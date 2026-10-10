@@ -3,8 +3,12 @@
 
 import pytest
 
+from intergrax.integrations.contracts.base import IntegrationCategoryMismatchError
+from intergrax.integrations.contracts.integration_profile import (
+    IntegrationProfile,
+    ObservabilityRoleBindings,
+)
 from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog as clear_integration_catalog
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -30,3 +34,21 @@ def test_from_integration_profile_lab_resolves_notification() -> None:
     assert ctx.search_provider is None
     assert ctx.managed_retrieval is None
     assert ctx.notification_channel is not None
+
+
+def test_observability_role_binding_unknown_slug_fail_closed() -> None:
+    profile = IntegrationProfile(
+        observability_roles=ObservabilityRoleBindings(
+            traces="config-x-nonexistent-observability-slug",
+        ),
+    )
+    with pytest.raises(ValueError, match="Unknown integration slug"):
+        ToolWiringContext.from_integration_profile(profile)
+
+
+def test_observability_role_binding_wrong_category_fail_closed() -> None:
+    profile = IntegrationProfile(
+        observability_roles=ObservabilityRoleBindings(traces="postgresql"),
+    )
+    with pytest.raises(IntegrationCategoryMismatchError):
+        ToolWiringContext.from_integration_profile(profile)

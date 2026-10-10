@@ -40,6 +40,30 @@ from intergrax.integrations.contracts.shipped_manifests import (
 from intergrax.integrations.contracts.cloud_platform_defaults import CLOUD_PLATFORM_DEFAULTS
 
 
+class ObservabilityRoleBindings(BaseModel):
+    """Explicit observability backend selection per harness tool role (CONFIG-X)."""
+
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    errors: IntegrationBinding | None = None
+    traces: IntegrationBinding | None = None
+    logs: IntegrationBinding | None = None
+    eval: IntegrationBinding | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_role_bindings(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        normalized = dict(data)
+        for field_name in ("errors", "traces", "logs", "eval"):
+            if field_name in normalized:
+                normalized[field_name] = normalize_integration_binding(
+                    normalized[field_name],
+                )
+        return normalized
+
+
 class IntegrationProfile(BaseModel):
     """
     Typed provider selection per category for a Tier-3 application.
@@ -83,6 +107,9 @@ class IntegrationProfile(BaseModel):
     issue_tracker: IntegrationBinding | None = None
     wiki_knowledge: IntegrationBinding | None = None
     observability_backend: IntegrationBinding | None = None
+    observability_roles: ObservabilityRoleBindings = Field(
+        default_factory=ObservabilityRoleBindings,
+    )
     browser_automation: IntegrationBinding | None = None
     secrets_store: IntegrationBinding | None = None
     graph_store: IntegrationBinding | None = None
@@ -212,6 +239,10 @@ class IntegrationProfile(BaseModel):
             relational_store=SQLITE,
             notification_channel=PAGERDUTY,
             observability_backend=SENTRY,
+            observability_roles=ObservabilityRoleBindings(
+                errors=SENTRY,
+                traces=LANGSMITH,
+            ),
             options={
                 LANGSMITH.slug: {},
                 SENTRY.slug: {},

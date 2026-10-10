@@ -5,10 +5,20 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any
 
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRisk
-from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.execution_integration_configuration_provenance import (
     ConfiguredIntegrationProvenanceSlice,
     ExecutionIntegrationConfigurationProvenance,
@@ -22,6 +32,11 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.execution_integration_configuration import (
     EffectiveIntegrationIdentity,
     IntegrationMaterializationKind,
+)
+from intergrax.integrations.contracts.execution_integration_configuration_pin_record import (
+    ExecutionIntegrationConfigurationPinRecord,
+    ExecutionIntegrationConfigurationRequirementRecoveryStaging,
+    validate_requirement_recovery_staging,
 )
 from intergrax.integrations.contracts.execution_integration_configuration_pinning import (
     ExecutionIntegrationConfigurationPinningError,
@@ -208,10 +223,82 @@ def _decode_configured_slice(raw: object) -> ConfiguredIntegrationProvenanceSlic
     )
 
 
+def _encode_recovery_staging(
+    staging: ExecutionIntegrationConfigurationRequirementRecoveryStaging,
+) -> dict[str, Any]:
+    validate_requirement_recovery_staging(staging)
+    payload: dict[str, Any] = {
+        "staging_schema_version": 1,
+        "requirement_boundary_prepared_at": staging.requirement_boundary_prepared_at.isoformat(),
+        "task_id": str(staging.task_id),
+        "run_id": str(staging.run_id),
+        "attempt_id": str(staging.attempt_id),
+    }
+    if staging.node_id is not None:
+        payload["node_id"] = staging.node_id
+    if staging.agent_id is not None:
+        payload["agent_id"] = staging.agent_id
+    if staging.step_id is not None:
+        payload["step_id"] = staging.step_id
+    if staging.correlation_id is not None:
+        payload["correlation_id"] = staging.correlation_id
+    if staging.traceparent is not None:
+        payload["traceparent"] = staging.traceparent
+    if staging.tracestate is not None:
+        payload["tracestate"] = staging.tracestate
+    return payload
+
+
+def _decode_recovery_staging(raw: object) -> ExecutionIntegrationConfigurationRequirementRecoveryStaging:
+    if not isinstance(raw, dict):
+        raise ExecutionIntegrationConfigurationPinningError(
+            ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+            detail="invalid requirement_recovery_staging",
+        )
+    try:
+        prepared_raw = raw["requirement_boundary_prepared_at"]
+        if type(prepared_raw) is not str:
+            raise TypeError("requirement_boundary_prepared_at")
+        prepared = datetime.fromisoformat(prepared_raw)
+        staging = ExecutionIntegrationConfigurationRequirementRecoveryStaging(
+            requirement_boundary_prepared_at=prepared,
+            task_id=validate_task_id(raw["task_id"]),
+            run_id=validate_run_id(raw["run_id"]),
+            attempt_id=validate_attempt_id(raw["attempt_id"]),
+            node_id=raw.get("node_id"),
+            agent_id=raw.get("agent_id"),
+            step_id=raw.get("step_id"),
+            correlation_id=raw.get("correlation_id"),
+            traceparent=raw.get("traceparent"),
+            tracestate=raw.get("tracestate"),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ExecutionIntegrationConfigurationPinningError(
+            ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+            detail=str(exc),
+        ) from exc
+    validate_requirement_recovery_staging(staging)
+    return staging
+
+
+def _pin_records_equal(
+    left: ExecutionIntegrationConfigurationPinRecord,
+    right: ExecutionIntegrationConfigurationPinRecord,
+) -> bool:
+    return (
+        left.subject == right.subject
+        and left.provenance == right.provenance
+        and left.requirement_recovery_staging == right.requirement_recovery_staging
+    )
+
+
 def encode_integration_configuration_provenance(
     provenance: ExecutionIntegrationConfigurationProvenance,
     *,
     subject: IntegrationConfigurationSubject,
+    requirement_recovery_staging: (
+        ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+    ) = None,
 ) -> bytes:
     validate_pin_subject_against_provenance(subject=subject, provenance=provenance)
     configured_raw: dict[str, Any] | None
@@ -239,12 +326,43 @@ def encode_integration_configuration_provenance(
             },
         },
     }
+    if requirement_recovery_staging is not None:
+        record = envelope["record"]
+        if not isinstance(record, dict):
+            raise ExecutionIntegrationConfigurationPinningError(
+                ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+            )
+        record["requirement_recovery_staging"] = _encode_recovery_staging(
+            requirement_recovery_staging,
+        )
     return json.dumps(envelope, separators=(",", ":"), sort_keys=True).encode("utf-8")
+
+
+def decode_integration_configuration_pin_record(
+    raw: bytes,
+) -> ExecutionIntegrationConfigurationPinRecord:
+    subject, provenance, staging = _decode_integration_configuration_pin_envelope(raw)
+    return ExecutionIntegrationConfigurationPinRecord(
+        subject=subject,
+        provenance=provenance,
+        requirement_recovery_staging=staging,
+    )
 
 
 def decode_integration_configuration_provenance(
     raw: bytes,
 ) -> tuple[IntegrationConfigurationSubject, ExecutionIntegrationConfigurationProvenance]:
+    subject, provenance, _staging = _decode_integration_configuration_pin_envelope(raw)
+    return subject, provenance
+
+
+def _decode_integration_configuration_pin_envelope(
+    raw: bytes,
+) -> tuple[
+    IntegrationConfigurationSubject,
+    ExecutionIntegrationConfigurationProvenance,
+    ExecutionIntegrationConfigurationRequirementRecoveryStaging | None,
+]:
     try:
         envelope = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -295,7 +413,13 @@ def decode_integration_configuration_provenance(
             detail=str(exc),
         ) from exc
     validate_pin_subject_against_provenance(subject=subject, provenance=provenance)
-    return subject, provenance
+    staging_raw = record.get("requirement_recovery_staging")
+    staging: ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+    if staging_raw is None:
+        staging = None
+    else:
+        staging = _decode_recovery_staging(staging_raw)
+    return subject, provenance, staging
 
 
 def _require_opportunity_tenant(tenant_id: str) -> str:
@@ -549,6 +673,32 @@ def _subject_sort_key(subject: IntegrationConfigurationSubject) -> tuple[str, st
     )
 
 
+def _incoming_pin_record(
+    *,
+    subject: IntegrationConfigurationSubject,
+    provenance: ExecutionIntegrationConfigurationProvenance,
+    requirement_recovery_staging: (
+        ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+    ),
+) -> ExecutionIntegrationConfigurationPinRecord:
+    return ExecutionIntegrationConfigurationPinRecord(
+        subject=subject,
+        provenance=provenance,
+        requirement_recovery_staging=requirement_recovery_staging,
+    )
+
+
+def _assert_idempotent_pin_record_or_conflict(
+    existing: ExecutionIntegrationConfigurationPinRecord,
+    incoming: ExecutionIntegrationConfigurationPinRecord,
+) -> None:
+    if _pin_records_equal(existing, incoming):
+        return
+    raise ExecutionIntegrationConfigurationPinningError(
+        ExecutionIntegrationConfigurationPinningFailureReason.CONFLICT,
+    )
+
+
 class KvExecutionIntegrationConfigurationPinningStore:
     """DistributedKVStore-backed integration configuration provenance pinning."""
 
@@ -564,11 +714,23 @@ class KvExecutionIntegrationConfigurationPinningStore:
         *,
         subject: IntegrationConfigurationSubject,
         provenance: ExecutionIntegrationConfigurationProvenance,
+        requirement_recovery_staging: (
+            ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+        ) = None,
     ) -> None:
         validate_pin_subject_against_provenance(subject=subject, provenance=provenance)
         tenant = require_tenant_id_for_integration_configuration_provenance(provenance.tenant_id)
         execution_id = validate_execution_id(provenance.execution_id)
-        encoded = encode_integration_configuration_provenance(provenance, subject=subject)
+        incoming = _incoming_pin_record(
+            subject=subject,
+            provenance=provenance,
+            requirement_recovery_staging=requirement_recovery_staging,
+        )
+        encoded = encode_integration_configuration_provenance(
+            provenance,
+            subject=subject,
+            requirement_recovery_staging=requirement_recovery_staging,
+        )
         key = _provenance_kv_key(execution_id, subject)
         subject_key = _subject_row_key(subject)
         _append_provenance_index_entry(
@@ -599,11 +761,53 @@ class KvExecutionIntegrationConfigurationPinningStore:
                 ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
                 detail="provenance record missing after index marker",
             )
-        _, existing = decode_integration_configuration_provenance(existing_raw)
-        if existing != provenance:
+        existing = decode_integration_configuration_pin_record(existing_raw)
+        _assert_idempotent_pin_record_or_conflict(existing, incoming)
+
+    def read_pin_records(
+        self,
+        *,
+        tenant_id: str,
+        execution_id: ExecutionId,
+    ) -> tuple[ExecutionIntegrationConfigurationPinRecord, ...]:
+        tenant = require_tenant_id_for_integration_configuration_provenance(tenant_id)
+        validated_execution_id = validate_execution_id(execution_id)
+        index_raw = self._kv_store.get(
+            tenant_id=tenant,
+            key=_provenance_index_kv_key(validated_execution_id),
+        )
+        if index_raw is None:
+            return ()
+        try:
+            subject_keys = json.loads(index_raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ExecutionIntegrationConfigurationPinningError(
-                ExecutionIntegrationConfigurationPinningFailureReason.CONFLICT,
+                ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                detail="invalid provenance index",
+            ) from exc
+        if not isinstance(subject_keys, list):
+            raise ExecutionIntegrationConfigurationPinningError(
+                ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                detail="invalid provenance index shape",
             )
+        records: list[ExecutionIntegrationConfigurationPinRecord] = []
+        for subject_key in _parse_provenance_index_subject_keys(subject_keys):
+            pin_key = f"{_PROVENANCE_KV_PREFIX}:{validated_execution_id}:{subject_key}"
+            raw = self._kv_store.get(tenant_id=tenant, key=pin_key)
+            if raw is None:
+                raise ExecutionIntegrationConfigurationPinningError(
+                    ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                    detail="missing provenance pin for index entry",
+                )
+            pin_record = decode_integration_configuration_pin_record(raw)
+            validate_execution_integration_configuration_provenance_record(
+                pin_record.provenance,
+                expected_tenant_id=tenant,
+                expected_execution_id=validated_execution_id,
+            )
+            records.append(pin_record)
+        records.sort(key=lambda item: _subject_sort_key(item.subject))
+        return tuple(records)
 
     def read_all(
         self,
@@ -670,10 +874,18 @@ class DocumentStoreExecutionIntegrationConfigurationPinningStore:
         *,
         subject: IntegrationConfigurationSubject,
         provenance: ExecutionIntegrationConfigurationProvenance,
+        requirement_recovery_staging: (
+            ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+        ) = None,
     ) -> None:
         validate_pin_subject_against_provenance(subject=subject, provenance=provenance)
         tenant = require_tenant_id_for_integration_configuration_provenance(provenance.tenant_id)
         execution_id = validate_execution_id(provenance.execution_id)
+        incoming = _incoming_pin_record(
+            subject=subject,
+            provenance=provenance,
+            requirement_recovery_staging=requirement_recovery_staging,
+        )
         partition = _provenance_document_partition(tenant, execution_id)
         row_key = _subject_row_key(subject)
         document = DocumentRecord(
@@ -683,6 +895,7 @@ class DocumentStoreExecutionIntegrationConfigurationPinningStore:
                 "provenance": encode_integration_configuration_provenance(
                     provenance,
                     subject=subject,
+                    requirement_recovery_staging=requirement_recovery_staging,
                 ).decode("utf-8"),
             },
         )
@@ -694,11 +907,75 @@ class DocumentStoreExecutionIntegrationConfigurationPinningStore:
                 ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
                 detail="provenance document create failed",
             )
-        _, stored = decode_integration_configuration_provenance(_provenance_record_to_bytes(existing))
-        if stored != provenance:
-            raise ExecutionIntegrationConfigurationPinningError(
-                ExecutionIntegrationConfigurationPinningFailureReason.CONFLICT,
+        stored = decode_integration_configuration_pin_record(_provenance_record_to_bytes(existing))
+        _assert_idempotent_pin_record_or_conflict(stored, incoming)
+
+    def read_pin_records(
+        self,
+        *,
+        tenant_id: str,
+        execution_id: ExecutionId,
+    ) -> tuple[ExecutionIntegrationConfigurationPinRecord, ...]:
+        tenant = require_tenant_id_for_integration_configuration_provenance(tenant_id)
+        validated_execution_id = validate_execution_id(execution_id)
+        partition = _provenance_document_partition(tenant, validated_execution_id)
+        records: list[ExecutionIntegrationConfigurationPinRecord] = []
+        seen_row_keys: set[str] = set()
+        seen_subjects: set[tuple[str, str, str, str]] = set()
+        seen_cursors: set[str] = set()
+        cursor: str | None = None
+        while True:
+            if cursor is not None:
+                if cursor in seen_cursors:
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="non-progressing document provenance query cursor",
+                    )
+                seen_cursors.add(cursor)
+            page = self._document_store.query(
+                partition,
+                limit=_PROVENANCE_DOCUMENT_QUERY_PAGE_SIZE,
+                cursor=cursor,
             )
+            for document in page.documents:
+                if document.row_key in seen_row_keys:
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="duplicate provenance document row key",
+                    )
+                seen_row_keys.add(document.row_key)
+                pin_record = decode_integration_configuration_pin_record(
+                    _provenance_record_to_bytes(document),
+                )
+                if document.row_key != _subject_row_key(pin_record.subject):
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="provenance document row key does not match decoded subject",
+                    )
+                validate_execution_integration_configuration_provenance_record(
+                    pin_record.provenance,
+                    expected_tenant_id=tenant,
+                    expected_execution_id=validated_execution_id,
+                )
+                subject_identity = _subject_sort_key(pin_record.subject)
+                if subject_identity in seen_subjects:
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="duplicate provenance subject in document query result",
+                    )
+                seen_subjects.add(subject_identity)
+                records.append(pin_record)
+            next_cursor = page.next_cursor
+            if next_cursor is None:
+                break
+            if next_cursor == cursor:
+                raise ExecutionIntegrationConfigurationPinningError(
+                    ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                    detail="non-progressing document provenance query cursor",
+                )
+            cursor = next_cursor
+        records.sort(key=lambda item: _subject_sort_key(item.subject))
+        return tuple(records)
 
     def read_all(
         self,
@@ -824,7 +1101,7 @@ class InMemoryExecutionIntegrationConfigurationPinningStore:
     def __init__(self) -> None:
         self._records: dict[
             tuple[str, str, str, str, str, str],
-            ExecutionIntegrationConfigurationProvenance,
+            ExecutionIntegrationConfigurationPinRecord,
         ] = {}
 
     @property
@@ -836,10 +1113,18 @@ class InMemoryExecutionIntegrationConfigurationPinningStore:
         *,
         subject: IntegrationConfigurationSubject,
         provenance: ExecutionIntegrationConfigurationProvenance,
+        requirement_recovery_staging: (
+            ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+        ) = None,
     ) -> None:
         validate_pin_subject_against_provenance(subject=subject, provenance=provenance)
         tenant = require_tenant_id_for_integration_configuration_provenance(provenance.tenant_id)
         execution_id = validate_execution_id(provenance.execution_id)
+        incoming = _incoming_pin_record(
+            subject=subject,
+            provenance=provenance,
+            requirement_recovery_staging=requirement_recovery_staging,
+        )
         key = (
             tenant,
             str(execution_id),
@@ -848,11 +1133,26 @@ class InMemoryExecutionIntegrationConfigurationPinningStore:
             subject.resource_scope,
             subject.configuration_type,
         )
-        if key in self._records and self._records[key] != provenance:
-            raise ExecutionIntegrationConfigurationPinningError(
-                ExecutionIntegrationConfigurationPinningFailureReason.CONFLICT,
-            )
-        self._records[key] = provenance
+        if key in self._records:
+            _assert_idempotent_pin_record_or_conflict(self._records[key], incoming)
+            return
+        self._records[key] = incoming
+
+    def read_pin_records(
+        self,
+        *,
+        tenant_id: str,
+        execution_id: ExecutionId,
+    ) -> tuple[ExecutionIntegrationConfigurationPinRecord, ...]:
+        tenant = require_tenant_id_for_integration_configuration_provenance(tenant_id)
+        validated_execution_id = validate_execution_id(execution_id)
+        matches = [
+            record
+            for key, record in self._records.items()
+            if key[0] == tenant and key[1] == str(validated_execution_id)
+        ]
+        matches.sort(key=lambda item: _subject_sort_key(item.subject))
+        return tuple(matches)
 
     def read_all(
         self,
@@ -863,7 +1163,7 @@ class InMemoryExecutionIntegrationConfigurationPinningStore:
         tenant = require_tenant_id_for_integration_configuration_provenance(tenant_id)
         validated_execution_id = validate_execution_id(execution_id)
         matches = [
-            record
+            record.provenance
             for key, record in self._records.items()
             if key[0] == tenant and key[1] == str(validated_execution_id)
         ]
@@ -927,6 +1227,7 @@ __all__ = [
     "KvExistingCapabilityConfigurationOpportunityStore",
     "KvExecutionIntegrationConfigurationPinningStore",
     "decode_configuration_opportunity",
+    "decode_integration_configuration_pin_record",
     "decode_integration_configuration_provenance",
     "encode_configuration_opportunity",
     "encode_integration_configuration_provenance",

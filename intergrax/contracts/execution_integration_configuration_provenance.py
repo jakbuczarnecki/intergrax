@@ -56,6 +56,7 @@ class ExecutionIntegrationConfigurationProvenanceReadStatus(StrEnum):
     NOT_CONFIGURED = "not_configured"
     CONFIGURED = "configured"
     REQUIRED_MISSING = "required_missing"
+    UNAVAILABLE_AT_EXECUTION_BOUNDARY = "unavailable_at_execution_boundary"
 
 
 @dataclass(frozen=True, slots=True)

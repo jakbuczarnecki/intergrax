@@ -4,75 +4,42 @@
 """Resolve observability backends by harness role (errors vs traces vs default)."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
-from typing import Any
-
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
 from intergrax.tools.registry.wiring import ToolWiringContext
 
-_ERRORS_SLUGS = ("sentry",)
-_TRACES_SLUGS = ("langsmith", "langfuse", "braintrust", "phoenix", "signoz", "helicone")
-_EVAL_SLUGS = ("braintrust",)
-_LOGS_SLUGS = ("elasticsearch", "opensearch")
+_KNOWN_ROLES = frozenset({"errors", "traces", "logs", "eval"})
 
 
-def _backends(ctx: ToolWiringContext) -> dict[str, Any]:
-    if ctx.observability_backends:
-        return ctx.observability_backends
-    if ctx.observability_backend is not None:
-        return {"default": ctx.observability_backend}
-    return {}
-
-
-def _first_matching(
-    backends: dict[str, Any],
-    slug_order: tuple[str, ...],
+def resolve_observability_backend(
+    ctx: ToolWiringContext,
     *,
-    attr: str,
-) -> Any | None:
-    for slug in slug_order:
-        candidate = backends.get(slug)
-        if candidate is not None and attribute_access.optional(candidate, attr, None) is not None:
-            return candidate
-    for candidate in backends.values():
-        if attribute_access.optional(candidate, attr, None) is not None:
-            return candidate
-    return None
-
-
-def resolve_observability_backend(ctx: ToolWiringContext, *, role: str = "default") -> Any:
+    role: str = "default",
+) -> ObservabilityBackend:
     """
     Pick an observability backend for a tool capability.
 
-    Roles:
-    - ``errors`` — Sentry-like ``capture_message`` (prefers ``sentry`` slug)
-    - ``traces`` — ``query_traces`` (prefers ``langsmith``, ``langfuse``, …)
-    - ``logs`` — ``rest_client`` for log search (prefers elasticsearch/opensearch)
-    - ``default`` — primary ``observability_backend`` or first registered backend
+    Role backends are materialized only from ``IntegrationProfile.observability_roles``.
     """
-    backends = _backends(ctx)
-    if role == "errors":
-        backend = _first_matching(backends, _ERRORS_SLUGS, attr="capture_message")
-        if backend is not None:
-            return backend
-    if role == "traces":
-        backend = _first_matching(backends, _TRACES_SLUGS, attr="query_traces")
-        if backend is not None:
-            return backend
-    if role == "logs":
-        backend = _first_matching(backends, _LOGS_SLUGS, attr="rest_client")
-        if backend is not None:
-            return backend
-        for candidate in backends.values():
-            if attribute_access.optional(candidate, "rest_client", None) is not None:
-                return candidate
-    if role == "eval":
-        backend = _first_matching(backends, _EVAL_SLUGS, attr="log_eval")
-        if backend is not None:
-            return backend
-
-    if ctx.observability_backend is not None:
+    if role == "default":
+        if ctx.observability_backend is None:
+            raise RuntimeError("observability_backend_not_configured")
         return ctx.observability_backend
-    if backends:
-        return next(iter(backends.values()))
-    raise RuntimeError("observability_backend_not_configured")
+
+    if role not in _KNOWN_ROLES:
+        raise RuntimeError(f"observability_unknown_role:{role}")
+
+    role_backends = ctx.observability_role_backends
+    backend: ObservabilityBackend | None
+    if role == "errors":
+        backend = role_backends.errors
+    elif role == "traces":
+        backend = role_backends.traces
+    elif role == "logs":
+        backend = role_backends.logs
+    else:
+        backend = role_backends.eval
+
+    if backend is None:
+        raise RuntimeError(f"observability_role_backend_not_configured:{role}")
+    return backend

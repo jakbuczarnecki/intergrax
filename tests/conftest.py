@@ -132,3 +132,27 @@ def session_manager_in_memory():
 
     return build_in_memory_session_manager()
 
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    from tests.qualification.trace_x._trace_x_p5_r2_closed_world_pass1_session import (
+        pytest_runtest_logreport as _p5_r2_cw_pass1_logreport,
+    )
+    from tests.qualification.trace_x._trace_x_p6_pass1_session import (
+        pytest_runtest_logreport as _p6_pass1_logreport,
+    )
+
+    _p5_r2_cw_pass1_logreport(report)
+    _p6_pass1_logreport(report)
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    from tests.qualification.trace_x._trace_x_p5_r2_closed_world_pass1_session import (
+        pytest_sessionfinish as _p5_r2_cw_pass1_sessionfinish,
+    )
+    from tests.qualification.trace_x._trace_x_p6_pass1_session import (
+        pytest_sessionfinish as _p6_pass1_sessionfinish,
+    )
+
+    _p5_r2_cw_pass1_sessionfinish(session, exitstatus)
+    _p6_pass1_sessionfinish(session, exitstatus)
+

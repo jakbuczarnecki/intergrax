@@ -19,8 +19,6 @@ from tests.qualification.trace_x._trace_x_p4_pass1_session import (
     pytest_runtest_logreport as _p4_pass1_logreport,
     pytest_sessionfinish as _p4_pass1_sessionfinish,
 )
-
-
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     _pass1_logreport(report)
     _pass2_logreport(report)

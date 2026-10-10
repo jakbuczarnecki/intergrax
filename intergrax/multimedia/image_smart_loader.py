@@ -67,7 +67,7 @@ class ImageSmartLoader:
         text_mode: Literal["ocr", "caption", "both"] = "both",
         caption_llm: Optional[LLMAdapter] = None,
         both_joiner: str = "\n\n---\n\n",
-        tenant_id: str = "default",
+        tenant_id: str,
         namespace: str | None = None,
         workspace_id: str | None = None,
     ):

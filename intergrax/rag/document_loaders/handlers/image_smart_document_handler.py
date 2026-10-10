@@ -4,13 +4,17 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Sequence
 
-
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
-from intergrax.rag.document_loaders.pipeline.document_handler_loading import PipelineDocumentHandler
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.parsers.image_smart_parser import ImageSmartParser
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import (
+    PipelineDocumentHandler,
+    _fragment_to_knowledge_document,
+)
+from intergrax.rag.document_loaders.pipeline.parser_pipeline import ParserPipeline
 
 
 class ImageSmartDocumentHandler(PipelineDocumentHandler):
@@ -53,16 +57,32 @@ class ImageSmartDocumentHandler(PipelineDocumentHandler):
         return GLOBAL_DOCUMENT_LOADER_CONFIG.default_builtin_handler_confidence
 
     def build_parsers(self) -> List[BaseDocumentParser]:
+        raise RuntimeError(
+            "ImageSmartDocumentHandler requires scoped load(); build_parsers is not supported",
+        )
 
+    def load(
+        self,
+        source: str,
+        *,
+        scope: KnowledgeDocumentScope,
+    ) -> Sequence[KnowledgeDocument]:
+        parser = ImageSmartParser(
+            ocr_lang=self._ocr_lang,
+            ocr_psm=self._ocr_psm,
+            ocr_oem=self._ocr_oem,
+            extract_exif=self._extract_exif,
+            max_image_dim=self._max_image_dim,
+            text_mode=self._text_mode,
+            caption_llm=self._caption_llm,
+            both_joiner=self._both_joiner,
+            tenant_id=scope.tenant_id,
+            namespace=scope.namespace,
+            workspace_id=scope.workspace_id,
+        )
+        pipeline = ParserPipeline([parser])
+        fragments = pipeline.parse(source)
         return [
-            ImageSmartParser(
-                ocr_lang=self._ocr_lang,
-                ocr_psm=self._ocr_psm,
-                ocr_oem=self._ocr_oem,
-                extract_exif=self._extract_exif,
-                max_image_dim=self._max_image_dim,
-                text_mode=self._text_mode,
-                caption_llm=self._caption_llm,
-                both_joiner=self._both_joiner,
-            )
+            _fragment_to_knowledge_document(fragment, source=source, scope=scope)
+            for fragment in fragments
         ]

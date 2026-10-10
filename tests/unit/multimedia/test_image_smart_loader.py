@@ -47,6 +47,7 @@ def _load_caption(monkeypatch, tmp_path, adapter, image_fixture):
         str(image_path),
         text_mode="caption",
         caption_llm=adapter,
+        tenant_id="tenant-test",
     ).load()[0]
     return document, caption_call
 
@@ -115,6 +116,10 @@ def test_ocr_only_has_no_caption_model_provenance(monkeypatch, tmp_path, image_f
     image_path = tmp_path / "sample.png"
     image_path.write_bytes(b"not-read")
 
-    document = ImageSmartLoader(str(image_path), text_mode="ocr").load()[0]
+    document = ImageSmartLoader(
+        str(image_path),
+        text_mode="ocr",
+        tenant_id="tenant-test",
+    ).load()[0]
 
     assert document.metadata["caption_model_inferred"] is None

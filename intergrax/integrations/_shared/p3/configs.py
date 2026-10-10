@@ -37,20 +37,38 @@ class VectorIntegrationConfig(BaseIntegrationConfig):
     url: str = ""
     api_key: str = ""
     collection: str = "intergrax"
-    tenant_id: str = "default"
+    tenant_id: str = ""
 
     def require_url(self) -> str:
         if not self.url.strip():
             raise IntegrationConfigurationError("Vector integration requires URL")
         return self.url.strip()
 
+    def require_tenant_id(self) -> str:
+        tenant = self.tenant_id.strip()
+        if not tenant:
+            raise IntegrationConfigurationError(
+                "Vector integration requires explicit tenant_id configuration",
+            )
+        return tenant
+
     @classmethod
     def from_env(cls, prefix: str, **overrides: object) -> VectorIntegrationConfig:
+        tenant_override = overrides.get("tenant_id")
+        tenant_from_env = _env(f"{prefix}_TENANT_ID")
+        if tenant_override is not None:
+            tenant_id = str(tenant_override).strip()
+        elif tenant_from_env:
+            tenant_id = tenant_from_env
+        else:
+            raise IntegrationConfigurationError(
+                f"Vector integration requires {prefix}_TENANT_ID",
+            )
         payload = {
             "url": _env(f"{prefix}_URL"),
             "api_key": _env(f"{prefix}_API_KEY"),
             "collection": _env(f"{prefix}_COLLECTION", "intergrax") or "intergrax",
-            "tenant_id": _env(f"{prefix}_TENANT_ID", "default") or "default",
+            "tenant_id": tenant_id,
         }
         payload.update(overrides)
         return cls.model_validate(payload)

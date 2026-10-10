@@ -69,6 +69,9 @@ _SPINE_OPS_HINT: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.BUDGET_THRESHOLD: "ops:budget",
     RuntimeEventType.BUDGET_EXCEEDED: "ops:alert",
     RuntimeEventType.DOMAIN_SIGNAL: "ops:domain_signal",
+    RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED: (
+        "ops:integration_config_provenance"
+    ),
 }
 
 

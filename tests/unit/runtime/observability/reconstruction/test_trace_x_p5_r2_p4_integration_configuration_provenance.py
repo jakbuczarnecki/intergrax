@@ -29,13 +29,25 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.execution_integration_configuration_provenance import (
     ExecutionIntegrationConfigurationProvenance,
+    ExecutionIntegrationConfigurationProvenanceMode,
     ExecutionIntegrationConfigurationProvenanceReadStatus,
+    IntegrationConfigurationSubject,
+)
+from intergrax.contracts.execution_integration_configuration_provenance_requirement import (
+    derive_integration_configuration_provenance_requirement_event_id,
+)
+from intergrax.integrations.contracts.execution_integration_configuration_pin_record import (
+    ExecutionIntegrationConfigurationRequirementRecoveryStaging,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_event_type import RuntimeEventType
 from intergrax.integrations.contracts.execution_integration_configuration_pinning import (
     ExecutionIntegrationConfigurationPinningError,
     ExecutionIntegrationConfigurationPinningFailureReason,
+)
+from intergrax.runtime.events.payload_registry import runtime_event_with_payload
+from intergrax.runtime.events.payloads.spine_families import (
+    IntegrationConfigurationProvenanceRequirementPayloadV1,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
@@ -84,6 +96,65 @@ def _runtime_event(
 
 def _append_event(store: InMemoryRuntimeEventStore, event: RuntimeEvent) -> None:
     store.append(event, tenant_id=event.tenant_id or _TENANT)
+
+
+def _recovery_staging() -> ExecutionIntegrationConfigurationRequirementRecoveryStaging:
+    return ExecutionIntegrationConfigurationRequirementRecoveryStaging(
+        requirement_boundary_prepared_at=datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc),
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+
+
+def _pin_adopted(
+    store: InMemoryExecutionIntegrationConfigurationPinningStore,
+    *,
+    subject: IntegrationConfigurationSubject,
+    provenance: ExecutionIntegrationConfigurationProvenance,
+) -> None:
+    store.pin(
+        subject=subject,
+        provenance=provenance,
+        requirement_recovery_staging=_recovery_staging(),
+    )
+
+
+def _append_requirement_spine(
+    store: InMemoryRuntimeEventStore,
+    *,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    execution_id: ExecutionId,
+    subject: IntegrationConfigurationSubject,
+) -> None:
+    payload = IntegrationConfigurationProvenanceRequirementPayloadV1(
+        integration_category=subject.integration_category.value,
+        provider_id=subject.provider_id,
+        resource_scope=subject.resource_scope,
+        configuration_type=subject.configuration_type,
+        provenance_mode=ExecutionIntegrationConfigurationProvenanceMode.CONFIGURED_ADOPTED.value,
+    )
+    event_id = derive_integration_configuration_provenance_requirement_event_id(
+        tenant_id=tenant_id,
+        execution_id=execution_id,
+        subject=subject,
+    )
+    event = RuntimeEvent(
+        event_id=event_id,
+        tenant_id=tenant_id,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        event_type=RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED,
+        phase=ExecutionPhase.STEP_EXECUTION,
+        timestamp=datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc),
+        payload={},
+    )
+    _append_event(store, runtime_event_with_payload(event, payload))
 
 
 def test_integration_reader_absent_yields_not_configured() -> None:
@@ -138,7 +209,7 @@ def test_configured_execution_reconstructs_persisted_provenance() -> None:
     execution_id = _EXEC
     pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
     record = _provenance_configured_adopted()
-    pinning.pin(subject=_subject(), provenance=record)
+    _pin_adopted(pinning, subject=_subject(), provenance=record)
     store = InMemoryRuntimeEventStore()
     _append_event(
         store,
@@ -172,8 +243,8 @@ def test_multiple_subjects_preserved_in_store_order() -> None:
         effective=first.effective,
         configured=_configured_slice(resource_scope="scope-b"),
     )
-    pinning.pin(subject=_subject(resource_scope="scope-a"), provenance=first)
-    pinning.pin(subject=_subject(resource_scope="scope-b"), provenance=second)
+    _pin_adopted(pinning, subject=_subject(resource_scope="scope-a"), provenance=first)
+    _pin_adopted(pinning, subject=_subject(resource_scope="scope-b"), provenance=second)
     store = InMemoryRuntimeEventStore()
     _append_event(
         store,
@@ -239,7 +310,7 @@ def test_tenant_mismatch_in_record_fails_closed() -> None:
 def test_execution_id_mismatch_fails_closed() -> None:
     pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
     record = _provenance_configured_adopted()
-    pinning.pin(subject=_subject(), provenance=record)
+    _pin_adopted(pinning, subject=_subject(), provenance=record)
     other_execution = mint_execution_id()
 
     class _CorruptReader:
@@ -318,16 +389,25 @@ def test_required_provenance_missing_fails_closed() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     store = InMemoryRuntimeEventStore()
+    attempt_id = mint_attempt_id()
     _append_event(
         store,
         _runtime_event(
             tenant_id=_TENANT,
             task_id=task_id,
             run_id=run_id,
-            attempt_id=mint_attempt_id(),
+            attempt_id=attempt_id,
             execution_id=_EXEC,
-            payload={"execution_integration_configuration_provenance_required": True},
         ),
+    )
+    _append_requirement_spine(
+        store,
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=_EXEC,
+        subject=_subject(),
     )
     reader = PinningStoreExecutionIntegrationConfigurationProvenanceReader(
         InMemoryExecutionIntegrationConfigurationPinningStore(),
@@ -347,7 +427,7 @@ def test_child_execution_does_not_inherit_parent_provenance() -> None:
     parent_execution = _EXEC
     child_execution = mint_execution_id()
     pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
-    pinning.pin(subject=_subject(), provenance=_provenance_configured_adopted())
+    _pin_adopted(pinning, subject=_subject(), provenance=_provenance_configured_adopted())
     store = InMemoryRuntimeEventStore()
     _append_event(
         store,
@@ -385,7 +465,7 @@ def test_historical_restart_ignores_changed_current_configuration_state() -> Non
     run_id = mint_run_id()
     pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
     historical = _provenance_configured_adopted()
-    pinning.pin(subject=_subject(), provenance=historical)
+    _pin_adopted(pinning, subject=_subject(), provenance=historical)
     store = InMemoryRuntimeEventStore()
     _append_event(
         store,
@@ -425,11 +505,59 @@ def test_historical_restart_ignores_changed_current_configuration_state() -> Non
     )
 
 
+def test_requirement_spine_malformed_payload_reconstruction_fails_closed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
+    _pin_adopted(pinning, subject=_subject(), provenance=_provenance_configured_adopted())
+    store = InMemoryRuntimeEventStore()
+    event_id = derive_integration_configuration_provenance_requirement_event_id(
+        tenant_id=_TENANT,
+        execution_id=_EXEC,
+        subject=_subject(),
+    )
+    malformed = RuntimeEvent(
+        event_id=event_id,
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=_EXEC,
+        event_type=RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED,
+        phase=ExecutionPhase.STEP_EXECUTION,
+        timestamp=datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc),
+        payload={
+            "payload_schema_id": "integration_configuration_provenance_requirement.unknown.v99",
+            "payload": {"integration_category": "invalid"},
+        },
+    )
+    _append_event(store, malformed)
+    _append_event(
+        store,
+        _runtime_event(
+            tenant_id=_TENANT,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=_EXEC,
+        ),
+    )
+    reader = PinningStoreExecutionIntegrationConfigurationProvenanceReader(pinning)
+    reconstructor = ExecutionReconstructor(
+        store,
+        InMemoryCausalEvidencePersistence(),
+        execution_integration_configuration_provenance_reader=reader,
+    )
+    with pytest.raises(ExecutionReconstructionIntegrityError, match="requirement payload"):
+        reconstructor.reconstruct_execution(_TENANT, task_id, run_id)
+
+
 def test_reconstruction_does_not_resolve_providers() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
-    pinning.pin(subject=_subject(), provenance=_provenance_configured_adopted())
+    _pin_adopted(pinning, subject=_subject(), provenance=_provenance_configured_adopted())
     store = InMemoryRuntimeEventStore()
     _append_event(
         store,
