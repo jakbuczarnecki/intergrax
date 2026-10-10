@@ -4,20 +4,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Final
 
-from tests.qualification.config_x._config_x_types import ConfigClassification
-
-@dataclass(frozen=True, slots=True)
-class ConfigBlockerRecord:
-    blocker_id: str
-    classification: ConfigClassification
-    paths: tuple[str, ...]
-    summary: str
-    child_stage: str
-    remediation_lineage: str
-
+from tests.qualification.config_x._config_x_current_classification import (
+    derive_config_x_active_blocker_records,
+)
+from tests.qualification.config_x._config_x_types import (
+    ConfigBlockerRecord,
+    ConfigClassification,
+)
 
 CONFIG_X_HISTORICAL_BLOCKER_RECORDS: Final[tuple[ConfigBlockerRecord, ...]] = (
     ConfigBlockerRecord(
@@ -84,7 +79,9 @@ CONFIG_X_HISTORICAL_BLOCKER_RECORDS: Final[tuple[ConfigBlockerRecord, ...]] = (
     ),
 )
 
-CONFIG_X_ACTIVE_BLOCKER_RECORDS: Final[tuple[ConfigBlockerRecord, ...]] = ()
+CONFIG_X_ACTIVE_BLOCKER_RECORDS: Final[tuple[ConfigBlockerRecord, ...]] = (
+    derive_config_x_active_blocker_records()
+)
 
 # Backward-compatible alias: wave-1 historical inventory (not current active blockers).
 CONFIG_X_BLOCKER_RECORDS: Final[tuple[ConfigBlockerRecord, ...]] = (

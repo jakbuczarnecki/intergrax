@@ -21,12 +21,19 @@ from tests.qualification.config_x._config_x_concern_inventory import (
     CONFIG_X_CONCERN_INVENTORY,
     config_x_concern_inventory,
 )
+from tests.qualification.config_x._config_x_current_classification import (
+    derive_config_x_active_blocker_records,
+    sweep_concern_classification_evidence,
+)
 from tests.qualification.config_x._config_x_discovery import (
     classify_synthetic_unknown_surface,
     discover_active_blocker_path_keys,
     discover_historical_blocker_evidence_paths,
     discover_composition_root_paths,
     discover_integration_category_enum_size,
+)
+from tests.qualification.config_x._config_x_semantic_production_scan import (
+    frz_cfg_05_semantic_i_blocker_count,
 )
 from tests.qualification.config_x._config_x_owner_discovery import (
     CONFIG_X_OWNER_EXPECTATIONS,
@@ -148,3 +155,20 @@ def test_cx_q15_active_blocker_exit_counts_zero() -> None:
     assert counts[ConfigClassification.L_UNCLEAR] == 0
     assert len(CONFIG_X_ACTIVE_BLOCKER_RECORDS) == 0
     assert blocker_counts_by_classification() == counts
+
+
+def test_cx_q16_mechanical_concern_classification_covers_inventory() -> None:
+    evidence = sweep_concern_classification_evidence()
+    assert len(evidence) == len(CONFIG_X_CONCERN_INVENTORY) == 54
+    for item in evidence:
+        assert item.mechanical_classification not in BLOCKER_CLASSIFICATIONS
+
+
+def test_cx_q17_active_blockers_derived_not_declared_empty() -> None:
+    derived = derive_config_x_active_blocker_records()
+    assert derived == CONFIG_X_ACTIVE_BLOCKER_RECORDS
+    assert discover_active_blocker_path_keys() == frozenset()
+
+
+def test_cx_q18_frz_cfg_05_semantic_selection_gate() -> None:
+    assert frz_cfg_05_semantic_i_blocker_count() == 0

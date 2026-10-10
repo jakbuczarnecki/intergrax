@@ -64,7 +64,10 @@ CONFIG_X_OWNER_EXPECTATIONS: Final[dict[str, frozenset[str]]] = {
 
 _OWNER_MARKERS: Final[dict[str, tuple[str, ...]]] = {
     "integration_provider_selection": ("def resolve_from_profile", "def resolve_slug"),
-    "integration_typed_resolution_delegate": ("def resolve_typed",),
+    "integration_typed_resolution_delegate": (
+        "def resolve_contract",
+        "Typed helpers for ``IntegrationProfile.resolve``",
+    ),
     "llm_provider_selection": ("class LLMAdapterRegistry", "def create(cls, provider"),
     "execution_bound_integration_resolution": ("class ExecutionBoundIntegrationResolution",),
     "existing_capability_configuration_realization": (
@@ -103,6 +106,10 @@ def discover_owner_paths(concern: str) -> frozenset[str]:
             rel = _normalize_repo_path(path)
             if concern == "plugin_integration_catalog" and rel != (
                 "intergrax/integrations/registry/catalog.py"
+            ):
+                continue
+            if concern == "integration_typed_resolution_delegate" and rel != (
+                "intergrax/integrations/registry/resolve_typed.py"
             ):
                 continue
             try:

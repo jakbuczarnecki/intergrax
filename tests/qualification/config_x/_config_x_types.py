@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
 
 
@@ -30,3 +31,13 @@ BLOCKER_CLASSIFICATIONS: frozenset[ConfigClassification] = frozenset(
         ConfigClassification.L_UNCLEAR,
     },
 )
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigBlockerRecord:
+    blocker_id: str
+    classification: ConfigClassification
+    paths: tuple[str, ...]
+    summary: str
+    child_stage: str
+    remediation_lineage: str

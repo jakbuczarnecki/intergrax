@@ -17,16 +17,28 @@ from intergrax.tokenizers.registry.tokenizer_registry import TokenizerRegistry
 from intergrax.tools.providers.observability.resolve import resolve_observability_backend
 from intergrax.tools.registry.wiring import ToolWiringContext
 
+from tests.qualification.config_x._config_x_activation_families import (
+    discover_activation_bypass_findings,
+)
 from tests.qualification.config_x._config_x_blockers import (
+    CONFIG_X_ACTIVE_BLOCKER_RECORDS,
     CONFIG_X_HISTORICAL_BLOCKER_RECORDS,
     WAVE1_HISTORICAL_BLOCKER_IDS,
     active_blocker_counts_by_classification,
 )
 from tests.qualification.config_x._config_x_concern_inventory import CONFIG_X_CONCERN_INVENTORY
+from tests.qualification.config_x._config_x_current_classification import (
+    discover_duplicate_configuration_authority_paths,
+    sweep_concern_classification_evidence,
+)
 from tests.qualification.config_x._config_x_discovery import discover_active_blocker_path_keys
 from tests.qualification.config_x._config_x_owner_discovery import (
     CONFIG_X_OWNER_EXPECTATIONS,
     compare_owner_gate,
+)
+from tests.qualification.config_x._config_x_semantic_production_scan import (
+    discover_semantic_i_blocker_paths,
+    frz_cfg_05_semantic_i_blocker_count,
 )
 from tests.qualification.config_x._config_x_types import (
     BLOCKER_CLASSIFICATIONS,
@@ -45,6 +57,8 @@ _EXPECTED_WAVE1_IDS = frozenset(
     },
 )
 
+_FRZ_CFG_PASS_CANDIDATE = "PASS CANDIDATE"
+
 
 def test_reconciliation_historical_blocker_ids_preserved() -> None:
     assert WAVE1_HISTORICAL_BLOCKER_IDS == _EXPECTED_WAVE1_IDS
@@ -56,6 +70,7 @@ def test_reconciliation_active_blockers_mechanically_empty() -> None:
     counts = active_blocker_counts_by_classification()
     for classification in BLOCKER_CLASSIFICATIONS:
         assert counts[classification] == 0
+    assert len(CONFIG_X_ACTIVE_BLOCKER_RECORDS) == 0
 
 
 @pytest.mark.parametrize(
@@ -70,11 +85,14 @@ def test_reconciliation_wave1_blocker_paths_not_active(blocker_id: str) -> None:
 
 
 def test_frz_cfg_01_closed_world_typed_configuration_contracts() -> None:
-    for row in CONFIG_X_CONCERN_INVENTORY:
+    evidence = sweep_concern_classification_evidence()
+    assert len(evidence) == len(CONFIG_X_CONCERN_INVENTORY) == 54
+    for row, item in zip(CONFIG_X_CONCERN_INVENTORY, evidence, strict=True):
         assert row.configuration_contract.strip()
         assert row.composition_owner.strip()
         assert row.effective_resolution_owner.strip()
-        assert row.classification not in BLOCKER_CLASSIFICATIONS
+        assert item.mechanical_classification not in BLOCKER_CLASSIFICATIONS
+        assert item.concern_id == row.concern_id
 
 
 def test_frz_cfg_02_missing_integration_config_fails_closed() -> None:
@@ -91,6 +109,7 @@ def test_frz_cfg_03_unconfigured_llm_not_effective() -> None:
 def test_frz_cfg_04_single_owner_per_mandatory_concern() -> None:
     mandatory = {
         "integration_provider_selection",
+        "integration_typed_resolution_delegate",
         "llm_provider_selection",
         "execution_bound_integration_resolution",
         "existing_capability_configuration_realization",
@@ -102,11 +121,15 @@ def test_frz_cfg_04_single_owner_per_mandatory_concern() -> None:
         assert discovered == expected
 
 
-def test_frz_cfg_05_no_active_hard_coded_semantic_blockers_in_wave1_scope() -> None:
-    """Closed-world CONFIG-X wave-1 paths: no I-class active forbidden markers remain."""
-    counts = active_blocker_counts_by_classification()
-    assert counts[ConfigClassification.I_HARD_CODED_PRODUCTION_SELECTION] == 0
-    assert discover_active_blocker_path_keys() == frozenset()
+def test_frz_cfg_05_semantic_production_selection_closed_world_zero() -> None:
+    assert frz_cfg_05_semantic_i_blocker_count() == 0
+    assert discover_semantic_i_blocker_paths() == frozenset()
+    assert _FRZ_CFG_PASS_CANDIDATE
+
+
+def test_frz_cfg_06_activation_families_no_bypasses() -> None:
+    assert discover_activation_bypass_findings() == ()
+    assert _FRZ_CFG_PASS_CANDIDATE
 
 
 def test_frz_cfg_06_unconfigured_observability_and_tokenizer_not_effective() -> None:
@@ -122,41 +145,98 @@ def test_frz_cfg_06_unconfigured_observability_and_tokenizer_not_effective() -> 
         registry.get(None)
 
 
-def test_frz_cfg_07_deterministic_integration_slug_resolution() -> None:
-    profile = IntegrationProfile(relational_store="sqlite")
+def test_frz_cfg_07_explicit_slug_precedence_over_profile_and_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.integrations.contracts.base import IntegrationEntry
+    from intergrax.integrations.registry.catalog import clear_catalog, register_integration
+
+    clear_catalog()
+
+    def _factory(**_kwargs: object) -> object:
+        return object()
+
+    register_integration(
+        IntegrationEntry(
+            slug="config_x_sqlite",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            factory=_factory,
+        ),
+    )
+    register_integration(
+        IntegrationEntry(
+            slug="config_x_postgresql",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            factory=_factory,
+        ),
+    )
+    monkeypatch.setenv("INTERGRAX_INTEGRATION_RELATIONAL_STORE", "config_x_postgresql")
+    profile = IntegrationProfile(relational_store="config_x_sqlite")
     assert (
-        resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile) == "sqlite"
+        resolve_slug(
+            IntegrationCategory.RELATIONAL_STORE,
+            slug="config_x_sqlite",
+            profile=profile,
+        )
+        == "config_x_sqlite"
     )
     assert (
-        resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile) == "sqlite"
+        resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile)
+        == "config_x_sqlite"
     )
 
 
-def test_frz_cfg_08_active_forbidden_markers_regression_gate() -> None:
+def test_frz_cfg_07_ambient_env_cannot_override_explicit_profile(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.integrations.contracts.base import IntegrationEntry
+    from intergrax.integrations.registry.catalog import clear_catalog, register_integration
+
+    clear_catalog()
+
+    def _factory(**_kwargs: object) -> object:
+        return object()
+
+    register_integration(
+        IntegrationEntry(
+            slug="config_x_profile_sqlite",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            factory=_factory,
+        ),
+    )
+    register_integration(
+        IntegrationEntry(
+            slug="config_x_env_postgresql",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            factory=_factory,
+        ),
+    )
+    monkeypatch.setenv("INTERGRAX_INTEGRATION_RELATIONAL_STORE", "config_x_env_postgresql")
+    profile = IntegrationProfile(relational_store="config_x_profile_sqlite")
+    assert (
+        resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile)
+        == "config_x_profile_sqlite"
+    )
+
+
+def test_frz_cfg_08_regression_protects_current_closed_world_classification() -> None:
     assert discover_active_blocker_path_keys() == frozenset()
+    assert discover_duplicate_configuration_authority_paths() == frozenset()
     unclassified = [
-        row
-        for row in CONFIG_X_CONCERN_INVENTORY
-        if row.classification == ConfigClassification.L_UNCLEAR
+        item
+        for item in sweep_concern_classification_evidence()
+        if item.mechanical_classification == ConfigClassification.L_UNCLEAR
     ]
     assert unclassified == []
+    assert len(CONFIG_X_ACTIVE_BLOCKER_RECORDS) == 0
 
 
-def test_config_x_tenant_isolation_audit_local_pass() -> None:
-    """CONFIG-X local tenant evidence (not global TENANT-X / FRZ-TEN-*)."""
-    audit = {
-        "tenant_scope_applicable": "YES",
-        "canonical_tenant_identity": "principal / explicit tenant_id on CONFIG-X surfaces",
-        "tenant_owner": "harness principal resolution; trace query param; P3 require_tenant_id",
-        "propagation_path": "HTTP principal → task; trace tenant_id query; scope on multimedia",
-        "state_isolation": "INT-CONFIG realization TENANT_MISMATCH (CX-G)",
-        "provider_config_isolation": "VectorIntegrationConfig.require_tenant_id",
-        "evidence_trace_isolation": "trace explorer requires tenant_id (422 when missing)",
-        "async_recovery_continuity": "out of CONFIG-X closed-world — TENANT-X later",
-        "cross_tenant_path": "CX-G adversarial mismatch rejected",
-        "fail_closed_behavior": "missing tenant → 422 / IntegrationConfigurationError",
-        "adversarial_evidence": "test_config_x_r1_remediation_gates.py T1–T5; test_cx_g_*",
-        "result": "PASS",
-    }
-    assert audit["result"] == "PASS"
-    assert discover_active_blocker_path_keys() == frozenset()
+def test_config_x_tenant_isolation_audit_runs_real_local_gates() -> None:
+    from tests.qualification.config_x import test_config_x_adversarial_cx_gates as cx_adv
+    from tests.qualification.config_x import test_config_x_r1_remediation_gates as cx_r1
+
+    cx_r1.test_t1_harness_async_run_requires_resolved_tenant_parameter()
+    cx_r1.test_t2_trace_explorer_missing_tenant_rejected()
+    cx_r1.test_t4_image_smart_loader_requires_explicit_tenant()
+    cx_r1.test_t5_vector_integration_config_missing_tenant_fails_closed()
+    cx_adv.test_cx_g_cross_tenant_provider_config_rejected_by_realization_guards()

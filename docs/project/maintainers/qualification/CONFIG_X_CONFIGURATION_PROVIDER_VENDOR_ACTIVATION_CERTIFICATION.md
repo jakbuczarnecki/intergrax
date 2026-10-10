@@ -23,8 +23,10 @@
 | **CONFIG-X-R1-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
 | **CONFIG-X-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
 | **CONFIG-X FINAL RECONCILIATION START_HEAD** | `25c49f42b093bb673d1c1b5dd111c51387fd4874` |
-| **CONFIG-X status** | **READY FOR FINAL AUDIT** (reconciliation evidence prepared — not independently CLOSED) |
-| **Production delta (final reconciliation)** | **0** (qualification/tests/docs only) |
+| **CONFIG-X-FINAL-R1** (corrective child) | **READY FOR AUDIT** — mechanical current-HEAD closed-world proof (`tests/qualification/config_x/_config_x_current_classification.py`, FRZ-CFG-05..08) |
+| **Audited reconciliation HEAD** | `639a2e161eaed41efdde63126828eeffe6fa27b0` |
+| **CONFIG-X status** | **READY FOR FINAL AUDIT** (not independently CLOSED) |
+| **Production delta (final reconciliation + FINAL-R1)** | **0** (qualification/tests/docs only) |
 | **Next mandatory stage (program order)** | Independent exact-SHA audit of CONFIG-X parent — then `COMPAT-X` (not enterable until CONFIG-X closure) |
 
 ## 1. Certification question (current-HEAD closed-world)
@@ -38,7 +40,8 @@
 | Item | Status |
 |---|---|
 | **Historical wave-1 blockers** | **5** (`CONFIG_X_HISTORICAL_BLOCKER_RECORDS`) — lineage preserved in §5 |
-| **Active production blockers** | **0** (`CONFIG_X_ACTIVE_BLOCKER_RECORDS`; `discover_active_blocker_path_keys()` empty) |
+| **Active production blockers** | **0** — **mechanically derived** (`derive_config_x_active_blocker_records()`; not declared empty); `discover_active_blocker_path_keys()` empty |
+| **Concern classification (current HEAD)** | **54/54** (`sweep_concern_classification_evidence()`; `test_cx_q16_mechanical_concern_classification_covers_inventory`) |
 | **Active I / J / K / L** | **0 / 0 / 0 / 0** (`test_cx_q15_active_blocker_exit_counts_zero`) |
 | Wave-1 five IDs | **REMEDIATED / NO LONGER ACTIVE** — regression in `test_config_x_r1_remediation_gates.py` + `test_config_x_final_reconciliation_gates.py` |
 | Parent **CONFIG-X** closure | **READY FOR FINAL AUDIT** — Cursor reconciliation complete; independent exact-SHA audit required for CLOSED |

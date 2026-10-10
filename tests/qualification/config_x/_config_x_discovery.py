@@ -141,7 +141,12 @@ def discover_historical_blocker_evidence_paths() -> frozenset[str]:
 
 
 def discover_active_blocker_path_keys() -> frozenset[str]:
-    """Paths where forbidden wave-1 defect patterns are still present (unresolved blockers)."""
+    """Paths tied to mechanically derived current active blockers (wave-1 + inventory sweep)."""
+    from tests.qualification.config_x._config_x_blockers import CONFIG_X_ACTIVE_BLOCKER_RECORDS
+    from tests.qualification.config_x._config_x_semantic_production_scan import (
+        discover_semantic_i_blocker_paths,
+    )
+
     keys: set[str] = set()
     for rel_path, forbidden in _ACTIVE_BLOCKER_FORBIDDEN_MARKERS.items():
         path = _REPO_ROOT / rel_path
@@ -150,6 +155,9 @@ def discover_active_blocker_path_keys() -> frozenset[str]:
         text = path.read_text(encoding="utf-8")
         if any(marker in text for marker in forbidden):
             keys.add(rel_path)
+    keys.update(discover_semantic_i_blocker_paths())
+    for row in CONFIG_X_ACTIVE_BLOCKER_RECORDS:
+        keys.update(row.paths)
     return frozenset(keys)
 
 

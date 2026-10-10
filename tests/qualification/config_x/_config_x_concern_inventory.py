@@ -35,7 +35,7 @@ def _integration_row(category: IntegrationCategory) -> ConfigConcernRecord:
         configuration_contract="IntegrationProfile / IntegrationBinding",
         composition_owner="intergrax/integrations/registry/factory.py (resolve_slug / resolve_from_profile)",
         effective_resolution_owner="Integration Catalog + IntegrationProfile slug_for_category",
-        provider_surface=f"intergrax/integrations/providers/*/{cat}",
+        provider_surface=f"intergrax/integrations/providers/{cat}/*",
     )
 
 
@@ -63,7 +63,7 @@ _PLATFORM_CONCERNS: Final[tuple[ConfigConcernRecord, ...]] = (
         domain="LLM_AI",
         classification=ConfigClassification.A_CANONICAL_CONFIGURATION_CONTRACT,
         configuration_contract="IntegrationProfile.rerank_provider",
-        composition_owner="intergrax/rag/graph/rerank_composition.py",
+        composition_owner="intergrax/rag/rerankers/registry/reranker_registry.py",
         effective_resolution_owner="resolve_from_profile(RERANK_PROVIDER)",
         provider_surface="intergrax/integrations/providers/rerank_provider/*",
     ),
@@ -101,7 +101,7 @@ _PLATFORM_CONCERNS: Final[tuple[ConfigConcernRecord, ...]] = (
         configuration_contract="ExistingCapabilityConfigurationRealizationRequest",
         composition_owner="intergrax/integrations/existing_capability_configuration_facade.py",
         effective_resolution_owner="ExistingCapabilityConfigurationRealizationService + strategy SPI",
-        provider_surface="intergrax/integrations/providers/*/configuration_realization.py",
+        provider_surface="intergrax/integrations/providers/relational_store/sqlite/configuration_realization.py",
     ),
     ConfigConcernRecord(
         concern_id="execution.integration_bound_resolution",
@@ -117,9 +117,9 @@ _PLATFORM_CONCERNS: Final[tuple[ConfigConcernRecord, ...]] = (
         domain="OBSERVABILITY",
         classification=ConfigClassification.A_CANONICAL_CONFIGURATION_CONTRACT,
         configuration_contract="OtlpTransportPort / ObservabilityExportPayload",
-        composition_owner="intergrax/runtime/observability/export/composition.py",
-        effective_resolution_owner="Event export sink factory — explicit transport wiring",
-        provider_surface="intergrax/runtime/observability/export/transports/*",
+        composition_owner="intergrax/applications/_shared/runtime_event_delivery_wiring.py",
+        effective_resolution_owner="Runtime event delivery wiring — explicit OTLP transport injection",
+        provider_surface="intergrax/runtime/observability/exporters/*",
     ),
     ConfigConcernRecord(
         concern_id="plugin.integration_catalog",
@@ -128,7 +128,7 @@ _PLATFORM_CONCERNS: Final[tuple[ConfigConcernRecord, ...]] = (
         configuration_contract="IntegrationEntry / plugin_register contract_specs",
         composition_owner="intergrax/integrations/registry/catalog.py",
         effective_resolution_owner="get_entry(slug) — registration ≠ activation",
-        provider_surface="intergrax/integrations/registry/catalog_factory.py",
+        provider_surface="intergrax/integrations/contracts/catalog_factory.py",
     ),
     ConfigConcernRecord(
         concern_id="plugin.llm_adapter_registry",
@@ -153,9 +153,9 @@ _PLATFORM_CONCERNS: Final[tuple[ConfigConcernRecord, ...]] = (
         domain="PLATFORM_ACTIVATION",
         classification=ConfigClassification.A_CANONICAL_CONFIGURATION_CONTRACT,
         configuration_contract="EffectiveProfileExecutionPinningStore (TRACE-X-P5-R1)",
-        composition_owner="intergrax/runtime/profile_resolution/*",
+        composition_owner="intergrax/applications/_shared/profile_resolution/wiring.py",
         effective_resolution_owner="Profile revision admission + pinning store",
-        provider_surface="intergrax/runtime/profile_resolution/*",
+        provider_surface="intergrax/applications/_shared/profile_resolution/*",
     ),
     ConfigConcernRecord(
         concern_id="speech.provider",
