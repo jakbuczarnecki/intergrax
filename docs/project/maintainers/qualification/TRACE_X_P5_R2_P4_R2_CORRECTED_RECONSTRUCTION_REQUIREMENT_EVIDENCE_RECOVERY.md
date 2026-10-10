@@ -3,8 +3,9 @@
 | Field | Value |
 |---|---|
 | **Status** | **READY FOR AUDIT** |
-| **Child (this closure)** | **TRACE-X-P5-R2-P4-R2-R1-R1** — **READY FOR AUDIT** |
-| **Parent** | TRACE-X-P5-R2-P4-R2-R1 — **BLOCKED ON R1-R1** |
+| **Child (integrity matrix closure)** | **TRACE-X-P5-R2-P4-R2-R1-R1-R1** — **READY FOR AUDIT** |
+| **Child (prior)** | **TRACE-X-P5-R2-P4-R2-R1-R1** — **READY FOR AUDIT** (blockers 33/35; matrix 34 open @ audit) |
+| **Parent** | TRACE-X-P5-R2-P4-R2-R1 — **BLOCKED** (await independent audit of R1-R1-R1) |
 | **Grandparent** | TRACE-X-P5-R2-P4-R2 — **BLOCKED** |
 | **FRZ-TRC-11** | **OPEN** |
 | **P5 / CERT** | **NOT ENTERED** |
@@ -15,16 +16,17 @@
 |---|---|
 | Audited rejection baseline (R1-R1 independent verdict) | `f21ffbae04b12686784933ef6926764198c19201` |
 | Blocker 32 resolved (production wiring) | `f21ffbae04b12686784933ef6926764198c19201` |
-| Blockers 33–35 closure (this child) | `90bfa980d2f6d445f6300fce729247e5400de648` (implementation); qualification doc tip = `origin/development` HEAD |
+| Blockers 33–35 closure (R1-R1) | `90bfa980d2f6d445f6300fce729247e5400de648` |
+| Blocker 34 matrix evidence correction (R1-R1-R1) | `origin/development` HEAD after this commit |
 
 ## Blocker disposition
 
 | Blocker | ID | Disposition |
 |---|---|---|
 | 32 | R2-P4-PRODUCTION-WIRING-32 | **RESOLVED** @ `f21ffbae…` (not reopened) |
-| 33 | R2-P4-DURABLE-CASE-CD-E2E-33 | **EVIDENCE** — durable PinRecord + durable `SQLiteRuntimeEventStore` spine; fresh bus/store/binding/composition adapters |
-| 34 | R2-P4-INTEGRITY-MATRIX-COMPLETENESS-34 | **EVIDENCE** — `P4_INTEGRITY_QUALIFICATION_MATRIX` + referenced tests |
-| 35 | R2-P4-ACTIVE-STAGING-TENANT-CONTINUITY-35 | **EVIDENCE** — `ActiveExecutionIdentityRequirementRecoveryStagingSource` vs `require_active_execution_governance_identity()` |
+| 33 | R2-P4-DURABLE-CASE-CD-E2E-33 | **ACCEPTED** (prior independent audit) — not reopened |
+| 34 | R2-P4-INTEGRITY-MATRIX-COMPLETENESS-34 | **EVIDENCE CORRECTED** (R1-R1-R1) — `P4_INTEGRITY_QUALIFICATION_MATRIX` + mechanical registry + exact semantic tests |
+| 35 | R2-P4-ACTIVE-STAGING-TENANT-CONTINUITY-35 | **ACCEPTED** (prior independent audit) — not reopened |
 
 Design locks **24–31** remain accepted; **blocker 32** not reopened.
 
@@ -40,9 +42,22 @@ Mandatory Case C assertions covered: one PinRecord; staging + `requirement_bound
 
 Mandatory Case D assertions covered: durable requirement event survives recreation; deterministic EventId; position 1; single semantic event; business I/O exactly once on retry.
 
-## P4 integrity matrix (blocker 34)
+## P4 integrity matrix (blocker 34 — R1-R1-R1)
 
-Canonical rows: `tests/unit/applications/integrations/test_trace_x_p5_r2_p4_r2_r1_integrity_matrix.py` → `P4_INTEGRITY_QUALIFICATION_MATRIX` (scenario → expected → exact test → **PASS**).
+SSOT catalog: `tests/unit/applications/integrations/_p4_integrity_matrix_catalog.py` → `P4_INTEGRITY_QUALIFICATION_MATRIX` (scenario · expected · test_module · test_id · status=`PASS`).
+
+Mechanical gate: `test_p4_integrity_matrix_registry_maps_existing_tests` (AST `test_id` ∈ module) + `tests/unit/conftest.py` session hook (every matrix `test_id` passed in the same batch).
+
+Added / corrected evidence (semantic match):
+
+| Scenario | Test |
+|---|---|
+| same EventId + changed timestamp | `test_conflicting_timestamp_rejected` (`test_event_id_persistence_semantics.py`, parametrized backends incl. SQLite) |
+| same EventId + changed payload | `test_conflicting_event_payload_rejected` |
+| same EventId + TaskId / RunId / AttemptId | `test_conflicting_task_rejected` / `test_conflicting_run_rejected` / `test_conflicting_attempt_rejected` |
+| malformed requirement spine payload | `test_requirement_spine_malformed_payload_reconstruction_fails_closed` (`ExecutionReconstructor`) |
+
+Production (minimal): requirement spine payload validated in `discover_integration_configuration_provenance_required_execution_ids` before scope admission.
 
 ## Tenant continuity (blocker 35)
 
@@ -78,7 +93,7 @@ uv run pytest -p no:xdist \
   tests/unit/contracts/test_execution_integration_configuration_provenance.py
 ```
 
-**Result @ session:** **144 passed** (docker-marked tests skipped when Redis/daemon absent).
+**Result @ R1-R1-R1 session:** **160 passed** (docker-marked tests skipped when Redis/daemon absent).
 
 ## Pyright (touched production modules)
 

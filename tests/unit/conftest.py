@@ -85,3 +85,44 @@ def span_exporter(_otel_in_memory_span_exporter: object) -> Generator[object, No
     exporter.clear()
     yield exporter
     exporter.clear()
+
+
+P4_INTEGRITY_PASSED_TEST_IDS: set[str] = set()
+
+_P4_INTEGRITY_MATRIX_MODULE = (
+    "tests/unit/applications/integrations/test_trace_x_p5_r2_p4_r2_r1_integrity_matrix.py"
+)
+
+
+def _p4_integrity_test_function_name(nodeid: str) -> str:
+    tail = nodeid.split("::")[-1]
+    return tail.split("[", 1)[0]
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    if report.when != "call" or not report.passed:
+        return
+    P4_INTEGRITY_PASSED_TEST_IDS.add(_p4_integrity_test_function_name(report.nodeid))
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    collected_modules = {
+        item.nodeid.replace("\\", "/").split("::", 1)[0] for item in session.items
+    }
+    if _P4_INTEGRITY_MATRIX_MODULE not in collected_modules:
+        return
+    from tests.unit.applications.integrations._p4_integrity_matrix_catalog import (
+        P4_INTEGRITY_QUALIFICATION_MATRIX,
+    )
+
+    required = {row.test_id for row in P4_INTEGRITY_QUALIFICATION_MATRIX}
+    missing = sorted(required - P4_INTEGRITY_PASSED_TEST_IDS)
+    if missing:
+        session.exitstatus = 1
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        if reporter is not None:
+            reporter.write_line(
+                "P4 integrity matrix missing passed evidence tests: "
+                + ", ".join(missing),
+                red=True,
+            )

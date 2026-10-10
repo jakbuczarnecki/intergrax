@@ -1,125 +1,43 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P5-R2-P4-R2-R1-R1 P4 integrity qualification matrix (blocker 34)."""
+"""TRACE-X-P5-R2-P4-R2-R1-R1-R1 P4 integrity qualification matrix (blocker 34)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import ast
+from pathlib import Path
 
 import pytest
 
+from tests.unit.applications.integrations._p4_integrity_matrix_catalog import (
+    P4_INTEGRITY_QUALIFICATION_MATRIX,
+)
 pytestmark = pytest.mark.unit
 
-
-@dataclass(frozen=True, slots=True)
-class _IntegrityMatrixRow:
-    scenario: str
-    expected: str
-    test_id: str
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
-P4_INTEGRITY_QUALIFICATION_MATRIX: tuple[_IntegrityMatrixRow, ...] = (
-    _IntegrityMatrixRow(
-        "tenant mismatch in provenance record",
-        "reconstruction fails closed",
-        "test_tenant_mismatch_in_record_fails_closed",
-    ),
-    _IntegrityMatrixRow(
-        "ExecutionId mismatch in provenance record",
-        "reconstruction fails closed",
-        "test_execution_id_mismatch_fails_closed",
-    ),
-    _IntegrityMatrixRow(
-        "document pin row key subject mismatch",
-        "read fails closed",
-        "test_document_provenance_row_key_subject_mismatch_fail_closed",
-    ),
-    _IntegrityMatrixRow(
-        "invalid/non-UTC requirement recovery staging",
-        "staging construction rejected",
-        "test_integrity_matrix_timezone_invalid_staging_rejected",
-    ),
-    _IntegrityMatrixRow(
-        "required staging absent on first CONFIGURED_ADOPTED pin",
-        "pin reconcile rejected",
-        "test_integrity_matrix_first_pin_requires_candidate_staging",
-    ),
-    _IntegrityMatrixRow(
-        "legacy configured pin without staging on retry",
-        "pin reconcile rejected",
-        "test_integrity_matrix_legacy_pin_without_staging_fails_reconcile",
-    ),
-    _IntegrityMatrixRow(
-        "corrupt provenance codec payload",
-        "read/pin fails closed",
-        "test_opportunity_unsupported_schema_and_corrupt_record",
-    ),
-    _IntegrityMatrixRow(
-        "requirement spine event without matching pin",
-        "reconstruction fails closed",
-        "test_required_provenance_missing_fails_closed",
-    ),
-    _IntegrityMatrixRow(
-        "same EventId + changed payload",
-        "persistence conflict rejected",
-        "test_conflicting_payload_rejected",
-    ),
-    _IntegrityMatrixRow(
-        "same EventId + changed timestamp",
-        "persistence conflict rejected",
-        "test_conflicting_payload_rejected",
-    ),
-    _IntegrityMatrixRow(
-        "same EventId + changed tenant",
-        "cross-tenant event id rejected",
-        "test_cross_tenant_same_event_id_rejected",
-    ),
-    _IntegrityMatrixRow(
-        "same EventId + changed task/run/attempt correlation",
-        "persistence conflict rejected",
-        "test_conflicting_task_rejected",
-    ),
-    _IntegrityMatrixRow(
-        "semantic configured provenance slice invalid",
-        "validator rejects record",
-        "test_provenance_reject_configured_lookalike",
-    ),
-    _IntegrityMatrixRow(
-        "mandatory spine persistence unavailable",
-        "commit returns PERSISTENCE_UNAVAILABLE; no durable fact",
-        "test_requirement_persistence_failure_fail_closed",
-    ),
-    _IntegrityMatrixRow(
-        "malformed requirement event payload at reconstruction",
-        "spine payload policy rejects invalid fact",
-        "test_configured_adopted_requires_slice",
-    ),
-    _IntegrityMatrixRow(
-        "cross-tenant reconstruction scope",
-        "wrong tenant lookup empty / fail closed",
-        "test_wrong_tenant_lookup_returns_none",
-    ),
-    _IntegrityMatrixRow(
-        "historical current-state mutation",
-        "historical projection unchanged after restart",
-        "test_historical_restart_ignores_changed_current_configuration_state",
-    ),
-    _IntegrityMatrixRow(
-        "active execution tenant vs configured invocation tenant",
-        "staging rejected; no pin/spine/I/O",
-        "test_active_execution_tenant_mismatch_rejects_pin_spine_and_io",
-    ),
-    _IntegrityMatrixRow(
-        "KV pin storage tenant partition isolation",
-        "foreign tenant read empty",
-        "test_cross_tenant_pin_scope_isolation",
-    ),
-)
+def _top_level_test_function_names(module_path: Path) -> frozenset[str]:
+    tree = ast.parse(module_path.read_text(encoding="utf-8"))
+    return frozenset(
+        node.name
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
+    )
 
 
-def test_p4_integrity_matrix_has_explicit_evidence_for_each_row() -> None:
-    assert len(P4_INTEGRITY_QUALIFICATION_MATRIX) >= 17
+def test_p4_integrity_matrix_registry_maps_existing_tests() -> None:
+    assert len(P4_INTEGRITY_QUALIFICATION_MATRIX) >= 20
+    seen_ids: set[str] = set()
     for row in P4_INTEGRITY_QUALIFICATION_MATRIX:
         assert row.scenario.strip()
         assert row.expected.strip()
+        assert row.test_module.endswith(".py")
         assert row.test_id.startswith("test_")
+        assert row.status == "PASS"
+        assert row.test_id not in seen_ids, row.test_id
+        seen_ids.add(row.test_id)
+        module_path = _REPO_ROOT / row.test_module
+        assert module_path.is_file(), row.test_module
+        defined = _top_level_test_function_names(module_path)
+        assert row.test_id in defined, (row.test_module, row.test_id)

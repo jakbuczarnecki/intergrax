@@ -48,6 +48,8 @@ def discover_integration_configuration_provenance_required_execution_ids(
             RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED
         ):
             continue
+        raw_payload = event.payload if isinstance(event.payload, dict) else {}
+        _decode_requirement_payload(event.event_type, dict(raw_payload))
         execution_id = validate_execution_id(event.execution_id)
         key = str(execution_id)
         if key in required:

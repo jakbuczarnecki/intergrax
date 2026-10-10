@@ -4,11 +4,17 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_event_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_event_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.events.persistence_contract import (
     EVENT_ID_OWNERSHIP_SCHEMA_V1,
@@ -125,6 +131,32 @@ def test_conflicting_run_rejected(
         store.append(conflicting, tenant_id=tenant_id)
 
 
+def test_conflicting_attempt_rejected(
+    persistence_backend: tuple[str, RuntimeEventPersistence],
+) -> None:
+    label, store = persistence_backend
+    tenant_id = f"{label}-attempt-conflict"
+    event_id = mint_event_id()
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    original = sample_runtime_event(
+        tenant_id=tenant_id,
+        event_id=event_id,
+        run_id=run_id,
+        task_id=task_id,
+    )
+    store.append(original, tenant_id=tenant_id)
+    conflicting = sample_runtime_event(
+        tenant_id=tenant_id,
+        event_id=event_id,
+        run_id=run_id,
+        task_id=task_id,
+        attempt_id=mint_attempt_id(),
+    )
+    with pytest.raises(RuntimeEventPersistenceIntegrityError, match="conflicts"):
+        store.append(conflicting, tenant_id=tenant_id)
+
+
 def test_conflicting_task_rejected(
     persistence_backend: tuple[str, RuntimeEventPersistence],
 ) -> None:
@@ -144,11 +176,71 @@ def test_conflicting_task_rejected(
         store.append(conflicting, tenant_id=tenant_id)
 
 
-def test_conflicting_payload_rejected(
+def test_conflicting_event_payload_rejected(
     persistence_backend: tuple[str, RuntimeEventPersistence],
 ) -> None:
     label, store = persistence_backend
     tenant_id = f"{label}-payload-conflict"
+    event_id = mint_event_id()
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    original = sample_runtime_event(
+        tenant_id=tenant_id,
+        event_id=event_id,
+        run_id=run_id,
+        task_id=task_id,
+    )
+    store.append(original, tenant_id=tenant_id)
+    conflicting = sample_runtime_event(
+        tenant_id=tenant_id,
+        event_id=event_id,
+        run_id=run_id,
+        task_id=task_id,
+        attempt_id=original.attempt_id,
+        execution_id=original.execution_id,
+    )
+    conflicting = conflicting.model_copy(
+        update={
+            "payload": {
+                **dict(conflicting.payload or {}),
+                "payload_schema_id": "graph_node.v1",
+                "payload": {"node_id": "different-node", "status": "completed"},
+            },
+        },
+    )
+    with pytest.raises(RuntimeEventPersistenceIntegrityError, match="conflicts"):
+        store.append(conflicting, tenant_id=tenant_id)
+
+
+def test_conflicting_timestamp_rejected(
+    persistence_backend: tuple[str, RuntimeEventPersistence],
+) -> None:
+    label, store = persistence_backend
+    tenant_id = f"{label}-timestamp-conflict"
+    event_id = mint_event_id()
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    original = sample_runtime_event(
+        tenant_id=tenant_id,
+        event_id=event_id,
+        run_id=run_id,
+        task_id=task_id,
+    )
+    store.append(original, tenant_id=tenant_id)
+    shifted = original.model_copy(
+        update={
+            "timestamp": original.timestamp + timedelta(seconds=1),
+        },
+    )
+    with pytest.raises(RuntimeEventPersistenceIntegrityError, match="conflicts"):
+        store.append(shifted, tenant_id=tenant_id)
+
+
+def test_conflicting_payload_rejected(
+    persistence_backend: tuple[str, RuntimeEventPersistence],
+) -> None:
+    label, store = persistence_backend
+    tenant_id = f"{label}-event-type-conflict"
     event_id = mint_event_id()
     run_id = mint_run_id()
     task_id = mint_task_id()

@@ -505,6 +505,54 @@ def test_historical_restart_ignores_changed_current_configuration_state() -> Non
     )
 
 
+def test_requirement_spine_malformed_payload_reconstruction_fails_closed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
+    _pin_adopted(pinning, subject=_subject(), provenance=_provenance_configured_adopted())
+    store = InMemoryRuntimeEventStore()
+    event_id = derive_integration_configuration_provenance_requirement_event_id(
+        tenant_id=_TENANT,
+        execution_id=_EXEC,
+        subject=_subject(),
+    )
+    malformed = RuntimeEvent(
+        event_id=event_id,
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=_EXEC,
+        event_type=RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED,
+        phase=ExecutionPhase.STEP_EXECUTION,
+        timestamp=datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc),
+        payload={
+            "payload_schema_id": "integration_configuration_provenance_requirement.unknown.v99",
+            "payload": {"integration_category": "invalid"},
+        },
+    )
+    _append_event(store, malformed)
+    _append_event(
+        store,
+        _runtime_event(
+            tenant_id=_TENANT,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=_EXEC,
+        ),
+    )
+    reader = PinningStoreExecutionIntegrationConfigurationProvenanceReader(pinning)
+    reconstructor = ExecutionReconstructor(
+        store,
+        InMemoryCausalEvidencePersistence(),
+        execution_integration_configuration_provenance_reader=reader,
+    )
+    with pytest.raises(ExecutionReconstructionIntegrityError, match="requirement payload"):
+        reconstructor.reconstruct_execution(_TENANT, task_id, run_id)
+
+
 def test_reconstruction_does_not_resolve_providers() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
