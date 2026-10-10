@@ -2,11 +2,11 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **READY FOR FINAL PARENT AUDIT** |
+| **Status** | **CLOSED / independently accepted** |
 | **Accepted child** | **TRACE-X-P5-R2-P4-R2-R1-R1-R1** — **CLOSED / independently accepted** @ `25df09093bf4d7103f0bf66780ae794d52a7f929` |
 | **Child (superseded)** | **TRACE-X-P5-R2-P4-R2-R1-R1** — **CLOSED / superseded by R1-R1-R1** @ `90bfa980d2f6d445f6300fce729247e5400de648` |
 | **Child (superseded)** | **TRACE-X-P5-R2-P4-R2-R1** — **CLOSED / superseded by descendant chain** (blocker **32** @ `f21ffbae04b12686784933ef6926764198c19201`) |
-| **Grandparent** | **TRACE-X-P5-R2-P4** — **audit-gated** (final parent recertification pending; not self-closed by child acceptance) |
+| **Grandparent** | **TRACE-X-P5-R2-P4** — **CLOSED / independently accepted** (parent reconciliation on accepted **P4-R2** chain @ `d3a99b915bee227d3a483ce636c1b55a7862c0cf` docs sync) |
 | **Independent audit (R1-R1-R1)** | **ACCEPTED** |
 | **Blockers 24–35 unresolved (P4-R2 scope)** | **0** |
 | **FRZ-TRC-11** | **OPEN** (P4-R2 supplies closure evidence; does not promote criterion alone) |

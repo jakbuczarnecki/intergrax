@@ -4,7 +4,8 @@
 |---|---|
 | **Task** | `TRACE-X-P5-R2-P3-CLOSE` (parent reconciliation) |
 | **Parent** | `TRACE-X-P5-R2-P3` |
-| **Disposition (Cursor)** | **READY FOR INDEPENDENT PARENT CLOSURE** — not independently **CLOSED** |
+| **Disposition** | **CLOSED / independently accepted** |
+| **CLOSURE_SYNC_BOOKKEEPING (docs)** | `d3a99b915bee227d3a483ce636c1b55a7862c0cf` (START_HEAD for this reconciliation) |
 | **Branch** | `development` |
 | **START_HEAD (implementation tip)** | `8c61eb62b9741285e539ec2079aae5e5c6313162` |
 | **PARENT_RECONCILIATION_EVIDENCE (bookkeeping)** | `d66fdef8d9e69903374b83ecfeee1458d5706f89` |
@@ -12,7 +13,8 @@
 | **Accepted P3-R2-R1 correction** | `5a361688e78928d23b6e8ffa161bcaf41b4c6ad3` |
 | **Production delta (reconciliation)** | **0** (qualification + test classification for P3 replay only) |
 | **FRZ-TRC-11** | **OPEN** (P3 parent closure ≠ FRZ-TRC-11 PASS) |
-| **P5-R2 P4 wave** | **NOT ENTERED** |
+| **P5-R2 P4 wave** | **ENTERED** (parent **TRACE-X-P5-R2-P4** subsequently **CLOSED** on corrected **P4-R2** chain) |
+| **Unresolved blockers (parent scope 12–23)** | **0** |
 
 ## Accepted child evidence chain
 
@@ -140,12 +142,12 @@ Replay fix (test-only): classify `MarketplaceToolExecutionIntentRepository` in S
 
 ## Next mandatory P5-R2 stage (canonical roadmap)
 
-Per [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) evidence ledger: **P4–P5/CERT** remain under **TRACE-X-P5-R2** after **P3** parent acceptance. No separate roadmap row ID **`TRACE-X-P5-R2-P4`** is defined; **P4 wave = NOT ENTERED** (do not enter until parent independently closed).
+Per [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md): **P3** + **P4** + **P4-R2** = **CLOSED / independently accepted**; **FRZ-TRC-11** remains **OPEN**; next mandatory work = **P5 closed-world / adversarial qualification** → **TRACE-X-CERT** (**NEXT / NOT ENTERED**).
 
 ## Disposition
 
-**`TRACE-X-P5-R2-P3` = READY FOR INDEPENDENT PARENT CLOSURE**
+**`TRACE-X-P5-R2-P3` = CLOSED / independently accepted**
 
 **`TRACE-X-P5-R2-P3-R2`** + **`TRACE-X-P5-R2-P3-R2-R1`** = **CLOSED / independently accepted** (implementation evidence chain above).
 
-Cursor does **not** claim final **CLOSED / independently accepted** for the **parent**.
+Historical rejected/superseded P3 child rows remain **lineage evidence only** — they do **not** block the parent.
