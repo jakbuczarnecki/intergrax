@@ -17,7 +17,8 @@
 | **R1-R1-R1 audit note** | Exact-SHA independent audit **accepted** production correction @ `4fa6f42f…`; final parent CONFIG-X reconciliation remains **separate** (CONFIG-X not CLOSED). |
 | **Production delta (wave-1)** | **0** (qualification/tests only) |
 | **Production delta (R1)** | **Narrow** — five blocker paths + scoped RAG image handler/parser wiring |
-| **CONFIG-X-R1-R1-R1 status** | **READY FOR FINAL AUDIT** (production correction @ `4fa6f42f…`; qualification test alignment bookkeeping only in follow-up commit) |
+| **CONFIG-X-R1-R1-R1 bookkeeping** | `7b5be489ff9a2fec2857eb3f379b258c9dd513e3` (test alignment; ownership reconciliation in follow-up) |
+| **CONFIG-X-R1-R1-R1 status** | **READY FOR FINAL AUDIT** (production correction @ `4fa6f42f…`; bookkeeping @ `7b5be489…`) |
 | **CONFIG-X-R1-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
 | **CONFIG-X-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
 | **CONFIG-X status** | **BLOCKED ON FINAL RECONCILIATION** |
@@ -238,7 +239,7 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 | Item | Evidence |
 |---|---|
 | Finding | Invalid explicit `observability_roles` binding was swallowed in `_materialize_observability_binding` (`resolve` → `None`) |
-| Correction | Catalog/configuration errors (`UnknownIntegrationError`, `IntegrationCategoryMismatchError`, `IntegrationConfigurationError`, canonical `resolve` failures) propagate from `ToolWiringContext.from_integration_profile` |
+| Correction | Invalid explicit role binding propagates canonical integration-resolution failure; no exception is swallowed into `None` (unknown slug → canonical `ValueError` from `resolve_ref_to_slug`; wrong category → `IntegrationCategoryMismatchError`) |
 | Tests | `tests/unit/tools/registry/test_wiring.py` (unknown slug; wrong-category slug) |
 
 **CONFIG-X-R1-R1-R1 = READY FOR FINAL AUDIT** (Cursor does not close CONFIG-X).
