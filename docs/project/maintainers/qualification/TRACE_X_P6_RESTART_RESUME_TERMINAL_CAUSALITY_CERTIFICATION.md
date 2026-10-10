@@ -6,7 +6,7 @@
 | **Parent** | `TRACE-X` |
 | **START_HEAD** | `e2deaee3efd7ee4e7d43414be3e76fe024a85408` |
 | **Audited implementation (initial)** | `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` |
-| **FINAL_COMMIT** | `0ce1469f440f58938ceeeb0f7c9be347091206be` |
+| **FINAL_COMMIT** | `eee314330b926692291520af6c11f70faf878858` |
 | **Independent verdict (initial P6)** | **REJECTED / BLOCKED** (permissive classification + non-mechanical owner matrix) |
 | **R1 blockers closed** | `P6-CLOSED-WORLD-PERMISSIVE-RESTART-CLASSIFICATION-01`, `P6-CLOSED-WORLD-PERMISSIVE-TERMINAL-CLASSIFICATION-02`, `P6-SEMANTIC-OWNER-MATRIX-NON-MECHANICAL-03` |
 | **FRZ-TRC-09** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT** — no self-PASS) |
