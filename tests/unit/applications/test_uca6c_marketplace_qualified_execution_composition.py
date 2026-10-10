@@ -11,8 +11,15 @@ from typing import Any, Mapping, Sequence
 import pytest
 from pydantic import BaseModel, ConfigDict
 
+from intergrax.applications._shared.integrations.integration_configuration_provenance_reader import (
+    PinningStoreExecutionIntegrationConfigurationProvenanceReader,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.applications._shared.uca6c_marketplace_qualified_execution_composition import (
     Uca6cMarketplaceQualifiedExecutionCompositionError,
     build_production_marketplace_configured_execution_bound_dispatch,
@@ -466,6 +473,29 @@ def _adoption(tenant: str = _TENANT) -> ExecutionIntegrationConfigurationAdoptio
     )
 
 
+def _adoption_for_category(
+    category: IntegrationCategory,
+    *,
+    tenant: str = _TENANT,
+    provider_id: str = "unsupported-provider",
+) -> ExecutionIntegrationConfigurationAdoption:
+    binding = ConfiguredCapabilityBinding(
+        tenant_id=tenant,
+        integration_category=category,
+        provider_id=provider_id,
+        resource_scope="default",
+        configuration_type="test",
+        configuration_version="v1",
+        configuration_fingerprint="fp",
+        realization_evidence_refs=(),
+    )
+    return ExecutionIntegrationConfigurationAdoption(
+        configured_binding=binding,
+        integration_category=category,
+        resource_scope="default",
+    )
+
+
 def _record_marketplace_intent(
     deps: _MarketplaceDeps,
     *,
@@ -665,6 +695,142 @@ def test_production_marketplace_configured_path_pin_requirement_spine_then_io() 
         spine[0].event.event_type
         is RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED
     )
+
+
+def test_production_marketplace_configured_path_execute_pin_spine_io_reconstruct() -> None:
+    """E2E-A: production execute → pin → spine → I/O → canonical historical reconstruction."""
+    event_store = InMemoryRuntimeEventStore()
+    runtime_bus = RuntimeEventBus(persistence=event_store)
+    token = object()
+    integration = _FakeRelationalIntegration(token)
+    materialization = _CountingMaterialization(integration)
+    deps = _marketplace_database_deps()
+    composition = _production_composition(
+        materialization=materialization,
+        catalog_invoker=_governed_database_catalog_invoker(),
+        deps=deps,
+        runtime_event_bus=runtime_bus,
+    )
+    intent = _record_marketplace_intent(deps)
+    execution_id = mint_execution_id()
+    dispatch_request = BoundCapabilityExecutionDispatchRequest(
+        execution_request_id=intent.execution_request_id,
+        execution_target=build_marketplace_tool_execution_target(
+            execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
+                deps.handoff_id,
+            ),
+            binding_provider_id=MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID,
+            qualified_subject_reference=intent.qualified_subject_reference,
+        ),
+        tenant_id=_TENANT,
+        task_id=_TASK_ID,
+    )
+    adoption = _adoption()
+    result = _with_active_execution_identity(
+        execution_id,
+        lambda: composition.handler.dispatch_once(
+            dispatch_request,
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
+            execution_id=execution_id,
+            integration_configuration_adoption=adoption,
+        ),
+    )
+    assert result.disposition is QualifiedCapabilityExecutionDispatchDisposition.DISPATCHED
+    assert integration.io_calls == 1
+    pin_records = composition.pinning_store.read_pin_records(
+        tenant_id=_TENANT,
+        execution_id=execution_id,
+    )
+    assert len(pin_records) == 1
+    live_provenance = pin_records[0].provenance
+    assert live_provenance.configured is not None
+
+    reader = PinningStoreExecutionIntegrationConfigurationProvenanceReader(
+        composition.pinning_store,
+    )
+    reconstructor = ExecutionReconstructor(
+        event_store,
+        InMemoryCausalEvidencePersistence(),
+        execution_integration_configuration_provenance_reader=reader,
+    )
+    view = reconstructor.reconstruct_execution(_TENANT, _TASK_ID, _RUN_ID)
+    assert len(view.execution_integration_configuration_provenance) == 1
+    reconstructed = view.execution_integration_configuration_provenance[0]
+    assert reconstructed.execution_id == execution_id
+    assert reconstructed.configured is not None
+    assert (
+        reconstructed.configured.integration_category
+        == live_provenance.configured.integration_category
+        == adoption.configured_binding.integration_category
+    )
+    assert (
+        reconstructed.configured.provider_id
+        == live_provenance.configured.provider_id
+        == adoption.configured_binding.provider_id
+    )
+    assert (
+        reconstructed.configured.configuration_type
+        == live_provenance.configured.configuration_type
+        == adoption.configured_binding.configuration_type
+    )
+    assert (
+        reconstructed.configured.configuration_fingerprint
+        == live_provenance.configured.configuration_fingerprint
+        == adoption.configured_binding.configuration_fingerprint
+    )
+    assert reconstructed.effective.provider_id == live_provenance.effective.provider_id
+    assert (
+        reconstructed.effective.integration_category
+        == live_provenance.effective.integration_category
+    )
+
+
+def test_production_marketplace_configured_adopted_unsupported_integration_category_rejects_before_io() -> None:
+    """E2E-H: non–Pattern-A IntegrationCategory rejected at production projection boundary."""
+    token = object()
+    integration = _FakeRelationalIntegration(token)
+    materialization = _CountingMaterialization(integration)
+    deps = _marketplace_database_deps()
+    composition = _production_composition(
+        materialization=materialization,
+        catalog_invoker=_governed_database_catalog_invoker(),
+        deps=deps,
+    )
+    intent = _record_marketplace_intent(deps)
+    execution_id = mint_execution_id()
+    dispatch_request = BoundCapabilityExecutionDispatchRequest(
+        execution_request_id=intent.execution_request_id,
+        execution_target=build_marketplace_tool_execution_target(
+            execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
+                deps.handoff_id,
+            ),
+            binding_provider_id=MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID,
+            qualified_subject_reference=intent.qualified_subject_reference,
+        ),
+        tenant_id=_TENANT,
+        task_id=_TASK_ID,
+    )
+    unsupported = _adoption_for_category(IntegrationCategory.DOCUMENT_STORE, provider_id="mongodb")
+    result = _with_active_execution_identity(
+        execution_id,
+        lambda: composition.handler.dispatch_once(
+            dispatch_request,
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
+            execution_id=execution_id,
+            integration_configuration_adoption=unsupported,
+        ),
+    )
+    assert result.disposition is QualifiedCapabilityExecutionDispatchDisposition.FAILED
+    assert result.reason_detail == "configured_invocation_projection_failed"
+    assert materialization.count == 0
+    assert integration.io_calls == 0
+    pin_records = composition.pinning_store.read_pin_records(
+        tenant_id=_TENANT,
+        execution_id=execution_id,
+    )
+    assert pin_records == ()
 
 
 def test_governance_scope_deny_zero_materialization_and_pin() -> None:

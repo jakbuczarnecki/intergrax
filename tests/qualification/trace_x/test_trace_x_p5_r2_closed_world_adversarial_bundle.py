@@ -5,12 +5,17 @@
 from __future__ import annotations
 
 import ast
+import json
+import os
 from pathlib import Path
 
 import pytest
 
 from tests.qualification.trace_x._trace_x_p5_r2_closed_world_adversarial_matrix import (
     P5_CLOSED_WORLD_ADVERSARIAL_MATRIX,
+)
+from tests.qualification.trace_x._trace_x_p5_r2_closed_world_pass1_session import (
+    PASS1_OBSERVED_MANIFEST,
 )
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
@@ -43,3 +48,28 @@ def test_txp5cw_adv02_adversarial_bundle_maps_existing_tests() -> None:
         assert module_path.is_file(), row.test_module
         defined = _top_level_test_names(module_path)
         assert row.test_id in defined, (row.test_module, row.test_id)
+
+
+def _nodeid_passed_in_manifest(full_nodeid: str, passed: set[str]) -> bool:
+    normalized = full_nodeid.replace("\\", "/")
+    test_name = normalized.rsplit("::", 1)[-1]
+    return normalized in passed or any(
+        entry.replace("\\", "/").endswith(f"::{test_name}") for entry in passed
+    )
+
+
+def test_txp5cw_adv03_adversarial_bundle_e2e_passed_in_qualification_session() -> None:
+    if os.environ.get("TRACE_X_P5_R2_CW_PASS1") == "1":
+        return
+    if not PASS1_OBSERVED_MANIFEST.is_file():
+        pytest.skip(
+            "adversarial bundle session manifest missing; rerun qualification batch with "
+            "TRACE_X_P5_R2_CW_PASS1=1 including all E2E-A..H tests",
+        )
+    passed = set(json.loads(PASS1_OBSERVED_MANIFEST.read_text(encoding="utf-8")))
+    missing = [
+        f"{row.test_module}::{row.test_id}"
+        for row in P5_CLOSED_WORLD_ADVERSARIAL_MATRIX
+        if not _nodeid_passed_in_manifest(f"{row.test_module}::{row.test_id}", passed)
+    ]
+    assert not missing, missing

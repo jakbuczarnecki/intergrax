@@ -29,7 +29,7 @@ P5_CLOSED_WORLD_ADVERSARIAL_MATRIX: Final[tuple[AdversarialBundleRow, ...]] = (
         "E2E-A",
         "configured binding → Execution → pin → spine → I/O → reconstruct",
         "tests/unit/applications/test_uca6c_marketplace_qualified_execution_composition.py",
-        "test_production_marketplace_configured_path_pin_requirement_spine_then_io",
+        "test_production_marketplace_configured_path_execute_pin_spine_io_reconstruct",
     ),
     _e2e(
         "E2E-B",
@@ -70,8 +70,8 @@ P5_CLOSED_WORLD_ADVERSARIAL_MATRIX: Final[tuple[AdversarialBundleRow, ...]] = (
     _e2e(
         "E2E-H",
         "unsupported configured category/path → explicit rejection",
-        "tests/qualification/trace_x/test_trace_x_p5_r2_p3_r2_configured_negative_e2e.py",
-        "test_txp5r2p3r2_neg_fail_closed_no_uca_stage_fallback_on_configured_target",
+        "tests/unit/applications/test_uca6c_marketplace_qualified_execution_composition.py",
+        "test_production_marketplace_configured_adopted_unsupported_integration_category_rejects_before_io",
     ),
 )
 

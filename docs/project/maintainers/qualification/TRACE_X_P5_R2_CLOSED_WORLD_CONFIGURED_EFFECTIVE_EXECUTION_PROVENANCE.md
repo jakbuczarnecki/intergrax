@@ -3,16 +3,21 @@
 | Field | Value |
 |---|---|
 | **Stage** | `TRACE-X-P5-R2` (closed-world wave) |
-| **START_HEAD** | `d565f36c00582fdadaa6ef3e6d5266265081b44d` |
-| **FINAL_COMMIT** | Evidence tip on `development` (exact SHA = `git rev-parse` of qualification bundle commit; see roadmap §5 ledger) |
-| **P5 closed-world status** | **READY FOR AUDIT** |
-| **FRZ-TRC-11** | **OPEN** / **READY FOR TRACE-X-CERT** (no PASS promotion) |
+| **Child** | `TRACE-X-P5-R2-R1` (adversarial E2E evidence reconciliation) |
+| **Audited SHA (parent baseline)** | `c74c8e0005a85ccb0d302df64e1798e0a8e6e632` |
+| **START_HEAD (R1)** | `c74c8e0005a85ccb0d302df64e1798e0a8e6e632` |
+| **FINAL_COMMIT** | Evidence tip on `development` (exact SHA = `git rev-parse` of qualification bundle commit) |
+| **TRACE-X-P5-R2** | **BLOCKED ON R1** |
+| **TRACE-X-P5-R2-R1** | **READY FOR AUDIT** |
+| **FRZ-TRC-11** | **OPEN** (no PASS promotion) |
 | **TRACE-X-CERT** | **NOT ENTERED** |
-| **Production delta** | **0** (qualification + gates + docs only) |
+| **Production delta** | **0** (tests + qualification gates + docs only) |
 
 ## 1. Purpose
 
 P0–P4 proved the canonical configured relational production path. This wave proves **closed-world completeness**: no additional production configured/effective execution path can bypass pin → requirement spine → business I/O ordering, durable provenance, tenant scope, or historical reconstruction invariants.
+
+**R1** closes independent audit blockers **36** and **37** (adversarial E2E matrix semantics vs. evidence).
 
 ## 2. Closed-world inventory
 
@@ -25,6 +30,8 @@ P0–P4 proved the canonical configured relational production path. This wave pr
 | Classification **C/D/E/F** | **0** |
 | **unclassified** | **0** |
 | **production bypass (E)** | **0** |
+
+**Discovery scope (qualification statement):** the closed-world registry certifies **production surfaces that touch the configured/effective provenance seam** through the declared marker/discovery model. It does **not** assert that ordinary non-configured `IntegrationProfile.resolve_from_profile()` usage is forbidden globally outside that seam.
 
 **Registry SSOT:** `tests/qualification/trace_x/_trace_x_p5_r2_configured_execution_path_registry.py`  
 **Mechanical parity:** `tests/qualification/trace_x/test_trace_x_p5_r2_closed_world_gates.py`
@@ -62,20 +69,31 @@ Detail: `tests/qualification/trace_x/_trace_x_p5_r2_closed_world_adversarial_mat
 
 ## 5. Adversarial E2E bundle
 
-| ID | Scenario | Status |
+| ID | Scenario | Evidence test | Status |
+|---|---|---|---|
+| E2E-A | configured → pin → spine → I/O → **reconstruct** | `test_production_marketplace_configured_path_execute_pin_spine_io_reconstruct` | **PASS** |
+| E2E-B | pin ACK lost recovery | `test_ambiguous_pin_lost_acknowledgement_retry_reuses_stored_staging` | **PASS** |
+| E2E-C | spine failure → zero I/O | `test_case_c_spine_failure_blocks_io_then_recovery_allows_io` | **PASS** |
+| E2E-D | idempotent spine → single I/O | `test_case_d_idempotent_spine_then_single_io` | **PASS** |
+| E2E-E | current config mutation → history unchanged | `test_historical_restart_ignores_changed_current_configuration_state` | **PASS** |
+| E2E-F | tenant attack rejected | `test_tenant_mismatch_blocks_materialization_pin_and_io` | **PASS** |
+| E2E-G | missing/corrupt evidence fail closed | `test_required_provenance_missing_fails_closed` | **PASS** |
+| E2E-H | unsupported configured category → explicit rejection | `test_production_marketplace_configured_adopted_unsupported_integration_category_rejects_before_io` | **PASS** |
+
+**Supporting (not E2E-H):** `test_txp5r2p3r2_neg_fail_closed_no_uca_stage_fallback_on_configured_target` — **configured/UCA path-conflation negative**.
+
+Matrix SSOT: `P5_CLOSED_WORLD_ADVERSARIAL_MATRIX` · gates: `test_trace_x_p5_r2_closed_world_adversarial_bundle.py` (`adv01` existence, `adv02` maps, `adv03` session PASS manifest).
+
+Session manifest: `.tmp/session/trace-x-p5-r2-closed-world/pass1_observed_nodeids.json` (written when `TRACE_X_P5_R2_CW_PASS1=1`).
+
+## 6. Blocker closure (R1)
+
+| Blocker | Disposition | Closure evidence |
 |---|---|---|
-| E2E-A | configured → pin → spine → I/O → reconstruct | **PASS** |
-| E2E-B | pin ACK lost recovery | **PASS** |
-| E2E-C | spine failure → zero I/O | **PASS** |
-| E2E-D | idempotent spine → single I/O | **PASS** |
-| E2E-E | current config mutation → history unchanged | **PASS** |
-| E2E-F | tenant attack rejected | **PASS** |
-| E2E-G | missing/corrupt evidence fail closed | **PASS** |
-| E2E-H | unsupported configured path rejected | **PASS** |
+| **36** `R2-P5-CLOSED-WORLD-E2E-A-RECONSTRUCTION-EVIDENCE-36` | **CLOSED** | E2E-A maps to production execute → pin → spine → I/O → `ExecutionReconstructor` + `PinningStoreExecutionIntegrationConfigurationProvenanceReader`; configured/effective identity parity asserted |
+| **37** `R2-P5-CLOSED-WORLD-UNSUPPORTED-CATEGORY-EVIDENCE-37` | **CLOSED** | E2E-H uses `IntegrationCategory.DOCUMENT_STORE` on production CONFIGURED_ADOPTED path; `DefaultConfiguredIntegrationToolInvocationProjectionPort` rejects before provider business I/O |
 
-Matrix SSOT: `P5_CLOSED_WORLD_ADVERSARIAL_MATRIX` · gate: `test_trace_x_p5_r2_closed_world_adversarial_bundle.py`
-
-## 6. Tenant isolation audit (P5-local)
+## 7. Tenant isolation audit (P5-local)
 
 | Case | Verdict |
 |---|---|
@@ -84,59 +102,57 @@ Matrix SSOT: `P5_CLOSED_WORLD_ADVERSARIAL_MATRIX` · gate: `test_trace_x_p5_r2_c
 | tenant A requirement event → tenant B authority | **not accepted** (EventId persistence gates) |
 | retry/resume A → rebind B | **REJECTED** (production wiring tests) |
 
-**Verdict:** **PASS** (P5-local; **no global FRZ-TEN promotion**).
+**Verdict:** **PASS** (revalidated P5-local evidence; **no global FRZ-TEN promotion**).
 
-## 7. Persistence / reconstruction notes
+## 8. Persistence / reconstruction notes
 
 - **P2** PinRecord: KV + DocumentStore + InMemory reference — parity gates in `test_trace_x_p5_r2_p2_persistence_gates.py` (accepted P2 chain).
 - **P4** requirement spine: SQLite RuntimeEvent + `P4_INTEGRITY_QUALIFICATION_MATRIX` (21 rows).
 - **Reconstruction current-config lookup count:** **0** (projection + reconstructor gates).
 - **Option B:** `UNAVAILABLE_AT_EXECUTION_BOUNDARY` when safe historical configured truth unknown — covered in P4 unit reconstruction suite.
 
-## 8. Provider neutrality / unsupported category
+## 9. Provider neutrality / unsupported category
 
 - **Pattern A relational** = production CONFIGURED_ADOPTED path (UCA-6C composition).
-- Other provider categories: **no silent CONFIGURED_ADOPTED fallback** — E2E-H + P3-R2 negative matrix (15 cases).
+- Other `IntegrationCategory` values: **no silent CONFIGURED_ADOPTED fallback** — E2E-H (production projection) + P3-R2 negative matrix (15 cases) + UCA path-conflation negative.
 - **ExternalWork:** excluded from CONFIGURED_ADOPTED v1; not present in closed-world registry surfaces.
 
-## 9. Tests
+## 10. Tests
 
-| Suite | Result |
-|---|---|
-| New P5 closed-world gates + adversarial bundle | **17 passed** |
-| P5 qualification regression bundle (gates + P3/P4 wiring + negative E2E) | **109 passed** |
-| P5 supplement (integrity matrix evidence modules + UCA composition) | **132 passed** |
-| Docker/durable | **classified skips** only in pin ambiguous Docker test when `redis` package absent |
+Qualification batch (sequential, `-p no:xdist`, `TRACE_X_P5_R2_CW_PASS1=1` for adversarial manifest):
 
-Command log: `.tmp/session/p5-closed-world/pytest-*.log`
+- new E2E-A + E2E-H tests;
+- `test_trace_x_p5_r2_closed_world_gates.py` + `test_trace_x_p5_r2_closed_world_adversarial_bundle.py`;
+- all eight matrix-backed E2E modules;
+- P3/P4 regression slices as in session log.
 
-## 10. Pyright (targeted P5 production modules)
+**R1 batch result:** **73 passed** (0 failed). Command log: `.tmp/session/p5-r2-r1/pytest.log`
 
-`execution_bound_integration_resolution.py`: **3 pre-existing** errors (ExternalWork typing seam) — **not introduced by this wave**; other targeted modules **0 errors**. Log: `.tmp/session/p5-closed-world/pyright.log`
+## 11. Pyright (targeted P5 production modules)
 
-## 11. FRZ-TRC-11 assessment
+`execution_bound_integration_resolution.py`: **3 pre-existing** errors (ExternalWork typing seam) — **not introduced by R1**; **not** a claim of global `0 errors`. Other targeted P5 production modules unchanged at **0 new** diagnostics.
 
-Criteria for **READY FOR TRACE-X-CERT** (not PASS):
+## 12. FRZ-TRC-11 assessment
 
 - [x] closed-world inventory complete (32/32 parity)
 - [x] unclassified = 0
 - [x] production bypass = 0
-- [x] unresolved P5 blocker = 0
-- [x] adversarial bundle PASS (8/8)
+- [x] adversarial bundle **8/8** semantic mapping + session PASS manifest
+- [ ] **FRZ-TRC-11 PASS** — **not claimed** (await independent audit / TRACE-X-CERT)
 
-**Proposed state:** `FRZ-TRC-11 = OPEN / READY FOR TRACE-X-CERT`
+**State:** `FRZ-TRC-11 = OPEN`
 
-## 12. Post-step enterprise discovery
+## 13. Post-step enterprise discovery
 
 | Item | Finding |
 |---|---|
-| New current-parent blockers | **0** configured/effective production bypass |
+| New current-parent blockers | **0** after R1 evidence reconciliation |
 | New future mandatory debt | Non–Pattern-A CONFIGURED_ADOPTED categories remain **explicitly unsupported** until future architecture |
-| New candidate roadmap stages | **TRACE-X-CERT** (next) |
+| New candidate roadmap stages | **TRACE-X-CERT** (next, not entered) |
 | FRZ coverage gaps | **FRZ-TRC-09**, **FRZ-TRC-10** unchanged (not claimed) |
 | New ownership/boundary concerns | **0** |
-| Roadmap amendment required | **yes** (closed-world wave bookkeeping) |
+| Production delta | **0** |
 
-## 13. Historical evidence
+## 14. Historical evidence
 
 Does **not** overwrite P4 artifacts: [`TRACE_X_P5_R2_P4_CONFIGURED_EFFECTIVE_RECONSTRUCTION.md`](TRACE_X_P5_R2_P4_CONFIGURED_EFFECTIVE_RECONSTRUCTION.md), [`TRACE_X_P5_R2_P4_R2_CORRECTED_RECONSTRUCTION_REQUIREMENT_EVIDENCE_RECOVERY.md`](TRACE_X_P5_R2_P4_R2_CORRECTED_RECONSTRUCTION_REQUIREMENT_EVIDENCE_RECOVERY.md).

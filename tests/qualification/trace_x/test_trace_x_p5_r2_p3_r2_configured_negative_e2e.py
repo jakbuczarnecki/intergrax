@@ -667,7 +667,7 @@ def test_txp5r2p3r2_neg15_configured_effective_provider_mismatch_before_io() -> 
 
 
 def test_txp5r2p3r2_neg_fail_closed_no_uca_stage_fallback_on_configured_target() -> None:
-    """Configured target + UCA binding provider must not call stage repository."""
+    """Configured/UCA path-conflation negative — not unsupported-category E2E-H proof."""
     repo = _RecordingIntentRepo()
     repo.recorded.append(configured_intent())
     stage = _CountingStageRepo()
