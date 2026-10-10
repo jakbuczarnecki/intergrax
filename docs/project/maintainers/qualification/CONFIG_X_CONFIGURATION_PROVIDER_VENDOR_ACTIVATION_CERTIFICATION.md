@@ -275,7 +275,7 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 | Field | Value |
 |---|---|
 | **START_HEAD** | `25c49f42b093bb673d1c1b5dd111c51387fd4874` |
-| **FINAL_COMMIT** | *(set at push — reconciliation commit on `development`)* |
+| **FINAL_COMMIT** | `1e74c27651af2e2df99f8448522c21205b203c6b` |
 | **historical blockers** | **5** |
 | **active blockers** | **0** |
 | **active I / J / K / L** | **0 / 0 / 0 / 0** |
