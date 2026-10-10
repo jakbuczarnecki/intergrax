@@ -7,10 +7,10 @@
 | **Audited SHA (parent baseline)** | `c74c8e0005a85ccb0d302df64e1798e0a8e6e632` |
 | **START_HEAD (R1)** | `c74c8e0005a85ccb0d302df64e1798e0a8e6e632` |
 | **FINAL_COMMIT** | `831011d9c92bb6478f672d295792fc36eb0d4f73` |
-| **TRACE-X-P5-R2** | **BLOCKED ON R1** |
-| **TRACE-X-P5-R2-R1** | **READY FOR AUDIT** |
-| **FRZ-TRC-11** | **OPEN** (no PASS promotion) |
-| **TRACE-X-CERT** | **NOT ENTERED** |
+| **TRACE-X-P5-R2** | **CLOSED / independently accepted** (closed-world + R1 incorporated) |
+| **TRACE-X-P5-R2-R1** | **CLOSED / independently accepted** |
+| **FRZ-TRC-11** | **OPEN / PASS CANDIDATE** (no Cursor PASS) |
+| **TRACE-X-CERT** | **READY FOR AUDIT** — [`TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md`](TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md) |
 | **Production delta** | **0** (tests + qualification gates + docs only) |
 
 ## 1. Purpose
