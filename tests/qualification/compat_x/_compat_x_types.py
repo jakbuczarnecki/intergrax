@@ -36,9 +36,16 @@ class ExposureFacet(StrEnum):
     COMPATIBILITY_ADAPTER = "COMPATIBILITY_ADAPTER"
 
 
+class OwnerResponsibilityState(StrEnum):
+    CURRENT_CONFIRMED_OWNER = "CURRENT_CONFIRMED_OWNER"
+    FRAGMENTED_UNOWNED = "FRAGMENTED_UNOWNED"
+    CANDIDATE_OWNER_REMEDIATION_REQUIRED = "CANDIDATE_OWNER_REMEDIATION_REQUIRED"
+
+
 class EvolutionState(StrEnum):
     VERSIONED_AND_POLICY_DEFINED = "VERSIONED_AND_POLICY_DEFINED"
     VERSIONED_POLICY_MISSING = "VERSIONED_POLICY_MISSING"
+    PERSISTED_SCHEMA_WITHOUT_VERSION = "PERSISTED_SCHEMA_WITHOUT_VERSION"
     PERSISTED_MIGRATION_DEFINED = "PERSISTED_MIGRATION_DEFINED"
     PERSISTED_MIGRATION_MISSING = "PERSISTED_MIGRATION_MISSING"
     EVENT_EVOLUTION_DEFINED = "EVENT_EVOLUTION_DEFINED"
@@ -58,6 +65,7 @@ class MigrationMechanismClass(StrEnum):
     LEGACY_COMPAT_READER = "LEGACY_COMPAT_READER"
     UNOWNED_MIGRATION = "UNOWNED_MIGRATION"
     DUPLICATE_MIGRATION_AUTHORITY = "DUPLICATE_MIGRATION_AUTHORITY"
+    UNSANCTIONED_MIGRATION_MECHANISM = "UNSANCTIONED_MIGRATION_MECHANISM"
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
@@ -75,8 +83,21 @@ class FrzCmpCandidate(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class DiscoveredCompatSurface:
+    surface_id: str
+    semantic_identity: str
+    owner_module_path: str
+    contract_schema_identity: str
+    version_source: str
+    current_version: str
+    discovery_kind: str
+    evidence_kinds: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class CompatSurfaceRecord:
     surface_id: str
+    semantic_identity: str
     domain: CompatDomain
     owner_module_path: str
     contract_schema_identity: str
@@ -98,13 +119,39 @@ class CompatSurfaceRecord:
 @dataclass(frozen=True, slots=True)
 class CompatOwnerMatrixRow:
     concern: str
+    responsibility_state: OwnerResponsibilityState
     semantic_owner_path: str
     composition_owner_path: str
     evidence_paths: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
+class DiscoveryCandidate:
+    candidate_id: str
+    path: str
+    discovery_kind: str
+    discovered_signal: str
+    semantic_identity: str
+    current_version: str | None
+    version_source: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class CompatDiscoveryExclusion:
-    surface_id: str
+    exclusion_id: str
+    path: str
+    discovered_signal: str
     reason: str
-    evidence_path: str
+    evidence: str
+
+
+@dataclass(frozen=True, slots=True)
+class RegistryOverlapMatrix:
+    only_contracts: frozenset[str]
+    only_runtime: frozenset[str]
+    only_event: frozenset[str]
+    overlap_contract_runtime: frozenset[str]
+    overlap_contract_event: frozenset[str]
+    overlap_runtime_event: frozenset[str]
+    overlap_all_three: frozenset[str]
+    version_conflicts: tuple[tuple[str, str, str], ...]

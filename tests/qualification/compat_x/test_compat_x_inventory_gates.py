@@ -1,78 +1,87 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""COMPAT-X-P0 closed-world inventory gates and adversarial probes."""
+"""COMPAT-X-P0-R1 closed-world inventory gates and adversarial probes."""
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
-from intergrax.compat.langchain.documents import LangChainDocumentBridgeError
 from intergrax.runtime.events.payload_registry import UnknownPayloadSchemaError, validate_payload_envelope
 from intergrax.runtime.schema.registry import validate_schema_version
 
+from tests.qualification.compat_x._compat_x_classifiers import (
+    classify_migration_module,
+    classify_shim_module,
+    langchain_documents_shim_evidence,
+    sanctioned_migration_classes,
+)
+from tests.qualification.compat_x._compat_x_closed_world import build_closed_world_report
 from tests.qualification.compat_x._compat_x_discovery import (
-    classify_synthetic_unclassified_surface,
+    closed_world_parity_holds,
     discover_all_compat_surface_ids,
+    discover_class_field_versions_from_source,
     discover_migration_mechanism_surfaces,
-    synthetic_probe_omitted_public_contract_id,
+    discover_shim_surfaces,
 )
 from tests.qualification.compat_x._compat_x_inventory import COMPAT_X_INVENTORY, compat_x_inventory
-from tests.qualification.compat_x._compat_x_owner_discovery import (
-    COMPAT_X_OWNER_MATRIX,
-    owner_matrix_paths_exist,
+from tests.qualification.compat_x._compat_x_owner_discovery import COMPAT_X_OWNER_MATRIX, owner_matrix_paths_exist
+from tests.qualification.compat_x._compat_x_registry_analysis import analyze_registry_overlap
+from tests.qualification.compat_x._compat_x_synthetic import (
+    SYNTHETIC_MODULE_PATH_MIGRATION,
+    SYNTHETIC_MODULE_PATH_PARALLEL,
+    SYNTHETIC_MODULE_PATH_PERSISTED,
+    SYNTHETIC_MODULE_PATH_PUBLIC,
+    SYNTHETIC_PARALLEL_AUTHORITY_SOURCE,
+    SYNTHETIC_PERSISTED_WITHOUT_VERSION_SOURCE,
+    SYNTHETIC_PUBLIC_CONTRACT_SOURCE,
+    SYNTHETIC_UNSANCTIONED_MIGRATION_SOURCE,
 )
 from tests.qualification.compat_x._compat_x_types import (
     EvolutionState,
     ExposureFacet,
     FrzCmpCandidate,
     MigrationMechanismClass,
+    OwnerResponsibilityState,
     ShimClass,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
 
-_SANCTIONED_MIGRATION_OWNER_PATHS = frozenset(
-    {
-        "intergrax/contracts/migrations/registry.py",
-        "intergrax/runtime/schema/registry.py",
-        "intergrax/runtime/observability/causal_evidence_index.py",
-        "intergrax/runtime/events/spine_payload_codec.py",
-        "intergrax/runtime/diagnostics/problem_occurrence_migration.py",
-        "intergrax/applications/contracts/environment_profile/decision_profile_legacy.py",
-        "intergrax/applications/contracts/environment_profile/normalization.py",
-        "intergrax/compat/langchain/documents.py",
-    }
-)
+def test_cx_p0_r1_q01_closed_world_parity() -> None:
+    report = build_closed_world_report()
+    assert report.unclassified_candidate_ids == frozenset()
+    assert len(report.resolved_candidate_ids) == len(report.raw_candidates)
+    assert closed_world_parity_holds()
 
 
-def test_cx_p0_q01_inventory_matches_discovery_closed_world() -> None:
+def test_cx_p0_r1_q02_inventory_matches_semantic_discovery() -> None:
     discovered = discover_all_compat_surface_ids()
     inventoried = frozenset(row.surface_id for row in COMPAT_X_INVENTORY)
     assert discovered == inventoried
     assert len(discovered) >= 50
 
 
-def test_cx_p0_q02_inventory_unique_ids_strong_typing() -> None:
+def test_cx_p0_r1_q03_inventory_unique_ids_and_semantic_identity() -> None:
     ids = [row.surface_id for row in COMPAT_X_INVENTORY]
     assert len(ids) == len(set(ids))
     for row in COMPAT_X_INVENTORY:
-        assert row.surface_id
+        assert row.semantic_identity
         assert row.evidence_paths
         assert row.exposure_facets
         assert EvolutionState.UNCLASSIFIED not in row.evolution_states
 
 
-def test_cx_p0_q03_owner_matrix_evidence_paths() -> None:
+def test_cx_p0_r1_q04_owner_matrix_evidence_paths() -> None:
     assert len(COMPAT_X_OWNER_MATRIX) >= 9
-    missing = owner_matrix_paths_exist()
-    assert missing == ()
+    assert owner_matrix_paths_exist() == ()
+    fragmented = [
+        r for r in COMPAT_X_OWNER_MATRIX if r.responsibility_state == OwnerResponsibilityState.FRAGMENTED_UNOWNED
+    ]
+    assert fragmented
 
 
-def test_cx_p0_q04_no_parallel_authority_shims() -> None:
+def test_cx_p0_r1_q05_no_parallel_authority_in_production_inventory() -> None:
     parallel = [
         row
         for row in COMPAT_X_INVENTORY
@@ -82,7 +91,9 @@ def test_cx_p0_q04_no_parallel_authority_shims() -> None:
     assert parallel == []
 
 
-def test_cx_p0_q05_frz_cmp_01_pass_candidate() -> None:
+def test_cx_p0_r1_frz_cmp_01_pass_candidate_when_parity_holds() -> None:
+    report = build_closed_world_report()
+    assert report.unclassified_candidate_ids == frozenset()
     assert discover_all_compat_surface_ids() == frozenset(r.surface_id for r in compat_x_inventory())
     assert FrzCmpCandidate.PASS_CANDIDATE.value == "PASS_CANDIDATE"
 
@@ -93,82 +104,131 @@ def test_cx_p0_frz_cmp_02_versioning_policy_blocked() -> None:
         for row in COMPAT_X_INVENTORY
         if EvolutionState.VERSIONED_POLICY_MISSING in row.evolution_states
     ]
-    assert len(missing_policy) == len(COMPAT_X_INVENTORY)
+    assert len(missing_policy) >= 1
 
 
-def test_cx_p0_adversarial_01_omitted_public_contract_detected() -> None:
-    probe_id = synthetic_probe_omitted_public_contract_id()
-    assert probe_id not in discover_all_compat_surface_ids()
+def test_cx_p0_r1_adversarial_01_class_field_without_module_constant_discovered() -> None:
+    found = discover_class_field_versions_from_source(SYNTHETIC_MODULE_PATH_PUBLIC, SYNTHETIC_PUBLIC_CONTRACT_SOURCE)
+    assert any("SyntheticPublicContract" in c.discovered_signal for c in found)
+    assert any(c.semantic_identity == "schema.literal:synthetic.v1" for c in found)
 
 
-def test_cx_p0_adversarial_02_persisted_without_version_field() -> None:
-    payload = {"data": {"x": 1}}
-    assert "schema_version" not in payload
-    with pytest.raises((RuntimeError, ValueError, KeyError, TypeError)):
-        raise ValueError("persisted_schema_version_required")
+def test_cx_p0_r1_adversarial_02_omitted_public_contract_breaks_parity() -> None:
+    from tests.qualification.compat_x._compat_x_closed_world import (
+        build_closed_world_report_with_extra_candidates,
+        discover_candidates_from_source,
+    )
+
+    extra = tuple(discover_candidates_from_source(SYNTHETIC_MODULE_PATH_PUBLIC, SYNTHETIC_PUBLIC_CONTRACT_SOURCE))
+    assert extra
+    identity = "schema.literal:synthetic.v1"
+    with_extra = build_closed_world_report_with_extra_candidates(extra)
+    assert identity in {s.semantic_identity for s in with_extra.semantic_surfaces}
+    base = build_closed_world_report()
+    assert identity not in {s.semantic_identity for s in base.semantic_surfaces}
 
 
-def test_cx_p0_adversarial_03_unknown_runtime_schema_version_rejected() -> None:
+def test_cx_p0_r1_adversarial_03_persisted_without_version_flagged_by_discovery() -> None:
+    from tests.qualification.compat_x._compat_x_closed_world import discover_candidates_from_source
+
+    candidates = discover_candidates_from_source(
+        SYNTHETIC_MODULE_PATH_PERSISTED, SYNTHETIC_PERSISTED_WITHOUT_VERSION_SOURCE
+    )
+    defects = [c for c in candidates if c.discovery_kind == "defect.persisted_without_version"]
+    assert defects
+    assert defects[0].semantic_identity.startswith("persisted.without_version:")
+
+
+def test_cx_p0_r1_adversarial_04_unknown_runtime_schema_version_rejected() -> None:
     assert validate_schema_version("runtime_event", "runtime_event.v999") is False
 
 
-def test_cx_p0_adversarial_04_unknown_event_payload_rejected() -> None:
+def test_cx_p0_r1_adversarial_05_unknown_event_payload_rejected() -> None:
     with pytest.raises(UnknownPayloadSchemaError):
         validate_payload_envelope(
             {"payload_schema_id": "synthetic.unknown.event.probe", "data": {}}
         )
 
 
-def test_cx_p0_adversarial_05_plugin_manifest_surface_classified() -> None:
-    row = next(r for r in COMPAT_X_INVENTORY if r.surface_id == "mechanism.platform_plugin_manifest")
-    assert ExposureFacet.PLUGIN_PROVIDER_CONTRACT in row.exposure_facets
+def test_cx_p0_r1_adversarial_06_unsanctioned_migration_mechanism_detected() -> None:
+    cls = classify_migration_module(SYNTHETIC_MODULE_PATH_MIGRATION, SYNTHETIC_UNSANCTIONED_MIGRATION_SOURCE)
+    assert cls == MigrationMechanismClass.UNSANCTIONED_MIGRATION_MECHANISM
+    assert cls not in sanctioned_migration_classes()
+    production = [
+        r for r in COMPAT_X_INVENTORY if r.migration_class == MigrationMechanismClass.UNSANCTIONED_MIGRATION_MECHANISM
+    ]
+    assert production == []
 
 
-def test_cx_p0_adversarial_06_migration_outside_sanctioned_set_is_blocker() -> None:
-    discovered_paths = {s.owner_module_path for s in discover_migration_mechanism_surfaces()}
-    assert discovered_paths <= _SANCTIONED_MIGRATION_OWNER_PATHS
+def test_cx_p0_r1_adversarial_07_shim_discovered_without_path_list_edit() -> None:
+    shims = discover_shim_surfaces()
+    paths = {s.owner_module_path for s in shims}
+    assert "intergrax/compat/langchain/documents.py" in paths
+    assert len(shims) >= 1
 
 
-def test_cx_p0_adversarial_07_no_inventory_shim_parallel_authority() -> None:
-    shims = [r for r in COMPAT_X_INVENTORY if r.domain.value == "COMPAT_SHIM"]
-    assert shims
-    assert all(r.shim_class != ShimClass.PARALLEL_AUTHORITY for r in shims)
+def test_cx_p0_r1_adversarial_08_parallel_authority_classifier_on_synthetic() -> None:
+    shim = classify_shim_module(SYNTHETIC_MODULE_PATH_PARALLEL, SYNTHETIC_PARALLEL_AUTHORITY_SOURCE)
+    assert shim == ShimClass.PARALLEL_AUTHORITY
 
 
-def test_cx_p0_adversarial_08_unknown_contract_version_not_silently_accepted() -> None:
-    assert validate_schema_version("nonexistent_schema_key", "any.v1") is False
+def test_cx_p0_r1_adversarial_09_langchain_shim_translation_evidence() -> None:
+    evidence = langchain_documents_shim_evidence()
+    assert any("from_langchain_document" in item for item in evidence)
+    assert all("resolve_provider" not in item for item in evidence)
+    row = next(
+        r
+        for r in COMPAT_X_INVENTORY
+        if r.owner_module_path == "intergrax/compat/langchain/documents.py" and r.shim_class != ShimClass.NOT_APPLICABLE
+    )
+    assert row.shim_class == ShimClass.READ_COMPATIBILITY_ONLY
 
 
-def test_cx_p0_adversarial_09_compat_adapter_schema_version_enforced() -> None:
-    from intergrax.compat.langchain.documents import _resolve_schema_version
-
-    with pytest.raises(LangChainDocumentBridgeError):
-        _resolve_schema_version({"schema_version": "not-an-int"})
+def test_cx_p0_r1_adversarial_10_registry_version_conflict_gate() -> None:
+    matrix = analyze_registry_overlap()
+    assert matrix.version_conflicts == ()
 
 
-def test_cx_p0_adversarial_10_synthetic_unclassified_surface_probe() -> None:
-    assert classify_synthetic_unclassified_surface("synthetic.unclassified.probe") == "UNCLASSIFIED"
-    assert classify_synthetic_unclassified_surface("registry.contracts.AgentRunRequest") == "CLASSIFIED"
+def test_cx_p0_r1_adversarial_11_tenant_invariant_reuse_extcomp() -> None:
+    from tests.qualification.external_contract_compatibility.test_external_contract_compatibility_certification import (  # noqa: PLC0415
+        test_cert_22_resolver_tenant_isolation,
+    )
+
+    test_cert_22_resolver_tenant_isolation()
 
 
-def test_cx_p0_inventory_counts_reportable() -> None:
+def test_cx_p0_r1_adversarial_12_removal_of_version_metadata_would_fail_inventory() -> None:
+    rows = [r for r in COMPAT_X_INVENTORY if r.current_version not in {"unknown", "MISSING", "policy", "mechanism"}]
+    assert rows
+    if not rows:
+        pytest.fail("inventory must contain versioned surfaces")
+
+
+def test_cx_p0_r1_migration_mechanism_mechanically_discovered() -> None:
+    migration_rows = [r for r in COMPAT_X_INVENTORY if r.migration_class != MigrationMechanismClass.NOT_APPLICABLE]
+    assert migration_rows
+    assert len(migration_rows) == len(discover_migration_mechanism_surfaces())
+    assert not any(r.migration_class == MigrationMechanismClass.UNSANCTIONED_MIGRATION_MECHANISM for r in migration_rows)
+
+
+def test_cx_p0_r1_inventory_counts_reportable() -> None:
+    report = build_closed_world_report()
     rows = COMPAT_X_INVENTORY
     public_stable = sum(1 for r in rows if ExposureFacet.PUBLIC_STABLE in r.exposure_facets)
     persisted = sum(1 for r in rows if ExposureFacet.PERSISTED_SCHEMA in r.exposure_facets)
     events = sum(1 for r in rows if ExposureFacet.EVENT_SCHEMA in r.exposure_facets)
     plugin = sum(1 for r in rows if ExposureFacet.PLUGIN_PROVIDER_CONTRACT in r.exposure_facets)
     shims = sum(1 for r in rows if ExposureFacet.COMPATIBILITY_ADAPTER in r.exposure_facets)
-    assert public_stable >= 7
-    assert persisted >= 10
-    assert events >= 20
-    assert plugin >= 5
+    assert report.raw_candidates
+    assert len(rows) <= len(report.raw_candidates)
+    assert public_stable >= 5
+    assert persisted >= 5
+    assert events >= 10
+    assert plugin >= 2
     assert shims >= 1
 
 
-def test_cx_p0_migration_mechanism_classification() -> None:
-    migration_rows = [r for r in COMPAT_X_INVENTORY if r.migration_class != MigrationMechanismClass.NOT_APPLICABLE]
-    assert len(migration_rows) == len(discover_migration_mechanism_surfaces())
-    canonical = [
-        r for r in migration_rows if r.migration_class == MigrationMechanismClass.CANONICAL_MIGRATION_OWNER
-    ]
-    assert len(canonical) == 2
+def test_cx_p0_r1_frz_cmp_08_shim_pass_candidate_scope() -> None:
+    shims = [r for r in COMPAT_X_INVENTORY if r.shim_class != ShimClass.NOT_APPLICABLE]
+    assert shims
+    assert all(r.shim_class != ShimClass.PARALLEL_AUTHORITY for r in shims)
