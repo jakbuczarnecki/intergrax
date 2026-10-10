@@ -119,13 +119,19 @@ def test_cx_p0_r1_frz_cmp_01_pass_candidate_when_parity_holds() -> None:
     assert FrzCmpCandidate.PASS_CANDIDATE.value == "PASS_CANDIDATE"
 
 
-def test_cx_p0_frz_cmp_02_versioning_policy_blocked() -> None:
+def test_cx_p0_frz_cmp_02_versioning_policy_r1_defined() -> None:
     missing_policy = [
         row.surface_id
         for row in COMPAT_X_INVENTORY
         if EvolutionState.VERSIONED_POLICY_MISSING in row.evolution_states
     ]
-    assert len(missing_policy) >= 1
+    assert missing_policy == []
+    defined = [
+        row.surface_id
+        for row in COMPAT_X_INVENTORY
+        if EvolutionState.VERSIONED_AND_POLICY_DEFINED in row.evolution_states
+    ]
+    assert len(defined) == len(COMPAT_X_INVENTORY)
 
 
 def test_cx_p0_r1_adversarial_01_class_field_without_module_constant_discovered() -> None:

@@ -395,6 +395,8 @@ Normative CI checks before merge to agent roster (extends §45).
 
 All runtime contracts carry **`schema_version`**. Breaking changes require ADR + migration window.
 
+**Platform-wide evolution rules (qualification):** COMPAT-X-R1 in docs/project/maintainers/qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md — domain registries own version *values*; COMPAT-X owns cross-surface *evolution policy* only. Additive field compatibility is per contract family (not a global SemVer minor bump).
+
 | Contract | Current | Compatibility rule |
 |----------|---------|-------------------|
 | `AgentRunRequest` | `agent_run.v1` | Readers accept v1; writers emit latest |

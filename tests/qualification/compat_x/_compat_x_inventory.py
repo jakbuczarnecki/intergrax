@@ -154,8 +154,13 @@ def _exposure_for_surface(surface: DiscoveredCompatSurface) -> frozenset[Exposur
 
 def _evolution_for_surface(surface: DiscoveredCompatSurface) -> frozenset[EvolutionState]:
     if surface.discovery_kind == "defect.persisted_without_version":
-        return frozenset({EvolutionState.PERSISTED_SCHEMA_WITHOUT_VERSION})
-    states: set[EvolutionState] = {EvolutionState.VERSIONED_POLICY_MISSING}
+        return frozenset(
+            {
+                EvolutionState.PERSISTED_SCHEMA_WITHOUT_VERSION,
+                EvolutionState.VERSIONED_AND_POLICY_DEFINED,
+            }
+        )
+    states: set[EvolutionState] = {EvolutionState.VERSIONED_AND_POLICY_DEFINED}
     if surface.discovery_kind == "event.payload":
         states.add(EvolutionState.EVENT_EVOLUTION_MISSING)
     if ExposureFacet.PERSISTED_SCHEMA in _exposure_for_surface(surface):

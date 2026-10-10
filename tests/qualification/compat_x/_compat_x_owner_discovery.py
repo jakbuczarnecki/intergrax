@@ -42,10 +42,14 @@ COMPAT_X_OWNER_MATRIX: Final[tuple[CompatOwnerMatrixRow, ...]] = (
     ),
     CompatOwnerMatrixRow(
         concern="versioning_policy",
-        responsibility_state=OwnerResponsibilityState.FRAGMENTED_UNOWNED,
-        semantic_owner_path="FRAGMENTED — no global versioning policy owner",
-        composition_owner_path="UNOWNED — COMPAT-X-R1",
-        evidence_paths=("tests/qualification/compat_x/_compat_x_inventory.py",),
+        responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
+        semantic_owner_path="tests/qualification/compat_x/_compat_x_versioning_policy.py",
+        composition_owner_path="tests/qualification/compat_x/_compat_x_versioning_classification.py",
+        evidence_paths=(
+            "tests/qualification/compat_x/_compat_x_versioning_policy.py",
+            "tests/qualification/compat_x/_compat_x_versioning_classification.py",
+            "tests/qualification/compat_x/test_compat_x_versioning_r1_gates.py",
+        ),
     ),
     CompatOwnerMatrixRow(
         concern="event_schema_evolution",

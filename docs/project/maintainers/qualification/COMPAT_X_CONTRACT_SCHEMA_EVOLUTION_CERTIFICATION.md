@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1–R5 REMEDIATION** (not parent closure)
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
 
 **Branch:** `development`
 
@@ -129,7 +129,7 @@ production delta = 0
 | Criterion | Candidate | Blocker IDs |
 | --- | --- | --- |
 | FRZ-CMP-01 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (closed-world parity + semantic inventory); checklist **OPEN** until parent closure |
-| FRZ-CMP-02 | **BLOCKED** | CMP-P0-B02 → COMPAT-X-R1 |
+| FRZ-CMP-02 | **PASS CANDIDATE** — R1 evidence pending independent audit | CMP-P0-B02 remediated in R1 qualification layer |
 | FRZ-CMP-03 | **BLOCKED** | CMP-P0-B03 (+ 5 `PERSISTED_SCHEMA_WITHOUT_VERSION` — **CHILD TASK REQUIRED**) → COMPAT-X-R2 |
 | FRZ-CMP-04 | **BLOCKED** | CMP-P0-B04 → COMPAT-X-R3 |
 | FRZ-CMP-05 | **BLOCKED** | CMP-P0-B05 → COMPAT-X-R4 |
@@ -170,7 +170,96 @@ P0-R3 additions: `test_cx_p0_r3_shim_authority_scope_reconciliation`; outside-co
 ## Unresolved findings (inventory blockers — not remediated in P0)
 
 - **5** `PERSISTED_SCHEMA_WITHOUT_VERSION` surfaces (table above) — **CHILD TASK REQUIRED — blocks COMPAT-X**; owned by **COMPAT-X-R2** (not suppressed in P0).
-- All versioned surfaces still carry `VERSIONED_POLICY_MISSING` until **COMPAT-X-R1**.
+- R1 maps every P0 semantic surface to a typed version-policy classification (`version-policy unclassified = 0`). Five `PERSISTED_SCHEMA_WITHOUT_VERSION` findings remain **BLOCKED / R2 validation**.
+
+## COMPAT-X-R1 — Contract Versioning & Classification
+
+**START_HEAD:** `a1e9691b57abaa164e51542337f982f55240c8c2`
+
+**Purpose:** Define one cross-platform **evolution policy** (qualification layer) connecting P0 compatibility surfaces to version obligation, identity scheme, change taxonomy, and domain version owners — without a universal runtime registry.
+
+**Policy SSOT:** `tests/qualification/compat_x/_compat_x_versioning_policy.py`
+
+**Classification SSOT:** `tests/qualification/compat_x/_compat_x_versioning_classification.py` (`COMPAT_X_R1_CLASSIFICATIONS` — 1:1 with `COMPAT_X_INVENTORY`)
+
+**Gates:** `tests/qualification/compat_x/_compat_x_versioning_gates.py`, `tests/qualification/compat_x/test_compat_x_versioning_r1_gates.py`
+
+### Policy model (normative)
+
+- Cross-platform evolution rules: **COMPAT-X** (`_compat_x_versioning_policy.py`).
+- Individual version truth: domain owners (`CONTRACT_SCHEMA_REGISTRY`, `RUNTIME_SCHEMA_REGISTRY`, event payload registry, plugin manifest owner, etc.).
+- **No** `GLOBAL_SCHEMA_VERSION_REGISTRY`; registries are not merged.
+
+Canonical rules (see `PLATFORM_POLICY_CANON` in policy module):
+
+- For a compatibility-relevant surface, the owning domain controls version identity; COMPAT-X defines evolution rules only.
+- Breaking semantic/structural change ⇒ new contract/schema version.
+- Unknown compatibility impact ⇒ fail closed.
+- Old-version acceptance ⇒ explicit reader/migration/compatibility policy only.
+- Additive compatibility is family-policy/evidence based (not global).
+
+### Taxonomies
+
+| Version obligation | Meaning |
+| --- | --- |
+| `EXPLICIT_VERSION_REQUIRED` | Surface must carry or inherit explicit schema/contract version identity |
+| `VERSION_INHERITED_FROM_CANONICAL_ENVELOPE` | Version owned by enclosing canonical envelope |
+| `INTERNAL_NON_VERSIONED_ALLOWED` | Internal/adapter surface — no canonical version authority |
+| `NOT_APPLICABLE` | Business/concurrency/deployment version fields ≠ schema evolution |
+
+| Version identity scheme | Examples |
+| --- | --- |
+| `SCHEMA_ID_GENERATION` | `agent_run.v1`, `runtime_event.v1` |
+| `INTEGER_GENERATION` | `schema_version = 1` |
+| `SEMANTIC_VERSION` | SemVer where domain uses it |
+| `EXTERNALLY_DEFINED_VERSION` | Consumed but not platform-owned scheme |
+
+| Change class | R1 consequence |
+| --- | --- |
+| `REPRESENTATION_PRESERVING` | No bump required |
+| `ADDITIVE_BACKWARD_COMPATIBLE` | Bump optional when family policy allows |
+| `BREAKING_STRUCTURAL` / `BREAKING_SEMANTIC` / `REMOVAL_OR_RENAME` | New version identity required |
+| `UNKNOWN` | Qualification fails closed |
+
+### Owner model
+
+```text
+Cross-platform evolution rule → COMPAT-X versioning policy (qualification)
+Individual version truth       → domain semantic owner (registries / module owners)
+```
+
+`versioning_policy` owner matrix row: **CURRENT_CONFIRMED_OWNER** @ `_compat_x_versioning_policy.py`.
+
+### Inventory reconciliation
+
+```text
+P0 semantic surfaces (1879) = R1 classified (1879) + NOT_APPLICABLE obligations + explicit R2/R3/R4/R5 deferrals
+unclassified version-policy obligations = 0
+```
+
+### Blockers preserved for later stages
+
+- **5** `PERSISTED_SCHEMA_WITHOUT_VERSION` — R1 obligation `EXPLICIT_VERSION_REQUIRED`, compliance `BLOCKED_R2_VALIDATION`.
+- FRZ-CMP-03..07 remain **BLOCKED** (R2–R5).
+
+### Tenant audit (R1 local)
+
+**Verdict:** **PASS** — `test_cx_r1_tenant_audit_reuse_extcomp` reuses INT-EXTCOMP `test_cert_22_resolver_tenant_isolation`.
+
+### R1 tests
+
+```text
+uv run pytest -p no:xdist tests/qualification/compat_x/
+uv run python scripts/maintenance/check_contract_schema_versions.py
+uv run pytest -p no:xdist tests/unit/runtime/schema/test_schema_registry_b07.py
+uv run pyright tests/qualification/compat_x
+```
+
+`scripts/maintenance/check_contract_schema_versions.py` remains the **domain-specific** CONTRACT_SCHEMA_REGISTRY gate (option A); R1 adds separate COMPAT-X qualification gates.
+
+### Architecture alignment
+
+§40.11 (`AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`) contract-family table remains authoritative for ACP; COMPAT-X generalizes cross-surface evolution rules without contradicting per-family version schemes (no fake global SemVer).
 
 ## Post-Step Enterprise Discovery (COMPAT-X-P0 closure)
 
@@ -202,11 +291,12 @@ COMPAT-X-P0-R1 = REJECTED / superseded
 COMPAT-X-P0-R2 = REJECTED / superseded by accepted R3
 COMPAT-X-P0-R3 = CLOSED / independently accepted
 COMPAT-X-P0   = CLOSED / independently accepted
-COMPAT-X-R1   = NEXT / CURRENT
-COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1–R5 REMEDIATION
+COMPAT-X-R1   = READY FOR AUDIT
+COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION
+COMPAT-X-R2   = NEXT / NOT ENTERED
 TENANT-X      = NOT ENTERED
 ```
 
 **Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
 
-**Next mandatory child:** **COMPAT-X-R1** — Contract Versioning & Classification (**not implemented** in this bookkeeping step).
+**Next mandatory child:** **COMPAT-X-R2** — Persisted Schema Migration (**not entered**).
