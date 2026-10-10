@@ -203,9 +203,11 @@ class ToolWiringContext:
                     slug = manifest.slug
             if slug is None:
                 return None
+            normalized_slug = slug.strip().lower()
+            get_entry(normalized_slug)
             return cast(
                 ObservabilityBackend,
-                resolve(obs_category, slug=slug, profile=profile),
+                resolve(obs_category, slug=normalized_slug, profile=profile),
             )
 
         def _optional(category: IntegrationCategory) -> Any | None:

@@ -12,14 +12,15 @@
 | **CONFIG-X-R1-R1 START_HEAD** | `0a9eaf4d3b992fde3643ec44a8a62182e5fc155a` |
 | **CONFIG-X-R1-R1 FINAL_COMMIT** | `4b8961e4a4376a95969384f76083d019eede9903` |
 | **CONFIG-X-R1-R1-R1 START_HEAD** | `4b8961e4a4376a95969384f76083d019eede9903` |
-| **CONFIG-X-R1-R1-R1 FINAL_COMMIT** | *(pending commit — audit on GitHub)* |
-| **Bookkeeping tip** | `4b8961e4a4376a95969384f76083d019eede9903` (R1-R1 implementation-under-audit) |
+| **CONFIG-X-R1-R1-R1 FINAL_COMMIT** | `4fa6f42f2cc24e9edd5c043a352b70f2668687bf` |
+| **Remediation roadmap (SHA chain)** | R1 → `d7183eb31d19967330687a5bc5345774c230e3aa` · R1-R1 → `4b8961e4a4376a95969384f76083d019eede9903` · R1-R1-R1 → `4fa6f42f2cc24e9edd5c043a352b70f2668687bf` |
+| **R1-R1-R1 audit note** | Exact-SHA independent audit **accepted** production correction @ `4fa6f42f…`; final parent CONFIG-X reconciliation remains **separate** (CONFIG-X not CLOSED). |
 | **Production delta (wave-1)** | **0** (qualification/tests only) |
 | **Production delta (R1)** | **Narrow** — five blocker paths + scoped RAG image handler/parser wiring |
-| **CONFIG-X-R1-R1-R1 status** | **READY FOR AUDIT** (invalid explicit `observability_roles` bindings propagate catalog/configuration errors; independent audit pending) |
-| **CONFIG-X-R1-R1 status** | **BLOCKED ON R1-R1-R1 AUDIT** (implementation @ `4b8961e4…`; fail-closed materialization correction pending audit) |
-| **CONFIG-X-R1 status** | **BLOCKED ON INDEPENDENT RECONCILIATION** (four non-OBS blockers remediated in R1; OBS path gated on R1-R1-R1) |
-| **CONFIG-X status** | **BLOCKED** |
+| **CONFIG-X-R1-R1-R1 status** | **READY FOR FINAL AUDIT** (production correction @ `4fa6f42f…`; qualification test alignment bookkeeping only in follow-up commit) |
+| **CONFIG-X-R1-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
+| **CONFIG-X-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
+| **CONFIG-X status** | **BLOCKED ON FINAL RECONCILIATION** |
 | **Next mandatory stage (program order)** | `COMPAT-X` (not enterable until CONFIG-X closure) |
 
 ## 1. Certification question (current-HEAD closed-world)
@@ -178,11 +179,10 @@ Command: `pyright` on `factory.py`, `execution_bound_integration_resolution.py`,
 ## 14. Program status
 
 ```text
-CONFIG-X-R1-R1-R1 = READY FOR AUDIT
-CONFIG-X-R1-R1    = BLOCKED ON R1-R1-R1 AUDIT
-CONFIG-X-R1       = BLOCKED ON INDEPENDENT RECONCILIATION
-CONFIG-X          = BLOCKED
-FRZ-CFG-01..08    = OPEN (candidate per evidence; global closure requires parent PASS)
+CONFIG-X-R1-R1-R1 = READY FOR FINAL AUDIT
+CONFIG-X-R1-R1    = BLOCKED ON PARENT RECONCILIATION
+CONFIG-X-R1       = BLOCKED ON PARENT RECONCILIATION
+CONFIG-X          = BLOCKED ON FINAL RECONCILIATION
 COMPAT-X          = NOT ENTERED
 ```
 
@@ -231,7 +231,7 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 | Harness preset | `IntegrationProfile.harness_lab()` — `errors`/`default` → Sentry; `traces` → LangSmith (explicit bindings, not slug order) |
 | Tests | `test_composite_observability.py` (explicit langfuse/langsmith traces, ambiguity fail-closed, structural gate); CONFIG-X `tests/qualification/config_x/` |
 
-**CONFIG-X-R1-R1 = BLOCKED ON R1-R1-R1 AUDIT** (implementation accepted for architecture @ `4b8961e4…`; materialization swallow corrected in R1-R1-R1).
+**CONFIG-X-R1-R1 = BLOCKED ON PARENT RECONCILIATION** (implementation @ `4b8961e4…`; R1-R1-R1 production correction accepted @ `4fa6f42f…`).
 
 ## 17. CONFIG-X-R1-R1-R1 — explicit observability role materialization fail-closed
 
@@ -241,7 +241,7 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 | Correction | Catalog/configuration errors (`UnknownIntegrationError`, `IntegrationCategoryMismatchError`, `IntegrationConfigurationError`, canonical `resolve` failures) propagate from `ToolWiringContext.from_integration_profile` |
 | Tests | `tests/unit/tools/registry/test_wiring.py` (unknown slug; wrong-category slug) |
 
-**CONFIG-X-R1-R1-R1 = READY FOR AUDIT** (Cursor does not close).
+**CONFIG-X-R1-R1-R1 = READY FOR FINAL AUDIT** (Cursor does not close CONFIG-X).
 
 ---
 

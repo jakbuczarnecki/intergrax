@@ -3,7 +3,10 @@
 
 import pytest
 
-from intergrax.integrations.contracts.base import IntegrationCategoryMismatchError
+from intergrax.integrations.contracts.base import (
+    IntegrationCategoryMismatchError,
+    UnknownIntegrationError,
+)
 from intergrax.integrations.contracts.integration_profile import (
     IntegrationProfile,
     ObservabilityRoleBindings,
@@ -42,7 +45,7 @@ def test_observability_role_binding_unknown_slug_fail_closed() -> None:
             traces="config-x-nonexistent-observability-slug",
         ),
     )
-    with pytest.raises(ValueError, match="Unknown integration slug"):
+    with pytest.raises(UnknownIntegrationError, match="config-x-nonexistent-observability-slug"):
         ToolWiringContext.from_integration_profile(profile)
 
 
