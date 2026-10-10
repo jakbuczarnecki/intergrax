@@ -47,6 +47,7 @@ _SEMANTIC_PARAM_NAMES: Final[frozenset[str]] = frozenset(
         "secret_ref",
         "url",
         "host",
+        "http_host",
     },
 )
 
@@ -78,6 +79,26 @@ _LOCALHOST_SANCTIONED_REL_PATHS: Final[frozenset[str]] = frozenset(
     },
 )
 
+# Explicit FRZ-CFG-05 evidence: per-surface sanctioned transport/deployment defaults.
+# Provider activation remains explicit; env/configuration overrides these defaults.
+_SANCTIONED_INTEGRATION_TRANSPORT_DEFAULT_SURFACES: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/integrations/providers/vector_store/qdrant/config.py",
+        "intergrax/integrations/providers/vector_store/chroma/config.py",
+        "intergrax/integrations/providers/key_value_cache/redis/config.py",
+        "intergrax/integrations/providers/message_bus/rabbitmq/config.py",
+        "intergrax/integrations/providers/relational_store/mysql/config.py",
+        "intergrax/integrations/providers/relational_store/postgresql/config.py",
+    },
+)
+
+_SANCTIONED_INTEGRATION_TRANSPORT_DETAIL: Final[str] = (
+    "sanctioned integration transport default (localhost/local endpoint) — explicit "
+    "provider selection required; host/url/port are deployment wiring only; "
+    "INTERGRAX_* env and typed overrides supersede; presence of provider code "
+    "does not activate the backend"
+)
+
 
 class SemanticProductionFindingClass(StrEnum):
     APPROVED_TYPED_CONFIGURATION = "approved_typed_configuration"
@@ -86,6 +107,7 @@ class SemanticProductionFindingClass(StrEnum):
     PROTOCOL_FORMAT_CONSTANT = "protocol_format_constant"
     REFERENCE_LAB_TEST_ONLY = "reference_lab_test_only"
     HARD_CODED_SEMANTIC_PRODUCTION_SELECTION = "hard_coded_semantic_production_selection"
+    NAMED_CONSTANT_SEMANTIC_BLIND_SPOT = "named_constant_semantic_blind_spot"
 
 
 @dataclass(frozen=True, slots=True)
@@ -204,6 +226,108 @@ def _normalize_production_finding(finding: SemanticProductionFinding) -> Semanti
     return finding
 
 
+def _module_level_string_constants(tree: ast.Module) -> dict[str, str]:
+    bindings: dict[str, str] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            if isinstance(target, ast.Name) and isinstance(node.value, ast.Constant):
+                if isinstance(node.value.value, str):
+                    bindings[target.id] = node.value.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                bindings[node.target.id] = node.value.value
+    return bindings
+
+
+def _resolve_string_constant(
+    expr: ast.expr | None,
+    bindings: dict[str, str],
+) -> tuple[str | None, bool]:
+    """Return (resolved literal, unresolved_name_reference)."""
+    if expr is None:
+        return None, False
+    if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
+        return expr.value, False
+    if isinstance(expr, ast.Name):
+        if expr.id in bindings:
+            return bindings[expr.id], False
+        return None, True
+    return None, False
+
+
+def _is_environ_get_call(node: ast.Call) -> bool:
+    func = node.func
+    return (
+        isinstance(func, ast.Attribute)
+        and func.attr == "get"
+        and isinstance(func.value, ast.Attribute)
+        and func.value.attr == "environ"
+    )
+
+
+def _collect_env_get_default_name_nodes(expr: ast.expr) -> tuple[ast.Name, ...]:
+    names: list[ast.Name] = []
+    for node in ast.walk(expr):
+        if isinstance(node, ast.Call) and _is_environ_get_call(node):
+            if len(node.args) >= 2 and isinstance(node.args[1], ast.Name):
+                names.append(node.args[1])
+        if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
+            for value in node.values:
+                if isinstance(value, ast.Name):
+                    names.append(value)
+    return tuple(names)
+
+
+def _classify_resolved_semantic_string_default(
+    rel: str,
+    field_name: str,
+    value: str,
+    *,
+    context: str,
+) -> SemanticProductionFindingClass:
+    normalized = rel.replace("\\", "/")
+    stripped = value.strip()
+    if not stripped:
+        return SemanticProductionFindingClass.APPROVED_TYPED_CONFIGURATION
+    if stripped == "default" and field_name == "tenant_id":
+        return SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION
+    if "localhost" in stripped and field_name in {"base_url", "url", "host", "http_host"}:
+        if normalized in _SANCTIONED_INTEGRATION_TRANSPORT_DEFAULT_SURFACES:
+            return SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT
+        return SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION
+    return SemanticProductionFindingClass.APPROVED_TYPED_CONFIGURATION
+
+
+def _finding_for_semantic_string_default(
+    rel: str,
+    field_name: str,
+    value: str,
+    *,
+    context: str,
+    concern_id: str | None,
+) -> SemanticProductionFinding | None:
+    finding_class = _classify_resolved_semantic_string_default(
+        rel,
+        field_name,
+        value,
+        context=context,
+    )
+    if finding_class is SemanticProductionFindingClass.APPROVED_TYPED_CONFIGURATION:
+        return None
+    detail = (
+        _SANCTIONED_INTEGRATION_TRANSPORT_DETAIL
+        if finding_class is SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT
+        else f"{context} defaults to semantic string {value!r}"
+    )
+    return SemanticProductionFinding(
+        repo_path=rel,
+        finding_class=finding_class,
+        detail=detail,
+        concern_id=concern_id,
+    )
+
+
 def _classify_path_context(rel: str) -> SemanticProductionFindingClass | None:
     if _is_excluded_path(rel):
         return SemanticProductionFindingClass.REFERENCE_LAB_TEST_ONLY
@@ -219,8 +343,13 @@ def _classify_path_context(rel: str) -> SemanticProductionFindingClass | None:
 def _class_assign_defaults_on_semantic_fields(
     tree: ast.Module,
     rel: str,
+    *,
+    bindings: dict[str, str] | None = None,
 ) -> list[SemanticProductionFinding]:
+    if bindings is None:
+        bindings = _module_level_string_constants(tree)
     findings: list[SemanticProductionFinding] = []
+    concern_id = _primary_concern_for_path(rel)
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
             for stmt in node.body:
@@ -239,35 +368,99 @@ def _class_assign_defaults_on_semantic_fields(
                     continue
                 if default_node is None:
                     continue
-                if isinstance(default_node, ast.Constant) and isinstance(default_node.value, str):
-                    value = default_node.value.strip()
-                    if not value:
-                        continue
-                    if value == "default" and target_name == "tenant_id":
-                        findings.append(
-                            SemanticProductionFinding(
-                                repo_path=rel,
-                                finding_class=SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION,
-                                detail=(
-                                    f"{node.name}.{target_name} defaults to ambient tenant literal "
-                                    f"{default_node.value!r}"
-                                ),
-                                concern_id=_primary_concern_for_path(rel),
+                resolved, unresolved = _resolve_string_constant(default_node, bindings)
+                if unresolved:
+                    findings.append(
+                        SemanticProductionFinding(
+                            repo_path=rel,
+                            finding_class=SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT,
+                            detail=(
+                                f"{node.name}.{target_name} uses unresolved named constant "
+                                f"{default_node.id!r} as semantic default"
                             ),
-                        )
-                    elif "localhost" in value and target_name in {"base_url", "url", "host"}:
-                        findings.append(
-                            SemanticProductionFinding(
-                                repo_path=rel,
-                                finding_class=SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION,
-                                detail=(
-                                    f"{node.name}.{target_name} defaults to localhost URL/host "
-                                    f"{default_node.value!r}"
-                                ),
-                                concern_id=_primary_concern_for_path(rel),
-                            ),
-                        )
+                            concern_id=concern_id,
+                        ),
+                    )
+                    continue
+                if resolved is None or not resolved.strip():
+                    continue
+                item = _finding_for_semantic_string_default(
+                    rel,
+                    target_name,
+                    resolved,
+                    context=f"{node.name}.{target_name}",
+                    concern_id=concern_id,
+                )
+                if item is not None:
+                    findings.append(item)
     return findings
+
+
+def _from_env_semantic_constant_fallbacks(
+    tree: ast.Module,
+    rel: str,
+    *,
+    bindings: dict[str, str],
+) -> list[SemanticProductionFinding]:
+    findings: list[SemanticProductionFinding] = []
+    concern_id = _primary_concern_for_path(rel)
+    for class_node in tree.body:
+        if not isinstance(class_node, ast.ClassDef):
+            continue
+        for stmt in class_node.body:
+            if not isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if stmt.name != "from_env":
+                continue
+            for inner in ast.walk(stmt):
+                if not isinstance(inner, ast.Assign) or len(inner.targets) != 1:
+                    continue
+                target = inner.targets[0]
+                if not isinstance(target, ast.Name):
+                    continue
+                field_name = target.id
+                if field_name not in _SEMANTIC_PARAM_NAMES:
+                    continue
+                for name_node in _collect_env_get_default_name_nodes(inner.value):
+                    resolved, unresolved = _resolve_string_constant(name_node, bindings)
+                    if unresolved:
+                        findings.append(
+                            SemanticProductionFinding(
+                                repo_path=rel,
+                                finding_class=SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT,
+                                detail=(
+                                    f"{class_node.name}.from_env {field_name} env fallback "
+                                    f"references unresolved constant {name_node.id!r}"
+                                ),
+                                concern_id=concern_id,
+                            ),
+                        )
+                        continue
+                    if resolved is None or not resolved.strip():
+                        continue
+                    item = _finding_for_semantic_string_default(
+                        rel,
+                        field_name,
+                        resolved,
+                        context=f"{class_node.name}.from_env {field_name} env fallback",
+                        concern_id=concern_id,
+                    )
+                    if item is not None:
+                        findings.append(item)
+    return findings
+
+
+def classify_semantic_defaults_in_module_source(
+    source: str,
+    rel: str,
+) -> tuple[SemanticProductionFinding, ...]:
+    """Qualification helper — classify semantic defaults in a synthetic module snippet."""
+    tree = ast.parse(source)
+    bindings = _module_level_string_constants(tree)
+    findings: list[SemanticProductionFinding] = []
+    findings.extend(_class_assign_defaults_on_semantic_fields(tree, rel, bindings=bindings))
+    findings.extend(_from_env_semantic_constant_fallbacks(tree, rel, bindings=bindings))
+    return tuple(_normalize_production_finding(f) for f in findings)
 
 
 def _literal_default_on_semantic_param(tree: ast.Module, rel: str) -> list[SemanticProductionFinding]:
@@ -351,8 +544,12 @@ def _scan_file_semantic_findings(rel: str) -> tuple[SemanticProductionFinding, .
             )
         return ()
 
+    module_bindings = _module_level_string_constants(tree)
+
     if is_config_surface:
-        for item in _class_assign_defaults_on_semantic_fields(tree, rel):
+        for item in _class_assign_defaults_on_semantic_fields(tree, rel, bindings=module_bindings):
+            findings.append(item)
+        for item in _from_env_semantic_constant_fallbacks(tree, rel, bindings=module_bindings):
             findings.append(item)
 
     for item in _literal_default_on_semantic_param(tree, rel):
@@ -366,16 +563,25 @@ def _scan_file_semantic_findings(rel: str) -> tuple[SemanticProductionFinding, .
 
     findings = [_normalize_production_finding(f) for f in findings]
 
-    hard_coded = [
+    blocking = [
         f
         for f in findings
-        if f.finding_class is SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION
+        if f.finding_class
+        in (
+            SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION,
+            SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT,
+        )
     ]
-    if hard_coded:
-        return tuple(hard_coded)
+    if blocking:
+        return tuple(blocking)
 
     if is_config_surface:
-        return (
+        evidence = [
+            f
+            for f in findings
+            if f.finding_class is SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT
+        ]
+        evidence.append(
             SemanticProductionFinding(
                 repo_path=rel,
                 finding_class=SemanticProductionFindingClass.APPROVED_TYPED_CONFIGURATION,
@@ -383,6 +589,7 @@ def _scan_file_semantic_findings(rel: str) -> tuple[SemanticProductionFinding, .
                 concern_id=concern_id,
             ),
         )
+        return tuple(evidence)
 
     if rel in discover_inventory_provider_surface_paths():
         return (
@@ -449,11 +656,37 @@ def discover_unclassified_provider_surface_paths() -> frozenset[str]:
 def discover_semantic_i_blocker_paths() -> frozenset[str]:
     paths: set[str] = set()
     for finding in discover_semantic_production_findings():
-        if (
-            finding.finding_class
-            is SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION
+        if finding.finding_class in (
+            SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION,
+            SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT,
         ):
             paths.add(finding.repo_path)
+    return frozenset(paths)
+
+
+@lru_cache(maxsize=1)
+def discover_named_constant_semantic_blind_spot_paths() -> frozenset[str]:
+    paths: set[str] = set()
+    for finding in discover_semantic_production_findings():
+        if (
+            finding.finding_class
+            is SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT
+        ):
+            paths.add(finding.repo_path)
+    return frozenset(paths)
+
+
+@lru_cache(maxsize=1)
+def discover_sanctioned_vector_store_localhost_transport_paths() -> frozenset[str]:
+    paths: set[str] = set()
+    for finding in discover_semantic_production_findings():
+        if (
+            finding.finding_class is SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT
+            and finding.repo_path.replace("\\", "/")
+            in _SANCTIONED_INTEGRATION_TRANSPORT_DEFAULT_SURFACES
+            and "integration transport default" in finding.detail
+        ):
+            paths.add(finding.repo_path.replace("\\", "/"))
     return frozenset(paths)
 
 
@@ -463,3 +696,7 @@ def frz_cfg_05_semantic_i_blocker_count() -> int:
 
 def frz_cfg_05_unclassified_provider_surface_count() -> int:
     return len(discover_unclassified_provider_surface_paths())
+
+
+def frz_cfg_05_named_constant_blind_spot_count() -> int:
+    return len(discover_named_constant_semantic_blind_spot_paths())

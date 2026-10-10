@@ -37,8 +37,10 @@ from tests.qualification.config_x._config_x_owner_discovery import (
     compare_owner_gate,
 )
 from tests.qualification.config_x._config_x_semantic_production_scan import (
+    discover_named_constant_semantic_blind_spot_paths,
     discover_semantic_i_blocker_paths,
     discover_unclassified_provider_surface_paths,
+    frz_cfg_05_named_constant_blind_spot_count,
     frz_cfg_05_semantic_i_blocker_count,
     frz_cfg_05_unclassified_provider_surface_count,
 )
@@ -128,6 +130,8 @@ def test_frz_cfg_05_semantic_production_selection_closed_world_zero() -> None:
     assert discover_semantic_i_blocker_paths() == frozenset()
     assert frz_cfg_05_unclassified_provider_surface_count() == 0
     assert discover_unclassified_provider_surface_paths() == frozenset()
+    assert frz_cfg_05_named_constant_blind_spot_count() == 0
+    assert discover_named_constant_semantic_blind_spot_paths() == frozenset()
     assert _FRZ_CFG_PASS_CANDIDATE
 
 
