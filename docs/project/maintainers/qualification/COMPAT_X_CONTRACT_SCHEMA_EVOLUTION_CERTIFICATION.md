@@ -8,6 +8,8 @@
 
 **Bookkeeping tip (pre-R2):** `237a7341a9be0e017e23dfb7ed2efe05543fda53`
 
+**IMPLEMENTATION_COMMIT (P0-R2 Cursor):** `6512ac5df43f45722b0bce50d90586609e6d46f3`
+
 **Rejected P0-R1 implementation (do not use as closure baseline):** `065a0dcd875f8b985792e70f4e1f1b20bd8de094`
 
 **P0-R2 reason:** Independent audit rejected weak adversarial gates (tautological version-removal test, narrow parallel-authority classifier). R2 strengthens qualification/discovery only (**production delta = 0**).
