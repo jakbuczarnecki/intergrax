@@ -61,6 +61,7 @@ def _open_rag_store(
     *,
     store_factory: Optional[Callable[[], VectorStore]] = None,
 ) -> VectorStore:
+    config.require_tenant_id()
     if store_factory is not None:
         return store_factory()
     _import_qdrant_client()

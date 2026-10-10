@@ -183,7 +183,7 @@ def test_pinecone_config_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_pinecone_config_requires_api_key() -> None:
     with patch("intergrax.integrations.providers.vector_store.pinecone.opens._import_pinecone"):
         with pytest.raises(IntegrationConfigurationError, match="api_key"):
-            create_pinecone_vector_store(api_key="")
+            create_pinecone_vector_store(api_key="", tenant_id="tenant-a")
 
 
 def test_add_documents_and_query_delegate_to_rag_store() -> None:

@@ -27,6 +27,8 @@ def open_vespa_rest_client(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[VespaIntegrationConfig], Any]] = None,
 ) -> VespaRestClient:
+    config.require_url()
+    config.require_tenant_id()
     if http_client is None:
         factory = http_client_factory or _create_http_client
         http_client = factory(config)

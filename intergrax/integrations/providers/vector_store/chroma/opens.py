@@ -117,6 +117,7 @@ def _open_rag_store(
     *,
     store_factory: Callable[[], VectorStore] | None = None,
 ) -> VectorStore:
+    config._required_text(config.tenant_id, field_name="tenant_id")
     if store_factory is not None:
         return store_factory()
     chromadb = _import_chromadb()

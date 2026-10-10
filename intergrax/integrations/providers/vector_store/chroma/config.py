@@ -26,7 +26,6 @@ Mode = Literal["embedded", "http"]
 Metric = Literal["cosine", "l2"]
 
 DEFAULT_COLLECTION = "intergrax"
-DEFAULT_TENANT_ID = "default"
 DEFAULT_MODE: Mode = "http"
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8000
@@ -42,7 +41,7 @@ class ChromaIntegrationConfig(BaseIntegrationConfig):
     http_port: int = DEFAULT_PORT
     persist_directory: str | None = None
     collection_name: str = DEFAULT_COLLECTION
-    tenant_id: str = DEFAULT_TENANT_ID
+    tenant_id: str = ""
     metric: Metric = DEFAULT_METRIC
     batch_size: int = DEFAULT_BATCH_SIZE
 
@@ -119,10 +118,16 @@ class ChromaIntegrationConfig(BaseIntegrationConfig):
             os.environ.get(ENV_CHROMA_COLLECTION, DEFAULT_COLLECTION).strip()
             or DEFAULT_COLLECTION
         )
-        tenant_id = (
-            os.environ.get(ENV_CHROMA_TENANT_ID, DEFAULT_TENANT_ID).strip()
-            or DEFAULT_TENANT_ID
-        )
+        tenant_override = overrides.get("tenant_id")
+        tenant_from_env = os.environ.get(ENV_CHROMA_TENANT_ID, "").strip()
+        if tenant_override is not None:
+            tenant_id = str(tenant_override).strip()
+        elif tenant_from_env:
+            tenant_id = tenant_from_env
+        else:
+            raise IntegrationConfigurationError(
+                f"Chroma integration requires {ENV_CHROMA_TENANT_ID}",
+            )
         metric_raw = (
             os.environ.get(ENV_CHROMA_METRIC, DEFAULT_METRIC).strip() or DEFAULT_METRIC
         )

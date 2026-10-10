@@ -16,9 +16,9 @@ SCHEMA_VERSION_PROPERTY = "intergrax_schema_version"
 @dataclass(frozen=True)
 class WeaviateSchemaConfig:
     collection_name: str
+    tenant_id: str
     schema_version: int = SCHEMA_VERSION
     multi_tenant: bool = True
-    tenant_id: str = "default"
 
 
 def ensure_weaviate_collection(

@@ -38,7 +38,9 @@ from tests.qualification.config_x._config_x_owner_discovery import (
 )
 from tests.qualification.config_x._config_x_semantic_production_scan import (
     discover_semantic_i_blocker_paths,
+    discover_unclassified_provider_surface_paths,
     frz_cfg_05_semantic_i_blocker_count,
+    frz_cfg_05_unclassified_provider_surface_count,
 )
 from tests.qualification.config_x._config_x_types import (
     BLOCKER_CLASSIFICATIONS,
@@ -124,6 +126,8 @@ def test_frz_cfg_04_single_owner_per_mandatory_concern() -> None:
 def test_frz_cfg_05_semantic_production_selection_closed_world_zero() -> None:
     assert frz_cfg_05_semantic_i_blocker_count() == 0
     assert discover_semantic_i_blocker_paths() == frozenset()
+    assert frz_cfg_05_unclassified_provider_surface_count() == 0
+    assert discover_unclassified_provider_surface_paths() == frozenset()
     assert _FRZ_CFG_PASS_CANDIDATE
 
 
