@@ -2,13 +2,16 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **READY FOR AUDIT** |
-| **Child (integrity matrix closure)** | **TRACE-X-P5-R2-P4-R2-R1-R1-R1** — **READY FOR AUDIT** |
-| **Child (prior)** | **TRACE-X-P5-R2-P4-R2-R1-R1** — **READY FOR AUDIT** (blockers 33/35; matrix 34 open @ audit) |
-| **Parent** | TRACE-X-P5-R2-P4-R2-R1 — **BLOCKED** (await independent audit of R1-R1-R1) |
-| **Grandparent** | TRACE-X-P5-R2-P4-R2 — **BLOCKED** |
-| **FRZ-TRC-11** | **OPEN** |
-| **P5 / CERT** | **NOT ENTERED** |
+| **Status** | **READY FOR FINAL PARENT AUDIT** |
+| **Accepted child** | **TRACE-X-P5-R2-P4-R2-R1-R1-R1** — **CLOSED / independently accepted** @ `25df09093bf4d7103f0bf66780ae794d52a7f929` |
+| **Child (superseded)** | **TRACE-X-P5-R2-P4-R2-R1-R1** — **CLOSED / superseded by R1-R1-R1** @ `90bfa980d2f6d445f6300fce729247e5400de648` |
+| **Child (superseded)** | **TRACE-X-P5-R2-P4-R2-R1** — **CLOSED / superseded by descendant chain** (blocker **32** @ `f21ffbae04b12686784933ef6926764198c19201`) |
+| **Grandparent** | **TRACE-X-P5-R2-P4** — **audit-gated** (final parent recertification pending; not self-closed by child acceptance) |
+| **Independent audit (R1-R1-R1)** | **ACCEPTED** |
+| **Blockers 24–35 unresolved (P4-R2 scope)** | **0** |
+| **FRZ-TRC-11** | **OPEN** (P4-R2 supplies closure evidence; does not promote criterion alone) |
+| **global FRZ-TEN promotion** | **0** |
+| **P5 closed-world / CERT** | **NOT ENTERED** |
 
 ## SHA lineage
 
@@ -17,7 +20,8 @@
 | Audited rejection baseline (R1-R1 independent verdict) | `f21ffbae04b12686784933ef6926764198c19201` |
 | Blocker 32 resolved (production wiring) | `f21ffbae04b12686784933ef6926764198c19201` |
 | Blockers 33–35 closure (R1-R1) | `90bfa980d2f6d445f6300fce729247e5400de648` |
-| Blocker 34 matrix evidence correction (R1-R1-R1) | `origin/development` HEAD after this commit |
+| Blocker 34 matrix evidence correction (R1-R1-R1) | `25df09093bf4d7103f0bf66780ae794d52a7f929` |
+| Independent audit acceptance (R1-R1-R1) | `25df09093bf4d7103f0bf66780ae794d52a7f929` |
 
 ## Blocker disposition
 
@@ -28,7 +32,34 @@
 | 34 | R2-P4-INTEGRITY-MATRIX-COMPLETENESS-34 | **EVIDENCE CORRECTED** (R1-R1-R1) — `P4_INTEGRITY_QUALIFICATION_MATRIX` + mechanical registry + exact semantic tests |
 | 35 | R2-P4-ACTIVE-STAGING-TENANT-CONTINUITY-35 | **ACCEPTED** (prior independent audit) — not reopened |
 
-Design locks **24–31** remain accepted; **blocker 32** not reopened.
+Design locks **24–31** remain accepted (historical rejection evidence preserved in qualification lineage); **blockers 32–35** = **RESOLVED / ACCEPTED** on SHAs above; **unresolved blocker count (24–35) = 0** within **P4-R2** scope.
+
+## Durable execution provenance spine (accepted evidence)
+
+```text
+configured execution
+→ durable PinRecord
+→ mandatory requirement spine (INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED)
+→ business I/O
+```
+
+## Crash / lost-acknowledgement recovery (accepted evidence)
+
+```text
+crash / lost acknowledgement
+→ fresh adapters (durable pin KV + SQLiteRuntimeEventStore)
+→ durable staging recovery
+→ exact requirement event reconciliation (deterministic EventId; no duplicate semantic event)
+→ safe continuation (Case C / Case D)
+```
+
+## Historical configured/effective truth (accepted evidence)
+
+Current provider/configuration mutation does **not** modify reconstructed historical configured/effective provenance (`test_historical_restart_ignores_changed_current_configuration_state`). No current-state lookup becomes historical truth.
+
+## P4 integrity matrix qualification
+
+**`P4_INTEGRITY_QUALIFICATION_MATRIX` = 21 rows / PASS** — SSOT catalog + mechanical registry (see § P4 integrity matrix below). Full matrix detail remains in this qualification artifact; roadmap references this document only.
 
 ## Durable Case C / Case D (blocker 33)
 
@@ -114,7 +145,8 @@ uv run pytest -p no:xdist \
 | cross-tenant path | active-context mismatch fail-closed + storage isolation |
 | fail-closed behavior | **YES** |
 | adversarial evidence | `test_active_execution_tenant_mismatch_rejects_pin_spine_and_io` |
-| **result** | **PASS** |
+| **result** | **PASS** (P4-local scope) |
+| **global FRZ-TEN promotion** | **0** |
 
 ## Duplicate / ownership audit
 
