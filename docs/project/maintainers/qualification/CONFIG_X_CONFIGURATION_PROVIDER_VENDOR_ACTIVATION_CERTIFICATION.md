@@ -6,7 +6,7 @@
 | **Parent** | Whole-program enterprise architecture roadmap |
 | **Prior stage** | `TRACE-X` = **CLOSED / independently accepted** @ `c53d10bb7ec643ba6b444214cc8eb20111553296` (audited HEAD at CONFIG-X entry) |
 | **START_HEAD** | `c53d10bb7ec643ba6b444214cc8eb20111553296` |
-| **FINAL_COMMIT** | *(pending commit — docs/tests qualification wave)* |
+| **FINAL_COMMIT** | `4dc5d15cbdad36c2b8e3fa588740ce8521896792` |
 | **Production delta** | **0** (qualification/tests only) |
 | **CONFIG-X status** | **BLOCKED** on in-scope production blockers (see §8) |
 | **Next mandatory stage (program order)** | `COMPAT-X` (not enterable until CONFIG-X closure) |
