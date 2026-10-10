@@ -1,8 +1,10 @@
-# COMPAT-X — Contract, Schema & Evolution Certification (P0-R3 baseline)
+# COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** COMPAT-X-P0-R3 — **READY FOR AUDIT** (Cursor implementation; not COMPAT-X parent closure)
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1–R5 REMEDIATION** (not parent closure)
 
 **Branch:** `development`
+
+**Accepted evidence HEAD (independent exact-SHA audit):** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0`
 
 **START_HEAD (P0-R3 session):** `d0466ac32ca4296bc1ac5ec5f874eda1039afed2`
 
@@ -11,6 +13,8 @@
 **Rejected P0-R2 implementation (do not use as closure baseline):** `6512ac5df43f45722b0bce50d90586609e6d46f3`
 
 **Rejected P0-R1 implementation:** `065a0dcd875f8b985792e70f4e1f1b20bd8de094`
+
+**Rejected initial P0 baseline:** `cea6393775c8b92a2cefb165fc9930511c776169` (historical only)
 
 **P0-R3 reason:** Independent audit rejected shim discovery / parallel-authority scope mismatch (`compat_adapter_module_scope` narrower than mechanical shim candidacy). R3 introduces typed `CompatibilityCandidateContext`, authority inspection on the same candidate universe, top-level executor/authorizer probes, and production reconciliation (**production delta = 0**).
 
@@ -100,18 +104,38 @@ See `tests/qualification/compat_x/_compat_x_owner_discovery.py` (`COMPAT_X_OWNER
 | Deprecation/removal | FRAGMENTED_UNOWNED |
 | Compatibility adapters (langchain bridge) | CURRENT_CONFIRMED_OWNER (translation-only evidence) |
 
-## FRZ-CMP candidate state (P0-R2)
+## Accepted P0 evidence (independent audit @ `0612c2a7…`)
+
+```text
+raw discovery signals = 7266
+semantic compatibility surfaces = 1879
+evidence-backed exclusions = 5289
+unclassified = 0
+
+registry version conflicts = 0
+
+compatibility candidates = 474
+authority-inspected compatibility candidates = 474
+uninspected compatibility candidates = 0
+production PARALLEL_AUTHORITY = 0
+
+production delta = 0
+```
+
+**Global FRZ-CMP-* = PASS:** not promoted — checklist rows remain **OPEN** until **COMPAT-X** parent closure.
+
+## FRZ-CMP candidate state (accepted P0 @ `0612c2a7…`)
 
 | Criterion | Candidate | Blocker IDs |
 | --- | --- | --- |
-| FRZ-CMP-01 | **PASS CANDIDATE** | — (closed-world parity + semantic inventory) |
+| FRZ-CMP-01 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (closed-world parity + semantic inventory); checklist **OPEN** until parent closure |
 | FRZ-CMP-02 | **BLOCKED** | CMP-P0-B02 → COMPAT-X-R1 |
 | FRZ-CMP-03 | **BLOCKED** | CMP-P0-B03 (+ 5 `PERSISTED_SCHEMA_WITHOUT_VERSION` — **CHILD TASK REQUIRED**) → COMPAT-X-R2 |
 | FRZ-CMP-04 | **BLOCKED** | CMP-P0-B04 → COMPAT-X-R3 |
 | FRZ-CMP-05 | **BLOCKED** | CMP-P0-B05 → COMPAT-X-R4 |
 | FRZ-CMP-06 | **BLOCKED** | CMP-P0-B06 → COMPAT-X-R2 |
 | FRZ-CMP-07 | **BLOCKED** | CMP-P0-B07 → COMPAT-X-R5 |
-| FRZ-CMP-08 | **PASS CANDIDATE** | — (0 `PARALLEL_AUTHORITY` production; `CompatibilityCandidateContext` + full candidate authority inspection; multi-shape synthetic probes incl. outside `intergrax/compat/`) |
+| FRZ-CMP-08 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (0 `PARALLEL_AUTHORITY` production; `CompatibilityCandidateContext` + full candidate authority inspection; multi-shape synthetic probes incl. outside `intergrax/compat/`); checklist **OPEN** until parent closure |
 
 ## Proposed remediation grouping (re-derived from corrected discovery)
 
@@ -143,11 +167,46 @@ P0-R2 adversarial additions: `test_cx_p0_r2_adversarial_12_version_removal_regre
 
 P0-R3 additions: `test_cx_p0_r3_shim_authority_scope_reconciliation`; outside-compat probes `test_cx_p0_r3_adversarial_a`..`e`; `test_cx_p0_r3_frz_cmp_08_pass_candidate_scope`.
 
-## Unresolved findings (inventory blockers, not remediated in P0-R2)
+## Unresolved findings (inventory blockers — not remediated in P0)
 
-- **5** `PERSISTED_SCHEMA_WITHOUT_VERSION` surfaces (table above) — **CHILD TASK REQUIRED** for COMPAT-X-R2 validation.
+- **5** `PERSISTED_SCHEMA_WITHOUT_VERSION` surfaces (table above) — **CHILD TASK REQUIRED — blocks COMPAT-X**; owned by **COMPAT-X-R2** (not suppressed in P0).
 - All versioned surfaces still carry `VERSIONED_POLICY_MISSING` until **COMPAT-X-R1**.
 
-**COMPAT-X parent:** **OPEN** — blocked on P0-R3 independent audit, then remediation waves.
+## Post-Step Enterprise Discovery (COMPAT-X-P0 closure)
 
-**Roadmap:** `COMPAT-X-P0-R1` = **REJECTED / superseded**; `COMPAT-X-P0-R2` = **REJECTED / superseded by R3**; `COMPAT-X-P0-R3` = **READY FOR AUDIT**; `COMPAT-X-P0` = **BLOCKED ON P0-R3 AUDIT**; `COMPAT-X` = **BLOCKED ON P0 CLOSURE**; `TENANT-X` = **NOT ENTERED**.
+```text
+New current-parent blockers:
+FRZ-CMP-02..07 as already discovered by accepted P0.
+
+New future mandatory debt:
+none beyond accepted COMPAT-X remediation set.
+
+New candidate roadmap stages:
+none; R1–R5 are COMPAT-X children.
+
+FRZ coverage gaps:
+FRZ-CMP-02..07 require remediation.
+FRZ-CMP-01/08 have accepted P0 candidate evidence but remain OPEN until parent closure.
+
+New ownership / boundary / authority concerns:
+none newly discovered by P0-R3.
+
+Roadmap amendment required:
+NO
+```
+
+## Program status
+
+```text
+COMPAT-X-P0-R1 = REJECTED / superseded
+COMPAT-X-P0-R2 = REJECTED / superseded by accepted R3
+COMPAT-X-P0-R3 = CLOSED / independently accepted
+COMPAT-X-P0   = CLOSED / independently accepted
+COMPAT-X-R1   = NEXT / CURRENT
+COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1–R5 REMEDIATION
+TENANT-X      = NOT ENTERED
+```
+
+**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
+
+**Next mandatory child:** **COMPAT-X-R1** — Contract Versioning & Classification (**not implemented** in this bookkeeping step).
