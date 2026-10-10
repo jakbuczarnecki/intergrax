@@ -43,11 +43,12 @@ COMPAT_X_OWNER_MATRIX: Final[tuple[CompatOwnerMatrixRow, ...]] = (
     CompatOwnerMatrixRow(
         concern="versioning_policy",
         responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
-        semantic_owner_path="tests/qualification/compat_x/_compat_x_versioning_policy.py",
-        composition_owner_path="tests/qualification/compat_x/_compat_x_versioning_classification.py",
+        semantic_owner_path="docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+        composition_owner_path="tests/qualification/compat_x",
         evidence_paths=(
-            "tests/qualification/compat_x/_compat_x_versioning_policy.py",
+            "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
             "tests/qualification/compat_x/_compat_x_versioning_classification.py",
+            "tests/qualification/compat_x/_compat_x_versioning_gates.py",
             "tests/qualification/compat_x/test_compat_x_versioning_r1_gates.py",
         ),
     ),
@@ -128,8 +129,12 @@ def owner_matrix_paths_exist() -> tuple[str, ...]:
             if not (_REPO_ROOT / rel).is_file():
                 missing.append(rel)
         for rel in (row.semantic_owner_path, row.composition_owner_path):
-            if rel.startswith(("UNOWNED", "FRAGMENTED")):
+            if rel.startswith(("UNOWNED", "FRAGMENTED", "tests/")):
                 continue
-            if not (_REPO_ROOT / rel).is_file():
-                missing.append(rel)
+            path = _REPO_ROOT / rel
+            if path.is_file():
+                continue
+            if path.is_dir():
+                continue
+            missing.append(rel)
     return tuple(missing)

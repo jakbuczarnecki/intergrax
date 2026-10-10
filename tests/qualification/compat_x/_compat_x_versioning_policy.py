@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""COMPAT-X-R1 cross-platform evolution rules (qualification policy — not runtime authority)."""
+"""COMPAT-X-R1 evolution rules — mechanical enforcement mirror (not semantic authority)."""
 
 from __future__ import annotations
 
@@ -8,14 +8,21 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
 
-COMPAT_X_VERSIONING_POLICY_OWNER: Final[str] = (
-    "tests/qualification/compat_x/_compat_x_versioning_policy.py (COMPAT-X evolution rules)"
+COMPAT_X_CROSS_PLATFORM_POLICY_AUTHORITY: Final[str] = (
+    "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md"
 )
 
+COMPAT_X_QUALIFICATION_ENFORCEMENT_ROOT: Final[str] = "tests/qualification/compat_x"
+
+# Back-compat alias for gates referencing policy authority path (not test module).
+COMPAT_X_VERSIONING_POLICY_OWNER: Final[str] = COMPAT_X_CROSS_PLATFORM_POLICY_AUTHORITY
+
 PLATFORM_POLICY_CANON: Final[tuple[str, ...]] = (
+    "COMPAT-X owns cross-platform evolution rules.",
+    "Domain contract/schema owners own concrete current version values.",
+    "Qualification code mechanically mirrors/enforces the canonical policy.",
+    "Qualification code is not semantic authority.",
     "For a compatibility-relevant surface, the owning domain controls version identity.",
-    "COMPAT-X defines the cross-platform evolution rules.",
-    "COMPAT-X does not own individual version values.",
     "breaking semantic/structural change => new contract/schema version",
     "unknown compatibility impact => fail closed / require explicit classification",
     "old-version acceptance => only through explicit reader/migration/compatibility policy",
@@ -71,6 +78,20 @@ class R1ComplianceState(StrEnum):
     BLOCKED_LATER_STAGE_ONLY = "BLOCKED_LATER_STAGE_ONLY"
 
 
+class VersionIdentityCompliance(StrEnum):
+    VERSION_PRESENT_AND_OWNED = "VERSION_PRESENT_AND_OWNED"
+    VERSION_REQUIRED_BUT_MISSING = "VERSION_REQUIRED_BUT_MISSING"
+    VERSION_INHERITED_AND_RESOLVED = "VERSION_INHERITED_AND_RESOLVED"
+    NO_VERSION_REQUIRED = "NO_VERSION_REQUIRED"
+    BLOCKED_LATER_STAGE = "BLOCKED_LATER_STAGE"
+
+
+class VersionAuthorityDisposition(StrEnum):
+    DOMAIN_VERSION_OWNER = "DOMAIN_VERSION_OWNER"
+    INHERITED_VERSION_OWNER = "INHERITED_VERSION_OWNER"
+    NO_VERSION_AUTHORITY = "NO_VERSION_AUTHORITY"
+
+
 @dataclass(frozen=True, slots=True)
 class ChangeClassificationVerdict:
     change_class: CompatibilityChangeClass
@@ -80,12 +101,25 @@ class ChangeClassificationVerdict:
 
 
 @dataclass(frozen=True, slots=True)
-class VersionAuthorityModel:
-    """Distinguishes policy owner from domain version truth."""
+class FamilyCompatibilityPolicy:
+    """Explicit family-level additive/read compatibility evidence (not inferred globally)."""
 
-    cross_platform_policy_owner: str
-    domain_version_owner_path: str
-    current_version_source: str
+    family_id: str
+    additive_read_compatibility_supported: bool
+    unknown_fields_accepted: bool
+    explicit_decoder_or_reader_evidence: bool
+    owner_evidence_reference: str
+
+
+@dataclass(frozen=True, slots=True)
+class VersionAuthorityModel:
+    """Separates cross-platform policy authority from domain version truth and enforcement."""
+
+    cross_platform_policy_authority: str
+    qualification_enforcement_root: str
+    domain_version_disposition: VersionAuthorityDisposition
+    domain_version_owner_path: str | None
+    current_version_evidence_source: str
 
 
 _SCHEMA_VERSION_FIELD_NAMES: Final[frozenset[str]] = frozenset(
@@ -128,7 +162,10 @@ def infer_version_identity_scheme(current_version: str) -> VersionIdentityScheme
     return VersionIdentityScheme.EXTERNALLY_DEFINED_VERSION
 
 
-def evaluate_change_classification(change_class: CompatibilityChangeClass) -> ChangeClassificationVerdict:
+def evaluate_change_classification(
+    change_class: CompatibilityChangeClass,
+    family_policy: FamilyCompatibilityPolicy | None = None,
+) -> ChangeClassificationVerdict:
     if change_class == CompatibilityChangeClass.UNKNOWN:
         return ChangeClassificationVerdict(
             change_class=change_class,
@@ -144,11 +181,32 @@ def evaluate_change_classification(change_class: CompatibilityChangeClass) -> Ch
             reason="wire representation unchanged",
         )
     if change_class == CompatibilityChangeClass.ADDITIVE_BACKWARD_COMPATIBLE:
+        if family_policy is None:
+            return ChangeClassificationVerdict(
+                change_class=change_class,
+                requires_new_version_identity=False,
+                qualification_passes=False,
+                reason="additive compatibility requires explicit family policy evidence",
+            )
+        if not family_policy.additive_read_compatibility_supported:
+            return ChangeClassificationVerdict(
+                change_class=change_class,
+                requires_new_version_identity=True,
+                qualification_passes=False,
+                reason="family policy does not support additive reader compatibility",
+            )
+        if not family_policy.explicit_decoder_or_reader_evidence:
+            return ChangeClassificationVerdict(
+                change_class=change_class,
+                requires_new_version_identity=False,
+                qualification_passes=False,
+                reason="family policy lacks explicit decoder/reader compatibility evidence",
+            )
         return ChangeClassificationVerdict(
             change_class=change_class,
             requires_new_version_identity=False,
             qualification_passes=True,
-            reason="additive only when family policy explicitly supports reader compatibility",
+            reason="additive compatibility allowed by explicit family policy",
         )
     if change_class in {
         CompatibilityChangeClass.BREAKING_STRUCTURAL,
@@ -172,8 +230,9 @@ def evaluate_change_classification(change_class: CompatibilityChangeClass) -> Ch
 def evaluate_declared_change_with_bump(
     change_class: CompatibilityChangeClass,
     declared_version_bump: bool,
+    family_policy: FamilyCompatibilityPolicy | None = None,
 ) -> ChangeClassificationVerdict:
-    base = evaluate_change_classification(change_class)
+    base = evaluate_change_classification(change_class, family_policy=family_policy)
     if not base.qualification_passes:
         return base
     if base.requires_new_version_identity and not declared_version_bump:
@@ -197,16 +256,28 @@ def evaluate_declared_change_with_bump(
 class ShimCanonicalAuthorityProbe:
     claims_canonical_current_version: bool
     adapter_supported_old_version: str | None
-    canonical_version_owner_path: str
+    canonical_owner_disposition: VersionAuthorityDisposition
+    canonical_version_owner_path: str | None
 
 
 def evaluate_shim_canonical_authority(probe: ShimCanonicalAuthorityProbe) -> bool:
     """Return True when qualification passes (shim is not canonical version owner)."""
     if probe.claims_canonical_current_version:
         return False
-    if (
-        probe.adapter_supported_old_version is not None
-        and probe.adapter_supported_old_version == probe.canonical_version_owner_path
-    ):
-        return False
-    return True
+    if probe.canonical_owner_disposition == VersionAuthorityDisposition.NO_VERSION_AUTHORITY:
+        if probe.adapter_supported_old_version is not None and probe.canonical_version_owner_path:
+            return True
+        return probe.adapter_supported_old_version is None
+    if probe.canonical_owner_disposition in {
+        VersionAuthorityDisposition.DOMAIN_VERSION_OWNER,
+        VersionAuthorityDisposition.INHERITED_VERSION_OWNER,
+    }:
+        if probe.adapter_supported_old_version is not None and probe.canonical_version_owner_path:
+            return True
+        return not probe.claims_canonical_current_version
+    return False
+
+
+def cross_platform_policy_is_qualification_module(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    return normalized.startswith("tests/qualification/")

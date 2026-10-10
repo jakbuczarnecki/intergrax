@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X-R1** = **BLOCKED ON R1-R1 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1-R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
 
 **Branch:** `development`
 
@@ -97,7 +97,7 @@ See `tests/qualification/compat_x/_compat_x_owner_discovery.py` (`COMPAT_X_OWNER
 | Public contract identity/version | CURRENT_CONFIRMED_OWNER |
 | Runtime schema registry | CURRENT_CONFIRMED_OWNER |
 | Persisted schema migration | FRAGMENTED_UNOWNED |
-| Versioning policy | FRAGMENTED_UNOWNED |
+| Versioning policy | CURRENT_CONFIRMED_OWNER @ architecture hub |
 | Event schema evolution | CANDIDATE_OWNER_REMEDIATION_REQUIRED |
 | Event evolution policy | FRAGMENTED_UNOWNED |
 | Plugin/provider compatibility policy | FRAGMENTED_UNOWNED |
@@ -178,7 +178,9 @@ P0-R3 additions: `test_cx_p0_r3_shim_authority_scope_reconciliation`; outside-co
 
 **Purpose:** Define one cross-platform **evolution policy** (qualification layer) connecting P0 compatibility surfaces to version obligation, identity scheme, change taxonomy, and domain version owners — without a universal runtime registry.
 
-**Policy SSOT:** `tests/qualification/compat_x/_compat_x_versioning_policy.py`
+**Semantic policy SSOT:** `docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md`
+
+**Qualification enforcement:** `tests/qualification/compat_x/` (`_compat_x_versioning_policy.py` mirrors canonical policy mechanically)
 
 **Classification SSOT:** `tests/qualification/compat_x/_compat_x_versioning_classification.py` (`COMPAT_X_R1_CLASSIFICATIONS` — 1:1 with `COMPAT_X_INVENTORY`)
 
@@ -228,7 +230,7 @@ Cross-platform evolution rule → COMPAT-X versioning policy (qualification)
 Individual version truth       → domain semantic owner (registries / module owners)
 ```
 
-`versioning_policy` owner matrix row: **CURRENT_CONFIRMED_OWNER** @ `_compat_x_versioning_policy.py`.
+`versioning_policy` owner matrix row: **CURRENT_CONFIRMED_OWNER** @ `docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md` (composition/enforcement: `tests/qualification/compat_x/`).
 
 ### Inventory reconciliation
 
@@ -284,6 +286,21 @@ Roadmap amendment required:
 NO
 ```
 
+## COMPAT-X-R1-R1 — Version Policy Authority & Evidence Integrity Closure
+
+**Rejected baseline (do not use):** `1b107dc8e87acf7d9d547ab694885beacbfd7197`
+
+**Purpose:** Canonical semantic policy authority outside qualification tests; typed version authority disposition; obligation vs compliance; additive family evidence; shim canonical-authority gates; FRZ-CMP-02 PASS CANDIDATE scope. **production delta = 0**.
+
+### Authority graph (post R1-R1)
+
+```text
+canonical architecture compatibility policy → semantic owner
+qualification code (tests/qualification/compat_x) → enforcement only
+domain registries → current version authority
+compatibility shim → NO canonical current-version authority (unless explicit canonical envelope inheritance)
+```
+
 ## Program status
 
 ```text
@@ -291,9 +308,10 @@ COMPAT-X-P0-R1 = REJECTED / superseded
 COMPAT-X-P0-R2 = REJECTED / superseded by accepted R3
 COMPAT-X-P0-R3 = CLOSED / independently accepted
 COMPAT-X-P0   = CLOSED / independently accepted
-COMPAT-X-R1   = READY FOR AUDIT
-COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION
-COMPAT-X-R2   = NEXT / NOT ENTERED
+COMPAT-X-R1-R1 = READY FOR AUDIT
+COMPAT-X-R1   = BLOCKED ON R1-R1 AUDIT
+COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1-R1 AUDIT + R2–R5 REMEDIATION
+COMPAT-X-R2   = NOT ENTERED
 TENANT-X      = NOT ENTERED
 ```
 
