@@ -126,6 +126,22 @@ class CompatOwnerMatrixRow:
 
 
 @dataclass(frozen=True, slots=True)
+class CompatibilityCandidateContext:
+    """Mechanical discovery evidence for compatibility/shim adapter candidacy (pre-classification)."""
+
+    module_path: str
+    evidence_kinds: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ShimAuthorityScopeReconciliation:
+    total_compatibility_candidates: int
+    authority_inspected_compatibility_candidates: int
+    uninspected_compatibility_candidates: int
+    production_parallel_authority_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class DiscoveryCandidate:
     candidate_id: str
     path: str

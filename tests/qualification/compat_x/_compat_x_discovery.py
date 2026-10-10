@@ -12,7 +12,8 @@ from tests.qualification.compat_x._compat_x_closed_world import (
     discover_candidates_from_source,
 )
 from tests.qualification.compat_x._compat_x_classifiers import classify_migration_module, classify_shim_module
-from tests.qualification.compat_x._compat_x_types import DiscoveredCompatSurface, DiscoveryCandidate
+from tests.qualification.compat_x._compat_x_shim_authority import build_shim_authority_scope_reconciliation
+from tests.qualification.compat_x._compat_x_types import DiscoveredCompatSurface, DiscoveryCandidate, ShimAuthorityScopeReconciliation
 
 __all__ = [
     "DiscoveredCompatSurface",
@@ -27,6 +28,8 @@ __all__ = [
     "parity_gate_failed_if_surface_omitted",
     "closed_world_parity_holds",
     "discover_candidates_from_source",
+    "build_shim_authority_scope_reconciliation",
+    "ShimAuthorityScopeReconciliation",
 ]
 
 

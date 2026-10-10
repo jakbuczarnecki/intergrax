@@ -112,3 +112,48 @@ SYNTHETIC_MODULE_PATH_PERSISTED_CONTRACT_UNVERSIONED: Final[str] = (
 SYNTHETIC_MODULE_PATH_MIGRATION: Final[str] = "synthetic/qualification/migration_probe.py"
 SYNTHETIC_MODULE_PATH_PARALLEL: Final[str] = "synthetic/qualification/parallel_authority_probe.py"
 SYNTHETIC_MODULE_PATH_PARALLEL_PROBES: Final[str] = "synthetic/qualification/compat_shim/authority_probes.py"
+
+SYNTHETIC_MODULE_PATH_LEGACY_RUNTIME_ADAPTER: Final[str] = "intergrax/runtime/legacy/foo_adapter.py"
+
+SYNTHETIC_MODULE_PATH_EXTERNAL_LEGACY_REGISTRY: Final[str] = (
+    "intergrax/integrations/registry/legacy_contract_registry.py"
+)
+
+SYNTHETIC_MODULE_PATH_LEGACY_TOP_LEVEL_EXECUTOR: Final[str] = (
+    "intergrax/runtime/legacy/top_level_executor_probe.py"
+)
+
+SYNTHETIC_MODULE_PATH_LEGACY_TOP_LEVEL_AUTHORIZER: Final[str] = (
+    "intergrax/runtime/legacy/top_level_authorizer_probe.py"
+)
+
+SYNTHETIC_MODULE_PATH_LEGACY_TRANSLATION_ADAPTER: Final[str] = (
+    "intergrax/runtime/legacy/payload_translation_adapter.py"
+)
+
+SYNTHETIC_PARALLEL_LEGACY_REGISTRY_SOURCE: Final[str] = '''
+class LegacyContractRegistry:
+    def register(self, name: str, impl: object) -> None:
+        pass
+
+    def resolve(self, name: str) -> object:
+        return object()
+'''
+
+SYNTHETIC_TOP_LEVEL_EXECUTE_LEGACY_SOURCE: Final[str] = '''
+def execute_legacy(payload: dict) -> dict:
+    return payload
+'''
+
+SYNTHETIC_TOP_LEVEL_AUTHORIZE_LEGACY_SOURCE: Final[str] = '''
+def authorize_legacy(principal: str, action: str) -> bool:
+    return True
+'''
+
+SYNTHETIC_LEGACY_TRANSLATION_OUTSIDE_COMPAT_SOURCE: Final[str] = '''
+def from_legacy_payload(raw: dict) -> dict:
+    return raw
+
+def to_current_payload(doc: dict) -> dict:
+    return doc
+'''

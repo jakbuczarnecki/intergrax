@@ -8,7 +8,9 @@ import ast
 from typing import Final
 
 from tests.qualification.compat_x._compat_x_ast_signals import (
+    build_compatibility_candidate_context,
     extract_migration_signals,
+    is_compatibility_adapter_candidate,
     module_exhibits_parallel_authority,
     module_is_translation_only_compat_adapter,
     parse_module,
@@ -62,9 +64,12 @@ def classify_migration_module(module_path: str, source: str) -> MigrationMechani
 def classify_shim_module(module_path: str, source: str) -> ShimClass:
     normalized = module_path.replace("\\", "/")
     tree = parse_module(module_path, source)
-    if module_exhibits_parallel_authority(tree, module_path):
+    context = build_compatibility_candidate_context(module_path, source, tree)
+    if not is_compatibility_adapter_candidate(context):
+        return ShimClass.NOT_APPLICABLE
+    if module_exhibits_parallel_authority(tree, context):
         return ShimClass.PARALLEL_AUTHORITY
-    if module_is_translation_only_compat_adapter(tree, module_path):
+    if module_is_translation_only_compat_adapter(tree, context):
         return ShimClass.TRANSLATION_ONLY
     lowered = source.lower()
     if "from_langchain" in lowered or "to_langchain" in lowered:

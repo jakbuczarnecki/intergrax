@@ -1,18 +1,18 @@
-# COMPAT-X — Contract, Schema & Evolution Certification (P0-R2 baseline)
+# COMPAT-X — Contract, Schema & Evolution Certification (P0-R3 baseline)
 
-**Status:** COMPAT-X-P0-R2 — **READY FOR AUDIT** (Cursor implementation; not COMPAT-X parent closure)
+**Status:** COMPAT-X-P0-R3 — **READY FOR AUDIT** (Cursor implementation; not COMPAT-X parent closure)
 
 **Branch:** `development`
 
-**START_HEAD (P0-R2 session):** `237a7341a9be0e017e23dfb7ed2efe05543fda53`
+**START_HEAD (P0-R3 session):** `d0466ac32ca4296bc1ac5ec5f874eda1039afed2`
 
-**Bookkeeping tip (pre-R2):** `237a7341a9be0e017e23dfb7ed2efe05543fda53`
+**Bookkeeping tip (pre-R3):** `d0466ac32ca4296bc1ac5ec5f874eda1039afed2`
 
-**IMPLEMENTATION_COMMIT (P0-R2 Cursor):** `6512ac5df43f45722b0bce50d90586609e6d46f3`
+**Rejected P0-R2 implementation (do not use as closure baseline):** `6512ac5df43f45722b0bce50d90586609e6d46f3`
 
-**Rejected P0-R1 implementation (do not use as closure baseline):** `065a0dcd875f8b985792e70f4e1f1b20bd8de094`
+**Rejected P0-R1 implementation:** `065a0dcd875f8b985792e70f4e1f1b20bd8de094`
 
-**P0-R2 reason:** Independent audit rejected weak adversarial gates (tautological version-removal test, narrow parallel-authority classifier). R2 strengthens qualification/discovery only (**production delta = 0**).
+**P0-R3 reason:** Independent audit rejected shim discovery / parallel-authority scope mismatch (`compat_adapter_module_scope` narrower than mechanical shim candidacy). R3 introduces typed `CompatibilityCandidateContext`, authority inspection on the same candidate universe, top-level executor/authorizer probes, and production reconciliation (**production delta = 0**).
 
 **Production delta:** `0`
 
@@ -24,13 +24,15 @@ Mechanical closed-world inventory of compatibility-relevant platform surfaces on
 
 | Metric | Count |
 | --- | ---: |
-| Raw discovered signals (`DISCOVERED_CANDIDATES`) | 7255 |
-| Semantic compatibility surfaces (`CLASSIFIED_COMPAT_SURFACES`) | 1868 |
+| Raw discovered signals (`DISCOVERED_CANDIDATES`) | 7266 |
+| Semantic compatibility surfaces (`CLASSIFIED_COMPAT_SURFACES`) | 1879 |
 | Evidence-backed exclusions (`EXCLUSIONS_WITH_EVIDENCE`) | 5289 |
 | Unclassified candidates | 0 |
 | Public/stable facet (inventory) | (see gate `test_cx_p0_r1_inventory_counts_reportable`) |
 | Migration mechanisms (discovered) | 157 |
-| Compatibility shim candidates (discovered) | 463 |
+| Compatibility shim candidates (discovered) | 474 |
+| Authority-inspected compatibility candidates | 474 |
+| Uninspected compatibility candidates | 0 |
 | Parallel authority (production inventory) | 0 |
 | Registry version conflicts | 0 |
 
@@ -38,7 +40,9 @@ Mechanical closed-world inventory of compatibility-relevant platform surfaces on
 
 **Discovery / parity:** `tests/qualification/compat_x/_compat_x_closed_world.py` (`build_closed_world_report`)
 
-**Gate:** `tests/qualification/compat_x/test_compat_x_inventory_gates.py` — parity + adversarial suite (P0-R2 version-removal mutation probe; bounded AST parallel-authority probes)
+**Shim authority reconciliation:** `tests/qualification/compat_x/_compat_x_shim_authority.py` (`build_shim_authority_scope_reconciliation`)
+
+**Gate:** `tests/qualification/compat_x/test_compat_x_inventory_gates.py` — parity + adversarial suite (P0-R2 version-removal; P0-R3 scope convergence + outside-compat synthetic probes)
 
 ### Discovery counts by mechanism (raw signals)
 
@@ -52,7 +56,7 @@ Mechanical closed-world inventory of compatibility-relevant platform surfaces on
 | `wire.persistence` (excluded after classification) | 601 |
 | `public.export` (excluded after classification) | 4688 |
 | `migration.mechanism` | 157 |
-| `compat.shim` | 463 |
+| `compat.shim` | 474 |
 | `mechanism.policy_owner` | 2 |
 | `defect.persisted_without_version` | 5 |
 
@@ -107,7 +111,7 @@ See `tests/qualification/compat_x/_compat_x_owner_discovery.py` (`COMPAT_X_OWNER
 | FRZ-CMP-05 | **BLOCKED** | CMP-P0-B05 → COMPAT-X-R4 |
 | FRZ-CMP-06 | **BLOCKED** | CMP-P0-B06 → COMPAT-X-R2 |
 | FRZ-CMP-07 | **BLOCKED** | CMP-P0-B07 → COMPAT-X-R5 |
-| FRZ-CMP-08 | **PASS CANDIDATE** | — (0 `PARALLEL_AUTHORITY` production; AST bounded classifier + multi-shape synthetic probes) |
+| FRZ-CMP-08 | **PASS CANDIDATE** | — (0 `PARALLEL_AUTHORITY` production; `CompatibilityCandidateContext` + full candidate authority inspection; multi-shape synthetic probes incl. outside `intergrax/compat/`) |
 
 ## Proposed remediation grouping (re-derived from corrected discovery)
 
@@ -117,7 +121,7 @@ See `tests/qualification/compat_x/_compat_x_owner_discovery.py` (`COMPAT_X_OWNER
 4. **COMPAT-X-R4** — Plugin/Provider Compatibility (FRZ-CMP-05)
 5. **COMPAT-X-R5** — Deprecation / Compatibility Shim Closure (FRZ-CMP-07, FRZ-CMP-08 hardening)
 
-## Tenant isolation audit (local COMPAT-X-P0-R2)
+## Tenant isolation audit (local COMPAT-X-P0-R3)
 
 **Verdict:** **PASS** (local scope; not global **TENANT-X**)
 
@@ -137,11 +141,13 @@ uv run pyright tests/qualification/compat_x
 
 P0-R2 adversarial additions: `test_cx_p0_r2_adversarial_12_version_removal_regression_probe`; parallel-authority probes `test_cx_p0_r2_parallel_authority_*`; sanctioned translation probes `test_cx_p0_r2_translation_only_*` / `test_cx_p0_r2_legacy_decode_*`.
 
+P0-R3 additions: `test_cx_p0_r3_shim_authority_scope_reconciliation`; outside-compat probes `test_cx_p0_r3_adversarial_a`..`e`; `test_cx_p0_r3_frz_cmp_08_pass_candidate_scope`.
+
 ## Unresolved findings (inventory blockers, not remediated in P0-R2)
 
 - **5** `PERSISTED_SCHEMA_WITHOUT_VERSION` surfaces (table above) — **CHILD TASK REQUIRED** for COMPAT-X-R2 validation.
 - All versioned surfaces still carry `VERSIONED_POLICY_MISSING` until **COMPAT-X-R1**.
 
-**COMPAT-X parent:** **OPEN** — blocked on P0-R2 independent audit, then remediation waves.
+**COMPAT-X parent:** **OPEN** — blocked on P0-R3 independent audit, then remediation waves.
 
-**Roadmap:** `COMPAT-X-P0-R1` = **REJECTED / superseded by R2**; `COMPAT-X-P0` = **BLOCKED ON P0-R2 AUDIT**; `COMPAT-X` = **BLOCKED ON P0 CLOSURE**; `TENANT-X` = **NOT ENTERED**.
+**Roadmap:** `COMPAT-X-P0-R1` = **REJECTED / superseded**; `COMPAT-X-P0-R2` = **REJECTED / superseded by R3**; `COMPAT-X-P0-R3` = **READY FOR AUDIT**; `COMPAT-X-P0` = **BLOCKED ON P0-R3 AUDIT**; `COMPAT-X` = **BLOCKED ON P0 CLOSURE**; `TENANT-X` = **NOT ENTERED**.

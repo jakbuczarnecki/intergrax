@@ -17,6 +17,7 @@ from tests.qualification.compat_x._compat_x_classifiers import (
 )
 from tests.qualification.compat_x._compat_x_closed_world import build_closed_world_report
 from tests.qualification.compat_x._compat_x_discovery import (
+    build_shim_authority_scope_reconciliation,
     closed_world_parity_holds,
     discover_all_compat_surface_ids,
     discover_class_field_versions_from_source,
@@ -30,6 +31,11 @@ from tests.qualification.compat_x._compat_x_synthetic import (
     SYNTHETIC_DECODE_NORMALIZATION_SOURCE,
     SYNTHETIC_MODULE_PATH_MIGRATION,
     SYNTHETIC_MODULE_PATH_PARALLEL,
+    SYNTHETIC_MODULE_PATH_EXTERNAL_LEGACY_REGISTRY,
+    SYNTHETIC_MODULE_PATH_LEGACY_RUNTIME_ADAPTER,
+    SYNTHETIC_MODULE_PATH_LEGACY_TOP_LEVEL_AUTHORIZER,
+    SYNTHETIC_MODULE_PATH_LEGACY_TOP_LEVEL_EXECUTOR,
+    SYNTHETIC_MODULE_PATH_LEGACY_TRANSLATION_ADAPTER,
     SYNTHETIC_MODULE_PATH_PARALLEL_PROBES,
     SYNTHETIC_MODULE_PATH_PERSISTED,
     SYNTHETIC_MODULE_PATH_PERSISTED_CONTRACT_UNVERSIONED,
@@ -38,8 +44,12 @@ from tests.qualification.compat_x._compat_x_synthetic import (
     SYNTHETIC_PARALLEL_AUTHORITY_SOURCE,
     SYNTHETIC_PARALLEL_AUTHORIZER_SOURCE,
     SYNTHETIC_PARALLEL_EXECUTOR_SOURCE,
+    SYNTHETIC_PARALLEL_LEGACY_REGISTRY_SOURCE,
     SYNTHETIC_PARALLEL_PROVIDER_SELECTOR_SOURCE,
     SYNTHETIC_PARALLEL_REGISTRY_SOURCE,
+    SYNTHETIC_LEGACY_TRANSLATION_OUTSIDE_COMPAT_SOURCE,
+    SYNTHETIC_TOP_LEVEL_AUTHORIZE_LEGACY_SOURCE,
+    SYNTHETIC_TOP_LEVEL_EXECUTE_LEGACY_SOURCE,
     SYNTHETIC_PERSISTED_CONTRACT_VERSION_REMOVED_SOURCE,
     SYNTHETIC_PERSISTED_CONTRACT_VERSIONED_SOURCE,
     SYNTHETIC_PERSISTED_WITHOUT_VERSION_SOURCE,
@@ -283,6 +293,67 @@ def test_cx_p0_r2_legacy_decode_sanctioned_probe() -> None:
 
 
 def test_cx_p0_r2_frz_cmp_08_pass_candidate_scope() -> None:
+    shims = [r for r in COMPAT_X_INVENTORY if r.shim_class != ShimClass.NOT_APPLICABLE]
+    assert shims
+    assert all(r.shim_class != ShimClass.PARALLEL_AUTHORITY for r in shims)
+
+
+def test_cx_p0_r3_shim_authority_scope_reconciliation() -> None:
+    reconciliation = build_shim_authority_scope_reconciliation()
+    assert reconciliation.total_compatibility_candidates > 0
+    assert reconciliation.authority_inspected_compatibility_candidates == reconciliation.total_compatibility_candidates
+    assert reconciliation.uninspected_compatibility_candidates == 0
+    assert reconciliation.production_parallel_authority_count == 0
+
+
+def test_cx_p0_r3_adversarial_a_parallel_authority_outside_compat_tree() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_LEGACY_RUNTIME_ADAPTER, SYNTHETIC_PARALLEL_PROVIDER_SELECTOR_SOURCE)
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r3_adversarial_b_external_legacy_registry_parallel_authority() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_EXTERNAL_LEGACY_REGISTRY, SYNTHETIC_PARALLEL_LEGACY_REGISTRY_SOURCE)
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r3_adversarial_c_top_level_executor_parallel_authority() -> None:
+    assert (
+        classify_shim_module(
+            SYNTHETIC_MODULE_PATH_LEGACY_TOP_LEVEL_EXECUTOR,
+            SYNTHETIC_TOP_LEVEL_EXECUTE_LEGACY_SOURCE,
+        )
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r3_adversarial_d_top_level_authorizer_parallel_authority() -> None:
+    assert (
+        classify_shim_module(
+            SYNTHETIC_MODULE_PATH_LEGACY_TOP_LEVEL_AUTHORIZER,
+            SYNTHETIC_TOP_LEVEL_AUTHORIZE_LEGACY_SOURCE,
+        )
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r3_adversarial_e_translation_outside_compat_not_parallel_authority() -> None:
+    assert (
+        classify_shim_module(
+            SYNTHETIC_MODULE_PATH_LEGACY_TRANSLATION_ADAPTER,
+            SYNTHETIC_LEGACY_TRANSLATION_OUTSIDE_COMPAT_SOURCE,
+        )
+        == ShimClass.TRANSLATION_ONLY
+    )
+
+
+def test_cx_p0_r3_frz_cmp_08_pass_candidate_scope() -> None:
+    reconciliation = build_shim_authority_scope_reconciliation()
+    assert reconciliation.uninspected_compatibility_candidates == 0
+    assert reconciliation.production_parallel_authority_count == 0
     shims = [r for r in COMPAT_X_INVENTORY if r.shim_class != ShimClass.NOT_APPLICABLE]
     assert shims
     assert all(r.shim_class != ShimClass.PARALLEL_AUTHORITY for r in shims)

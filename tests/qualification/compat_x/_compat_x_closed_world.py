@@ -16,13 +16,15 @@ from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY
 
 from tests.qualification.compat_x._compat_x_ast_signals import (
     ClassVersionFieldSignal,
+    build_compatibility_candidate_context,
+    class_has_schema_version_field,
     extract_class_version_fields,
     extract_migration_signals,
     extract_module_version_constants,
     extract_public_export_signals,
     extract_shim_path_signal,
     extract_wire_persistence_signals,
-    class_has_schema_version_field,
+    is_compatibility_adapter_candidate,
     parse_module,
 )
 from tests.qualification.compat_x._compat_x_classifiers import classify_migration_module, classify_shim_module
@@ -314,19 +316,20 @@ def _migration_candidates_for_module(module_path: str, source: str) -> list[Disc
 
 
 def _shim_candidates_for_module(module_path: str, source: str) -> list[DiscoveryCandidate]:
+    tree = parse_module(module_path, source)
+    context = build_compatibility_candidate_context(module_path, source, tree)
+    if not is_compatibility_adapter_candidate(context):
+        return []
     path_signal = extract_shim_path_signal(module_path)
     shim_class = classify_shim_module(module_path, source)
-    from tests.qualification.compat_x._compat_x_types import ShimClass
-
-    if path_signal is None and shim_class == ShimClass.NOT_APPLICABLE:
-        return []
+    primary_signal = path_signal.signal if path_signal else context.evidence_kinds[0]
     identity = f"shim:{module_path}"
     return [
         _candidate(
             candidate_id=f"shim.{module_path.replace('/', '.')}",
             path=module_path,
             discovery_kind="compat.shim",
-            discovered_signal=path_signal.signal if path_signal else "shim.classifier",
+            discovered_signal=primary_signal,
             semantic_identity=identity,
             current_version=shim_class.value,
             version_source=module_path,

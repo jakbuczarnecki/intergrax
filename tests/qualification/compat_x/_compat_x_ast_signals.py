@@ -9,6 +9,8 @@ import re
 from dataclasses import dataclass
 from typing import Final
 
+from tests.qualification.compat_x._compat_x_types import CompatibilityCandidateContext
+
 _VERSION_FIELD_NAMES: Final[frozenset[str]] = frozenset(
     {"schema_version", "contract_version", "payload_schema_version"}
 )
@@ -371,7 +373,121 @@ _AUTHORITY_METHOD_PREFIXES: Final[tuple[str, ...]] = (
 )
 
 
+_COMPAT_SOURCE_MARKERS: Final[tuple[str, ...]] = (
+    "from_langchain",
+    "to_langchain",
+)
+
+_COMPAT_SOURCE_SUBSTRINGS: Final[tuple[str, ...]] = (
+    "adapter",
+    "translate",
+)
+
+_COMPAT_PATH_MARKERS: Final[tuple[str, ...]] = (
+    "/legacy/",
+    "_legacy",
+    "legacy_",
+    "_adapter",
+    "/compat/",
+    "compat_",
+)
+
+_COMPAT_CLASS_NAME_PREFIXES: Final[tuple[str, ...]] = (
+    "legacy",
+    "compatibility",
+    "compat",
+)
+
+def build_compatibility_candidate_context(
+    module_path: str,
+    source: str,
+    tree: ast.Module,
+) -> CompatibilityCandidateContext:
+    """Mechanical signals only — must not call shim classifiers."""
+    normalized = module_path.replace("\\", "/")
+    kinds: list[str] = []
+    path_signal = extract_shim_path_signal(module_path)
+    if path_signal is not None:
+        kinds.append(path_signal.kind)
+    if normalized.startswith("synthetic/qualification/"):
+        kinds.append("path.synthetic_qualification")
+    lowered_path = normalized.lower()
+    for marker in _COMPAT_PATH_MARKERS:
+        if marker in lowered_path:
+            kinds.append(f"path.marker:{marker}")
+    lowered_source = source.lower()
+    for marker in _COMPAT_SOURCE_MARKERS:
+        if marker in lowered_source:
+            kinds.append(f"source.{marker}")
+    for substring in _COMPAT_SOURCE_SUBSTRINGS:
+        if substring in lowered_source:
+            kinds.append(f"source.contains:{substring}")
+    _ = tree  # reserved for future AST-only shim discovery signals
+    return CompatibilityCandidateContext(
+        module_path=normalized,
+        evidence_kinds=tuple(dict.fromkeys(kinds)),
+    )
+
+
+def is_compatibility_adapter_candidate(context: CompatibilityCandidateContext) -> bool:
+    return bool(context.evidence_kinds)
+
+
+def _class_name_suggests_compat_adapter_type(class_name: str) -> bool:
+    lowered = class_name.lower()
+    return any(lowered.startswith(prefix) for prefix in _COMPAT_CLASS_NAME_PREFIXES)
+
+
+def _module_path_suggests_compat_adapter_seam(module_path: str) -> bool:
+    lowered = module_path.replace("\\", "/").lower()
+    if lowered.startswith("intergrax/compat/") or lowered.startswith("synthetic/qualification/"):
+        return True
+    return any(
+        fragment in lowered
+        for fragment in (
+            "/legacy/",
+            "_legacy",
+            "legacy_",
+            "/compat/",
+        )
+    )
+
+
+_PARALLEL_AUTHORITY_PATH_MARKERS: Final[frozenset[str]] = frozenset(
+    {
+        "/legacy/",
+        "_legacy",
+        "legacy_",
+        "/compat/",
+        "compat_",
+    }
+)
+
+
+def parallel_authority_detection_applies(
+    tree: ast.Module,
+    context: CompatibilityCandidateContext,
+) -> bool:
+    """Parallel authority is bounded to compat seams — not every weak shim text signal."""
+    if any(kind in ("path.compat_tree", "path.synthetic_qualification") for kind in context.evidence_kinds):
+        return True
+    for kind in context.evidence_kinds:
+        if kind.startswith("path.marker:"):
+            marker = kind.split(":", 1)[1]
+            if marker in _PARALLEL_AUTHORITY_PATH_MARKERS:
+                return True
+    if any(kind.startswith("source.from_langchain") or kind.startswith("source.to_langchain") for kind in context.evidence_kinds):
+        return True
+    if _module_path_suggests_compat_adapter_seam(context.module_path):
+        return True
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and _class_name_suggests_compat_adapter_type(node.name):
+            return True
+    return False
+
+
 def compat_adapter_module_scope(module_path: str) -> bool:
+    """Deprecated path gate — use ``is_compatibility_adapter_candidate`` with discovery context."""
     normalized = module_path.replace("\\", "/")
     if normalized.startswith("intergrax/compat/"):
         return True
@@ -391,6 +507,19 @@ def is_sanctioned_translation_callable(name: str) -> bool:
     return False
 
 
+_STRICT_AUTHORITY_METHOD_PREFIXES: Final[tuple[str, ...]] = (
+    "select_",
+    "resolve_",
+    "dispatch_",
+    "execute_",
+    "invoke_",
+    "authorize_",
+    "admit_",
+)
+
+_TOP_LEVEL_PARALLEL_AUTHORITY_NAMES: Final[frozenset[str]] = frozenset({"resolve_provider"})
+
+
 def _method_name_suggests_parallel_authority(name: str) -> bool:
     if is_sanctioned_translation_callable(name):
         return False
@@ -398,16 +527,33 @@ def _method_name_suggests_parallel_authority(name: str) -> bool:
     return any(lowered.startswith(prefix) for prefix in _AUTHORITY_METHOD_PREFIXES)
 
 
+def _strict_parallel_authority_method_name(name: str) -> bool:
+    if is_sanctioned_translation_callable(name):
+        return False
+    if name in _TOP_LEVEL_PARALLEL_AUTHORITY_NAMES:
+        return True
+    lowered = name.lower()
+    return any(lowered.startswith(prefix) for prefix in _STRICT_AUTHORITY_METHOD_PREFIXES)
+
+
 def _class_name_suggests_authority_carrier(class_name: str) -> bool:
     lowered = class_name.lower()
     return any(marker in lowered for marker in _AUTHORITY_CLASS_MARKERS)
 
 
-def module_exhibits_parallel_authority(tree: ast.Module, module_path: str) -> bool:
-    """Bounded AST gate: parallel authority only inside compatibility adapter scope."""
-    if not compat_adapter_module_scope(module_path):
+def module_exhibits_parallel_authority(
+    tree: ast.Module,
+    context: CompatibilityCandidateContext,
+) -> bool:
+    """Bounded AST gate: parallel authority only for compatibility adapter candidates."""
+    if not is_compatibility_adapter_candidate(context):
+        return False
+    if not parallel_authority_detection_applies(tree, context):
         return False
     for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            if _strict_parallel_authority_method_name(node.name):
+                return True
         if not isinstance(node, ast.ClassDef):
             continue
         class_carrier = _class_name_suggests_authority_carrier(node.name)
@@ -420,18 +566,18 @@ def module_exhibits_parallel_authority(tree: ast.Module, module_path: str) -> bo
             continue
         if class_carrier:
             return True
-        if any(
-            name.startswith(("select_", "resolve_", "dispatch_", "execute_", "invoke_", "authorize_", "admit_"))
-            for name in authority_methods
-        ):
+        if any(_strict_parallel_authority_method_name(name) for name in authority_methods):
             return True
     if module_defines_resolve_provider(tree):
         return True
     return False
 
 
-def module_is_translation_only_compat_adapter(tree: ast.Module, module_path: str) -> bool:
-    if not compat_adapter_module_scope(module_path):
+def module_is_translation_only_compat_adapter(
+    tree: ast.Module,
+    context: CompatibilityCandidateContext,
+) -> bool:
+    if not is_compatibility_adapter_candidate(context):
         return False
     callables: list[str] = []
     for node in tree.body:
