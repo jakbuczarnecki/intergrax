@@ -312,3 +312,58 @@ def synthetic_public_stable_missing_version() -> VersionPolicyClassification:
 
 def synthetic_public_stable_explicit_version() -> VersionPolicyClassification:
     return classify_inventory_surface(_synthetic_public_stable_record("foo.v1"))
+
+
+def _synthetic_public_stable_inherited_envelope_record(
+    *,
+    compatibility_policy_owner: str,
+    current_version: str,
+):
+    from tests.qualification.compat_x._compat_x_types import (
+        CompatDomain,
+        CompatSurfaceRecord,
+        EvolutionState,
+        MigrationMechanismClass,
+        ShimClass,
+    )
+
+    return CompatSurfaceRecord(
+        surface_id="synthetic.r1.public.inherited_envelope_probe",
+        semantic_identity="synthetic.public.inherited_envelope_probe",
+        domain=CompatDomain.COMPAT_SHIM,
+        owner_module_path="synthetic/r1_inherited_probe.py",
+        contract_schema_identity="SyntheticInheritedPublicAdapter",
+        exposure_facets=frozenset(
+            {ExposureFacet.PUBLIC_STABLE, ExposureFacet.COMPATIBILITY_ADAPTER},
+        ),
+        persistence_wire="wire_or_transient",
+        version_source="synthetic:inherited_envelope",
+        current_version=current_version,
+        compatibility_policy_owner=compatibility_policy_owner,
+        migration_owner_path="UNOWNED",
+        deprecation_owner_path="UNOWNED",
+        plugin_provider_relevant=False,
+        tenant_relevant=False,
+        evolution_states=frozenset({EvolutionState.VERSIONED_AND_POLICY_DEFINED}),
+        migration_class=MigrationMechanismClass.NOT_APPLICABLE,
+        shim_class=ShimClass.BOUNDED_MIGRATION_ADAPTER,
+        evidence_paths=("synthetic",),
+    )
+
+
+def synthetic_public_stable_inherited_envelope_resolved() -> VersionPolicyClassification:
+    return classify_inventory_surface(
+        _synthetic_public_stable_inherited_envelope_record(
+            compatibility_policy_owner="intergrax/contracts/migrations/registry.py",
+            current_version="synthetic.envelope.v1",
+        )
+    )
+
+
+def synthetic_public_stable_inherited_envelope_unresolved() -> VersionPolicyClassification:
+    return classify_inventory_surface(
+        _synthetic_public_stable_inherited_envelope_record(
+            compatibility_policy_owner="synthetic/unowned_envelope.py",
+            current_version="",
+        )
+    )

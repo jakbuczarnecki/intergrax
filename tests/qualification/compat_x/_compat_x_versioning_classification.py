@@ -137,6 +137,9 @@ def compute_version_identity_compliance(
     }:
         return VersionIdentityCompliance.NO_VERSION_REQUIRED
     if obligation == VersionObligation.VERSION_INHERITED_FROM_CANONICAL_ENVELOPE:
+        cv = (record.current_version or "").strip()
+        if disposition != VersionAuthorityDisposition.INHERITED_VERSION_OWNER or not cv or cv.lower() == "unknown":
+            return VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING
         return VersionIdentityCompliance.VERSION_INHERITED_AND_RESOLVED
     if r1_compliance == R1ComplianceState.BLOCKED_R2_VALIDATION:
         return VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING
@@ -188,8 +191,11 @@ def classify_inventory_surface(record: CompatSurfaceRecord) -> VersionPolicyClas
         obligation = VersionObligation.EXPLICIT_VERSION_REQUIRED
         deferral = LaterStageDeferral.R4_PLUGIN_PROVIDER
     elif ExposureFacet.COMPATIBILITY_ADAPTER in record.exposure_facets:
-        obligation = VersionObligation.INTERNAL_NON_VERSIONED_ALLOWED
-        field_role = VersionFieldRole.NOT_APPLICABLE
+        if ExposureFacet.PUBLIC_STABLE in record.exposure_facets:
+            obligation = VersionObligation.VERSION_INHERITED_FROM_CANONICAL_ENVELOPE
+        else:
+            obligation = VersionObligation.INTERNAL_NON_VERSIONED_ALLOWED
+            field_role = VersionFieldRole.NOT_APPLICABLE
     elif surface_id.startswith("semantic.migration:"):
         obligation = VersionObligation.NOT_APPLICABLE
         deferral = LaterStageDeferral.R2_PERSISTED_MIGRATION

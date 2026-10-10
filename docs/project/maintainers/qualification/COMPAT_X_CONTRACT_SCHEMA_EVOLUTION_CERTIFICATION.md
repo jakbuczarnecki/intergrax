@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **REJECTED / superseded by R1-R2** @ `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` · **COMPAT-X-R1-R2** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X-R1** = **BLOCKED ON R1-R2 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **REJECTED / superseded by R1-R2** @ `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` · **COMPAT-X-R1-R2** = **REJECTED / superseded by R1-R3** @ `bc6b46b7c300d1db12ba664d327b339a75762532` · **COMPAT-X-R1-R3** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X-R1** = **BLOCKED ON R1-R3 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
 
 **Branch:** `development`
 
@@ -206,6 +206,8 @@ Canonical rules (see `PLATFORM_POLICY_CANON` in policy module):
 | --- | --- |
 | `EXPLICIT_VERSION_REQUIRED` | Surface must carry or inherit explicit schema/contract version identity |
 | `VERSION_INHERITED_FROM_CANONICAL_ENVELOPE` | Version owned by enclosing canonical envelope |
+
+**SemanticSurfaceIdentity vs VersionIdentity (R1-R3):** `SemanticSurfaceIdentity` identifies *which contract/surface* (e.g. `class.field:<module>:<class>:<field>`). `VersionIdentity` / `current_version` identifies *which generation* of that surface; it is an attribute of semantic identity, never a substitute for it.
 | `INTERNAL_NON_VERSIONED_ALLOWED` | Internal/adapter surface — no canonical version authority |
 | `NOT_APPLICABLE` | Business/concurrency/deployment version fields ≠ schema evolution |
 
@@ -321,6 +323,34 @@ NO
 
 **FRZ-CMP-02:** PASS CANDIDATE pending independent exact-SHA audit; checklist row remains **OPEN**.
 
+**Independent exact-SHA audit rejection @ `bc6b46b7c300d1db12ba664d327b339a75762532`:** static resolution correct, but semantic identity became version-value-derived (`schema.literal:<version>`) and collapsed 9 surfaces vs accepted P0 (`1879` → `1870`); inherited-version adversarial coverage incomplete (`pytest.skip` on mandatory probe).
+
+## COMPAT-X-R1-R3 — Semantic Surface Identity Preservation & Inherited-Version Gate Closure
+
+**Rejected baseline (do not use):** `bc6b46b7c300d1db12ba664d327b339a75762532`
+
+**Fix:** class version fields keep contract-specific `class.field:<module_path>:<class_name>:<field_name>` semantic identity; resolved version lives in `current_version` + `version_source` only (static resolution preserved).
+
+**ProofReceipt:** `semantic_identity` = `class.field:intergrax/proofs/receipts/contracts.py:ProofReceipt:schema_version`; `current_version` = `intergrax.proof_receipt.v1`; `version_source` = `PROOF_RECEIPT_SCHEMA_VERSION→ProofReceipt.schema_version`.
+
+**Inherited-version gates:** synthetic `PUBLIC_STABLE` + `COMPATIBILITY_ADAPTER` probes — resolved canonical envelope owner/version ⇒ PASS; unresolved envelope authority ⇒ FAIL (no inventory skip).
+
+**Closed-world reconciliation (accepted P0 vs R1-R3 corrected inventory):**
+
+| Metric | Accepted P0 @ `0612c2a7…` | Rejected R1-R2 @ `bc6b46b7…` | R1-R3 corrected |
+|--------|---------------------------|------------------------------|-----------------|
+| raw candidates | 7266 | 7266 | 7266 |
+| semantic surfaces | 1879 | 1870 | 1977 |
+| exclusions | 5289 | 5289 | 5289 |
+| unclassified | 0 | 0 | 0 |
+| cross-contract `schema.literal` merge | 98 (legacy P0) | 107 (R1-R2 regression) | 0 |
+| split vs accepted P0 | — | — | +98 (contract-specific identities) |
+| R1-R2 regression vs P0 | — | −9 | restored |
+
+**Adversarial probes:** `test_compat_x_versioning_r1_r3_identity_gates.py` (A–D + reconciliation); `test_compat_x_versioning_r1_gates.py` (inherited K/L synthetic).
+
+**FRZ-CMP-02:** PASS CANDIDATE pending independent exact-SHA audit; checklist row remains **OPEN**.
+
 ### Authority graph (post R1-R1)
 
 ```text
@@ -338,8 +368,9 @@ COMPAT-X-P0-R2 = REJECTED / superseded by accepted R3
 COMPAT-X-P0-R3 = CLOSED / independently accepted
 COMPAT-X-P0   = CLOSED / independently accepted
 COMPAT-X-R1-R1 = REJECTED / superseded by R1-R2 @ 1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6
-COMPAT-X-R1-R2 = READY FOR AUDIT
-COMPAT-X-R1   = BLOCKED ON R1-R2 AUDIT
+COMPAT-X-R1-R2 = REJECTED / superseded by R1-R3 @ bc6b46b7c300d1db12ba664d327b339a75762532
+COMPAT-X-R1-R3 = READY FOR AUDIT
+COMPAT-X-R1   = BLOCKED ON R1-R3 AUDIT
 COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION
 COMPAT-X-R2   = NOT ENTERED
 TENANT-X      = NOT ENTERED

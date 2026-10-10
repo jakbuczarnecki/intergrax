@@ -201,8 +201,6 @@ def _ast_candidates_for_module(module_path: str, source: str) -> list[DiscoveryC
     for signal in extract_class_version_fields(module_path, tree):
         version = signal.version_literal or "unknown"
         identity = f"class.field:{module_path}:{signal.class_name}:{signal.field_name}"
-        if signal.version_literal:
-            identity = f"schema.literal:{signal.version_literal}"
         version_source = f"{module_path}:{signal.class_name}.{signal.field_name}"
         if signal.resolved_via_constant is not None:
             version_source = f"{module_path}:{signal.resolved_via_constant}→{version_source}"

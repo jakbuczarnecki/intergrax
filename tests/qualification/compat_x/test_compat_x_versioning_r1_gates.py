@@ -130,39 +130,44 @@ def test_cx_r1_r2_adversarial_j_public_version_present_r2_deferral_passes_r1_ide
     assert clf.later_stage_deferral in {LaterStageDeferral.NOT_APPLICABLE, LaterStageDeferral.R2_PERSISTED_MIGRATION}
 
 
-def test_cx_r1_r2_adversarial_k_public_inherited_resolved_passes() -> None:
-    inherited = [
-        r for r in COMPAT_X_INVENTORY if ExposureFacet.PUBLIC_STABLE in r.exposure_facets
-    ]
-    for row in inherited:
-        clf = classify_inventory_surface(row)
-        if clf.version_obligation != VersionObligation.VERSION_INHERITED_FROM_CANONICAL_ENVELOPE:
-            continue
-        assert clf.version_identity_compliance == VersionIdentityCompliance.VERSION_INHERITED_AND_RESOLVED
-        assert classification_r1_qualification_passes(clf, row) is True
-        return
-    pytest.skip("no public inherited envelope surface in current inventory")
+def test_cx_r1_r3_adversarial_k_public_inherited_resolved_passes() -> None:
+    from tests.qualification.compat_x._compat_x_versioning_gates import (
+        _synthetic_public_stable_inherited_envelope_record,
+        synthetic_public_stable_inherited_envelope_resolved,
+    )
+
+    record = _synthetic_public_stable_inherited_envelope_record(
+        compatibility_policy_owner="intergrax/contracts/migrations/registry.py",
+        current_version="synthetic.envelope.v1",
+    )
+    clf = synthetic_public_stable_inherited_envelope_resolved()
+    assert clf.version_obligation == VersionObligation.VERSION_INHERITED_FROM_CANONICAL_ENVELOPE
+    assert clf.version_identity_compliance == VersionIdentityCompliance.VERSION_INHERITED_AND_RESOLVED
+    assert classification_r1_qualification_passes(clf, record) is True
 
 
-def test_cx_r1_r2_adversarial_l_public_unresolved_identity_in_noncompliant_list() -> None:
-    from tests.qualification.compat_x._compat_x_versioning_gates import _synthetic_public_stable_record
+def test_cx_r1_r3_adversarial_l_public_inherited_unresolved_fails() -> None:
+    from tests.qualification.compat_x._compat_x_versioning_gates import (
+        _synthetic_public_stable_inherited_envelope_record,
+        synthetic_public_stable_inherited_envelope_unresolved,
+    )
 
-    record = _synthetic_public_stable_record("")
-    clf = synthetic_public_stable_missing_version()
-    assert clf.version_identity_compliance in {
-        VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING,
-        VersionIdentityCompliance.BLOCKED_LATER_STAGE,
-    }
+    record = _synthetic_public_stable_inherited_envelope_record(
+        compatibility_policy_owner="synthetic/unowned_envelope.py",
+        current_version="",
+    )
+    clf = synthetic_public_stable_inherited_envelope_unresolved()
+    assert clf.version_obligation == VersionObligation.VERSION_INHERITED_FROM_CANONICAL_ENVELOPE
+    assert clf.version_identity_compliance == VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING
     assert classification_r1_qualification_passes(clf, record) is False
-    noncompliant_ids = {sid for sid, _ in public_stable_noncompliant_version_surfaces()}
-    assert "synthetic.r1.public.version_probe" not in noncompliant_ids
 
 
 def test_cx_r1_r2_adversarial_m_proof_receipt_production_surface() -> None:
     proof_rows = [
         r
         for r in COMPAT_X_INVENTORY
-        if r.semantic_identity == "schema.literal:intergrax.proof_receipt.v1"
+        if r.semantic_identity
+        == "class.field:intergrax/proofs/receipts/contracts.py:ProofReceipt:schema_version"
         and r.owner_module_path == "intergrax/proofs/receipts/contracts.py"
     ]
     assert proof_rows, "ProofReceipt.schema_version must appear in closed-world inventory"

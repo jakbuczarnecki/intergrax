@@ -137,7 +137,11 @@ def test_cx_p0_frz_cmp_02_versioning_policy_r1_defined() -> None:
 def test_cx_p0_r1_adversarial_01_class_field_without_module_constant_discovered() -> None:
     found = discover_class_field_versions_from_source(SYNTHETIC_MODULE_PATH_PUBLIC, SYNTHETIC_PUBLIC_CONTRACT_SOURCE)
     assert any("SyntheticPublicContract" in c.discovered_signal for c in found)
-    assert any(c.semantic_identity == "schema.literal:synthetic.v1" for c in found)
+    assert any(
+        c.semantic_identity
+        == "class.field:synthetic/qualification/public_contract_probe.py:SyntheticPublicContract:schema_version"
+        for c in found
+    )
 
 
 def test_cx_p0_r1_adversarial_02_omitted_public_contract_breaks_parity() -> None:
@@ -148,7 +152,9 @@ def test_cx_p0_r1_adversarial_02_omitted_public_contract_breaks_parity() -> None
 
     extra = tuple(discover_candidates_from_source(SYNTHETIC_MODULE_PATH_PUBLIC, SYNTHETIC_PUBLIC_CONTRACT_SOURCE))
     assert extra
-    identity = "schema.literal:synthetic.v1"
+    identity = (
+        "class.field:synthetic/qualification/public_contract_probe.py:SyntheticPublicContract:schema_version"
+    )
     with_extra = build_closed_world_report_with_extra_candidates(extra)
     assert identity in {s.semantic_identity for s in with_extra.semantic_surfaces}
     base = build_closed_world_report()
