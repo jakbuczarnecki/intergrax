@@ -6,7 +6,7 @@
 | **Child** | `TRACE-X-P5-R2-R1` (adversarial E2E evidence reconciliation) |
 | **Audited SHA (parent baseline)** | `c74c8e0005a85ccb0d302df64e1798e0a8e6e632` |
 | **START_HEAD (R1)** | `c74c8e0005a85ccb0d302df64e1798e0a8e6e632` |
-| **FINAL_COMMIT** | Evidence tip on `development` (exact SHA = `git rev-parse` of qualification bundle commit) |
+| **FINAL_COMMIT** | `9f7f38f55` (qualification bundle on `development`) |
 | **TRACE-X-P5-R2** | **BLOCKED ON R1** |
 | **TRACE-X-P5-R2-R1** | **READY FOR AUDIT** |
 | **FRZ-TRC-11** | **OPEN** (no PASS promotion) |
