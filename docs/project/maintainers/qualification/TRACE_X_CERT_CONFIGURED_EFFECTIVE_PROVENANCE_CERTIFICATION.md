@@ -6,7 +6,7 @@
 | **Parent** | `TRACE-X` / `TRACE-X-P5-R2` |
 | **Certification subject** | Every supported production **CONFIGURED_ADOPTED** execution proves exact, durable, tenant-preserving, historically reconstructable configured/effective provenance — fail-closed under missing/corrupt/ambiguous evidence; no alternate semantic owner; no production bypass |
 | **START_HEAD** | `53265fa6dbe3975359967f0db8c7581b55fa4632` (audited branch tip at CERT entry) |
-| **FINAL_COMMIT** | *(set at docs bookkeeping commit after this record)* |
+| **FINAL_COMMIT** | `69d8b111e8d2f6717b75d866d3738a0106d00304` |
 | **TRACE-X-CERT** | **READY FOR AUDIT** |
 | **TRACE-X-P5-R2** | **CLOSED / independently accepted** (P0–P4 + closed-world + R1 evidence incorporated) |
 | **TRACE-X-P5-R2-R1** | **CLOSED / independently accepted** @ `831011d9c92bb6478f672d295792fc36eb0d4f73` |
