@@ -15,7 +15,7 @@
 |---|---|
 | Audited rejection baseline (R1-R1 independent verdict) | `f21ffbae04b12686784933ef6926764198c19201` |
 | Blocker 32 resolved (production wiring) | `f21ffbae04b12686784933ef6926764198c19201` |
-| Blockers 33–35 closure (this child) | `90bfa980d2f6d445f6300fce729247e5400de648` |
+| Blockers 33–35 closure (this child) | `89412d066f25b1f2679c9defa0582b53acba0761` |
 
 ## Blocker disposition
 
