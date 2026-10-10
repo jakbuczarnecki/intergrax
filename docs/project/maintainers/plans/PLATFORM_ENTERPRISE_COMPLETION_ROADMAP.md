@@ -213,6 +213,7 @@ Minimum planned linkage:
 | EBH-7 | all enterprise families | TEN |
 | ENT-AUDIT-X | all enterprise families as audit coverage + REG + FRZ + DEBT + DOC + **TEN** (cross-family executable audit evidence; not necessarily primary semantic closer per family) | TEN (executable continuous enforcement) |
 | ARCH-FREEZE | FRZ, DEBT, DOC + all remaining | TEN (final acceptance) |
+| **SCENARIO-READINESS-X** | product/delivery readiness validation (post-freeze reference scenario; consumes frozen contracts — no new platform authority; FRZ families not extended by this roadmap amendment) | TEN |
 
 ### 2.1 Required instruction header
 
@@ -376,8 +377,9 @@ If a new blocker is discovered:
 | **ROADMAP-REPLAY-X** | Full Program Current-HEAD Revalidation | **FINAL / MANDATORY** — Re-run the complete enterprise roadmap from the earliest relevant stage to current HEAD and prove that later changes have not invalidated earlier certifications or reopened architecture drift. Every historical CLOSED stage is evidence, not automatic current PASS; revalidate original invariants and exit criteria; later changes must not invalidate earlier ownership/boundaries/contracts/authority; stale evidence and stale assumptions must be detected; a real violation reopens the affected historical semantic parent; replay remains BLOCKED while any reopened stage is unresolved. **Mechanical prerequisites:** `reopened historical stages` = 0; `unresolved replay blockers` = 0; `roadmap drift` = 0; `historical evidence invalidated by later changes` = 0; `unclassified replay findings` = 0. **Depends on:** `DUP-X`. **Next:** `EBH-7`. | **[ ] FINAL / MANDATORY** |
 | **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior, **and end-to-end tenant isolation proven on current HEAD across subsystem boundaries — not inferred from individual component closure alone**. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6** and **`ROADMAP-REPLAY-X` = CLOSED**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. | **[ ] FINAL / MANDATORY** |
 | **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after final enterprise certification, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates instead of duplicating them; adds cross-cutting static/structural checks; one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X`. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`SKILL-X` = CLOSED** (independent exact-SHA evidence; scope per §3.0.4); **`TOOL-LIFE-X` = CLOSED** (independent exact-SHA evidence; lifecycle scope per §3.0.5); **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.6); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
-| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED** or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, and **freeze-SHA enterprise audit = PASS**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `ARCH-FREEZE`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`SKILL-X` = CLOSED** (independent exact-SHA evidence; scope per §3.0.4); **`TOOL-LIFE-X` = CLOSED** (independent exact-SHA evidence; lifecycle scope per §3.0.5); **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.6); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). **Next mandatory stage after closure:** **`SCENARIO-READINESS-X`**. | **[ ] FINAL / MANDATORY** |
+| **SCENARIO-READINESS-X** | Scenario Delivery Velocity & Boundary Integration Certification | **Mandatory post-freeze pre-scenario validation.** Answers: *On formally frozen Intergrax, can a real business process be built and run very quickly as a thin, separately deployable component between existing customer systems—without core platform changes, scenario-local bypasses, or new platform mechanisms?* Reference validation scenario: **business settlement / reconciliation** through boundary adapters and typed contracts (not a specific customer production rollout). Certifies boundary-integrated deployment, typed input/output, deterministic-first rules, platform HITL/trace/evidence reuse, delivery-velocity metrics, friction inventory/classification, and **Intergrax Scenario Delivery Kit** standardization analysis. **Depends on:** **`ARCH-FREEZE` = CLOSED**. **Next:** **`SCENARIO-GATE`**. Full scope, metrics, acceptance criteria, friction taxonomy, frozen-architecture rule, and relationship to scenario program: §3.0.7. **Implementation status:** docs/plan only — **not started**; **production delta = 0** until implementation waves are explicitly opened. | **[ ] PLANNED / MANDATORY** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **`SCENARIO-READINESS-X` does not start scenario-driven platform development** — it certifies post-freeze delivery readiness; only **`SCENARIO-READINESS-X` = CLOSED** enables entry to the formal scenario program opened by this gate. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED**, **`SCENARIO-READINESS-X` ≠ CLOSED**, or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`SCENARIO-READINESS-X` = CLOSED**, **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, **freeze-SHA enterprise audit = PASS**, and **unresolved platform-level architecture blockers discovered during `SCENARIO-READINESS-X` = 0**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `ARCH-FREEZE`, `SCENARIO-READINESS-X`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
 
 ### 3.0.1 Transferred Scenario #24 capabilities — mandatory order before EBH-3 / EBH-4
 
@@ -494,7 +496,7 @@ earlier correctness / production certifications
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary platform question:**
@@ -607,7 +609,7 @@ earlier correctness / production certifications
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary platform question:**
@@ -815,7 +817,7 @@ CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary business / platform question:**
@@ -1042,6 +1044,201 @@ No silent fallback to unsafe provider/store.
 #### Implementation boundary (this roadmap revision)
 
 **`production delta = 0`** until explicit implementation waves are opened. Do not add load-test dependencies, Docker configs, benchmarks, chaos tooling, or production runtime changes as part of roadmap documentation alone.
+
+### 3.0.7 `SCENARIO-READINESS-X` — Scenario Delivery Velocity & Boundary Integration Certification
+
+**Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED; do **not** mark PASS until independent exact-SHA closure. Roadmap/plan authority only until then.
+
+**Position:** after **`ARCH-FREEZE`**, before **`SCENARIO-GATE`**.
+
+**Dependencies:** **`ARCH-FREEZE` = CLOSED**.
+
+**Next mandatory stage:** **`SCENARIO-GATE`**.
+
+**Canonical late-stage dependency chain (tail):**
+
+```text
+… → DIST-SCALE-X
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE
+→ SCENARIO-READINESS-X
+→ SCENARIO-GATE
+```
+
+**Primary platform question:**
+
+> Czy na formalnie zamrożonym Intergrax można bardzo szybko zbudować i uruchomić realny proces biznesowy jako cienki, osobno deployowalny komponent pomiędzy istniejącymi systemami klienta — bez zmian core platformy, bez scenario-local bypassów i bez tworzenia nowych mechanizmów platformowych?
+
+This stage runs **after** architecture freeze. It is **not** a customer production rollout and **not** the start of scenario-driven platform development. It is a **reference scenario-readiness test** of the frozen platform.
+
+#### Reference validation scenario
+
+**Business settlement / reconciliation** (illustrative — not a frozen domain model):
+
+```text
+existing customer system / file / API
+        ↓
+input adapter
+        ↓
+typed scenario input
+        ↓
+Intergrax scenario
+        ↓
+deterministic rules / reconciliation
+        ↓
+exception classification
+        ↓
+optional HITL
+        ↓
+typed output
+        ↓
+output adapter
+        ↓
+existing customer system
+```
+
+#### Boundary model
+
+Intergrax must operate as a **component of an existing process**, not as a replacement for the whole customer environment:
+
+```text
+CUSTOMER SYSTEM A
+      ↓
+boundary adapter
+      ↓
+INTERGRAX SCENARIO COMPONENT
+      ↓
+boundary adapter
+      ↓
+CUSTOMER SYSTEM B
+```
+
+External systems remain external. The scenario must consume **platform-defined contracts** only — no scenario-local execution/governance/provider/configuration authority.
+
+#### Reference business flow (validation only)
+
+Example reconciliation steps (names are illustrative, not canonical domain types):
+
+1. przyjęcie danych rozliczeniowych / godzin / wykonania;
+2. przyjęcie faktury lub dokumentu kosztowego;
+3. normalizacja danych;
+4. identyfikacja kontrahenta / okresu / kontraktu / stawki;
+5. wyliczenie expected amount;
+6. porównanie expected vs submitted amount;
+7. klasyfikacja: `MATCH`, `HOURS_MISMATCH`, `AMOUNT_MISMATCH`, `UNKNOWN_CONTRACTOR`, `MISSING_RATE`, `MISSING_DOCUMENT`, `DUPLICATE`;
+8. poprawne rekordy → downstream output;
+9. exceptions → HITL / review;
+10. wygenerowanie typed output;
+11. pełne trace/evidence.
+
+#### Scenario deployment (expected delivery shape — non-prescriptive)
+
+The stage must require a **reference deployment package** runnable independently of core platform development. Example layout (roadmap does **not** mandate CLI or final directory structure):
+
+```text
+scenario/
+    contracts/
+    rules/
+    adapters/
+    configuration/
+    tests/
+    fixtures/
+    docker/
+```
+
+Reproducible local deployment example: `docker compose up` (or equivalent — not frozen here).
+
+#### Deterministic-first invariant
+
+```text
+deterministic business logic
+must remain deterministic
+```
+
+LLM/agent is **not** required when the problem is unambiguous and rule-based. AI may be used only where genuine ambiguity exists, e.g. document interpretation, fuzzy matching, classification of unstructured descriptions, exception-resolution recommendations. AI must **not** replace simple deterministic rules without justification.
+
+#### Primary product metric — delivery velocity
+
+Proving that a reference scenario **works** is insufficient. The stage must **measure speed of deploying a new process**.
+
+**Required metrics (minimum):**
+
+- `Time to First Running Scenario`;
+- `Time to Reproducible Local Deployment`;
+- liczba zmian w core Intergrax;
+- liczba nowych mechanizmów platformowych;
+- ilość scenario-specific code;
+- ilość adapter-specific code;
+- udział konfiguracji / deklaratywnego opisu;
+- reuse istniejących platform capabilities;
+- czas wymiany jednego external adaptera;
+- liczba manual deployment steps;
+- liczba friction points utrudniających szybkie wdrożenie.
+
+**Targets during reference validation:**
+
+```text
+core platform changes target: 0
+new scenario-local platform mechanisms target: 0
+```
+
+#### Friction classification (exactly one per finding)
+
+```text
+PLATFORM DEFICIENCY
+TOOLING / DX DEFICIENCY
+ADAPTER / INTEGRATION WORK
+BUSINESS-SCENARIO WORK
+DEPLOYMENT / OPERABILITY DEFICIENCY
+STOP — FROZEN ARCHITECTURE VIOLATION
+```
+
+Platform deficiencies must **not** be masked as scenario-local workarounds.
+
+#### Frozen architecture rule
+
+`SCENARIO-READINESS-X` operates on **frozen** core architecture. If the reference scenario requires changing frozen core architecture:
+
+```text
+STOP — FROZEN ARCHITECTURE VIOLATION
+```
+
+Use the formal freeze-exception / ADR / recertification process. Do **not** patch core inside scenario validation.
+
+#### Intergrax Scenario Delivery Kit (expected analysis output — not implemented in this stage)
+
+The stage must produce an analysis of what should be standardized as **`Intergrax Scenario Delivery Kit`** (implementation deferred), e.g. whether the program needs: scenario template; typed input/output templates; adapter template; rules module convention; fixture convention; qualification template; Docker/local deployment template; environment/configuration template; one-command validation/deployment workflow — to reduce future `time-to-running-scenario`.
+
+#### Relationship to `SCENARIO-GATE`
+
+`SCENARIO-READINESS-X` **does not** open scenario-driven platform development. Only **`SCENARIO-READINESS-X` = CLOSED** permits entry to **`SCENARIO-GATE`**, which remains the formal boundary opening the real scenario program.
+
+#### Exit criteria (`SCENARIO-READINESS-X` = CLOSED only when all hold)
+
+1. frozen Intergrax core delta = 0;
+2. reference scenario runs as a separately deployable component;
+3. input has typed contract;
+4. output has typed contract;
+5. external systems are behind adapters/contracts;
+6. an adapter can be swapped without changing core scenario logic;
+7. deterministic rules use deterministic mechanisms;
+8. HITL uses existing platform mechanisms;
+9. trace/evidence uses existing platform mechanisms;
+10. Governance/Execution boundaries remain intact;
+11. tenant boundary remains intact;
+12. no scenario-local execution/governance/provider/configuration authority;
+13. no duplicated mechanisms;
+14. no bypasses;
+15. clean local deployment is reproducible;
+16. full E2E can run automatically;
+17. `Time to First Running Scenario` measured;
+18. `Time to Reproducible Deployment` measured;
+19. friction points inventoried;
+20. every friction point classified (taxonomy above);
+21. unresolved platform-level architecture blockers = 0 before `SCENARIO-GATE`.
+
+#### Implementation boundary (this roadmap revision)
+
+**`production delta = 0`** until explicit implementation waves are opened. This roadmap amendment does not implement the reference scenario, adapters, Docker, templates, or runtime changes.
 
 ### 3.1 `ENT-AUDIT-X` — Continuous Enterprise Architecture Audit System
 
@@ -1306,7 +1503,9 @@ Update this section only after independent exact-SHA audit.
 | TOOL-LIFE-X | — | PLANNED / MANDATORY — Tool execution lifecycle, timeout, cancellation & retry certification (`SKILL-X` → `TOOL-LIFE-X` → `DIST-SCALE-X`); full scope §3.0.5; **not started**; **production delta = 0** until implementation opened. |
 | DIST-SCALE-X | — | PLANNED / MANDATORY — cross-platform data-intensive distributed scale & resilience certification (`TOOL-LIFE-X` → `DIST-SCALE-X` → `EBH-5`); full scope §3.0.6; mandatory before `ARCH-FREEZE`; **production delta = 0** until implementation opened; not started. |
 | ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE; exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
-| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. |
+| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. **Next:** `SCENARIO-READINESS-X`. |
+| SCENARIO-READINESS-X | — | PLANNED / MANDATORY — post-freeze scenario delivery velocity & boundary integration certification (`ARCH-FREEZE` → `SCENARIO-READINESS-X` → `SCENARIO-GATE`); full scope §3.0.7; **not started**; **production delta = 0** until implementation opened. |
+| SCENARIO-GATE | — | BLOCKED — formal Enterprise → Scenario transition; requires `SCENARIO-READINESS-X` = CLOSED among other mandatory prerequisites (§3). |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
@@ -1413,7 +1612,39 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X`);
 - exact-SHA enterprise audit baseline recorded at `ARCH-FREEZE`;
 - actionable enterprise drift report available on demand;
-- formal `ARCH-FREEZE` (checklist-complete, green freeze-SHA enterprise audit) before `SCENARIO-GATE`;
+- formal `ARCH-FREEZE` (checklist-complete, green freeze-SHA enterprise audit) before `SCENARIO-READINESS-X`;
+- post-freeze scenario delivery readiness certified through a real boundary-integrated reference process;
+- scenario time-to-first-run and deployment friction measured before `SCENARIO-GATE`;
+- frozen platform proven capable of rapidly composing customer-process automation without core modifications;
+- `SCENARIO-READINESS-X` = CLOSED before `SCENARIO-GATE`;
 - scenario-driven platform evolution continuously audited against the accepted baseline;
 - new violations of frozen invariants remediated before accepting further platform evolution;
 - after freeze, any change to a frozen contract/boundary/ownership rule requires ADR, architecture review, explicit freeze exception, targeted recertification and scenario-wave drift audit where applicable.
+
+---
+
+### Post-Step Enterprise Discovery & Roadmap Completeness Audit (roadmap amendment — `SCENARIO-READINESS-X`)
+
+```text
+New current-parent blockers:
+none — roadmap-only amendment
+
+New future mandatory debt:
+SCENARIO-READINESS-X — mandatory post-freeze pre-scenario validation
+
+New candidate roadmap stages:
+SCENARIO-READINESS-X
+
+FRZ coverage gaps:
+none introduced by this documentation-only amendment; stage is product/delivery readiness validation unless future audit determines a freeze criterion is required
+
+New ownership / boundary / authority concerns:
+none — scenario readiness must consume frozen platform contracts and may not create new platform authority
+
+Roadmap amendment required:
+YES — SCENARIO-READINESS-X inserted between ARCH-FREEZE and SCENARIO-GATE
+```
+
+**Classification:** `NEW ROADMAP STAGE REQUIRED`
+
+**Cursor stage status (this amendment):** `READY FOR AUDIT` — not `CLOSED`.
