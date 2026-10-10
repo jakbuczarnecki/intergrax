@@ -25,7 +25,8 @@ from tests.qualification.trace_x._trace_x_p6_restart_resume_classification impor
     compare_restart_resume_registry,
 )
 from tests.qualification.trace_x._trace_x_p6_semantic_owner_discovery import (
-    discover_semantic_owners,
+    compare_semantic_owner_gate,
+    discover_owner_candidates,
 )
 from tests.qualification.trace_x._trace_x_p6_terminal_producer_classification import (
     TERMINAL_PRODUCER_REGISTRY,
@@ -131,11 +132,44 @@ def test_txp6_q09_no_production_bypass_restart_resume() -> None:
     assert bypass == []
 
 
-def test_txp6_q10_semantic_owner_matrix_counts() -> None:
-    for concern, expected_count in P6_SEMANTIC_OWNER_MATRIX:
-        actual = discover_semantic_owners(concern)
-        assert len(actual) == expected_count, (concern, actual)
-        assert all(owner.strip() for owner in actual)
+def test_txp6_q10_semantic_owner_discovery_exact_parity() -> None:
+    for concern, expected_owners in P6_SEMANTIC_OWNER_MATRIX:
+        result = compare_semantic_owner_gate(concern)
+        assert result.ok, (
+            concern,
+            result.expected_owner_set,
+            result.discovered_owner_set,
+        )
+        assert discover_owner_candidates(concern) == expected_owners
+        assert all(owner.strip() for owner in result.discovered_owner_set)
+
+
+def test_txp6_q15_negative_sensitivity_terminal_truth_duplicate_owner() -> None:
+    concern = "terminal state truth owner"
+    baseline = compare_semantic_owner_gate(concern)
+    assert baseline.ok
+    synthetic = frozenset({"intergrax/runtime/synthetic_p6_duplicate_terminal_truth_owner.py"})
+    failed = compare_semantic_owner_gate(concern, extra_discovered=synthetic)
+    assert synthetic.issubset(failed.discovered_owner_set)
+    assert not failed.ok
+
+
+def test_txp6_q16_negative_sensitivity_resume_coordination_duplicate_owner() -> None:
+    concern = "resume coordination owner"
+    baseline = compare_semantic_owner_gate(concern)
+    assert baseline.ok
+    synthetic = frozenset({"intergrax/runtime/synthetic_p6_duplicate_resume_coordinator.py"})
+    failed = compare_semantic_owner_gate(concern, extra_discovered=synthetic)
+    assert not failed.ok
+
+
+def test_txp6_q17_negative_sensitivity_retry_orchestration_duplicate_owner() -> None:
+    concern = "retry orchestration owner"
+    baseline = compare_semantic_owner_gate(concern)
+    assert baseline.ok
+    synthetic = frozenset({"intergrax/runtime/synthetic_p6_duplicate_retry_orchestrator.py"})
+    failed = compare_semantic_owner_gate(concern, extra_discovered=synthetic)
+    assert not failed.ok
 
 
 def test_txp6_q11_negative_sensitivity_unregistered_restart_path() -> None:

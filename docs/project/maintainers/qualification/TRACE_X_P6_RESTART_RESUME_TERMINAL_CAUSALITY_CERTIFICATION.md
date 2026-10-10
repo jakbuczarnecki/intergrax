@@ -2,17 +2,22 @@
 
 | Field | Value |
 |---|---|
-| **Stage** | `TRACE-X-P6` / **`TRACE-X-P6-R1`** (fail-closed correction) |
+| **Stage** | `TRACE-X-P6` / **`TRACE-X-P6-R1`** / **`TRACE-X-P6-R1-R1`** (duplicate-owner discovery gate) |
 | **Parent** | `TRACE-X` |
-| **START_HEAD** | `e2deaee3efd7ee4e7d43414be3e76fe024a85408` |
+| **START_HEAD (P6)** | `e2deaee3efd7ee4e7d43414be3e76fe024a85408` |
+| **START_HEAD (R1-R1)** | `21f4aa38c68221bff56f893a8770d030e1c2ccf6` |
 | **Audited implementation (initial)** | `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` |
-| **FINAL_COMMIT** | `eee314330b926692291520af6c11f70faf878858` |
+| **Audited R1 qualification tip** | `96e70c354a5805953c85031c707f115e8dcd1129` |
+| **Audited R1 qualification (independent)** | `0ce1469f440f58938ceeeb0f7c9be347091206be` — **BLOCKED** (`P6-SEMANTIC-OWNER-DUPLICATE-DISCOVERY-03R`) |
+| **FINAL_COMMIT (R1-R1)** | `7522d6215b237a591991843a4e65969b96a94c51` |
 | **Independent verdict (initial P6)** | **REJECTED / BLOCKED** (permissive classification + non-mechanical owner matrix) |
-| **R1 blockers closed** | `P6-CLOSED-WORLD-PERMISSIVE-RESTART-CLASSIFICATION-01`, `P6-CLOSED-WORLD-PERMISSIVE-TERMINAL-CLASSIFICATION-02`, `P6-SEMANTIC-OWNER-MATRIX-NON-MECHANICAL-03` |
-| **FRZ-TRC-09** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT** — no self-PASS) |
-| **FRZ-TRC-10** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT** — no self-PASS) |
-| **TRACE-X-P6-R1** | **READY FOR AUDIT** |
-| **TRACE-X-P6** | **BLOCKED ON R1 AUDIT** |
+| **R1 blockers closed** | `P6-CLOSED-WORLD-PERMISSIVE-RESTART-CLASSIFICATION-01`, `P6-CLOSED-WORLD-PERMISSIVE-TERMINAL-CLASSIFICATION-02`, `P6-SEMANTIC-OWNER-MATRIX-NON-MECHANICAL-03` (partially remediated in R1; residual **03R** closed in R1-R1) |
+| **R1-R1 blockers closed** | `P6-SEMANTIC-OWNER-DUPLICATE-DISCOVERY-03R` |
+| **FRZ-TRC-09** | **OPEN / PASS CANDIDATE** (no self-PASS) |
+| **FRZ-TRC-10** | **OPEN / PASS CANDIDATE** (no self-PASS) |
+| **TRACE-X-P6-R1-R1** | **READY FOR AUDIT** |
+| **TRACE-X-P6-R1** | **BLOCKED ON R1-R1 AUDIT** |
+| **TRACE-X-P6** | **BLOCKED** |
 | **TRACE-X** | **CURRENT** |
 | **CONFIG-X** | **NOT ENTERED** |
 | **Production delta** | **0** |
@@ -61,27 +66,30 @@ Terminal roles use **module evidence** (`path` + AST/marker facts via `_trace_x_
 
 **Negative sensitivity:** `test_txp6_q11`–`test_txp6_q14` (registry unknown + classifier fail-closed for synthetic paths).
 
-## 4. Semantic owner matrix (mechanical)
+## 4. Semantic owner matrix (mechanical duplicate discovery, R1-R1)
 
-`discover_semantic_owners(concern)` in `_trace_x_p6_semantic_owner_discovery.py` — gated by `test_txp6_q10`:
+**Model:** `discover_owner_candidates(concern)` scans production modules (AST / responsibility-bearing symbols).  
+`P6_CANONICAL_OWNER_EXPECTATIONS` is the **expectation only** — gate `compare_semantic_owner_gate` asserts `discovered == expected` (`test_txp6_q10`).
 
-| Concern | Expected owners |
-|---|---:|
-| Execution identity owner | 1 |
-| Run identity owner | 1 |
-| Attempt identity owner | 1 |
-| checkpoint persistence owner | 1 |
-| resumability decision owner | 1 |
-| resume coordination owner | 1 |
-| resume admission tenant/identity validation owner | 2 |
-| retry policy owner | 1 |
-| retry orchestration owner | 1 |
-| terminal state truth owner | 1 |
-| terminal RuntimeEvent/evidence owner | 1 |
-| failure reconstruction owner | 1 |
-| parent-child causality owner | 1 |
+| Concern | Discovered == expected (modules) |
+|---|---|
+| Execution identity owner | `intergrax/contracts/execution_identity.py` |
+| Run identity owner | `intergrax/runtime/execution/identity_authority.py` |
+| Attempt identity owner | `intergrax/runtime/execution/attempt_lifecycle/service.py` |
+| checkpoint persistence owner | `intergrax/runtime/long_running/store.py` |
+| resumability decision owner | `intergrax/runtime/cancellation/resume_admission.py` |
+| resume coordination owner | `intergrax/runtime/long_running/scheduler.py` |
+| resume admission tenant/identity validation owner | `resume_admission.py` + `reentry_admission.py` (distinct admission boundaries) |
+| retry policy owner | `intergrax/runtime/execution/retry/policy.py` |
+| retry orchestration owner | `intergrax/runtime/nexus/retry/coordinator.py` |
+| terminal state truth owner | `intergrax/runtime/execution/execution_terminal/service.py` (`ExecutionTerminalService.commit_terminal_outcome`) |
+| terminal RuntimeEvent/evidence owner | `intergrax/runtime/events/trace_bridge.py` |
+| failure reconstruction owner | `intergrax/runtime/observability/reconstruction/execution_reconstruction.py` |
+| parent-child causality owner | `intergrax/contracts/execution_lineage.py` |
 
-Resume checkpoint persistence vs coordination vs admission validation are **distinct** concerns (not collapsed into a single prose owner).
+**Negative sensitivity (owner gate):** `test_txp6_q15`–`test_txp6_q17` (synthetic duplicate candidate ⇒ FAIL).
+
+Resume checkpoint persistence vs coordination vs admission validation remain **distinct** concerns; two admission anchors document separate tenant/identity validation boundaries (checkpoint resume vs background re-entry).
 
 ## 5. Adversarial bundle P6-A … P6-H
 
@@ -91,14 +99,14 @@ Unchanged matrix; replayed in R1 Pass1 session (`.tmp/session/trace-x-p6/pass1_o
 
 **PASS** — P6-F, P6-G + supporting STATE-X / TRACE-X negatives (no global FRZ-TEN promotion).
 
-## 7. Tests (R1 Cursor session)
+## 7. Tests (R1-R1 Cursor session)
 
 | Batch | Result |
 |---|---|
-| P6 closed-world gates (`test_trace_x_p6_closed_world_gates.py`) | **14 passed** |
+| P6 closed-world gates (`test_trace_x_p6_closed_world_gates.py`) | **17 passed** |
 | P6 adversarial bundle + PASS1 manifest | **3 passed** |
-| P6-A … P6-H nodeids (targeted PASS1 batch) | **8 passed** |
-| Tenant negatives (P6-F, P6-G) | **PASS** |
+| P6-A … P6-H nodeids (targeted batch) | **11 passed** |
+| Tenant negatives (P6-F, P6-G) | **PASS** (included in P6-A…H) |
 
 Command: `pytest -p no:xdist` on qualification gates + targeted P6-A…H nodeids.
 
@@ -106,11 +114,11 @@ Command: `pytest -p no:xdist` on qualification gates + targeted P6-A…H nodeids
 
 **Production delta = 0** (qualification/support modules only).
 
-## 9. Post-step enterprise discovery (R1)
+## 9. Post-step enterprise discovery (R1-R1)
 
 | Item | Finding |
 |---|---|
-| New current blockers | none beyond **BLOCKED ON R1 AUDIT** |
+| New current blockers | none beyond **BLOCKED ON R1-R1 AUDIT** |
 | New future mandatory debt | none from qualification-only R1 |
 | New candidate roadmap stages | none |
 | FRZ coverage gaps | **FRZ-TRC-09** / **FRZ-TRC-10** await independent PASS |
