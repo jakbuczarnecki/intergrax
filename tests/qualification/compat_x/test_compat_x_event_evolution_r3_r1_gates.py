@@ -48,9 +48,12 @@ from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     validate_production_persistence_call_site_classification,
 )
 from tests.qualification.compat_x._compat_x_event_evolution_r3_r1 import (
+    RuntimeEventReaderClassificationEvidence,
     RuntimeEventReaderDisposition,
+    compute_event_evolution_r3_r1_metrics,
     count_runtime_event_v2_semantic_authority_literals,
     discover_persisted_runtime_event_read_paths,
+    discover_runtime_event_constructor_sites,
     discover_runtime_event_reader_sites,
     event_evolution_r3_r1_gate_passes,
     minimal_runtime_event_payload_dict,
@@ -61,8 +64,11 @@ from tests.qualification.compat_x._compat_x_event_evolution_r3_r1 import (
     runtime_event_default_schema_version,
     synthetic_persisted_runtime_event_model_validate_bypass_site,
     synthetic_registry_drift_violations,
+    synthetic_runtime_event_kwargs_raw_reconstruction_site,
+    synthetic_sanctioned_runtime_event_constructor_site,
     synthetic_second_v2_literal_owner,
     synthetic_unknown_persisted_reader_site,
+    synthetic_unknown_runtime_event_constructor_site,
     validate_runtime_event_registry_parity,
 )
 
@@ -302,3 +308,47 @@ def test_cx_r3_r1_reader_sites_closed_world_classified() -> None:
         "intergrax/runtime/events/stores/document_backed_runtime_event_store.py",
         "intergrax/runtime/events/stores/sqlite_runtime_event_store.py",
     }
+
+
+def test_cx_r3_r1_constructor_sites_closed_world_evidence_backed() -> None:
+    ctor_sites = discover_runtime_event_constructor_sites()
+    assert ctor_sites
+    assert all(
+        site.disposition != RuntimeEventReaderDisposition.UNCLASSIFIED for site in ctor_sites
+    )
+    assert all(
+        site.classification_evidence != RuntimeEventReaderClassificationEvidence.UNSPECIFIED
+        for site in ctor_sites
+    )
+    metrics = compute_event_evolution_r3_r1_metrics()
+    assert metrics.constructor_unclassified == 0
+    assert metrics.constructor_evidence_less_producer == 0
+    assert metrics.constructor_candidate_count == len(ctor_sites)
+    assert metrics.constructor_positively_classified == len(ctor_sites)
+
+
+def test_cx_r3_r1_probe_k_runtime_event_kwargs_raw_reconstruction_fails_gate() -> None:
+    site = synthetic_runtime_event_kwargs_raw_reconstruction_site()
+    assert site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
+    passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+    assert not passed
+    assert violations
+
+
+def test_cx_r3_r1_probe_l_unknown_constructor_unclassified_fails_gate() -> None:
+    site = synthetic_unknown_runtime_event_constructor_site()
+    assert site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
+    passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+    assert not passed
+    assert violations
+
+
+def test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification() -> None:
+    site = synthetic_sanctioned_runtime_event_constructor_site()
+    assert site.disposition == RuntimeEventReaderDisposition.NON_PERSISTED_CONSTRUCTION
+    assert (
+        site.classification_evidence
+        == RuntimeEventReaderClassificationEvidence.PLATFORM_SIGNAL_EVENT_FACTORY
+    )
+    passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+    assert passed, violations
