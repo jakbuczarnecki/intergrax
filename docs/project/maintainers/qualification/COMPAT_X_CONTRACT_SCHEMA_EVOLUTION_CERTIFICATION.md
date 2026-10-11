@@ -390,7 +390,7 @@ Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.
 | Classified / unclassified | **26** / **0** |
 | Explicit payload version | **12** |
 | Inherited envelope version | **1** |
-| Missing durable version | **8** |
+| Missing durable version | **9** |
 | Migration-required / owner-missing | **9** / **9** |
 | Duplicate version / migration authority | **0** / **0** |
 
