@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -32,10 +33,11 @@ from intergrax.agent_distribution.stores import (
 LEGACY_UNVERSIONED_PRE_V1 = "LEGACY_UNVERSIONED_PRE_V1"
 
 _NON_EMPTY = Field(min_length=1)
-_MODEL = TypeVar("_MODEL", bound=BaseModel)
+LegacyT = TypeVar("LegacyT", bound=BaseModel)
+CurrentT = TypeVar("CurrentT", bound=BaseModel)
 
 
-def _mapping_without_schema_version(data: object) -> dict[str, Any] | None:
+def _mapping_without_schema_version(data: object) -> dict[str, object] | None:
     if not isinstance(data, dict):
         return None
     if "schema_version" in data:
@@ -111,11 +113,11 @@ def _decode_versioned_or_legacy(
     payload: str,
     *,
     expected_schema: str,
-    current_type: type[_MODEL],
-    legacy_type: type[BaseModel],
-    migrate: Any,
+    current_type: type[CurrentT],
+    legacy_type: type[LegacyT],
+    migrate: Callable[[LegacyT], CurrentT],
     family_label: str,
-) -> _MODEL:
+) -> CurrentT:
     data = json.loads(payload)
     if not isinstance(data, dict):
         raise ValueError(f"corrupt {family_label} payload: expected JSON object")

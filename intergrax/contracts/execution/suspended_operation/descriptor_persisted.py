@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -54,7 +54,7 @@ class _LegacySuspendedExecutionOperationDescriptor(BaseModel):
         return validate_content_digest(value)
 
 
-def _is_legacy_descriptor_mapping(data: dict[str, Any]) -> bool:
+def _is_legacy_descriptor_mapping(data: Mapping[str, object]) -> bool:
     if data.get("authority_scope") is not None:
         return False
     if "invocation_scope_id" not in data:
@@ -70,23 +70,24 @@ def parse_suspended_execution_operation_descriptor(
 ) -> SuspendedExecutionOperationDescriptor:
     if not isinstance(data, dict):
         raise ValueError("suspended operation descriptor must be a mapping")
-    schema_version = data.get("schema_version")
+    mapping: Mapping[str, object] = data
+    schema_version = mapping.get("schema_version")
     if schema_version == SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1:
-        if data.get("authority_scope") is not None:
+        if mapping.get("authority_scope") is not None:
             return SuspendedExecutionOperationDescriptor.model_validate(data)
-        if not _is_legacy_descriptor_mapping(data):
+        if not _is_legacy_descriptor_mapping(mapping):
             raise ValueError("unsupported suspended operation descriptor shape")
-        return _migrate_legacy_descriptor(data)
-    if schema_version is None and _is_legacy_descriptor_mapping(data):
-        return _migrate_legacy_descriptor(data)
+        return _migrate_legacy_descriptor(mapping)
+    if schema_version is None and _is_legacy_descriptor_mapping(mapping):
+        return _migrate_legacy_descriptor(mapping)
     raise ValueError(
         f"unsupported suspended operation descriptor schema version {schema_version!r}; "
         f"expected {SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1!r}"
     )
 
 
-def _migrate_legacy_descriptor(data: dict[str, Any]) -> SuspendedExecutionOperationDescriptor:
-    legacy = _LegacySuspendedExecutionOperationDescriptor.model_validate(data)
+def _migrate_legacy_descriptor(data: Mapping[str, object]) -> SuspendedExecutionOperationDescriptor:
+    legacy = _LegacySuspendedExecutionOperationDescriptor.model_validate(dict(data))
     scope = legacy.invocation_scope_id
     try:
         authority_scope = recognize_authority_scope_from_invocation(scope)

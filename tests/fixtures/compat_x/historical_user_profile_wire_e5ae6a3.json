@@ -1,0 +1,55 @@
+{
+  "provenance_sha": "e5ae6a3e358470607c2acd2eeb5a18334f36db63",
+  "source_path": "intergrax/memory/user_profile_serialization.py",
+  "legacy_user_profile_wire_fields": [
+    "identity",
+    "preferences",
+    "system_instructions",
+    "memory_entries",
+    "version",
+    "entry_id",
+    "deleted",
+    "modified"
+  ],
+  "legacy_user_identity_wire_fields": [
+    "user_id",
+    "display_name",
+    "role",
+    "domain_expertise",
+    "language",
+    "locale",
+    "timezone"
+  ],
+  "legacy_user_preferences_wire_fields": [
+    "preferred_language",
+    "answer_length",
+    "tone",
+    "no_emojis_in_code",
+    "no_emojis_in_docs",
+    "prefer_markdown",
+    "prefer_code_blocks",
+    "default_project_context",
+    "extra"
+  ],
+  "legacy_user_profile_memory_entry_wire_fields": [
+    "entry_id",
+    "revision",
+    "content",
+    "session_id",
+    "kind",
+    "title",
+    "importance",
+    "created_at",
+    "updated_at",
+    "valid_from",
+    "valid_until",
+    "provenance",
+    "trust",
+    "governance",
+    "lineage",
+    "evidence_refs",
+    "metadata",
+    "deleted",
+    "modified"
+  ]
+}

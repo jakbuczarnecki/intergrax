@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import ast
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -17,6 +16,10 @@ from tests.qualification.compat_x._compat_x_persisted_inventory import PERSISTED
 from tests.qualification.compat_x._compat_x_persisted_types import (
     LegacyCompatibilityDisposition,
     MigrationDisposition,
+)
+from tests.qualification.compat_x._compat_x_r2_r2_r1_implicit_compatibility import (
+    discover_orphan_migration_modules,
+    implicit_compatibility_blocker_count,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -43,6 +46,7 @@ class PersistedR2R2Metrics:
     migration_owner_missing: int
     duplicate_migration_authority: int
     implicit_compatibility_branches: int
+    orphan_migration_readers: int
 
 
 def _family_by_id(family_id: str):
@@ -61,18 +65,6 @@ def _duplicate_migration_owners() -> tuple[str, ...]:
             duplicates.append(obligation.family_id)
         seen.setdefault(obligation.family_id, owner)
     return tuple(sorted(set(duplicates)))
-
-
-def _implicit_before_validators(module_rel: str) -> list[str]:
-    path = _REPO_ROOT / module_rel.replace("/", "\\") if False else _REPO_ROOT / module_rel
-    if not path.is_file():
-        return [f"missing module {module_rel}"]
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    hits: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name.startswith("_migrate_legacy"):
-            hits.append(f"{module_rel}:{node.lineno}:{node.name}")
-    return hits
 
 
 @lru_cache(maxsize=1)
@@ -96,11 +88,8 @@ def compute_persisted_r2_r2_metrics() -> PersistedR2R2Metrics:
         if family_id not in covered:
             unclassified += 1
 
-    implicit = 0
-    for rel in (
-        "intergrax/contracts/execution/suspended_operation/descriptor.py",
-    ):
-        implicit += len(_implicit_before_validators(rel))
+    implicit = implicit_compatibility_blocker_count()
+    orphans = len(discover_orphan_migration_modules())
 
     explicit_migrations = sum(
         1 for o in obligations if o.disposition == LegacyCompatibilityDisposition.EXPLICIT_MIGRATION
@@ -139,6 +128,7 @@ def compute_persisted_r2_r2_metrics() -> PersistedR2R2Metrics:
         migration_owner_missing=migration_owner_missing,
         duplicate_migration_authority=dup_migration,
         implicit_compatibility_branches=implicit,
+        orphan_migration_readers=orphans,
     )
 
 
@@ -151,6 +141,8 @@ def persisted_r2_r2_gate_passes() -> bool:
     if metrics.duplicate_migration_authority != 0:
         return False
     if metrics.implicit_compatibility_branches != 0:
+        return False
+    if metrics.orphan_migration_readers != 0:
         return False
     for family_id in legacy_r2_r2_inventory_family_ids():
         family = _family_by_id(family_id)

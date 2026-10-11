@@ -6,9 +6,8 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Mapping
 from typing import Any, Dict, Final, List
-
-from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.memory.contracts.enterprise_memory_record import (
@@ -21,6 +20,7 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     memory_record_source_from_legacy_string,
 )
 from intergrax.memory.memory_entry_materialization import apply_legacy_metadata_provenance
+from intergrax.memory.user_profile_legacy_wire import LegacyUserProfileWire
 from intergrax.memory.user_profile_memory import (
     MemoryImportance,
     MemoryKind,
@@ -34,22 +34,7 @@ SCHEMA_USER_PROFILE_V1: Final = "user_profile.v1"
 LEGACY_UNVERSIONED_PRE_V1: Final = "LEGACY_UNVERSIONED_PRE_V1"
 
 
-class _LegacyUserProfileWire(BaseModel):
-    """Historical durable JSON before ``schema_version`` (evidence @ e5ae6a3)."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    identity: Dict[str, Any]
-    preferences: Dict[str, Any] = Field(default_factory=dict)
-    system_instructions: str | None = None
-    memory_entries: List[Dict[str, Any]] = Field(default_factory=list)
-    version: int = 1
-    entry_id: str | None = None
-    deleted: bool = False
-    modified: bool = False
-
-
-def _is_legacy_user_profile_mapping(payload: Dict[str, Any]) -> bool:
+def _is_legacy_user_profile_mapping(payload: Mapping[str, object]) -> bool:
     return "schema_version" not in payload and isinstance(payload.get("identity"), dict)
 
 
@@ -242,15 +227,22 @@ def user_profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
     }
 
 
-def deserialize_user_profile_payload(payload: Dict[str, Any]) -> UserProfile:
+def deserialize_user_profile_payload(payload: Mapping[str, object]) -> UserProfile:
     schema_version = payload.get("schema_version")
     if schema_version == SCHEMA_USER_PROFILE_V1:
-        return _user_profile_from_versioned_dict(payload)
+        return _user_profile_from_versioned_dict(dict(payload))
     if _is_legacy_user_profile_mapping(payload):
-        legacy = _LegacyUserProfileWire.model_validate(payload)
-        migrated = {
+        legacy = LegacyUserProfileWire.model_validate(payload)
+        migrated: Dict[str, Any] = {
             "schema_version": SCHEMA_USER_PROFILE_V1,
-            **legacy.model_dump(),
+            "identity": legacy.identity.model_dump(),
+            "preferences": legacy.preferences.model_dump(),
+            "system_instructions": legacy.system_instructions,
+            "memory_entries": [item.model_dump() for item in legacy.memory_entries],
+            "version": legacy.version,
+            "entry_id": legacy.entry_id,
+            "deleted": legacy.deleted,
+            "modified": legacy.modified,
         }
         return _user_profile_from_versioned_dict(migrated)
     raise ValueError(
@@ -259,7 +251,7 @@ def deserialize_user_profile_payload(payload: Dict[str, Any]) -> UserProfile:
     )
 
 
-def user_profile_from_dict(payload: Dict[str, Any]) -> UserProfile:
+def user_profile_from_dict(payload: Mapping[str, object]) -> UserProfile:
     return deserialize_user_profile_payload(payload)
 
 

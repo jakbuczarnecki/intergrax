@@ -5,14 +5,14 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+import sqlite3
 
 from intergrax.runtime.task_memory.models import SCHEMA_TASK_MEMORY_RECORD_V1, TaskMemoryRecord
 
 LEGACY_UNVERSIONED_PRE_V1 = "LEGACY_UNVERSIONED_PRE_V1"
 
 
-def task_memory_record_from_sqlite_row(row: Any) -> TaskMemoryRecord:
+def task_memory_record_from_sqlite_row(row: sqlite3.Row) -> TaskMemoryRecord:
     """Parse one task_memory row; migrate NULL schema_version after validation."""
     schema_version = row["schema_version"]
     record = TaskMemoryRecord(
