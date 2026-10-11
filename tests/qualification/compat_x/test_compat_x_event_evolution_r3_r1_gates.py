@@ -47,9 +47,15 @@ from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     synthetic_second_evolution_authority_owner,
     validate_production_persistence_call_site_classification,
 )
+from tests.qualification.compat_x._compat_x_closed_world import (
+    build_closed_world_report_with_extra_candidates,
+    discover_candidates_from_source,
+)
 from tests.qualification.compat_x._compat_x_event_evolution_r3_r1 import (
     RuntimeEventReaderClassificationEvidence,
     RuntimeEventReaderDisposition,
+    count_module_wide_constructor_positive_evidence_rules,
+    count_stale_constructor_positive_evidence_rules,
     compute_event_evolution_r3_r1_metrics,
     count_runtime_event_v2_semantic_authority_literals,
     discover_persisted_runtime_event_read_paths,
@@ -65,11 +71,19 @@ from tests.qualification.compat_x._compat_x_event_evolution_r3_r1 import (
     synthetic_persisted_runtime_event_model_validate_bypass_site,
     synthetic_registry_drift_violations,
     synthetic_runtime_event_kwargs_raw_reconstruction_site,
+    synthetic_persisted_reconstruction_in_trusted_module_constructor_site,
     synthetic_sanctioned_runtime_event_constructor_site,
     synthetic_second_v2_literal_owner,
+    synthetic_stale_constructor_positive_evidence_rule,
+    synthetic_unknown_qualname_in_trusted_module_constructor_site,
     synthetic_unknown_persisted_reader_site,
     synthetic_unknown_runtime_event_constructor_site,
+    validate_constructor_positive_evidence_rule_integrity,
     validate_runtime_event_registry_parity,
+)
+from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
+    build_r3_runtime_event_schema_version_candidate_delta,
+    validate_current_head_compat_closed_world_inventory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
@@ -352,3 +366,55 @@ def test_cx_r3_r1_probe_m_sanctioned_constructor_passes_classification() -> None
     )
     passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
     assert passed, violations
+
+
+def test_cx_r3_r1_constructor_evidence_rule_integrity_on_current_head() -> None:
+    assert count_module_wide_constructor_positive_evidence_rules() == 0
+    assert count_stale_constructor_positive_evidence_rules() == 0
+    assert validate_constructor_positive_evidence_rule_integrity() == ()
+
+
+def test_cx_r3_r1_probe_n_unknown_qualname_in_trusted_module_fails_gate() -> None:
+    site = synthetic_unknown_qualname_in_trusted_module_constructor_site()
+    assert site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
+    passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+    assert not passed
+    assert violations
+
+
+def test_cx_r3_r1_probe_o_stale_positive_constructor_rule_fails_integrity() -> None:
+    stale_rule = synthetic_stale_constructor_positive_evidence_rule()
+    violations = validate_constructor_positive_evidence_rule_integrity(extra_rules=(stale_rule,))
+    assert violations
+
+
+def test_cx_r3_r1_probe_persisted_reconstruction_in_trusted_module_fails_gate() -> None:
+    site = synthetic_persisted_reconstruction_in_trusted_module_constructor_site()
+    assert site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
+    passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+    assert not passed
+    assert violations
+
+
+def test_cx_r3_r1_compat_current_head_inventory_reconciled() -> None:
+    delta = build_r3_runtime_event_schema_version_candidate_delta()
+    assert delta.added_candidate_ids == (
+        delta.r3_reconciled_candidate_id,
+    )
+    assert delta.removed_candidate_ids == ()
+    assert validate_current_head_compat_closed_world_inventory() == ()
+
+
+def test_cx_r3_r1_probe_p_unknown_extra_compat_candidate_fails_inventory() -> None:
+    source = '''
+COMMON_SCHEMA_VERSION = "probe.compat.extra.v1"
+
+class SyntheticCompatProbe:
+    schema_version = COMMON_SCHEMA_VERSION
+'''
+    module = "synthetic/qualification/r3_r1_compat_closed_world_probe.py"
+    extra = tuple(discover_candidates_from_source(module, source))
+    assert extra
+    report = build_closed_world_report_with_extra_candidates(extra)
+    violations = validate_current_head_compat_closed_world_inventory(report)
+    assert violations

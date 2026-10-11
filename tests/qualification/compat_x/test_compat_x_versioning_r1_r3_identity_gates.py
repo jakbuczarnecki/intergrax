@@ -11,16 +11,18 @@ from tests.qualification.compat_x._compat_x_closed_world import (
     build_closed_world_report_with_extra_candidates,
     discover_candidates_from_source,
 )
+from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
+    ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES,
+    ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES,
+    ACCEPTED_P0_EXCLUSIONS,
+)
 from tests.qualification.compat_x._compat_x_discovery import discover_class_field_versions_from_source
 from tests.qualification.compat_x._compat_x_types import DiscoveryCandidate
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
-_ACCEPTED_P0_SEMANTIC_SURFACES = 1902
-_ACCEPTED_P0_RAW_CANDIDATES = 7294
-_ACCEPTED_P0_EXCLUSIONS = 5294
-# Contract-specific class.field identities split 98 erroneous accepted-P0 value-based merges.
-_R1_R3_CORRECTED_SEMANTIC_SURFACES = _ACCEPTED_P0_SEMANTIC_SURFACES + 98
+# Contract-specific class.field identities split 98 erroneous accepted-P0 value-based merges (+1 R3 version.constant).
+_R1_R3_CORRECTED_SEMANTIC_SURFACES = ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES
 
 _MODULE_A = "synthetic/qualification/r1_r3_identity_probe_a.py"
 _MODULE_B = "synthetic/qualification/r1_r3_identity_probe_b.py"
@@ -111,7 +113,7 @@ def test_cx_r1_r3_cross_contract_version_value_collisions_zero() -> None:
 
 def test_cx_r1_r3_p0_inventory_reconciliation() -> None:
     report = build_closed_world_report()
-    assert len(report.raw_candidates) == _ACCEPTED_P0_RAW_CANDIDATES
-    assert len(report.exclusions) == _ACCEPTED_P0_EXCLUSIONS
+    assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
+    assert len(report.exclusions) == ACCEPTED_P0_EXCLUSIONS
     assert report.unclassified_candidate_ids == frozenset()
     assert len(report.semantic_surfaces) == _R1_R3_CORRECTED_SEMANTIC_SURFACES

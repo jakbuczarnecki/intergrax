@@ -24,6 +24,20 @@ ACCEPTED_P0_RAW_CANDIDATES = 7294
 ACCEPTED_P0_SEMANTIC_SURFACES = 1902
 ACCEPTED_P0_EXCLUSIONS = 5294
 
+# Current-head closed-world inventory after COMPAT-X-R3 envelope version authority (lineage preserved above).
+ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES = 7295
+ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES = 2001
+ACCEPTED_CURRENT_HEAD_LEGACY_PROJECTED_SEMANTIC_SURFACES = 1903
+ACCEPTED_R3_EVENT_EVOLUTION_IMPLEMENTATION_SHA = (
+    "59afe830ddd765d9ad3d30ce77202d22184f3a97"
+)
+R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID = (
+    "const.intergrax.contracts.runtime_event.py::RUNTIME_EVENT_SCHEMA_VERSION"
+)
+R3_RUNTIME_EVENT_SCHEMA_VERSION_SEMANTIC_IDENTITY = (
+    "const:intergrax/contracts/runtime_event.py:RUNTIME_EVENT_SCHEMA_VERSION"
+)
+
 _UNRESOLVED_VERSION_MARKERS = frozenset({"unknown", "MISSING", ""})
 
 _NON_CLASS_FIELD_KINDS_PRESERVED: frozenset[str] = frozenset(
@@ -427,3 +441,88 @@ def verify_class_field_legacy_mapping_bijection(
         if key in by_tuple:
             raise AssertionError(f"duplicate class-field tuple {key}")
         by_tuple[key] = row
+
+
+@dataclass(frozen=True, slots=True)
+class CurrentHeadCompatInventoryDelta:
+    historical_accepted_raw_candidates: int
+    current_raw_candidates: int
+    added_candidate_ids: tuple[str, ...]
+    removed_candidate_ids: tuple[str, ...]
+    r3_reconciled_candidate_id: str
+    r3_reconciled_semantic_identity: str
+    r3_implementation_sha: str
+
+
+def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompatInventoryDelta:
+    """Mechanical R3 reconciliation: sole expected raw-candidate delta vs frozen historical P0 count."""
+    report = build_closed_world_report()
+    current_ids = {c.candidate_id for c in report.raw_candidates}
+    if len(current_ids) != len(report.raw_candidates):
+        raise AssertionError("duplicate candidate_id in closed-world raw inventory")
+    if R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID not in current_ids:
+        raise AssertionError("R3 RUNTIME_EVENT_SCHEMA_VERSION candidate missing from inventory")
+    added = (R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,)
+    if len(report.raw_candidates) != ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES:
+        raise AssertionError(
+            f"current raw candidates {len(report.raw_candidates)} != "
+            f"accepted current-head {ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES}",
+        )
+    if len(report.raw_candidates) != ACCEPTED_P0_RAW_CANDIDATES + len(added):
+        raise AssertionError("unexpected raw candidate delta magnitude vs historical P0")
+    return CurrentHeadCompatInventoryDelta(
+        historical_accepted_raw_candidates=ACCEPTED_P0_RAW_CANDIDATES,
+        current_raw_candidates=len(report.raw_candidates),
+        added_candidate_ids=added,
+        removed_candidate_ids=(),
+        r3_reconciled_candidate_id=R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,
+        r3_reconciled_semantic_identity=R3_RUNTIME_EVENT_SCHEMA_VERSION_SEMANTIC_IDENTITY,
+        r3_implementation_sha=ACCEPTED_R3_EVENT_EVOLUTION_IMPLEMENTATION_SHA,
+    )
+
+
+def validate_current_head_compat_closed_world_inventory(
+    report: ClosedWorldReport | None = None,
+) -> tuple[str, ...]:
+    """Closed-world COMPAT inventory parity on current HEAD (post-R3 reconciliation)."""
+    closed = report or build_closed_world_report()
+    violations: list[str] = []
+    if len(closed.raw_candidates) != ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES:
+        violations.append(
+            f"raw_candidates {len(closed.raw_candidates)} != "
+            f"accepted current-head {ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES}",
+        )
+    if len(closed.exclusions) != ACCEPTED_P0_EXCLUSIONS:
+        violations.append(
+            f"exclusions {len(closed.exclusions)} != accepted P0 {ACCEPTED_P0_EXCLUSIONS}",
+        )
+    if closed.unclassified_candidate_ids:
+        violations.append(
+            f"unclassified COMPAT candidates ({len(closed.unclassified_candidate_ids)})",
+        )
+    identities = [s.semantic_identity for s in closed.semantic_surfaces]
+    if len(identities) != len(set(identities)):
+        violations.append("duplicate COMPAT semantic surface owners")
+    if len(closed.semantic_surfaces) != ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES:
+        violations.append(
+            f"semantic_surfaces {len(closed.semantic_surfaces)} != "
+            f"accepted current-head {ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES}",
+        )
+    try:
+        delta = build_r3_runtime_event_schema_version_candidate_delta()
+    except AssertionError as exc:
+        violations.append(f"R3 inventory delta proof failed: {exc}")
+        return tuple(violations)
+    candidate_by_id = {c.candidate_id: c for c in closed.raw_candidates}
+    r3_candidate = candidate_by_id.get(delta.r3_reconciled_candidate_id)
+    if r3_candidate is None:
+        violations.append("R3 RUNTIME_EVENT_SCHEMA_VERSION candidate missing")
+    elif r3_candidate.discovery_kind != "version.constant":
+        violations.append(
+            f"R3 candidate discovery_kind {r3_candidate.discovery_kind!r} != version.constant",
+        )
+    elif r3_candidate.semantic_identity != delta.r3_reconciled_semantic_identity:
+        violations.append("R3 candidate semantic_identity mismatch")
+    elif r3_candidate.path != "intergrax/contracts/runtime_event.py":
+        violations.append("R3 candidate owner path != canonical RuntimeEvent contract owner")
+    return tuple(violations)

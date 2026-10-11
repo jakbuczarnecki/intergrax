@@ -15,8 +15,10 @@ from tests.qualification.compat_x._compat_x_closed_world import (
 )
 from tests.qualification.compat_x._compat_x_discovery import discover_class_field_versions_from_source
 from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
+    ACCEPTED_CURRENT_HEAD_LEGACY_PROJECTED_SEMANTIC_SURFACES,
+    ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES,
+    ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES,
     ACCEPTED_P0_EXCLUSIONS,
-    ACCEPTED_P0_RAW_CANDIDATES,
     ACCEPTED_P0_SEMANTIC_SURFACES,
     _NON_CLASS_FIELD_KINDS_PRESERVED,
     build_class_field_reconciliations_from_report,
@@ -42,10 +44,12 @@ def test_cx_r1_r5_closure_mechanical_inventory_and_delta() -> None:
     report = build_closed_world_report()
     closure = build_deterministic_semantic_identity_reconciliation()
 
-    assert len(report.raw_candidates) == ACCEPTED_P0_RAW_CANDIDATES
+    assert len(report.raw_candidates) == ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES
     assert len(report.exclusions) == ACCEPTED_P0_EXCLUSIONS
     assert report.unclassified_candidate_ids == frozenset()
-    assert closure.legacy_projected_semantic_count == ACCEPTED_P0_SEMANTIC_SURFACES
+    assert closure.legacy_projected_semantic_count == ACCEPTED_CURRENT_HEAD_LEGACY_PROJECTED_SEMANTIC_SURFACES
+    assert closure.legacy_projected_semantic_count == ACCEPTED_P0_SEMANTIC_SURFACES + 1
+    assert closure.current_semantic_count == ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES
     assert closure.current_semantic_count == len(report.semantic_surfaces)
     assert closure.semantic_split_delta == closure.current_semantic_count - closure.legacy_projected_semantic_count
     assert closure.semantic_split_delta == derived_semantic_split_delta(closure.collision_groups)

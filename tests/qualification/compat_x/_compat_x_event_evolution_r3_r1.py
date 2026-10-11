@@ -35,6 +35,9 @@ from intergrax.runtime.schema.registry import (
 
 from testing_support.runtime_events import with_preferred_canonical_payload
 
+from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
+    validate_current_head_compat_closed_world_inventory,
+)
 from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     _enclosing_qualname,
     _iter_production_python_sources,
@@ -138,113 +141,166 @@ _SUSPICIOUS_CONSTRUCTOR_KWARG_SPLAT_NAMES: Final = frozenset(
     {"raw", "data", "payload", "record", "row"},
 )
 
+# Each rule binds (module suffix, exact enclosing qualname) — never module-wide trust.
 _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES: Final = (
     (
         "applications/_shared/application_guardrail_middleware.py",
-        None,
+        "_emit_blocked",
         RuntimeEventReaderClassificationEvidence.APPLICATION_GUARDRAIL_RUNTIME_EMISSION,
     ),
     (
         "contracts/runtime_execution_context.py",
-        None,
+        "_emit_immediate_tool_event",
         RuntimeEventReaderClassificationEvidence.CONTRACT_RUNTIME_EXECUTION_CONTEXT_EMISSION,
     ),
     (
         "runtime/events/context_skill_recording.py",
-        None,
+        "record_skill_resolved",
+        RuntimeEventReaderClassificationEvidence.RUNTIME_CONTEXT_SKILL_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/context_skill_recording.py",
+        "record_skill_import_failed",
+        RuntimeEventReaderClassificationEvidence.RUNTIME_CONTEXT_SKILL_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/context_skill_recording.py",
+        "record_context_candidate_collected",
+        RuntimeEventReaderClassificationEvidence.RUNTIME_CONTEXT_SKILL_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/context_skill_recording.py",
+        "record_context_candidate_dropped",
+        RuntimeEventReaderClassificationEvidence.RUNTIME_CONTEXT_SKILL_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/context_skill_recording.py",
+        "record_context_validation_failed",
+        RuntimeEventReaderClassificationEvidence.RUNTIME_CONTEXT_SKILL_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/context_skill_recording.py",
+        "record_context_assembly",
+        RuntimeEventReaderClassificationEvidence.RUNTIME_CONTEXT_SKILL_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/context_skill_recording.py",
+        "record_context_assembled_from_engine",
         RuntimeEventReaderClassificationEvidence.RUNTIME_CONTEXT_SKILL_EVENT_FACTORY,
     ),
     (
         "runtime/events/ingestion_events.py",
-        None,
+        "record_ingestion_failed",
         RuntimeEventReaderClassificationEvidence.RUNTIME_INGESTION_EVENT_FACTORY,
     ),
     (
         "runtime/events/llm_call_recording.py",
-        None,
+        "record_llm_call_runtime_event",
         RuntimeEventReaderClassificationEvidence.RUNTIME_LLM_CALL_EVENT_FACTORY,
     ),
     (
         "runtime/events/planner_events.py",
-        None,
+        "record_plan_failed",
         RuntimeEventReaderClassificationEvidence.RUNTIME_PLANNER_EVENT_FACTORY,
     ),
     (
         "runtime/events/signals.py",
-        None,
+        "emit_platform_event",
+        RuntimeEventReaderClassificationEvidence.PLATFORM_SIGNAL_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/signals.py",
+        "emit_domain_signal",
         RuntimeEventReaderClassificationEvidence.PLATFORM_SIGNAL_EVENT_FACTORY,
     ),
     (
         "runtime/events/spine_consolidation.py",
-        None,
+        "build_platform_signal_event",
         RuntimeEventReaderClassificationEvidence.PLATFORM_SPINE_SIGNAL_EVENT_FACTORY,
     ),
     (
         "runtime/events/trace_bridge.py",
-        None,
+        "runtime_event_from_task_notification",
+        RuntimeEventReaderClassificationEvidence.TRACE_BRIDGE_RUNTIME_EVENT_FACTORY,
+    ),
+    (
+        "runtime/events/trace_bridge.py",
+        "trace_event_to_runtime_event",
         RuntimeEventReaderClassificationEvidence.TRACE_BRIDGE_RUNTIME_EVENT_FACTORY,
     ),
     (
         "runtime/execution/failure_evidence/runtime_event_recorder.py",
-        None,
+        "record_failure",
         RuntimeEventReaderClassificationEvidence.EXECUTION_FAILURE_EVIDENCE_EVENT_RECORDER,
     ),
     (
         "runtime/execution/integration_configuration_provenance_requirement_recorder.py",
-        None,
+        "commit",
         RuntimeEventReaderClassificationEvidence.INTEGRATION_CONFIG_PROVENANCE_EVENT_RECORDER,
     ),
     (
         "runtime/external_operations/diagnostic/runtime_event_recorder.py",
-        None,
+        "record_failure",
         RuntimeEventReaderClassificationEvidence.EXTERNAL_OPS_DIAGNOSTIC_EVENT_RECORDER,
     ),
     (
         "runtime/governance/governance_evidence_persistence.py",
-        None,
+        "persist",
         RuntimeEventReaderClassificationEvidence.GOVERNANCE_EVIDENCE_EVENT_PRODUCER,
     ),
     (
         "runtime/kernel/step_kernel.py",
-        None,
+        "_emit",
         RuntimeEventReaderClassificationEvidence.KERNEL_STEP_RUNTIME_EMISSION,
     ),
     (
         "runtime/middleware/trace_middleware.py",
-        None,
+        "before",
         RuntimeEventReaderClassificationEvidence.TRACE_MIDDLEWARE_RUNTIME_EMISSION,
     ),
     (
         "runtime/nexus/agent_router.py",
-        None,
+        "_emit_agent_selected",
         RuntimeEventReaderClassificationEvidence.NEXUS_AGENT_ROUTER_EVENT_EMISSION,
     ),
     (
         "runtime/nexus/execution/graph_executor.py",
-        None,
+        "_runtime_event_for_task",
         RuntimeEventReaderClassificationEvidence.NEXUS_GRAPH_EXECUTOR_EVENT_FACTORY,
     ),
     (
         "runtime/nexus/orchestration/planning_coordination_advisory.py",
-        None,
+        "build_coordination_advisory_event",
         RuntimeEventReaderClassificationEvidence.NEXUS_PLANNING_COORDINATION_EVENT_FACTORY,
     ),
     (
         "runtime/nexus/uaep/uaep_executor.py",
-        None,
+        "execute",
+        RuntimeEventReaderClassificationEvidence.NEXUS_UAEP_EXECUTOR_EVENT_EMISSION,
+    ),
+    (
+        "runtime/nexus/uaep/uaep_executor.py",
+        "_emit_context_assembled",
+        RuntimeEventReaderClassificationEvidence.NEXUS_UAEP_EXECUTOR_EVENT_EMISSION,
+    ),
+    (
+        "runtime/nexus/uaep/uaep_executor.py",
+        "_emit",
         RuntimeEventReaderClassificationEvidence.NEXUS_UAEP_EXECUTOR_EVENT_EMISSION,
     ),
     (
         "runtime/observability/trace_scope.py",
-        None,
+        "step",
         RuntimeEventReaderClassificationEvidence.OBSERVABILITY_TRACE_SCOPE_EVENT_EMISSION,
     ),
     (
         "runtime/task_memory/memory_view.py",
-        None,
+        "_emit",
         RuntimeEventReaderClassificationEvidence.TASK_MEMORY_VIEW_EVENT_EMISSION,
     ),
 )
+
+_LAB_CONSTRUCTOR_MODULE_SUFFIX: Final = "runtime/observability/persistence_conformance.py"
 
 
 @dataclass(frozen=True, slots=True)
@@ -436,13 +492,88 @@ def positive_runtime_event_constructor_evidence(
     qualname: str,
 ) -> RuntimeEventReaderClassificationEvidence | None:
     path = module_path.replace("\\", "/")
-    for suffix, qual_prefix, evidence in _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES:
-        if not path.endswith(suffix):
-            continue
-        if qual_prefix is not None and not qualname.startswith(qual_prefix):
-            continue
-        return evidence
+    for suffix, expected_qualname, evidence in _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES:
+        if path.endswith(suffix) and qualname == expected_qualname:
+            return evidence
     return None
+
+
+def _production_runtime_event_constructor_sites(
+    sites: tuple[RuntimeEventReaderSite, ...] | None = None,
+) -> tuple[RuntimeEventReaderSite, ...]:
+    ctor_sites = sites if sites is not None else discover_runtime_event_constructor_sites()
+    return tuple(
+        site
+        for site in ctor_sites
+        if not site.module_path.replace("\\", "/").endswith(_LAB_CONSTRUCTOR_MODULE_SUFFIX)
+    )
+
+
+def _constructor_sites_matching_positive_rule(
+    suffix: str,
+    qualname: str,
+    sites: tuple[RuntimeEventReaderSite, ...],
+) -> tuple[RuntimeEventReaderSite, ...]:
+    return tuple(
+        site
+        for site in sites
+        if site.module_path.replace("\\", "/").endswith(suffix) and site.qualname == qualname
+    )
+
+
+def count_module_wide_constructor_positive_evidence_rules() -> int:
+    return sum(
+        1
+        for _, qualname, _ in _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES
+        if qualname is None
+    )
+
+
+def count_stale_constructor_positive_evidence_rules(
+    sites: tuple[RuntimeEventReaderSite, ...] | None = None,
+) -> int:
+    production_sites = _production_runtime_event_constructor_sites(sites)
+    stale = 0
+    for suffix, qualname, _evidence in _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES:
+        if not _constructor_sites_matching_positive_rule(suffix, qualname, production_sites):
+            stale += 1
+    return stale
+
+
+def validate_constructor_positive_evidence_rule_integrity(
+    *,
+    extra_rules: tuple[tuple[str, str, RuntimeEventReaderClassificationEvidence], ...] = (),
+) -> tuple[str, ...]:
+    """Mechanical constructor allowlist integrity (module-wide trust = 0, no stale/unmatched rules)."""
+    violations: list[str] = []
+    module_wide = count_module_wide_constructor_positive_evidence_rules()
+    if module_wide != 0:
+        violations.append(
+            f"module-wide production constructor trust rules = {module_wide} (expected 0)",
+        )
+    production_sites = _production_runtime_event_constructor_sites()
+    all_rules = _CONSTRUCTOR_POSITIVE_EVIDENCE_RULES + extra_rules
+    stale_rules: list[str] = []
+    for suffix, qualname, evidence in all_rules:
+        if qualname is None:
+            continue
+        if not _constructor_sites_matching_positive_rule(suffix, qualname, production_sites):
+            stale_rules.append(f"({suffix}, {qualname})")
+    if stale_rules:
+        violations.append(
+            f"stale positive constructor rules matching zero call-sites ({len(stale_rules)}): "
+            f"{stale_rules}",
+        )
+    uncovered: list[str] = []
+    for site in production_sites:
+        if positive_runtime_event_constructor_evidence(site.module_path, site.qualname) is None:
+            uncovered.append(f"{site.module_path}:{site.qualname}:{site.line}")
+    if uncovered:
+        violations.append(
+            f"production RuntimeEvent constructors without positive evidence ({len(uncovered)}): "
+            f"{uncovered}",
+        )
+    return tuple(violations)
 
 
 def classify_runtime_event_constructor_site(
@@ -796,6 +927,50 @@ def synthetic_sanctioned_runtime_event_constructor_site() -> RuntimeEventReaderS
     )
 
 
+def synthetic_unknown_qualname_in_trusted_module_constructor_site() -> RuntimeEventReaderSite:
+    """Probe N: new unknown qualname inside already-trusted module → UNCLASSIFIED."""
+    disposition, evidence = classify_runtime_event_constructor_site(
+        "intergrax/runtime/events/signals.py",
+        "restore_event",
+    )
+    return RuntimeEventReaderSite(
+        module_path="intergrax/runtime/events/signals.py",
+        line=1,
+        qualname="restore_event",
+        operation="RuntimeEvent(...)",
+        disposition=disposition,
+        classification_evidence=evidence,
+    )
+
+
+def synthetic_stale_constructor_positive_evidence_rule() -> (
+    tuple[str, str, RuntimeEventReaderClassificationEvidence]
+):
+    """Probe O: positive rule with no matching production constructor call-site."""
+    return (
+        "runtime/events/signals.py",
+        "orphan_constructor_evidence_rule_probe",
+        RuntimeEventReaderClassificationEvidence.PLATFORM_SIGNAL_EVENT_FACTORY,
+    )
+
+
+def synthetic_persisted_reconstruction_in_trusted_module_constructor_site() -> RuntimeEventReaderSite:
+    """Persisted-shaped constructor in trusted module but unknown qualname (§9 variant)."""
+    disposition, evidence = classify_runtime_event_constructor_site(
+        "intergrax/runtime/events/signals.py",
+        "restore_event",
+        force_persisted_reconstruction=True,
+    )
+    return RuntimeEventReaderSite(
+        module_path="intergrax/runtime/events/signals.py",
+        line=2,
+        qualname="restore_event",
+        operation="RuntimeEvent(...)",
+        disposition=disposition,
+        classification_evidence=evidence,
+    )
+
+
 def minimal_runtime_event_payload_dict(
     schema_version: object,
 ) -> dict[str, object]:
@@ -941,6 +1116,9 @@ def collect_event_evolution_r3_r1_violations(
     if count_canonical_production_raw_store_bypasses(persistence_sites) != 0:
         violations.append("canonical production persistence bypass count != 0")
 
+    violations.extend(validate_constructor_positive_evidence_rule_integrity())
+    violations.extend(validate_current_head_compat_closed_world_inventory())
+
     return tuple(violations)
 
 
@@ -1064,10 +1242,16 @@ __all__ = [
     "synthetic_persisted_runtime_event_model_validate_bypass_site",
     "synthetic_registry_drift_violations",
     "synthetic_runtime_event_kwargs_raw_reconstruction_site",
+    "count_module_wide_constructor_positive_evidence_rules",
+    "count_stale_constructor_positive_evidence_rules",
+    "synthetic_persisted_reconstruction_in_trusted_module_constructor_site",
     "synthetic_sanctioned_runtime_event_constructor_site",
     "synthetic_second_v2_literal_owner",
+    "synthetic_stale_constructor_positive_evidence_rule",
+    "synthetic_unknown_qualname_in_trusted_module_constructor_site",
     "synthetic_unknown_persisted_reader_site",
     "synthetic_unknown_runtime_event_constructor_site",
+    "validate_constructor_positive_evidence_rule_integrity",
     "validate_runtime_event_registry_parity",
     "validate_runtime_event_reader_site_classification",
     "validate_schema_version",
