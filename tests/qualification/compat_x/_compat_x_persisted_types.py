@@ -102,6 +102,7 @@ class LegacyPersistedCompatibilityObligation:
     migration_owner_path: str | None
     reader_path: str
     evidence_paths: tuple[str, ...]
+    sanctioned_reader_symbols: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

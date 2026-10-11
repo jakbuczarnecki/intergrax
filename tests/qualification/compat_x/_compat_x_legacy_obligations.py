@@ -46,6 +46,8 @@ def _obligation(
     migration_owner: str | None,
     reader_path: str,
     evidence: tuple[str, ...],
+    *,
+    sanctioned_reader_symbols: tuple[str, ...] = (),
 ) -> LegacyPersistedCompatibilityObligation:
     return LegacyPersistedCompatibilityObligation(
         family_id=family_id,
@@ -56,6 +58,7 @@ def _obligation(
         migration_owner_path=migration_owner,
         reader_path=reader_path,
         evidence_paths=evidence,
+        sanctioned_reader_symbols=sanctioned_reader_symbols,
     )
 
 
@@ -71,6 +74,10 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             _AD_LEGACY,
             _AD_SQLITE,
             (_AD_LEGACY, _AD_SQLITE, f"git:{_PRE_R2_R1_SHA}:intergrax/agent_distribution/stores.py"),
+            sanctioned_reader_symbols=(
+                "decode_agent_artifact_metadata_payload",
+                "_decode_versioned_or_legacy",
+            ),
         ),
         _obligation(
             "agent_distribution.runtime_materialization_record",
@@ -81,6 +88,10 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             _AD_LEGACY,
             _AD_SQLITE,
             (_AD_LEGACY, f"git:{_PRE_R2_R1_SHA}:intergrax/agent_distribution/runtime_materialization_record.py"),
+            sanctioned_reader_symbols=(
+                "decode_runtime_materialization_record_payload",
+                "_decode_versioned_or_legacy",
+            ),
         ),
         _obligation(
             "agent_distribution.deployment_instance_record",
@@ -91,6 +102,10 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             _AD_LEGACY,
             _AD_SQLITE,
             (_AD_LEGACY, f"git:{_PRE_R2_R1_SHA}:intergrax/agent_distribution/deployment.py"),
+            sanctioned_reader_symbols=(
+                "decode_deployment_instance_record_payload",
+                "_decode_versioned_or_legacy",
+            ),
         ),
         _obligation(
             "agent_distribution.application_environment_serving_record",
@@ -101,6 +116,10 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             _AD_LEGACY,
             _AD_SQLITE,
             (_AD_LEGACY, f"git:{_PRE_R2_R1_SHA}:intergrax/agent_distribution/stores.py"),
+            sanctioned_reader_symbols=(
+                "decode_application_environment_serving_record_payload",
+                "_decode_versioned_or_legacy",
+            ),
         ),
         _obligation(
             "runtime.task_memory_record",
@@ -114,6 +133,7 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
                 "intergrax/runtime/task_memory/sqlite_row_legacy.py",
                 "intergrax/runtime/task_memory/stores/sqlite_task_memory_store.py",
             ),
+            sanctioned_reader_symbols=("task_memory_record_from_sqlite_row",),
         ),
         _obligation(
             "memory.user_profile",
@@ -127,6 +147,7 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
                 "intergrax/memory/user_profile_serialization.py",
                 f"git:{_PRE_R2_R1_SHA}:intergrax/memory/user_profile_serialization.py",
             ),
+            sanctioned_reader_symbols=("deserialize_user_profile_payload",),
         ),
         _obligation(
             "memory.conversational_turn",
@@ -137,6 +158,7 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             "intergrax/memory/conversational_memory_persistence.py",
             "intergrax/memory/stores/sqlite_conversational_memory_store.py",
             ("intergrax/memory/conversational_memory_persistence.py",),
+            sanctioned_reader_symbols=("parse_conversational_memory_persisted",),
         ),
         _obligation(
             "applications.registry_snapshot",
@@ -147,6 +169,7 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             "intergrax/applications/_shared/registry_snapshot_persistence.py",
             "intergrax/applications/_shared/registry_snapshot_store.py",
             ("intergrax/applications/_shared/registry_snapshot_persistence.py",),
+            sanctioned_reader_symbols=("parse_registry_snapshot_persisted",),
         ),
         _obligation(
             "runtime.tool_idempotency_ledger",
@@ -161,6 +184,7 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
                 "intergrax/runtime/tools/sqlite_idempotency_store.py",
                 "intergrax/distributed/providers/redis_idempotency_store.py",
             ),
+            sanctioned_reader_symbols=("assert_tool_idempotency_ledger_schema_version",),
         ),
         _obligation(
             "runtime.suspended_execution_operation_descriptor",
@@ -174,6 +198,10 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
                 "intergrax/contracts/execution/suspended_operation/descriptor_persisted.py",
                 "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
             ),
+            sanctioned_reader_symbols=(
+                "parse_suspended_execution_operation_descriptor",
+                "_migrate_legacy_descriptor",
+            ),
         ),
         _obligation(
             "runtime.suspended_operation_backing_envelope",
@@ -186,6 +214,10 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             (
                 "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
                 "intergrax/contracts/execution/suspended_operation/descriptor_persisted.py",
+            ),
+            sanctioned_reader_symbols=(
+                "parse_suspended_execution_operation_descriptor",
+                "_migrate_legacy_descriptor",
             ),
         ),
         _obligation(
@@ -227,6 +259,7 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
             "intergrax/autonomous_work/postgresql_repository.py",
             "intergrax/autonomous_work/postgresql_repository.py",
             ("intergrax/autonomous_work/postgresql_repository.py",),
+            sanctioned_reader_symbols=("_require_revision_argument",),
         ),
         _obligation(
             "collaborative_work.sqlite_container",
@@ -240,6 +273,7 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
                 "intergrax/collaborative_work/sqlite_repository.py",
                 "intergrax/collaborative_work/serialization.py",
             ),
+            sanctioned_reader_symbols=("workspace_membership_from_json",),
         ),
     )
 

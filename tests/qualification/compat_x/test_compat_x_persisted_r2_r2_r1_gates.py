@@ -75,11 +75,7 @@ class TaskMemoryRecord(BaseModel):
     classified = classify_implicit_compatibility_in_source(_PROBE_A, source)
     assert any(item.candidate.signal == "pydantic_before_validator" for item in classified)
     assert any(
-        item.disposition
-        in {
-            ImplicitCompatibilityDisposition.BLOCKER_IMPLICIT_COMPATIBILITY,
-            ImplicitCompatibilityDisposition.NON_COMPAT_VALIDATION,
-        }
+        item.disposition == ImplicitCompatibilityDisposition.BLOCKER_IMPLICIT_COMPATIBILITY
         for item in classified
     )
 
@@ -111,6 +107,10 @@ def read_persisted(raw):
     classified = classify_implicit_compatibility_in_source(_PROBE_C, source)
     assert any(
         item.candidate.signal == "bare_model_validate_without_schema_gate"
+        for item in classified
+    )
+    assert any(
+        item.disposition == ImplicitCompatibilityDisposition.BLOCKER_IMPLICIT_COMPATIBILITY
         for item in classified
     )
 

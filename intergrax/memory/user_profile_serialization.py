@@ -20,7 +20,10 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     memory_record_source_from_legacy_string,
 )
 from intergrax.memory.memory_entry_materialization import apply_legacy_metadata_provenance
-from intergrax.memory.user_profile_legacy_wire import LegacyUserProfileWire
+from intergrax.memory.user_profile_legacy_wire import (
+    LegacyUserProfileMemoryEntryWire,
+    LegacyUserProfileWire,
+)
 from intergrax.memory.user_profile_memory import (
     MemoryImportance,
     MemoryKind,
@@ -227,24 +230,75 @@ def user_profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
     }
 
 
+def _memory_entry_from_legacy_wire(entry: LegacyUserProfileMemoryEntryWire) -> UserProfileMemoryEntry:
+    provenance_payload = entry.provenance.model_dump() if entry.provenance is not None else None
+    return memory_entry_from_dict(
+        {
+            "entry_id": entry.entry_id,
+            "revision": entry.revision,
+            "content": entry.content,
+            "session_id": entry.session_id,
+            "kind": entry.kind,
+            "title": entry.title,
+            "importance": entry.importance,
+            "created_at": entry.created_at,
+            "updated_at": entry.updated_at,
+            "valid_from": entry.valid_from,
+            "valid_until": entry.valid_until,
+            "provenance": provenance_payload,
+            "trust": entry.trust.model_dump() if entry.trust is not None else None,
+            "governance": entry.governance.model_dump() if entry.governance is not None else None,
+            "lineage": entry.lineage.model_dump() if entry.lineage is not None else None,
+            "evidence_refs": list(entry.evidence_refs),
+            "metadata": dict(entry.metadata),
+            "deleted": entry.deleted,
+            "modified": entry.modified,
+        }
+    )
+
+
+def _user_profile_from_legacy_wire(legacy: LegacyUserProfileWire) -> UserProfile:
+    identity_wire = legacy.identity
+    preferences_wire = legacy.preferences
+    identity = UserIdentity(
+        user_id=identity_wire.user_id,
+        display_name=identity_wire.display_name,
+        role=identity_wire.role,
+        domain_expertise=identity_wire.domain_expertise,
+        language=identity_wire.language,
+        locale=identity_wire.locale,
+        timezone=identity_wire.timezone,
+    )
+    preferences = UserPreferences(
+        preferred_language=preferences_wire.preferred_language,
+        answer_length=preferences_wire.answer_length,
+        tone=preferences_wire.tone,
+        no_emojis_in_code=preferences_wire.no_emojis_in_code,
+        no_emojis_in_docs=preferences_wire.no_emojis_in_docs,
+        prefer_markdown=preferences_wire.prefer_markdown,
+        prefer_code_blocks=preferences_wire.prefer_code_blocks,
+        default_project_context=preferences_wire.default_project_context,
+        extra=dict(preferences_wire.extra),
+    )
+    return UserProfile(
+        identity=identity,
+        preferences=preferences,
+        system_instructions=legacy.system_instructions,
+        memory_entries=[_memory_entry_from_legacy_wire(item) for item in legacy.memory_entries],
+        version=legacy.version,
+        entry_id=str(legacy.entry_id or identity.user_id),
+        deleted=legacy.deleted,
+        modified=legacy.modified,
+    )
+
+
 def deserialize_user_profile_payload(payload: Mapping[str, object]) -> UserProfile:
     schema_version = payload.get("schema_version")
     if schema_version == SCHEMA_USER_PROFILE_V1:
         return _user_profile_from_versioned_dict(dict(payload))
     if _is_legacy_user_profile_mapping(payload):
         legacy = LegacyUserProfileWire.model_validate(payload)
-        migrated: Dict[str, Any] = {
-            "schema_version": SCHEMA_USER_PROFILE_V1,
-            "identity": legacy.identity.model_dump(),
-            "preferences": legacy.preferences.model_dump(),
-            "system_instructions": legacy.system_instructions,
-            "memory_entries": [item.model_dump() for item in legacy.memory_entries],
-            "version": legacy.version,
-            "entry_id": legacy.entry_id,
-            "deleted": legacy.deleted,
-            "modified": legacy.modified,
-        }
-        return _user_profile_from_versioned_dict(migrated)
+        return _user_profile_from_legacy_wire(legacy)
     raise ValueError(
         f"unsupported user profile schema version {schema_version!r}; "
         f"expected {SCHEMA_USER_PROFILE_V1!r} or {LEGACY_UNVERSIONED_PRE_V1}"
