@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **REJECTED / superseded by R1-R2** @ `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` · **COMPAT-X-R1-R2** = **REJECTED / superseded by R1-R3** @ `bc6b46b7c300d1db12ba664d327b339a75762532` · **COMPAT-X-R1-R3** = **REJECTED / superseded by R1-R4** @ `fc95f0f72d20401837bfaf6c06a63c8ef2d78aca` · **COMPAT-X-R1-R4** = **REJECTED / superseded by R1-R5** @ `a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72` · **COMPAT-X-R1-R5** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X-R1** = **BLOCKED ON R1-R5 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **REJECTED / superseded by R1-R2** @ `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` · **COMPAT-X-R1-R2** = **REJECTED / superseded by R1-R3** @ `bc6b46b7c300d1db12ba664d327b339a75762532` · **COMPAT-X-R1-R3** = **REJECTED / superseded by R1-R4** @ `fc95f0f72d20401837bfaf6c06a63c8ef2d78aca` · **COMPAT-X-R1-R4** = **REJECTED / superseded by R1-R5** @ `a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72` · **COMPAT-X-R1-R5** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** (not parent closure) · **COMPAT-X-R2** = **NEXT / NOT YET IMPLEMENTED** · **TENANT-X** = **NOT ENTERED**
 
 **Branch:** `development`
 
@@ -129,7 +129,7 @@ production delta = 0
 | Criterion | Candidate | Blocker IDs |
 | --- | --- | --- |
 | FRZ-CMP-01 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (closed-world parity + semantic inventory); checklist **OPEN** until parent closure |
-| FRZ-CMP-02 | **PASS CANDIDATE** — R1 evidence pending independent audit | CMP-P0-B02 remediated in R1 qualification layer |
+| FRZ-CMP-02 | **OPEN** / **PASS CANDIDATE** / independently accepted evidence @ `4361943d6812a83db321e3d3fbc6d361ed393fee` | CMP-P0-B02 remediated in R1 qualification layer; checklist **OPEN** until **COMPAT-X** parent closure |
 | FRZ-CMP-03 | **BLOCKED** | CMP-P0-B03 (+ 5 `PERSISTED_SCHEMA_WITHOUT_VERSION` — **CHILD TASK REQUIRED**) → COMPAT-X-R2 |
 | FRZ-CMP-04 | **BLOCKED** | CMP-P0-B04 → COMPAT-X-R3 |
 | FRZ-CMP-05 | **BLOCKED** | CMP-P0-B05 → COMPAT-X-R4 |
@@ -367,7 +367,9 @@ NO
 
 **FRZ-CMP-01:** PASS CANDIDATE historical evidence @ `0612c2a7…` remains accepted.
 
-**FRZ-CMP-02:** PASS CANDIDATE pending independent exact-SHA audit; checklist row remains **OPEN**.
+**FRZ-CMP-02:** **OPEN** / **PASS CANDIDATE** / independently accepted evidence @ `4361943d6812a83db321e3d3fbc6d361ed393fee`; checklist row remains **OPEN** until **COMPAT-X** parent closure.
+
+**Independent exact-SHA audit acceptance @ `4361943d6812a83db321e3d3fbc6d361ed393fee`:** historical AST P0 projection accepted; historical P0 semantic surfaces **1879**; corrected current inventory **1977**; semantic split delta **98**; collision reconciliation mechanical; unexplained identity delta **0**; public stable noncompliant identity **0**; inherited-version resolved probes **PASS**; inherited-version unresolved probes **FAIL** (fail-closed); **ProofReceipt** correctly versioned; five `PERSISTED_SCHEMA_WITHOUT_VERSION` findings preserved for **COMPAT-X-R2**; **production delta = 0**.
 
 ### Authority graph (post R1-R1)
 
@@ -389,13 +391,13 @@ COMPAT-X-R1-R1 = REJECTED / superseded by R1-R2 @ 1e79d2a72be8095515f0e6ffa8e59d
 COMPAT-X-R1-R2 = REJECTED / superseded by R1-R3 @ bc6b46b7c300d1db12ba664d327b339a75762532
 COMPAT-X-R1-R3 = REJECTED / superseded by R1-R4 @ fc95f0f72d20401837bfaf6c06a63c8ef2d78aca
 COMPAT-X-R1-R4 = REJECTED / superseded by R1-R5 @ a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72
-COMPAT-X-R1-R5 = READY FOR AUDIT
-COMPAT-X-R1   = BLOCKED ON R1-R5 AUDIT
-COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION
-COMPAT-X-R2   = NOT ENTERED
+COMPAT-X-R1-R5 = CLOSED / independently accepted @ 4361943d6812a83db321e3d3fbc6d361ed393fee
+COMPAT-X-R1   = CLOSED / independently accepted @ 4361943d6812a83db321e3d3fbc6d361ed393fee
+COMPAT-X      = OPEN / CURRENT — BLOCKED ON R2–R5 REMEDIATION
+COMPAT-X-R2   = NEXT / NOT YET IMPLEMENTED
 TENANT-X      = NOT ENTERED
 ```
 
-**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
+**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
 
-**Next mandatory child:** **COMPAT-X-R2** — Persisted Schema Migration (**not entered**).
+**Next mandatory child:** **COMPAT-X-R2** — Persisted Schemas & Migration Closure (**NEXT / NOT YET IMPLEMENTED**).
