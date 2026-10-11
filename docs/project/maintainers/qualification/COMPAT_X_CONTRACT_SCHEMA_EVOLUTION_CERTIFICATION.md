@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **REJECTED / superseded by R2-P0-R1** @ `e33048eff988d561ba4469bb99036d33a7b058b2` · **COMPAT-X-R2-P0-R1** = **REJECTED / superseded by R2-P0-R2** @ `9138b12a77c5e42831846b11220216fa6772df1a` · **COMPAT-X-R2-P0-R2** = **READY FOR AUDIT** (durable mechanism coverage + false-exclusion closure; independent audit pending) · **COMPAT-X-R2** = **BLOCKED ON R2-P0-R2 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** · **COMPAT-X-R3** = **NOT ENTERED** · **TENANT-X** = **NOT ENTERED**
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **REJECTED / superseded** (by **R2-P0-R1**) @ `e33048eff988d561ba4469bb99036d33a7b058b2` · **COMPAT-X-R2-P0-R1** = **REJECTED / superseded** (by **R2-P0-R2**) @ `9138b12a77c5e42831846b11220216fa6772df1a` · **COMPAT-X-R2-P0-R2** = **CLOSED / independently accepted** @ `78bd502b5da5284b1bdaae2e321b7076fa22227d` · **COMPAT-X-R2** = **OPEN** / **CURRENT** · **COMPAT-X-R2-R1** = **NEXT** / **NOT YET IMPLEMENTED** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** · **COMPAT-X-R3** = **NOT ENTERED** · **TENANT-X** = **NOT ENTERED**
 
 **Branch:** `development`
 
@@ -130,10 +130,10 @@ production delta = 0
 | --- | --- | --- |
 | FRZ-CMP-01 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (closed-world parity + semantic inventory); checklist **OPEN** until parent closure |
 | FRZ-CMP-02 | **OPEN** / **PASS CANDIDATE** / independently accepted evidence @ `4361943d6812a83db321e3d3fbc6d361ed393fee` | CMP-P0-B02 remediated in R1 qualification layer; checklist **OPEN** until **COMPAT-X** parent closure |
-| FRZ-CMP-03 | **BLOCKED** | CMP-P0-B03 (+ 5 `PERSISTED_SCHEMA_WITHOUT_VERSION` — **CHILD TASK REQUIRED**) → COMPAT-X-R2 |
+| FRZ-CMP-03 | **OPEN** / **BLOCKED** | CMP-P0-B03 → COMPAT-X-R2; **R2-P0-R2** inventory evidence independently accepted @ `78bd502b5da5284b1bdaae2e321b7076fa22227d` (**28** / **10**; not **PASS**) |
 | FRZ-CMP-04 | **BLOCKED** | CMP-P0-B04 → COMPAT-X-R3 |
 | FRZ-CMP-05 | **BLOCKED** | CMP-P0-B05 → COMPAT-X-R4 |
-| FRZ-CMP-06 | **BLOCKED** | CMP-P0-B06 → COMPAT-X-R2 |
+| FRZ-CMP-06 | **OPEN** / **BLOCKED** | CMP-P0-B06 → COMPAT-X-R2; **R2-P0-R2** inventory evidence independently accepted @ `78bd502b5da5284b1bdaae2e321b7076fa22227d` (not **PASS**) |
 | FRZ-CMP-07 | **BLOCKED** | CMP-P0-B07 → COMPAT-X-R5 |
 | FRZ-CMP-08 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (0 `PARALLEL_AUTHORITY` production; `CompatibilityCandidateContext` + full candidate authority inspection; multi-shape synthetic probes incl. outside `intergrax/compat/`); checklist **OPEN** until parent closure |
 
@@ -384,7 +384,7 @@ compatibility shim → NO canonical current-version authority (unless explicit c
 
 Rejected @ `9138b12a77c5e42831846b11220216fa6772df1a`: false `CACHE_NON_DURABLE` exclusion of file-backed execution continuation state; Redis/KV/idempotency mechanisms under-scanned; SQLite idempotency ledger absent from closed world.
 
-## COMPAT-X-R2-P0-R2 — Durable mechanism coverage & false-exclusion closure (READY FOR AUDIT)
+## COMPAT-X-R2-P0-R2 — Durable mechanism coverage & false-exclusion closure (CLOSED / independently accepted @ `78bd502b5da5284b1bdaae2e321b7076fa22227d`)
 
 **Rejected R2-P0 (tautological discovery):** `e6838d0ef404571e3f7585725be62681ff890071` → `e33048eff988d561ba4469bb99036d33a7b058b2` (primary `e0a0f21790a4464da55eaa6cd1b3405af1c0c97c`).
 
@@ -396,16 +396,20 @@ Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.
 | --- | --- |
 | Production Python modules scanned | **7378** |
 | Raw durable candidates | **1613** |
-| Persisted members / evidence-backed exclusions | **601** / **1012** |
+| Persisted members | **601** |
+| Evidence-backed exclusions | **1012** |
 | Unclassified | **0** |
-| Persisted families (closed world) | **28** (was **26**) |
+| Semantic persisted families | **28** |
 | Explicit payload version | **13** |
 | Inherited envelope version | **1** |
-| Missing durable version | **10** (was **9**) |
+| Missing durable version | **10** |
 | Migration-required / owner-missing | **10** / **10** |
-| Duplicate version / migration authority | **0** / **0** |
+| Duplicate semantic version authority | **0** |
+| Duplicate migration authority | **0** |
 
-**Reconciliation (26 → 28):** **added** `runtime.execution_continuation_durable_state`, `runtime.tool_idempotency_ledger`; **merged** Redis `RedisKVStore` + `RedisIdempotencyStore` evidence into existing `distributed.kv_entry` / shared idempotency semantic contract (no parallel `distributed.redis_kv_entry` family); **reclassified** `durable_state_file.py` out of `CACHE_NON_DURABLE`; **excluded** TTL Redis coordination (`redis_execution_semaphore`, `redis_rate_limiter`) as evidence-backed non-payload cache.
+**Reconciliation (26 → 28):** **added** `runtime.execution_continuation_durable_state`, `runtime.tool_idempotency_ledger`; **expanded** `distributed.kv_entry` → SQLite + Redis providers under the same semantic family; **reclassified** `runtime/execution/continuation/durable_state_file.py` → real durable persistence, not cache; **excluded** TTL Redis coordination (`redis_execution_semaphore`, `redis_rate_limiter`) as evidence-backed non-payload cache.
+
+**Accepted closed-world mechanism coverage (current HEAD; qualification gate scope — not a claim that future mechanisms are impossible):** SQLite / DBAPI · PostgreSQL · DocumentStore · Redis KV/hash/scripted state · durable file persistence · pickle durable wire.
 
 **Mechanism signals (raw candidate counts):** SQLite DML/payload **747** · PostgreSQL **134** · DocumentStore **302** · Redis KV/hash/script/read **23** · file atomic/JSON **101** · pickle durable wire **5** · wire-to-store **285**.
 
@@ -421,24 +425,40 @@ Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.
 
 **Agent Distribution SQLite:** tables `installations` … `projection_descriptors` mapped; **IN-SCOPE BLOCKER:** `PackageAgentContractAuthorityRecord` durable in-memory only — SQLite bundle does not persist contract authority rows.
 
+**Current R2 remediation baseline — `MISSING_VERSION` families (accepted inventory @ `78bd502b5da5284b1bdaae2e321b7076fa22227d`; set frozen — do not manually alter):**
+
+1. `agent_distribution.agent_artifact_metadata`
+2. `agent_distribution.runtime_materialization_record`
+3. `agent_distribution.deployment_instance_record`
+4. `agent_distribution.application_environment_serving_record`
+5. `runtime.task_memory_record`
+6. `memory.user_profile`
+7. `memory.conversational_turn`
+8. `distributed.kv_entry`
+9. `runtime.tool_idempotency_ledger`
+10. `applications.registry_snapshot`
+
 **Remediation waves (evidence-derived):** **COMPAT-X-R2-R1** (missing schema identities + SQLite authority gap) → **COMPAT-X-R2-R2** (migration/read-compat) → **COMPAT-X-R2-FINAL** (FRZ-CMP-03/06 qualification).
+
+**Targeted current-head suite — pre-existing failures (mandatory future debt; not resolved; not auto-classified as environment failures):** representative targeted `uv run pytest -p no:xdist` on current HEAD @ accepted evidence records **47 failed / 1633 passed** (session capture `.tmp/session/compat-x-r2-p0-r2/pytest-targeted.log`). Failures span governance identity (`active execution governance identity required`), tool side-effect safety, agent-distribution architecture gates, integration catalog double-registration (`redis`), and runtime events spine/export composition — owned by their respective stages; **not** remediated or waived in R2-P0-R2 bookkeeping.
 
 **production delta = 0**
 
 ## Program status
 
 ```text
-COMPAT-X-P0   = CLOSED / independently accepted @ 0612c2a7…
-COMPAT-X-R1   = CLOSED / independently accepted @ 4361943d…
-COMPAT-X-R2-P0    = REJECTED / superseded by R2-P0-R1
-COMPAT-X-R2-P0-R1 = REJECTED / superseded by R2-P0-R2 @ 9138b12a…
-COMPAT-X-R2-P0-R2 = READY FOR AUDIT
-COMPAT-X-R2       = BLOCKED ON R2-P0-R2 AUDIT
-COMPAT-X      = OPEN / CURRENT — BLOCKED ON R2–R5 REMEDIATION
-COMPAT-X-R3   = NOT ENTERED
-TENANT-X      = NOT ENTERED
+COMPAT-X-P0       = CLOSED / independently accepted @ 0612c2a7…
+COMPAT-X-R1       = CLOSED / independently accepted @ 4361943d…
+COMPAT-X-R2-P0    = REJECTED / superseded
+COMPAT-X-R2-P0-R1 = REJECTED / superseded @ 9138b12a…
+COMPAT-X-R2-P0-R2 = CLOSED / independently accepted @ 78bd502b5da5284b1bdaae2e321b7076fa22227d
+COMPAT-X-R2       = OPEN / CURRENT
+COMPAT-X-R2-R1    = NEXT / NOT YET IMPLEMENTED
+COMPAT-X          = OPEN / CURRENT — BLOCKED ON R2–R5 REMEDIATION
+COMPAT-X-R3       = NOT ENTERED
+TENANT-X          = NOT ENTERED
 ```
 
-**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **R2-P0-R1 rejected HEAD:** `9138b12a77c5e42831846b11220216fa6772df1a` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
+**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **Accepted R2-P0-R2 evidence HEAD:** `78bd502b5da5284b1bdaae2e321b7076fa22227d` · **R2-P0-R1 rejected HEAD:** `9138b12a77c5e42831846b11220216fa6772df1a` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
 
-**Next mandatory child:** **COMPAT-X-R2-P0-R2** independent audit → **COMPAT-X-R2** remediation implementation (not closed).
+**Next mandatory child:** **COMPAT-X-R2-R1** — Missing Durable Schema Identity & SQLite Authority Remediation (**NOT YET IMPLEMENTED**).
