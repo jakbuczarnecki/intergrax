@@ -110,6 +110,36 @@ class SQLiteIdempotencyStore(IdempotencyStore):
     def _require_ledger_schema(row: sqlite3.Row) -> None:
         assert_tool_idempotency_ledger_schema_version(row["schema_version"])
 
+    def _reject_stale_or_schema_after_mutation_failure(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+        now: datetime,
+        stale_message: str,
+    ) -> None:
+        row = conn.execute(
+            """
+            SELECT schema_version, status, owner_id, fence, lease_expires_at
+            FROM idempotency_ledger
+            WHERE tenant_id = ? AND key = ?
+            """,
+            (tenant_id, key),
+        ).fetchone()
+        if row is None:
+            raise StaleClaimError(stale_message)
+        self._require_ledger_schema(row)
+        if (
+            InvocationStatus(row["status"]) is not InvocationStatus.STARTED
+            or row["owner_id"] != claim.owner_id
+            or int(row["fence"]) != claim.fence
+            or datetime.fromisoformat(row["lease_expires_at"]) <= now
+        ):
+            raise StaleClaimError(stale_message)
+        raise StaleClaimError(stale_message)
+
     def _row_to_claim(
         self,
         row: sqlite3.Row,
@@ -257,19 +287,33 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 conn.commit()
                 return ClaimResult(outcome=ClaimOutcome.BLOCKED_ACTIVE)
 
-            conn.execute(
+            updated = conn.execute(
                 """
                 UPDATE idempotency_ledger
                 SET status = ?
                 WHERE tenant_id = ? AND key = ? AND fence = ?
+                  AND schema_version = ?
                 """,
                 (
                     InvocationStatus.UNCERTAIN.value,
                     tenant_id,
                     key,
                     stored_claim.fence,
+                    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
                 ),
             )
+            if updated.rowcount != 1:
+                self._reject_stale_or_schema_after_mutation_failure(
+                    conn,
+                    tenant_id=tenant_id,
+                    key=key,
+                    claim=stored_claim,
+                    now=now,
+                    stale_message=(
+                        f"Stale uncertain transition rejected for key={key} "
+                        f"fence={stored_claim.fence}."
+                    ),
+                )
             conn.commit()
             return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
 
@@ -297,6 +341,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                   AND owner_id = ?
                   AND fence = ?
                   AND lease_expires_at > ?
+                  AND schema_version = ?
                 """,
                 (
                     InvocationStatus.COMPLETED.value,
@@ -307,12 +352,19 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     claim.owner_id,
                     claim.fence,
                     now.isoformat(),
+                    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
                 ),
             )
             if updated.rowcount != 1:
-                conn.rollback()
-                raise StaleClaimError(
-                    f"Stale completion rejected for key={key} fence={claim.fence}.",
+                self._reject_stale_or_schema_after_mutation_failure(
+                    conn,
+                    tenant_id=tenant_id,
+                    key=key,
+                    claim=claim,
+                    now=now,
+                    stale_message=(
+                        f"Stale completion rejected for key={key} fence={claim.fence}."
+                    ),
                 )
             conn.commit()
 
@@ -334,6 +386,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                   AND owner_id = ?
                   AND fence = ?
                   AND lease_expires_at > ?
+                  AND schema_version = ?
                 """,
                 (
                     InvocationStatus.UNCERTAIN.value,
@@ -343,12 +396,20 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     claim.owner_id,
                     claim.fence,
                     now.isoformat(),
+                    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
                 ),
             )
             if updated.rowcount != 1:
-                conn.rollback()
-                raise StaleClaimError(
-                    f"Stale uncertain transition rejected for key={key} fence={claim.fence}.",
+                self._reject_stale_or_schema_after_mutation_failure(
+                    conn,
+                    tenant_id=tenant_id,
+                    key=key,
+                    claim=claim,
+                    now=now,
+                    stale_message=(
+                        f"Stale uncertain transition rejected for key={key} "
+                        f"fence={claim.fence}."
+                    ),
                 )
             conn.commit()
 
@@ -370,6 +431,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                   AND fence = ?
                   AND lease_expires_at > ?
                   AND external_effect_may_have_started = 0
+                  AND schema_version = ?
                 """,
                 (
                     tenant_id,
@@ -378,12 +440,20 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     claim.owner_id,
                     claim.fence,
                     now.isoformat(),
+                    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
                 ),
             )
             if deleted.rowcount != 1:
-                conn.rollback()
-                raise StaleClaimError(
-                    f"Stale pre-effect abandon rejected for key={key} fence={claim.fence}.",
+                self._reject_stale_or_schema_after_mutation_failure(
+                    conn,
+                    tenant_id=tenant_id,
+                    key=key,
+                    claim=claim,
+                    now=now,
+                    stale_message=(
+                        f"Stale pre-effect abandon rejected for key={key} "
+                        f"fence={claim.fence}."
+                    ),
                 )
             conn.commit()
 
@@ -425,6 +495,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                   AND fence = ?
                   AND lease_expires_at > ?
                   AND external_effect_may_have_started = 0
+                  AND schema_version = ?
                 """,
                 (
                     tenant_id,
@@ -433,6 +504,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     claim.owner_id,
                     claim.fence,
                     now.isoformat(),
+                    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
                 ),
             )
             if updated.rowcount == 1:
@@ -440,27 +512,32 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 return
             row = conn.execute(
                 """
-                SELECT external_effect_may_have_started, owner_id, fence, lease_expires_at
+                SELECT external_effect_may_have_started, owner_id, fence, lease_expires_at,
+                       schema_version
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ? AND status = ?
                 """,
                 (tenant_id, key, InvocationStatus.STARTED.value),
             ).fetchone()
-            conn.rollback()
             if row is None:
+                conn.rollback()
                 raise StaleClaimError(
                     f"Cannot admit effect for key={key}: missing active claim.",
                 )
+            self._require_ledger_schema(row)
             if (
                 row["owner_id"] != claim.owner_id
                 or int(row["fence"]) != claim.fence
                 or datetime.fromisoformat(row["lease_expires_at"]) <= now
             ):
+                conn.rollback()
                 raise StaleClaimError(
                     f"Stale effect admission rejected for key={key} fence={claim.fence}.",
                 )
             if bool(row["external_effect_may_have_started"]):
+                conn.commit()
                 return
+            conn.rollback()
             raise StaleClaimError(
                 f"Stale effect admission rejected for key={key} fence={claim.fence}.",
             )
@@ -505,8 +582,14 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 DELETE FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ? AND status = ?
                   AND external_effect_may_have_started = 0
+                  AND schema_version = ?
                 """,
-                (tenant_id, key, InvocationStatus.STARTED.value),
+                (
+                    tenant_id,
+                    key,
+                    InvocationStatus.STARTED.value,
+                    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
+                ),
             )
             conn.commit()
             return deleted.rowcount == 1

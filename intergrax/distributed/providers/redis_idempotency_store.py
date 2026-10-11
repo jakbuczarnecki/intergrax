@@ -139,10 +139,15 @@ class RedisIdempotencyStore(IdempotencyStore):
             -- ARGV[3] = result_blob
             -- ARGV[4] = completed_ttl_seconds (optional)
             --
-            -- Returns: 1 success, 0 missing, 2 stale/invalid
+            -- Returns: 1 success, 0 missing, 2 stale/invalid, 3 unsupported schema
 
             if redis.call("EXISTS", KEYS[1]) == 0 then
                 return 0
+            end
+
+            local schema_version = redis.call("HGET", KEYS[1], "schema_version")
+            if not schema_version or schema_version ~= "tool_idempotency_ledger.v1" then
+                return 3
             end
 
             local status = redis.call("HGET", KEYS[1], "status")
@@ -174,10 +179,15 @@ class RedisIdempotencyStore(IdempotencyStore):
             -- ARGV[1] = owner_id
             -- ARGV[2] = fence
             --
-            -- Returns: 1 success, 0 missing, 2 stale/invalid
+            -- Returns: 1 success, 0 missing, 2 stale/invalid, 3 unsupported schema
 
             if redis.call("EXISTS", KEYS[1]) == 0 then
                 return 0
+            end
+
+            local schema_version = redis.call("HGET", KEYS[1], "schema_version")
+            if not schema_version or schema_version ~= "tool_idempotency_ledger.v1" then
+                return 3
             end
 
             local status = redis.call("HGET", KEYS[1], "status")
@@ -221,6 +231,10 @@ class RedisIdempotencyStore(IdempotencyStore):
             if redis.call("EXISTS", KEYS[1]) == 0 then
                 return 0
             end
+            local schema_version = redis.call("HGET", KEYS[1], "schema_version")
+            if not schema_version or schema_version ~= "tool_idempotency_ledger.v1" then
+                return 3
+            end
             local status = redis.call("HGET", KEYS[1], "status")
             if status ~= "started" then
                 return 2
@@ -248,6 +262,10 @@ class RedisIdempotencyStore(IdempotencyStore):
             if redis.call("EXISTS", KEYS[1]) == 0 then
                 return 0
             end
+            local schema_version = redis.call("HGET", KEYS[1], "schema_version")
+            if not schema_version or schema_version ~= "tool_idempotency_ledger.v1" then
+                return 3
+            end
             local status = redis.call("HGET", KEYS[1], "status")
             if status ~= "started" then
                 return 2
@@ -274,6 +292,10 @@ class RedisIdempotencyStore(IdempotencyStore):
             """
             if redis.call("EXISTS", KEYS[1]) == 0 then
                 return 0
+            end
+            local schema_version = redis.call("HGET", KEYS[1], "schema_version")
+            if not schema_version or schema_version ~= "tool_idempotency_ledger.v1" then
+                return 3
             end
             local status = redis.call("HGET", KEYS[1], "status")
             if status ~= "started" then
@@ -325,6 +347,29 @@ class RedisIdempotencyStore(IdempotencyStore):
         assert_tool_idempotency_ledger_schema_version(
             schema_version if schema_version else None
         )
+
+    def _ledger_schema_version_from_key(self, ledger_key: str) -> str | None:
+        raw = self._redis.hget(ledger_key, "schema_version")
+        if raw is None:
+            return None
+        return self._decode(raw)
+
+    def _raise_ledger_schema_for_key(self, ledger_key: str) -> None:
+        assert_tool_idempotency_ledger_schema_version(
+            self._ledger_schema_version_from_key(ledger_key)
+        )
+
+    def _reject_stale_mutation_script_result(
+        self,
+        script_result: int,
+        ledger_key: str,
+        *,
+        stale_message: str,
+    ) -> None:
+        if script_result == 3:
+            self._raise_ledger_schema_for_key(ledger_key)
+        if script_result != 1:
+            raise StaleClaimError(stale_message)
 
     @staticmethod
     def _operation_args(
@@ -385,7 +430,7 @@ class RedisIdempotencyStore(IdempotencyStore):
                 "Idempotency key is bound to a different logical operation.",
             )
         if outcome_code == "6":
-            assert_tool_idempotency_ledger_schema_version(None)
+            self._raise_ledger_schema_for_key(ledger_key)
         return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
 
     def complete_with_claim(
@@ -406,10 +451,13 @@ class RedisIdempotencyStore(IdempotencyStore):
             keys=[ledger_key],
             args=[claim.owner_id, str(claim.fence), serialized, ttl_arg, now_arg],
         )
-        if script_result != 1:
-            raise StaleClaimError(
-                f"Stale completion rejected for key={key} fence={claim.fence}.",
-            )
+        self._reject_stale_mutation_script_result(
+            int(script_result),
+            ledger_key,
+            stale_message=(
+                f"Stale completion rejected for key={key} fence={claim.fence}."
+            ),
+        )
 
     def mark_uncertain_with_claim(
         self,
@@ -423,10 +471,13 @@ class RedisIdempotencyStore(IdempotencyStore):
             keys=[ledger_key],
             args=[claim.owner_id, str(claim.fence), now_arg],
         )
-        if script_result != 1:
-            raise StaleClaimError(
-                f"Stale uncertain transition rejected for key={key} fence={claim.fence}.",
-            )
+        self._reject_stale_mutation_script_result(
+            int(script_result),
+            ledger_key,
+            stale_message=(
+                f"Stale uncertain transition rejected for key={key} fence={claim.fence}."
+            ),
+        )
 
     def abandon_pre_effect_with_claim(
         self,
@@ -440,10 +491,13 @@ class RedisIdempotencyStore(IdempotencyStore):
             keys=[ledger_key],
             args=[claim.owner_id, str(claim.fence), now_arg],
         )
-        if script_result != 1:
-            raise StaleClaimError(
-                f"Stale pre-effect abandon rejected for key={key} fence={claim.fence}.",
-            )
+        self._reject_stale_mutation_script_result(
+            int(script_result),
+            ledger_key,
+            stale_message=(
+                f"Stale pre-effect abandon rejected for key={key} fence={claim.fence}."
+            ),
+        )
 
     def external_effect_may_have_started(
         self,
@@ -451,7 +505,13 @@ class RedisIdempotencyStore(IdempotencyStore):
         key: str,
     ) -> bool:
         ledger_key = self._ledger_key(tenant_id, key)
-        raw = self._redis.hget(ledger_key, "external_effect_may_have_started")
+        data = self._redis.hgetall(ledger_key)
+        if not data:
+            return False
+        self._require_ledger_schema_hash(data)
+        raw = data.get(b"external_effect_may_have_started")
+        if raw is None:
+            raw = data.get("external_effect_may_have_started")
         if raw is None:
             return False
         return self._decode(raw) == "1"
@@ -468,10 +528,13 @@ class RedisIdempotencyStore(IdempotencyStore):
             keys=[ledger_key],
             args=[claim.owner_id, str(claim.fence), now_arg],
         )
-        if script_result != 1:
-            raise StaleClaimError(
-                f"Stale effect admission rejected for key={key} fence={claim.fence}.",
-            )
+        self._reject_stale_mutation_script_result(
+            int(script_result),
+            ledger_key,
+            stale_message=(
+                f"Stale effect admission rejected for key={key} fence={claim.fence}."
+            ),
+        )
 
     def reconcile_abandoned_pre_effect_not_started(
         self,
@@ -492,6 +555,8 @@ class RedisIdempotencyStore(IdempotencyStore):
                 str(recovery_authority.fence),
             ],
         )
+        if script_result == 3:
+            self._raise_ledger_schema_for_key(ledger_key)
         if script_result == 2:
             raise IdempotencyOperationConflictError(
                 "Idempotency key is bound to a different logical operation.",
