@@ -82,7 +82,13 @@ from tests.qualification.compat_x._compat_x_event_evolution_r3_r1 import (
     validate_runtime_event_registry_parity,
 )
 from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
+    ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA,
+    ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256,
+    R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,
     build_r3_runtime_event_schema_version_candidate_delta,
+    build_synthetic_r3_inventory_balanced_add_remove_report,
+    build_synthetic_r3_inventory_equal_count_substitution_report,
+    build_synthetic_r3_inventory_hidden_removal_report,
     validate_current_head_compat_closed_world_inventory,
 )
 
@@ -402,7 +408,44 @@ def test_cx_r3_r1_compat_current_head_inventory_reconciled() -> None:
         delta.r3_reconciled_candidate_id,
     )
     assert delta.removed_candidate_ids == ()
+    assert delta.current_remainder_fingerprint == ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256
+    assert delta.historical_remainder_fingerprint == ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256
     assert validate_current_head_compat_closed_world_inventory() == ()
+
+
+def test_cx_r3_r1_r3_candidate_semantic_identity_and_version_literal() -> None:
+    delta = build_r3_runtime_event_schema_version_candidate_delta()
+    assert delta.r3_reconciled_candidate_id == R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
+    assert RUNTIME_EVENT_SCHEMA_VERSION == "runtime_event.v2"
+
+
+def test_cx_r3_r1_probe_q_equal_count_substitution_fails_inventory() -> None:
+    report = build_synthetic_r3_inventory_equal_count_substitution_report()
+    assert len(report.raw_candidates) == 7295
+    violations = validate_current_head_compat_closed_world_inventory(report)
+    assert violations
+    assert any("fingerprint" in v for v in violations)
+
+
+def test_cx_r3_r1_probe_r_hidden_removal_fails_inventory() -> None:
+    report = build_synthetic_r3_inventory_hidden_removal_report()
+    assert len(report.raw_candidates) == 7294
+    violations = validate_current_head_compat_closed_world_inventory(report)
+    assert violations
+
+
+def test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory() -> None:
+    report = build_synthetic_r3_inventory_balanced_add_remove_report()
+    assert len(report.raw_candidates) == 7295
+    violations = validate_current_head_compat_closed_world_inventory(report)
+    assert violations
+    assert any("fingerprint" in v for v in violations)
+
+
+def test_cx_r3_r1_historical_inventory_provenance_constants() -> None:
+    assert ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA == (
+        "0e5262199a6c2f1737cf8ff48def53945ec02974"
+    )
 
 
 def test_cx_r3_r1_probe_p_unknown_extra_compat_candidate_fails_inventory() -> None:

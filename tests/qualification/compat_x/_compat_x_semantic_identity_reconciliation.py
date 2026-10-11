@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -24,11 +25,26 @@ ACCEPTED_P0_RAW_CANDIDATES = 7294
 ACCEPTED_P0_SEMANTIC_SURFACES = 1902
 ACCEPTED_P0_EXCLUSIONS = 5294
 
+# Mechanical closed-world acceptance of historical P0 raw count (COMPAT-X R3-P0-R1 @ 0e5262199…).
+ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA = (
+    "0e5262199a6c2f1737cf8ff48def53945ec02974"
+)
+# Frozen SHA-256 of sorted historical raw candidate_id set (7294) at lineage head immediately
+# before COMPAT-X-R3-R1 final reconciliation proof (remainder equals current HEAD minus R3).
+ACCEPTED_P0_RAW_CANDIDATE_IDS_FINGERPRINT_SOURCE_SHA = (
+    "59afe830ddd765d9ad3d30ce77202d22184f3a97"
+)
+# UTF-8 newline-joined sorted(candidate_id) → SHA-256 hex (see candidate_id_fingerprint).
+ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256 = (
+    "bd2d065ad8730f0079885a189fb1cf4b22fcabe920267aec777b8db2c624878c"
+)
+
 # Current-head closed-world inventory after COMPAT-X-R3 envelope version authority (lineage preserved above).
 ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES = 7295
 ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES = 2001
 ACCEPTED_CURRENT_HEAD_LEGACY_PROJECTED_SEMANTIC_SURFACES = 1903
-ACCEPTED_R3_EVENT_EVOLUTION_IMPLEMENTATION_SHA = (
+R3_PRODUCTION_IMPLEMENTATION_SHA = "69f5e6fcb34918a43a602c1e00b079656c79c9a5"
+R3_RECONCILIATION_LINEAGE_HEAD_SHA = (
     "59afe830ddd765d9ad3d30ce77202d22184f3a97"
 )
 R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID = (
@@ -39,6 +55,15 @@ R3_RUNTIME_EVENT_SCHEMA_VERSION_SEMANTIC_IDENTITY = (
 )
 
 _UNRESOLVED_VERSION_MARKERS = frozenset({"unknown", "MISSING", ""})
+
+_SYNTHETIC_R3_INVENTORY_PROBE_PREFIX = "synthetic.qualification.compat_x.r3_inventory_probe::"
+
+
+def candidate_id_fingerprint(candidate_ids: Iterable[str]) -> str:
+    """Deterministic SHA-256 over UTF-8 newline-joined sorted unique candidate_id strings."""
+    normalized = "\n".join(sorted(set(candidate_ids)))
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
 
 _NON_CLASS_FIELD_KINDS_PRESERVED: frozenset[str] = frozenset(
     {
@@ -451,34 +476,168 @@ class CurrentHeadCompatInventoryDelta:
     removed_candidate_ids: tuple[str, ...]
     r3_reconciled_candidate_id: str
     r3_reconciled_semantic_identity: str
-    r3_implementation_sha: str
+    r3_reconciliation_lineage_head_sha: str
+    historical_remainder_fingerprint: str
+    current_remainder_fingerprint: str
+
+
+def _historical_remainder_fingerprint_mismatch_message(observed: str) -> str:
+    return (
+        "current-minus-R3 candidate_id fingerprint "
+        f"{observed} != accepted historical {ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256} "
+        f"(source {ACCEPTED_P0_RAW_CANDIDATE_IDS_FINGERPRINT_SOURCE_SHA})"
+    )
+
+
+def prove_r3_runtime_event_schema_version_inventory_delta(
+    report: ClosedWorldReport,
+) -> tuple[str, ...]:
+    """Cryptographic proof that current raw inventory is historical 7294-set plus exactly one R3 ID."""
+    violations: list[str] = []
+    raw_ids = [c.candidate_id for c in report.raw_candidates]
+    if len(raw_ids) != len(set(raw_ids)):
+        violations.append("duplicate candidate_id in closed-world raw inventory")
+        return tuple(violations)
+    current_ids = set(raw_ids)
+    if len(current_ids) != ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES:
+        violations.append(
+            f"raw_candidates {len(current_ids)} != "
+            f"accepted current-head {ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES}",
+        )
+    r3_id = R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
+    if r3_id not in current_ids:
+        violations.append("R3 RUNTIME_EVENT_SCHEMA_VERSION candidate missing from inventory")
+    remainder = current_ids - {r3_id}
+    if len(remainder) != ACCEPTED_P0_RAW_CANDIDATES:
+        violations.append(
+            f"current-minus-R3 raw count {len(remainder)} != "
+            f"historical accepted {ACCEPTED_P0_RAW_CANDIDATES}",
+        )
+    remainder_fp = candidate_id_fingerprint(remainder)
+    if remainder_fp != ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256:
+        violations.append(_historical_remainder_fingerprint_mismatch_message(remainder_fp))
+    return tuple(violations)
 
 
 def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompatInventoryDelta:
-    """Mechanical R3 reconciliation: sole expected raw-candidate delta vs frozen historical P0 count."""
+    """R3 reconciliation: derived added/removed IDs only after historical remainder fingerprint proof."""
     report = build_closed_world_report()
+    violations = prove_r3_runtime_event_schema_version_inventory_delta(report)
+    if violations:
+        raise AssertionError("; ".join(violations))
     current_ids = {c.candidate_id for c in report.raw_candidates}
-    if len(current_ids) != len(report.raw_candidates):
-        raise AssertionError("duplicate candidate_id in closed-world raw inventory")
-    if R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID not in current_ids:
-        raise AssertionError("R3 RUNTIME_EVENT_SCHEMA_VERSION candidate missing from inventory")
-    added = (R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,)
-    if len(report.raw_candidates) != ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES:
-        raise AssertionError(
-            f"current raw candidates {len(report.raw_candidates)} != "
-            f"accepted current-head {ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES}",
-        )
-    if len(report.raw_candidates) != ACCEPTED_P0_RAW_CANDIDATES + len(added):
-        raise AssertionError("unexpected raw candidate delta magnitude vs historical P0")
+    remainder = current_ids - {R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID}
+    remainder_fp = candidate_id_fingerprint(remainder)
     return CurrentHeadCompatInventoryDelta(
         historical_accepted_raw_candidates=ACCEPTED_P0_RAW_CANDIDATES,
-        current_raw_candidates=len(report.raw_candidates),
-        added_candidate_ids=added,
+        current_raw_candidates=len(current_ids),
+        added_candidate_ids=(R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,),
         removed_candidate_ids=(),
         r3_reconciled_candidate_id=R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,
         r3_reconciled_semantic_identity=R3_RUNTIME_EVENT_SCHEMA_VERSION_SEMANTIC_IDENTITY,
-        r3_implementation_sha=ACCEPTED_R3_EVENT_EVOLUTION_IMPLEMENTATION_SHA,
+        r3_reconciliation_lineage_head_sha=R3_RECONCILIATION_LINEAGE_HEAD_SHA,
+        historical_remainder_fingerprint=ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256,
+        current_remainder_fingerprint=remainder_fp,
     )
+
+
+def _closed_world_report_with_substituted_raw_candidates(
+    raw_candidates: tuple[DiscoveryCandidate, ...],
+) -> ClosedWorldReport:
+    template = build_closed_world_report()
+    return ClosedWorldReport(
+        raw_candidates=raw_candidates,
+        semantic_surfaces=template.semantic_surfaces,
+        exclusions=template.exclusions,
+        discovery_counts_by_kind=template.discovery_counts_by_kind,
+        unclassified_candidate_ids=template.unclassified_candidate_ids,
+        resolved_candidate_ids=template.resolved_candidate_ids,
+    )
+
+
+def _synthetic_r3_inventory_probe_candidate(suffix: str) -> DiscoveryCandidate:
+    probe_id = f"{_SYNTHETIC_R3_INVENTORY_PROBE_PREFIX}{suffix}"
+    return DiscoveryCandidate(
+        candidate_id=probe_id,
+        path="synthetic/qualification/compat_x/r3_inventory_probe.py",
+        discovery_kind="class.field.version",
+        discovered_signal="synthetic_inventory_probe",
+        semantic_identity=(
+            f"class.field:synthetic/qualification/compat_x/r3_inventory_probe.py:"
+            f"SyntheticInventoryProbe:{suffix}"
+        ),
+        current_version="synthetic.probe.v1",
+        version_source="literal",
+    )
+
+
+def _first_historical_remainder_candidate_id(report: ClosedWorldReport) -> str:
+    remainder = sorted(
+        c.candidate_id
+        for c in report.raw_candidates
+        if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
+    )
+    if not remainder:
+        raise AssertionError("historical remainder candidate set is empty")
+    return remainder[0]
+
+
+def build_synthetic_r3_inventory_equal_count_substitution_report() -> ClosedWorldReport:
+    """Probe Q: one historical removal + one synthetic replacement; R3 retained; net count 7295."""
+    base = build_closed_world_report()
+    remove_id = _first_historical_remainder_candidate_id(base)
+    replacement = _synthetic_r3_inventory_probe_candidate("probe_q_replacement")
+    raw: list[DiscoveryCandidate] = []
+    removed = False
+    for candidate in base.raw_candidates:
+        if candidate.candidate_id == remove_id:
+            removed = True
+            continue
+        raw.append(candidate)
+    if not removed:
+        raise AssertionError(f"probe Q could not remove historical candidate {remove_id}")
+    raw.append(replacement)
+    return _closed_world_report_with_substituted_raw_candidates(tuple(raw))
+
+
+def build_synthetic_r3_inventory_hidden_removal_report() -> ClosedWorldReport:
+    """Probe R: omit R3, remove one historical ID, add synthetic replacement (7294 raw IDs)."""
+    base = build_closed_world_report()
+    remove_id = _first_historical_remainder_candidate_id(base)
+    replacement = _synthetic_r3_inventory_probe_candidate("probe_r_replacement")
+    raw: list[DiscoveryCandidate] = []
+    for candidate in base.raw_candidates:
+        if candidate.candidate_id in {
+            R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,
+            remove_id,
+        }:
+            continue
+        raw.append(candidate)
+    raw.append(replacement)
+    return _closed_world_report_with_substituted_raw_candidates(tuple(raw))
+
+
+def build_synthetic_r3_inventory_balanced_add_remove_report() -> ClosedWorldReport:
+    """Probe S: R3 retained, distinct historical removal + synthetic addition (net count 7295)."""
+    base = build_closed_world_report()
+    remainder_ids = sorted(
+        c.candidate_id
+        for c in base.raw_candidates
+        if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
+    )
+    remove_id = remainder_ids[1] if len(remainder_ids) > 1 else remainder_ids[0]
+    replacement = _synthetic_r3_inventory_probe_candidate("probe_s_replacement")
+    raw: list[DiscoveryCandidate] = []
+    removed = False
+    for candidate in base.raw_candidates:
+        if candidate.candidate_id == remove_id:
+            removed = True
+            continue
+        raw.append(candidate)
+    if not removed:
+        raise AssertionError(f"probe S could not remove historical candidate {remove_id}")
+    raw.append(replacement)
+    return _closed_world_report_with_substituted_raw_candidates(tuple(raw))
 
 
 def validate_current_head_compat_closed_world_inventory(
@@ -508,21 +667,21 @@ def validate_current_head_compat_closed_world_inventory(
             f"semantic_surfaces {len(closed.semantic_surfaces)} != "
             f"accepted current-head {ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES}",
         )
-    try:
-        delta = build_r3_runtime_event_schema_version_candidate_delta()
-    except AssertionError as exc:
-        violations.append(f"R3 inventory delta proof failed: {exc}")
-        return tuple(violations)
+    violations.extend(prove_r3_runtime_event_schema_version_inventory_delta(closed))
     candidate_by_id = {c.candidate_id: c for c in closed.raw_candidates}
-    r3_candidate = candidate_by_id.get(delta.r3_reconciled_candidate_id)
+    r3_candidate = candidate_by_id.get(R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID)
     if r3_candidate is None:
         violations.append("R3 RUNTIME_EVENT_SCHEMA_VERSION candidate missing")
     elif r3_candidate.discovery_kind != "version.constant":
         violations.append(
             f"R3 candidate discovery_kind {r3_candidate.discovery_kind!r} != version.constant",
         )
-    elif r3_candidate.semantic_identity != delta.r3_reconciled_semantic_identity:
+    elif r3_candidate.semantic_identity != R3_RUNTIME_EVENT_SCHEMA_VERSION_SEMANTIC_IDENTITY:
         violations.append("R3 candidate semantic_identity mismatch")
     elif r3_candidate.path != "intergrax/contracts/runtime_event.py":
         violations.append("R3 candidate owner path != canonical RuntimeEvent contract owner")
+    elif r3_candidate.current_version != "runtime_event.v2":
+        violations.append(
+            f"R3 candidate current_version {r3_candidate.current_version!r} != runtime_event.v2",
+        )
     return tuple(violations)
