@@ -617,9 +617,9 @@ UNKNOWN → UNCLASSIFIED → gate FAIL
 
 ### TRACKED FREEZE DEBT (recorded @ R3-P0 bookkeeping — not R3 blockers)
 
-| Finding | Classification | Owner |
+| Finding | Classification | Disposition |
 | --- | --- | --- |
-| Execution → `RuntimeEventPersistence` direct imports (`debug_lab_nexus_loop.py`, `host_observability_composition.py`) | **TRACKED FREEZE DEBT** | **EBH-4** / **FRZ-BND-03** |
+| Execution → `RuntimeEventPersistence` direct imports (`debug_lab_nexus_loop.py`, `host_observability_composition.py`) | **TRACKED FREEZE DEBT** | **criterion:** **FRZ-BND-03** — reverse dependencies = 0; **historical affected stage:** **EBH-4** (already **CLOSED** on its historical accepted SHA); **mandatory future disposition:** **ROADMAP-REPLAY-X** — current-HEAD revalidation; if the violation remains, reopen **EBH-4** / applicable boundary parent before freeze |
 | `test_ue_9br1_runtime_event_legacy_retirement_gate.py` references missing `intergrax/agents/uaep.py` | **TRACKED FREEZE DEBT** | **QUAL-X** (stale qualification gate; not environment) |
 
 ## COMPAT-X-R3-R1 — Event Evolution Enforcement & Current-HEAD Closure (NEXT / QUEUED)
