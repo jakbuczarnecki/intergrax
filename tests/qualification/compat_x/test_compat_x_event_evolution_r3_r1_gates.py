@@ -48,15 +48,22 @@ from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     validate_production_persistence_call_site_classification,
 )
 from tests.qualification.compat_x._compat_x_event_evolution_r3_r1 import (
+    RuntimeEventReaderDisposition,
     count_runtime_event_v2_semantic_authority_literals,
     discover_persisted_runtime_event_read_paths,
+    discover_runtime_event_reader_sites,
+    event_evolution_r3_r1_gate_passes,
     minimal_runtime_event_payload_dict,
     observability_runtime_event_v2_literal_sites,
     production_runtime_event_v1_literal_sites,
     production_runtime_event_v2_literal_sites,
     registry_runtime_event_version_parity_violations,
     runtime_event_default_schema_version,
+    synthetic_persisted_runtime_event_model_validate_bypass_site,
+    synthetic_registry_drift_violations,
     synthetic_second_v2_literal_owner,
+    synthetic_unknown_persisted_reader_site,
+    validate_runtime_event_registry_parity,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
@@ -174,8 +181,36 @@ def test_cx_r3_r1_q15_no_second_evolution_authority() -> None:
     assert len(concerns) == len(set(concerns))
 
 
+def test_cx_r3_r1_combined_gate_passes_on_current_head() -> None:
+    passed, violations = event_evolution_r3_r1_gate_passes()
+    assert passed, violations
+
+
 def test_cx_r3_r1_probe_b_registry_drift_would_fail() -> None:
     assert registry_runtime_event_version_parity_violations() == ()
+    drift_violations = synthetic_registry_drift_violations()
+    assert drift_violations
+    drifted = {**RUNTIME_SCHEMA_REGISTRY, "runtime_event": "runtime_event.v99"}
+    assert validate_runtime_event_registry_parity(drifted) == drift_violations
+    passed, gate_violations = event_evolution_r3_r1_gate_passes(registry=drifted)
+    assert not passed
+    assert gate_violations
+
+
+def test_cx_r3_r1_probe_i_synthetic_persisted_model_validate_bypass_fails_gate() -> None:
+    site = synthetic_persisted_runtime_event_model_validate_bypass_site()
+    assert site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
+    passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+    assert not passed
+    assert violations
+
+
+def test_cx_r3_r1_probe_j_unknown_reader_unclassified_fails_gate() -> None:
+    site = synthetic_unknown_persisted_reader_site()
+    assert site.disposition == RuntimeEventReaderDisposition.UNCLASSIFIED
+    passed, violations = event_evolution_r3_r1_gate_passes(extra_reader_sites=(site,))
+    assert not passed
+    assert violations
 
 
 def test_cx_r3_r1_probe_j_second_evolution_authority_injection_fails() -> None:
@@ -248,3 +283,22 @@ def test_cx_r3_r1_persisted_readers_use_canonical_parser() -> None:
     readers = discover_persisted_runtime_event_read_paths()
     assert "intergrax/runtime/events/stores/sqlite_runtime_event_store.py" in readers
     assert "intergrax/runtime/events/stores/document_backed_runtime_event_store.py" in readers
+
+
+def test_cx_r3_r1_reader_sites_closed_world_classified() -> None:
+    sites = discover_runtime_event_reader_sites()
+    assert sites
+    assert all(
+        site.disposition != RuntimeEventReaderDisposition.UNCLASSIFIED for site in sites
+    )
+    canonical = [
+        site
+        for site in sites
+        if site.disposition == RuntimeEventReaderDisposition.CANONICAL_PARSER
+    ]
+    assert len(canonical) == 2
+    modules = {site.module_path for site in canonical}
+    assert modules == {
+        "intergrax/runtime/events/stores/document_backed_runtime_event_store.py",
+        "intergrax/runtime/events/stores/sqlite_runtime_event_store.py",
+    }
