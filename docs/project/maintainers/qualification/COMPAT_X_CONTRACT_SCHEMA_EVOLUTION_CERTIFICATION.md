@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **REJECTED / superseded by R1-R2** @ `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` · **COMPAT-X-R1-R2** = **REJECTED / superseded by R1-R3** @ `bc6b46b7c300d1db12ba664d327b339a75762532` · **COMPAT-X-R1-R3** = **REJECTED / superseded by R1-R4** @ `fc95f0f72d20401837bfaf6c06a63c8ef2d78aca` · **COMPAT-X-R1-R4** = **REJECTED / superseded by R1-R5** @ `a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72` · **COMPAT-X-R1-R5** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** (not parent closure) · **COMPAT-X-R2** = **NEXT / NOT YET IMPLEMENTED** · **TENANT-X** = **NOT ENTERED**
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **READY FOR AUDIT** (implementation on `development`; independent audit pending) · **COMPAT-X-R2** = **BLOCKED ON R2-P0 AUDIT** — **NEXT** persisted remediation after audit · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** · **COMPAT-X-R3** = **NOT ENTERED** · **TENANT-X** = **NOT ENTERED**
 
 **Branch:** `development`
 
@@ -380,24 +380,40 @@ domain registries → current version authority
 compatibility shim → NO canonical current-version authority (unless explicit canonical envelope inheritance)
 ```
 
+## COMPAT-X-R2-P0 — Persisted closed-world inventory (READY FOR AUDIT)
+
+Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.py` · gates: `test_compat_x_persisted_r2_p0_gates.py`.
+
+| Metric | Value |
+| --- | --- |
+| Persisted families (closed world) | **26** |
+| Classified / unclassified | **26** / **0** |
+| Explicit payload version | **12** |
+| Inherited envelope version | **1** |
+| Missing durable version | **8** |
+| Migration-required / owner-missing | **9** / **9** |
+| Duplicate version / migration authority | **0** / **0** |
+
+**Historical five P0 `PERSISTED_SCHEMA_WITHOUT_VERSION` findings:** reconciled — **4** heuristic false positives (service/exception/publisher); **1** real durable store boundary (`DocumentStoreSuspendedExecutionOperationStore` → envelope `suspended_operation_backing.v1`, not store class as schema).
+
+**Agent Distribution SQLite:** tables `installations` … `projection_descriptors` mapped; **IN-SCOPE BLOCKER:** `PackageAgentContractAuthorityRecord` durable in-memory only — SQLite bundle does not persist contract authority rows.
+
+**Remediation waves (evidence-derived):** **COMPAT-X-R2-R1** (missing schema identities + SQLite authority gap) → **COMPAT-X-R2-R2** (migration/read-compat) → **COMPAT-X-R2-FINAL** (FRZ-CMP-03/06 qualification).
+
+**production delta = 0**
+
 ## Program status
 
 ```text
-COMPAT-X-P0-R1 = REJECTED / superseded
-COMPAT-X-P0-R2 = REJECTED / superseded by accepted R3
-COMPAT-X-P0-R3 = CLOSED / independently accepted
-COMPAT-X-P0   = CLOSED / independently accepted
-COMPAT-X-R1-R1 = REJECTED / superseded by R1-R2 @ 1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6
-COMPAT-X-R1-R2 = REJECTED / superseded by R1-R3 @ bc6b46b7c300d1db12ba664d327b339a75762532
-COMPAT-X-R1-R3 = REJECTED / superseded by R1-R4 @ fc95f0f72d20401837bfaf6c06a63c8ef2d78aca
-COMPAT-X-R1-R4 = REJECTED / superseded by R1-R5 @ a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72
-COMPAT-X-R1-R5 = CLOSED / independently accepted @ 4361943d6812a83db321e3d3fbc6d361ed393fee
-COMPAT-X-R1   = CLOSED / independently accepted @ 4361943d6812a83db321e3d3fbc6d361ed393fee
+COMPAT-X-P0   = CLOSED / independently accepted @ 0612c2a7…
+COMPAT-X-R1   = CLOSED / independently accepted @ 4361943d…
+COMPAT-X-R2-P0 = READY FOR AUDIT
+COMPAT-X-R2   = BLOCKED ON R2-P0 AUDIT
 COMPAT-X      = OPEN / CURRENT — BLOCKED ON R2–R5 REMEDIATION
-COMPAT-X-R2   = NEXT / NOT YET IMPLEMENTED
+COMPAT-X-R3   = NOT ENTERED
 TENANT-X      = NOT ENTERED
 ```
 
 **Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
 
-**Next mandatory child:** **COMPAT-X-R2** — Persisted Schemas & Migration Closure (**NEXT / NOT YET IMPLEMENTED**).
+**Next mandatory child:** **COMPAT-X-R2-P0** independent audit → **COMPAT-X-R2** remediation implementation (not closed).
