@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Final
 
 
 class CompatDomain(StrEnum):
@@ -40,6 +41,12 @@ class OwnerResponsibilityState(StrEnum):
     CURRENT_CONFIRMED_OWNER = "CURRENT_CONFIRMED_OWNER"
     FRAGMENTED_UNOWNED = "FRAGMENTED_UNOWNED"
     CANDIDATE_OWNER_REMEDIATION_REQUIRED = "CANDIDATE_OWNER_REMEDIATION_REQUIRED"
+
+
+# Owner-matrix composition paths that are policy-only (no runtime composition module).
+POLICY_ONLY_DOMAIN_COMPOSITION_OWNER: Final[str] = (
+    "N/A — POLICY ONLY; DOMAIN COMPOSITION OWNERS"
+)
 
 
 class EvolutionState(StrEnum):

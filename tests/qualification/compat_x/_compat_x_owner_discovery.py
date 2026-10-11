@@ -7,7 +7,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Final
 
-from tests.qualification.compat_x._compat_x_types import CompatOwnerMatrixRow, OwnerResponsibilityState
+from tests.qualification.compat_x._compat_x_types import (
+    POLICY_ONLY_DOMAIN_COMPOSITION_OWNER,
+    CompatOwnerMatrixRow,
+    OwnerResponsibilityState,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -95,7 +99,7 @@ COMPAT_X_OWNER_MATRIX: Final[tuple[CompatOwnerMatrixRow, ...]] = (
         concern="plugin_provider_compatibility_policy",
         responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
         semantic_owner_path="docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
-        composition_owner_path="tests/qualification/compat_x/_compat_x_plugin_provider_r4_inventory.py",
+        composition_owner_path=POLICY_ONLY_DOMAIN_COMPOSITION_OWNER,
         evidence_paths=(
             "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
             "tests/qualification/compat_x/_compat_x_plugin_provider_r4_inventory.py",
@@ -106,9 +110,11 @@ COMPAT_X_OWNER_MATRIX: Final[tuple[CompatOwnerMatrixRow, ...]] = (
         concern="external_contract_semantic_assessment",
         responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
         semantic_owner_path="intergrax/integrations/contracts/external_contract_compatibility.py",
-        composition_owner_path="intergrax/integrations/contracts/external_contract_compatibility.py",
+        composition_owner_path="intergrax/integrations/external_contract_compatibility_extensions.py",
         evidence_paths=(
             "intergrax/integrations/contracts/external_contract_compatibility.py",
+            "intergrax/integrations/external_contract_compatibility_extensions.py",
+            "intergrax/integrations/external_contract_compatibility_service.py",
             "tests/qualification/external_contract_compatibility/test_external_contract_compatibility_certification.py",
         ),
     ),
@@ -138,7 +144,7 @@ def owner_matrix_paths_exist() -> tuple[str, ...]:
             if not (_REPO_ROOT / rel).is_file():
                 missing.append(rel)
         for rel in (row.semantic_owner_path, row.composition_owner_path):
-            if rel.startswith(("UNOWNED", "FRAGMENTED", "tests/")):
+            if rel.startswith(("UNOWNED", "FRAGMENTED", "tests/", "N/A")):
                 continue
             path = _REPO_ROOT / rel
             if path.is_file():

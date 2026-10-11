@@ -39,20 +39,34 @@ from tests.qualification.external_contract_compatibility.test_external_contract_
 from tests.qualification.compat_x._compat_x_owner_discovery import COMPAT_X_OWNER_MATRIX
 from tests.qualification.compat_x._compat_x_plugin_provider_r4_inventory import (
     PluginProviderCompatibilityDisposition,
+    SYNTHETIC_COMPATIBILITY_ACTIVATION_SHORTCUT_SOURCE,
+    SYNTHETIC_COMPATIBILITY_GOVERNANCE_SHORTCUT_SOURCE,
+    SYNTHETIC_IMPLEMENTATION_COMPATIBILITY_SOURCE,
     SYNTHETIC_REGISTRY_V2_SHADOW_REGISTER_SOURCE,
+    SYNTHETIC_ROGUE_LOCAL_PROVIDER_REGISTRY_SOURCE,
+    SYNTHETIC_SANCTIONED_CATALOG_DELEGATE_SOURCE,
+    SYNTHETIC_SHADOW_EXTERNAL_ASSESSMENT_SOURCE,
     SYNTHETIC_SHADOW_PACKAGE_EVALUATOR_SOURCE,
     SYNTHETIC_UNKNOWN_PLUGIN_COMPATIBILITY_SOURCE,
-    SYNTHETIC_IMPLEMENTATION_COMPATIBILITY_SOURCE,
+    _UNKNOWN_COMPAT_PROBE_MODULE,
     classify_synthetic_implementation_compatibility,
     classify_synthetic_registry_shadow_register,
+    classify_synthetic_sanctioned_catalog_delegate,
     classify_synthetic_shadow_package_evaluator,
     classify_synthetic_unknown_helper,
     collect_plugin_provider_compatibility_r4_violations,
+    count_provider_catalog_authorities,
     disposition_counts,
     plugin_provider_compatibility_r4_gate_passes,
+    provider_r4_authority_report,
+    qualification_composition_authority_violations,
     unclassified_records,
 )
-from tests.qualification.compat_x._compat_x_types import OwnerResponsibilityState
+from tests.qualification.compat_x._compat_x_types import (
+    POLICY_ONLY_DOMAIN_COMPOSITION_OWNER,
+    CompatOwnerMatrixRow,
+    OwnerResponsibilityState,
+)
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
@@ -68,6 +82,7 @@ def test_r4_owner_matrix_plugin_provider_policy_confirmed() -> None:
     policy = next(r for r in COMPAT_X_OWNER_MATRIX if r.concern == "plugin_provider_compatibility_policy")
     assert policy.responsibility_state == OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER
     assert "COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md" in policy.semantic_owner_path
+    assert policy.composition_owner_path == POLICY_ONLY_DOMAIN_COMPOSITION_OWNER
     manifest = next(r for r in COMPAT_X_OWNER_MATRIX if r.concern == "platform_plugin_manifest_compatibility")
     assert manifest.responsibility_state == OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER
     provider = next(r for r in COMPAT_X_OWNER_MATRIX if r.concern == "provider_contract_compatibility")
@@ -91,7 +106,7 @@ def test_r4_probe_b_unknown_compatibility_helper() -> None:
     assert classify_synthetic_unknown_helper() == PluginProviderCompatibilityDisposition.UNCLASSIFIED
     violations = collect_plugin_provider_compatibility_r4_violations(
         extra_sources=(
-            ("intergrax/synthetic/new_plugin_compatibility.py", SYNTHETIC_UNKNOWN_PLUGIN_COMPATIBILITY_SOURCE),
+            (_UNKNOWN_COMPAT_PROBE_MODULE, SYNTHETIC_UNKNOWN_PLUGIN_COMPATIBILITY_SOURCE),
         )
     )
     assert any("UNCLASSIFIED" in v for v in violations)
@@ -208,7 +223,88 @@ def test_r4_probe_k_duplicate_extension_ids() -> None:
 def test_r4_probe_l_unknown_production_candidate_fails_gate() -> None:
     violations = collect_plugin_provider_compatibility_r4_violations(
         extra_sources=(
-            ("intergrax/synthetic/new_plugin_compatibility.py", SYNTHETIC_UNKNOWN_PLUGIN_COMPATIBILITY_SOURCE),
+            (_UNKNOWN_COMPAT_PROBE_MODULE, SYNTHETIC_UNKNOWN_PLUGIN_COMPATIBILITY_SOURCE),
         )
     )
     assert violations
+
+
+def test_r4_probe_m_generic_unknown_compat_helper_production_path() -> None:
+    assert classify_synthetic_unknown_helper() == PluginProviderCompatibilityDisposition.UNCLASSIFIED
+
+
+def test_r4_probe_n_sanctioned_catalog_delegate() -> None:
+    assert (
+        classify_synthetic_sanctioned_catalog_delegate()
+        == PluginProviderCompatibilityDisposition.PROVIDER_CATALOG_DELEGATE
+    )
+    report = provider_r4_authority_report()
+    assert report["authority_count"] == 1
+
+
+def test_r4_probe_o_rogue_local_provider_registry() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/rogue_local_registry.py",
+                SYNTHETIC_ROGUE_LOCAL_PROVIDER_REGISTRY_SOURCE,
+            ),
+        )
+    )
+    assert any("shadow" in v.lower() for v in violations)
+
+
+def test_r4_probe_p_qualification_as_composition_owner_fails_gate() -> None:
+    policy = next(r for r in COMPAT_X_OWNER_MATRIX if r.concern == "plugin_provider_compatibility_policy")
+    mutated = CompatOwnerMatrixRow(
+        concern=policy.concern,
+        responsibility_state=policy.responsibility_state,
+        semantic_owner_path=policy.semantic_owner_path,
+        composition_owner_path="tests/qualification/compat_x/evil_composition_owner.py",
+        evidence_paths=policy.evidence_paths,
+    )
+    matrix = tuple(
+        mutated if row.concern == "plugin_provider_compatibility_policy" else row
+        for row in COMPAT_X_OWNER_MATRIX
+    )
+    assert qualification_composition_authority_violations(matrix)
+
+
+def test_r4_probe_q_shadow_external_assessment_authority() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/rogue_external_assessment.py",
+                SYNTHETIC_SHADOW_EXTERNAL_ASSESSMENT_SOURCE,
+            ),
+        )
+    )
+    assert any("external" in v.lower() for v in violations)
+
+
+def test_r4_probe_r_compatibility_activation_shortcut() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/compat_activation_shortcut.py",
+                SYNTHETIC_COMPATIBILITY_ACTIVATION_SHORTCUT_SOURCE,
+            ),
+        )
+    )
+    assert any("activation" in v.lower() for v in violations)
+
+
+def test_r4_probe_s_compatibility_governance_shortcut() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/compat_governance_shortcut.py",
+                SYNTHETIC_COMPATIBILITY_GOVERNANCE_SHORTCUT_SOURCE,
+            ),
+        )
+    )
+    assert any("governance" in v.lower() or "execution" in v.lower() for v in violations)
+
+
+def test_r4_provider_catalog_authority_exactly_one() -> None:
+    assert count_provider_catalog_authorities() == 1
