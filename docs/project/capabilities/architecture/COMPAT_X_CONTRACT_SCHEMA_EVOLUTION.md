@@ -64,12 +64,12 @@ RuntimeEvent evolution has **two independent compatibility dimensions**. They mu
 
 | Dimension | Identity field | Canonical current-value owner | Enforcement |
 | --- | --- | --- | --- |
-| **Envelope** | `RuntimeEvent.schema_version` (e.g. `runtime_event.v2`) | `intergrax/runtime/schema/registry.py` (`RUNTIME_SCHEMA_REGISTRY`) + envelope contract `intergrax/contracts/runtime_event.py` | `intergrax/runtime/events/schema_guard.py`, `parse_runtime_event_payload` |
+| **Envelope** | `RuntimeEvent.schema_version` (e.g. `runtime_event.v2`) | **`intergrax/contracts/runtime_event.py`** (`RUNTIME_EVENT_SCHEMA_VERSION`); `RUNTIME_SCHEMA_REGISTRY["runtime_event"]` is a derived catalog projection | `intergrax/runtime/events/schema_guard.py`, `parse_runtime_event_payload` |
 | **Payload** | `payload.payload_schema_id` + registered `RuntimeEventPayload` class | Payload models under `intergrax/runtime/events/payloads/` + `intergrax/runtime/events/payload_registry.py` | `schema_guard`, `validate_payload_envelope`, canonical write policy |
 
 ### Envelope version semantics
 
-- **Current write and supported read** for production runtime evidence is the value in `RUNTIME_SCHEMA_REGISTRY["runtime_event"]` (currently `runtime_event.v2`).
+- **Current write and supported read** for production runtime evidence is `RUNTIME_EVENT_SCHEMA_VERSION` on the contract (registry entry must match; preview hooks do not apply to the `runtime_event` envelope).
 - **Missing** envelope `schema_version` on persisted/wire decode ⇒ **fail closed** (`parse_runtime_event_payload`).
 - **Unknown or future** envelope versions ⇒ **fail closed** (no implicit preview acceptance via qualification).
 - **Retired** envelope versions (e.g. `runtime_event.v1`) ⇒ **fail closed** on read; no default v1→v2 migration or compatibility adapter in event evolution policy.

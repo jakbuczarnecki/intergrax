@@ -89,6 +89,7 @@ def test_envelope_from_runtime_event_excludes_raw_payload_content() -> None:
 
     envelope = envelope_from_runtime_event(event)
 
+    assert envelope.source_schema_id == event.schema_version
     assert envelope.tool_id == "workspace.write_file"
     assert envelope.latency_ms == 12
     assert envelope_is_content_safe(envelope)

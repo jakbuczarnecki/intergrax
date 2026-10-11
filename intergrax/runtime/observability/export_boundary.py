@@ -393,7 +393,7 @@ def envelope_from_runtime_event_source(
         sha256=str(safe_payload.get("args_digest") or ""),
         schema_id=schema_id,
         tenant_id=source.tenant_id,
-        source_schema_id="runtime_event.v2",
+        source_schema_id=source.source_schema_id,
         correlation_id=source.correlation_id,
         event_id=source.event_id,
         parent_event_id=source.parent_event_id,

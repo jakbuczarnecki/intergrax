@@ -19,6 +19,7 @@ class RuntimeEventExportSource(BaseModel):
     schema_version: Literal["runtime_event_export_source.v1"] = (
         "runtime_event_export_source.v1"
     )
+    source_schema_id: str
     event_id: str
     run_id: str
     task_id: str

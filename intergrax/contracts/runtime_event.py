@@ -37,6 +37,9 @@ from intergrax.contracts.w3c_trace_context import (
     is_valid_tracestate,
 )
 
+RUNTIME_EVENT_SCHEMA_VERSION = "runtime_event.v2"
+_RUNTIME_EVENT_V1 = "runtime_event.v1"
+
 
 class RuntimeEvent(BaseModel):
     event_id: EventId = Field(default_factory=mint_event_id)
@@ -60,7 +63,7 @@ class RuntimeEvent(BaseModel):
     parent_event_id: EventId | None = None
     traceparent: Optional[str] = None
     tracestate: Optional[str] = None
-    schema_version: str = "runtime_event.v2"
+    schema_version: str = RUNTIME_EVENT_SCHEMA_VERSION
 
     @field_validator("event_id", mode="before")
     @classmethod
@@ -137,20 +140,16 @@ class RuntimeEvent(BaseModel):
         return self.model_copy(update=updates)
 
 
-_RUNTIME_EVENT_V2 = "runtime_event.v2"
-_RUNTIME_EVENT_V1 = "runtime_event.v1"
-
-
 def parse_runtime_event_payload(data: object) -> RuntimeEvent:
     """Deserialize persisted runtime events (explicit version gate; fail closed)."""
     if not isinstance(data, dict):
         raise ValueError("runtime event payload must be a mapping")
     schema_version = data.get("schema_version")
-    if schema_version == _RUNTIME_EVENT_V2:
+    if schema_version == RUNTIME_EVENT_SCHEMA_VERSION:
         return RuntimeEvent.model_validate(data)
     if schema_version is None:
         raise ValueError(
-            f"missing runtime event schema_version; expected {_RUNTIME_EVENT_V2!r}"
+            f"missing runtime event schema_version; expected {RUNTIME_EVENT_SCHEMA_VERSION!r}"
         )
     if schema_version == _RUNTIME_EVENT_V1:
         raise ValueError(
@@ -159,11 +158,12 @@ def parse_runtime_event_payload(data: object) -> RuntimeEvent:
         )
     raise ValueError(
         f"unsupported runtime event schema version {schema_version!r}; "
-        f"expected {_RUNTIME_EVENT_V2!r}"
+        f"expected {RUNTIME_EVENT_SCHEMA_VERSION!r}"
     )
 
 
 __all__ = [
+    "RUNTIME_EVENT_SCHEMA_VERSION",
     "RuntimeEvent",
     "RuntimeEventType",
     "parse_runtime_event_payload",
