@@ -39,8 +39,12 @@ from tests.qualification.external_contract_compatibility.test_external_contract_
 from tests.qualification.compat_x._compat_x_owner_discovery import COMPAT_X_OWNER_MATRIX
 from tests.qualification.compat_x._compat_x_plugin_provider_r4_inventory import (
     PluginProviderCompatibilityDisposition,
+    SYNTHETIC_BENIGN_ADMISSION_CONSUMER_SOURCE,
     SYNTHETIC_COMPATIBILITY_ACTIVATION_SHORTCUT_SOURCE,
     SYNTHETIC_COMPATIBILITY_GOVERNANCE_SHORTCUT_SOURCE,
+    SYNTHETIC_NEUTRAL_LOCAL_PROVIDER_REGISTRY_SOURCE,
+    SYNTHETIC_PRODUCTION_PATH_ACTIVATION_SHORTCUT_SOURCE,
+    _EXTERNAL_COMPAT_CONTRACTS,
     SYNTHETIC_IMPLEMENTATION_COMPATIBILITY_SOURCE,
     SYNTHETIC_REGISTRY_V2_SHADOW_REGISTER_SOURCE,
     SYNTHETIC_ROGUE_LOCAL_PROVIDER_REGISTRY_SOURCE,
@@ -55,8 +59,16 @@ from tests.qualification.compat_x._compat_x_plugin_provider_r4_inventory import 
     classify_synthetic_shadow_package_evaluator,
     classify_synthetic_unknown_helper,
     collect_plugin_provider_compatibility_r4_violations,
+    count_compatibility_activation_shortcuts,
+    count_compatibility_execution_shortcuts,
+    count_compatibility_governance_shortcuts,
+    count_external_semantic_assessment_authorities,
     count_provider_catalog_authorities,
+    count_provider_registration_shadow_authorities,
+    count_shadow_external_compat_authorities,
     disposition_counts,
+    production_python_source_count,
+    plugin_provider_r4_closed_world_records,
     plugin_provider_compatibility_r4_gate_passes,
     provider_r4_authority_report,
     qualification_composition_authority_violations,
@@ -76,6 +88,14 @@ def test_r4_closed_world_gate_passes_on_current_head() -> None:
     assert passed, violations
     assert unclassified_records() == ()
     assert disposition_counts().get(PluginProviderCompatibilityDisposition.UNCLASSIFIED.value, 0) == 0
+    assert production_python_source_count() > 0
+    records = plugin_provider_r4_closed_world_records()
+    assert count_external_semantic_assessment_authorities(records) == 1
+    assert count_compatibility_activation_shortcuts(records) == 0
+    assert count_compatibility_governance_shortcuts(records) == 0
+    assert count_compatibility_execution_shortcuts(records) == 0
+    assert count_provider_registration_shadow_authorities(records) == 0
+    assert count_shadow_external_compat_authorities(records) == 0
 
 
 def test_r4_owner_matrix_plugin_provider_policy_confirmed() -> None:
@@ -308,3 +328,58 @@ def test_r4_probe_s_compatibility_governance_shortcut() -> None:
 
 def test_r4_provider_catalog_authority_exactly_one() -> None:
     assert count_provider_catalog_authorities() == 1
+
+
+def test_r4_probe_t_canonical_external_owner_missing() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        exclude_production_modules=frozenset({_EXTERNAL_COMPAT_CONTRACTS}),
+    )
+    assert any("external semantic assessment authority count 0" in v for v in violations)
+
+
+def test_r4_probe_u_second_external_assessment_with_canonical_present() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/second_external_assessment.py",
+                SYNTHETIC_SHADOW_EXTERNAL_ASSESSMENT_SOURCE,
+            ),
+        )
+    )
+    assert any("external" in v.lower() for v in violations)
+
+
+def test_r4_probe_v_production_path_activation_shortcut() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/production_compat_activation.py",
+                SYNTHETIC_PRODUCTION_PATH_ACTIVATION_SHORTCUT_SOURCE,
+            ),
+        )
+    )
+    assert any("activation" in v.lower() for v in violations)
+
+
+def test_r4_probe_w_benign_admission_consumer() -> None:
+    passed, violations = plugin_provider_compatibility_r4_gate_passes(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/benign_admission_consumer.py",
+                SYNTHETIC_BENIGN_ADMISSION_CONSUMER_SOURCE,
+            ),
+        )
+    )
+    assert passed, violations
+
+
+def test_r4_probe_x_neutral_local_provider_registry() -> None:
+    violations = collect_plugin_provider_compatibility_r4_violations(
+        extra_sources=(
+            (
+                "intergrax/applications/provider_bridge/neutral_provider_registry.py",
+                SYNTHETIC_NEUTRAL_LOCAL_PROVIDER_REGISTRY_SOURCE,
+            ),
+        )
+    )
+    assert any("provider registration shadow" in v for v in violations)

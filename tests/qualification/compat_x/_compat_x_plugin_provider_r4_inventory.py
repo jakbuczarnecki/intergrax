@@ -41,6 +41,39 @@ _EXTERNAL_COMPAT_EXTENSIONS: Final = (
     "intergrax/integrations/external_contract_compatibility_extensions.py"
 )
 _EXTERNAL_COMPAT_SERVICE: Final = "intergrax/integrations/external_contract_compatibility_service.py"
+_SANCTIONED_EXTERNAL_COMPAT_MODULES: Final = frozenset(
+    {
+        _EXTERNAL_COMPAT_CONTRACTS,
+        _EXTERNAL_COMPAT_EXTENSIONS,
+        _EXTERNAL_COMPAT_SERVICE,
+    }
+)
+_PROVIDER_REGISTRATION_SANCTIONED_MODULES: Final = frozenset(
+    {
+        _PROVIDER_CATALOG,
+        _PROVIDER_PLUGIN_REGISTER,
+        _REGISTRY_V2,
+        _PROVIDER_FACTORY,
+        _PROVIDER_CONTRACT_SPEC,
+    }
+)
+_CANONICAL_EXTERNAL_SEMANTIC_ANCHORS: Final = frozenset(
+    {
+        "ExternalContractCompatibilityExpectation",
+        "ExternalContractCompatibilityEvidence",
+        "ExternalContractCompatibilityAssessment",
+        "ExternalContractCompatibilityEvaluator",
+    }
+)
+_CANONICAL_CATALOG_REGISTRATION_CALLEES: Final = frozenset(
+    {
+        "register_integration",
+        "register_from_manifest",
+        "register_integration_plugin",
+        "declare_integration_contract",
+        "augment_integration_contract_specs",
+    }
+)
 
 _PACKAGE_EVAL_CALLS: Final = frozenset(
     {
@@ -136,6 +169,7 @@ class PluginProviderClassificationEvidence(StrEnum):
     CONTRACT_IDENTITY_ASSERTION = "contract_identity_assertion"
     SYNTHETIC_SHADOW_PROBE = "synthetic_shadow_probe"
     SYNTHETIC_UNCLASSIFIED_PROBE = "synthetic_unclassified_probe"
+    PRODUCTION_COMPATIBILITY_AUTHORITY_SCAN = "production_compatibility_authority_scan"
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +202,32 @@ def _iter_production_python_sources() -> list[Path]:
                 continue
             paths.append(file_path)
     return sorted(paths)
+
+
+@lru_cache(maxsize=1)
+def _production_python_sources() -> tuple[tuple[str, str], ...]:
+    return tuple(
+        (_repo_relative(file_path), file_path.read_text(encoding="utf-8"))
+        for file_path in _iter_production_python_sources()
+    )
+
+
+def production_python_source_count() -> int:
+    return len(_production_python_sources())
+
+
+def _build_discovery_source_universe(
+    *,
+    extra_sources: tuple[tuple[str, str], ...],
+    exclude_production_modules: frozenset[str],
+) -> tuple[tuple[str, str], ...]:
+    sources: list[tuple[str, str]] = []
+    for rel, text in _production_python_sources():
+        if rel in exclude_production_modules:
+            continue
+        sources.append((rel, text))
+    sources.extend(extra_sources)
+    return tuple(sources)
 
 
 def _enclosing_qualname(tree: ast.Module, lineno: int) -> str:
@@ -589,6 +649,7 @@ def _classify_specifier_set_call(
 def discover_plugin_provider_compatibility_candidates(
     *,
     extra_sources: tuple[tuple[str, str], ...] = (),
+    exclude_production_modules: frozenset[str] = frozenset(),
 ) -> tuple[PluginProviderCompatibilityCandidateRecord, ...]:
     """Mechanical closed-world discovery for R4 (production roots + optional synthetic sources)."""
     records: list[PluginProviderCompatibilityCandidateRecord] = []
@@ -601,11 +662,10 @@ def discover_plugin_provider_compatibility_candidates(
         seen.add(key)
         records.append(record)
 
-    sources: list[tuple[str, str]] = []
-    for file_path in _iter_production_python_sources():
-        rel = _repo_relative(file_path)
-        sources.append((rel, file_path.read_text(encoding="utf-8")))
-    sources.extend(extra_sources)
+    sources = _build_discovery_source_universe(
+        extra_sources=extra_sources,
+        exclude_production_modules=exclude_production_modules,
+    )
 
     for module_path, source in sources:
         try:
@@ -676,6 +736,22 @@ def discover_plugin_provider_compatibility_candidates(
 @lru_cache(maxsize=1)
 def plugin_provider_r4_inventory() -> tuple[PluginProviderCompatibilityCandidateRecord, ...]:
     return discover_plugin_provider_compatibility_candidates()
+
+
+def plugin_provider_r4_closed_world_records(
+    *,
+    extra_sources: tuple[tuple[str, str], ...] = (),
+    exclude_production_modules: frozenset[str] = frozenset(),
+) -> tuple[PluginProviderCompatibilityCandidateRecord, ...]:
+    discovered = discover_plugin_provider_compatibility_candidates(
+        extra_sources=extra_sources,
+        exclude_production_modules=exclude_production_modules,
+    )
+    shortcuts = _discover_shortcut_and_shadow_records(
+        extra_sources=extra_sources,
+        exclude_production_modules=exclude_production_modules,
+    )
+    return tuple(discovered) + shortcuts
 
 
 def disposition_counts(
@@ -770,7 +846,7 @@ def count_shadow_external_compat_authorities(
 def count_compatibility_activation_shortcuts(
     records: tuple[PluginProviderCompatibilityCandidateRecord, ...] | None = None,
 ) -> int:
-    items = records if records is not None else plugin_provider_r4_inventory()
+    items = records if records is not None else plugin_provider_r4_closed_world_records()
     return sum(
         1
         for r in items
@@ -781,30 +857,38 @@ def count_compatibility_activation_shortcuts(
 def count_compatibility_governance_shortcuts(
     records: tuple[PluginProviderCompatibilityCandidateRecord, ...] | None = None,
 ) -> int:
-    items = records if records is not None else plugin_provider_r4_inventory()
+    items = records if records is not None else plugin_provider_r4_closed_world_records()
     return sum(
         1
         for r in items
         if r.disposition
-        in {
-            PluginProviderCompatibilityDisposition.COMPATIBILITY_GOVERNANCE_AUTHORITY_SHORTCUT,
-            PluginProviderCompatibilityDisposition.COMPATIBILITY_EXECUTION_AUTHORITY_SHORTCUT,
-        }
+        == PluginProviderCompatibilityDisposition.COMPATIBILITY_GOVERNANCE_AUTHORITY_SHORTCUT
+    )
+
+
+def count_compatibility_execution_shortcuts(
+    records: tuple[PluginProviderCompatibilityCandidateRecord, ...] | None = None,
+) -> int:
+    items = records if records is not None else plugin_provider_r4_closed_world_records()
+    return sum(
+        1
+        for r in items
+        if r.disposition
+        == PluginProviderCompatibilityDisposition.COMPATIBILITY_EXECUTION_AUTHORITY_SHORTCUT
     )
 
 
 def count_external_semantic_assessment_authorities(
     records: tuple[PluginProviderCompatibilityCandidateRecord, ...] | None = None,
 ) -> int:
-    items = records if records is not None else plugin_provider_r4_inventory()
-    contract_markers = {
+    items = records if records is not None else plugin_provider_r4_closed_world_records()
+    discovered = {
         r.operation
         for r in items
         if r.module_path == _EXTERNAL_COMPAT_CONTRACTS
-        and r.disposition
-        == PluginProviderCompatibilityDisposition.EXTERNAL_CONTRACT_COMPATIBILITY_CONTRACT
+        and r.operation in _CANONICAL_EXTERNAL_SEMANTIC_ANCHORS
     }
-    return 1 if _EXTERNAL_COMPAT_CONTRACTS and contract_markers else 0
+    return 1 if discovered == _CANONICAL_EXTERNAL_SEMANTIC_ANCHORS else 0
 
 
 def count_provider_registration_shadow_authorities(
@@ -920,6 +1004,14 @@ def _bounded_platform_compatibility_consumer_violations() -> tuple[str, ...]:
     return tuple(violations)
 
 
+def _function_test_reads_compatible_attribute(test: ast.expr) -> bool:
+    if isinstance(test, ast.Attribute) and test.attr == "compatible":
+        return True
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        return _function_test_reads_compatible_attribute(test.operand)
+    return False
+
+
 def _function_has_compatible_activation_shortcut(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     activation_calls = frozenset(
         {
@@ -927,22 +1019,22 @@ def _function_has_compatible_activation_shortcut(func: ast.FunctionDef | ast.Asy
             "load_plugin",
             "register_integration",
             "register_integration_plugin",
+            "register_from_manifest",
             "execute_plugin",
+            "enable_plugin",
         }
     )
+    admission_calls = frozenset({"evaluate_package_production_admission"})
     for node in ast.walk(func):
         if not isinstance(node, ast.If):
             continue
-        test = node.test
-        if not (
-            isinstance(test, ast.Attribute)
-            and test.attr == "compatible"
-            and isinstance(test.value, ast.Name)
-        ):
+        if not _function_test_reads_compatible_attribute(node.test):
             continue
         for child in ast.walk(node):
             if isinstance(child, ast.Call):
                 callee = _call_name(child)
+                if callee in admission_calls:
+                    continue
                 if callee in activation_calls:
                     return True
     return False
@@ -955,13 +1047,13 @@ def _function_grants_governance_from_compatible(func: ast.FunctionDef | ast.Asyn
             "approve",
             "authorize",
             "mint_execution_authority",
+            "mint_authority",
         }
     )
     for node in ast.walk(func):
         if not isinstance(node, ast.If):
             continue
-        test = node.test
-        if not (isinstance(test, ast.Attribute) and test.attr == "compatible"):
+        if not _function_test_reads_compatible_attribute(node.test):
             continue
         for child in ast.walk(node):
             if isinstance(child, ast.Call):
@@ -971,82 +1063,224 @@ def _function_grants_governance_from_compatible(func: ast.FunctionDef | ast.Asyn
     return False
 
 
-def _is_shadow_external_assessment_class(node: ast.ClassDef) -> bool:
-    method_names = {item.name for item in node.body if isinstance(item, ast.FunctionDef)}
-    return {"assess", "collect_evidence", "resolve_expectation"}.issubset(method_names)
-
-
-def _module_defines_rogue_provider_registry(tree: ast.Module) -> bool:
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name.startswith("rogue_"):
-            for inner in ast.walk(node):
-                if isinstance(inner, ast.Assign) and isinstance(inner.targets[0], ast.Subscript):
+def _function_grants_execution_from_compatible(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    execution_calls = frozenset(
+        {
+            "execute_plugin",
+            "invoke_plugin",
+            "execute_integration",
+            "invoke_integration",
+        }
+    )
+    for node in ast.walk(func):
+        if not isinstance(node, ast.If):
+            continue
+        if not _function_test_reads_compatible_attribute(node.test):
+            continue
+        for child in ast.walk(node):
+            if isinstance(child, ast.Call):
+                callee = _call_name(child)
+                if callee in execution_calls:
                     return True
     return False
+
+
+def _annotation_references_integration_entry(annotation: ast.expr | None) -> bool:
+    if annotation is None:
+        return False
+    text = ast.unparse(annotation)
+    return "IntegrationEntry" in text
+
+
+def _module_local_provider_registry_names(tree: ast.Module) -> frozenset[str]:
+    names: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if _annotation_references_integration_entry(node.annotation):
+                names.add(node.target.id)
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if not isinstance(target, ast.Name):
+                    continue
+                if node.value is not None and isinstance(node.value, ast.Dict):
+                    for key in node.value.keys:
+                        if key is None:
+                            continue
+                    names.add(target.id)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if _annotation_references_integration_entry(node.annotation):
+                names.add(node.target.id)
+    return frozenset(names)
+
+
+def _function_mutates_local_provider_registry(
+    func: ast.FunctionDef | ast.AsyncFunctionDef,
+    registry_names: frozenset[str],
+) -> bool:
+    if not registry_names:
+        return False
+    delegates_to_catalog = False
+    mutates_local = False
+    for inner in ast.walk(func):
+        if isinstance(inner, ast.Call):
+            callee = _call_name(inner)
+            if callee in _CANONICAL_CATALOG_REGISTRATION_CALLEES:
+                delegates_to_catalog = True
+        if isinstance(inner, ast.Assign) and isinstance(inner.targets[0], ast.Subscript):
+            target = inner.targets[0].value
+            if isinstance(target, ast.Name) and target.id in registry_names:
+                mutates_local = True
+        if isinstance(inner, ast.AugAssign) and isinstance(inner.target, ast.Subscript):
+            target = inner.target.value
+            if isinstance(target, ast.Name) and target.id in registry_names:
+                mutates_local = True
+    return mutates_local and not delegates_to_catalog
+
+
+def _module_provider_registration_shadow_evidence(
+    tree: ast.Module,
+    module_path: str,
+) -> tuple[int, str, str] | None:
+    path = module_path.replace("\\", "/")
+    if path in _PROVIDER_REGISTRATION_SANCTIONED_MODULES:
+        return None
+    registry_names = _module_local_provider_registry_names(tree)
+    if not registry_names:
+        return None
+    for node in tree.body:
+        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            continue
+        if _function_mutates_local_provider_registry(node, registry_names):
+            return (node.lineno, node.name, next(iter(registry_names)))
+    return None
+
+
+def _external_assessment_method_semantics(method_names: frozenset[str]) -> bool:
+    canonical = {"assess", "collect_evidence", "resolve_expectation"}
+    if canonical.issubset(method_names):
+        return True
+    has_assess = "assess" in method_names or "evaluate" in method_names
+    has_evidence = (
+        "collect_evidence" in method_names
+        or "collect" in method_names
+        or "gather_evidence" in method_names
+    )
+    has_expectation = "resolve_expectation" in method_names or "resolve" in method_names
+    return has_assess and has_evidence and has_expectation
+
+
+def _is_shadow_external_assessment_class(node: ast.ClassDef, module_path: str) -> bool:
+    path = module_path.replace("\\", "/")
+    if path in _SANCTIONED_EXTERNAL_COMPAT_MODULES:
+        return False
+    name_lower = node.name.lower()
+    if "compat" not in name_lower and "contract" not in name_lower:
+        return False
+    method_names = frozenset(
+        item.name for item in node.body if isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef)
+    )
+    if not _external_assessment_method_semantics(method_names):
+        return False
+    if "Evaluator" in node.name and "assess" not in method_names:
+        return False
+    return True
+
+
+def _shortcut_classification_evidence(
+    module_path: str,
+    extra_paths: frozenset[str],
+) -> PluginProviderClassificationEvidence:
+    if module_path in extra_paths:
+        return PluginProviderClassificationEvidence.SYNTHETIC_SHADOW_PROBE
+    return PluginProviderClassificationEvidence.PRODUCTION_COMPATIBILITY_AUTHORITY_SCAN
 
 
 def _discover_shortcut_and_shadow_records(
     *,
     extra_sources: tuple[tuple[str, str], ...] = (),
+    exclude_production_modules: frozenset[str] = frozenset(),
 ) -> tuple[PluginProviderCompatibilityCandidateRecord, ...]:
     records: list[PluginProviderCompatibilityCandidateRecord] = []
-    for module_path, source in extra_sources:
+    extra_paths = frozenset(module_path.replace("\\", "/") for module_path, _ in extra_sources)
+    sources = _build_discovery_source_universe(
+        extra_sources=extra_sources,
+        exclude_production_modules=exclude_production_modules,
+    )
+    for module_path, source in sources:
+        path = module_path.replace("\\", "/")
+        evidence = _shortcut_classification_evidence(path, extra_paths)
         try:
             tree = ast.parse(source)
         except SyntaxError:
             continue
-        if _module_defines_rogue_provider_registry(tree):
+        shadow_registry = _module_provider_registration_shadow_evidence(tree, path)
+        if shadow_registry is not None:
+            line, qualname, registry_name = shadow_registry
             records.append(
                 PluginProviderCompatibilityCandidateRecord(
-                    module_path=module_path.replace("\\", "/"),
-                    line=1,
-                    qualname="<module>",
-                    operation="rogue_local_provider_registry",
+                    module_path=path,
+                    line=line,
+                    qualname=qualname,
+                    operation=f"local_provider_registry:{registry_name}",
                     disposition=PluginProviderCompatibilityDisposition.PROVIDER_REGISTRATION_SHADOW_AUTHORITY,
                     semantic_concern="provider_registration_shadow",
-                    owner_evidence="shadow",
-                    classification_evidence=PluginProviderClassificationEvidence.SYNTHETIC_SHADOW_PROBE,
+                    owner_evidence=path,
+                    classification_evidence=evidence,
                 )
             )
         for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and _is_shadow_external_assessment_class(node):
+            if isinstance(node, ast.ClassDef) and _is_shadow_external_assessment_class(node, path):
                 records.append(
                     PluginProviderCompatibilityCandidateRecord(
-                        module_path=module_path.replace("\\", "/"),
+                        module_path=path,
                         line=node.lineno,
                         qualname=node.name,
                         operation=node.name,
                         disposition=PluginProviderCompatibilityDisposition.SHADOW_EXTERNAL_COMPATIBILITY_AUTHORITY,
                         semantic_concern="shadow_external_contract_assessment",
-                        owner_evidence="shadow",
-                        classification_evidence=PluginProviderClassificationEvidence.SYNTHETIC_SHADOW_PROBE,
+                        owner_evidence=path,
+                        classification_evidence=evidence,
                     )
                 )
             if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                 if _function_has_compatible_activation_shortcut(node):
                     records.append(
                         PluginProviderCompatibilityCandidateRecord(
-                            module_path=module_path.replace("\\", "/"),
+                            module_path=path,
                             line=node.lineno,
                             qualname=node.name,
                             operation=node.name,
                             disposition=PluginProviderCompatibilityDisposition.COMPATIBILITY_ACTIVATION_SHORTCUT,
                             semantic_concern="compatibility_activation_shortcut",
-                            owner_evidence=module_path,
-                            classification_evidence=PluginProviderClassificationEvidence.SYNTHETIC_SHADOW_PROBE,
+                            owner_evidence=path,
+                            classification_evidence=evidence,
                         )
                     )
                 if _function_grants_governance_from_compatible(node):
                     records.append(
                         PluginProviderCompatibilityCandidateRecord(
-                            module_path=module_path.replace("\\", "/"),
+                            module_path=path,
                             line=node.lineno,
                             qualname=node.name,
                             operation=node.name,
                             disposition=PluginProviderCompatibilityDisposition.COMPATIBILITY_GOVERNANCE_AUTHORITY_SHORTCUT,
                             semantic_concern="compatibility_governance_shortcut",
-                            owner_evidence=module_path,
-                            classification_evidence=PluginProviderClassificationEvidence.SYNTHETIC_SHADOW_PROBE,
+                            owner_evidence=path,
+                            classification_evidence=evidence,
+                        )
+                    )
+                if _function_grants_execution_from_compatible(node):
+                    records.append(
+                        PluginProviderCompatibilityCandidateRecord(
+                            module_path=path,
+                            line=node.lineno,
+                            qualname=node.name,
+                            operation=node.name,
+                            disposition=PluginProviderCompatibilityDisposition.COMPATIBILITY_EXECUTION_AUTHORITY_SHORTCUT,
+                            semantic_concern="compatibility_execution_shortcut",
+                            owner_evidence=path,
+                            classification_evidence=evidence,
                         )
                     )
     return tuple(records)
@@ -1055,9 +1289,12 @@ def _discover_shortcut_and_shadow_records(
 def collect_plugin_provider_compatibility_r4_violations(
     *,
     extra_sources: tuple[tuple[str, str], ...] = (),
+    exclude_production_modules: frozenset[str] = frozenset(),
 ) -> tuple[str, ...]:
-    records = discover_plugin_provider_compatibility_candidates(extra_sources=extra_sources)
-    records = tuple(records) + _discover_shortcut_and_shadow_records(extra_sources=extra_sources)
+    records = plugin_provider_r4_closed_world_records(
+        extra_sources=extra_sources,
+        exclude_production_modules=exclude_production_modules,
+    )
     violations = list(validate_r4_closed_world_classification(records))
     violations.extend(qualification_composition_authority_violations())
     violations.extend(_bounded_platform_compatibility_consumer_violations())
@@ -1085,12 +1322,18 @@ def collect_plugin_provider_compatibility_r4_violations(
         violations.append(
             f"provider registration shadow authority count {count_provider_registration_shadow_authorities(records)}"
         )
+    if count_external_semantic_assessment_authorities(records) != 1:
+        violations.append(
+            f"external semantic assessment authority count {count_external_semantic_assessment_authorities(records)} (expected 1)"
+        )
     if count_shadow_external_compat_authorities(records) != 0:
         violations.append("parallel external contract compatibility authority detected")
     if count_compatibility_activation_shortcuts(records) != 0:
         violations.append("compatibility_to_activation_shortcut detected")
     if count_compatibility_governance_shortcuts(records) != 0:
-        violations.append("compatibility_to_governance_or_execution_authority_shortcut detected")
+        violations.append("compatibility_to_governance_authority_shortcut detected")
+    if count_compatibility_execution_shortcuts(records) != 0:
+        violations.append("compatibility_to_execution_authority_shortcut detected")
     if count_package_platform_evaluator_authorities(records) != 1:
         violations.append(
             f"package/platform evaluator semantic authority count {count_package_platform_evaluator_authorities(records)} (expected 1)"
@@ -1182,6 +1425,33 @@ SYNTHETIC_COMPATIBILITY_GOVERNANCE_SHORTCUT_SOURCE: Final[str] = '''
 def grant_on_platform_compatibility(compatibility: object) -> None:
     if compatibility.compatible:
         grant_permission("execute")
+'''
+
+SYNTHETIC_BENIGN_ADMISSION_CONSUMER_SOURCE: Final[str] = '''
+from intergrax.core.distribution import PlatformCompatibility, check_platform_compatibility
+from intergrax.core.plugins.platform_qualification import evaluate_package_production_admission
+
+def admit_package(qualification: object) -> object:
+    compat = check_platform_compatibility(
+        PlatformCompatibility(intergrax_version=">=0.0.0"),
+        "1.0.0",
+    )
+    return evaluate_package_production_admission(qualification, compatibility=compat)
+'''
+
+SYNTHETIC_NEUTRAL_LOCAL_PROVIDER_REGISTRY_SOURCE: Final[str] = '''
+from intergrax.integrations.registry.catalog import IntegrationEntry
+
+_PROVIDER_ENTRIES: dict[str, IntegrationEntry] = {}
+
+def add_provider(entry: IntegrationEntry) -> None:
+    _PROVIDER_ENTRIES[entry.slug] = entry
+'''
+
+SYNTHETIC_PRODUCTION_PATH_ACTIVATION_SHORTCUT_SOURCE: Final[str] = '''
+def production_admit_on_platform_compatibility(compatibility: object) -> None:
+    if compatibility.compatible:
+        activate_plugin("demo")
 '''
 
 SYNTHETIC_REGISTRY_V2_SHADOW_REGISTER_SOURCE: Final[str] = '''
@@ -1300,5 +1570,13 @@ __all__ = [
     "SYNTHETIC_SHADOW_EXTERNAL_ASSESSMENT_SOURCE",
     "SYNTHETIC_COMPATIBILITY_ACTIVATION_SHORTCUT_SOURCE",
     "SYNTHETIC_COMPATIBILITY_GOVERNANCE_SHORTCUT_SOURCE",
+    "SYNTHETIC_BENIGN_ADMISSION_CONSUMER_SOURCE",
+    "SYNTHETIC_NEUTRAL_LOCAL_PROVIDER_REGISTRY_SOURCE",
+    "SYNTHETIC_PRODUCTION_PATH_ACTIVATION_SHORTCUT_SOURCE",
+    "count_compatibility_execution_shortcuts",
+    "count_external_semantic_assessment_authorities",
+    "production_python_source_count",
+    "plugin_provider_r4_closed_world_records",
     "_UNKNOWN_COMPAT_PROBE_MODULE",
+    "_EXTERNAL_COMPAT_CONTRACTS",
 ]
