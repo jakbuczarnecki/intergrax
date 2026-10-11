@@ -34,6 +34,39 @@ class MigrationDisposition(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class DurableStorageSignal(StrEnum):
+    SQLITE_DML = "SQLITE_DML"
+    SQLITE_PAYLOAD_TABLE = "SQLITE_PAYLOAD_TABLE"
+    DOCUMENT_STORE_WRITE = "DOCUMENT_STORE_WRITE"
+    FILE_WRITE = "FILE_WRITE"
+    POSTGRESQL_DML = "POSTGRESQL_DML"
+    EXPLICIT_PERSIST_API = "EXPLICIT_PERSIST_API"
+    WIRE_TO_DURABLE_STORE = "WIRE_TO_DURABLE_STORE"
+
+
+class DurableAccessDirection(StrEnum):
+    WRITE = "WRITE"
+    READ = "READ"
+    READ_WRITE = "READ_WRITE"
+
+
+class PersistedCandidateDisposition(StrEnum):
+    PERSISTED_FAMILY_MEMBER = "PERSISTED_FAMILY_MEMBER"
+    EVIDENCE_BACKED_EXCLUSION = "EVIDENCE_BACKED_EXCLUSION"
+
+
+class DurableExclusionReason(StrEnum):
+    EPHEMERAL_IN_MEMORY_ONLY = "EPHEMERAL_IN_MEMORY_ONLY"
+    ORCHESTRATOR_SERVICE_NOT_PAYLOAD = "ORCHESTRATOR_SERVICE_NOT_PAYLOAD"
+    EXCEPTION_NOT_PAYLOAD = "EXCEPTION_NOT_PAYLOAD"
+    PROTOCOL_OR_INTERFACE_ONLY = "PROTOCOL_OR_INTERFACE_ONLY"
+    SERIALIZATION_WITHOUT_DURABLE_IO = "SERIALIZATION_WITHOUT_DURABLE_IO"
+    SQL_METADATA_NOT_SEMANTIC_PAYLOAD = "SQL_METADATA_NOT_SEMANTIC_PAYLOAD"
+    TRANSPORT_ONLY_ENCODING = "TRANSPORT_ONLY_ENCODING"
+    CACHE_NON_DURABLE = "CACHE_NON_DURABLE"
+    TEST_OR_LAB_ONLY = "TEST_OR_LAB_ONLY"
+
+
 class HistoricalFindingAssessment(StrEnum):
     FALSE_POSITIVE_SERVICE_OR_ORCHESTRATOR = "FALSE_POSITIVE_SERVICE_OR_ORCHESTRATOR"
     FALSE_POSITIVE_EXCEPTION = "FALSE_POSITIVE_EXCEPTION"
@@ -96,6 +129,38 @@ class PersistedRemediationItem:
     migration_behavior_required: str
     tests_required: str
     frz_mapping: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DurableBoundaryCandidate:
+    candidate_id: str
+    module_path: str
+    class_name: str | None
+    function_name: str | None
+    storage_signal: DurableStorageSignal
+    write_or_read: DurableAccessDirection
+    payload_symbol: str | None
+    evidence: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DurableCandidateClassification:
+    candidate: DurableBoundaryCandidate
+    disposition: PersistedCandidateDisposition
+    family_id: str | None
+    exclusion_reason: DurableExclusionReason | None
+    classification_evidence: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class PersistedMechanicalDiscoveryReport:
+    discovery_roots: tuple[str, ...]
+    raw_candidates: tuple[DurableBoundaryCandidate, ...]
+    classifications: tuple[DurableCandidateClassification, ...]
+    unclassified_candidate_ids: frozenset[str]
+    semantic_persisted_family_ids: frozenset[str]
+    exclusion_count: int
+    persisted_member_count: int
 
 
 @dataclass(frozen=True, slots=True)

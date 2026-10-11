@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **READY FOR AUDIT** (implementation on `development`; independent audit pending) · **COMPAT-X-R2** = **BLOCKED ON R2-P0 AUDIT** — **NEXT** persisted remediation after audit · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** · **COMPAT-X-R3** = **NOT ENTERED** · **TENANT-X** = **NOT ENTERED**
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **REJECTED / superseded by R2-P0-R1** @ `e33048eff988d561ba4469bb99036d33a7b058b2` · **COMPAT-X-R2-P0-R1** = **READY FOR AUDIT** (mechanical durable discovery + closed-world parity; independent audit pending) · **COMPAT-X-R2** = **BLOCKED ON R2-P0-R1 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** · **COMPAT-X-R3** = **NOT ENTERED** · **TENANT-X** = **NOT ENTERED**
 
 **Branch:** `development`
 
@@ -380,9 +380,13 @@ domain registries → current version authority
 compatibility shim → NO canonical current-version authority (unless explicit canonical envelope inheritance)
 ```
 
-## COMPAT-X-R2-P0 — Persisted closed-world inventory (READY FOR AUDIT)
+## COMPAT-X-R2-P0-R1 — Mechanical durable discovery & closed-world parity (READY FOR AUDIT)
 
-Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.py` · gates: `test_compat_x_persisted_r2_p0_gates.py`.
+**Rejected R2-P0 (tautological discovery):** `e6838d0ef404571e3f7585725be62681ff890071` → `e33048eff988d561ba4469bb99036d33a7b058b2` (primary `e0a0f21790a4464da55eaa6cd1b3405af1c0c97c`).
+
+Discovery roots: `intergrax/`, `agents/`, `applications/` (AST durability signals; excludes `tests/`, `testing_support/`, `scripts/`, `docs/`, docker/scaffold artifacts). Classification SSOT remains `tests/qualification/compat_x/_compat_x_persisted_inventory.py`; completeness proven via `raw durable candidates = persisted members + evidence-backed exclusions` (`unclassified = 0`). Gates: `test_compat_x_persisted_r2_p0_gates.py`.
+
+Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.py` · mechanical pipeline: `_compat_x_persisted_mechanical_scan.py`, `_compat_x_persisted_classifier.py`, `_compat_x_persisted_discovery.py`.
 
 | Metric | Value |
 | --- | --- |
@@ -407,8 +411,9 @@ Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.
 ```text
 COMPAT-X-P0   = CLOSED / independently accepted @ 0612c2a7…
 COMPAT-X-R1   = CLOSED / independently accepted @ 4361943d…
-COMPAT-X-R2-P0 = READY FOR AUDIT
-COMPAT-X-R2   = BLOCKED ON R2-P0 AUDIT
+COMPAT-X-R2-P0    = REJECTED / superseded by R2-P0-R1
+COMPAT-X-R2-P0-R1 = READY FOR AUDIT
+COMPAT-X-R2       = BLOCKED ON R2-P0-R1 AUDIT
 COMPAT-X      = OPEN / CURRENT — BLOCKED ON R2–R5 REMEDIATION
 COMPAT-X-R3   = NOT ENTERED
 TENANT-X      = NOT ENTERED
@@ -416,4 +421,4 @@ TENANT-X      = NOT ENTERED
 
 **Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
 
-**Next mandatory child:** **COMPAT-X-R2-P0** independent audit → **COMPAT-X-R2** remediation implementation (not closed).
+**Next mandatory child:** **COMPAT-X-R2-P0-R1** independent audit → **COMPAT-X-R2** remediation implementation (not closed).

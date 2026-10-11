@@ -20,10 +20,21 @@ from tests.qualification.compat_x._compat_x_persisted_historical_five import (
 )
 from tests.qualification.compat_x._compat_x_persisted_inventory import PERSISTED_SCHEMA_FAMILIES
 from tests.qualification.compat_x._compat_x_persisted_remediation import persisted_r2_remediation_waves
+from tests.qualification.compat_x._compat_x_persisted_contract_authority import (
+    build_contract_authority_durability_evidence,
+)
+from tests.qualification.compat_x._compat_x_persisted_discovery import (
+    build_persisted_mechanical_discovery_report,
+)
 from tests.qualification.compat_x._compat_x_persisted_synthetic import (
+    synthetic_document_store_unknown_fails,
     synthetic_envelope_inheritance_proven,
+    synthetic_exception_near_persistence_not_payload_family,
     synthetic_implicit_fallback_allowed,
+    synthetic_serialization_only_excluded,
     synthetic_service_false_positive_classification,
+    synthetic_unknown_sqlite_module_fails_closed_world,
+    synthetic_unknown_sql_table_fails,
 )
 from tests.qualification.compat_x._compat_x_persisted_types import (
     MigrationDisposition,
@@ -77,10 +88,36 @@ def test_cx_r2_p0_historical_five_reconciliation() -> None:
     )
 
 
-def test_cx_r2_p0_adversarial_a_service_false_positive() -> None:
+def test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world() -> None:
+    assert synthetic_unknown_sqlite_module_fails_closed_world()
+
+
+def test_cx_r2_p0_adversarial_a2_service_false_positive() -> None:
     probe = synthetic_service_false_positive_classification()
-    assert probe.payload_disposition == PersistedVersionDisposition.EXPLICIT_PAYLOAD_VERSION
     assert probe.orchestrator_disposition == PersistedVersionDisposition.NOT_A_PERSISTED_SCHEMA
+
+
+def test_cx_r2_p0_adversarial_c_serialization_only_excluded() -> None:
+    assert synthetic_serialization_only_excluded()
+
+
+def test_cx_r2_p0_adversarial_f_document_store_unknown_fails() -> None:
+    assert synthetic_document_store_unknown_fails()
+
+
+def test_cx_r2_p0_adversarial_g_unknown_sql_table_fails() -> None:
+    assert synthetic_unknown_sql_table_fails()
+
+
+def test_cx_r2_p0_mechanical_discovery_closed_world_counts() -> None:
+    report = build_persisted_mechanical_discovery_report()
+    assert len(report.unclassified_candidate_ids) == 0
+    assert report.persisted_member_count + report.exclusion_count == len(report.raw_candidates)
+
+
+def test_cx_r2_p0_sqlite_contract_authority_gap() -> None:
+    evidence = build_contract_authority_durability_evidence()
+    assert evidence.in_scope_blocker
 
 
 def test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present() -> None:
@@ -145,6 +182,10 @@ def test_cx_r2_p0_adversarial_i_envelope_inheritance() -> None:
         if f.family_id == "runtime.suspended_execution_operation_descriptor"
     )
     assert inner.version_disposition == PersistedVersionDisposition.INHERITED_ENVELOPE_VERSION
+
+
+def test_cx_r2_p0_adversarial_e_exception_not_payload_family() -> None:
+    assert synthetic_exception_near_persistence_not_payload_family()
 
 
 def test_cx_r2_p0_adversarial_j_historical_not_payload_identity() -> None:

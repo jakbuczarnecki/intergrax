@@ -1,93 +1,72 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Mechanical persisted-family discovery signals for R2-P0 closed-world parity."""
+"""Mechanical persisted durable-boundary discovery and closed-world parity (R2-P0-R1)."""
 
 from __future__ import annotations
 
-import re
 from functools import lru_cache
-from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-
-# Agent Distribution SQLite tables with JSON payloads (must match inventory).
-_AGENT_DISTRIBUTION_SQLITE_TABLE_PAYLOADS: tuple[tuple[str, str], ...] = (
-    ("installations", "agent_distribution.agent_installation_record"),
-    ("bindings", "agent_distribution.application_agent_binding"),
-    ("revisions", "agent_distribution.runtime_revision"),
-    ("artifact_metadata", "agent_distribution.agent_artifact_metadata"),
-    ("runtime_locks", "agent_distribution.materialized_runtime_lock"),
-    ("materializations", "agent_distribution.runtime_materialization_record"),
-    ("effective_roster_snapshots", "agent_distribution.effective_roster"),
-    ("deployment_instances", "agent_distribution.deployment_instance_record"),
-    ("serving_records", "agent_distribution.application_environment_serving_record"),
-    ("projection_descriptors", "agent_distribution.runtime_registry_projection_descriptor"),
+from tests.qualification.compat_x._compat_x_persisted_classifier import (
+    agent_distribution_table_parity_holds,
+    classify_durable_candidates,
+    classify_is_unclassified,
+    mechanical_agent_distribution_table_family_map,
+    semantic_family_ids_from_classifications,
 )
-
-_PERSISTED_SCAN_MODULES: tuple[str, ...] = (
-    "intergrax/agent_distribution/sqlite_stores.py",
-    "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
-    "intergrax/runtime/events/stores/sqlite_runtime_event_store.py",
-    "intergrax/runtime/long_running/store.py",
-    "intergrax/runtime/task_memory/stores/sqlite_task_memory_store.py",
-    "intergrax/memory/stores/sqlite_user_profile_store.py",
-    "intergrax/memory/stores/sqlite_conversational_memory_store.py",
-    "intergrax/distributed/providers/sqlite_kv_store.py",
-    "intergrax/applications/_shared/registry_snapshot_store.py",
-    "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py",
-    "intergrax/autonomous_work/postgresql_repository.py",
-    "intergrax/collaborative_work/sqlite_repository.py",
+from tests.qualification.compat_x._compat_x_persisted_mechanical_scan import (
+    discover_all_production_durable_candidates,
+    discover_durable_candidates_in_source,
+    discovery_root_paths,
 )
-
-_DECODE_RE = re.compile(
-    r"_decode\(\s*(\w+)\s*,\s*row\[\"payload_json\"\]\s*,\s*(\w+)\s*,",
+from tests.qualification.compat_x._compat_x_persisted_types import (
+    DurableBoundaryCandidate,
+    PersistedMechanicalDiscoveryReport,
 )
 
 
-@lru_cache(maxsize=1)
-def mechanical_agent_distribution_family_ids() -> frozenset[str]:
-    sqlite_path = _REPO_ROOT / "intergrax/agent_distribution/sqlite_stores.py"
-    source = sqlite_path.read_text(encoding="utf-8")
-    discovered: set[str] = set()
-    for table, family_id in _AGENT_DISTRIBUTION_SQLITE_TABLE_PAYLOADS:
-        if f"FROM {table}" not in source and f"INTO {table}" not in source:
-            raise RuntimeError(f"expected SQLite table {table} in sqlite_stores.py")
-        discovered.add(family_id)
-    if "model_validate_json" in source:
-        if "agent_distribution.agent_artifact_metadata" not in discovered:
-            raise RuntimeError("artifact_metadata family expected")
-    for match in _DECODE_RE.finditer(source):
-        _model, _schema_const = match.groups()
-    discovered.add("agent_distribution.sqlite_container")
-    discovered.add("agent_distribution.package_agent_contract_authority_record")
-    return frozenset(discovered)
-
-
-@lru_cache(maxsize=1)
-def mechanical_closed_world_family_ids() -> frozenset[str]:
-    ids = set(mechanical_agent_distribution_family_ids())
-    ids.update(
-        {
-            "runtime.suspended_operation_backing_envelope",
-            "runtime.suspended_execution_operation_descriptor",
-            "runtime.runtime_event",
-            "runtime.task_checkpoint",
-            "runtime.runtime_checkpoint",
-            "runtime.scheduled_resume",
-            "runtime.task_memory_record",
-            "runtime.decision_event_append",
-            "memory.user_profile",
-            "memory.conversational_turn",
-            "distributed.kv_entry",
-            "applications.registry_snapshot",
-            "autonomous_work.postgresql_container",
-            "collaborative_work.sqlite_container",
-        }
+def _build_report(
+    raw: tuple[DurableBoundaryCandidate, ...],
+) -> PersistedMechanicalDiscoveryReport:
+    classifications = classify_durable_candidates(raw)
+    unclassified = frozenset(
+        c.candidate.candidate_id for c in classifications if classify_is_unclassified(c)
     )
-    for module_rel in _PERSISTED_SCAN_MODULES:
-        if not (_REPO_ROOT / module_rel).is_file():
-            raise FileNotFoundError(module_rel)
-    return frozenset(ids)
+    semantic_ids = semantic_family_ids_from_classifications(classifications)
+    from tests.qualification.compat_x._compat_x_persisted_types import PersistedCandidateDisposition
+
+    persisted_members = sum(
+        1
+        for c in classifications
+        if c.disposition == PersistedCandidateDisposition.PERSISTED_FAMILY_MEMBER
+    )
+    exclusions = sum(1 for c in classifications if c.exclusion_reason is not None)
+    return PersistedMechanicalDiscoveryReport(
+        discovery_roots=discovery_root_paths(),
+        raw_candidates=raw,
+        classifications=classifications,
+        unclassified_candidate_ids=unclassified,
+        semantic_persisted_family_ids=semantic_ids,
+        exclusion_count=exclusions,
+        persisted_member_count=persisted_members,
+    )
+
+
+@lru_cache(maxsize=1)
+def build_persisted_mechanical_discovery_report() -> PersistedMechanicalDiscoveryReport:
+    return _build_report(discover_all_production_durable_candidates())
+
+
+def build_persisted_mechanical_discovery_report_with_extra(
+    extra_source: tuple[tuple[str, str], ...],
+) -> PersistedMechanicalDiscoveryReport:
+    base = list(discover_all_production_durable_candidates())
+    seen = {c.candidate_id for c in base}
+    for module_path, source in extra_source:
+        for candidate in discover_durable_candidates_in_source(module_path, source):
+            if candidate.candidate_id not in seen:
+                seen.add(candidate.candidate_id)
+                base.append(candidate)
+    return _build_report(tuple(base))
 
 
 def inventory_family_ids() -> frozenset[str]:
@@ -98,7 +77,35 @@ def inventory_family_ids() -> frozenset[str]:
     return frozenset(f.family_id for f in PERSISTED_SCHEMA_FAMILIES)
 
 
-def persisted_closed_world_parity_holds() -> bool:
-    mechanical = mechanical_closed_world_family_ids()
+@lru_cache(maxsize=1)
+def mechanical_closed_world_family_ids() -> frozenset[str]:
+    """Semantic families evidenced by mechanical discovery + classification (not inventory injection)."""
+    report = build_persisted_mechanical_discovery_report()
+    return report.semantic_persisted_family_ids
+
+
+def mechanical_agent_distribution_family_ids() -> frozenset[str]:
+    table_map = mechanical_agent_distribution_table_family_map()
+    ids = set(table_map.values())
+    ids.add("agent_distribution.sqlite_container")
+    ids.add("agent_distribution.package_agent_contract_authority_record")
+    return frozenset(ids)
+
+
+def persisted_closed_world_parity_holds(
+    extra_source: tuple[tuple[str, str], ...] = (),
+) -> bool:
+    if extra_source:
+        report = build_persisted_mechanical_discovery_report_with_extra(extra_source)
+    else:
+        report = build_persisted_mechanical_discovery_report()
+    if report.unclassified_candidate_ids:
+        return False
+    if len(report.raw_candidates) != report.persisted_member_count + report.exclusion_count:
+        return False
+    if not agent_distribution_table_parity_holds():
+        return False
     inventory = inventory_family_ids()
-    return mechanical == inventory
+    if report.semantic_persisted_family_ids != inventory:
+        return False
+    return True

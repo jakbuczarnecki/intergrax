@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from tests.qualification.compat_x._compat_x_persisted_discovery import (
+    build_persisted_mechanical_discovery_report,
     inventory_family_ids,
     mechanical_closed_world_family_ids,
     persisted_closed_world_parity_holds,
@@ -78,6 +79,7 @@ def compute_persisted_r2_p0_metrics() -> PersistedR2P0Metrics:
         )
         and f.migration_owner_path is None
     )
+    discovery = build_persisted_mechanical_discovery_report()
     dup_version = _duplicate_version_authority_keys()
     dup_migration = _duplicate_migration_authority_keys()
     return PersistedR2P0Metrics(
@@ -89,29 +91,30 @@ def compute_persisted_r2_p0_metrics() -> PersistedR2P0Metrics:
         missing_version_family_count=missing,
         migration_required_count=migration_required,
         migration_owner_missing_count=migration_owner_missing,
-        unknown_unclassified_count=0,
+        unknown_unclassified_count=len(discovery.unclassified_candidate_ids),
         duplicate_version_authority_count=len(dup_version),
         duplicate_migration_authority_count=len(dup_migration),
     )
 
 
 def _duplicate_version_authority_keys() -> tuple[str, ...]:
-    seen: dict[tuple[str, str], str] = {}
+    """Same semantic family_id must not list two version owners."""
+    owners_by_family: dict[str, str] = {}
     duplicates: list[str] = []
     for family in PERSISTED_SCHEMA_FAMILIES:
-        if family.current_version is None or family.version_owner_path is None:
+        owner = family.version_owner_path
+        if owner is None:
             continue
         if family.version_disposition in (
             PersistedVersionDisposition.NOT_A_PERSISTED_SCHEMA,
             PersistedVersionDisposition.STORE_CONTAINER_VERSION,
         ):
             continue
-        key = (family.current_version, family.version_owner_path)
-        prior = seen.get(key)
-        if prior is not None and prior != family.family_id:
-            duplicates.append(f"{prior}|{family.family_id}:{key}")
+        prior = owners_by_family.get(family.family_id)
+        if prior is not None and prior != owner:
+            duplicates.append(f"{family.family_id}:{prior}|{owner}")
         else:
-            seen[key] = family.family_id
+            owners_by_family[family.family_id] = owner
     return tuple(sorted(duplicates))
 
 
