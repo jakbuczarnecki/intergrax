@@ -213,6 +213,7 @@ Minimum planned linkage:
 | EBH-7 | all enterprise families | TEN |
 | ENT-AUDIT-X | all enterprise families as audit coverage + REG + FRZ + DEBT + DOC + **TEN** (cross-family executable audit evidence; not necessarily primary semantic closer per family) | TEN (executable continuous enforcement) |
 | ARCH-FREEZE | FRZ, DEBT, DOC + all remaining | TEN (final acceptance) |
+| **SCENARIO-READINESS-X** | product/delivery readiness validation (post-freeze reference scenario; consumes frozen contracts — no new platform authority; FRZ families not extended by this roadmap amendment) | TEN |
 
 ### 2.1 Required instruction header
 
@@ -350,12 +351,43 @@ If a new blocker is discovered:
 | **TRACE-X-P5-R2-CLOSED-WORLD** | P5 closed-world / adversarial configured/effective provenance qualification | **CLOSED / independently accepted** — parent baseline `c74c8e0005a85ccb0d302df64e1798e0a8e6e632`; **TRACE-X-P5-R2-R1** @ `831011d9c92bb6478f672d295792fc36eb0d4f73`; closed-world registry **32** modules; **unclassified = 0**; **production bypass = 0**; adversarial **E2E-A..H = PASS**; **production delta = 0**. Qualification: [`TRACE_X_P5_R2_CLOSED_WORLD_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE.md`](../qualification/TRACE_X_P5_R2_CLOSED_WORLD_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE.md). | **[x] CLOSED** |
 | **TRACE-X-CERT** | Configured/effective provenance certification (current-HEAD consolidation) | **CLOSED / independently accepted** @ evidence `69d8b111e8d2f6717b75d866d3738a0106d00304` (CERT entry START_HEAD `53265fa6dbe3975359967f0db8c7581b55fa4632`; bookkeeping tip `f4c42c79928ac7fb8568591fe06ab71c2ff3aa15`); current-HEAD replay = **PASS**; **160** pytest = **PASS**; closed-world **32/32**; **unclassified = 0**; **production bypass = 0**; **duplicate semantic owner = 0**; **E2E-A..H = PASS**; local Tenant Isolation Audit = **PASS**; unresolved CERT blockers = **0**; **FRZ-TRC-11** = **PASS**; at CERT closure **FRZ-TRC-09** + **FRZ-TRC-10** remained **OPEN** (subsequently **PASS** @ **TRACE-X-P6** `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2`); **production delta = 0**. Qualification: [`TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md`](../qualification/TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md). | **[x] CLOSED** |
 | **TRACE-X-P6** | Restart/Resume Continuity & Terminal Outcome Causality Certification | **CLOSED / independently accepted** @ accepted qualification evidence `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2` (START_HEAD `e2deaee3efd7ee4e7d43414be3e76fe024a85408`; bookkeeping tip `270e57a70630d3df959fd2b4431ec0fa3cc944b0`). Child chain: **TRACE-X-P6-R1-R1-R1** = **CLOSED / independently accepted**; **R1-R1** / **R1** = **CLOSED / superseded-and-accepted**; initial P6 **REJECTED** @ `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` preserved. **FRZ-TRC-09** + **FRZ-TRC-10** = **PASS**. Closed-world restart/resume **159**; terminal producers **50**; **unclassified = 0**; **production bypass = 0**; **P6-A..H = PASS**; **production delta = 0**. Qualification: [`TRACE_X_P6_RESTART_RESUME_TERMINAL_CAUSALITY_CERTIFICATION.md`](../qualification/TRACE_X_P6_RESTART_RESUME_TERMINAL_CAUSALITY_CERTIFICATION.md). Enables **TRACE-X** parent closure; does **not** enter **CONFIG-X** implementation. | **[x] CLOSED** |
-| **CONFIG-X** | Configuration / Provider / Vendor Activation Certification | Wave-1 **historical** **5** blockers (**I=3**, **J=2**); **current active blockers** mechanically derived (**54/54** concern sweep). **CONFIG-X-FINAL-R1** corrective child — **READY FOR AUDIT** (not CLOSED). Audited reconciliation HEAD `639a2e161eaed41efdde63126828eeffe6fa27b0`; implementation `1e74c27651af2e2df99f8448522c21205b203c6b`. Child chain: **R1** @ `d7183eb31d19967330687a5bc5345774c230e3aa` · **R1-R1** @ `4b8961e4a4376a95969384f76083d019eede9903` · **R1-R1-R1** = **CLOSED / independently accepted** @ `e405b71a91b6652334a407c997a1c3a46c7eadc9`. **FRZ-CFG-01..08** = **PASS CANDIDATE** (checklist rows **OPEN** until independent audit). Qualification: [`CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md`](../qualification/CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md). **COMPAT-X** = **NOT ENTERED**. | [ ] **READY FOR FINAL AUDIT** |
-| **CONFIG-X-FINAL-R1** | Current-Head Closed-World Configuration Activation Proof | Strengthens qualification/discovery/tests only (**production delta = 0**): mechanical **54/54** concern classification; derived `CONFIG_X_ACTIVE_BLOCKER_RECORDS`; FRZ-CFG-05 semantic selection scan; FRZ-CFG-06 activation-family gates; FRZ-CFG-07 precedence; tenant-local real gates; FRZ-CFG-08 regression. Independent audit owns final PASS. | [ ] **READY FOR AUDIT** |
-| **CONFIG-X-R1** | CONFIG-X production blocker remediation | Closes wave-1 blockers OBS-TOOL / TOK / HARNESS-HTTP / MM / INT-P3 without new configuration authority. | [ ] **BLOCKED ON PARENT FINAL AUDIT** |
-| **CONFIG-X-R1-R1** | OBS explicit observability role binding (OBS-TOOL-01) | `IntegrationProfile.observability_roles` → `ToolWiringContext.observability_role_backends`; role-only resolver. | [ ] **BLOCKED ON PARENT FINAL AUDIT** |
+| **CONFIG-X** | Configuration / Provider / Vendor Activation Certification | **CLOSED / independently accepted** @ `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb`. Wave-1 **historical** **5** blockers (**I=3**, **J=2**); **current active blockers = 0**; **54/54** concern classification; **active I/J/K/L = 0/0/0/0**; **CX-A..H** = **PASS**; CONFIG-X local tenant isolation audit **PASS**; semantic production hard-coded selection **0**; unauthorized activation bypasses **0**; **production delta final qualification child = 0**. Evidence chain: wave-1 `4dc5d15cbdad36c2b8e3fa588740ce8521896792` · **R1** @ `d7183eb31d19967330687a5bc5345774c230e3aa` · **R1-R1** @ `4b8961e4a4376a95969384f76083d019eede9903` · **R1-R1-R1** @ `e405b71a91b6652334a407c997a1c3a46c7eadc9` (production `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`) · final reconciliation `1e74c27651af2e2df99f8448522c21205b203c6b` · **CONFIG-X-FINAL-R1-R1-R1** @ `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` (**CONFIG-X-FINAL-R1** @ `dc42728a7260c2b48996fcd77dcda070f65b3c91` **REJECTED** as final evidence — lineage preserved). **FRZ-CFG-01..08** = **PASS**. Qualification: [`CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md`](../qualification/CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md). Does **not** close global **TENANT-X** / **FRZ-TEN-***. **Next mandatory stage = COMPAT-X**. | **[x] CLOSED** |
+| **CONFIG-X-FINAL-R1** | Current-Head Closed-World Configuration Activation Proof | Strengthens qualification/discovery/tests only (**production delta = 0**): mechanical **54/54** concern classification; derived `CONFIG_X_ACTIVE_BLOCKER_RECORDS`; FRZ-CFG-05 semantic selection scan; FRZ-CFG-06 activation-family gates; FRZ-CFG-07 precedence; tenant-local real gates; FRZ-CFG-08 regression. **REJECTED** as final evidence @ `dc42728a7260c2b48996fcd77dcda070f65b3c91`; subsequent **FINAL-R1-R1** / **FINAL-R1-R1-R1** children close findings. | **[x] CLOSED** (superseded-and-accepted) |
+| **CONFIG-X-FINAL-R1-R1** | CONFIG-X-FINAL corrective wave (post–FINAL-R1) | Qualification/discovery closure after **CONFIG-X-FINAL-R1** rejection; **production delta = 0**. | **[x] CLOSED** (superseded-and-accepted @ `de5701f09dbb18397f7ffcbfee0a246d05097cd2`) |
+| **CONFIG-X-FINAL-R1-R1-R1** | CONFIG-X-FINAL independent acceptance baseline | Exact-SHA independent audit **CLOSED / independently accepted** @ `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb`; closes parent **CONFIG-X** with **FRZ-CFG-01..08** **PASS**. | **[x] CLOSED** |
+| **CONFIG-X-R1** | CONFIG-X production blocker remediation | Closes wave-1 blockers OBS-TOOL / TOK / HARNESS-HTTP / MM / INT-P3 without new configuration authority. | **[x] CLOSED** (superseded-and-accepted @ `d7183eb31d19967330687a5bc5345774c230e3aa`) |
+| **CONFIG-X-R1-R1** | OBS explicit observability role binding (OBS-TOOL-01) | `IntegrationProfile.observability_roles` → `ToolWiringContext.observability_role_backends`; role-only resolver. | **[x] CLOSED** (superseded-and-accepted @ `4b8961e4a4376a95969384f76083d019eede9903`) |
 | **CONFIG-X-R1-R1-R1** | OBS role materialization fail-closed | Invalid explicit role binding propagates canonical integration-resolution failure (no swallow to `None`). Independent audit **ACCEPTED** @ `e405b71a91b6652334a407c997a1c3a46c7eadc9`. | **[x] CLOSED** |
-| COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. | [ ] PLANNED / MANDATORY |
+| COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. **P0 closed** @ `0612c2a7…`; **R1 closed** @ `4361943d…`; **R2 closed** @ `97abf88f…`; **R3-P0 closed** via **R3-P0-R1-R1** @ `8ff23c9…`; **R3** = **OPEN** / **CURRENT** — **BLOCKED ON R3-R1**; **R4** / **R5** = **PLANNED**; parent **OPEN** — blocked on **R3–R5** remediation (**FRZ-CMP-04** partial pass candidate @ `8ff23c9…`; **05** / **07**). | [ ] **OPEN** / **CURRENT** — **BLOCKED ON R3–R5 REMEDIATION** |
+| **COMPAT-X-P0** | Closed-World Contract & Evolution Inventory Certification | Mechanical current-HEAD inventory of all compatibility-relevant platform surfaces; owner matrix; FRZ-CMP-01..08 **candidate** state (no global PASS); adversarial discovery gates. **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). | **[x] CLOSED** (independently accepted @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0`) |
+| **COMPAT-X-P0-R1** | Closed-World Discovery Integrity & Anti-Tautology Closure | Repair mechanical discovery (class fields, wire/persist candidates, migration/shim signals, registry overlap, exclusions parity, non-tautological adversarial gates). **production delta = 0**. | [ ] **REJECTED / superseded** (rejected evidence `065a0dcd…`) |
+| **COMPAT-X-P0-R2** | Final Adversarial Gate Integrity Closure | Version-removal mutation probe; bounded AST parallel-authority classifier; negative/positive shim probes; **production delta = 0**. | [ ] **REJECTED / superseded by accepted R3** (rejected evidence `6512ac5d…`) |
+| **COMPAT-X-P0-R3** | Shim Discovery / Authority Scope Convergence | Typed `CompatibilityCandidateContext`; authority inspection parity with shim candidacy; top-level executor/authorizer probes; production reconciliation; **production delta = 0**. | **[x] CLOSED** (independently accepted @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0`) |
+| **COMPAT-X-R1** | Contract Versioning & Classification | Versioning policy and classification for inventoried compatibility surfaces (**FRZ-CMP-02**; **CMP-P0-B02**). **production delta = 0**. | **[x] CLOSED** (independently accepted @ `4361943d6812a83db321e3d3fbc6d361ed393fee`) |
+| **COMPAT-X-R1-R1** | Version Policy Authority & Evidence Integrity Closure | Canonical architecture policy owner; typed authority disposition; obligation vs compliance; additive family evidence; shim canonical-authority gates (**FRZ-CMP-02** PASS CANDIDATE scope). Rejected baseline `1b107dc8…`; independent exact-SHA audit rejected @ `1e79d2a7…` (public stable could pass R1 while `BLOCKED_LATER_STAGE` hid missing identity). **production delta = 0**. | [ ] **REJECTED / superseded by R1-R2** |
+| **COMPAT-X-R1-R2** | Public Version Compliance & Static Version Resolution Closure | Same-module static version-constant + `Literal[…]` resolution for class version fields; public/stable R1 identity gate counts all noncompliant identities (including later-stage deferral). **production delta = 0**. | [ ] **REJECTED / superseded by R1-R3** @ `bc6b46b7c300d1db12ba664d327b339a75762532` |
+| **COMPAT-X-R1-R3** | Semantic Surface Identity Preservation & Inherited-Version Gate Closure | Contract-specific `class.field` semantic identity (version value → `current_version` only); synthetic inherited-version adversarial gates; aggregate P0 inventory counts only (superseded by R1-R4 mechanical reconciliation). **production delta = 0**. | [ ] **REJECTED / superseded by R1-R4** @ `fc95f0f72d20401837bfaf6c06a63c8ef2d78aca` |
+| **COMPAT-X-R1-R4** | Semantic Identity Reconciliation Closure | Heuristic legacy-P0 projection from current metadata (superseded by exact AST historical projector). **production delta = 0**. | [ ] **REJECTED / superseded by R1-R5** @ `a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72` |
+| **COMPAT-X-R1-R5** | Exact Historical P0 Projection Closure | Exact accepted-P0 `@ 0612c2a7…` literal semantics on current source AST `node.value`; mechanical collision groups and identity delta; zero unexplained mappings. **production delta = 0**. | **[x] CLOSED** (independently accepted @ `4361943d6812a83db321e3d3fbc6d361ed393fee`) |
+| **COMPAT-X-R2-P0** | Persisted closed-world inventory & migration ownership | **REJECTED** (tautological discovery) — superseded by **R2-P0-R1**. | [x] **REJECTED** |
+| **COMPAT-X-R2-P0-R1** | Mechanical durable discovery & anti-tautology closure | Production-root AST discovery → classification → parity; historical-five evidence; **production delta = 0**. | [x] **REJECTED / superseded by R2-P0-R2** @ `9138b12a77c5e42831846b11220216fa6772df1a` |
+| **COMPAT-X-R2-P0-R2** | Durable mechanism coverage & false-exclusion closure | Redis/file/pickle/idempotency/continuation mechanisms; evidence-backed exclusions; accepted inventory **28** families / **10** `MISSING_VERSION`; **production delta = 0**. | **[x] CLOSED** (independently accepted @ `78bd502b5da5284b1bdaae2e321b7076fa22227d`) |
+| **COMPAT-X-R2** | Persisted Schemas & Migration Closure | Persisted schema versioning, migration policy (**FRZ-CMP-03**, **FRZ-CMP-06**). Child chain **R2-P0-R2** @ `78bd502b…` · **R2-R1-R1** @ `bb5900cd…` · **R2-R2-R1-R1-R1** @ `2e7d6173…` · **R2-FINAL** **REJECTED** @ `b9d456a0…` · **R2-FINAL-R1** **CLOSED** @ `97abf88f…`. **Next mandatory sibling:** **COMPAT-X-R3-R1** (under **OPEN** **R3**). | **[x] CLOSED** (independently accepted @ `97abf88f6364758e7768e6fbf1bf56e138b43520`) |
+| **COMPAT-X-R2-R1** | Missing Durable Schema Identity & SQLite Authority Remediation | Durable `schema_version` identities + fail-closed readers; SQLite `package_contract_authority`; KV opaque-carrier reclassification. Rejected: idempotency paths lacked universal schema gate. | [ ] **REJECTED / superseded by R2-R1-R1** @ `549c8c1937267f07639043719d7fa27bba968430` |
+| **COMPAT-X-R2-R1-R1** | Idempotency Ledger Universal Schema-Gate Closure | Universal schema gate on all idempotency ledger existing-state paths (SQLite + Redis); `SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1` sole contract-level owner; fail-closed legacy/unknown; live Redis matrix deferred per qualification note. | **[x] CLOSED** (independently accepted @ `bb5900cd9a502f3e967b88ee54e4e18f6ff101cb`) |
+| **COMPAT-X-R2-R2** | Legacy Read Compatibility & Migration Closure | Legacy read-compat and migration policy closure (**FRZ-CMP-06**). Original implementation **REJECTED** @ `60a6c3b2…`; remediation chain **R2-R2-R1** → **R2-R2-R1-R1** → **R2-R2-R1-R1-R1**; parent **CLOSED** through independently accepted corrective descendant @ `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137`. | **[x] CLOSED** (independently accepted via corrective descendant @ `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137`) |
+| **COMPAT-X-R2-R2-R1** | R2-R2 corrective — migration boundary & qualification integrity | Post–R2-R2 rejection remediation. **REJECTED** @ `552db5c5d9ead99471d5db78f357393e167ebdef` — module-level sanctioned-owner bypass; adversarial gates proved detection but not enforcement; UserProfile migration typing incomplete. | [ ] **REJECTED / superseded by R2-R2-R1-R1** |
+| **COMPAT-X-R2-R2-R1-R1** | R2-R2 corrective — anti-bypass & UserProfile typing | **REJECTED** @ `ef5e05ef1f3b818611236dc9b5248b18feceea22` — qualification anti-bypass substantially corrected; UserProfile legacy memory-entry path still returned through `Dict[str, Any]`. | [ ] **REJECTED / superseded by R2-R2-R1-R1-R1** |
+| **COMPAT-X-R2-R2-R1-R1-R1** | R2-R2 corrective — typed legacy UserProfile migration closure | Independent exact-SHA audit **CLOSED / independently accepted** @ `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137`; closes parent **COMPAT-X-R2-R2** remediation obligation. **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). | **[x] CLOSED** |
+| **COMPAT-X-R2-FINAL** | Persisted Schema & Migration Current-HEAD Reconciliation | First current-HEAD reconciliation attempt. Independent exact-SHA audit **REJECTED** @ `b9d456a0ec69026101214c79dffa7a33ad713a34` — semantic baseline still used generic mapping/`Any`; fixture provenance not sufficiently tied to gate evidence meaning. **Superseded by COMPAT-X-R2-FINAL-R1.** | [x] **REJECTED** @ `b9d456a0ec69026101214c79dffa7a33ad713a34` |
+| **COMPAT-X-R2-FINAL-R1** | R2-FINAL corrective — typed baseline & provenance closure | Independent exact-SHA audit **CLOSED / independently accepted** @ `97abf88f6364758e7768e6fbf1bf56e138b43520`: typed accepted baseline; exact provenance separation (identity `78bd502b…` · schema `bb5900cd…` · closure fingerprint `2e7d6173…`); fail-closed JSON → typed parsing; family/obligation typed equality; adversarial probes **A–L**; current family drift **0**; current obligation drift **0**; SQLite + Redis static idempotency schema gates **PASS**; **production delta = 0**. Closes parent **COMPAT-X-R2**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). | **[x] CLOSED** |
+| **COMPAT-X-R3** | Event Evolution | Event evolution semantics and policy (**FRZ-CMP-04**). **R3-P0** **CLOSED** via accepted corrective descendant **R3-P0-R1-R1** @ `8ff23c9…` (rejected lineage **R3-P0** @ `7a2cbed…` · **R3-P0-R1** @ `0e526219…` preserved). **FRZ-CMP-04** = **OPEN** / **PARTIAL PASS CANDIDATE** @ `8ff23c9…`; R3 final enforcement/current-head closure pending **R3-R1**. **Not** R4 plugin/provider compatibility or R5 deprecation. | [ ] **OPEN** / **CURRENT** — **BLOCKED ON R3-R1** |
+| **COMPAT-X-R3-P0** | Event Evolution Policy & Closed-World Write-Path Inventory | **REJECTED** @ `7a2cbeddf4b64368ebab13a01697f6ab56201621` — payload numeric schema version not enforced; closed-world write-path proof too weak / handwritten. Parent **CLOSED** via accepted corrective descendant **R3-P0-R1-R1**. | **[x] CLOSED** (via **R3-P0-R1-R1** @ `8ff23c9ef19f9baf9f9b013d73716e990c7d4e26`) |
+| **COMPAT-X-R3-P0-R1** | R3-P0 corrective — payload numeric version enforcement | **REJECTED** @ `0e5262199a6c2f1737cf8ff48def53945ec02974` — unknown persistence `.append(..., tenant_id=...)` could still be classified as harmless `NON_EVENT_APPEND` (not fully fail-closed). | [x] **REJECTED** @ `0e5262199a6c2f1737cf8ff48def53945ec02974` |
+| **COMPAT-X-R3-P0-R1-R1** | R3-P0 corrective — fail-closed append classification & write-path proof | Independent exact-SHA audit **CLOSED / independently accepted** @ `8ff23c9ef19f9baf9f9b013d73716e990c7d4e26`; closes parent **COMPAT-X-R3-P0**. Envelope/payload version semantics; mandatory `payload_schema_version`; closed-world write-path inventory (**7256** production Python files; **12** candidate append sites; **UNCLASSIFIED** **0**). **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). | **[x] CLOSED** |
+| **COMPAT-X-R3-R1** | Event Evolution Enforcement & Current-HEAD Closure | Current-head enforcement of accepted Event Evolution policy; final **R3** reconciliation; verify no alternate compatibility path; verify current read/write version semantics; prove **FRZ-CMP-04** candidate evidence. **Not** R4/R5 scope. | [ ] **NEXT** / **QUEUED** |
+| **COMPAT-X-R4** | Plugin/Provider Compatibility | Plugin/provider compatibility policy closure (**FRZ-CMP-05**); blocker **CMP-P0-B05**. | [ ] **PLANNED** |
+| **COMPAT-X-R5** | Deprecation / Compatibility Shim Closure | Deprecation/removal policy closure (**FRZ-CMP-07**); blocker **CMP-P0-B07**. | [ ] **PLANNED** |
 | **TENANT-X** | Cross-Platform Tenant Isolation Certification | First complete cross-platform tenant isolation certification after individual recertification of Governance, Execution, Control Plane, State/Recovery, Traceability, Configuration and Compatibility. Certifies tenant isolation across the entire platform with no tenant-boundary bypass across subsystem composition. **Closed-world domains (minimum):** identity; execution; governance; tool invocation; provider invocation; integration resolution; configuration/profile resolution; state; durable persistence; cache; memory; RAG/vector/graph indexes; events; observability; traceability; evidence; recovery/resume; queues/background work; retries; external operations; credentials/secrets references; plugins; provider extensions; compatibility assessment; control plane. **Required proof classes:** (A) identity continuity through canonical request/subject/envelope/state/evidence contracts; (B) authority isolation — tenant A authority cannot authorize tenant B; (C) state isolation — no cross-tenant read/write of state/durable records/checkpoints/cache/memory/index material without explicit governed cross-tenant semantics; (D) provider/config isolation; (E) evidence/trace isolation; (F) async continuity through queue/retry/background/child/resume/recovery; (G) fail closed — missing/invalid tenant must not silently select global/shared state or widen access; (H) adversarial proof — tenant A request → tenant B state = DENIED; tenant A evidence → tenant B assessment = REJECTED; tenant A credential ref → tenant B provider = REJECTED; tenant A checkpoint → tenant B recovery = REJECTED; tenant A child execution → tenant B scope = REJECTED. Full scope: §3.0.2. **Depends on:** `COMPAT-X`. **Next:** `PROD-Q`. | [ ] PLANNED / MANDATORY |
 | PROD-Q | Platform Production Qualification | Prove production readiness rather than harness/lab maturity: provider/plugin admission and qualification, startup/shutdown/resource lifecycle, strict-vs-lab mode separation, unsupported configuration handling, production bypass prevention, secrets/tenant isolation, degraded operation and fail-closed materialization. Historical `implementation complete` or harness qualification is not sufficient. **Capacity / overload:** capacity/overload behavior known; bounded resource behavior; backpressure or explicit rejection semantics; provider throttling handling; no silent infinite retry/fallback. **Operability:** health semantics; readiness semantics; degraded-state visibility; terminal failure visibility; operator-actionable failure classification; critical recovery responsibility/procedure; startup failure visibility; shutdown/resource-cleanup visibility. Platform-level enterprise requirements only — no mandated deployment technology or vendor observability stack. Overlapping Security/Reliability proof may reference evidence from `CTRL-X`, `HARNESS-W4` and `STATE-X` without duplicating semantic criteria. | [ ] PLANNED / MANDATORY |
 | **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Answers: *Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built?* Certifies architecture gates, regression gates, negative tests, allowlists, inventories, deterministic qualification, clean-checkout reproducibility, environment failure classification, and protection of frozen invariants—not a substitute for a full-platform enterprise audit (`ENT-AUDIT-X`). Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. **Depends on:** `PROD-Q`. **Next:** `SKILL-X`. | [ ] PLANNED / MANDATORY |
@@ -368,8 +400,9 @@ If a new blocker is discovered:
 | **ROADMAP-REPLAY-X** | Full Program Current-HEAD Revalidation | **FINAL / MANDATORY** — Re-run the complete enterprise roadmap from the earliest relevant stage to current HEAD and prove that later changes have not invalidated earlier certifications or reopened architecture drift. Every historical CLOSED stage is evidence, not automatic current PASS; revalidate original invariants and exit criteria; later changes must not invalidate earlier ownership/boundaries/contracts/authority; stale evidence and stale assumptions must be detected; a real violation reopens the affected historical semantic parent; replay remains BLOCKED while any reopened stage is unresolved. **Mechanical prerequisites:** `reopened historical stages` = 0; `unresolved replay blockers` = 0; `roadmap drift` = 0; `historical evidence invalidated by later changes` = 0; `unclassified replay findings` = 0. **Depends on:** `DUP-X`. **Next:** `EBH-7`. | **[ ] FINAL / MANDATORY** |
 | **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior, **and end-to-end tenant isolation proven on current HEAD across subsystem boundaries — not inferred from individual component closure alone**. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6** and **`ROADMAP-REPLAY-X` = CLOSED**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. | **[ ] FINAL / MANDATORY** |
 | **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after final enterprise certification, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates instead of duplicating them; adds cross-cutting static/structural checks; one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X`. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`SKILL-X` = CLOSED** (independent exact-SHA evidence; scope per §3.0.4); **`TOOL-LIFE-X` = CLOSED** (independent exact-SHA evidence; lifecycle scope per §3.0.5); **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.6); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
-| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED** or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, and **freeze-SHA enterprise audit = PASS**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `ARCH-FREEZE`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`SKILL-X` = CLOSED** (independent exact-SHA evidence; scope per §3.0.4); **`TOOL-LIFE-X` = CLOSED** (independent exact-SHA evidence; lifecycle scope per §3.0.5); **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.6); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). **Next mandatory stage after closure:** **`SCENARIO-READINESS-X`**. | **[ ] FINAL / MANDATORY** |
+| **SCENARIO-READINESS-X** | Scenario Delivery Velocity & Boundary Integration Certification | **Mandatory post-freeze pre-scenario validation.** Answers: *On formally frozen Intergrax, can a real business process be built and run very quickly as a thin, separately deployable component between existing customer systems—without core platform changes, scenario-local bypasses, or new platform mechanisms?* Reference validation scenario: **business settlement / reconciliation** through boundary adapters and typed contracts (not a specific customer production rollout). Certifies boundary-integrated deployment, typed input/output, deterministic-first rules, platform HITL/trace/evidence reuse, delivery-velocity metrics, friction inventory/classification, and **Intergrax Scenario Delivery Kit** standardization analysis. **Depends on:** **`ARCH-FREEZE` = CLOSED**. **Next:** **`SCENARIO-GATE`**. Full scope, metrics, acceptance criteria, friction taxonomy, frozen-architecture rule, and relationship to scenario program: §3.0.7. **Implementation status:** docs/plan only — **not started**; **production delta = 0** until implementation waves are explicitly opened. | **[ ] PLANNED / MANDATORY** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **`SCENARIO-READINESS-X` does not start scenario-driven platform development** — it certifies post-freeze delivery readiness; only **`SCENARIO-READINESS-X` = CLOSED** enables entry to the formal scenario program opened by this gate. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED**, **`SCENARIO-READINESS-X` ≠ CLOSED**, or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`SCENARIO-READINESS-X` = CLOSED**, **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, **freeze-SHA enterprise audit = PASS**, and **unresolved platform-level architecture blockers discovered during `SCENARIO-READINESS-X` = 0**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `ARCH-FREEZE`, `SCENARIO-READINESS-X`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
 
 ### 3.0.1 Transferred Scenario #24 capabilities — mandatory order before EBH-3 / EBH-4
 
@@ -486,7 +519,7 @@ earlier correctness / production certifications
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary platform question:**
@@ -599,7 +632,7 @@ earlier correctness / production certifications
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary platform question:**
@@ -807,7 +840,7 @@ CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary business / platform question:**
@@ -1035,6 +1068,201 @@ No silent fallback to unsafe provider/store.
 
 **`production delta = 0`** until explicit implementation waves are opened. Do not add load-test dependencies, Docker configs, benchmarks, chaos tooling, or production runtime changes as part of roadmap documentation alone.
 
+### 3.0.7 `SCENARIO-READINESS-X` — Scenario Delivery Velocity & Boundary Integration Certification
+
+**Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED; do **not** mark PASS until independent exact-SHA closure. Roadmap/plan authority only until then.
+
+**Position:** after **`ARCH-FREEZE`**, before **`SCENARIO-GATE`**.
+
+**Dependencies:** **`ARCH-FREEZE` = CLOSED**.
+
+**Next mandatory stage:** **`SCENARIO-GATE`**.
+
+**Canonical late-stage dependency chain (tail):**
+
+```text
+… → DIST-SCALE-X
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE
+→ SCENARIO-READINESS-X
+→ SCENARIO-GATE
+```
+
+**Primary platform question:**
+
+> Czy na formalnie zamrożonym Intergrax można bardzo szybko zbudować i uruchomić realny proces biznesowy jako cienki, osobno deployowalny komponent pomiędzy istniejącymi systemami klienta — bez zmian core platformy, bez scenario-local bypassów i bez tworzenia nowych mechanizmów platformowych?
+
+This stage runs **after** architecture freeze. It is **not** a customer production rollout and **not** the start of scenario-driven platform development. It is a **reference scenario-readiness test** of the frozen platform.
+
+#### Reference validation scenario
+
+**Business settlement / reconciliation** (illustrative — not a frozen domain model):
+
+```text
+existing customer system / file / API
+        ↓
+input adapter
+        ↓
+typed scenario input
+        ↓
+Intergrax scenario
+        ↓
+deterministic rules / reconciliation
+        ↓
+exception classification
+        ↓
+optional HITL
+        ↓
+typed output
+        ↓
+output adapter
+        ↓
+existing customer system
+```
+
+#### Boundary model
+
+Intergrax must operate as a **component of an existing process**, not as a replacement for the whole customer environment:
+
+```text
+CUSTOMER SYSTEM A
+      ↓
+boundary adapter
+      ↓
+INTERGRAX SCENARIO COMPONENT
+      ↓
+boundary adapter
+      ↓
+CUSTOMER SYSTEM B
+```
+
+External systems remain external. The scenario must consume **platform-defined contracts** only — no scenario-local execution/governance/provider/configuration authority.
+
+#### Reference business flow (validation only)
+
+Example reconciliation steps (names are illustrative, not canonical domain types):
+
+1. przyjęcie danych rozliczeniowych / godzin / wykonania;
+2. przyjęcie faktury lub dokumentu kosztowego;
+3. normalizacja danych;
+4. identyfikacja kontrahenta / okresu / kontraktu / stawki;
+5. wyliczenie expected amount;
+6. porównanie expected vs submitted amount;
+7. klasyfikacja: `MATCH`, `HOURS_MISMATCH`, `AMOUNT_MISMATCH`, `UNKNOWN_CONTRACTOR`, `MISSING_RATE`, `MISSING_DOCUMENT`, `DUPLICATE`;
+8. poprawne rekordy → downstream output;
+9. exceptions → HITL / review;
+10. wygenerowanie typed output;
+11. pełne trace/evidence.
+
+#### Scenario deployment (expected delivery shape — non-prescriptive)
+
+The stage must require a **reference deployment package** runnable independently of core platform development. Example layout (roadmap does **not** mandate CLI or final directory structure):
+
+```text
+scenario/
+    contracts/
+    rules/
+    adapters/
+    configuration/
+    tests/
+    fixtures/
+    docker/
+```
+
+Reproducible local deployment example: `docker compose up` (or equivalent — not frozen here).
+
+#### Deterministic-first invariant
+
+```text
+deterministic business logic
+must remain deterministic
+```
+
+LLM/agent is **not** required when the problem is unambiguous and rule-based. AI may be used only where genuine ambiguity exists, e.g. document interpretation, fuzzy matching, classification of unstructured descriptions, exception-resolution recommendations. AI must **not** replace simple deterministic rules without justification.
+
+#### Primary product metric — delivery velocity
+
+Proving that a reference scenario **works** is insufficient. The stage must **measure speed of deploying a new process**.
+
+**Required metrics (minimum):**
+
+- `Time to First Running Scenario`;
+- `Time to Reproducible Local Deployment`;
+- liczba zmian w core Intergrax;
+- liczba nowych mechanizmów platformowych;
+- ilość scenario-specific code;
+- ilość adapter-specific code;
+- udział konfiguracji / deklaratywnego opisu;
+- reuse istniejących platform capabilities;
+- czas wymiany jednego external adaptera;
+- liczba manual deployment steps;
+- liczba friction points utrudniających szybkie wdrożenie.
+
+**Targets during reference validation:**
+
+```text
+core platform changes target: 0
+new scenario-local platform mechanisms target: 0
+```
+
+#### Friction classification (exactly one per finding)
+
+```text
+PLATFORM DEFICIENCY
+TOOLING / DX DEFICIENCY
+ADAPTER / INTEGRATION WORK
+BUSINESS-SCENARIO WORK
+DEPLOYMENT / OPERABILITY DEFICIENCY
+STOP — FROZEN ARCHITECTURE VIOLATION
+```
+
+Platform deficiencies must **not** be masked as scenario-local workarounds.
+
+#### Frozen architecture rule
+
+`SCENARIO-READINESS-X` operates on **frozen** core architecture. If the reference scenario requires changing frozen core architecture:
+
+```text
+STOP — FROZEN ARCHITECTURE VIOLATION
+```
+
+Use the formal freeze-exception / ADR / recertification process. Do **not** patch core inside scenario validation.
+
+#### Intergrax Scenario Delivery Kit (expected analysis output — not implemented in this stage)
+
+The stage must produce an analysis of what should be standardized as **`Intergrax Scenario Delivery Kit`** (implementation deferred), e.g. whether the program needs: scenario template; typed input/output templates; adapter template; rules module convention; fixture convention; qualification template; Docker/local deployment template; environment/configuration template; one-command validation/deployment workflow — to reduce future `time-to-running-scenario`.
+
+#### Relationship to `SCENARIO-GATE`
+
+`SCENARIO-READINESS-X` **does not** open scenario-driven platform development. Only **`SCENARIO-READINESS-X` = CLOSED** permits entry to **`SCENARIO-GATE`**, which remains the formal boundary opening the real scenario program.
+
+#### Exit criteria (`SCENARIO-READINESS-X` = CLOSED only when all hold)
+
+1. frozen Intergrax core delta = 0;
+2. reference scenario runs as a separately deployable component;
+3. input has typed contract;
+4. output has typed contract;
+5. external systems are behind adapters/contracts;
+6. an adapter can be swapped without changing core scenario logic;
+7. deterministic rules use deterministic mechanisms;
+8. HITL uses existing platform mechanisms;
+9. trace/evidence uses existing platform mechanisms;
+10. Governance/Execution boundaries remain intact;
+11. tenant boundary remains intact;
+12. no scenario-local execution/governance/provider/configuration authority;
+13. no duplicated mechanisms;
+14. no bypasses;
+15. clean local deployment is reproducible;
+16. full E2E can run automatically;
+17. `Time to First Running Scenario` measured;
+18. `Time to Reproducible Deployment` measured;
+19. friction points inventoried;
+20. every friction point classified (taxonomy above);
+21. unresolved platform-level architecture blockers = 0 before `SCENARIO-GATE`.
+
+#### Implementation boundary (this roadmap revision)
+
+**`production delta = 0`** until explicit implementation waves are opened. This roadmap amendment does not implement the reference scenario, adapters, Docker, templates, or runtime changes.
+
 ### 3.1 `ENT-AUDIT-X` — Continuous Enterprise Architecture Audit System
 
 **Responsibility split (`QUAL-X` vs `ENT-AUDIT-X`):**
@@ -1240,7 +1468,7 @@ Update this section only after independent exact-SHA audit.
 | STATE-X-FINAL-R1 | `bd54941d933069b8bfb2819bb819c1cbdbe71576` | **CLOSED** — residual blocker **STATE-X-FINAL-R1-R1** independently accepted @ `bd54941d…`; no further child. |
 | STATE-X-FINAL | `bd54941d933069b8bfb2819bb819c1cbdbe71576` | **CLOSED / independently accepted** — parent current-HEAD certification (**FRZ-STA-01..08** + **FRZ-REC-01..10**). **Historical baselines:** initial FINAL `3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7`; FINAL implementation `4ed4c01d3ce5417fc902ace213d3a4f53c9064bc`; R1 closed-world `d2b08198c674ba2f40e6a30afadb198fb9a3d5f9`. Qualification: [`STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md`](../qualification/STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md). |
 | STATE-X | `bd54941d933069b8bfb2819bb819c1cbdbe71576` | **CLOSED / independently accepted** — Persistence, State & Recovery Certification. **Accepted evidence/code baseline:** `bd54941d933069b8bfb2819bb819c1cbdbe71576`. **Closure-maintenance/bookkeeping:** first `development` commit after evidence baseline (docs-only; see `git log bd54941d933069b8bfb2819bb819c1cbdbe71576..`). Child lineage **R3 → R4 → R5 → R6 → FINAL → FINAL-R1 → FINAL-R1-R1** (per-child SHAs in ledger above). **SX-F01..SX-F20**; closed-world discovery; **FRZ-STA-01..08** + **FRZ-REC-01..10** = **PASS**; **R1-SQLITE-ENV-01** CLASSIFIED (STATE-X semantic impact none; **PROD-Q** / **QUAL-X** debt preserved); **global TENANT-X** not closed; **TRACE-X** = next mandatory stage. Qualification: [`STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md`](../qualification/STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md). |
-| TRACE-X | `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2` | **CLOSED / independently accepted** — **FRZ-TRC-01..12** = **PASS** (**12 of 12**); **FRZ-TRC-09** + **FRZ-TRC-10** @ **TRACE-X-P6** `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2`; bookkeeping tip `270e57a70630d3df959fd2b4431ec0fa3cc944b0`. Evidence chain: P0 `3a6030deb…` → P1 `2643d36e…` → P2 `4c6b7d05…` → P3 `3799b2d9…` → P4 `95fd9062…` → P5 → **TRACE-X-CERT** `69d8b111…` → **TRACE-X-P6** `a3203d79…`. **CONFIG-X** = **NEXT / REQUIRED / NOT ENTERED**; **P5-GAP-04** = **QUALIFICATION CLOSED**; **TRACE-X-P5-R2-P1** + **TRACE-X-P5-R2-P1-R1** = **CLOSED / independently accepted** @ `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9`; **TRACE-X-P5-R2-P2** = **CLOSED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c`; **TRACE-X-P5-R2-P2-R1** = **CLOSED / independently accepted** @ `e0d5209825de532363b62f0e1e58f53e1ac30e47`; **TRACE-X-P5-R2-P2-R2** = **CLOSED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c`; **R2-P2-STATE-X-DELTA-CLASSIFICATION-01** = **SATISFIED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c`; **TRACE-X-P5-R2-P3** = **CLOSED / independently accepted**; **TRACE-X-P5-R2-P4** = **CLOSED / independently accepted**; **TRACE-X-P5-R2-P4-R2** = **CLOSED / independently accepted**; **TRACE-X-P5-R2-P4-R2-R1-R1-R1** = **CLOSED / independently accepted** @ `25df09093bf4d7103f0bf66780ae794d52a7f929`; P5 closed-world + **TRACE-X-CERT** = **NOT ENTERED**. **Accepted P5-R2-P1 evidence:** `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9` (initial P1 implementation `bfe0e04b70613ce70929170a5d7b6c3d8acdd336` — lineage only). **Accepted P5-R1 evidence tip:** `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` (bookkeeping e.g. `16be5fdf…` — not implementation evidence). **R2-P0 accepted architecture evidence:** `74b93fdf1617e90b19bf42b1658d674e215baba6` (ledger/bookkeeping tip before P0-CLOSE e.g. `ec92759a…` — not architecture evidence). **R2-P0 architecture:** [`TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md`](../qualification/TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md). **Accepted P5-P0 evidence/code baseline:** `81fd1490f18d73eaf31ec94c2b93dbb525026ba2`. **Accepted P4 evidence/code baseline:** `95fd906215b789bde8a0d04f718ff21cb144833e`. **Accepted P3 evidence/code baseline:** `3799b2d974369e6002ac5326e62c8c8b381e7944`. |
+| TRACE-X | `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2` | **CLOSED / independently accepted** — **FRZ-TRC-01..12** = **PASS** (**12 of 12**); **FRZ-TRC-09** + **FRZ-TRC-10** @ **TRACE-X-P6** `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2`; bookkeeping tip `270e57a70630d3df959fd2b4431ec0fa3cc944b0`. Evidence chain: P0 `3a6030deb…` → P1 `2643d36e…` → P2 `4c6b7d05…` → P3 `3799b2d9…` → P4 `95fd9062…` → P5 → **TRACE-X-CERT** `69d8b111…` → **TRACE-X-P6** `a3203d79…`. **CONFIG-X** = **CLOSED / independently accepted** @ `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb`; **COMPAT-X** = **CURRENT**; **P5-GAP-04** = **QUALIFICATION CLOSED**; **TRACE-X-P5-R2-P1** + **TRACE-X-P5-R2-P1-R1** = **CLOSED / independently accepted** @ `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9`; **TRACE-X-P5-R2-P2** = **CLOSED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c`; **TRACE-X-P5-R2-P2-R1** = **CLOSED / independently accepted** @ `e0d5209825de532363b62f0e1e58f53e1ac30e47`; **TRACE-X-P5-R2-P2-R2** = **CLOSED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c`; **R2-P2-STATE-X-DELTA-CLASSIFICATION-01** = **SATISFIED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c`; **TRACE-X-P5-R2-P3** = **CLOSED / independently accepted**; **TRACE-X-P5-R2-P4** = **CLOSED / independently accepted**; **TRACE-X-P5-R2-P4-R2** = **CLOSED / independently accepted**; **TRACE-X-P5-R2-P4-R2-R1-R1-R1** = **CLOSED / independently accepted** @ `25df09093bf4d7103f0bf66780ae794d52a7f929`; P5 closed-world + **TRACE-X-CERT** = **NOT ENTERED**. **Accepted P5-R2-P1 evidence:** `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9` (initial P1 implementation `bfe0e04b70613ce70929170a5d7b6c3d8acdd336` — lineage only). **Accepted P5-R1 evidence tip:** `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` (bookkeeping e.g. `16be5fdf…` — not implementation evidence). **R2-P0 accepted architecture evidence:** `74b93fdf1617e90b19bf42b1658d674e215baba6` (ledger/bookkeeping tip before P0-CLOSE e.g. `ec92759a…` — not architecture evidence). **R2-P0 architecture:** [`TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md`](../qualification/TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md). **Accepted P5-P0 evidence/code baseline:** `81fd1490f18d73eaf31ec94c2b93dbb525026ba2`. **Accepted P4 evidence/code baseline:** `95fd906215b789bde8a0d04f718ff21cb144833e`. **Accepted P3 evidence/code baseline:** `3799b2d974369e6002ac5326e62c8c8b381e7944`. |
 | TRACE-X-P0 | `3a6030deb2cd05f080efeee83a5d1060fa3704de` | **CLOSED / independently accepted** — **Accepted evidence/code baseline:** `3a6030deb…`. **Historical:** initial P0 baseline `6be91ed91…`; P0-R1 remediation @ `3a6030deb…`. Inventory, ownership, coverage, child decomposition, TXP0-Q01..Q30 + TXP0-R1-Q01..Q20; **production delta = 0**; qualification [`TRACE_X_P0_TRACEABILITY_OWNERSHIP_COVERAGE_BASELINE.md`](../qualification/TRACE_X_P0_TRACEABILITY_OWNERSHIP_COVERAGE_BASELINE.md); does **not** close **TRACE-X** or promote **FRZ-TRC-*** PASS. Closure-maintenance docs commit after this SHA is bookkeeping only — not P0 evidence baseline. |
 | TRACE-X-P0-R1 | `3a6030deb2cd05f080efeee83a5d1060fa3704de` | **CLOSED / independently accepted** — remediation @ accepted SHA `3a6030deb…` (R1 START_HEAD `a2eb3d6e…`): all sensitive categories enforced; closed-world discovered == classified (17/17); registry→surface integrity; orphan registry audit; SHA provenance corrected; P1–P6 mapping mechanically consistent; **production delta = 0**. |
 | TRACE-X-P1 | `2643d36edb7e90fb2e68b4dd88dc146aca1b58af` | **CLOSED / independently accepted** — **Final accepted evidence/code baseline:** `2643d36edb7e90fb2e68b4dd88dc146aca1b58af` (transport qualification preserved @ `097b8236817456377848885a324afa1044101009`; no transport semantic change through final baseline). **FRZ-TRC-02** + **FRZ-TRC-12** = **PASS**; `P1-BLK-DEGRADED-LINEAGE-01` = **RESOLVED / independently accepted**. Qualification: [`TRACE_X_P1_IDENTITY_CAUSALITY_CERTIFICATION.md`](../qualification/TRACE_X_P1_IDENTITY_CAUSALITY_CERTIFICATION.md), [`TRACE_X_P1_R1_STRICT_DURABLE_CHILD_LINEAGE_CERTIFICATION.md`](../qualification/TRACE_X_P1_R1_STRICT_DURABLE_CHILD_LINEAGE_CERTIFICATION.md). Does **not** close **TRACE-X** globally. Closure-maintenance docs commit after this SHA is bookkeeping only — not P1 evidence baseline. |
@@ -1277,17 +1505,52 @@ Update this section only after independent exact-SHA audit.
 | TRACE-X-P5-R2-CLOSED-WORLD | `831011d9c92bb6478f672d295792fc36eb0d4f73` | **CLOSED / independently accepted** — parent baseline `c74c8e0005a85ccb0d302df64e1798e0a8e6e632`; **TRACE-X-P5-R2-R1** evidence; closed-world **32/32**; **unclassified = 0**; **bypass = 0**; **E2E-A..H = PASS**; blockers **36**/**37** closed. Qualification: [`TRACE_X_P5_R2_CLOSED_WORLD_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE.md`](../qualification/TRACE_X_P5_R2_CLOSED_WORLD_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE.md). **FRZ-TRC-11** = **PASS** @ **TRACE-X-CERT** `69d8b111…`. |
 | TRACE-X-CERT | `69d8b111e8d2f6717b75d866d3738a0106d00304` | **CLOSED / independently accepted** — configured/effective provenance current-HEAD certification; replay **PASS**; **160** pytest **PASS**; closed-world **32/32**; **unclassified = 0**; **bypass = 0**; **E2E-A..H = PASS**; local tenant audit **PASS**; **FRZ-TRC-11** = **PASS**; CERT entry START_HEAD `53265fa6dbe3975359967f0db8c7581b55fa4632`; bookkeeping tip `f4c42c79928ac7fb8568591fe06ab71c2ff3aa15`. Qualification: [`TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md`](../qualification/TRACE_X_CERT_CONFIGURED_EFFECTIVE_PROVENANCE_CERTIFICATION.md). Does **not** close **FRZ-TRC-09**/**10** or global **TRACE-X**. **production delta = 0**. |
 | TRACE-X-P6 | `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2` | **CLOSED / independently accepted** — corrective chain **P6** → **R1** (`0ce1469f440f58938ceeeb0f7c9be347091206be`) → **R1-R1** (`cd1f6fbbb0991c02dba95e07433fa999e61260cf`) → **R1-R1-R1** (`a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2`); initial P6 **REJECTED** @ `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516`; **FRZ-TRC-09** + **FRZ-TRC-10** = **PASS**; restart/resume **159**; terminal **50**; **unclassified = 0**; **bypass = 0**; **production delta = 0**. Qualification: [`TRACE_X_P6_RESTART_RESUME_TERMINAL_CAUSALITY_CERTIFICATION.md`](../qualification/TRACE_X_P6_RESTART_RESUME_TERMINAL_CAUSALITY_CERTIFICATION.md). |
-| CONFIG-X | `e405b71a91b6652334a407c997a1c3a46c7eadc9` | **CURRENT / FINAL RECONCILIATION** — wave-1 @ `4dc5d15c…` (historical **5** blockers); **R1** @ `d7183eb3…` · **R1-R1** @ `4b8961e4…` · **R1-R1-R1** = **CLOSED / independently accepted** @ `e405b71a91b6652334a407c997a1c3a46c7eadc9` (production correction `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`; bookkeeping `7b5be489ff9a2fec2857eb3f379b258c9dd513e3`); **R1** / **R1-R1** = **BLOCKED ON PARENT RECONCILIATION**; **FRZ-CFG-01..08** **OPEN**; qualification [`CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md`](../qualification/CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md). **Next:** CONFIG-X FINAL RECONCILIATION. **COMPAT-X** = **NOT ENTERED**. |
-| CONFIG-X-R1-R1-R1 | `e405b71a91b6652334a407c997a1c3a46c7eadc9` | **CLOSED / independently accepted** — fail-closed observability role materialization; production correction `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`. Does not close parent **CONFIG-X**. |
-| COMPAT-X | — | **NOT ENTERED** — contract/schema/event/plugin evolution certification before tenant cross-platform certification (`CONFIG-X` → `COMPAT-X` → `TENANT-X` → `PROD-Q`). |
-| TENANT-X | — | PLANNED / MANDATORY — cross-platform tenant isolation certification on current HEAD after `COMPAT-X`; primary closer for `FRZ-TEN-*`; precedes `PROD-Q`. |
+| CONFIG-X-FINAL-R1 | `dc42728a7260c2b48996fcd77dcda070f65b3c91` | **CLOSED / superseded-and-accepted** — **REJECTED** as final evidence; mechanical closed-world proof lineage preserved; subsequent **FINAL-R1-R1** / **FINAL-R1-R1-R1** close findings. **production delta = 0**. |
+| CONFIG-X-FINAL-R1-R1 | `de5701f09dbb18397f7ffcbfee0a246d05097cd2` | **CLOSED / superseded-and-accepted** — corrective qualification wave after **CONFIG-X-FINAL-R1** rejection. **production delta = 0**. |
+| CONFIG-X-FINAL-R1-R1-R1 | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` | **CLOSED / independently accepted** — exact-SHA independent audit; **FRZ-CFG-01..08** = **PASS**; parent **CONFIG-X** closure evidence anchor. Qualification: [`CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md`](../qualification/CONFIG_X_CONFIGURATION_PROVIDER_VENDOR_ACTIVATION_CERTIFICATION.md). |
+| CONFIG-X | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` | **CLOSED / independently accepted** — Configuration / Provider / Vendor Activation Certification. **FRZ-CFG-01..08** = **PASS** (**8 of 8**). Evidence chain: wave-1 `4dc5d15c…` · **R1** `d7183eb3…` · **R1-R1** `4b8961e4…` · **R1-R1-R1** `e405b71a…` (production `4fa6f42f…`) · final reconciliation `1e74c276…` · **FINAL-R1** `dc42728a…` (rejected as final evidence) · **FINAL-R1-R1** `de5701f0…` · **FINAL-R1-R1-R1** `fac9a43f…`. **historical blockers = 5**; **active blockers = 0**; **54/54** classified; **CX-A..H** = **PASS**; CONFIG-X local tenant audit **PASS**; does **not** close **TENANT-X** / global **FRZ-TEN-***. **new FRZ-TEN PASS = 0**. **Next mandatory stage = COMPAT-X** (**CURRENT**). |
+| CONFIG-X-R1-R1-R1 | `e405b71a91b6652334a407c997a1c3a46c7eadc9` | **CLOSED / independently accepted** — fail-closed observability role materialization; production correction `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`. |
+| CONFIG-X-R1-R1 | `4b8961e4a4376a95969384f76083d019eede9903` | **CLOSED / superseded-and-accepted** — explicit observability role binding (OBS-TOOL-01). |
+| CONFIG-X-R1 | `d7183eb31d19967330687a5bc5345774c230e3aa` | **CLOSED / superseded-and-accepted** — wave-1 production blocker remediation. |
+| COMPAT-X | — | **OPEN** / **CURRENT** — **BLOCKED ON R3–R5 REMEDIATION** — Contract, Schema & Evolution Certification (`CONFIG-X` → `COMPAT-X` → `TENANT-X` → `PROD-Q`). **P0** @ `0612c2a7…`; **R1** @ `4361943d…`; **R2** **CLOSED** @ `97abf88f…` (**R2-FINAL-R1**); **FRZ-CMP-01** / **02** / **08** = **OPEN** / **PASS CANDIDATE**; **FRZ-CMP-03** / **06** = **OPEN** / **PASS CANDIDATE** @ `97abf88f…`; **FRZ-CMP-04** = **OPEN** / **PARTIAL PASS CANDIDATE** @ `8ff23c9…` (R3 final closure pending **R3-R1**); **FRZ-CMP-05** / **07** = **OPEN** / **BLOCKED** → **R4** / **R5**. **COMPAT-X-R3-P0** **CLOSED** via **R3-P0-R1-R1** @ `8ff23c9…`; **COMPAT-X-R3** = **OPEN** / **CURRENT** — **BLOCKED ON R3-R1**; **COMPAT-X-R3-R1** = **NEXT** / **QUEUED**; **COMPAT-X-R4** / **R5** = **PLANNED**; **TENANT-X** = **NOT ENTERED**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). |
+| COMPAT-X-P0 | `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` | **CLOSED / independently accepted** — closed-world inventory + adversarial gates; evidence chain: rejected initial `cea6393775c8b92a2cefb165fc9930511c776169` → **P0-R1** `065a0dcd…` (**REJECTED / superseded**) → **P0-R2** `6512ac5d…` (**REJECTED / superseded by accepted R3**) → **P0-R3** `0612c2a7…` (**accepted**). Raw **7266** / semantic **1879** / exclusions **5289** / unclassified **0**; registry conflicts **0**; shim candidates **474/474** authority-inspected; production `PARALLEL_AUTHORITY` **0**; **production delta = 0**. Does **not** close **COMPAT-X** parent or global **FRZ-CMP-* PASS**. |
+| COMPAT-X-P0-R1 | `065a0dcd875f8b985792e70f4e1f1b20bd8de094` | **REJECTED / superseded** — weak version-removal + parallel-authority adversarial gates. |
+| COMPAT-X-P0-R2 | `6512ac5df43f45722b0bce50d90586609e6d46f3` | **REJECTED / superseded by accepted R3** — parallel-authority universe narrower than shim discovery (`compat_adapter_module_scope`). |
+| COMPAT-X-P0-R3 | `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` | **CLOSED / independently accepted** — `CompatibilityCandidateContext`; shim candidate authority inspection **474/474**; **0** production `PARALLEL_AUTHORITY`; outside-compat synthetic probes; **5** preserved `PERSISTED_SCHEMA_WITHOUT_VERSION` findings (**CHILD TASK REQUIRED** → **COMPAT-X-R2**); **FRZ-CMP-01** / **FRZ-CMP-08** = **PASS CANDIDATE** @ accepted SHA; **FRZ-CMP-02..07** = **BLOCKED**; **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). |
+| COMPAT-X-R1-R1 | `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` | **REJECTED / superseded by R1-R2** — independent exact-SHA audit: public stable identity gate + `ProofReceipt` qualification false negative; rejected baseline `1b107dc8e87acf7d9d547ab694885beacbfd7197`. |
+| COMPAT-X-R1-R2 | `bc6b46b7c300d1db12ba664d327b339a75762532` | **REJECTED / superseded by R1-R3** — static resolution correct, but semantic identity became version-value-derived and collapsed 9 surfaces vs accepted P0; inherited-version adversarial coverage incomplete. |
+| COMPAT-X-R1-R3 | `fc95f0f72d20401837bfaf6c06a63c8ef2d78aca` | **REJECTED / superseded by R1-R4** — aggregate inventory reconciliation insufficient for independent audit (no mechanical legacy collision proof). |
+| COMPAT-X-R1-R4 | `a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72` | **REJECTED / superseded by R1-R5** — historical identity derived from `version_source` / field-name heuristics rather than exact P0 AST `node.value` semantics. |
+| COMPAT-X-R1-R5 | `4361943d6812a83db321e3d3fbc6d361ed393fee` | **CLOSED / independently accepted** — exact historical P0 AST projection; historical P0 **1879**; current inventory **1977**; semantic split delta **98**; mechanical collision reconciliation; unexplained identity delta **0**; public stable noncompliant identity **0**; inherited resolved **PASS** / unresolved **FAIL**; **ProofReceipt** versioned; five `PERSISTED_SCHEMA_WITHOUT_VERSION` preserved for R2; **FRZ-CMP-02** = **OPEN** / **PASS CANDIDATE** @ accepted SHA; **production delta = 0**. |
+| COMPAT-X-R1 | `4361943d6812a83db321e3d3fbc6d361ed393fee` | **CLOSED / independently accepted** — Contract Versioning & Classification (**FRZ-CMP-02** candidate evidence); rejected lineage **R1-R1** → **R1-R2** → **R1-R3** → **R1-R4** preserved; does **not** close **COMPAT-X** parent. |
+| COMPAT-X-R2-P0-R1 | `9138b12a77c5e42831846b11220216fa6772df1a` | **REJECTED / superseded by R2-P0-R2** — false durable exclusions + Redis/idempotency coverage gaps. |
+| COMPAT-X-R2-P0-R2 | `78bd502b5da5284b1bdaae2e321b7076fa22227d` | **CLOSED / independently accepted** — durable mechanism coverage + false-exclusion closure; modules **7378**; raw **1613**; persisted **601**; exclusions **1012**; unclassified **0**; families **28**; missing durable version **10**; duplicate version/migration authority **0**/**0**; **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). |
+| COMPAT-X-R2 | `97abf88f6364758e7768e6fbf1bf56e138b43520` | **CLOSED / independently accepted** — Persisted Schemas & Migration Closure (**FRZ-CMP-03**, **FRZ-CMP-06**); accepted child chain **R2-P0-R2** @ `78bd502b…` · **R2-R1-R1** @ `bb5900cd…` · **R2-R2-R1-R1-R1** @ `2e7d6173…` · **R2-FINAL-R1** @ `97abf88f…`; **R2-FINAL** rejected @ `b9d456a0…` preserved; persisted families **28**; `MISSING_VERSION` **0**; legacy obligations **16**; family/obligation drift **0**; **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). |
+| COMPAT-X-R2-R1 | `549c8c1937267f07639043719d7fa27bba968430` | **REJECTED / superseded by R2-R1-R1** — idempotency mutation paths lacked universal schema gate. |
+| COMPAT-X-R2-R1-R1 | `bb5900cd9a502f3e967b88ee54e4e18f6ff101cb` | **CLOSED / independently accepted** — idempotency ledger universal existing-state schema gating (SQLite + Redis); `SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1` sole contract-level owner; semantic `MISSING_VERSION` **0**; opaque carriers **1**; unclassified durable **0**; duplicate version/migration authority **0**/**0**; live Redis behavioral matrix = future mandatory evidence before final architecture freeze (**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED**; static Lua audit passed; not resolved as live run). Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). |
+| COMPAT-X-R2-R2 | `60a6c3b2987d0e321268b0750fdcdd7816d47578` | **REJECTED** — legacy compatibility policy largely correct; typed migration-boundary defects; qualification implicit-compatibility proof insufficient. Superseded by corrective chain **R2-R2-R1** → **R2-R2-R1-R1** → **R2-R2-R1-R1-R1**. Parent **COMPAT-X-R2-R2** **CLOSED** through accepted descendant @ `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137`. |
+| COMPAT-X-R2-R2-R1 | `552db5c5d9ead99471d5db78f357393e167ebdef` | **REJECTED** — module-level sanctioned-owner bypass; adversarial gates proved detection but not enforcement; UserProfile migration typing still incomplete. |
+| COMPAT-X-R2-R2-R1-R1 | `ef5e05ef1f3b818611236dc9b5248b18feceea22` | **REJECTED** — qualification anti-bypass substantially corrected; UserProfile legacy memory-entry path still returned through `Dict[str, Any]`. |
+| COMPAT-X-R2-R2-R1-R1-R1 | `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137` | **CLOSED / independently accepted** — typed legacy UserProfile migration path end-to-end; direct legacy-wire → typed domain conversion; symbol-level sanctioned compatibility boundaries; module ≠ allowlist; fail-closed implicit-compatibility qualification; migration helper call-path strong-typing coverage; adversarial anti-bypass gates; `implicit_compatibility_branches` **0**; `orphan_migration_readers` **0**; `strong_typing_violations` **0**; no new global migration/version authority; **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). |
+| COMPAT-X-R2-FINAL | `b9d456a0ec69026101214c79dffa7a33ad713a34` | **REJECTED** — semantic baseline used generic mapping/`Any`; fixture provenance not sufficiently tied to evidence meaning; superseded by **COMPAT-X-R2-FINAL-R1**. |
+| COMPAT-X-R2-FINAL-R1 | `97abf88f6364758e7768e6fbf1bf56e138b43520` | **CLOSED / independently accepted** — typed baseline; fail-closed fixture parsing; exact provenance validation (identity `78bd502b…` · schema `bb5900cd…` · closure `2e7d6173…`); semantic `Any` **0** for R2-FINAL baseline contracts; family identity/fingerprint reconciliation; legacy obligation reconciliation; probes **A–L**; drift **0**; SQLite/Redis static schema gates **PASS**; **production delta = 0**. Closes **COMPAT-X-R2**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). |
+| COMPAT-X-R3-P0 | `7a2cbeddf4b64368ebab13a01697f6ab56201621` | **REJECTED** — payload numeric schema version not enforced; closed-world write-path proof too weak / handwritten. Parent **COMPAT-X-R3-P0** **CLOSED** via accepted corrective descendant **R3-P0-R1-R1** @ `8ff23c9…`. | **FRZ-CMP-04** evidence chain (rejected baseline) | Rejected ancestry preserved. |
+| COMPAT-X-R3-P0-R1 | `0e5262199a6c2f1737cf8ff48def53945ec02974` | **REJECTED** — payload version enforcement corrected; unknown `.append(..., tenant_id=...)` could still be classified as harmless `NON_EVENT_APPEND`. | **FRZ-CMP-04** corrective evidence (rejected) | Superseded by **R3-P0-R1-R1**. |
+| COMPAT-X-R3-P0-R1-R1 | `8ff23c9ef19f9baf9f9b013d73716e990c7d4e26` | **CLOSED / independently accepted** — fail-closed append classification; closed-world write-path inventory accepted; closes parent **COMPAT-X-R3-P0**. **production delta = 0**. Qualification: [`COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md`](../qualification/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION_CERTIFICATION.md). | **FRZ-CMP-04** partial pass candidate @ accepted SHA | Child **CLOSED**; **FRZ-CMP-04** final closure pending **R3-R1**. |
+| COMPAT-X-R3 | — | **OPEN** / **CURRENT** — **BLOCKED ON R3-R1** — Event Evolution (**FRZ-CMP-04** partial pass candidate @ `8ff23c9…`); **R3-P0** **CLOSED** via **R3-P0-R1-R1**; R3 final enforcement/current-head closure pending **R3-R1**; **not** R4/R5 scope. |
+| COMPAT-X-R3-R1 | — | **NEXT** / **QUEUED** — Event Evolution Enforcement & Current-HEAD Closure; primary **FRZ-CMP-04** final reconciliation. |
+| COMPAT-X-R4 | — | **PLANNED** — Plugin/Provider Compatibility (**FRZ-CMP-05**). |
+| COMPAT-X-R5 | — | **PLANNED** — Deprecation / Compatibility Shim Closure (**FRZ-CMP-07**). |
+| TENANT-X | — | **NOT ENTERED** — cross-platform tenant isolation certification on current HEAD after `COMPAT-X`; primary closer for `FRZ-TEN-*`; precedes `PROD-Q`. |
 | PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification; follows `TENANT-X`; includes ensuring the SQLite bootstrap finding cannot mask production startup correctness. |
 | QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `SKILL-X`); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
 | SKILL-X | — | PLANNED / MANDATORY — Agent Skills lifecycle/composition/governance certification (`QUAL-X` → `SKILL-X` → `TOOL-LIFE-X`); full scope §3.0.4; **not started**; **production delta = 0** until implementation opened. |
 | TOOL-LIFE-X | — | PLANNED / MANDATORY — Tool execution lifecycle, timeout, cancellation & retry certification (`SKILL-X` → `TOOL-LIFE-X` → `DIST-SCALE-X`); full scope §3.0.5; **not started**; **production delta = 0** until implementation opened. |
 | DIST-SCALE-X | — | PLANNED / MANDATORY — cross-platform data-intensive distributed scale & resilience certification (`TOOL-LIFE-X` → `DIST-SCALE-X` → `EBH-5`); full scope §3.0.6; mandatory before `ARCH-FREEZE`; **production delta = 0** until implementation opened; not started. |
 | ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE; exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
-| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. |
+| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. **Next:** `SCENARIO-READINESS-X`. |
+| SCENARIO-READINESS-X | — | PLANNED / MANDATORY — post-freeze scenario delivery velocity & boundary integration certification (`ARCH-FREEZE` → `SCENARIO-READINESS-X` → `SCENARIO-GATE`); full scope §3.0.7; **not started**; **production delta = 0** until implementation opened. |
+| SCENARIO-GATE | — | BLOCKED — formal Enterprise → Scenario transition; requires `SCENARIO-READINESS-X` = CLOSED among other mandatory prerequisites (§3). |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
@@ -1394,7 +1657,39 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X`);
 - exact-SHA enterprise audit baseline recorded at `ARCH-FREEZE`;
 - actionable enterprise drift report available on demand;
-- formal `ARCH-FREEZE` (checklist-complete, green freeze-SHA enterprise audit) before `SCENARIO-GATE`;
+- formal `ARCH-FREEZE` (checklist-complete, green freeze-SHA enterprise audit) before `SCENARIO-READINESS-X`;
+- post-freeze scenario delivery readiness certified through a real boundary-integrated reference process;
+- scenario time-to-first-run and deployment friction measured before `SCENARIO-GATE`;
+- frozen platform proven capable of rapidly composing customer-process automation without core modifications;
+- `SCENARIO-READINESS-X` = CLOSED before `SCENARIO-GATE`;
 - scenario-driven platform evolution continuously audited against the accepted baseline;
 - new violations of frozen invariants remediated before accepting further platform evolution;
 - after freeze, any change to a frozen contract/boundary/ownership rule requires ADR, architecture review, explicit freeze exception, targeted recertification and scenario-wave drift audit where applicable.
+
+---
+
+### Post-Step Enterprise Discovery & Roadmap Completeness Audit (roadmap amendment — `SCENARIO-READINESS-X`)
+
+```text
+New current-parent blockers:
+none — roadmap-only amendment
+
+New future mandatory debt:
+SCENARIO-READINESS-X — mandatory post-freeze pre-scenario validation
+
+New candidate roadmap stages:
+SCENARIO-READINESS-X
+
+FRZ coverage gaps:
+none introduced by this documentation-only amendment; stage is product/delivery readiness validation unless future audit determines a freeze criterion is required
+
+New ownership / boundary / authority concerns:
+none — scenario readiness must consume frozen platform contracts and may not create new platform authority
+
+Roadmap amendment required:
+YES — SCENARIO-READINESS-X inserted between ARCH-FREEZE and SCENARIO-GATE
+```
+
+**Classification:** `NEW ROADMAP STAGE REQUIRED`
+
+**Cursor stage status (this amendment):** `READY FOR AUDIT` — not `CLOSED`.

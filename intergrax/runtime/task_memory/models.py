@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Final, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+SCHEMA_TASK_MEMORY_RECORD_V1: Final = "task_memory.v1"
 
 
 class TaskMemoryRecord(BaseModel):
@@ -31,7 +34,7 @@ class TaskMemoryRecord(BaseModel):
     value: Dict[str, Any] = Field(default_factory=dict)
     created_at_utc: str = Field(default_factory=utc_now_iso)
     updated_at_utc: str = Field(default_factory=utc_now_iso)
-    schema_version: str = "task_memory.v1"
+    schema_version: str = SCHEMA_TASK_MEMORY_RECORD_V1
     provenance: Dict[str, Any] = Field(default_factory=dict)
 
     @property

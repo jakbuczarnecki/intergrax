@@ -217,10 +217,19 @@ def test_authority_scope_unknown_cannot_map_to_mse() -> None:
 
 
 def test_descriptor_v1_dhr_without_authority_scope_remains_readable() -> None:
-    source = _DESCRIPTOR.read_text(encoding="utf-8")
-    assert "_migrate_legacy_authority_scope" in source
-    assert "_default_authority_scope" not in source
+    persisted = (
+        Path(__file__).resolve().parents[4]
+        / "intergrax"
+        / "contracts"
+        / "execution"
+        / "suspended_operation"
+        / "descriptor_persisted.py"
+    )
+    source = persisted.read_text(encoding="utf-8")
+    assert "parse_suspended_execution_operation_descriptor" in source
     assert "recognize_authority_scope_from_invocation" in source
+    descriptor_source = _DESCRIPTOR.read_text(encoding="utf-8")
+    assert "_migrate_legacy_authority_scope" not in descriptor_source
 
 
 def test_reblock_and_block_share_continuation_helpers() -> None:

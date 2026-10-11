@@ -10,6 +10,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
+from intergrax.applications._shared.registry_snapshot_persistence import (
+    RegistrySnapshotPersistedPayload,
+    parse_registry_snapshot_persisted,
+)
 
 
 class SqliteRegistrySnapshotStore:
@@ -37,13 +41,14 @@ class SqliteRegistrySnapshotStore:
             )
 
     def persist(self, snapshot: HarnessRegistrySnapshot, *, host_id: str, snapshot_id: str) -> None:
-        payload = {
-            "tool_ids": list(snapshot.tool_ids()),
-            "skill_ids": list(snapshot.skill_ids()),
-            "prompt_ids": list(snapshot.prompt_ids()),
-            "agent_contract_ids": list(snapshot.agent_contract_ids()),
-            "evaluation_registry_ids": list(snapshot.evaluation_registry_ids()),
-        }
+        envelope = RegistrySnapshotPersistedPayload(
+            tool_ids=tuple(snapshot.tool_ids()),
+            skill_ids=tuple(snapshot.skill_ids()),
+            prompt_ids=tuple(snapshot.prompt_ids()),
+            agent_contract_ids=tuple(snapshot.agent_contract_ids()),
+            evaluation_registry_ids=tuple(snapshot.evaluation_registry_ids()),
+        )
+        payload = envelope.model_dump(mode="json")
         captured_at = datetime.now(timezone.utc).isoformat()
         with self._connect() as conn:
             conn.execute(
@@ -66,7 +71,11 @@ class SqliteRegistrySnapshotStore:
             ).fetchone()
         if row is None:
             return None
-        return json.loads(row[0])
+        raw = json.loads(row[0])
+        if not isinstance(raw, dict):
+            raise ValueError("corrupt registry snapshot payload")
+        envelope = parse_registry_snapshot_persisted(raw)
+        return envelope.to_legacy_projection()
 
 
 def persist_registry_snapshot(

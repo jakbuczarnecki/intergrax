@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Protocol
+from typing import Final, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -32,12 +32,18 @@ from intergrax.agent_distribution.runtime_revision import (
 
 _NON_EMPTY = Field(min_length=1)
 
+SCHEMA_AGENT_ARTIFACT_METADATA_V1: Final = "agent_artifact_metadata.v1"
+SCHEMA_APPLICATION_ENVIRONMENT_SERVING_RECORD_V1: Final = (
+    "application_environment_serving_record.v1"
+)
+
 
 class AgentArtifactMetadata(BaseModel):
     """Artifact metadata owned by the distribution plane."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: str = SCHEMA_AGENT_ARTIFACT_METADATA_V1
     package_digest: str = _NON_EMPTY
     artifact_store_ref: str = Field(min_length=1)
     distribution_package_id: str = Field(min_length=1)
@@ -252,6 +258,7 @@ class ApplicationEnvironmentServingRecord(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: str = SCHEMA_APPLICATION_ENVIRONMENT_SERVING_RECORD_V1
     application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY
     traffic_serving_revision_id: str | None = None

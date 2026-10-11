@@ -169,7 +169,11 @@ def test_qdrant_integration_delegates_list_source_record_ids() -> None:
     inner = MagicMock()
     inner.list_source_record_ids.return_value = ("chunk-a", "chunk-b")
     integration = QdrantVectorStoreIntegration.from_store(
-        QdrantIntegrationConfig(url="http://localhost:6333", collection_name="coll"),
+        QdrantIntegrationConfig(
+            url="http://localhost:6333",
+            collection_name="coll",
+            tenant_id="tenant-a",
+        ),
         inner,
     )
     scope = VectorStoreScope(tenant_id="tenant-a", namespace=None, workspace_id="ws-a")
@@ -222,8 +226,11 @@ def test_chroma_default_configuration_is_http_only(
         "INTERGRAX_CHROMA_MODE",
         "INTERGRAX_CHROMA_HOST",
         "INTERGRAX_CHROMA_PORT",
+        "INTERGRAX_CHROMA_TENANT_ID",
     ):
         monkeypatch.delenv(env_name, raising=False)
+
+    monkeypatch.setenv("INTERGRAX_CHROMA_TENANT_ID", "tenant-lab")
 
     config = ChromaIntegrationConfig.from_env()
 

@@ -63,24 +63,6 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
     logical_invocation_fingerprint: LogicalInvocationFingerprint | None = None
     authority_scope: SuspendedOperationAuthorityScope
 
-    @model_validator(mode="before")
-    @classmethod
-    def _migrate_legacy_authority_scope(cls, data: object) -> object:
-        if not isinstance(data, dict):
-            return data
-        if data.get("authority_scope") is not None:
-            return data
-        scope = data.get("invocation_scope_id")
-        if not isinstance(scope, str):
-            raise ValueError("invocation_scope_id required for legacy descriptor")
-        try:
-            data["authority_scope"] = recognize_authority_scope_from_invocation(
-                scope,
-            ).value
-        except UnknownInvocationScopeError as exc:
-            raise ValueError("unknown invocation scope for legacy descriptor") from exc
-        return data
-
     @model_validator(mode="after")
     def _authority_scope_matches_invocation(
         self,

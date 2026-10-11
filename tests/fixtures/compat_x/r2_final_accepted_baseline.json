@@ -1,0 +1,755 @@
+{
+  "provenance": {
+    "family_identity_baseline_sha": "78bd502b5da5284b1bdaae2e321b7076fa22227d",
+    "schema_gate_accepted_sha": "bb5900cd9a502f3e967b88ee54e4e18f6ff101cb",
+    "closure_fingerprint_baseline_sha": "2e7d6173cc13bd1fb5ae48ef02292ee76bd22137",
+    "bookkeeping_task_baseline_sha": "f526d97e6fb56bf032d60fd9166fb1c6fa9ecf42"
+  },
+  "accepted_persisted_family_ids": [
+    "agent_distribution.agent_artifact_metadata",
+    "agent_distribution.agent_installation_record",
+    "agent_distribution.application_agent_binding",
+    "agent_distribution.application_environment_serving_record",
+    "agent_distribution.deployment_instance_record",
+    "agent_distribution.effective_roster",
+    "agent_distribution.materialized_runtime_lock",
+    "agent_distribution.package_agent_contract_authority_record",
+    "agent_distribution.runtime_materialization_record",
+    "agent_distribution.runtime_registry_projection_descriptor",
+    "agent_distribution.runtime_revision",
+    "agent_distribution.sqlite_container",
+    "applications.registry_snapshot",
+    "autonomous_work.postgresql_container",
+    "collaborative_work.sqlite_container",
+    "distributed.kv_entry",
+    "memory.conversational_turn",
+    "memory.user_profile",
+    "runtime.decision_event_append",
+    "runtime.execution_continuation_durable_state",
+    "runtime.runtime_checkpoint",
+    "runtime.runtime_event",
+    "runtime.scheduled_resume",
+    "runtime.suspended_execution_operation_descriptor",
+    "runtime.suspended_operation_backing_envelope",
+    "runtime.task_checkpoint",
+    "runtime.task_memory_record",
+    "runtime.tool_idempotency_ledger"
+  ],
+  "accepted_family_fingerprints": {
+    "agent_distribution.agent_artifact_metadata": {
+      "family_id": "agent_distribution.agent_artifact_metadata",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "agent_artifact_metadata.v1",
+      "version_owner_path": "intergrax/agent_distribution/stores.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "AgentArtifactMetadata",
+      "owner_module_path": "intergrax/agent_distribution/stores.py"
+    },
+    "agent_distribution.agent_installation_record": {
+      "family_id": "agent_distribution.agent_installation_record",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "agent_installation_record.v1",
+      "version_owner_path": "intergrax/agent_distribution/installation.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "AgentInstallationRecord",
+      "owner_module_path": "intergrax/agent_distribution/installation.py"
+    },
+    "agent_distribution.application_agent_binding": {
+      "family_id": "agent_distribution.application_agent_binding",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "application_agent_binding.v1",
+      "version_owner_path": "intergrax/agent_distribution/binding.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "ApplicationAgentBinding",
+      "owner_module_path": "intergrax/agent_distribution/binding.py"
+    },
+    "agent_distribution.application_environment_serving_record": {
+      "family_id": "agent_distribution.application_environment_serving_record",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "application_environment_serving_record.v1",
+      "version_owner_path": "intergrax/agent_distribution/stores.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "ApplicationEnvironmentServingRecord",
+      "owner_module_path": "intergrax/agent_distribution/stores.py"
+    },
+    "agent_distribution.deployment_instance_record": {
+      "family_id": "agent_distribution.deployment_instance_record",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "deployment_instance_record.v1",
+      "version_owner_path": "intergrax/agent_distribution/deployment.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "DeploymentInstanceRecord",
+      "owner_module_path": "intergrax/agent_distribution/deployment.py"
+    },
+    "agent_distribution.effective_roster": {
+      "family_id": "agent_distribution.effective_roster",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "effective_roster.v1",
+      "version_owner_path": "intergrax/agent_distribution/roster.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "EffectiveRoster",
+      "owner_module_path": "intergrax/agent_distribution/roster.py"
+    },
+    "agent_distribution.materialized_runtime_lock": {
+      "family_id": "agent_distribution.materialized_runtime_lock",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "materialized_runtime_lock.v1",
+      "version_owner_path": "intergrax/agent_distribution/dependency.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "MaterializedRuntimeLock",
+      "owner_module_path": "intergrax/agent_distribution/dependency.py"
+    },
+    "agent_distribution.package_agent_contract_authority_record": {
+      "family_id": "agent_distribution.package_agent_contract_authority_record",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "package_agent_contract_authority.v1",
+      "version_owner_path": "intergrax/agent_distribution/agent_contract_authority.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "PackageAgentContractAuthorityRecord",
+      "owner_module_path": "intergrax/agent_distribution/agent_contract_authority.py"
+    },
+    "agent_distribution.runtime_materialization_record": {
+      "family_id": "agent_distribution.runtime_materialization_record",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "runtime_materialization_record.v1",
+      "version_owner_path": "intergrax/agent_distribution/runtime_materialization_record.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "RuntimeMaterializationRecord",
+      "owner_module_path": "intergrax/agent_distribution/runtime_materialization_record.py"
+    },
+    "agent_distribution.runtime_registry_projection_descriptor": {
+      "family_id": "agent_distribution.runtime_registry_projection_descriptor",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "runtime_registry_projection_descriptor.v1",
+      "version_owner_path": "intergrax/applications/_shared/registry_projection_descriptor.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "RuntimeRegistryProjectionDescriptor",
+      "owner_module_path": "intergrax/applications/_shared/registry_projection_descriptor.py"
+    },
+    "agent_distribution.runtime_revision": {
+      "family_id": "agent_distribution.runtime_revision",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "runtime_revision.v1",
+      "version_owner_path": "intergrax/agent_distribution/runtime_revision.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py",
+        "intergrax/agent_distribution/in_memory_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "RuntimeRevision",
+      "owner_module_path": "intergrax/agent_distribution/runtime_revision.py"
+    },
+    "agent_distribution.sqlite_container": {
+      "family_id": "agent_distribution.sqlite_container",
+      "version_disposition": "STORE_CONTAINER_VERSION",
+      "current_version": "agent_distribution_sqlite.v1",
+      "version_owner_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "migration_disposition": "NO_PRIOR_VERSION",
+      "migration_owner_path": null,
+      "writer_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py"
+      ],
+      "reader_paths": [
+        "intergrax/agent_distribution/sqlite_stores.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "SqliteAgentDistributionDatabase",
+      "owner_module_path": "intergrax/agent_distribution/sqlite_stores.py"
+    },
+    "applications.registry_snapshot": {
+      "family_id": "applications.registry_snapshot",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "registry_snapshot.v1",
+      "version_owner_path": "intergrax/applications/_shared/registry_snapshot_persistence.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/applications/_shared/registry_snapshot_persistence.py",
+      "writer_paths": [
+        "intergrax/applications/_shared/registry_snapshot_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/applications/_shared/registry_snapshot_store.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "RegistrySnapshotPersistedPayload",
+      "owner_module_path": "intergrax/applications/_shared/registry_snapshot_persistence.py"
+    },
+    "autonomous_work.postgresql_container": {
+      "family_id": "autonomous_work.postgresql_container",
+      "version_disposition": "STORE_CONTAINER_VERSION",
+      "current_version": null,
+      "version_owner_path": "intergrax/autonomous_work/postgresql_repository.py",
+      "migration_disposition": "EXPLICIT_MIGRATION",
+      "migration_owner_path": "intergrax/autonomous_work/postgresql_repository.py",
+      "writer_paths": [
+        "intergrax/autonomous_work/postgresql_repository.py"
+      ],
+      "reader_paths": [
+        "intergrax/autonomous_work/postgresql_repository.py"
+      ],
+      "storage_kind": "POSTGRESQL_ROW",
+      "canonical_payload_type": "AutonomousWorkPostgreSQLSchema",
+      "owner_module_path": "intergrax/autonomous_work/postgresql_repository.py"
+    },
+    "collaborative_work.sqlite_container": {
+      "family_id": "collaborative_work.sqlite_container",
+      "version_disposition": "STORE_CONTAINER_VERSION",
+      "current_version": null,
+      "version_owner_path": "intergrax/collaborative_work/sqlite_repository.py",
+      "migration_disposition": "EXPLICIT_MIGRATION",
+      "migration_owner_path": "intergrax/collaborative_work/serialization.py",
+      "writer_paths": [
+        "intergrax/collaborative_work/sqlite_repository.py"
+      ],
+      "reader_paths": [
+        "intergrax/collaborative_work/sqlite_repository.py"
+      ],
+      "storage_kind": "SQLITE_ROW_COLUMNS",
+      "canonical_payload_type": "CollaborativeWorkSQLiteSchema",
+      "owner_module_path": "intergrax/collaborative_work/sqlite_repository.py"
+    },
+    "distributed.kv_entry": {
+      "family_id": "distributed.kv_entry",
+      "version_disposition": "OPAQUE_CARRIER_NOT_SEMANTIC_PAYLOAD",
+      "current_version": null,
+      "version_owner_path": "intergrax/distributed/contracts/kv_store.py",
+      "migration_disposition": "NO_PRIOR_VERSION",
+      "migration_owner_path": null,
+      "writer_paths": [
+        "intergrax/distributed/providers/sqlite_kv_store.py",
+        "intergrax/distributed/providers/redis_kv_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/distributed/providers/sqlite_kv_store.py",
+        "intergrax/distributed/providers/redis_kv_store.py"
+      ],
+      "storage_kind": "REDIS_BYTES",
+      "canonical_payload_type": "DistributedKvEntry",
+      "owner_module_path": "intergrax/distributed/contracts/kv_store.py"
+    },
+    "memory.conversational_turn": {
+      "family_id": "memory.conversational_turn",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "conversational_memory.v1",
+      "version_owner_path": "intergrax/memory/conversational_memory_persistence.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/memory/conversational_memory_persistence.py",
+      "writer_paths": [
+        "intergrax/memory/stores/sqlite_conversational_memory_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/memory/stores/sqlite_conversational_memory_store.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "ConversationalMemoryPersistedPayload",
+      "owner_module_path": "intergrax/memory/conversational_memory_persistence.py"
+    },
+    "memory.user_profile": {
+      "family_id": "memory.user_profile",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "user_profile.v1",
+      "version_owner_path": "intergrax/memory/user_profile_serialization.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/memory/user_profile_serialization.py",
+      "writer_paths": [
+        "intergrax/memory/stores/sqlite_user_profile_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/memory/stores/sqlite_user_profile_store.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "UserProfile",
+      "owner_module_path": "intergrax/memory/user_profile_memory.py"
+    },
+    "runtime.decision_event_append": {
+      "family_id": "runtime.decision_event_append",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": null,
+      "version_owner_path": "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py",
+      "writer_paths": [
+        "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "DecisionEventStreamPayload",
+      "owner_module_path": "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py"
+    },
+    "runtime.execution_continuation_durable_state": {
+      "family_id": "runtime.execution_continuation_durable_state",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "execution_continuation_durable_state.v1",
+      "version_owner_path": "intergrax/runtime/execution/continuation/persistence.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/runtime/execution/continuation/persistence.py",
+      "writer_paths": [
+        "intergrax/runtime/execution/continuation/durable_state_file.py",
+        "intergrax/runtime/execution/continuation/persistence.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/execution/continuation/durable_state_file.py",
+        "intergrax/runtime/execution/continuation/persistence.py"
+      ],
+      "storage_kind": "FILE_JSON",
+      "canonical_payload_type": "execution_continuation_durable_state.v1",
+      "owner_module_path": "intergrax/runtime/execution/continuation/persistence.py"
+    },
+    "runtime.runtime_checkpoint": {
+      "family_id": "runtime.runtime_checkpoint",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "runtime_checkpoint.v2",
+      "version_owner_path": "intergrax/runtime/long_running/runtime_checkpoint.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/runtime/long_running/checkpoint_resume_validation.py",
+      "writer_paths": [
+        "intergrax/runtime/long_running/store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/long_running/store.py"
+      ],
+      "storage_kind": "SQLITE_ROW_COLUMNS",
+      "canonical_payload_type": "RuntimeCheckpoint",
+      "owner_module_path": "intergrax/runtime/long_running/runtime_checkpoint.py"
+    },
+    "runtime.runtime_event": {
+      "family_id": "runtime.runtime_event",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "runtime_event.v2",
+      "version_owner_path": "intergrax/contracts/runtime_event.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/contracts/runtime_event.py",
+      "writer_paths": [
+        "intergrax/runtime/events/stores/sqlite_runtime_event_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/events/stores/sqlite_runtime_event_store.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "RuntimeEvent",
+      "owner_module_path": "intergrax/contracts/runtime_event.py"
+    },
+    "runtime.scheduled_resume": {
+      "family_id": "runtime.scheduled_resume",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "scheduled_resume.v1",
+      "version_owner_path": "intergrax/runtime/long_running/scheduled_resume.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/runtime/long_running/store.py",
+      "writer_paths": [
+        "intergrax/runtime/long_running/store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/long_running/store.py"
+      ],
+      "storage_kind": "SQLITE_JSON_PAYLOAD",
+      "canonical_payload_type": "ScheduledResume",
+      "owner_module_path": "intergrax/runtime/long_running/scheduled_resume.py"
+    },
+    "runtime.suspended_execution_operation_descriptor": {
+      "family_id": "runtime.suspended_execution_operation_descriptor",
+      "version_disposition": "INHERITED_ENVELOPE_VERSION",
+      "current_version": "suspended_execution_operation_descriptor.v1",
+      "version_owner_path": "intergrax/contracts/execution/suspended_operation/descriptor.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/contracts/execution/suspended_operation/descriptor_persisted.py",
+      "writer_paths": [
+        "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py"
+      ],
+      "storage_kind": "DOCUMENT_STORE_PARTITION",
+      "canonical_payload_type": "SuspendedExecutionOperationDescriptor",
+      "owner_module_path": "intergrax/contracts/execution/suspended_operation/descriptor.py"
+    },
+    "runtime.suspended_operation_backing_envelope": {
+      "family_id": "runtime.suspended_operation_backing_envelope",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "suspended_operation_backing.v1",
+      "version_owner_path": "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
+      "migration_disposition": "EXPLICIT_LEGACY_READER",
+      "migration_owner_path": "intergrax/contracts/execution/suspended_operation/descriptor_persisted.py",
+      "writer_paths": [
+        "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py"
+      ],
+      "storage_kind": "DOCUMENT_STORE_PARTITION",
+      "canonical_payload_type": "suspended_operation_backing.v1",
+      "owner_module_path": "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py"
+    },
+    "runtime.task_checkpoint": {
+      "family_id": "runtime.task_checkpoint",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "task_checkpoint.v1",
+      "version_owner_path": "intergrax/runtime/long_running/models.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/runtime/long_running/checkpoint_resume_validation.py",
+      "writer_paths": [
+        "intergrax/runtime/long_running/store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/long_running/store.py"
+      ],
+      "storage_kind": "SQLITE_ROW_COLUMNS",
+      "canonical_payload_type": "TaskCheckpoint",
+      "owner_module_path": "intergrax/runtime/long_running/models.py"
+    },
+    "runtime.task_memory_record": {
+      "family_id": "runtime.task_memory_record",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "task_memory.v1",
+      "version_owner_path": "intergrax/runtime/task_memory/models.py",
+      "migration_disposition": "EXPLICIT_MIGRATION",
+      "migration_owner_path": "intergrax/runtime/task_memory/sqlite_row_legacy.py",
+      "writer_paths": [
+        "intergrax/runtime/task_memory/stores/sqlite_task_memory_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/task_memory/stores/sqlite_task_memory_store.py"
+      ],
+      "storage_kind": "SQLITE_ROW_COLUMNS",
+      "canonical_payload_type": "TaskMemoryRecord",
+      "owner_module_path": "intergrax/runtime/task_memory/models.py"
+    },
+    "runtime.tool_idempotency_ledger": {
+      "family_id": "runtime.tool_idempotency_ledger",
+      "version_disposition": "EXPLICIT_PAYLOAD_VERSION",
+      "current_version": "tool_idempotency_ledger.v1",
+      "version_owner_path": "intergrax/contracts/idempotency_store.py",
+      "migration_disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "migration_owner_path": "intergrax/contracts/idempotency_store.py",
+      "writer_paths": [
+        "intergrax/runtime/tools/sqlite_idempotency_store.py",
+        "intergrax/distributed/providers/redis_idempotency_store.py"
+      ],
+      "reader_paths": [
+        "intergrax/runtime/tools/sqlite_idempotency_store.py",
+        "intergrax/distributed/providers/redis_idempotency_store.py"
+      ],
+      "storage_kind": "PICKLE_BLOB_LEDGER",
+      "canonical_payload_type": "IdempotencyStore ledger row",
+      "owner_module_path": "intergrax/contracts/idempotency_store.py"
+    }
+  },
+  "accepted_legacy_obligation_fingerprints": [
+    {
+      "obligation_key": "agent_distribution.agent_artifact_metadata::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "agent_distribution.agent_artifact_metadata",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/agent_distribution/stores.py",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "reader_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "sanctioned_reader_symbols": [
+        "decode_agent_artifact_metadata_payload",
+        "_decode_versioned_or_legacy"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "agent_distribution.runtime_materialization_record::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "agent_distribution.runtime_materialization_record",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/agent_distribution/runtime_materialization_record.py",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "reader_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "sanctioned_reader_symbols": [
+        "decode_runtime_materialization_record_payload",
+        "_decode_versioned_or_legacy"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "agent_distribution.deployment_instance_record::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "agent_distribution.deployment_instance_record",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/agent_distribution/deployment.py",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "reader_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "sanctioned_reader_symbols": [
+        "decode_deployment_instance_record_payload",
+        "_decode_versioned_or_legacy"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "agent_distribution.application_environment_serving_record::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "agent_distribution.application_environment_serving_record",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/agent_distribution/stores.py",
+      "migration_owner_path": "intergrax/agent_distribution/sqlite_payload_legacy.py",
+      "reader_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "sanctioned_reader_symbols": [
+        "decode_application_environment_serving_record_payload",
+        "_decode_versioned_or_legacy"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "runtime.task_memory_record::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "runtime.task_memory_record",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_MIGRATION",
+      "semantic_owner_path": "intergrax/runtime/task_memory/models.py",
+      "migration_owner_path": "intergrax/runtime/task_memory/sqlite_row_legacy.py",
+      "reader_path": "intergrax/runtime/task_memory/stores/sqlite_task_memory_store.py",
+      "sanctioned_reader_symbols": [
+        "task_memory_record_from_sqlite_row"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "memory.user_profile::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "memory.user_profile",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/memory/user_profile_serialization.py",
+      "migration_owner_path": "intergrax/memory/user_profile_serialization.py",
+      "reader_path": "intergrax/memory/stores/sqlite_user_profile_store.py",
+      "sanctioned_reader_symbols": [
+        "deserialize_user_profile_payload"
+      ],
+      "migration_boundary_helper_symbols": [
+        "_user_profile_from_legacy_wire",
+        "_memory_entry_from_legacy_wire"
+      ]
+    },
+    {
+      "obligation_key": "memory.conversational_turn::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "memory.conversational_turn",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/memory/conversational_memory_persistence.py",
+      "migration_owner_path": "intergrax/memory/conversational_memory_persistence.py",
+      "reader_path": "intergrax/memory/stores/sqlite_conversational_memory_store.py",
+      "sanctioned_reader_symbols": [
+        "parse_conversational_memory_persisted"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "applications.registry_snapshot::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "applications.registry_snapshot",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/applications/_shared/registry_snapshot_persistence.py",
+      "migration_owner_path": "intergrax/applications/_shared/registry_snapshot_persistence.py",
+      "reader_path": "intergrax/applications/_shared/registry_snapshot_store.py",
+      "sanctioned_reader_symbols": [
+        "parse_registry_snapshot_persisted"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "runtime.tool_idempotency_ledger::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "runtime.tool_idempotency_ledger",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "semantic_owner_path": "intergrax/contracts/idempotency_store.py",
+      "migration_owner_path": "intergrax/contracts/idempotency_store.py",
+      "reader_path": "intergrax/runtime/tools/sqlite_idempotency_store.py",
+      "sanctioned_reader_symbols": [
+        "assert_tool_idempotency_ledger_schema_version"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "runtime.suspended_execution_operation_descriptor::LEGACY_DESCRIPTOR_WITHOUT_AUTHORITY_SCOPE",
+      "family_id": "runtime.suspended_execution_operation_descriptor",
+      "legacy_shape_id": "LEGACY_DESCRIPTOR_WITHOUT_AUTHORITY_SCOPE",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/contracts/execution/suspended_operation/descriptor.py",
+      "migration_owner_path": "intergrax/contracts/execution/suspended_operation/descriptor_persisted.py",
+      "reader_path": "intergrax/contracts/execution/suspended_operation/descriptor_persisted.py",
+      "sanctioned_reader_symbols": [
+        "parse_suspended_execution_operation_descriptor",
+        "_migrate_legacy_descriptor"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "runtime.suspended_operation_backing_envelope::suspended_operation_backing.v1",
+      "family_id": "runtime.suspended_operation_backing_envelope",
+      "legacy_shape_id": "suspended_operation_backing.v1",
+      "disposition": "EXPLICIT_LEGACY_READER",
+      "semantic_owner_path": "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
+      "migration_owner_path": "intergrax/contracts/execution/suspended_operation/descriptor_persisted.py",
+      "reader_path": "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
+      "sanctioned_reader_symbols": [
+        "parse_suspended_execution_operation_descriptor",
+        "_migrate_legacy_descriptor"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "runtime.runtime_event::LEGACY_UNVERSIONED_PRE_V1",
+      "family_id": "runtime.runtime_event",
+      "legacy_shape_id": "LEGACY_UNVERSIONED_PRE_V1",
+      "disposition": "CURRENT_ONLY_FAIL_CLOSED",
+      "semantic_owner_path": "intergrax/contracts/runtime_event.py",
+      "migration_owner_path": "intergrax/contracts/runtime_event.py",
+      "reader_path": "intergrax/contracts/runtime_event.py",
+      "sanctioned_reader_symbols": [],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "runtime.runtime_event::runtime_event.v1",
+      "family_id": "runtime.runtime_event",
+      "legacy_shape_id": "runtime_event.v1",
+      "disposition": "DEFERRED_TO_EVENT_EVOLUTION",
+      "semantic_owner_path": "intergrax/contracts/runtime_event.py",
+      "migration_owner_path": null,
+      "reader_path": "intergrax/contracts/runtime_event.py",
+      "sanctioned_reader_symbols": [],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "agent_distribution.package_agent_contract_authority_record::NO_PRIOR_DURABLE_REPRESENTATION",
+      "family_id": "agent_distribution.package_agent_contract_authority_record",
+      "legacy_shape_id": "NO_PRIOR_DURABLE_REPRESENTATION",
+      "disposition": "NO_PRIOR_DURABLE_REPRESENTATION",
+      "semantic_owner_path": "intergrax/agent_distribution/agent_contract_authority.py",
+      "migration_owner_path": null,
+      "reader_path": "intergrax/agent_distribution/sqlite_stores.py",
+      "sanctioned_reader_symbols": [],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "autonomous_work.postgresql_container::EXPLICIT_DOMAIN_MIGRATION",
+      "family_id": "autonomous_work.postgresql_container",
+      "legacy_shape_id": "EXPLICIT_DOMAIN_MIGRATION",
+      "disposition": "EXPLICIT_MIGRATION",
+      "semantic_owner_path": "intergrax/autonomous_work/postgresql_repository.py",
+      "migration_owner_path": "intergrax/autonomous_work/postgresql_repository.py",
+      "reader_path": "intergrax/autonomous_work/postgresql_repository.py",
+      "sanctioned_reader_symbols": [
+        "_require_revision_argument"
+      ],
+      "migration_boundary_helper_symbols": []
+    },
+    {
+      "obligation_key": "collaborative_work.sqlite_container::EXPLICIT_DOMAIN_MIGRATION",
+      "family_id": "collaborative_work.sqlite_container",
+      "legacy_shape_id": "EXPLICIT_DOMAIN_MIGRATION",
+      "disposition": "EXPLICIT_MIGRATION",
+      "semantic_owner_path": "intergrax/collaborative_work/sqlite_repository.py",
+      "migration_owner_path": "intergrax/collaborative_work/serialization.py",
+      "reader_path": "intergrax/collaborative_work/sqlite_repository.py",
+      "sanctioned_reader_symbols": [
+        "workspace_membership_from_json"
+      ],
+      "migration_boundary_helper_symbols": []
+    }
+  ]
+}

@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import FrozenSet
 
+from intergrax.contracts.runtime_event import RUNTIME_EVENT_SCHEMA_VERSION
+
 
 @dataclass(frozen=True)
 class RuntimeVersionInfo:
@@ -22,7 +24,7 @@ class RuntimeVersionInfo:
 RUNTIME_SCHEMA_REGISTRY: dict[str, str] = {
     "agent_decision": "agent_decision.v1",
     "human_request": "human_request.v2",
-    "runtime_event": "runtime_event.v2",
+    "runtime_event": RUNTIME_EVENT_SCHEMA_VERSION,
     "runtime_checkpoint": "runtime_checkpoint.v1",
     "task_checkpoint": "task_checkpoint.v1",
     "governance_resolution": "governance_resolution.v1",
@@ -57,5 +59,7 @@ def validate_schema_version(schema_id: str, version: str) -> bool:
         return False
     if version == expected:
         return True
+    if schema_id == "runtime_event":
+        return False
     previews = PREVIEW_RUNTIME_SCHEMA_VERSIONS.get(schema_id, frozenset())
     return version in previews

@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import Final
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.agent_distribution._digest import normalize_package_digest
@@ -15,6 +17,8 @@ from intergrax.agent_distribution.runtime_revision import (
 )
 
 _NON_EMPTY = Field(min_length=1)
+
+SCHEMA_RUNTIME_MATERIALIZATION_RECORD_V1: Final = "runtime_materialization_record.v1"
 
 
 def _strip_required(value: str) -> str:
@@ -29,6 +33,7 @@ class RuntimeMaterializationRecord(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: str = SCHEMA_RUNTIME_MATERIALIZATION_RECORD_V1
     runtime_revision_id: str = _NON_EMPTY
     application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY

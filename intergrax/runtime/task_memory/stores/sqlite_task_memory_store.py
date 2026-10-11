@@ -10,8 +10,12 @@ import sqlite3
 from pathlib import Path
 from typing import List, Optional
 
-from intergrax.runtime.task_memory.models import TaskMemoryRecord
+from intergrax.runtime.task_memory.models import (
+    SCHEMA_TASK_MEMORY_RECORD_V1,
+    TaskMemoryRecord,
+)
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
+from intergrax.runtime.task_memory.sqlite_row_legacy import task_memory_record_from_sqlite_row
 
 
 class SQLiteTaskMemoryStore(TaskMemoryPersistence):
@@ -40,10 +44,17 @@ class SQLiteTaskMemoryStore(TaskMemoryPersistence):
                     created_at_utc TEXT NOT NULL,
                     updated_at_utc TEXT NOT NULL,
                     provenance_json TEXT NOT NULL DEFAULT '{}',
+                    schema_version TEXT,
                     UNIQUE (tenant_id, task_id, namespace, key)
                 );
                 """
             )
+            columns = {
+                row[1]
+                for row in conn.execute("PRAGMA table_info(task_memory)").fetchall()
+            }
+            if "schema_version" not in columns:
+                conn.execute("ALTER TABLE task_memory ADD COLUMN schema_version TEXT")
             conn.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_task_memory_task
@@ -58,13 +69,15 @@ class SQLiteTaskMemoryStore(TaskMemoryPersistence):
                 """
                 INSERT INTO task_memory (
                     record_id, tenant_id, task_id, namespace, key,
-                    value_json, created_at_utc, updated_at_utc, provenance_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    value_json, created_at_utc, updated_at_utc, provenance_json,
+                    schema_version
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(tenant_id, task_id, namespace, key) DO UPDATE SET
                     record_id = excluded.record_id,
                     value_json = excluded.value_json,
                     updated_at_utc = excluded.updated_at_utc,
-                    provenance_json = excluded.provenance_json
+                    provenance_json = excluded.provenance_json,
+                    schema_version = excluded.schema_version
                 """,
                 (
                     record.record_id,
@@ -76,6 +89,7 @@ class SQLiteTaskMemoryStore(TaskMemoryPersistence):
                     record.created_at_utc,
                     record.updated_at_utc,
                     json.dumps(payload.get("provenance") or {}),
+                    SCHEMA_TASK_MEMORY_RECORD_V1,
                 ),
             )
         return record
@@ -92,15 +106,18 @@ class SQLiteTaskMemoryStore(TaskMemoryPersistence):
             row = conn.execute(
                 """
                 SELECT record_id, tenant_id, task_id, namespace, key,
-                       value_json, created_at_utc, updated_at_utc, provenance_json
+                       value_json, created_at_utc, updated_at_utc, provenance_json,
+                       schema_version
                 FROM task_memory
                 WHERE tenant_id = ? AND task_id = ? AND namespace = ? AND key = ?
                 """,
                 (tenant_id, task_id, namespace, key),
             ).fetchone()
-        if row is None:
-            return None
-        return self._row_to_record(row)
+            if row is None:
+                return None
+            record = self._row_to_record(row, conn=conn)
+            conn.commit()
+            return record
 
     def delete(
         self,
@@ -133,7 +150,8 @@ class SQLiteTaskMemoryStore(TaskMemoryPersistence):
             rows = conn.execute(
                 """
                 SELECT record_id, tenant_id, task_id, namespace, key,
-                       value_json, created_at_utc, updated_at_utc, provenance_json
+                       value_json, created_at_utc, updated_at_utc, provenance_json,
+                       schema_version
                 FROM task_memory
                 WHERE tenant_id = ? AND task_id = ? AND namespace = ?
                   AND key LIKE ?
@@ -142,7 +160,9 @@ class SQLiteTaskMemoryStore(TaskMemoryPersistence):
                 """,
                 (tenant_id, task_id, namespace, f"{prefix}%", limit),
             ).fetchall()
-        return [self._row_to_record(row) for row in rows]
+            records = [self._row_to_record(row, conn=conn) for row in rows]
+            conn.commit()
+            return records
 
     def count_for_task(self, *, tenant_id: str, task_id: str) -> int:
         with self._connection() as conn:
@@ -166,16 +186,22 @@ class SQLiteTaskMemoryStore(TaskMemoryPersistence):
             )
         return cursor.rowcount
 
-    @staticmethod
-    def _row_to_record(row: sqlite3.Row) -> TaskMemoryRecord:
-        return TaskMemoryRecord(
-            record_id=str(row["record_id"]),
-            tenant_id=str(row["tenant_id"]),
-            task_id=str(row["task_id"]),
-            namespace=str(row["namespace"]),
-            key=str(row["key"]),
-            value=json.loads(row["value_json"]),
-            created_at_utc=str(row["created_at_utc"]),
-            updated_at_utc=str(row["updated_at_utc"]),
-            provenance=json.loads(row["provenance_json"] or "{}"),
-        )
+    def _row_to_record(self, row: sqlite3.Row, *, conn: sqlite3.Connection | None = None) -> TaskMemoryRecord:
+        record = task_memory_record_from_sqlite_row(row)
+        if row["schema_version"] is None and conn is not None:
+            conn.execute(
+                """
+                UPDATE task_memory
+                SET schema_version = ?
+                WHERE tenant_id = ? AND task_id = ? AND namespace = ? AND key = ?
+                """,
+                (
+                    SCHEMA_TASK_MEMORY_RECORD_V1,
+                    record.tenant_id,
+                    record.task_id,
+                    record.namespace,
+                    record.key,
+                ),
+            )
+        return record
+

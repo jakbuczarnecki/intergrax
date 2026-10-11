@@ -55,6 +55,7 @@ def runtime_event_export_source_from_event(
 ) -> RuntimeEventExportSource:
     safe_payload = _extract_safe_payload(event.payload)
     return RuntimeEventExportSource(
+        source_schema_id=event.schema_version,
         event_id=event.event_id,
         run_id=event.run_id,
         task_id=event.task_id,

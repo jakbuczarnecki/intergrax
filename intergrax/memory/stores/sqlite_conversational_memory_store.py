@@ -10,6 +10,11 @@ from pathlib import Path
 
 from intergrax.llm.messages import ChatMessage, MessageRole
 from intergrax.memory.conversational_memory import ConversationalMemory
+from intergrax.memory.conversational_memory_persistence import (
+    ConversationalMemoryMessageWire,
+    ConversationalMemoryPersistedPayload,
+    parse_conversational_memory_persisted,
+)
 from intergrax.memory.conversational_store import ConversationalMemoryStore
 
 
@@ -60,12 +65,15 @@ class SQLiteConversationalMemoryStore(ConversationalMemoryStore):
         row = cursor.fetchone()
         if row is None:
             return ConversationalMemory(session_id=session_id, max_messages=max_messages or 100)
-        payload = json.loads(str(row[0]))
+        raw = json.loads(str(row[0]))
+        if not isinstance(raw, dict):
+            raise ValueError("corrupt conversational memory payload")
+        envelope = parse_conversational_memory_persisted(raw)
         messages = [
-            ChatMessage(role=MessageRole(item["role"]), content=str(item["content"]))
-            for item in payload.get("messages", [])
+            ChatMessage(role=MessageRole(item.role), content=item.content)
+            for item in envelope.messages
         ]
-        limit = max_messages or int(payload.get("max_messages", 100))
+        limit = max_messages or envelope.max_messages
         memory = ConversationalMemory(session_id=session_id, max_messages=limit)
         for message in messages:
             memory.add_message(message)
@@ -77,13 +85,17 @@ class SQLiteConversationalMemoryStore(ConversationalMemoryStore):
         tenant_id: str,
         memory: ConversationalMemory,
     ) -> None:
-        payload = {
-            "max_messages": memory.max_messages,
-            "messages": [
-                {"role": message.role.value, "content": message.content}
+        envelope = ConversationalMemoryPersistedPayload(
+            max_messages=memory.max_messages,
+            messages=tuple(
+                ConversationalMemoryMessageWire(
+                    role=message.role.value,
+                    content=message.content,
+                )
                 for message in memory.messages
-            ],
-        }
+            ),
+        )
+        payload = envelope.model_dump(mode="json")
         cursor = self._connection.cursor()
         cursor.execute(
             """

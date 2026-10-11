@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional
+from typing import Final, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -14,6 +14,25 @@ from intergrax.contracts.lease_claim import LeaseOwnership
 from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.contracts.validation import validate_content_digest
 from intergrax.tools.execution_models import ToolExecutionResult
+
+SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1: Final = "tool_idempotency_ledger.v1"
+
+
+class IdempotencyLedgerSchemaError(RuntimeError):
+    """Persisted idempotency ledger row has missing or unsupported schema_version."""
+
+
+# Legacy durable ledger rows without schema_version are intentionally unsupported:
+# side-effect / replay semantics cannot be inferred safely from field presence alone.
+IDEMPOTENCY_LEDGER_LEGACY_POLICY = "CURRENT_ONLY_FAIL_CLOSED"
+
+
+def assert_tool_idempotency_ledger_schema_version(schema_version: str | None) -> None:
+    if schema_version != SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1:
+        raise IdempotencyLedgerSchemaError(
+            f"unsupported idempotency ledger schema version {schema_version!r}; "
+            f"expected {SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1!r}"
+        )
 
 
 class InvocationStatus(str, Enum):
