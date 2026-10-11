@@ -21,6 +21,9 @@ from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerpri
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
 )
+from intergrax.contracts.execution.suspended_operation.descriptor_persisted import (
+    parse_suspended_execution_operation_descriptor,
+)
 from intergrax.contracts.execution.suspended_operation.persistence_conflict import (
     SuspendedOperationPersistenceConflictError,
 )
@@ -92,9 +95,7 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
             raise RuntimeError("corrupt suspended operation durable records")
         restored: dict[str, SuspendedExecutionOperationDescriptor] = {}
         for key, value in raw_records.items():
-            restored[str(key)] = SuspendedExecutionOperationDescriptor.model_validate(
-                value
-            )
+            restored[str(key)] = parse_suspended_execution_operation_descriptor(value)
         backing.replace_all(restored)
         return backing
 

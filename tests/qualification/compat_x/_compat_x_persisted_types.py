@@ -38,6 +38,14 @@ class MigrationDisposition(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class LegacyCompatibilityDisposition(StrEnum):
+    EXPLICIT_MIGRATION = "EXPLICIT_MIGRATION"
+    EXPLICIT_LEGACY_READER = "EXPLICIT_LEGACY_READER"
+    CURRENT_ONLY_FAIL_CLOSED = "CURRENT_ONLY_FAIL_CLOSED"
+    NO_PRIOR_DURABLE_REPRESENTATION = "NO_PRIOR_DURABLE_REPRESENTATION"
+    DEFERRED_TO_EVENT_EVOLUTION = "DEFERRED_TO_EVENT_EVOLUTION"
+
+
 class DurableStorageSignal(StrEnum):
     SQLITE_DML = "SQLITE_DML"
     SQLITE_PAYLOAD_TABLE = "SQLITE_PAYLOAD_TABLE"
@@ -82,6 +90,18 @@ class HistoricalFindingAssessment(StrEnum):
     FALSE_POSITIVE_PUBLISHER_PROTOCOL = "FALSE_POSITIVE_PUBLISHER_PROTOCOL"
     REAL_DURABLE_BOUNDARY_STORE = "REAL_DURABLE_BOUNDARY_STORE"
     PRE_AUDIT_CONTRADICTION = "PRE_AUDIT_CONTRADICTION"
+
+
+@dataclass(frozen=True, slots=True)
+class LegacyPersistedCompatibilityObligation:
+    family_id: str
+    legacy_shape_id: str
+    current_version: str
+    disposition: LegacyCompatibilityDisposition
+    semantic_owner_path: str
+    migration_owner_path: str | None
+    reader_path: str
+    evidence_paths: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)

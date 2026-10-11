@@ -555,6 +555,21 @@ def discover_durable_candidates_in_source(
                     )
                 )
 
+        if call_name == "parse_suspended_execution_operation_descriptor" and wire_without_durable:
+            cid = f"wire.parse_suspended_descriptor::{module_path}::{lineno}"
+            add(
+                DurableBoundaryCandidate(
+                    candidate_id=cid,
+                    module_path=module_path,
+                    class_name="SuspendedExecutionOperationDescriptor",
+                    function_name=fn,
+                    storage_signal=DurableStorageSignal.WIRE_TO_DURABLE_STORE,
+                    write_or_read=DurableAccessDirection.READ,
+                    payload_symbol="SuspendedExecutionOperationDescriptor",
+                    evidence=(f"parse_suspended_execution_operation_descriptor@{lineno}",),
+                )
+            )
+
         if call_name in _WIRE_NAMES and wire_without_durable:
             payload_sym: str | None = None
             if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):

@@ -84,6 +84,12 @@ from intergrax.applications._shared.registry_projection_descriptor import (
     SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
     RuntimeRegistryProjectionDescriptor,
 )
+from intergrax.agent_distribution.sqlite_payload_legacy import (
+    decode_agent_artifact_metadata_payload,
+    decode_application_environment_serving_record_payload,
+    decode_deployment_instance_record_payload,
+    decode_runtime_materialization_record_payload,
+)
 
 SCHEMA_AGENT_DISTRIBUTION_SQLITE_V1 = "agent_distribution_sqlite.v1"
 _MODEL = TypeVar("_MODEL", bound=BaseModel)
@@ -336,11 +342,7 @@ class SqliteAgentDistributionDatabase:
         for row in conn.execute(
             "SELECT package_digest, payload_json FROM artifact_metadata"
         ):
-            metadata = _decode(
-                AgentArtifactMetadata,
-                row["payload_json"],
-                SCHEMA_AGENT_ARTIFACT_METADATA_V1,
-            )
+            metadata = decode_agent_artifact_metadata_payload(row["payload_json"])
             state.artifact_metadata[metadata.package_digest] = metadata
         for row in conn.execute("SELECT lock_id, payload_json FROM runtime_locks"):
             lock = _decode(
@@ -352,11 +354,7 @@ class SqliteAgentDistributionDatabase:
         for row in conn.execute(
             "SELECT runtime_revision_id, payload_json FROM materializations"
         ):
-            record = _decode(
-                RuntimeMaterializationRecord,
-                row["payload_json"],
-                SCHEMA_RUNTIME_MATERIALIZATION_RECORD_V1,
-            )
+            record = decode_runtime_materialization_record_payload(row["payload_json"])
             state.materializations[record.runtime_revision_id] = record
         for row in conn.execute(
             "SELECT effective_roster_revision_id, payload_json FROM effective_roster_snapshots"
@@ -368,11 +366,7 @@ class SqliteAgentDistributionDatabase:
             )
             state.effective_roster_snapshots[roster.effective_roster_revision_id] = roster
         for row in conn.execute("SELECT instance_key, payload_json FROM deployment_instances"):
-            instance = _decode(
-                DeploymentInstanceRecord,
-                row["payload_json"],
-                SCHEMA_DEPLOYMENT_INSTANCE_RECORD_V1,
-            )
+            instance = decode_deployment_instance_record_payload(row["payload_json"])
             key = (
                 ApplicationEnvironmentIdentity(
                     application_id=instance.application_id,
@@ -383,10 +377,8 @@ class SqliteAgentDistributionDatabase:
             state.deployment_instances[key] = instance
         for row in conn.execute("SELECT scope_key, payload_json FROM serving_records"):
             application_id, application_environment_id = row["scope_key"].split("\0", 1)
-            serving = _decode(
-                ApplicationEnvironmentServingRecord,
-                row["payload_json"],
-                SCHEMA_APPLICATION_ENVIRONMENT_SERVING_RECORD_V1,
+            serving = decode_application_environment_serving_record_payload(
+                row["payload_json"]
             )
             state.serving_records[
                 ApplicationEnvironmentIdentity(

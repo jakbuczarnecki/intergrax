@@ -11,9 +11,9 @@ from pathlib import Path
 from intergrax.llm.messages import ChatMessage, MessageRole
 from intergrax.memory.conversational_memory import ConversationalMemory
 from intergrax.memory.conversational_memory_persistence import (
-    SCHEMA_CONVERSATIONAL_MEMORY_V1,
     ConversationalMemoryMessageWire,
     ConversationalMemoryPersistedPayload,
+    parse_conversational_memory_persisted,
 )
 from intergrax.memory.conversational_store import ConversationalMemoryStore
 
@@ -66,13 +66,9 @@ class SQLiteConversationalMemoryStore(ConversationalMemoryStore):
         if row is None:
             return ConversationalMemory(session_id=session_id, max_messages=max_messages or 100)
         raw = json.loads(str(row[0]))
-        schema_version = raw.get("schema_version")
-        if schema_version != SCHEMA_CONVERSATIONAL_MEMORY_V1:
-            raise ValueError(
-                f"unsupported conversational memory schema version {schema_version!r}; "
-                f"expected {SCHEMA_CONVERSATIONAL_MEMORY_V1!r}"
-            )
-        envelope = ConversationalMemoryPersistedPayload.model_validate(raw)
+        if not isinstance(raw, dict):
+            raise ValueError("corrupt conversational memory payload")
+        envelope = parse_conversational_memory_persisted(raw)
         messages = [
             ChatMessage(role=MessageRole(item.role), content=item.content)
             for item in envelope.messages

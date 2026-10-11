@@ -137,9 +137,30 @@ class RuntimeEvent(BaseModel):
         return self.model_copy(update=updates)
 
 
+_RUNTIME_EVENT_V2 = "runtime_event.v2"
+_RUNTIME_EVENT_V1 = "runtime_event.v1"
+
+
 def parse_runtime_event_payload(data: object) -> RuntimeEvent:
-    """Deserialize persisted runtime events (canonical schema only)."""
-    return RuntimeEvent.model_validate(data)
+    """Deserialize persisted runtime events (explicit version gate; fail closed)."""
+    if not isinstance(data, dict):
+        raise ValueError("runtime event payload must be a mapping")
+    schema_version = data.get("schema_version")
+    if schema_version == _RUNTIME_EVENT_V2:
+        return RuntimeEvent.model_validate(data)
+    if schema_version is None:
+        raise ValueError(
+            f"missing runtime event schema_version; expected {_RUNTIME_EVENT_V2!r}"
+        )
+    if schema_version == _RUNTIME_EVENT_V1:
+        raise ValueError(
+            f"unsupported runtime event schema version {schema_version!r}; "
+            f"{_RUNTIME_EVENT_V1!r} is retired"
+        )
+    raise ValueError(
+        f"unsupported runtime event schema version {schema_version!r}; "
+        f"expected {_RUNTIME_EVENT_V2!r}"
+    )
 
 
 __all__ = [

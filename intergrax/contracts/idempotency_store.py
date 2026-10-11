@@ -22,6 +22,11 @@ class IdempotencyLedgerSchemaError(RuntimeError):
     """Persisted idempotency ledger row has missing or unsupported schema_version."""
 
 
+# Legacy durable ledger rows without schema_version are intentionally unsupported:
+# side-effect / replay semantics cannot be inferred safely from field presence alone.
+IDEMPOTENCY_LEDGER_LEGACY_POLICY = "CURRENT_ONLY_FAIL_CLOSED"
+
+
 def assert_tool_idempotency_ledger_schema_version(schema_version: str | None) -> None:
     if schema_version != SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1:
         raise IdempotencyLedgerSchemaError(

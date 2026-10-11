@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from tests.qualification.compat_x._compat_x_legacy_obligations import (
+    legacy_r2_r2_remediation_family_ids,
+)
 from tests.qualification.compat_x._compat_x_persisted_inventory import PERSISTED_SCHEMA_FAMILIES
 from tests.qualification.compat_x._compat_x_persisted_types import (
     MigrationDisposition,
@@ -55,14 +58,7 @@ def persisted_r2_remediation_waves() -> tuple[PersistedRemediationWave, ...]:
             if f.version_disposition == PersistedVersionDisposition.MISSING_VERSION
         )
     )
-    migration_gap_ids = tuple(
-        sorted(
-            f.family_id
-            for f in PERSISTED_SCHEMA_FAMILIES
-            if f.migration_disposition == MigrationDisposition.MIGRATION_REQUIRED_BUT_MISSING
-            and f.family_id not in missing_version_ids
-        )
-    )
+    migration_gap_ids = legacy_r2_r2_remediation_family_ids()
     blocker_ids = tuple(
         f.family_id
         for f in PERSISTED_SCHEMA_FAMILIES

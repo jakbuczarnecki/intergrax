@@ -12,8 +12,10 @@ from intergrax.contracts.execution.suspended_operation.codec import (
     SuspendedOperationKind,
 )
 from intergrax.contracts.execution.suspended_operation.descriptor import (
-    SuspendedExecutionOperationDescriptor,
     SuspendedOperationMaterializationState,
+)
+from intergrax.contracts.execution.suspended_operation.descriptor_persisted import (
+    parse_suspended_execution_operation_descriptor,
 )
 from intergrax.contracts.execution.suspended_operation.authority_scope_compat import (
     CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID,
@@ -54,7 +56,7 @@ def _legacy_payload(**overrides: object) -> dict[str, object]:
 
 
 def test_legacy_dhr_without_authority_scope_loads_declarative() -> None:
-    loaded = SuspendedExecutionOperationDescriptor.model_validate(_legacy_payload())
+    loaded = parse_suspended_execution_operation_descriptor(_legacy_payload())
     assert (
         loaded.authority_scope
         is SuspendedOperationAuthorityScope.DECLARATIVE_GOVERNANCE
@@ -63,7 +65,7 @@ def test_legacy_dhr_without_authority_scope_loads_declarative() -> None:
 
 
 def test_legacy_mse_with_explicit_authority_scope() -> None:
-    loaded = SuspendedExecutionOperationDescriptor.model_validate(
+    loaded = parse_suspended_execution_operation_descriptor(
         _legacy_payload(
             invocation_scope_id=CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID,
             authority_scope=SuspendedOperationAuthorityScope.MEANINGFUL_SIDE_EFFECT,
@@ -77,13 +79,13 @@ def test_legacy_mse_with_explicit_authority_scope() -> None:
 
 def test_unknown_legacy_scope_without_authority_rejected() -> None:
     with pytest.raises(ValueError, match="unknown invocation scope"):
-        SuspendedExecutionOperationDescriptor.model_validate(
+        parse_suspended_execution_operation_descriptor(
             _legacy_payload(invocation_scope_id="mystery_scope"),
         )
 
 
 def test_legacy_envelope_round_trip_preserves_identity() -> None:
     raw = _legacy_payload()
-    loaded = SuspendedExecutionOperationDescriptor.model_validate(raw)
+    loaded = parse_suspended_execution_operation_descriptor(raw)
     envelope = SerializedSuspendedOperationEnvelope.model_validate(raw["payload"])
     assert loaded.payload == envelope

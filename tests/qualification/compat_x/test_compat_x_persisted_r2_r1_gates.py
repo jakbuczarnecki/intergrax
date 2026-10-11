@@ -95,8 +95,11 @@ def test_cx_r2_r1_user_profile_schema_independent_of_business_version() -> None:
     assert payload["schema_version"] == SCHEMA_USER_PROFILE_V1
     assert payload["version"] == 99
     payload.pop("schema_version")
+    restored = user_profile_from_dict(payload)
+    assert restored.version == 99
+    assert restored.identity.user_id == "u1"
     with pytest.raises(ValueError, match="schema version"):
-        user_profile_from_dict(payload)
+        user_profile_from_dict({"version": 2})
 
 
 def _minimal_agent_contract() -> object:

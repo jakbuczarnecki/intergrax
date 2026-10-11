@@ -11,8 +11,8 @@ from pathlib import Path
 
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
 from intergrax.applications._shared.registry_snapshot_persistence import (
-    SCHEMA_REGISTRY_SNAPSHOT_V1,
     RegistrySnapshotPersistedPayload,
+    parse_registry_snapshot_persisted,
 )
 
 
@@ -72,13 +72,9 @@ class SqliteRegistrySnapshotStore:
         if row is None:
             return None
         raw = json.loads(row[0])
-        schema_version = raw.get("schema_version")
-        if schema_version != SCHEMA_REGISTRY_SNAPSHOT_V1:
-            raise ValueError(
-                f"unsupported registry snapshot schema version {schema_version!r}; "
-                f"expected {SCHEMA_REGISTRY_SNAPSHOT_V1!r}"
-            )
-        envelope = RegistrySnapshotPersistedPayload.model_validate(raw)
+        if not isinstance(raw, dict):
+            raise ValueError("corrupt registry snapshot payload")
+        envelope = parse_registry_snapshot_persisted(raw)
         return envelope.to_legacy_projection()
 
 

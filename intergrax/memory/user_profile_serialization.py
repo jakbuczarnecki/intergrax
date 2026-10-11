@@ -8,6 +8,8 @@ import json
 import uuid
 from typing import Any, Dict, Final, List
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
@@ -29,6 +31,26 @@ from intergrax.memory.user_profile_memory import (
 )
 
 SCHEMA_USER_PROFILE_V1: Final = "user_profile.v1"
+LEGACY_UNVERSIONED_PRE_V1: Final = "LEGACY_UNVERSIONED_PRE_V1"
+
+
+class _LegacyUserProfileWire(BaseModel):
+    """Historical durable JSON before ``schema_version`` (evidence @ e5ae6a3)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    identity: Dict[str, Any]
+    preferences: Dict[str, Any] = Field(default_factory=dict)
+    system_instructions: str | None = None
+    memory_entries: List[Dict[str, Any]] = Field(default_factory=list)
+    version: int = 1
+    entry_id: str | None = None
+    deleted: bool = False
+    modified: bool = False
+
+
+def _is_legacy_user_profile_mapping(payload: Dict[str, Any]) -> bool:
+    return "schema_version" not in payload and isinstance(payload.get("identity"), dict)
 
 
 def _memory_kind(value: str) -> MemoryKind:
@@ -220,7 +242,28 @@ def user_profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
     }
 
 
+def deserialize_user_profile_payload(payload: Dict[str, Any]) -> UserProfile:
+    schema_version = payload.get("schema_version")
+    if schema_version == SCHEMA_USER_PROFILE_V1:
+        return _user_profile_from_versioned_dict(payload)
+    if _is_legacy_user_profile_mapping(payload):
+        legacy = _LegacyUserProfileWire.model_validate(payload)
+        migrated = {
+            "schema_version": SCHEMA_USER_PROFILE_V1,
+            **legacy.model_dump(),
+        }
+        return _user_profile_from_versioned_dict(migrated)
+    raise ValueError(
+        f"unsupported user profile schema version {schema_version!r}; "
+        f"expected {SCHEMA_USER_PROFILE_V1!r} or {LEGACY_UNVERSIONED_PRE_V1}"
+    )
+
+
 def user_profile_from_dict(payload: Dict[str, Any]) -> UserProfile:
+    return deserialize_user_profile_payload(payload)
+
+
+def _user_profile_from_versioned_dict(payload: Dict[str, Any]) -> UserProfile:
     schema_version = payload.get("schema_version")
     if schema_version != SCHEMA_USER_PROFILE_V1:
         raise ValueError(
