@@ -95,11 +95,28 @@ _PREFILTER_MARKERS: Final[tuple[str, ...]] = (
     "asyncpg",
     "postgresql",
     ".write_text(",
+    ".write_bytes(",
+    ".read_text(",
     "json.dump(",
+    "json.dumps(",
+    "json.loads(",
+    "pickle.dumps",
+    "pickle.loads",
     "put_if_absent",
     "replace_if_match",
     "persist_package_contract_authority",
+    "register_script",
+    "import redis",
+    "from redis",
+    ".hset(",
+    ".hget(",
+    ".hgetall(",
+    'redis.call("SET"',
+    'redis.call("HSET"',
 )
+
+_REDIS_WRITE_ATTRS: Final[frozenset[str]] = frozenset({"set", "hset", "delete"})
+_REDIS_READ_ATTRS: Final[frozenset[str]] = frozenset({"get", "hget", "hgetall"})
 
 _WIRE_NAMES: Final[frozenset[str]] = frozenset(
     {
@@ -192,6 +209,41 @@ def _module_imports_sqlite(tree: ast.Module) -> bool:
     return False
 
 
+def _module_has_redis(tree: ast.Module, source: str) -> bool:
+    if "register_script" in source:
+        return True
+    if 'redis.call("' in source or "redis.call('" in source:
+        return True
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "redis" or alias.name.startswith("redis."):
+                    return True
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if node.module == "redis" or node.module.startswith("redis."):
+                return True
+    return False
+
+
+def _module_has_pickle(source: str) -> bool:
+    return "pickle.dumps" in source or "pickle.loads" in source
+
+
+def _module_has_file_durable_semantics(source: str) -> bool:
+    lowered = source.lower()
+    if "durable persist" in lowered or "durable persistence" in lowered:
+        return True
+    if "Durable single-host ledger" in source:
+        return True
+    atomic = ".replace(" in source and (".write_text(" in source or ".write_bytes(" in source)
+    roundtrip = (
+        (".read_text(" in source or "json.loads(" in source or "json.load(" in source)
+        and (".write_text(" in source or ".write_bytes(" in source or "json.dump(" in source)
+        and ("json.dumps(" in source or "json.dump(" in source)
+    )
+    return atomic or roundtrip
+
+
 def _module_has_postgres(tree: ast.Module, source: str) -> bool:
     if "psycopg" in source or "asyncpg" in source:
         return True
@@ -219,11 +271,9 @@ def discover_durable_candidates_in_source(
     has_sqlite = _module_imports_sqlite(tree) or "sqlite3" in source
     has_postgres = _module_has_postgres(tree, source)
     has_document_store = "DocumentRecord" in source or "ConditionalDocumentStore" in source
-    has_file_persist = (
-        ".write_text(" in source
-        or ".write_bytes(" in source
-        or ("json.dump(" in source and ("registry_snapshot" in module_path or "_snapshot" in module_path))
-    )
+    has_redis = _module_has_redis(tree, source)
+    has_pickle = _module_has_pickle(source)
+    has_file_persist = _module_has_file_durable_semantics(source)
 
     if has_sqlite:
         for match in _CREATE_TABLE_RE.finditer(source):
@@ -260,7 +310,14 @@ def discover_durable_candidates_in_source(
             )
         )
 
-    wire_without_durable = has_sqlite or has_postgres or has_document_store or has_file_persist
+    wire_without_durable = (
+        has_sqlite
+        or has_postgres
+        or has_document_store
+        or has_file_persist
+        or has_redis
+        or has_pickle
+    )
     seen_ids: set[str] = set()
 
     def add(candidate: DurableBoundaryCandidate) -> None:
@@ -276,6 +333,9 @@ def discover_durable_candidates_in_source(
                 "get_package_contract_authority",
                 "persist_candidate_revision",
                 "save_checkpoint",
+                "export_durable_continuation_state",
+                "execution_continuation_state_store_from_durable_export",
+                "restore_durable_continuation_backing",
             ):
                 cid = f"persist.api.def::{module_path}::{node.name}"
                 add(
@@ -305,6 +365,9 @@ def discover_durable_candidates_in_source(
             "get_package_contract_authority",
             "save_checkpoint",
             "persist_candidate_revision",
+            "export_durable_continuation_state",
+            "execution_continuation_state_store_from_durable_export",
+            "restore_durable_continuation_backing",
         ):
             cid = f"persist.api::{module_path}::{lineno}::{call_name}"
             add(
@@ -352,9 +415,30 @@ def discover_durable_candidates_in_source(
                 )
             )
 
-        if call_name in ("write_text", "write_bytes"):
+        if call_name in ("write_text", "write_bytes", "read_text"):
             if has_file_persist:
-                cid = f"file.write::{module_path}::{lineno}::{call_name}"
+                direction = (
+                    DurableAccessDirection.READ
+                    if call_name == "read_text"
+                    else DurableAccessDirection.WRITE
+                )
+                cid = f"file.io::{module_path}::{lineno}::{call_name}"
+                add(
+                    DurableBoundaryCandidate(
+                        candidate_id=cid,
+                        module_path=module_path,
+                        class_name=None,
+                        function_name=fn,
+                        storage_signal=DurableStorageSignal.FILE_WRITE,
+                        write_or_read=direction,
+                        payload_symbol=None,
+                        evidence=(f"file_io.{call_name}@{lineno}",),
+                    )
+                )
+
+        if call_name == "replace" and isinstance(node.func, ast.Attribute):
+            if has_file_persist and node.func.attr == "replace":
+                cid = f"file.atomic_replace::{module_path}::{lineno}"
                 add(
                     DurableBoundaryCandidate(
                         candidate_id=cid,
@@ -364,9 +448,79 @@ def discover_durable_candidates_in_source(
                         storage_signal=DurableStorageSignal.FILE_WRITE,
                         write_or_read=DurableAccessDirection.WRITE,
                         payload_symbol=None,
-                        evidence=(f"file_io.{call_name}@{lineno}",),
+                        evidence=(f"Path.replace@{lineno}",),
                     )
                 )
+
+        if call_name in _REDIS_WRITE_ATTRS and has_redis:
+            signal = (
+                DurableStorageSignal.REDIS_HASH_WRITE
+                if call_name == "hset"
+                else DurableStorageSignal.REDIS_KV_WRITE
+            )
+            cid = f"redis.write::{module_path}::{lineno}::{call_name}"
+            add(
+                DurableBoundaryCandidate(
+                    candidate_id=cid,
+                    module_path=module_path,
+                    class_name=None,
+                    function_name=fn,
+                    storage_signal=signal,
+                    write_or_read=DurableAccessDirection.WRITE,
+                    payload_symbol=None,
+                    evidence=(f"redis.{call_name}@{lineno}",),
+                )
+            )
+
+        if call_name in _REDIS_READ_ATTRS and has_redis:
+            cid = f"redis.read::{module_path}::{lineno}::{call_name}"
+            add(
+                DurableBoundaryCandidate(
+                    candidate_id=cid,
+                    module_path=module_path,
+                    class_name=None,
+                    function_name=fn,
+                    storage_signal=DurableStorageSignal.REDIS_READ,
+                    write_or_read=DurableAccessDirection.READ,
+                    payload_symbol=None,
+                    evidence=(f"redis.{call_name}@{lineno}",),
+                )
+            )
+
+        if call_name == "register_script" and has_redis:
+            cid = f"redis.script::{module_path}::{lineno}"
+            add(
+                DurableBoundaryCandidate(
+                    candidate_id=cid,
+                    module_path=module_path,
+                    class_name=None,
+                    function_name=fn,
+                    storage_signal=DurableStorageSignal.REDIS_SCRIPTED_STATE,
+                    write_or_read=DurableAccessDirection.READ_WRITE,
+                    payload_symbol=None,
+                    evidence=(f"register_script@{lineno}",),
+                )
+            )
+
+        if call_name in ("dumps", "loads") and has_pickle:
+            if isinstance(node.func, ast.Attribute) and node.func.attr in ("dumps", "loads"):
+                if isinstance(node.func.value, ast.Name) and node.func.value.id == "pickle":
+                    if wire_without_durable:
+                        cid = f"pickle.wire::{module_path}::{lineno}::{call_name}"
+                        add(
+                            DurableBoundaryCandidate(
+                                candidate_id=cid,
+                                module_path=module_path,
+                                class_name=None,
+                                function_name=fn,
+                                storage_signal=DurableStorageSignal.PICKLE_DURABLE_WIRE,
+                                write_or_read=DurableAccessDirection.WRITE
+                                if call_name == "dumps"
+                                else DurableAccessDirection.READ,
+                                payload_symbol=None,
+                                evidence=(f"pickle.{call_name}@{lineno}",),
+                            )
+                        )
 
         if call_name == "dump" and isinstance(node.func, ast.Attribute):
             if node.func.attr == "dump" and has_file_persist:

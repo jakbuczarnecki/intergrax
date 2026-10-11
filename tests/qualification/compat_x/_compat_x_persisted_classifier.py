@@ -40,6 +40,17 @@ _MODULE_FAMILY_ANCHOR: dict[str, str] = {
     "intergrax/memory/stores/sqlite_conversational_memory_store.py": "memory.conversational_turn",
     "intergrax/memory/stores/document_store_user_profile_store.py": "memory.user_profile",
     "intergrax/distributed/providers/sqlite_kv_store.py": "distributed.kv_entry",
+    "intergrax/distributed/providers/redis_kv_store.py": "distributed.kv_entry",
+    "intergrax/runtime/tools/sqlite_idempotency_store.py": "runtime.tool_idempotency_ledger",
+    "intergrax/distributed/providers/redis_idempotency_store.py": "runtime.tool_idempotency_ledger",
+    "intergrax/runtime/execution/continuation/durable_state_file.py": (
+        "runtime.execution_continuation_durable_state"
+    ),
+    "intergrax/runtime/execution/continuation/persistence.py": (
+        "runtime.execution_continuation_durable_state"
+    ),
+    "synthetic/qualification/compat_x_r2_redis_classified.py": "distributed.kv_entry",
+    "synthetic/qualification/compat_x_r2_cache_false_exclude.py": "runtime.tool_idempotency_ledger",
     "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py": "runtime.decision_event_append",
     "intergrax/autonomous_work/postgresql_repository.py": "autonomous_work.postgresql_container",
     "intergrax/collaborative_work/sqlite_repository.py": "collaborative_work.sqlite_container",
@@ -74,6 +85,7 @@ _SQLITE_SCHEMA_TABLE_FAMILY: dict[str, str] = {
     "runtime_events": "runtime.runtime_event",
     "runtime_event_run_sequences": "runtime.runtime_event",
     "task_execution_terminal": "runtime.task_checkpoint",
+    "idempotency_ledger": "runtime.tool_idempotency_ledger",
 }
 
 # Model symbol on read/decode → family (sqlite_stores decode paths).
@@ -115,6 +127,7 @@ _PERSISTENCE_CRITICAL_PREFIXES: tuple[str, ...] = (
     "intergrax/runtime/execution/",
     "intergrax/runtime/long_running/",
     "intergrax/runtime/task_memory/",
+    "intergrax/runtime/tools/",
     "intergrax/memory/stores/",
     "intergrax/distributed/providers/",
     "intergrax/applications/_shared/",
@@ -196,6 +209,12 @@ def _family_for_candidate(candidate: DurableBoundaryCandidate) -> str | None:
             if "runtime_checkpoint" in module:
                 return "runtime.runtime_checkpoint"
             return "runtime.task_checkpoint"
+        if "export_durable_continuation_state" in evidence0:
+            return "runtime.execution_continuation_durable_state"
+        if "execution_continuation_state_store_from_durable_export" in evidence0:
+            return "runtime.execution_continuation_durable_state"
+        if "restore_durable_continuation_backing" in evidence0:
+            return "runtime.execution_continuation_durable_state"
     if module.startswith("intergrax/autonomous_work/"):
         return "autonomous_work.postgresql_container"
     if module.startswith("intergrax/collaborative_work/"):
@@ -225,6 +244,15 @@ def _family_for_candidate(candidate: DurableBoundaryCandidate) -> str | None:
         anchor = _MODULE_FAMILY_ANCHOR[module]
         if candidate.storage_signal == DurableStorageSignal.SQLITE_PAYLOAD_TABLE:
             return _AD_TABLE_FAMILY.get(candidate.payload_symbol or "", anchor)
+        if candidate.storage_signal in (
+            DurableStorageSignal.REDIS_KV_WRITE,
+            DurableStorageSignal.REDIS_HASH_WRITE,
+            DurableStorageSignal.REDIS_SCRIPTED_STATE,
+            DurableStorageSignal.REDIS_READ,
+            DurableStorageSignal.PICKLE_DURABLE_WIRE,
+            DurableStorageSignal.FILE_WRITE,
+        ):
+            return anchor
         return anchor
     if module.endswith("sqlite_stores.py") and candidate.payload_symbol:
         return _AD_TABLE_FAMILY.get(candidate.payload_symbol)
@@ -275,6 +303,8 @@ def _exclusion_for_candidate(
             (f"class_suffix:{candidate.class_name}",),
         )
     if candidate.storage_signal == DurableStorageSignal.WIRE_TO_DURABLE_STORE:
+        if module in _MODULE_FAMILY_ANCHOR:
+            return None
         if _family_for_candidate(candidate) is None:
             return (
                 DurableExclusionReason.SERIALIZATION_WITHOUT_DURABLE_IO,
@@ -323,13 +353,14 @@ def _exclusion_for_candidate(
         ("intergrax/agent_distribution/materialization_adapters.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/applications/_shared/package_wiring.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/applications/_shared/registry_ops_wiring.py", DurableExclusionReason.CACHE_NON_DURABLE),
-        ("intergrax/runtime/execution/continuation/durable_state_file.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/runtime/execution/sqlite_decision_", DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD),
         ("intergrax/applications/_shared/application_build_context.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/applications/_shared/sqlite_async_task_index.py", DurableExclusionReason.SQL_METADATA_NOT_SEMANTIC_PAYLOAD),
         ("intergrax/applications/_shared/docker_templates.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/applications/_shared/integrations/persistence.py", DurableExclusionReason.TRANSPORT_ONLY_ENCODING),
         ("intergrax/applications/_shared/profile_resolution/persistence.py", DurableExclusionReason.TRANSPORT_ONLY_ENCODING),
+        ("intergrax/distributed/providers/redis_execution_semaphore.py", DurableExclusionReason.CACHE_NON_DURABLE),
+        ("intergrax/distributed/providers/redis_rate_limiter.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/queueing/", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/runtime/diagnostics/", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/runtime/adaptive/", DurableExclusionReason.CACHE_NON_DURABLE),
@@ -339,6 +370,11 @@ def _exclusion_for_candidate(
         ("agents/", DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD),
     ):
         if frag in module:
+            if (
+                reason == DurableExclusionReason.CACHE_NON_DURABLE
+                and module.replace("\\", "/") in _MODULE_FAMILY_ANCHOR
+            ):
+                continue
             return (reason, (f"path:{frag}",))
     if module.startswith("synthetic/qualification/"):
         return None

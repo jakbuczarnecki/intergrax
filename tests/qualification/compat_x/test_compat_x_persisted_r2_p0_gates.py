@@ -26,16 +26,29 @@ from tests.qualification.compat_x._compat_x_persisted_contract_authority import 
 from tests.qualification.compat_x._compat_x_persisted_discovery import (
     build_persisted_mechanical_discovery_report,
 )
+from tests.qualification.compat_x._compat_x_persisted_classifier import classify_durable_candidate
+from tests.qualification.compat_x._compat_x_persisted_mechanical_scan import (
+    iter_production_python_modules,
+)
 from tests.qualification.compat_x._compat_x_persisted_synthetic import (
+    synthetic_cache_name_not_false_excluded,
     synthetic_document_store_unknown_fails,
+    synthetic_durable_file_state_detected,
+    synthetic_durable_state_file_not_cache_excluded,
     synthetic_envelope_inheritance_proven,
+    synthetic_evidence_export_excluded,
     synthetic_exception_near_persistence_not_payload_family,
     synthetic_implicit_fallback_allowed,
+    synthetic_pickle_to_redis_detected,
+    synthetic_pickle_to_sqlite_detected,
+    synthetic_redis_classified_family_passes,
+    synthetic_redis_unknown_family_fails_closed_world,
     synthetic_serialization_only_excluded,
     synthetic_service_false_positive_classification,
     synthetic_unknown_sqlite_module_fails_closed_world,
     synthetic_unknown_sql_table_fails,
 )
+from tests.qualification.compat_x._compat_x_persisted_types import DurableExclusionReason
 from tests.qualification.compat_x._compat_x_persisted_types import (
     MigrationDisposition,
     PersistedVersionDisposition,
@@ -191,6 +204,64 @@ def test_cx_r2_p0_adversarial_e_exception_not_payload_family() -> None:
 def test_cx_r2_p0_adversarial_j_historical_not_payload_identity() -> None:
     report = build_persisted_r2_p0_qualification_report()
     assert report.service_misclassified_as_payload == 0
+
+
+_REQUIRED_HEAD_MODULES: tuple[str, ...] = (
+    "intergrax/runtime/execution/continuation/durable_state_file.py",
+    "intergrax/runtime/tools/sqlite_idempotency_store.py",
+    "intergrax/distributed/providers/redis_idempotency_store.py",
+    "intergrax/distributed/providers/redis_kv_store.py",
+)
+
+
+def test_cx_r2_p0_r2_required_head_module_probes() -> None:
+    report = build_persisted_mechanical_discovery_report()
+    by_module: dict[str, list] = {m: [] for m in _REQUIRED_HEAD_MODULES}
+    for c in report.raw_candidates:
+        if c.module_path in by_module:
+            by_module[c.module_path].append(c)
+    for module_path, raw in by_module.items():
+        assert raw, f"missing durable candidates for {module_path}"
+        for candidate in raw:
+            cls = classify_durable_candidate(candidate)
+            assert cls.exclusion_reason != DurableExclusionReason.CACHE_NON_DURABLE, module_path
+            assert cls.family_id is not None or cls.exclusion_reason is not None, module_path
+
+
+def test_cx_r2_p0_adversarial_k_redis_unknown_fails_closed_world() -> None:
+    assert synthetic_redis_unknown_family_fails_closed_world()
+
+
+def test_cx_r2_p0_adversarial_l_redis_classified_passes() -> None:
+    assert synthetic_redis_classified_family_passes()
+
+
+def test_cx_r2_p0_adversarial_m_durable_file_detected() -> None:
+    assert synthetic_durable_file_state_detected()
+
+
+def test_cx_r2_p0_adversarial_n_evidence_export_excluded() -> None:
+    assert synthetic_evidence_export_excluded()
+
+
+def test_cx_r2_p0_adversarial_o_pickle_sqlite_detected() -> None:
+    assert synthetic_pickle_to_sqlite_detected()
+
+
+def test_cx_r2_p0_adversarial_p_pickle_redis_detected() -> None:
+    assert synthetic_pickle_to_redis_detected()
+
+
+def test_cx_r2_p0_adversarial_q_cache_name_not_false_excluded() -> None:
+    assert synthetic_cache_name_not_false_excluded()
+
+
+def test_cx_r2_p0_adversarial_r_durable_state_file_regression() -> None:
+    assert synthetic_durable_state_file_not_cache_excluded()
+
+
+def test_cx_r2_p0_r2_production_module_scan_non_zero() -> None:
+    assert len(iter_production_python_modules()) > 0
 
 
 def test_cx_r2_p0_remediation_waves_non_empty_r2_r1() -> None:

@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **REJECTED / superseded by R2-P0-R1** @ `e33048eff988d561ba4469bb99036d33a7b058b2` · **COMPAT-X-R2-P0-R1** = **READY FOR AUDIT** (mechanical durable discovery + closed-world parity; independent audit pending) · **COMPAT-X-R2** = **BLOCKED ON R2-P0-R1 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** · **COMPAT-X-R3** = **NOT ENTERED** · **TENANT-X** = **NOT ENTERED**
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **REJECTED / superseded by R2-P0-R1** @ `e33048eff988d561ba4469bb99036d33a7b058b2` · **COMPAT-X-R2-P0-R1** = **REJECTED / superseded by R2-P0-R2** @ `9138b12a77c5e42831846b11220216fa6772df1a` · **COMPAT-X-R2-P0-R2** = **READY FOR AUDIT** (durable mechanism coverage + false-exclusion closure; independent audit pending) · **COMPAT-X-R2** = **BLOCKED ON R2-P0-R2 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R2–R5 REMEDIATION** · **COMPAT-X-R3** = **NOT ENTERED** · **TENANT-X** = **NOT ENTERED**
 
 **Branch:** `development`
 
@@ -380,7 +380,11 @@ domain registries → current version authority
 compatibility shim → NO canonical current-version authority (unless explicit canonical envelope inheritance)
 ```
 
-## COMPAT-X-R2-P0-R1 — Mechanical durable discovery & closed-world parity (READY FOR AUDIT)
+## COMPAT-X-R2-P0-R1 — Mechanical durable discovery & closed-world parity (REJECTED / superseded by R2-P0-R2)
+
+Rejected @ `9138b12a77c5e42831846b11220216fa6772df1a`: false `CACHE_NON_DURABLE` exclusion of file-backed execution continuation state; Redis/KV/idempotency mechanisms under-scanned; SQLite idempotency ledger absent from closed world.
+
+## COMPAT-X-R2-P0-R2 — Durable mechanism coverage & false-exclusion closure (READY FOR AUDIT)
 
 **Rejected R2-P0 (tautological discovery):** `e6838d0ef404571e3f7585725be62681ff890071` → `e33048eff988d561ba4469bb99036d33a7b058b2` (primary `e0a0f21790a4464da55eaa6cd1b3405af1c0c97c`).
 
@@ -390,13 +394,28 @@ Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.
 
 | Metric | Value |
 | --- | --- |
-| Persisted families (closed world) | **26** |
-| Classified / unclassified | **26** / **0** |
-| Explicit payload version | **12** |
+| Production Python modules scanned | **7378** |
+| Raw durable candidates | **1613** |
+| Persisted members / evidence-backed exclusions | **601** / **1012** |
+| Unclassified | **0** |
+| Persisted families (closed world) | **28** (was **26**) |
+| Explicit payload version | **13** |
 | Inherited envelope version | **1** |
-| Missing durable version | **9** |
-| Migration-required / owner-missing | **9** / **9** |
+| Missing durable version | **10** (was **9**) |
+| Migration-required / owner-missing | **10** / **10** |
 | Duplicate version / migration authority | **0** / **0** |
+
+**Reconciliation (26 → 28):** **added** `runtime.execution_continuation_durable_state`, `runtime.tool_idempotency_ledger`; **merged** Redis `RedisKVStore` + `RedisIdempotencyStore` evidence into existing `distributed.kv_entry` / shared idempotency semantic contract (no parallel `distributed.redis_kv_entry` family); **reclassified** `durable_state_file.py` out of `CACHE_NON_DURABLE`; **excluded** TTL Redis coordination (`redis_execution_semaphore`, `redis_rate_limiter`) as evidence-backed non-payload cache.
+
+**Mechanism signals (raw candidate counts):** SQLite DML/payload **747** · PostgreSQL **134** · DocumentStore **302** · Redis KV/hash/script/read **23** · file atomic/JSON **101** · pickle durable wire **5** · wire-to-store **285**.
+
+**Head probes (required):** `durable_state_file.py`, `sqlite_idempotency_store.py`, `redis_idempotency_store.py`, `redis_kv_store.py` — raw candidates present; classified to families above (not `CACHE_NON_DURABLE`).
+
+**Pickle rule:** `runtime.tool_idempotency_ledger` records `pickle.dumps`/`pickle.loads` on `result_blob` (SQLite + Redis hash) as compatibility-sensitive wire without semantic `schema_version` (**MISSING_VERSION**).
+
+**Execution continuation:** envelope `execution_continuation_durable_state.v1` via `export_durable_continuation_state` / `execution_continuation_state_store_from_durable_export` (**EXPLICIT_PAYLOAD_VERSION**).
+
+**Contract-authority blocker (preserved):** `PackageAgentContractAuthorityRecord` SQLite durability gap — not remediated in R2-P0-R2.
 
 **Historical five P0 `PERSISTED_SCHEMA_WITHOUT_VERSION` findings:** reconciled — **4** heuristic false positives (service/exception/publisher); **1** real durable store boundary (`DocumentStoreSuspendedExecutionOperationStore` → envelope `suspended_operation_backing.v1`, not store class as schema).
 
@@ -412,13 +431,14 @@ Qualification SSOT: `tests/qualification/compat_x/_compat_x_persisted_inventory.
 COMPAT-X-P0   = CLOSED / independently accepted @ 0612c2a7…
 COMPAT-X-R1   = CLOSED / independently accepted @ 4361943d…
 COMPAT-X-R2-P0    = REJECTED / superseded by R2-P0-R1
-COMPAT-X-R2-P0-R1 = READY FOR AUDIT
-COMPAT-X-R2       = BLOCKED ON R2-P0-R1 AUDIT
+COMPAT-X-R2-P0-R1 = REJECTED / superseded by R2-P0-R2 @ 9138b12a…
+COMPAT-X-R2-P0-R2 = READY FOR AUDIT
+COMPAT-X-R2       = BLOCKED ON R2-P0-R2 AUDIT
 COMPAT-X      = OPEN / CURRENT — BLOCKED ON R2–R5 REMEDIATION
 COMPAT-X-R3   = NOT ENTERED
 TENANT-X      = NOT ENTERED
 ```
 
-**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
+**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **R2-P0-R1 rejected HEAD:** `9138b12a77c5e42831846b11220216fa6772df1a` · **production delta = 0** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**.
 
-**Next mandatory child:** **COMPAT-X-R2-P0-R1** independent audit → **COMPAT-X-R2** remediation implementation (not closed).
+**Next mandatory child:** **COMPAT-X-R2-P0-R2** independent audit → **COMPAT-X-R2** remediation implementation (not closed).
