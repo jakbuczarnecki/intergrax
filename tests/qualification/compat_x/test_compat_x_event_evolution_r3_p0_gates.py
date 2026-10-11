@@ -21,9 +21,12 @@ from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY, validate_
 
 from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     EventCompatibilityDisposition,
+    RuntimeEventCallSiteClassificationEvidence,
     RuntimeEventWritePathDisposition,
+    classify_runtime_event_append_call_site,
     compute_event_evolution_r3_p0_metrics,
     count_canonical_production_raw_store_bypasses,
+    count_non_event_append_without_evidence,
     discover_runtime_event_persistence_call_sites,
     envelope_fail_closed_probes,
     event_evolution_inventory,
@@ -35,13 +38,20 @@ from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     synthetic_inventory_missing_classification,
     synthetic_inventory_phantom_schema_id,
     synthetic_inventory_phantom_schema_row_probe,
+    synthetic_misleading_audit_append_call_site,
+    synthetic_probe_k_unknown_persistence_append_gate,
+    synthetic_probe_l_misleading_audit_append,
+    synthetic_probe_m_raw_production_composition_bypass_gate,
+    synthetic_probe_n_evidence_less_non_event_append,
     synthetic_second_evolution_authority_owner,
     synthetic_two_current_write_versions_for_family,
     synthetic_undispositioned_historical_version,
+    synthetic_unknown_persistence_append_call_site,
     synthetic_write_policy_unregistered_schema_probe,
     validate_canonical_production_guard_chains,
     validate_inventory_closed_world,
     validate_inventory_closed_world_for_extra_class,
+    validate_non_event_append_positive_evidence,
     validate_production_persistence_call_site_classification,
 )
 
@@ -288,9 +298,36 @@ def test_cx_r3_p0_mechanical_persistence_discovery_classified() -> None:
     assert sites
     assert validate_production_persistence_call_site_classification(sites) == ()
     assert count_canonical_production_raw_store_bypasses(sites) == 0
+    assert count_non_event_append_without_evidence(sites) == 0
     assert all(
         site.disposition != RuntimeEventWritePathDisposition.UNCLASSIFIED for site in sites
     )
+    for site in sites:
+        if site.disposition == RuntimeEventWritePathDisposition.NON_EVENT_APPEND:
+            assert (
+                site.classification_evidence
+                in {
+                    RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_WIRING_MULTI_REGION,
+                    RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE,
+                    RuntimeEventCallSiteClassificationEvidence.PLATFORM_RUNTIME_EVENT_HISTORY_BUFFER,
+                }
+            )
+
+
+def test_cx_r3_p0_non_event_append_anti_tautology_gate() -> None:
+    sites = discover_runtime_event_persistence_call_sites()
+    non_event = [
+        site for site in sites if site.disposition == RuntimeEventWritePathDisposition.NON_EVENT_APPEND
+    ]
+    assert validate_non_event_append_positive_evidence(sites) == ()
+    assert count_non_event_append_without_evidence(sites) == 0
+    evidence_backed = sum(
+        1
+        for site in non_event
+        if site.classification_evidence
+        != RuntimeEventCallSiteClassificationEvidence.UNSPECIFIED
+    )
+    assert len(non_event) == evidence_backed
 
 
 def test_cx_r3_p0_canonical_composition_guard_chains() -> None:
@@ -306,3 +343,29 @@ def test_cx_r3_p0_probe_bypass_raw_store_without_validator() -> None:
 def test_cx_r3_p0_combined_gate_passes() -> None:
     passed, violations = event_evolution_r3_p0_gate_passes()
     assert passed, violations
+
+
+def test_cx_r3_p0_probe_k_unknown_persistence_append() -> None:
+    site = synthetic_unknown_persistence_append_call_site()
+    assert site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED
+    assert synthetic_probe_k_unknown_persistence_append_gate() == ()
+
+
+def test_cx_r3_p0_probe_l_misleading_audit_append() -> None:
+    site = synthetic_misleading_audit_append_call_site()
+    assert site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED
+    classification = classify_runtime_event_append_call_site(
+        site.module_path,
+        site.qualname,
+        site.callee_expr,
+    )
+    assert classification.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED
+    assert synthetic_probe_l_misleading_audit_append() == ()
+
+
+def test_cx_r3_p0_probe_m_raw_production_composition_bypass() -> None:
+    assert synthetic_probe_m_raw_production_composition_bypass_gate() == ()
+
+
+def test_cx_r3_p0_probe_n_evidence_less_non_event_append() -> None:
+    assert synthetic_probe_n_evidence_less_non_event_append() == ()
