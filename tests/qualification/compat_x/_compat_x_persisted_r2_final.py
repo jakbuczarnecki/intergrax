@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 import json
+import types
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Mapping, get_type_hints
 
 from tests.qualification.compat_x._compat_x_legacy_obligations import (
     legacy_persisted_compatibility_obligations,
@@ -57,13 +58,88 @@ _REDIS_LIVE_EVIDENCE_DEBT = (
     "static Lua/source gating only unless an environment-backed live test is executed."
 )
 
+_FIXTURE_TOP_LEVEL_KEYS = frozenset(
+    {
+        "provenance",
+        "accepted_persisted_family_ids",
+        "accepted_family_fingerprints",
+        "accepted_legacy_obligation_fingerprints",
+    }
+)
+
+_PROVENANCE_KEYS = frozenset(
+    {
+        "family_identity_baseline_sha",
+        "schema_gate_accepted_sha",
+        "closure_fingerprint_baseline_sha",
+        "bookkeeping_task_baseline_sha",
+    }
+)
+
+_FAMILY_FINGERPRINT_KEYS = frozenset(
+    {
+        "family_id",
+        "version_disposition",
+        "current_version",
+        "version_owner_path",
+        "migration_disposition",
+        "migration_owner_path",
+        "writer_paths",
+        "reader_paths",
+        "storage_kind",
+        "canonical_payload_type",
+        "owner_module_path",
+    }
+)
+
+_OBLIGATION_FINGERPRINT_KEYS = frozenset(
+    {
+        "obligation_key",
+        "family_id",
+        "legacy_shape_id",
+        "disposition",
+        "semantic_owner_path",
+        "migration_owner_path",
+        "reader_path",
+        "sanctioned_reader_symbols",
+        "migration_boundary_helper_symbols",
+    }
+)
+
+_FORBIDDEN_SEMANTIC_ANNOTATION_MARKERS = (
+    "Any",
+    "dict[str, Any]",
+    "Dict[str, Any]",
+    "Mapping[str, Any]",
+    "Mapping[str, Mapping[str, Any]]",
+)
+
+_ACCEPTED_FAMILY_COUNT = 28
+_ACCEPTED_OBLIGATION_COUNT = 16
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptedR2BaselineProvenance:
+    family_identity_baseline_sha: str
+    schema_gate_accepted_sha: str
+    closure_fingerprint_baseline_sha: str
+    bookkeeping_task_baseline_sha: str
+
+
+EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE = AcceptedR2BaselineProvenance(
+    family_identity_baseline_sha="78bd502b5da5284b1bdaae2e321b7076fa22227d",
+    schema_gate_accepted_sha="bb5900cd9a502f3e967b88ee54e4e18f6ff101cb",
+    closure_fingerprint_baseline_sha="2e7d6173cc13bd1fb5ae48ef02292ee76bd22137",
+    bookkeeping_task_baseline_sha="f526d97e6fb56bf032d60fd9166fb1c6fa9ecf42",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class AcceptedR2Baseline:
-    provenance: Mapping[str, str]
+    provenance: AcceptedR2BaselineProvenance
     accepted_persisted_family_ids: frozenset[str]
-    accepted_family_fingerprints: Mapping[str, Mapping[str, Any]]
-    accepted_legacy_obligation_fingerprints: tuple[Mapping[str, Any], ...]
+    accepted_family_fingerprints: Mapping[str, PersistedFamilyFingerprint]
+    accepted_legacy_obligation_fingerprints: Mapping[str, LegacyObligationFingerprint]
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,21 +156,6 @@ class PersistedFamilyFingerprint:
     canonical_payload_type: str
     owner_module_path: str
 
-    def as_mapping(self) -> dict[str, Any]:
-        return {
-            "family_id": self.family_id,
-            "version_disposition": self.version_disposition,
-            "current_version": self.current_version,
-            "version_owner_path": self.version_owner_path,
-            "migration_disposition": self.migration_disposition,
-            "migration_owner_path": self.migration_owner_path,
-            "writer_paths": list(self.writer_paths),
-            "reader_paths": list(self.reader_paths),
-            "storage_kind": self.storage_kind,
-            "canonical_payload_type": self.canonical_payload_type,
-            "owner_module_path": self.owner_module_path,
-        }
-
 
 @dataclass(frozen=True, slots=True)
 class LegacyObligationFingerprint:
@@ -107,19 +168,6 @@ class LegacyObligationFingerprint:
     reader_path: str
     sanctioned_reader_symbols: tuple[str, ...]
     migration_boundary_helper_symbols: tuple[str, ...]
-
-    def as_mapping(self) -> dict[str, Any]:
-        return {
-            "obligation_key": self.obligation_key,
-            "family_id": self.family_id,
-            "legacy_shape_id": self.legacy_shape_id,
-            "disposition": self.disposition,
-            "semantic_owner_path": self.semantic_owner_path,
-            "migration_owner_path": self.migration_owner_path,
-            "reader_path": self.reader_path,
-            "sanctioned_reader_symbols": list(self.sanctioned_reader_symbols),
-            "migration_boundary_helper_symbols": list(self.migration_boundary_helper_symbols),
-        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,22 +212,231 @@ class PersistedR2FinalReport:
     tenant_isolation_verdict: str
     accepted_baseline: AcceptedR2Baseline
     drift: R2FinalDrift
+    baseline_provenance_valid: bool
+    r2_final_baseline_semantic_typing_violations: tuple[str, ...]
     r2_p0_gate: bool
     r2_r1_gate: bool
     r2_r2_gate: bool
     idempotency_r1_r1_gate: bool
 
 
+def _reject_unknown_keys(mapping: Mapping[str, object], allowed: frozenset[str], context: str) -> None:
+    extra = frozenset(mapping) - allowed
+    if extra:
+        raise ValueError(f"unknown keys in {context}: {sorted(extra)}")
+
+
+def _require_str(mapping: Mapping[str, object], key: str, context: str) -> str:
+    value = mapping[key]
+    if not isinstance(value, str):
+        raise ValueError(f"{context}.{key} must be str, got {type(value).__name__}")
+    return value
+
+
+def _require_str_or_null(mapping: Mapping[str, object], key: str, context: str) -> str | None:
+    value = mapping[key]
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{context}.{key} must be str or null, got {type(value).__name__}")
+    return value
+
+
+def _require_str_list(mapping: Mapping[str, object], key: str, context: str) -> tuple[str, ...]:
+    value = mapping[key]
+    if not isinstance(value, list):
+        raise ValueError(f"{context}.{key} must be list, got {type(value).__name__}")
+    items: list[str] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, str):
+            raise ValueError(
+                f"{context}.{key}[{index}] must be str, got {type(item).__name__}"
+            )
+        items.append(item)
+    return tuple(items)
+
+
+def _parse_provenance(raw: object) -> AcceptedR2BaselineProvenance:
+    if not isinstance(raw, dict):
+        raise ValueError("provenance must be object")
+    _reject_unknown_keys(raw, _PROVENANCE_KEYS, "provenance")
+    for key in _PROVENANCE_KEYS:
+        if key not in raw:
+            raise ValueError(f"provenance missing required field: {key}")
+    return AcceptedR2BaselineProvenance(
+        family_identity_baseline_sha=_require_str(raw, "family_identity_baseline_sha", "provenance"),
+        schema_gate_accepted_sha=_require_str(raw, "schema_gate_accepted_sha", "provenance"),
+        closure_fingerprint_baseline_sha=_require_str(
+            raw, "closure_fingerprint_baseline_sha", "provenance"
+        ),
+        bookkeeping_task_baseline_sha=_require_str(
+            raw, "bookkeeping_task_baseline_sha", "provenance"
+        ),
+    )
+
+
+def _parse_family_fingerprint(raw: object, context: str) -> PersistedFamilyFingerprint:
+    if not isinstance(raw, dict):
+        raise ValueError(f"{context} must be object")
+    _reject_unknown_keys(raw, _FAMILY_FINGERPRINT_KEYS, context)
+    for key in _FAMILY_FINGERPRINT_KEYS:
+        if key not in raw:
+            raise ValueError(f"{context} missing required field: {key}")
+    return PersistedFamilyFingerprint(
+        family_id=_require_str(raw, "family_id", context),
+        version_disposition=_require_str(raw, "version_disposition", context),
+        current_version=_require_str_or_null(raw, "current_version", context),
+        version_owner_path=_require_str_or_null(raw, "version_owner_path", context),
+        migration_disposition=_require_str(raw, "migration_disposition", context),
+        migration_owner_path=_require_str_or_null(raw, "migration_owner_path", context),
+        writer_paths=_require_str_list(raw, "writer_paths", context),
+        reader_paths=_require_str_list(raw, "reader_paths", context),
+        storage_kind=_require_str(raw, "storage_kind", context),
+        canonical_payload_type=_require_str(raw, "canonical_payload_type", context),
+        owner_module_path=_require_str(raw, "owner_module_path", context),
+    )
+
+
+def _parse_obligation_fingerprint(raw: object, context: str) -> LegacyObligationFingerprint:
+    if not isinstance(raw, dict):
+        raise ValueError(f"{context} must be object")
+    _reject_unknown_keys(raw, _OBLIGATION_FINGERPRINT_KEYS, context)
+    for key in _OBLIGATION_FINGERPRINT_KEYS:
+        if key not in raw:
+            raise ValueError(f"{context} missing required field: {key}")
+    return LegacyObligationFingerprint(
+        obligation_key=_require_str(raw, "obligation_key", context),
+        family_id=_require_str(raw, "family_id", context),
+        legacy_shape_id=_require_str(raw, "legacy_shape_id", context),
+        disposition=_require_str(raw, "disposition", context),
+        semantic_owner_path=_require_str(raw, "semantic_owner_path", context),
+        migration_owner_path=_require_str_or_null(raw, "migration_owner_path", context),
+        reader_path=_require_str(raw, "reader_path", context),
+        sanctioned_reader_symbols=_require_str_list(raw, "sanctioned_reader_symbols", context),
+        migration_boundary_helper_symbols=_require_str_list(
+            raw, "migration_boundary_helper_symbols", context
+        ),
+    )
+
+
+def _parse_obligation_fingerprints(raw: object) -> Mapping[str, LegacyObligationFingerprint]:
+    if isinstance(raw, dict):
+        items = raw.items()
+    elif isinstance(raw, list):
+        items = ((index, entry) for index, entry in enumerate(raw))
+    else:
+        raise ValueError(
+            "accepted_legacy_obligation_fingerprints must be object or list, "
+            f"got {type(raw).__name__}"
+        )
+    parsed: dict[str, LegacyObligationFingerprint] = {}
+    for key_or_index, entry in items:
+        context = (
+            f"accepted_legacy_obligation_fingerprints[{key_or_index}]"
+            if isinstance(raw, list)
+            else f"accepted_legacy_obligation_fingerprints.{key_or_index}"
+        )
+        fingerprint = _parse_obligation_fingerprint(entry, context)
+        if fingerprint.obligation_key in parsed:
+            raise ValueError(f"duplicate obligation_key in fixture: {fingerprint.obligation_key}")
+        parsed[fingerprint.obligation_key] = fingerprint
+    return types.MappingProxyType(parsed)
+
+
+def validate_accepted_r2_baseline_integrity(baseline: AcceptedR2Baseline) -> None:
+    family_ids = baseline.accepted_persisted_family_ids
+    family_fps = baseline.accepted_family_fingerprints
+    obligation_fps = baseline.accepted_legacy_obligation_fingerprints
+
+    if len(family_ids) != _ACCEPTED_FAMILY_COUNT:
+        raise ValueError(
+            f"accepted family count must be {_ACCEPTED_FAMILY_COUNT}, got {len(family_ids)}"
+        )
+    if len(obligation_fps) != _ACCEPTED_OBLIGATION_COUNT:
+        raise ValueError(
+            f"accepted obligation count must be {_ACCEPTED_OBLIGATION_COUNT}, "
+            f"got {len(obligation_fps)}"
+        )
+    if frozenset(family_fps) != family_ids:
+        raise ValueError("accepted family IDs must equal keys(accepted family fingerprints)")
+    for family_id, fingerprint in family_fps.items():
+        if fingerprint.family_id != family_id:
+            raise ValueError(
+                f"family fingerprint key {family_id!r} != fingerprint.family_id "
+                f"{fingerprint.family_id!r}"
+            )
+    for obligation_key, fingerprint in obligation_fps.items():
+        if fingerprint.obligation_key != obligation_key:
+            raise ValueError(
+                f"obligation fingerprint key {obligation_key!r} != "
+                f"fingerprint.obligation_key {fingerprint.obligation_key!r}"
+            )
+
+
+def accepted_r2_baseline_provenance_valid(provenance: AcceptedR2BaselineProvenance) -> bool:
+    return provenance == EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE
+
+
+def discover_r2_final_baseline_semantic_typing_violations() -> tuple[str, ...]:
+    violations: list[str] = []
+    for cls in (
+        AcceptedR2BaselineProvenance,
+        AcceptedR2Baseline,
+        PersistedFamilyFingerprint,
+        LegacyObligationFingerprint,
+    ):
+        for field_name, hint in get_type_hints(cls).items():
+            text = str(hint).replace("typing.", "")
+            for marker in _FORBIDDEN_SEMANTIC_ANNOTATION_MARKERS:
+                if marker in text:
+                    violations.append(f"{cls.__name__}.{field_name}: {text}")
+                    break
+    return tuple(violations)
+
+
 def load_accepted_r2_baseline(path: Path | None = None) -> AcceptedR2Baseline:
     fixture_path = path or _FIXTURE_PATH
     raw = json.loads(fixture_path.read_text(encoding="utf-8"))
-    provenance = dict(raw["provenance"])
-    return AcceptedR2Baseline(
-        provenance=provenance,
-        accepted_persisted_family_ids=frozenset(raw["accepted_persisted_family_ids"]),
-        accepted_family_fingerprints=raw["accepted_family_fingerprints"],
-        accepted_legacy_obligation_fingerprints=tuple(raw["accepted_legacy_obligation_fingerprints"]),
+    if not isinstance(raw, dict):
+        raise ValueError("baseline fixture root must be object")
+    _reject_unknown_keys(raw, _FIXTURE_TOP_LEVEL_KEYS, "baseline fixture")
+
+    for key in _FIXTURE_TOP_LEVEL_KEYS:
+        if key not in raw:
+            raise ValueError(f"baseline fixture missing required field: {key}")
+
+    family_raw = raw["accepted_family_fingerprints"]
+    if not isinstance(family_raw, dict):
+        raise ValueError("accepted_family_fingerprints must be object")
+    family_parsed: dict[str, PersistedFamilyFingerprint] = {}
+    for family_id, entry in family_raw.items():
+        if not isinstance(family_id, str):
+            raise ValueError("accepted_family_fingerprints keys must be str")
+        family_parsed[family_id] = _parse_family_fingerprint(
+            entry, f"accepted_family_fingerprints.{family_id}"
+        )
+
+    ids_raw = raw["accepted_persisted_family_ids"]
+    if not isinstance(ids_raw, list):
+        raise ValueError("accepted_persisted_family_ids must be list")
+    accepted_ids: list[str] = []
+    for index, item in enumerate(ids_raw):
+        if not isinstance(item, str):
+            raise ValueError(
+                f"accepted_persisted_family_ids[{index}] must be str, got {type(item).__name__}"
+            )
+        accepted_ids.append(item)
+
+    baseline = AcceptedR2Baseline(
+        provenance=_parse_provenance(raw["provenance"]),
+        accepted_persisted_family_ids=frozenset(accepted_ids),
+        accepted_family_fingerprints=types.MappingProxyType(family_parsed),
+        accepted_legacy_obligation_fingerprints=_parse_obligation_fingerprints(
+            raw["accepted_legacy_obligation_fingerprints"]
+        ),
     )
+    validate_accepted_r2_baseline_integrity(baseline)
+    return baseline
 
 
 def family_fingerprint_from_inventory(family: PersistedSchemaFamily) -> PersistedFamilyFingerprint:
@@ -245,23 +502,18 @@ def compute_r2_final_drift(
     drift_families: list[str] = []
     for family_id in sorted(accepted_ids & current_family_ids):
         accepted = baseline.accepted_family_fingerprints[family_id]
-        current = current_families[family_id].as_mapping()
+        current = current_families[family_id]
         if accepted != current:
             drift_families.append(family_id)
 
-    accepted_obl_keys = {
-        item["obligation_key"] for item in baseline.accepted_legacy_obligation_fingerprints
-    }
+    accepted_obl_keys = frozenset(baseline.accepted_legacy_obligation_fingerprints)
     current_obl_keys = frozenset(current_obligations)
     obl_additions = tuple(sorted(current_obl_keys - accepted_obl_keys))
     obl_removals = tuple(sorted(accepted_obl_keys - current_obl_keys))
 
-    accepted_obl_map = {
-        item["obligation_key"]: item for item in baseline.accepted_legacy_obligation_fingerprints
-    }
     obl_drift: list[str] = []
     for key in sorted(accepted_obl_keys & current_obl_keys):
-        if accepted_obl_map[key] != current_obligations[key].as_mapping():
+        if baseline.accepted_legacy_obligation_fingerprints[key] != current_obligations[key]:
             obl_drift.append(key)
 
     return R2FinalDrift(
@@ -288,6 +540,7 @@ def build_persisted_r2_final_report(
     obligation_fingerprints: Mapping[str, LegacyObligationFingerprint] | None = None,
 ) -> PersistedR2FinalReport:
     accepted = baseline or load_accepted_r2_baseline()
+    validate_accepted_r2_baseline_integrity(accepted)
     families = dict(family_fingerprints or current_family_fingerprints())
     obligations = dict(obligation_fingerprints or current_obligation_fingerprints())
 
@@ -342,6 +595,8 @@ def build_persisted_r2_final_report(
         tenant_isolation_verdict=_tenant_isolation_verdict(),
         accepted_baseline=accepted,
         drift=drift,
+        baseline_provenance_valid=accepted_r2_baseline_provenance_valid(accepted.provenance),
+        r2_final_baseline_semantic_typing_violations=discover_r2_final_baseline_semantic_typing_violations(),
         r2_p0_gate=persisted_r2_p0_inventory_gate_passes(),
         r2_r1_gate=r1.missing_version_semantic_family_count == 0
         and r1.opaque_carrier_family_count == 1
@@ -353,6 +608,10 @@ def build_persisted_r2_final_report(
 
 def persisted_r2_final_gate_passes(report: PersistedR2FinalReport | None = None) -> bool:
     item = report or build_persisted_r2_final_report()
+    if not item.baseline_provenance_valid:
+        return False
+    if item.r2_final_baseline_semantic_typing_violations:
+        return False
     if not item.closed_world_discovery_parity:
         return False
     if item.unclassified_candidates != 0:

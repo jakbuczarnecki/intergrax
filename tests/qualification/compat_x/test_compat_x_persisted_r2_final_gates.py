@@ -4,11 +4,15 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
 from tests.qualification.compat_x._compat_x_persisted_r2_final import (
+    AcceptedR2Baseline,
+    EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE,
     LegacyObligationFingerprint,
     PersistedFamilyFingerprint,
     R2FinalDrift,
@@ -16,6 +20,7 @@ from tests.qualification.compat_x._compat_x_persisted_r2_final import (
     compute_r2_final_drift,
     current_family_fingerprints,
     current_obligation_fingerprints,
+    discover_r2_final_baseline_semantic_typing_violations,
     load_accepted_r2_baseline,
     persisted_r2_final_gate_passes,
 )
@@ -173,7 +178,64 @@ def test_cx_r2_final_baseline_fixture_matches_accepted_family_list() -> None:
     baseline = load_accepted_r2_baseline()
     assert len(baseline.accepted_persisted_family_ids) == 28
     assert len(baseline.accepted_legacy_obligation_fingerprints) == 16
-    provenance = baseline.provenance
-    assert provenance["durable_inventory_accepted_sha"] == "78bd502b5da5284b1bdaae2e321b7076fa22227d"
-    assert provenance["schema_gate_accepted_sha"] == "bb5900cd9a502f3e967b88ee54e4e18f6ff101cb"
-    assert provenance["legacy_migration_accepted_sha"] == "2e7d6173cc13bd1fb5ae48ef02292ee76bd22137"
+    assert baseline.provenance == EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE
+    assert discover_r2_final_baseline_semantic_typing_violations() == ()
+
+
+def test_cx_r2_final_probe_i_bad_provenance_sha_fails() -> None:
+    baseline = load_accepted_r2_baseline()
+    bad_provenance = replace(
+        baseline.provenance,
+        closure_fingerprint_baseline_sha="0000000000000000000000000000000000000000",
+    )
+    bad_baseline = replace(baseline, provenance=bad_provenance)
+    report = build_persisted_r2_final_report(baseline=bad_baseline)
+    assert not report.baseline_provenance_valid
+    assert not persisted_r2_final_gate_passes(report)
+
+
+def test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed(
+    tmp_path: Path,
+) -> None:
+    fixture = json.loads(
+        Path(__file__).resolve().parents[2]
+        .joinpath("fixtures", "compat_x", "r2_final_accepted_baseline.json")
+        .read_text(encoding="utf-8")
+    )
+    family_id = "memory.user_profile"
+    del fixture["accepted_family_fingerprints"][family_id]["version_disposition"]
+    path = tmp_path / "bad_baseline.json"
+    path.write_text(json.dumps(fixture), encoding="utf-8")
+    with pytest.raises(ValueError, match="missing required field"):
+        load_accepted_r2_baseline(path)
+
+
+def test_cx_r2_final_probe_k_family_id_key_mismatch_fails(tmp_path: Path) -> None:
+    baseline = load_accepted_r2_baseline()
+    families = dict(baseline.accepted_family_fingerprints)
+    target = families["memory.user_profile"]
+    families["memory.user_profile"] = replace(target, family_id="synthetic.mismatched_id")
+    broken = AcceptedR2Baseline(
+        provenance=baseline.provenance,
+        accepted_persisted_family_ids=baseline.accepted_persisted_family_ids,
+        accepted_family_fingerprints=families,
+        accepted_legacy_obligation_fingerprints=baseline.accepted_legacy_obligation_fingerprints,
+    )
+    with pytest.raises(ValueError, match="family fingerprint key"):
+        build_persisted_r2_final_report(baseline=broken)
+
+
+def test_cx_r2_final_probe_l_obligation_key_mismatch_fails() -> None:
+    baseline = load_accepted_r2_baseline()
+    obligations = dict(baseline.accepted_legacy_obligation_fingerprints)
+    key = "memory.user_profile::LEGACY_UNVERSIONED_PRE_V1"
+    original = obligations[key]
+    obligations[key] = replace(original, obligation_key="synthetic::wrong_key")
+    broken = AcceptedR2Baseline(
+        provenance=baseline.provenance,
+        accepted_persisted_family_ids=baseline.accepted_persisted_family_ids,
+        accepted_family_fingerprints=baseline.accepted_family_fingerprints,
+        accepted_legacy_obligation_fingerprints=obligations,
+    )
+    with pytest.raises(ValueError, match="obligation fingerprint key"):
+        build_persisted_r2_final_report(baseline=broken)

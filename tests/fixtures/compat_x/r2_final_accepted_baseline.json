@@ -1,10 +1,9 @@
 {
   "provenance": {
-    "durable_inventory_accepted_sha": "78bd502b5da5284b1bdaae2e321b7076fa22227d",
+    "family_identity_baseline_sha": "78bd502b5da5284b1bdaae2e321b7076fa22227d",
     "schema_gate_accepted_sha": "bb5900cd9a502f3e967b88ee54e4e18f6ff101cb",
-    "legacy_migration_accepted_sha": "2e7d6173cc13bd1fb5ae48ef02292ee76bd22137",
-    "bookkeeping_task_baseline_sha": "f526d97e6fb56bf032d60fd9166fb1c6fa9ecf42",
-    "note": "Accepted evidence metadata for R2-FINAL drift comparison; not semantic authority."
+    "closure_fingerprint_baseline_sha": "2e7d6173cc13bd1fb5ae48ef02292ee76bd22137",
+    "bookkeeping_task_baseline_sha": "f526d97e6fb56bf032d60fd9166fb1c6fa9ecf42"
   },
   "accepted_persisted_family_ids": [
     "agent_distribution.agent_artifact_metadata",
