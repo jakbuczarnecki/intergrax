@@ -837,3 +837,41 @@ none introduced by R3 closure
 Roadmap amendment required:
 NO
 ```
+
+## COMPAT-X-R4 — Plugin/Provider Compatibility Policy (READY FOR AUDIT)
+
+**START_HEAD:** `0ff6b7ef134f4a3f89930ef365e1c92b166c945e`
+
+**Production delta:** `0` (architecture policy + qualification gates only).
+
+**Policy authority:** `docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md` — **Plugin / Provider Compatibility Policy** section.
+
+**Qualification enforcement:**
+
+- `tests/qualification/compat_x/_compat_x_plugin_provider_r4_inventory.py` — closed-world discovery, disposition model, `collect_plugin_provider_compatibility_r4_violations()` / `plugin_provider_compatibility_r4_gate_passes()`
+- `tests/qualification/compat_x/test_compat_x_plugin_provider_r4_gates.py` — combined R4 gate + adversarial probes A–L (external probes revalidate current-HEAD external contract service)
+
+**Owner matrix remediation:** `tests/qualification/compat_x/_compat_x_owner_discovery.py` — `plugin_provider_compatibility_policy`, `platform_plugin_manifest_compatibility`, `provider_contract_compatibility` → `CURRENT_CONFIRMED_OWNER`.
+
+**FRZ-CMP-05:** **PASS CANDIDATE / PENDING INDEPENDENT AUDIT** (Cursor must not self-promote to **PASS**).
+
+**Recommended status (pre-audit):**
+
+```text
+COMPAT-X-R4     = READY FOR AUDIT
+COMPAT-X-R5     = PLANNED
+COMPAT-X        = OPEN / BLOCKED ON R4–R5
+TENANT-X        = NOT ENTERED
+```
+
+### Tenant isolation audit (R4 — external compatibility portion)
+
+**Verdict:** **PASS — LOCAL R4 INVARIANT** (revalidated via external contract certification probes in R4 gate suite; not global FRZ-TEN promotion).
+
+### B2B Network / Nordea checkpoint (R4 scope)
+
+**Verdict:** **READY WITH PLATFORM GAPS**
+
+**Platform Escape Count (R4 scope):** **0** — scenario-local plugin/provider compatibility logic not required when consuming typed extensions and canonical catalog/platform compatibility paths.
+
+Formal **SCENARIO-GATE** unchanged; **R5**, **TENANT-X**, and parent **COMPAT-X** closure remain mandatory.
