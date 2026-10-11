@@ -1,15 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Evidence-only legacy P0 class-field semantic identity projection (COMPAT-X-R1-R4)."""
+"""Evidence-only exact historical P0 class-field semantic identity projection (COMPAT-X-R1-R5)."""
 
 from __future__ import annotations
 
+import ast
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 
+from tests.qualification.compat_x._compat_x_ast_signals import parse_module
 from tests.qualification.compat_x._compat_x_closed_world import ClosedWorldReport, build_closed_world_report
 from tests.qualification.compat_x._compat_x_types import DiscoveryCandidate
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 _CLASS_FIELD_PREFIX = "class.field:"
 _LEGACY_LITERAL_PREFIX = "schema.literal:"
@@ -32,6 +38,10 @@ _NON_CLASS_FIELD_KINDS_PRESERVED: frozenset[str] = frozenset(
         "version.constant",
     }
 )
+
+
+class HistoricalP0ProjectionError(Exception):
+    """Fail-closed historical AST projection (ambiguous or missing class field)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,29 +85,21 @@ class SemanticIdentityReconciliationClosure:
     semantic_surface_counts_by_kind: dict[str, int]
 
 
+def historical_p0_literal_version(node: ast.AST | None) -> str | None:
+    """Frozen accepted-P0 @ 0612c2a7 literal extraction from assignment value nodes only."""
+    if node is None:
+        return None
+    if isinstance(node, ast.Constant) and isinstance(node.value, (str, int)):
+        return str(node.value)
+    if isinstance(node, ast.Subscript):
+        return historical_p0_literal_version(node.slice)
+    return None
+
+
 def _normalize_current_version(raw: str | None) -> str | None:
     if raw is None or raw in _UNRESOLVED_VERSION_MARKERS:
         return None
     return raw
-
-
-def _is_bare_major_minor_numeric_version(version: str) -> bool:
-    parts = version.split(".")
-    return len(parts) == 2 and all(part.isdigit() for part in parts)
-
-
-def _legacy_p0_value_identity_eligible(
-    version: str,
-    version_source: str | None,
-    field_name: str | None,
-) -> bool:
-    """Whether accepted-P0 inventory used version-value semantic identity for this class field."""
-    source = version_source or ""
-    if "→" in source:
-        return False
-    if field_name == "spec_version" and _is_bare_major_minor_numeric_version(version):
-        return False
-    return True
 
 
 def parse_class_field_semantic_identity(semantic_identity: str) -> ClassFieldSurfaceTuple:
@@ -108,41 +110,122 @@ def parse_class_field_semantic_identity(semantic_identity: str) -> ClassFieldSur
     return ClassFieldSurfaceTuple(module_path, class_name, field_name)
 
 
+def _read_module_source(
+    module_path: str,
+    source_by_module: Mapping[str, str] | None,
+) -> str:
+    if source_by_module is not None and module_path in source_by_module:
+        return source_by_module[module_path]
+    full = _REPO_ROOT / module_path
+    if not full.is_file():
+        raise HistoricalP0ProjectionError(f"no source for module {module_path}")
+    return full.read_text(encoding="utf-8")
+
+
+def _class_def_in_module(tree: ast.Module, class_name: str) -> ast.ClassDef | None:
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            return node
+    return None
+
+
+def _class_field_value_nodes(class_def: ast.ClassDef, field_name: str) -> list[ast.AST | None]:
+    nodes: list[ast.AST | None] = []
+    for item in class_def.body:
+        if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name) and item.target.id == field_name:
+            nodes.append(item.value)
+        elif (
+            isinstance(item, ast.Assign)
+            and len(item.targets) == 1
+            and isinstance(item.targets[0], ast.Name)
+            and item.targets[0].id == field_name
+        ):
+            nodes.append(item.value)
+    return nodes
+
+
+def locate_class_field_value_node(
+    module_path: str,
+    class_name: str,
+    field_name: str,
+    *,
+    source_by_module: Mapping[str, str] | None = None,
+) -> ast.AST | None:
+    """Return the sole assignment value node for a module-level class field (fail closed if ambiguous)."""
+    source = _read_module_source(module_path, source_by_module)
+    tree = parse_module(module_path, source)
+    class_def = _class_def_in_module(tree, class_name)
+    if class_def is None:
+        raise HistoricalP0ProjectionError(f"class {class_name} not found in {module_path}")
+    value_nodes = _class_field_value_nodes(class_def, field_name)
+    if len(value_nodes) == 0:
+        raise HistoricalP0ProjectionError(
+            f"field {class_name}.{field_name} not found in {module_path}"
+        )
+    if len(value_nodes) > 1:
+        raise HistoricalP0ProjectionError(
+            f"ambiguous field assignments for {class_name}.{field_name} in {module_path}"
+        )
+    return value_nodes[0]
+
+
+def project_legacy_p0_class_field_semantic_identity_from_ast(
+    surface: ClassFieldSurfaceTuple,
+    *,
+    source_by_module: Mapping[str, str] | None = None,
+) -> str:
+    """Derive accepted-P0 identity by applying historical literal rules to the field's AST value node."""
+    class_field_identity = (
+        f"{_CLASS_FIELD_PREFIX}{surface.owner_module_path}:{surface.class_name}:{surface.field_name}"
+    )
+    value_node = locate_class_field_value_node(
+        surface.owner_module_path,
+        surface.class_name,
+        surface.field_name,
+        source_by_module=source_by_module,
+    )
+    literal = historical_p0_literal_version(value_node)
+    # Accepted P0 @ 0612c2a7 used `if signal.version_literal:` (falsy "" does not collapse).
+    if literal:
+        return f"{_LEGACY_LITERAL_PREFIX}{literal}"
+    return class_field_identity
+
+
 def project_legacy_p0_class_field_semantic_identity(
     current_identity: str,
-    current_version: str | None,
     *,
-    version_source: str | None = None,
-    field_name: str | None = None,
+    source_by_module: Mapping[str, str] | None = None,
 ) -> str:
-    """Reproduce accepted-P0 class-field identity rule (evidence only; not current authority)."""
-    version = _normalize_current_version(current_version)
-    if version is not None and _legacy_p0_value_identity_eligible(version, version_source, field_name):
-        return f"{_LEGACY_LITERAL_PREFIX}{version}"
-    return current_identity
-
-
-def project_legacy_p0_semantic_identity_from_candidate(candidate: DiscoveryCandidate) -> str:
-    if candidate.discovery_kind != "class.field.version":
-        raise ValueError(f"expected class.field.version candidate, got {candidate.discovery_kind}")
-    parsed = parse_class_field_semantic_identity(candidate.semantic_identity)
-    return project_legacy_p0_class_field_semantic_identity(
-        candidate.semantic_identity,
-        candidate.current_version,
-        version_source=candidate.version_source,
-        field_name=parsed.field_name,
+    """Reproduce accepted-P0 class-field identity from current source AST (evidence only)."""
+    surface = parse_class_field_semantic_identity(current_identity)
+    return project_legacy_p0_class_field_semantic_identity_from_ast(
+        surface, source_by_module=source_by_module
     )
 
 
-def _reconciliation_from_candidate(candidate: DiscoveryCandidate) -> SemanticIdentityReconciliation:
+def project_legacy_p0_semantic_identity_from_candidate(
+    candidate: DiscoveryCandidate,
+    *,
+    source_by_module: Mapping[str, str] | None = None,
+) -> str:
+    if candidate.discovery_kind != "class.field.version":
+        raise ValueError(f"expected class.field.version candidate, got {candidate.discovery_kind}")
+    return project_legacy_p0_class_field_semantic_identity(
+        candidate.semantic_identity,
+        source_by_module=source_by_module,
+    )
+
+
+def _reconciliation_from_candidate(
+    candidate: DiscoveryCandidate,
+    *,
+    source_by_module: Mapping[str, str] | None = None,
+) -> SemanticIdentityReconciliation:
     parsed = parse_class_field_semantic_identity(candidate.semantic_identity)
     return SemanticIdentityReconciliation(
         current_identity=candidate.semantic_identity,
-        legacy_identity=project_legacy_p0_class_field_semantic_identity(
-            candidate.semantic_identity,
-            candidate.current_version,
-            version_source=candidate.version_source,
-            field_name=parsed.field_name,
+        legacy_identity=project_legacy_p0_class_field_semantic_identity_from_ast(
+            parsed, source_by_module=source_by_module
         ),
         owner_module_path=parsed.owner_module_path,
         class_name=parsed.class_name,
@@ -153,19 +236,30 @@ def _reconciliation_from_candidate(candidate: DiscoveryCandidate) -> SemanticIde
 
 def build_class_field_reconciliations_from_report(
     report: ClosedWorldReport,
+    *,
+    source_by_module: Mapping[str, str] | None = None,
 ) -> tuple[SemanticIdentityReconciliation, ...]:
     class_field_candidates = [
         c for c in report.raw_candidates if c.discovery_kind == "class.field.version"
     ]
-    reconciled = [_reconciliation_from_candidate(c) for c in class_field_candidates]
+    reconciled = [
+        _reconciliation_from_candidate(c, source_by_module=source_by_module)
+        for c in class_field_candidates
+    ]
     return tuple(sorted(reconciled, key=lambda r: r.current_identity))
 
 
-def legacy_projected_semantic_identity_set(report: ClosedWorldReport) -> frozenset[str]:
+def legacy_projected_semantic_identity_set(
+    report: ClosedWorldReport,
+    *,
+    source_by_module: Mapping[str, str] | None = None,
+) -> frozenset[str]:
     projected: set[str] = set()
     class_field_legacy = {
         row.current_identity: row.legacy_identity
-        for row in build_class_field_reconciliations_from_report(report)
+        for row in build_class_field_reconciliations_from_report(
+            report, source_by_module=source_by_module
+        )
     }
     for surface in report.semantic_surfaces:
         if surface.discovery_kind == "class.field.version":

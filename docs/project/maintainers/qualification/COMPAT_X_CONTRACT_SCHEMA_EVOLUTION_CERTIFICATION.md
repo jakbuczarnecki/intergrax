@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **REJECTED / superseded by R1-R2** @ `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` · **COMPAT-X-R1-R2** = **REJECTED / superseded by R1-R3** @ `bc6b46b7c300d1db12ba664d327b339a75762532` · **COMPAT-X-R1-R3** = **REJECTED / superseded by R1-R4** @ `fc95f0f72d20401837bfaf6c06a63c8ef2d78aca` · **COMPAT-X-R1-R4** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X-R1** = **BLOCKED ON R1-R4 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1-R1** = **REJECTED / superseded by R1-R2** @ `1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6` · **COMPAT-X-R1-R2** = **REJECTED / superseded by R1-R3** @ `bc6b46b7c300d1db12ba664d327b339a75762532` · **COMPAT-X-R1-R3** = **REJECTED / superseded by R1-R4** @ `fc95f0f72d20401837bfaf6c06a63c8ef2d78aca` · **COMPAT-X-R1-R4** = **REJECTED / superseded by R1-R5** @ `a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72` · **COMPAT-X-R1-R5** = **READY FOR AUDIT** (implementation pending independent audit) · **COMPAT-X-R1** = **BLOCKED ON R1-R5 AUDIT** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION** (not parent closure)
 
 **Branch:** `development`
 
@@ -353,29 +353,21 @@ NO
 
 ## COMPAT-X-R1-R4 — Semantic Identity Reconciliation Closure
 
-**Historical P0 evidence:** P0 independently accepted @ `0612c2a7…` with **1879** semantic identities under the then-current identity model. Current-head replay uses the corrected contract-specific `class.field` identity model (R1-R3 implementation preserved); historical P0 counts remain valid evidence, not rewritten as **1977**.
+**Rejected baseline:** `a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72` — historical identity inferred from `current_version`, `version_source` (`→`), `spec_version`, and bare `major.minor` heuristics rather than exact accepted-P0 AST `node.value` semantics. **Superseded by COMPAT-X-R1-R5.**
 
-**Mechanical legacy-P0 projection (qualification-only, not current authority):** for each discovered class-field signal, `legacy_identity = schema.literal:<version>` when a resolved version exists and P0 value-collapse eligibility holds (inline resolution; excludes R1-expanded same-module constant attribution in `version_source`; preserves accepted-P0 distinct `spec_version` bare `major.minor` literals). Otherwise `legacy_identity = class.field:<module>:<class>:<field>`.
+## COMPAT-X-R1-R5 — Exact Historical P0 Projection Closure
 
-**Primary reconciliation proof:** `sum(member_count - 1)` over legacy `schema.literal:*` collision groups = `current_semantic_count - legacy_projected_semantic_count` = **98** (not hard-coded primary gate).
+**Historical P0 evidence:** P0 independently accepted @ `0612c2a7…` with **1879** semantic identities under the then-current identity model. Current-head inventory uses contract-specific `class.field` identity (R1-R3 preserved).
 
-**Closed-world reconciliation (accepted P0 vs R1-R4 current-head):**
+**Exact historical projector (qualification-only):** parse current source → locate `ClassDef` / `AnnAssign|Assign` field → `historical_p0_literal_version(node.value)` frozen @ `0612c2a7…` → `schema.literal:<literal>` or `class.field:<module>:<class>:<field>`. No `current_version`, `version_source`, field-name, or version-format heuristics.
 
-| Metric | Accepted P0 @ `0612c2a7…` | R1-R4 mechanical legacy replay @ current HEAD | R1-R4 corrected current |
-|--------|---------------------------|-----------------------------------------------|-------------------------|
-| raw candidates | 7266 | 7266 | 7266 |
-| semantic surfaces | 1879 | 1879 (legacy projected) | 1977 |
-| exclusions | 5289 | 5289 | 5289 |
-| unclassified | 0 | 0 | 0 |
-| legacy collision groups | — | 8 | 0 cross-contract merge |
-| members in collision groups | — | 106 | — |
-| explained split delta | — | 98 | +98 vs P0 semantic count |
+**Primary reconciliation proof:** `sum(member_count - 1)` over legacy `schema.literal:*` collision groups = `current_semantic_count - legacy_projected_semantic_count`; `unexplained additions = 0`; `unexplained removals = 0`.
 
-**Adversarial probes:** `test_compat_x_versioning_r1_r4_semantic_identity_reconciliation_gates.py` (A–E + closure); `test_compat_x_versioning_r1_r3_identity_gates.py` (identity preservation); `test_compat_x_versioning_r1_gates.py` (public / inherited / persisted).
+**Adversarial probes:** `test_compat_x_versioning_r1_r5_semantic_identity_reconciliation_gates.py` (A–F + metadata independence + closure); `test_compat_x_versioning_r1_r3_identity_gates.py`; `test_compat_x_versioning_r1_gates.py`.
 
-**FRZ-CMP-01:** PASS CANDIDATE historical evidence @ `0612c2a7…` remains accepted; current-head COMPAT-X closure uses corrected inventory semantics.
+**FRZ-CMP-01:** PASS CANDIDATE historical evidence @ `0612c2a7…` remains accepted.
 
-**FRZ-CMP-02:** PASS CANDIDATE pending independent exact-SHA audit only if `public noncompliant identities = 0`, semantic identity reconciliation complete, `unexplained identity delta = 0`, `cross-contract merge = 0`; checklist row remains **OPEN**.
+**FRZ-CMP-02:** PASS CANDIDATE pending independent exact-SHA audit; checklist row remains **OPEN**.
 
 ### Authority graph (post R1-R1)
 
@@ -396,8 +388,9 @@ COMPAT-X-P0   = CLOSED / independently accepted
 COMPAT-X-R1-R1 = REJECTED / superseded by R1-R2 @ 1e79d2a72be8095515f0e6ffa8e59dd94eb5c7f6
 COMPAT-X-R1-R2 = REJECTED / superseded by R1-R3 @ bc6b46b7c300d1db12ba664d327b339a75762532
 COMPAT-X-R1-R3 = REJECTED / superseded by R1-R4 @ fc95f0f72d20401837bfaf6c06a63c8ef2d78aca
-COMPAT-X-R1-R4 = READY FOR AUDIT
-COMPAT-X-R1   = BLOCKED ON R1-R4 AUDIT
+COMPAT-X-R1-R4 = REJECTED / superseded by R1-R5 @ a6c3d0a2f630bdd1b943db4de6a9b83f7c50bc72
+COMPAT-X-R1-R5 = READY FOR AUDIT
+COMPAT-X-R1   = BLOCKED ON R1-R5 AUDIT
 COMPAT-X      = OPEN / CURRENT — BLOCKED ON R1 AUDIT + R2–R5 REMEDIATION
 COMPAT-X-R2   = NOT ENTERED
 TENANT-X      = NOT ENTERED
