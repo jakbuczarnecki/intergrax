@@ -127,6 +127,16 @@ def validate_payload_envelope(payload: dict[str, Any]) -> RuntimeEventPayload | 
     schema_cls = get_payload_schema(schema_id)
     if schema_cls is None:
         raise UnknownPayloadSchemaError(f"unknown payload_schema_id: {schema_id!r}")
+    if "payload_schema_version" not in payload:
+        raise RuntimeEventPayloadError("typed payload envelope requires payload_schema_version")
+    envelope_version = payload["payload_schema_version"]
+    if type(envelope_version) is not int:
+        raise RuntimeEventPayloadError("payload_schema_version must be int")
+    if envelope_version != schema_cls.schema_version:
+        raise RuntimeEventPayloadError(
+            f"payload_schema_version mismatch for {schema_id!r}: "
+            f"expected {schema_cls.schema_version}, got {envelope_version!r}"
+        )
     data = payload.get("data")
     if not isinstance(data, dict):
         raise RuntimeEventPayloadError("typed payload envelope requires data dict")

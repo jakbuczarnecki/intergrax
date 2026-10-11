@@ -67,6 +67,68 @@ def test_validate_envelope_rejects_unknown_schema() -> None:
         )
 
 
+def test_validate_envelope_accepts_matching_version_from_to_envelope() -> None:
+    typed = ToolPayloadV1(tool_name="websearch.query", status="requested")
+    validate_payload_envelope(typed.to_envelope())
+
+
+def test_validate_envelope_rejects_missing_payload_schema_version() -> None:
+    typed = ToolPayloadV1(tool_name="websearch.query", status="requested")
+    envelope = typed.to_envelope()
+    del envelope["payload_schema_version"]
+    with pytest.raises(RuntimeEventPayloadError, match="payload_schema_version"):
+        validate_payload_envelope(envelope)
+
+
+def test_validate_envelope_rejects_wrong_numeric_version() -> None:
+    schema_cls = ToolPayloadV1
+    with pytest.raises(RuntimeEventPayloadError, match="mismatch"):
+        validate_payload_envelope(
+            {
+                "payload_schema_id": schema_cls.schema_id,
+                "payload_schema_version": schema_cls.schema_version + 1,
+                "data": {"tool_name": "t", "status": "requested"},
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "bad_version",
+    ["1", True, None],
+)
+def test_validate_envelope_rejects_wrong_type_version(bad_version: object) -> None:
+    with pytest.raises(RuntimeEventPayloadError, match="payload_schema_version"):
+        validate_payload_envelope(
+            {
+                "payload_schema_id": ToolPayloadV1.schema_id,
+                "payload_schema_version": bad_version,
+                "data": {"tool_name": "t", "status": "requested"},
+            }
+        )
+
+
+def test_validate_envelope_rejects_correct_id_wrong_version() -> None:
+    with pytest.raises(RuntimeEventPayloadError, match="mismatch"):
+        validate_payload_envelope(
+            {
+                "payload_schema_id": "tool.v1",
+                "payload_schema_version": 99,
+                "data": {"tool_name": "t", "status": "requested"},
+            }
+        )
+
+
+def test_validate_envelope_unknown_schema_id_v6() -> None:
+    with pytest.raises(UnknownPayloadSchemaError):
+        validate_payload_envelope(
+            {
+                "payload_schema_id": "unknown.compat_x.v1",
+                "payload_schema_version": 1,
+                "data": {},
+            }
+        )
+
+
 def test_validate_envelope_allows_legacy_dict_without_schema() -> None:
     assert validate_payload_envelope({"tool_name": "legacy"}) is None
 

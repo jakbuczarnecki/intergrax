@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Final
+from pathlib import Path
+from typing import Final, Iterable
 
 from intergrax.contracts.runtime_event import parse_runtime_event_payload
 from intergrax.contracts.runtime_event_type import RuntimeEventType
@@ -61,7 +63,12 @@ from intergrax.runtime.events.payloads.spine_families import (
 from intergrax.runtime.events.runtime_event_payload_policy import (
     EVENT_TYPE_PREFERRED_SCHEMA,
     PayloadWriteMode,
+    RuntimeEventPayloadPolicyEntry,
+    RuntimeEventTypeClassification,
     iter_runtime_event_payload_policies,
+)
+from intergrax.runtime.events.stores.validating_runtime_event_store import (
+    ValidatingRuntimeEventPersistence,
 )
 from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY, validate_schema_version
 
@@ -78,6 +85,29 @@ _SCHEMA_GUARD: Final = "intergrax/runtime/events/schema_guard.py"
 _EVENT_KIND_REGISTRY: Final = "intergrax/runtime/events/event_kind_registry.py"
 _PERSISTENCE_CONTRACT: Final = "intergrax/runtime/events/persistence_contract.py"
 _VALIDATING_STORE: Final = "intergrax/runtime/events/stores/validating_runtime_event_store.py"
+_REPO_ROOT: Final = Path(__file__).resolve().parents[3]
+_PRODUCTION_SCAN_ROOTS: Final = ("intergrax", "applications")
+_PRODUCTION_SCAN_EXCLUDE: Final = frozenset(
+    {"tests", "testing_support", "docs", "scripts", "__pycache__"}
+)
+
+
+class RuntimeEventWritePathDisposition(str, Enum):
+    CANONICAL_VALIDATING_PATH = "canonical_validating_path"
+    RAW_BACKEND_INTERNAL = "raw_backend_internal"
+    TEST_LAB_ONLY = "test_lab_only"
+    NON_EVENT_APPEND = "non_event_append"
+    UNCLASSIFIED = "unclassified"
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeEventPersistenceCallSite:
+    module_path: str
+    lineno: int
+    qualname: str
+    callee_expr: str
+    disposition: RuntimeEventWritePathDisposition
+    notes: str = ""
 
 
 class EventEvolutionSurfaceKind(str, Enum):
@@ -118,6 +148,7 @@ class EventEnvelopeEvolutionRecord:
 class EventPayloadVersionRecord:
     payload_type: type[RuntimeEventPayload]
     schema_id: str
+    payload_schema_version: int
     compatibility_disposition: EventCompatibilityDisposition
     migration_required: bool
     adaptation_required: bool
@@ -156,6 +187,7 @@ class EventEvolutionInventory:
     extension_contract: ExtensionEventEvolutionContract
     owner_matrix: tuple[EventEvolutionOwnerRow, ...]
     production_persistence_guard_paths: tuple[str, ...]
+    production_persistence_call_sites: tuple[RuntimeEventPersistenceCallSite, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,6 +271,7 @@ def _build_payload_families() -> tuple[EventPayloadEvolutionFamily, ...]:
         record = EventPayloadVersionRecord(
             payload_type=payload_type,
             schema_id=schema_id,
+            payload_schema_version=int(payload_type.schema_version),
             compatibility_disposition=_compatibility_for_schema(schema_id),
             migration_required=False,
             adaptation_required=False,
@@ -347,6 +380,296 @@ def _owner_matrix() -> tuple[EventEvolutionOwnerRow, ...]:
     )
 
 
+def _repo_relative(path: Path) -> str:
+    return path.relative_to(_REPO_ROOT).as_posix()
+
+
+def _iter_production_python_sources() -> list[Path]:
+    paths: list[Path] = []
+    for root_name in _PRODUCTION_SCAN_ROOTS:
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
+            continue
+        for file_path in root.rglob("*.py"):
+            rel_parts = file_path.relative_to(_REPO_ROOT).parts
+            if any(part in _PRODUCTION_SCAN_EXCLUDE for part in rel_parts):
+                continue
+            if "docker" in rel_parts and "runtime-context" in rel_parts:
+                continue
+            paths.append(file_path)
+    return sorted(paths)
+
+
+def _enclosing_qualname(tree: ast.Module, lineno: int) -> str:
+    best: tuple[int, str] | None = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            if node.lineno <= lineno <= getattr(node, "end_lineno", node.lineno):
+                if best is None or node.lineno >= best[0]:
+                    best = (node.lineno, node.name)
+        if isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef):
+                    if item.lineno <= lineno <= getattr(item, "end_lineno", item.lineno):
+                        qual = f"{node.name}.{item.name}"
+                        if best is None or item.lineno >= best[0]:
+                            best = (item.lineno, qual)
+    return best[1] if best else "<module>"
+
+
+def _callee_expr(node: ast.Call) -> str:
+    if isinstance(node.func, ast.Attribute):
+        base = ast.unparse(node.func.value) if hasattr(ast, "unparse") else "?"
+        return f"{base}.{node.func.attr}"
+    if isinstance(node.func, ast.Name):
+        return node.func.id
+    return "?"
+
+
+def _classify_runtime_event_append_call_site(
+    module_path: str,
+    qualname: str,
+    callee_expr: str,
+) -> RuntimeEventWritePathDisposition:
+    path = module_path.replace("\\", "/")
+    if "runtime/events/stores/sqlite_runtime_event_store.py" in path:
+        return RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL
+    if "runtime/events/stores/memory_runtime_event_store.py" in path:
+        return RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL
+    if "runtime/events/stores/document_backed_runtime_event_store.py" in path:
+        return RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL
+    if path.endswith("runtime/events/persistence_contract.py"):
+        return RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL
+    if path.endswith("runtime/events/stores/validating_runtime_event_store.py"):
+        if "_inner" in callee_expr:
+            return RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL
+        return RuntimeEventWritePathDisposition.CANONICAL_VALIDATING_PATH
+    if "runtime/events/validating_evidence_persistence_port.py" in path:
+        if "_inner" in callee_expr:
+            return RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL
+        return RuntimeEventWritePathDisposition.CANONICAL_VALIDATING_PATH
+    if path.endswith("runtime/events/evidence_persistence_adapter.py"):
+        return RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL
+    if path.endswith("runtime/events/event_bus.py") and "_persistence" in callee_expr:
+        return RuntimeEventWritePathDisposition.CANONICAL_VALIDATING_PATH
+    if path.endswith("runtime/governance/governance_evidence_persistence.py"):
+        return RuntimeEventWritePathDisposition.CANONICAL_VALIDATING_PATH
+    if path.endswith("runtime/observability/persistence_conformance.py"):
+        return RuntimeEventWritePathDisposition.TEST_LAB_ONLY
+    if "lab_application/" in path or "poc_template_application/" in path:
+        return RuntimeEventWritePathDisposition.TEST_LAB_ONLY
+    if path.endswith("runtime/events/runtime_event_history.py"):
+        return RuntimeEventWritePathDisposition.NON_EVENT_APPEND
+    if "tenant_id" not in callee_expr and "append" in callee_expr:
+        return RuntimeEventWritePathDisposition.NON_EVENT_APPEND
+    return RuntimeEventWritePathDisposition.UNCLASSIFIED
+
+
+@lru_cache(maxsize=1)
+def discover_runtime_event_persistence_call_sites() -> tuple[RuntimeEventPersistenceCallSite, ...]:
+    """AST scan for production ``.append(..., tenant_id=...)`` runtime-event persistence writes."""
+    discovered: list[RuntimeEventPersistenceCallSite] = []
+    for file_path in _iter_production_python_sources():
+        module_path = _repo_relative(file_path)
+        try:
+            source = file_path.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=module_path)
+        except (OSError, SyntaxError):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Attribute) or node.func.attr != "append":
+                continue
+            has_tenant_kw = any(kw.arg == "tenant_id" for kw in node.keywords)
+            if not has_tenant_kw:
+                continue
+            callee = _callee_expr(node)
+            qualname = _enclosing_qualname(tree, node.lineno)
+            disposition = _classify_runtime_event_append_call_site(module_path, qualname, callee)
+            discovered.append(
+                RuntimeEventPersistenceCallSite(
+                    module_path=module_path,
+                    lineno=node.lineno,
+                    qualname=qualname,
+                    callee_expr=callee,
+                    disposition=disposition,
+                )
+            )
+    return tuple(sorted(discovered, key=lambda s: (s.module_path, s.lineno)))
+
+
+_CANONICAL_COMPOSITION_ROOTS: Final = (
+    "intergrax/runtime/events/store.py",
+    "intergrax/runtime/persistence/integration_profile_wiring.py",
+    "intergrax/runtime/nexus/observability_wiring.py",
+    "intergrax/runtime/events/evidence_persistence_adapter.py",
+)
+
+
+def _composition_root_references_validating_wrapper(module_path: str) -> bool:
+    path = _REPO_ROOT / module_path
+    if not path.is_file():
+        return False
+    source = path.read_text(encoding="utf-8")
+    return (
+        "ValidatingRuntimeEventPersistence" in source
+        or "ValidatingEvidencePersistencePort" in source
+        or "resolve_runtime_event_persistence" in source
+        or "open_runtime_event_store_from_profile" in source
+    )
+
+
+def validate_canonical_production_guard_chains() -> tuple[str, ...]:
+    violations: list[str] = []
+    for root in _CANONICAL_COMPOSITION_ROOTS:
+        if not _composition_root_references_validating_wrapper(root):
+            violations.append(f"composition root missing validating wrapper reference: {root}")
+    return tuple(violations)
+
+
+def validate_production_persistence_call_site_classification(
+    call_sites: Iterable[RuntimeEventPersistenceCallSite] | None = None,
+) -> tuple[str, ...]:
+    violations: list[str] = []
+    sites = tuple(call_sites or discover_runtime_event_persistence_call_sites())
+    for site in sites:
+        if site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED:
+            violations.append(
+                f"unclassified persistence append {site.module_path}:{site.lineno} {site.callee_expr}"
+            )
+    return tuple(violations)
+
+
+def count_canonical_production_raw_store_bypasses(
+    call_sites: Iterable[RuntimeEventPersistenceCallSite] | None = None,
+) -> int:
+    """Production call sites that persist runtime events without validating disposition."""
+    sites = tuple(call_sites or discover_runtime_event_persistence_call_sites())
+    bypass = 0
+    for site in sites:
+        if site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED:
+            bypass += 1
+        if site.disposition == RuntimeEventWritePathDisposition.CANONICAL_VALIDATING_PATH:
+            continue
+        if site.disposition in (
+            RuntimeEventWritePathDisposition.RAW_BACKEND_INTERNAL,
+            RuntimeEventWritePathDisposition.TEST_LAB_ONLY,
+            RuntimeEventWritePathDisposition.NON_EVENT_APPEND,
+        ):
+            continue
+    return bypass
+
+
+def detect_raw_runtime_event_persistence_without_validator(
+    persistence: object,
+) -> tuple[str, ...]:
+    """Return violations when a composition root would expose unwrapped durable runtime-event persistence."""
+    if persistence is None:
+        return ()
+    if isinstance(persistence, ValidatingRuntimeEventPersistence):
+        return ()
+    append = getattr(persistence, "append", None)
+    if callable(append):
+        return ("raw RuntimeEventPersistence without ValidatingRuntimeEventPersistence",)
+    return ()
+
+
+def synthetic_canonical_composition_raw_store_bypass_probe() -> tuple[str, ...]:
+    """Adversarial: production composition exposing raw ``RuntimeEventPersistence`` without validator."""
+    from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+
+    return detect_raw_runtime_event_persistence_without_validator(InMemoryRuntimeEventStore())
+
+
+def validate_strict_write_policies_against_registry(
+    policies: Iterable[tuple[RuntimeEventType, RuntimeEventPayloadPolicyEntry]],
+    *,
+    registered_schema_ids: frozenset[str] | None = None,
+) -> tuple[str, ...]:
+    reg = registered_schema_ids or registered_canonical_payload_schema_ids()
+    violations: list[str] = []
+    for event_type, entry in policies:
+        if entry.write_mode == PayloadWriteMode.STRICT_SPINE_SCHEMA and entry.schema_id:
+            if entry.schema_id not in reg:
+                violations.append(
+                    f"strict policy {event_type.value} references unregistered {entry.schema_id!r}"
+                )
+    return tuple(violations)
+
+
+def synthetic_write_policy_unregistered_schema_probe() -> tuple[str, ...]:
+    """Probe I: inject write policy pointing at a schema id absent from the canonical registry."""
+    phantom_id = "phantom.compat_x_probe.write_policy.v1"
+    reg = registered_canonical_payload_schema_ids()
+    if phantom_id in reg:
+        return ("probe: phantom schema unexpectedly registered",)
+    synthetic_policy = (
+        (
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventPayloadPolicyEntry(
+                classification=RuntimeEventTypeClassification.CANONICAL_PRODUCTION,
+                write_mode=PayloadWriteMode.STRICT_SPINE_SCHEMA,
+                schema_id=phantom_id,
+            ),
+        ),
+    )
+    return validate_strict_write_policies_against_registry(synthetic_policy, registered_schema_ids=reg)
+
+
+def _payload_envelope_version_fail_closed_probe() -> tuple[str, ...]:
+    from intergrax.runtime.events.payload_registry import RuntimeEventPayloadError, validate_payload_envelope
+
+    failures: list[str] = []
+    base = {
+        "payload_schema_id": "tool.v1",
+        "data": {"tool_name": "t", "status": "requested"},
+    }
+    cases: list[tuple[str, dict[str, object]]] = [
+        ("missing_version", dict(base)),
+        ("wrong_numeric", {**base, "payload_schema_version": 99}),
+        ("wrong_type_str", {**base, "payload_schema_version": "1"}),
+        ("wrong_type_bool", {**base, "payload_schema_version": True}),
+        ("wrong_type_none", {**base, "payload_schema_version": None}),
+    ]
+    for label, envelope in cases:
+        try:
+            validate_payload_envelope(envelope)  # type: ignore[arg-type]
+        except RuntimeEventPayloadError:
+            continue
+        except Exception as exc:
+            failures.append(f"{label}: unexpected {type(exc).__name__}")
+        else:
+            failures.append(f"{label}: unexpected success")
+    return tuple(failures)
+
+
+def validate_payload_version_inventory_consistency(
+    inventory: EventEvolutionInventory | None = None,
+) -> tuple[str, ...]:
+    inv = inventory or event_evolution_inventory()
+    violations: list[str] = []
+    for family in inv.payload_families:
+        for version in family.versions:
+            payload_type = version.payload_type
+            if not getattr(payload_type, "schema_id", None):
+                violations.append(f"missing schema_id on {payload_type.__name__}")
+            class_version = getattr(payload_type, "schema_version", None)
+            if type(class_version) is not int:
+                violations.append(f"missing or non-int schema_version on {payload_type.__name__}")
+            elif version.payload_schema_version != class_version:
+                violations.append(
+                    f"inventory version mismatch for {payload_type.__name__}: "
+                    f"{version.payload_schema_version} vs class {class_version}"
+                )
+            if version.schema_id != payload_type.schema_id:
+                violations.append(
+                    f"inventory schema_id mismatch for {payload_type.__name__}: "
+                    f"{version.schema_id!r} vs {payload_type.schema_id!r}"
+                )
+    return tuple(violations)
+
+
 @lru_cache(maxsize=1)
 def event_evolution_inventory() -> EventEvolutionInventory:
     """Authoritative R3-P0 closed-world inventory (qualification evidence; not runtime authority)."""
@@ -356,11 +679,8 @@ def event_evolution_inventory() -> EventEvolutionInventory:
         payload_families=_build_payload_families(),
         extension_contract=_extension_contract(),
         owner_matrix=_owner_matrix(),
-        production_persistence_guard_paths=(
-            _VALIDATING_STORE,
-            "intergrax/runtime/events/store.py",
-            "intergrax/runtime/persistence/integration_profile_wiring.py",
-        ),
+        production_persistence_guard_paths=_CANONICAL_COMPOSITION_ROOTS,
+        production_persistence_call_sites=discover_runtime_event_persistence_call_sites(),
     )
 
 
@@ -546,6 +866,10 @@ def validate_inventory_closed_world(inventory: EventEvolutionInventory | None = 
     if any(_QUALIFICATION_PREFIX in row.semantic_owner_path for row in inv.owner_matrix):
         violations.append("qualification module listed as semantic version owner")
 
+    violations.extend(validate_payload_version_inventory_consistency(inv))
+    violations.extend(validate_production_persistence_call_site_classification(inv.production_persistence_call_sites))
+    violations.extend(validate_canonical_production_guard_chains())
+
     return tuple(violations)
 
 
@@ -572,6 +896,52 @@ def synthetic_inventory_phantom_schema_id() -> str:
     return "phantom.compat_x_probe.nonexistent.v1"
 
 
+def synthetic_inventory_phantom_schema_row_probe() -> tuple[str, ...]:
+    """Probe B (adversarial): closed-world validator must reject phantom inventory row."""
+    phantom_id = synthetic_inventory_phantom_schema_id()
+    inv = event_evolution_inventory()
+    phantom_record = EventPayloadVersionRecord(
+        payload_type=ToolPayloadV1,
+        schema_id=phantom_id,
+        payload_schema_version=int(ToolPayloadV1.schema_version),
+        compatibility_disposition=EventCompatibilityDisposition.SUPPORTED_READ_ONLY,
+        migration_required=False,
+        adaptation_required=False,
+    )
+    mutated_families: list[EventPayloadEvolutionFamily] = []
+    injected = False
+    for family in inv.payload_families:
+        if family.family_id == "tool":
+            mutated_families.append(
+                EventPayloadEvolutionFamily(
+                    family_id=family.family_id,
+                    versions=family.versions + (phantom_record,),
+                    semantic_owner_path=family.semantic_owner_path,
+                    composition_owner_path=family.composition_owner_path,
+                    compatibility_semantics_owner_path=family.compatibility_semantics_owner_path,
+                    allows_multiple_active_write_versions=family.allows_multiple_active_write_versions,
+                    notes=family.notes,
+                )
+            )
+            injected = True
+        else:
+            mutated_families.append(family)
+    if not injected:
+        return ("probe: could not inject phantom row into tool family",)
+    probe_inv = EventEvolutionInventory(
+        envelope_records=inv.envelope_records,
+        payload_families=tuple(mutated_families),
+        extension_contract=inv.extension_contract,
+        owner_matrix=inv.owner_matrix,
+        production_persistence_guard_paths=inv.production_persistence_guard_paths,
+        production_persistence_call_sites=inv.production_persistence_call_sites,
+    )
+    violations = validate_inventory_closed_world(probe_inv)
+    if violations:
+        return violations
+    return ("probe: phantom inventory row did not fail closed",)
+
+
 def synthetic_two_current_write_versions_for_family() -> tuple[str, ...]:
     """Probe C: family with two active writes when disallowed."""
     inv = event_evolution_inventory()
@@ -582,6 +952,7 @@ def synthetic_two_current_write_versions_for_family() -> tuple[str, ...]:
                 EventPayloadVersionRecord(
                     payload_type=v.payload_type,
                     schema_id=v.schema_id,
+                    payload_schema_version=v.payload_schema_version,
                     compatibility_disposition=EventCompatibilityDisposition.CURRENT_WRITE_AND_READ,
                     migration_required=False,
                     adaptation_required=False,
@@ -606,6 +977,7 @@ def synthetic_two_current_write_versions_for_family() -> tuple[str, ...]:
         extension_contract=inv.extension_contract,
         owner_matrix=inv.owner_matrix,
         production_persistence_guard_paths=inv.production_persistence_guard_paths,
+        production_persistence_call_sites=inv.production_persistence_call_sites,
     )
     return validate_inventory_closed_world(probe_inv)
 
@@ -629,6 +1001,7 @@ def synthetic_undispositioned_historical_version() -> tuple[str, ...]:
                 EventPayloadVersionRecord(
                     payload_type=version.payload_type,
                     schema_id=version.schema_id,
+                    payload_schema_version=version.payload_schema_version,
                     compatibility_disposition=disp,
                     migration_required=version.migration_required,
                     adaptation_required=version.adaptation_required,
@@ -650,6 +1023,7 @@ def synthetic_undispositioned_historical_version() -> tuple[str, ...]:
         extension_contract=inv.extension_contract,
         owner_matrix=inv.owner_matrix,
         production_persistence_guard_paths=inv.production_persistence_guard_paths,
+        production_persistence_call_sites=inv.production_persistence_call_sites,
     )
     return validate_inventory_closed_world(probe_inv)
 
@@ -669,8 +1043,24 @@ def synthetic_second_evolution_authority_owner() -> tuple[str, ...]:
         extension_contract=inv.extension_contract,
         owner_matrix=inv.owner_matrix + (extra_row,),
         production_persistence_guard_paths=inv.production_persistence_guard_paths,
+        production_persistence_call_sites=inv.production_persistence_call_sites,
     )
     return validate_inventory_closed_world(probe_inv)
+
+
+def event_evolution_r3_p0_gate_passes() -> tuple[bool, tuple[str, ...]]:
+    """
+    Combined R3-P0 closure verdict (qualification authority; not runtime enforcement).
+
+    Requires inventory closed-world, payload version contract, envelope fail-closed probes,
+    mechanical persistence discovery classification, and canonical composition guard evidence.
+    """
+    violations: list[str] = list(validate_inventory_closed_world())
+    violations.extend(_payload_envelope_version_fail_closed_probe())
+    violations.extend(validate_strict_write_policies_against_registry(iter_runtime_event_payload_policies()))
+    if count_canonical_production_raw_store_bypasses() != 0:
+        violations.append("canonical production persistence call sites include unclassified writes")
+    return (not violations, tuple(violations))
 
 
 def probe_extension_duplicate_canonical_override() -> str | None:
@@ -699,17 +1089,29 @@ __all__ = [
     "EventPayloadVersionRecord",
     "EventVersionDisposition",
     "ExtensionEventEvolutionContract",
+    "RuntimeEventPersistenceCallSite",
+    "RuntimeEventWritePathDisposition",
     "compute_event_evolution_r3_p0_metrics",
+    "count_canonical_production_raw_store_bypasses",
+    "detect_raw_runtime_event_persistence_without_validator",
+    "discover_runtime_event_persistence_call_sites",
     "envelope_fail_closed_probes",
     "event_evolution_inventory",
+    "event_evolution_r3_p0_gate_passes",
     "inventory_payload_schema_ids",
     "probe_extension_duplicate_canonical_override",
     "registered_canonical_payload_schema_ids",
+    "synthetic_canonical_composition_raw_store_bypass_probe",
     "synthetic_inventory_missing_classification",
     "synthetic_inventory_phantom_schema_id",
+    "synthetic_inventory_phantom_schema_row_probe",
     "synthetic_second_evolution_authority_owner",
     "synthetic_two_current_write_versions_for_family",
     "synthetic_undispositioned_historical_version",
+    "synthetic_write_policy_unregistered_schema_probe",
+    "validate_canonical_production_guard_chains",
     "validate_inventory_closed_world",
     "validate_inventory_closed_world_for_extra_class",
+    "validate_production_persistence_call_site_classification",
+    "validate_strict_write_policies_against_registry",
 ]

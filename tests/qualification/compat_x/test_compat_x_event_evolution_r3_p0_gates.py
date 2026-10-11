@@ -21,19 +21,28 @@ from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY, validate_
 
 from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     EventCompatibilityDisposition,
+    RuntimeEventWritePathDisposition,
     compute_event_evolution_r3_p0_metrics,
+    count_canonical_production_raw_store_bypasses,
+    discover_runtime_event_persistence_call_sites,
     envelope_fail_closed_probes,
     event_evolution_inventory,
+    event_evolution_r3_p0_gate_passes,
     inventory_payload_schema_ids,
     probe_extension_duplicate_canonical_override,
     registered_canonical_payload_schema_ids,
+    synthetic_canonical_composition_raw_store_bypass_probe,
     synthetic_inventory_missing_classification,
     synthetic_inventory_phantom_schema_id,
+    synthetic_inventory_phantom_schema_row_probe,
     synthetic_second_evolution_authority_owner,
     synthetic_two_current_write_versions_for_family,
     synthetic_undispositioned_historical_version,
+    synthetic_write_policy_unregistered_schema_probe,
+    validate_canonical_production_guard_chains,
     validate_inventory_closed_world,
     validate_inventory_closed_world_for_extra_class,
+    validate_production_persistence_call_site_classification,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
@@ -142,7 +151,11 @@ def test_cx_r3_p0_q10_envelope_missing_unknown_fail_closed() -> None:
 def test_cx_r3_p0_q11_unknown_payload_schema_fail_closed() -> None:
     with pytest.raises(UnknownPayloadSchemaError):
         validate_payload_envelope(
-            {"payload_schema_id": "unknown.compat_x_probe.v1", "data": {}}
+            {
+                "payload_schema_id": "unknown.compat_x_probe.v1",
+                "payload_schema_version": 1,
+                "data": {},
+            }
         )
 
 
@@ -187,6 +200,9 @@ def test_cx_r3_p0_probe_a_unclassified_payload_fails() -> None:
 def test_cx_r3_p0_probe_b_phantom_schema_not_in_registry() -> None:
     phantom = synthetic_inventory_phantom_schema_id()
     assert phantom not in registered_canonical_payload_schema_ids()
+    violations = synthetic_inventory_phantom_schema_row_probe()
+    assert violations
+    assert not any("did not fail closed" in v for v in violations)
 
 
 def test_cx_r3_p0_probe_c_two_current_writes_disallowed_family_fails() -> None:
@@ -231,7 +247,9 @@ def test_cx_r3_p0_probe_f_runtime_event_v1_fail_closed() -> None:
 
 def test_cx_r3_p0_probe_g_unknown_payload_fail_closed() -> None:
     with pytest.raises(UnknownPayloadSchemaError):
-        validate_payload_envelope({"payload_schema_id": "nope.v1", "data": {}})
+        validate_payload_envelope(
+            {"payload_schema_id": "nope.v1", "payload_schema_version": 1, "data": {}}
+        )
 
 
 def test_cx_r3_p0_probe_h_extension_duplicate_id() -> None:
@@ -239,12 +257,9 @@ def test_cx_r3_p0_probe_h_extension_duplicate_id() -> None:
 
 
 def test_cx_r3_p0_probe_i_write_policy_unregistered_schema_detection() -> None:
-    violations = validate_inventory_closed_world()
-    reg = registered_canonical_payload_schema_ids()
-    for event_type, entry in iter_runtime_event_payload_policies():
-        if entry.schema_id and entry.schema_id not in reg:
-            pytest.fail(f"policy {event_type.value} -> {entry.schema_id}")
-    assert not violations
+    violations = synthetic_write_policy_unregistered_schema_probe()
+    assert violations
+    assert any("unregistered" in v for v in violations)
 
 
 def test_cx_r3_p0_probe_j_second_evolution_authority_fails() -> None:
@@ -259,3 +274,35 @@ def test_cx_r3_p0_metrics_snapshot() -> None:
     assert metrics.multi_version_family_count == 2
     assert metrics.strict_production_write_policies == len(RuntimeEventType) - 1
     assert metrics.extension_event_kind_policies == 1
+
+
+def test_cx_r3_p0_payload_version_explicit_in_inventory() -> None:
+    inv = event_evolution_inventory()
+    for family in inv.payload_families:
+        for version in family.versions:
+            assert version.payload_schema_version == int(version.payload_type.schema_version)
+
+
+def test_cx_r3_p0_mechanical_persistence_discovery_classified() -> None:
+    sites = discover_runtime_event_persistence_call_sites()
+    assert sites
+    assert validate_production_persistence_call_site_classification(sites) == ()
+    assert count_canonical_production_raw_store_bypasses(sites) == 0
+    assert all(
+        site.disposition != RuntimeEventWritePathDisposition.UNCLASSIFIED for site in sites
+    )
+
+
+def test_cx_r3_p0_canonical_composition_guard_chains() -> None:
+    assert validate_canonical_production_guard_chains() == ()
+
+
+def test_cx_r3_p0_probe_bypass_raw_store_without_validator() -> None:
+    violations = synthetic_canonical_composition_raw_store_bypass_probe()
+    assert violations
+    assert any("ValidatingRuntimeEventPersistence" in v for v in violations)
+
+
+def test_cx_r3_p0_combined_gate_passes() -> None:
+    passed, violations = event_evolution_r3_p0_gate_passes()
+    assert passed, violations

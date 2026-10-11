@@ -179,7 +179,11 @@ def test_cx_p0_r1_adversarial_04_unknown_runtime_schema_version_rejected() -> No
 def test_cx_p0_r1_adversarial_05_unknown_event_payload_rejected() -> None:
     with pytest.raises(UnknownPayloadSchemaError):
         validate_payload_envelope(
-            {"payload_schema_id": "synthetic.unknown.event.probe", "data": {}}
+            {
+                "payload_schema_id": "synthetic.unknown.event.probe",
+                "payload_schema_version": 1,
+                "data": {},
+            }
         )
 
 
