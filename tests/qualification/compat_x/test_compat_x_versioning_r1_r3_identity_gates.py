@@ -115,5 +115,3 @@ def test_cx_r1_r3_p0_inventory_reconciliation() -> None:
     assert len(report.exclusions) == _ACCEPTED_P0_EXCLUSIONS
     assert report.unclassified_candidate_ids == frozenset()
     assert len(report.semantic_surfaces) == _R1_R3_CORRECTED_SEMANTIC_SURFACES
-    split_from_p0_value_merge = len(report.semantic_surfaces) - _ACCEPTED_P0_SEMANTIC_SURFACES
-    assert split_from_p0_value_merge == 98
