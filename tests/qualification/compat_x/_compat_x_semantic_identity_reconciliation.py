@@ -25,18 +25,16 @@ ACCEPTED_P0_RAW_CANDIDATES = 7294
 ACCEPTED_P0_SEMANTIC_SURFACES = 1902
 ACCEPTED_P0_EXCLUSIONS = 5294
 
-# Mechanical closed-world acceptance of historical P0 raw count (COMPAT-X R3-P0-R1 @ 0e5262199…).
+# Mechanical closed-world acceptance of historical P0 inventory and fingerprint provenance
+# (COMPAT-X R3-P0-R1 @ 0e5262199…; git-archive snapshot, historical discovery only).
 ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA = (
     "0e5262199a6c2f1737cf8ff48def53945ec02974"
 )
-# Frozen SHA-256 of sorted historical raw candidate_id set (7294) at lineage head immediately
-# before COMPAT-X-R3-R1 final reconciliation proof (remainder equals current HEAD minus R3).
-ACCEPTED_P0_RAW_CANDIDATE_IDS_FINGERPRINT_SOURCE_SHA = (
-    "59afe830ddd765d9ad3d30ce77202d22184f3a97"
-)
-# UTF-8 newline-joined sorted(candidate_id) → SHA-256 hex (see candidate_id_fingerprint).
-ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256 = (
-    "bd2d065ad8730f0079885a189fb1cf4b22fcabe920267aec777b8db2c624878c"
+# UTF-8 newline-joined sorted(stable_inventory_candidate_identity) → SHA-256 hex
+# (see inventory_identity_fingerprint). Frozen from historical raw_candidates at
+# ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA (7294 unique stable inventory identities).
+ACCEPTED_P0_STABLE_INVENTORY_SHA256 = (
+    "7a39eec8a37f4af21d9a6aca90981a4e6f5ed83fcdbb5feb5cea633efc52ca80"
 )
 
 # Current-head closed-world inventory after COMPAT-X-R3 envelope version authority (lineage preserved above).
@@ -63,6 +61,52 @@ def candidate_id_fingerprint(candidate_ids: Iterable[str]) -> str:
     """Deterministic SHA-256 over UTF-8 newline-joined sorted unique candidate_id strings."""
     normalized = "\n".join(sorted(set(candidate_ids)))
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def stable_inventory_candidate_identity(candidate: DiscoveryCandidate) -> str:
+    """Qualification-only stable key for closed-world inventory equivalence (raw inventory row)."""
+    if candidate.discovery_kind == "wire.persistence":
+        return candidate.semantic_identity
+    return candidate.candidate_id
+
+
+def inventory_identity_fingerprint(identities: Iterable[str]) -> str:
+    """SHA-256 over UTF-8 newline-joined sorted unique stable inventory identity strings."""
+    normalized = "\n".join(sorted(set(identities)))
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def stable_inventory_identity_set(
+    candidates: Iterable[DiscoveryCandidate],
+) -> frozenset[str]:
+    return frozenset(stable_inventory_candidate_identity(c) for c in candidates)
+
+
+def assert_stable_inventory_identity_bijection(
+    candidates: tuple[DiscoveryCandidate, ...] | list[DiscoveryCandidate],
+) -> None:
+    """Fail closed if stable inventory normalization collapses distinct raw candidates."""
+    identities = [stable_inventory_candidate_identity(c) for c in candidates]
+    if len(identities) != len(set(identities)):
+        raise AssertionError("QUALIFICATION IDENTITY COLLISION")
+
+
+def _remainder_candidates_minus_r3(
+    report: ClosedWorldReport,
+) -> tuple[DiscoveryCandidate, ...]:
+    return tuple(
+        c
+        for c in report.raw_candidates
+        if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
+    )
+
+
+def _remainder_stable_inventory_fingerprint(report: ClosedWorldReport) -> str:
+    remainder = _remainder_candidates_minus_r3(report)
+    assert_stable_inventory_identity_bijection(remainder)
+    return inventory_identity_fingerprint(
+        stable_inventory_candidate_identity(c) for c in remainder
+    )
 
 
 _NON_CLASS_FIELD_KINDS_PRESERVED: frozenset[str] = frozenset(
@@ -483,9 +527,9 @@ class CurrentHeadCompatInventoryDelta:
 
 def _historical_remainder_fingerprint_mismatch_message(observed: str) -> str:
     return (
-        "current-minus-R3 candidate_id fingerprint "
-        f"{observed} != accepted historical {ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256} "
-        f"(source {ACCEPTED_P0_RAW_CANDIDATE_IDS_FINGERPRINT_SOURCE_SHA})"
+        "current-minus-R3 stable inventory fingerprint "
+        f"{observed} != accepted historical {ACCEPTED_P0_STABLE_INVENTORY_SHA256} "
+        f"(source {ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA})"
     )
 
 
@@ -507,14 +551,19 @@ def prove_r3_runtime_event_schema_version_inventory_delta(
     r3_id = R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
     if r3_id not in current_ids:
         violations.append("R3 RUNTIME_EVENT_SCHEMA_VERSION candidate missing from inventory")
-    remainder = current_ids - {r3_id}
-    if len(remainder) != ACCEPTED_P0_RAW_CANDIDATES:
+    remainder_candidates = _remainder_candidates_minus_r3(report)
+    if len(remainder_candidates) != ACCEPTED_P0_RAW_CANDIDATES:
         violations.append(
-            f"current-minus-R3 raw count {len(remainder)} != "
+            f"current-minus-R3 raw count {len(remainder_candidates)} != "
             f"historical accepted {ACCEPTED_P0_RAW_CANDIDATES}",
         )
-    remainder_fp = candidate_id_fingerprint(remainder)
-    if remainder_fp != ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256:
+    try:
+        assert_stable_inventory_identity_bijection(remainder_candidates)
+    except AssertionError:
+        violations.append("QUALIFICATION IDENTITY COLLISION")
+        return tuple(violations)
+    remainder_fp = _remainder_stable_inventory_fingerprint(report)
+    if remainder_fp != ACCEPTED_P0_STABLE_INVENTORY_SHA256:
         violations.append(_historical_remainder_fingerprint_mismatch_message(remainder_fp))
     return tuple(violations)
 
@@ -526,8 +575,7 @@ def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompat
     if violations:
         raise AssertionError("; ".join(violations))
     current_ids = {c.candidate_id for c in report.raw_candidates}
-    remainder = current_ids - {R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID}
-    remainder_fp = candidate_id_fingerprint(remainder)
+    remainder_fp = _remainder_stable_inventory_fingerprint(report)
     return CurrentHeadCompatInventoryDelta(
         historical_accepted_raw_candidates=ACCEPTED_P0_RAW_CANDIDATES,
         current_raw_candidates=len(current_ids),
@@ -536,7 +584,7 @@ def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompat
         r3_reconciled_candidate_id=R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,
         r3_reconciled_semantic_identity=R3_RUNTIME_EVENT_SCHEMA_VERSION_SEMANTIC_IDENTITY,
         r3_reconciliation_lineage_head_sha=R3_RECONCILIATION_LINEAGE_HEAD_SHA,
-        historical_remainder_fingerprint=ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256,
+        historical_remainder_fingerprint=ACCEPTED_P0_STABLE_INVENTORY_SHA256,
         current_remainder_fingerprint=remainder_fp,
     )
 
@@ -617,6 +665,55 @@ def build_synthetic_r3_inventory_hidden_removal_report() -> ClosedWorldReport:
     return _closed_world_report_with_substituted_raw_candidates(tuple(raw))
 
 
+RUNTIME_EVENT_MODEL_VALIDATE_STABLE_IDENTITY = (
+    "wire:intergrax/contracts/runtime_event.py:module_level:model_validate:1"
+)
+RUNTIME_EVENT_MODEL_VALIDATE_HISTORICAL_CANDIDATE_ID = (
+    "wire.intergrax.contracts.runtime_event.py::module_level.model_validate:150:1"
+)
+RUNTIME_EVENT_MODEL_VALIDATE_CURRENT_CANDIDATE_ID = (
+    "wire.intergrax.contracts.runtime_event.py::module_level.model_validate:149:1"
+)
+
+
+def synthetic_wire_persistence_lineno_only_pair() -> tuple[DiscoveryCandidate, DiscoveryCandidate]:
+    """Probe T: wire.persistence candidates differing only in embedded source lineno."""
+    semantic = RUNTIME_EVENT_MODEL_VALIDATE_STABLE_IDENTITY
+    base = {
+        "path": "intergrax/contracts/runtime_event.py",
+        "discovery_kind": "wire.persistence",
+        "discovered_signal": "wire.persistence.probe",
+        "semantic_identity": semantic,
+        "current_version": None,
+        "version_source": "intergrax/contracts/runtime_event.py:probe",
+    }
+    old = DiscoveryCandidate(
+        candidate_id=RUNTIME_EVENT_MODEL_VALIDATE_HISTORICAL_CANDIDATE_ID,
+        **base,
+    )
+    new = DiscoveryCandidate(
+        candidate_id=RUNTIME_EVENT_MODEL_VALIDATE_CURRENT_CANDIDATE_ID,
+        **base,
+    )
+    return old, new
+
+
+def synthetic_wire_persistence_semantic_variant(
+    *,
+    semantic_identity: str,
+    candidate_id: str,
+) -> DiscoveryCandidate:
+    return DiscoveryCandidate(
+        candidate_id=candidate_id,
+        path="intergrax/contracts/runtime_event.py",
+        discovery_kind="wire.persistence",
+        discovered_signal="wire.persistence.semantic_probe",
+        semantic_identity=semantic_identity,
+        current_version=None,
+        version_source="intergrax/contracts/runtime_event.py:probe",
+    )
+
+
 def build_synthetic_r3_inventory_balanced_add_remove_report() -> ClosedWorldReport:
     """Probe S: R3 retained, distinct historical removal + synthetic addition (net count 7295)."""
     base = build_closed_world_report()
@@ -659,6 +756,13 @@ def validate_current_head_compat_closed_world_inventory(
         violations.append(
             f"unclassified COMPAT candidates ({len(closed.unclassified_candidate_ids)})",
         )
+    raw_ids = [c.candidate_id for c in closed.raw_candidates]
+    if len(raw_ids) != len(set(raw_ids)):
+        violations.append("duplicate candidate_id in closed-world raw inventory")
+    try:
+        assert_stable_inventory_identity_bijection(closed.raw_candidates)
+    except AssertionError:
+        violations.append("duplicate stable inventory identities in raw inventory")
     identities = [s.semantic_identity for s in closed.semantic_surfaces]
     if len(identities) != len(set(identities)):
         violations.append("duplicate COMPAT semantic surface owners")
