@@ -16,9 +16,9 @@ from tests.qualification.compat_x._compat_x_types import DiscoveryCandidate
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
-_ACCEPTED_P0_SEMANTIC_SURFACES = 1879
-_ACCEPTED_P0_RAW_CANDIDATES = 7266
-_ACCEPTED_P0_EXCLUSIONS = 5289
+_ACCEPTED_P0_SEMANTIC_SURFACES = 1895
+_ACCEPTED_P0_RAW_CANDIDATES = 7277
+_ACCEPTED_P0_EXCLUSIONS = 5284
 # Contract-specific class.field identities split 98 erroneous accepted-P0 value-based merges.
 _R1_R3_CORRECTED_SEMANTIC_SURFACES = _ACCEPTED_P0_SEMANTIC_SURFACES + 98
 

@@ -14,7 +14,9 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from intergrax.contracts.idempotency_store import (
+    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
     assert_operation_identity_compatible,
+    assert_tool_idempotency_ledger_schema_version,
     ClaimOutcome,
     ClaimResult,
     IdempotencyStore,
@@ -61,6 +63,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     fence INTEGER NOT NULL DEFAULT 0,
                     operation_tool_id TEXT,
                     operation_fingerprint TEXT,
+                    schema_version TEXT,
                     PRIMARY KEY (tenant_id, key)
                 )
                 """
@@ -98,6 +101,14 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     "ALTER TABLE idempotency_ledger "
                     "ADD COLUMN external_effect_may_have_started INTEGER NOT NULL DEFAULT 0",
                 )
+            if "schema_version" not in columns:
+                conn.execute(
+                    "ALTER TABLE idempotency_ledger ADD COLUMN schema_version TEXT"
+                )
+
+    @staticmethod
+    def _require_ledger_schema(row: sqlite3.Row) -> None:
+        assert_tool_idempotency_ledger_schema_version(row["schema_version"])
 
     def _row_to_claim(
         self,
@@ -137,13 +148,14 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT status FROM idempotency_ledger
+                SELECT status, schema_version FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
                 (tenant_id, key),
             ).fetchone()
         if row is None:
             return None
+        self._require_ledger_schema(row)
         return InvocationStatus(row["status"])
 
     def claim(
@@ -161,7 +173,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
             row = conn.execute(
                 """
                 SELECT status, result_blob, owner_id, lease_expires_at, fence,
-                       operation_tool_id, operation_fingerprint
+                       operation_tool_id, operation_fingerprint, schema_version
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
@@ -181,8 +193,8 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     """
                     INSERT INTO idempotency_ledger
                         (tenant_id, key, status, owner_id, lease_expires_at, fence,
-                         operation_tool_id, operation_fingerprint)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                         operation_tool_id, operation_fingerprint, schema_version)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         tenant_id,
@@ -197,11 +209,13 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                             if operation_identity
                             else None
                         ),
+                        SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
                     ),
                 )
                 conn.commit()
                 return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=claim)
 
+            self._require_ledger_schema(row)
             status = InvocationStatus(row["status"])
             if status == InvocationStatus.COMPLETED:
                 assert_operation_identity_compatible(
@@ -381,7 +395,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT external_effect_may_have_started
+                SELECT external_effect_may_have_started, schema_version
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
@@ -389,6 +403,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
             ).fetchone()
         if row is None:
             return False
+        self._require_ledger_schema(row)
         return bool(row["external_effect_may_have_started"])
 
     def admit_external_effect_may_have_started_with_claim(
@@ -464,12 +479,14 @@ class SQLiteIdempotencyStore(IdempotencyStore):
             row = conn.execute(
                 """
                 SELECT status, operation_tool_id, operation_fingerprint,
-                       external_effect_may_have_started
+                       external_effect_may_have_started, schema_version
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
                 (tenant_id, key),
             ).fetchone()
+            if row is not None:
+                self._require_ledger_schema(row)
             if (
                 row is None
                 or InvocationStatus(row["status"]) is not InvocationStatus.STARTED
@@ -522,7 +539,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 """
-                SELECT owner_id, lease_expires_at, fence
+                SELECT owner_id, lease_expires_at, fence, schema_version
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ? AND status = ?
                 """,
@@ -531,6 +548,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
             if row is None:
                 conn.rollback()
                 raise RuntimeError("Invalid state transition to COMPLETED.")
+            self._require_ledger_schema(row)
             claim = InvocationClaim(
                 tenant_id=tenant_id,
                 key=key,
@@ -549,7 +567,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT status, result_blob
+                SELECT status, result_blob, schema_version
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
@@ -558,6 +576,8 @@ class SQLiteIdempotencyStore(IdempotencyStore):
 
         if row is None:
             return None
+
+        self._require_ledger_schema(row)
 
         if row["status"] != InvocationStatus.COMPLETED.value:
             return None

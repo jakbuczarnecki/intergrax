@@ -130,7 +130,7 @@ def test_cx_r2_p0_mechanical_discovery_closed_world_counts() -> None:
 
 def test_cx_r2_p0_sqlite_contract_authority_gap() -> None:
     evidence = build_contract_authority_durability_evidence()
-    assert evidence.in_scope_blocker
+    assert not evidence.in_scope_blocker
 
 
 def test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present() -> None:
@@ -147,7 +147,7 @@ def test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged() -> None:
         for f in PERSISTED_SCHEMA_FAMILIES
         if f.version_disposition == PersistedVersionDisposition.MISSING_VERSION
     ]
-    assert any(f.family_id == "agent_distribution.agent_artifact_metadata" for f in missing)
+    assert missing == []
 
 
 def test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision() -> None:
@@ -184,7 +184,7 @@ def test_cx_r2_p0_adversarial_h_container_not_payload_version() -> None:
         if f.family_id == "agent_distribution.agent_artifact_metadata"
     )
     assert container.version_disposition == PersistedVersionDisposition.STORE_CONTAINER_VERSION
-    assert payload.version_disposition == PersistedVersionDisposition.MISSING_VERSION
+    assert payload.version_disposition == PersistedVersionDisposition.EXPLICIT_PAYLOAD_VERSION
 
 
 def test_cx_r2_p0_adversarial_i_envelope_inheritance() -> None:
@@ -264,11 +264,8 @@ def test_cx_r2_p0_r2_production_module_scan_non_zero() -> None:
     assert len(iter_production_python_modules()) > 0
 
 
-def test_cx_r2_p0_remediation_waves_non_empty_r2_r1() -> None:
+def test_cx_r2_p0_remediation_waves_r2_r2_has_migration_items() -> None:
     waves = persisted_r2_remediation_waves()
     assert waves[0].wave_id == "COMPAT-X-R2-R1"
-    assert len(waves[0].items) >= 1
-    assert any(
-        item.family_id == "agent_distribution.package_agent_contract_authority_record"
-        for item in waves[0].items
-    )
+    assert waves[1].wave_id == "COMPAT-X-R2-R2"
+    assert len(waves[1].items) >= 1

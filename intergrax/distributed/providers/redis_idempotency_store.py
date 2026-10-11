@@ -19,6 +19,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from intergrax.contracts.idempotency_store import (
+    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
     ClaimOutcome,
     ClaimResult,
     IdempotencyOperationConflictError,
@@ -27,6 +28,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationOperationIdentity,
     InvocationStatus,
     PreEffectSuspendedWorkRecoveryAuthority,
+    assert_tool_idempotency_ledger_schema_version,
     validate_pre_effect_recovery_authority,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
@@ -68,7 +70,9 @@ class RedisIdempotencyStore(IdempotencyStore):
             local function identity_matches()
                 local stored_tool = redis.call("HGET", KEYS[1], "operation_tool_id")
                 local stored_fp = redis.call("HGET", KEYS[1], "operation_fingerprint")
-                if not stored_tool and not stored_fp and op_tool == "" and op_fp == "" then
+                if (not stored_tool or stored_tool == "")
+                    and (not stored_fp or stored_fp == "")
+                    and op_tool == "" and op_fp == "" then
                     return true
                 end
                 if not stored_tool or not stored_fp or op_tool == "" or op_fp == "" then
@@ -86,8 +90,14 @@ class RedisIdempotencyStore(IdempotencyStore):
                     "fence", "1",
                     "operation_tool_id", op_tool,
                     "operation_fingerprint", op_fp,
-                    "external_effect_may_have_started", "0")
+                    "external_effect_may_have_started", "0",
+                    "schema_version", "tool_idempotency_ledger.v1")
                 return {"1", ARGV[1], ARGV[2], "1", ""}
+            end
+
+            local schema_version = redis.call("HGET", KEYS[1], "schema_version")
+            if not schema_version or schema_version ~= "tool_idempotency_ledger.v1" then
+                return {"6", "", "", "", ""}
             end
 
             if status == "completed" then
@@ -195,7 +205,10 @@ class RedisIdempotencyStore(IdempotencyStore):
             if redis.call("EXISTS", KEYS[1]) == 1 then
                 return 0
             end
-            redis.call("HSET", KEYS[1], "status", "started", "fence", "1")
+            redis.call("HSET", KEYS[1],
+                "status", "started",
+                "fence", "1",
+                "schema_version", "tool_idempotency_ledger.v1")
             if ARGV[1] ~= "" then
                 redis.call("EXPIRE", KEYS[1], tonumber(ARGV[1]))
             end
@@ -302,6 +315,17 @@ class RedisIdempotencyStore(IdempotencyStore):
             return value.decode("utf-8")
         return str(value)
 
+    def _require_ledger_schema_hash(self, data: dict[Any, Any]) -> None:
+        if not data:
+            return
+        raw = data.get(b"schema_version")
+        if raw is None:
+            raw = data.get("schema_version")
+        schema_version = self._decode(raw) if raw is not None else None
+        assert_tool_idempotency_ledger_schema_version(
+            schema_version if schema_version else None
+        )
+
     @staticmethod
     def _operation_args(
         operation_identity: InvocationOperationIdentity | None,
@@ -360,6 +384,8 @@ class RedisIdempotencyStore(IdempotencyStore):
             raise IdempotencyOperationConflictError(
                 "Idempotency key is bound to a different logical operation.",
             )
+        if outcome_code == "6":
+            assert_tool_idempotency_ledger_schema_version(None)
         return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
 
     def complete_with_claim(
@@ -499,10 +525,14 @@ class RedisIdempotencyStore(IdempotencyStore):
         data = self._redis.hgetall(ledger_key)
         if not data:
             raise RuntimeError("Invalid state transition")
+        self._require_ledger_schema_hash(data)
         owner_id = self._decode(data.get(b"owner_id", b""))
         lease_raw = data.get(b"lease_expires_at")
         fence_raw = data.get(b"fence", b"1")
         if not owner_id or lease_raw is None:
+            raise RuntimeError("Invalid state transition")
+        status = self._decode(data.get(b"status", b""))
+        if status != InvocationStatus.STARTED.value:
             raise RuntimeError("Invalid state transition")
         claim = InvocationClaim(
             tenant_id=tenant_id,
@@ -525,7 +555,11 @@ class RedisIdempotencyStore(IdempotencyStore):
         key: str,
     ) -> Optional[InvocationStatus]:
         ledger_key = self._ledger_key(tenant_id, key)
-        status = self._redis.hget(ledger_key, "status")
+        data = self._redis.hgetall(ledger_key)
+        if not data:
+            return None
+        self._require_ledger_schema_hash(data)
+        status = data.get(b"status")
         if status is None:
             return None
         status_value = self._decode(status)
@@ -543,6 +577,7 @@ class RedisIdempotencyStore(IdempotencyStore):
         data = self._redis.hgetall(ledger_key)
         if not data:
             return None
+        self._require_ledger_schema_hash(data)
         status = data.get(b"status")
         if status is None:
             return None

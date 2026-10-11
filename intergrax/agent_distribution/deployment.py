@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Protocol
+from typing import Final, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -15,6 +15,8 @@ from intergrax.agent_distribution.materialization import MaterializationOutput
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision
 
 _NON_EMPTY = Field(min_length=1)
+
+SCHEMA_DEPLOYMENT_INSTANCE_RECORD_V1: Final = "deployment_instance_record.v1"
 
 
 def _strip_required(value: str) -> str:
@@ -40,6 +42,7 @@ class DeploymentInstanceRecord(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: str = SCHEMA_DEPLOYMENT_INSTANCE_RECORD_V1
     runtime_revision_id: str = _NON_EMPTY
     application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY

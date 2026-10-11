@@ -35,6 +35,8 @@ _MODULE_FAMILY_ANCHOR: dict[str, str] = {
     "intergrax/runtime/long_running/models.py": "runtime.task_checkpoint",
     "intergrax/runtime/events/stores/document_backed_runtime_event_store.py": "runtime.runtime_event",
     "intergrax/applications/_shared/registry_snapshot_store.py": "applications.registry_snapshot",
+    "intergrax/applications/_shared/registry_snapshot_persistence.py": "applications.registry_snapshot",
+    "intergrax/memory/conversational_memory_persistence.py": "memory.conversational_turn",
     "intergrax/runtime/task_memory/stores/sqlite_task_memory_store.py": "runtime.task_memory_record",
     "intergrax/memory/stores/sqlite_user_profile_store.py": "memory.user_profile",
     "intergrax/memory/stores/sqlite_conversational_memory_store.py": "memory.conversational_turn",
@@ -68,6 +70,7 @@ _AD_TABLE_FAMILY: dict[str, str] = {
     "deployment_instances": "agent_distribution.deployment_instance_record",
     "serving_records": "agent_distribution.application_environment_serving_record",
     "projection_descriptors": "agent_distribution.runtime_registry_projection_descriptor",
+    "package_contract_authority": "agent_distribution.package_agent_contract_authority_record",
     "conversational_memory": "memory.conversational_turn",
 }
 
@@ -98,6 +101,8 @@ _MODEL_SYMBOL_FAMILY: dict[str, str] = {
     "TaskMemoryRecord": "runtime.task_memory_record",
     "UserProfile": "memory.user_profile",
     "ConversationalMemoryRecord": "memory.conversational_turn",
+    "ConversationalMemoryPersistedPayload": "memory.conversational_turn",
+    "RegistrySnapshotPersistedPayload": "applications.registry_snapshot",
     "RegistrySnapshot": "applications.registry_snapshot",
     "AgentInstallationRecord": "agent_distribution.agent_installation_record",
     "ApplicationAgentBinding": "agent_distribution.application_agent_binding",
@@ -199,9 +204,15 @@ def _family_for_candidate(candidate: DurableBoundaryCandidate) -> str | None:
             )
     evidence0 = candidate.evidence[0] if candidate.evidence else ""
     if candidate.storage_signal == DurableStorageSignal.EXPLICIT_PERSIST_API:
-        if "get_package_contract_authority" in evidence0:
-            return None  # handled by exclusion as protocol surface
-        if "persist_package_contract_authority" in evidence0 or "def persist_package_contract_authority" in evidence0:
+        if (
+            "get_package_contract_authority" in evidence0
+            or "persist_package_contract_authority" in evidence0
+            or "def persist_package_contract_authority" in evidence0
+        ):
+            if module == "intergrax/agent_distribution/sqlite_stores.py":
+                return "agent_distribution.package_agent_contract_authority_record"
+            if "get_package_contract_authority" in evidence0:
+                return None  # protocol surface on in-memory / contract module
             return "agent_distribution.package_agent_contract_authority_record"
         if "persist_candidate_revision" in evidence0:
             return "agent_distribution.runtime_revision"

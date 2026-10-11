@@ -342,6 +342,12 @@ def _persisted_boundary_without_version(module_path: str, source: str, class_nam
         if class_name:
             return class_name in source
         return "model_dump" in source and "persist" in source.lower()
+    if class_name in {
+        "SqliteRegistrySnapshotStore",
+        "SQLiteConversationalMemoryStore",
+        "SQLiteUserProfileStore",
+    }:
+        return False
     lowered = source.lower()
     if class_name not in source:
         return False

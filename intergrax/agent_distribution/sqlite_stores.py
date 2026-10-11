@@ -32,7 +32,12 @@ from intergrax.agent_distribution.dependency import (
     SCHEMA_MATERIALIZED_RUNTIME_LOCK_V1,
     MaterializedRuntimeLock,
 )
+from intergrax.agent_distribution.agent_contract_authority import (
+    PackageAgentContractAuthorityRecord,
+    SCHEMA_PACKAGE_AGENT_CONTRACT_AUTHORITY_V1,
+)
 from intergrax.agent_distribution.deployment import (
+    SCHEMA_DEPLOYMENT_INSTANCE_RECORD_V1,
     DeploymentInstanceRecord,
     DeploymentInstanceState,
 )
@@ -59,6 +64,7 @@ from intergrax.agent_distribution.roster import (
     EffectiveRoster,
 )
 from intergrax.agent_distribution.runtime_materialization_record import (
+    SCHEMA_RUNTIME_MATERIALIZATION_RECORD_V1,
     RuntimeMaterializationRecord,
 )
 from intergrax.agent_distribution.runtime_revision import (
@@ -67,6 +73,8 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.stores import (
+    SCHEMA_AGENT_ARTIFACT_METADATA_V1,
+    SCHEMA_APPLICATION_ENVIRONMENT_SERVING_RECORD_V1,
     ActivationAtomicCommitResult,
     AgentArtifactMetadata,
     ApplicationEnvironmentServingRecord,
@@ -242,6 +250,16 @@ class SqliteAgentDistributionDatabase:
             )
             conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS package_contract_authority (
+                    package_digest TEXT NOT NULL,
+                    contract_id TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    PRIMARY KEY (package_digest, contract_id)
+                )
+                """
+            )
+            conn.execute(
+                """
                 INSERT OR IGNORE INTO agent_distribution_meta(key, value)
                 VALUES ('schema_version', ?)
                 """,
@@ -318,7 +336,11 @@ class SqliteAgentDistributionDatabase:
         for row in conn.execute(
             "SELECT package_digest, payload_json FROM artifact_metadata"
         ):
-            metadata = AgentArtifactMetadata.model_validate_json(row["payload_json"])
+            metadata = _decode(
+                AgentArtifactMetadata,
+                row["payload_json"],
+                SCHEMA_AGENT_ARTIFACT_METADATA_V1,
+            )
             state.artifact_metadata[metadata.package_digest] = metadata
         for row in conn.execute("SELECT lock_id, payload_json FROM runtime_locks"):
             lock = _decode(
@@ -330,7 +352,11 @@ class SqliteAgentDistributionDatabase:
         for row in conn.execute(
             "SELECT runtime_revision_id, payload_json FROM materializations"
         ):
-            record = RuntimeMaterializationRecord.model_validate_json(row["payload_json"])
+            record = _decode(
+                RuntimeMaterializationRecord,
+                row["payload_json"],
+                SCHEMA_RUNTIME_MATERIALIZATION_RECORD_V1,
+            )
             state.materializations[record.runtime_revision_id] = record
         for row in conn.execute(
             "SELECT effective_roster_revision_id, payload_json FROM effective_roster_snapshots"
@@ -342,7 +368,11 @@ class SqliteAgentDistributionDatabase:
             )
             state.effective_roster_snapshots[roster.effective_roster_revision_id] = roster
         for row in conn.execute("SELECT instance_key, payload_json FROM deployment_instances"):
-            instance = DeploymentInstanceRecord.model_validate_json(row["payload_json"])
+            instance = _decode(
+                DeploymentInstanceRecord,
+                row["payload_json"],
+                SCHEMA_DEPLOYMENT_INSTANCE_RECORD_V1,
+            )
             key = (
                 ApplicationEnvironmentIdentity(
                     application_id=instance.application_id,
@@ -353,8 +383,10 @@ class SqliteAgentDistributionDatabase:
             state.deployment_instances[key] = instance
         for row in conn.execute("SELECT scope_key, payload_json FROM serving_records"):
             application_id, application_environment_id = row["scope_key"].split("\0", 1)
-            serving = ApplicationEnvironmentServingRecord.model_validate_json(
-                row["payload_json"]
+            serving = _decode(
+                ApplicationEnvironmentServingRecord,
+                row["payload_json"],
+                SCHEMA_APPLICATION_ENVIRONMENT_SERVING_RECORD_V1,
             )
             state.serving_records[
                 ApplicationEnvironmentIdentity(
@@ -362,6 +394,17 @@ class SqliteAgentDistributionDatabase:
                     application_environment_id=application_environment_id,
                 )
             ] = serving
+        for row in conn.execute(
+            "SELECT package_digest, contract_id, payload_json FROM package_contract_authority"
+        ):
+            record = _decode(
+                PackageAgentContractAuthorityRecord,
+                row["payload_json"],
+                SCHEMA_PACKAGE_AGENT_CONTRACT_AUTHORITY_V1,
+            )
+            state.package_contract_authority[
+                (record.package_digest, record.contract_id)
+            ] = record
         return state
 
     def _save_state(self, conn: sqlite3.Connection, state: AgentDistributionStoreState) -> None:
@@ -376,6 +419,7 @@ class SqliteAgentDistributionDatabase:
         conn.execute("DELETE FROM effective_roster_snapshots")
         conn.execute("DELETE FROM deployment_instances")
         conn.execute("DELETE FROM serving_records")
+        conn.execute("DELETE FROM package_contract_authority")
         for record in state.installations.values():
             conn.execute(
                 "INSERT INTO installations(installation_id, payload_json) VALUES (?, ?)",
@@ -414,7 +458,7 @@ class SqliteAgentDistributionDatabase:
         for record in state.materializations.values():
             conn.execute(
                 "INSERT INTO materializations(runtime_revision_id, payload_json) VALUES (?, ?)",
-                (record.runtime_revision_id, record.model_dump_json()),
+                (record.runtime_revision_id, _encode(record)),
             )
         for roster in state.effective_roster_snapshots.values():
             conn.execute(
@@ -435,13 +479,22 @@ class SqliteAgentDistributionDatabase:
                         scope.application_environment_id,
                         revision_id,
                     ),
-                    instance.model_dump_json(),
+                    _encode(instance),
                 ),
             )
         for scope, serving in state.serving_records.items():
             conn.execute(
                 "INSERT INTO serving_records(scope_key, payload_json) VALUES (?, ?)",
-                (_scope_key(scope), serving.model_dump_json()),
+                (_scope_key(scope), _encode(serving)),
+            )
+        for record in state.package_contract_authority.values():
+            conn.execute(
+                """
+                INSERT INTO package_contract_authority(
+                    package_digest, contract_id, payload_json
+                ) VALUES (?, ?, ?)
+                """,
+                (record.package_digest, record.contract_id, _encode(record)),
             )
 
 
@@ -663,6 +716,23 @@ class SqliteAgentArtifactMetadataStore(
             lambda: super(SqliteAgentArtifactMetadataStore, self).persist_metadata(
                 metadata
             )
+        )
+
+    def get_package_contract_authority(
+        self,
+        package_digest: str,
+        contract_id: str,
+    ) -> PackageAgentContractAuthorityRecord | None:
+        self._refresh()
+        return super().get_package_contract_authority(package_digest, contract_id)
+
+    def persist_package_contract_authority(
+        self, record: PackageAgentContractAuthorityRecord
+    ) -> PackageAgentContractAuthorityRecord:
+        return self._mutate(
+            lambda: super(
+                SqliteAgentArtifactMetadataStore, self
+            ).persist_package_contract_authority(record)
         )
 
 

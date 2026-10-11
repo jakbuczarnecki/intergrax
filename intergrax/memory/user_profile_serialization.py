@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, Final, List
 
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.memory.contracts.enterprise_memory_record import (
@@ -27,6 +27,8 @@ from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
 )
+
+SCHEMA_USER_PROFILE_V1: Final = "user_profile.v1"
 
 
 def _memory_kind(value: str) -> MemoryKind:
@@ -188,6 +190,7 @@ def user_profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
     identity = profile.identity
     preferences = profile.preferences
     return {
+        "schema_version": SCHEMA_USER_PROFILE_V1,
         "identity": {
             "user_id": identity.user_id,
             "display_name": identity.display_name,
@@ -218,6 +221,12 @@ def user_profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
 
 
 def user_profile_from_dict(payload: Dict[str, Any]) -> UserProfile:
+    schema_version = payload.get("schema_version")
+    if schema_version != SCHEMA_USER_PROFILE_V1:
+        raise ValueError(
+            f"unsupported user profile schema version {schema_version!r}; "
+            f"expected {SCHEMA_USER_PROFILE_V1!r}"
+        )
     identity_raw = payload.get("identity") or {}
     preferences_raw = payload.get("preferences") or {}
     identity = UserIdentity(
