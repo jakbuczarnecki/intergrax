@@ -21,6 +21,10 @@ from intergrax.memory.contracts.enterprise_memory_record import (
 )
 from intergrax.memory.memory_entry_materialization import apply_legacy_metadata_provenance
 from intergrax.memory.user_profile_legacy_wire import (
+    LegacyMemoryProvenanceWire,
+    LegacyMemoryRecordGovernanceWire,
+    LegacyMemoryRecordLineageWire,
+    LegacyMemoryRecordTrustWire,
     LegacyUserProfileMemoryEntryWire,
     LegacyUserProfileWire,
 )
@@ -134,6 +138,58 @@ def _lineage_from_dict(payload: Dict[str, Any] | None) -> MemoryRecordLineage:
     )
 
 
+def _provenance_from_legacy_wire(wire: LegacyMemoryProvenanceWire | None) -> MemoryProvenance:
+    if wire is None:
+        return MemoryProvenance()
+    try:
+        source_type = MemoryRecordSourceType(
+            str(wire.source_type or MemoryRecordSourceType.UNKNOWN.value)
+        )
+    except ValueError:
+        source_type = MemoryRecordSourceType.UNKNOWN
+    return MemoryProvenance(
+        source_type=source_type,
+        source_id=wire.source_id,
+        session_id=wire.session_id,
+        run_id=wire.run_id,
+        strategy_id=wire.strategy_id,
+        actor_user_id=wire.actor_user_id,
+    )
+
+
+def _trust_from_legacy_wire(wire: LegacyMemoryRecordTrustWire | None) -> MemoryRecordTrust:
+    if wire is None:
+        return MemoryRecordTrust()
+    try:
+        trust_class = MemoryTrustClass(str(wire.trust_class or MemoryTrustClass.UNKNOWN.value))
+    except ValueError:
+        trust_class = MemoryTrustClass.UNKNOWN
+    confidence = wire.confidence
+    if confidence is not None:
+        confidence = float(confidence)
+    return MemoryRecordTrust(trust_class=trust_class, confidence=confidence)
+
+
+def _governance_from_legacy_wire(wire: LegacyMemoryRecordGovernanceWire | None) -> MemoryRecordGovernance:
+    if wire is None:
+        return MemoryRecordGovernance()
+    raw = wire.data_classification or DataClassification.INTERNAL.value
+    try:
+        classification = DataClassification(str(raw).lower())
+    except ValueError:
+        classification = DataClassification.INTERNAL
+    return MemoryRecordGovernance(data_classification=classification)
+
+
+def _lineage_from_legacy_wire(wire: LegacyMemoryRecordLineageWire | None) -> MemoryRecordLineage:
+    if wire is None:
+        return MemoryRecordLineage()
+    return MemoryRecordLineage(
+        supersedes_memory_id=wire.supersedes_memory_id,
+        superseded_by_memory_id=wire.superseded_by_memory_id,
+    )
+
+
 def memory_entry_to_dict(entry: UserProfileMemoryEntry) -> Dict[str, Any]:
     return {
         "entry_id": entry.entry_id,
@@ -231,30 +287,43 @@ def user_profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
 
 
 def _memory_entry_from_legacy_wire(entry: LegacyUserProfileMemoryEntryWire) -> UserProfileMemoryEntry:
-    provenance_payload = entry.provenance.model_dump() if entry.provenance is not None else None
-    return memory_entry_from_dict(
-        {
-            "entry_id": entry.entry_id,
-            "revision": entry.revision,
-            "content": entry.content,
-            "session_id": entry.session_id,
-            "kind": entry.kind,
-            "title": entry.title,
-            "importance": entry.importance,
-            "created_at": entry.created_at,
-            "updated_at": entry.updated_at,
-            "valid_from": entry.valid_from,
-            "valid_until": entry.valid_until,
-            "provenance": provenance_payload,
-            "trust": entry.trust.model_dump() if entry.trust is not None else None,
-            "governance": entry.governance.model_dump() if entry.governance is not None else None,
-            "lineage": entry.lineage.model_dump() if entry.lineage is not None else None,
-            "evidence_refs": list(entry.evidence_refs),
-            "metadata": dict(entry.metadata),
-            "deleted": entry.deleted,
-            "modified": entry.modified,
-        }
+    provenance = _provenance_from_legacy_wire(entry.provenance)
+    entry_id = str(entry.entry_id or "").strip()
+    if not entry_id:
+        entry_id = uuid.uuid4().hex
+    kind_value = entry.kind if entry.kind is not None else MemoryKind.OTHER.value
+    importance_value = (
+        entry.importance if entry.importance is not None else MemoryImportance.MEDIUM.value
     )
+    memory_entry = UserProfileMemoryEntry(
+        entry_id=entry_id,
+        revision=entry.revision,
+        content=entry.content,
+        session_id=entry.session_id,
+        kind=_memory_kind(str(kind_value)),
+        title=entry.title,
+        importance=_memory_importance(str(importance_value)),
+        created_at=entry.created_at,
+        updated_at=entry.updated_at,
+        valid_from=entry.valid_from,
+        valid_until=entry.valid_until,
+        provenance=provenance,
+        trust=_trust_from_legacy_wire(entry.trust),
+        governance=_governance_from_legacy_wire(entry.governance),
+        lineage=_lineage_from_legacy_wire(entry.lineage),
+        evidence_refs=tuple(str(item) for item in entry.evidence_refs),
+        metadata=dict(entry.metadata),
+        deleted=entry.deleted,
+        modified=entry.modified,
+    )
+    if provenance.source_type is MemoryRecordSourceType.UNKNOWN:
+        legacy = memory_entry.metadata.get("source")
+        if legacy is not None:
+            memory_entry.provenance = MemoryProvenance(
+                source_type=memory_record_source_from_legacy_string(str(legacy)),
+                session_id=memory_entry.session_id,
+            )
+    return apply_legacy_metadata_provenance(memory_entry)
 
 
 def _user_profile_from_legacy_wire(legacy: LegacyUserProfileWire) -> UserProfile:

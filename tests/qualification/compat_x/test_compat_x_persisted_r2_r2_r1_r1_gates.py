@@ -146,3 +146,17 @@ def test_cx_r2_r2_r1_r1_probe_d_sanctioned_real_module_passes() -> None:
     assert not any(
         b.candidate.module_path == _OWNER_AD_LEGACY for b in report.blockers
     )
+
+
+def test_cx_r2_r2_r1_r1_strong_typing_helper_dict_any_bypass_fails() -> None:
+    source = '''
+from typing import Any, Dict
+
+def deserialize_user_profile_payload(payload):
+    return _memory_entry_from_legacy_wire(entry=None)
+
+def _memory_entry_from_legacy_wire(entry):
+    semantic: Dict[str, Any] = {}
+    return semantic
+'''
+    assert synthetic_module_fails_implicit_gate(_OWNER_USER_PROFILE, source)

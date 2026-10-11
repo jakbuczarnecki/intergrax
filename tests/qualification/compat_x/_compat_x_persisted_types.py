@@ -103,6 +103,7 @@ class LegacyPersistedCompatibilityObligation:
     reader_path: str
     evidence_paths: tuple[str, ...]
     sanctioned_reader_symbols: tuple[str, ...] = ()
+    migration_boundary_helper_symbols: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

@@ -48,6 +48,7 @@ def _obligation(
     evidence: tuple[str, ...],
     *,
     sanctioned_reader_symbols: tuple[str, ...] = (),
+    migration_boundary_helper_symbols: tuple[str, ...] = (),
 ) -> LegacyPersistedCompatibilityObligation:
     return LegacyPersistedCompatibilityObligation(
         family_id=family_id,
@@ -59,6 +60,7 @@ def _obligation(
         reader_path=reader_path,
         evidence_paths=evidence,
         sanctioned_reader_symbols=sanctioned_reader_symbols,
+        migration_boundary_helper_symbols=migration_boundary_helper_symbols,
     )
 
 
@@ -148,6 +150,10 @@ def legacy_persisted_compatibility_obligations() -> tuple[LegacyPersistedCompati
                 f"git:{_PRE_R2_R1_SHA}:intergrax/memory/user_profile_serialization.py",
             ),
             sanctioned_reader_symbols=("deserialize_user_profile_payload",),
+            migration_boundary_helper_symbols=(
+                "_user_profile_from_legacy_wire",
+                "_memory_entry_from_legacy_wire",
+            ),
         ),
         _obligation(
             "memory.conversational_turn",

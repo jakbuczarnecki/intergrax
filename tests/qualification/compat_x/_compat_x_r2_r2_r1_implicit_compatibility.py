@@ -591,14 +591,89 @@ def _function_body_nodes(tree: ast.Module, function_name: str) -> list[ast.AST]:
     return collected
 
 
-def discover_strong_typing_violations() -> tuple[str, ...]:
-    violations: list[str] = []
-    symbols_by_module: dict[str, set[str]] = {}
-    for module_path, symbol in _sanctioned_boundary_symbols():
-        symbols_by_module.setdefault(module_path, set()).add(symbol)
+def _module_top_level_function_names(tree: ast.Module) -> set[str]:
+    names: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            names.add(node.name)
+    return names
 
+
+def _callees_in_function(tree: ast.Module, function_name: str) -> set[str]:
+    local_functions = _module_top_level_function_names(tree)
+    callees: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            continue
+        if node.name != function_name:
+            continue
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Call):
+                continue
+            callee_name: str | None = None
+            if isinstance(child.func, ast.Name):
+                callee_name = child.func.id
+            elif isinstance(child.func, ast.Attribute):
+                callee_name = child.func.attr
+            if callee_name is not None and callee_name in local_functions:
+                callees.add(callee_name)
+    return callees
+
+
+def _migration_boundary_functions_for_module(
+    module_rel: str,
+    source: str,
+    reader_roots: set[str],
+    helper_roots: set[str],
+) -> set[str]:
+    tree = parse_module(module_rel, source)
+    local_functions = _module_top_level_function_names(tree)
+    discovered: set[str] = {
+        symbol for symbol in reader_roots if symbol in local_functions
+    }
+    for root in tuple(discovered):
+        for callee in _callees_in_function(tree, root):
+            if callee in local_functions and "legacy" in callee.lower():
+                discovered.add(callee)
+    for helper in helper_roots:
+        if helper in local_functions:
+            discovered.add(helper)
+    queue = [name for name in discovered if "legacy" in name.lower()]
+    while queue:
+        current = queue.pop()
+        for callee in _callees_in_function(tree, current):
+            if callee not in local_functions or callee in discovered:
+                continue
+            discovered.add(callee)
+            queue.append(callee)
+    return discovered
+
+
+def discover_strong_typing_violations(
+    *,
+    source_overrides: dict[str, str] | None = None,
+) -> tuple[str, ...]:
+    violations: list[str] = []
+    reader_symbols_by_module: dict[str, set[str]] = {}
+    helper_symbols_by_module: dict[str, set[str]] = {}
+    for obligation in legacy_persisted_compatibility_obligations():
+        if obligation.migration_owner_path is None:
+            continue
+        if obligation.disposition not in (
+            LegacyCompatibilityDisposition.EXPLICIT_LEGACY_READER,
+            LegacyCompatibilityDisposition.EXPLICIT_MIGRATION,
+            LegacyCompatibilityDisposition.CURRENT_ONLY_FAIL_CLOSED,
+        ):
+            continue
+        module = obligation.migration_owner_path.replace("\\", "/")
+        for symbol in obligation.sanctioned_reader_symbols:
+            reader_symbols_by_module.setdefault(module, set()).add(symbol)
+        for symbol in obligation.migration_boundary_helper_symbols:
+            helper_symbols_by_module.setdefault(module, set()).add(symbol)
+
+    overrides = source_overrides or {}
     for module_rel in sorted(_MIGRATION_BOUNDARY_MODULES):
-        source = _read_module_source(module_rel)
+        source = overrides.get(module_rel) or _read_module_source(module_rel)
         if source is None:
             violations.append(f"missing migration boundary module {module_rel}")
             continue
@@ -619,7 +694,13 @@ def discover_strong_typing_violations() -> tuple[str, ...]:
                             f"{module_rel}:{item.lineno}: legacy_field "
                             f"{class_node.name} {ast.unparse(item.annotation)}"
                         )
-        for function_name in symbols_by_module.get(module_rel, ()):
+        function_names = _migration_boundary_functions_for_module(
+            module_rel,
+            source,
+            reader_symbols_by_module.get(module_rel, set()),
+            helper_symbols_by_module.get(module_rel, set()),
+        )
+        for function_name in sorted(function_names):
             body_nodes = _function_body_nodes(tree, function_name)
             for node in body_nodes:
                 if isinstance(node, ast.AnnAssign) and node.annotation is not None:
@@ -668,12 +749,15 @@ def build_implicit_compatibility_report(
     candidates = discover_implicit_compatibility_candidates(extra_modules=extra_modules)
     source_by_module = _source_map_for_candidates(candidates, extra_modules)
     classified = tuple(_classify_candidate(c, source_by_module) for c in candidates)
+    source_overrides = dict(extra_modules)
     base_report = ImplicitCompatibilityReport(
         scanned_modules=derive_compatibility_scan_universe(),
         raw_candidates=candidates,
         classified=classified,
         orphan_migration_modules=discover_orphan_migration_modules(),
-        strong_typing_violations=discover_strong_typing_violations(),
+        strong_typing_violations=discover_strong_typing_violations(
+            source_overrides=source_overrides or None
+        ),
         module_wide_sanctioned_exemptions=0,
     )
     if extra_modules:
