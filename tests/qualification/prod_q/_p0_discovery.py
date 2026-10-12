@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Final
 
 from tests.qualification.prod_q._p0_types import (
+    AnchorResolutionFailure,
     DiscoveryKind,
     ProductionReadinessCandidate,
     ScanFailure,
@@ -73,7 +74,11 @@ _SYMBOL_INDICATORS: Final[tuple[tuple[re.Pattern[str], str, str], ...]] = (
 
 _CANONICAL_ANCHORS: Final[tuple[tuple[str, str, str], ...]] = (
     ("intergrax/contracts/execution_capacity_admission.py", "ExecutionCapacityAdmissionPort", "capacity"),
-    ("intergrax/runtime/execution/capacity.py", "LocalExecutionCapacityAdmission", "capacity"),
+    (
+        "intergrax/runtime/execution/local_execution_capacity_admission.py",
+        "LocalExecutionCapacityAdmission",
+        "capacity",
+    ),
     (
         "intergrax/contracts/execution_capacity/admission_decision.py",
         "assess_root_execution_capacity",
@@ -83,7 +88,11 @@ _CANONICAL_ANCHORS: Final[tuple[tuple[str, str, str], ...]] = (
     ("intergrax/hosting/engine/engine.py", "health_snapshot", "health"),
     ("intergrax/applications/_shared/auditability_health_wiring.py", "project_host_auditability_health_facts", "readiness"),
     ("intergrax/runtime/observability/auditability_health.py", "build_auditability_health_snapshot", "readiness"),
-    ("intergrax/applications/_shared/capability_health/providers/dependency_validation.py", "DependencyValidationCapabilityHealthProvider", "health"),
+    (
+        "intergrax/applications/_shared/capability_health/providers/dependency_validation.py",
+        "DependencyValidationHealthProvider",
+        "health",
+    ),
     (
         "intergrax/contracts/execution_reliability/shutdown_contract.py",
         "ExecutionRuntimeShutdownPhase",
@@ -101,9 +110,21 @@ _CANONICAL_ANCHORS: Final[tuple[tuple[str, str, str], ...]] = (
         "create_daytona_sandbox_host_integration",
         "sandbox",
     ),
-    ("intergrax/runtime/execution/lab_reference_agent_runtime.py", "LabReferenceAgentRuntime", "mode"),
+    (
+        "intergrax/runtime/execution/lab_reference_agent_runtime.py",
+        "build_lab_agent_runtime_config_from_merged",
+        "mode",
+    ),
     ("intergrax/fastapi_core/routers/health.py", "health", "health"),
-    ("applications/governed_contractor_application/host/factory.py", "build_host_application", "startup"),
+    (
+        "applications/governed_contractor_application/host/factory.py",
+        "create_governed_contractor_backend_app",
+        "startup",
+    ),
+)
+
+_ANCHOR_MODULE_SYMBOLS: Final[frozenset[tuple[str, str]]] = frozenset(
+    (module_path, symbol) for module_path, symbol, _ in _CANONICAL_ANCHORS
 )
 
 _SANDBOX_PROVIDER_MODULES: Final[tuple[str, ...]] = (
@@ -111,6 +132,8 @@ _SANDBOX_PROVIDER_MODULES: Final[tuple[str, ...]] = (
     "intergrax/integrations/providers/sandbox_host/modal/bundle.py",
     "intergrax/integrations/providers/sandbox_host/daytona/bundle.py",
 )
+
+_LAST_DUPLICATE_CANDIDATE_IDS: tuple[str, ...] = ()
 
 
 def repo_root() -> Path:
@@ -135,16 +158,54 @@ def _candidate_id(module_path: str, symbol: str, kind: DiscoveryKind) -> str:
     return f"{module_path}::{symbol}::{kind.value}"
 
 
+def _module_defines_symbol(module_path: str, symbol: str) -> tuple[bool, int, str]:
+    full = _REPO_ROOT / module_path
+    if not full.is_file():
+        return False, 0, "missing module file"
+    try:
+        source = full.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=module_path)
+    except OSError as exc:
+        return False, 0, f"read:{exc}"
+    except SyntaxError as exc:
+        return False, 0, f"syntax:{exc}"
+
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            if node.name == symbol:
+                return True, node.lineno, "module-level"
+        if isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef) and item.name == symbol:
+                    return True, item.lineno, f"class:{node.name}"
+    return False, 0, "symbol not found"
+
+
+@lru_cache(maxsize=1)
+def anchor_resolution_failures() -> tuple[AnchorResolutionFailure, ...]:
+    failures: list[AnchorResolutionFailure] = []
+    for module_path, symbol, _indicator in _CANONICAL_ANCHORS:
+        ok, _line, reason = _module_defines_symbol(module_path, symbol)
+        if not ok:
+            failures.append(
+                AnchorResolutionFailure(module_path=module_path, symbol=symbol, reason=reason)
+            )
+    return tuple(failures)
+
+
 def _discover_anchors() -> list[ProductionReadinessCandidate]:
     out: list[ProductionReadinessCandidate] = []
     for module_path, symbol, indicator in _CANONICAL_ANCHORS:
+        ok, line_no, _reason = _module_defines_symbol(module_path, symbol)
+        if not ok:
+            continue
         out.append(
             ProductionReadinessCandidate(
                 candidate_id=_candidate_id(module_path, symbol, DiscoveryKind.ANCHOR_REGISTRY),
                 module_path=module_path,
                 symbol=symbol,
                 discovery_kind=DiscoveryKind.ANCHOR_REGISTRY,
-                line_no=1,
+                line_no=line_no,
                 indicator=indicator,
             )
         )
@@ -170,14 +231,16 @@ def _match_symbol_indicator(name: str) -> str | None:
 
 
 def _discover_from_ast(module_path: str, source: str) -> list[ProductionReadinessCandidate]:
-    out: list[ProductionReadinessCandidate] = []
+    out: dict[str, ProductionReadinessCandidate] = {}
     try:
         tree = ast.parse(source, filename=module_path)
     except SyntaxError:
-        return out
+        return []
 
     for node in tree.body:
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            if (module_path, node.name) in _ANCHOR_MODULE_SYMBOLS:
+                continue
             indicator = _match_symbol_indicator(node.name)
             if indicator:
                 kind = (
@@ -185,45 +248,57 @@ def _discover_from_ast(module_path: str, source: str) -> list[ProductionReadines
                     if node.name == "lifespan"
                     else DiscoveryKind.AST_SYMBOL_INDICATOR
                 )
-                out.append(
-                    ProductionReadinessCandidate(
-                        candidate_id=_candidate_id(module_path, node.name, kind),
-                        module_path=module_path,
-                        symbol=node.name,
-                        discovery_kind=kind,
-                        line_no=node.lineno,
-                        indicator=indicator,
-                    )
+                cid = _candidate_id(module_path, node.name, kind)
+                out[cid] = ProductionReadinessCandidate(
+                    candidate_id=cid,
+                    module_path=module_path,
+                    symbol=node.name,
+                    discovery_kind=kind,
+                    line_no=node.lineno,
+                    indicator=indicator,
                 )
             if any(
                 isinstance(dec, ast.Name) and dec.id == "lifespan"
                 for dec in node.decorator_list
             ):
-                out.append(
-                    ProductionReadinessCandidate(
-                        candidate_id=_candidate_id(module_path, node.name, DiscoveryKind.AST_LIFESPAN_HANDLER),
-                        module_path=module_path,
-                        symbol=node.name,
-                        discovery_kind=DiscoveryKind.AST_LIFESPAN_HANDLER,
-                        line_no=node.lineno,
-                        indicator="lifespan",
-                    )
+                cid = _candidate_id(module_path, node.name, DiscoveryKind.AST_LIFESPAN_HANDLER)
+                out[cid] = ProductionReadinessCandidate(
+                    candidate_id=cid,
+                    module_path=module_path,
+                    symbol=node.name,
+                    discovery_kind=DiscoveryKind.AST_LIFESPAN_HANDLER,
+                    line_no=node.lineno,
+                    indicator="lifespan",
                 )
         elif isinstance(node, ast.ClassDef):
+            if (module_path, node.name) in _ANCHOR_MODULE_SYMBOLS:
+                continue
             indicator = _match_symbol_indicator(node.name)
             if indicator:
-                out.append(
-                    ProductionReadinessCandidate(
-                        candidate_id=_candidate_id(
-                            module_path, node.name, DiscoveryKind.AST_SYMBOL_INDICATOR
-                        ),
-                        module_path=module_path,
-                        symbol=node.name,
-                        discovery_kind=DiscoveryKind.AST_SYMBOL_INDICATOR,
-                        line_no=node.lineno,
-                        indicator=indicator,
-                    )
+                cid = _candidate_id(module_path, node.name, DiscoveryKind.AST_SYMBOL_INDICATOR)
+                out[cid] = ProductionReadinessCandidate(
+                    candidate_id=cid,
+                    module_path=module_path,
+                    symbol=node.name,
+                    discovery_kind=DiscoveryKind.AST_SYMBOL_INDICATOR,
+                    line_no=node.lineno,
+                    indicator=indicator,
                 )
+            for item in node.body:
+                if not isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef):
+                    continue
+                method_indicator = _match_symbol_indicator(item.name)
+                if method_indicator:
+                    symbol = f"{node.name}.{item.name}"
+                    cid = _candidate_id(module_path, symbol, DiscoveryKind.AST_METHOD_INDICATOR)
+                    out[cid] = ProductionReadinessCandidate(
+                        candidate_id=cid,
+                        module_path=module_path,
+                        symbol=symbol,
+                        discovery_kind=DiscoveryKind.AST_METHOD_INDICATOR,
+                        line_no=item.lineno,
+                        indicator=method_indicator,
+                    )
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
@@ -231,17 +306,14 @@ def _discover_from_ast(module_path: str, source: str) -> list[ProductionReadines
             for prefix in _CONTRACT_IMPORT_PREFIXES:
                 if mod == prefix or mod.startswith(prefix + "."):
                     symbol = prefix.split(".")[-1]
-                    out.append(
-                        ProductionReadinessCandidate(
-                            candidate_id=_candidate_id(
-                                module_path, f"import:{prefix}", DiscoveryKind.AST_IMPORT_CONTRACT
-                            ),
-                            module_path=module_path,
-                            symbol=f"import:{prefix}",
-                            discovery_kind=DiscoveryKind.AST_IMPORT_CONTRACT,
-                            line_no=node.lineno,
-                            indicator="contract_import",
-                        )
+                    cid = _candidate_id(module_path, f"import:{prefix}", DiscoveryKind.AST_IMPORT_CONTRACT)
+                    out[cid] = ProductionReadinessCandidate(
+                        candidate_id=cid,
+                        module_path=module_path,
+                        symbol=f"import:{prefix}",
+                        discovery_kind=DiscoveryKind.AST_IMPORT_CONTRACT,
+                        line_no=node.lineno,
+                        indicator="contract_import",
                     )
                     break
         if isinstance(node, ast.If):
@@ -249,23 +321,22 @@ def _discover_from_ast(module_path: str, source: str) -> list[ProductionReadines
                 if isinstance(test, ast.Constant) and isinstance(test.value, str):
                     val = test.value.lower()
                     if any(tok in val for tok in ("lab", "dev", "strict", "production")):
-                        out.append(
-                            ProductionReadinessCandidate(
-                                candidate_id=_candidate_id(
-                                    module_path,
-                                    f"branch:{node.lineno}",
-                                    DiscoveryKind.AST_STRICT_LAB_BRANCH,
-                                ),
-                                module_path=module_path,
-                                symbol=f"branch:{node.lineno}",
-                                discovery_kind=DiscoveryKind.AST_STRICT_LAB_BRANCH,
-                                line_no=node.lineno,
-                                indicator="mode_branch",
-                            )
+                        cid = _candidate_id(
+                            module_path,
+                            f"branch:{node.lineno}",
+                            DiscoveryKind.AST_STRICT_LAB_BRANCH,
+                        )
+                        out[cid] = ProductionReadinessCandidate(
+                            candidate_id=cid,
+                            module_path=module_path,
+                            symbol=f"branch:{node.lineno}",
+                            discovery_kind=DiscoveryKind.AST_STRICT_LAB_BRANCH,
+                            line_no=node.lineno,
+                            indicator="mode_branch",
                         )
                         break
 
-    return out
+    return list(out.values())
 
 
 @lru_cache(maxsize=1)
@@ -304,9 +375,14 @@ def _discovery_scan_failures() -> tuple[ScanFailure, ...]:
 
 @lru_cache(maxsize=1)
 def raw_discovery_candidates() -> tuple[ProductionReadinessCandidate, ...]:
+    global _LAST_DUPLICATE_CANDIDATE_IDS
     candidates: dict[str, ProductionReadinessCandidate] = {}
+    duplicate_ids: list[str] = []
 
     for anchor in _discover_anchors():
+        existing = candidates.get(anchor.candidate_id)
+        if existing is not None and existing != anchor:
+            duplicate_ids.append(anchor.candidate_id)
         candidates[anchor.candidate_id] = anchor
 
     for module_path in scanned_module_paths():
@@ -315,9 +391,19 @@ def raw_discovery_candidates() -> tuple[ProductionReadinessCandidate, ...]:
         full = _REPO_ROOT / module_path
         source = full.read_text(encoding="utf-8")
         for cand in _discover_from_ast(module_path, source):
-            candidates.setdefault(cand.candidate_id, cand)
+            existing = candidates.get(cand.candidate_id)
+            if existing is not None and existing != cand:
+                duplicate_ids.append(cand.candidate_id)
+            elif existing is None:
+                candidates[cand.candidate_id] = cand
 
+    _LAST_DUPLICATE_CANDIDATE_IDS = tuple(sorted(frozenset(duplicate_ids)))
     return tuple(sorted(candidates.values(), key=lambda c: c.candidate_id))
+
+
+def raw_discovery_duplicate_ids() -> tuple[str, ...]:
+    raw_discovery_candidates()
+    return _LAST_DUPLICATE_CANDIDATE_IDS
 
 
 def discovery_scan_failures() -> tuple[ScanFailure, ...]:

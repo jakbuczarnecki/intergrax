@@ -357,20 +357,121 @@ _FRZ_ROWS: tuple[tuple[str, str, str, ProductionReadinessEvidenceState, ProdQFin
 )
 
 
+def _historical_stage_ancestry_ok(stage_token: str) -> bool:
+    from tests.qualification.prod_q._p0_certification import HISTORICAL_EVIDENCE, current_git_head
+    import subprocess
+    from tests.qualification.prod_q._p0_discovery import repo_root
+
+    head = current_git_head()
+    for item in HISTORICAL_EVIDENCE:
+        if item.stage_id.startswith(stage_token):
+            proc = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", item.accepted_sha, head],
+                cwd=repo_root(),
+                capture_output=True,
+            )
+            return proc.returncode == 0
+    return False
+
+
+def _derived_frz_assessment(
+    criterion_id: str,
+    pq_families: tuple[ProductionReadinessFamily, ...],
+    canonical_refs: tuple[str, ...],
+) -> tuple[ProductionReadinessEvidenceState, ProdQFindingDisposition, tuple[str, ...]]:
+    from tests.qualification.prod_q._p0_certification import (
+        build_provider_dispositions,
+        build_r1_sqlite_disposition,
+    )
+    from tests.qualification.prod_q._p0_classification import classified_inventory
+
+    refs = list(canonical_refs)
+    inventory = classified_inventory()
+    family_states = {
+        family: [r for r in inventory if r.family == family]
+        for family in pq_families
+    }
+
+    if criterion_id == "FRZ-PRD-04":
+        sqlite = build_r1_sqlite_disposition()
+        refs.append(f"sqlite.reproduction:{sqlite.reproduction_classification.value}")
+        if sqlite.reproduction_executed:
+            refs.append(f"sqlite.exit_code:{sqlite.reproduction_exit_code}")
+        return (
+            ProductionReadinessEvidenceState.BLOCKER,
+            ProdQFindingDisposition.IN_SCOPE_BLOCKER,
+            tuple(refs),
+        )
+
+    if criterion_id in ("FRZ-PRD-02", "FRZ-SEC-06"):
+        providers = build_provider_dispositions()
+        refs.extend(f"provider:{p.provider_id}:registered={p.registered}" for p in providers)
+        return (
+            ProductionReadinessEvidenceState.EXTERNAL_PROVIDER_EVIDENCE_REQUIRED,
+            ProdQFindingDisposition.IN_SCOPE_BLOCKER,
+            tuple(refs),
+        )
+
+    if criterion_id == "FRZ-SEC-10":
+        refs.append("PQ-F21 platform-vs-infrastructure responsibility")
+        return (
+            ProductionReadinessEvidenceState.N_A_WITH_EVIDENCE,
+            ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+            tuple(refs),
+        )
+
+    blockers = [
+        r
+        for family in pq_families
+        for r in family_states.get(family, ())
+        if r.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER
+    ]
+    if blockers:
+        refs.append(f"inventory.blockers:{len(blockers)}")
+        return (
+            ProductionReadinessEvidenceState.BLOCKER,
+            ProdQFindingDisposition.IN_SCOPE_BLOCKER,
+            tuple(refs),
+        )
+
+    for token in ("TENANT-X", "CTRL-X", "STATE-X", "HARNESS-W4", "CONFIG-X", "COMPAT-X"):
+        if any(token in ref for ref in canonical_refs) and _historical_stage_ancestry_ok(token):
+            refs.append(f"historical.ancestry:{token}")
+            return (
+                ProductionReadinessEvidenceState.SUPPORTING_HISTORICAL_EVIDENCE_REVALIDATED,
+                ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+                tuple(refs),
+            )
+
+    refs.append("derived.current_head.partial")
+    disposition = (
+        ProdQFindingDisposition.IN_SCOPE_BLOCKER
+        if criterion_id == "FRZ-PRD-08"
+        else ProdQFindingDisposition.TRACKED_FREEZE_DEBT
+    )
+    return (
+        ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
+        disposition,
+        tuple(refs),
+    )
+
+
 @lru_cache(maxsize=1)
 def build_frz_reconciliation() -> tuple[FrzCriterionRecord, ...]:
-    records = [
-        FrzCriterionRecord(
-            criterion_id=row[0],
-            domain=row[1],
-            summary=row[2],
-            evidence_state=row[3],
-            finding_disposition=row[4],
-            pq_families=row[5],
-            evidence_refs=row[6],
+    records: list[FrzCriterionRecord] = []
+    for row in _FRZ_ROWS:
+        evidence, disposition, refs = _derived_frz_assessment(row[0], row[5], row[6])
+        records.append(
+            FrzCriterionRecord(
+                criterion_id=row[0],
+                domain=row[1],
+                summary=row[2],
+                evidence_state=evidence,
+                finding_disposition=disposition,
+                pq_families=row[5],
+                evidence_refs=refs,
+            )
         )
-        for row in _FRZ_ROWS
-    ]
     return tuple(records)
 
 

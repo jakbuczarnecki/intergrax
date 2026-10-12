@@ -8,7 +8,9 @@ from functools import lru_cache
 
 from tests.qualification.prod_q._p0_discovery import raw_discovery_candidates
 from tests.qualification.prod_q._p0_types import (
+    CandidateInventoryStatus,
     DiscoveryKind,
+    OwnershipResolutionState,
     ProdQFindingDisposition,
     ProductionReadinessCandidate,
     ProductionReadinessClassification,
@@ -56,12 +58,12 @@ _ANCHOR_METADATA: dict[tuple[str, str], tuple[ProductionReadinessOwner, str, str
         ProductionReadinessEvidenceState.PROVEN_CURRENT_HEAD,
     ),
     (
-        "intergrax/runtime/execution/capacity.py",
+        "intergrax/runtime/execution/local_execution_capacity_admission.py",
         "LocalExecutionCapacityAdmission",
     ): (
         ProductionReadinessOwner.EXECUTION_CAPACITY,
         "intergrax.contracts.execution_capacity_admission.ExecutionCapacityAdmissionPort",
-        "intergrax/runtime/execution/capacity.py",
+        "intergrax/runtime/execution/local_execution_capacity_admission.py",
         ProductionReadinessEvidenceState.PROVEN_CURRENT_HEAD,
     ),
     (
@@ -93,7 +95,7 @@ _ANCHOR_METADATA: dict[tuple[str, str], tuple[ProductionReadinessOwner, str, str
     ),
     (
         "intergrax/runtime/execution/lab_reference_agent_runtime.py",
-        "LabReferenceAgentRuntime",
+        "build_lab_agent_runtime_config_from_merged",
     ): (
         ProductionReadinessOwner.EXECUTION_RUNTIME,
         "intergrax.runtime.execution.lab_reference_agent_runtime",
@@ -144,36 +146,63 @@ def _default_disposition(
     return ProdQFindingDisposition.TRACKED_FREEZE_DEBT
 
 
+def _semantic_responsibility_key(
+    family: ProductionReadinessFamily,
+    indicator: str,
+    candidate: ProductionReadinessCandidate,
+) -> str:
+    if candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
+        return f"anchor:{candidate.module_path}:{candidate.symbol}"
+    if candidate.discovery_kind == DiscoveryKind.PROVIDER_SANDBOX_HOST:
+        return f"provider.sandbox_host:{candidate.module_path}"
+    return f"mechanical:{candidate.candidate_id}"
+
+
 def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionReadinessClassification:
-    family = _INDICATOR_TO_FAMILY.get(
-        candidate.indicator, ProductionReadinessFamily.PQ_F01
-    )
+    mapped_family = _INDICATOR_TO_FAMILY.get(candidate.indicator)
+    inventory_status = CandidateInventoryStatus.CLASSIFIED
+    if mapped_family is None:
+        inventory_status = CandidateInventoryStatus.UNCLASSIFIED_INDICATOR
+        family = ProductionReadinessFamily.PQ_UNCLASSIFIED
+    else:
+        family = mapped_family
     if candidate.discovery_kind == DiscoveryKind.PROVIDER_SANDBOX_HOST:
         family = ProductionReadinessFamily.PQ_F09
+        inventory_status = CandidateInventoryStatus.CLASSIFIED
 
     anchor_key = (candidate.module_path, candidate.symbol)
+    ownership_resolution = OwnershipResolutionState.NOT_YET_RESOLVED
     if anchor_key in _ANCHOR_METADATA:
         owner, contract, composition, evidence = _ANCHOR_METADATA[anchor_key]
+        ownership_resolution = OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE
     elif candidate.discovery_kind == DiscoveryKind.PROVIDER_SANDBOX_HOST:
         owner = ProductionReadinessOwner.SANDBOX_HOST_PROVIDER
-        contract = candidate.module_path
-        composition = "intergrax/integrations/providers/sandbox_host/"
+        contract = "CONTRACT_UNRESOLVED"
+        composition = "COMPOSITION_UNRESOLVED"
         evidence = ProductionReadinessEvidenceState.EXTERNAL_PROVIDER_EVIDENCE_REQUIRED
+        ownership_resolution = OwnershipResolutionState.NOT_YET_RESOLVED
     elif candidate.discovery_kind == DiscoveryKind.AST_STRICT_LAB_BRANCH:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
-        contract = "UNRESOLVED_BRANCH"
+        contract = "CONTRACT_UNRESOLVED"
         composition = candidate.module_path
         evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+        ownership_resolution = OwnershipResolutionState.DISCOVERED
     elif candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
-        contract = candidate.module_path
-        composition = candidate.module_path
+        contract = "CONTRACT_UNRESOLVED"
+        composition = "COMPOSITION_UNRESOLVED"
         evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+        ownership_resolution = OwnershipResolutionState.DISCOVERED
     else:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
-        contract = "MECHANICAL_DISCOVERY"
-        composition = candidate.module_path
+        contract = "CONTRACT_UNRESOLVED"
+        composition = "COMPOSITION_UNRESOLVED"
         evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+        ownership_resolution = OwnershipResolutionState.DISCOVERED
+
+    if inventory_status == CandidateInventoryStatus.UNCLASSIFIED_INDICATOR:
+        evidence = ProductionReadinessEvidenceState.BLOCKER
+        ownership_resolution = OwnershipResolutionState.AMBIGUOUS
 
     tenant_relevance = family == ProductionReadinessFamily.PQ_F22 or "tenant" in candidate.indicator
 
@@ -181,20 +210,29 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
         evidence = ProductionReadinessEvidenceState.EXTERNAL_PROVIDER_EVIDENCE_REQUIRED
 
     disposition = _default_disposition(evidence, family)
+    if inventory_status == CandidateInventoryStatus.UNCLASSIFIED_INDICATOR:
+        disposition = ProdQFindingDisposition.IN_SCOPE_BLOCKER
     if (
         candidate.module_path == "intergrax/runtime/execution/lab_reference_agent_runtime.py"
         and family == ProductionReadinessFamily.PQ_F11
+        and candidate.symbol == "build_lab_agent_runtime_config_from_merged"
     ):
         disposition = ProdQFindingDisposition.TRACKED_FREEZE_DEBT
 
+    semantic_key = _semantic_responsibility_key(family, candidate.indicator, candidate)
+
     return ProductionReadinessClassification(
+        candidate_id=candidate.candidate_id,
+        inventory_status=inventory_status,
         family=family,
         module=candidate.module_path,
         symbol=candidate.symbol,
         responsibility=f"{family.value}:{candidate.indicator}",
+        semantic_responsibility_key=semantic_key,
         semantic_owner=owner,
         canonical_contract=contract,
         composition_owner=composition,
+        ownership_resolution=ownership_resolution,
         production_callers=(candidate.module_path,),
         tenant_relevance=tenant_relevance,
         applicable_frz_ids=_FRZ_BY_FAMILY.get(family, ()),
@@ -213,6 +251,4 @@ def classified_inventory() -> tuple[ProductionReadinessClassification, ...]:
 
 
 def classification_by_candidate_id() -> dict[str, ProductionReadinessClassification]:
-    raw = raw_discovery_candidates()
-    classified = classified_inventory()
-    return {raw[i].candidate_id: classified[i] for i in range(len(raw))}
+    return {record.candidate_id: record for record in classified_inventory()}

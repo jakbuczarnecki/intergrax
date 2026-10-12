@@ -32,10 +32,11 @@ class ProductionReadinessFamily(str, Enum):
     PQ_F21 = "PQ-F21"
     PQ_F22 = "PQ-F22"
     PQ_F23 = "PQ-F23"
+    PQ_UNCLASSIFIED = "PQ-UNCLASSIFIED"
 
 
 ALL_PRODUCTION_READINESS_FAMILIES: frozenset[ProductionReadinessFamily] = frozenset(
-    ProductionReadinessFamily
+    member for member in ProductionReadinessFamily if member != ProductionReadinessFamily.PQ_UNCLASSIFIED
 )
 
 
@@ -75,10 +76,32 @@ class ProductionReadinessOwner(str, Enum):
 class DiscoveryKind(str, Enum):
     ANCHOR_REGISTRY = "anchor.registry"
     AST_SYMBOL_INDICATOR = "ast.symbol.indicator"
+    AST_METHOD_INDICATOR = "ast.method.indicator"
     AST_LIFESPAN_HANDLER = "ast.lifespan.handler"
     AST_IMPORT_CONTRACT = "ast.import.contract"
     AST_STRICT_LAB_BRANCH = "ast.strict_lab.branch"
     PROVIDER_SANDBOX_HOST = "provider.sandbox_host"
+
+
+class CandidateInventoryStatus(str, Enum):
+    CLASSIFIED = "classified"
+    UNCLASSIFIED_INDICATOR = "unclassified_indicator"
+
+
+class OwnershipResolutionState(str, Enum):
+    DISCOVERED = "DISCOVERED"
+    NOT_YET_RESOLVED = "NOT_YET_RESOLVED"
+    RESOLVED_WITH_CURRENT_HEAD_EVIDENCE = "RESOLVED_WITH_CURRENT_HEAD_EVIDENCE"
+    AMBIGUOUS = "AMBIGUOUS"
+    NOT_APPLICABLE_WITH_EVIDENCE = "NOT_APPLICABLE_WITH_EVIDENCE"
+
+
+class SqliteReproductionClassification(str, Enum):
+    NOT_EXECUTED = "NOT_EXECUTED"
+    PRODUCTION_DEFECT = "PRODUCTION_DEFECT"
+    TEST_ISOLATION_OR_HARNESS = "TEST_ISOLATION_OR_HARNESS"
+    DEPENDENCY_MATERIALIZATION = "DEPENDENCY_MATERIALIZATION"
+    ENVIRONMENT_UNAVAILABLE = "ENVIRONMENT_UNAVAILABLE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,13 +116,17 @@ class ProductionReadinessCandidate:
 
 @dataclass(frozen=True, slots=True)
 class ProductionReadinessClassification:
+    candidate_id: str
+    inventory_status: CandidateInventoryStatus
     family: ProductionReadinessFamily
     module: str
     symbol: str
     responsibility: str
+    semantic_responsibility_key: str
     semantic_owner: ProductionReadinessOwner
     canonical_contract: str
     composition_owner: str
+    ownership_resolution: OwnershipResolutionState
     production_callers: tuple[str, ...]
     tenant_relevance: bool
     applicable_frz_ids: tuple[str, ...]
@@ -115,10 +142,19 @@ class ScanFailure:
 
 
 @dataclass(frozen=True, slots=True)
+class AnchorResolutionFailure:
+    module_path: str
+    symbol: str
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
 class ClosedWorldDiscoveryReport:
     module_paths_scanned: tuple[str, ...]
     scan_failures: tuple[ScanFailure, ...]
+    anchor_resolution_failures: tuple[AnchorResolutionFailure, ...]
     raw_candidates: tuple[ProductionReadinessCandidate, ...]
+    duplicate_candidate_ids: tuple[str, ...]
     unclassified_candidate_ids: frozenset[str]
 
 
@@ -146,6 +182,7 @@ class OwnershipMatrixReport:
     rows: tuple[OwnershipRow, ...]
     duplicate_semantic_owner_keys: tuple[str, ...]
     duplicate_composition_owner_keys: tuple[str, ...]
+    alternate_canonical_contract_concern_keys: tuple[str, ...]
     unresolved_ownership_keys: tuple[str, ...]
 
 
@@ -170,13 +207,15 @@ class HistoricalEvidenceItem:
 @dataclass(frozen=True, slots=True)
 class ProviderQualificationDisposition:
     provider_id: str
-    installed: bool
+    implementation_exists: bool
     registered: bool
     configured: bool
+    effective: bool
     qualified: bool
     production_approved: bool
     evidence_state: ProductionReadinessEvidenceState
     finding_disposition: ProdQFindingDisposition
+    registration_evidence: tuple[str, ...]
     notes: str
 
 
@@ -186,6 +225,11 @@ class R1SqliteEnv01Disposition:
     default_db_path: str
     default_db_header_probe: str
     isolated_env_var: str
+    isolated_db_path: str
+    reproduction_executed: bool
+    reproduction_exit_code: int | None
+    reproduction_classification: SqliteReproductionClassification
+    reproduction_summary: str
     evidence_state: ProductionReadinessEvidenceState
     finding_disposition: ProdQFindingDisposition
     recommended_child: str

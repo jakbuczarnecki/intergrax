@@ -7,8 +7,17 @@ from __future__ import annotations
 import pytest
 
 from tests.qualification.prod_q._p0_certification import build_prod_q_p0_certification_report
-from tests.qualification.prod_q._p0_classification import classified_inventory
-from tests.qualification.prod_q._p0_discovery import discovery_scan_failures, raw_discovery_candidates
+from tests.qualification.prod_q._p0_classification import (
+    classification_by_candidate_id,
+    classified_inventory,
+)
+from tests.qualification.prod_q._p0_discovery import (
+    anchor_resolution_failures,
+    discovery_scan_failures,
+    raw_discovery_candidates,
+    raw_discovery_duplicate_ids,
+)
+from tests.qualification.prod_q._p0_integrity import assert_inventory_identity_sound
 from tests.qualification.prod_q._p0_frz_reconciliation import build_frz_reconciliation, required_frz_ids
 from tests.qualification.prod_q._p0_inventory import (
     build_closed_world_discovery_report,
@@ -25,17 +34,17 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 def test_prod_q_p0_head_q01_discovery_parse_fail_closed() -> None:
     assert discovery_scan_failures() == ()
+    assert anchor_resolution_failures() == ()
+    assert raw_discovery_duplicate_ids() == ()
 
 
 def test_prod_q_p0_head_q02_inventory_covers_all_candidates() -> None:
     report = build_closed_world_discovery_report()
-    discovered = frozenset(c.candidate_id for c in report.raw_candidates)
-    classified = frozenset(
-        raw_discovery_candidates()[i].candidate_id for i in range(len(classified_inventory()))
-    )
-    assert discovered == classified
+    raw = raw_discovery_candidates()
+    by_id = classification_by_candidate_id()
+    assert_inventory_identity_sound(raw, by_id)
     assert report.unclassified_candidate_ids == frozenset()
-    assert len(discovered) == len(classified_inventory())
+    assert len(report.raw_candidates) == len(classified_inventory())
 
 
 def test_prod_q_p0_head_q03_all_pq_families_classified() -> None:
@@ -61,7 +70,8 @@ def test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape() -> None
     assert report.matrix.unclassified_candidates == 0
     assert report.matrix.frz_criteria_classified == 33
     assert report.matrix.families_covered == 23
-    assert report.tenant_audit.verdict == "PASS"
+    assert report.tenant_audit.verdict == "DERIVED_PASS_REUSE_TENANT_X"
+    assert report.r1_sqlite.reproduction_executed is True
     assert report.r1_sqlite.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER
     assert len(report.recommended_children) >= 3
 
