@@ -74,6 +74,20 @@ class R1AuthorityMechanismResolution:
     authority_class: R1MechanismAuthorityClass
     canonical_contract: str
     notes: str
+    owner_evidence: tuple[str, ...] = ()
+    scope_evidence_refs: tuple[str, ...] = ()
+    production_classification_evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class R1StructuralPropagationProof:
+    source_symbol: str
+    target_symbol: str
+    production_file: str
+    source_expression: str
+    target_expression: str
+    relation: PropagationRelation
+    fail_closed: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

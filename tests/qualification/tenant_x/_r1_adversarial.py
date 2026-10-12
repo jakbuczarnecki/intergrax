@@ -57,6 +57,44 @@ def _minimal_root_op():
     return RootExecutionOperation.ROOT_AGENT
 
 
+def assert_governance_tenant_matches_runtime_envelope() -> None:
+    from intergrax.contracts.execution_identity import RunId, TaskId
+    from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+
+    tenant = "tenant-r1-probe-a"
+    req = RuntimeRequest(
+        agent_id="a",
+        user_id="u",
+        session_id="s",
+        message="m",
+        task_id=TaskId("task_00000000000000000000000000000001"),
+        run_id=RunId("run_00000000000000000000000000000001"),
+        tenant_id=tenant,
+        metadata={},
+    )
+    envelope = req.to_envelope()
+    assert envelope.tenant_id == tenant
+
+
+def assert_tool_scope_tenant_follows_inspection_scope() -> None:
+    from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId
+    from intergrax.contracts.runtime_inspection.sources import RuntimeInspectionExecutionScope
+    from intergrax.contracts.tool_runtime_read import ToolRuntimeExecutionScope
+    from intergrax.runtime.runtime_inspection.adapters.tool_runtime_read import _to_tool_scope
+
+    tenant = "tenant-r1-probe-b"
+    scope = RuntimeInspectionExecutionScope(
+        tenant_id=tenant,
+        task_id=TaskId("task_00000000000000000000000000000002"),
+        run_id=RunId("run_00000000000000000000000000000002"),
+        attempt_id=AttemptId("attempt_00000000000000000000000000000001"),
+        execution_id=ExecutionId("exec_00000000000000000000000000000001"),
+    )
+    tool_scope = _to_tool_scope(scope)
+    assert isinstance(tool_scope, ToolRuntimeExecutionScope)
+    assert tool_scope.tenant_id == tenant
+
+
 def assert_functional_evidence_rejects_missing_tenant() -> None:
     from intergrax.contracts.functional_evidence.tenant import (
         FunctionalEvidenceTenantIdentityError,

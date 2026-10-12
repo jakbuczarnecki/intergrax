@@ -11,19 +11,31 @@ from tests.qualification.tenant_x._authority_semantics import (
     build_authority_review_metrics,
 )
 from tests.qualification.tenant_x._r1_authority_resolutions import (
-    SANCTIONED_ROOT_TENANT_SELECTORS,
     build_r1_authority_resolutions,
     build_r1_overlay_mechanisms,
+    build_sanctioned_root_tenant_selectors,
+    r1_critical_owner_unresolved,
+    r1_critical_scope_unresolved,
     r1_duplicate_authority_confirmed,
     r1_duplicate_authority_unresolved,
 )
+from tests.qualification.tenant_x._r1_cross_tenant_inventory import (
+    build_r1_cross_tenant_inventory,
+    legal_cross_tenant_mechanism_count,
+    r1_cross_tenant_unknown_critical,
+)
 from tests.qualification.tenant_x._r1_critical_boundaries import (
     R1_CRITICAL_BOUNDARY_FAMILIES,
-    r1_critical_boundary_missing_or_invalid,
+    r1_owned_critical_boundary_missing_or_invalid,
 )
 from tests.qualification.tenant_x._r1_propagation_proofs import (
     certify_r1_propagation_edges,
-    r1_critical_propagation_missing,
+    r1_owned_propagation_missing,
+)
+from tests.qualification.tenant_x._r1_root_selectors import (
+    build_r1_root_selector_inventory,
+    r1_critical_unknown_root_selectors,
+    r1_illegal_root_selectors,
 )
 from tests.qualification.tenant_x._r1_silent_substitution import (
     R1_SILENT_SUBSTITUTION_MATRIX,
@@ -36,8 +48,6 @@ from tests.qualification.tenant_x._types import (
     TenantAuthorityScopeEvidence,
     TenantSurfaceRecord,
 )
-
-LEGAL_CROSS_TENANT_PRODUCTION_MECHANISMS: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +90,8 @@ def build_r1_qualification_report(
     resolutions = build_r1_authority_resolutions(inventory)
     overlay = build_r1_overlay_mechanisms(inventory)
     edges = certify_r1_propagation_edges()
+    root_inventory = build_r1_root_selector_inventory(inventory)
+    root_selectors = build_sanctioned_root_tenant_selectors(inventory)
 
     proven = sum(1 for e in edges if e.final_status == R1ProvenanceStatus.PROVEN_CURRENT_HEAD)
     historical = sum(1 for e in edges if e.final_status == R1ProvenanceStatus.HISTORICAL_REPLAY_CONFIRMED)
@@ -90,7 +102,13 @@ def build_r1_qualification_report(
         1 for r in resolutions if r.owner_disposition == TenantAuthorityOwnerDisposition.OWNER_CONFIRMED
     )
     owner_unresolved = sum(
-        1 for r in resolutions if r.owner_disposition == TenantAuthorityOwnerDisposition.OWNER_UNRESOLVED
+        1
+        for r in resolutions
+        if r.owner_disposition
+        in {
+            TenantAuthorityOwnerDisposition.OWNER_UNRESOLVED,
+            TenantAuthorityOwnerDisposition.OWNER_CANDIDATE,
+        }
     )
     owner_conflict = sum(
         1 for r in resolutions if r.owner_disposition == TenantAuthorityOwnerDisposition.OWNER_CONFLICT
@@ -105,27 +123,35 @@ def build_r1_qualification_report(
     illegal_critical = len(r1_illegal_critical_substitutions())
 
     remediation: list[str] = []
-    if r1_critical_boundary_missing_or_invalid():
-        remediation.append("TENANT-X-R1-R1")
-    if scope_unresolved or owner_unresolved or owner_conflict:
-        remediation.append("TENANT-X-R1-R2")
+    if r1_owned_critical_boundary_missing_or_invalid():
+        remediation.append("TENANT-X-R1-R1 - R1-owned critical boundary families missing/invalid")
+    if r1_critical_scope_unresolved(resolutions) or r1_critical_owner_unresolved(resolutions):
+        remediation.append("TENANT-X-R1-R2 - critical authority scope/owner reconciliation")
     if dup_confirmed or dup_unresolved:
-        remediation.append("TENANT-X-R1-R3")
-    if r1_critical_propagation_missing():
-        remediation.append("TENANT-X-R1-R4")
+        remediation.append("TENANT-X-R1-R3 - duplicate authority reconciliation")
+    if r1_owned_propagation_missing():
+        remediation.append("TENANT-X-R1-R4 - missing R1-owned structural provenance")
     if critical_unknown or illegal_critical:
-        remediation.append("TENANT-X-R1-R5")
+        remediation.append("TENANT-X-R1-R5 - silent substitution gaps")
+    if len(root_selectors) != 1 or r1_illegal_root_selectors(root_inventory):
+        remediation.append("TENANT-X-R1-R6 - root tenant selector inventory")
+    if r1_critical_unknown_root_selectors(root_inventory):
+        remediation.append("TENANT-X-R1-R7 - unknown critical root selectors")
 
     ready = (
-        not r1_critical_boundary_missing_or_invalid()
-        and scope_unresolved == 0
-        and owner_unresolved == 0
+        not r1_owned_critical_boundary_missing_or_invalid()
+        and not r1_critical_scope_unresolved(resolutions)
+        and not r1_critical_owner_unresolved(resolutions)
         and owner_conflict == 0
         and dup_confirmed == 0
         and dup_unresolved == 0
-        and not r1_critical_propagation_missing()
+        and not r1_owned_propagation_missing()
         and critical_unknown == 0
         and illegal_critical == 0
+        and len(root_selectors) == 1
+        and not r1_illegal_root_selectors(root_inventory)
+        and not r1_critical_unknown_root_selectors(root_inventory)
+        and not r1_cross_tenant_unknown_critical(build_r1_cross_tenant_inventory(inventory))
         and len(resolutions) == 22
     )
 
@@ -140,8 +166,10 @@ def build_r1_qualification_report(
         owner_conflict=owner_conflict,
         duplicate_confirmed=dup_confirmed,
         duplicate_unresolved=dup_unresolved,
-        root_tenant_selectors=SANCTIONED_ROOT_TENANT_SELECTORS,
-        legal_cross_tenant_mechanisms=len(LEGAL_CROSS_TENANT_PRODUCTION_MECHANISMS),
+        root_tenant_selectors=root_selectors,
+        legal_cross_tenant_mechanisms=legal_cross_tenant_mechanism_count(
+            build_r1_cross_tenant_inventory(inventory)
+        ),
         critical_unknown_substitutions=critical_unknown,
         illegal_critical_substitutions=illegal_critical,
         proven_current_head_edges=proven,
@@ -150,7 +178,7 @@ def build_r1_qualification_report(
         invalid_edges=invalid,
         b2b_nordea_verdict="READY WITH PLATFORM GAPS",
         r1_ready_for_audit=ready,
-        remediation_children=tuple(sorted(set(remediation))),
+        remediation_children=tuple(remediation),
     )
 
 
