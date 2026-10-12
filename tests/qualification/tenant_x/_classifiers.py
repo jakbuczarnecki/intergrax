@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from tests.qualification.tenant_x._discovery import discover_candidates_from_source
-from tests.qualification.tenant_x._evidence import evidence_kinds, has_kind
+from tests.qualification.tenant_x._evidence import TenantAstEvidenceKind, evidence_kinds, has_kind
 from tests.qualification.tenant_x._types import (
     AmbientDefaultSemantics,
     OptionalTenantSemantics,
@@ -20,16 +20,17 @@ from tests.qualification.tenant_x._types import (
     TenantSurfaceRecord,
 )
 
-_EVID_SQL_PREDICATE = "TENANT_IN_SQL_PREDICATE"
-_EVID_SQL_MISSING = "TENANT_MISSING_IN_SQL_QUERY"
-_EVID_SUBSCRIPT_KEY = "TENANT_IN_SUBSCRIPT_KEY"
-_EVID_SUBSCRIPT_MISSING = "TENANT_MISSING_IN_SUBSCRIPT"
-_EVID_DEFAULT_PROTECTED = "DEFAULT_FLOWS_TO_PROTECTED_OP"
-_EVID_APP_LOCAL = "APPLICATION_LOCAL_MODULE"
-_EVID_COMPAT = "COMPATIBILITY_MODULE"
-_EVID_GLOBAL_SYMBOL = "GLOBAL_NON_TENANT_SYMBOL"
-_EVID_VALIDATOR_INVOKED = "VALIDATOR_INVOKED_BEFORE_LOOKUP"
-_EVID_LOOKUP_NO_VALIDATOR = "PROTECTED_LOOKUP_WITHOUT_VALIDATOR"
+_EVID_SQL_PREDICATE = TenantAstEvidenceKind.TENANT_IN_SQL_PREDICATE.value
+_EVID_SQL_MISSING = TenantAstEvidenceKind.TENANT_MISSING_IN_TENANT_SCOPED_SQL.value
+_EVID_RESOURCE_KEY = TenantAstEvidenceKind.TENANT_IN_RESOURCE_KEY.value
+_EVID_RESOURCE_MISSING = TenantAstEvidenceKind.TENANT_MISSING_FROM_TENANT_SCOPED_RESOURCE_KEY.value
+_EVID_DEFAULT_PROTECTED = TenantAstEvidenceKind.DEFAULT_FLOWS_TO_PROTECTED_OP.value
+_EVID_APP_LOCAL = TenantAstEvidenceKind.APPLICATION_LOCAL_MODULE.value
+_EVID_COMPAT = TenantAstEvidenceKind.COMPATIBILITY_MODULE.value
+_EVID_GLOBAL_SYMBOL = TenantAstEvidenceKind.GLOBAL_NON_TENANT_SYMBOL.value
+_EVID_VALIDATOR_INVOKED = TenantAstEvidenceKind.VALIDATOR_INVOKED_BEFORE_LOOKUP.value
+_EVID_LOOKUP_NO_VALIDATOR = TenantAstEvidenceKind.PROTECTED_LOOKUP_WITHOUT_VALIDATOR.value
+_EVID_VALIDATOR_AFTER = TenantAstEvidenceKind.VALIDATOR_AFTER_PROTECTED_OPERATION.value
 
 # Longer / more specific prefixes must appear before broader parents.
 _DOMAIN_PREFIX: tuple[tuple[str, TenantDomain], ...] = tuple(
@@ -248,21 +249,21 @@ def _persistence_from_evidence(
             TenantBlockerClass.NONE,
             "Validator invocation precedes protected lookup in same function",
         )
-    if _EVID_SQL_PREDICATE in kinds or _EVID_SUBSCRIPT_KEY in kinds:
+    if _EVID_SQL_PREDICATE in kinds or _EVID_RESOURCE_KEY in kinds:
         return (
             TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE,
             ("TENANT-X-P0:ast:tenant_in_key_or_predicate", *extra_refs),
             blocker,
             note,
         )
-    if _EVID_LOOKUP_NO_VALIDATOR in kinds:
+    if _EVID_LOOKUP_NO_VALIDATOR in kinds or _EVID_VALIDATOR_AFTER in kinds:
         return (
             TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE,
             ("TENANT-X-P0:ast:lookup_without_validator",),
             TenantBlockerClass.NONE,
             "Validator exists in module but protected lookup not proven guarded",
         )
-    if _EVID_SQL_MISSING in kinds or _EVID_SUBSCRIPT_MISSING in kinds:
+    if _EVID_SQL_MISSING in kinds or _EVID_RESOURCE_MISSING in kinds:
         blocker = TenantBlockerClass.IN_SCOPE_BLOCKER
         note = "Tenant represented but storage/query lacks tenant isolation evidence"
         return (

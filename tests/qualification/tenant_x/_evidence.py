@@ -21,20 +21,92 @@ _VALIDATOR_CALL_NAMES: frozenset[str] = frozenset(
     {"require_tenant_id", "validate_tenant", "_validate_tenant_id", "require_tenant_id_from_exec_ctx"}
 )
 
+_TENANT_SCOPED_CONTAINER_NAMES: frozenset[str] = frozenset(
+    {
+        "store",
+        "cache",
+        "state",
+        "memory",
+        "index",
+        "repository",
+        "repo",
+        "tenant_store",
+        "tenant_cache",
+        "tenant_state",
+        "session_store",
+        "kv",
+        "bucket",
+        "persistence",
+    }
+)
+
+_TENANT_SCOPED_TYPE_MARKERS: frozenset[str] = frozenset(
+    {
+        "TenantScopedStore",
+        "TenantScopedCache",
+        "TenantScopedState",
+        "TenantScopedResource",
+        "TenantStateStore",
+    }
+)
+
+_GLOBAL_SQL_TABLES: frozenset[str] = frozenset(
+    {
+        "countries",
+        "country",
+        "regions",
+        "region",
+        "currencies",
+        "currency",
+        "languages",
+        "language",
+        "locales",
+        "locale",
+        "timezones",
+        "timezone",
+        "platform_config",
+        "platform_metadata",
+        "reference_data",
+        "global_config",
+    }
+)
+
+_TENANT_OWNED_SQL_TABLES: frozenset[str] = frozenset(
+    {
+        "items",
+        "tenants",
+        "tenant",
+        "sessions",
+        "documents",
+        "records",
+        "checkpoints",
+        "artifacts",
+        "memories",
+        "vectors",
+        "embeddings",
+    }
+)
+
+_SQL_FROM_RE = re.compile(r"\bfrom\s+([`\"']?)(\w+)\1", re.IGNORECASE)
+
 _AMBIENT_DEFAULT_RE = re.compile(
     r'tenant_id\s*:\s*str\s*=\s*["\']default["\']|tenant_id\s*=\s*["\']default["\']'
 )
 
 
-class _EvidenceKind(StrEnum):
+class TenantAstEvidenceKind(StrEnum):
     TENANT_FIELD_DECLARED = "TENANT_FIELD_DECLARED"
+    TENANT_SCOPED_RESOURCE = "TENANT_SCOPED_RESOURCE"
+    TENANT_IN_RESOURCE_KEY = "TENANT_IN_RESOURCE_KEY"
+    TENANT_MISSING_FROM_TENANT_SCOPED_RESOURCE_KEY = "TENANT_MISSING_FROM_TENANT_SCOPED_RESOURCE_KEY"
     TENANT_IN_SQL_PREDICATE = "TENANT_IN_SQL_PREDICATE"
-    TENANT_MISSING_IN_SQL_QUERY = "TENANT_MISSING_IN_SQL_QUERY"
-    TENANT_IN_SUBSCRIPT_KEY = "TENANT_IN_SUBSCRIPT_KEY"
-    TENANT_MISSING_IN_SUBSCRIPT = "TENANT_MISSING_IN_SUBSCRIPT"
+    TENANT_MISSING_IN_TENANT_SCOPED_SQL = "TENANT_MISSING_IN_TENANT_SCOPED_SQL"
+    SQL_GLOBAL_REFERENCE_TABLE = "SQL_GLOBAL_REFERENCE_TABLE"
+    SQL_UNKNOWN_TABLE_OWNERSHIP = "SQL_UNKNOWN_TABLE_OWNERSHIP"
     DEFAULT_FLOWS_TO_PROTECTED_OP = "DEFAULT_FLOWS_TO_PROTECTED_OP"
     VALIDATOR_MARKER_PRESENT = "VALIDATOR_MARKER_PRESENT"
     VALIDATOR_INVOKED_BEFORE_LOOKUP = "VALIDATOR_INVOKED_BEFORE_LOOKUP"
+    VALIDATOR_AFTER_PROTECTED_OPERATION = "VALIDATOR_AFTER_PROTECTED_OPERATION"
     PROTECTED_LOOKUP_WITHOUT_VALIDATOR = "PROTECTED_LOOKUP_WITHOUT_VALIDATOR"
     GLOBAL_NON_TENANT_SYMBOL = "GLOBAL_NON_TENANT_SYMBOL"
     APPLICATION_LOCAL_MODULE = "APPLICATION_LOCAL_MODULE"
@@ -72,6 +144,92 @@ def _sql_literal_has_tenant_predicate(sql: str) -> bool:
     return "tenant_id" in lowered or " tenant " in f" {lowered} "
 
 
+def _sql_primary_tables(sql: str) -> tuple[str, ...]:
+    return tuple(m.group(2).lower() for m in _SQL_FROM_RE.finditer(sql))
+
+
+def _sql_table_ownership(table: str) -> str:
+    if table in _GLOBAL_SQL_TABLES:
+        return "global"
+    if table in _TENANT_OWNED_SQL_TABLES or table.startswith("tenant_") or table.endswith("_by_tenant"):
+        return "tenant"
+    return "unknown"
+
+
+def _sql_resource_ownership(sql: str) -> str:
+    tables = _sql_primary_tables(sql)
+    if not tables:
+        return "unknown"
+    kinds = {_sql_table_ownership(t) for t in tables}
+    if "tenant" in kinds:
+        return "tenant"
+    if kinds == {"global"}:
+        return "global"
+    if "unknown" in kinds:
+        return "unknown"
+    return "unknown"
+
+
+def _container_symbol(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return None
+
+
+def _name_suggests_tenant_scoped_resource(name: str, *, on_instance_field: bool = False) -> bool:
+    lowered = name.lower()
+    if "tenant" in lowered and any(
+        marker in lowered for marker in ("store", "cache", "state", "memory", "index", "bucket", "kv")
+    ):
+        return True
+    if on_instance_field and lowered in _TENANT_SCOPED_CONTAINER_NAMES:
+        return True
+    return lowered in {
+        "tenant_store",
+        "tenant_cache",
+        "tenant_state",
+        "tenant_memory",
+        "tenant_index",
+        "session_store",
+    }
+
+
+def _subscript_container_tenant_scoped(
+    node: ast.Subscript,
+    *,
+    class_has_tenant_field: bool,
+    class_scoped_fields: frozenset[str],
+) -> bool:
+    symbol = _container_symbol(node.value)
+    if symbol is None:
+        return False
+    if isinstance(node.value, ast.Name):
+        return _name_suggests_tenant_scoped_resource(symbol)
+    if isinstance(node.value, ast.Attribute) and isinstance(node.value.value, ast.Name):
+        if node.value.value.id == "self" and class_has_tenant_field:
+            if symbol in class_scoped_fields or _name_suggests_tenant_scoped_resource(
+                symbol, on_instance_field=True
+            ):
+                return True
+    return _name_suggests_tenant_scoped_resource(symbol)
+
+
+def _class_tenant_scoped_field_names(class_def: ast.ClassDef) -> frozenset[str]:
+    scoped: set[str] = set()
+    for stmt in class_def.body:
+        if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+            name = stmt.target.id
+            if _name_suggests_tenant_scoped_resource(name, on_instance_field=True):
+                scoped.add(name)
+            if stmt.annotation is not None:
+                ann_src = ast.unparse(stmt.annotation)
+                if any(marker in ann_src for marker in _TENANT_SCOPED_TYPE_MARKERS):
+                    scoped.add(name)
+    return frozenset(scoped)
+
+
 def _is_protected_execute(call: ast.Call) -> bool:
     if isinstance(call.func, ast.Attribute) and call.func.attr in _SQL_EXECUTE_NAMES:
         if call.args and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str):
@@ -83,11 +241,14 @@ def _analyze_function(
     func: ast.FunctionDef | ast.AsyncFunctionDef,
     source: str,
     class_name: str | None,
+    *,
+    class_has_tenant_field: bool = False,
+    class_scoped_fields: frozenset[str] = frozenset(),
 ) -> tuple[TenantAstEvidence, ...]:
     enclosing = f"{class_name}.{func.name}" if class_name else func.name
     evidence: list[TenantAstEvidence] = []
-    validator_invoked = False
-    protected_calls: list[tuple[int, ast.Call, str]] = []
+    validator_lines: list[int] = []
+    protected_lines: list[int] = []
     tenant_key_vars: set[str] = set()
 
     for node in ast.walk(func):
@@ -96,67 +257,117 @@ def _analyze_function(
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         tenant_key_vars.add(target.id)
+
+    for node in ast.walk(func):
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name) and node.func.id in _VALIDATOR_CALL_NAMES:
-                validator_invoked = True
+                validator_lines.append(node.lineno)
             if isinstance(node.func, ast.Attribute) and node.func.attr in _VALIDATOR_CALL_NAMES:
-                validator_invoked = True
+                validator_lines.append(node.lineno)
             if _is_protected_execute(node):
                 sql = node.args[0].value  # type: ignore[union-attr]
-                protected_calls.append((node.lineno, node, sql))
-
-        if isinstance(node, ast.Subscript):
-            if isinstance(node.ctx, ast.Store | ast.Load):
-                slice_has_tenant = _name_refs_tenant(node.slice)
-                if isinstance(node.slice, ast.Name) and node.slice.id in tenant_key_vars:
-                    slice_has_tenant = True
-                if slice_has_tenant:
+                ownership = _sql_resource_ownership(sql)
+                if ownership == "tenant":
+                    protected_lines.append(node.lineno)
                     evidence.append(
                         TenantAstEvidence(
-                            kind=_EvidenceKind.TENANT_IN_SUBSCRIPT_KEY.value,
-                            detail=f"{enclosing}: subscript key includes tenant",
+                            kind=TenantAstEvidenceKind.TENANT_SCOPED_RESOURCE.value,
+                            detail=f"{enclosing}: SQL targets tenant-scoped table",
                             line_no=node.lineno,
                         )
                     )
-                elif isinstance(node.slice, ast.Name) and not _name_refs_tenant(node.slice):
-                    has_tenant_param = any(a.arg in _TENANT_NAMES for a in func.args.args)
-                    has_class_tenant = class_name is not None
-                    if has_tenant_param or has_class_tenant:
+                    if _sql_literal_has_tenant_predicate(sql):
                         evidence.append(
                             TenantAstEvidence(
-                                kind=_EvidenceKind.TENANT_MISSING_IN_SUBSCRIPT.value,
-                                detail=f"{enclosing}: subscript without tenant in key",
+                                kind=TenantAstEvidenceKind.TENANT_IN_SQL_PREDICATE.value,
+                                detail=f"{enclosing}: SQL predicate references tenant",
                                 line_no=node.lineno,
                             )
                         )
+                    else:
+                        evidence.append(
+                            TenantAstEvidence(
+                                kind=TenantAstEvidenceKind.TENANT_MISSING_IN_TENANT_SCOPED_SQL.value,
+                                detail=f"{enclosing}: tenant-scoped SQL without tenant predicate",
+                                line_no=node.lineno,
+                            )
+                        )
+                elif ownership == "global":
+                    evidence.append(
+                        TenantAstEvidence(
+                            kind=TenantAstEvidenceKind.SQL_GLOBAL_REFERENCE_TABLE.value,
+                            detail=f"{enclosing}: SQL targets global/reference table",
+                            line_no=node.lineno,
+                        )
+                    )
+                else:
+                    evidence.append(
+                        TenantAstEvidence(
+                            kind=TenantAstEvidenceKind.SQL_UNKNOWN_TABLE_OWNERSHIP.value,
+                            detail=f"{enclosing}: SQL table ownership unknown",
+                            line_no=node.lineno,
+                        )
+                    )
 
-    for lineno, _call, sql in protected_calls:
-        if _sql_literal_has_tenant_predicate(sql):
-            evidence.append(
-                TenantAstEvidence(
-                    kind=_EvidenceKind.TENANT_IN_SQL_PREDICATE.value,
-                    detail=f"{enclosing}: SQL predicate references tenant",
-                    line_no=lineno,
-                )
-            )
-        else:
-            has_tenant_param = any(a.arg in _TENANT_NAMES for a in func.args.args)
-            if has_tenant_param or class_name is not None:
+        if isinstance(node, ast.Subscript) and isinstance(node.ctx, ast.Store | ast.Load):
+            slice_has_tenant = _name_refs_tenant(node.slice)
+            if isinstance(node.slice, ast.Name) and node.slice.id in tenant_key_vars:
+                slice_has_tenant = True
+            if slice_has_tenant:
                 evidence.append(
                     TenantAstEvidence(
-                        kind=_EvidenceKind.TENANT_MISSING_IN_SQL_QUERY.value,
-                        detail=f"{enclosing}: SQL query without tenant predicate",
-                        line_no=lineno,
+                        kind=TenantAstEvidenceKind.TENANT_IN_RESOURCE_KEY.value,
+                        detail=f"{enclosing}: resource key includes tenant",
+                        line_no=node.lineno,
+                    )
+                )
+                if _subscript_container_tenant_scoped(
+                    node,
+                    class_has_tenant_field=class_has_tenant_field,
+                    class_scoped_fields=class_scoped_fields,
+                ):
+                    protected_lines.append(node.lineno)
+                continue
+            if not _subscript_container_tenant_scoped(
+                node,
+                class_has_tenant_field=class_has_tenant_field,
+                class_scoped_fields=class_scoped_fields,
+            ):
+                continue
+            protected_lines.append(node.lineno)
+            evidence.append(
+                TenantAstEvidence(
+                    kind=TenantAstEvidenceKind.TENANT_SCOPED_RESOURCE.value,
+                    detail=f"{enclosing}: subscript on tenant-scoped resource",
+                    line_no=node.lineno,
+                )
+            )
+            if isinstance(node.slice, ast.Name) and not _name_refs_tenant(node.slice):
+                evidence.append(
+                    TenantAstEvidence(
+                        kind=TenantAstEvidenceKind.TENANT_MISSING_FROM_TENANT_SCOPED_RESOURCE_KEY.value,
+                        detail=f"{enclosing}: tenant-scoped resource key lacks tenant",
+                        line_no=node.lineno,
                     )
                 )
 
-    if protected_calls:
-        if validator_invoked:
+    if protected_lines:
+        all_guarded = all(any(v < p for v in validator_lines) for p in protected_lines)
+        any_validator = bool(validator_lines)
+        if all_guarded and any_validator:
             evidence.append(
                 TenantAstEvidence(
-                    kind=_EvidenceKind.VALIDATOR_INVOKED_BEFORE_LOOKUP.value,
-                    detail=f"{enclosing}: validator invoked in function with protected access",
-                    line_no=func.lineno,
+                    kind=TenantAstEvidenceKind.VALIDATOR_INVOKED_BEFORE_LOOKUP.value,
+                    detail=f"{enclosing}: validator precedes protected operation(s)",
+                    line_no=min(validator_lines),
+                )
+            )
+        elif any_validator and any(v > min(protected_lines) for v in validator_lines):
+            evidence.append(
+                TenantAstEvidence(
+                    kind=TenantAstEvidenceKind.VALIDATOR_AFTER_PROTECTED_OPERATION.value,
+                    detail=f"{enclosing}: validator occurs after protected operation",
+                    line_no=max(validator_lines),
                 )
             )
         else:
@@ -164,8 +375,8 @@ def _analyze_function(
             if module_has_validator:
                 evidence.append(
                     TenantAstEvidence(
-                        kind=_EvidenceKind.PROTECTED_LOOKUP_WITHOUT_VALIDATOR.value,
-                        detail=f"{enclosing}: protected access without validator invocation in flow",
+                        kind=TenantAstEvidenceKind.PROTECTED_LOOKUP_WITHOUT_VALIDATOR.value,
+                        detail=f"{enclosing}: protected access without validator before operation",
                         line_no=func.lineno,
                     )
                 )
@@ -180,12 +391,20 @@ def _class_field_declarations(class_def: ast.ClassDef) -> tuple[TenantAstEvidenc
             if stmt.target.id in _TENANT_NAMES:
                 out.append(
                     TenantAstEvidence(
-                        kind=_EvidenceKind.TENANT_FIELD_DECLARED.value,
+                        kind=TenantAstEvidenceKind.TENANT_FIELD_DECLARED.value,
                         detail=f"{class_def.name}.{stmt.target.id} field declared",
                         line_no=stmt.lineno,
                     )
                 )
     return tuple(out)
+
+
+def _class_has_tenant_field(class_def: ast.ClassDef) -> bool:
+    for stmt in class_def.body:
+        if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+            if stmt.target.id in _TENANT_NAMES:
+                return True
+    return False
 
 
 def _ambient_default_flows_to_protected(source: str, tree: ast.Module) -> bool:
@@ -234,7 +453,7 @@ def build_module_evidence_index(module_path: str, source: str) -> _ModuleEvidenc
     if module_path.startswith("applications/"):
         module_level.append(
             TenantAstEvidence(
-                kind=_EvidenceKind.APPLICATION_LOCAL_MODULE.value,
+                kind=TenantAstEvidenceKind.APPLICATION_LOCAL_MODULE.value,
                 detail="module under applications/",
                 line_no=1,
             )
@@ -242,7 +461,7 @@ def build_module_evidence_index(module_path: str, source: str) -> _ModuleEvidenc
     if "compat" in module_path or "legacy" in module_path:
         module_level.append(
             TenantAstEvidence(
-                kind=_EvidenceKind.COMPATIBILITY_MODULE.value,
+                kind=TenantAstEvidenceKind.COMPATIBILITY_MODULE.value,
                 detail="compatibility/legacy path segment",
                 line_no=1,
             )
@@ -252,7 +471,7 @@ def build_module_evidence_index(module_path: str, source: str) -> _ModuleEvidenc
         if marker in source:
             module_level.append(
                 TenantAstEvidence(
-                    kind=_EvidenceKind.VALIDATOR_MARKER_PRESENT.value,
+                    kind=TenantAstEvidenceKind.VALIDATOR_MARKER_PRESENT.value,
                     detail=f"module contains {marker}",
                     line_no=1,
                 )
@@ -262,7 +481,7 @@ def build_module_evidence_index(module_path: str, source: str) -> _ModuleEvidenc
     if _ambient_default_flows_to_protected(source, tree):
         module_level.append(
             TenantAstEvidence(
-                kind=_EvidenceKind.DEFAULT_FLOWS_TO_PROTECTED_OP.value,
+                kind=TenantAstEvidenceKind.DEFAULT_FLOWS_TO_PROTECTED_OP.value,
                 detail="ambient tenant default participates in protected operation",
                 line_no=1,
             )
@@ -270,11 +489,19 @@ def build_module_evidence_index(module_path: str, source: str) -> _ModuleEvidenc
 
     for node in tree.body:
         if isinstance(node, ast.ClassDef):
+            scoped_fields = _class_tenant_scoped_field_names(node)
+            has_tenant = _class_has_tenant_field(node)
             by_enclosing[node.name] = list(_class_field_declarations(node))
             for stmt in node.body:
                 if isinstance(stmt, ast.FunctionDef | ast.AsyncFunctionDef):
                     fn_key = f"{node.name}.{stmt.name}"
-                    fn_ev = _analyze_function(stmt, source, node.name)
+                    fn_ev = _analyze_function(
+                        stmt,
+                        source,
+                        node.name,
+                        class_has_tenant_field=has_tenant,
+                        class_scoped_fields=scoped_fields,
+                    )
                     by_enclosing[fn_key] = list(fn_ev)
         elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             by_enclosing[node.name] = list(_analyze_function(node, source, None))
@@ -298,6 +525,9 @@ def discovery_evidence_for(
 
     if enclosing_symbol in idx.by_enclosing:
         collected.extend(idx.by_enclosing[enclosing_symbol])
+    for key, ev_tuple in idx.by_enclosing.items():
+        if key.endswith(f".{enclosing_symbol}") and key != enclosing_symbol:
+            collected.extend(ev_tuple)
     method_prefix = f"{enclosing_symbol}."
     for key, ev_tuple in idx.by_enclosing.items():
         if key.startswith(method_prefix):
@@ -310,7 +540,7 @@ def discovery_evidence_for(
                 if key.startswith(f"{class_prefix}.") and key != enclosing_symbol:
                     collected.extend(ev_tuple)
 
-    for kind in (_EvidenceKind.GLOBAL_NON_TENANT_SYMBOL.value,):
+    for kind in (TenantAstEvidenceKind.GLOBAL_NON_TENANT_SYMBOL.value,):
         if any(
             m in enclosing_symbol.lower()
             for m in ("health", "liveness", "readiness", "metrics_registry", "platform_version")

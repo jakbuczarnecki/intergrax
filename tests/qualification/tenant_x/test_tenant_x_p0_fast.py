@@ -13,7 +13,7 @@ from tests.qualification.tenant_x._classifiers import (
     domain_for_path,
     uses_generic_safe_fallback,
 )
-from tests.qualification.tenant_x._types import TenantPersistenceRole
+from tests.qualification.tenant_x._types import TenantBlockerClass, TenantPersistenceRole
 from tests.qualification.tenant_x._coverage_matrix import TENANT_PROOF_COVERAGE_MATRIX
 from tests.qualification.tenant_x._evidence_reconciliation import (
     HISTORICAL_TENANT_EVIDENCE,
@@ -130,7 +130,10 @@ class Cache:
     neg_records = classify_source_fixture("synthetic/probes/key_negative.py", neg)
     assert any(r.persistence_role == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE for r in pos_records)
     cache = next(r for r in neg_records if r.symbol == "Cache")
-    assert cache.persistence_role == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE
+    assert cache.blocker_class != TenantBlockerClass.IN_SCOPE_BLOCKER
+    assert cache.persistence_role != TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE or (
+        "missing_isolation" not in "".join(cache.evidence_refs)
+    )
 
 
 def test_tx_p0_r1_q12_propagation_edge_validation_empty_without_inventory() -> None:

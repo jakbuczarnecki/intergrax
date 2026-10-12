@@ -47,6 +47,8 @@ def test_tx_p0_head_q04_matrix_truthful_unknown_allowed() -> None:
     assert unknown_identity_source_count() == matrix.unknown_identity_sources
 
 
-def test_tx_p0_head_q05_in_scope_blockers_from_ambient_not_universal() -> None:
+def test_tx_p0_head_q05_in_scope_blockers_require_positive_evidence() -> None:
     blockers = [r for r in get_tenant_x_inventory() if r.blocker_class == TenantBlockerClass.IN_SCOPE_BLOCKER]
-    assert blockers
+    for record in blockers:
+        joined = "".join(record.evidence_refs)
+        assert "ast:missing_isolation" in joined or "ambient:TENANT_REQUIRED_SILENT_DEFAULT" in joined

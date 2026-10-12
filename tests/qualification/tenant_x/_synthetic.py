@@ -39,6 +39,12 @@ class SyntheticProbeId(StrEnum):
     Q_ACTUAL_TENANT_PREDICATE = "Q"
     R_VALIDATOR_NOT_ON_LOOKUP = "R"
     S_VALIDATOR_BEFORE_LOOKUP = "S"
+    T_UNRELATED_DICT_SUBSCRIPT = "T"
+    U_GLOBAL_REFERENCE_SQL = "U"
+    V_TENANT_STORE_MISSING_KEY = "V"
+    W_TENANT_STORE_TENANT_KEY = "W"
+    X_VALIDATOR_AFTER_LOOKUP = "X"
+    Y_VALIDATOR_BEFORE_TENANT_KEY = "Y"
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,6 +217,67 @@ def load(item_id: str, tenant_id: str):
     )
 """
 
+_SOURCE_T = """
+class Service:
+    tenant_id: str
+
+    def run(self, name: str):
+        return self.handlers[name]
+"""
+
+_SOURCE_U = """
+def load_country(tenant_id: str, code: str):
+    return db.execute(
+        "SELECT name FROM countries WHERE code = ?",
+        (code,),
+    )
+"""
+
+_SOURCE_V = """
+class Service:
+    tenant_id: str
+    store: dict
+
+    def load(self, item_id: str):
+        return self.store[item_id]
+"""
+
+_SOURCE_W = """
+class Service:
+    tenant_id: str
+    store: dict
+
+    def load(self, tenant_id: str, item_id: str):
+        return self.store[(tenant_id, item_id)]
+"""
+
+_SOURCE_X = """
+def require_tenant_id(value: str) -> str:
+    if not value:
+        raise ValueError("tenant_id is required")
+    return value
+
+tenant_store = {}
+
+def load(tenant_id: str, item_id: str):
+    value = tenant_store[item_id]
+    require_tenant_id(tenant_id)
+    return value
+"""
+
+_SOURCE_Y = """
+def require_tenant_id(value: str) -> str:
+    if not value:
+        raise ValueError("tenant_id is required")
+    return value
+
+tenant_store = {}
+
+def load(tenant_id: str, item_id: str):
+    tenant_id = require_tenant_id(tenant_id)
+    return tenant_store[(tenant_id, item_id)]
+"""
+
 CLASSIFIER_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.K_UNKNOWN_TENANT_FIELD,
@@ -264,6 +331,42 @@ CLASSIFIER_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
         probe_id=SyntheticProbeId.S_VALIDATOR_BEFORE_LOOKUP,
         module_path="synthetic/probes/s_validator_guard.py",
         source=_SOURCE_S,
+        surface_selector="load",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.T_UNRELATED_DICT_SUBSCRIPT,
+        module_path="synthetic/probes/t_unrelated_dict.py",
+        source=_SOURCE_T,
+        surface_selector="Service",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.U_GLOBAL_REFERENCE_SQL,
+        module_path="synthetic/probes/u_global_sql.py",
+        source=_SOURCE_U,
+        surface_selector="load_country",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.V_TENANT_STORE_MISSING_KEY,
+        module_path="synthetic/probes/v_tenant_store_missing.py",
+        source=_SOURCE_V,
+        surface_selector="Service",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.W_TENANT_STORE_TENANT_KEY,
+        module_path="synthetic/probes/w_tenant_store_key.py",
+        source=_SOURCE_W,
+        surface_selector="load",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.X_VALIDATOR_AFTER_LOOKUP,
+        module_path="synthetic/probes/x_validator_after.py",
+        source=_SOURCE_X,
+        surface_selector="load",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Y_VALIDATOR_BEFORE_TENANT_KEY,
+        module_path="synthetic/probes/y_validator_before_key.py",
+        source=_SOURCE_Y,
         surface_selector="load",
     ),
 )
@@ -370,5 +473,20 @@ def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
             and "lookup_without_validator" in "".join(record.evidence_refs)
         )
     if probe == SyntheticProbeId.S_VALIDATOR_BEFORE_LOOKUP:
+        return record.persistence_role == TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
+    if probe == SyntheticProbeId.T_UNRELATED_DICT_SUBSCRIPT:
+        return record.blocker_class != TenantBlockerClass.IN_SCOPE_BLOCKER
+    if probe == SyntheticProbeId.U_GLOBAL_REFERENCE_SQL:
+        return record.blocker_class == TenantBlockerClass.NONE
+    if probe == SyntheticProbeId.V_TENANT_STORE_MISSING_KEY:
+        return (
+            record.persistence_role == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE
+            and record.blocker_class == TenantBlockerClass.IN_SCOPE_BLOCKER
+        )
+    if probe == SyntheticProbeId.W_TENANT_STORE_TENANT_KEY:
+        return record.persistence_role == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE
+    if probe == SyntheticProbeId.X_VALIDATOR_AFTER_LOOKUP:
+        return record.persistence_role != TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
+    if probe == SyntheticProbeId.Y_VALIDATOR_BEFORE_TENANT_KEY:
         return record.persistence_role == TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
     return False
