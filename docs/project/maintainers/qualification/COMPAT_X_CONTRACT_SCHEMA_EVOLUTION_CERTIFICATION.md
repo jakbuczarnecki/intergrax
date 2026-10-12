@@ -34,8 +34,8 @@ Mechanical closed-world inventory of compatibility-relevant platform surfaces on
 | Unclassified candidates | 0 |
 | Public/stable facet (inventory) | (see gate `test_cx_p0_r1_inventory_counts_reportable`) |
 | Migration mechanisms (discovered) | 157 |
-| Compatibility shim candidates (discovered) | 474 |
-| Authority-inspected compatibility candidates | 474 |
+| Compatibility shim candidates (discovered) | 476 |
+| Authority-inspected compatibility candidates | 476 |
 | Uninspected compatibility candidates | 0 |
 | Parallel authority (production inventory) | 0 |
 | Registry version conflicts | 0 |
@@ -60,7 +60,7 @@ Mechanical closed-world inventory of compatibility-relevant platform surfaces on
 | `wire.persistence` (excluded after classification) | 601 |
 | `public.export` (excluded after classification) | 4688 |
 | `migration.mechanism` | 157 |
-| `compat.shim` | 474 |
+| `compat.shim` | 476 |
 | `mechanism.policy_owner` | 2 |
 | `defect.persisted_without_version` | 5 |
 
@@ -134,8 +134,8 @@ production delta = 0
 | FRZ-CMP-04 | **PASS** @ `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` (**COMPAT-X-R3** **CLOSED**; **R3-P0** accepted @ `8ff23c9…`) | — (**COMPAT-X** parent checklist row remains **OPEN** until parent closure) |
 | FRZ-CMP-05 | **PASS** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b` (**COMPAT-X-R4** **CLOSED**) | CMP-P0-B05 remediated in **R4** qualification layer |
 | FRZ-CMP-06 | **OPEN** / **PASS CANDIDATE** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) | **16** legacy obligations reconciled; obligation drift **0**; implicit compatibility blockers **0**; not global **PASS** |
-| FRZ-CMP-07 | **OPEN** / **BLOCKED** → **COMPAT-X-R5** | CMP-P0-B07 |
-| FRZ-CMP-08 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (0 `PARALLEL_AUTHORITY` production; `CompatibilityCandidateContext` + full candidate authority inspection; multi-shape synthetic probes incl. outside `intergrax/compat/`); checklist **OPEN** until parent closure |
+| FRZ-CMP-07 | **OPEN** / **PASS CANDIDATE** — **COMPAT-X-R5-P0** **READY FOR AUDIT** @ `66f5c847…` | CMP-P0-B07 — cross-platform deprecation/removal policy + closed-world obligation inventory (`UNCLASSIFIED` **0**); not global **PASS** until **COMPAT-X-R5** closure |
+| FRZ-CMP-08 | **PASS CANDIDATE** / hardened @ **R5-P0** current HEAD | — (**476/476** authority-inspected; **0** `PARALLEL_AUTHORITY`; shim current-version authority violations **0**; adversarial probes **A–R**); checklist **OPEN** until parent closure |
 
 ## Proposed remediation grouping (re-derived from corrected discovery)
 
@@ -989,3 +989,36 @@ none introduced by R4 closure
 Roadmap amendment required:
 NO
 ```
+
+## COMPAT-X-R5-P0 — Deprecation/Removal Obligation Inventory (READY FOR AUDIT)
+
+**Status:** **COMPAT-X-R5-P0** = **READY FOR AUDIT** · **COMPAT-X-R5** = **BLOCKED PENDING P0 INDEPENDENT AUDIT** · **production delta = 0**
+
+**Baseline START_HEAD:** `66f5c847930144f83afe7a87b808ed5acac8420d`
+
+**Policy:** `docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md` — **Deprecation / Removal Policy** (rules A–J).
+
+**Qualification SSOT:** `tests/qualification/compat_x/_compat_x_deprecation_r5_inventory.py` · gates `tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py`
+
+### R5-P0 mechanical inventory (current HEAD)
+
+| Metric | Count |
+| --- | ---: |
+| Production Python files scanned | 7415 |
+| Total deprecation candidates | 1457 |
+| `UNCLASSIFIED` | 0 |
+| Temporary deprecation obligations | 42 |
+| Permanent compatibility boundaries | 488 |
+| Lifecycle-only (domain semantics) | 4 |
+| Historical read-only | 27 |
+| Shim candidates (closed-world `compat.shim`) | 476 |
+| Shim authority-inspected | 476 |
+| Shim uninspected | 0 |
+| Shim `PARALLEL_AUTHORITY` (production) | 0 |
+| Shim current-version authority violations | 0 |
+
+**Owner matrix:** `deprecation_removal` → **CURRENT_CONFIRMED_OWNER** @ architecture policy (`N/A — POLICY ONLY; DOMAIN COMPOSITION OWNERS`).
+
+**FRZ-CMP-07:** **OPEN** / **PASS CANDIDATE** (pending independent P0 audit). **FRZ-CMP-08:** **PASS CANDIDATE** / hardened (shim reconciliation revalidated on current HEAD).
+
+**B2B/Nordea (R5-P0):** **READY WITH PLATFORM GAPS** — replacement path clarity via typed obligation inventory; **Platform Escape Count (R5 scope) = 0**; formal scenario gate **NOT YET**.

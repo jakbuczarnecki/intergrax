@@ -120,10 +120,14 @@ COMPAT_X_OWNER_MATRIX: Final[tuple[CompatOwnerMatrixRow, ...]] = (
     ),
     CompatOwnerMatrixRow(
         concern="deprecation_removal",
-        responsibility_state=OwnerResponsibilityState.FRAGMENTED_UNOWNED,
-        semantic_owner_path="UNOWNED — COMPAT-X-R5",
-        composition_owner_path="UNOWNED — COMPAT-X-R5",
-        evidence_paths=("tests/qualification/compat_x/_compat_x_inventory.py",),
+        responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
+        semantic_owner_path="docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+        composition_owner_path=POLICY_ONLY_DOMAIN_COMPOSITION_OWNER,
+        evidence_paths=(
+            "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+            "tests/qualification/compat_x/_compat_x_deprecation_r5_inventory.py",
+            "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+        ),
     ),
     CompatOwnerMatrixRow(
         concern="compatibility_adapters",
