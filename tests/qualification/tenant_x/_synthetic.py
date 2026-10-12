@@ -1,15 +1,20 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""In-memory adversarial probes (TENANT-X-P0 §27)."""
+"""In-memory adversarial probes (TENANT-X-P0 §14–15)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
 
+from tests.qualification.tenant_x._classifiers import classify_candidate
 from tests.qualification.tenant_x._types import (
     AdversarialProbeVerdict,
+    TenantBlockerClass,
+    TenantDiscoveryCandidate,
     TenantFailClosedDisposition,
+    TenantIdentitySource,
+    TenantPersistenceRole,
     TenantPropagationRole,
 )
 
@@ -25,6 +30,13 @@ class SyntheticProbeId(StrEnum):
     H_PLUGIN_REWRITES_TENANT = "H"
     I_LEGAL_CROSS_TENANT_CONTRACT = "I"
     J_GLOBAL_HEALTH_METRIC = "J"
+    K_UNKNOWN_TENANT_FIELD = "K"
+    L_FUNCTION_PARAM_ONLY = "L"
+    M_SILENT_TENANT_DEFAULT = "M"
+    N_HARMLESS_GLOBAL_METADATA = "N"
+    O_CREDENTIALS_PATH_ONLY = "O"
+    P_STORAGE_IGNORES_TENANT = "P"
+    Q_ACTUAL_TENANT_PREDICATE = "Q"
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +46,12 @@ class SyntheticAdversarialScenario:
     tenant_a: str
     tenant_b: str
     expected_verdict: AdversarialProbeVerdict
+
+
+@dataclass(frozen=True, slots=True)
+class ClassifierProbeScenario:
+    probe_id: SyntheticProbeId
+    candidate: TenantDiscoveryCandidate
 
 
 SYNTHETIC_ADVERSARIAL_SCENARIOS: tuple[SyntheticAdversarialScenario, ...] = (
@@ -110,6 +128,61 @@ SYNTHETIC_ADVERSARIAL_SCENARIOS: tuple[SyntheticAdversarialScenario, ...] = (
 )
 
 
+def _fixture_candidate(probe_file: str, symbol: str, kind: str) -> TenantDiscoveryCandidate:
+    module_path = f"synthetic/probes/{probe_file}.py"
+    return TenantDiscoveryCandidate(
+        surface_id=f"{module_path}::{symbol}::{kind}",
+        module_path=module_path,
+        symbol=symbol,
+        discovery_kind=kind,
+        line_no=1,
+    )
+
+
+CLASSIFIER_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.K_UNKNOWN_TENANT_FIELD,
+        candidate=_fixture_candidate("k_unknown_tenant_field", "ProbeK", "class.field.tenant"),
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.L_FUNCTION_PARAM_ONLY,
+        candidate=_fixture_candidate("l_function_param_only", "fn", "function.param.tenant"),
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.M_SILENT_TENANT_DEFAULT,
+        candidate=TenantDiscoveryCandidate(
+            surface_id="intergrax/runtime/execution/m_probe_fixture.py::line1::ambient_default_field",
+            module_path="intergrax/runtime/execution/m_probe_fixture.py",
+            symbol="L1",
+            discovery_kind="ambient_default_field",
+            line_no=1,
+        ),
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.N_HARMLESS_GLOBAL_METADATA,
+        candidate=_fixture_candidate("n_harmless_global_metadata", "health_status", "class.field.tenant"),
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.O_CREDENTIALS_PATH_ONLY,
+        candidate=TenantDiscoveryCandidate(
+            surface_id="synthetic/probes/o_credentials_path_only.py::Broker::class.field.tenant",
+            module_path="synthetic/probes/o_credentials_path_only.py",
+            symbol="Broker",
+            discovery_kind="class.field.tenant",
+            line_no=1,
+        ),
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.P_STORAGE_IGNORES_TENANT,
+        candidate=_fixture_candidate("p_storage_ignores_tenant", "Store", "class.field.tenant"),
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Q_ACTUAL_TENANT_PREDICATE,
+        candidate=_fixture_candidate("q_actual_tenant_predicate", "Repo", "class.field.tenant"),
+    ),
+)
+
+
 def classify_synthetic_probe(scenario: SyntheticAdversarialScenario) -> TenantPropagationRole:
     probe = scenario.probe_id
     if probe == SyntheticProbeId.I_LEGAL_CROSS_TENANT_CONTRACT:
@@ -164,3 +237,27 @@ def evaluate_synthetic_probe(scenario: SyntheticAdversarialScenario) -> bool:
         TenantFailClosedDisposition.FAIL_CLOSED_ON_MISMATCH,
         TenantFailClosedDisposition.SILENT_DEFAULT_SUBSTITUTION,
     }
+
+
+def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
+    record = classify_candidate(scenario.candidate)
+    probe = scenario.probe_id
+    if probe == SyntheticProbeId.K_UNKNOWN_TENANT_FIELD:
+        return record.propagation_role == TenantPropagationRole.UNKNOWN
+    if probe == SyntheticProbeId.L_FUNCTION_PARAM_ONLY:
+        return (
+            record.identity_source == TenantIdentitySource.EXPLICIT_PARAMETER
+            and record.fail_closed_behavior == TenantFailClosedDisposition.UNKNOWN
+            and record.persistence_role == TenantPersistenceRole.NOT_APPLICABLE
+        )
+    if probe == SyntheticProbeId.M_SILENT_TENANT_DEFAULT:
+        return record.blocker_class == TenantBlockerClass.IN_SCOPE_BLOCKER
+    if probe == SyntheticProbeId.N_HARMLESS_GLOBAL_METADATA:
+        return record.blocker_class == TenantBlockerClass.NONE and record.tenant_required is False
+    if probe == SyntheticProbeId.O_CREDENTIALS_PATH_ONLY:
+        return record.propagation_role == TenantPropagationRole.UNKNOWN
+    if probe == SyntheticProbeId.P_STORAGE_IGNORES_TENANT:
+        return record.persistence_role != TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE
+    if probe == SyntheticProbeId.Q_ACTUAL_TENANT_PREDICATE:
+        return record.persistence_role == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE
+    return False

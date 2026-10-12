@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from tests.qualification.tenant_x._types import HistoricalEvidenceItem, TENANT_X_P0_BASELINE_SHA
+from tests.qualification.tenant_x._types import HistoricalEvidenceItem
 
 HISTORICAL_TENANT_EVIDENCE: Final[tuple[HistoricalEvidenceItem, ...]] = (
     HistoricalEvidenceItem(
@@ -20,7 +20,7 @@ HISTORICAL_TENANT_EVIDENCE: Final[tuple[HistoricalEvidenceItem, ...]] = (
     ),
     HistoricalEvidenceItem(
         stage_id="CTRL-X",
-        accepted_sha="0e8d4025da1e9bfc089b92fc7f11635dcd30dc59",
+        accepted_sha="318a4d835534ef5c48575f4649551c957dacd8ea",
         domain="control_plane",
         frz_ten_criteria=("FRZ-TEN-04", "FRZ-TEN-07"),
         historical_status="CLOSED_WITH_TRACKED_DEBT",
@@ -97,5 +97,10 @@ def evidence_items_requiring_current_head_replay() -> tuple[HistoricalEvidenceIt
     return tuple(item for item in HISTORICAL_TENANT_EVIDENCE if item.current_head_replay_required)
 
 
-def p0_baseline_matches_head(head_sha: str) -> bool:
-    return head_sha == TENANT_X_P0_BASELINE_SHA
+def historical_evidence_sha_mismatches() -> tuple[str, ...]:
+    """Return stage_ids whose accepted_sha was replaced with a non-historical placeholder."""
+    violations: list[str] = []
+    for item in HISTORICAL_TENANT_EVIDENCE:
+        if not item.accepted_sha or len(item.accepted_sha) != 40:
+            violations.append(item.stage_id)
+    return tuple(violations)

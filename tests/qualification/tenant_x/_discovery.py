@@ -10,10 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Final
 
-from tests.qualification.tenant_x._types import (
-    ClosedWorldDiscoveryReport,
-    TenantDiscoveryCandidate,
-)
+from tests.qualification.tenant_x._types import TenantDiscoveryCandidate
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -217,7 +214,7 @@ def _canonical_anchor_candidates() -> tuple[TenantDiscoveryCandidate, ...]:
 
 
 @lru_cache(maxsize=1)
-def build_closed_world_discovery_report() -> ClosedWorldDiscoveryReport:
+def _raw_discovery_scan() -> tuple[tuple[str, ...], tuple[TenantDiscoveryCandidate, ...]]:
     scanned: list[str] = []
     candidates: dict[str, TenantDiscoveryCandidate] = {}
 
@@ -242,16 +239,20 @@ def build_closed_world_discovery_report() -> ClosedWorldDiscoveryReport:
                 candidates[item.surface_id] = item
 
     raw = tuple(sorted(candidates.values(), key=lambda c: c.surface_id))
-    return ClosedWorldDiscoveryReport(
-        module_paths_scanned=tuple(sorted(set(scanned))),
-        raw_candidates=raw,
-        unclassified_candidate_ids=frozenset(),
-    )
+    return tuple(sorted(set(scanned))), raw
 
 
 def production_files_scanned_count() -> int:
-    return len(build_closed_world_discovery_report().module_paths_scanned)
+    return len(_raw_discovery_scan()[0])
 
 
 def discover_all_candidates() -> frozenset[TenantDiscoveryCandidate]:
-    return frozenset(build_closed_world_discovery_report().raw_candidates)
+    return frozenset(_raw_discovery_scan()[1])
+
+
+def raw_discovery_candidates() -> tuple[TenantDiscoveryCandidate, ...]:
+    return _raw_discovery_scan()[1]
+
+
+def scanned_module_paths() -> tuple[str, ...]:
+    return _raw_discovery_scan()[0]

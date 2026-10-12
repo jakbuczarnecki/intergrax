@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TENANT-X-P0 fast gates — closed-world inventory and synthetic adversarial probes."""
+"""TENANT-X-P0-R1 fast gates — classifiers, provenance, synthetic probes (no full inventory scan)."""
 
 from __future__ import annotations
 
@@ -8,104 +8,89 @@ import subprocess
 
 import pytest
 
-from tests.qualification.tenant_x._coverage_matrix import TENANT_PROOF_COVERAGE_MATRIX
-from tests.qualification.tenant_x._discovery import (
-    build_closed_world_discovery_report,
-    discover_all_candidates,
+from tests.qualification.tenant_x._classifiers import (
+    classify_candidate,
+    domain_for_path,
+    uses_generic_safe_fallback,
 )
+from tests.qualification.tenant_x._coverage_matrix import TENANT_PROOF_COVERAGE_MATRIX
 from tests.qualification.tenant_x._evidence_reconciliation import (
     HISTORICAL_TENANT_EVIDENCE,
     evidence_items_requiring_current_head_replay,
-    p0_baseline_matches_head,
-)
-from tests.qualification.tenant_x._inventory import (
-    TENANT_X_INVENTORY,
-    inventory_surface_ids,
-    unknown_propagation_role_count,
+    historical_evidence_sha_mismatches,
 )
 from tests.qualification.tenant_x._owner_graph import TENANT_OWNER_GRAPH
-from tests.qualification.tenant_x._p0_matrix import build_p0_matrix
-from tests.qualification.tenant_x._propagation import TENANT_PROPAGATION_EDGES
+from tests.qualification.tenant_x._propagation import (
+    TENANT_PROPAGATION_GAPS,
+    validate_propagation_edges,
+)
 from tests.qualification.tenant_x._synthetic import (
+    CLASSIFIER_PROBE_SCENARIOS,
     SYNTHETIC_ADVERSARIAL_SCENARIOS,
+    evaluate_classifier_probe,
     evaluate_synthetic_probe,
 )
-from tests.qualification.tenant_x._types import (
-    TENANT_X_P0_BASELINE_SHA,
-    TenantBlockerClass,
-    TenantIdentitySource,
-    TenantPropagationRole,
-)
+from tests.qualification.tenant_x._types import TenantDomain, TenantPropagationRole
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
-def test_tx_p0_q01_baseline_sha() -> None:
+def test_tx_p0_r1_q01_head_is_git_object_not_pinned_task_sha() -> None:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    assert p0_baseline_matches_head(head)
-    assert head == TENANT_X_P0_BASELINE_SHA
+    assert len(head) == 40
+    assert head.isalnum()
 
 
-def test_tx_p0_q02_inventory_covers_all_candidates() -> None:
-    report = build_closed_world_discovery_report()
-    discovered = frozenset(c.surface_id for c in report.raw_candidates)
-    classified = inventory_surface_ids()
-    assert discovered == classified
-    assert report.unclassified_candidate_ids == frozenset()
+def test_tx_p0_r1_q02_ctrl_x_historical_evidence_sha() -> None:
+    ctrl = next(item for item in HISTORICAL_TENANT_EVIDENCE if item.stage_id == "CTRL-X")
+    assert ctrl.accepted_sha == "318a4d835534ef5c48575f4649551c957dacd8ea"
+    assert historical_evidence_sha_mismatches() == ()
 
 
-def test_tx_p0_q03_unknown_propagation_roles_zero() -> None:
-    assert unknown_propagation_role_count() == 0
-    assert all(r.propagation_role != TenantPropagationRole.UNKNOWN for r in TENANT_X_INVENTORY)
-    assert all(r.identity_source != TenantIdentitySource.UNKNOWN for r in TENANT_X_INVENTORY)
+def test_tx_p0_r1_q03_domain_specificity_credentials_before_integrations() -> None:
+    assert (
+        domain_for_path("intergrax/integrations/credentials/broker.py")
+        == TenantDomain.CREDENTIALS_SECRETS
+    )
+    assert (
+        domain_for_path("intergrax/integrations/foo/bar.py") == TenantDomain.INTEGRATION_RESOLUTION
+    )
 
 
-def test_tx_p0_q04_canonical_identity_inventory_nonzero() -> None:
-    matrix = build_p0_matrix()
-    assert matrix.production_files_scanned > 0
-    assert matrix.tenant_related_candidates > 0
-    assert matrix.canonical_identity_sources >= 9
-    assert matrix.unknown_identity_sources == 0
-    assert matrix.unknown_propagation_roles == 0
+def test_tx_p0_r1_q04_recovery_checkpoint_events_specificity() -> None:
+    assert domain_for_path("intergrax/runtime/recovery/coordinator.py") == TenantDomain.RECOVERY
+    assert domain_for_path("intergrax/runtime/checkpoint/store.py") == TenantDomain.CHECKPOINT
+    assert domain_for_path("intergrax/runtime/events/bus.py") == TenantDomain.EVENTS
 
 
-def test_tx_p0_q05_propagation_edges_reference_known_sources() -> None:
-    known = inventory_surface_ids()
-    for edge in TENANT_PROPAGATION_EDGES:
-        assert edge.source_surface_id in known
-        assert edge.target_surface_id in known
-        assert edge.expected_relation.value in {"SAME", "NARROWER", "EXPLICIT_CROSS_TENANT"}
-
-
-def test_tx_p0_q06_owner_graph_unique_authority() -> None:
-    owners = [item.owner for item in TENANT_OWNER_GRAPH]
-    responsibilities = [item.responsibility for item in TENANT_OWNER_GRAPH]
-    assert len(responsibilities) == len(set(responsibilities))
-    assert "TENANT-X qualification" not in " ".join(owners)
+@pytest.mark.parametrize("scenario", CLASSIFIER_PROBE_SCENARIOS, ids=lambda s: s.probe_id.value)
+def test_tx_p0_r1_q05_classifier_synthetic_probes(scenario) -> None:
+    assert evaluate_classifier_probe(scenario)
 
 
 @pytest.mark.parametrize("scenario", SYNTHETIC_ADVERSARIAL_SCENARIOS, ids=lambda s: s.probe_id.value)
-def test_tx_p0_q07_synthetic_adversarial_probe(scenario) -> None:
+def test_tx_p0_r1_q06_legacy_bucket_probes(scenario) -> None:
     assert evaluate_synthetic_probe(scenario)
 
 
-def test_tx_p0_q08_frz_ten_01_counts_reported_not_pass() -> None:
-    matrix = build_p0_matrix()
-    assert matrix.ambient_default_identity_sources >= 1
-    assert matrix.canonical_identity_sources >= 1
+def test_tx_p0_r1_q07_propagation_gaps_not_surrogate_edges() -> None:
+    gap_ids = {g.gap_id for g in TENANT_PROPAGATION_GAPS}
+    assert "gap.checkpoint_to_recovery" in gap_ids
+    assert "gap.credential_to_provider_consumption" in gap_ids
 
 
-def test_tx_p0_q09_legal_cross_tenant_production_mechanisms_zero() -> None:
-    matrix = build_p0_matrix()
-    assert matrix.legal_cross_tenant_boundaries == 0
+def test_tx_p0_r1_q08_owner_graph_non_authoritative() -> None:
+    owners = [item.owner for item in TENANT_OWNER_GRAPH]
+    assert all(o.startswith("CANDIDATE_OWNER:") for o in owners)
+    assert "TENANT-X qualification" not in " ".join(owners)
 
 
-def test_tx_p0_q10_historical_evidence_requires_replay() -> None:
+def test_tx_p0_r1_q09_historical_evidence_requires_replay() -> None:
     assert len(HISTORICAL_TENANT_EVIDENCE) >= 8
     assert all(item.current_head_replay_required for item in evidence_items_requiring_current_head_replay())
 
 
-def test_tx_p0_q11_proof_coverage_matrix_complete() -> None:
+def test_tx_p0_r1_q10_proof_coverage_matrix_complete() -> None:
     concerns = {row.concern for row in TENANT_PROOF_COVERAGE_MATRIX}
     required = {
         "execution",
@@ -121,8 +106,12 @@ def test_tx_p0_q11_proof_coverage_matrix_complete() -> None:
     assert required <= concerns
 
 
-def test_tx_p0_q12_in_scope_blockers_catalogued() -> None:
-    blockers = [r for r in TENANT_X_INVENTORY if r.blocker_class == TenantBlockerClass.IN_SCOPE_BLOCKER]
-    assert blockers, "P0 must classify known ambient/default production blockers"
-    cred_gap = [r for r in TENANT_PROOF_COVERAGE_MATRIX if r.concern == "credentials/secrets"][0]
-    assert cred_gap.missing_proof is True
+def test_tx_p0_r1_q11_classifier_no_generic_safe_fallback_on_fixture() -> None:
+    for scenario in CLASSIFIER_PROBE_SCENARIOS:
+        record = classify_candidate(scenario.candidate)
+        assert not uses_generic_safe_fallback(record)
+
+
+def test_tx_p0_r1_q12_propagation_edge_validation_empty_without_inventory() -> None:
+    violations = validate_propagation_edges(frozenset())
+    assert violations

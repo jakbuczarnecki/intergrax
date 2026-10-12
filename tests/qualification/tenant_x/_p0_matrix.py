@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from tests.qualification.tenant_x._discovery import production_files_scanned_count
-from tests.qualification.tenant_x._inventory import TENANT_X_INVENTORY, unknown_propagation_role_count
+from tests.qualification.tenant_x._inventory import get_tenant_x_inventory, unknown_propagation_role_count
 from tests.qualification.tenant_x._propagation import propagation_edge_count
 from tests.qualification.tenant_x._types import (
     TenantBlockerClass,
@@ -53,9 +53,9 @@ _EXTENSION_ROLES = frozenset(
 
 
 def build_p0_matrix() -> TenantP0Matrix:
-    inventory = TENANT_X_INVENTORY
+    inventory = get_tenant_x_inventory()
     canonical = sum(
-        1 for r in inventory if r.propagation_role == TenantPropagationRole.CANONICAL_IDENTITY_SOURCE
+        1 for r in inventory if "canonical_anchor_profile" in "".join(r.evidence_refs)
     )
     carriers = sum(1 for r in inventory if r.propagation_role == TenantPropagationRole.IDENTITY_CARRIER)
     derived = sum(

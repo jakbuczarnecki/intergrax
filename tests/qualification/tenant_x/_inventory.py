@@ -7,26 +7,49 @@ from __future__ import annotations
 from functools import lru_cache
 
 from tests.qualification.tenant_x._classifiers import classify_candidate
-from tests.qualification.tenant_x._discovery import discover_all_candidates
-from tests.qualification.tenant_x._types import TenantPropagationRole, TenantSurfaceRecord
+from tests.qualification.tenant_x._discovery import raw_discovery_candidates, scanned_module_paths
+from tests.qualification.tenant_x._types import (
+    ClosedWorldDiscoveryReport,
+    TenantPropagationRole,
+    TenantSurfaceRecord,
+)
 
 
 @lru_cache(maxsize=1)
 def tenant_x_inventory() -> tuple[TenantSurfaceRecord, ...]:
-    records = [classify_candidate(c) for c in sorted(discover_all_candidates(), key=lambda x: x.surface_id)]
+    records = [classify_candidate(c) for c in sorted(raw_discovery_candidates(), key=lambda x: x.surface_id)]
     return tuple(records)
 
 
-TENANT_X_INVENTORY: tuple[TenantSurfaceRecord, ...] = tenant_x_inventory()
+def get_tenant_x_inventory() -> tuple[TenantSurfaceRecord, ...]:
+    return tenant_x_inventory()
+
+
+@lru_cache(maxsize=1)
+def build_closed_world_discovery_report() -> ClosedWorldDiscoveryReport:
+    raw = raw_discovery_candidates()
+    classified_ids = inventory_surface_ids()
+    unclassified = frozenset(c.surface_id for c in raw if c.surface_id not in classified_ids)
+    return ClosedWorldDiscoveryReport(
+        module_paths_scanned=scanned_module_paths(),
+        raw_candidates=raw,
+        unclassified_candidate_ids=unclassified,
+    )
 
 
 def inventory_by_propagation_role(role: TenantPropagationRole) -> tuple[TenantSurfaceRecord, ...]:
-    return tuple(r for r in TENANT_X_INVENTORY if r.propagation_role == role)
+    return tuple(r for r in get_tenant_x_inventory() if r.propagation_role == role)
 
 
 def unknown_propagation_role_count() -> int:
-    return sum(1 for r in TENANT_X_INVENTORY if r.propagation_role == TenantPropagationRole.UNKNOWN)
+    return sum(1 for r in get_tenant_x_inventory() if r.propagation_role == TenantPropagationRole.UNKNOWN)
+
+
+def unknown_identity_source_count() -> int:
+    from tests.qualification.tenant_x._types import TenantIdentitySource
+
+    return sum(1 for r in get_tenant_x_inventory() if r.identity_source == TenantIdentitySource.UNKNOWN)
 
 
 def inventory_surface_ids() -> frozenset[str]:
-    return frozenset(r.surface_id for r in TENANT_X_INVENTORY)
+    return frozenset(r.surface_id for r in get_tenant_x_inventory())
