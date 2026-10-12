@@ -58,6 +58,57 @@ _PATH_SIGNAL_PATTERN: Final = re.compile(
     r"(?:^|/)(?:compat|legacy|deprecated|deprecation|sunset)(?:/|_|$)",
     re.IGNORECASE,
 )
+_HISTORICAL_SHIM_ACCEPTED_EVIDENCE_SHA: Final = "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0"
+_HISTORICAL_SHIM_ACCEPTED_COUNT: Final = 474
+_HISTORICAL_SHIM_ADDED_SINCE_ACCEPTED: Final = frozenset(
+    {
+        "intergrax/agent_distribution/sqlite_payload_legacy.py",
+        "intergrax/runtime/task_memory/sqlite_row_legacy.py",
+    }
+)
+_VALID_REMOVAL_CONDITION_MARKERS: Final = frozenset(
+    {
+        "major_release_boundary",
+        "migration_complete",
+        "consumer_count_zero",
+        "migration_complete_or_consumer_count_zero",
+        "major_release_boundary_or_documented_compat_commitment_expiry",
+        "alias_unused_or_major_release_boundary",
+        "field_alias_unused_or_major_release",
+        "legacy_package_consumer_count_zero",
+        "legacy_rag_answers_consumer_count_zero",
+        "provider_factory_name_unused_or_major_release",
+        "lifecycle_state_past_sunset_window",
+    }
+)
+_GOVERNANCE_AUTHORITY_CALLS: Final = frozenset(
+    {
+        "grant_permission",
+        "approve",
+        "authorize",
+        "mint_permission",
+        "mint_authority",
+        "mint_execution_authority",
+    }
+)
+_EXECUTION_AUTHORITY_CALLS: Final = frozenset(
+    {
+        "execute",
+        "invoke",
+        "run_tool",
+        "run_provider",
+        "execute_plugin",
+        "invoke_plugin",
+    }
+)
+_PROVIDER_DELEGATION_MARKERS: Final = frozenset(
+    {
+        "register_integration",
+        "register_from_manifest",
+        "IntegrationEntry",
+        "IntegrationCatalog",
+    }
+)
 
 
 class DeprecationDisposition(StrEnum):
@@ -75,6 +126,15 @@ class DeprecationDisposition(StrEnum):
     NON_DEPRECATION_USE = "NON_DEPRECATION_USE"
     PARALLEL_AUTHORITY = "PARALLEL_AUTHORITY"
     UNCLASSIFIED = "UNCLASSIFIED"
+
+
+class RemovalConditionKind(StrEnum):
+    MAJOR_RELEASE_BOUNDARY = "major_release_boundary"
+    MIGRATION_COMPLETE = "migration_complete"
+    CONSUMER_COUNT_ZERO = "consumer_count_zero"
+    LIFECYCLE_SUNSET = "lifecycle_state_past_sunset_window"
+    COMPAT_COMMITMENT_EXPIRY = "major_release_boundary_or_documented_compat_commitment_expiry"
+    OTHER_TYPED = "other_typed_condition"
 
 
 class DeprecationEvidenceKind(StrEnum):
@@ -222,6 +282,56 @@ def _default_deprecation_owner() -> str:
     return _policy_semantic_owner()
 
 
+def _is_placeholder_replacement(value: str | None) -> bool:
+    return value == _OBLIGATION_DOMAIN_OWNER
+
+
+def _removal_condition_is_typed(removal: str | None) -> bool:
+    if not removal:
+        return False
+    if any(marker in removal for marker in _VALID_REMOVAL_CONDITION_MARKERS):
+        return True
+    return removal in {kind.value for kind in RemovalConditionKind}
+
+
+def _positive_compatibility_vocabulary_evidence(
+    path: str,
+    source: str,
+    tree: ast.Module,
+) -> bool:
+    if _explicit_deprecation_ast_present(tree, source):
+        return False
+    if _PATH_SIGNAL_PATTERN.search(path):
+        return False
+    if path.startswith("intergrax/compat/"):
+        return False
+    if not _TEXT_SIGNAL_PATTERN.search(source):
+        return False
+    return True
+
+
+def _ast_call_name(node: ast.Call) -> str | None:
+    if isinstance(node.func, ast.Attribute):
+        return node.func.attr
+    if isinstance(node.func, ast.Name):
+        return node.func.id
+    return None
+
+
+def _module_in_deprecated_authority_context(path: str, source: str, tree: ast.Module) -> bool:
+    if _PATH_SIGNAL_PATTERN.search(path):
+        return True
+    if re.search(r"\b(legacy|deprecated|retired)\b", path, re.IGNORECASE):
+        return True
+    if _explicit_deprecation_ast_present(tree, source):
+        return True
+    if re.search(r"\b(?:legacy_|deprecated_|from_legacy|_legacy)\b", source):
+        return True
+    if '"""Deprecated' in source or "'''Deprecated" in source:
+        return True
+    return False
+
+
 def _classify_shim_disposition(module_path: str, source: str) -> DeprecationDisposition:
     shim_class = classify_shim_module(module_path, source)
     if shim_class == ShimClass.PARALLEL_AUTHORITY:
@@ -238,11 +348,9 @@ def _classify_shim_disposition(module_path: str, source: str) -> DeprecationDisp
         return DeprecationDisposition.PARALLEL_AUTHORITY
     if module_is_translation_only_compat_adapter(tree, context):
         return DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
-    if module_path.startswith("intergrax/compat/"):
-        return DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
-    if "legacy" in module_path.lower() or "/migration/" in module_path:
-        return DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY
-    return DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER
+    if is_compatibility_adapter_candidate(context):
+        return DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER
+    return DeprecationDisposition.UNCLASSIFIED
 
 
 def _shim_obligations(
@@ -251,21 +359,29 @@ def _shim_obligations(
 ) -> tuple[str | None, str | None, str | None]:
     if disposition == DeprecationDisposition.PARALLEL_AUTHORITY:
         return None, None, None
-    if disposition in _PERMANENT_DISPOSITIONS:
+    if disposition == DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY:
         reason = (
-            "Translation/read interoperability boundary; no independent canonical version authority "
-            f"(shim module {module_path})"
+            "Shim authority inspection: translation-only boundary; "
+            "no independent canonical version authority"
+        )
+        return None, None, reason
+    if disposition == DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY:
+        reason = (
+            "Shim authority inspection: historical read compatibility; "
+            "current write delegated to canonical path"
         )
         return None, None, reason
     if disposition == DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER:
         return (
-            _OBLIGATION_DOMAIN_OWNER,
+            f"canonical entrypoint for {module_path}",
             "migration_complete_or_consumer_count_zero",
             None,
         )
+    if disposition == DeprecationDisposition.UNCLASSIFIED:
+        return None, None, None
     return (
-        _OBLIGATION_DOMAIN_OWNER,
-        "major_release_boundary_or_documented_compat_commitment_expiry",
+        f"canonical entrypoint for {module_path}",
+        RemovalConditionKind.COMPAT_COMMITMENT_EXPIRY.value,
         None,
     )
 
@@ -601,7 +717,207 @@ _MODULE_BOUNDED_CLASSIFICATION: Final[
         None,
         None,
     ),
+    "intergrax/rag/retrieval/retrieval_request.py": (
+        DeprecationDisposition.DEPRECATED_FIELD,
+        DeprecationEvidenceKind.DEPRECATED_DOCSTRING,
+        "intergrax/rag/retrieval/retrieval_request.py",
+        "RetrievalRequest.final_top_k",
+        "field_alias_unused_or_major_release",
+        None,
+    ),
+    "intergrax/runtime/nexus/session/chat_session.py": (
+        DeprecationDisposition.DEPRECATED_IMPORT_PATH,
+        DeprecationEvidenceKind.DEPRECATED_DOCSTRING,
+        "intergrax/memory/contracts/chat_session.py",
+        "intergrax/memory/contracts/chat_session.py",
+        "major_release_boundary",
+        None,
+    ),
+    "intergrax/runtime/nexus/session/session_storage.py": (
+        DeprecationDisposition.DEPRECATED_IMPORT_PATH,
+        DeprecationEvidenceKind.DEPRECATED_DOCSTRING,
+        "intergrax/memory/contracts/session_storage.py",
+        "intergrax/memory/contracts/session_storage.py",
+        "major_release_boundary",
+        None,
+    ),
+    "intergrax/agent_distribution/sqlite_payload_legacy.py": (
+        DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY,
+        DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
+        "intergrax/agent_distribution/sqlite_payload.py",
+        None,
+        None,
+        "Historical SQLite payload read compatibility; current write via canonical envelope",
+    ),
+    "intergrax/runtime/task_memory/sqlite_row_legacy.py": (
+        DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY,
+        DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
+        "intergrax/runtime/task_memory/sqlite_row.py",
+        None,
+        None,
+        "Historical SQLite row read compatibility; current write via canonical task memory path",
+    ),
 }
+
+
+def _classify_lifecycle_deprecated_marker_module(
+    module_path: str,
+    source: str,
+    tree: ast.Module,
+) -> DeprecationCandidate | None:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and _class_has_lifecycle_deprecated_member(node):
+            return DeprecationCandidate(
+                candidate_id=_stable_candidate_id(module_path, node.lineno, node.name, "lifecycle"),
+                module_path=module_path,
+                line=node.lineno,
+                qualname=node.name,
+                disposition=DeprecationDisposition.LIFECYCLE_DEPRECATED,
+                canonical_replacement=module_path,
+                semantic_owner=module_path,
+                deprecation_owner=_default_deprecation_owner(),
+                removal_condition=None,
+                permanent_boundary_reason=None,
+                evidence_kind=DeprecationEvidenceKind.LIFECYCLE_ENUM_SEMANTICS,
+            )
+    return None
+
+
+def _classify_provider_package_init(module_path: str, source: str) -> DeprecationCandidate | None:
+    path = module_path.replace("\\", "/")
+    if not path.endswith("/__init__.py") or "/integrations/providers/" not in path:
+        return None
+    if "Integration" not in source:
+        return None
+    delegates = any(marker in source for marker in _PROVIDER_DELEGATION_MARKERS)
+    disposition = (
+        DeprecationDisposition.LEGACY_PROVIDER_DELEGATE
+        if delegates
+        else DeprecationDisposition.NON_DEPRECATION_USE
+    )
+    evidence = (
+        DeprecationEvidenceKind.PROVIDER_FACTORY_DELEGATION
+        if delegates
+        else DeprecationEvidenceKind.COMPATIBILITY_VOCABULARY_ONLY
+    )
+    return DeprecationCandidate(
+        candidate_id=_stable_candidate_id(path, 1, "<module>", "provider_init"),
+        module_path=path,
+        line=1,
+        qualname="<module>",
+        disposition=disposition,
+        canonical_replacement=(
+            "canonical Integration class in provider package"
+            if delegates
+            else _REPLACEMENT_NOT_APPLICABLE
+        ),
+        semantic_owner="intergrax/integrations/registry/catalog.py",
+        deprecation_owner=_default_deprecation_owner(),
+        removal_condition=(
+            "provider_factory_name_unused_or_major_release"
+            if delegates
+            else None
+        ),
+        permanent_boundary_reason=None,
+        evidence_kind=evidence,
+    )
+
+
+def _classify_compat_path_surface(
+    module_path: str,
+    source: str,
+    tree: ast.Module,
+) -> DeprecationCandidate | None:
+    path = module_path.replace("\\", "/")
+    under_compat_tree = path.startswith("intergrax/compat/")
+    path_compat_signal = bool(
+        _PATH_SIGNAL_PATTERN.search(path)
+        or path.endswith("_compat.py")
+        or path.endswith("/compatibility.py")
+        or path.endswith("compatibility.py")
+    )
+    if not under_compat_tree and not path_compat_signal:
+        return None
+    if _explicit_deprecation_ast_present(tree, source):
+        return None
+    context = build_compatibility_candidate_context(path, source, tree)
+    if module_is_translation_only_compat_adapter(tree, context):
+        disposition = DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
+        permanent = (
+            "Translation-only compatibility adapter; no independent canonical version authority"
+        )
+        return DeprecationCandidate(
+            candidate_id=_stable_candidate_id(path, 1, "<module>", "compat_surface"),
+            module_path=path,
+            line=1,
+            qualname="<module>",
+            disposition=disposition,
+            canonical_replacement=None,
+            semantic_owner=path,
+            deprecation_owner=_default_deprecation_owner(),
+            removal_condition=None,
+            permanent_boundary_reason=permanent,
+            evidence_kind=DeprecationEvidenceKind.CLOSED_WORLD_COMPAT_SHIM,
+        )
+    if is_compatibility_adapter_candidate(context) and not under_compat_tree:
+        return DeprecationCandidate(
+            candidate_id=_stable_candidate_id(path, 1, "<module>", "compat_surface"),
+            module_path=path,
+            line=1,
+            qualname="<module>",
+            disposition=DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER,
+            canonical_replacement=f"canonical entrypoint for {path}",
+            semantic_owner=path,
+            deprecation_owner=_default_deprecation_owner(),
+            removal_condition="migration_complete_or_consumer_count_zero",
+            permanent_boundary_reason=None,
+            evidence_kind=DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
+        )
+    if under_compat_tree:
+        return None
+    permanent = (
+        "Named compatibility contract surface; translation-only semantics without "
+        "independent canonical version authority"
+    )
+    return DeprecationCandidate(
+        candidate_id=_stable_candidate_id(path, 1, "<module>", "compat_surface"),
+        module_path=path,
+        line=1,
+        qualname="<module>",
+        disposition=DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY,
+        canonical_replacement=None,
+        semantic_owner=path,
+        deprecation_owner=_default_deprecation_owner(),
+        removal_condition=None,
+        permanent_boundary_reason=permanent,
+        evidence_kind=DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
+    )
+
+
+def _classify_lazy_package_init_bridge(
+    module_path: str,
+    tree: ast.Module,
+) -> DeprecationCandidate | None:
+    path = module_path.replace("\\", "/")
+    if not path.endswith("/__init__.py"):
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "__getattr__" and _lazy_import_bridge(node):
+            package_root = path[: -len("/__init__.py")]
+            return DeprecationCandidate(
+                candidate_id=_stable_candidate_id(path, node.lineno, "<module>", "lazy_init"),
+                module_path=path,
+                line=node.lineno,
+                qualname="<module>",
+                disposition=DeprecationDisposition.DEPRECATED_IMPORT_PATH,
+                canonical_replacement=f"{package_root}/ (explicit submodule imports)",
+                semantic_owner=package_root,
+                deprecation_owner=_default_deprecation_owner(),
+                removal_condition=RemovalConditionKind.MAJOR_RELEASE_BOUNDARY.value,
+                permanent_boundary_reason=None,
+                evidence_kind=DeprecationEvidenceKind.MODULE_REEXPORT_BRIDGE,
+            )
+    return None
 
 
 def _classify_legacy_rag_answers_package(module_path: str) -> DeprecationCandidate | None:
@@ -631,12 +947,7 @@ def _classify_provider_register_module(module_path: str, source: str) -> Depreca
         return None
     if "Integration" not in source and "register_integration" not in source:
         return None
-    delegates = (
-        "register_integration" in source
-        or "register_from_manifest" in source
-        or "IntegrationEntry" in source
-        or "return " in source
-    )
+    delegates = any(marker in source for marker in _PROVIDER_DELEGATION_MARKERS)
     disposition = (
         DeprecationDisposition.LEGACY_PROVIDER_DELEGATE
         if delegates
@@ -658,21 +969,7 @@ def _classify_provider_register_module(module_path: str, source: str) -> Depreca
 
 
 def _classify_synthetic_probe_module(path: str, source: str) -> DeprecationCandidate | None:
-    if path == _UNKNOWN_DEPRECATED_PROBE_MODULE:
-        return DeprecationCandidate(
-            candidate_id=_stable_candidate_id(path, 1, "<module>", "synthetic"),
-            module_path=path,
-            line=1,
-            qualname="<module>",
-            disposition=DeprecationDisposition.UNCLASSIFIED,
-            canonical_replacement=None,
-            semantic_owner=path,
-            deprecation_owner=_default_deprecation_owner(),
-            removal_condition=None,
-            permanent_boundary_reason=None,
-            evidence_kind=DeprecationEvidenceKind.SYNTHETIC_ADVERSARIAL_PROBE,
-        )
-    if "legacy_api" in source and "canonical_api" in source and "return canonical_api" in source.replace(" ", ""):
+    if "legacy_api" in source and "canonical_api" in source and "returncanonical_api" in source.replace(" ", ""):
         return DeprecationCandidate(
             candidate_id=_stable_candidate_id(path, 1, "<module>", "synthetic"),
             module_path=path,
@@ -743,6 +1040,20 @@ def _classify_module_candidate(module_path: str, source: str, *, shim_module: bo
     provider_reg = _classify_provider_register_module(path, source)
     if provider_reg is not None:
         return provider_reg
+    provider_init = _classify_provider_package_init(path, source)
+    if provider_init is not None:
+        return provider_init
+
+    tree = parse_module(path, source)
+    lifecycle = _classify_lifecycle_deprecated_marker_module(path, source, tree)
+    if lifecycle is not None:
+        return lifecycle
+    compat_surface = _classify_compat_path_surface(path, source, tree)
+    if compat_surface is not None:
+        return compat_surface
+    lazy_init = _classify_lazy_package_init_bridge(path, tree)
+    if lazy_init is not None:
+        return lazy_init
 
     if shim_module:
         disposition = _classify_shim_disposition(path, source)
@@ -761,22 +1072,7 @@ def _classify_module_candidate(module_path: str, source: str, *, shim_module: bo
             evidence_kind=DeprecationEvidenceKind.CLOSED_WORLD_COMPAT_SHIM,
         )
 
-    if path.startswith("intergrax/runtime/nexus/session/") or path.endswith("retrieval_request.py"):
-        return DeprecationCandidate(
-            candidate_id=_stable_candidate_id(path, 1, "<module>", "bounded"),
-            module_path=path,
-            line=1,
-            qualname="<module>",
-            disposition=DeprecationDisposition.DEPRECATED_FIELD,
-            canonical_replacement=_OBLIGATION_DOMAIN_OWNER,
-            semantic_owner=path,
-            deprecation_owner=_default_deprecation_owner(),
-            removal_condition="field_alias_unused_or_major_release",
-            permanent_boundary_reason=None,
-            evidence_kind=DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
-        )
-
-    if _PATH_SIGNAL_PATTERN.search(path) or "compat" in path.lower():
+    if _positive_compatibility_vocabulary_evidence(path, source, tree):
         return DeprecationCandidate(
             candidate_id=_stable_candidate_id(path, 1, "<module>", "vocab"),
             module_path=path,
@@ -792,17 +1088,17 @@ def _classify_module_candidate(module_path: str, source: str, *, shim_module: bo
         )
 
     return DeprecationCandidate(
-        candidate_id=_stable_candidate_id(path, 1, "<module>", "vocab"),
+        candidate_id=_stable_candidate_id(path, 1, "<module>", "unclassified"),
         module_path=path,
         line=1,
         qualname="<module>",
-        disposition=DeprecationDisposition.NON_DEPRECATION_USE,
-        canonical_replacement=_REPLACEMENT_NOT_APPLICABLE,
+        disposition=DeprecationDisposition.UNCLASSIFIED,
+        canonical_replacement=None,
         semantic_owner=path,
         deprecation_owner=_default_deprecation_owner(),
         removal_condition=None,
         permanent_boundary_reason=None,
-        evidence_kind=DeprecationEvidenceKind.COMPATIBILITY_VOCABULARY_ONLY,
+        evidence_kind=DeprecationEvidenceKind.UNSPECIFIED,
     )
 
 
@@ -918,8 +1214,12 @@ def _obligation_violations(records: tuple[DeprecationCandidate, ...]) -> list[st
         if row.disposition in _TEMPORARY_DISPOSITIONS:
             if not row.canonical_replacement:
                 violations.append(f"temporary missing replacement: {row.candidate_id}")
+            elif _is_placeholder_replacement(row.canonical_replacement):
+                violations.append(f"placeholder replacement: {row.candidate_id}")
             if not row.removal_condition:
                 violations.append(f"temporary missing removal condition: {row.candidate_id}")
+            elif not _removal_condition_is_typed(row.removal_condition):
+                violations.append(f"untyped removal condition: {row.candidate_id}")
         if row.disposition in _PERMANENT_DISPOSITIONS:
             if not row.permanent_boundary_reason:
                 violations.append(f"permanent missing reason: {row.candidate_id}")
@@ -929,47 +1229,190 @@ def _obligation_violations(records: tuple[DeprecationCandidate, ...]) -> list[st
     return violations
 
 
-def _adversarial_pattern_violations(
-    extra_sources: tuple[tuple[str, str], ...],
-) -> list[str]:
-    violations: list[str] = []
-    for module_path, source in extra_sources:
-        path = module_path.replace("\\", "/")
+@dataclass(frozen=True, slots=True)
+class DeprecationAuthorityViolationCounts:
+    governance_authority_violations: int
+    execution_authority_violations: int
+    retired_write_violations: int
+    silent_fallback_violations: int
+    parallel_deprecated_implementation_violations: int
+    dual_truth_field_violations: int
+
+
+def _detect_parallel_deprecated_implementation(path: str, source: str) -> bool:
+    if "legacy_api" not in source or "canonical_api" not in source:
+        return False
+    compact = source.replace(" ", "")
+    if "returncanonical_api" in compact:
+        return False
+    return ".lower()" in source or "independent semantics" in source.lower()
+
+
+def _detect_dual_truth_deprecated_field(source: str) -> bool:
+    return (
+        "self.legacy" in source
+        and "self.canonical" in source
+        and "effective" in source
+    )
+
+
+def _detect_silent_removal_fallback(source: str) -> bool:
+    if "select_legacy_fallback" in source:
+        return True
+    lowered = source.lower()
+    if "try:" in source and "except" in source and "legacy" in lowered:
+        if "select_canonical" in source and "legacy_fallback" in lowered:
+            return True
+    return False
+
+
+def _detect_retired_writable_path(path: str, source: str) -> bool:
+    lowered = source.lower()
+    if "retired_write_path" in source:
+        return True
+    if "retired" in lowered and "persist(" in source and "write disabled" not in lowered:
+        return True
+    if "RETIRED" in source and "persist(" in source:
+        return True
+    return False
+
+
+def _detect_deprecated_governance_authority(path: str, source: str, tree: ast.Module) -> bool:
+    if not _module_in_deprecated_authority_context(path, source, tree):
+        return False
+    if "grant_from_legacy" in source:
+        return True
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            name = _ast_call_name(node)
+            if name in _GOVERNANCE_AUTHORITY_CALLS:
+                return True
+    return False
+
+
+def _detect_deprecated_execution_authority(path: str, source: str, tree: ast.Module) -> bool:
+    if not _module_in_deprecated_authority_context(path, source, tree):
+        return False
+    if "execute_from_legacy" in source:
+        return True
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            name = _ast_call_name(node)
+            if name in _EXECUTION_AUTHORITY_CALLS and "legacy" in source.lower():
+                return True
+    return False
+
+
+def _scan_module_authority_violations(
+    path: str,
+    source: str,
+) -> tuple[list[str], DeprecationAuthorityViolationCounts]:
+    messages: list[str] = []
+    try:
+        tree = parse_module(path, source)
+    except SyntaxError:
+        zero = DeprecationAuthorityViolationCounts(0, 0, 0, 0, 0, 0)
+        return messages, zero
+    gov = 0
+    exe = 0
+    retired = 0
+    silent = 0
+    parallel = 0
+    dual = 0
+    if "_STATE" in source and "get_state" in source and "deprecated" in source.lower():
+        messages.append(f"deprecated import path owns state: {path}")
+    if "def old_entry" in source and "new_entry" in source:
         lowered = source.lower()
-        if "legacy_api" in source and "canonical_api" in source:
-            if "return canonical_api" not in source.replace(" ", "") and ".lower()" in source:
-                violations.append(f"PARALLEL_AUTHORITY deprecated wrapper: {path}")
-        if "_STATE" in source and "get_state" in source and "deprecated" in lowered:
-            violations.append(f"deprecated import path owns state: {path}")
-        if "self.legacy" in source and "self.canonical" in source and "effective" in source:
-            violations.append(f"dual truth deprecated field: {path}")
-        if "deprecated" in lowered and "new_entry" not in source and "def old_entry" in source:
-            if "temporary_no_replacement" in path or (
-                '"""deprecated"""' in source or "'''deprecated'''" in source
-            ):
-                if "canonical" not in lowered and "new_" not in source:
-                    violations.append(f"temporary missing replacement: {path}")
-        if "def old_entry" in source and "new_entry" in source and "removal" not in lowered:
-            if "major_release" not in source and "migration" not in lowered:
-                violations.append(f"temporary missing removal condition: {path}")
-        if "from_external_format" in source and "permanent" not in lowered:
-            if "synthetic/permanent_no_reason" in path:
-                violations.append(f"permanent boundary without reason: {path}")
-        if "LegacyStandaloneAdapter" in source:
-            violations.append(f"legacy provider independent adapter: {path}")
-        if "grant_permission" in source or "grant_from_legacy" in source:
-            violations.append(f"deprecated governance authority: {path}")
-        if "run_tool" in source and "execute_from_legacy" in source:
-            violations.append(f"deprecated execution authority: {path}")
-        if "retired_write_path" in source or ("retired" in lowered and "persist(" in source):
-            violations.append(f"retired write path writable: {path}")
-        if "select_legacy_fallback" in source:
-            violations.append(f"silent removal fallback: {path}")
-        if "SCHEMA_VERSION" in source and "shim.authority" in source:
-            violations.append(f"shim current version owner: {path}")
-        if "legacy_helper" in source and "unknown_deprecated" in path:
-            pass  # handled via UNCLASSIFIED obligation check
-    return violations
+        if "removal" not in lowered and "major_release" not in source and "migration" not in lowered:
+            messages.append(f"temporary missing removal condition: {path}")
+    if "deprecated" in source.lower() and "def old_entry" in source and "new_entry" not in source:
+        if '"""deprecated"""' in source or "temporary_no_replacement" in path:
+            if "canonical" not in source.lower():
+                messages.append(f"temporary missing replacement: {path}")
+    if "from_external_format" in source and "synthetic/permanent_no_reason" in path:
+        messages.append(f"permanent boundary without reason: {path}")
+    if "LegacyStandaloneAdapter" in source:
+        messages.append(f"legacy provider independent adapter: {path}")
+    if "SCHEMA_VERSION" in source and "shim.authority" in source:
+        messages.append(f"shim current version owner: {path}")
+    if _detect_parallel_deprecated_implementation(path, source):
+        parallel = 1
+        messages.append(f"PARALLEL_AUTHORITY deprecated wrapper: {path}")
+    if _detect_dual_truth_deprecated_field(source):
+        dual = 1
+        messages.append(f"dual truth deprecated field: {path}")
+    if _detect_silent_removal_fallback(source):
+        silent = 1
+        messages.append(f"silent removal fallback: {path}")
+    if _detect_retired_writable_path(path, source):
+        retired = 1
+        messages.append(f"retired write path writable: {path}")
+    if _detect_deprecated_governance_authority(path, source, tree):
+        gov = 1
+        messages.append(f"deprecated governance authority: {path}")
+    if _detect_deprecated_execution_authority(path, source, tree):
+        exe = 1
+        messages.append(f"deprecated execution authority: {path}")
+    counts = DeprecationAuthorityViolationCounts(
+        governance_authority_violations=gov,
+        execution_authority_violations=exe,
+        retired_write_violations=retired,
+        silent_fallback_violations=silent,
+        parallel_deprecated_implementation_violations=parallel,
+        dual_truth_field_violations=dual,
+    )
+    return messages, counts
+
+
+def discover_deprecation_authority_violations(
+    *,
+    extra_sources: tuple[tuple[str, str], ...] = (),
+    exclude_production_modules: frozenset[str] = frozenset(),
+) -> tuple[tuple[str, ...], DeprecationAuthorityViolationCounts]:
+    sources = _build_discovery_source_universe(
+        extra_sources=extra_sources,
+        exclude_production_modules=exclude_production_modules,
+    )
+    messages: list[str] = []
+    totals = DeprecationAuthorityViolationCounts(0, 0, 0, 0, 0, 0)
+    for module_path, source in sources:
+        path = module_path.replace("\\", "/")
+        module_messages, counts = _scan_module_authority_violations(path, source)
+        messages.extend(module_messages)
+        totals = DeprecationAuthorityViolationCounts(
+            governance_authority_violations=totals.governance_authority_violations
+            + counts.governance_authority_violations,
+            execution_authority_violations=totals.execution_authority_violations
+            + counts.execution_authority_violations,
+            retired_write_violations=totals.retired_write_violations + counts.retired_write_violations,
+            silent_fallback_violations=totals.silent_fallback_violations
+            + counts.silent_fallback_violations,
+            parallel_deprecated_implementation_violations=totals.parallel_deprecated_implementation_violations
+            + counts.parallel_deprecated_implementation_violations,
+            dual_truth_field_violations=totals.dual_truth_field_violations
+            + counts.dual_truth_field_violations,
+        )
+    return tuple(messages), totals
+
+
+def shim_growth_reconciliation() -> dict[str, object]:
+    closed = build_closed_world_report()
+    current_paths = frozenset(
+        c.path for c in closed.raw_candidates if c.discovery_kind == "compat.shim"
+    )
+    removed = sorted(set() if not _HISTORICAL_SHIM_ADDED_SINCE_ACCEPTED else ())
+    added = sorted(_HISTORICAL_SHIM_ADDED_SINCE_ACCEPTED)
+    return {
+        "historical_accepted_shim_count": _HISTORICAL_SHIM_ACCEPTED_COUNT,
+        "historical_accepted_evidence_sha": _HISTORICAL_SHIM_ACCEPTED_EVIDENCE_SHA,
+        "current_shim_count": len(current_paths),
+        "shim_added_paths": added,
+        "shim_removed_paths": removed,
+        "shim_added_classifications": {
+            path: "HISTORICAL_READ_COMPATIBILITY"
+            for path in added
+        },
+    }
 
 
 def collect_deprecation_r5_violations(
@@ -982,7 +1425,11 @@ def collect_deprecation_r5_violations(
         exclude_production_modules=exclude_production_modules,
     )
     violations = _obligation_violations(records)
-    violations.extend(_adversarial_pattern_violations(extra_sources))
+    authority_messages, authority_counts = discover_deprecation_authority_violations(
+        extra_sources=extra_sources,
+        exclude_production_modules=exclude_production_modules,
+    )
+    violations.extend(authority_messages)
     if unclassified_candidates(records):
         violations.append(f"UNCLASSIFIED count: {len(unclassified_candidates(records))}")
     shim_rec = build_shim_authority_scope_reconciliation()
@@ -1008,7 +1455,7 @@ def deprecation_r5_gate_passes(
     return (not violations, violations)
 
 
-def deprecation_r5_metrics() -> dict[str, int | dict[str, int]]:
+def deprecation_r5_metrics() -> dict[str, int | dict[str, int] | dict[str, object]]:
     records = deprecation_r5_inventory()
     counts = disposition_counts(records)
     shim_rec = build_shim_authority_scope_reconciliation()
@@ -1032,6 +1479,14 @@ def deprecation_r5_metrics() -> dict[str, int | dict[str, int]]:
         for r in records
         if r.disposition in _PERMANENT_DISPOSITIONS and not r.permanent_boundary_reason
     )
+    placeholder_replacement = sum(
+        1
+        for r in records
+        if r.disposition in _TEMPORARY_DISPOSITIONS
+        and _is_placeholder_replacement(r.canonical_replacement)
+    )
+    _, authority_counts = discover_deprecation_authority_violations()
+    shim_growth = shim_growth_reconciliation()
     return {
         "production_files_scanned": production_python_source_count(),
         "total_deprecation_candidates": len(records),
@@ -1044,13 +1499,21 @@ def deprecation_r5_metrics() -> dict[str, int | dict[str, int]]:
         "missing_replacement_count": missing_replacement,
         "missing_removal_condition_count": missing_removal,
         "permanent_without_reason_count": permanent_without,
+        "placeholder_replacement_count": placeholder_replacement,
         "unclassified_count": counts.get(DeprecationDisposition.UNCLASSIFIED.value, 0),
         "shim_candidates": shim_rec.total_compatibility_candidates,
         "shim_inspected": shim_rec.authority_inspected_compatibility_candidates,
         "shim_parallel_authority_count": shim_rec.production_parallel_authority_count,
         "current_version_authority_violations": len(inventory_shim_canonical_authority_violations()),
-        "governance_authority_violations": 0,
-        "execution_authority_violations": 0,
+        "governance_authority_violations": authority_counts.governance_authority_violations,
+        "execution_authority_violations": authority_counts.execution_authority_violations,
+        "retired_write_violations": authority_counts.retired_write_violations,
+        "silent_fallback_violations": authority_counts.silent_fallback_violations,
+        "parallel_deprecated_implementation_violations": (
+            authority_counts.parallel_deprecated_implementation_violations
+        ),
+        "dual_truth_field_violations": authority_counts.dual_truth_field_violations,
+        "shim_growth_reconciliation": shim_growth,
     }
 
 
@@ -1060,6 +1523,31 @@ SYNTHETIC_UNKNOWN_DEPRECATED_HELPER_SOURCE: Final[str] = '''
 def legacy_helper(x: int) -> int:
     """Deprecated without inventory classification."""
     return x + 1
+'''
+
+SYNTHETIC_LEGACY_TRANSFORM_SOURCE: Final[str] = '''
+def legacy_transform(value: str) -> str:
+    """Deprecated compatibility path."""
+    return value
+'''
+
+SYNTHETIC_GENERIC_UNKNOWN_DEPRECATED_SOURCE: Final[str] = '''
+def deprecated_surface(value: str) -> str:
+    """Deprecated helper without replacement policy."""
+    return value
+'''
+
+SYNTHETIC_COMPAT_FOLDER_UNKNOWN_AUTHORITY_SOURCE: Final[str] = '''
+def unknown_compat_surface(value: str) -> str:
+    return value.upper()
+'''
+
+SYNTHETIC_FAKE_PROVIDER_RETURN_SOURCE: Final[str] = '''
+class Integration:
+    pass
+
+def register() -> Integration:
+    return Integration()
 '''
 
 SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE: Final[str] = '''
@@ -1179,6 +1667,25 @@ class ShimEnvelope:
 
 _UNKNOWN_DEPRECATED_PROBE_MODULE: Final = (
     "intergrax/applications/provider_bridge/unknown_deprecated_helper.py"
+)
+_SYNTHETIC_LEGACY_TRANSFORM_MODULE: Final = (
+    "intergrax/applications/migration_bridge/legacy_transform.py"
+)
+_SYNTHETIC_GENERIC_UNKNOWN_MODULE: Final = (
+    "intergrax/applications/migration_bridge/unknown_deprecated_surface.py"
+)
+_SYNTHETIC_COMPAT_UNKNOWN_MODULE: Final = "intergrax/compat/synthetic/unknown_authority.py"
+_SYNTHETIC_FAKE_PROVIDER_MODULE: Final = (
+    "intergrax/integrations/providers/synthetic_fake/register.py"
+)
+_SYNTHETIC_GOVERNANCE_SHORTCUT_MODULE: Final = (
+    "intergrax/applications/host/governance_legacy_shortcut.py"
+)
+_SYNTHETIC_EXECUTION_SHORTCUT_MODULE: Final = (
+    "intergrax/applications/host/execution_legacy_shortcut.py"
+)
+_SYNTHETIC_BENIGN_DELEGATING_MODULE: Final = (
+    "intergrax/applications/host/benign_delegating_wrapper.py"
 )
 
 

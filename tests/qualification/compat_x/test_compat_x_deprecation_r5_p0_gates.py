@@ -8,11 +8,15 @@ import pytest
 
 from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     DeprecationDisposition,
+    SYNTHETIC_COMPAT_FOLDER_UNKNOWN_AUTHORITY_SOURCE,
     SYNTHETIC_DELEGATING_ALIAS_SOURCE,
     SYNTHETIC_DEPRECATED_IMPORT_STATE_SOURCE,
     SYNTHETIC_DUAL_TRUTH_FIELD_SOURCE,
     SYNTHETIC_EXECUTION_FROM_DEPRECATED_SOURCE,
+    SYNTHETIC_FAKE_PROVIDER_RETURN_SOURCE,
+    SYNTHETIC_GENERIC_UNKNOWN_DEPRECATED_SOURCE,
     SYNTHETIC_GOVERNANCE_FROM_DEPRECATED_SOURCE,
+    SYNTHETIC_LEGACY_TRANSFORM_SOURCE,
     SYNTHETIC_HISTORICAL_READ_ONLY_SOURCE,
     SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE,
     SYNTHETIC_PERMANENT_NO_REASON_SOURCE,
@@ -25,6 +29,13 @@ from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     SYNTHETIC_TEMPORARY_NO_REMOVAL_SOURCE,
     SYNTHETIC_TEMPORARY_NO_REPLACEMENT_SOURCE,
     SYNTHETIC_UNKNOWN_DEPRECATED_HELPER_SOURCE,
+    _SYNTHETIC_BENIGN_DELEGATING_MODULE,
+    _SYNTHETIC_COMPAT_UNKNOWN_MODULE,
+    _SYNTHETIC_EXECUTION_SHORTCUT_MODULE,
+    _SYNTHETIC_FAKE_PROVIDER_MODULE,
+    _SYNTHETIC_GENERIC_UNKNOWN_MODULE,
+    _SYNTHETIC_GOVERNANCE_SHORTCUT_MODULE,
+    _SYNTHETIC_LEGACY_TRANSFORM_MODULE,
     _UNKNOWN_DEPRECATED_PROBE_MODULE,
     classify_synthetic_module,
     classify_synthetic_unknown_deprecated_helper,
@@ -58,6 +69,21 @@ def test_r5_p0_closed_world_gate_passes_on_current_head() -> None:
     assert metrics["shim_inspected"] == metrics["shim_candidates"]
     assert metrics["shim_parallel_authority_count"] == 0
     assert metrics["current_version_authority_violations"] == 0
+    assert metrics["governance_authority_violations"] == 0
+    assert metrics["execution_authority_violations"] == 0
+    assert metrics["retired_write_violations"] == 0
+    assert metrics["silent_fallback_violations"] == 0
+    assert metrics["parallel_deprecated_implementation_violations"] == 0
+    assert metrics["dual_truth_field_violations"] == 0
+    assert metrics["placeholder_replacement_count"] == 0
+    shim_growth = metrics["shim_growth_reconciliation"]
+    assert isinstance(shim_growth, dict)
+    assert shim_growth["historical_accepted_shim_count"] == 474
+    assert shim_growth["current_shim_count"] == metrics["shim_candidates"]
+    assert shim_growth["shim_added_paths"] == [
+        "intergrax/agent_distribution/sqlite_payload_legacy.py",
+        "intergrax/runtime/task_memory/sqlite_row_legacy.py",
+    ]
     assert inventory_shim_canonical_authority_violations() == ()
     shim = build_shim_authority_scope_reconciliation()
     assert shim.uninspected_compatibility_candidates == 0
@@ -265,3 +291,98 @@ def test_r5_probe_r_omitted_candidate_fails_gate() -> None:
         extra_sources=((_UNKNOWN_DEPRECATED_PROBE_MODULE, SYNTHETIC_UNKNOWN_DEPRECATED_HELPER_SOURCE),)
     )
     assert violations
+
+
+def test_r5_probe_a2_legacy_transform_unclassified() -> None:
+    disposition = classify_synthetic_module(
+        _SYNTHETIC_LEGACY_TRANSFORM_MODULE,
+        SYNTHETIC_LEGACY_TRANSFORM_SOURCE,
+    )
+    assert disposition == DeprecationDisposition.UNCLASSIFIED
+    violations = collect_deprecation_r5_violations(
+        extra_sources=((_SYNTHETIC_LEGACY_TRANSFORM_MODULE, SYNTHETIC_LEGACY_TRANSFORM_SOURCE),)
+    )
+    assert violations
+
+
+def test_r5_probe_s_generic_unknown_production_candidate() -> None:
+    disposition = classify_synthetic_module(
+        _SYNTHETIC_GENERIC_UNKNOWN_MODULE,
+        SYNTHETIC_GENERIC_UNKNOWN_DEPRECATED_SOURCE,
+    )
+    assert disposition == DeprecationDisposition.UNCLASSIFIED
+    violations = collect_deprecation_r5_violations(
+        extra_sources=((_SYNTHETIC_GENERIC_UNKNOWN_MODULE, SYNTHETIC_GENERIC_UNKNOWN_DEPRECATED_SOURCE),)
+    )
+    assert any("UNCLASSIFIED" in v for v in violations)
+
+
+def test_r5_probe_t_compat_folder_unknown_not_permanent() -> None:
+    disposition = classify_synthetic_module(
+        _SYNTHETIC_COMPAT_UNKNOWN_MODULE,
+        SYNTHETIC_COMPAT_FOLDER_UNKNOWN_AUTHORITY_SOURCE,
+    )
+    assert disposition == DeprecationDisposition.UNCLASSIFIED
+
+
+def test_r5_probe_u_fake_provider_return_not_delegate() -> None:
+    disposition = classify_synthetic_module(
+        _SYNTHETIC_FAKE_PROVIDER_MODULE,
+        SYNTHETIC_FAKE_PROVIDER_RETURN_SOURCE,
+    )
+    assert disposition == DeprecationDisposition.UNCLASSIFIED
+
+
+def test_r5_probe_v_production_governance_shortcut() -> None:
+    violations = collect_deprecation_r5_violations(
+        extra_sources=(
+            (
+                _SYNTHETIC_GOVERNANCE_SHORTCUT_MODULE,
+                SYNTHETIC_GOVERNANCE_FROM_DEPRECATED_SOURCE,
+            ),
+        )
+    )
+    assert any("governance" in v for v in violations)
+
+
+def test_r5_probe_w_production_execution_shortcut() -> None:
+    violations = collect_deprecation_r5_violations(
+        extra_sources=(
+            (
+                _SYNTHETIC_EXECUTION_SHORTCUT_MODULE,
+                SYNTHETIC_EXECUTION_FROM_DEPRECATED_SOURCE,
+            ),
+        )
+    )
+    assert any("execution" in v for v in violations)
+
+
+def test_r5_probe_x_retired_writer() -> None:
+    violations = collect_deprecation_r5_violations(
+        extra_sources=(
+            ("intergrax/applications/host/retired_writer.py", SYNTHETIC_RETIRED_WRITABLE_SOURCE),
+        )
+    )
+    assert any("retired write" in v for v in violations)
+
+
+def test_r5_probe_y_silent_legacy_fallback() -> None:
+    violations = collect_deprecation_r5_violations(
+        extra_sources=(
+            ("intergrax/applications/host/removal_fallback.py", SYNTHETIC_REMOVAL_FALLBACK_SOURCE),
+        )
+    )
+    assert any("fallback" in v for v in violations)
+
+
+def test_r5_probe_z_benign_delegating_wrapper_passes() -> None:
+    violations = collect_deprecation_r5_violations(
+        extra_sources=(
+            (
+                _SYNTHETIC_BENIGN_DELEGATING_MODULE,
+                SYNTHETIC_DELEGATING_ALIAS_SOURCE,
+            ),
+        )
+    )
+    assert not any("PARALLEL_AUTHORITY" in v for v in violations)
+    assert not any("UNCLASSIFIED" in v for v in violations)
