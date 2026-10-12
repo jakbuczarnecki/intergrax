@@ -117,9 +117,11 @@ def test_tx_p0_r3r1_head_q01_positive_surfaces_group_into_mechanisms() -> None:
     summary = summarize_authority_mechanism_review(review)
     assert summary["positive_mint_rewrite_surfaces"] == 37
     assert summary["authority_mechanisms_total"] == len(review.authority_mechanisms)
-    multi_surface = [m for m in review.authority_mechanisms if len(m.surfaces) > 1]
-    if multi_surface:
-        assert review.duplicate_authority_mechanisms == () or len(review.duplicate_authority_mechanisms) >= 0
+    assert summary["authority_mechanisms_total"] == 22
+    assert review.scope_domain_fallback + review.scope_unknown == len(review.authority_mechanisms)
+    assert review.duplicate_confirmed == 0
+    assert review.duplicate_proven_no_duplicate == 0
+    assert review.duplicate_unresolved == len(review.authority_mechanisms)
     assert review.owner_unresolved + review.owner_confirmed + review.owner_candidate + review.owner_conflict <= len(
         review.authority_mechanisms
     )

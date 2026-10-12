@@ -10,7 +10,7 @@ from enum import StrEnum
 from tests.qualification.tenant_x._authority_semantics import (
     build_authority_mechanisms,
     build_authority_review_metrics,
-    duplicate_authority_mechanism_ids,
+    classify_authority_duplicate_mechanisms,
     resolve_owner_disposition,
 )
 from tests.qualification.tenant_x._classifiers import classify_source_fixture
@@ -78,6 +78,10 @@ class SyntheticProbeId(StrEnum):
     AM_COMPETING_OWNERS_SAME_DECISION = "AM"
     AN_PLATFORM_CORE_UNRESOLVED = "AN"
     AO_OWNER_CONFIRMED = "AO"
+    AP_SAME_DECISION_DOMAIN_FALLBACK = "AP"
+    AQ_EXPLICIT_DIFFERENT_SCOPES = "AQ"
+    AR_EXPLICIT_SAME_SCOPE_COMPETING = "AR"
+    AS_SAME_MECHANISM_CALL_SITES = "AS"
 
 
 @dataclass(frozen=True, slots=True)
@@ -643,6 +647,89 @@ def _authority_r3r1_probe_surfaces(probe_id: SyntheticProbeId) -> tuple[TenantSu
                 ),
             ),
         )
+    if probe_id == SyntheticProbeId.AP_SAME_DECISION_DOMAIN_FALLBACK:
+        return (
+            _synthetic_mint_surface(
+                surface_id="ap::runtime",
+                module_path="intergrax/runtime/execution/synthetic/ap_runtime.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence + (root_decision,),
+            ),
+            _synthetic_mint_surface(
+                surface_id="ap::governance",
+                module_path="intergrax/governance/synthetic/ap_governance.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.GOVERNANCE,
+                semantic_owner="GOVERNANCE",
+                evidence_refs=mint_evidence + (root_decision,),
+            ),
+        )
+    if probe_id == SyntheticProbeId.AQ_EXPLICIT_DIFFERENT_SCOPES:
+        scope_a = "TENANT-X-P0:authority_scope:root_execution_tenant"
+        scope_b = "TENANT-X-P0:authority_scope:governance_policy_tenant"
+        return (
+            _synthetic_mint_surface(
+                surface_id="aq::runtime",
+                module_path="intergrax/runtime/execution/synthetic/aq_runtime.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence + (scope_a, root_decision),
+            ),
+            _synthetic_mint_surface(
+                surface_id="aq::governance",
+                module_path="intergrax/governance/synthetic/aq_governance.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.GOVERNANCE,
+                semantic_owner="GOVERNANCE",
+                evidence_refs=mint_evidence + (scope_b, root_decision),
+            ),
+        )
+    if probe_id == SyntheticProbeId.AR_EXPLICIT_SAME_SCOPE_COMPETING:
+        explicit_shared = "TENANT-X-P0:authority_scope:root_execution_tenant"
+        return (
+            _synthetic_mint_surface(
+                surface_id="ar::owner_a",
+                module_path="intergrax/runtime/execution/synthetic/ar_owner_a.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence + (explicit_shared, root_decision),
+            ),
+            _synthetic_mint_surface(
+                surface_id="ar::owner_b",
+                module_path="intergrax/governance/synthetic/ar_owner_b.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.GOVERNANCE,
+                semantic_owner="GOVERNANCE",
+                evidence_refs=mint_evidence + (explicit_shared, root_decision),
+            ),
+        )
+    if probe_id == SyntheticProbeId.AS_SAME_MECHANISM_CALL_SITES:
+        module = "intergrax/runtime/execution/synthetic/as_two_callsites.py"
+        explicit_shared = "TENANT-X-P0:authority_scope:root_execution_tenant"
+        return (
+            _synthetic_mint_surface(
+                surface_id="as::rewrite_a",
+                module_path=module,
+                symbol="rewrite_a",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence
+                + (explicit_shared, shared_mech, root_decision),
+            ),
+            _synthetic_mint_surface(
+                surface_id="as::rewrite_b",
+                module_path=module,
+                symbol="rewrite_b",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence
+                + (explicit_shared, shared_mech, root_decision),
+            ),
+        )
     raise AssertionError(f"unknown authority mechanism probe {probe_id}")
 
 
@@ -666,6 +753,22 @@ AUTHORITY_R3R1_PROBE_SCENARIOS: tuple[AuthorityMechanismProbeScenario, ...] = (
     AuthorityMechanismProbeScenario(
         probe_id=SyntheticProbeId.AO_OWNER_CONFIRMED,
         description="explicit owner confirmation evidence",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AP_SAME_DECISION_DOMAIN_FALLBACK,
+        description="same decision, different domains, domain-fallback scope only",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AQ_EXPLICIT_DIFFERENT_SCOPES,
+        description="same decision, explicit different authority scopes",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AR_EXPLICIT_SAME_SCOPE_COMPETING,
+        description="same decision, same explicit scope, competing owners",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AS_SAME_MECHANISM_CALL_SITES,
+        description="same owner, explicit scope, multiple call-sites",
     ),
 )
 
@@ -915,14 +1018,18 @@ def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
 def evaluate_authority_r3r1_probe(scenario: AuthorityMechanismProbeScenario) -> bool:
     surfaces = _authority_r3r1_probe_surfaces(scenario.probe_id)
     mechanisms = build_authority_mechanisms(surfaces)
-    dup_ids = duplicate_authority_mechanism_ids(mechanisms)
+    duplicate_review = classify_authority_duplicate_mechanisms(mechanisms)
     probe = scenario.probe_id
     if probe == SyntheticProbeId.AK_ONE_OWNER_TWO_CALL_SITES:
-        return len(surfaces) == 2 and len(mechanisms) == 1 and dup_ids == ()
+        return (
+            len(surfaces) == 2
+            and len(mechanisms) == 1
+            and duplicate_review.confirmed_duplicate_mechanism_ids == ()
+        )
     if probe == SyntheticProbeId.AL_SAME_OWNER_DIFFERENT_DECISIONS:
-        return len(mechanisms) == 2 and dup_ids == ()
+        return len(mechanisms) == 2 and duplicate_review.confirmed_duplicate_mechanism_ids == ()
     if probe == SyntheticProbeId.AM_COMPETING_OWNERS_SAME_DECISION:
-        return len(mechanisms) == 2 and len(dup_ids) >= 1
+        return len(mechanisms) == 2 and len(duplicate_review.confirmed_duplicate_mechanism_ids) >= 1
     if probe == SyntheticProbeId.AN_PLATFORM_CORE_UNRESOLVED:
         metrics = build_authority_review_metrics(surfaces)
         disposition = resolve_owner_disposition(surfaces[0])
@@ -932,6 +1039,28 @@ def evaluate_authority_r3r1_probe(scenario: AuthorityMechanismProbeScenario) -> 
         )
     if probe == SyntheticProbeId.AO_OWNER_CONFIRMED:
         return resolve_owner_disposition(surfaces[0]) == TenantAuthorityOwnerDisposition.OWNER_CONFIRMED
+    if probe == SyntheticProbeId.AP_SAME_DECISION_DOMAIN_FALLBACK:
+        return (
+            len(mechanisms) == 2
+            and duplicate_review.confirmed_duplicate_mechanism_ids == ()
+            and duplicate_review.proven_no_duplicate_mechanism_ids == ()
+            and len(duplicate_review.unresolved_duplicate_mechanism_ids) >= 1
+        )
+    if probe == SyntheticProbeId.AQ_EXPLICIT_DIFFERENT_SCOPES:
+        return (
+            len(mechanisms) == 2
+            and duplicate_review.confirmed_duplicate_mechanism_ids == ()
+            and len(duplicate_review.proven_no_duplicate_mechanism_ids) == 2
+            and duplicate_review.unresolved_duplicate_mechanism_ids == ()
+        )
+    if probe == SyntheticProbeId.AR_EXPLICIT_SAME_SCOPE_COMPETING:
+        return len(mechanisms) == 2 and len(duplicate_review.confirmed_duplicate_mechanism_ids) >= 1
+    if probe == SyntheticProbeId.AS_SAME_MECHANISM_CALL_SITES:
+        return (
+            len(surfaces) == 2
+            and len(mechanisms) == 1
+            and duplicate_review.confirmed_duplicate_mechanism_ids == ()
+        )
     return False
 
 

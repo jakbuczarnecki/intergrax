@@ -11,6 +11,7 @@ from tests.qualification.tenant_x._types import (
     AmbientSubstitutionClass,
     TenantAuthorityDecisionKind,
     TenantAuthorityOwnerDisposition,
+    TenantAuthorityScopeEvidence,
     TenantAuthoritySemanticRole,
     TenantCarrierProvenanceRequirement,
     TenantDiscoveryCandidate,
@@ -208,13 +209,61 @@ def classify_authority_decision_kind(record: TenantSurfaceRecord) -> TenantAutho
     return TenantAuthorityDecisionKind.UNKNOWN
 
 
+_PROVEN_SCOPE_EVIDENCE: frozenset[TenantAuthorityScopeEvidence] = frozenset(
+    {
+        TenantAuthorityScopeEvidence.EXPLICIT_CONTRACT,
+        TenantAuthorityScopeEvidence.EXPLICIT_QUALIFICATION_EVIDENCE,
+        TenantAuthorityScopeEvidence.STRUCTURAL_CURRENT_HEAD,
+    }
+)
+
+_SCOPE_EVIDENCE_STRENGTH: dict[TenantAuthorityScopeEvidence, int] = {
+    TenantAuthorityScopeEvidence.EXPLICIT_CONTRACT: 5,
+    TenantAuthorityScopeEvidence.EXPLICIT_QUALIFICATION_EVIDENCE: 4,
+    TenantAuthorityScopeEvidence.STRUCTURAL_CURRENT_HEAD: 3,
+    TenantAuthorityScopeEvidence.DOMAIN_FALLBACK: 1,
+    TenantAuthorityScopeEvidence.UNKNOWN: 0,
+}
+
+
 def resolve_authority_scope(record: TenantSurfaceRecord) -> str:
     for ref in record.evidence_refs:
         if ref.startswith("TENANT-X-P0:authority_scope:"):
             return ref.removeprefix("TENANT-X-P0:authority_scope:")
+    for ref in record.evidence_refs:
+        if ref.startswith("TENANT-X-P0:authority_scope_structural:"):
+            return ref.removeprefix("TENANT-X-P0:authority_scope_structural:")
     if record.domain == TenantDomain.RECOVERY:
         return f"recovery:{record.domain.value}"
     return f"domain:{record.domain.value}"
+
+
+def resolve_authority_scope_evidence(record: TenantSurfaceRecord) -> TenantAuthorityScopeEvidence:
+    for ref in record.evidence_refs:
+        if ref.startswith("TENANT-X-P0:authority_scope_evidence:"):
+            raw = ref.removeprefix("TENANT-X-P0:authority_scope_evidence:")
+            try:
+                return TenantAuthorityScopeEvidence(raw)
+            except ValueError:
+                return TenantAuthorityScopeEvidence.UNKNOWN
+    for ref in record.evidence_refs:
+        if ref.startswith("TENANT-X-P0:authority_scope:"):
+            return TenantAuthorityScopeEvidence.EXPLICIT_CONTRACT
+    for ref in record.evidence_refs:
+        if ref.startswith("TENANT-X-P0:authority_scope_structural:"):
+            return TenantAuthorityScopeEvidence.STRUCTURAL_CURRENT_HEAD
+    if any(ref.startswith("TENANT-X-P0:authority_scope:") for ref in record.evidence_refs):
+        return TenantAuthorityScopeEvidence.EXPLICIT_CONTRACT
+    if record.domain == TenantDomain.RECOVERY:
+        return TenantAuthorityScopeEvidence.DOMAIN_FALLBACK
+    return TenantAuthorityScopeEvidence.DOMAIN_FALLBACK
+
+
+def _merge_scope_evidence(records: tuple[TenantSurfaceRecord, ...]) -> TenantAuthorityScopeEvidence:
+    return min(
+        (resolve_authority_scope_evidence(record) for record in records),
+        key=lambda evidence: _SCOPE_EVIDENCE_STRENGTH[evidence],
+    )
 
 
 def _mechanism_contract_key(record: TenantSurfaceRecord) -> str:
@@ -282,6 +331,7 @@ class TenantAuthorityMechanism:
     mechanism_id: str
     semantic_owner: str
     authority_scope: str
+    authority_scope_evidence: TenantAuthorityScopeEvidence
     decision_kind: TenantAuthorityDecisionKind
     owner_disposition: TenantAuthorityOwnerDisposition
     surfaces: tuple[str, ...]
@@ -307,12 +357,14 @@ def build_authority_mechanisms(
         surface_ids = tuple(sorted({r.surface_id for r in records}))
         dispositions = frozenset(resolve_owner_disposition(r) for r in records)
         disposition = _merge_owner_dispositions(dispositions)
+        scope_evidence = _merge_scope_evidence(tuple(records))
         mechanism_id = f"{owner}|{decision.value}|{scope}|{contract}"
         mechanisms.append(
             TenantAuthorityMechanism(
                 mechanism_id=mechanism_id,
                 semantic_owner=owner,
                 authority_scope=scope,
+                authority_scope_evidence=scope_evidence,
                 decision_kind=decision,
                 owner_disposition=disposition,
                 surfaces=surface_ids,
@@ -321,33 +373,85 @@ def build_authority_mechanisms(
     return tuple(mechanisms)
 
 
+def _mechanisms_compete_for_authority(
+    left: TenantAuthorityMechanism,
+    right: TenantAuthorityMechanism,
+) -> bool:
+    if left.semantic_owner == right.semantic_owner:
+        return False
+    competing = [
+        mechanism
+        for mechanism in (left, right)
+        if mechanism.owner_disposition != TenantAuthorityOwnerDisposition.UNOWNED_AUTHORITY
+    ]
+    if len(competing) < 2:
+        return False
+    return len({mechanism.semantic_owner for mechanism in competing}) >= 2
+
+
+@dataclass(frozen=True, slots=True)
+class TenantAuthorityDuplicateReview:
+    confirmed_duplicate_mechanism_ids: tuple[str, ...]
+    proven_no_duplicate_mechanism_ids: tuple[str, ...]
+    unresolved_duplicate_mechanism_ids: tuple[str, ...]
+
+
+def classify_authority_duplicate_mechanisms(
+    mechanisms: tuple[TenantAuthorityMechanism, ...],
+) -> TenantAuthorityDuplicateReview:
+    confirmed: set[str] = set()
+    unresolved: set[str] = set()
+
+    for mechanism in mechanisms:
+        if mechanism.authority_scope_evidence not in _PROVEN_SCOPE_EVIDENCE:
+            unresolved.add(mechanism.mechanism_id)
+        if mechanism.owner_disposition in {
+            TenantAuthorityOwnerDisposition.OWNER_UNRESOLVED,
+            TenantAuthorityOwnerDisposition.OWNER_CONFLICT,
+            TenantAuthorityOwnerDisposition.UNOWNED_AUTHORITY,
+        }:
+            unresolved.add(mechanism.mechanism_id)
+
+    by_decision: dict[TenantAuthorityDecisionKind, list[TenantAuthorityMechanism]] = {}
+    for mechanism in mechanisms:
+        by_decision.setdefault(mechanism.decision_kind, []).append(mechanism)
+
+    for group in by_decision.values():
+        if len(group) < 2:
+            continue
+        for index, left in enumerate(group):
+            for right in group[index + 1 :]:
+                if not _mechanisms_compete_for_authority(left, right):
+                    continue
+                left_proven = left.authority_scope_evidence in _PROVEN_SCOPE_EVIDENCE
+                right_proven = right.authority_scope_evidence in _PROVEN_SCOPE_EVIDENCE
+                if left_proven and right_proven:
+                    if left.authority_scope == right.authority_scope:
+                        confirmed.add(left.mechanism_id)
+                        confirmed.add(right.mechanism_id)
+                else:
+                    unresolved.add(left.mechanism_id)
+                    unresolved.add(right.mechanism_id)
+
+    proven: set[str] = set()
+    for mechanism in mechanisms:
+        mechanism_id = mechanism.mechanism_id
+        if mechanism_id in confirmed or mechanism_id in unresolved:
+            continue
+        if mechanism.authority_scope_evidence in _PROVEN_SCOPE_EVIDENCE:
+            proven.add(mechanism_id)
+
+    return TenantAuthorityDuplicateReview(
+        confirmed_duplicate_mechanism_ids=tuple(sorted(confirmed)),
+        proven_no_duplicate_mechanism_ids=tuple(sorted(proven)),
+        unresolved_duplicate_mechanism_ids=tuple(sorted(unresolved)),
+    )
+
+
 def duplicate_authority_mechanism_ids(
     mechanisms: tuple[TenantAuthorityMechanism, ...],
 ) -> tuple[str, ...]:
-    by_decision_scope: dict[tuple[TenantAuthorityDecisionKind, str], list[TenantAuthorityMechanism]] = {}
-    for mechanism in mechanisms:
-        key = (mechanism.decision_kind, mechanism.authority_scope)
-        by_decision_scope.setdefault(key, []).append(mechanism)
-
-    duplicate_ids: list[str] = []
-    for group in by_decision_scope.values():
-        if len(group) < 2:
-            continue
-        owners = {m.semantic_owner for m in group}
-        if len(owners) < 2:
-            continue
-        competing = [
-            m
-            for m in group
-            if m.owner_disposition
-            not in {
-                TenantAuthorityOwnerDisposition.UNOWNED_AUTHORITY,
-            }
-        ]
-        if len({m.semantic_owner for m in competing}) < 2:
-            continue
-        duplicate_ids.extend(m.mechanism_id for m in competing)
-    return tuple(sorted(set(duplicate_ids)))
+    return classify_authority_duplicate_mechanisms(mechanisms).confirmed_duplicate_mechanism_ids
 
 
 @dataclass(frozen=True, slots=True)
@@ -364,6 +468,14 @@ class TenantAuthorityReviewMetrics:
     owner_conflict: int
     unowned_authority_mechanisms: tuple[str, ...]
     duplicate_authority_mechanisms: tuple[str, ...]
+    duplicate_confirmed: int
+    duplicate_proven_no_duplicate: int
+    duplicate_unresolved: int
+    scope_explicit_contract: int
+    scope_explicit_qualification: int
+    scope_structural_current_head: int
+    scope_domain_fallback: int
+    scope_unknown: int
 
     @property
     def actual_mint_rewrite_candidates(self) -> tuple[str, ...]:
@@ -431,7 +543,8 @@ def build_authority_review_metrics(
                 unknown_auth.append(record.surface_id)
 
     mechanisms = build_authority_mechanisms(tuple(mint_surfaces))
-    dup_ids = duplicate_authority_mechanism_ids(mechanisms)
+    duplicate_review = classify_authority_duplicate_mechanisms(mechanisms)
+    dup_ids = duplicate_review.confirmed_duplicate_mechanism_ids
     unowned_ids = tuple(
         sorted(m.mechanism_id for m in mechanisms if m.owner_disposition == TenantAuthorityOwnerDisposition.UNOWNED_AUTHORITY)
     )
@@ -449,6 +562,28 @@ def build_authority_review_metrics(
         1 for m in mechanisms if m.owner_disposition == TenantAuthorityOwnerDisposition.OWNER_CONFLICT
     )
 
+    scope_explicit_contract = sum(
+        1
+        for m in mechanisms
+        if m.authority_scope_evidence == TenantAuthorityScopeEvidence.EXPLICIT_CONTRACT
+    )
+    scope_explicit_qualification = sum(
+        1
+        for m in mechanisms
+        if m.authority_scope_evidence == TenantAuthorityScopeEvidence.EXPLICIT_QUALIFICATION_EVIDENCE
+    )
+    scope_structural_current_head = sum(
+        1
+        for m in mechanisms
+        if m.authority_scope_evidence == TenantAuthorityScopeEvidence.STRUCTURAL_CURRENT_HEAD
+    )
+    scope_domain_fallback = sum(
+        1 for m in mechanisms if m.authority_scope_evidence == TenantAuthorityScopeEvidence.DOMAIN_FALLBACK
+    )
+    scope_unknown = sum(
+        1 for m in mechanisms if m.authority_scope_evidence == TenantAuthorityScopeEvidence.UNKNOWN
+    )
+
     return TenantAuthorityReviewMetrics(
         validator_candidates=tuple(sorted(validators)),
         derivation_candidates=tuple(sorted(derivations)),
@@ -462,6 +597,14 @@ def build_authority_review_metrics(
         owner_conflict=owner_conflict,
         unowned_authority_mechanisms=unowned_ids,
         duplicate_authority_mechanisms=dup_ids,
+        duplicate_confirmed=len(duplicate_review.confirmed_duplicate_mechanism_ids),
+        duplicate_proven_no_duplicate=len(duplicate_review.proven_no_duplicate_mechanism_ids),
+        duplicate_unresolved=len(duplicate_review.unresolved_duplicate_mechanism_ids),
+        scope_explicit_contract=scope_explicit_contract,
+        scope_explicit_qualification=scope_explicit_qualification,
+        scope_structural_current_head=scope_structural_current_head,
+        scope_domain_fallback=scope_domain_fallback,
+        scope_unknown=scope_unknown,
     )
 
 
@@ -480,6 +623,14 @@ def summarize_authority_mechanism_review(
         "owner_candidate": metrics.owner_candidate,
         "owner_unresolved": metrics.owner_unresolved,
         "owner_conflict": metrics.owner_conflict,
-        "duplicate_authority_mechanisms": len(metrics.duplicate_authority_mechanisms),
+        "duplicate_authority_mechanisms": metrics.duplicate_confirmed,
+        "duplicate_confirmed": metrics.duplicate_confirmed,
+        "duplicate_proven_no_duplicate": metrics.duplicate_proven_no_duplicate,
+        "duplicate_unresolved": metrics.duplicate_unresolved,
+        "scope_explicit_contract": metrics.scope_explicit_contract,
+        "scope_explicit_qualification": metrics.scope_explicit_qualification,
+        "scope_structural_current_head": metrics.scope_structural_current_head,
+        "scope_domain_fallback": metrics.scope_domain_fallback,
+        "scope_unknown": metrics.scope_unknown,
         "surfaces_collapsed_into_shared_mechanism": collapsed,
     }
