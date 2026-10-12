@@ -4,15 +4,18 @@
 
 from __future__ import annotations
 
+from tests.qualification.tenant_x._final_execution import run_final_adversarial_matrix
 from tests.qualification.tenant_x._final_matrices import FINAL_ADVERSARIAL_MATRIX
+from tests.qualification.tenant_x._final_production_delta import build_final_production_delta_evidence
 from tests.qualification.tenant_x._final_reconciliation import (
     WaveReadinessOnHead,
-    adversarial_matrix_complete,
     build_frz_ten_reconciliation_rows,
     frz_ten_identity_reconciled,
+    reconcile_final_adversarial_execution,
     unclassified_frz_ten_count,
 )
 from tests.qualification.tenant_x._final_types import (
+    FinalAdversarialExecutionResult,
     FrzTenReconciliationVerdict,
     TenantXFinalQualificationReport,
     TenantXWave,
@@ -30,8 +33,7 @@ from tests.qualification.tenant_x._r4_certification import build_r4_qualificatio
 
 
 def build_final_qualification_report(
-    *,
-    final_negatives_runnable: bool = True,
+    execution: tuple[FinalAdversarialExecutionResult, ...] | None = None,
 ) -> TenantXFinalQualificationReport:
     head = current_git_head_sha()
     ancestry_violations = accepted_wave_ancestry_violations(head)
@@ -43,15 +45,19 @@ def build_final_qualification_report(
     r3 = build_r3_qualification_report()
     r4 = build_r4_qualification_report()
 
-    matrix_complete = adversarial_matrix_complete()
+    if execution is None:
+        execution = run_final_adversarial_matrix()
+    adversarial = reconcile_final_adversarial_execution(execution)
+    production_evidence = build_final_production_delta_evidence(head_sha=head)
+    production_ok = production_evidence is not None and production_evidence.production_delta_count == 0
+
     readiness = WaveReadinessOnHead(
         r1_ready=r1.r1_ready_for_audit,
         r2_ready=r2.r2_ready_for_audit,
         r3_ready=r3.r3_ready_for_audit,
         r4_ready=r4.r4_ready_for_audit,
         accepted_ancestry_ok=ancestry_ok,
-        adversarial_matrix_complete=matrix_complete,
-        final_negatives_runnable=final_negatives_runnable,
+        adversarial_reconciliation=adversarial,
     )
     frz_rows = build_frz_ten_reconciliation_rows(readiness)
 
@@ -75,12 +81,16 @@ def build_final_qualification_report(
         remediation.append("TENANT-X-FINAL-R4 - R3 current-HEAD replay failed")
     if not r4.r4_ready_for_audit:
         remediation.append("TENANT-X-FINAL-R5 - R4 current-HEAD replay failed")
-    if not matrix_complete:
-        remediation.append("TENANT-X-FINAL-R6 - adversarial matrix incomplete")
+    if not adversarial.adversarial_matrix_complete:
+        remediation.append("TENANT-X-FINAL-R6 - adversarial execution reconciliation incomplete")
+    if production_evidence is None:
+        remediation.append("TENANT-X-FINAL-R7 - production delta evidence unavailable")
+    elif production_evidence.production_delta_count != 0:
+        remediation.append("TENANT-X-FINAL-R8 - production delta non-zero in corrective range")
     if cross_allowed or cross_unknown:
-        remediation.append("TENANT-X-FINAL-R7 - cross-tenant ALLOWED/UNKNOWN on composed matrices")
+        remediation.append("TENANT-X-FINAL-R9 - cross-tenant ALLOWED/UNKNOWN on composed matrices")
     if not frz_ten_identity_reconciled(frz_rows):
-        remediation.append("TENANT-X-FINAL-R8 - FRZ-TEN identity reconciliation mismatch")
+        remediation.append("TENANT-X-FINAL-R10 - FRZ-TEN identity reconciliation mismatch")
     for row in frz_rows:
         if row.unresolved_blocker:
             remediation.append(f"TENANT-X-FINAL-FRZ-{row.criterion_id.value} - {row.unresolved_blocker}")
@@ -91,8 +101,8 @@ def build_final_qualification_report(
         and r2.r2_ready_for_audit
         and r3.r3_ready_for_audit
         and r4.r4_ready_for_audit
-        and matrix_complete
-        and final_negatives_runnable
+        and adversarial.adversarial_matrix_complete
+        and production_ok
         and frz_ten_identity_reconciled(frz_rows)
         and reconciled == len(frz_rows)
         and blocked == 0
@@ -102,6 +112,8 @@ def build_final_qualification_report(
         and unclassified_frz_ten_count(frz_rows) == 0
         and not remediation
     )
+
+    prod_delta = production_evidence.production_delta_count if production_evidence else -1
 
     return TenantXFinalQualificationReport(
         current_head_sha=head,
@@ -114,7 +126,16 @@ def build_final_qualification_report(
         r3_ready_on_head=r3.r3_ready_for_audit,
         r4_ready_on_head=r4.r4_ready_for_audit,
         adversarial_matrix_rows=len(FINAL_ADVERSARIAL_MATRIX),
-        adversarial_matrix_executable=sum(1 for row in FINAL_ADVERSARIAL_MATRIX if row.executable_evidence),
+        adversarial_matrix_executable=adversarial.adversarial_classes_executed,
+        adversarial_classes_expected=adversarial.adversarial_classes_expected,
+        adversarial_classes_executed=adversarial.adversarial_classes_executed,
+        adversarial_missing=len(adversarial.adversarial_missing),
+        adversarial_duplicates=len(adversarial.adversarial_duplicates),
+        adversarial_unknown=adversarial.adversarial_unknown,
+        adversarial_not_executed=adversarial.adversarial_not_executed,
+        adversarial_outcome_mismatches=adversarial.adversarial_outcome_mismatches,
+        adversarial_failed=adversarial.adversarial_failed,
+        production_delta_evidence_available=production_evidence is not None,
         frz_ten_rows=len(frz_rows),
         frz_ten_reconciled=reconciled,
         frz_ten_blocked=blocked,
@@ -123,7 +144,7 @@ def build_final_qualification_report(
         cross_tenant_unknown=cross_unknown,
         unclassified_frz_ten=unclassified_frz_ten_count(frz_rows),
         final_blockers=tuple(remediation),
-        production_delta=0,
+        production_delta=prod_delta,
         final_ready_for_audit=ready,
         remediation_children=tuple(remediation),
     )

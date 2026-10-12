@@ -6,9 +6,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from tests.qualification.tenant_x._final_execution import registry_class_ids
 from tests.qualification.tenant_x._final_matrices import FINAL_ADVERSARIAL_MATRIX
 from tests.qualification.tenant_x._final_types import (
     FinalAdversarialClass,
+    FinalAdversarialExecutionResult,
+    FinalAdversarialOutcome,
+    FinalAdversarialReconciliationEvidence,
     FrzTenId,
     FrzTenReconciliationRow,
     FrzTenReconciliationVerdict,
@@ -24,8 +28,7 @@ class WaveReadinessOnHead:
     r3_ready: bool
     r4_ready: bool
     accepted_ancestry_ok: bool
-    adversarial_matrix_complete: bool
-    final_negatives_runnable: bool
+    adversarial_reconciliation: FinalAdversarialReconciliationEvidence
 
     def wave_ready(self, wave: TenantXWave) -> bool:
         if wave == TenantXWave.R1:
@@ -37,7 +40,7 @@ class WaveReadinessOnHead:
         if wave == TenantXWave.R4:
             return self.r4_ready
         if wave == TenantXWave.FINAL:
-            return self.adversarial_matrix_complete and self.final_negatives_runnable
+            return self.adversarial_reconciliation.adversarial_matrix_complete
         if wave == TenantXWave.P0:
             return self.accepted_ancestry_ok
         return False
@@ -155,7 +158,9 @@ def _row_verdict(
         return FrzTenReconciliationVerdict.BLOCKED
     if not readiness.waves_ready(accepted_waves):
         return FrzTenReconciliationVerdict.BLOCKED
-    if criterion_id == FrzTenId.FRZ_TEN_12 and not readiness.final_negatives_runnable:
+    if criterion_id == FrzTenId.FRZ_TEN_10 and not readiness.adversarial_reconciliation.f8_passed():
+        return FrzTenReconciliationVerdict.BLOCKED
+    if criterion_id == FrzTenId.FRZ_TEN_12 and not readiness.adversarial_reconciliation.adversarial_matrix_complete:
         return FrzTenReconciliationVerdict.BLOCKED
     return FrzTenReconciliationVerdict.RECONCILED_READY_FOR_AUDIT
 
@@ -213,10 +218,104 @@ def unclassified_frz_ten_count(rows: tuple[FrzTenReconciliationRow, ...]) -> int
     return unknown
 
 
-def adversarial_matrix_complete() -> bool:
+def matrix_class_ids() -> frozenset[FinalAdversarialClass]:
+    return frozenset(row.adversarial_class for row in FINAL_ADVERSARIAL_MATRIX)
+
+
+def _expected_outcome_for(adversarial_class: FinalAdversarialClass) -> FinalAdversarialOutcome:
+    for row in FINAL_ADVERSARIAL_MATRIX:
+        if row.adversarial_class == adversarial_class:
+            return row.expected_outcome
+    raise KeyError(adversarial_class)
+
+
+def reconcile_final_adversarial_execution(
+    execution: tuple[FinalAdversarialExecutionResult, ...],
+) -> FinalAdversarialReconciliationEvidence:
+    expected_set = set(FinalAdversarialClass)
+    matrix_ids = matrix_class_ids()
+    registry_ids = registry_class_ids()
+    if matrix_ids != expected_set or registry_ids != expected_set or matrix_ids != registry_ids:
+        return FinalAdversarialReconciliationEvidence(
+            adversarial_matrix_complete=False,
+            adversarial_classes_expected=len(expected_set),
+            adversarial_classes_executed=0,
+            adversarial_missing=tuple(sorted(expected_set, key=lambda c: c.value)),
+            adversarial_duplicates=(),
+            adversarial_unknown=0,
+            adversarial_not_executed=len(expected_set),
+            adversarial_outcome_mismatches=0,
+            adversarial_failed=0,
+            f8_missing_tenant_reconciled=False,
+        )
+
+    seen: list[FinalAdversarialClass] = []
+    duplicates: list[FinalAdversarialClass] = []
+    unknown = 0
+    not_executed = 0
+    outcome_mismatches = 0
+    failed = 0
+    f8_ok = False
+
+    for item in execution:
+        if item.adversarial_class in seen:
+            duplicates.append(item.adversarial_class)
+        seen.append(item.adversarial_class)
+        if item.observed_outcome == FinalAdversarialOutcome.UNKNOWN:
+            unknown += 1
+        if not item.executed:
+            not_executed += 1
+        if item.observed_outcome == FinalAdversarialOutcome.FAILED:
+            failed += 1
+        expected = _expected_outcome_for(item.adversarial_class)
+        if item.executed and item.observed_outcome != expected:
+            outcome_mismatches += 1
+        if item.adversarial_class == FinalAdversarialClass.F8_MISSING_TENANT_FAIL_CLOSED:
+            f8_ok = (
+                item.executed
+                and item.observed_outcome == expected
+                and item.observed_outcome != FinalAdversarialOutcome.FAILED
+            )
+
+    executed_classes = frozenset(seen)
+    missing = tuple(sorted(expected_set - executed_classes, key=lambda c: c.value))
+    dup_tuple = tuple(sorted(set(duplicates), key=lambda c: c.value))
+
+    complete = (
+        len(expected_set) == len(execution)
+        and len(missing) == 0
+        and len(dup_tuple) == 0
+        and unknown == 0
+        and not_executed == 0
+        and outcome_mismatches == 0
+        and failed == 0
+    )
+
+    return FinalAdversarialReconciliationEvidence(
+        adversarial_matrix_complete=complete,
+        adversarial_classes_expected=len(expected_set),
+        adversarial_classes_executed=len(executed_classes),
+        adversarial_missing=missing,
+        adversarial_duplicates=dup_tuple,
+        adversarial_unknown=unknown,
+        adversarial_not_executed=not_executed,
+        adversarial_outcome_mismatches=outcome_mismatches,
+        adversarial_failed=failed,
+        f8_missing_tenant_reconciled=f8_ok,
+    )
+
+
+def adversarial_matrix_complete_from_execution(
+    execution: tuple[FinalAdversarialExecutionResult, ...],
+) -> bool:
+    return reconcile_final_adversarial_execution(execution).adversarial_matrix_complete
+
+
+# Backward import surface: structural matrix identity only (not execution proof).
+def adversarial_matrix_structural_identity_complete() -> bool:
     classes = {row.adversarial_class for row in FINAL_ADVERSARIAL_MATRIX}
     return (
         len(FINAL_ADVERSARIAL_MATRIX) == len(FinalAdversarialClass)
         and len(classes) == len(FinalAdversarialClass)
-        and all(row.executable_evidence for row in FINAL_ADVERSARIAL_MATRIX)
+        and matrix_class_ids() == registry_class_ids()
     )

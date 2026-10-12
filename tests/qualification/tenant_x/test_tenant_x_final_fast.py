@@ -8,16 +8,17 @@ import subprocess
 
 import pytest
 
-from tests.qualification.tenant_x._final_adversarial import run_final_composed_adversarial_negatives
 from tests.qualification.tenant_x._final_certification import (
     build_final_qualification_report,
     summarize_final_metrics,
 )
+from tests.qualification.tenant_x._final_execution import run_final_adversarial_matrix
 from tests.qualification.tenant_x._final_matrices import FINAL_ADVERSARIAL_MATRIX
 from tests.qualification.tenant_x._final_reconciliation import (
-    adversarial_matrix_complete,
+    adversarial_matrix_structural_identity_complete,
     build_frz_ten_reconciliation_rows,
     frz_ten_identity_reconciled,
+    reconcile_final_adversarial_execution,
 )
 from tests.qualification.tenant_x._final_types import (
     FinalAdversarialClass,
@@ -53,7 +54,7 @@ def test_tx_final_q02_accepted_r1_r4_shas_ancestor_of_head() -> None:
 
 
 def test_tx_final_q03_adversarial_matrix_f1_f10_closed_world() -> None:
-    assert adversarial_matrix_complete()
+    assert adversarial_matrix_structural_identity_complete()
     assert len(FINAL_ADVERSARIAL_MATRIX) == len(FinalAdversarialClass)
     classes = {row.adversarial_class for row in FINAL_ADVERSARIAL_MATRIX}
     assert classes == set(FinalAdversarialClass)
@@ -65,14 +66,15 @@ def test_tx_final_q04_frz_ten_identity_reconciliation_01_12() -> None:
     r2 = build_r2_qualification_report()
     r3 = build_r3_qualification_report()
     r4 = build_r4_qualification_report()
+    execution = run_final_adversarial_matrix()
+    adversarial = reconcile_final_adversarial_execution(execution)
     readiness = WaveReadinessOnHead(
         r1_ready=r1.r1_ready_for_audit,
         r2_ready=r2.r2_ready_for_audit,
         r3_ready=r3.r3_ready_for_audit,
         r4_ready=r4.r4_ready_for_audit,
         accepted_ancestry_ok=accepted_wave_ancestry_violations() == (),
-        adversarial_matrix_complete=adversarial_matrix_complete(),
-        final_negatives_runnable=True,
+        adversarial_reconciliation=adversarial,
     )
     rows = build_frz_ten_reconciliation_rows(readiness)
     assert frz_ten_identity_reconciled(rows)
@@ -82,11 +84,13 @@ def test_tx_final_q04_frz_ten_identity_reconciliation_01_12() -> None:
 
 
 def test_tx_final_q05_composed_adversarial_negatives_executable() -> None:
-    run_final_composed_adversarial_negatives()
+    execution = run_final_adversarial_matrix()
+    adversarial = reconcile_final_adversarial_execution(execution)
+    assert adversarial.adversarial_matrix_complete
 
 
 def test_tx_final_q06_report_ready_for_audit() -> None:
-    report = build_final_qualification_report(final_negatives_runnable=True)
+    report = build_final_qualification_report()
     metrics = summarize_final_metrics(report)
     assert metrics["adversarial_matrix_rows"] == len(FinalAdversarialClass)
     assert report.frz_ten_rows == len(REQUIRED_FRZ_TEN_IDS)
@@ -97,6 +101,10 @@ def test_tx_final_q06_report_ready_for_audit() -> None:
     assert report.cross_tenant_allowed == 0
     assert report.cross_tenant_unknown == 0
     assert report.production_delta == 0
+    assert report.production_delta_evidence_available
+    assert report.adversarial_classes_expected == 10
+    assert report.adversarial_classes_executed == 10
+    assert report.adversarial_missing == 0
     assert report.r1_ready_on_head
     assert report.r2_ready_on_head
     assert report.r3_ready_on_head
@@ -112,8 +120,9 @@ def test_tx_final_q06_report_ready_for_audit() -> None:
                 r3_ready=report.r3_ready_on_head,
                 r4_ready=report.r4_ready_on_head,
                 accepted_ancestry_ok=True,
-                adversarial_matrix_complete=True,
-                final_negatives_runnable=True,
+                adversarial_reconciliation=reconcile_final_adversarial_execution(
+                    run_final_adversarial_matrix()
+                ),
             )
         )
     )

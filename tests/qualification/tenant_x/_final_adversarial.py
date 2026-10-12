@@ -82,10 +82,6 @@ def run_final_missing_tenant_fail_closed_negatives() -> None:
     assert_background_blank_transport_rejects()
 
 
-def run_final_extension_rewrite_negatives() -> None:
-    assert_vector_scope_cross_tenant_rejects()
-
-
 def run_final_trace_preservation_negatives() -> None:
     assert_retry_resume_preserves_tenant_a()
     assert_tool_scope_tenant_follows_inspection_scope()
@@ -100,5 +96,4 @@ def run_final_composed_adversarial_negatives() -> None:
     run_final_recovery_isolation_negatives()
     run_final_child_async_isolation_negatives()
     run_final_missing_tenant_fail_closed_negatives()
-    run_final_extension_rewrite_negatives()
     run_final_trace_preservation_negatives()

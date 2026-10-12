@@ -1,6 +1,6 @@
 # TENANT-X — Cross-Platform Tenant Isolation Certification
 
-**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **CLOSED / independently accepted** @ `d903a8dfaf7acaa53b013e2f7074fde9814441d2` · **TENANT-X-FINAL** = **READY FOR AUDIT** (qualification evidence on current HEAD; not independently **CLOSED**) · **TENANT-X** = **OPEN** / **BLOCKED ON FINAL** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
+**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **CLOSED / independently accepted** @ `d903a8dfaf7acaa53b013e2f7074fde9814441d2` · **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** (FINAL executable evidence integrity false-PASS) · **TENANT-X-FINAL-R1** = **READY FOR AUDIT** (corrective child; not **CLOSED**) · **TENANT-X-FINAL** parent = **BLOCKED ON R1 INDEPENDENT AUDIT** · **TENANT-X** = **OPEN** / **BLOCKED ON FINAL** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
 
 **Branch:** `development`
 
@@ -460,9 +460,11 @@ NO
 
 ## TENANT-X-FINAL — Cross-Platform Adversarial Reconciliation (current HEAD)
 
-**Cursor qualification status:** **TENANT-X-FINAL** = **READY FOR AUDIT** (not **CLOSED**; independent exact-SHA audit required).
+**Rejected baseline (exact SHA):** **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** — FINAL executable evidence integrity false-PASS: caller-controlled runnable boolean; string-only `executable_evidence`; F9 semantic underproof; F10 expected/observed mismatch; hardcoded production delta.
 
-**START_HEAD (FINAL wave baseline):** `6d635485c73cda171966adce401ae46b24016027`
+**Corrective child:** **TENANT-X-FINAL-R1** = **READY FOR AUDIT** (not **CLOSED**; independent exact-SHA audit required). Parent **TENANT-X-FINAL** = **BLOCKED ON R1 INDEPENDENT AUDIT**.
+
+**START_HEAD (FINAL-R1 corrective baseline):** `940e6219ecf95d3202236a51b2fa284403583e5f`
 
 **Current HEAD (qualification execution):** recorded at gate runtime via `git rev-parse HEAD` (must be descendant of accepted R1–R4 evidence SHAs).
 
@@ -479,7 +481,7 @@ NO
 
 **Production delta (FINAL):** **0**
 
-**Mechanical SSOT:** `tests/qualification/tenant_x/_final_*.py` · `test_tenant_x_final_fast.py` (**6** tests) · `test_tenant_x_final_current_head.py` (**1** test)
+**Mechanical SSOT:** `tests/qualification/tenant_x/_final_*.py` · `test_tenant_x_final_fast.py` · `test_tenant_x_final_current_head.py` · `test_tenant_x_final_r1_integrity.py` — canonical path `run_final_adversarial_matrix()` → `reconcile_final_adversarial_execution()` → `build_final_qualification_report()` (no caller-controlled readiness boolean).
 
 ### Mandatory adversarial matrix (F1–F10)
 
@@ -494,9 +496,9 @@ NO
 | **F7** | tenant A async/parent → tenant B child | **REJECTED** | **R4** |
 | **F8** | missing tenant on required scope | **REJECTED** | **FINAL** (composed R1–R4 negatives) |
 | **F9** | extension/provider tenant rewrite | **REJECTED** | **R2** + **R4** |
-| **F10** | request → execution → evidence → trace continuity | **REJECTED** (cross-tenant break) | **R4** |
+| **F10** | request → execution → evidence → trace continuity | **PRESERVED** | **R4** |
 
-Executable negatives compose R1–R4 SSOT (`_final_adversarial.py`); no duplicate inventories.
+Executable negatives compose R1–R4 SSOT (`_final_adversarial.py`); F9 dedicated replace/drop/widen-or-structural proof (`_final_execution.py`); typed per-class execution via `FINAL_ADVERSARIAL_EXECUTABLE_REGISTRY`.
 
 ### FRZ-TEN-01..12 FINAL reconciliation (global checklist remains **OPEN**)
 

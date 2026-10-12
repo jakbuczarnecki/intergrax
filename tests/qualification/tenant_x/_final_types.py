@@ -60,6 +60,63 @@ class FrzTenReconciliationVerdict(StrEnum):
 class FinalAdversarialOutcome(StrEnum):
     DENIED = "DENIED"
     REJECTED = "REJECTED"
+    PRESERVED = "PRESERVED"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+
+
+class FinalF9WidenProof(StrEnum):
+    REJECTED = "REJECTED"
+    STRUCTURALLY_IMPOSSIBLE = "STRUCTURALLY_IMPOSSIBLE"
+
+
+@dataclass(frozen=True, slots=True)
+class FinalF9ExecutionEvidence:
+    replace_rejected: bool
+    widen_proof: FinalF9WidenProof | None
+    drop_rejected: bool
+
+    def complete(self) -> bool:
+        return (
+            self.replace_rejected
+            and self.drop_rejected
+            and self.widen_proof is not None
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class FinalAdversarialExecutionResult:
+    adversarial_class: FinalAdversarialClass
+    executed: bool
+    observed_outcome: FinalAdversarialOutcome
+    evidence_source: str
+    failure_detail: str | None
+    f9_evidence: FinalF9ExecutionEvidence | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FinalAdversarialReconciliationEvidence:
+    adversarial_matrix_complete: bool
+    adversarial_classes_expected: int
+    adversarial_classes_executed: int
+    adversarial_missing: tuple[FinalAdversarialClass, ...]
+    adversarial_duplicates: tuple[FinalAdversarialClass, ...]
+    adversarial_unknown: int
+    adversarial_not_executed: int
+    adversarial_outcome_mismatches: int
+    adversarial_failed: int
+    f8_missing_tenant_reconciled: bool
+
+    def f8_passed(self) -> bool:
+        return self.f8_missing_tenant_reconciled
+
+
+@dataclass(frozen=True, slots=True)
+class FinalProductionDeltaEvidence:
+    base_sha: str
+    head_sha: str
+    changed_production_paths: tuple[str, ...]
+    production_delta_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,6 +163,15 @@ class TenantXFinalQualificationReport:
     r4_ready_on_head: bool
     adversarial_matrix_rows: int
     adversarial_matrix_executable: int
+    adversarial_classes_expected: int
+    adversarial_classes_executed: int
+    adversarial_missing: int
+    adversarial_duplicates: int
+    adversarial_unknown: int
+    adversarial_not_executed: int
+    adversarial_outcome_mismatches: int
+    adversarial_failed: int
+    production_delta_evidence_available: bool
     frz_ten_rows: int
     frz_ten_reconciled: int
     frz_ten_blocked: int
