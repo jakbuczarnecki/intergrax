@@ -16,15 +16,27 @@ class R2ChainVerdict(StrEnum):
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
-class R2PluginRewriteClass(StrEnum):
-    LEGAL = "LEGAL"
-    ILLEGAL = "ILLEGAL"
+class R2CrossTenantClass(StrEnum):
+    SAME_TENANT_PROVEN = "SAME_TENANT_PROVEN"
+    CROSS_TENANT_REJECTED = "CROSS_TENANT_REJECTED"
+    CROSS_TENANT_ALLOWED = "CROSS_TENANT_ALLOWED"
     UNKNOWN = "UNKNOWN"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+
+
+class R2ProviderRewriteClass(StrEnum):
+    SCOPE_PRESERVED = "SCOPE_PRESERVED"
+    LOCAL_SCOPE_PIN = "LOCAL_SCOPE_PIN"
+    REWRITE_REJECTED = "REWRITE_REJECTED"
+    REWRITE_ALLOWED = "REWRITE_ALLOWED"
+    UNKNOWN = "UNKNOWN"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
 class R2SubstitutionClass(StrEnum):
+    ILLEGAL_SUBSTITUTION_PRESENT = "ILLEGAL_SUBSTITUTION_PRESENT"
+    ILLEGAL_INPUT_REJECTED = "ILLEGAL_INPUT_REJECTED"
     LEGAL_NON_TENANT = "LEGAL_NON_TENANT"
-    ILLEGAL = "ILLEGAL"
     UNKNOWN = "UNKNOWN"
 
 
@@ -55,7 +67,12 @@ class R2MechanismRow:
 class R2MatrixRow:
     row_id: str
     surface_hint: str
-    verdict: R2ChainVerdict | R2PluginRewriteClass | R2SubstitutionClass
+    verdict: (
+        R2ChainVerdict
+        | R2CrossTenantClass
+        | R2ProviderRewriteClass
+        | R2SubstitutionClass
+    )
     evidence: tuple[str, ...]
 
 
