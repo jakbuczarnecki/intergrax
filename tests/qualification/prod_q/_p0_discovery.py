@@ -408,3 +408,116 @@ def raw_discovery_duplicate_ids() -> tuple[str, ...]:
 
 def discovery_scan_failures() -> tuple[ScanFailure, ...]:
     return _discovery_scan_failures()
+
+
+_PRODUCTION_ENTRYPOINT_MODULES: Final[tuple[str, ...]] = (
+    "applications/governed_contractor_application/host/factory.py",
+    "applications/local_workspace_application/host/main.py",
+    "applications/research_application/host/main.py",
+    "intergrax/hosting/engine/engine.py",
+)
+
+
+def _resolve_import_to_module_paths(
+    importing_module: str,
+    import_module: str,
+    level: int,
+) -> tuple[str, ...]:
+    if level > 0:
+        base_parts = importing_module.split("/")[:-level]
+        if not import_module:
+            target = "/".join(base_parts)
+        else:
+            target = "/".join(base_parts + import_module.split("."))
+    else:
+        target = import_module.replace(".", "/")
+    candidates = (
+        f"{target}.py",
+        f"{target}/__init__.py",
+    )
+    scanned = frozenset(scanned_module_paths())
+    return tuple(path for path in candidates if path in scanned)
+
+
+@lru_cache(maxsize=1)
+def modules_reachable_from_production_entrypoints() -> frozenset[str]:
+    scanned = frozenset(scanned_module_paths())
+    reachable: set[str] = set()
+    queue: list[str] = []
+    for entry in _PRODUCTION_ENTRYPOINT_MODULES:
+        if entry in scanned:
+            reachable.add(entry)
+            queue.append(entry)
+    while queue:
+        module_path = queue.pop()
+        full = _REPO_ROOT / module_path
+        try:
+            tree = ast.parse(full.read_text(encoding="utf-8"), filename=module_path)
+        except (OSError, SyntaxError):
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if node.module is None and node.level == 0:
+                    continue
+                targets = _resolve_import_to_module_paths(
+                    module_path,
+                    node.module or "",
+                    node.level,
+                )
+                for target in targets:
+                    if target not in reachable:
+                        reachable.add(target)
+                        queue.append(target)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    top = alias.name.split(".")[0]
+                    for candidate in (f"{top}/__init__.py", f"{top}.py"):
+                        if candidate in scanned and candidate not in reachable:
+                            reachable.add(candidate)
+                            queue.append(candidate)
+    return frozenset(reachable)
+
+
+@lru_cache(maxsize=1)
+def symbol_enclosing_class_by_module() -> dict[str, dict[str, str]]:
+    index: dict[str, dict[str, str]] = {}
+    for module_path in scanned_module_paths():
+        full = _REPO_ROOT / module_path
+        try:
+            tree = ast.parse(full.read_text(encoding="utf-8"), filename=module_path)
+        except (OSError, SyntaxError):
+            continue
+        symbols: dict[str, str] = {}
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+                symbols[node.name] = ""
+            elif isinstance(node, ast.ClassDef):
+                symbols[node.name] = ""
+                for item in node.body:
+                    if isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef):
+                        symbols[f"{node.name}.{item.name}"] = node.name
+        index[module_path] = symbols
+    return index
+
+
+@lru_cache(maxsize=1)
+def module_contract_import_prefixes() -> dict[str, tuple[str, ...]]:
+    prefixes_by_module: dict[str, tuple[str, ...]] = {}
+    for module_path in scanned_module_paths():
+        full = _REPO_ROOT / module_path
+        try:
+            tree = ast.parse(full.read_text(encoding="utf-8"), filename=module_path)
+        except (OSError, SyntaxError):
+            continue
+        found: list[str] = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom) or not node.module:
+                continue
+            mod = node.module
+            for prefix in _CONTRACT_IMPORT_PREFIXES:
+                if mod == prefix or mod.startswith(prefix + "."):
+                    found.append(prefix)
+                    break
+        if found:
+            prefixes_by_module[module_path] = tuple(sorted(frozenset(found)))
+    return prefixes_by_module

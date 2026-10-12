@@ -307,20 +307,16 @@ def _default_disposition(
     return ProdQFindingDisposition.TRACKED_FREEZE_DEBT
 
 
-def _auxiliary_na_evidence(candidate: ProductionReadinessCandidate) -> tuple[str, ...] | None:
+def _auxiliary_eligible(candidate: ProductionReadinessCandidate) -> bool:
     if candidate.indicator in _OPERATIONAL_RESPONSIBILITY_INDICATORS:
-        return None
+        return False
     if candidate.discovery_kind in (
         DiscoveryKind.ANCHOR_REGISTRY,
         DiscoveryKind.PROVIDER_SANDBOX_HOST,
         DiscoveryKind.AST_IMPORT_CONTRACT,
     ):
-        return None
-    return (
-        f"auxiliary_na:symbol:{candidate.module_path}:{candidate.symbol}",
-        f"indicator_token:{candidate.indicator}",
-        "no_standalone_production_operation_at_discovery_site",
-    )
+        return False
+    return True
 
 
 def _mechanism_role(candidate: ProductionReadinessCandidate) -> MechanismRole:
@@ -336,7 +332,7 @@ def _mechanism_role(candidate: ProductionReadinessCandidate) -> MechanismRole:
         return MechanismRole.SEMANTIC_MECHANISM
     if candidate.indicator in _OPERATIONAL_RESPONSIBILITY_INDICATORS:
         return MechanismRole.SEMANTIC_MECHANISM
-    if _auxiliary_na_evidence(candidate) is not None:
+    if _auxiliary_eligible(candidate):
         return MechanismRole.AUXILIARY_DISCOVERY
     return MechanismRole.UNRESOLVED_CLASSIFICATION
 
@@ -378,7 +374,6 @@ def _semantic_concern_key(
 
 def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionReadinessClassification:
     mechanism_role = _mechanism_role(candidate)
-    auxiliary_evidence = _auxiliary_na_evidence(candidate)
     mapped_family = _INDICATOR_TO_FAMILY.get(candidate.indicator)
     inventory_status = CandidateInventoryStatus.CLASSIFIED
     if mapped_family is None:
@@ -418,8 +413,8 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
         contract = "CONTRACT_UNRESOLVED"
         composition = candidate.module_path
-        evidence = ProductionReadinessEvidenceState.N_A_WITH_EVIDENCE
-        ownership_resolution = OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE
+        evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+        ownership_resolution = OwnershipResolutionState.NOT_YET_RESOLVED
     elif mechanism_role == MechanismRole.UNRESOLVED_CLASSIFICATION:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
         contract = "CONTRACT_UNRESOLVED"
@@ -467,9 +462,6 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
         f"indicator:{candidate.indicator}",
         f"mechanism_role:{mechanism_role.value}",
     )
-    if auxiliary_evidence is not None:
-        head_evidence = head_evidence + auxiliary_evidence
-
     return ProductionReadinessClassification(
         candidate_id=candidate.candidate_id,
         inventory_status=inventory_status,
@@ -492,9 +484,27 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
     )
 
 
+def _finalize_classified_inventory(
+    preliminary: tuple[ProductionReadinessClassification, ...],
+    raw: tuple[ProductionReadinessCandidate, ...],
+) -> tuple[ProductionReadinessClassification, ...]:
+    from tests.qualification.prod_q._p0_ownership import (
+        apply_auxiliary_finalization,
+        build_auxiliary_justifications,
+    )
+
+    justifications = build_auxiliary_justifications(raw, preliminary)
+    return tuple(
+        apply_auxiliary_finalization(record, justifications.get(record.candidate_id))
+        for record in preliminary
+    )
+
+
 @lru_cache(maxsize=1)
 def classified_inventory() -> tuple[ProductionReadinessClassification, ...]:
-    return tuple(classify_candidate(c) for c in raw_discovery_candidates())
+    raw = raw_discovery_candidates()
+    preliminary = tuple(classify_candidate(c) for c in raw)
+    return _finalize_classified_inventory(preliminary, raw)
 
 
 def classification_by_candidate_id() -> dict[str, ProductionReadinessClassification]:

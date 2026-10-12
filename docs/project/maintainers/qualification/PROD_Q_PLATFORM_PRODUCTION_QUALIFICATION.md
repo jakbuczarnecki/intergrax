@@ -1,10 +1,10 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1-R1-R1 baseline):** `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8`
+**START_HEAD (P0-R1-R1-R1-R1 baseline):** `ab8db1531c0017984dad7f8797f251b365319285`
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 
@@ -12,13 +12,13 @@
 
 **Freeze checklist (unchanged OPEN rows):** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 
-## PROD-Q-P0-R1-R1-R1 purpose
+## PROD-Q-P0-R1-R1-R1-R1 purpose
 
-Correct **semantic-role classification** (discovery kind ≠ auxiliary N/A), **operation-boundary concern identity** (cross-module / cross-contract duplicate owners), **evidence-based disposition of eight known findings**, and **fail-closed `PROD-Q-P0-R1-R1-R1` gate** without production code changes (**production delta = 0**). Auxiliary N/A requires per-symbol `auxiliary_na:symbol:` evidence; operational readiness indicators enter ownership audit as semantic mechanisms; `UNRESOLVED_CLASSIFICATION` is explicit and must be **0** on current HEAD for READY.
+Correct **evidence-proven auxiliary classification** (no self-attested `auxiliary_na:symbol:` sufficiency), **total semantic-concern ↔ finding reconciliation** (eight historical findings preserved as lineage; unresolved concerns derive mandatory dispositions), and **fail-closed `PROD-Q-P0-R1-R1-R1-R1` gate** without production code changes (**production delta = 0**). Auxiliary exclusions require typed `auxiliary_evidence:` + `related_concern:` or `reachability_evidence:`; operational readiness indicators remain semantic mechanisms; `UNRESOLVED_CLASSIFICATION` must be **0** on current HEAD for READY.
 
-**Lineage:** **PROD-Q-P0-R1-R1** @ `58fb6ce8…` = **REJECTED** (independent audit). P0-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
+**Lineage:** **PROD-Q-P0-R1-R1-R1** @ `ab8db153…` = **REJECTED** (independent audit). P0-R1-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
 
-Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` · findings register: `_p0_findings_register.py`.
+Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` (`PROD-Q-P0-R1-R1-R1-R1`) · findings register: `_p0_findings_register.py` · auxiliary justification: `_p0_ownership.py` + `_p0_discovery.py` static reachability.
 
 ## Inventory methodology (current HEAD)
 

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Fail-closed PROD-Q-P0-R1-R1-R1 readiness gate (qualification harness only)."""
+"""Fail-closed PROD-Q-P0 readiness gates (qualification harness only)."""
 
 from __future__ import annotations
 
@@ -12,28 +12,98 @@ from tests.qualification.prod_q._p0_discovery import (
     discovery_scan_failures,
     raw_discovery_duplicate_ids,
 )
-from tests.qualification.prod_q._p0_findings_register import known_prod_q_findings
+from tests.qualification.prod_q._p0_findings_register import (
+    concern_finding_reconciliation_violations,
+    historical_prod_q_findings,
+    known_prod_q_findings,
+)
 from tests.qualification.prod_q._p0_frz_reconciliation import build_frz_reconciliation, required_frz_ids
 from tests.qualification.prod_q._p0_integrity import unclassified_indicator_ids
 from tests.qualification.prod_q._p0_ownership import (
     alternate_composition_violations,
     auxiliary_na_without_symbol_evidence,
+    build_auxiliary_reconciliation_metrics,
     build_ownership_reconciliation,
     ownership_soundness_violations,
     unresolved_role_classifications,
 )
 from tests.qualification.prod_q._p0_types import (
-    CandidateInventoryStatus,
     MechanismRole,
-    ProdQFindingDisposition,
+    ProductionReadinessClassification,
     ProductionReadinessEvidenceState,
 )
 
 PROD_Q_P0_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1"
+PROD_Q_P0_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1"
 
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_gate_violations() -> tuple[str, ...]:
+    return prod_q_p0_r1_r1_r1_r1_gate_violations()
+
+
+def fake_auxiliary_na_violations(
+    inventory: tuple[ProductionReadinessClassification, ...],
+) -> tuple[str, ...]:
+    return tuple(
+        f"{record.candidate_id}: fake auxiliary_na without evidence"
+        for record in inventory
+        if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY
+        and any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence)
+        and not any(ref.startswith("auxiliary_evidence:") for ref in record.current_head_evidence)
+    )
+
+
+def prod_q_p0_inventory_reconciliation_violations(
+    inventory: tuple[ProductionReadinessClassification, ...],
+) -> tuple[str, ...]:
+    from tests.qualification.prod_q._p0_ownership import _reconciliation_from
+
+    violations: list[str] = []
+    by_id = {r.candidate_id: r for r in inventory}
+    unclassified = unclassified_indicator_ids(by_id)
+    if unclassified:
+        violations.append(f"unclassified indicators on current HEAD: {len(unclassified)}")
+
+    violations.extend(auxiliary_na_without_symbol_evidence(inventory))
+    violations.extend(fake_auxiliary_na_violations(inventory))
+    violations.extend(unresolved_role_classifications(inventory))
+    violations.extend(ownership_soundness_violations(inventory))
+    violations.extend(alternate_composition_violations(inventory))
+    violations.extend(concern_finding_reconciliation_violations(inventory))
+
+    aux_metrics = build_auxiliary_reconciliation_metrics(inventory)
+    if aux_metrics.auxiliary_discovered != (
+        aux_metrics.auxiliary_justified + aux_metrics.auxiliary_unresolved
+    ):
+        violations.append("auxiliary reconciliation identity does not balance")
+    if aux_metrics.auxiliary_unresolved != 0:
+        violations.append(f"auxiliary unresolved: {aux_metrics.auxiliary_unresolved}")
+    if aux_metrics.auxiliary_falsely_excluded != 0:
+        violations.append(f"auxiliary falsely excluded: {aux_metrics.auxiliary_falsely_excluded}")
+
+    recon = _reconciliation_from(inventory)
+    accounted = (
+        recon.semantic_mechanism_count
+        + recon.auxiliary_discovery_count
+        + recon.unresolved_classification_count
+    )
+    if accounted != recon.candidate_count:
+        violations.append("role classification counters do not cover all candidates")
+    ownership_accounted = (
+        recon.ownership_resolved
+        + recon.ownership_unresolved
+        + recon.ownership_ambiguous
+        + recon.ownership_not_applicable_with_evidence
+        + recon.unresolved_classification_count
+    )
+    if ownership_accounted != recon.candidate_count:
+        violations.append("ownership reconciliation counters do not cover all candidates")
+    return tuple(violations)
+
+
+@lru_cache(maxsize=1)
+def prod_q_p0_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
     violations: list[str] = []
 
     if discovery_scan_failures() or anchor_resolution_failures():
@@ -41,24 +111,19 @@ def prod_q_p0_r1_r1_r1_gate_violations() -> tuple[str, ...]:
     if raw_discovery_duplicate_ids():
         violations.append("duplicate candidate ids present")
 
-    by_id = {r.candidate_id: r for r in classified_inventory()}
-    unclassified = unclassified_indicator_ids(by_id)
-    if unclassified:
-        violations.append(f"unclassified indicators on current HEAD: {len(unclassified)}")
+    inventory = classified_inventory()
+    violations.extend(prod_q_p0_inventory_reconciliation_violations(inventory))
 
-    for record in classified_inventory():
-        if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY:
-            if not any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence):
-                violations.append(f"{record.candidate_id}: auxiliary N/A without symbol evidence")
-
-    violations.extend(auxiliary_na_without_symbol_evidence())
-    violations.extend(unresolved_role_classifications())
-    violations.extend(ownership_soundness_violations())
-    violations.extend(alternate_composition_violations())
+    historical = historical_prod_q_findings()
+    if len(historical) != 8:
+        violations.append(f"historical findings lineage incomplete: {len(historical)}")
+    for item in historical:
+        if not item.evidence_refs:
+            violations.append(f"{item.finding_id}: missing evidence_refs")
 
     findings = known_prod_q_findings()
-    if len(findings) != 8:
-        violations.append(f"known findings register incomplete: {len(findings)}")
+    if len(findings) < 8:
+        violations.append(f"reconciled findings register incomplete: {len(findings)}")
     for item in findings:
         if not item.evidence_refs:
             violations.append(f"{item.finding_id}: missing evidence_refs")
@@ -95,3 +160,7 @@ def prod_q_p0_r1_r1_r1_gate_violations() -> tuple[str, ...]:
 
 def prod_q_p0_r1_r1_r1_ready_for_audit() -> bool:
     return prod_q_p0_r1_r1_r1_gate_violations() == ()
+
+
+def prod_q_p0_r1_r1_r1_r1_ready_for_audit() -> bool:
+    return prod_q_p0_r1_r1_r1_r1_gate_violations() == ()

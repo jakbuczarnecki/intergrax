@@ -11,6 +11,7 @@ from tests.qualification.prod_q._p0_classification import classify_candidate
 from tests.qualification.prod_q._p0_discovery import raw_discovery_candidates
 from tests.qualification.prod_q._p0_ownership import (
     _reconciliation_from,
+    auxiliary_evidence_is_sufficient,
     ownership_incomplete_reason,
     ownership_resolved_with_evidence,
 )
@@ -216,9 +217,9 @@ def probe_false_auxiliary_na_without_symbol_evidence() -> str | None:
     record = classify_candidate(sample)
     if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
         return None
-    if any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence):
-        return None
-    return "auxiliary role without symbol-scoped evidence not rejected by classifier"
+    if auxiliary_evidence_is_sufficient(record):
+        return "auxiliary role accepted without finalized evidence-backed justification"
+    return None
 
 
 def probe_unresolved_classification_role_explicit() -> str | None:

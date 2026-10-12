@@ -96,6 +96,24 @@ class MechanismRole(str, Enum):
     UNRESOLVED_CLASSIFICATION = "unresolved_classification"
 
 
+class AuxiliaryJustificationKind(str, Enum):
+    HELPER_OF_CLASSIFIED_CONCERN = "helper_of_classified_concern"
+    IMPLEMENTATION_DETAIL_BEHIND_CONTRACT = "implementation_detail_behind_contract"
+    NON_AUTHORITATIVE_PROJECTION = "non_authoritative_projection"
+    MECHANICALLY_EXCLUDED_REACHABILITY = "mechanically_excluded_reachability"
+
+
+class AuxiliaryEvidenceStrength(str, Enum):
+    PROVEN_STATIC = "proven_static"
+    CONSERVATIVE_STATIC = "conservative_static"
+
+
+class SemanticConcernResolutionState(str, Enum):
+    RESOLVED_WITH_CURRENT_HEAD_EVIDENCE = "RESOLVED_WITH_CURRENT_HEAD_EVIDENCE"
+    LEGAL_DISTINCT_COMPOSITION = "LEGAL_DISTINCT_COMPOSITION"
+    UNRESOLVED = "UNRESOLVED"
+
+
 class OwnershipResolutionState(str, Enum):
     DISCOVERED = "DISCOVERED"
     NOT_YET_RESOLVED = "NOT_YET_RESOLVED"
@@ -294,6 +312,54 @@ class ProdQKnownFinding:
     disposition: ProdQFindingDisposition
     evidence_refs: tuple[str, ...]
     recommended_child: str | None
+    lineage_only: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class AuxiliaryJustification:
+    candidate_id: str
+    kind: AuxiliaryJustificationKind
+    related_concern_key: str
+    source_location: str
+    strength: AuxiliaryEvidenceStrength
+    rationale: str
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticConcernRecord:
+    concern_id: str
+    concern_key: str
+    member_candidate_ids: tuple[str, ...]
+    semantic_responsibility: str
+    canonical_owner: str
+    canonical_contract: str
+    composition_owner: str
+    production_callers: tuple[str, ...]
+    source_evidence: tuple[str, ...]
+    resolution_state: SemanticConcernResolutionState
+    finding_disposition: ProdQFindingDisposition | None
+    mandatory_child: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class AuxiliaryReconciliationMetrics:
+    auxiliary_discovered: int
+    auxiliary_justified: int
+    auxiliary_unresolved: int
+    auxiliary_falsely_excluded: int
+
+
+@dataclass(frozen=True, slots=True)
+class ConcernFindingReconciliationMetrics:
+    concerns_discovered: int
+    concerns_resolved: int
+    concerns_unresolved: int
+    unresolved_candidate_members: int
+    concerns_with_dispositions: int
+    concerns_missing_dispositions: int
+    orphan_findings: int
+    missing_findings: int
+    duplicate_dispositions: int
 
 
 @dataclass(frozen=True, slots=True)

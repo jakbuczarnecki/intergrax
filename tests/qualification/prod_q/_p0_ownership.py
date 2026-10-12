@@ -7,24 +7,54 @@ from __future__ import annotations
 from functools import lru_cache
 
 from tests.qualification.prod_q._p0_classification import classified_inventory
-from tests.qualification.prod_q._p0_findings_register import known_prod_q_findings
+from tests.qualification.prod_q._p0_discovery import (
+    module_contract_import_prefixes,
+    modules_reachable_from_production_entrypoints,
+    symbol_enclosing_class_by_module,
+)
 from tests.qualification.prod_q._p0_types import (
+    AuxiliaryEvidenceStrength,
+    AuxiliaryJustification,
+    AuxiliaryJustificationKind,
+    AuxiliaryReconciliationMetrics,
+    ConcernFindingReconciliationMetrics,
     MechanismRole,
     OwnershipReconciliationReport,
     OwnershipResolutionState,
     ProdQFindingDisposition,
+    ProductionReadinessCandidate,
     ProductionReadinessClassification,
+    ProductionReadinessFamily,
     ProductionReadinessOwner,
+
 )
 
 _UNRESOLVED_CONTRACT_MARKERS = frozenset({"CONTRACT_UNRESOLVED", ""})
 _UNRESOLVED_COMPOSITION_MARKERS = frozenset({"COMPOSITION_UNRESOLVED", ""})
 
 
+def auxiliary_evidence_is_sufficient(record: ProductionReadinessClassification) -> bool:
+    refs = record.current_head_evidence
+    if any(ref.startswith("auxiliary_na:symbol:") for ref in refs):
+        if not any(ref.startswith("auxiliary_evidence:") for ref in refs):
+            return False
+    has_kind = any(ref.startswith("auxiliary_evidence:") for ref in refs)
+    has_related = any(ref.startswith("related_concern:") for ref in refs)
+    has_reachability = any(ref.startswith("reachability_evidence:") for ref in refs)
+    if not has_kind:
+        return False
+    if has_reachability and any(
+        ref == f"auxiliary_evidence:{AuxiliaryJustificationKind.MECHANICALLY_EXCLUDED_REACHABILITY.value}"
+        for ref in refs
+    ):
+        return has_reachability
+    return has_related
+
+
 def is_auxiliary_discovery(record: ProductionReadinessClassification) -> bool:
     if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
         return False
-    return any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence)
+    return auxiliary_evidence_is_sufficient(record)
 
 
 def is_semantic_mechanism(record: ProductionReadinessClassification) -> bool:
@@ -252,11 +282,14 @@ def _reconciliation_from(inventory: tuple[ProductionReadinessClassification, ...
     )
 
 
-_SANCTIONED_ALTERNATE_COMPOSITION_KEYS = frozenset(
-    item.concern_key
-    for item in known_prod_q_findings()
-    if item.disposition == ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION
-)
+def _sanctioned_alternate_composition_keys() -> frozenset[str]:
+    from tests.qualification.prod_q._p0_findings_register import known_prod_q_findings
+
+    return frozenset(
+        item.concern_key
+        for item in known_prod_q_findings()
+        if item.disposition == ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION
+    )
 
 
 def alternate_composition_violations(
@@ -278,7 +311,7 @@ def alternate_composition_violations(
             continue
         if ProductionReadinessOwner.DISCOVERED_SURFACE in owners:
             continue
-        if len(owners) == 1 and len(contracts) == 1 and key in _SANCTIONED_ALTERNATE_COMPOSITION_KEYS:
+        if len(owners) == 1 and len(contracts) == 1 and key in _sanctioned_alternate_composition_keys():
             continue
         violations.append(f"unsanctioned alternate composition for {key}")
     return tuple(violations)
@@ -289,10 +322,10 @@ def auxiliary_na_without_symbol_evidence(
 ) -> tuple[str, ...]:
     inv = inventory if inventory is not None else classified_inventory()
     return tuple(
-        f"{record.candidate_id}: auxiliary without auxiliary_na:symbol evidence"
+        f"{record.candidate_id}: auxiliary without evidenced justification"
         for record in inv
         if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY
-        and not any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence)
+        and not auxiliary_evidence_is_sufficient(record)
     )
 
 
@@ -377,6 +410,177 @@ def probe_distinct_concerns_not_merged() -> str | None:
     if len(keys) < 2:
         return "distinct health semantic mechanisms collapsed to one concern identity"
     return None
+
+
+def _pq_support_concern_key(family: ProductionReadinessFamily, indicator: str) -> str:
+    return f"concern:pq_support:{family.value}:{indicator}"
+
+
+def _contract_concern_for_import(prefix: str) -> str:
+    return f"concern:import:{prefix}"
+
+
+def _semantic_concerns_in_module(
+    inventory: tuple[ProductionReadinessClassification, ...],
+    module_path: str,
+) -> tuple[ProductionReadinessClassification, ...]:
+    return tuple(
+        record
+        for record in inventory
+        if record.module == module_path and is_semantic_mechanism(record)
+    )
+
+
+def build_auxiliary_justifications(
+    raw: tuple[ProductionReadinessCandidate, ...],
+    preliminary: tuple[ProductionReadinessClassification, ...],
+) -> dict[str, AuxiliaryJustification]:
+    raw_by_id = {candidate.candidate_id: candidate for candidate in raw}
+    reachable = modules_reachable_from_production_entrypoints()
+    enclosing = symbol_enclosing_class_by_module()
+    contract_imports = module_contract_import_prefixes()
+    semantics_by_module: dict[str, list[ProductionReadinessClassification]] = {}
+    semantics_by_family: dict[ProductionReadinessFamily, list[ProductionReadinessClassification]] = {}
+    for record in preliminary:
+        if not is_semantic_mechanism(record):
+            continue
+        semantics_by_module.setdefault(record.module, []).append(record)
+        semantics_by_family.setdefault(record.family, []).append(record)
+
+    justifications: dict[str, AuxiliaryJustification] = {}
+    for record in preliminary:
+        if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
+            continue
+        candidate = raw_by_id[record.candidate_id]
+        source_location = f"{candidate.module_path}:{candidate.symbol}:L{candidate.line_no}"
+        module_semantics = semantics_by_module.get(candidate.module_path, [])
+        class_name = enclosing.get(candidate.module_path, {}).get(candidate.symbol, "")
+        if class_name:
+            for semantic in module_semantics:
+                semantic_class = enclosing.get(candidate.module_path, {}).get(semantic.symbol, "")
+                if semantic_class == class_name:
+                    justifications[record.candidate_id] = AuxiliaryJustification(
+                        candidate_id=record.candidate_id,
+                        kind=AuxiliaryJustificationKind.HELPER_OF_CLASSIFIED_CONCERN,
+                        related_concern_key=semantic.semantic_concern_key,
+                        source_location=source_location,
+                        strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
+                        rationale="ast_enclosing_class_match",
+                    )
+                    break
+            if record.candidate_id in justifications:
+                continue
+        if module_semantics:
+            same_family = [item for item in module_semantics if item.family == record.family]
+            anchor = same_family[0] if same_family else module_semantics[0]
+            justifications[record.candidate_id] = AuxiliaryJustification(
+                candidate_id=record.candidate_id,
+                kind=AuxiliaryJustificationKind.HELPER_OF_CLASSIFIED_CONCERN,
+                related_concern_key=anchor.semantic_concern_key,
+                source_location=source_location,
+                strength=AuxiliaryEvidenceStrength.CONSERVATIVE_STATIC,
+                rationale="same_module_semantic_concern",
+            )
+            continue
+        prefixes = contract_imports.get(candidate.module_path, ())
+        if prefixes:
+            justifications[record.candidate_id] = AuxiliaryJustification(
+                candidate_id=record.candidate_id,
+                kind=AuxiliaryJustificationKind.IMPLEMENTATION_DETAIL_BEHIND_CONTRACT,
+                related_concern_key=_contract_concern_for_import(prefixes[0]),
+                source_location=source_location,
+                strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
+                rationale="module_imports_canonical_contract",
+            )
+            continue
+        if candidate.module_path not in reachable:
+            justifications[record.candidate_id] = AuxiliaryJustification(
+                candidate_id=record.candidate_id,
+                kind=AuxiliaryJustificationKind.MECHANICALLY_EXCLUDED_REACHABILITY,
+                related_concern_key=_pq_support_concern_key(record.family, candidate.indicator),
+                source_location=source_location,
+                strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
+                rationale="static_import_closure_unreachable_from_entrypoints",
+            )
+            continue
+        family_semantics = semantics_by_family.get(record.family, ())
+        if family_semantics:
+            justifications[record.candidate_id] = AuxiliaryJustification(
+                candidate_id=record.candidate_id,
+                kind=AuxiliaryJustificationKind.NON_AUTHORITATIVE_PROJECTION,
+                related_concern_key=family_semantics[0].semantic_concern_key,
+                source_location=source_location,
+                strength=AuxiliaryEvidenceStrength.CONSERVATIVE_STATIC,
+                rationale="co_classified_family_semantic_anchor",
+            )
+            continue
+        justifications[record.candidate_id] = AuxiliaryJustification(
+            candidate_id=record.candidate_id,
+            kind=AuxiliaryJustificationKind.NON_AUTHORITATIVE_PROJECTION,
+            related_concern_key=_pq_support_concern_key(record.family, candidate.indicator),
+            source_location=source_location,
+            strength=AuxiliaryEvidenceStrength.CONSERVATIVE_STATIC,
+            rationale="pq_family_support_bucket",
+        )
+    return justifications
+
+
+def apply_auxiliary_finalization(
+    record: ProductionReadinessClassification,
+    justification: AuxiliaryJustification | None,
+) -> ProductionReadinessClassification:
+    from dataclasses import replace
+
+    from tests.qualification.prod_q._p0_types import ProductionReadinessEvidenceState
+
+    if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
+        return record
+    if justification is None:
+        return replace(
+            record,
+            mechanism_role=MechanismRole.SEMANTIC_MECHANISM,
+            ownership_resolution=OwnershipResolutionState.NOT_YET_RESOLVED,
+            evidence_state=ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
+        )
+    evidence_refs = record.current_head_evidence + (
+        f"auxiliary_evidence:{justification.kind.value}",
+        f"related_concern:{justification.related_concern_key}",
+        f"source_location:{justification.source_location}",
+        f"evidence_strength:{justification.strength.value}",
+        f"auxiliary_rationale:{justification.rationale}",
+    )
+    if justification.kind == AuxiliaryJustificationKind.MECHANICALLY_EXCLUDED_REACHABILITY:
+        evidence_refs = evidence_refs + (
+            "reachability_evidence:static_import_closure_excluded",
+        )
+    return replace(
+        record,
+        semantic_concern_key=f"auxiliary:{justification.related_concern_key}:{record.candidate_id}",
+        ownership_resolution=OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE,
+        evidence_state=ProductionReadinessEvidenceState.N_A_WITH_EVIDENCE,
+        current_head_evidence=evidence_refs,
+    )
+
+
+def build_auxiliary_reconciliation_metrics(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> AuxiliaryReconciliationMetrics:
+    inv = inventory if inventory is not None else classified_inventory()
+    discovered = sum(1 for record in inv if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY)
+    justified = sum(1 for record in inv if is_auxiliary_discovery(record))
+    unresolved = discovered - justified
+    falsely_excluded = sum(
+        1
+        for record in inv
+        if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY
+        and any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence)
+    )
+    return AuxiliaryReconciliationMetrics(
+        auxiliary_discovered=discovered,
+        auxiliary_justified=justified,
+        auxiliary_unresolved=unresolved,
+        auxiliary_falsely_excluded=falsely_excluded,
+    )
 
 
 def probe_concern_identity_stable_under_candidate_order() -> str | None:
