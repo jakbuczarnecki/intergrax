@@ -88,6 +88,11 @@ class CandidateInventoryStatus(str, Enum):
     UNCLASSIFIED_INDICATOR = "unclassified_indicator"
 
 
+class MechanismRole(str, Enum):
+    SEMANTIC_MECHANISM = "semantic_mechanism"
+    AUXILIARY_DISCOVERY = "auxiliary_discovery"
+
+
 class OwnershipResolutionState(str, Enum):
     DISCOVERED = "DISCOVERED"
     NOT_YET_RESOLVED = "NOT_YET_RESOLVED"
@@ -122,7 +127,8 @@ class ProductionReadinessClassification:
     module: str
     symbol: str
     responsibility: str
-    semantic_responsibility_key: str
+    mechanism_role: MechanismRole
+    semantic_concern_key: str
     semantic_owner: ProductionReadinessOwner
     canonical_contract: str
     composition_owner: str
@@ -187,6 +193,21 @@ class OwnershipMatrixReport:
 
 
 @dataclass(frozen=True, slots=True)
+class OwnershipReconciliationReport:
+    candidate_count: int
+    semantic_mechanism_count: int
+    auxiliary_discovery_count: int
+    ownership_resolved: int
+    ownership_unresolved: int
+    ownership_ambiguous: int
+    ownership_not_applicable_with_evidence: int
+    duplicate_semantic_concern_keys: tuple[str, ...]
+    duplicate_composition_concern_keys: tuple[str, ...]
+    alternate_canonical_contract_concern_keys: tuple[str, ...]
+    unresolved_semantic_concern_keys: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class FrzCriterionRecord:
     criterion_id: str
     domain: str
@@ -208,6 +229,8 @@ class HistoricalEvidenceItem:
 class ProviderQualificationDisposition:
     provider_id: str
     implementation_exists: bool
+    registration_callable_exists: bool
+    sanctioned_composition_reachable: bool
     registered: bool
     configured: bool
     effective: bool
@@ -229,6 +252,10 @@ class R1SqliteEnv01Disposition:
     reproduction_executed: bool
     reproduction_exit_code: int | None
     reproduction_classification: SqliteReproductionClassification
+    failing_exception_type: str
+    failing_trace_location: str
+    sqlite_bootstrap_observed: bool
+    strict_dependency_materialization_observed: bool
     reproduction_summary: str
     evidence_state: ProductionReadinessEvidenceState
     finding_disposition: ProdQFindingDisposition
@@ -263,6 +290,7 @@ class ProdQP0CertificationReport:
     discovery_report: ClosedWorldDiscoveryReport
     family_coverage: tuple[FamilyCoverageRecord, ...]
     ownership: OwnershipMatrixReport
+    ownership_reconciliation: OwnershipReconciliationReport
     frz_records: tuple[FrzCriterionRecord, ...]
     provider_dispositions: tuple[ProviderQualificationDisposition, ...]
     r1_sqlite: R1SqliteEnv01Disposition

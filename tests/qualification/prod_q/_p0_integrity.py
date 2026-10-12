@@ -9,9 +9,15 @@ from dataclasses import replace
 
 from tests.qualification.prod_q._p0_classification import classify_candidate
 from tests.qualification.prod_q._p0_discovery import raw_discovery_candidates
+from tests.qualification.prod_q._p0_ownership import (
+    _reconciliation_from,
+    ownership_incomplete_reason,
+    ownership_resolved_with_evidence,
+)
 from tests.qualification.prod_q._p0_types import (
     CandidateInventoryStatus,
     DiscoveryKind,
+    MechanismRole,
     OwnershipResolutionState,
     ProductionReadinessCandidate,
     ProductionReadinessClassification,
@@ -94,9 +100,10 @@ def probe_fake_semantic_owner_not_resolved() -> str | None:
         not in (
             OwnershipResolutionState.DISCOVERED,
             OwnershipResolutionState.NOT_YET_RESOLVED,
+            OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE,
         )
     ):
-        return "DISCOVERED_SURFACE without DISCOVERED/NOT_YET_RESOLVED state"
+        return "DISCOVERED_SURFACE without expected non-resolved state"
     return None
 
 
@@ -111,6 +118,70 @@ def probe_removed_classification_detected(
     violations = inventory_identity_violations(raw_discovery_candidates(), trimmed)
     if not violations:
         return "removed classification not detected"
+    return None
+
+
+def probe_unresolved_contract_marks_incomplete() -> str | None:
+    sample = ProductionReadinessCandidate(
+        candidate_id="probe::unresolved_contract::anchor.registry",
+        module_path="intergrax/probe_unresolved.py",
+        symbol="ProbeSemantic",
+        discovery_kind=DiscoveryKind.ANCHOR_REGISTRY,
+        line_no=1,
+        indicator="health",
+    )
+    record = classify_candidate(sample)
+    if record.mechanism_role != MechanismRole.SEMANTIC_MECHANISM:
+        return "anchor candidate not classified as semantic mechanism"
+    if ownership_resolved_with_evidence(record):
+        return "unresolved contract marked as ownership resolved"
+    if ownership_incomplete_reason(record) != "unresolved_canonical_contract":
+        return "expected unresolved_canonical_contract reason"
+    return None
+
+
+def probe_unresolved_composition_marks_incomplete() -> str | None:
+    from dataclasses import replace
+
+    from tests.qualification.prod_q._p0_classification import classification_by_candidate_id
+
+    base = next(iter(classification_by_candidate_id().values()))
+    mutant = replace(
+        base,
+        mechanism_role=MechanismRole.SEMANTIC_MECHANISM,
+        canonical_contract="intergrax.probe.resolved_contract",
+        composition_owner="COMPOSITION_UNRESOLVED",
+        ownership_resolution=OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
+        semantic_owner=ProductionReadinessOwner.EXECUTION_RUNTIME,
+    )
+    if ownership_resolved_with_evidence(mutant):
+        return "unresolved composition counted as resolved"
+    if ownership_incomplete_reason(mutant) != "unresolved_composition_owner":
+        return "expected unresolved_composition_owner reason"
+    return None
+
+
+def probe_mutated_owner_alters_reconciliation() -> str | None:
+    from dataclasses import replace
+
+    from tests.qualification.prod_q._p0_classification import classified_inventory
+
+    inventory = classified_inventory()
+    baseline = _reconciliation_from(inventory)
+    target = next(r for r in inventory if ownership_resolved_with_evidence(r))
+    mutated = tuple(
+        replace(
+            target,
+            canonical_contract="CONTRACT_UNRESOLVED",
+            ownership_resolution=OwnershipResolutionState.NOT_YET_RESOLVED,
+        )
+        if r.candidate_id == target.candidate_id
+        else r
+        for r in inventory
+    )
+    after = _reconciliation_from(mutated)
+    if baseline.ownership_resolved <= after.ownership_resolved:
+        return "mutated owner/contract state did not reduce resolved ownership count"
     return None
 
 

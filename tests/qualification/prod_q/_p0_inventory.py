@@ -7,9 +7,8 @@ from __future__ import annotations
 from functools import lru_cache
 
 from tests.qualification.prod_q._p0_classification import (
-    _ANCHOR_METADATA,
-    classification_by_candidate_id,
     classified_inventory,
+    classification_by_candidate_id,
 )
 from tests.qualification.prod_q._p0_discovery import scanned_module_paths
 from tests.qualification.prod_q._p0_discovery import (
@@ -20,20 +19,24 @@ from tests.qualification.prod_q._p0_discovery import (
     raw_discovery_duplicate_ids,
 )
 from tests.qualification.prod_q._p0_integrity import unclassified_indicator_ids
+from tests.qualification.prod_q._p0_ownership import (
+    concern_identity_for_ownership,
+    detect_ownership_matrix_findings,
+    is_semantic_mechanism,
+)
 from tests.qualification.prod_q._p0_types import (
     ALL_PRODUCTION_READINESS_FAMILIES,
     ClosedWorldDiscoveryReport,
-    DiscoveryKind,
     FamilyCoverageRecord,
     OwnershipMatrixReport,
     OwnershipRow,
-    OwnershipResolutionState,
-    ProdQP0Matrix,
-    ProdQFindingDisposition,
     ProductionReadinessEvidenceState,
     ProductionReadinessFamily,
     ProductionReadinessOwner,
+    ProdQFindingDisposition,
+    ProdQP0Matrix,
 )
+
 
 _FAMILY_TITLES: dict[ProductionReadinessFamily, str] = {
     ProductionReadinessFamily.PQ_F01: "production mode / environment semantics",
@@ -127,72 +130,36 @@ def build_family_coverage() -> tuple[FamilyCoverageRecord, ...]:
 @lru_cache(maxsize=1)
 def build_ownership_matrix() -> OwnershipMatrixReport:
     inventory = classified_inventory()
-    raw_by_id = {c.candidate_id: c for c in raw_discovery_candidates()}
-    by_key: dict[str, list[tuple[str, ProductionReadinessOwner, str, str, OwnershipResolutionState]]] = {}
-    for record in inventory:
-        key = record.semantic_responsibility_key
-        by_key.setdefault(key, []).append(
-            (
-                record.candidate_id,
-                record.semantic_owner,
-                record.canonical_contract,
-                record.composition_owner,
-                record.ownership_resolution,
-            )
-        )
+    semantic = [r for r in inventory if is_semantic_mechanism(r)]
+    by_key: dict[str, list] = {}
+    for record in semantic:
+        key = concern_identity_for_ownership(record)
+        by_key.setdefault(key, []).append(record)
 
     rows: list[OwnershipRow] = []
-    duplicate_semantic: list[str] = []
-    duplicate_composition: list[str] = []
-    alternate_contracts: list[str] = []
-    unresolved: list[str] = []
-    concern_contracts: dict[str, set[str]] = {}
-
     for key, items in sorted(by_key.items()):
-        owners = {item[1] for item in items}
-        compositions = {item[3] for item in items}
-        contracts = {item[2] for item in items}
-        resolutions = {item[4] for item in items}
-        cid_tuple = tuple(item[0] for item in items)
-        if len(owners) > 1:
-            duplicate_semantic.append(key)
-        if len(compositions) > 1 and ProductionReadinessOwner.DISCOVERED_SURFACE not in owners:
-            duplicate_composition.append(key)
+        owners = {item.semantic_owner for item in items}
+        compositions = {item.composition_owner for item in items}
+        contracts = {item.canonical_contract for item in items}
         primary_owner = next(iter(sorted(owners, key=lambda o: o.value)))
-        sample_cid = cid_tuple[0]
-        raw_candidate = raw_by_id.get(sample_cid)
-        if raw_candidate and raw_candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
-            anchor_key = (raw_candidate.module_path, raw_candidate.symbol)
-            if anchor_key in _ANCHOR_METADATA:
-                if OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE not in resolutions:
-                    unresolved.append(key)
         rows.append(
             OwnershipRow(
                 responsibility_key=key,
                 semantic_owner=primary_owner,
                 canonical_contract=next(iter(contracts)),
                 composition_owner=next(iter(compositions)),
-                candidate_ids=cid_tuple,
+                candidate_ids=tuple(item.candidate_id for item in items),
             )
         )
 
-    for record in inventory:
-        if record.ownership_resolution != OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE:
-            continue
-        if record.canonical_contract.startswith("CONTRACT_"):
-            continue
-        concern_key = record.responsibility
-        concern_contracts.setdefault(concern_key, set()).add(record.canonical_contract)
-    for concern_key, contracts in concern_contracts.items():
-        if len(contracts) > 1:
-            alternate_contracts.append(concern_key)
+    dup_sem, dup_comp, alt, unresolved = detect_ownership_matrix_findings(inventory)
 
     return OwnershipMatrixReport(
         rows=tuple(rows),
-        duplicate_semantic_owner_keys=tuple(sorted(frozenset(duplicate_semantic))),
-        duplicate_composition_owner_keys=tuple(sorted(frozenset(duplicate_composition))),
-        alternate_canonical_contract_concern_keys=tuple(sorted(alternate_contracts)),
-        unresolved_ownership_keys=tuple(sorted(frozenset(unresolved))),
+        duplicate_semantic_owner_keys=dup_sem,
+        duplicate_composition_owner_keys=dup_comp,
+        alternate_canonical_contract_concern_keys=alt,
+        unresolved_ownership_keys=unresolved,
     )
 
 

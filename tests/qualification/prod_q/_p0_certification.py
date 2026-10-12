@@ -18,6 +18,7 @@ from tests.qualification.prod_q._p0_inventory import (
     build_ownership_matrix,
     build_p0_matrix,
 )
+from tests.qualification.prod_q._p0_ownership import build_ownership_reconciliation
 from tests.qualification.prod_q._p0_types import (
     HistoricalEvidenceItem,
     ProdQP0CertificationReport,
@@ -97,7 +98,85 @@ def _isolated_db_path() -> Path:
     return repo_root() / ".tmp" / "session" / "prod-q-p0-r1" / "isolated-relational.db"
 
 
-def _execute_r1_sqlite_reproduction() -> tuple[int, str, SqliteReproductionClassification]:
+def _parse_sqlite_reproduction_tail(
+    tail: str,
+) -> tuple[
+    SqliteReproductionClassification,
+    str,
+    str,
+    bool,
+    bool,
+]:
+    failing_exception = ""
+    failing_location = ""
+    for line in tail.splitlines():
+        stripped = line.strip()
+        if stripped.endswith("Error") or "Error:" in stripped or "Exception:" in stripped:
+            if "FAILURES" not in stripped and "warnings summary" not in stripped:
+                failing_exception = stripped
+        if ".py:" in stripped and (
+            "intergrax" in stripped or "applications" in stripped
+        ):
+            failing_location = stripped
+
+    lowered = tail.lower()
+    sqlite_bootstrap = "sqlite" in lowered or "intergrax_relational_db" in lowered
+    strict_materialization = (
+        "ToolDependencyAttemptBoundaryMaterializationError" in tail
+        or "dependency_attempt_boundary_composition" in tail
+        or "strict production requires" in lowered
+    )
+
+    if strict_materialization:
+        return (
+            SqliteReproductionClassification.DEPENDENCY_MATERIALIZATION,
+            failing_exception,
+            failing_location,
+            sqlite_bootstrap,
+            True,
+        )
+    if "SQLite format 3" in tail or "collaborative" in lowered:
+        return (
+            SqliteReproductionClassification.DEPENDENCY_MATERIALIZATION,
+            failing_exception,
+            failing_location,
+            True,
+            False,
+        )
+    if "ModuleNotFoundError" in tail or "No module named" in tail:
+        return (
+            SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE,
+            failing_exception,
+            failing_location,
+            sqlite_bootstrap,
+            False,
+        )
+    if failing_exception or failing_location:
+        return (
+            SqliteReproductionClassification.TEST_ISOLATION_OR_HARNESS,
+            failing_exception,
+            failing_location,
+            sqlite_bootstrap,
+            strict_materialization,
+        )
+    return (
+        SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE,
+        failing_exception,
+        failing_location,
+        sqlite_bootstrap,
+        False,
+    )
+
+
+def _execute_r1_sqlite_reproduction() -> tuple[
+    int,
+    str,
+    SqliteReproductionClassification,
+    str,
+    str,
+    bool,
+    bool,
+]:
     isolated = _isolated_db_path()
     isolated.parent.mkdir(parents=True, exist_ok=True)
     if isolated.exists():
@@ -125,17 +204,30 @@ def _execute_r1_sqlite_reproduction() -> tuple[int, str, SqliteReproductionClass
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
-        return -1, str(exc), SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE
+        return (
+            -1,
+            str(exc),
+            SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE,
+            "",
+            "",
+            False,
+            False,
+        )
     tail = (proc.stdout + proc.stderr)[-4000:]
     if proc.returncode == 0:
-        return proc.returncode, tail, SqliteReproductionClassification.TEST_ISOLATION_OR_HARNESS
-    if "SQLite format 3" in tail or "collaborative" in tail.lower():
-        classification = SqliteReproductionClassification.DEPENDENCY_MATERIALIZATION
-    elif "ModuleNotFoundError" in tail or "No module named" in tail:
-        classification = SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE
-    else:
-        classification = SqliteReproductionClassification.PRODUCTION_DEFECT
-    return proc.returncode, tail, classification
+        return (
+            proc.returncode,
+            tail,
+            SqliteReproductionClassification.TEST_ISOLATION_OR_HARNESS,
+            "",
+            "",
+            True,
+            False,
+        )
+    classification, exc_type, location, sqlite_boot, strict_mat = _parse_sqlite_reproduction_tail(
+        tail
+    )
+    return proc.returncode, tail, classification, exc_type, location, sqlite_boot, strict_mat
 
 
 @lru_cache(maxsize=1)
@@ -145,7 +237,9 @@ def build_r1_sqlite_disposition() -> R1SqliteEnv01Disposition:
         "uv run --with cryptography pytest "
         f"{_R1_GCA_NODE} -p no:xdist -q"
     )
-    exit_code, summary, classification = _execute_r1_sqlite_reproduction()
+    exit_code, summary, classification, exc_type, location, sqlite_boot, strict_mat = (
+        _execute_r1_sqlite_reproduction()
+    )
     executed = exit_code >= 0
     return R1SqliteEnv01Disposition(
         finding_id="R1-SQLITE-ENV-01",
@@ -156,6 +250,10 @@ def build_r1_sqlite_disposition() -> R1SqliteEnv01Disposition:
         reproduction_executed=executed,
         reproduction_exit_code=exit_code if executed else None,
         reproduction_classification=classification,
+        failing_exception_type=exc_type,
+        failing_trace_location=location,
+        sqlite_bootstrap_observed=sqlite_boot,
+        strict_dependency_materialization_observed=strict_mat,
         reproduction_summary=summary[:500] if summary else "",
         evidence_state=ProductionReadinessEvidenceState.BLOCKER,
         finding_disposition=ProdQFindingDisposition.IN_SCOPE_BLOCKER,
@@ -175,17 +273,44 @@ def _bootstrap_registers_provider(marker: str) -> bool:
     return marker in text
 
 
+def _registration_callable_exists(provider_id: str, register_marker: str) -> bool:
+    slug = provider_id.lower()
+    register_py = (
+        repo_root()
+        / "intergrax"
+        / "integrations"
+        / "providers"
+        / "sandbox_host"
+        / slug
+        / "register.py"
+    )
+    if not register_py.is_file():
+        return False
+    try:
+        text = register_py.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return f"def {register_marker}" in text
+
+
 @lru_cache(maxsize=1)
 def build_provider_dispositions() -> tuple[ProviderQualificationDisposition, ...]:
     root = repo_root()
     out: list[ProviderQualificationDisposition] = []
     for provider_id, rel, register_marker in _PROVIDER_REGISTER_MARKERS:
         implementation_exists = (root / rel).is_file()
+        registration_callable_exists = _registration_callable_exists(provider_id, register_marker)
+        composition_reachable = _bootstrap_registers_provider(register_marker)
         registration_refs: tuple[str, ...] = ()
-        registered = False
-        if implementation_exists and _bootstrap_registers_provider(register_marker):
-            registered = True
+        registered = (
+            implementation_exists
+            and registration_callable_exists
+            and composition_reachable
+        )
+        if registered:
             registration_refs = (
+                rel,
+                f"intergrax/integrations/providers/sandbox_host/{provider_id.lower()}/register.py",
                 "intergrax/integrations/registry/bootstrap_m6_p6.py",
                 register_marker,
             )
@@ -193,6 +318,8 @@ def build_provider_dispositions() -> tuple[ProviderQualificationDisposition, ...
             ProviderQualificationDisposition(
                 provider_id=provider_id,
                 implementation_exists=implementation_exists,
+                registration_callable_exists=registration_callable_exists,
+                sanctioned_composition_reachable=composition_reachable,
                 registered=registered,
                 configured=False,
                 effective=False,
@@ -201,7 +328,10 @@ def build_provider_dispositions() -> tuple[ProviderQualificationDisposition, ...
                 evidence_state=ProductionReadinessEvidenceState.EXTERNAL_PROVIDER_EVIDENCE_REQUIRED,
                 finding_disposition=ProdQFindingDisposition.IN_SCOPE_BLOCKER,
                 registration_evidence=registration_refs,
-                notes="Bundle presence alone is not registration; live qualification not executed",
+                notes=(
+                    "implementation → registration callable → sanctioned bootstrap composition "
+                    "are separate evidence layers; live qualification not executed"
+                ),
             )
         )
     return tuple(out)
@@ -246,6 +376,7 @@ def build_prod_q_p0_certification_report() -> ProdQP0CertificationReport:
         discovery_report=build_closed_world_discovery_report(),
         family_coverage=build_family_coverage(),
         ownership=build_ownership_matrix(),
+        ownership_reconciliation=build_ownership_reconciliation(),
         frz_records=frz,
         provider_dispositions=build_provider_dispositions(),
         r1_sqlite=build_r1_sqlite_disposition(),

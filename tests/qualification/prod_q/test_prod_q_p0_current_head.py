@@ -24,6 +24,10 @@ from tests.qualification.prod_q._p0_inventory import (
     build_family_coverage,
     build_ownership_matrix,
 )
+from tests.qualification.prod_q._p0_ownership import (
+    build_ownership_reconciliation,
+    ownership_soundness_violations,
+)
 from tests.qualification.prod_q._p0_types import (
     ALL_PRODUCTION_READINESS_FAMILIES,
     ProdQFindingDisposition,
@@ -61,8 +65,18 @@ def test_prod_q_p0_head_q04_frz_exactly_once() -> None:
 
 def test_prod_q_p0_head_q05_ownership_duplicates_absent() -> None:
     matrix = build_ownership_matrix()
+    recon = build_ownership_reconciliation()
     assert matrix.duplicate_semantic_owner_keys == ()
-    assert matrix.unresolved_ownership_keys == ()
+    assert recon.duplicate_semantic_concern_keys == ()
+    assert ownership_soundness_violations() == ()
+    assert recon.candidate_count == recon.semantic_mechanism_count + recon.auxiliary_discovery_count
+    assert (
+        recon.ownership_resolved
+        + recon.ownership_unresolved
+        + recon.ownership_ambiguous
+        + recon.ownership_not_applicable_with_evidence
+        == recon.candidate_count
+    )
 
 
 def test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape() -> None:
@@ -73,6 +87,7 @@ def test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape() -> None
     assert report.tenant_audit.verdict == "DERIVED_PASS_REUSE_TENANT_X"
     assert report.r1_sqlite.reproduction_executed is True
     assert report.r1_sqlite.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER
+    assert report.ownership_reconciliation.semantic_mechanism_count > 0
     assert len(report.recommended_children) >= 3
 
 

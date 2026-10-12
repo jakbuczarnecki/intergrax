@@ -23,9 +23,18 @@ from tests.qualification.prod_q._p0_integrity import (
     assert_inventory_identity_sound,
     probe_duplicate_candidate_id_detected,
     probe_fake_semantic_owner_not_resolved,
+    probe_mutated_owner_alters_reconciliation,
     probe_removed_classification_detected,
+    probe_unresolved_composition_marks_incomplete,
+    probe_unresolved_contract_marks_incomplete,
     probe_unknown_indicator_classified_not_pq_f01,
 )
+from tests.qualification.prod_q._p0_ownership import (
+    probe_alternate_contract_conflict_detected,
+    probe_concern_identity_stable_under_candidate_order,
+    probe_distinct_concerns_not_merged,
+)
+from tests.qualification.prod_q._p0_types import SqliteReproductionClassification
 from tests.qualification.prod_q._p0_types import (
     CandidateInventoryStatus,
     DiscoveryKind,
@@ -49,7 +58,7 @@ def test_prod_q_p0_int_d2_removed_classification_fails_identity() -> None:
 def test_prod_q_p0_int_d2_identity_not_index_tautology() -> None:
     raw = tuple(reversed(raw_discovery_candidates()))
     by_id = classification_by_candidate_id()
-    assert_inventory_identity_sound(raw_discovery_candidates(), by_id)
+    assert_inventory_identity_sound(raw, by_id)
 
 
 def test_prod_q_p0_int_d2_duplicate_candidate_id_mutation() -> None:
@@ -84,6 +93,9 @@ def test_prod_q_p0_int_d7_sqlite_reproduction_executed() -> None:
     record = build_r1_sqlite_disposition()
     assert record.reproduction_executed is True
     assert record.reproduction_exit_code is not None
+    assert record.reproduction_classification != SqliteReproductionClassification.PRODUCTION_DEFECT
+    assert record.strict_dependency_materialization_observed is True
+    assert "ToolDependencyAttemptBoundaryMaterializationError" in record.failing_exception_type
 
 
 def test_prod_q_p0_int_d8_provider_bundle_not_registered_alone() -> None:
@@ -121,6 +133,30 @@ def test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator() -> None:
     mutant = classify_candidate(replace(sample, indicator="__unknown__"))
     assert mutant.inventory_status == CandidateInventoryStatus.UNCLASSIFIED_INDICATOR
     assert mutant.family == ProductionReadinessFamily.PQ_UNCLASSIFIED
+
+
+def test_prod_q_p0_int_ownership_unresolved_contract_incomplete() -> None:
+    assert probe_unresolved_contract_marks_incomplete() is None
+
+
+def test_prod_q_p0_int_ownership_unresolved_composition_incomplete() -> None:
+    assert probe_unresolved_composition_marks_incomplete() is None
+
+
+def test_prod_q_p0_int_ownership_alternate_contract_conflict() -> None:
+    assert probe_alternate_contract_conflict_detected() is None
+
+
+def test_prod_q_p0_int_ownership_distinct_concerns_not_merged() -> None:
+    assert probe_distinct_concerns_not_merged() is None
+
+
+def test_prod_q_p0_int_ownership_concern_identity_order_stable() -> None:
+    assert probe_concern_identity_stable_under_candidate_order() is None
+
+
+def test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation() -> None:
+    assert probe_mutated_owner_alters_reconciliation() is None
 
 
 def test_prod_q_p0_int_d8_nonexistent_provider_not_registered() -> None:

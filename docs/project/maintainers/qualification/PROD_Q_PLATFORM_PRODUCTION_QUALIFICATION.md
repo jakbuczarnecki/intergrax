@@ -1,10 +1,10 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON P0-R1 INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON R1-R1 INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1 baseline):** `20ce563d383312bd53c72167cb228623dfbb8881`
+**START_HEAD (P0-R1-R1 baseline):** `34f780b00d18499a1aef166985806cd78ba809b4`
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 
@@ -12,11 +12,11 @@
 
 **Freeze checklist (unchanged OPEN rows):** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 
-## PROD-Q-P0-R1 purpose
+## PROD-Q-P0-R1-R1 purpose
 
-Correct **closed-world inventory soundness** and **evidence integrity** for PROD-Q-P0 without production code changes (**production delta = 0**). Fixes silent classification fallback, index-tautological completeness, synthetic ownership, static tenant/FRZ/SQLite/provider evidence, and expands bounded discovery (anchors, method-level indicators).
+Correct **ownership reconciliation soundness**, **concern-level semantic identity**, **SQLite reproduction root-cause classification**, and **layered provider registration evidence** for PROD-Q-P0 without production code changes (**production delta = 0**). Separates auxiliary mechanical discovery from semantic mechanisms; `DISCOVERED_SURFACE` / `CONTRACT_UNRESOLVED` / `COMPOSITION_UNRESOLVED` never count as resolved ownership; reports candidate vs semantic-mechanism counters.
 
-P0-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
+**Lineage:** **PROD-Q-P0-R1** @ `34f780b0…` = **REJECTED** (independent audit). P0-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
 
 ## Inventory methodology (current HEAD)
 
@@ -51,7 +51,7 @@ Each of the **23** families has a typed `FamilyCoverageRecord` in `build_family_
 
 ## Ownership / contract / composition matrix
 
-`build_ownership_matrix()` keys rows by **semantic responsibility** (`semantic_responsibility_key`), detects alternate canonical contracts per resolved concern, and tracks anchor metadata resolution separately from mechanical `DISCOVERED` surfaces.
+`build_ownership_matrix()` and `build_ownership_reconciliation()` key semantic rows by **concern-level identity** (`semantic_concern_key` / `concern_identity_for_ownership`) — not `candidate_id`. Auxiliary AST surfaces are `NOT_APPLICABLE_WITH_EVIDENCE`. Counters: candidates, semantic mechanisms, resolved, unresolved, ambiguous, N/A with evidence.
 
 ## FRZ reconciliation (33 criteria)
 
@@ -63,12 +63,12 @@ Each of the **23** families has a typed `FamilyCoverageRecord` in `build_family_
 | --- | --- |
 | ID | `R1-SQLITE-ENV-01` |
 | PROD-Q impact | **IN-SCOPE BLOCKER** for **FRZ-PRD-04** |
-| Reproduction | **Executed** under isolated `INTERGRAX_RELATIONAL_DB` (see disposition record) |
+| Reproduction | **Executed** under isolated `INTERGRAX_RELATIONAL_DB`; failure classified from traceback (e.g. `ToolDependencyAttemptBoundaryMaterializationError` → **DEPENDENCY_MATERIALIZATION**, not `exit_code`-only `PRODUCTION_DEFECT`) |
 | Recommended child | **PROD-Q-R1** |
 
 ## Provider qualification disposition
 
-Registration is evidenced via `bootstrap_m6_p6.py` import of `register_*_integration` — **not** bundle file existence alone. Live qualification remains **EXTERNAL_PROVIDER_EVIDENCE_REQUIRED**.
+Evidence layers: `implementation_exists` → `registration_callable_exists` (`register.py`) → `sanctioned_composition_reachable` (`bootstrap_m6_p6.py`) → `registered` (derived) → `configured` / `effective` / `qualified` / `production_approved` (not evidenced on P0). Live qualification remains **EXTERNAL_PROVIDER_EVIDENCE_REQUIRED**.
 
 ## Tenant Isolation Audit (PROD-Q-P0)
 

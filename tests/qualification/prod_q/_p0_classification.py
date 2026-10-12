@@ -10,6 +10,7 @@ from tests.qualification.prod_q._p0_discovery import raw_discovery_candidates
 from tests.qualification.prod_q._p0_types import (
     CandidateInventoryStatus,
     DiscoveryKind,
+    MechanismRole,
     OwnershipResolutionState,
     ProdQFindingDisposition,
     ProductionReadinessCandidate,
@@ -102,6 +103,97 @@ _ANCHOR_METADATA: dict[tuple[str, str], tuple[ProductionReadinessOwner, str, str
         "intergrax/runtime/execution/lab_reference_agent_runtime.py",
         ProductionReadinessEvidenceState.SUPPORTING_HISTORICAL_EVIDENCE_REVALIDATED,
     ),
+    (
+        "intergrax/contracts/execution_capacity/admission_decision.py",
+        "assess_root_execution_capacity",
+    ): (
+        ProductionReadinessOwner.EXECUTION_CAPACITY,
+        "intergrax.contracts.execution_capacity_admission.ExecutionCapacityAdmissionPort",
+        "intergrax/contracts/execution_capacity/admission_decision.py",
+        ProductionReadinessEvidenceState.PROVEN_CURRENT_HEAD,
+    ),
+    (
+        "intergrax/hosting/engine/engine.py",
+        "health_snapshot",
+    ): (
+        ProductionReadinessOwner.HOSTING_ENGINE,
+        "intergrax.hosting.engine.engine.HostedApplicationEngine.health_snapshot",
+        "intergrax/hosting/engine/engine.py",
+        ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
+    ),
+    (
+        "intergrax/runtime/observability/auditability_health.py",
+        "build_auditability_health_snapshot",
+    ): (
+        ProductionReadinessOwner.OBSERVABILITY_AUDITABILITY,
+        "intergrax.runtime.observability.auditability_health",
+        "intergrax/runtime/observability/auditability_health.py",
+        ProductionReadinessEvidenceState.PROVEN_CURRENT_HEAD,
+    ),
+    (
+        "intergrax/applications/_shared/capability_health/providers/dependency_validation.py",
+        "DependencyValidationHealthProvider",
+    ): (
+        ProductionReadinessOwner.CAPABILITY_HEALTH,
+        "intergrax.applications._shared.capability_health.providers.dependency_validation",
+        "intergrax/applications/_shared/capability_health/providers/dependency_validation.py",
+        ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
+    ),
+    (
+        "intergrax/contracts/execution_reliability/shutdown_contract.py",
+        "ExecutionRuntimeShutdownPhase",
+    ): (
+        ProductionReadinessOwner.EXECUTION_RUNTIME,
+        "intergrax.contracts.execution_reliability.shutdown_contract",
+        "intergrax/contracts/execution_reliability/shutdown_contract.py",
+        ProductionReadinessEvidenceState.PROVEN_CURRENT_HEAD,
+    ),
+    (
+        "intergrax/fastapi_core/routers/health.py",
+        "health",
+    ): (
+        ProductionReadinessOwner.HOSTING_ENGINE,
+        "intergrax.fastapi_core.routers.health",
+        "intergrax/fastapi_core/routers/health.py",
+        ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
+    ),
+    (
+        "applications/governed_contractor_application/host/factory.py",
+        "create_governed_contractor_backend_app",
+    ): (
+        ProductionReadinessOwner.APPLICATION_HOST_WIRING,
+        "applications.governed_contractor_application.host.factory",
+        "applications/governed_contractor_application/host/factory.py",
+        ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
+    ),
+}
+
+_CONTRACT_IMPORT_OWNERS: dict[str, tuple[ProductionReadinessOwner, str, str]] = {
+    "intergrax.contracts.execution_capacity_admission": (
+        ProductionReadinessOwner.EXECUTION_CAPACITY,
+        "intergrax.contracts.execution_capacity_admission",
+        "intergrax/contracts/execution_capacity_admission.py",
+    ),
+    "intergrax.contracts.execution_reliability": (
+        ProductionReadinessOwner.EXECUTION_RUNTIME,
+        "intergrax.contracts.execution_reliability",
+        "intergrax/contracts/execution_reliability",
+    ),
+    "intergrax.contracts.runtime_execution_admission": (
+        ProductionReadinessOwner.EXECUTION_RUNTIME,
+        "intergrax.contracts.runtime_execution_admission",
+        "intergrax/contracts/runtime_execution_admission",
+    ),
+    "intergrax.contracts.functional_evidence": (
+        ProductionReadinessOwner.OBSERVABILITY_AUDITABILITY,
+        "intergrax.contracts.functional_evidence",
+        "intergrax/contracts/functional_evidence",
+    ),
+    "intergrax.contracts.idempotency": (
+        ProductionReadinessOwner.EXECUTION_RUNTIME,
+        "intergrax.contracts.idempotency",
+        "intergrax/contracts/idempotency",
+    ),
 }
 
 _FRZ_BY_FAMILY: dict[ProductionReadinessFamily, tuple[str, ...]] = {
@@ -146,19 +238,43 @@ def _default_disposition(
     return ProdQFindingDisposition.TRACKED_FREEZE_DEBT
 
 
-def _semantic_responsibility_key(
-    family: ProductionReadinessFamily,
-    indicator: str,
+def _mechanism_role(candidate: ProductionReadinessCandidate) -> MechanismRole:
+    if candidate.discovery_kind in (
+        DiscoveryKind.ANCHOR_REGISTRY,
+        DiscoveryKind.PROVIDER_SANDBOX_HOST,
+        DiscoveryKind.AST_IMPORT_CONTRACT,
+    ):
+        return MechanismRole.SEMANTIC_MECHANISM
+    return MechanismRole.AUXILIARY_DISCOVERY
+
+
+def _semantic_concern_key(
     candidate: ProductionReadinessCandidate,
+    owner: ProductionReadinessOwner,
+    contract: str,
+    mechanism_role: MechanismRole,
+    family: ProductionReadinessFamily,
 ) -> str:
-    if candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
-        return f"anchor:{candidate.module_path}:{candidate.symbol}"
+    if mechanism_role == MechanismRole.AUXILIARY_DISCOVERY:
+        return f"auxiliary:{candidate.module_path}:{candidate.symbol}:{candidate.indicator}"
+    if not contract.startswith("CONTRACT_"):
+        return f"concern:contract:{contract}"
     if candidate.discovery_kind == DiscoveryKind.PROVIDER_SANDBOX_HOST:
-        return f"provider.sandbox_host:{candidate.module_path}"
-    return f"mechanical:{candidate.candidate_id}"
+        slug = candidate.module_path.split("/")[-2]
+        return f"concern:provider.sandbox_host:{slug}"
+    if candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
+        return f"concern:unresolved:anchor:{candidate.module_path}:{candidate.symbol}"
+    if candidate.discovery_kind == DiscoveryKind.AST_IMPORT_CONTRACT:
+        prefix = candidate.symbol.removeprefix("import:")
+        return f"concern:import:{prefix}"
+    return (
+        f"concern:unresolved:semantic:{family.value}:"
+        f"{candidate.module_path}:{candidate.symbol}"
+    )
 
 
 def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionReadinessClassification:
+    mechanism_role = _mechanism_role(candidate)
     mapped_family = _INDICATOR_TO_FAMILY.get(candidate.indicator)
     inventory_status = CandidateInventoryStatus.CLASSIFIED
     if mapped_family is None:
@@ -175,24 +291,37 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
     if anchor_key in _ANCHOR_METADATA:
         owner, contract, composition, evidence = _ANCHOR_METADATA[anchor_key]
         ownership_resolution = OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE
+    elif candidate.discovery_kind == DiscoveryKind.AST_IMPORT_CONTRACT:
+        prefix = candidate.symbol.removeprefix("import:")
+        import_meta = _CONTRACT_IMPORT_OWNERS.get(prefix)
+        if import_meta is not None:
+            owner, contract, composition = import_meta
+            evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+            ownership_resolution = OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE
+        else:
+            owner = ProductionReadinessOwner.DISCOVERED_SURFACE
+            contract = "CONTRACT_UNRESOLVED"
+            composition = "COMPOSITION_UNRESOLVED"
+            evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+            ownership_resolution = OwnershipResolutionState.NOT_YET_RESOLVED
     elif candidate.discovery_kind == DiscoveryKind.PROVIDER_SANDBOX_HOST:
         owner = ProductionReadinessOwner.SANDBOX_HOST_PROVIDER
         contract = "CONTRACT_UNRESOLVED"
         composition = "COMPOSITION_UNRESOLVED"
         evidence = ProductionReadinessEvidenceState.EXTERNAL_PROVIDER_EVIDENCE_REQUIRED
         ownership_resolution = OwnershipResolutionState.NOT_YET_RESOLVED
-    elif candidate.discovery_kind == DiscoveryKind.AST_STRICT_LAB_BRANCH:
+    elif mechanism_role == MechanismRole.AUXILIARY_DISCOVERY:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
         contract = "CONTRACT_UNRESOLVED"
         composition = candidate.module_path
         evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
-        ownership_resolution = OwnershipResolutionState.DISCOVERED
+        ownership_resolution = OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE
     elif candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
         contract = "CONTRACT_UNRESOLVED"
         composition = "COMPOSITION_UNRESOLVED"
         evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
-        ownership_resolution = OwnershipResolutionState.DISCOVERED
+        ownership_resolution = OwnershipResolutionState.NOT_YET_RESOLVED
     else:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
         contract = "CONTRACT_UNRESOLVED"
@@ -219,7 +348,9 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
     ):
         disposition = ProdQFindingDisposition.TRACKED_FREEZE_DEBT
 
-    semantic_key = _semantic_responsibility_key(family, candidate.indicator, candidate)
+    concern_key = _semantic_concern_key(
+        candidate, owner, contract, mechanism_role, family
+    )
 
     return ProductionReadinessClassification(
         candidate_id=candidate.candidate_id,
@@ -228,7 +359,8 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
         module=candidate.module_path,
         symbol=candidate.symbol,
         responsibility=f"{family.value}:{candidate.indicator}",
-        semantic_responsibility_key=semantic_key,
+        mechanism_role=mechanism_role,
+        semantic_concern_key=concern_key,
         semantic_owner=owner,
         canonical_contract=contract,
         composition_owner=composition,
