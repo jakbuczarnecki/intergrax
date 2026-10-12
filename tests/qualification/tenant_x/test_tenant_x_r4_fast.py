@@ -18,7 +18,17 @@ from tests.qualification.tenant_x._r4_adversarial import (
     assert_vendor_queue_request_tenant_mismatch_rejects,
     assert_vendor_worker_payload_job_tenant_mismatch_rejects,
 )
+from tests.qualification.tenant_x._r4_call_sites import (
+    R4ContextAssemblyCallSite,
+    build_maybe_record_llm_call_from_usage_end_inventory,
+    build_record_context_assembly_inventory,
+    build_record_llm_call_inventory,
+    context_assembly_production_path_closed,
+    llm_call_production_tenant_closed,
+    reconcile_context_assembly_inventory,
+)
 from tests.qualification.tenant_x._r4_certification import build_r4_qualification_report, summarize_r4_metrics
+from tests.qualification.tenant_x._r4_types import R4ContextAssemblyPathClass
 from tests.qualification.tenant_x._r4_chain import build_r4_e2e_chain
 from tests.qualification.tenant_x._r4_matrices import (
     ASYNC_DOMAIN_WORKER_MATRIX,
@@ -107,6 +117,39 @@ def test_tx_r4_q10_closure_derived_security_metrics() -> None:
     assert report.substitution_unknown == 0
     assert report.cross_tenant_rejected == sum(
         1 for r in CROSS_TENANT_R4_MATRIX if r.verdict == R4CrossTenantClass.CROSS_TENANT_REJECTED
+    )
+
+
+def test_tx_r4_q11_mechanical_call_site_discovery_reconciles() -> None:
+    ctx = build_record_context_assembly_inventory()
+    direct = build_record_llm_call_inventory()
+    wrapper = build_maybe_record_llm_call_from_usage_end_inventory()
+    assert ctx.production_callers_total == 2
+    assert ctx.production_callers_total == ctx.canonically_bound + ctx.caller_controlled_unsafe + ctx.unknown
+    assert direct.production_callers_total == 1
+    assert direct.canonical_tenant == 1
+    assert wrapper.production_callers_total == 1
+    assert wrapper.canonical_tenant == 1
+    assert context_assembly_production_path_closed()
+    assert llm_call_production_tenant_closed()
+
+
+def test_tx_r4_q12_fail_closed_unknown_synthetic_context_caller() -> None:
+    base = build_record_context_assembly_inventory()
+    synthetic = R4ContextAssemblyCallSite(
+        module="intergrax/synthetic/unknown_caller.py",
+        containing_symbol="synthetic_fn",
+        path_class=R4ContextAssemblyPathClass.UNKNOWN_CALLSITE,
+        tenant_source_expression="metadata['tenant_id']",
+        validation_before_helper="synthetic unclassified caller",
+    )
+    merged = reconcile_context_assembly_inventory((*base.call_sites, synthetic))
+    assert merged.unknown >= 1
+    assert merged.production_callers_total == base.production_callers_total + 1
+    assert not (
+        merged.unknown == 0
+        and merged.caller_controlled_unsafe == 0
+        and merged.canonically_bound == merged.production_callers_total
     )
 
 
