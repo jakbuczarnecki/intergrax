@@ -1,6 +1,6 @@
 # COMPAT-X — Contract, Schema & Evolution Certification (P0 closed-world baseline)
 
-**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **REJECTED / superseded** (by **R2-P0-R1**) @ `e33048eff988d561ba4469bb99036d33a7b058b2` · **COMPAT-X-R2-P0-R1** = **REJECTED / superseded** (by **R2-P0-R2**) @ `9138b12a77c5e42831846b11220216fa6772df1a` · **COMPAT-X-R2-P0-R2** = **CLOSED / independently accepted** @ `78bd502b5da5284b1bdaae2e321b7076fa22227d` · **COMPAT-X-R2** = **CLOSED / independently accepted** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) · **COMPAT-X-R2-R1** = **REJECTED / superseded** @ `549c8c1937267f07639043719d7fa27bba968430` · **COMPAT-X-R2-R1-R1** = **CLOSED / independently accepted** @ `bb5900cd9a502f3e967b88ee54e4e18f6ff101cb` · **COMPAT-X-R2-R2** = **CLOSED / independently accepted** via **COMPAT-X-R2-R2-R1-R1-R1** @ `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137` · **COMPAT-X-R2-FINAL** = **REJECTED** @ `b9d456a0ec69026101214c79dffa7a33ad713a34` · **COMPAT-X-R2-FINAL-R1** = **CLOSED / independently accepted** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` · **COMPAT-X-R3-P0** = **CLOSED** via **R3-P0-R1-R1** @ `8ff23c9ef19f9baf9f9b013d73716e990c7d4e26` (rejected **R3-P0** @ `7a2cbed…` · **R3-P0-R1** @ `0e526219…` preserved) · **COMPAT-X-R3-R1** = **CLOSED / independently accepted** @ `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` (qualification-only final closure evidence; production Event Evolution implementation origin `69f5e6fcb34918a43a602c1e00b079656c79c9a5` — do not conflate) · **COMPAT-X-R3** = **CLOSED / independently accepted** @ `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` · **COMPAT-X-R4-R1-R1** = **CLOSED / independently accepted** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b` · **COMPAT-X-R4** = **CLOSED / independently accepted** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b` · **COMPAT-X-R5** = **NEXT** / **QUEUED** · **COMPAT-X** parent = **OPEN** / **CURRENT** — **BLOCKED ON R5** · **TENANT-X** = **NOT ENTERED** · **FRZ-CMP-04** = **PASS** @ `c2c6b689…` · **FRZ-CMP-05** = **PASS** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b`
+**Status:** **COMPAT-X-P0** = **CLOSED / independently accepted** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **COMPAT-X-P0-R3** = **CLOSED / independently accepted** (same evidence SHA) · **COMPAT-X-R1** = **CLOSED / independently accepted** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` · **COMPAT-X-R2-P0** = **REJECTED / superseded** (by **R2-P0-R1**) @ `e33048eff988d561ba4469bb99036d33a7b058b2` · **COMPAT-X-R2-P0-R1** = **REJECTED / superseded** (by **R2-P0-R2**) @ `9138b12a77c5e42831846b11220216fa6772df1a` · **COMPAT-X-R2-P0-R2** = **CLOSED / independently accepted** @ `78bd502b5da5284b1bdaae2e321b7076fa22227d` · **COMPAT-X-R2** = **CLOSED / independently accepted** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) · **COMPAT-X-R2-R1** = **REJECTED / superseded** @ `549c8c1937267f07639043719d7fa27bba968430` · **COMPAT-X-R2-R1-R1** = **CLOSED / independently accepted** @ `bb5900cd9a502f3e967b88ee54e4e18f6ff101cb` · **COMPAT-X-R2-R2** = **CLOSED / independently accepted** via **COMPAT-X-R2-R2-R1-R1-R1** @ `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137` · **COMPAT-X-R2-FINAL** = **REJECTED** @ `b9d456a0ec69026101214c79dffa7a33ad713a34` · **COMPAT-X-R2-FINAL-R1** = **CLOSED / independently accepted** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` · **COMPAT-X-R3-P0** = **CLOSED** via **R3-P0-R1-R1** @ `8ff23c9ef19f9baf9f9b013d73716e990c7d4e26` (rejected **R3-P0** @ `7a2cbed…` · **R3-P0-R1** @ `0e526219…` preserved) · **COMPAT-X-R3-R1** = **CLOSED / independently accepted** @ `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` (qualification-only final closure evidence; production Event Evolution implementation origin `69f5e6fcb34918a43a602c1e00b079656c79c9a5` — do not conflate) · **COMPAT-X-R3** = **CLOSED / independently accepted** @ `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` · **COMPAT-X-R4-R1-R1** = **CLOSED / independently accepted** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b` · **COMPAT-X-R4** = **CLOSED / independently accepted** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b` · **COMPAT-X-R5** = **CLOSED / independently accepted** @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a` (**R5-FINAL**) · **COMPAT-X** parent = **CLOSED / independently accepted** @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a` · **TENANT-X** = **NEXT** / **QUEUED** · **FRZ-CMP-01..08** = **PASS**
 
 **Branch:** `development`
 
@@ -22,7 +22,7 @@
 
 ## Purpose
 
-Mechanical closed-world inventory of compatibility-relevant platform surfaces on current HEAD with **candidates = semantic surfaces + evidence-backed exclusions**. Establishes evidence for **FRZ-CMP-01..08** *candidate* state only. Does **not** close **COMPAT-X** or promote global **FRZ-CMP-* = PASS**.
+Mechanical closed-world inventory of compatibility-relevant platform surfaces on current HEAD with **candidates = semantic surfaces + evidence-backed exclusions**. **COMPAT-X** parent **CLOSED / independently accepted** @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a` with child evidence chain through **P0** / **R1** / **R2** / **R3** / **R4** / **R5**; **FRZ-CMP-01..08** = **PASS** (provenance per child accepted SHAs — not conflated with parent bookkeeping SHA).
 
 ## Inventory summary (mechanical)
 
@@ -101,7 +101,7 @@ See `tests/qualification/compat_x/_compat_x_owner_discovery.py` (`COMPAT_X_OWNER
 | Event schema evolution | CANDIDATE_OWNER_REMEDIATION_REQUIRED |
 | Event evolution policy | CURRENT_CONFIRMED_OWNER @ architecture hub + `runtime_event_payload_policy` write authority (**R3** **CLOSED** @ `c2c6b689…`; **R3-P0** @ `8ff23c9…`; **FRZ-CMP-04** **PASS**) |
 | Plugin/provider compatibility policy | CURRENT_CONFIRMED_OWNER (**R4** **CLOSED** @ `f80c60af…`; **FRZ-CMP-05** **PASS**) |
-| Deprecation/removal | FRAGMENTED_UNOWNED |
+| Deprecation/removal | CURRENT_CONFIRMED_OWNER @ architecture policy (**R5** **CLOSED** @ `84b8739b…`; **FRZ-CMP-07** **PASS**) |
 | Compatibility adapters (langchain bridge) | CURRENT_CONFIRMED_OWNER (translation-only evidence) |
 
 ## Accepted P0 evidence (independent audit @ `0612c2a7…`)
@@ -122,20 +122,20 @@ production PARALLEL_AUTHORITY = 0
 production delta = 0
 ```
 
-**Global FRZ-CMP-* = PASS:** not promoted — checklist rows remain **OPEN** until **COMPAT-X** parent closure.
+**Global FRZ-CMP-01..08 = PASS** @ **COMPAT-X** parent closure (evidence provenance preserved per accepted child SHA).
 
-## FRZ-CMP candidate state (accepted P0 @ `0612c2a7…`)
+## FRZ-CMP state @ **COMPAT-X** parent closure
 
-| Criterion | Candidate | Blocker IDs |
+| Criterion | Status | Evidence SHA (accepted child — not parent bookkeeping alone) |
 | --- | --- | --- |
-| FRZ-CMP-01 | **PASS CANDIDATE** / P0 evidence accepted @ `0612c2a7…` | — (closed-world parity + semantic inventory); checklist **OPEN** until parent closure |
-| FRZ-CMP-02 | **OPEN** / **PASS CANDIDATE** / independently accepted evidence @ `4361943d6812a83db321e3d3fbc6d361ed393fee` | CMP-P0-B02 remediated in R1 qualification layer; checklist **OPEN** until **COMPAT-X** parent closure |
-| FRZ-CMP-03 | **OPEN** / **PASS CANDIDATE** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) | CMP-P0-B03 → **COMPAT-X-R2** **CLOSED**; persisted schema/versioning reconciled on current HEAD; `MISSING_VERSION` **0**; family drift **0**; checklist **OPEN** until **COMPAT-X** parent closure (not global **PASS**) |
-| FRZ-CMP-04 | **PASS** @ `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` (**COMPAT-X-R3** **CLOSED**; **R3-P0** accepted @ `8ff23c9…`) | — (**COMPAT-X** parent checklist row remains **OPEN** until parent closure) |
-| FRZ-CMP-05 | **PASS** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b` (**COMPAT-X-R4** **CLOSED**) | CMP-P0-B05 remediated in **R4** qualification layer |
-| FRZ-CMP-06 | **OPEN** / **PASS CANDIDATE** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) | **16** legacy obligations reconciled; obligation drift **0**; implicit compatibility blockers **0**; not global **PASS** |
-| FRZ-CMP-07 | **OPEN** / **PASS CANDIDATE** — **COMPAT-X-R5-P0** **READY FOR AUDIT** @ `66f5c847…` | CMP-P0-B07 — cross-platform deprecation/removal policy + closed-world obligation inventory (`UNCLASSIFIED` **0**); not global **PASS** until **COMPAT-X-R5** closure |
-| FRZ-CMP-08 | **PASS CANDIDATE** / hardened @ **R5-P0** current HEAD | — (**476/476** authority-inspected; **0** `PARALLEL_AUTHORITY`; shim current-version authority violations **0**; adversarial probes **A–R**); checklist **OPEN** until parent closure |
+| FRZ-CMP-01 | **PASS** | **P0** @ `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` |
+| FRZ-CMP-02 | **PASS** | **R1** @ `4361943d6812a83db321e3d3fbc6d361ed393fee` |
+| FRZ-CMP-03 | **PASS** | **R2** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) |
+| FRZ-CMP-04 | **PASS** | **R3** @ `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` |
+| FRZ-CMP-05 | **PASS** | **R4** @ `f80c60af8963e4c20c5c174a45dfe4c5297e825b` |
+| FRZ-CMP-06 | **PASS** | **R2** @ `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) |
+| FRZ-CMP-07 | **PASS** | **R5** @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a` |
+| FRZ-CMP-08 | **PASS** | **R5** hardened closure @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a` |
 
 ## Proposed remediation grouping (re-derived from corrected discovery)
 
@@ -779,21 +779,21 @@ COMPAT-X-R2-R1-R1     = CLOSED / independently accepted @ bb5900cd9a502f3e967b88
 COMPAT-X-R2-R2        = CLOSED / independently accepted via R2-R2-R1-R1-R1 @ 2e7d6173…
 COMPAT-X-R2-FINAL     = REJECTED @ b9d456a0ec69026101214c79dffa7a33ad713a34
 COMPAT-X-R2-FINAL-R1  = CLOSED / independently accepted @ 97abf88f6364758e7768e6fbf1bf56e138b43520
-COMPAT-X              = OPEN / CURRENT — BLOCKED ON R5
+COMPAT-X              = CLOSED / independently accepted @ 84b8739b8b6e62c8e580e26ca3011f6aa46d457a
 COMPAT-X-R3           = CLOSED / independently accepted @ c2c6b689b0171125eac84f8a6dc40faa8cab94cd
 COMPAT-X-R3-P0        = CLOSED via R3-P0-R1-R1 @ 8ff23c9ef19f9baf9f9b013d73716e990c7d4e26
 COMPAT-X-R3-R1        = CLOSED / independently accepted @ c2c6b689b0171125eac84f8a6dc40faa8cab94cd
 COMPAT-X-R4           = CLOSED / independently accepted @ f80c60af8963e4c20c5c174a45dfe4c5297e825b
 COMPAT-X-R4-R1-R1     = CLOSED / independently accepted @ f80c60af8963e4c20c5c174a45dfe4c5297e825b
-COMPAT-X-R5           = NEXT / QUEUED
-TENANT-X              = NOT ENTERED
-FRZ-CMP-04            = PASS @ c2c6b689b0171125eac84f8a6dc40faa8cab94cd
-FRZ-CMP-05            = PASS @ f80c60af8963e4c20c5c174a45dfe4c5297e825b
+COMPAT-X-R5           = CLOSED / independently accepted @ 84b8739b8b6e62c8e580e26ca3011f6aa46d457a
+COMPAT-X-R5-FINAL     = ACCEPTED on exact HEAD 84b8739b8b6e62c8e580e26ca3011f6aa46d457a
+TENANT-X              = NEXT / QUEUED
+FRZ-CMP-01..08        = PASS (provenance: P0/R1/R2/R3/R4/R5 accepted child SHAs)
 ```
 
-**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **Accepted R2-P0-R2 evidence HEAD:** `78bd502b5da5284b1bdaae2e321b7076fa22227d` · **Accepted R2-R1-R1 evidence HEAD:** `bb5900cd9a502f3e967b88ee54e4e18f6ff101cb` · **Accepted R2-R2 evidence HEAD:** `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137` (**R2-R2-R1-R1-R1**) · **Accepted R2 parent closure HEAD:** `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) · **Accepted R3-P0 closure HEAD:** `8ff23c9ef19f9baf9f9b013d73716e990c7d4e26` (**R3-P0-R1-R1**) · **Accepted R3 parent closure HEAD:** `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` (**R3-R1** final qualification evidence) · **Accepted R4 parent closure HEAD:** `f80c60af8963e4c20c5c174a45dfe4c5297e825b` (**R4-R1-R1** final qualification evidence) · **R3 production implementation origin:** `69f5e6fcb34918a43a602c1e00b079656c79c9a5` · **R4 rejected initial implementation HEAD:** `fcfd0245c69ee1dcf881d0c71cff7c5394a7d8ba` · **R4-R1 rejected corrective HEAD:** `06a0ac38d6fa7a49cf008333e85b48d4c070469d` · **R3-P0 rejected HEAD:** `7a2cbeddf4b64368ebab13a01697f6ab56201621` · **R3-P0-R1 rejected HEAD:** `0e5262199a6c2f1737cf8ff48def53945ec02974` · **R2-FINAL rejected HEAD:** `b9d456a0ec69026101214c79dffa7a33ad713a34` · **R2-R2 rejected HEAD:** `60a6c3b2987d0e321268b0750fdcdd7816d47578` · **R2-R2-R1 rejected HEAD:** `552db5c5d9ead99471d5db78f357393e167ebdef` · **R2-R2-R1-R1 rejected HEAD:** `ef5e05ef1f3b818611236dc9b5248b18feceea22` · **R2-P0-R1 rejected HEAD:** `9138b12a77c5e42831846b11220216fa6772df1a` · **R2-R1 rejected HEAD:** `549c8c1937267f07639043719d7fa27bba968430` · **production delta = 0** · **new global FRZ PASS = 0** (FRZ-CMP-04 / **FRZ-CMP-05** criteria **PASS**; **COMPAT-X** parent checklist row remains **OPEN**) · **new FRZ-TEN PASS = 0**.
+**Accepted P0 evidence HEAD:** `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · **Accepted R1 evidence HEAD:** `4361943d6812a83db321e3d3fbc6d361ed393fee` · **Accepted R2-P0-R2 evidence HEAD:** `78bd502b5da5284b1bdaae2e321b7076fa22227d` · **Accepted R2-R1-R1 evidence HEAD:** `bb5900cd9a502f3e967b88ee54e4e18f6ff101cb` · **Accepted R2-R2 evidence HEAD:** `2e7d6173cc13bd1fb5ae48ef02292ee76bd22137` (**R2-R2-R1-R1-R1**) · **Accepted R2 parent closure HEAD:** `97abf88f6364758e7768e6fbf1bf56e138b43520` (**R2-FINAL-R1**) · **Accepted R3-P0 closure HEAD:** `8ff23c9ef19f9baf9f9b013d73716e990c7d4e26` (**R3-P0-R1-R1**) · **Accepted R3 parent closure HEAD:** `c2c6b689b0171125eac84f8a6dc40faa8cab94cd` (**R3-R1** final qualification evidence) · **Accepted R4 parent closure HEAD:** `f80c60af8963e4c20c5c174a45dfe4c5297e825b` (**R4-R1-R1** final qualification evidence) · **Accepted R5 parent closure HEAD:** `84b8739b8b6e62c8e580e26ca3011f6aa46d457a` (**R5-FINAL** / **R5-P0-R1-R1-R1**) · **R5 rejected lineage:** `8843c29b3de178282eb5b16fad6d110bf54ecf0e` · `9d210b69407dba1144b843ab6b2fca8d97f94000` · `5e4391a1b4c923d42f6c9d61de1181ac7605c576` · **R3 production implementation origin:** `69f5e6fcb34918a43a602c1e00b079656c79c9a5` · **production delta = 0** · **new FRZ-TEN PASS = 0**.
 
-**Next mandatory child:** **COMPAT-X-R5** — Deprecation / Compatibility Shim Closure (**NEXT** / **QUEUED**; **FRZ-CMP-07**; blocker **CMP-P0-B07**; supporting **FRZ-CMP-08** hardening).
+**Next mandatory stage:** **TENANT-X** — Cross-Platform Tenant Isolation Certification (**NEXT** / **QUEUED**).
 
 ### Tenant isolation audit (R3 closure)
 
@@ -990,35 +990,141 @@ Roadmap amendment required:
 NO
 ```
 
-## COMPAT-X-R5-P0 — Deprecation/Removal Obligation Inventory (READY FOR AUDIT)
+## COMPAT-X-R5-P0 — Deprecation/Removal Obligation Inventory (REJECTED / superseded)
 
-**Status:** **COMPAT-X-R5-P0** = **READY FOR AUDIT** · **COMPAT-X-R5** = **BLOCKED PENDING P0 INDEPENDENT AUDIT** · **production delta = 0**
+**Status:** **COMPAT-X-R5-P0** @ `8843c29b3de178282eb5b16fad6d110bf54ecf0e` = **REJECTED / superseded** · historical **READY FOR AUDIT** baseline @ `66f5c847930144f83afe7a87b808ed5acac8420d` preserved · **production delta = 0** on accepted final evidence.
 
-**Baseline START_HEAD:** `66f5c847930144f83afe7a87b808ed5acac8420d`
+**Corrective lineage (preserved):**
+
+```text
+COMPAT-X-R5-P0           @ 8843c29b3de178282eb5b16fad6d110bf54ecf0e = REJECTED / superseded
+COMPAT-X-R5-P0-R1        @ 9d210b69407dba1144b843ab6b2fca8d97f94000 = REJECTED / superseded
+COMPAT-X-R5-P0-R1-R1     @ 5e4391a1b4c923d42f6c9d61de1181ac7605c576 = REJECTED / superseded
+COMPAT-X-R5-P0-R1-R1-R1  @ 84b8739b8b6e62c8e580e26ca3011f6aa46d457a = CLOSED / independently accepted
+COMPAT-X-R5-FINAL        = ACCEPTED on exact HEAD 84b8739b8b6e62c8e580e26ca3011f6aa46d457a
+COMPAT-X-R5              = CLOSED / independently accepted @ 84b8739b8b6e62c8e580e26ca3011f6aa46d457a
+```
 
 **Policy:** `docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md` — **Deprecation / Removal Policy** (rules A–J).
 
-**Qualification SSOT:** `tests/qualification/compat_x/_compat_x_deprecation_r5_inventory.py` · gates `tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py`
+**Qualification SSOT:** `tests/qualification/compat_x/_compat_x_deprecation_r5_inventory.py` · gates `tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py` · shim reconciliation `tests/qualification/compat_x/_compat_x_deprecation_r5_shim_reconciliation.py`
 
-### R5-P0 mechanical inventory (current HEAD)
+### R5 final mechanical inventory (accepted @ `84b8739b…`)
 
 | Metric | Count |
 | --- | ---: |
 | Production Python files scanned | 7415 |
 | Total deprecation candidates | 1457 |
 | `UNCLASSIFIED` | 0 |
-| Temporary deprecation obligations | 42 |
-| Permanent compatibility boundaries | 488 |
-| Lifecycle-only (domain semantics) | 4 |
-| Historical read-only | 27 |
-| Shim candidates (closed-world `compat.shim`) | 476 |
-| Shim authority-inspected | 476 |
+| Temporary deprecation | 518 |
+| Permanent compatibility boundary | 22 |
+| Historical read-only | 21 |
+| Lifecycle-only | 6 |
+| Missing replacement | 0 |
+| Missing removal condition | 0 |
+| Placeholder replacement | 0 |
+| Shim candidates | 476 |
+| Shim inspected | 476 |
 | Shim uninspected | 0 |
-| Shim `PARALLEL_AUTHORITY` (production) | 0 |
+| Shim parallel authority | 0 |
 | Shim current-version authority violations | 0 |
+| Governance authority violations | 0 |
+| Execution authority violations | 0 |
+| Retired write violations | 0 |
+| Silent fallback violations | 0 |
+| Parallel deprecated implementation violations | 0 |
+| Dual-truth field violations | 0 |
 
-**Owner matrix:** `deprecation_removal` → **CURRENT_CONFIRMED_OWNER** @ architecture policy (`N/A — POLICY ONLY; DOMAIN COMPOSITION OWNERS`).
+**Owner matrix:** `deprecation_removal` → **CURRENT_CONFIRMED_OWNER** @ architecture policy.
 
-**FRZ-CMP-07:** **OPEN** / **PASS CANDIDATE** (pending independent P0 audit). **FRZ-CMP-08:** **PASS CANDIDATE** / hardened (shim reconciliation revalidated on current HEAD).
+**Heavy evidence @ `84b8739b…`:** one current-HEAD R5 gate · **1 passed** · ~**63.24 s** pytest · full COMPAT suite **NOT RUN** · parallel processes **0**.
 
-**B2B/Nordea (R5-P0):** **READY WITH PLATFORM GAPS** — replacement path clarity via typed obligation inventory; **Platform Escape Count (R5 scope) = 0**; formal scenario gate **NOT YET**.
+### Shim freeze evidence
+
+**Historical accepted baseline:** SHA `0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0` · count **474** · fingerprint `5c96738960aee26af9792a464922661843a6edd87a0731fed83ba38682e8dafd`
+
+**Accepted R5 delta (exact match on current HEAD):**
+
+```text
+added:
+- intergrax/agent_distribution/sqlite_payload_legacy.py
+- intergrax/runtime/task_memory/sqlite_row_legacy.py
+removed:
+- none
+```
+
+Future drift is fail-closed.
+
+**FRZ-CMP-07** = **PASS** @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a` · **FRZ-CMP-08** = **PASS** @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a`
+
+## COMPAT-X — Parent final closure @ `84b8739b8b6e62c8e580e26ca3011f6aa46d457a`
+
+**Status:** **CLOSED / independently accepted** (bookkeeping commit — child accepted SHAs authoritative)
+
+**Mandatory children independently accepted:**
+
+```text
+COMPAT-X-P0  = CLOSED @ 0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0
+COMPAT-X-R1  = CLOSED @ 4361943d6812a83db321e3d3fbc6d361ed393fee
+COMPAT-X-R2  = CLOSED @ 97abf88f6364758e7768e6fbf1bf56e138b43520
+COMPAT-X-R3  = CLOSED @ c2c6b689b0171125eac84f8a6dc40faa8cab94cd
+COMPAT-X-R4  = CLOSED @ f80c60af8963e4c20c5c174a45dfe4c5297e825b
+COMPAT-X-R5  = CLOSED @ 84b8739b8b6e62c8e580e26ca3011f6aa46d457a
+```
+
+**Canonical closure statement:**
+
+```text
+contract/schema/evolution closed-world coverage = accepted
+versioning/classification = accepted
+persisted schema migration/evolution = accepted
+event evolution = accepted
+plugin/provider compatibility = accepted
+deprecation/removal = accepted
+parallel compatibility authorities = 0 within COMPAT-X scope
+UNCLASSIFIED compatibility/deprecation surfaces = 0
+production bypasses discovered by final R5 scan = 0
+```
+
+### B2B Network / Nordea readiness checkpoint (post-COMPAT-X parent closure)
+
+**Verdict:** **READY WITH PLATFORM GAPS**
+
+**COMPAT-X Platform Escape Count:** **0**
+
+**Question:** Can we implement B2B Network/Nordea today without violating frozen core?
+
+**Answer:** **YES** for COMPAT-X concerns; whole-platform customer scenario remains **READY WITH PLATFORM GAPS** (`TENANT-X` and later mandatory stages remain).
+
+**Formal reference scenario:** **NOT YET**
+
+### Tenant isolation audit (COMPAT-X parent closure)
+
+**Verdict:** **PASS — LOCAL COMPAT-X INVARIANT** (historical/local evidence from **GOV-X2**, **CTRL-X**, **STATE-X**, **TRACE-X**, **CONFIG-X**, **COMPAT-X** is supporting only — **not** global **TENANT-X**).
+
+**FRZ-TEN global PASS = NO** · **TENANT-X** = **NEXT** / **QUEUED**
+
+## Post-Step Enterprise Discovery (COMPAT-X parent closure)
+
+```text
+New current-parent blockers:
+none — COMPAT-X closed
+
+New future mandatory debt:
+none introduced by COMPAT-X closure
+
+New candidate roadmap stages:
+none
+
+FRZ coverage gaps:
+none within FRZ-CMP-01..08;
+global tenant isolation remains TENANT-X
+
+New ownership / boundary / authority concerns:
+none introduced
+
+Roadmap amendment required:
+NO
+```
+
+**Preserved non-COMPAT debt (unchanged):** **FRZ-BND-03** Execution → `RuntimeEventPersistence` → **ROADMAP-REPLAY-X**; stale **UE-9BR1** → **QUAL-X**; publication spine **59 > 58** → **NPSC-5F** / **ROADMAP-REPLAY-X**.
