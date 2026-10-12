@@ -4,6 +4,12 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
+from tests.qualification.tenant_x._carrier_semantics import (
+    carrier_family_for_class_field,
+    provenance_requirement_for_family,
+)
 from tests.qualification.tenant_x._discovery import discover_candidates_from_source
 from tests.qualification.tenant_x._evidence import TenantAstEvidenceKind, evidence_kinds, has_kind
 from tests.qualification.tenant_x._types import (
@@ -11,6 +17,8 @@ from tests.qualification.tenant_x._types import (
     OptionalTenantSemantics,
     TenantAuthorityRole,
     TenantBlockerClass,
+    TenantCarrierFamily,
+    TenantCarrierProvenanceRequirement,
     TenantDiscoveryCandidate,
     TenantDomain,
     TenantFailClosedDisposition,
@@ -407,14 +415,23 @@ def _classify_class_field_tenant(
             cross_tenant_capable=False,
             cross_tenant_contract=None,
             evidence_refs=("TENANT-X-P0:global_non_tenant",),
+            carrier_family=TenantCarrierFamily.GLOBAL_NON_TENANT,
+            carrier_provenance_requirement=TenantCarrierProvenanceRequirement.GLOBAL_NON_TENANT,
         )
 
     if "credential" in candidate.module_path and not candidate.discovery_kind.startswith("canonical"):
-        return _unknown_surface(
+        unknown = _unknown_surface(
             candidate,
             TenantDomain.CREDENTIALS_SECRETS,
             "INTEGRATIONS_CREDENTIALS",
             note="credentials path without credential tenant semantics",
+        )
+        return replace(
+            unknown,
+            carrier_family=TenantCarrierFamily.CREDENTIAL_REFERENCE,
+            carrier_provenance_requirement=provenance_requirement_for_family(
+                TenantCarrierFamily.CREDENTIAL_REFERENCE
+            ),
         )
 
     persistence, evidence, blocker, persistence_note = _persistence_from_evidence(candidate)
@@ -425,7 +442,12 @@ def _classify_class_field_tenant(
     elif persistence == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE and evidence == (
         "TENANT-X-P0:identity_represented_only",
     ):
-        propagation = TenantPropagationRole.UNKNOWN
+        persistence = TenantPersistenceRole.NOT_APPLICABLE
+        evidence = ("TENANT-X-P0:class_field_identity_carrier_only",)
+        note = "Typed class field carries tenant identity; provenance not established at declaration"
+
+    family = carrier_family_for_class_field(candidate, domain)
+    prov_req = provenance_requirement_for_family(family)
 
     return TenantSurfaceRecord(
         surface_id=candidate.surface_id,
@@ -444,6 +466,8 @@ def _classify_class_field_tenant(
         evidence_refs=evidence,
         blocker_class=blocker,
         blocker_note=note,
+        carrier_family=family,
+        carrier_provenance_requirement=prov_req,
     )
 
 

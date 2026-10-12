@@ -148,6 +148,29 @@ class PropagationEdgeStatus(StrEnum):
     INVALID = "INVALID"
 
 
+class TenantCarrierFamily(StrEnum):
+    RUNTIME_EXECUTION = "RUNTIME_EXECUTION"
+    GOVERNANCE = "GOVERNANCE"
+    STATE_DURABLE = "STATE_DURABLE"
+    EVIDENCE_TRACE = "EVIDENCE_TRACE"
+    PROVIDER_CONFIG = "PROVIDER_CONFIG"
+    CREDENTIAL_REFERENCE = "CREDENTIAL_REFERENCE"
+    MEMORY_INDEX = "MEMORY_INDEX"
+    ASYNC_CHILD = "ASYNC_CHILD"
+    APPLICATION_BOUNDARY = "APPLICATION_BOUNDARY"
+    GLOBAL_NON_TENANT = "GLOBAL_NON_TENANT"
+    COMPATIBILITY = "COMPATIBILITY"
+    UNKNOWN = "UNKNOWN"
+
+
+class TenantCarrierProvenanceRequirement(StrEnum):
+    PROVENANCE_REQUIRED_AT_BOUNDARY = "PROVENANCE_REQUIRED_AT_BOUNDARY"
+    PROVENANCE_REQUIRED_AT_USE_SITE = "PROVENANCE_REQUIRED_AT_USE_SITE"
+    PASSIVE_CARRIER_ONLY = "PASSIVE_CARRIER_ONLY"
+    GLOBAL_NON_TENANT = "GLOBAL_NON_TENANT"
+    UNKNOWN_REQUIREMENT = "UNKNOWN_REQUIREMENT"
+
+
 @dataclass(frozen=True, slots=True)
 class TenantAstEvidence:
     kind: str
@@ -190,6 +213,10 @@ class TenantSurfaceRecord:
     evidence_refs: tuple[str, ...]
     blocker_class: TenantBlockerClass = TenantBlockerClass.NONE
     blocker_note: str = ""
+    carrier_family: TenantCarrierFamily = TenantCarrierFamily.UNKNOWN
+    carrier_provenance_requirement: TenantCarrierProvenanceRequirement = (
+        TenantCarrierProvenanceRequirement.UNKNOWN_REQUIREMENT
+    )
 
 
 @dataclass(frozen=True, slots=True)

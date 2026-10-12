@@ -26,8 +26,10 @@ from tests.qualification.tenant_x._propagation import (
     validate_propagation_edges,
 )
 from tests.qualification.tenant_x._synthetic import (
+    CARRIER_R2_PROBE_SCENARIOS,
     CLASSIFIER_PROBE_SCENARIOS,
     SYNTHETIC_ADVERSARIAL_SCENARIOS,
+    evaluate_carrier_r2_probe,
     evaluate_classifier_probe,
     evaluate_synthetic_probe,
 )
@@ -139,3 +141,8 @@ class Cache:
 def test_tx_p0_r1_q12_propagation_edge_validation_empty_without_inventory() -> None:
     violations = validate_propagation_edges(frozenset())
     assert violations
+
+
+@pytest.mark.parametrize("scenario", CARRIER_R2_PROBE_SCENARIOS, ids=lambda s: s.probe_id.value)
+def test_tx_p0_r2_q01_carrier_semantic_probes(scenario) -> None:
+    assert evaluate_carrier_r2_probe(scenario)

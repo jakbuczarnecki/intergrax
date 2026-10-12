@@ -9,10 +9,13 @@ import pytest
 from tests.qualification.tenant_x._classifiers import uses_generic_safe_fallback
 from tests.qualification.tenant_x._inventory import (
     build_closed_world_discovery_report,
+    carrier_semantics_report,
+    class_field_tenant_surface_ids,
     get_tenant_x_inventory,
     unknown_identity_source_count,
     unknown_propagation_role_count,
 )
+from tests.qualification.tenant_x._types import TenantCarrierFamily
 from tests.qualification.tenant_x._p0_matrix import build_p0_matrix
 from tests.qualification.tenant_x._propagation import validate_propagation_edges
 from tests.qualification.tenant_x._types import TenantBlockerClass
@@ -52,3 +55,23 @@ def test_tx_p0_head_q05_in_scope_blockers_require_positive_evidence() -> None:
     for record in blockers:
         joined = "".join(record.evidence_refs)
         assert "ast:missing_isolation" in joined or "ambient:TENANT_REQUIRED_SILENT_DEFAULT" in joined
+
+
+def test_tx_p0_r2_head_q01_class_field_carriers_have_family() -> None:
+    class_ids = class_field_tenant_surface_ids()
+    inventory = get_tenant_x_inventory()
+    class_records = [r for r in inventory if r.surface_id in class_ids]
+    assert len(class_records) == len(class_ids)
+    for record in class_records:
+        assert isinstance(record.carrier_family, TenantCarrierFamily)
+
+
+def test_tx_p0_r2_head_q02_class_field_identity_carrier_not_authority() -> None:
+    report = carrier_semantics_report()
+    assert report.generic_class_field_authority_count == 0
+    assert report.class_field_carrier_total > 0
+
+
+def test_tx_p0_r2_head_q03_unknown_propagation_reduced_vs_class_fields() -> None:
+    report = carrier_semantics_report()
+    assert report.unknown_propagation_roles < report.class_field_carrier_total

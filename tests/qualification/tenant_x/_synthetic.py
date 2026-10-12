@@ -10,7 +10,10 @@ from enum import StrEnum
 from tests.qualification.tenant_x._classifiers import classify_source_fixture
 from tests.qualification.tenant_x._types import (
     AdversarialProbeVerdict,
+    TenantAuthorityRole,
     TenantBlockerClass,
+    TenantCarrierFamily,
+    TenantCarrierProvenanceRequirement,
     TenantFailClosedDisposition,
     TenantIdentitySource,
     TenantPersistenceRole,
@@ -45,6 +48,12 @@ class SyntheticProbeId(StrEnum):
     W_TENANT_STORE_TENANT_KEY = "W"
     X_VALIDATOR_AFTER_LOOKUP = "X"
     Y_VALIDATOR_BEFORE_TENANT_KEY = "Y"
+    Z1_PASSIVE_DTO = "Z1"
+    Z2_EXECUTION_BOUNDARY = "Z2"
+    Z3_STATE_DTO = "Z3"
+    Z4_APPLICATION_SCHEMA = "Z4"
+    Z5_EVIDENCE_EVENT = "Z5"
+    Z6_FAMILY_UNKNOWN = "Z6"
 
 
 @dataclass(frozen=True, slots=True)
@@ -371,6 +380,83 @@ CLASSIFIER_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
     ),
 )
 
+_SOURCE_Z1 = """
+from dataclasses import dataclass
+
+@dataclass
+class EvidenceRecord:
+    tenant_id: str
+    value: str
+"""
+
+_SOURCE_Z2 = """
+class RuntimeAdmissionEnvelope:
+    tenant_id: str
+    request_id: str
+"""
+
+_SOURCE_Z3 = """
+class CheckpointRow:
+    tenant_id: str
+    checkpoint_id: str
+"""
+
+_SOURCE_Z4 = """
+class AppTenantPayload:
+    tenant_id: str
+    payload: str
+"""
+
+_SOURCE_Z5 = """
+class RuntimeEventRecord:
+    tenant_id: str
+    event_type: str
+"""
+
+_SOURCE_Z6 = """
+class UnclassifiedCarrier:
+    tenant_id: str
+"""
+
+CARRIER_R2_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Z1_PASSIVE_DTO,
+        module_path="intergrax/runtime/schema/z1_passive_evidence_fixture.py",
+        source=_SOURCE_Z1,
+        surface_selector="EvidenceRecord",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Z2_EXECUTION_BOUNDARY,
+        module_path="intergrax/runtime/execution/z2_admission_fixture.py",
+        source=_SOURCE_Z2,
+        surface_selector="RuntimeAdmissionEnvelope",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Z3_STATE_DTO,
+        module_path="intergrax/runtime/schema/z3_state_fixture.py",
+        source=_SOURCE_Z3,
+        surface_selector="CheckpointRow",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Z4_APPLICATION_SCHEMA,
+        module_path="applications/demo/z4_app_schema_fixture.py",
+        source=_SOURCE_Z4,
+        surface_selector="AppTenantPayload",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Z5_EVIDENCE_EVENT,
+        module_path="intergrax/runtime/events/z5_event_fixture.py",
+        source=_SOURCE_Z5,
+        surface_selector="RuntimeEventRecord",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.Z6_FAMILY_UNKNOWN,
+        module_path="synthetic/carrier_family_unknown/z6_unclassified.py",
+        source=_SOURCE_Z6,
+        surface_selector="UnclassifiedCarrier",
+    ),
+)
+
 
 def _select_record(scenario: ClassifierProbeScenario) -> TenantSurfaceRecord:
     records = classify_source_fixture(scenario.module_path, scenario.source)
@@ -447,7 +533,11 @@ def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
     record = _select_record(scenario)
     probe = scenario.probe_id
     if probe == SyntheticProbeId.K_UNKNOWN_TENANT_FIELD:
-        return record.propagation_role == TenantPropagationRole.UNKNOWN
+        return (
+            record.propagation_role == TenantPropagationRole.IDENTITY_CARRIER
+            and record.identity_source == TenantIdentitySource.UNKNOWN
+            and record.authority_role == TenantAuthorityRole.NOT_APPLICABLE
+        )
     if probe == SyntheticProbeId.L_FUNCTION_PARAM_ONLY:
         return (
             record.identity_source == TenantIdentitySource.EXPLICIT_PARAMETER
@@ -489,4 +579,48 @@ def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
         return record.persistence_role != TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
     if probe == SyntheticProbeId.Y_VALIDATOR_BEFORE_TENANT_KEY:
         return record.persistence_role == TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
+    return False
+
+
+def evaluate_carrier_r2_probe(scenario: ClassifierProbeScenario) -> bool:
+    record = _select_record(scenario)
+    probe = scenario.probe_id
+    if probe == SyntheticProbeId.Z1_PASSIVE_DTO:
+        return (
+            record.propagation_role == TenantPropagationRole.IDENTITY_CARRIER
+            and record.carrier_provenance_requirement
+            == TenantCarrierProvenanceRequirement.PASSIVE_CARRIER_ONLY
+            and record.identity_source == TenantIdentitySource.UNKNOWN
+            and record.authority_role == TenantAuthorityRole.NOT_APPLICABLE
+        )
+    if probe == SyntheticProbeId.Z2_EXECUTION_BOUNDARY:
+        return (
+            record.propagation_role == TenantPropagationRole.IDENTITY_CARRIER
+            and record.carrier_family == TenantCarrierFamily.RUNTIME_EXECUTION
+            and record.carrier_provenance_requirement
+            == TenantCarrierProvenanceRequirement.PROVENANCE_REQUIRED_AT_BOUNDARY
+            and record.authority_role == TenantAuthorityRole.NOT_APPLICABLE
+        )
+    if probe == SyntheticProbeId.Z3_STATE_DTO:
+        return (
+            record.propagation_role == TenantPropagationRole.IDENTITY_CARRIER
+            and record.carrier_family == TenantCarrierFamily.STATE_DURABLE
+            and record.carrier_provenance_requirement
+            == TenantCarrierProvenanceRequirement.PASSIVE_CARRIER_ONLY
+        )
+    if probe == SyntheticProbeId.Z4_APPLICATION_SCHEMA:
+        return (
+            record.propagation_role == TenantPropagationRole.IDENTITY_CARRIER
+            and record.carrier_family == TenantCarrierFamily.APPLICATION_BOUNDARY
+            and record.authority_role != TenantAuthorityRole.TENANT_SCOPE_AUTHORITY
+        )
+    if probe == SyntheticProbeId.Z5_EVIDENCE_EVENT:
+        return (
+            record.propagation_role == TenantPropagationRole.IDENTITY_CARRIER
+            and record.carrier_family == TenantCarrierFamily.EVIDENCE_TRACE
+            and record.carrier_provenance_requirement
+            == TenantCarrierProvenanceRequirement.PROVENANCE_REQUIRED_AT_USE_SITE
+        )
+    if probe == SyntheticProbeId.Z6_FAMILY_UNKNOWN:
+        return record.carrier_family == TenantCarrierFamily.UNKNOWN
     return False

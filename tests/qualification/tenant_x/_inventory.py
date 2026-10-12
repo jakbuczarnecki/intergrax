@@ -7,6 +7,10 @@ from __future__ import annotations
 from functools import lru_cache
 
 from tests.qualification.tenant_x._classifiers import classify_candidate
+from tests.qualification.tenant_x._carrier_semantics import (
+    TenantCarrierSemanticsReport,
+    build_carrier_semantics_report,
+)
 from tests.qualification.tenant_x._discovery import raw_discovery_candidates, scanned_module_paths
 from tests.qualification.tenant_x._types import (
     ClosedWorldDiscoveryReport,
@@ -61,3 +65,16 @@ def unknown_identity_source_count() -> int:
 
 def inventory_surface_ids() -> frozenset[str]:
     return frozenset(r.surface_id for r in get_tenant_x_inventory())
+
+
+def class_field_tenant_surface_ids() -> frozenset[str]:
+    return frozenset(
+        c.surface_id for c in raw_discovery_candidates() if c.discovery_kind == "class.field.tenant"
+    )
+
+
+def carrier_semantics_report() -> TenantCarrierSemanticsReport:
+    return build_carrier_semantics_report(
+        get_tenant_x_inventory(),
+        class_field_surface_ids=class_field_tenant_surface_ids(),
+    )
