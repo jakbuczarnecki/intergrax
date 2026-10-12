@@ -4,11 +4,18 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable
 from dataclasses import dataclass, fields
+from inspect import Parameter
 from typing import Final
 
-from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.knowledge.contracts.document import KnowledgeDocumentScope
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreContractError,
+    VectorStoreScope,
+    _ROUTING_KEYS,
+)
 from intergrax.rag.vectorstore.providers.native_provider_boundary import validate_scope
 
 from tests.qualification.tenant_x._final_adversarial import (
@@ -92,13 +99,61 @@ def _execute_preservation_runner(
         )
 
 
+_WIDEN_FORBIDDEN_SCOPE_FIELDS: Final[frozenset[str]] = frozenset(
+    {
+        "tenant_ids",
+        "all_tenants",
+        "tenant_wildcard",
+        "global_tenant",
+        "tenant_collection",
+        "tenant_range",
+    }
+)
+
+
 def _prove_f9_widen_structurally_impossible() -> FinalF9WidenProof:
-    """Vector provider scope is a single explicit tenant_id — no widen API on the contract."""
-    tenant_field = next(f for f in fields(VectorStoreScope) if f.name == "tenant_id")
-    if tenant_field.type not in (str, "str"):
-        raise AssertionError("VectorStoreScope.tenant_id must be str — widen proof invalidated")
-    pinned = "tenant-a"
-    validate_scope(VectorStoreScope(tenant_id=pinned), tenant_id=pinned)
+    """Mechanical contract proof: single explicit tenant authority, no widen representation."""
+    scope_field_names = {field.name for field in fields(VectorStoreScope)}
+    if scope_field_names & _WIDEN_FORBIDDEN_SCOPE_FIELDS:
+        raise AssertionError("VectorStoreScope exposes forbidden tenant-widen fields")
+
+    validate_sig = inspect.signature(validate_scope)
+    if tuple(validate_sig.parameters) != ("scope", "tenant_id"):
+        raise AssertionError("validate_scope must bind exactly scope + tenant_id")
+    tenant_param = validate_sig.parameters["tenant_id"]
+    if tenant_param.kind is not Parameter.KEYWORD_ONLY:
+        raise AssertionError("validate_scope tenant_id must be keyword-only authority pin")
+
+    model_fields = KnowledgeDocumentScope.model_fields
+    if model_fields.keys() & _WIDEN_FORBIDDEN_SCOPE_FIELDS:
+        raise AssertionError("KnowledgeDocumentScope exposes forbidden tenant-widen fields")
+    tenant_model = model_fields["tenant_id"]
+    if not tenant_model.is_required():
+        raise AssertionError("tenant_id must be required explicit identity, not optional widen")
+    extra_policy = KnowledgeDocumentScope.model_config.get("extra")
+    if extra_policy != "forbid":
+        raise AssertionError("KnowledgeDocumentScope must forbid extra tenant authority fields")
+
+    if "tenant_id" not in _ROUTING_KEYS:
+        raise AssertionError("tenant_id must be a reserved routing key (no membership widen)")
+
+    for name, _member in inspect.getmembers(VectorStoreScope):
+        if not name.startswith("_") and any(
+            marker in name.lower() for marker in ("wildcard", "all_tenant", "widen", "global")
+        ):
+            raise AssertionError(f"VectorStoreScope must not expose widen API: {name}")
+
+    pinned = "tenant-f9-pinned-authority"
+    bound = validate_scope(VectorStoreScope(tenant_id=pinned), tenant_id=pinned)
+    if bound.tenant_id != pinned:
+        raise AssertionError("validate_scope must not rewrite pinned tenant authority")
+    try:
+        validate_scope(VectorStoreScope(tenant_id=pinned), tenant_id="tenant-f9-other")
+    except VectorStoreContractError:
+        pass
+    else:
+        raise AssertionError("cross-tenant validate_scope must fail closed")
+
     return FinalF9WidenProof.STRUCTURALLY_IMPOSSIBLE
 
 

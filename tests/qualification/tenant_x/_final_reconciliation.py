@@ -13,6 +13,7 @@ from tests.qualification.tenant_x._final_types import (
     FinalAdversarialExecutionResult,
     FinalAdversarialOutcome,
     FinalAdversarialReconciliationEvidence,
+    FinalF9ExecutionEvidence,
     FrzTenId,
     FrzTenReconciliationRow,
     FrzTenReconciliationVerdict,
@@ -229,6 +230,16 @@ def _expected_outcome_for(adversarial_class: FinalAdversarialClass) -> FinalAdve
     raise KeyError(adversarial_class)
 
 
+def _f9_sub_evidence_satisfied(evidence: FinalF9ExecutionEvidence | None) -> bool:
+    if evidence is None:
+        return False
+    return (
+        evidence.replace_rejected
+        and evidence.drop_rejected
+        and evidence.widen_proof is not None
+    )
+
+
 def reconcile_final_adversarial_execution(
     execution: tuple[FinalAdversarialExecutionResult, ...],
 ) -> FinalAdversarialReconciliationEvidence:
@@ -247,6 +258,8 @@ def reconcile_final_adversarial_execution(
             adversarial_outcome_mismatches=0,
             adversarial_failed=0,
             f8_missing_tenant_reconciled=False,
+            f9_sub_evidence_complete=False,
+            adversarial_specialized_evidence_failures=("MATRIX_REGISTRY_IDENTITY_MISMATCH",),
         )
 
     seen: list[FinalAdversarialClass] = []
@@ -256,6 +269,8 @@ def reconcile_final_adversarial_execution(
     outcome_mismatches = 0
     failed = 0
     f8_ok = False
+    f9_ok = False
+    specialized_failures: list[str] = []
 
     for item in execution:
         if item.adversarial_class in seen:
@@ -276,6 +291,25 @@ def reconcile_final_adversarial_execution(
                 and item.observed_outcome == expected
                 and item.observed_outcome != FinalAdversarialOutcome.FAILED
             )
+            if not f8_ok:
+                specialized_failures.append("F8_FAIL_CLOSED_EVIDENCE_INCOMPLETE")
+        if item.adversarial_class == FinalAdversarialClass.F9_EXTENSION_PROVIDER_REWRITE:
+            f9_item_ok = _f9_sub_evidence_satisfied(item.f9_evidence)
+            if item.f9_evidence is None:
+                specialized_failures.append("F9_EVIDENCE_ABSENT")
+            elif not item.f9_evidence.replace_rejected:
+                specialized_failures.append("F9_REPLACE_NOT_REJECTED")
+            elif not item.f9_evidence.drop_rejected:
+                specialized_failures.append("F9_DROP_NOT_REJECTED")
+            elif item.f9_evidence.widen_proof is None:
+                specialized_failures.append("F9_WIDEN_PROOF_ABSENT")
+            if (
+                item.observed_outcome == FinalAdversarialOutcome.REJECTED
+                and not f9_item_ok
+            ):
+                outcome_mismatches += 1
+                specialized_failures.append("F9_REJECTED_WITHOUT_COMPLETE_SUB_EVIDENCE")
+            f9_ok = f9_item_ok and item.executed and item.observed_outcome == expected
 
     executed_classes = frozenset(seen)
     missing = tuple(sorted(expected_set - executed_classes, key=lambda c: c.value))
@@ -289,6 +323,9 @@ def reconcile_final_adversarial_execution(
         and not_executed == 0
         and outcome_mismatches == 0
         and failed == 0
+        and f8_ok
+        and f9_ok
+        and len(specialized_failures) == 0
     )
 
     return FinalAdversarialReconciliationEvidence(
@@ -302,6 +339,8 @@ def reconcile_final_adversarial_execution(
         adversarial_outcome_mismatches=outcome_mismatches,
         adversarial_failed=failed,
         f8_missing_tenant_reconciled=f8_ok,
+        f9_sub_evidence_complete=f9_ok,
+        adversarial_specialized_evidence_failures=tuple(sorted(set(specialized_failures))),
     )
 
 

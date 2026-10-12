@@ -72,8 +72,10 @@ def _wave_readiness(adversarial: object) -> WaveReadinessOnHead:
 def test_r1_a_no_caller_controlled_readiness_boolean() -> None:
     params = inspect.signature(build_final_qualification_report).parameters
     assert "final_negatives_runnable" not in params
-    report = build_final_qualification_report(execution=())
-    assert report.final_ready_for_audit is False
+    forbidden = frozenset(
+        {"execution", "results", "evidence", "adversarial_results", "runner_results"}
+    )
+    assert not forbidden.intersection(params)
 
 
 def test_r1_b_executable_evidence_string_not_execution_proof() -> None:
@@ -250,7 +252,7 @@ def test_tx_final_r1_q20_ready_false_when_production_delta_unavailable(monkeypat
     from tests.qualification.tenant_x import _final_certification as cert
 
     monkeypatch.setattr(cert, "build_final_production_delta_evidence", lambda **_: None)
-    report = build_final_qualification_report(execution=_golden_execution())
+    report = build_final_qualification_report()
     assert report.final_ready_for_audit is False
     assert report.production_delta_evidence_available is False
 

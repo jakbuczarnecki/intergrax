@@ -15,7 +15,6 @@ from tests.qualification.tenant_x._final_reconciliation import (
     unclassified_frz_ten_count,
 )
 from tests.qualification.tenant_x._final_types import (
-    FinalAdversarialExecutionResult,
     FrzTenReconciliationVerdict,
     TenantXFinalQualificationReport,
     TenantXWave,
@@ -32,9 +31,7 @@ from tests.qualification.tenant_x._r3_certification import build_r3_qualificatio
 from tests.qualification.tenant_x._r4_certification import build_r4_qualification_report
 
 
-def build_final_qualification_report(
-    execution: tuple[FinalAdversarialExecutionResult, ...] | None = None,
-) -> TenantXFinalQualificationReport:
+def build_final_qualification_report() -> TenantXFinalQualificationReport:
     head = current_git_head_sha()
     ancestry_violations = accepted_wave_ancestry_violations(head)
     ancestry_ok = len(ancestry_violations) == 0
@@ -45,8 +42,7 @@ def build_final_qualification_report(
     r3 = build_r3_qualification_report()
     r4 = build_r4_qualification_report()
 
-    if execution is None:
-        execution = run_final_adversarial_matrix()
+    execution = run_final_adversarial_matrix()
     adversarial = reconcile_final_adversarial_execution(execution)
     production_evidence = build_final_production_delta_evidence(head_sha=head)
     production_ok = production_evidence is not None and production_evidence.production_delta_count == 0

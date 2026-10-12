@@ -1,6 +1,6 @@
 # TENANT-X — Cross-Platform Tenant Isolation Certification
 
-**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **CLOSED / independently accepted** @ `d903a8dfaf7acaa53b013e2f7074fde9814441d2` · **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** (FINAL executable evidence integrity false-PASS) · **TENANT-X-FINAL-R1** = **READY FOR AUDIT** (corrective child; not **CLOSED**) · **TENANT-X-FINAL** parent = **BLOCKED ON R1 INDEPENDENT AUDIT** · **TENANT-X** = **OPEN** / **BLOCKED ON FINAL** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
+**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **CLOSED / independently accepted** @ `d903a8dfaf7acaa53b013e2f7074fde9814441d2` · **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** (FINAL executable evidence integrity false-PASS) · **TENANT-X-FINAL-R1** @ `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec` = **REJECTED** (authoritative execution provenance closure gaps) · **TENANT-X-FINAL-R1-R1** = **READY FOR AUDIT** (corrective child; not **CLOSED**) · **TENANT-X-FINAL** parent = **BLOCKED ON R1-R1 INDEPENDENT AUDIT** · **TENANT-X** = **OPEN** / **BLOCKED ON FINAL** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
 
 **Branch:** `development`
 
@@ -462,9 +462,11 @@ NO
 
 **Rejected baseline (exact SHA):** **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** — FINAL executable evidence integrity false-PASS: caller-controlled runnable boolean; string-only `executable_evidence`; F9 semantic underproof; F10 expected/observed mismatch; hardcoded production delta.
 
-**Corrective child:** **TENANT-X-FINAL-R1** = **READY FOR AUDIT** (not **CLOSED**; independent exact-SHA audit required). Parent **TENANT-X-FINAL** = **BLOCKED ON R1 INDEPENDENT AUDIT**.
+**Rejected corrective (exact SHA):** **TENANT-X-FINAL-R1** @ `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec` = **REJECTED** — caller-supplied execution injection on authoritative report builder; F9 reconciliation without mandatory sub-evidence; F9 widen proof type-only.
 
-**START_HEAD (FINAL-R1 corrective baseline):** `940e6219ecf95d3202236a51b2fa284403583e5f`
+**Corrective child:** **TENANT-X-FINAL-R1-R1** = **READY FOR AUDIT** (not **CLOSED**; independent exact-SHA audit required). Parent **TENANT-X-FINAL** = **BLOCKED ON R1-R1 INDEPENDENT AUDIT**.
+
+**START_HEAD (FINAL-R1-R1 corrective baseline):** `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec`
 
 **Current HEAD (qualification execution):** recorded at gate runtime via `git rev-parse HEAD` (must be descendant of accepted R1–R4 evidence SHAs).
 
@@ -481,7 +483,7 @@ NO
 
 **Production delta (FINAL):** **0**
 
-**Mechanical SSOT:** `tests/qualification/tenant_x/_final_*.py` · `test_tenant_x_final_fast.py` · `test_tenant_x_final_current_head.py` · `test_tenant_x_final_r1_integrity.py` — canonical path `run_final_adversarial_matrix()` → `reconcile_final_adversarial_execution()` → `build_final_qualification_report()` (no caller-controlled readiness boolean).
+**Mechanical SSOT:** `tests/qualification/tenant_x/_final_*.py` · `test_tenant_x_final_fast.py` · `test_tenant_x_final_current_head.py` · `test_tenant_x_final_r1_integrity.py` · `test_tenant_x_final_r1_r1_integrity.py` — canonical path `build_final_qualification_report()` → `run_final_adversarial_matrix()` → `reconcile_final_adversarial_execution()` (authoritative builder accepts no caller execution injection; pure reconciliation is mutation-test-only).
 
 ### Mandatory adversarial matrix (F1–F10)
 

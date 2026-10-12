@@ -106,9 +106,14 @@ class FinalAdversarialReconciliationEvidence:
     adversarial_outcome_mismatches: int
     adversarial_failed: int
     f8_missing_tenant_reconciled: bool
+    f9_sub_evidence_complete: bool
+    adversarial_specialized_evidence_failures: tuple[str, ...]
 
     def f8_passed(self) -> bool:
         return self.f8_missing_tenant_reconciled
+
+    def f9_passed(self) -> bool:
+        return self.f9_sub_evidence_complete
 
 
 @dataclass(frozen=True, slots=True)
