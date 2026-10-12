@@ -180,8 +180,9 @@ def require_tenant_id(tenant_id: str) -> str:
 
 def test_tx_p0_r3_q03_propagation_gaps_preserved_in_continuity() -> None:
     assessments = assess_propagation_edge_continuity(())
+    by_id = {a.edge_id: a for a in assessments}
+    assert by_id["gap.checkpoint_to_recovery"].status.value == "PROVEN_CURRENT_HEAD"
     gap_ids = {a.edge_id for a in assessments if a.status.value in {"MISSING", "INVALID"}}
-    assert "gap.checkpoint_to_recovery" in gap_ids
     assert "gap.credential_to_provider_consumption" in gap_ids
 
 
@@ -189,4 +190,4 @@ def test_tx_p0_r3_q04_credential_recovery_boundary_qualified() -> None:
     cred = qualify_credential_boundary()
     rec = qualify_recovery_boundary()
     assert "GAP" in cred.cross_tenant_consumption_risk or "MISSING" in cred.cross_tenant_consumption_risk
-    assert rec.status.value == "GAP_QUALIFICATION_ONLY"
+    assert rec.status.value == "PROVEN_CURRENT_HEAD"

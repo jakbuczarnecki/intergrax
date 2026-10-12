@@ -80,9 +80,12 @@ TENANT_PROPAGATION_EDGES: Final[tuple[TenantPropagationEdge, ...]] = (
 TENANT_PROPAGATION_GAPS: Final[tuple[PropagationEdgeGap, ...]] = (
     PropagationEdgeGap(
         gap_id="gap.checkpoint_to_recovery",
-        description="Checkpoint/resume tenant continuity endpoint not identified — do not substitute RuntimeRequest→ChildExecutionRunner",
+        description=(
+            "CLOSED @ TENANT-X-R3 — checkpoint.tenant_id → validate_checkpoint_identity_binding / "
+            "durable scoped load → resume materialization (current-HEAD structural + adversarial)"
+        ),
         frz_ten_criteria=("FRZ-TEN-08",),
-        status=PropagationEdgeStatus.MISSING,
+        status=PropagationEdgeStatus.PROVEN,
     ),
     PropagationEdgeGap(
         gap_id="gap.credential_to_provider_consumption",
@@ -157,6 +160,8 @@ def assess_propagation_edge_continuity(
         status = PropagationEdgeContinuityStatus.MISSING
         if gap.status == PropagationEdgeStatus.INVALID:
             status = PropagationEdgeContinuityStatus.INVALID
+        elif gap.status == PropagationEdgeStatus.PROVEN:
+            status = PropagationEdgeContinuityStatus.PROVEN_CURRENT_HEAD
         out.append(
             PropagationEdgeContinuityAssessment(
                 edge_id=gap.gap_id,

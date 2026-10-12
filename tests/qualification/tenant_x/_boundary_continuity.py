@@ -49,10 +49,16 @@ def qualify_credential_boundary() -> CredentialContinuityQualification:
 
 def qualify_recovery_boundary() -> RecoveryContinuityQualification:
     return RecoveryContinuityQualification(
-        status=BoundaryContinuityClass.GAP_QUALIFICATION_ONLY,
-        original_tenant_in_checkpoint="not proven — checkpoint tenant carriers not continuity-proven",
-        restored_from_durable_artifact="not proven — resume/recovery typed edge missing",
-        caller_substitution_blocked="not proven at qualification layer",
-        mismatch_fail_closed="not proven at qualification layer",
-        note="gap.checkpoint_to_recovery remains MISSING — no substitute edge",
+        status=BoundaryContinuityClass.PROVEN_CURRENT_HEAD,
+        original_tenant_in_checkpoint=(
+            "TaskCheckpoint.tenant_id persisted in SQLiteTaskCheckpointStore + agent checkpoint payload"
+        ),
+        restored_from_durable_artifact=(
+            "validate_checkpoint_identity_binding + assert_checkpoint_resume_materialization_eligible"
+        ),
+        caller_substitution_blocked=(
+            "checkpoint A + recovery tenant B → REJECT_TENANT; scoped get_by_token fails closed"
+        ),
+        mismatch_fail_closed="REJECT_TENANT / invalid_resume_token / TENANT_MISMATCH partial recovery",
+        note="gap.checkpoint_to_recovery CLOSED @ TENANT-X-R3 (qualification matrices + adversarial probes)",
     )
