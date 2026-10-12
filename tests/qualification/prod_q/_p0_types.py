@@ -51,9 +51,11 @@ class ProductionReadinessEvidenceState(str, Enum):
 
 
 class ProdQFindingDisposition(str, Enum):
+    RESOLVED_WITH_CURRENT_HEAD_EVIDENCE = "RESOLVED_WITH_CURRENT_HEAD_EVIDENCE"
     IN_SCOPE_BLOCKER = "IN-SCOPE BLOCKER"
     TRACKED_FREEZE_DEBT = "TRACKED FREEZE DEBT"
     ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED = "ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED"
+    LEGAL_DISTINCT_COMPOSITION = "LEGAL DISTINCT COMPOSITION"
 
 
 class ProductionReadinessOwner(str, Enum):
@@ -91,6 +93,7 @@ class CandidateInventoryStatus(str, Enum):
 class MechanismRole(str, Enum):
     SEMANTIC_MECHANISM = "semantic_mechanism"
     AUXILIARY_DISCOVERY = "auxiliary_discovery"
+    UNRESOLVED_CLASSIFICATION = "unresolved_classification"
 
 
 class OwnershipResolutionState(str, Enum):
@@ -197,6 +200,7 @@ class OwnershipReconciliationReport:
     candidate_count: int
     semantic_mechanism_count: int
     auxiliary_discovery_count: int
+    unresolved_classification_count: int
     ownership_resolved: int
     ownership_unresolved: int
     ownership_ambiguous: int
@@ -284,9 +288,19 @@ class ProdQP0Matrix:
 
 
 @dataclass(frozen=True, slots=True)
+class ProdQKnownFinding:
+    finding_id: str
+    concern_key: str
+    disposition: ProdQFindingDisposition
+    evidence_refs: tuple[str, ...]
+    recommended_child: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class ProdQP0CertificationReport:
     audited_head: str
     matrix: ProdQP0Matrix
+    known_findings: tuple[ProdQKnownFinding, ...]
     discovery_report: ClosedWorldDiscoveryReport
     family_coverage: tuple[FamilyCoverageRecord, ...]
     ownership: OwnershipMatrixReport

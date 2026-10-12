@@ -196,6 +196,75 @@ _CONTRACT_IMPORT_OWNERS: dict[str, tuple[ProductionReadinessOwner, str, str]] = 
     ),
 }
 
+_OPERATIONAL_RESPONSIBILITY_INDICATORS: frozenset[str] = frozenset(
+    {
+        "startup",
+        "shutdown",
+        "health",
+        "readiness",
+        "admission",
+        "sandbox_provider",
+        "sandbox",
+        "materialization",
+        "capacity",
+        "unsupported",
+        "mode",
+        "degraded",
+        "recovery",
+    }
+)
+
+_ANCHOR_OPERATION_BOUNDARY: dict[tuple[str, str], str] = {
+    (
+        "intergrax/contracts/execution_capacity_admission.py",
+        "ExecutionCapacityAdmissionPort",
+    ): "concern:operation:contract:intergrax.contracts.execution_capacity_admission.ExecutionCapacityAdmissionPort",
+    (
+        "intergrax/runtime/execution/local_execution_capacity_admission.py",
+        "LocalExecutionCapacityAdmission",
+    ): "concern:operation:contract:intergrax.contracts.execution_capacity_admission.ExecutionCapacityAdmissionPort",
+    (
+        "intergrax/contracts/execution_capacity/admission_decision.py",
+        "assess_root_execution_capacity",
+    ): "concern:operation:contract:intergrax.contracts.execution_capacity_admission.ExecutionCapacityAdmissionPort",
+    (
+        "intergrax/applications/_shared/auditability_health_wiring.py",
+        "project_host_auditability_health_facts",
+    ): "concern:operation:contract:intergrax.runtime.observability.auditability_health",
+    (
+        "intergrax/runtime/observability/auditability_health.py",
+        "build_auditability_health_snapshot",
+    ): "concern:operation:contract:intergrax.runtime.observability.auditability_health",
+    (
+        "intergrax/hosting/engine/engine.py",
+        "HostedApplicationEngine",
+    ): "concern:operation:PQ-F04:health:hosted_application_engine",
+    (
+        "intergrax/hosting/engine/engine.py",
+        "health_snapshot",
+    ): "concern:operation:PQ-F04:health:hosted_application_engine_snapshot",
+    (
+        "intergrax/applications/_shared/capability_health/providers/dependency_validation.py",
+        "DependencyValidationHealthProvider",
+    ): "concern:operation:PQ-F04:health:capability_dependency_validation",
+    (
+        "intergrax/fastapi_core/routers/health.py",
+        "health",
+    ): "concern:operation:PQ-F04:health:http_router_surface",
+    (
+        "intergrax/integrations/providers/sandbox_host/e2b/bundle.py",
+        "create_e2b_sandbox_host_integration",
+    ): "concern:operation:PQ-F09:sandbox_provider:e2b:factory_anchor",
+    (
+        "intergrax/integrations/providers/sandbox_host/modal/bundle.py",
+        "create_modal_sandbox_host_integration",
+    ): "concern:operation:PQ-F09:sandbox_provider:modal:factory_anchor",
+    (
+        "intergrax/integrations/providers/sandbox_host/daytona/bundle.py",
+        "create_daytona_sandbox_host_integration",
+    ): "concern:operation:PQ-F09:sandbox_provider:daytona:factory_anchor",
+}
+
 _FRZ_BY_FAMILY: dict[ProductionReadinessFamily, tuple[str, ...]] = {
     ProductionReadinessFamily.PQ_F01: ("FRZ-PRD-01", "FRZ-PRD-07"),
     ProductionReadinessFamily.PQ_F02: ("FRZ-PRD-04",),
@@ -238,14 +307,38 @@ def _default_disposition(
     return ProdQFindingDisposition.TRACKED_FREEZE_DEBT
 
 
-def _mechanism_role(candidate: ProductionReadinessCandidate) -> MechanismRole:
+def _auxiliary_na_evidence(candidate: ProductionReadinessCandidate) -> tuple[str, ...] | None:
+    if candidate.indicator in _OPERATIONAL_RESPONSIBILITY_INDICATORS:
+        return None
     if candidate.discovery_kind in (
         DiscoveryKind.ANCHOR_REGISTRY,
         DiscoveryKind.PROVIDER_SANDBOX_HOST,
         DiscoveryKind.AST_IMPORT_CONTRACT,
     ):
+        return None
+    return (
+        f"auxiliary_na:symbol:{candidate.module_path}:{candidate.symbol}",
+        f"indicator_token:{candidate.indicator}",
+        "no_standalone_production_operation_at_discovery_site",
+    )
+
+
+def _mechanism_role(candidate: ProductionReadinessCandidate) -> MechanismRole:
+    if candidate.indicator not in _INDICATOR_TO_FAMILY:
+        return MechanismRole.UNRESOLVED_CLASSIFICATION
+    if candidate.discovery_kind in (
+        DiscoveryKind.ANCHOR_REGISTRY,
+        DiscoveryKind.PROVIDER_SANDBOX_HOST,
+        DiscoveryKind.AST_IMPORT_CONTRACT,
+        DiscoveryKind.AST_LIFESPAN_HANDLER,
+        DiscoveryKind.AST_STRICT_LAB_BRANCH,
+    ):
         return MechanismRole.SEMANTIC_MECHANISM
-    return MechanismRole.AUXILIARY_DISCOVERY
+    if candidate.indicator in _OPERATIONAL_RESPONSIBILITY_INDICATORS:
+        return MechanismRole.SEMANTIC_MECHANISM
+    if _auxiliary_na_evidence(candidate) is not None:
+        return MechanismRole.AUXILIARY_DISCOVERY
+    return MechanismRole.UNRESOLVED_CLASSIFICATION
 
 
 def _semantic_concern_key(
@@ -257,16 +350,26 @@ def _semantic_concern_key(
 ) -> str:
     if mechanism_role == MechanismRole.AUXILIARY_DISCOVERY:
         return f"auxiliary:{candidate.module_path}:{candidate.symbol}:{candidate.indicator}"
-    if not contract.startswith("CONTRACT_"):
-        return f"concern:contract:{contract}"
+    if mechanism_role == MechanismRole.UNRESOLVED_CLASSIFICATION:
+        return (
+            f"concern:unresolved:classification:{family.value}:"
+            f"{candidate.module_path}:{candidate.symbol}:{candidate.indicator}"
+        )
+    anchor_key = (candidate.module_path, candidate.symbol)
+    if anchor_key in _ANCHOR_OPERATION_BOUNDARY:
+        return _ANCHOR_OPERATION_BOUNDARY[anchor_key]
     if candidate.discovery_kind == DiscoveryKind.PROVIDER_SANDBOX_HOST:
         slug = candidate.module_path.split("/")[-2]
-        return f"concern:provider.sandbox_host:{slug}"
+        return f"concern:operation:PQ-F09:sandbox_provider:{slug}"
+    if not contract.startswith("CONTRACT_"):
+        return f"concern:operation:contract:{contract}"
     if candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
         return f"concern:unresolved:anchor:{candidate.module_path}:{candidate.symbol}"
     if candidate.discovery_kind == DiscoveryKind.AST_IMPORT_CONTRACT:
         prefix = candidate.symbol.removeprefix("import:")
         return f"concern:import:{prefix}"
+    if candidate.indicator in _OPERATIONAL_RESPONSIBILITY_INDICATORS:
+        return f"concern:operation:{family.value}:{candidate.indicator}"
     return (
         f"concern:unresolved:semantic:{family.value}:"
         f"{candidate.module_path}:{candidate.symbol}"
@@ -275,6 +378,7 @@ def _semantic_concern_key(
 
 def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionReadinessClassification:
     mechanism_role = _mechanism_role(candidate)
+    auxiliary_evidence = _auxiliary_na_evidence(candidate)
     mapped_family = _INDICATOR_TO_FAMILY.get(candidate.indicator)
     inventory_status = CandidateInventoryStatus.CLASSIFIED
     if mapped_family is None:
@@ -314,8 +418,14 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
         contract = "CONTRACT_UNRESOLVED"
         composition = candidate.module_path
-        evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+        evidence = ProductionReadinessEvidenceState.N_A_WITH_EVIDENCE
         ownership_resolution = OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE
+    elif mechanism_role == MechanismRole.UNRESOLVED_CLASSIFICATION:
+        owner = ProductionReadinessOwner.DISCOVERED_SURFACE
+        contract = "CONTRACT_UNRESOLVED"
+        composition = "COMPOSITION_UNRESOLVED"
+        evidence = ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD
+        ownership_resolution = OwnershipResolutionState.NOT_YET_RESOLVED
     elif candidate.discovery_kind == DiscoveryKind.ANCHOR_REGISTRY:
         owner = ProductionReadinessOwner.DISCOVERED_SURFACE
         contract = "CONTRACT_UNRESOLVED"
@@ -352,6 +462,14 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
         candidate, owner, contract, mechanism_role, family
     )
 
+    head_evidence: tuple[str, ...] = (
+        f"discovery:{candidate.discovery_kind.value}",
+        f"indicator:{candidate.indicator}",
+        f"mechanism_role:{mechanism_role.value}",
+    )
+    if auxiliary_evidence is not None:
+        head_evidence = head_evidence + auxiliary_evidence
+
     return ProductionReadinessClassification(
         candidate_id=candidate.candidate_id,
         inventory_status=inventory_status,
@@ -368,10 +486,7 @@ def classify_candidate(candidate: ProductionReadinessCandidate) -> ProductionRea
         production_callers=(candidate.module_path,),
         tenant_relevance=tenant_relevance,
         applicable_frz_ids=_FRZ_BY_FAMILY.get(family, ()),
-        current_head_evidence=(
-            f"discovery:{candidate.discovery_kind.value}",
-            f"indicator:{candidate.indicator}",
-        ),
+        current_head_evidence=head_evidence,
         evidence_state=evidence,
         finding_disposition=disposition,
     )

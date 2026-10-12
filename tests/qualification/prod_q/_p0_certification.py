@@ -11,6 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from tests.qualification.prod_q._p0_discovery import repo_root
+from tests.qualification.prod_q._p0_findings_register import known_prod_q_findings
 from tests.qualification.prod_q._p0_frz_reconciliation import build_frz_reconciliation
 from tests.qualification.prod_q._p0_inventory import (
     build_closed_world_discovery_report,
@@ -373,6 +374,7 @@ def build_prod_q_p0_certification_report() -> ProdQP0CertificationReport:
     return ProdQP0CertificationReport(
         audited_head=current_git_head(),
         matrix=build_p0_matrix(len(frz)),
+        known_findings=known_prod_q_findings(),
         discovery_report=build_closed_world_discovery_report(),
         family_coverage=build_family_coverage(),
         ownership=build_ownership_matrix(),

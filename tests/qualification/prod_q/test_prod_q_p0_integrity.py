@@ -23,8 +23,12 @@ from tests.qualification.prod_q._p0_integrity import (
     assert_inventory_identity_sound,
     probe_duplicate_candidate_id_detected,
     probe_fake_semantic_owner_not_resolved,
+    probe_false_auxiliary_na_without_symbol_evidence,
+    probe_mutated_alternate_mechanism_detected,
     probe_mutated_owner_alters_reconciliation,
+    probe_readiness_method_not_auto_auxiliary,
     probe_removed_classification_detected,
+    probe_unresolved_classification_role_explicit,
     probe_unresolved_composition_marks_incomplete,
     probe_unresolved_contract_marks_incomplete,
     probe_unknown_indicator_classified_not_pq_f01,
@@ -33,6 +37,7 @@ from tests.qualification.prod_q._p0_ownership import (
     probe_alternate_contract_conflict_detected,
     probe_concern_identity_stable_under_candidate_order,
     probe_distinct_concerns_not_merged,
+    probe_legal_port_providers_not_duplicate,
 )
 from tests.qualification.prod_q._p0_types import SqliteReproductionClassification
 from tests.qualification.prod_q._p0_types import (
@@ -157,6 +162,30 @@ def test_prod_q_p0_int_ownership_concern_identity_order_stable() -> None:
 
 def test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation() -> None:
     assert probe_mutated_owner_alters_reconciliation() is None
+
+
+def test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary() -> None:
+    assert probe_readiness_method_not_auto_auxiliary() is None
+
+
+def test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit() -> None:
+    assert probe_unresolved_classification_role_explicit() is None
+
+
+def test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected() -> None:
+    assert probe_false_auxiliary_na_without_symbol_evidence() is None
+
+
+def test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner() -> None:
+    assert probe_alternate_contract_conflict_detected() is None
+
+
+def test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate() -> None:
+    assert probe_legal_port_providers_not_duplicate() is None
+
+
+def test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation() -> None:
+    assert probe_mutated_alternate_mechanism_detected() is None
 
 
 def test_prod_q_p0_int_d8_nonexistent_provider_not_registered() -> None:

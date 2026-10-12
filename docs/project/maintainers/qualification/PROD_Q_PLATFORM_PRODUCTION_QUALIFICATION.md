@@ -1,10 +1,10 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON R1-R1 INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1-R1 baseline):** `34f780b00d18499a1aef166985806cd78ba809b4`
+**START_HEAD (P0-R1-R1-R1 baseline):** `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8`
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 
@@ -12,11 +12,13 @@
 
 **Freeze checklist (unchanged OPEN rows):** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 
-## PROD-Q-P0-R1-R1 purpose
+## PROD-Q-P0-R1-R1-R1 purpose
 
-Correct **ownership reconciliation soundness**, **concern-level semantic identity**, **SQLite reproduction root-cause classification**, and **layered provider registration evidence** for PROD-Q-P0 without production code changes (**production delta = 0**). Separates auxiliary mechanical discovery from semantic mechanisms; `DISCOVERED_SURFACE` / `CONTRACT_UNRESOLVED` / `COMPOSITION_UNRESOLVED` never count as resolved ownership; reports candidate vs semantic-mechanism counters.
+Correct **semantic-role classification** (discovery kind ≠ auxiliary N/A), **operation-boundary concern identity** (cross-module / cross-contract duplicate owners), **evidence-based disposition of eight known findings**, and **fail-closed `PROD-Q-P0-R1-R1-R1` gate** without production code changes (**production delta = 0**). Auxiliary N/A requires per-symbol `auxiliary_na:symbol:` evidence; operational readiness indicators enter ownership audit as semantic mechanisms; `UNRESOLVED_CLASSIFICATION` is explicit and must be **0** on current HEAD for READY.
 
-**Lineage:** **PROD-Q-P0-R1** @ `34f780b0…` = **REJECTED** (independent audit). P0-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
+**Lineage:** **PROD-Q-P0-R1-R1** @ `58fb6ce8…` = **REJECTED** (independent audit). P0-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
+
+Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` · findings register: `_p0_findings_register.py`.
 
 ## Inventory methodology (current HEAD)
 

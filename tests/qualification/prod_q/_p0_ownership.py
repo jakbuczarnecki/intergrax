@@ -7,10 +7,12 @@ from __future__ import annotations
 from functools import lru_cache
 
 from tests.qualification.prod_q._p0_classification import classified_inventory
+from tests.qualification.prod_q._p0_findings_register import known_prod_q_findings
 from tests.qualification.prod_q._p0_types import (
     MechanismRole,
     OwnershipReconciliationReport,
     OwnershipResolutionState,
+    ProdQFindingDisposition,
     ProductionReadinessClassification,
     ProductionReadinessOwner,
 )
@@ -20,11 +22,17 @@ _UNRESOLVED_COMPOSITION_MARKERS = frozenset({"COMPOSITION_UNRESOLVED", ""})
 
 
 def is_auxiliary_discovery(record: ProductionReadinessClassification) -> bool:
-    return record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY
+    if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
+        return False
+    return any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence)
 
 
 def is_semantic_mechanism(record: ProductionReadinessClassification) -> bool:
     return record.mechanism_role == MechanismRole.SEMANTIC_MECHANISM
+
+
+def is_unresolved_classification(record: ProductionReadinessClassification) -> bool:
+    return record.mechanism_role == MechanismRole.UNRESOLVED_CLASSIFICATION
 
 
 def ownership_resolved_with_evidence(record: ProductionReadinessClassification) -> bool:
@@ -43,17 +51,17 @@ def ownership_resolved_with_evidence(record: ProductionReadinessClassification) 
 
 def concern_identity_for_ownership(record: ProductionReadinessClassification) -> str:
     """Concern-level identity for duplicate/alternate-contract detection (not candidate_id)."""
-    if is_auxiliary_discovery(record):
+    if is_auxiliary_discovery(record) or is_unresolved_classification(record):
         return record.semantic_concern_key
+    key = record.semantic_concern_key
+    if key.startswith("concern:operation:") or key.startswith("concern:import:"):
+        return key
     if not record.canonical_contract.startswith("CONTRACT_"):
-        return f"concern:contract:{record.canonical_contract}"
-    if record.semantic_concern_key.startswith("concern:provider."):
-        return record.semantic_concern_key
-    if record.semantic_concern_key.startswith("concern:unresolved:"):
-        return record.semantic_concern_key
+        return f"concern:operation:contract:{record.canonical_contract}"
+    if key.startswith("concern:unresolved:"):
+        return key
     return (
-        f"concern:semantic:{record.semantic_owner.value}:"
-        f"{record.family.value}:{record.module}:{record.symbol}"
+        f"concern:operation:{record.family.value}:{record.responsibility.split(':', 1)[-1]}"
     )
 
 
@@ -61,8 +69,8 @@ def semantic_concern_alt_contract_key(record: ProductionReadinessClassification)
     if not ownership_resolved_with_evidence(record):
         return None
     return (
-        f"concern:alt:{record.semantic_owner.value}:"
-        f"{record.family.value}:{record.module}:{record.symbol}"
+        f"concern:alt:owner:{record.semantic_owner.value}:"
+        f"{concern_identity_for_ownership(record)}"
     )
 
 
@@ -107,10 +115,12 @@ def detect_ownership_matrix_findings(
     for key, items in sorted(by_concern.items()):
         owners = {item.semantic_owner for item in items}
         compositions = {item.composition_owner for item in items}
+        contracts = {item.canonical_contract for item in items}
         if len(owners) > 1:
             duplicate_semantic.append(key)
         if len(compositions) > 1 and ProductionReadinessOwner.DISCOVERED_SURFACE not in owners:
-            duplicate_composition.append(key)
+            if len(owners) > 1 or len(contracts) > 1:
+                duplicate_composition.append(key)
         for item in items:
             reason = ownership_incomplete_reason(item)
             if reason is not None:
@@ -138,7 +148,8 @@ def build_ownership_reconciliation() -> OwnershipReconciliationReport:
     inventory = classified_inventory()
     candidate_count = len(inventory)
     semantic_records = [r for r in inventory if is_semantic_mechanism(r)]
-    auxiliary_count = candidate_count - len(semantic_records)
+    auxiliary_count = sum(1 for r in inventory if is_auxiliary_discovery(r))
+    unresolved_class_count = sum(1 for r in inventory if is_unresolved_classification(r))
 
     resolved = 0
     unresolved = 0
@@ -149,6 +160,8 @@ def build_ownership_reconciliation() -> OwnershipReconciliationReport:
         if is_auxiliary_discovery(record):
             if record.ownership_resolution == OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE:
                 na_with_evidence += 1
+            continue
+        if is_unresolved_classification(record):
             continue
         reason = ownership_incomplete_reason(record)
         if reason == "ambiguous":
@@ -164,6 +177,7 @@ def build_ownership_reconciliation() -> OwnershipReconciliationReport:
         candidate_count=candidate_count,
         semantic_mechanism_count=len(semantic_records),
         auxiliary_discovery_count=auxiliary_count,
+        unresolved_classification_count=unresolved_class_count,
         ownership_resolved=resolved,
         ownership_unresolved=unresolved,
         ownership_ambiguous=ambiguous,
@@ -204,12 +218,15 @@ def ownership_soundness_violations(
 def _reconciliation_from(inventory: tuple[ProductionReadinessClassification, ...]) -> OwnershipReconciliationReport:
     candidate_count = len(inventory)
     semantic_records = [r for r in inventory if is_semantic_mechanism(r)]
-    auxiliary_count = candidate_count - len(semantic_records)
+    auxiliary_count = sum(1 for r in inventory if is_auxiliary_discovery(r))
+    unresolved_class_count = sum(1 for r in inventory if is_unresolved_classification(r))
     resolved = unresolved = ambiguous = na_with_evidence = 0
     for record in inventory:
         if is_auxiliary_discovery(record):
             if record.ownership_resolution == OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE:
                 na_with_evidence += 1
+            continue
+        if is_unresolved_classification(record):
             continue
         reason = ownership_incomplete_reason(record)
         if reason == "ambiguous":
@@ -223,6 +240,7 @@ def _reconciliation_from(inventory: tuple[ProductionReadinessClassification, ...
         candidate_count=candidate_count,
         semantic_mechanism_count=len(semantic_records),
         auxiliary_discovery_count=auxiliary_count,
+        unresolved_classification_count=unresolved_class_count,
         ownership_resolved=resolved,
         ownership_unresolved=unresolved,
         ownership_ambiguous=ambiguous,
@@ -231,6 +249,63 @@ def _reconciliation_from(inventory: tuple[ProductionReadinessClassification, ...
         duplicate_composition_concern_keys=dup_comp,
         alternate_canonical_contract_concern_keys=alt,
         unresolved_semantic_concern_keys=unres_keys,
+    )
+
+
+_SANCTIONED_ALTERNATE_COMPOSITION_KEYS = frozenset(
+    item.concern_key
+    for item in known_prod_q_findings()
+    if item.disposition == ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION
+)
+
+
+def alternate_composition_violations(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    inv = inventory if inventory is not None else classified_inventory()
+    semantic = [r for r in inv if is_semantic_mechanism(r)]
+    by_concern: dict[str, list[ProductionReadinessClassification]] = {}
+    for record in semantic:
+        key = concern_identity_for_ownership(record)
+        by_concern.setdefault(key, []).append(record)
+
+    violations: list[str] = []
+    for key, items in by_concern.items():
+        compositions = {item.composition_owner for item in items}
+        owners = {item.semantic_owner for item in items}
+        contracts = {item.canonical_contract for item in items}
+        if len(compositions) <= 1:
+            continue
+        if ProductionReadinessOwner.DISCOVERED_SURFACE in owners:
+            continue
+        if len(owners) == 1 and len(contracts) == 1 and key in _SANCTIONED_ALTERNATE_COMPOSITION_KEYS:
+            continue
+        violations.append(f"unsanctioned alternate composition for {key}")
+    return tuple(violations)
+
+
+def auxiliary_na_without_symbol_evidence(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    inv = inventory if inventory is not None else classified_inventory()
+    return tuple(
+        f"{record.candidate_id}: auxiliary without auxiliary_na:symbol evidence"
+        for record in inv
+        if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY
+        and not any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence)
+    )
+
+
+def unresolved_role_classifications(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    """Fail-closed when UNRESOLVED_CLASSIFICATION appears on current HEAD (must be 0 for READY)."""
+    inv = inventory if inventory is not None else classified_inventory()
+    unresolved = [r for r in inv if is_unresolved_classification(r)]
+    if not unresolved:
+        return ()
+    return (
+        f"unresolved mechanism role classifications on current HEAD: {len(unresolved)}",
     )
 
 
@@ -244,29 +319,50 @@ def probe_alternate_contract_conflict_detected() -> str | None:
         for r in classified_inventory()
         if is_semantic_mechanism(r) and ownership_resolved_with_evidence(r)
     )
-    shared_module = "intergrax/probe/shared_concern.py"
-    shared_symbol = "shared_semantic_responsibility"
+    operation_key = f"concern:operation:{base.family.value}:health:shared_probe"
     a = replace(
         base,
         candidate_id="probe::alt::a",
         canonical_contract="intergrax.probe.contract.A",
-        module=shared_module,
-        symbol=shared_symbol,
-        semantic_concern_key="concern:contract:intergrax.probe.contract.A",
+        module="intergrax/probe/module_a.py",
+        symbol="shared_semantic_responsibility",
+        semantic_owner=ProductionReadinessOwner.HOSTING_ENGINE,
+        semantic_concern_key=operation_key,
+        composition_owner="intergrax/probe/module_a.py",
         ownership_resolution=OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
     )
     b = replace(
         base,
         candidate_id="probe::alt::b",
         canonical_contract="intergrax.probe.contract.B",
-        module=shared_module,
-        symbol=shared_symbol,
-        semantic_concern_key="concern:contract:intergrax.probe.contract.B",
+        module="intergrax/probe/module_b.py",
+        symbol="shared_semantic_responsibility",
+        semantic_owner=ProductionReadinessOwner.EXECUTION_RUNTIME,
+        semantic_concern_key=operation_key,
+        composition_owner="intergrax/probe/module_b.py",
         ownership_resolution=OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
     )
-    _, _, alt, _ = detect_ownership_matrix_findings((a, b))
-    if not alt:
-        return "alternate canonical contracts for same concern not detected"
+    dup_sem, _, _, _ = detect_ownership_matrix_findings((a, b))
+    if not dup_sem:
+        return "cross-module cross-contract duplicate semantic owners not detected"
+    return None
+
+
+def probe_legal_port_providers_not_duplicate() -> str | None:
+    from tests.qualification.prod_q._p0_classification import classified_inventory
+
+    inventory = classified_inventory()
+    key = "concern:operation:contract:intergrax.contracts.execution_capacity_admission.ExecutionCapacityAdmissionPort"
+    items = [
+        r
+        for r in inventory
+        if is_semantic_mechanism(r) and concern_identity_for_ownership(r) == key
+    ]
+    if len(items) < 2:
+        return None
+    dup_sem, dup_comp, _, _ = detect_ownership_matrix_findings(tuple(items))
+    if dup_sem or dup_comp:
+        return "legal implementation providers behind one contract flagged as duplicate"
     return None
 
 

@@ -185,6 +185,81 @@ def probe_mutated_owner_alters_reconciliation() -> str | None:
     return None
 
 
+def probe_readiness_method_not_auto_auxiliary() -> str | None:
+    sample = ProductionReadinessCandidate(
+        candidate_id="probe::readiness::ast.method.indicator",
+        module_path="intergrax/probe_readiness.py",
+        symbol="check_production_readiness",
+        discovery_kind=DiscoveryKind.AST_METHOD_INDICATOR,
+        line_no=1,
+        indicator="readiness",
+    )
+    record = classify_candidate(sample)
+    if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY:
+        return "operational readiness discovery classified as auxiliary"
+    if record.mechanism_role != MechanismRole.SEMANTIC_MECHANISM:
+        return "operational readiness discovery not classified as semantic mechanism"
+    if record.ownership_resolution == OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE:
+        return "operational readiness discovery auto N/A"
+    return None
+
+
+def probe_false_auxiliary_na_without_symbol_evidence() -> str | None:
+    sample = ProductionReadinessCandidate(
+        candidate_id="probe::fake_na::ast.symbol.indicator",
+        module_path="intergrax/probe_fake_na.py",
+        symbol="incidental_mention",
+        discovery_kind=DiscoveryKind.AST_SYMBOL_INDICATOR,
+        line_no=1,
+        indicator="lifecycle",
+    )
+    record = classify_candidate(sample)
+    if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
+        return None
+    if any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence):
+        return None
+    return "auxiliary role without symbol-scoped evidence not rejected by classifier"
+
+
+def probe_unresolved_classification_role_explicit() -> str | None:
+    sample = ProductionReadinessCandidate(
+        candidate_id="probe::unresolved::role",
+        module_path="intergrax/probe_unresolved.py",
+        symbol="opaque_surface",
+        discovery_kind=DiscoveryKind.AST_SYMBOL_INDICATOR,
+        line_no=1,
+        indicator="__opaque_token_without_family_mapping__",
+    )
+    record = classify_candidate(sample)
+    if record.mechanism_role != MechanismRole.UNRESOLVED_CLASSIFICATION:
+        return "unknown indicator token did not yield UNRESOLVED_CLASSIFICATION"
+    if record.inventory_status != CandidateInventoryStatus.UNCLASSIFIED_INDICATOR:
+        return "unknown indicator not marked UNCLASSIFIED_INDICATOR"
+    return None
+
+
+def probe_mutated_alternate_mechanism_detected() -> str | None:
+    from tests.qualification.prod_q._p0_ownership import alternate_composition_violations
+
+    from tests.qualification.prod_q._p0_classification import classified_inventory
+
+    base = next(
+        r
+        for r in classified_inventory()
+        if r.mechanism_role == MechanismRole.SEMANTIC_MECHANISM
+        and r.ownership_resolution == OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE
+    )
+    shadow = replace(
+        base,
+        candidate_id="probe::alternate::mechanism",
+        module="intergrax/probe/alternate_path.py",
+        composition_owner="intergrax/probe/alternate_path.py",
+    )
+    if not alternate_composition_violations((base, shadow)):
+        return "unsanctioned alternate composition path not detected"
+    return None
+
+
 def probe_duplicate_candidate_id_detected() -> str | None:
     raw = raw_discovery_candidates()
     if not raw:

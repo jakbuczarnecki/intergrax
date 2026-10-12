@@ -69,12 +69,18 @@ def test_prod_q_p0_head_q05_ownership_duplicates_absent() -> None:
     assert matrix.duplicate_semantic_owner_keys == ()
     assert recon.duplicate_semantic_concern_keys == ()
     assert ownership_soundness_violations() == ()
-    assert recon.candidate_count == recon.semantic_mechanism_count + recon.auxiliary_discovery_count
+    assert (
+        recon.candidate_count
+        == recon.semantic_mechanism_count
+        + recon.auxiliary_discovery_count
+        + recon.unresolved_classification_count
+    )
     assert (
         recon.ownership_resolved
         + recon.ownership_unresolved
         + recon.ownership_ambiguous
         + recon.ownership_not_applicable_with_evidence
+        + recon.unresolved_classification_count
         == recon.candidate_count
     )
 
