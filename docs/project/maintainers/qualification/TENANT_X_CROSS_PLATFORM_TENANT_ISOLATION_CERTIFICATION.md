@@ -1,6 +1,6 @@
 # TENANT-X — Cross-Platform Tenant Isolation Certification
 
-**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X** = **OPEN** / **BLOCKED ON R1 INDEPENDENT AUDIT** · **TENANT-X-R1** = **READY FOR AUDIT** (qualification evidence on `development`; not independently closed) · **TENANT-X-R2** = **PLANNED** · **TENANT-X-R3** = **PLANNED** · **TENANT-X-R4** = **PLANNED** · **TENANT-X-FINAL** = **PLANNED** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
+**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X** = **OPEN** / **BLOCKED ON R2 INDEPENDENT AUDIT** · **TENANT-X-R1** = **READY FOR AUDIT** (qualification evidence on `development`; not independently closed) · **TENANT-X-R2** = **READY FOR AUDIT** (qualification evidence on `development`; not independently closed) · **TENANT-X-R3** = **PLANNED** · **TENANT-X-R4** = **PLANNED** · **TENANT-X-FINAL** = **PLANNED** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
 
 **Branch:** `development`
 
@@ -140,7 +140,7 @@ P0 is discovery evidence, not final FRZ evidence.
 | --- | --- | --- |
 | **TENANT-X-P0** | **CLOSED** | Discovery / inventory |
 | **TENANT-X-R1** | **READY FOR AUDIT** | Critical tenant provenance & authority scope — families **A–J**; **7/7** propagation edges **PROVEN_CURRENT_HEAD**; **22/22** authority scopes resolved; **legal cross-tenant production mechanisms = 0**; mechanical SSOT: `tests/qualification/tenant_x/_r1_*.py`, `test_tenant_x_r1_fast.py`, `test_tenant_x_r1_current_head.py` |
-| **TENANT-X-R2** | **PLANNED** | Provider / configuration / credential isolation — **FRZ-TEN-05, 06, 11**; must close `credential → provider consumption` |
+| **TENANT-X-R2** | **READY FOR AUDIT** | Provider / configuration / credential isolation — **FRZ-TEN-05, 06, 11**; **9/9** canonical mechanisms; credential→provider consumption **PROVEN_CURRENT_HEAD** on AW-7C reference + GW late-bound paths; **consumption MISSING/INVALID = 0**; mechanical SSOT: `tests/qualification/tenant_x/_r2_*.py`, `test_tenant_x_r2_fast.py`, `test_tenant_x_r2_current_head.py` |
 | **TENANT-X-R3** | **PLANNED** | State / checkpoint / recovery continuity — **FRZ-TEN-04, 08**; must close `checkpoint → recovery`; current-HEAD tenant proof required (reuse STATE-X evidence where applicable) |
 | **TENANT-X-R4** | **PLANNED** | Evidence / context / async cross-boundary continuity — **FRZ-TEN-02, 03, 07, 11**; resolve `context/model continuity` and remaining async propagation |
 | **TENANT-X-FINAL** | **PLANNED** | Cross-platform adversarial certification after R1–R4 independently **CLOSED**; **FRZ-TEN-12** + reconciliation **FRZ-TEN-01..11** |
@@ -245,9 +245,9 @@ illegal critical silent substitution = 0
 
 **FRZ-TEN (scoped R1 contribution only — parent remains OPEN):** evidence supports qualification review for **FRZ-TEN-01, 02, 03, 09, 10, 11**; global **PASS** remains parent **TENANT-X-FINAL** policy.
 
-**B2B / Nordea:** **READY WITH PLATFORM GAPS** (R2 credential→provider, R3 recovery, R4 context/async remain mandatory).
+**B2B / Nordea:** **READY WITH PLATFORM GAPS** (R3 recovery, R4 context/async, FINAL adversarial remain mandatory).
 
-**Handoff:** **TENANT-X-R2** (credential→provider consumption), **TENANT-X-R3** (checkpoint→recovery), **TENANT-X-R4** (context/model + async).
+**Handoff:** **TENANT-X-R3** (checkpoint→recovery), **TENANT-X-R4** (context/model + async).
 
 **Tests:**
 
@@ -257,3 +257,24 @@ uv run pytest -p no:xdist tests/qualification/tenant_x/test_tenant_x_r1_current_
 ```
 
 **Production delta (R1):** `0` (certification-first; no production remediation children emitted).
+
+## TENANT-X-R2 — provider / configuration / credential isolation (qualification evidence)
+
+**Status:** **READY FOR AUDIT** (not independently closed).
+
+**Closure (mechanical gates):** **9** canonical provider/config mechanisms; **6** E2E chain transitions **PROVEN_CURRENT_HEAD**; credential→provider consumption **MISSING = 0**, **INVALID = 0**; cross-tenant credential broker adversarial negatives; vector scope pin continuity (p8 + LanceDB + `validate_scope`).
+
+**FRZ-TEN (scoped R2 contribution only):** **FRZ-TEN-05, 06, 11** (+ supporting **01, 02, 10, 12** qualification rows); global **PASS** remains **OPEN**.
+
+**B2B / Nordea:** **READY WITH PLATFORM GAPS** until R3/R4/FINAL.
+
+**Handoff:** **TENANT-X-R3**, **TENANT-X-R4**, **TENANT-X-FINAL**.
+
+**Tests:**
+
+```bash
+uv run pytest -p no:xdist tests/qualification/tenant_x/test_tenant_x_r2_fast.py -q
+uv run pytest -p no:xdist tests/qualification/tenant_x/test_tenant_x_r2_current_head.py -q
+```
+
+**Production delta (R2):** `0`.
