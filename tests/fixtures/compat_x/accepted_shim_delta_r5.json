@@ -1,0 +1,9 @@
+{
+  "freeze_label": "COMPAT-X-R5-P0 accepted shim set delta (certified expectation, not historical discovery)",
+  "baseline_source_sha": "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0",
+  "added_paths": [
+    "intergrax/agent_distribution/sqlite_payload_legacy.py",
+    "intergrax/runtime/task_memory/sqlite_row_legacy.py"
+  ],
+  "removed_paths": []
+}
