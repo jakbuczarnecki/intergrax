@@ -98,9 +98,12 @@ TENANT_PROPAGATION_GAPS: Final[tuple[PropagationEdgeGap, ...]] = (
     ),
     PropagationEdgeGap(
         gap_id="gap.context_model_scope",
-        description="RuntimeIntelligenceContext self-edge removed — not a propagation mechanism",
+        description=(
+            "CLOSED @ TENANT-X-R4 — execution/context tenant → CONTEXT_ASSEMBLED → LLM_CALL → "
+            "try_attribute_model_call_to_context (current-HEAD structural + adversarial)"
+        ),
         frz_ten_criteria=("FRZ-TEN-02", "FRZ-TEN-11"),
-        status=PropagationEdgeStatus.INVALID,
+        status=PropagationEdgeStatus.PROVEN,
     ),
 )
 

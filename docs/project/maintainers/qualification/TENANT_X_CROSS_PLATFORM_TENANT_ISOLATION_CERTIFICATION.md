@@ -1,6 +1,6 @@
 # TENANT-X — Cross-Platform Tenant Isolation Certification
 
-**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **NEXT / QUEUED** · **TENANT-X-FINAL** = **PLANNED** · **TENANT-X** = **OPEN** / **BLOCKED ON R4** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
+**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **READY FOR AUDIT** (Cursor qualification — independent GitHub SHA audit required) · **TENANT-X-FINAL** = **PLANNED** · **TENANT-X** = **OPEN** / **BLOCKED ON R4 INDEPENDENT AUDIT** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
 
 **Branch:** `development`
 
@@ -145,7 +145,7 @@ P0 is discovery evidence, not final FRZ evidence.
 | **TENANT-X-R1** | **CLOSED** | Critical tenant provenance & authority scope — accepted @ `220fd6e9…`; mechanical SSOT: `tests/qualification/tenant_x/_r1_*.py`, `test_tenant_x_r1_fast.py`, `test_tenant_x_r1_current_head.py` |
 | **TENANT-X-R2** | **CLOSED** | Provider / configuration / credential isolation — accepted @ `9bc53dfa…`; **FRZ-TEN-05, 06, 11** (scoped); mechanical SSOT: `tests/qualification/tenant_x/_r2_*.py`, `test_tenant_x_r2_fast.py`, `test_tenant_x_r2_current_head.py` |
 | **TENANT-X-R3** | **CLOSED** | State / Checkpoint / Recovery Tenant Continuity Certification — accepted @ `c3e708fe…`; **FRZ-TEN-04, 08** (scoped); `checkpoint → recovery` **PROVEN_CURRENT_HEAD**; mechanical SSOT: `tests/qualification/tenant_x/_r3_*.py`, `test_tenant_x_r3_fast.py`, `test_tenant_x_r3_current_head.py` |
-| **TENANT-X-R4** | **NEXT / QUEUED** | Evidence / Context / Async Cross-Boundary Continuity — **FRZ-TEN-02, 03, 07, 11**; mandatory `gap.context_model_scope`; remaining async/background propagation |
+| **TENANT-X-R4** | **READY FOR AUDIT** | Evidence / Context / Async Cross-Boundary Continuity — **FRZ-TEN-02, 03, 07, 11**; `gap.context_model_scope` **PROVEN_CURRENT_HEAD**; mechanical SSOT: `tests/qualification/tenant_x/_r4_*.py`, `test_tenant_x_r4_fast.py`, `test_tenant_x_r4_current_head.py` |
 | **TENANT-X-FINAL** | **PLANNED** | Cross-platform adversarial certification after R1–R4 independently **CLOSED**; **FRZ-TEN-12** + reconciliation **FRZ-TEN-01..11** |
 
 **TENANT-X-FINAL** mandatory adversarial matrix (minimum):
@@ -166,7 +166,7 @@ missing tenant → default/global/system/shared = REJECTED
 ```text
 credential → provider consumption = PROVEN_CURRENT_HEAD (owner = R2)
 checkpoint → recovery/resume       = PROVEN_CURRENT_HEAD (owner = R3)
-context/model continuity           = remaining open gap (owner = R4)
+context/model continuity           = PROVEN_CURRENT_HEAD (owner = R4 qualification SSOT)
 ```
 
 Do **not** implement a new global `TenantContext`; do **not** create new authority merely to simplify qualification.
@@ -385,15 +385,45 @@ checkpoint → recovery/resume
 
 **Production delta (R3):** **0**
 
-## TENANT-X-R4 — Evidence / Context / Async Cross-Boundary Continuity (queued)
+## TENANT-X-R4 — Evidence / Context / Async Cross-Boundary Continuity
 
-**Stage status:** **NEXT / QUEUED** (not entered — docs bookkeeping only)
+**Stage status:** **READY FOR AUDIT** (Cursor mechanical qualification — not **CLOSED** until independent GitHub SHA audit)
 
-**Primary FRZ-TEN:** **02**, **03**, **07**, **11**
+**Primary FRZ-TEN:** **02**, **03**, **07**, **11** (+ supporting **01, 10, 12** where applicable)
 
-**Mandatory known gap:** `gap.context_model_scope`
+**Mandatory gap:** `gap.context_model_scope` = **PROVEN_CURRENT_HEAD** (derived from R4 SSOT + `_propagation.py`)
+
+**Mechanical SSOT:** `tests/qualification/tenant_x/_r4_*.py` · fast gate `test_tenant_x_r4_fast.py` (**11** tests) · current-HEAD gate `test_tenant_x_r4_current_head.py` (**1** test)
+
+**Production delta (R4):** **0**
+
+**B2B / Nordea:** **READY WITH PLATFORM GAPS** (**TENANT-X-FINAL** remains mandatory)
+
+**Handoff:** independent audit of **TENANT-X-R4** → **TENANT-X-FINAL**
 
 **Minimum scope (do not reopen R1/R2/R3 without contradictory current-HEAD evidence):** context/model tenant continuity; evidence tenant continuity; event tenant continuity; trace/diagnostic tenant continuity; queue/background worker tenant propagation; child execution tenant propagation not already closed in R1; async retries/background operations outside R3 recovery scope; extensions/providers/plugins where tenant crosses async/context boundaries.
+
+## Post-Step Enterprise Discovery (TENANT-X-R4 qualification bookkeeping)
+
+```text
+New current-parent blockers:
+TENANT-X-R4 independent audit; TENANT-X-FINAL adversarial certification
+
+New future mandatory debt:
+TENANT-X-FINAL adversarial certification
+
+New candidate roadmap stages:
+none
+
+FRZ coverage gaps:
+FRZ-TEN-01..12 remain OPEN pending FINAL reconciliation
+
+New ownership / boundary / authority concerns:
+record_context_assembly metadata tenant path remains caller-supplied (UNTRUSTED_CALLER_METADATA classification)
+
+Roadmap amendment required:
+NO
+```
 
 ## Post-Step Enterprise Discovery (TENANT-X-R3 closure bookkeeping)
 
