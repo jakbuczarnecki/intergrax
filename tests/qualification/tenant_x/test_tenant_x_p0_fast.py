@@ -29,10 +29,12 @@ from tests.qualification.tenant_x._boundary_continuity import qualify_credential
 from tests.qualification.tenant_x._propagation import assess_propagation_edge_continuity
 from tests.qualification.tenant_x._synthetic import (
     AUTHORITY_R3_PROBE_SCENARIOS,
+    AUTHORITY_R3R1_PROBE_SCENARIOS,
     CARRIER_R2_PROBE_SCENARIOS,
     CLASSIFIER_PROBE_SCENARIOS,
     SYNTHETIC_ADVERSARIAL_SCENARIOS,
     evaluate_authority_r3_probe,
+    evaluate_authority_r3r1_probe,
     evaluate_carrier_r2_probe,
     evaluate_classifier_probe,
     evaluate_synthetic_probe,
@@ -156,6 +158,11 @@ def test_tx_p0_r2_q01_carrier_semantic_probes(scenario) -> None:
 @pytest.mark.parametrize("scenario", AUTHORITY_R3_PROBE_SCENARIOS, ids=lambda s: s.probe_id.value)
 def test_tx_p0_r3_q01_authority_semantic_probes(scenario) -> None:
     assert evaluate_authority_r3_probe(scenario)
+
+
+@pytest.mark.parametrize("scenario", AUTHORITY_R3R1_PROBE_SCENARIOS, ids=lambda s: s.probe_id.value)
+def test_tx_p0_r3r1_q01_authority_mechanism_probes(scenario) -> None:
+    assert evaluate_authority_r3r1_probe(scenario)
 
 
 def test_tx_p0_r3_q02_validator_fixture_not_mint_authority() -> None:

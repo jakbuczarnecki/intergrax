@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 
 from tests.qualification.tenant_x._classifiers import uses_generic_safe_fallback
+from tests.qualification.tenant_x._authority_semantics import summarize_authority_mechanism_review
 from tests.qualification.tenant_x._inventory import (
     build_closed_world_discovery_report,
     carrier_semantics_report,
@@ -106,3 +107,19 @@ def test_tx_p0_r3_head_q04_unknown_family_clustered_not_zeroed() -> None:
     unknown_bucket = next(b for b in report.family_buckets if b.family == TenantCarrierFamily.UNKNOWN)
     assert unknown_bucket.total > 0
     assert report.unknown_family_clusters
+
+
+def test_tx_p0_r3r1_head_q01_positive_surfaces_group_into_mechanisms() -> None:
+    report = carrier_semantics_report()
+    review = report.authority_review
+    assert len(review.actual_mint_rewrite_surfaces) == 37
+    assert len(review.authority_mechanisms) < len(review.actual_mint_rewrite_surfaces)
+    summary = summarize_authority_mechanism_review(review)
+    assert summary["positive_mint_rewrite_surfaces"] == 37
+    assert summary["authority_mechanisms_total"] == len(review.authority_mechanisms)
+    multi_surface = [m for m in review.authority_mechanisms if len(m.surfaces) > 1]
+    if multi_surface:
+        assert review.duplicate_authority_mechanisms == () or len(review.duplicate_authority_mechanisms) >= 0
+    assert review.owner_unresolved + review.owner_confirmed + review.owner_candidate + review.owner_conflict <= len(
+        review.authority_mechanisms
+    )

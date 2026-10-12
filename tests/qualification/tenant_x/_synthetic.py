@@ -7,11 +7,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from tests.qualification.tenant_x._authority_semantics import (
+    build_authority_mechanisms,
+    build_authority_review_metrics,
+    duplicate_authority_mechanism_ids,
+    resolve_owner_disposition,
+)
 from tests.qualification.tenant_x._classifiers import classify_source_fixture
 from tests.qualification.tenant_x._types import (
     AdversarialProbeVerdict,
+    TenantAuthorityOwnerDisposition,
     TenantAuthorityRole,
     TenantAuthoritySemanticRole,
+    TenantDomain,
     TenantBlockerClass,
     TenantCarrierFamily,
     TenantCarrierProvenanceRequirement,
@@ -65,6 +73,11 @@ class SyntheticProbeId(StrEnum):
     AH_CREDENTIAL_MISMATCH = "AH"
     AI_CHECKPOINT_SAME = "AI"
     AJ_CHECKPOINT_SUBSTITUTION = "AJ"
+    AK_ONE_OWNER_TWO_CALL_SITES = "AK"
+    AL_SAME_OWNER_DIFFERENT_DECISIONS = "AL"
+    AM_COMPETING_OWNERS_SAME_DECISION = "AM"
+    AN_PLATFORM_CORE_UNRESOLVED = "AN"
+    AO_OWNER_CONFIRMED = "AO"
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +95,12 @@ class ClassifierProbeScenario:
     module_path: str
     source: str
     surface_selector: str
+
+
+@dataclass(frozen=True, slots=True)
+class AuthorityMechanismProbeScenario:
+    probe_id: SyntheticProbeId
+    description: str
 
 
 SYNTHETIC_ADVERSARIAL_SCENARIOS: tuple[SyntheticAdversarialScenario, ...] = (
@@ -503,6 +522,154 @@ def resume(checkpoint, caller_tenant_id: str):
     return caller_tenant_id
 """
 
+def _synthetic_mint_surface(
+    *,
+    surface_id: str,
+    module_path: str,
+    symbol: str,
+    domain: TenantDomain,
+    semantic_owner: str,
+    evidence_refs: tuple[str, ...],
+) -> TenantSurfaceRecord:
+    return TenantSurfaceRecord(
+        surface_id=surface_id,
+        module_path=module_path,
+        symbol=symbol,
+        domain=domain,
+        tenant_required=True,
+        identity_source=TenantIdentitySource.EXPLICIT_PARAMETER,
+        semantic_owner=semantic_owner,
+        propagation_role=TenantPropagationRole.IDENTITY_DERIVATION,
+        persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
+        authority_role=TenantAuthorityRole.NOT_APPLICABLE,
+        fail_closed_behavior=TenantFailClosedDisposition.UNKNOWN,
+        cross_tenant_capable=False,
+        cross_tenant_contract=None,
+        evidence_refs=evidence_refs,
+        authority_semantic_role=TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY,
+    )
+
+
+def _authority_r3r1_probe_surfaces(probe_id: SyntheticProbeId) -> tuple[TenantSurfaceRecord, ...]:
+    shared_scope = "TENANT-X-P0:authority_scope:synthetic.r3r1.shared"
+    shared_mech = "TENANT-X-P0:authority_mechanism:shared_sanctioned_rewrite"
+    root_decision = "TENANT-X-P0:authority:decision:ROOT_TENANT_SELECTION"
+    recovery_decision = "TENANT-X-P0:authority:decision:RECOVERY_TENANT_RESTORE"
+    mint_evidence = ("TENANT-X-P0:mint:literal_rewrite_kwarg",)
+
+    if probe_id == SyntheticProbeId.AK_ONE_OWNER_TWO_CALL_SITES:
+        module = "intergrax/runtime/execution/synthetic/ak_two_callsites.py"
+        return (
+            _synthetic_mint_surface(
+                surface_id="ak::rewrite_a",
+                module_path=module,
+                symbol="rewrite_a",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence + (shared_scope, shared_mech, root_decision),
+            ),
+            _synthetic_mint_surface(
+                surface_id="ak::rewrite_b",
+                module_path=module,
+                symbol="rewrite_b",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence + (shared_scope, shared_mech, root_decision),
+            ),
+        )
+    if probe_id == SyntheticProbeId.AL_SAME_OWNER_DIFFERENT_DECISIONS:
+        module = "intergrax/runtime/execution/synthetic/al_dual_decision.py"
+        return (
+            _synthetic_mint_surface(
+                surface_id="al::select_root",
+                module_path=module,
+                symbol="select_root",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="STATE_RECOVERY",
+                evidence_refs=mint_evidence + (shared_scope, root_decision),
+            ),
+            _synthetic_mint_surface(
+                surface_id="al::restore_recovery",
+                module_path="intergrax/runtime/recovery/synthetic/al_restore.py",
+                symbol="restore_recovery",
+                domain=TenantDomain.RECOVERY,
+                semantic_owner="STATE_RECOVERY",
+                evidence_refs=mint_evidence + (shared_scope, recovery_decision),
+            ),
+        )
+    if probe_id == SyntheticProbeId.AM_COMPETING_OWNERS_SAME_DECISION:
+        return (
+            _synthetic_mint_surface(
+                surface_id="am::owner_a",
+                module_path="intergrax/runtime/execution/synthetic/am_owner_a.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence + (shared_scope, root_decision),
+            ),
+            _synthetic_mint_surface(
+                surface_id="am::owner_b",
+                module_path="intergrax/governance/synthetic/am_owner_b.py",
+                symbol="pick_tenant",
+                domain=TenantDomain.GOVERNANCE,
+                semantic_owner="GOVERNANCE",
+                evidence_refs=mint_evidence + (shared_scope, root_decision),
+            ),
+        )
+    if probe_id == SyntheticProbeId.AN_PLATFORM_CORE_UNRESOLVED:
+        return (
+            _synthetic_mint_surface(
+                surface_id="an::unmapped",
+                module_path="intergrax/platform/synthetic/an_unresolved.py",
+                symbol="rewrite_unmapped",
+                domain=TenantDomain.PLATFORM_GLOBAL,
+                semantic_owner="PLATFORM_CORE",
+                evidence_refs=mint_evidence + (root_decision,),
+            ),
+        )
+    if probe_id == SyntheticProbeId.AO_OWNER_CONFIRMED:
+        return (
+            _synthetic_mint_surface(
+                surface_id="ao::confirmed",
+                module_path="intergrax/runtime/execution/synthetic/ao_confirmed.py",
+                symbol="admit_tenant",
+                domain=TenantDomain.RUNTIME_REQUEST_EXECUTION,
+                semantic_owner="EXECUTION",
+                evidence_refs=mint_evidence
+                + (
+                    root_decision,
+                    "TENANT-X-P0:owner:confirmed:EXECUTION",
+                    "TENANT-X-P0:canonical_anchor_profile",
+                ),
+            ),
+        )
+    raise AssertionError(f"unknown authority mechanism probe {probe_id}")
+
+
+AUTHORITY_R3R1_PROBE_SCENARIOS: tuple[AuthorityMechanismProbeScenario, ...] = (
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AK_ONE_OWNER_TWO_CALL_SITES,
+        description="one owner, two call-sites, same sanctioned mechanism",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AL_SAME_OWNER_DIFFERENT_DECISIONS,
+        description="same owner, distinct decision kinds",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AM_COMPETING_OWNERS_SAME_DECISION,
+        description="competing owners for same decision/scope",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AN_PLATFORM_CORE_UNRESOLVED,
+        description="PLATFORM_CORE maps to owner unresolved, not unowned",
+    ),
+    AuthorityMechanismProbeScenario(
+        probe_id=SyntheticProbeId.AO_OWNER_CONFIRMED,
+        description="explicit owner confirmation evidence",
+    ),
+)
+
+
 AUTHORITY_R3_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.AA_VALIDATOR_ONLY,
@@ -742,6 +909,29 @@ def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
         return record.persistence_role != TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
     if probe == SyntheticProbeId.Y_VALIDATOR_BEFORE_TENANT_KEY:
         return record.persistence_role == TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
+    return False
+
+
+def evaluate_authority_r3r1_probe(scenario: AuthorityMechanismProbeScenario) -> bool:
+    surfaces = _authority_r3r1_probe_surfaces(scenario.probe_id)
+    mechanisms = build_authority_mechanisms(surfaces)
+    dup_ids = duplicate_authority_mechanism_ids(mechanisms)
+    probe = scenario.probe_id
+    if probe == SyntheticProbeId.AK_ONE_OWNER_TWO_CALL_SITES:
+        return len(surfaces) == 2 and len(mechanisms) == 1 and dup_ids == ()
+    if probe == SyntheticProbeId.AL_SAME_OWNER_DIFFERENT_DECISIONS:
+        return len(mechanisms) == 2 and dup_ids == ()
+    if probe == SyntheticProbeId.AM_COMPETING_OWNERS_SAME_DECISION:
+        return len(mechanisms) == 2 and len(dup_ids) >= 1
+    if probe == SyntheticProbeId.AN_PLATFORM_CORE_UNRESOLVED:
+        metrics = build_authority_review_metrics(surfaces)
+        disposition = resolve_owner_disposition(surfaces[0])
+        return (
+            disposition == TenantAuthorityOwnerDisposition.OWNER_UNRESOLVED
+            and metrics.unowned_authority_mechanisms == ()
+        )
+    if probe == SyntheticProbeId.AO_OWNER_CONFIRMED:
+        return resolve_owner_disposition(surfaces[0]) == TenantAuthorityOwnerDisposition.OWNER_CONFIRMED
     return False
 
 
