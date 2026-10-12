@@ -18,6 +18,10 @@ from tests.qualification.tenant_x._r4_adversarial import (
     assert_vendor_queue_request_tenant_mismatch_rejects,
     assert_vendor_worker_payload_job_tenant_mismatch_rejects,
 )
+from tests.qualification.tenant_x._r4_call_site_scanner import (
+    r4_scan_accounting_holds,
+    scan_r4_production_modules,
+)
 from tests.qualification.tenant_x._r4_call_sites import (
     R4ContextAssemblyCallSite,
     build_maybe_record_llm_call_from_usage_end_inventory,
@@ -25,6 +29,7 @@ from tests.qualification.tenant_x._r4_call_sites import (
     build_record_llm_call_inventory,
     context_assembly_production_path_closed,
     llm_call_production_tenant_closed,
+    r4_production_ast_scan_closed,
     reconcile_context_assembly_inventory,
 )
 from tests.qualification.tenant_x._r4_certification import build_r4_qualification_report, summarize_r4_metrics
@@ -118,6 +123,13 @@ def test_tx_r4_q10_closure_derived_security_metrics() -> None:
     assert report.cross_tenant_rejected == sum(
         1 for r in CROSS_TENANT_R4_MATRIX if r.verdict == R4CrossTenantClass.CROSS_TENANT_REJECTED
     )
+
+
+def test_tx_r4_q11_ast_scan_completeness_closed_world() -> None:
+    scan = scan_r4_production_modules()
+    assert r4_scan_accounting_holds(scan)
+    assert len(scan.failures) == 0
+    assert r4_production_ast_scan_closed()
 
 
 def test_tx_r4_q11_mechanical_call_site_discovery_reconciles() -> None:

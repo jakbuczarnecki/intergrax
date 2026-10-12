@@ -10,6 +10,7 @@ from tests.qualification.tenant_x._propagation import TENANT_PROPAGATION_GAPS, P
 from tests.qualification.tenant_x._r4_call_sites import (
     build_record_context_assembly_inventory,
     build_record_llm_call_inventory,
+    r4_production_ast_scan_closed,
 )
 from tests.qualification.tenant_x._r4_chain import (
     build_r4_e2e_chain,
@@ -245,9 +246,14 @@ def build_r4_qualification_report() -> TenantXR4QualificationReport:
         remediation.append("TENANT-X-R4-R8 - queue/worker continuity gaps")
     if optional_row.verdict == R4AttributionTenantOptionalClass.TENANT_REQUIRED_BUT_OPTIONAL:
         remediation.append("TENANT-X-R4-R9 - ModelContextAttributionEvidence tenant optionality blocker")
+    if not r4_production_ast_scan_closed():
+        remediation.append(
+            "TENANT-X-R4-R1-R1-R1 - production AST scan completeness / unresolved protected call-site"
+        )
 
     ready = (
-        unknown_families == 0
+        r4_production_ast_scan_closed()
+        and unknown_families == 0
         and gap_proven
         and cm_m == 0
         and cm_i == 0

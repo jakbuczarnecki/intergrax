@@ -13,6 +13,9 @@ from tests.qualification.tenant_x._r4_call_site_scanner import (
     R4DiscoveredProductionCallSite,
     call_expression_at_line,
     discover_r4_calls_for_callee,
+    r4_scan_accounting_holds,
+    r4_unresolved_protected_call_sites,
+    scan_r4_production_modules,
 )
 from tests.qualification.tenant_x._r4_types import (
     R4ContextAssemblyPathClass,
@@ -387,10 +390,20 @@ def build_maybe_record_llm_call_from_usage_end_inventory() -> R4MaybeRecordLlmCa
     return inv
 
 
+def r4_production_ast_scan_closed() -> bool:
+    scan = scan_r4_production_modules()
+    return (
+        r4_scan_accounting_holds(scan)
+        and len(scan.failures) == 0
+        and len(r4_unresolved_protected_call_sites(scan)) == 0
+    )
+
+
 def context_assembly_production_path_closed() -> bool:
     inv = build_record_context_assembly_inventory()
     return (
-        inv.unknown == 0
+        r4_production_ast_scan_closed()
+        and inv.unknown == 0
         and inv.caller_controlled_unsafe == 0
         and inv.production_callers_total > 0
         and inv.canonically_bound == inv.production_callers_total
@@ -401,6 +414,8 @@ def context_assembly_production_path_closed() -> bool:
 
 
 def llm_call_production_tenant_closed() -> bool:
+    if not r4_production_ast_scan_closed():
+        return False
     direct = build_record_llm_call_inventory()
     wrapper = build_maybe_record_llm_call_from_usage_end_inventory()
     direct_ok = (

@@ -34,6 +34,10 @@ _PROTECTED_DEFINING_MODULE: Final[dict[ProtectedCallee, str]] = {
     "maybe_record_llm_call_from_usage_end": "intergrax/runtime/events/llm_call_recording.py",
 }
 
+CallSiteResolution = Literal["resolved", "ambiguous_star_import", "unresolved"]
+
+ScanFailureKind = Literal["read_failure", "parse_failure"]
+
 
 @dataclass(frozen=True, slots=True)
 class R4DiscoveredProductionCallSite:
@@ -41,7 +45,22 @@ class R4DiscoveredProductionCallSite:
     containing_symbol: str
     callee: ProtectedCallee
     line_no: int
-    resolution: Literal["resolved", "ambiguous_star_import", "unresolved"]
+    resolution: CallSiteResolution
+
+
+@dataclass(frozen=True, slots=True)
+class R4ModuleScanFailure:
+    module: str
+    kind: ScanFailureKind
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class R4ProductionScanResult:
+    eligible_modules: tuple[str, ...]
+    successfully_scanned: tuple[str, ...]
+    failures: tuple[R4ModuleScanFailure, ...]
+    call_sites: tuple[R4DiscoveredProductionCallSite, ...]
 
 
 def module_name_from_rel(rel: str) -> str:
@@ -67,7 +86,7 @@ def _is_production_intergrax_file(path: Path) -> bool:
 
 @dataclass
 class _ImportBindings:
-    """Maps local names to fully-qualified module paths (dotted)."""
+    """Maps local names to module path roots for attribute chaining."""
 
     by_name: dict[str, str]
     star_modules: tuple[str, ...]
@@ -89,8 +108,12 @@ def _collect_import_bindings(tree: ast.Module, current_module: str) -> _ImportBi
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                local = alias.asname or alias.name.split(".")[-1]
-                by_name[local] = alias.name
+                if alias.asname:
+                    local = alias.asname
+                    by_name[local] = alias.name
+                else:
+                    root = alias.name.split(".")[0]
+                    by_name[root] = root
         elif isinstance(node, ast.ImportFrom):
             if node.module is None and node.level == 0:
                 continue
@@ -154,21 +177,22 @@ def _resolve_protected_callee(
     *,
     star_import: bool,
     module_rel: str,
-) -> tuple[ProtectedCallee | None, Literal["resolved", "ambiguous_star_import", "unresolved"]]:
+) -> tuple[ProtectedCallee | None, CallSiteResolution]:
     if isinstance(func, ast.Name):
         symbol = func.id
+        qualified = bindings.by_name.get(symbol)
+        if qualified is not None:
+            for callee in _PROTECTED_DEFINING_MODULE:
+                if qualified == _protected_qualified_name(callee):
+                    return callee, "resolved"
+            return None, "unresolved"
         if symbol not in _PROTECTED_DEFINING_MODULE:
             return None, "unresolved"
         if _PROTECTED_DEFINING_MODULE[symbol] == module_rel:
             return symbol, "resolved"
-        qualified = bindings.by_name.get(symbol)
-        if qualified is None:
-            if star_import:
-                return None, "ambiguous_star_import"
-            return None, "unresolved"
-        if qualified == _protected_qualified_name(symbol):
-            return symbol, "resolved"
-        return None, "unresolved"
+        if star_import:
+            return symbol, "ambiguous_star_import"
+        return symbol, "unresolved"
     if isinstance(func, ast.Attribute):
         symbol = func.attr
         if symbol not in _PROTECTED_DEFINING_MODULE:
@@ -178,14 +202,18 @@ def _resolve_protected_callee(
             mod_path = bindings.by_name.get(func.value.id)
             if mod_path is None:
                 if star_import:
-                    return None, "ambiguous_star_import"
-                return None, "unresolved"
+                    return symbol, "ambiguous_star_import"
+                return symbol, "unresolved"
             if mod_path == expected_mod:
                 return symbol, "resolved"
             return None, "unresolved"
         dotted = _dotted_module_from_expr(func.value, bindings)
         if dotted == expected_mod:
             return symbol, "resolved"
+        if dotted is None:
+            if star_import:
+                return symbol, "ambiguous_star_import"
+            return symbol, "unresolved"
         return None, "unresolved"
     return None, "unresolved"
 
@@ -201,11 +229,12 @@ def call_expression_at_line(source: str, line_no: int, module_rel: str) -> ast.C
     return None
 
 
-def _discover_in_module(module_rel: str, source: str) -> tuple[R4DiscoveredProductionCallSite, ...]:
-    try:
-        tree = ast.parse(source, filename=module_rel)
-    except SyntaxError:
-        return ()
+def discover_call_sites_in_module(
+    module_rel: str,
+    source: str,
+) -> tuple[R4DiscoveredProductionCallSite, ...]:
+    """Parse module source and return protected call-site candidates (raises SyntaxError on parse failure)."""
+    tree = ast.parse(source, filename=module_rel)
     if not isinstance(tree, ast.Module):
         return ()
 
@@ -241,21 +270,57 @@ def _discover_in_module(module_rel: str, source: str) -> tuple[R4DiscoveredProdu
     return tuple(found)
 
 
+def r4_scan_accounting_holds(result: R4ProductionScanResult) -> bool:
+    return len(result.eligible_modules) == len(result.successfully_scanned) + len(result.failures)
+
+
+def r4_unresolved_protected_call_sites(
+    result: R4ProductionScanResult,
+) -> tuple[R4DiscoveredProductionCallSite, ...]:
+    return tuple(s for s in result.call_sites if s.resolution != "resolved")
+
+
 @lru_cache(maxsize=1)
-def discover_r4_protected_production_call_sites() -> tuple[R4DiscoveredProductionCallSite, ...]:
+def scan_r4_production_modules() -> R4ProductionScanResult:
+    eligible: list[str] = []
+    success: list[str] = []
+    failures: list[R4ModuleScanFailure] = []
     sites: list[R4DiscoveredProductionCallSite] = []
     if not _INTERGRAX_ROOT.is_dir():
-        return ()
+        return R4ProductionScanResult((), (), (), ())
+
     for path in sorted(_INTERGRAX_ROOT.rglob("*.py")):
         if not _is_production_intergrax_file(path):
             continue
         rel = _normalize_repo_path(path)
+        eligible.append(rel)
         try:
             source = path.read_text(encoding="utf-8")
-        except OSError:
+        except OSError as exc:
+            failures.append(
+                R4ModuleScanFailure(module=rel, kind="read_failure", detail=str(exc))
+            )
             continue
-        sites.extend(_discover_in_module(rel, source))
-    return tuple(sites)
+        try:
+            sites.extend(discover_call_sites_in_module(rel, source))
+        except SyntaxError as exc:
+            failures.append(
+                R4ModuleScanFailure(module=rel, kind="parse_failure", detail=str(exc))
+            )
+            continue
+        success.append(rel)
+
+    return R4ProductionScanResult(
+        eligible_modules=tuple(eligible),
+        successfully_scanned=tuple(success),
+        failures=tuple(failures),
+        call_sites=tuple(sites),
+    )
+
+
+@lru_cache(maxsize=1)
+def discover_r4_protected_production_call_sites() -> tuple[R4DiscoveredProductionCallSite, ...]:
+    return scan_r4_production_modules().call_sites
 
 
 def discover_r4_calls_for_callee(callee: ProtectedCallee) -> tuple[R4DiscoveredProductionCallSite, ...]:
