@@ -8,6 +8,8 @@ from functools import lru_cache
 
 from tests.qualification.prod_q._p0_classification import classified_inventory
 from tests.qualification.prod_q._p0_discovery import (
+    class_method_self_calls,
+    external_attribute_callers_of_method,
     module_contract_import_prefixes,
     modules_reachable_from_production_entrypoints,
     symbol_enclosing_class_by_module,
@@ -40,6 +42,8 @@ def auxiliary_evidence_is_sufficient(record: ProductionReadinessClassification) 
         if not any(ref.startswith("auxiliary_evidence:") for ref in refs):
             return False
     if not any(ref.startswith("verification_result:verified") for ref in refs):
+        return False
+    if not any(ref.startswith("relationship_evidence:caller_to_callee:") for ref in refs):
         return False
     has_kind = any(ref.startswith("auxiliary_evidence:") for ref in refs)
     has_related = any(ref.startswith("related_concern:") for ref in refs)
@@ -319,6 +323,26 @@ def alternate_composition_violations(
     return tuple(violations)
 
 
+def auxiliary_verified_without_relationship_proof_violations(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    inv = inventory if inventory is not None else classified_inventory()
+    violations: list[str] = []
+    for record in inv:
+        if not is_auxiliary_discovery(record):
+            continue
+        refs = record.current_head_evidence
+        if not any(ref.startswith("verification_result:verified") for ref in refs):
+            continue
+        if not any(ref.startswith("relationship_evidence:caller_to_callee:") for ref in refs):
+            violations.append(
+                f"{record.candidate_id}: private helper VERIFIED without caller_to_callee proof"
+            )
+        if not auxiliary_evidence_is_sufficient(record):
+            violations.append(f"{record.candidate_id}: VERIFIED auxiliary fails sufficiency gate")
+    return tuple(violations)
+
+
 def auxiliary_na_without_symbol_evidence(
     inventory: tuple[ProductionReadinessClassification, ...] | None = None,
 ) -> tuple[str, ...]:
@@ -437,6 +461,29 @@ def _auxiliary_source_symbol_identity(candidate: ProductionReadinessCandidate) -
     return f"{candidate.module_path}::{candidate.symbol}"
 
 
+def _operational_methods_in_class(
+    module_path: str,
+    class_name: str,
+    module_semantics: tuple[ProductionReadinessClassification, ...],
+    enclosing: dict[str, dict[str, str]],
+    operational_indicators: frozenset[str],
+) -> tuple[tuple[ProductionReadinessClassification, str], ...]:
+    matched: list[tuple[ProductionReadinessClassification, str]] = []
+    for semantic in module_semantics:
+        semantic_indicator = semantic.responsibility.split(":", 1)[-1]
+        if semantic_indicator not in operational_indicators:
+            continue
+        if "." in semantic.symbol:
+            semantic_class, method = semantic.symbol.split(".", 1)
+        else:
+            semantic_class = enclosing.get(module_path, {}).get(semantic.symbol, "")
+            method = semantic.symbol
+        if semantic_class != class_name:
+            continue
+        matched.append((semantic, method))
+    return tuple(matched)
+
+
 def _verified_private_nested_helper(
     candidate: ProductionReadinessCandidate,
     module_semantics: tuple[ProductionReadinessClassification, ...],
@@ -448,30 +495,63 @@ def _verified_private_nested_helper(
     class_name, method_name = candidate.symbol.split(".", 1)
     if not method_name.startswith("_"):
         return None
+    operational = _operational_methods_in_class(
+        candidate.module_path,
+        class_name,
+        module_semantics,
+        enclosing,
+        operational_indicators,
+    )
+    if not operational:
+        return None
+
+    call_graph = class_method_self_calls(candidate.module_path)
+    operational_callers: list[tuple[ProductionReadinessClassification, str]] = []
+    for semantic, op_method in operational:
+        invoked = call_graph.get((class_name, op_method), frozenset())
+        if method_name in invoked:
+            operational_callers.append((semantic, op_method))
+
+    if not operational_callers:
+        return None
+
+    if external_attribute_callers_of_method(candidate.module_path, class_name, method_name):
+        return None
+
+    for caller_class, caller_method in call_graph:
+        if caller_class != class_name:
+            continue
+        if method_name not in call_graph.get((caller_class, caller_method), frozenset()):
+            continue
+        if caller_method.startswith("_"):
+            continue
+        if any(op_method == caller_method for _, op_method in operational):
+            continue
+        return None
+
+    concern_keys = {semantic.semantic_concern_key for semantic, _ in operational_callers}
+    if len(concern_keys) != 1:
+        return None
+
+    semantic, op_method = operational_callers[0]
     source_location = f"{candidate.module_path}:{candidate.symbol}:L{candidate.line_no}"
-    for semantic in module_semantics:
-        semantic_indicator = semantic.responsibility.split(":", 1)[-1]
-        if semantic_indicator not in operational_indicators:
-            continue
-        semantic_class = enclosing.get(candidate.module_path, {}).get(semantic.symbol, "")
-        if semantic_class != class_name:
-            continue
-        return AuxiliaryJustification(
-            candidate_id=candidate.candidate_id,
-            kind=AuxiliaryJustificationKind.HELPER_OF_CLASSIFIED_CONCERN,
-            related_concern_key=semantic.semantic_concern_key,
-            source_location=source_location,
-            strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
-            rationale="verified_private_nested_helper",
-            source_symbol_identity=_auxiliary_source_symbol_identity(candidate),
-            relationship_evidence=(
-                f"ast_enclosing_class:{class_name}",
-                f"operational_semantic:{semantic.candidate_id}",
-                f"private_method:{method_name}",
-            ),
-            verification_result=AuxiliaryVerificationResult.VERIFIED,
-        )
-    return None
+    return AuxiliaryJustification(
+        candidate_id=candidate.candidate_id,
+        kind=AuxiliaryJustificationKind.HELPER_OF_CLASSIFIED_CONCERN,
+        related_concern_key=semantic.semantic_concern_key,
+        source_location=source_location,
+        strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
+        rationale="verified_private_nested_helper",
+        source_symbol_identity=_auxiliary_source_symbol_identity(candidate),
+        relationship_evidence=(
+            f"caller_to_callee:{class_name}.{op_method}->{class_name}.{method_name}",
+            f"ast_static_call:self.{method_name}",
+            f"operational_semantic:{semantic.candidate_id}",
+            f"analysis_limit:bounded_static_ast_no_dynamic_dispatch_proof",
+            f"independent_authority:none_detected_in_module_static_shape",
+        ),
+        verification_result=AuxiliaryVerificationResult.VERIFIED,
+    )
 
 
 def _auxiliary_hint(

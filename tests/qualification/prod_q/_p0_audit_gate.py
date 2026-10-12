@@ -14,6 +14,7 @@ from tests.qualification.prod_q._p0_discovery import (
 )
 from tests.qualification.prod_q._p0_findings_register import (
     concern_finding_reconciliation_violations,
+    factory_ownership_resolved_without_proof_violations,
     historical_prod_q_findings,
     known_prod_q_findings,
 )
@@ -23,6 +24,7 @@ from tests.qualification.prod_q._p0_ownership import (
     alternate_composition_violations,
     auxiliary_evidence_is_sufficient,
     auxiliary_na_without_symbol_evidence,
+    auxiliary_verified_without_relationship_proof_violations,
     build_auxiliary_reconciliation_metrics,
     build_ownership_reconciliation,
     ownership_soundness_violations,
@@ -37,11 +39,12 @@ from tests.qualification.prod_q._p0_types import (
 PROD_Q_P0_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1"
 PROD_Q_P0_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1"
 PROD_Q_P0_R1_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1-R1"
+PROD_Q_P0_R1_R1_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1-R1-R1"
 
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_gate_violations() -> tuple[str, ...]:
-    return prod_q_p0_r1_r1_r1_r1_r1_gate_violations()
+    return prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations()
 
 
 def fake_auxiliary_na_violations(
@@ -68,6 +71,7 @@ def prod_q_p0_inventory_reconciliation_violations(
         violations.append(f"unclassified indicators on current HEAD: {len(unclassified)}")
 
     violations.extend(auxiliary_na_without_symbol_evidence(inventory))
+    violations.extend(auxiliary_verified_without_relationship_proof_violations(inventory))
     violations.extend(fake_auxiliary_na_violations(inventory))
     violations.extend(unresolved_role_classifications(inventory))
     violations.extend(ownership_soundness_violations(inventory))
@@ -115,7 +119,14 @@ def prod_q_p0_inventory_reconciliation_violations(
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
-    return prod_q_p0_r1_r1_r1_r1_r1_gate_violations()
+    return prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations()
+
+
+@lru_cache(maxsize=1)
+def prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
+    violations: list[str] = list(prod_q_p0_r1_r1_r1_r1_r1_gate_violations())
+    violations.extend(factory_ownership_resolved_without_proof_violations())
+    return tuple(violations)
 
 
 @lru_cache(maxsize=1)
@@ -184,3 +195,7 @@ def prod_q_p0_r1_r1_r1_r1_ready_for_audit() -> bool:
 
 def prod_q_p0_r1_r1_r1_r1_r1_ready_for_audit() -> bool:
     return prod_q_p0_r1_r1_r1_r1_r1_gate_violations() == ()
+
+
+def prod_q_p0_r1_r1_r1_r1_r1_r1_ready_for_audit() -> bool:
+    return prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations() == ()

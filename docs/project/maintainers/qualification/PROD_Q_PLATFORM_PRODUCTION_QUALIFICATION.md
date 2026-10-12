@@ -1,10 +1,10 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ecccdbf2dae2d6200993a9c4196682b090` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ecccdbf2dae2d6200993a9c4196682b090` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1** @ `d9af6e3420997febd676c4bf28ddac230978a098` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1-R1-R1-R1-R1 baseline):** `0ccc64ecccdbf2dae2d6200993a9c4196682b090`
+**START_HEAD (P0-R1-R1-R1-R1-R1-R1 baseline):** `d9af6e3420997febd676c4bf28ddac230978a098`
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 
@@ -12,13 +12,13 @@
 
 **Freeze checklist (unchanged OPEN rows):** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 
-## PROD-Q-P0-R1-R1-R1-R1-R1 purpose
+## PROD-Q-P0-R1-R1-R1-R1-R1-R1 purpose
 
-Close **evidence integrity** and **fail-closed disposition** gaps on **PROD-Q-P0** qualification only (**production delta = 0**): auxiliary `N/A` requires `AuxiliaryVerificationResult.VERIFIED` plus typed `relationship_evidence` (module/family/reachability/import hints are **HINT_ONLY** and reclassify to `concern:pq_support:*` semantic obligations); `disposition_for_unresolved_concern` has **no default TRACKED FREEZE DEBT** fallback (`UNRESOLVED DISPOSITION` when unrouted); `build_semantic_concern_records` resolves from **current HEAD** (historical findings are lineage only); authoritative gate **`PROD-Q-P0-R1-R1-R1-R1-R1`** in `_p0_audit_gate.py`.
+Close **auxiliary relationship proof** and **provider factory ownership integrity** gaps on **PROD-Q-P0** only (**production delta = 0**): `VERIFIED` auxiliary requires bounded static `caller_to_callee` evidence plus absence of independent module-level authority; sandbox factory `OWNERSHIP_RESOLVED` requires current-HEAD `contract_spec` + sanctioned `register_from_manifest` + `SandboxHostIntegrationContract` composition (name/path alone insufficient); historical bundle-anchor dispositions are **lineage only** and cannot mask current unresolved concerns; authoritative gate **`PROD-Q-P0-R1-R1-R1-R1-R1-R1`** in `_p0_audit_gate.py`.
 
-**Lineage:** **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ec…` = **REJECTED** (independent audit). P0-R1-R1-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
+**Lineage:** **PROD-Q-P0-R1-R1-R1-R1-R1** @ `d9af6e34…` = **REJECTED** (independent audit). P0-R1-R1-R1-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
 
-Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` (`PROD-Q-P0-R1-R1-R1-R1-R1`) · findings register: `_p0_findings_register.py` · auxiliary justification: `_p0_ownership.py` (bounded static hints; no universal reachability claim).
+Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` (`PROD-Q-P0-R1-R1-R1-R1-R1-R1`) · findings register: `_p0_findings_register.py` · auxiliary justification: `_p0_ownership.py` · bounded static AST call graph: `_p0_discovery.py`.
 
 ## Inventory methodology (current HEAD)
 

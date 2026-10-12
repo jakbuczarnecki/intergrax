@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from functools import lru_cache
 
+from tests.qualification.prod_q._p0_discovery import repo_root
 from tests.qualification.prod_q._p0_types import (
     ConcernFindingReconciliationMetrics,
     ProdQFindingDisposition,
@@ -204,6 +206,8 @@ def disposition_for_unresolved_concern(
     family: ProductionReadinessFamily,
     members: tuple[ProductionReadinessClassification, ...],
 ) -> tuple[ProdQFindingDisposition, str | None]:
+    if concern_key.endswith(":factory_anchor"):
+        return ProdQFindingDisposition.IN_SCOPE_BLOCKER, "PROD-Q-P1"
     if "sandbox_provider" in concern_key and "factory_anchor" not in concern_key:
         return ProdQFindingDisposition.IN_SCOPE_BLOCKER, "PROD-Q-P1"
     if family in (ProductionReadinessFamily.PQ_F02, ProductionReadinessFamily.PQ_F18):
@@ -243,22 +247,116 @@ def _auto_finding_id(concern_key: str) -> str:
     return f"PROD-Q-P0-CONCERN-{digest}"
 
 
+_CANONICAL_SANDBOX_HOST_INTEGRATION_CONTRACT = (
+    "intergrax.runtime.integrations.categories.devops.SandboxHostIntegrationContract"
+)
+
+_SANDBOX_FACTORY_PROVIDER_ARTIFACTS: dict[str, tuple[str, str, str, str]] = {
+    "e2b": (
+        "intergrax/integrations/providers/sandbox_host/e2b/contract_spec.py",
+        "intergrax/integrations/providers/sandbox_host/e2b/integration.py",
+        "intergrax/integrations/providers/sandbox_host/e2b/register.py",
+        "E2bSandboxHostIntegration",
+    ),
+    "modal": (
+        "intergrax/integrations/providers/sandbox_host/modal/contract_spec.py",
+        "intergrax/integrations/providers/sandbox_host/modal/integration.py",
+        "intergrax/integrations/providers/sandbox_host/modal/register.py",
+        "ModalSandboxHostIntegration",
+    ),
+    "daytona": (
+        "intergrax/integrations/providers/sandbox_host/daytona/contract_spec.py",
+        "intergrax/integrations/providers/sandbox_host/daytona/integration.py",
+        "intergrax/integrations/providers/sandbox_host/daytona/register.py",
+        "DaytonaSandboxHostIntegration",
+    ),
+}
+
+
+def _sandbox_provider_key(module_path: str) -> str | None:
+    for provider in _SANDBOX_FACTORY_PROVIDER_ARTIFACTS:
+        if f"/sandbox_host/{provider}/" in module_path:
+            return provider
+    return None
+
+
+def factory_anchor_ownership_current_head_evidence(
+    members: tuple[ProductionReadinessClassification, ...],
+) -> tuple[str, ...] | None:
+    """FACTORY_ANCHOR_IDENTIFIED + OWNERSHIP_RESOLVED evidence, or None (fail-closed)."""
+    if not members:
+        return None
+    member = members[0]
+    if len(members) != 1:
+        return None
+    if not any(ref.startswith("discovery:anchor.registry") for ref in member.current_head_evidence):
+        return None
+    provider = _sandbox_provider_key(member.module)
+    if provider is None:
+        return None
+    if not member.symbol.startswith("create_") or not member.symbol.endswith("_sandbox_host_integration"):
+        return None
+
+    contract_spec_path, integration_path, register_path, integration_class = (
+        _SANDBOX_FACTORY_PROVIDER_ARTIFACTS[provider]
+    )
+    root = repo_root()
+    for path in (member.module, contract_spec_path, integration_path, register_path):
+        if not (root / path).is_file():
+            return None
+
+    spec_src = (root / contract_spec_path).read_text(encoding="utf-8")
+    if "SandboxHostIntegrationContract" not in spec_src:
+        return None
+    if f"integration_class={integration_class}" not in spec_src:
+        return None
+    if not re.search(rf"contract_factory\s*=\s*{member.symbol}\b", spec_src):
+        return None
+
+    integration_src = (root / integration_path).read_text(encoding="utf-8")
+    if f"class {integration_class}" not in integration_src:
+        return None
+    if "SandboxHostIntegrationContract" not in integration_src:
+        return None
+    if "SandboxHostBackend.register" not in integration_src or integration_class not in integration_src:
+        return None
+
+    register_src = (root / register_path).read_text(encoding="utf-8")
+    if "register_from_manifest" not in register_src:
+        return None
+    if "contract_specs=CONTRACT_SPECS" not in register_src.replace(" ", ""):
+        return None
+
+    return (
+        f"factory_identified:{member.module}:{member.symbol}",
+        f"canonical_contract:{_CANONICAL_SANDBOX_HOST_INTEGRATION_CONTRACT}",
+        f"semantic_owner:sandbox_host_provider",
+        f"composition_owner:{integration_path}",
+        f"registration_evidence:{register_path}:register_from_manifest+CONTRACT_SPECS",
+        f"contract_spec:{contract_spec_path}:declare_integration_contract",
+        "ownership_assertion:OWNERSHIP_RESOLVED",
+        "production_qualification:PROD-Q-P1_required",
+    )
+
+
 def _factory_anchor_currently_resolved(
     members: tuple[ProductionReadinessClassification, ...],
 ) -> bool:
-    if not members:
-        return False
-    for member in members:
-        if not any(ref.startswith("discovery:anchor.registry") for ref in member.current_head_evidence):
-            return False
-        if member.composition_owner in {"", "COMPOSITION_UNRESOLVED"}:
-            if not member.module.endswith("/bundle.py"):
-                return False
-        if "/integrations/providers/sandbox_host/" not in member.module:
-            return False
-        if not member.symbol.startswith("create_") or not member.symbol.endswith("_sandbox_host_integration"):
-            return False
-    return True
+    return factory_anchor_ownership_current_head_evidence(members) is not None
+
+
+def _active_findings_by_concern(
+    findings: tuple[ProdQKnownFinding, ...],
+) -> dict[str, ProdQKnownFinding]:
+    index: dict[str, ProdQKnownFinding] = {}
+    for finding in findings:
+        existing = index.get(finding.concern_key)
+        if existing is None:
+            index[finding.concern_key] = finding
+            continue
+        if existing.lineage_only and not finding.lineage_only:
+            index[finding.concern_key] = finding
+    return index
 
 
 def _legal_distinct_composition_currently_supported(
@@ -319,7 +417,15 @@ def build_semantic_concern_records(
         member_ids = tuple(sorted(item.candidate_id for item in members))
         sample = members[0]
         historical = historical_finding_for_concern(concern_key)
+        factory_evidence: tuple[str, ...] = ()
+        factory_resolved = False
+        if concern_key.endswith(":factory_anchor"):
+            factory_evidence = factory_anchor_ownership_current_head_evidence(tuple(members)) or ()
+            factory_resolved = bool(factory_evidence)
+
         source_evidence = tuple(sample.current_head_evidence)
+        if factory_evidence:
+            source_evidence = source_evidence + factory_evidence
         if historical is not None:
             source_evidence = source_evidence + (
                 f"historical_lineage:{historical.finding_id}:{historical.disposition.value}",
@@ -327,9 +433,6 @@ def build_semantic_concern_records(
 
         resolved = all(ownership_resolved_with_evidence(item) for item in members)
         legal_distinct = _legal_distinct_composition_currently_supported(concern_key, tuple(members))
-        factory_resolved = concern_key.endswith(":factory_anchor") and _factory_anchor_currently_resolved(
-            tuple(members)
-        )
 
         if legal_distinct:
             resolution = SemanticConcernResolutionState.LEGAL_DISTINCT_COMPOSITION
@@ -369,13 +472,9 @@ def build_reconciled_prod_q_findings(
     inventory: tuple[ProductionReadinessClassification, ...] | None = None,
 ) -> tuple[ProdQKnownFinding, ...]:
     concerns = build_semantic_concern_records(inventory)
-    historical_by_key = {item.concern_key: item for item in historical_prod_q_findings()}
     findings: list[ProdQKnownFinding] = list(historical_prod_q_findings())
-    covered_keys = set(historical_by_key)
     for concern in concerns:
         if concern.resolution_state != SemanticConcernResolutionState.UNRESOLVED:
-            continue
-        if concern.concern_key in covered_keys:
             continue
         if concern.finding_disposition is None:
             continue
@@ -393,7 +492,6 @@ def build_reconciled_prod_q_findings(
                 lineage_only=False,
             )
         )
-        covered_keys.add(concern.concern_key)
     return tuple(findings)
 
 
@@ -433,6 +531,8 @@ def historical_resolution_without_current_proof_violations(
 
     inv = inventory if inventory is not None else classified_inventory()
     concerns = build_semantic_concern_records(inv)
+    findings = build_reconciled_prod_q_findings(inv)
+    active_by_concern = _active_findings_by_concern(findings)
     violations: list[str] = []
     for concern in concerns:
         historical = historical_finding_for_concern(concern.concern_key)
@@ -443,10 +543,48 @@ def historical_resolution_without_current_proof_violations(
             ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION,
         ):
             continue
-        if concern.resolution_state == SemanticConcernResolutionState.UNRESOLVED:
+        if concern.resolution_state != SemanticConcernResolutionState.UNRESOLVED:
+            continue
+        active = active_by_concern.get(concern.concern_key)
+        if active is None or active.lineage_only:
             violations.append(
                 f"{concern.concern_key}: historical resolution without current-HEAD proof"
             )
+            continue
+        if active.disposition in (
+            ProdQFindingDisposition.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
+            ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION,
+        ):
+            violations.append(
+                f"{concern.concern_key}: historical resolution masks current unresolved concern"
+            )
+    return tuple(violations)
+
+
+def factory_ownership_resolved_without_proof_violations(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    from tests.qualification.prod_q._p0_classification import classified_inventory
+
+    inv = inventory if inventory is not None else classified_inventory()
+    inv_by_id = {record.candidate_id: record for record in inv}
+    concerns = build_semantic_concern_records(inv)
+    violations: list[str] = []
+    for concern in concerns:
+        if not concern.concern_key.endswith(":factory_anchor"):
+            continue
+        if concern.resolution_state != SemanticConcernResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE:
+            continue
+        member_records = tuple(
+            inv_by_id[member_id]
+            for member_id in concern.member_candidate_ids
+            if member_id in inv_by_id
+        )
+        if not member_records:
+            violations.append(f"{concern.concern_key}: factory anchor resolved without members")
+            continue
+        if factory_anchor_ownership_current_head_evidence(member_records) is None:
+            violations.append(f"{concern.concern_key}: factory OWNERSHIP_RESOLVED without proof")
     return tuple(violations)
 
 
@@ -479,17 +617,17 @@ def concern_finding_reconciliation_violations(
         for concern in concerns
         if concern.resolution_state == SemanticConcernResolutionState.UNRESOLVED
     }
-    finding_by_concern: dict[str, ProdQKnownFinding] = {}
-    for finding in findings:
-        if finding.concern_key in finding_by_concern:
-            violations.append(f"duplicate finding disposition for {finding.concern_key}")
-        finding_by_concern[finding.concern_key] = finding
+    active_findings = tuple(finding for finding in findings if not finding.lineage_only)
+    finding_by_concern = _active_findings_by_concern(findings)
+    active_by_concern = {finding.concern_key: finding for finding in active_findings}
+    if len(active_by_concern) != len(active_findings):
+        violations.append("duplicate active finding disposition for one or more concern keys")
 
     covered_unresolved = {
         key
         for key in unresolved_keys
-        if key in finding_by_concern
-        and finding_by_concern[key].disposition
+        if key in active_by_concern
+        and active_by_concern[key].disposition
         not in (
             ProdQFindingDisposition.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
             ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION,
@@ -530,7 +668,7 @@ def concern_finding_reconciliation_violations(
                 violations.append(
                     f"{concern.concern_key}: unresolved member {member_id} missing from inventory"
                 )
-        finding = finding_by_concern.get(concern.concern_key)
+        finding = active_by_concern.get(concern.concern_key)
         if finding is None:
             continue
         if (
@@ -550,6 +688,7 @@ def concern_finding_reconciliation_violations(
     violations.extend(unjustified_future_debt_violations(inv))
     violations.extend(historical_resolution_without_current_proof_violations(inv))
     violations.extend(unresolved_disposition_violations(inv))
+    violations.extend(factory_ownership_resolved_without_proof_violations(inv))
 
     return tuple(violations)
 

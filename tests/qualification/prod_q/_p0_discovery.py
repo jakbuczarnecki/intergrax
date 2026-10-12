@@ -521,3 +521,77 @@ def module_contract_import_prefixes() -> dict[str, tuple[str, ...]]:
         if found:
             prefixes_by_module[module_path] = tuple(sorted(frozenset(found)))
     return prefixes_by_module
+
+
+def _attribute_call_name(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return None
+
+
+def _self_method_calls_in_function(func: ast.FunctionDef | ast.AsyncFunctionDef) -> frozenset[str]:
+    called: set[str] = set()
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Call):
+            continue
+        attr = _attribute_call_name(node.func)
+        if attr is None:
+            continue
+        if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+            if node.func.value.id == "self":
+                called.add(attr)
+    return frozenset(called)
+
+
+@lru_cache(maxsize=256)
+def class_method_self_calls(module_path: str) -> dict[tuple[str, str], frozenset[str]]:
+    """Map (class_name, method_name) -> method names invoked via self.<name> in that method."""
+    full = _REPO_ROOT / module_path
+    try:
+        tree = ast.parse(full.read_text(encoding="utf-8"), filename=module_path)
+    except (OSError, SyntaxError):
+        return {}
+    out: dict[tuple[str, str], frozenset[str]] = {}
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef):
+                continue
+            out[(node.name, item.name)] = _self_method_calls_in_function(item)
+    return out
+
+
+@lru_cache(maxsize=256)
+def external_attribute_callers_of_method(
+    module_path: str,
+    class_name: str,
+    method_name: str,
+) -> frozenset[tuple[str, str]]:
+    """Callers outside ``class_name`` that invoke ``.<method_name>`` (static attribute shape only)."""
+    full = _REPO_ROOT / module_path
+    try:
+        tree = ast.parse(full.read_text(encoding="utf-8"), filename=module_path)
+    except (OSError, SyntaxError):
+        return frozenset()
+
+    callers: set[tuple[str, str]] = set()
+
+    def scan_function(func: ast.FunctionDef | ast.AsyncFunctionDef, scope: str) -> None:
+        if scope == class_name:
+            return
+        for call in ast.walk(func):
+            if not isinstance(call, ast.Call):
+                continue
+            if _attribute_call_name(call.func) != method_name:
+                continue
+            callers.add((scope, func.name))
+
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            scan_function(node, "<module>")
+        elif isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef):
+                    scan_function(item, node.name)
+    return frozenset(callers)
