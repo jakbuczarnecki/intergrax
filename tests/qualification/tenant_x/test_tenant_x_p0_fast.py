@@ -25,14 +25,19 @@ from tests.qualification.tenant_x._propagation import (
     TENANT_PROPAGATION_GAPS,
     validate_propagation_edges,
 )
+from tests.qualification.tenant_x._boundary_continuity import qualify_credential_boundary, qualify_recovery_boundary
+from tests.qualification.tenant_x._propagation import assess_propagation_edge_continuity
 from tests.qualification.tenant_x._synthetic import (
+    AUTHORITY_R3_PROBE_SCENARIOS,
     CARRIER_R2_PROBE_SCENARIOS,
     CLASSIFIER_PROBE_SCENARIOS,
     SYNTHETIC_ADVERSARIAL_SCENARIOS,
+    evaluate_authority_r3_probe,
     evaluate_carrier_r2_probe,
     evaluate_classifier_probe,
     evaluate_synthetic_probe,
 )
+from tests.qualification.tenant_x._types import TenantAuthoritySemanticRole
 from tests.qualification.tenant_x._types import TenantDomain, TenantPropagationRole
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
@@ -146,3 +151,35 @@ def test_tx_p0_r1_q12_propagation_edge_validation_empty_without_inventory() -> N
 @pytest.mark.parametrize("scenario", CARRIER_R2_PROBE_SCENARIOS, ids=lambda s: s.probe_id.value)
 def test_tx_p0_r2_q01_carrier_semantic_probes(scenario) -> None:
     assert evaluate_carrier_r2_probe(scenario)
+
+
+@pytest.mark.parametrize("scenario", AUTHORITY_R3_PROBE_SCENARIOS, ids=lambda s: s.probe_id.value)
+def test_tx_p0_r3_q01_authority_semantic_probes(scenario) -> None:
+    assert evaluate_authority_r3_probe(scenario)
+
+
+def test_tx_p0_r3_q02_validator_fixture_not_mint_authority() -> None:
+    source = """
+def require_tenant_id(tenant_id: str) -> str:
+    if not tenant_id:
+        raise ValueError()
+    return tenant_id
+"""
+    records = classify_source_fixture("synthetic/authority_probes/aa_validator.py", source)
+    roles = {r.authority_semantic_role for r in records if r.symbol == "require_tenant_id"}
+    assert TenantAuthoritySemanticRole.VALIDATOR in roles
+    assert TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY not in roles
+
+
+def test_tx_p0_r3_q03_propagation_gaps_preserved_in_continuity() -> None:
+    assessments = assess_propagation_edge_continuity(())
+    gap_ids = {a.edge_id for a in assessments if a.status.value in {"MISSING", "INVALID"}}
+    assert "gap.checkpoint_to_recovery" in gap_ids
+    assert "gap.credential_to_provider_consumption" in gap_ids
+
+
+def test_tx_p0_r3_q04_credential_recovery_boundary_qualified() -> None:
+    cred = qualify_credential_boundary()
+    rec = qualify_recovery_boundary()
+    assert "GAP" in cred.cross_tenant_consumption_risk or "MISSING" in cred.cross_tenant_consumption_risk
+    assert rec.status.value == "GAP_QUALIFICATION_ONLY"

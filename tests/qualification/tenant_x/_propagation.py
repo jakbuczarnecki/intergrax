@@ -7,7 +7,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from tests.qualification.tenant_x._types import PropagationEdgeStatus, PropagationRelation, TenantPropagationEdge
+from tests.qualification.tenant_x._types import (
+    PropagationEdgeContinuityStatus,
+    PropagationEdgeStatus,
+    PropagationRelation,
+    TenantPropagationEdge,
+    TenantProvenanceEdge,
+    TenantSurfaceRecord,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +101,89 @@ TENANT_PROPAGATION_GAPS: Final[tuple[PropagationEdgeGap, ...]] = (
 
 def propagation_edge_count() -> int:
     return len(TENANT_PROPAGATION_EDGES)
+
+
+@dataclass(frozen=True, slots=True)
+class PropagationEdgeContinuityAssessment:
+    edge_id: str
+    status: PropagationEdgeContinuityStatus
+    note: str
+
+
+def assess_propagation_edge_continuity(
+    inventory: tuple[TenantSurfaceRecord, ...],
+) -> tuple[PropagationEdgeContinuityAssessment, ...]:
+    by_id = {r.surface_id: r for r in inventory}
+    out: list[PropagationEdgeContinuityAssessment] = []
+    for edge in TENANT_PROPAGATION_EDGES:
+        src = by_id.get(edge.source_surface_id)
+        tgt = by_id.get(edge.target_surface_id)
+        if src is None or tgt is None:
+            out.append(
+                PropagationEdgeContinuityAssessment(
+                    edge_id=edge.edge_id,
+                    status=PropagationEdgeContinuityStatus.MISSING,
+                    note="endpoint not in current inventory",
+                )
+            )
+            continue
+        src_refs = "".join(src.evidence_refs)
+        tgt_refs = "".join(tgt.evidence_refs)
+        if "provenance:current_head" in src_refs or "provenance:current_head" in tgt_refs:
+            out.append(
+                PropagationEdgeContinuityAssessment(
+                    edge_id=edge.edge_id,
+                    status=PropagationEdgeContinuityStatus.PROVEN_CURRENT_HEAD,
+                    note="structural current-head provenance evidence on endpoint",
+                )
+            )
+        elif "canonical_anchor_profile" in src_refs and "canonical_anchor_profile" in tgt_refs:
+            out.append(
+                PropagationEdgeContinuityAssessment(
+                    edge_id=edge.edge_id,
+                    status=PropagationEdgeContinuityStatus.HISTORICAL_EVIDENCE_REPLAY_REQUIRED,
+                    note="canonical anchors only — replay required for current continuity",
+                )
+            )
+        else:
+            out.append(
+                PropagationEdgeContinuityAssessment(
+                    edge_id=edge.edge_id,
+                    status=PropagationEdgeContinuityStatus.HISTORICAL_EVIDENCE_REPLAY_REQUIRED,
+                    note="no current-head structural propagation proof",
+                )
+            )
+    for gap in TENANT_PROPAGATION_GAPS:
+        status = PropagationEdgeContinuityStatus.MISSING
+        if gap.status == PropagationEdgeStatus.INVALID:
+            status = PropagationEdgeContinuityStatus.INVALID
+        out.append(
+            PropagationEdgeContinuityAssessment(
+                edge_id=gap.gap_id,
+                status=status,
+                note=gap.description,
+            )
+        )
+    return tuple(out)
+
+
+def build_structural_provenance_edges(
+    inventory: tuple[TenantSurfaceRecord, ...],
+) -> tuple[TenantProvenanceEdge, ...]:
+    edges: list[TenantProvenanceEdge] = []
+    for record in inventory:
+        joined = "".join(record.evidence_refs)
+        if "provenance:current_head:derive_same" not in joined:
+            continue
+        edges.append(
+            TenantProvenanceEdge(
+                source_surface_id=record.module_path + "::parent",
+                target_surface_id=record.surface_id,
+                relation=PropagationRelation.SAME,
+                evidence=joined,
+            )
+        )
+    return tuple(edges)
 
 
 def validate_propagation_edges(known_surface_ids: frozenset[str]) -> tuple[str, ...]:

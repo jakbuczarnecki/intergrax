@@ -6,14 +6,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from tests.qualification.tenant_x._authority_semantics import (
+    TenantAuthorityReviewMetrics,
+    build_authority_review_metrics,
+)
 from tests.qualification.tenant_x._types import (
     TenantAuthorityRole,
+    TenantAuthoritySemanticRole,
     TenantCarrierFamily,
     TenantCarrierProvenanceRequirement,
     TenantDiscoveryCandidate,
     TenantDomain,
     TenantIdentitySource,
     TenantPropagationRole,
+    TenantProvenanceProofStatus,
     TenantSurfaceRecord,
 )
 
@@ -133,6 +139,98 @@ def is_boundary_critical_family(family: TenantCarrierFamily) -> bool:
     return family in _BOUNDARY_CRITICAL_FAMILIES
 
 
+def unknown_carrier_family_cluster(module_path: str) -> str:
+    if module_path.startswith("applications/"):
+        return "application_boundary"
+    if module_path.startswith("intergrax/contracts/"):
+        return "contracts"
+    if module_path.startswith("intergrax/context/"):
+        return "context_prompt"
+    if "auth" in module_path or "identity" in module_path:
+        return "identity_auth"
+    if module_path.startswith("intergrax/core/"):
+        return "platform_core"
+    return "unknown_cluster"
+
+
+@dataclass(frozen=True, slots=True)
+class BoundaryCriticalFamilyReport:
+    family: str
+    total_carriers: int
+    provenance_required: int
+    current_head_proven: int
+    historical_evidence_only: int
+    provenance_missing: int
+    authority_carrier: int
+    authority_validator: int
+    authority_derivation: int
+    authority_narrowing: int
+    authority_mint_rewrite: int
+    authority_unknown: int
+
+
+def build_boundary_critical_family_reports(
+    class_field_records: tuple[TenantSurfaceRecord, ...],
+) -> tuple[BoundaryCriticalFamilyReport, ...]:
+    by_family: dict[TenantCarrierFamily, list[TenantSurfaceRecord]] = {}
+    for record in class_field_records:
+        if not is_boundary_critical_family(record.carrier_family):
+            continue
+        by_family.setdefault(record.carrier_family, []).append(record)
+
+    reports: list[BoundaryCriticalFamilyReport] = []
+    for family in TenantCarrierFamily:
+        if family not in by_family:
+            continue
+        records = by_family[family]
+        req = sum(
+            1
+            for r in records
+            if r.carrier_provenance_requirement
+            in {
+                TenantCarrierProvenanceRequirement.PROVENANCE_REQUIRED_AT_BOUNDARY,
+                TenantCarrierProvenanceRequirement.PROVENANCE_REQUIRED_AT_USE_SITE,
+            }
+        )
+        head = sum(1 for r in records if r.provenance_proof_status == TenantProvenanceProofStatus.PROVEN_CURRENT_HEAD)
+        hist = sum(1 for r in records if r.provenance_proof_status == TenantProvenanceProofStatus.HISTORICAL_ONLY)
+        missing = sum(1 for r in records if r.provenance_proof_status == TenantProvenanceProofStatus.MISSING)
+
+        reports.append(
+            BoundaryCriticalFamilyReport(
+                family=family.value,
+                total_carriers=len(records),
+                provenance_required=req,
+                current_head_proven=head,
+                historical_evidence_only=hist,
+                provenance_missing=missing,
+                authority_carrier=sum(
+                    1 for r in records if r.authority_semantic_role == TenantAuthoritySemanticRole.CARRIER
+                ),
+                authority_validator=sum(
+                    1 for r in records if r.authority_semantic_role == TenantAuthoritySemanticRole.VALIDATOR
+                ),
+                authority_derivation=sum(
+                    1 for r in records if r.authority_semantic_role == TenantAuthoritySemanticRole.DERIVER
+                ),
+                authority_narrowing=sum(
+                    1
+                    for r in records
+                    if r.authority_semantic_role == TenantAuthoritySemanticRole.SCOPE_NARROWER
+                ),
+                authority_mint_rewrite=sum(
+                    1
+                    for r in records
+                    if r.authority_semantic_role == TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY
+                ),
+                authority_unknown=sum(
+                    1 for r in records if r.authority_semantic_role == TenantAuthoritySemanticRole.UNKNOWN
+                ),
+            )
+        )
+    return tuple(reports)
+
+
 def identity_provenance_known(record: TenantSurfaceRecord) -> bool:
     return record.identity_source != TenantIdentitySource.UNKNOWN
 
@@ -157,8 +255,14 @@ class TenantCarrierSemanticsReport:
     boundary_critical_provenance_unknown: int
     passive_carrier_provenance_unknown: int
     generic_class_field_authority_count: int
-    duplicate_mint_rewrite_candidates: tuple[str, ...]
     family_buckets: tuple[TenantCarrierFamilyBucket, ...]
+    unknown_family_clusters: tuple[tuple[str, int], ...]
+    provenance_required_count: int
+    provenance_current_head_proven: int
+    provenance_historical_only: int
+    provenance_missing_count: int
+    authority_review: TenantAuthorityReviewMetrics
+    boundary_critical_reports: tuple[BoundaryCriticalFamilyReport, ...]
 
 
 def build_carrier_semantics_report(
@@ -198,22 +302,6 @@ def build_carrier_semantics_report(
             )
         )
 
-    mint_roles = frozenset(
-        {
-            TenantPropagationRole.CANONICAL_IDENTITY_SOURCE,
-            TenantPropagationRole.TENANT_VALIDATOR,
-            TenantPropagationRole.IDENTITY_DERIVATION,
-        }
-    )
-    mint_candidates = tuple(
-        r.surface_id
-        for r in inventory
-        if r.authority_role == TenantAuthorityRole.TENANT_SCOPE_AUTHORITY
-        and r.propagation_role in mint_roles
-        and "canonical_anchor_profile" not in "".join(r.evidence_refs)
-        and r.surface_id not in class_field_surface_ids
-    )
-
     generic_authority = sum(
         1
         for r in class_fields
@@ -238,6 +326,35 @@ def build_carrier_semantics_report(
         and r.carrier_provenance_requirement == TenantCarrierProvenanceRequirement.PASSIVE_CARRIER_ONLY
     )
 
+    cluster_counts: dict[str, int] = {}
+    for record in class_fields:
+        if record.carrier_family != TenantCarrierFamily.UNKNOWN:
+            continue
+        cluster = unknown_carrier_family_cluster(record.module_path)
+        cluster_counts[cluster] = cluster_counts.get(cluster, 0) + 1
+
+    prov_required = sum(
+        1
+        for r in class_fields
+        if r.carrier_provenance_requirement
+        in {
+            TenantCarrierProvenanceRequirement.PROVENANCE_REQUIRED_AT_BOUNDARY,
+            TenantCarrierProvenanceRequirement.PROVENANCE_REQUIRED_AT_USE_SITE,
+        }
+    )
+    prov_head = sum(
+        1 for r in class_fields if r.provenance_proof_status == TenantProvenanceProofStatus.PROVEN_CURRENT_HEAD
+    )
+    prov_hist = sum(
+        1 for r in class_fields if r.provenance_proof_status == TenantProvenanceProofStatus.HISTORICAL_ONLY
+    )
+    prov_missing = sum(
+        1 for r in class_fields if r.provenance_proof_status == TenantProvenanceProofStatus.MISSING
+    )
+
+    authority_review = build_authority_review_metrics(inventory)
+    bc_reports = build_boundary_critical_family_reports(tuple(class_fields))
+
     return TenantCarrierSemanticsReport(
         class_field_carrier_total=len(class_fields),
         identity_carrier_count=identity_carriers,
@@ -247,6 +364,12 @@ def build_carrier_semantics_report(
         boundary_critical_provenance_unknown=bc_prov_unknown,
         passive_carrier_provenance_unknown=passive_prov_unknown,
         generic_class_field_authority_count=generic_authority,
-        duplicate_mint_rewrite_candidates=mint_candidates,
         family_buckets=tuple(buckets),
+        unknown_family_clusters=tuple(sorted(cluster_counts.items())),
+        provenance_required_count=prov_required,
+        provenance_current_head_proven=prov_head,
+        provenance_historical_only=prov_hist,
+        provenance_missing_count=prov_missing,
+        authority_review=authority_review,
+        boundary_critical_reports=bc_reports,
     )

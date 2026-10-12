@@ -148,6 +148,44 @@ class PropagationEdgeStatus(StrEnum):
     INVALID = "INVALID"
 
 
+class PropagationEdgeContinuityStatus(StrEnum):
+    PROVEN_CURRENT_HEAD = "PROVEN_CURRENT_HEAD"
+    HISTORICAL_EVIDENCE_REPLAY_REQUIRED = "HISTORICAL_EVIDENCE_REPLAY_REQUIRED"
+    MISSING = "MISSING"
+    INVALID = "INVALID"
+
+
+class TenantAuthoritySemanticRole(StrEnum):
+    CARRIER = "CARRIER"
+    VALIDATOR = "VALIDATOR"
+    DERIVER = "DERIVER"
+    SCOPE_NARROWER = "SCOPE_NARROWER"
+    MINT_OR_REWRITE_AUTHORITY = "MINT_OR_REWRITE_AUTHORITY"
+    UNKNOWN = "UNKNOWN"
+
+
+class TenantProvenanceProofStatus(StrEnum):
+    NOT_REQUIRED = "NOT_REQUIRED"
+    REQUIRED = "REQUIRED"
+    PROVEN_CURRENT_HEAD = "PROVEN_CURRENT_HEAD"
+    HISTORICAL_ONLY = "HISTORICAL_ONLY"
+    MISSING = "MISSING"
+
+
+class AmbientSubstitutionClass(StrEnum):
+    LEGITIMATE_GLOBAL_SURFACE = "LEGITIMATE_GLOBAL_SURFACE"
+    COMPATIBILITY_BEHAVIOR = "COMPATIBILITY_BEHAVIOR"
+    ILLEGAL_SILENT_SUBSTITUTION = "ILLEGAL_SILENT_SUBSTITUTION"
+    UNKNOWN = "UNKNOWN"
+
+
+class BoundaryContinuityClass(StrEnum):
+    PROVEN_CURRENT_HEAD = "PROVEN_CURRENT_HEAD"
+    PARTIAL_EVIDENCE = "PARTIAL_EVIDENCE"
+    GAP_QUALIFICATION_ONLY = "GAP_QUALIFICATION_ONLY"
+    UNKNOWN = "UNKNOWN"
+
+
 class TenantCarrierFamily(StrEnum):
     RUNTIME_EXECUTION = "RUNTIME_EXECUTION"
     GOVERNANCE = "GOVERNANCE"
@@ -217,6 +255,17 @@ class TenantSurfaceRecord:
     carrier_provenance_requirement: TenantCarrierProvenanceRequirement = (
         TenantCarrierProvenanceRequirement.UNKNOWN_REQUIREMENT
     )
+    authority_semantic_role: TenantAuthoritySemanticRole = TenantAuthoritySemanticRole.UNKNOWN
+    provenance_proof_status: TenantProvenanceProofStatus = TenantProvenanceProofStatus.NOT_REQUIRED
+    ambient_substitution_class: AmbientSubstitutionClass | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TenantProvenanceEdge:
+    source_surface_id: str
+    target_surface_id: str
+    relation: PropagationRelation
+    evidence: str
 
 
 @dataclass(frozen=True, slots=True)

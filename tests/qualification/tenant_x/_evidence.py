@@ -111,6 +111,14 @@ class TenantAstEvidenceKind(StrEnum):
     GLOBAL_NON_TENANT_SYMBOL = "GLOBAL_NON_TENANT_SYMBOL"
     APPLICATION_LOCAL_MODULE = "APPLICATION_LOCAL_MODULE"
     COMPATIBILITY_MODULE = "COMPATIBILITY_MODULE"
+    VALIDATOR_RETURNS_SAME_INPUT = "VALIDATOR_RETURNS_SAME_INPUT"
+    TENANT_KWARG_DERIVED_FROM_PARENT = "TENANT_KWARG_DERIVED_FROM_PARENT"
+    TENANT_KWARG_LITERAL_REWRITE = "TENANT_KWARG_LITERAL_REWRITE"
+    TENANT_SILENT_DEFAULT_OR_SUBSTITUTION = "TENANT_SILENT_DEFAULT_OR_SUBSTITUTION"
+    SCOPE_NARROWING_ASSIGNMENT = "SCOPE_NARROWING_ASSIGNMENT"
+    SCOPE_WIDENING_VIOLATION = "SCOPE_WIDENING_VIOLATION"
+    TENANT_SCOPE_WIDENING_ASSIGN = "TENANT_SCOPE_WIDENING_ASSIGN"
+    MINT_OR_REWRITE_POSITIVE = "MINT_OR_REWRITE_POSITIVE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,6 +236,170 @@ def _class_tenant_scoped_field_names(class_def: ast.ClassDef) -> frozenset[str]:
                 if any(marker in ann_src for marker in _TENANT_SCOPED_TYPE_MARKERS):
                     scoped.add(name)
     return frozenset(scoped)
+
+
+def _function_param_names(func: ast.FunctionDef | ast.AsyncFunctionDef) -> frozenset[str]:
+    return frozenset(a.arg for a in func.args.args)
+
+
+def _returns_same_parameter(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    params = _function_param_names(func)
+    for node in ast.walk(func):
+        if isinstance(node, ast.Return) and node.value is not None:
+            if isinstance(node.value, ast.Name) and node.value.id in params:
+                return True
+    return False
+
+
+def _is_tenant_derivation_kwarg(kw: ast.keyword) -> bool:
+    if kw.arg not in _TENANT_NAMES:
+        return False
+    val = kw.value
+    if isinstance(val, ast.Attribute) and val.attr in _TENANT_NAMES:
+        return True
+    if isinstance(val, ast.Name) and val.id in _TENANT_NAMES:
+        return True
+    return False
+
+
+def _is_tenant_literal_rewrite_kwarg(kw: ast.keyword) -> bool:
+    if kw.arg not in _TENANT_NAMES:
+        return False
+    return isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str)
+
+
+def _is_silent_tenant_substitution(value: ast.AST) -> bool:
+    if isinstance(value, ast.BoolOp) and isinstance(value.op, ast.Or):
+        for operand in value.values:
+            if isinstance(operand, ast.Constant) and isinstance(operand.value, str):
+                if operand.value in {"default", "global", "system"}:
+                    return True
+            if isinstance(operand, ast.Attribute) and operand.attr in _TENANT_NAMES:
+                return True
+    if isinstance(value, ast.IfExp):
+        return _is_silent_tenant_substitution(value.body) or _is_silent_tenant_substitution(value.orelse)
+    return False
+
+
+def collect_function_authority_evidence(
+    func: ast.FunctionDef | ast.AsyncFunctionDef,
+    source: str,
+    class_name: str | None = None,
+) -> tuple[TenantAstEvidence, ...]:
+    return _collect_authority_semantics_in_function(func, source, class_name)
+
+
+def _collect_authority_semantics_in_function(
+    func: ast.FunctionDef | ast.AsyncFunctionDef,
+    source: str,
+    class_name: str | None,
+) -> tuple[TenantAstEvidence, ...]:
+    enclosing = f"{class_name}.{func.name}" if class_name else func.name
+    evidence: list[TenantAstEvidence] = []
+    if _returns_same_parameter(func):
+        evidence.append(
+            TenantAstEvidence(
+                kind=TenantAstEvidenceKind.VALIDATOR_RETURNS_SAME_INPUT.value,
+                detail=f"{enclosing}: returns validated same tenant parameter",
+                line_no=func.lineno,
+            )
+        )
+    if func.name in _VALIDATOR_CALL_NAMES:
+        if not any(e.kind == TenantAstEvidenceKind.VALIDATOR_RETURNS_SAME_INPUT.value for e in evidence):
+            evidence.append(
+                TenantAstEvidence(
+                    kind=TenantAstEvidenceKind.VALIDATOR_MARKER_PRESENT.value,
+                    detail=f"{enclosing}: validator-named function",
+                    line_no=func.lineno,
+                )
+            )
+    params = _function_param_names(func)
+    for node in ast.walk(func):
+        if isinstance(node, ast.Assert) and isinstance(node.test, ast.Compare):
+            if any(_name_refs_tenant(op) for op in node.test.comparators + [node.test.left]):
+                evidence.append(
+                    TenantAstEvidence(
+                        kind=TenantAstEvidenceKind.VALIDATOR_RETURNS_SAME_INPUT.value,
+                        detail=f"{enclosing}: tenant equality/membership guard",
+                        line_no=node.lineno,
+                    )
+                )
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Compare):
+            if any(_name_refs_tenant(op) for op in node.test.comparators + [node.test.left]):
+                for stmt in node.body:
+                    if isinstance(stmt, ast.Raise):
+                        evidence.append(
+                            TenantAstEvidence(
+                                kind=TenantAstEvidenceKind.VALIDATOR_RETURNS_SAME_INPUT.value,
+                                detail=f"{enclosing}: tenant mismatch rejection",
+                                line_no=node.lineno,
+                            )
+                        )
+        if isinstance(node, ast.Return) and node.value is not None:
+            if isinstance(node.value, ast.Attribute) and node.value.attr in _TENANT_NAMES:
+                evidence.append(
+                    TenantAstEvidence(
+                        kind=TenantAstEvidenceKind.TENANT_KWARG_DERIVED_FROM_PARENT.value,
+                        detail=f"{enclosing}: return derived tenant attribute",
+                        line_no=node.lineno,
+                    )
+                )
+            elif isinstance(node.value, ast.Name) and node.value.id in params:
+                if "caller" in node.value.id:
+                    evidence.append(
+                        TenantAstEvidence(
+                            kind=TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value,
+                            detail=f"{enclosing}: return independent tenant param (substitution candidate)",
+                            line_no=node.lineno,
+                        )
+                    )
+                elif node.value.id in _TENANT_NAMES and not _returns_same_parameter(func):
+                    evidence.append(
+                        TenantAstEvidence(
+                            kind=TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value,
+                            detail=f"{enclosing}: return tenant param without validator-same proof",
+                            line_no=node.lineno,
+                        )
+                    )
+        if isinstance(node, ast.Call):
+            for kw in node.keywords:
+                if _is_tenant_derivation_kwarg(kw):
+                    evidence.append(
+                        TenantAstEvidence(
+                            kind=TenantAstEvidenceKind.TENANT_KWARG_DERIVED_FROM_PARENT.value,
+                            detail=f"{enclosing}: tenant kwarg derived from parent/input",
+                            line_no=node.lineno,
+                        )
+                    )
+                elif _is_tenant_literal_rewrite_kwarg(kw):
+                    evidence.append(
+                        TenantAstEvidence(
+                            kind=TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value,
+                            detail=f"{enclosing}: tenant kwarg independent literal (rewrite candidate)",
+                            line_no=node.lineno,
+                        )
+                    )
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Attribute) and "tenant" in target.attr and target.attr != "tenant_id":
+                    evidence.append(
+                        TenantAstEvidence(
+                            kind=TenantAstEvidenceKind.TENANT_SCOPE_WIDENING_ASSIGN.value,
+                            detail=f"{enclosing}: widened tenant-related scope field",
+                            line_no=node.lineno,
+                        )
+                    )
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id in _TENANT_NAMES:
+                    if _is_silent_tenant_substitution(node.value):
+                        evidence.append(
+                            TenantAstEvidence(
+                                kind=TenantAstEvidenceKind.TENANT_SILENT_DEFAULT_OR_SUBSTITUTION.value,
+                                detail=f"{enclosing}: tenant or default/global substitution",
+                                line_no=node.lineno,
+                            )
+                        )
+    return tuple(evidence)
 
 
 def _is_protected_execute(call: ast.Call) -> bool:
@@ -381,7 +553,8 @@ def _analyze_function(
                     )
                 )
 
-    return tuple(evidence)
+    auth_ev = _collect_authority_semantics_in_function(func, source, class_name)
+    return tuple(evidence) + auth_ev
 
 
 def _class_field_declarations(class_def: ast.ClassDef) -> tuple[TenantAstEvidence, ...]:

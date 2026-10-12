@@ -10,7 +10,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Final
 
-from tests.qualification.tenant_x._evidence import build_module_evidence_index, discovery_evidence_for
+from tests.qualification.tenant_x._evidence import (
+    build_module_evidence_index,
+    collect_function_authority_evidence,
+    discovery_evidence_for,
+)
 from tests.qualification.tenant_x._types import TenantDiscoveryCandidate
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -154,6 +158,30 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
                             )
                         )
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Call):
+                    for kw in sub.keywords:
+                        if kw.arg in _TENANT_FIELD_NAMES:
+                            kind = "function.tenant_kwarg.site"
+                            site_id = _surface_id(module_path, node.name, kind)
+                            if not any(c.surface_id == site_id for c in out):
+                                out.append(
+                                    TenantDiscoveryCandidate(
+                                        surface_id=site_id,
+                                        module_path=module_path,
+                                        symbol=node.name,
+                                        discovery_kind=kind,
+                                        line_no=sub.lineno,
+                                        evidence=discovery_evidence_for(
+                                            module_path,
+                                            source,
+                                            enclosing_symbol=node.name,
+                                            line_no=sub.lineno,
+                                            index=evidence_index,
+                                        ),
+                                    )
+                                )
+                            break
             for arg in node.args.args:
                 if arg.arg in _TENANT_FIELD_NAMES:
                     kind = "function.param.tenant"
@@ -173,6 +201,28 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
                             ),
                         )
                     )
+
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            auth_ev = collect_function_authority_evidence(node, source, None)
+            if auth_ev:
+                kind = "function.body.authority"
+                out.append(
+                    TenantDiscoveryCandidate(
+                        surface_id=_surface_id(module_path, node.name, kind),
+                        module_path=module_path,
+                        symbol=node.name,
+                        discovery_kind=kind,
+                        line_no=node.lineno,
+                        evidence=discovery_evidence_for(
+                            module_path,
+                            source,
+                            enclosing_symbol=node.name,
+                            line_no=node.lineno,
+                            index=evidence_index,
+                        ),
+                    )
+                )
 
     for pattern, kind in _AMBIENT_DEFAULT_PATTERNS:
         for match in pattern.finditer(source):

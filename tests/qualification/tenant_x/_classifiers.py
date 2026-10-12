@@ -6,10 +6,12 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from tests.qualification.tenant_x._authority_semantics import finalize_surface_record
 from tests.qualification.tenant_x._carrier_semantics import (
     carrier_family_for_class_field,
     provenance_requirement_for_family,
 )
+from tests.qualification.tenant_x._evidence import TenantAstEvidenceKind
 from tests.qualification.tenant_x._discovery import discover_candidates_from_source
 from tests.qualification.tenant_x._evidence import TenantAstEvidenceKind, evidence_kinds, has_kind
 from tests.qualification.tenant_x._types import (
@@ -514,78 +516,170 @@ def classify_candidate(candidate: TenantDiscoveryCandidate) -> TenantSurfaceReco
     if kind.startswith("canonical."):
         profile = _CANONICAL_ANCHOR_PROFILES.get(kind)
         if profile is None:
-            return _unknown_surface(candidate, domain, owner, note=f"unknown canonical kind {kind}")
+            return finalize_surface_record(
+                _unknown_surface(candidate, domain, owner, note=f"unknown canonical kind {kind}"),
+                candidate,
+            )
         propagation, authority, identity, tenant_required, fail_closed, note = profile
-        return TenantSurfaceRecord(
-            surface_id=candidate.surface_id,
-            module_path=candidate.module_path,
-            symbol=candidate.symbol,
-            domain=domain,
-            tenant_required=tenant_required,
-            identity_source=identity,
-            semantic_owner=owner,
-            propagation_role=propagation,
-            persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
-            authority_role=authority,
-            fail_closed_behavior=fail_closed,
-            cross_tenant_capable=False,
-            cross_tenant_contract=None,
-            evidence_refs=("TENANT-X-P0:canonical_anchor_profile", note),
-            blocker_class=TenantBlockerClass.NONE,
-            blocker_note=note,
+        arch_authority = authority
+        if propagation == TenantPropagationRole.TENANT_VALIDATOR:
+            arch_authority = TenantAuthorityRole.NON_TENANT_ADVISORY
+        return finalize_surface_record(
+            TenantSurfaceRecord(
+                surface_id=candidate.surface_id,
+                module_path=candidate.module_path,
+                symbol=candidate.symbol,
+                domain=domain,
+                tenant_required=tenant_required,
+                identity_source=identity,
+                semantic_owner=owner,
+                propagation_role=propagation,
+                persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
+                authority_role=arch_authority,
+                fail_closed_behavior=fail_closed,
+                cross_tenant_capable=False,
+                cross_tenant_contract=None,
+                evidence_refs=("TENANT-X-P0:canonical_anchor_profile", note),
+                blocker_class=TenantBlockerClass.NONE,
+                blocker_note=note,
+            ),
+            candidate,
         )
 
     if kind.startswith("ambient_default"):
-        return _classify_ambient_default(candidate, domain, owner, kind)
+        return finalize_surface_record(_classify_ambient_default(candidate, domain, owner, kind), candidate)
 
     if kind == "optional.tenant":
-        return _classify_optional_tenant(candidate, domain, owner)
+        return finalize_surface_record(_classify_optional_tenant(candidate, domain, owner), candidate)
 
     if kind == "validator.marker":
-        return TenantSurfaceRecord(
-            surface_id=candidate.surface_id,
-            module_path=candidate.module_path,
-            symbol=candidate.symbol,
-            domain=domain,
-            tenant_required=True,
-            identity_source=TenantIdentitySource.VALIDATED_ENVELOPE,
-            semantic_owner=owner,
-            propagation_role=TenantPropagationRole.TENANT_VALIDATOR,
-            persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
-            authority_role=TenantAuthorityRole.TENANT_SCOPE_AUTHORITY,
-            fail_closed_behavior=TenantFailClosedDisposition.FAIL_CLOSED_ON_MISMATCH,
-            cross_tenant_capable=False,
-            cross_tenant_contract=None,
-            evidence_refs=("TENANT-X-P0:validator_marker_only",),
-            blocker_class=TenantBlockerClass.NONE,
-            blocker_note="Validator marker proves validator surface only — not lookup guard",
+        return finalize_surface_record(
+            TenantSurfaceRecord(
+                surface_id=candidate.surface_id,
+                module_path=candidate.module_path,
+                symbol=candidate.symbol,
+                domain=domain,
+                tenant_required=True,
+                identity_source=TenantIdentitySource.VALIDATED_ENVELOPE,
+                semantic_owner=owner,
+                propagation_role=TenantPropagationRole.TENANT_VALIDATOR,
+                persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
+                authority_role=TenantAuthorityRole.NON_TENANT_ADVISORY,
+                fail_closed_behavior=TenantFailClosedDisposition.FAIL_CLOSED_ON_MISMATCH,
+                cross_tenant_capable=False,
+                cross_tenant_contract=None,
+                evidence_refs=("TENANT-X-P0:validator_marker_only",),
+                blocker_class=TenantBlockerClass.NONE,
+                blocker_note="Validator marker — semantic VALIDATOR; not mint/rewrite authority",
+            ),
+            candidate,
+        )
+
+    if kind == "function.body.authority":
+        kinds = evidence_kinds(candidate.evidence)
+        ev: tuple[str, ...] = ("TENANT-X-P0:function_body_authority",)
+        propagation = TenantPropagationRole.IDENTITY_DERIVATION
+        identity = TenantIdentitySource.UNKNOWN
+        note = "Function body authority semantics"
+        if TenantAstEvidenceKind.TENANT_SILENT_DEFAULT_OR_SUBSTITUTION.value in kinds:
+            ev = ("TENANT-X-P0:mint:silent_substitution",)
+        elif TenantAstEvidenceKind.TENANT_SCOPE_WIDENING_ASSIGN.value in kinds:
+            ev = ("TENANT-X-P0:mint:scope_widening",)
+        elif TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value in kinds:
+            ev = ("TENANT-X-P0:mint:literal_rewrite_kwarg",)
+        elif TenantAstEvidenceKind.VALIDATOR_RETURNS_SAME_INPUT.value in kinds:
+            propagation = TenantPropagationRole.TENANT_VALIDATOR
+            identity = TenantIdentitySource.VALIDATED_ENVELOPE
+            ev = ("TENANT-X-P0:validator_body_proof",)
+        elif TenantAstEvidenceKind.TENANT_KWARG_DERIVED_FROM_PARENT.value in kinds:
+            ev = ("TENANT-X-P0:provenance:current_head:derive_same",)
+            identity = TenantIdentitySource.DERIVED_FROM_PARENT
+        return finalize_surface_record(
+            TenantSurfaceRecord(
+                surface_id=candidate.surface_id,
+                module_path=candidate.module_path,
+                symbol=candidate.symbol,
+                domain=domain,
+                tenant_required=False,
+                identity_source=identity,
+                semantic_owner=owner,
+                propagation_role=propagation,
+                persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
+                authority_role=TenantAuthorityRole.NOT_APPLICABLE,
+                fail_closed_behavior=TenantFailClosedDisposition.UNKNOWN,
+                cross_tenant_capable=False,
+                cross_tenant_contract=None,
+                evidence_refs=ev,
+                blocker_class=TenantBlockerClass.NONE,
+                blocker_note=note,
+            ),
+            candidate,
+        )
+
+    if kind == "function.tenant_kwarg.site":
+        kinds = evidence_kinds(candidate.evidence)
+        ev: tuple[str, ...] = ("TENANT-X-P0:tenant_kwarg_site",)
+        propagation = TenantPropagationRole.IDENTITY_DERIVATION
+        identity = TenantIdentitySource.DERIVED_FROM_PARENT
+        blocker = TenantBlockerClass.NONE
+        note = "Tenant kwarg construction site"
+        if TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value in kinds:
+            propagation = TenantPropagationRole.IDENTITY_DERIVATION
+            identity = TenantIdentitySource.UNKNOWN
+            ev = ("TENANT-X-P0:mint:literal_rewrite_kwarg",)
+            note = "Independent literal tenant kwarg — mint/rewrite candidate"
+        elif TenantAstEvidenceKind.TENANT_KWARG_DERIVED_FROM_PARENT.value in kinds:
+            ev = ("TENANT-X-P0:provenance:current_head:derive_same",)
+        return finalize_surface_record(
+            TenantSurfaceRecord(
+                surface_id=candidate.surface_id,
+                module_path=candidate.module_path,
+                symbol=candidate.symbol,
+                domain=domain,
+                tenant_required=False,
+                identity_source=identity,
+                semantic_owner=owner,
+                propagation_role=propagation,
+                persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
+                authority_role=TenantAuthorityRole.NOT_APPLICABLE,
+                fail_closed_behavior=TenantFailClosedDisposition.UNKNOWN,
+                cross_tenant_capable=False,
+                cross_tenant_contract=None,
+                evidence_refs=ev,
+                blocker_class=blocker,
+                blocker_note=note,
+            ),
+            candidate,
         )
 
     if any(marker in candidate.symbol.lower() for marker in _GLOBAL_NON_TENANT_MARKERS):
-        return TenantSurfaceRecord(
-            surface_id=candidate.surface_id,
-            module_path=candidate.module_path,
-            symbol=candidate.symbol,
-            domain=TenantDomain.PLATFORM_GLOBAL,
-            tenant_required=False,
-            identity_source=TenantIdentitySource.GLOBAL_NON_TENANT,
-            semantic_owner="OBSERVABILITY",
-            propagation_role=TenantPropagationRole.GLOBAL_NON_TENANT_SURFACE,
-            persistence_role=TenantPersistenceRole.GLOBAL_SHARED_BY_DESIGN,
-            authority_role=TenantAuthorityRole.NON_TENANT_ADVISORY,
-            fail_closed_behavior=TenantFailClosedDisposition.NON_TENANT_SURFACE,
-            cross_tenant_capable=False,
-            cross_tenant_contract=None,
-            evidence_refs=("TENANT-X-P0:global_non_tenant",),
+        return finalize_surface_record(
+            TenantSurfaceRecord(
+                surface_id=candidate.surface_id,
+                module_path=candidate.module_path,
+                symbol=candidate.symbol,
+                domain=TenantDomain.PLATFORM_GLOBAL,
+                tenant_required=False,
+                identity_source=TenantIdentitySource.GLOBAL_NON_TENANT,
+                semantic_owner="OBSERVABILITY",
+                propagation_role=TenantPropagationRole.GLOBAL_NON_TENANT_SURFACE,
+                persistence_role=TenantPersistenceRole.GLOBAL_SHARED_BY_DESIGN,
+                authority_role=TenantAuthorityRole.NON_TENANT_ADVISORY,
+                fail_closed_behavior=TenantFailClosedDisposition.NON_TENANT_SURFACE,
+                cross_tenant_capable=False,
+                cross_tenant_contract=None,
+                evidence_refs=("TENANT-X-P0:global_non_tenant",),
+            ),
+            candidate,
         )
 
     if kind == "class.field.tenant":
-        return _classify_class_field_tenant(candidate, domain, owner)
+        return finalize_surface_record(_classify_class_field_tenant(candidate, domain, owner), candidate)
 
     if kind == "function.param.tenant":
-        return _classify_function_param_tenant(candidate, domain, owner)
+        return finalize_surface_record(_classify_function_param_tenant(candidate, domain, owner), candidate)
 
-    return _unknown_surface(candidate, domain, owner)
+    return finalize_surface_record(_unknown_surface(candidate, domain, owner), candidate)
 
 
 def classify_source_fixture(module_path: str, source: str) -> tuple[TenantSurfaceRecord, ...]:

@@ -11,6 +11,7 @@ from tests.qualification.tenant_x._classifiers import classify_source_fixture
 from tests.qualification.tenant_x._types import (
     AdversarialProbeVerdict,
     TenantAuthorityRole,
+    TenantAuthoritySemanticRole,
     TenantBlockerClass,
     TenantCarrierFamily,
     TenantCarrierProvenanceRequirement,
@@ -54,6 +55,16 @@ class SyntheticProbeId(StrEnum):
     Z4_APPLICATION_SCHEMA = "Z4"
     Z5_EVIDENCE_EVENT = "Z5"
     Z6_FAMILY_UNKNOWN = "Z6"
+    AA_VALIDATOR_ONLY = "AA"
+    AB_PARENT_PROPAGATION = "AB"
+    AC_ILLEGAL_REWRITE = "AC"
+    AD_SCOPE_NARROWING = "AD"
+    AE_SCOPE_WIDENING = "AE"
+    AF_SILENT_DEFAULT = "AF"
+    AG_CREDENTIAL_SAME = "AG"
+    AH_CREDENTIAL_MISMATCH = "AH"
+    AI_CHECKPOINT_SAME = "AI"
+    AJ_CHECKPOINT_SUBSTITUTION = "AJ"
 
 
 @dataclass(frozen=True, slots=True)
@@ -418,6 +429,143 @@ class UnclassifiedCarrier:
     tenant_id: str
 """
 
+_SOURCE_AA = """
+def require_tenant_id(tenant_id: str) -> str:
+    if not tenant_id:
+        raise ValueError()
+    return tenant_id
+"""
+
+_SOURCE_AB = """
+class ChildRequest:
+    def __init__(self, tenant_id: str):
+        self.tenant_id = tenant_id
+
+def build_child(parent):
+    return ChildRequest(tenant_id=parent.tenant_id)
+"""
+
+_SOURCE_AC = """
+class ChildRequest:
+    def __init__(self, tenant_id: str):
+        self.tenant_id = tenant_id
+
+def build_bad():
+    return ChildRequest(tenant_id="other-tenant")
+"""
+
+_SOURCE_AD = """
+def narrow_scope(parent_scope, child_scope):
+    if child_scope.tenant_id != parent_scope.tenant_id:
+        raise ValueError()
+    return child_scope
+"""
+
+_SOURCE_AE = """
+def widen_scope(parent_scope, child_scope):
+    child_scope.tenant_id = parent_scope.tenant_id
+    child_scope.extra_tenant = "widened"
+    return child_scope
+"""
+
+_SOURCE_AF = """
+def resolve_tenant(request):
+    tenant_id = request.tenant_id or "default"
+    return tenant_id
+"""
+
+_SOURCE_AG = """
+def use_credential(scope, grant):
+    assert scope.tenant_id == grant.tenant_id
+    return scope.tenant_id
+"""
+
+_SOURCE_AH = """
+def bad_credential(scope_a, grant_a, scope_b):
+    if scope_b.tenant_id != grant_a.tenant_id:
+        raise ValueError()
+    return scope_b.tenant_id
+"""
+
+_SOURCE_AI = """
+class Checkpoint:
+    tenant_id: str
+
+def restore(checkpoint):
+    return checkpoint.tenant_id
+"""
+
+_SOURCE_AJ = """
+class Checkpoint:
+    tenant_id: str
+
+def resume(checkpoint, caller_tenant_id: str):
+    return caller_tenant_id
+"""
+
+AUTHORITY_R3_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AA_VALIDATOR_ONLY,
+        module_path="synthetic/authority_probes/aa_validator.py",
+        source=_SOURCE_AA,
+        surface_selector="require_tenant_id",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AB_PARENT_PROPAGATION,
+        module_path="synthetic/authority_probes/ab_parent_propagation.py",
+        source=_SOURCE_AB,
+        surface_selector="build_child",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AC_ILLEGAL_REWRITE,
+        module_path="synthetic/authority_probes/ac_illegal_rewrite.py",
+        source=_SOURCE_AC,
+        surface_selector="build_bad",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AD_SCOPE_NARROWING,
+        module_path="synthetic/authority_probes/ad_narrowing.py",
+        source=_SOURCE_AD,
+        surface_selector="narrow_scope",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AE_SCOPE_WIDENING,
+        module_path="synthetic/authority_probes/ae_widening.py",
+        source=_SOURCE_AE,
+        surface_selector="widen_scope",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AF_SILENT_DEFAULT,
+        module_path="synthetic/authority_probes/af_silent_default.py",
+        source=_SOURCE_AF,
+        surface_selector="resolve_tenant",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AG_CREDENTIAL_SAME,
+        module_path="intergrax/integrations/credentials/synthetic/ag_same.py",
+        source=_SOURCE_AG,
+        surface_selector="use_credential",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AH_CREDENTIAL_MISMATCH,
+        module_path="intergrax/integrations/credentials/synthetic/ah_mismatch.py",
+        source=_SOURCE_AH,
+        surface_selector="bad_credential",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AI_CHECKPOINT_SAME,
+        module_path="intergrax/runtime/checkpoint/synthetic/ai_same.py",
+        source=_SOURCE_AI,
+        surface_selector="restore",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.AJ_CHECKPOINT_SUBSTITUTION,
+        module_path="intergrax/runtime/checkpoint/synthetic/aj_substitution.py",
+        source=_SOURCE_AJ,
+        surface_selector="resume",
+    ),
+)
+
 CARRIER_R2_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.Z1_PASSIVE_DTO,
@@ -458,18 +606,33 @@ CARRIER_R2_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
 )
 
 
-def _select_record(scenario: ClassifierProbeScenario) -> TenantSurfaceRecord:
+def _select_record(
+    scenario: ClassifierProbeScenario,
+    *,
+    prefer_body_authority: bool = False,
+) -> TenantSurfaceRecord:
     records = classify_source_fixture(scenario.module_path, scenario.source)
     if scenario.surface_selector == "ambient_default_field":
         matches = [r for r in records if "ambient_default" in r.surface_id]
         if not matches:
             raise AssertionError(f"no ambient default surface in fixture {scenario.probe_id}")
         return matches[0]
-    for record in records:
-        if record.symbol == scenario.surface_selector:
-            return record
-        if scenario.surface_selector in record.surface_id:
-            return record
+    matches = [
+        record
+        for record in records
+        if record.symbol == scenario.surface_selector or scenario.surface_selector in record.surface_id
+    ]
+    if matches:
+        prefs = (
+            ("function.body.authority", "function.tenant_kwarg.site", "function.param.tenant")
+            if prefer_body_authority
+            else ("function.param.tenant", "function.tenant_kwarg.site", "function.body.authority")
+        )
+        for pref in prefs:
+            for record in matches:
+                if pref in record.surface_id:
+                    return record
+        return matches[0]
     raise AssertionError(f"surface {scenario.surface_selector} not found for probe {scenario.probe_id}")
 
 
@@ -579,6 +742,41 @@ def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
         return record.persistence_role != TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
     if probe == SyntheticProbeId.Y_VALIDATOR_BEFORE_TENANT_KEY:
         return record.persistence_role == TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
+    return False
+
+
+def evaluate_authority_r3_probe(scenario: ClassifierProbeScenario) -> bool:
+    record = _select_record(scenario, prefer_body_authority=True)
+    probe = scenario.probe_id
+    if probe == SyntheticProbeId.AA_VALIDATOR_ONLY:
+        return record.authority_semantic_role == TenantAuthoritySemanticRole.VALIDATOR
+    if probe == SyntheticProbeId.AB_PARENT_PROPAGATION:
+        return record.authority_semantic_role == TenantAuthoritySemanticRole.DERIVER
+    if probe == SyntheticProbeId.AC_ILLEGAL_REWRITE:
+        return record.authority_semantic_role == TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY
+    if probe == SyntheticProbeId.AD_SCOPE_NARROWING:
+        return record.authority_semantic_role in {
+            TenantAuthoritySemanticRole.VALIDATOR,
+            TenantAuthoritySemanticRole.DERIVER,
+        }
+    if probe == SyntheticProbeId.AE_SCOPE_WIDENING:
+        return record.authority_semantic_role in {
+            TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY,
+            TenantAuthoritySemanticRole.UNKNOWN,
+        }
+    if probe == SyntheticProbeId.AF_SILENT_DEFAULT:
+        return record.authority_semantic_role == TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY
+    if probe == SyntheticProbeId.AG_CREDENTIAL_SAME:
+        return record.authority_semantic_role == TenantAuthoritySemanticRole.VALIDATOR
+    if probe == SyntheticProbeId.AH_CREDENTIAL_MISMATCH:
+        return record.authority_semantic_role == TenantAuthoritySemanticRole.VALIDATOR
+    if probe == SyntheticProbeId.AI_CHECKPOINT_SAME:
+        return record.authority_semantic_role == TenantAuthoritySemanticRole.DERIVER
+    if probe == SyntheticProbeId.AJ_CHECKPOINT_SUBSTITUTION:
+        return record.authority_semantic_role in {
+            TenantAuthoritySemanticRole.MINT_OR_REWRITE_AUTHORITY,
+            TenantAuthoritySemanticRole.UNKNOWN,
+        }
     return False
 
 
