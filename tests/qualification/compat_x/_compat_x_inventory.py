@@ -169,7 +169,7 @@ def _evolution_for_surface(surface: DiscoveredCompatSurface) -> frozenset[Evolut
         states.update(
             {
                 EvolutionState.PLUGIN_COMPATIBILITY_DEFINED,
-                EvolutionState.DEPRECATION_POLICY_MISSING,
+                EvolutionState.DEPRECATION_POLICY_DEFINED,
             }
         )
         states.discard(EvolutionState.PLUGIN_COMPATIBILITY_MISSING)
@@ -179,7 +179,7 @@ def _evolution_for_surface(surface: DiscoveredCompatSurface) -> frozenset[Evolut
         states.update(
             {
                 EvolutionState.PLUGIN_COMPATIBILITY_DEFINED,
-                EvolutionState.DEPRECATION_POLICY_MISSING,
+                EvolutionState.DEPRECATION_POLICY_DEFINED,
             }
         )
         states.discard(EvolutionState.PLUGIN_COMPATIBILITY_MISSING)
@@ -187,10 +187,10 @@ def _evolution_for_surface(surface: DiscoveredCompatSurface) -> frozenset[Evolut
         states.update(
             {
                 EvolutionState.COMPATIBILITY_SHIM_SANCTIONED,
-                EvolutionState.DEPRECATION_POLICY_MISSING,
+                EvolutionState.DEPRECATION_POLICY_DEFINED,
             }
         )
-    states.add(EvolutionState.DEPRECATION_POLICY_MISSING)
+    states.add(EvolutionState.DEPRECATION_POLICY_DEFINED)
     return frozenset(states)
 
 
@@ -263,7 +263,9 @@ def _record_from_surface(surface: DiscoveredCompatSurface) -> CompatSurfaceRecor
         migration_owner_path=surface.owner_module_path
         if surface.discovery_kind.startswith("migration")
         else "UNOWNED — COMPAT-X-R2",
-        deprecation_owner_path="UNOWNED — COMPAT-X-R5",
+        deprecation_owner_path=(
+            "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md"
+        ),
         plugin_provider_relevant=ExposureFacet.PLUGIN_PROVIDER_CONTRACT in exposure,
         tenant_relevant=_tenant_relevant(surface),
         evolution_states=_evolution_for_surface(surface),

@@ -1,0 +1,351 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""TENANT-X mechanical tenant-surface discovery (single cached HEAD scan)."""
+
+from __future__ import annotations
+
+import ast
+import re
+from functools import lru_cache
+from pathlib import Path
+from typing import Final
+
+from tests.qualification.tenant_x._evidence import (
+    build_module_evidence_index,
+    collect_function_authority_evidence,
+    discovery_evidence_for,
+)
+from tests.qualification.tenant_x._types import TenantDiscoveryCandidate
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+_DISCOVERY_ROOTS: Final[tuple[Path, ...]] = (
+    _REPO_ROOT / "intergrax",
+    _REPO_ROOT / "agents",
+    _REPO_ROOT / "applications",
+)
+
+_EXCLUDE_PATH_PARTS: Final[tuple[str, ...]] = (
+    "/tests/",
+    "\\tests\\",
+    "/test_",
+    "\\test_",
+    "/qualification/",
+    "\\qualification\\",
+    "/examples/",
+    "\\examples\\",
+    "/scaffold/",
+    "\\scaffold\\",
+    "testing_support/",
+    "docker/runtime-context",
+)
+
+_TENANT_FIELD_NAMES: Final[frozenset[str]] = frozenset(
+    {"tenant_id", "tenant", "tenant_scope", "principal_tenant_id"}
+)
+
+_AMBIENT_DEFAULT_PATTERNS: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
+    (re.compile(r'tenant_id\s*:\s*str\s*=\s*["\']default["\']'), "ambient_default_field"),
+    (re.compile(r'tenant_id\s*=\s*Field\s*\(\s*default\s*=\s*["\']default["\']'), "ambient_default_pydantic"),
+    (re.compile(r'DEFAULT_TENANT_ID\s*=\s*["\']default["\']'), "ambient_default_constant"),
+    (re.compile(r'PREFIX_TENANT_ID["\'],\s*["\']default["\']'), "ambient_default_env_fallback"),
+)
+
+_VALIDATOR_MARKERS: Final[tuple[str, ...]] = (
+    "require_tenant_id",
+    "validate_tenant",
+    "_validate_tenant_id",
+    "tenant_id must be non-empty",
+    "tenant_id is required",
+)
+
+_CANONICAL_ANCHORS: Final[tuple[tuple[str, str, str], ...]] = (
+    (
+        "intergrax/runtime/execution/agent_runtime_io.py",
+        "RuntimeRequest",
+        "canonical.runtime_request",
+    ),
+    (
+        "intergrax/contracts/runtime_execution_admission.py",
+        "RootExecutionAuthorityAdmissionRequest",
+        "canonical.execution_admission",
+    ),
+    (
+        "intergrax/contracts/agent_runtime_governance.py",
+        "GovernanceAuditEvent",
+        "canonical.governance_event",
+    ),
+    (
+        "intergrax/contracts/functional_evidence/tenant.py",
+        "require_tenant_id_from_exec_ctx",
+        "canonical.functional_evidence_tenant",
+    ),
+    (
+        "intergrax/contracts/runtime_inspection/query.py",
+        "RuntimeInspectionQuery",
+        "canonical.runtime_inspection_query",
+    ),
+    (
+        "intergrax/integrations/credentials/broker.py",
+        "ScopedCredentialBroker",
+        "canonical.credential_broker",
+    ),
+    (
+        "intergrax/memory/memory_scope_authority.py",
+        "assert_memory_scope_authorized",
+        "canonical.memory_scope_authority",
+    ),
+    (
+        "intergrax/contracts/tool_runtime_read.py",
+        "ToolRuntimeExecutionScope",
+        "canonical.tool_runtime_scope",
+    ),
+    (
+        "intergrax/runtime/execution/child.py",
+        "ChildExecutionRunner",
+        "canonical.child_execution_runner",
+    ),
+)
+
+
+def _normalize_repo_path(path: Path) -> str:
+    return path.relative_to(_REPO_ROOT).as_posix()
+
+
+def _is_candidate_file(path: Path) -> bool:
+    if path.suffix != ".py":
+        return False
+    normalized = path.as_posix()
+    for part in _EXCLUDE_PATH_PARTS:
+        if part.replace("/", "\\") in normalized or part in normalized:
+            return False
+    return True
+
+
+def _surface_id(module_path: str, symbol: str, kind: str) -> str:
+    return f"{module_path}::{symbol}::{kind}"
+
+
+def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCandidate]:
+    out: list[TenantDiscoveryCandidate] = []
+    try:
+        tree = ast.parse(source, filename=module_path)
+    except SyntaxError:
+        return out
+
+    evidence_index = build_module_evidence_index(module_path, source)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            for stmt in node.body:
+                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                    if stmt.target.id in _TENANT_FIELD_NAMES:
+                        kind = "class.field.tenant"
+                        out.append(
+                            TenantDiscoveryCandidate(
+                                surface_id=_surface_id(module_path, f"{node.name}.{stmt.target.id}", kind),
+                                module_path=module_path,
+                                symbol=node.name,
+                                discovery_kind=kind,
+                                line_no=stmt.lineno,
+                                evidence=discovery_evidence_for(
+                                    module_path,
+                                    source,
+                                    enclosing_symbol=node.name,
+                                    line_no=stmt.lineno,
+                                    index=evidence_index,
+                                ),
+                            )
+                        )
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Call):
+                    for kw in sub.keywords:
+                        if kw.arg in _TENANT_FIELD_NAMES:
+                            kind = "function.tenant_kwarg.site"
+                            site_id = _surface_id(module_path, node.name, kind)
+                            if not any(c.surface_id == site_id for c in out):
+                                out.append(
+                                    TenantDiscoveryCandidate(
+                                        surface_id=site_id,
+                                        module_path=module_path,
+                                        symbol=node.name,
+                                        discovery_kind=kind,
+                                        line_no=sub.lineno,
+                                        evidence=discovery_evidence_for(
+                                            module_path,
+                                            source,
+                                            enclosing_symbol=node.name,
+                                            line_no=sub.lineno,
+                                            index=evidence_index,
+                                        ),
+                                    )
+                                )
+                            break
+            for arg in node.args.args:
+                if arg.arg in _TENANT_FIELD_NAMES:
+                    kind = "function.param.tenant"
+                    out.append(
+                        TenantDiscoveryCandidate(
+                            surface_id=_surface_id(module_path, f"{node.name}.{arg.arg}", kind),
+                            module_path=module_path,
+                            symbol=node.name,
+                            discovery_kind=kind,
+                            line_no=node.lineno,
+                            evidence=discovery_evidence_for(
+                                module_path,
+                                source,
+                                enclosing_symbol=node.name,
+                                line_no=node.lineno,
+                                index=evidence_index,
+                            ),
+                        )
+                    )
+
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            auth_ev = collect_function_authority_evidence(node, source, None)
+            if auth_ev:
+                kind = "function.body.authority"
+                out.append(
+                    TenantDiscoveryCandidate(
+                        surface_id=_surface_id(module_path, node.name, kind),
+                        module_path=module_path,
+                        symbol=node.name,
+                        discovery_kind=kind,
+                        line_no=node.lineno,
+                        evidence=discovery_evidence_for(
+                            module_path,
+                            source,
+                            enclosing_symbol=node.name,
+                            line_no=node.lineno,
+                            index=evidence_index,
+                        ),
+                    )
+                )
+
+    for pattern, kind in _AMBIENT_DEFAULT_PATTERNS:
+        for match in pattern.finditer(source):
+            line_no = source[: match.start()].count("\n") + 1
+            out.append(
+                TenantDiscoveryCandidate(
+                    surface_id=_surface_id(module_path, f"line{line_no}", kind),
+                    module_path=module_path,
+                    symbol=f"L{line_no}",
+                    discovery_kind=kind,
+                    line_no=line_no,
+                    evidence=discovery_evidence_for(
+                        module_path,
+                        source,
+                        enclosing_symbol=f"L{line_no}",
+                        line_no=line_no,
+                        index=evidence_index,
+                    ),
+                )
+            )
+
+    for marker in _VALIDATOR_MARKERS:
+        if marker in source:
+            out.append(
+                TenantDiscoveryCandidate(
+                    surface_id=_surface_id(module_path, marker, "validator.marker"),
+                    module_path=module_path,
+                    symbol=marker,
+                    discovery_kind="validator.marker",
+                    line_no=1,
+                    evidence=discovery_evidence_for(
+                        module_path,
+                        source,
+                        enclosing_symbol=marker,
+                        line_no=1,
+                        index=evidence_index,
+                    ),
+                )
+            )
+            break
+
+    if "Optional[str]" in source and "tenant_id" in source:
+        if "tenant_id: Optional[str]" in source or "tenant_id: str | None" in source:
+            out.append(
+                TenantDiscoveryCandidate(
+                    surface_id=_surface_id(module_path, "optional_tenant_field", "optional.tenant"),
+                    module_path=module_path,
+                    symbol="optional_tenant",
+                    discovery_kind="optional.tenant",
+                    line_no=1,
+                    evidence=discovery_evidence_for(
+                        module_path,
+                        source,
+                        enclosing_symbol="optional_tenant",
+                        line_no=1,
+                        index=evidence_index,
+                    ),
+                )
+            )
+
+    return out
+
+
+def discover_candidates_from_source(module_path: str, source: str) -> tuple[TenantDiscoveryCandidate, ...]:
+    """Pure discovery for fixture modules (no repo scan)."""
+    return tuple(_discover_from_ast(module_path, source))
+
+
+def _canonical_anchor_candidates() -> tuple[TenantDiscoveryCandidate, ...]:
+    anchors: list[TenantDiscoveryCandidate] = []
+    for module_path, symbol, kind in _CANONICAL_ANCHORS:
+        anchors.append(
+            TenantDiscoveryCandidate(
+                surface_id=_surface_id(module_path, symbol, kind),
+                module_path=module_path,
+                symbol=symbol,
+                discovery_kind=kind,
+                line_no=1,
+            )
+        )
+    return tuple(anchors)
+
+
+@lru_cache(maxsize=1)
+def _raw_discovery_scan() -> tuple[tuple[str, ...], tuple[TenantDiscoveryCandidate, ...]]:
+    scanned: list[str] = []
+    candidates: dict[str, TenantDiscoveryCandidate] = {}
+
+    for anchor in _canonical_anchor_candidates():
+        candidates[anchor.surface_id] = anchor
+
+    for root in _DISCOVERY_ROOTS:
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*.py"):
+            if not _is_candidate_file(path):
+                continue
+            rel = _normalize_repo_path(path)
+            scanned.append(rel)
+            try:
+                source = path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            if "tenant" not in source and "Tenant" not in source:
+                continue
+            for item in _discover_from_ast(rel, source):
+                candidates[item.surface_id] = item
+
+    raw = tuple(sorted(candidates.values(), key=lambda c: c.surface_id))
+    return tuple(sorted(set(scanned))), raw
+
+
+def production_files_scanned_count() -> int:
+    return len(_raw_discovery_scan()[0])
+
+
+def discover_all_candidates() -> frozenset[TenantDiscoveryCandidate]:
+    return frozenset(_raw_discovery_scan()[1])
+
+
+def raw_discovery_candidates() -> tuple[TenantDiscoveryCandidate, ...]:
+    return _raw_discovery_scan()[1]
+
+
+def scanned_module_paths() -> tuple[str, ...]:
+    return _raw_discovery_scan()[0]

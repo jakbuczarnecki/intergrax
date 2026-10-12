@@ -7,7 +7,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Final
 
-from tests.qualification.compat_x._compat_x_types import CompatOwnerMatrixRow, OwnerResponsibilityState
+from tests.qualification.compat_x._compat_x_types import (
+    POLICY_ONLY_DOMAIN_COMPOSITION_OWNER,
+    CompatOwnerMatrixRow,
+    OwnerResponsibilityState,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -71,44 +75,59 @@ COMPAT_X_OWNER_MATRIX: Final[tuple[CompatOwnerMatrixRow, ...]] = (
     ),
     CompatOwnerMatrixRow(
         concern="platform_plugin_manifest_compatibility",
-        responsibility_state=OwnerResponsibilityState.CANDIDATE_OWNER_REMEDIATION_REQUIRED,
+        responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
         semantic_owner_path="intergrax/core/plugins/package_contract.py",
-        composition_owner_path="intergrax/core/plugins/package_contract.py",
-        evidence_paths=("intergrax/core/plugins/package_contract.py",),
+        composition_owner_path="intergrax/core/distribution/platform_compatibility.py",
+        evidence_paths=(
+            "intergrax/core/plugins/package_contract.py",
+            "intergrax/core/distribution/platform_compatibility.py",
+            "intergrax/core/plugins/platform_semantics.py",
+        ),
     ),
     CompatOwnerMatrixRow(
         concern="provider_contract_compatibility",
-        responsibility_state=OwnerResponsibilityState.CANDIDATE_OWNER_REMEDIATION_REQUIRED,
-        semantic_owner_path="intergrax/integrations/registry/catalog.py",
-        composition_owner_path="intergrax/integrations/registry/factory.py",
-        evidence_paths=("intergrax/integrations/registry/catalog.py",),
+        responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
+        semantic_owner_path="intergrax/integrations/registry/contract_spec.py",
+        composition_owner_path="intergrax/integrations/registry/catalog.py",
+        evidence_paths=(
+            "intergrax/integrations/registry/contract_spec.py",
+            "intergrax/integrations/registry/catalog.py",
+            "intergrax/runtime/integrations/registry_v2.py",
+        ),
     ),
     CompatOwnerMatrixRow(
         concern="plugin_provider_compatibility_policy",
-        responsibility_state=OwnerResponsibilityState.FRAGMENTED_UNOWNED,
-        semantic_owner_path="FRAGMENTED — manifest vs catalog vs external assessment",
-        composition_owner_path="UNOWNED — COMPAT-X-R4",
+        responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
+        semantic_owner_path="docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+        composition_owner_path=POLICY_ONLY_DOMAIN_COMPOSITION_OWNER,
         evidence_paths=(
-            "intergrax/core/plugins/package_contract.py",
-            "intergrax/integrations/registry/catalog.py",
+            "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+            "tests/qualification/compat_x/_compat_x_plugin_provider_r4_inventory.py",
+            "tests/qualification/compat_x/test_compat_x_plugin_provider_r4_gates.py",
         ),
     ),
     CompatOwnerMatrixRow(
         concern="external_contract_semantic_assessment",
         responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
         semantic_owner_path="intergrax/integrations/contracts/external_contract_compatibility.py",
-        composition_owner_path="intergrax/integrations/contracts/external_contract_compatibility.py",
+        composition_owner_path="intergrax/integrations/external_contract_compatibility_extensions.py",
         evidence_paths=(
             "intergrax/integrations/contracts/external_contract_compatibility.py",
+            "intergrax/integrations/external_contract_compatibility_extensions.py",
+            "intergrax/integrations/external_contract_compatibility_service.py",
             "tests/qualification/external_contract_compatibility/test_external_contract_compatibility_certification.py",
         ),
     ),
     CompatOwnerMatrixRow(
         concern="deprecation_removal",
-        responsibility_state=OwnerResponsibilityState.FRAGMENTED_UNOWNED,
-        semantic_owner_path="UNOWNED — COMPAT-X-R5",
-        composition_owner_path="UNOWNED — COMPAT-X-R5",
-        evidence_paths=("tests/qualification/compat_x/_compat_x_inventory.py",),
+        responsibility_state=OwnerResponsibilityState.CURRENT_CONFIRMED_OWNER,
+        semantic_owner_path="docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+        composition_owner_path=POLICY_ONLY_DOMAIN_COMPOSITION_OWNER,
+        evidence_paths=(
+            "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md",
+            "tests/qualification/compat_x/_compat_x_deprecation_r5_inventory.py",
+            "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+        ),
     ),
     CompatOwnerMatrixRow(
         concern="compatibility_adapters",
@@ -129,7 +148,7 @@ def owner_matrix_paths_exist() -> tuple[str, ...]:
             if not (_REPO_ROOT / rel).is_file():
                 missing.append(rel)
         for rel in (row.semantic_owner_path, row.composition_owner_path):
-            if rel.startswith(("UNOWNED", "FRAGMENTED", "tests/")):
+            if rel.startswith(("UNOWNED", "FRAGMENTED", "tests/", "N/A")):
                 continue
             path = _REPO_ROOT / rel
             if path.is_file():

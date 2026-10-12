@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 from typing import Any, Mapping, Sequence
 
 import pytest
@@ -28,17 +29,65 @@ from intergrax.integrations.registry.factory import (
     resolve,
     resolve_slug,
 )
-from intergrax.integrations.registry.catalog_manifests import LOG, SQLITE
+from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.registry.profile import IntegrationProfile, default_lab_profile
+from intergrax.runtime.integrations.categories import (
+    KeyValueCacheIntegrationContract,
+    MessageBusIntegrationContract,
+    NotificationChannelIntegrationContract,
+    RelationalStoreIntegrationContract,
+)
 
 pytestmark = pytest.mark.unit
 
 
+class _FakeKeyValueCacheIntegration(KeyValueCacheIntegrationContract):
+    test_payload: str = ""
+
+
+class _FakeRelationalStoreIntegration(RelationalStoreIntegrationContract):
+    test_payload: str = ""
+
+
+class _FakeMessageBusIntegration(MessageBusIntegrationContract):
+    test_payload: str = ""
+
+
+class _FakeNotificationChannelIntegration(NotificationChannelIntegrationContract):
+    test_payload: str = ""
+
+
 @pytest.fixture(autouse=True)
-def _isolated_catalog() -> None:
+def _isolated_catalog() -> Iterator[None]:
     clear_catalog()
     yield
     clear_catalog()
+
+
+def _materialize_fake(
+    slug: str,
+    payload: str,
+    category: IntegrationCategory,
+    **kwargs: Any,
+) -> KeyValueCacheIntegrationContract | RelationalStoreIntegrationContract | MessageBusIntegrationContract:
+    _ = kwargs
+    if category is IntegrationCategory.KEY_VALUE_CACHE:
+        return _FakeKeyValueCacheIntegration.for_provider(
+            provider_id=slug,
+            display_name=slug,
+        ).model_copy(update={"test_payload": payload})
+    if category is IntegrationCategory.RELATIONAL_STORE:
+        return _FakeRelationalStoreIntegration.for_provider(
+            provider_id=slug,
+            display_name=slug,
+        ).model_copy(update={"test_payload": payload})
+    if category is IntegrationCategory.MESSAGE_BUS:
+        return _FakeMessageBusIntegration.for_provider(
+            provider_id=slug,
+            display_name=slug,
+        ).model_copy(update={"test_payload": payload})
+    msg = f"unsupported fake category {category!r}"
+    raise ValueError(msg)
 
 
 def _register_fake(
@@ -47,11 +96,17 @@ def _register_fake(
     categories: tuple[IntegrationCategory, ...],
     payload: str,
 ) -> None:
+    primary = categories[0]
+
+    def _factory(**kwargs: Any) -> KeyValueCacheIntegrationContract | RelationalStoreIntegrationContract | MessageBusIntegrationContract:
+        category = kwargs.pop("integration_category", primary)
+        return _materialize_fake(slug, payload, category, **kwargs)
+
     register_integration(
         IntegrationEntry(
             slug=slug,
             categories=categories,
-            factory=lambda **_: {"slug": slug, "payload": payload},
+            factory=_factory,
             status=IntegrationStatus.BETA,
         )
     )
@@ -70,22 +125,24 @@ def test_resolve_with_explicit_slug() -> None:
 
     instance = resolve(IntegrationCategory.KEY_VALUE_CACHE, slug="redis")
 
-    assert instance == {"slug": "redis", "payload": "kv"}
+    assert instance.provider_id == "redis"
+    assert getattr(instance, "test_payload") == "kv"
 
 
 def test_resolve_from_profile() -> None:
     _register_fake("sqlite", categories=(IntegrationCategory.RELATIONAL_STORE,), payload="sql")
-    profile = IntegrationProfile(relational_store=SQLITE)
+    profile = IntegrationProfile(relational_store=IntegrationBinding.from_slug("sqlite"))
 
     instance = resolve(IntegrationCategory.RELATIONAL_STORE, profile=profile)
 
-    assert instance["slug"] == "sqlite"
+    assert instance.provider_id == "sqlite"
+    assert getattr(instance, "test_payload") == "sql"
 
 
 def test_resolve_with_typed_slug() -> None:
     _register_fake("redis", categories=(IntegrationCategory.KEY_VALUE_CACHE,), payload="kv")
     instance = resolve(IntegrationCategory.KEY_VALUE_CACHE, slug="redis")
-    assert instance["slug"] == "redis"
+    assert instance.provider_id == "redis"
 
 
 def test_resolve_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -159,9 +216,12 @@ def test_resolve_requires_configuration() -> None:
 def test_factory_receives_profile_options() -> None:
     captured: dict[str, Any] = {}
 
-    def _factory(**kwargs: Any) -> dict[str, Any]:
+    def _factory(**kwargs: Any) -> KeyValueCacheIntegrationContract:
         captured.update(kwargs)
-        return captured
+        return _FakeKeyValueCacheIntegration.for_provider(
+            provider_id="redis",
+            display_name="redis",
+        )
 
     register_integration(
         IntegrationEntry(
@@ -171,7 +231,7 @@ def test_factory_receives_profile_options() -> None:
         )
     )
     profile = IntegrationProfile(
-        key_value_cache="redis",
+        key_value_cache=IntegrationBinding.from_slug("redis"),
         options={"redis": {"url": "redis://localhost/0"}},
     )
 
@@ -185,7 +245,10 @@ def test_get_entry_metadata() -> None:
         IntegrationEntry(
             slug="lab_json",
             categories=(IntegrationCategory.NOTIFICATION_CHANNEL,),
-            factory=lambda: object(),
+            factory=lambda: _FakeNotificationChannelIntegration.for_provider(
+                provider_id="lab_json",
+                display_name="lab_json",
+            ),
             env_prefix="INTERGRAX_LAB",
         )
     )

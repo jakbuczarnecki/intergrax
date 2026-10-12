@@ -48,6 +48,7 @@ from tests.qualification.compat_x._compat_x_event_evolution_inventory import (
     validate_production_persistence_call_site_classification,
 )
 from tests.qualification.compat_x._compat_x_closed_world import (
+    build_closed_world_report,
     build_closed_world_report_with_extra_candidates,
     discover_candidates_from_source,
 )
@@ -83,12 +84,21 @@ from tests.qualification.compat_x._compat_x_event_evolution_r3_r1 import (
 )
 from tests.qualification.compat_x._compat_x_semantic_identity_reconciliation import (
     ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA,
-    ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256,
+    ACCEPTED_P0_STABLE_INVENTORY_SHA256,
     R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,
+    RUNTIME_EVENT_MODEL_VALIDATE_CURRENT_CANDIDATE_ID,
+    RUNTIME_EVENT_MODEL_VALIDATE_HISTORICAL_CANDIDATE_ID,
+    RUNTIME_EVENT_MODEL_VALIDATE_STABLE_IDENTITY,
+    _remainder_candidates_minus_r3,
     build_r3_runtime_event_schema_version_candidate_delta,
     build_synthetic_r3_inventory_balanced_add_remove_report,
     build_synthetic_r3_inventory_equal_count_substitution_report,
     build_synthetic_r3_inventory_hidden_removal_report,
+    inventory_identity_fingerprint,
+    stable_inventory_candidate_identity,
+    stable_inventory_identity_set,
+    synthetic_wire_persistence_lineno_only_pair,
+    synthetic_wire_persistence_semantic_variant,
     validate_current_head_compat_closed_world_inventory,
 )
 
@@ -408,8 +418,8 @@ def test_cx_r3_r1_compat_current_head_inventory_reconciled() -> None:
         delta.r3_reconciled_candidate_id,
     )
     assert delta.removed_candidate_ids == ()
-    assert delta.current_remainder_fingerprint == ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256
-    assert delta.historical_remainder_fingerprint == ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256
+    assert delta.current_remainder_fingerprint == ACCEPTED_P0_STABLE_INVENTORY_SHA256
+    assert delta.historical_remainder_fingerprint == ACCEPTED_P0_STABLE_INVENTORY_SHA256
     assert validate_current_head_compat_closed_world_inventory() == ()
 
 
@@ -443,9 +453,46 @@ def test_cx_r3_r1_probe_s_balanced_add_remove_fails_inventory() -> None:
 
 
 def test_cx_r3_r1_historical_inventory_provenance_constants() -> None:
-    assert ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA == (
-        "0e5262199a6c2f1737cf8ff48def53945ec02974"
+    canonical = "0e5262199a6c2f1737cf8ff48def53945ec02974"
+    assert ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA == canonical
+    assert ACCEPTED_P0_STABLE_INVENTORY_SHA256 == (
+        "7a39eec8a37f4af21d9a6aca90981a4e6f5ed83fcdbb5feb5cea633efc52ca80"
     )
+    import tests.qualification.compat_x._compat_x_semantic_identity_reconciliation as recon
+
+    assert not hasattr(recon, "ACCEPTED_P0_RAW_CANDIDATE_IDS_SHA256")
+    assert not hasattr(recon, "ACCEPTED_P0_RAW_CANDIDATE_IDS_FINGERPRINT_SOURCE_SHA")
+
+
+def test_cx_r3_r1_probe_t_wire_lineno_only_stable_identity_normalized() -> None:
+    old, new = synthetic_wire_persistence_lineno_only_pair()
+    assert stable_inventory_candidate_identity(old) == RUNTIME_EVENT_MODEL_VALIDATE_STABLE_IDENTITY
+    assert stable_inventory_candidate_identity(new) == RUNTIME_EVENT_MODEL_VALIDATE_STABLE_IDENTITY
+    assert (
+        RUNTIME_EVENT_MODEL_VALIDATE_HISTORICAL_CANDIDATE_ID
+        != RUNTIME_EVENT_MODEL_VALIDATE_CURRENT_CANDIDATE_ID
+    )
+
+
+def test_cx_r3_r1_probe_u_semantic_wire_movement_changes_fingerprint() -> None:
+    base_set = stable_inventory_identity_set(
+        _remainder_candidates_minus_r3(build_closed_world_report())
+    )
+    base_fp = inventory_identity_fingerprint(base_set)
+    variant = synthetic_wire_persistence_semantic_variant(
+        semantic_identity="wire:intergrax/contracts/runtime_event.py:module_level:model_validate:99",
+        candidate_id="wire.intergrax.contracts.runtime_event.py::module_level.model_validate:149:99",
+    )
+    variant_identity = stable_inventory_candidate_identity(variant)
+    assert variant_identity not in base_set
+    mutated = base_set | {variant_identity}
+    assert inventory_identity_fingerprint(mutated) != base_fp
+
+
+def test_cx_r3_r1_positional_only_runtime_event_model_validate_drift_evidence() -> None:
+    """Audit record: raw candidate_id lineno drift is non-semantic (SOURCE-LINE-ONLY)."""
+    assert RUNTIME_EVENT_MODEL_VALIDATE_HISTORICAL_CANDIDATE_ID.endswith(":150:1")
+    assert RUNTIME_EVENT_MODEL_VALIDATE_CURRENT_CANDIDATE_ID.endswith(":149:1")
 
 
 def test_cx_r3_r1_probe_p_unknown_extra_compat_candidate_fails_inventory() -> None:

@@ -23,7 +23,12 @@ Qualification code is not semantic authority.
 | Public contract version truth | `intergrax/contracts/migrations/registry.py` (`CONTRACT_SCHEMA_REGISTRY`) |
 | Runtime persisted/wire schema truth | `intergrax/runtime/schema/registry.py` (`RUNTIME_SCHEMA_REGISTRY`) |
 | Event payload schema truth | `intergrax/runtime/events/payload_registry.py` |
-| Plugin / provider manifest compatibility | Domain owners per owner matrix (see qualification `_compat_x_owner_discovery.py`) |
+| Plugin / provider compatibility policy (cross-platform rules) | This document — **Plugin/Provider Compatibility Policy** (below) |
+| Package ↔ Intergrax platform version compatibility | `intergrax/core/distribution/platform_compatibility.py` |
+| Plugin package compatibility declaration | `PlatformPluginManifest.platform_compatibility` in `intergrax/core/plugins/package_contract.py` |
+| Provider contract identity / registration | `IntegrationContractSpec` + canonical `intergrax/integrations/registry/catalog.py` |
+| External provider contract semantic assessment | `intergrax/integrations/contracts/external_contract_compatibility.py` (+ extensions/service composition) |
+| Cross-platform deprecation / removal policy | This document — **Deprecation / Removal Policy** (below) |
 
 There is **no** universal platform version registry. Registries remain complementary domain authorities.
 
@@ -123,6 +128,120 @@ Qualification inventory (tests/qualification/compat_x/)
 ```
 
 Qualification code must mirror policy and detect drift; it must **not** become a second registry of current production versions.
+
+## Plugin / Provider Compatibility Policy (COMPAT-X-R4)
+
+Cross-platform rules for plugin packages and integration providers. **COMPAT-X** owns policy coordination only — not runtime evaluation, registration, or activation.
+
+### Policy rule 1 — one cross-platform policy owner
+
+This architecture document is the **semantic owner** of cross-platform plugin/provider compatibility and evolution rules. Qualification under `tests/qualification/compat_x/` mirrors and gates; it is not semantic authority.
+
+### Policy rule 2 — concrete domain semantics remain domain-owned
+
+```text
+package ↔ Intergrax platform version compatibility
+  → intergrax/core/distribution/platform_compatibility.py
+
+plugin package declaration (platform_compatibility metadata)
+  → PlatformPluginManifest in intergrax/core/plugins/package_contract.py
+
+provider registration / contract identity
+  → Integration Catalog (catalog.py) + IntegrationContractSpec (contract_spec.py)
+
+external provider contract semantic assessment
+  → intergrax/integrations/contracts/external_contract_compatibility.py
+     (+ external_contract_compatibility_extensions.py / service composition)
+```
+
+`intergrax/runtime/integrations/registry_v2.py` is a **derived projection/read model** from canonical catalog truth. It is not a second registration authority, discovery universe, or compatibility authority.
+
+### Policy rule 3 — compatibility does not grant authority
+
+```text
+compatible ≠ installed ≠ configured ≠ effective ≠ qualified ≠ authorized ≠ executable
+```
+
+A compatible outcome may be **required evidence** for admission or qualification; it cannot mint Governance permission, Execution authority, or activation by itself.
+
+### Policy rule 4 — fail closed
+
+Unknown, incomplete, or ambiguous compatibility information must never silently become “compatible”. Missing external evidence, unsupported or ambiguous evaluators, stale evidence, tenant/provider/operation mismatch, and evidence conflict must not yield `COMPATIBLE`.
+
+### Policy rule 5 — no second mechanism
+
+No domain may recreate an equivalent platform-level package/platform compatibility evaluator when `platform_compatibility.py` already defines canonical semantics. Wrappers (e.g. `check_manifest_platform_compatibility`) must delegate without independent version-range logic.
+
+### Policy rule 6 — extensibility
+
+External plugin/provider compatibility extensions enter through **typed** platform/domain contracts (`ExternalContractCompatibility*` family) and remain structurally replaceable without patching core.
+
+### Hard separation (do not unify)
+
+```text
+package ↔ platform compatibility
+≠ provider registration / contract identity
+≠ external contract semantic compatibility
+≠ production qualification
+≠ configuration selection
+≠ Governance permission
+≠ Execution authority
+```
+
+## Deprecation / Removal Policy (COMPAT-X-R5)
+
+Cross-platform rules for deprecation, retirement, and compatibility-surface removal. **COMPAT-X** owns policy coordination only — not a global runtime deprecation engine, registry, or calendar sunset for every symbol.
+
+### Policy rule A — one semantic owner
+
+Every compatibility or deprecation surface has exactly one **semantic owner** (domain module/registry or explicit policy classification). Cross-platform coordination owner is this document.
+
+### Policy rule B — canonical replacement when applicable
+
+A **temporary** deprecated surface has one canonical replacement when replacement is semantically required. Where no replacement applies (e.g. pure removal of an mistake), classification must record `NOT_APPLICABLE` with positive evidence.
+
+### Policy rule C — explicit exit / removal condition
+
+Temporary deprecated surfaces declare an explicit **removal or exit condition** (major release boundary, consumer count zero, migration complete, documented compatibility commitment expiry, etc.). Calendar sunset is optional — not universal.
+
+### Policy rule D — permanent translation/read boundaries
+
+A **permanent** translation or historical read boundary requires an explicit reason why permanence is part of its responsibility (external format bridge, historical verify-only path, language/framework document bridge). Absence of a removal plan is **not** sufficient evidence of permanence.
+
+### Policy rule E — shims are not current-version authority
+
+Compatibility adapters and shims never become canonical **current-version** authority unless version identity is explicitly inherited from a canonical envelope owner (same rule as evolution policy §6).
+
+### Policy rule F — deprecation does not mint Governance or Execution authority
+
+Deprecated wrappers, aliases, and compatibility paths do not grant Governance permission or independent Execution authority. Thin delegation into canonical mechanisms is allowed.
+
+### Policy rule G — writes through canonical mechanisms
+
+Writes go through canonical owners; deprecated surfaces may translate, delegate, or read historical shapes only where sanctioned.
+
+### Policy rule H — fail closed in qualification
+
+Unknown deprecation semantics (`UNCLASSIFIED`) fail closed in qualification until positively classified.
+
+### Policy rule I — historical read when evidence requires it
+
+Retirement must not silently delete historical readability when persisted or legal evidence still requires supported read semantics. Historical read authority is not current write authority.
+
+### Policy rule J — no silent widening on removal
+
+Removing a compatibility surface must not widen behavior through fallback (alternate provider, implicit default implementation, or cross-tenant scope expansion).
+
+### Hard separation (do not conflate)
+
+```text
+API/code deprecation (warnings, aliases, import paths)
+≠ domain lifecycle state (AgentLifecycleState.DEPRECATED, integration status, bundle status)
+≠ persisted historical read obligations (R2 family readers)
+≠ plugin/provider legacy factory delegates (R4 registration authority)
+```
+
+`intergrax/runtime/architecture/deprecation_sunset.py` is **domain-local lifecycle support** (sunset window for deprecated agent routing), not a global COMPAT-X deprecation authority.
 
 ## Relationship to certification
 
