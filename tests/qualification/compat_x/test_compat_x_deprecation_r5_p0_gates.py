@@ -6,6 +6,12 @@ from __future__ import annotations
 
 import pytest
 
+from tests.qualification.compat_x._compat_x_deprecation_r5_shim_reconciliation import (
+    current_compat_shim_paths,
+    load_frozen_historical_shim_baseline,
+    production_shim_set_delta,
+    shim_reconciliation_gate_violations,
+)
 from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     DeprecationDisposition,
     SYNTHETIC_COMPAT_FOLDER_UNKNOWN_AUTHORITY_SOURCE,
@@ -18,6 +24,9 @@ from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     SYNTHETIC_GOVERNANCE_FROM_DEPRECATED_SOURCE,
     SYNTHETIC_LEGACY_TRANSFORM_SOURCE,
     SYNTHETIC_HISTORICAL_READ_ONLY_SOURCE,
+    SYNTHETIC_INDEPENDENT_COMPAT_LOGIC_SOURCE,
+    SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE,
+    SYNTHETIC_TRANSLATION_ONLY_WIRE_SOURCE,
     SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE,
     SYNTHETIC_PERMANENT_NO_REASON_SOURCE,
     SYNTHETIC_PERMANENT_WITH_REASON_SOURCE,
@@ -30,6 +39,9 @@ from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     SYNTHETIC_TEMPORARY_NO_REPLACEMENT_SOURCE,
     SYNTHETIC_UNKNOWN_DEPRECATED_HELPER_SOURCE,
     _SYNTHETIC_BENIGN_DELEGATING_MODULE,
+    _SYNTHETIC_INDEPENDENT_COMPAT_MODULE,
+    _SYNTHETIC_PROVIDER_COMPATIBILITY_MODULE,
+    _SYNTHETIC_TRANSLATION_ONLY_MODULE,
     _SYNTHETIC_COMPAT_UNKNOWN_MODULE,
     _SYNTHETIC_EXECUTION_SHORTCUT_MODULE,
     _SYNTHETIC_FAKE_PROVIDER_MODULE,
@@ -78,12 +90,13 @@ def test_r5_p0_closed_world_gate_passes_on_current_head() -> None:
     assert metrics["placeholder_replacement_count"] == 0
     shim_growth = metrics["shim_growth_reconciliation"]
     assert isinstance(shim_growth, dict)
-    assert shim_growth["historical_accepted_shim_count"] == 474
-    assert shim_growth["current_shim_count"] == metrics["shim_candidates"]
-    assert shim_growth["shim_added_paths"] == [
-        "intergrax/agent_distribution/sqlite_payload_legacy.py",
-        "intergrax/runtime/task_memory/sqlite_row_legacy.py",
-    ]
+    baseline = load_frozen_historical_shim_baseline()
+    delta = production_shim_set_delta()
+    assert shim_growth["historical_accepted_shim_count"] == baseline.count == 474
+    assert shim_growth["current_shim_count"] == metrics["shim_candidates"] == 476
+    assert shim_growth["shim_removed_paths"] == []
+    assert shim_growth["shim_added_paths"] == list(delta.added_paths)
+    assert len(delta.added_paths) == 2
     assert inventory_shim_canonical_authority_violations() == ()
     shim = build_shim_authority_scope_reconciliation()
     assert shim.uninspected_compatibility_candidates == 0
@@ -373,6 +386,73 @@ def test_r5_probe_y_silent_legacy_fallback() -> None:
         )
     )
     assert any("fallback" in v for v in violations)
+
+
+def test_r5_probe_aa_shim_reconciliation_hidden_removal_fails() -> None:
+    baseline = load_frozen_historical_shim_baseline()
+    current = current_compat_shim_paths()
+    removed_path = next(iter(sorted(baseline.paths)))
+    mutated = frozenset(p for p in current if p != removed_path)
+    violations = shim_reconciliation_gate_violations(current_paths=mutated)
+    assert violations
+
+
+def test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails() -> None:
+    baseline = load_frozen_historical_shim_baseline()
+    current = current_compat_shim_paths()
+    removed_path = next(iter(sorted(baseline.paths)))
+    mutated = frozenset((p for p in current if p != removed_path)) | {
+        "intergrax/synthetic/unexpected_substitution_shim.py"
+    }
+    violations = shim_reconciliation_gate_violations(current_paths=mutated)
+    assert violations
+
+
+def test_r5_probe_ac_shim_reconciliation_extra_addition_fails() -> None:
+    current = current_compat_shim_paths() | {"intergrax/synthetic/third_unexpected_shim.py"}
+    violations = shim_reconciliation_gate_violations(current_paths=current)
+    assert violations
+
+
+def test_r5_probe_ad_provider_compatibility_without_semantics_unclassified() -> None:
+    disposition = classify_synthetic_module(
+        _SYNTHETIC_PROVIDER_COMPATIBILITY_MODULE,
+        SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE,
+    )
+    assert disposition == DeprecationDisposition.UNCLASSIFIED
+    violations = collect_deprecation_r5_violations(
+        extra_sources=(
+            (
+                _SYNTHETIC_PROVIDER_COMPATIBILITY_MODULE,
+                SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE,
+            ),
+        )
+    )
+    assert any("UNCLASSIFIED" in v for v in violations)
+
+
+def test_r5_probe_ae_independent_compat_not_permanent() -> None:
+    disposition = classify_synthetic_module(
+        _SYNTHETIC_INDEPENDENT_COMPAT_MODULE,
+        SYNTHETIC_INDEPENDENT_COMPAT_LOGIC_SOURCE,
+    )
+    assert disposition != DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
+
+
+def test_r5_probe_af_translation_only_wire_permanent() -> None:
+    disposition = classify_synthetic_module(
+        _SYNTHETIC_TRANSLATION_ONLY_MODULE,
+        SYNTHETIC_TRANSLATION_ONLY_WIRE_SOURCE,
+    )
+    assert disposition == DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
+
+
+def test_r5_probe_ag_historical_read_disposition() -> None:
+    disposition = classify_synthetic_module(
+        "intergrax/synthetic/historical_read_only.py",
+        SYNTHETIC_HISTORICAL_READ_ONLY_SOURCE,
+    )
+    assert disposition == DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY
 
 
 def test_r5_probe_z_benign_delegating_wrapper_passes() -> None:

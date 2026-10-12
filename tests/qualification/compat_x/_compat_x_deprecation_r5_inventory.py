@@ -15,13 +15,14 @@ from pathlib import Path
 from typing import Final
 
 from tests.qualification.compat_x._compat_x_ast_signals import (
+    CompatibilityCandidateContext,
     build_compatibility_candidate_context,
+    extract_migration_signals,
     is_compatibility_adapter_candidate,
     module_exhibits_parallel_authority,
     module_is_translation_only_compat_adapter,
     parse_module,
 )
-from tests.qualification.compat_x._compat_x_classifiers import classify_shim_module
 from tests.qualification.compat_x._compat_x_closed_world import build_closed_world_report
 from tests.qualification.compat_x._compat_x_legacy_obligations import (
     legacy_persisted_compatibility_obligations,
@@ -34,7 +35,11 @@ from tests.qualification.compat_x._compat_x_plugin_provider_r4_inventory import 
 from tests.qualification.compat_x._compat_x_shim_authority import (
     build_shim_authority_scope_reconciliation,
 )
-from tests.qualification.compat_x._compat_x_types import ShimClass
+from tests.qualification.compat_x._compat_x_deprecation_r5_shim_reconciliation import (
+    load_frozen_historical_shim_baseline,
+    shim_growth_reconciliation_snapshot,
+    shim_reconciliation_gate_violations,
+)
 from tests.qualification.compat_x._compat_x_versioning_gates import (
     inventory_shim_canonical_authority_violations,
 )
@@ -57,14 +62,6 @@ _TEXT_SIGNAL_PATTERN: Final = re.compile(
 _PATH_SIGNAL_PATTERN: Final = re.compile(
     r"(?:^|/)(?:compat|legacy|deprecated|deprecation|sunset)(?:/|_|$)",
     re.IGNORECASE,
-)
-_HISTORICAL_SHIM_ACCEPTED_EVIDENCE_SHA: Final = "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0"
-_HISTORICAL_SHIM_ACCEPTED_COUNT: Final = 474
-_HISTORICAL_SHIM_ADDED_SINCE_ACCEPTED: Final = frozenset(
-    {
-        "intergrax/agent_distribution/sqlite_payload_legacy.py",
-        "intergrax/runtime/task_memory/sqlite_row_legacy.py",
-    }
 )
 _VALID_REMOVAL_CONDITION_MARKERS: Final = frozenset(
     {
@@ -332,25 +329,68 @@ def _module_in_deprecated_authority_context(path: str, source: str, tree: ast.Mo
     return False
 
 
-def _classify_shim_disposition(module_path: str, source: str) -> DeprecationDisposition:
-    shim_class = classify_shim_module(module_path, source)
-    if shim_class == ShimClass.PARALLEL_AUTHORITY:
-        return DeprecationDisposition.PARALLEL_AUTHORITY
-    if shim_class == ShimClass.BOUNDED_MIGRATION_ADAPTER:
-        return DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER
-    if shim_class == ShimClass.READ_COMPATIBILITY_ONLY:
-        return DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY
-    if shim_class == ShimClass.TRANSLATION_ONLY:
-        return DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
-    tree = parse_module(module_path, source)
+def _module_in_compat_path_universe(module_path: str) -> bool:
+    path = module_path.replace("\\", "/")
+    if path.startswith("intergrax/compat/"):
+        return True
+    return bool(
+        _PATH_SIGNAL_PATTERN.search(path)
+        or path.endswith("_compat.py")
+        or path.endswith("/compatibility.py")
+        or path.endswith("compatibility.py")
+    )
+
+
+def _module_exhibits_historical_read_compatibility(
+    source: str,
+    context: CompatibilityCandidateContext,
+) -> bool:
+    if not is_compatibility_adapter_candidate(context):
+        return False
+    lowered = source.lower()
+    if "from_langchain" in lowered or "to_langchain" in lowered:
+        return True
+    if "verify_historical_signature" in source:
+        return True
+    return "historical" in lowered and "write disabled" in lowered
+
+
+def _module_exhibits_bounded_migration_evidence(
+    module_path: str,
+    source: str,
+    tree: ast.Module,
+    context: CompatibilityCandidateContext,
+) -> bool:
+    if any(kind.startswith("source.") for kind in context.evidence_kinds):
+        return True
+    if extract_migration_signals(module_path, tree, source):
+        return True
+    path = module_path.replace("\\", "/")
+    if path.startswith("intergrax/compat/"):
+        return False
+    return is_compatibility_adapter_candidate(context)
+
+
+def _compat_path_semantic_disposition(
+    module_path: str,
+    source: str,
+    tree: ast.Module,
+) -> DeprecationDisposition:
     context = build_compatibility_candidate_context(module_path, source, tree)
     if module_exhibits_parallel_authority(tree, context):
         return DeprecationDisposition.PARALLEL_AUTHORITY
     if module_is_translation_only_compat_adapter(tree, context):
         return DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
-    if is_compatibility_adapter_candidate(context):
+    if _module_exhibits_historical_read_compatibility(source, context):
+        return DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY
+    if _module_exhibits_bounded_migration_evidence(module_path, source, tree, context):
         return DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER
     return DeprecationDisposition.UNCLASSIFIED
+
+
+def _classify_shim_disposition(module_path: str, source: str) -> DeprecationDisposition:
+    tree = parse_module(module_path, source)
+    return _compat_path_semantic_disposition(module_path, source, tree)
 
 
 def _shim_obligations(
@@ -829,68 +869,31 @@ def _classify_compat_path_surface(
     tree: ast.Module,
 ) -> DeprecationCandidate | None:
     path = module_path.replace("\\", "/")
-    under_compat_tree = path.startswith("intergrax/compat/")
-    path_compat_signal = bool(
-        _PATH_SIGNAL_PATTERN.search(path)
-        or path.endswith("_compat.py")
-        or path.endswith("/compatibility.py")
-        or path.endswith("compatibility.py")
-    )
-    if not under_compat_tree and not path_compat_signal:
+    if not _module_in_compat_path_universe(path):
         return None
     if _explicit_deprecation_ast_present(tree, source):
         return None
-    context = build_compatibility_candidate_context(path, source, tree)
-    if module_is_translation_only_compat_adapter(tree, context):
-        disposition = DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
-        permanent = (
-            "Translation-only compatibility adapter; no independent canonical version authority"
-        )
-        return DeprecationCandidate(
-            candidate_id=_stable_candidate_id(path, 1, "<module>", "compat_surface"),
-            module_path=path,
-            line=1,
-            qualname="<module>",
-            disposition=disposition,
-            canonical_replacement=None,
-            semantic_owner=path,
-            deprecation_owner=_default_deprecation_owner(),
-            removal_condition=None,
-            permanent_boundary_reason=permanent,
-            evidence_kind=DeprecationEvidenceKind.CLOSED_WORLD_COMPAT_SHIM,
-        )
-    if is_compatibility_adapter_candidate(context) and not under_compat_tree:
-        return DeprecationCandidate(
-            candidate_id=_stable_candidate_id(path, 1, "<module>", "compat_surface"),
-            module_path=path,
-            line=1,
-            qualname="<module>",
-            disposition=DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER,
-            canonical_replacement=f"canonical entrypoint for {path}",
-            semantic_owner=path,
-            deprecation_owner=_default_deprecation_owner(),
-            removal_condition="migration_complete_or_consumer_count_zero",
-            permanent_boundary_reason=None,
-            evidence_kind=DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
-        )
-    if under_compat_tree:
+    disposition = _compat_path_semantic_disposition(path, source, tree)
+    if disposition == DeprecationDisposition.UNCLASSIFIED:
         return None
-    permanent = (
-        "Named compatibility contract surface; translation-only semantics without "
-        "independent canonical version authority"
+    replacement, removal, permanent = _shim_obligations(path, disposition)
+    evidence = (
+        DeprecationEvidenceKind.CLOSED_WORLD_COMPAT_SHIM
+        if disposition == DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY
+        else DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE
     )
     return DeprecationCandidate(
         candidate_id=_stable_candidate_id(path, 1, "<module>", "compat_surface"),
         module_path=path,
         line=1,
         qualname="<module>",
-        disposition=DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY,
-        canonical_replacement=None,
+        disposition=disposition,
+        canonical_replacement=replacement,
         semantic_owner=path,
         deprecation_owner=_default_deprecation_owner(),
-        removal_condition=None,
+        removal_condition=removal,
         permanent_boundary_reason=permanent,
-        evidence_kind=DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
+        evidence_kind=evidence,
     )
 
 
@@ -1396,23 +1399,54 @@ def discover_deprecation_authority_violations(
 
 
 def shim_growth_reconciliation() -> dict[str, object]:
-    closed = build_closed_world_report()
-    current_paths = frozenset(
-        c.path for c in closed.raw_candidates if c.discovery_kind == "compat.shim"
-    )
-    removed = sorted(set() if not _HISTORICAL_SHIM_ADDED_SINCE_ACCEPTED else ())
-    added = sorted(_HISTORICAL_SHIM_ADDED_SINCE_ACCEPTED)
+    baseline = load_frozen_historical_shim_baseline()
+    delta = shim_growth_reconciliation_snapshot()
+    added_classifications: dict[str, str] = {}
+    for path in delta.added_paths:
+        full = _REPO_ROOT / path
+        if not full.is_file():
+            added_classifications[path] = DeprecationDisposition.UNCLASSIFIED.value
+            continue
+        source = full.read_text(encoding="utf-8")
+        added_classifications[path] = _classify_shim_disposition(path, source).value
     return {
-        "historical_accepted_shim_count": _HISTORICAL_SHIM_ACCEPTED_COUNT,
-        "historical_accepted_evidence_sha": _HISTORICAL_SHIM_ACCEPTED_EVIDENCE_SHA,
-        "current_shim_count": len(current_paths),
-        "shim_added_paths": added,
-        "shim_removed_paths": removed,
-        "shim_added_classifications": {
-            path: "HISTORICAL_READ_COMPATIBILITY"
-            for path in added
-        },
+        "historical_accepted_shim_count": baseline.count,
+        "historical_accepted_evidence_sha": baseline.source_sha,
+        "historical_shim_fingerprint_sha256": baseline.fingerprint_sha256,
+        "current_shim_count": len(delta.current_paths),
+        "current_shim_fingerprint_sha256": delta.current_fingerprint,
+        "shim_added_paths": list(delta.added_paths),
+        "shim_removed_paths": list(delta.removed_paths),
+        "shim_added_classifications": added_classifications,
+        "derivation_method": baseline.derivation_method,
+        "candidate_identity_definition": baseline.candidate_identity_definition,
     }
+
+
+def _compat_path_permanent_without_translation_violations(
+    records: tuple[DeprecationCandidate, ...],
+) -> tuple[str, ...]:
+    violations: list[str] = []
+    for row in records:
+        if row.disposition != DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY:
+            continue
+        if not _module_in_compat_path_universe(row.module_path):
+            continue
+        if row.module_path in _MODULE_BOUNDED_CLASSIFICATION:
+            continue
+        if row.evidence_kind == DeprecationEvidenceKind.SYNTHETIC_ADVERSARIAL_PROBE:
+            continue
+        full = _REPO_ROOT / row.module_path
+        if not full.is_file():
+            continue
+        source = full.read_text(encoding="utf-8")
+        tree = parse_module(row.module_path, source)
+        context = build_compatibility_candidate_context(row.module_path, source, tree)
+        if not module_is_translation_only_compat_adapter(tree, context):
+            violations.append(
+                f"compat path permanent without translation evidence: {row.module_path}"
+            )
+    return tuple(violations)
 
 
 def collect_deprecation_r5_violations(
@@ -1444,6 +1478,8 @@ def collect_deprecation_r5_violations(
     parallel = [r for r in records if r.disposition == DeprecationDisposition.PARALLEL_AUTHORITY]
     if parallel:
         violations.append(f"deprecation inventory PARALLEL_AUTHORITY: {len(parallel)}")
+    violations.extend(shim_reconciliation_gate_violations())
+    violations.extend(_compat_path_permanent_without_translation_violations(records))
     return tuple(violations)
 
 
@@ -1687,6 +1723,24 @@ _SYNTHETIC_EXECUTION_SHORTCUT_MODULE: Final = (
 _SYNTHETIC_BENIGN_DELEGATING_MODULE: Final = (
     "intergrax/applications/host/benign_delegating_wrapper.py"
 )
+_SYNTHETIC_PROVIDER_COMPATIBILITY_MODULE: Final = "intergrax/foo/provider_compatibility.py"
+_SYNTHETIC_INDEPENDENT_COMPAT_MODULE: Final = "intergrax/foo/independent_logic_compat.py"
+_SYNTHETIC_TRANSLATION_ONLY_MODULE: Final = "intergrax/compat/synthetic/from_external_wire.py"
+
+SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE: Final[str] = '''
+def helper(value: str) -> str:
+    return value.upper()
+'''
+
+SYNTHETIC_INDEPENDENT_COMPAT_LOGIC_SOURCE: Final[str] = '''
+def select_canonical_provider(name: str) -> str:
+    return name.upper()
+'''
+
+SYNTHETIC_TRANSLATION_ONLY_WIRE_SOURCE: Final[str] = '''
+def from_external_wire(payload: dict) -> dict:
+    return {"canonical": payload["wire"]}
+'''
 
 
 def classify_synthetic_unknown_deprecated_helper() -> DeprecationDisposition:
