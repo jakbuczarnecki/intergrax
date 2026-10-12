@@ -41,6 +41,18 @@ class R1MechanismAuthorityClass(StrEnum):
     EVALUATION_OR_LOAD_HARNESS = "EVALUATION_OR_LOAD_HARNESS"
 
 
+class R1AuthorityDuplicateParticipation(StrEnum):
+    """Whether a P0 mechanism may compete in critical duplicate-authority review."""
+
+    CRITICAL_AUTHORITY = "CRITICAL_AUTHORITY"
+    SUBORDINATE_DERIVATION = "SUBORDINATE_DERIVATION"
+    APPLICATION_LOCAL = "APPLICATION_LOCAL"
+    HARNESS_ONLY = "HARNESS_ONLY"
+    OBSERVABILITY_NON_AUTHORITY = "OBSERVABILITY_NON_AUTHORITY"
+    DEV_COMPATIBILITY_SEAM = "DEV_COMPATIBILITY_SEAM"
+    UNKNOWN = "UNKNOWN"
+
+
 @dataclass(frozen=True, slots=True)
 class R1CriticalBoundaryFamily:
     family_id: str

@@ -13,6 +13,7 @@ from tests.qualification.tenant_x._authority_semantics import (
 from tests.qualification.tenant_x._r1_authority_resolutions import (
     build_r1_authority_resolutions,
     build_r1_overlay_mechanisms,
+    build_r1_scoped_duplicate_authority_review,
     build_sanctioned_root_tenant_selectors,
     r1_critical_owner_unresolved,
     r1_critical_scope_unresolved,
@@ -62,6 +63,10 @@ class TenantXR1QualificationReport:
     owner_conflict: int
     duplicate_confirmed: int
     duplicate_unresolved: int
+    critical_authority_participants: int
+    non_authority_duplicate_participants: int
+    unknown_authority_participation: int
+    non_critical_owner_scope_uncertainty: int
     root_tenant_selectors: tuple[str, ...]
     legal_cross_tenant_mechanisms: int
     critical_unknown_substitutions: int
@@ -87,8 +92,10 @@ def _scope_unresolved(resolutions: tuple) -> int:
 def build_r1_qualification_report(
     inventory: tuple[TenantSurfaceRecord, ...] | None = None,
 ) -> TenantXR1QualificationReport:
-    resolutions = build_r1_authority_resolutions(inventory)
-    overlay = build_r1_overlay_mechanisms(inventory)
+    inv = inventory if inventory is not None else None
+    resolutions = build_r1_authority_resolutions(inv)
+    overlay = build_r1_overlay_mechanisms(inv)
+    scoped_duplicate = build_r1_scoped_duplicate_authority_review(inv)
     edges = certify_r1_propagation_edges()
     root_inventory = build_r1_root_selector_inventory(inventory)
     root_selectors = build_sanctioned_root_tenant_selectors(inventory)
@@ -116,8 +123,8 @@ def build_r1_qualification_report(
     scope_unresolved = _scope_unresolved(resolutions)
     scope_resolved = len(resolutions) - scope_unresolved
 
-    dup_confirmed = len(r1_duplicate_authority_confirmed(overlay))
-    dup_unresolved = len(r1_duplicate_authority_unresolved(overlay))
+    dup_confirmed = len(r1_duplicate_authority_confirmed(overlay, inv))
+    dup_unresolved = len(r1_duplicate_authority_unresolved(overlay, inv))
 
     critical_unknown = len(r1_critical_unknown_substitutions())
     illegal_critical = len(r1_illegal_critical_substitutions())
@@ -127,7 +134,11 @@ def build_r1_qualification_report(
         remediation.append("TENANT-X-R1-R1 - R1-owned critical boundary families missing/invalid")
     if r1_critical_scope_unresolved(resolutions) or r1_critical_owner_unresolved(resolutions):
         remediation.append("TENANT-X-R1-R2 - critical authority scope/owner reconciliation")
-    if dup_confirmed or dup_unresolved:
+    if (
+        dup_confirmed
+        or dup_unresolved
+        or scoped_duplicate.unknown_participation_ids
+    ):
         remediation.append("TENANT-X-R1-R3 - duplicate authority reconciliation")
     if r1_owned_propagation_missing():
         remediation.append("TENANT-X-R1-R4 - missing R1-owned structural provenance")
@@ -145,6 +156,7 @@ def build_r1_qualification_report(
         and owner_conflict == 0
         and dup_confirmed == 0
         and dup_unresolved == 0
+        and not scoped_duplicate.unknown_participation_ids
         and not r1_owned_propagation_missing()
         and critical_unknown == 0
         and illegal_critical == 0
@@ -166,6 +178,12 @@ def build_r1_qualification_report(
         owner_conflict=owner_conflict,
         duplicate_confirmed=dup_confirmed,
         duplicate_unresolved=dup_unresolved,
+        critical_authority_participants=len(scoped_duplicate.critical_authority_participant_ids),
+        non_authority_duplicate_participants=len(scoped_duplicate.non_authority_participant_ids),
+        unknown_authority_participation=len(scoped_duplicate.unknown_participation_ids),
+        non_critical_owner_scope_uncertainty=len(
+            scoped_duplicate.non_critical_owner_scope_uncertainty_ids
+        ),
         root_tenant_selectors=root_selectors,
         legal_cross_tenant_mechanisms=legal_cross_tenant_mechanism_count(
             build_r1_cross_tenant_inventory(inventory)
@@ -201,6 +219,10 @@ def summarize_r1_metrics(report: TenantXR1QualificationReport) -> dict[str, int 
         "owner_conflict": report.owner_conflict,
         "duplicate_authority_confirmed": report.duplicate_confirmed,
         "duplicate_authority_unresolved": report.duplicate_unresolved,
+        "critical_authority_participants": report.critical_authority_participants,
+        "non_authority_duplicate_participants": report.non_authority_duplicate_participants,
+        "unknown_authority_participation": report.unknown_authority_participation,
+        "non_critical_owner_scope_uncertainty": report.non_critical_owner_scope_uncertainty,
         "root_tenant_selectors": report.root_tenant_selectors,
         "legal_cross_tenant_mechanisms": report.legal_cross_tenant_mechanisms,
         "critical_unknown_substitutions": report.critical_unknown_substitutions,

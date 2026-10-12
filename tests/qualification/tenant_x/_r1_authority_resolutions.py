@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Final
 
 from tests.qualification.tenant_x._authority_semantics import (
@@ -19,6 +19,7 @@ from tests.qualification.tenant_x._r1_root_selectors import (
     sanctioned_root_selectors_from_inventory,
 )
 from tests.qualification.tenant_x._r1_types import (
+    R1AuthorityDuplicateParticipation,
     R1AuthorityMechanismResolution,
     R1MechanismAuthorityClass,
 )
@@ -144,19 +145,33 @@ def _resolution_for(mechanism: TenantAuthorityMechanism) -> R1AuthorityMechanism
             production_classification_evidence=("NON_ROOT_DERIVATION — subordinate to root admission",),
         )
     if "integrations/_shared/p8/factories.py" in mid or "lancedb/opens.py" in mid:
+        contract = (
+            "intergrax/integrations/_shared/p8/factories.py::create_lancedb_vector_store"
+            if "factories.py" in mid
+            else "intergrax/integrations/providers/vector_store/lancedb/opens.py::_open_rag_store"
+        )
         return R1AuthorityMechanismResolution(
             mechanism_id=mid,
             decision_kind=decision,
             semantic_owner="INTEGRATIONS",
-            authority_scope="integration_provider_factory_scope",
-            scope_evidence=TenantAuthorityScopeEvidence.UNKNOWN,
+            authority_scope="vector_store_provider_local_scope_pin",
+            scope_evidence=TenantAuthorityScopeEvidence.STRUCTURAL_CURRENT_HEAD,
             owner_disposition=TenantAuthorityOwnerDisposition.OWNER_CANDIDATE,
             authority_class=R1MechanismAuthorityClass.INTEGRATION_DEMO_OR_DEV_SEAM,
-            canonical_contract="intergrax/integrations/**",
-            notes="Provider factory scope widening — integration-local; catalog remains canonical",
-            owner_evidence=("path_categorization_only: integrations factory surface",),
-            scope_evidence_refs=("candidate: integration-local factory scope — bounded evidence pending",),
-            production_classification_evidence=("integration dev seam — no platform root admission",),
+            canonical_contract=contract,
+            notes="VectorStore client pins scope.tenant_id on first write — not platform root admission",
+            owner_evidence=("structural: integration provider construction seam — INTEGRATIONS tier",),
+            scope_evidence_refs=(
+                "structural: _tenant_id assigned from VectorStoreScope.tenant_id on first add_records only",
+                "structural: validate_scope/validate_records — cannot rewrite scope tenant independently",
+            ),
+            production_classification_evidence=(
+                "not reachable from canonical production admission — provider-local vector scope only",
+                "cannot select root tenant — no RootExecutionAuthorityAdmission port",
+                "cannot override admitted tenant — validate_scope enforces scope tenant",
+                "cannot create execution authority — VectorStore contract only",
+                "cannot bypass Integration Catalog — factory returns catalog-wrapped RestVectorStoreIntegration",
+            ),
         )
     if "allow_all.py" in mid:
         return R1AuthorityMechanismResolution(
@@ -276,15 +291,128 @@ def build_sanctioned_root_tenant_selectors(
 
 SANCTIONED_ROOT_TENANT_SELECTORS: Final[tuple[str, ...]] = build_sanctioned_root_tenant_selectors()
 
+_SUBORDINATE_DERIVATION_MARKERS: Final[tuple[str, ...]] = (
+    "NON_ROOT_DERIVATION",
+    "subordinate to root admission",
+    "subordinate to admitted",
+)
 
-def r1_duplicate_authority_unresolved(mechanisms: tuple[TenantAuthorityMechanism, ...]) -> tuple[str, ...]:
-    review = classify_authority_duplicate_mechanisms(mechanisms)
-    return review.unresolved_duplicate_mechanism_ids
+
+def r1_authority_duplicate_participation(
+    resolution: R1AuthorityMechanismResolution,
+) -> R1AuthorityDuplicateParticipation:
+    cls = resolution.authority_class
+    if cls == R1MechanismAuthorityClass.SANCTIONED_SEMANTIC_AUTHORITY:
+        evidence = " ".join(resolution.production_classification_evidence).lower()
+        if any(marker.lower() in evidence for marker in _SUBORDINATE_DERIVATION_MARKERS):
+            return R1AuthorityDuplicateParticipation.SUBORDINATE_DERIVATION
+        if not resolution.production_classification_evidence:
+            return R1AuthorityDuplicateParticipation.UNKNOWN
+        return R1AuthorityDuplicateParticipation.CRITICAL_AUTHORITY
+    if cls == R1MechanismAuthorityClass.APPLICATION_LOCAL_INGRESS:
+        return R1AuthorityDuplicateParticipation.APPLICATION_LOCAL
+    if cls in {
+        R1MechanismAuthorityClass.CONFORMANCE_OR_QUALIFICATION_ONLY,
+        R1MechanismAuthorityClass.EVALUATION_OR_LOAD_HARNESS,
+    }:
+        return R1AuthorityDuplicateParticipation.HARNESS_ONLY
+    if cls == R1MechanismAuthorityClass.OBSERVABILITY_NON_TENANT:
+        return R1AuthorityDuplicateParticipation.OBSERVABILITY_NON_AUTHORITY
+    if cls == R1MechanismAuthorityClass.INTEGRATION_DEMO_OR_DEV_SEAM:
+        if resolution.production_classification_evidence:
+            return R1AuthorityDuplicateParticipation.DEV_COMPATIBILITY_SEAM
+        return R1AuthorityDuplicateParticipation.UNKNOWN
+    return R1AuthorityDuplicateParticipation.UNKNOWN
 
 
-def r1_duplicate_authority_confirmed(mechanisms: tuple[TenantAuthorityMechanism, ...]) -> tuple[str, ...]:
-    review = classify_authority_duplicate_mechanisms(mechanisms)
-    return review.confirmed_duplicate_mechanism_ids
+@dataclass(frozen=True, slots=True)
+class R1ScopedDuplicateAuthorityReview:
+    authority_mechanisms_total: int
+    critical_authority_participant_ids: tuple[str, ...]
+    non_authority_participant_ids: tuple[str, ...]
+    unknown_participation_ids: tuple[str, ...]
+    critical_duplicate_confirmed_ids: tuple[str, ...]
+    critical_duplicate_unresolved_ids: tuple[str, ...]
+    non_critical_owner_scope_uncertainty_ids: tuple[str, ...]
+
+
+def _non_critical_owner_scope_uncertainty(
+    resolutions: tuple[R1AuthorityMechanismResolution, ...],
+    participation: dict[str, R1AuthorityDuplicateParticipation],
+) -> tuple[str, ...]:
+    out: list[str] = []
+    for resolution in resolutions:
+        part = participation[resolution.mechanism_id]
+        if part in {
+            R1AuthorityDuplicateParticipation.CRITICAL_AUTHORITY,
+            R1AuthorityDuplicateParticipation.UNKNOWN,
+        }:
+            continue
+        uncertain_owner = resolution.owner_disposition in {
+            TenantAuthorityOwnerDisposition.OWNER_CANDIDATE,
+            TenantAuthorityOwnerDisposition.OWNER_UNRESOLVED,
+        }
+        uncertain_scope = resolution.scope_evidence in {
+            TenantAuthorityScopeEvidence.DOMAIN_FALLBACK,
+            TenantAuthorityScopeEvidence.UNKNOWN,
+        }
+        if uncertain_owner or uncertain_scope:
+            out.append(resolution.mechanism_id)
+    return tuple(sorted(out))
+
+
+def build_r1_scoped_duplicate_authority_review(
+    inventory: tuple[TenantSurfaceRecord, ...] | None = None,
+) -> R1ScopedDuplicateAuthorityReview:
+    inv = inventory if inventory is not None else get_tenant_x_inventory()
+    resolutions = build_r1_authority_resolutions(inv)
+    mechanisms = build_r1_overlay_mechanisms(inv)
+    participation = {r.mechanism_id: r1_authority_duplicate_participation(r) for r in resolutions}
+
+    critical_ids: list[str] = []
+    non_authority_ids: list[str] = []
+    unknown_ids: list[str] = []
+    for resolution in resolutions:
+        part = participation[resolution.mechanism_id]
+        if part == R1AuthorityDuplicateParticipation.CRITICAL_AUTHORITY:
+            critical_ids.append(resolution.mechanism_id)
+        elif part == R1AuthorityDuplicateParticipation.UNKNOWN:
+            unknown_ids.append(resolution.mechanism_id)
+        else:
+            non_authority_ids.append(resolution.mechanism_id)
+
+    critical_mechanisms = tuple(m for m in mechanisms if m.mechanism_id in critical_ids)
+    duplicate_review = classify_authority_duplicate_mechanisms(critical_mechanisms)
+
+    return R1ScopedDuplicateAuthorityReview(
+        authority_mechanisms_total=len(resolutions),
+        critical_authority_participant_ids=tuple(sorted(critical_ids)),
+        non_authority_participant_ids=tuple(sorted(non_authority_ids)),
+        unknown_participation_ids=tuple(sorted(unknown_ids)),
+        critical_duplicate_confirmed_ids=duplicate_review.confirmed_duplicate_mechanism_ids,
+        critical_duplicate_unresolved_ids=duplicate_review.unresolved_duplicate_mechanism_ids,
+        non_critical_owner_scope_uncertainty_ids=_non_critical_owner_scope_uncertainty(
+            resolutions, participation
+        ),
+    )
+
+
+def r1_duplicate_authority_unresolved(
+    mechanisms: tuple[TenantAuthorityMechanism, ...],
+    inventory: tuple[TenantSurfaceRecord, ...] | None = None,
+) -> tuple[str, ...]:
+    _ = mechanisms
+    review = build_r1_scoped_duplicate_authority_review(inventory)
+    return review.critical_duplicate_unresolved_ids
+
+
+def r1_duplicate_authority_confirmed(
+    mechanisms: tuple[TenantAuthorityMechanism, ...],
+    inventory: tuple[TenantSurfaceRecord, ...] | None = None,
+) -> tuple[str, ...]:
+    _ = mechanisms
+    review = build_r1_scoped_duplicate_authority_review(inventory)
+    return review.critical_duplicate_confirmed_ids
 
 
 def r1_critical_scope_unresolved(

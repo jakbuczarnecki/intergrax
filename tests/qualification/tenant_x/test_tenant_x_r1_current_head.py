@@ -19,3 +19,8 @@ def test_tx_r1_head_q01_inventory_reconciles_twenty_two_mechanisms() -> None:
     metrics = summarize_r1_metrics(report)
     assert metrics["authority_mechanisms_total"] == 22
     assert report.proven_current_head_edges + report.historical_replay_edges + report.missing_edges == 7
+    assert report.critical_authority_participants == 0
+    assert report.unknown_authority_participation == 0
+    assert report.duplicate_confirmed == 0
+    assert report.duplicate_unresolved == 0
+    assert report.r1_ready_for_audit
