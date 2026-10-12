@@ -1,6 +1,6 @@
 # TENANT-X — Cross-Platform Tenant Isolation Certification
 
-**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **CLOSED / independently accepted** @ `d903a8dfaf7acaa53b013e2f7074fde9814441d2` · **TENANT-X-FINAL** = **NEXT / CURRENT** · **TENANT-X** = **OPEN** / **BLOCKED ON FINAL** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
+**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **CLOSED / independently accepted** @ `d903a8dfaf7acaa53b013e2f7074fde9814441d2` · **TENANT-X-FINAL** = **READY FOR AUDIT** (qualification evidence on current HEAD; not independently **CLOSED**) · **TENANT-X** = **OPEN** / **BLOCKED ON FINAL** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
 
 **Branch:** `development`
 
@@ -150,7 +150,7 @@ P0 is discovery evidence, not final FRZ evidence.
 | **TENANT-X-R2** | **CLOSED** | Provider / configuration / credential isolation — accepted @ `9bc53dfa…`; **FRZ-TEN-05, 06, 11** (scoped); mechanical SSOT: `tests/qualification/tenant_x/_r2_*.py`, `test_tenant_x_r2_fast.py`, `test_tenant_x_r2_current_head.py` |
 | **TENANT-X-R3** | **CLOSED** | State / Checkpoint / Recovery Tenant Continuity Certification — accepted @ `c3e708fe…`; **FRZ-TEN-04, 08** (scoped); `checkpoint → recovery` **PROVEN_CURRENT_HEAD**; mechanical SSOT: `tests/qualification/tenant_x/_r3_*.py`, `test_tenant_x_r3_fast.py`, `test_tenant_x_r3_current_head.py` |
 | **TENANT-X-R4** | **CLOSED** | Evidence / Context / Async Cross-Boundary Continuity — accepted @ `d903a8df…`; **FRZ-TEN-02, 03, 07, 11** (+ supporting **01, 10, 12**); `gap.context_model_scope` **PROVEN_CURRENT_HEAD**; mechanical SSOT: `tests/qualification/tenant_x/_r4_*.py`, `test_tenant_x_r4_fast.py`, `test_tenant_x_r4_current_head.py`, `test_r4_call_site_scanner.py` |
-| **TENANT-X-FINAL** | **NEXT / CURRENT** | Cross-platform adversarial certification after R1–R4 independently **CLOSED**; **FRZ-TEN-12** + reconciliation **FRZ-TEN-01..11** |
+| **TENANT-X-FINAL** | **READY FOR AUDIT** | Cross-platform adversarial reconciliation after R1–R4 **CLOSED**; **FRZ-TEN-01..12** typed reconciliation + F1–F10 matrix on current HEAD |
 
 **TENANT-X-FINAL** mandatory adversarial matrix (minimum):
 
@@ -456,4 +456,116 @@ none introduced by R3 closure
 
 Roadmap amendment required:
 NO
+```
+
+## TENANT-X-FINAL — Cross-Platform Adversarial Reconciliation (current HEAD)
+
+**Cursor qualification status:** **TENANT-X-FINAL** = **READY FOR AUDIT** (not **CLOSED**; independent exact-SHA audit required).
+
+**START_HEAD (FINAL wave baseline):** `6d635485c73cda171966adce401ae46b24016027`
+
+**Current HEAD (qualification execution):** recorded at gate runtime via `git rev-parse HEAD` (must be descendant of accepted R1–R4 evidence SHAs).
+
+**Accepted R1–R4 evidence SHAs (reconciled, not re-closed):**
+
+| Wave | Accepted evidence SHA |
+| --- | --- |
+| **TENANT-X-R1** | `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` |
+| **TENANT-X-R2** | `9bc53dfad65dc20d327d7c7340953264c5d69c7a` |
+| **TENANT-X-R3** | `c3e708febf6a138258f65ca0fa391925fa3e2ad8` |
+| **TENANT-X-R4** | `d903a8dfaf7acaa53b013e2f7074fde9814441d2` |
+
+**Preserved rejected R4 lineage:** **R4-R1** @ `b57ba7cfef45e7fac699c83792ebe432be19879d` · **R4-R1-R1** @ `eec0d0ef3b77b53ca49cbbb8aada1bf7dcb97b7c`
+
+**Production delta (FINAL):** **0**
+
+**Mechanical SSOT:** `tests/qualification/tenant_x/_final_*.py` · `test_tenant_x_final_fast.py` (**6** tests) · `test_tenant_x_final_current_head.py` (**1** test)
+
+### Mandatory adversarial matrix (F1–F10)
+
+| Class | Scenario | Outcome | Primary owner |
+| --- | --- | --- | --- |
+| **F1** | tenant A authority → tenant B target | **DENIED** | **R1** |
+| **F2** | tenant A request → tenant B state | **DENIED** | **R3** |
+| **F3** | tenant A provider/config → tenant B execution | **REJECTED** | **R2** |
+| **F4** | tenant A evidence → tenant B assessment | **REJECTED** | **R4** |
+| **F5** | tenant A credential ref → tenant B provider | **REJECTED** | **R2** |
+| **F6** | tenant A checkpoint → tenant B recovery | **REJECTED** | **R3** |
+| **F7** | tenant A async/parent → tenant B child | **REJECTED** | **R4** |
+| **F8** | missing tenant on required scope | **REJECTED** | **FINAL** (composed R1–R4 negatives) |
+| **F9** | extension/provider tenant rewrite | **REJECTED** | **R2** + **R4** |
+| **F10** | request → execution → evidence → trace continuity | **REJECTED** (cross-tenant break) | **R4** |
+
+Executable negatives compose R1–R4 SSOT (`_final_adversarial.py`); no duplicate inventories.
+
+### FRZ-TEN-01..12 FINAL reconciliation (global checklist remains **OPEN**)
+
+Each row verdict **`RECONCILED_READY_FOR_AUDIT`** means: accepted wave evidence on ancestry chain, R1–R4 `*_ready_for_audit` on current HEAD, adversarial proof referenced, composed cross-tenant **ALLOWED** / **UNKNOWN** = **0** — **not** global **FRZ-TEN PASS**.
+
+| ID | Primary owner | FINAL reconciliation verdict |
+| --- | --- | --- |
+| **FRZ-TEN-01** | **R1** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-02** | **R4** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-03** | **R4** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-04** | **R3** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-05** | **R2** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-06** | **R2** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-07** | **R4** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-08** | **R3** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-09** | **R1** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-10** | **FINAL** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-11** | **R2** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-12** | **FINAL** | **RECONCILED_READY_FOR_AUDIT** |
+
+**Identity invariant:** `required_frz_ten_ids == reconciled_frz_ten_ids` (**12** / **12** by exact ID) · **unclassified = 0** · **FINAL blockers = 0** · **cross-tenant ALLOWED = 0** · **cross-tenant UNKNOWN = 0**
+
+### Tenant Isolation Audit (FINAL parent scope)
+
+```text
+tenant scope applicable: YES
+canonical tenant identity: platform tenant_id + scoped authority carriers (R1 SSOT)
+tenant owner: TENANT-X wave owners (R1 authority, R2 provider/credential, R3 state/recovery, R4 evidence/async)
+propagation path: R1 propagation edges + R4 E2E chain replay on current HEAD
+state isolation: R3 checkpoint/load/recovery adversarial negatives
+provider/config isolation: R2 provider + credential matrices
+evidence/trace isolation: R4 evidence/event/trace + context attribution negatives
+async/recovery continuity: R3 recovery + R4 queue/background negatives
+cross-tenant path: composed matrices — ALLOWED 0 / UNKNOWN 0
+fail-closed behavior: F8 composed missing-tenant negatives
+adversarial evidence: test_tenant_x_final_fast.py + composed _final_adversarial
+result: PASS (qualification READY FOR AUDIT — not global FRZ-TEN PASS)
+```
+
+### Post-Step Enterprise Discovery (TENANT-X-FINAL qualification)
+
+```text
+Classification:
+NO ROADMAP CHANGE REQUIRED
+
+New current-parent blockers:
+independent exact-SHA audit of TENANT-X-FINAL qualification commit
+
+New future mandatory debt:
+none beyond independent FINAL closure audit
+
+New candidate roadmap stages:
+none
+
+FRZ coverage gaps:
+FRZ-TEN-01..12 remain OPEN on freeze checklist until independent auditor promotes PASS
+
+New ownership / boundary / authority concerns:
+none newly discovered by FINAL qualification wave
+
+Roadmap amendment required:
+NO
+```
+
+**Explicit non-closure:**
+
+```text
+TENANT-X-FINAL ≠ CLOSED
+TENANT-X ≠ CLOSED
+FRZ-TEN-* ≠ PASS
+PROD-Q ≠ started
 ```
