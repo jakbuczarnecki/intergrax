@@ -20,6 +20,10 @@ from tests.qualification.tenant_x._r1_authority_resolutions import (
     r1_duplicate_authority_confirmed,
     r1_duplicate_authority_unresolved,
 )
+from tests.qualification.tenant_x._r1_capability_routing_consumers import (
+    capability_routing_consumer_unknown_count,
+    routing_sentinel_direct_authority_escape_paths,
+)
 from tests.qualification.tenant_x._r1_cross_tenant_inventory import (
     build_r1_cross_tenant_inventory,
     legal_cross_tenant_mechanism_count,
@@ -148,6 +152,8 @@ def build_r1_qualification_report(
         remediation.append("TENANT-X-R1-R6 - root tenant selector inventory")
     if r1_critical_unknown_root_selectors(root_inventory):
         remediation.append("TENANT-X-R1-R7 - unknown critical root selectors")
+    if capability_routing_consumer_unknown_count() or routing_sentinel_direct_authority_escape_paths():
+        remediation.append("TENANT-X-R1-R3-Q1-R1 - capability routing sentinel reconciliation")
 
     ready = (
         not r1_owned_critical_boundary_missing_or_invalid()
@@ -165,6 +171,8 @@ def build_r1_qualification_report(
         and not r1_critical_unknown_root_selectors(root_inventory)
         and not r1_cross_tenant_unknown_critical(build_r1_cross_tenant_inventory(inventory))
         and len(resolutions) == 22
+        and capability_routing_consumer_unknown_count() == 0
+        and not routing_sentinel_direct_authority_escape_paths()
     )
 
     return TenantXR1QualificationReport(

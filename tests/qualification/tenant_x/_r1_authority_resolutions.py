@@ -132,17 +132,25 @@ def _resolution_for(mechanism: TenantAuthorityMechanism) -> R1AuthorityMechanism
             mechanism_id=mid,
             decision_kind=decision,
             semantic_owner="EXECUTION",
-            authority_scope="task_envelope_derivation_from_task_context",
+            authority_scope="capability_routing_sentinel_envelope",
             scope_evidence=TenantAuthorityScopeEvidence.STRUCTURAL_CURRENT_HEAD,
             owner_disposition=TenantAuthorityOwnerDisposition.OWNER_CONFIRMED,
-            authority_class=R1MechanismAuthorityClass.SANCTIONED_SEMANTIC_AUTHORITY,
+            authority_class=R1MechanismAuthorityClass.NON_AUTHORITATIVE_ROUTING,
             canonical_contract="intergrax/runtime/task/agent_capability_intake.py",
-            notes="Derives task envelope tenant from admitted task context — subordinate to root admission",
+            notes=(
+                "task_envelope_from_task_context uses tenant_id=user_id=routing sentinel for "
+                "Agent.can_handle — not customer/execution/governance/provider/state tenant"
+            ),
             owner_evidence=("canonical_contract: intergrax/runtime/task/agent_capability_intake.py",),
             scope_evidence_refs=(
-                "structural: envelope tenant derived from admitted task context — non-root derivation",
+                "structural: TaskEnvelope(tenant_id='routing', user_id='routing') literal sentinel",
+                "structural: coordinator → select_best_routable_agent → can_handle only",
+                "structural: contracts/task_envelope.py::task_envelope_for_capability_routing same sentinel",
             ),
-            production_classification_evidence=("NON_ROOT_DERIVATION — subordinate to root admission",),
+            production_classification_evidence=(
+                "NON_AUTHORITATIVE_ROUTING — capability match / agent selection pre-check only",
+                "no RootExecutionAuthorityAdmissionRequest port",
+            ),
         )
     if "integrations/_shared/p8/factories.py" in mid or "lancedb/opens.py" in mid:
         contract = (
@@ -302,6 +310,8 @@ def r1_authority_duplicate_participation(
     resolution: R1AuthorityMechanismResolution,
 ) -> R1AuthorityDuplicateParticipation:
     cls = resolution.authority_class
+    if cls == R1MechanismAuthorityClass.NON_AUTHORITATIVE_ROUTING:
+        return R1AuthorityDuplicateParticipation.ROUTING_NON_AUTHORITY
     if cls == R1MechanismAuthorityClass.SANCTIONED_SEMANTIC_AUTHORITY:
         evidence = " ".join(resolution.production_classification_evidence).lower()
         if any(marker.lower() in evidence for marker in _SUBORDINATE_DERIVATION_MARKERS):

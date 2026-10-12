@@ -83,10 +83,11 @@ def _classify_root_mechanism(mechanism: TenantAuthorityMechanism) -> R1RootSelec
     if "agent_capability_intake.py" in mid:
         return R1RootSelectorEntry(
             mid,
-            R1RootSelectorClass.NON_ROOT_DERIVATION,
+            R1RootSelectorClass.NON_TENANT,
             (
-                "structural: task envelope tenant derived from admitted task context",
-                "intergrax/runtime/task/agent_capability_intake.py",
+                "structural: tenant_id=user_id=routing sentinel for capability pre-check only",
+                "structural: not customer/execution/governance/provider/state tenant identity",
+                "intergrax/runtime/task/agent_capability_intake.py::task_envelope_from_task_context",
             ),
         )
     if "intergrax/cli/external_work.py" in mid:
