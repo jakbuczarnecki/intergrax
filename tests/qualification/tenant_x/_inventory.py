@@ -10,6 +10,7 @@ from tests.qualification.tenant_x._classifiers import classify_candidate
 from tests.qualification.tenant_x._discovery import raw_discovery_candidates, scanned_module_paths
 from tests.qualification.tenant_x._types import (
     ClosedWorldDiscoveryReport,
+    TenantIdentitySource,
     TenantPropagationRole,
     TenantSurfaceRecord,
 )
@@ -29,11 +30,18 @@ def get_tenant_x_inventory() -> tuple[TenantSurfaceRecord, ...]:
 def build_closed_world_discovery_report() -> ClosedWorldDiscoveryReport:
     raw = raw_discovery_candidates()
     classified_ids = inventory_surface_ids()
-    unclassified = frozenset(c.surface_id for c in raw if c.surface_id not in classified_ids)
+    unrecorded = frozenset(c.surface_id for c in raw if c.surface_id not in classified_ids)
+    semantic_unknown = frozenset(
+        r.surface_id
+        for r in get_tenant_x_inventory()
+        if r.propagation_role == TenantPropagationRole.UNKNOWN
+        or r.identity_source == TenantIdentitySource.UNKNOWN
+    )
     return ClosedWorldDiscoveryReport(
         module_paths_scanned=scanned_module_paths(),
         raw_candidates=raw,
-        unclassified_candidate_ids=unclassified,
+        unrecorded_candidate_ids=unrecorded,
+        semantic_unknown_surface_ids=semantic_unknown,
     )
 
 

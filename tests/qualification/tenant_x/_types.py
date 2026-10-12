@@ -149,12 +149,27 @@ class PropagationEdgeStatus(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class TenantAstEvidence:
+    kind: str
+    detail: str
+    line_no: int
+
+
+@dataclass(frozen=True, slots=True)
+class TenantDiscoveryEvidence:
+    source_excerpt: str
+    enclosing_symbol: str
+    ast_evidence: tuple[TenantAstEvidence, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class TenantDiscoveryCandidate:
     surface_id: str
     module_path: str
     symbol: str
     discovery_kind: str
     line_no: int
+    evidence: TenantDiscoveryEvidence | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -233,4 +248,5 @@ class TenantP0Matrix:
 class ClosedWorldDiscoveryReport:
     module_paths_scanned: tuple[str, ...]
     raw_candidates: tuple[TenantDiscoveryCandidate, ...]
-    unclassified_candidate_ids: frozenset[str]
+    unrecorded_candidate_ids: frozenset[str]
+    semantic_unknown_surface_ids: frozenset[str]

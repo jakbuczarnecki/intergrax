@@ -25,7 +25,7 @@ def test_tx_p0_head_q01_inventory_covers_all_candidates() -> None:
     discovered = frozenset(c.surface_id for c in report.raw_candidates)
     classified = frozenset(r.surface_id for r in get_tenant_x_inventory())
     assert discovered == classified
-    assert report.unclassified_candidate_ids == frozenset()
+    assert report.unrecorded_candidate_ids == frozenset()
 
 
 def test_tx_p0_head_q02_integrity_no_generic_safe_fallback() -> None:

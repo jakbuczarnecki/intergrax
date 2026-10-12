@@ -10,6 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Final
 
+from tests.qualification.tenant_x._evidence import build_module_evidence_index, discovery_evidence_for
 from tests.qualification.tenant_x._types import TenantDiscoveryCandidate
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -128,6 +129,8 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
     except SyntaxError:
         return out
 
+    evidence_index = build_module_evidence_index(module_path, source)
+
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
             for stmt in node.body:
@@ -141,6 +144,13 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
                                 symbol=node.name,
                                 discovery_kind=kind,
                                 line_no=stmt.lineno,
+                                evidence=discovery_evidence_for(
+                                    module_path,
+                                    source,
+                                    enclosing_symbol=node.name,
+                                    line_no=stmt.lineno,
+                                    index=evidence_index,
+                                ),
                             )
                         )
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -154,6 +164,13 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
                             symbol=node.name,
                             discovery_kind=kind,
                             line_no=node.lineno,
+                            evidence=discovery_evidence_for(
+                                module_path,
+                                source,
+                                enclosing_symbol=node.name,
+                                line_no=node.lineno,
+                                index=evidence_index,
+                            ),
                         )
                     )
 
@@ -167,6 +184,13 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
                     symbol=f"L{line_no}",
                     discovery_kind=kind,
                     line_no=line_no,
+                    evidence=discovery_evidence_for(
+                        module_path,
+                        source,
+                        enclosing_symbol=f"L{line_no}",
+                        line_no=line_no,
+                        index=evidence_index,
+                    ),
                 )
             )
 
@@ -179,6 +203,13 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
                     symbol=marker,
                     discovery_kind="validator.marker",
                     line_no=1,
+                    evidence=discovery_evidence_for(
+                        module_path,
+                        source,
+                        enclosing_symbol=marker,
+                        line_no=1,
+                        index=evidence_index,
+                    ),
                 )
             )
             break
@@ -192,10 +223,22 @@ def _discover_from_ast(module_path: str, source: str) -> list[TenantDiscoveryCan
                     symbol="optional_tenant",
                     discovery_kind="optional.tenant",
                     line_no=1,
+                    evidence=discovery_evidence_for(
+                        module_path,
+                        source,
+                        enclosing_symbol="optional_tenant",
+                        line_no=1,
+                        index=evidence_index,
+                    ),
                 )
             )
 
     return out
+
+
+def discover_candidates_from_source(module_path: str, source: str) -> tuple[TenantDiscoveryCandidate, ...]:
+    """Pure discovery for fixture modules (no repo scan)."""
+    return tuple(_discover_from_ast(module_path, source))
 
 
 def _canonical_anchor_candidates() -> tuple[TenantDiscoveryCandidate, ...]:

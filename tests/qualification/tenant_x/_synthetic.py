@@ -1,21 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""In-memory adversarial probes (TENANT-X-P0 §14–15)."""
+"""In-memory adversarial probes (TENANT-X-P0 §14–15) — source fixtures only."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
 
-from tests.qualification.tenant_x._classifiers import classify_candidate
+from tests.qualification.tenant_x._classifiers import classify_source_fixture
 from tests.qualification.tenant_x._types import (
     AdversarialProbeVerdict,
     TenantBlockerClass,
-    TenantDiscoveryCandidate,
     TenantFailClosedDisposition,
     TenantIdentitySource,
     TenantPersistenceRole,
     TenantPropagationRole,
+    TenantSurfaceRecord,
 )
 
 
@@ -37,6 +37,8 @@ class SyntheticProbeId(StrEnum):
     O_CREDENTIALS_PATH_ONLY = "O"
     P_STORAGE_IGNORES_TENANT = "P"
     Q_ACTUAL_TENANT_PREDICATE = "Q"
+    R_VALIDATOR_NOT_ON_LOOKUP = "R"
+    S_VALIDATOR_BEFORE_LOOKUP = "S"
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +53,9 @@ class SyntheticAdversarialScenario:
 @dataclass(frozen=True, slots=True)
 class ClassifierProbeScenario:
     probe_id: SyntheticProbeId
-    candidate: TenantDiscoveryCandidate
+    module_path: str
+    source: str
+    surface_selector: str
 
 
 SYNTHETIC_ADVERSARIAL_SCENARIOS: tuple[SyntheticAdversarialScenario, ...] = (
@@ -127,60 +131,157 @@ SYNTHETIC_ADVERSARIAL_SCENARIOS: tuple[SyntheticAdversarialScenario, ...] = (
     ),
 )
 
+_SOURCE_K = """
+class ProbeK:
+    tenant_id: str
+"""
 
-def _fixture_candidate(probe_file: str, symbol: str, kind: str) -> TenantDiscoveryCandidate:
-    module_path = f"synthetic/probes/{probe_file}.py"
-    return TenantDiscoveryCandidate(
-        surface_id=f"{module_path}::{symbol}::{kind}",
-        module_path=module_path,
-        symbol=symbol,
-        discovery_kind=kind,
-        line_no=1,
+_SOURCE_L = """
+def fn(tenant_id: str):
+    return tenant_id
+"""
+
+_SOURCE_M = """
+class Worker:
+    tenant_id: str = "default"
+
+    def fetch(self, item_id: str):
+        return db.execute(
+            "SELECT value FROM items WHERE tenant_id = ? AND item_id = ?",
+            (self.tenant_id, item_id),
+        )
+"""
+
+_SOURCE_N = """
+class health_status:
+    tenant_id: str
+"""
+
+_SOURCE_O = """
+class Broker:
+    tenant_id: str
+"""
+
+_SOURCE_P = """
+class Store:
+    tenant_id: str
+
+    def load(self, item_id: str):
+        return db.execute(
+            "SELECT value FROM items WHERE item_id = ?",
+            (item_id,),
+        )
+"""
+
+_SOURCE_Q = """
+class Repo:
+    tenant_id: str
+
+    def load(self, tenant_id: str, item_id: str):
+        return db.execute(
+            "SELECT value FROM items WHERE tenant_id = ? AND item_id = ?",
+            (tenant_id, item_id),
+        )
+"""
+
+_SOURCE_R = """
+def require_tenant_id(value: str) -> str:
+    if not value:
+        raise ValueError("tenant_id is required")
+    return value
+
+def load(item_id: str, tenant_id: str):
+    return db.execute(
+        "SELECT value FROM items WHERE item_id = ?",
+        (item_id,),
     )
+"""
 
+_SOURCE_S = """
+def require_tenant_id(value: str) -> str:
+    if not value:
+        raise ValueError("tenant_id is required")
+    return value
+
+def load(item_id: str, tenant_id: str):
+    tenant_id = require_tenant_id(tenant_id)
+    return db.execute(
+        "SELECT value FROM items WHERE tenant_id = ? AND item_id = ?",
+        (tenant_id, item_id),
+    )
+"""
 
 CLASSIFIER_PROBE_SCENARIOS: tuple[ClassifierProbeScenario, ...] = (
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.K_UNKNOWN_TENANT_FIELD,
-        candidate=_fixture_candidate("k_unknown_tenant_field", "ProbeK", "class.field.tenant"),
+        module_path="synthetic/probes/k_unknown.py",
+        source=_SOURCE_K,
+        surface_selector="ProbeK",
     ),
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.L_FUNCTION_PARAM_ONLY,
-        candidate=_fixture_candidate("l_function_param_only", "fn", "function.param.tenant"),
+        module_path="synthetic/probes/l_param.py",
+        source=_SOURCE_L,
+        surface_selector="fn",
     ),
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.M_SILENT_TENANT_DEFAULT,
-        candidate=TenantDiscoveryCandidate(
-            surface_id="intergrax/runtime/execution/m_probe_fixture.py::line1::ambient_default_field",
-            module_path="intergrax/runtime/execution/m_probe_fixture.py",
-            symbol="L1",
-            discovery_kind="ambient_default_field",
-            line_no=1,
-        ),
+        module_path="intergrax/runtime/execution/m_silent_default_fixture.py",
+        source=_SOURCE_M,
+        surface_selector="ambient_default_field",
     ),
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.N_HARMLESS_GLOBAL_METADATA,
-        candidate=_fixture_candidate("n_harmless_global_metadata", "health_status", "class.field.tenant"),
+        module_path="synthetic/probes/n_global.py",
+        source=_SOURCE_N,
+        surface_selector="health_status",
     ),
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.O_CREDENTIALS_PATH_ONLY,
-        candidate=TenantDiscoveryCandidate(
-            surface_id="synthetic/probes/o_credentials_path_only.py::Broker::class.field.tenant",
-            module_path="synthetic/probes/o_credentials_path_only.py",
-            symbol="Broker",
-            discovery_kind="class.field.tenant",
-            line_no=1,
-        ),
+        module_path="intergrax/integrations/credentials/o_path_fixture.py",
+        source=_SOURCE_O,
+        surface_selector="Broker",
     ),
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.P_STORAGE_IGNORES_TENANT,
-        candidate=_fixture_candidate("p_storage_ignores_tenant", "Store", "class.field.tenant"),
+        module_path="synthetic/probes/p_storage.py",
+        source=_SOURCE_P,
+        surface_selector="Store",
     ),
     ClassifierProbeScenario(
         probe_id=SyntheticProbeId.Q_ACTUAL_TENANT_PREDICATE,
-        candidate=_fixture_candidate("q_actual_tenant_predicate", "Repo", "class.field.tenant"),
+        module_path="synthetic/probes/q_predicate.py",
+        source=_SOURCE_Q,
+        surface_selector="Repo",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.R_VALIDATOR_NOT_ON_LOOKUP,
+        module_path="synthetic/probes/r_validator_gap.py",
+        source=_SOURCE_R,
+        surface_selector="load",
+    ),
+    ClassifierProbeScenario(
+        probe_id=SyntheticProbeId.S_VALIDATOR_BEFORE_LOOKUP,
+        module_path="synthetic/probes/s_validator_guard.py",
+        source=_SOURCE_S,
+        surface_selector="load",
     ),
 )
+
+
+def _select_record(scenario: ClassifierProbeScenario) -> TenantSurfaceRecord:
+    records = classify_source_fixture(scenario.module_path, scenario.source)
+    if scenario.surface_selector == "ambient_default_field":
+        matches = [r for r in records if "ambient_default" in r.surface_id]
+        if not matches:
+            raise AssertionError(f"no ambient default surface in fixture {scenario.probe_id}")
+        return matches[0]
+    for record in records:
+        if record.symbol == scenario.surface_selector:
+            return record
+        if scenario.surface_selector in record.surface_id:
+            return record
+    raise AssertionError(f"surface {scenario.surface_selector} not found for probe {scenario.probe_id}")
 
 
 def classify_synthetic_probe(scenario: SyntheticAdversarialScenario) -> TenantPropagationRole:
@@ -240,7 +341,7 @@ def evaluate_synthetic_probe(scenario: SyntheticAdversarialScenario) -> bool:
 
 
 def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
-    record = classify_candidate(scenario.candidate)
+    record = _select_record(scenario)
     probe = scenario.probe_id
     if probe == SyntheticProbeId.K_UNKNOWN_TENANT_FIELD:
         return record.propagation_role == TenantPropagationRole.UNKNOWN
@@ -257,7 +358,17 @@ def evaluate_classifier_probe(scenario: ClassifierProbeScenario) -> bool:
     if probe == SyntheticProbeId.O_CREDENTIALS_PATH_ONLY:
         return record.propagation_role == TenantPropagationRole.UNKNOWN
     if probe == SyntheticProbeId.P_STORAGE_IGNORES_TENANT:
-        return record.persistence_role != TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE
+        return (
+            record.persistence_role == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE
+            and record.blocker_class == TenantBlockerClass.IN_SCOPE_BLOCKER
+        )
     if probe == SyntheticProbeId.Q_ACTUAL_TENANT_PREDICATE:
         return record.persistence_role == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE
+    if probe == SyntheticProbeId.R_VALIDATOR_NOT_ON_LOOKUP:
+        return (
+            record.persistence_role == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE
+            and "lookup_without_validator" in "".join(record.evidence_refs)
+        )
+    if probe == SyntheticProbeId.S_VALIDATOR_BEFORE_LOOKUP:
+        return record.persistence_role == TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP
     return False

@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from tests.qualification.tenant_x._discovery import discover_candidates_from_source
+from tests.qualification.tenant_x._evidence import evidence_kinds, has_kind
 from tests.qualification.tenant_x._types import (
     AmbientDefaultSemantics,
     OptionalTenantSemantics,
@@ -17,6 +19,17 @@ from tests.qualification.tenant_x._types import (
     TenantPropagationRole,
     TenantSurfaceRecord,
 )
+
+_EVID_SQL_PREDICATE = "TENANT_IN_SQL_PREDICATE"
+_EVID_SQL_MISSING = "TENANT_MISSING_IN_SQL_QUERY"
+_EVID_SUBSCRIPT_KEY = "TENANT_IN_SUBSCRIPT_KEY"
+_EVID_SUBSCRIPT_MISSING = "TENANT_MISSING_IN_SUBSCRIPT"
+_EVID_DEFAULT_PROTECTED = "DEFAULT_FLOWS_TO_PROTECTED_OP"
+_EVID_APP_LOCAL = "APPLICATION_LOCAL_MODULE"
+_EVID_COMPAT = "COMPATIBILITY_MODULE"
+_EVID_GLOBAL_SYMBOL = "GLOBAL_NON_TENANT_SYMBOL"
+_EVID_VALIDATOR_INVOKED = "VALIDATOR_INVOKED_BEFORE_LOOKUP"
+_EVID_LOOKUP_NO_VALIDATOR = "PROTECTED_LOOKUP_WITHOUT_VALIDATOR"
 
 # Longer / more specific prefixes must appear before broader parents.
 _DOMAIN_PREFIX: tuple[tuple[str, TenantDomain], ...] = tuple(
@@ -220,6 +233,52 @@ def _unknown_surface(
     )
 
 
+def _persistence_from_evidence(
+    candidate: TenantDiscoveryCandidate,
+) -> tuple[TenantPersistenceRole, tuple[str, ...], TenantBlockerClass, str]:
+    kinds = evidence_kinds(candidate.evidence)
+    extra_refs: list[str] = []
+    blocker = TenantBlockerClass.NONE
+    note = ""
+
+    if _EVID_VALIDATOR_INVOKED in kinds:
+        return (
+            TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP,
+            ("TENANT-X-P0:ast:validated_before_lookup",),
+            TenantBlockerClass.NONE,
+            "Validator invocation precedes protected lookup in same function",
+        )
+    if _EVID_SQL_PREDICATE in kinds or _EVID_SUBSCRIPT_KEY in kinds:
+        return (
+            TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE,
+            ("TENANT-X-P0:ast:tenant_in_key_or_predicate", *extra_refs),
+            blocker,
+            note,
+        )
+    if _EVID_LOOKUP_NO_VALIDATOR in kinds:
+        return (
+            TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE,
+            ("TENANT-X-P0:ast:lookup_without_validator",),
+            TenantBlockerClass.NONE,
+            "Validator exists in module but protected lookup not proven guarded",
+        )
+    if _EVID_SQL_MISSING in kinds or _EVID_SUBSCRIPT_MISSING in kinds:
+        blocker = TenantBlockerClass.IN_SCOPE_BLOCKER
+        note = "Tenant represented but storage/query lacks tenant isolation evidence"
+        return (
+            TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE,
+            ("TENANT-X-P0:ast:missing_isolation",),
+            blocker,
+            note,
+        )
+    return (
+        TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE,
+        ("TENANT-X-P0:identity_represented_only",),
+        blocker,
+        note,
+    )
+
+
 def _classify_ambient_default(
     candidate: TenantDiscoveryCandidate,
     domain: TenantDomain,
@@ -227,17 +286,17 @@ def _classify_ambient_default(
     kind: str,
 ) -> TenantSurfaceRecord:
     semantics = AmbientDefaultSemantics.UNKNOWN_DEFAULT_SEMANTICS
-    if candidate.module_path.startswith("applications/"):
+    ev = candidate.evidence
+    if has_kind(ev, _EVID_DEFAULT_PROTECTED):
+        semantics = AmbientDefaultSemantics.TENANT_REQUIRED_SILENT_DEFAULT
+    elif has_kind(ev, _EVID_APP_LOCAL) or candidate.module_path.startswith("applications/"):
         semantics = AmbientDefaultSemantics.DEMO_OR_APPLICATION_LOCAL_DEFAULT
-    elif any(m in candidate.symbol.lower() for m in _GLOBAL_NON_TENANT_MARKERS):
+    elif has_kind(ev, _EVID_GLOBAL_SYMBOL) or any(m in candidate.symbol.lower() for m in _GLOBAL_NON_TENANT_MARKERS):
         semantics = AmbientDefaultSemantics.GLOBAL_NON_TENANT_DEFAULT
-    elif "compat" in candidate.module_path or "legacy" in candidate.module_path:
+    elif has_kind(ev, _EVID_COMPAT) or "compat" in candidate.module_path or "legacy" in candidate.module_path:
         semantics = AmbientDefaultSemantics.COMPATIBILITY_DEFAULT
     elif "config" in candidate.module_path or "profile" in candidate.module_path:
         semantics = AmbientDefaultSemantics.CONFIGURATION_DEFAULT_REQUIRING_VALIDATION
-    elif kind in {"ambient_default_field", "ambient_default_pydantic", "ambient_default_constant", "ambient_default_env_fallback"}:
-        if candidate.module_path.startswith(("intergrax/", "agents/")):
-            semantics = AmbientDefaultSemantics.TENANT_REQUIRED_SILENT_DEFAULT
 
     blocker = TenantBlockerClass.NONE
     note = f"ambient_default:{semantics.value}"
@@ -251,10 +310,10 @@ def _classify_ambient_default(
         fail_closed = TenantFailClosedDisposition.SILENT_DEFAULT_SUBSTITUTION
         cross_tenant = True
         blocker = TenantBlockerClass.IN_SCOPE_BLOCKER
-        note = "Silent tenant default on tenant-required production path"
+        note = "Ambient default flows into protected operation (source evidence)"
     elif semantics == AmbientDefaultSemantics.UNKNOWN_DEFAULT_SEMANTICS:
-        blocker = TenantBlockerClass.ARCHITECTURE_DECISION_REQUIRED
-        note = "Ambient default semantics unknown — classify before P0 closure"
+        blocker = TenantBlockerClass.TRACKED_FREEZE_DEBT
+        note = "IN-SCOPE CLASSIFICATION BLOCKER: ambient default semantics unknown"
 
     return TenantSurfaceRecord(
         surface_id=candidate.surface_id,
@@ -357,21 +416,15 @@ def _classify_class_field_tenant(
             note="credentials path without credential tenant semantics",
         )
 
-    persistence = TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE
-    evidence = ("TENANT-X-P0:identity_represented_only",)
-    blocker = TenantBlockerClass.NONE
-
-    if candidate.module_path.startswith("synthetic/"):
-        return _unknown_surface(candidate, domain, owner, note="synthetic probe")
-
-    if "tenant" in candidate.symbol.lower() and "query" in candidate.module_path and "ignore" in candidate.module_path:
-        persistence = TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE
-        blocker = TenantBlockerClass.IN_SCOPE_BLOCKER
-        evidence = ("TENANT-X-P0:storage_field_without_predicate",)
-
-    if candidate.module_path.startswith("synthetic/probes/") and "tenant_predicate" in candidate.module_path:
-        persistence = TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE
-        evidence = ("TENANT-X-P0:tenant_predicate_positive",)
+    persistence, evidence, blocker, persistence_note = _persistence_from_evidence(candidate)
+    note = persistence_note or "Class field proves identity representation only"
+    propagation = TenantPropagationRole.IDENTITY_CARRIER
+    if persistence == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE:
+        propagation = TenantPropagationRole.TENANT_SCOPED_LOOKUP
+    elif persistence == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE and evidence == (
+        "TENANT-X-P0:identity_represented_only",
+    ):
+        propagation = TenantPropagationRole.UNKNOWN
 
     return TenantSurfaceRecord(
         surface_id=candidate.surface_id,
@@ -381,7 +434,7 @@ def _classify_class_field_tenant(
         tenant_required=False,
         identity_source=TenantIdentitySource.UNKNOWN,
         semantic_owner=owner,
-        propagation_role=TenantPropagationRole.IDENTITY_CARRIER,
+        propagation_role=propagation,
         persistence_role=persistence,
         authority_role=TenantAuthorityRole.NOT_APPLICABLE,
         fail_closed_behavior=TenantFailClosedDisposition.UNKNOWN,
@@ -389,7 +442,7 @@ def _classify_class_field_tenant(
         cross_tenant_contract=None,
         evidence_refs=evidence,
         blocker_class=blocker,
-        blocker_note="Class field proves identity representation only" if blocker == TenantBlockerClass.NONE else "Storage field without tenant predicate/key evidence",
+        blocker_note=note,
     )
 
 
@@ -398,6 +451,16 @@ def _classify_function_param_tenant(
     domain: TenantDomain,
     owner: str,
 ) -> TenantSurfaceRecord:
+    persistence, ev_refs, blocker, note = _persistence_from_evidence(candidate)
+    if persistence == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE and ev_refs == (
+        "TENANT-X-P0:identity_represented_only",
+    ):
+        persistence = TenantPersistenceRole.NOT_APPLICABLE
+        ev_refs = ("TENANT-X-P0:explicit_parameter_carrier_only",)
+        note = "Function parameter is explicit tenant carrier only"
+    propagation = TenantPropagationRole.IDENTITY_CARRIER
+    if persistence == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE:
+        propagation = TenantPropagationRole.TENANT_SCOPED_LOOKUP
     return TenantSurfaceRecord(
         surface_id=candidate.surface_id,
         module_path=candidate.module_path,
@@ -406,15 +469,15 @@ def _classify_function_param_tenant(
         tenant_required=False,
         identity_source=TenantIdentitySource.EXPLICIT_PARAMETER,
         semantic_owner=owner,
-        propagation_role=TenantPropagationRole.IDENTITY_CARRIER,
-        persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
+        propagation_role=propagation,
+        persistence_role=persistence,
         authority_role=TenantAuthorityRole.NOT_APPLICABLE,
         fail_closed_behavior=TenantFailClosedDisposition.UNKNOWN,
         cross_tenant_capable=False,
         cross_tenant_contract=None,
-        evidence_refs=("TENANT-X-P0:explicit_parameter_carrier_only",),
-        blocker_class=TenantBlockerClass.NONE,
-        blocker_note="Function parameter is explicit tenant carrier only",
+        evidence_refs=ev_refs,
+        blocker_class=blocker,
+        blocker_note=note,
     )
 
 
@@ -450,9 +513,6 @@ def classify_candidate(candidate: TenantDiscoveryCandidate) -> TenantSurfaceReco
     if kind.startswith("ambient_default"):
         return _classify_ambient_default(candidate, domain, owner, kind)
 
-    if candidate.module_path.startswith("synthetic/probes/"):
-        return classify_synthetic_fixture_candidate(candidate)
-
     if kind == "optional.tenant":
         return _classify_optional_tenant(candidate, domain, owner)
 
@@ -466,12 +526,14 @@ def classify_candidate(candidate: TenantDiscoveryCandidate) -> TenantSurfaceReco
             identity_source=TenantIdentitySource.VALIDATED_ENVELOPE,
             semantic_owner=owner,
             propagation_role=TenantPropagationRole.TENANT_VALIDATOR,
-            persistence_role=TenantPersistenceRole.TENANT_VALIDATED_BEFORE_LOOKUP,
+            persistence_role=TenantPersistenceRole.NOT_APPLICABLE,
             authority_role=TenantAuthorityRole.TENANT_SCOPE_AUTHORITY,
             fail_closed_behavior=TenantFailClosedDisposition.FAIL_CLOSED_ON_MISMATCH,
             cross_tenant_capable=False,
             cross_tenant_contract=None,
-            evidence_refs=("TENANT-X-P0:validator_marker",),
+            evidence_refs=("TENANT-X-P0:validator_marker_only",),
+            blocker_class=TenantBlockerClass.NONE,
+            blocker_note="Validator marker proves validator surface only — not lookup guard",
         )
 
     if any(marker in candidate.symbol.lower() for marker in _GLOBAL_NON_TENANT_MARKERS):
@@ -501,97 +563,21 @@ def classify_candidate(candidate: TenantDiscoveryCandidate) -> TenantSurfaceReco
     return _unknown_surface(candidate, domain, owner)
 
 
-def classify_synthetic_fixture_candidate(candidate: TenantDiscoveryCandidate) -> TenantSurfaceRecord:
-    """Classify in-memory synthetic probe modules (K–Q) via production classifier."""
-    domain = domain_for_path(candidate.module_path)
-    owner = _semantic_owner(candidate.module_path, domain)
-    probe = candidate.module_path.rsplit("/", 1)[-1].replace(".py", "")
-    if probe == "k_unknown_tenant_field":
-        return _unknown_surface(
-            candidate,
-            domain,
-            owner,
-            evidence="TENANT-X-P0:synthetic:K",
-            note="tenant_id field without validation/storage semantics",
-        )
-    if probe == "l_function_param_only":
-        return _classify_function_param_tenant(candidate, domain, owner)
-    if probe == "m_silent_tenant_default":
-        return _classify_ambient_default(candidate, domain, owner, "ambient_default_field")
-    if probe == "n_harmless_global_metadata":
-        return TenantSurfaceRecord(
-            surface_id=candidate.surface_id,
-            module_path=candidate.module_path,
-            symbol=candidate.symbol,
-            domain=TenantDomain.PLATFORM_GLOBAL,
-            tenant_required=False,
-            identity_source=TenantIdentitySource.GLOBAL_NON_TENANT,
-            semantic_owner="OBSERVABILITY",
-            propagation_role=TenantPropagationRole.GLOBAL_NON_TENANT_SURFACE,
-            persistence_role=TenantPersistenceRole.GLOBAL_SHARED_BY_DESIGN,
-            authority_role=TenantAuthorityRole.NON_TENANT_ADVISORY,
-            fail_closed_behavior=TenantFailClosedDisposition.NON_TENANT_SURFACE,
-            cross_tenant_capable=False,
-            cross_tenant_contract=None,
-            evidence_refs=("TENANT-X-P0:synthetic:N",),
-        )
-    if probe == "o_credentials_path_only":
-        return _unknown_surface(
-            candidate,
-            TenantDomain.CREDENTIALS_SECRETS,
-            "INTEGRATIONS_CREDENTIALS",
-            evidence="TENANT-X-P0:synthetic:O",
-            note="credentials path without credential tenant semantics",
-        )
-    if probe == "p_storage_ignores_tenant":
-        rec = _classify_class_field_tenant(candidate, domain, owner)
-        return TenantSurfaceRecord(
-            surface_id=rec.surface_id,
-            module_path=rec.module_path,
-            symbol=rec.symbol,
-            domain=TenantDomain.DURABLE_STATE,
-            tenant_required=False,
-            identity_source=rec.identity_source,
-            semantic_owner=rec.semantic_owner,
-            propagation_role=rec.propagation_role,
-            persistence_role=TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE,
-            authority_role=rec.authority_role,
-            fail_closed_behavior=rec.fail_closed_behavior,
-            cross_tenant_capable=True,
-            cross_tenant_contract=None,
-            evidence_refs=("TENANT-X-P0:synthetic:P",),
-            blocker_class=TenantBlockerClass.IN_SCOPE_BLOCKER,
-            blocker_note="Storage class with tenant field but query ignores tenant",
-        )
-    if probe == "q_actual_tenant_predicate":
-        return TenantSurfaceRecord(
-            surface_id=candidate.surface_id,
-            module_path=candidate.module_path,
-            symbol=candidate.symbol,
-            domain=TenantDomain.DURABLE_STATE,
-            tenant_required=True,
-            identity_source=TenantIdentitySource.EXPLICIT_PARAMETER,
-            semantic_owner=owner,
-            propagation_role=TenantPropagationRole.TENANT_SCOPED_LOOKUP,
-            persistence_role=TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE,
-            authority_role=TenantAuthorityRole.NON_TENANT_ADVISORY,
-            fail_closed_behavior=TenantFailClosedDisposition.UNKNOWN,
-            cross_tenant_capable=False,
-            cross_tenant_contract=None,
-            evidence_refs=("TENANT-X-P0:synthetic:Q", "TENANT-X-P0:tenant_predicate_positive"),
-        )
-    return _unknown_surface(candidate, domain, owner)
+def classify_source_fixture(module_path: str, source: str) -> tuple[TenantSurfaceRecord, ...]:
+    """Classify fixture source via production discovery + classifier (no probe shortcuts)."""
+    candidates = discover_candidates_from_source(module_path, source)
+    return tuple(classify_candidate(c) for c in candidates)
 
 
 def uses_generic_safe_fallback(record: TenantSurfaceRecord) -> bool:
     """True when record asserts safe tenant semantics without bounded evidence."""
     if record.evidence_refs and record.evidence_refs[0] == "TENANT-X-P0:mechanical_discovery":
         return True
+    joined_refs = "".join(record.evidence_refs)
     if (
         record.persistence_role == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE
-        and record.evidence_refs
-        and "tenant_predicate_positive" not in record.evidence_refs[0]
-        and "synthetic:Q" not in "".join(record.evidence_refs)
+        and "ast:tenant_in_key_or_predicate" not in joined_refs
+        and "tenant_predicate_positive" not in joined_refs
         and record.propagation_role == TenantPropagationRole.IDENTITY_CARRIER
     ):
         return True
@@ -605,9 +591,7 @@ def uses_generic_safe_fallback(record: TenantSurfaceRecord) -> bool:
         TenantPropagationRole.TENANT_SCOPED_PROVIDER_SELECTION,
         TenantPropagationRole.TENANT_SCOPED_RECOVERY,
         TenantPropagationRole.TENANT_SCOPED_CREDENTIAL_REFERENCE,
-    } and "canonical_anchor_profile" not in "".join(record.evidence_refs) and "synthetic:" not in "".join(
-        record.evidence_refs
-    ):
+    } and "canonical_anchor_profile" not in "".join(record.evidence_refs):
         if "path" in record.blocker_note.lower():
             return True
     return False
@@ -622,7 +606,6 @@ def is_path_name_only_classification(record: TenantSurfaceRecord) -> bool:
         "bounded" not in joined
         and "validator" not in joined
         and "canonical_anchor" not in joined
-        and "synthetic:" not in joined
         and record.propagation_role
         in {
             TenantPropagationRole.TENANT_SCOPED_PROVIDER_SELECTION,

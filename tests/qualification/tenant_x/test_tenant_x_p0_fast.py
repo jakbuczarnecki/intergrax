@@ -9,10 +9,11 @@ import subprocess
 import pytest
 
 from tests.qualification.tenant_x._classifiers import (
-    classify_candidate,
+    classify_source_fixture,
     domain_for_path,
     uses_generic_safe_fallback,
 )
+from tests.qualification.tenant_x._types import TenantPersistenceRole
 from tests.qualification.tenant_x._coverage_matrix import TENANT_PROOF_COVERAGE_MATRIX
 from tests.qualification.tenant_x._evidence_reconciliation import (
     HISTORICAL_TENANT_EVIDENCE,
@@ -108,8 +109,28 @@ def test_tx_p0_r1_q10_proof_coverage_matrix_complete() -> None:
 
 def test_tx_p0_r1_q11_classifier_no_generic_safe_fallback_on_fixture() -> None:
     for scenario in CLASSIFIER_PROBE_SCENARIOS:
-        record = classify_candidate(scenario.candidate)
-        assert not uses_generic_safe_fallback(record)
+        for record in classify_source_fixture(scenario.module_path, scenario.source):
+            assert not uses_generic_safe_fallback(record)
+
+
+def test_tx_p0_r1_q13_storage_key_index_fixture_semantics() -> None:
+    positive = """
+def save(item_id: str, tenant_id: str, value: str):
+    key = (tenant_id, item_id)
+    store[key] = value
+"""
+    neg = """
+class Cache:
+    tenant_id: str
+
+    def get(self, item_id: str):
+        return store[item_id]
+"""
+    pos_records = classify_source_fixture("synthetic/probes/key_positive.py", positive)
+    neg_records = classify_source_fixture("synthetic/probes/key_negative.py", neg)
+    assert any(r.persistence_role == TenantPersistenceRole.TENANT_IN_KEY_OR_PREDICATE for r in pos_records)
+    cache = next(r for r in neg_records if r.symbol == "Cache")
+    assert cache.persistence_role == TenantPersistenceRole.MISSING_ISOLATION_EVIDENCE
 
 
 def test_tx_p0_r1_q12_propagation_edge_validation_empty_without_inventory() -> None:
