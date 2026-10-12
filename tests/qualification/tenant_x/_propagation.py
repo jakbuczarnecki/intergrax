@@ -89,9 +89,12 @@ TENANT_PROPAGATION_GAPS: Final[tuple[PropagationEdgeGap, ...]] = (
     ),
     PropagationEdgeGap(
         gap_id="gap.credential_to_provider_consumption",
-        description="Provider credential consumption endpoint not identified — no self-edge proof",
+        description=(
+            "CLOSED @ TENANT-X-R2 — credential broker → provider operation consumption "
+            "(exec.aw7c.reference_effect + R2 canonical mechanisms @ 9bc53dfa)"
+        ),
         frz_ten_criteria=("FRZ-TEN-06",),
-        status=PropagationEdgeStatus.MISSING,
+        status=PropagationEdgeStatus.PROVEN,
     ),
     PropagationEdgeGap(
         gap_id="gap.context_model_scope",

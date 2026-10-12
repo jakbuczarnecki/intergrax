@@ -9,6 +9,28 @@ from typing import Final
 from tests.qualification.tenant_x._r1_structural_io import all_structural_patterns_present
 from tests.qualification.tenant_x._r3_types import R3ChainTransition, R3ChainVerdict
 
+_EXEC_TO_CHECKPOINT_CHECKS: Final[tuple[tuple[str, str], ...]] = (
+    (
+        "intergrax/runtime/long_running/checkpoint_builder.py",
+        "tenant_id=task.tenant_id",
+    ),
+    (
+        "intergrax/runtime/long_running/store.py",
+        "checkpoint.tenant_id",
+    ),
+)
+
+_CHECKPOINT_PERSIST_LOAD_CHECKS: Final[tuple[tuple[str, str], ...]] = (
+    (
+        "intergrax/runtime/long_running/store.py",
+        "WHERE task_id = ? AND tenant_id = ? AND resume_token = ?",
+    ),
+    (
+        "intergrax/runtime/long_running/store.py",
+        "_checkpoint_write_payload",
+    ),
+)
+
 _RESUME_CHAIN_CHECKS: Final[tuple[tuple[str, str], ...]] = (
     (
         "intergrax/runtime/long_running/store.py",
@@ -28,16 +50,84 @@ _RESUME_CHAIN_CHECKS: Final[tuple[tuple[str, str], ...]] = (
     ),
 )
 
+_AGENT_CHECKPOINT_CHECKS: Final[tuple[tuple[str, str], ...]] = (
+    (
+        "intergrax/agents/persistence/checkpoint_store.py",
+        "checkpoint.tenant_id != tenant_id",
+    ),
+    (
+        "intergrax/agents/persistence/checkpoint_store.py",
+        "CheckpointStreamIdentityConflictError",
+    ),
+)
+
+_PARTIAL_RECOVERY_CHECKS: Final[tuple[tuple[str, str], ...]] = (
+    (
+        "intergrax/runtime/execution/fan_out_partial_recovery.py",
+        "checkpoint.tenant_id != tenant_id",
+    ),
+    (
+        "intergrax/runtime/execution/fan_out_partial_recovery.py",
+        "PartialRecoveryErrorCode.TENANT_MISMATCH",
+    ),
+)
+
+_RETRY_LINEAGE_CHECKS: Final[tuple[tuple[str, str], ...]] = (
+    (
+        "intergrax/runtime/execution/retry/service.py",
+        "transition_to_next_attempt",
+    ),
+    (
+        "intergrax/runtime/execution/retry/service.py",
+        "tenant_id=tenant_id",
+    ),
+    (
+        "intergrax/runtime/execution/attempt_lifecycle/service.py",
+        "def transition_to_next_attempt",
+    ),
+)
+
+
+def _verdict_from_checks(
+    checks: tuple[tuple[str, str], ...],
+    *,
+    discovery_note: str,
+) -> tuple[R3ChainVerdict, tuple[str, ...]]:
+    matched = all_structural_patterns_present(checks)
+    if len(matched) == len(checks):
+        return R3ChainVerdict.PROVEN_CURRENT_HEAD, matched
+    return R3ChainVerdict.MISSING, (discovery_note,)
+
 
 def _resume_chain_verdict() -> tuple[R3ChainVerdict, tuple[str, ...]]:
-    matched = all_structural_patterns_present(_RESUME_CHAIN_CHECKS)
-    if len(matched) == len(_RESUME_CHAIN_CHECKS):
-        return R3ChainVerdict.PROVEN_CURRENT_HEAD, matched
-    return R3ChainVerdict.MISSING, ("discovery: checkpoint→recovery chain incomplete",)
+    return _verdict_from_checks(
+        _RESUME_CHAIN_CHECKS,
+        discovery_note="discovery: checkpoint→recovery chain incomplete",
+    )
 
 
 def build_r3_e2e_chain() -> tuple[R3ChainTransition, ...]:
+    exec_verdict, exec_ev = _verdict_from_checks(
+        _EXEC_TO_CHECKPOINT_CHECKS,
+        discovery_note="discovery: execution→checkpoint write markers incomplete",
+    )
+    persist_verdict, persist_ev = _verdict_from_checks(
+        _CHECKPOINT_PERSIST_LOAD_CHECKS,
+        discovery_note="discovery: checkpoint persist/load tenant scope incomplete",
+    )
     resume_verdict, resume_ev = _resume_chain_verdict()
+    agent_verdict, agent_ev = _verdict_from_checks(
+        _AGENT_CHECKPOINT_CHECKS,
+        discovery_note="discovery: agent checkpoint durable lookup incomplete",
+    )
+    partial_verdict, partial_ev = _verdict_from_checks(
+        _PARTIAL_RECOVERY_CHECKS,
+        discovery_note="discovery: partial recovery tenant gate incomplete",
+    )
+    retry_verdict, retry_ev = _verdict_from_checks(
+        _RETRY_LINEAGE_CHECKS,
+        discovery_note="discovery: retry attempt lineage tenant threading incomplete",
+    )
     return (
         R3ChainTransition(
             transition_id="execution.tenant_to_checkpoint_write",
@@ -48,25 +138,20 @@ def build_r3_e2e_chain() -> tuple[R3ChainTransition, ...]:
             relation="structural assignment tenant_id=task.tenant_id",
             mismatch_behavior="revision conflict preserves existing tenant-bound row",
             fail_closed=True,
-            verdict=R3ChainVerdict.PROVEN_CURRENT_HEAD,
-            evidence=(
-                "intergrax/runtime/long_running/checkpoint_builder.py::tenant_id=task.tenant_id",
-                "intergrax/runtime/long_running/store.py::_checkpoint_write_payload includes tenant_id",
-            ),
+            verdict=exec_verdict,
+            evidence=exec_ev,
         ),
         R3ChainTransition(
             transition_id="checkpoint_persist.tenant_truth",
             source_symbol="intergrax/runtime/long_running/store.py::save",
             target_symbol="intergrax/runtime/long_running/store.py::get_by_token",
             tenant_source="checkpoint.tenant_id",
-            tenant_target="SQL WHERE tenant_id = ? AND task_id = ?",
-            relation="durable lookup scoped by caller tenant + task",
+            tenant_target="SQL WHERE tenant_id scoped lookup",
+            relation="durable lookup scoped by caller tenant + task + token",
             mismatch_behavior="wrong tenant → row not found (no cross-tenant load)",
             fail_closed=True,
-            verdict=R3ChainVerdict.PROVEN_CURRENT_HEAD,
-            evidence=(
-                "intergrax/runtime/long_running/store.py::get_by_token WHERE tenant_id = ?",
-            ),
+            verdict=persist_verdict,
+            evidence=persist_ev,
         ),
         R3ChainTransition(
             transition_id="checkpoint_load.identity_binding",
@@ -89,10 +174,8 @@ def build_r3_e2e_chain() -> tuple[R3ChainTransition, ...]:
             relation="payload tenant must match lookup keys",
             mismatch_behavior="CheckpointStreamIdentityConflictError",
             fail_closed=True,
-            verdict=R3ChainVerdict.PROVEN_CURRENT_HEAD,
-            evidence=(
-                "intergrax/agents/persistence/checkpoint_store.py::checkpoint.tenant_id != tenant_id",
-            ),
+            verdict=agent_verdict,
+            evidence=agent_ev,
         ),
         R3ChainTransition(
             transition_id="governed_resume.materialization",
@@ -115,10 +198,8 @@ def build_r3_e2e_chain() -> tuple[R3ChainTransition, ...]:
             relation="checkpoint.tenant_id != tenant_id → PartialRecoveryError",
             mismatch_behavior="TENANT_MISMATCH fail closed",
             fail_closed=True,
-            verdict=R3ChainVerdict.PROVEN_CURRENT_HEAD,
-            evidence=(
-                "intergrax/runtime/execution/fan_out_partial_recovery.py::tenant mismatch for partial recovery",
-            ),
+            verdict=partial_verdict,
+            evidence=partial_ev,
         ),
         R3ChainTransition(
             transition_id="retry.attempt_lineage",
@@ -129,10 +210,8 @@ def build_r3_e2e_chain() -> tuple[R3ChainTransition, ...]:
             relation="tenant_id threaded into lifecycle transition (not inferred from execution_id alone)",
             mismatch_behavior="lifecycle errors fail closed without tenant rewrite",
             fail_closed=True,
-            verdict=R3ChainVerdict.PROVEN_CURRENT_HEAD,
-            evidence=(
-                "intergrax/runtime/execution/retry/service.py::tenant_id=tenant_id on transition_to_next_attempt",
-            ),
+            verdict=retry_verdict,
+            evidence=retry_ev,
         ),
     )
 
