@@ -17,6 +17,7 @@ from tests.qualification.prod_q._p0_types import (
     AuxiliaryJustification,
     AuxiliaryJustificationKind,
     AuxiliaryReconciliationMetrics,
+    AuxiliaryVerificationResult,
     ConcernFindingReconciliationMetrics,
     MechanismRole,
     OwnershipReconciliationReport,
@@ -38,17 +39,18 @@ def auxiliary_evidence_is_sufficient(record: ProductionReadinessClassification) 
     if any(ref.startswith("auxiliary_na:symbol:") for ref in refs):
         if not any(ref.startswith("auxiliary_evidence:") for ref in refs):
             return False
+    if not any(ref.startswith("verification_result:verified") for ref in refs):
+        return False
     has_kind = any(ref.startswith("auxiliary_evidence:") for ref in refs)
     has_related = any(ref.startswith("related_concern:") for ref in refs)
-    has_reachability = any(ref.startswith("reachability_evidence:") for ref in refs)
-    if not has_kind:
+    if not has_kind or not has_related:
         return False
-    if has_reachability and any(
+    if any(
         ref == f"auxiliary_evidence:{AuxiliaryJustificationKind.MECHANICALLY_EXCLUDED_REACHABILITY.value}"
         for ref in refs
     ):
-        return has_reachability
-    return has_related
+        return False
+    return True
 
 
 def is_auxiliary_discovery(record: ProductionReadinessClassification) -> bool:
@@ -431,10 +433,76 @@ def _semantic_concerns_in_module(
     )
 
 
+def _auxiliary_source_symbol_identity(candidate: ProductionReadinessCandidate) -> str:
+    return f"{candidate.module_path}::{candidate.symbol}"
+
+
+def _verified_private_nested_helper(
+    candidate: ProductionReadinessCandidate,
+    module_semantics: tuple[ProductionReadinessClassification, ...],
+    enclosing: dict[str, dict[str, str]],
+    operational_indicators: frozenset[str],
+) -> AuxiliaryJustification | None:
+    if "." not in candidate.symbol:
+        return None
+    class_name, method_name = candidate.symbol.split(".", 1)
+    if not method_name.startswith("_"):
+        return None
+    source_location = f"{candidate.module_path}:{candidate.symbol}:L{candidate.line_no}"
+    for semantic in module_semantics:
+        semantic_indicator = semantic.responsibility.split(":", 1)[-1]
+        if semantic_indicator not in operational_indicators:
+            continue
+        semantic_class = enclosing.get(candidate.module_path, {}).get(semantic.symbol, "")
+        if semantic_class != class_name:
+            continue
+        return AuxiliaryJustification(
+            candidate_id=candidate.candidate_id,
+            kind=AuxiliaryJustificationKind.HELPER_OF_CLASSIFIED_CONCERN,
+            related_concern_key=semantic.semantic_concern_key,
+            source_location=source_location,
+            strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
+            rationale="verified_private_nested_helper",
+            source_symbol_identity=_auxiliary_source_symbol_identity(candidate),
+            relationship_evidence=(
+                f"ast_enclosing_class:{class_name}",
+                f"operational_semantic:{semantic.candidate_id}",
+                f"private_method:{method_name}",
+            ),
+            verification_result=AuxiliaryVerificationResult.VERIFIED,
+        )
+    return None
+
+
+def _auxiliary_hint(
+    candidate: ProductionReadinessCandidate,
+    record: ProductionReadinessClassification,
+    *,
+    kind: AuxiliaryJustificationKind,
+    related_concern_key: str,
+    rationale: str,
+    relationship_evidence: tuple[str, ...],
+) -> AuxiliaryJustification:
+    source_location = f"{candidate.module_path}:{candidate.symbol}:L{candidate.line_no}"
+    return AuxiliaryJustification(
+        candidate_id=record.candidate_id,
+        kind=kind,
+        related_concern_key=related_concern_key,
+        source_location=source_location,
+        strength=AuxiliaryEvidenceStrength.HINT_ONLY,
+        rationale=rationale,
+        source_symbol_identity=_auxiliary_source_symbol_identity(candidate),
+        relationship_evidence=relationship_evidence,
+        verification_result=AuxiliaryVerificationResult.HINT_ONLY,
+    )
+
+
 def build_auxiliary_justifications(
     raw: tuple[ProductionReadinessCandidate, ...],
     preliminary: tuple[ProductionReadinessClassification, ...],
 ) -> dict[str, AuxiliaryJustification]:
+    from tests.qualification.prod_q._p0_classification import _OPERATIONAL_RESPONSIBILITY_INDICATORS
+
     raw_by_id = {candidate.candidate_id: candidate for candidate in raw}
     reachable = modules_reachable_from_production_entrypoints()
     enclosing = symbol_enclosing_class_by_module()
@@ -452,75 +520,92 @@ def build_auxiliary_justifications(
         if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
             continue
         candidate = raw_by_id[record.candidate_id]
-        source_location = f"{candidate.module_path}:{candidate.symbol}:L{candidate.line_no}"
-        module_semantics = semantics_by_module.get(candidate.module_path, [])
+        module_semantics = tuple(semantics_by_module.get(candidate.module_path, []))
+        verified = _verified_private_nested_helper(
+            candidate,
+            module_semantics,
+            enclosing,
+            _OPERATIONAL_RESPONSIBILITY_INDICATORS,
+        )
+        if verified is not None:
+            justifications[record.candidate_id] = verified
+            continue
+
         class_name = enclosing.get(candidate.module_path, {}).get(candidate.symbol, "")
-        if class_name:
+        if class_name and module_semantics:
             for semantic in module_semantics:
                 semantic_class = enclosing.get(candidate.module_path, {}).get(semantic.symbol, "")
                 if semantic_class == class_name:
-                    justifications[record.candidate_id] = AuxiliaryJustification(
-                        candidate_id=record.candidate_id,
+                    justifications[record.candidate_id] = _auxiliary_hint(
+                        candidate,
+                        record,
                         kind=AuxiliaryJustificationKind.HELPER_OF_CLASSIFIED_CONCERN,
                         related_concern_key=semantic.semantic_concern_key,
-                        source_location=source_location,
-                        strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
-                        rationale="ast_enclosing_class_match",
+                        rationale="same_enclosing_class_hint_only",
+                        relationship_evidence=(f"ast_enclosing_class:{class_name}",),
                     )
                     break
-            if record.candidate_id in justifications:
-                continue
+        if record.candidate_id in justifications:
+            continue
+
         if module_semantics:
             same_family = [item for item in module_semantics if item.family == record.family]
             anchor = same_family[0] if same_family else module_semantics[0]
-            justifications[record.candidate_id] = AuxiliaryJustification(
-                candidate_id=record.candidate_id,
+            justifications[record.candidate_id] = _auxiliary_hint(
+                candidate,
+                record,
                 kind=AuxiliaryJustificationKind.HELPER_OF_CLASSIFIED_CONCERN,
                 related_concern_key=anchor.semantic_concern_key,
-                source_location=source_location,
-                strength=AuxiliaryEvidenceStrength.CONSERVATIVE_STATIC,
                 rationale="same_module_semantic_concern",
+                relationship_evidence=(f"module:{candidate.module_path}",),
             )
             continue
+
         prefixes = contract_imports.get(candidate.module_path, ())
         if prefixes:
-            justifications[record.candidate_id] = AuxiliaryJustification(
-                candidate_id=record.candidate_id,
+            justifications[record.candidate_id] = _auxiliary_hint(
+                candidate,
+                record,
                 kind=AuxiliaryJustificationKind.IMPLEMENTATION_DETAIL_BEHIND_CONTRACT,
                 related_concern_key=_contract_concern_for_import(prefixes[0]),
-                source_location=source_location,
-                strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
                 rationale="module_imports_canonical_contract",
+                relationship_evidence=(f"contract_import_module:{prefixes[0]}",),
             )
             continue
+
         if candidate.module_path not in reachable:
-            justifications[record.candidate_id] = AuxiliaryJustification(
-                candidate_id=record.candidate_id,
+            justifications[record.candidate_id] = _auxiliary_hint(
+                candidate,
+                record,
                 kind=AuxiliaryJustificationKind.MECHANICALLY_EXCLUDED_REACHABILITY,
                 related_concern_key=_pq_support_concern_key(record.family, candidate.indicator),
-                source_location=source_location,
-                strength=AuxiliaryEvidenceStrength.PROVEN_STATIC,
                 rationale="static_import_closure_unreachable_from_entrypoints",
+                relationship_evidence=(
+                    "reachability:bounded_static_import_closure",
+                    "reachability:universal_exclusion_not_proven",
+                ),
             )
             continue
+
         family_semantics = semantics_by_family.get(record.family, ())
         if family_semantics:
-            justifications[record.candidate_id] = AuxiliaryJustification(
-                candidate_id=record.candidate_id,
+            justifications[record.candidate_id] = _auxiliary_hint(
+                candidate,
+                record,
                 kind=AuxiliaryJustificationKind.NON_AUTHORITATIVE_PROJECTION,
                 related_concern_key=family_semantics[0].semantic_concern_key,
-                source_location=source_location,
-                strength=AuxiliaryEvidenceStrength.CONSERVATIVE_STATIC,
                 rationale="co_classified_family_semantic_anchor",
+                relationship_evidence=(f"family:{record.family.value}",),
             )
             continue
-        justifications[record.candidate_id] = AuxiliaryJustification(
-            candidate_id=record.candidate_id,
+
+        justifications[record.candidate_id] = _auxiliary_hint(
+            candidate,
+            record,
             kind=AuxiliaryJustificationKind.NON_AUTHORITATIVE_PROJECTION,
             related_concern_key=_pq_support_concern_key(record.family, candidate.indicator),
-            source_location=source_location,
-            strength=AuxiliaryEvidenceStrength.CONSERVATIVE_STATIC,
             rationale="pq_family_support_bucket",
+            relationship_evidence=(f"family:{record.family.value}", f"indicator:{candidate.indicator}"),
         )
     return justifications
 
@@ -536,29 +621,51 @@ def apply_auxiliary_finalization(
     if record.mechanism_role != MechanismRole.AUXILIARY_DISCOVERY:
         return record
     if justification is None:
-        return replace(
-            record,
-            mechanism_role=MechanismRole.SEMANTIC_MECHANISM,
-            ownership_resolution=OwnershipResolutionState.NOT_YET_RESOLVED,
-            evidence_state=ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
-        )
-    evidence_refs = record.current_head_evidence + (
+        return _reclassify_unverified_auxiliary(record, ("auxiliary:missing_justification",))
+
+    hint_refs = record.current_head_evidence + (
+        f"source_symbol_identity:{justification.source_symbol_identity}",
+        f"verification_result:{justification.verification_result.value}",
+        f"auxiliary_rationale:{justification.rationale}",
+    )
+    for rel in justification.relationship_evidence:
+        hint_refs = hint_refs + (f"relationship_evidence:{rel}",)
+
+    if justification.verification_result != AuxiliaryVerificationResult.VERIFIED:
+        return _reclassify_unverified_auxiliary(record, hint_refs)
+
+    evidence_refs = hint_refs + (
         f"auxiliary_evidence:{justification.kind.value}",
         f"related_concern:{justification.related_concern_key}",
         f"source_location:{justification.source_location}",
         f"evidence_strength:{justification.strength.value}",
-        f"auxiliary_rationale:{justification.rationale}",
     )
-    if justification.kind == AuxiliaryJustificationKind.MECHANICALLY_EXCLUDED_REACHABILITY:
-        evidence_refs = evidence_refs + (
-            "reachability_evidence:static_import_closure_excluded",
-        )
     return replace(
         record,
         semantic_concern_key=f"auxiliary:{justification.related_concern_key}:{record.candidate_id}",
         ownership_resolution=OwnershipResolutionState.NOT_APPLICABLE_WITH_EVIDENCE,
         evidence_state=ProductionReadinessEvidenceState.N_A_WITH_EVIDENCE,
         current_head_evidence=evidence_refs,
+    )
+
+
+def _reclassify_unverified_auxiliary(
+    record: ProductionReadinessClassification,
+    hint_refs: tuple[str, ...],
+) -> ProductionReadinessClassification:
+    from dataclasses import replace
+
+    from tests.qualification.prod_q._p0_types import ProductionReadinessEvidenceState
+
+    indicator = record.responsibility.split(":", 1)[-1]
+    concern_key = _pq_support_concern_key(record.family, indicator)
+    return replace(
+        record,
+        mechanism_role=MechanismRole.SEMANTIC_MECHANISM,
+        semantic_concern_key=concern_key,
+        ownership_resolution=OwnershipResolutionState.NOT_YET_RESOLVED,
+        evidence_state=ProductionReadinessEvidenceState.PARTIAL_CURRENT_HEAD,
+        current_head_evidence=hint_refs + ("auxiliary_reclassified:unverified_relationship",),
     )
 
 

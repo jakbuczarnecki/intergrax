@@ -1,10 +1,10 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ecccdbf2dae2d6200993a9c4196682b090` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1-R1-R1-R1 baseline):** `ab8db1531c0017984dad7f8797f251b365319285`
+**START_HEAD (P0-R1-R1-R1-R1-R1 baseline):** `0ccc64ecccdbf2dae2d6200993a9c4196682b090`
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 
@@ -12,13 +12,13 @@
 
 **Freeze checklist (unchanged OPEN rows):** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 
-## PROD-Q-P0-R1-R1-R1-R1 purpose
+## PROD-Q-P0-R1-R1-R1-R1-R1 purpose
 
-Correct **evidence-proven auxiliary classification** (no self-attested `auxiliary_na:symbol:` sufficiency), **total semantic-concern ↔ finding reconciliation** (eight historical findings preserved as lineage; unresolved concerns derive mandatory dispositions), and **fail-closed `PROD-Q-P0-R1-R1-R1-R1` gate** without production code changes (**production delta = 0**). Auxiliary exclusions require typed `auxiliary_evidence:` + `related_concern:` or `reachability_evidence:`; operational readiness indicators remain semantic mechanisms; `UNRESOLVED_CLASSIFICATION` must be **0** on current HEAD for READY.
+Close **evidence integrity** and **fail-closed disposition** gaps on **PROD-Q-P0** qualification only (**production delta = 0**): auxiliary `N/A` requires `AuxiliaryVerificationResult.VERIFIED` plus typed `relationship_evidence` (module/family/reachability/import hints are **HINT_ONLY** and reclassify to `concern:pq_support:*` semantic obligations); `disposition_for_unresolved_concern` has **no default TRACKED FREEZE DEBT** fallback (`UNRESOLVED DISPOSITION` when unrouted); `build_semantic_concern_records` resolves from **current HEAD** (historical findings are lineage only); authoritative gate **`PROD-Q-P0-R1-R1-R1-R1-R1`** in `_p0_audit_gate.py`.
 
-**Lineage:** **PROD-Q-P0-R1-R1-R1** @ `ab8db153…` = **REJECTED** (independent audit). P0-R1-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
+**Lineage:** **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ec…` = **REJECTED** (independent audit). P0-R1-R1-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
 
-Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` (`PROD-Q-P0-R1-R1-R1-R1`) · findings register: `_p0_findings_register.py` · auxiliary justification: `_p0_ownership.py` + `_p0_discovery.py` static reachability.
+Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` (`PROD-Q-P0-R1-R1-R1-R1-R1`) · findings register: `_p0_findings_register.py` · auxiliary justification: `_p0_ownership.py` (bounded static hints; no universal reachability claim).
 
 ## Inventory methodology (current HEAD)
 

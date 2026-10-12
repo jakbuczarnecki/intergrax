@@ -134,6 +134,71 @@ def historical_finding_for_concern(concern_key: str) -> ProdQKnownFinding | None
     return None
 
 
+_FAMILY_UNRESOLVED_DISPOSITION: dict[
+    ProductionReadinessFamily,
+    tuple[ProdQFindingDisposition, str],
+] = {
+    ProductionReadinessFamily.PQ_F07: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+    ProductionReadinessFamily.PQ_F10: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P2",
+    ),
+    ProductionReadinessFamily.PQ_F12: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+    ProductionReadinessFamily.PQ_F13: (
+        ProdQFindingDisposition.IN_SCOPE_BLOCKER,
+        "PROD-Q-P1",
+    ),
+    ProductionReadinessFamily.PQ_F14: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+    ProductionReadinessFamily.PQ_F15: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+    ProductionReadinessFamily.PQ_F16: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+    ProductionReadinessFamily.PQ_F17: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P2",
+    ),
+    ProductionReadinessFamily.PQ_F19: (
+        ProdQFindingDisposition.IN_SCOPE_BLOCKER,
+        "PROD-Q-P1",
+    ),
+    ProductionReadinessFamily.PQ_F20: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+    ProductionReadinessFamily.PQ_F22: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+    ProductionReadinessFamily.PQ_F23: (
+        ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+        "PROD-Q-P3",
+    ),
+}
+
+
+def _pq_support_family(concern_key: str) -> ProductionReadinessFamily | None:
+    if not concern_key.startswith("concern:pq_support:"):
+        return None
+    token = concern_key.split(":", 3)[2]
+    try:
+        return ProductionReadinessFamily(token)
+    except ValueError:
+        return None
+
+
 def disposition_for_unresolved_concern(
     concern_key: str,
     family: ProductionReadinessFamily,
@@ -143,8 +208,11 @@ def disposition_for_unresolved_concern(
         return ProdQFindingDisposition.IN_SCOPE_BLOCKER, "PROD-Q-P1"
     if family in (ProductionReadinessFamily.PQ_F02, ProductionReadinessFamily.PQ_F18):
         return ProdQFindingDisposition.IN_SCOPE_BLOCKER, "PROD-Q-R1"
-    if family == ProductionReadinessFamily.PQ_F11 or "mode" in concern_key:
-        return ProdQFindingDisposition.TRACKED_FREEZE_DEBT, "PROD-Q-P2"
+    if family == ProductionReadinessFamily.PQ_F11:
+        return (
+            ProdQFindingDisposition.TRACKED_FREEZE_DEBT,
+            "PROD-Q-P2",
+        )
     if family in (
         ProductionReadinessFamily.PQ_F03,
         ProductionReadinessFamily.PQ_F04,
@@ -157,12 +225,74 @@ def disposition_for_unresolved_concern(
         return ProdQFindingDisposition.IN_SCOPE_BLOCKER, "PROD-Q-P1"
     if any(item.evidence_state.name == "BLOCKER" for item in members):
         return ProdQFindingDisposition.IN_SCOPE_BLOCKER, "PROD-Q-P2"
-    return ProdQFindingDisposition.TRACKED_FREEZE_DEBT, "PROD-Q-P2"
+    pq_support = _pq_support_family(concern_key)
+    if pq_support is not None:
+        return disposition_for_unresolved_concern(
+            concern_key,
+            pq_support,
+            members,
+        )
+    explicit = _FAMILY_UNRESOLVED_DISPOSITION.get(family)
+    if explicit is not None:
+        return explicit
+    return ProdQFindingDisposition.UNRESOLVED_DISPOSITION, None
 
 
 def _auto_finding_id(concern_key: str) -> str:
     digest = hashlib.sha256(concern_key.encode("utf-8")).hexdigest()[:12]
     return f"PROD-Q-P0-CONCERN-{digest}"
+
+
+def _factory_anchor_currently_resolved(
+    members: tuple[ProductionReadinessClassification, ...],
+) -> bool:
+    if not members:
+        return False
+    for member in members:
+        if not any(ref.startswith("discovery:anchor.registry") for ref in member.current_head_evidence):
+            return False
+        if member.composition_owner in {"", "COMPOSITION_UNRESOLVED"}:
+            if not member.module.endswith("/bundle.py"):
+                return False
+        if "/integrations/providers/sandbox_host/" not in member.module:
+            return False
+        if not member.symbol.startswith("create_") or not member.symbol.endswith("_sandbox_host_integration"):
+            return False
+    return True
+
+
+def _legal_distinct_composition_currently_supported(
+    concern_key: str,
+    members: tuple[ProductionReadinessClassification, ...],
+) -> bool:
+    if len(members) < 2:
+        return False
+    owners = {item.semantic_owner for item in members}
+    contracts = {item.canonical_contract for item in members}
+    compositions = {item.composition_owner for item in members}
+    if len(owners) != 1 or len(contracts) != 1:
+        return False
+    if len(compositions) <= 1:
+        return False
+    if concern_key == (
+        "concern:operation:contract:intergrax.contracts.execution_capacity_admission."
+        "ExecutionCapacityAdmissionPort"
+    ):
+        return (
+            "intergrax.contracts.execution_capacity_admission.ExecutionCapacityAdmissionPort"
+            in contracts
+        )
+    if concern_key == "concern:operation:contract:intergrax.runtime.observability.auditability_health":
+        allowed = {
+            "intergrax/applications/_shared/auditability_health_wiring.py",
+            "intergrax/runtime/observability/auditability_health.py",
+        }
+        return (
+            "intergrax.runtime.observability.auditability_health" in contracts
+            and compositions <= allowed
+            and len(compositions) >= 2
+        )
+    return False
 
 
 def build_semantic_concern_records(
@@ -189,19 +319,23 @@ def build_semantic_concern_records(
         member_ids = tuple(sorted(item.candidate_id for item in members))
         sample = members[0]
         historical = historical_finding_for_concern(concern_key)
-        resolved = all(ownership_resolved_with_evidence(item) for item in members)
-        if historical is not None and historical.disposition in (
-            ProdQFindingDisposition.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
-            ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION,
-        ):
-            resolution = (
-                SemanticConcernResolutionState.LEGAL_DISTINCT_COMPOSITION
-                if historical.disposition == ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION
-                else SemanticConcernResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE
+        source_evidence = tuple(sample.current_head_evidence)
+        if historical is not None:
+            source_evidence = source_evidence + (
+                f"historical_lineage:{historical.finding_id}:{historical.disposition.value}",
             )
-            disposition = historical.disposition
-            mandatory_child = historical.recommended_child
-        elif resolved:
+
+        resolved = all(ownership_resolved_with_evidence(item) for item in members)
+        legal_distinct = _legal_distinct_composition_currently_supported(concern_key, tuple(members))
+        factory_resolved = concern_key.endswith(":factory_anchor") and _factory_anchor_currently_resolved(
+            tuple(members)
+        )
+
+        if legal_distinct:
+            resolution = SemanticConcernResolutionState.LEGAL_DISTINCT_COMPOSITION
+            disposition = ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION
+            mandatory_child = None
+        elif factory_resolved or resolved:
             resolution = SemanticConcernResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE
             disposition = ProdQFindingDisposition.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE
             mandatory_child = None
@@ -222,7 +356,7 @@ def build_semantic_concern_records(
                 canonical_contract=sample.canonical_contract,
                 composition_owner=sample.composition_owner,
                 production_callers=sample.production_callers,
-                source_evidence=sample.current_head_evidence,
+                source_evidence=source_evidence,
                 resolution_state=resolution,
                 finding_disposition=disposition,
                 mandatory_child=mandatory_child,
@@ -270,6 +404,62 @@ def known_prod_q_findings() -> tuple[ProdQKnownFinding, ...]:
 
 def known_finding_ids() -> frozenset[str]:
     return frozenset(item.finding_id for item in known_prod_q_findings())
+
+
+def unjustified_future_debt_violations(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    from tests.qualification.prod_q._p0_classification import classified_inventory
+
+    inv = inventory if inventory is not None else classified_inventory()
+    concerns = build_semantic_concern_records(inv)
+    violations: list[str] = []
+    for concern in concerns:
+        if concern.resolution_state != SemanticConcernResolutionState.UNRESOLVED:
+            continue
+        if concern.finding_disposition != ProdQFindingDisposition.TRACKED_FREEZE_DEBT:
+            continue
+        if concern.mandatory_child is None:
+            violations.append(f"{concern.concern_key}: future debt without mandatory child")
+        if concern.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER:
+            violations.append(f"{concern.concern_key}: production blocker labeled future debt")
+    return tuple(violations)
+
+
+def historical_resolution_without_current_proof_violations(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    from tests.qualification.prod_q._p0_classification import classified_inventory
+
+    inv = inventory if inventory is not None else classified_inventory()
+    concerns = build_semantic_concern_records(inv)
+    violations: list[str] = []
+    for concern in concerns:
+        historical = historical_finding_for_concern(concern.concern_key)
+        if historical is None:
+            continue
+        if historical.disposition not in (
+            ProdQFindingDisposition.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
+            ProdQFindingDisposition.LEGAL_DISTINCT_COMPOSITION,
+        ):
+            continue
+        if concern.resolution_state == SemanticConcernResolutionState.UNRESOLVED:
+            violations.append(
+                f"{concern.concern_key}: historical resolution without current-HEAD proof"
+            )
+    return tuple(violations)
+
+
+def unresolved_disposition_violations(
+    inventory: tuple[ProductionReadinessClassification, ...] | None = None,
+) -> tuple[str, ...]:
+    concerns = build_semantic_concern_records(inventory)
+    return tuple(
+        f"{concern.concern_key}: unresolved disposition"
+        for concern in concerns
+        if concern.resolution_state == SemanticConcernResolutionState.UNRESOLVED
+        and concern.finding_disposition == ProdQFindingDisposition.UNRESOLVED_DISPOSITION
+    )
 
 
 def concern_finding_reconciliation_violations(
@@ -350,8 +540,16 @@ def concern_finding_reconciliation_violations(
             violations.append(
                 f"{concern.concern_key}: current blocker masked as future-stage debt"
             )
-        if finding.disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER and not concern.mandatory_child:
+        if finding.disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER and (
+            not concern.mandatory_child or not finding.recommended_child
+        ):
             violations.append(f"{concern.concern_key}: in-scope blocker missing mandatory child")
+        if concern.finding_disposition == ProdQFindingDisposition.UNRESOLVED_DISPOSITION:
+            violations.append(f"{concern.concern_key}: unresolved disposition blocks P0 inventory")
+
+    violations.extend(unjustified_future_debt_violations(inv))
+    violations.extend(historical_resolution_without_current_proof_violations(inv))
+    violations.extend(unresolved_disposition_violations(inv))
 
     return tuple(violations)
 

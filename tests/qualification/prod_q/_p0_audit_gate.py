@@ -21,6 +21,7 @@ from tests.qualification.prod_q._p0_frz_reconciliation import build_frz_reconcil
 from tests.qualification.prod_q._p0_integrity import unclassified_indicator_ids
 from tests.qualification.prod_q._p0_ownership import (
     alternate_composition_violations,
+    auxiliary_evidence_is_sufficient,
     auxiliary_na_without_symbol_evidence,
     build_auxiliary_reconciliation_metrics,
     build_ownership_reconciliation,
@@ -35,11 +36,12 @@ from tests.qualification.prod_q._p0_types import (
 
 PROD_Q_P0_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1"
 PROD_Q_P0_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1"
+PROD_Q_P0_R1_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1-R1"
 
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_gate_violations() -> tuple[str, ...]:
-    return prod_q_p0_r1_r1_r1_r1_gate_violations()
+    return prod_q_p0_r1_r1_r1_r1_r1_gate_violations()
 
 
 def fake_auxiliary_na_violations(
@@ -77,6 +79,15 @@ def prod_q_p0_inventory_reconciliation_violations(
         aux_metrics.auxiliary_justified + aux_metrics.auxiliary_unresolved
     ):
         violations.append("auxiliary reconciliation identity does not balance")
+    unverified_auxiliary_na = sum(
+        1
+        for record in inventory
+        if record.mechanism_role == MechanismRole.AUXILIARY_DISCOVERY
+        and record.evidence_state == ProductionReadinessEvidenceState.N_A_WITH_EVIDENCE
+        and not auxiliary_evidence_is_sufficient(record)
+    )
+    if unverified_auxiliary_na > 0:
+        violations.append(f"unverified auxiliary N/A: {unverified_auxiliary_na}")
     if aux_metrics.auxiliary_unresolved != 0:
         violations.append(f"auxiliary unresolved: {aux_metrics.auxiliary_unresolved}")
     if aux_metrics.auxiliary_falsely_excluded != 0:
@@ -104,6 +115,11 @@ def prod_q_p0_inventory_reconciliation_violations(
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
+    return prod_q_p0_r1_r1_r1_r1_r1_gate_violations()
+
+
+@lru_cache(maxsize=1)
+def prod_q_p0_r1_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
     violations: list[str] = []
 
     if discovery_scan_failures() or anchor_resolution_failures():
@@ -164,3 +180,7 @@ def prod_q_p0_r1_r1_r1_ready_for_audit() -> bool:
 
 def prod_q_p0_r1_r1_r1_r1_ready_for_audit() -> bool:
     return prod_q_p0_r1_r1_r1_r1_gate_violations() == ()
+
+
+def prod_q_p0_r1_r1_r1_r1_r1_ready_for_audit() -> bool:
+    return prod_q_p0_r1_r1_r1_r1_r1_gate_violations() == ()

@@ -56,6 +56,7 @@ class ProdQFindingDisposition(str, Enum):
     TRACKED_FREEZE_DEBT = "TRACKED FREEZE DEBT"
     ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED = "ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED"
     LEGAL_DISTINCT_COMPOSITION = "LEGAL DISTINCT COMPOSITION"
+    UNRESOLVED_DISPOSITION = "UNRESOLVED DISPOSITION"
 
 
 class ProductionReadinessOwner(str, Enum):
@@ -106,6 +107,14 @@ class AuxiliaryJustificationKind(str, Enum):
 class AuxiliaryEvidenceStrength(str, Enum):
     PROVEN_STATIC = "proven_static"
     CONSERVATIVE_STATIC = "conservative_static"
+    HINT_ONLY = "hint_only"
+
+
+class AuxiliaryVerificationResult(str, Enum):
+    VERIFIED = "verified"
+    HINT_ONLY = "hint_only"
+    NOT_PROVEN = "not_proven"
+    BLOCKED = "blocked"
 
 
 class SemanticConcernResolutionState(str, Enum):
@@ -323,6 +332,9 @@ class AuxiliaryJustification:
     source_location: str
     strength: AuxiliaryEvidenceStrength
     rationale: str
+    source_symbol_identity: str
+    relationship_evidence: tuple[str, ...]
+    verification_result: AuxiliaryVerificationResult
 
 
 @dataclass(frozen=True, slots=True)
