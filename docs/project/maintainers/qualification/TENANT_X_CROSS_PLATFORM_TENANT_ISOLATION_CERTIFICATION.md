@@ -1,6 +1,6 @@
 # TENANT-X — Cross-Platform Tenant Isolation Certification
 
-**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X** = **OPEN** / **BLOCKED ON R1** · **TENANT-X-R1** = **NEXT** / **QUEUED** · **TENANT-X-R2** = **PLANNED** · **TENANT-X-R3** = **PLANNED** · **TENANT-X-R4** = **PLANNED** · **TENANT-X-FINAL** = **PLANNED** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
+**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X** = **OPEN** / **BLOCKED ON R1 INDEPENDENT AUDIT** · **TENANT-X-R1** = **READY FOR AUDIT** (qualification evidence on `development`; not independently closed) · **TENANT-X-R2** = **PLANNED** · **TENANT-X-R3** = **PLANNED** · **TENANT-X-R4** = **PLANNED** · **TENANT-X-FINAL** = **PLANNED** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
 
 **Branch:** `development`
 
@@ -139,7 +139,7 @@ P0 is discovery evidence, not final FRZ evidence.
 | Stage | Status | Purpose (summary) |
 | --- | --- | --- |
 | **TENANT-X-P0** | **CLOSED** | Discovery / inventory |
-| **TENANT-X-R1** | **NEXT** / **QUEUED** | Critical tenant provenance & authority scope certification — **FRZ-TEN-01, 02, 03, 09, 10, 11**; boundary/mechanism families (not 319 individual records) |
+| **TENANT-X-R1** | **READY FOR AUDIT** | Critical tenant provenance & authority scope — families **A–J**; **7/7** propagation edges **PROVEN_CURRENT_HEAD**; **22/22** authority scopes resolved; **legal cross-tenant production mechanisms = 0**; mechanical SSOT: `tests/qualification/tenant_x/_r1_*.py`, `test_tenant_x_r1_fast.py`, `test_tenant_x_r1_current_head.py` |
 | **TENANT-X-R2** | **PLANNED** | Provider / configuration / credential isolation — **FRZ-TEN-05, 06, 11**; must close `credential → provider consumption` |
 | **TENANT-X-R3** | **PLANNED** | State / checkpoint / recovery continuity — **FRZ-TEN-04, 08**; must close `checkpoint → recovery`; current-HEAD tenant proof required (reuse STATE-X evidence where applicable) |
 | **TENANT-X-R4** | **PLANNED** | Evidence / context / async cross-boundary continuity — **FRZ-TEN-02, 03, 07, 11**; resolve `context/model continuity` and remaining async propagation |
@@ -214,3 +214,46 @@ YES — add explicit TENANT-X child decomposition
 ```
 
 Roadmap amendment is inside the existing **TENANT-X** parent, not a new top-level platform stage.
+
+## TENANT-X-R1 — critical provenance & authority scope (qualification evidence)
+
+**Stage status:** **READY FOR AUDIT** (not independently **CLOSED**)
+
+**Sanctioned root tenant selection:** exactly one contract — `intergrax/contracts/runtime_execution_admission.py::RootExecutionAuthorityAdmissionRequest` (fail-closed on missing `tenant_id`). P0-classified `ROOT_TENANT_SELECTION` mint surfaces reconcile to application/conformance/CLI harness scopes — not competing platform roots.
+
+**Exit metrics (R1 closure targets):**
+
+```text
+critical boundary families A–J certified (H/J = NOT_APPLICABLE handoff to R4/R3)
+critical propagation edges = 7
+  PROVEN_CURRENT_HEAD = 7
+  MISSING = 0
+  INVALID = 0
+authority mechanisms = 22
+  scope resolved = 22
+  scope unresolved = 0
+  owner confirmed = 22
+  owner unresolved = 0
+  owner conflict = 0
+duplicate authority confirmed = 0
+duplicate authority unresolved = 0
+root tenant selectors (sanctioned) = 1
+legal cross-tenant production mechanisms = 0
+critical silent substitution UNKNOWN = 0
+illegal critical silent substitution = 0
+```
+
+**FRZ-TEN (scoped R1 contribution only — parent remains OPEN):** evidence supports qualification review for **FRZ-TEN-01, 02, 03, 09, 10, 11**; global **PASS** remains parent **TENANT-X-FINAL** policy.
+
+**B2B / Nordea:** **READY WITH PLATFORM GAPS** (R2 credential→provider, R3 recovery, R4 context/async remain mandatory).
+
+**Handoff:** **TENANT-X-R2** (credential→provider consumption), **TENANT-X-R3** (checkpoint→recovery), **TENANT-X-R4** (context/model + async).
+
+**Tests:**
+
+```bash
+uv run pytest -p no:xdist tests/qualification/tenant_x/test_tenant_x_r1_fast.py -q
+uv run pytest -p no:xdist tests/qualification/tenant_x/test_tenant_x_r1_current_head.py -q
+```
+
+**Production delta (R1):** `0` (certification-first; no production remediation children emitted).
