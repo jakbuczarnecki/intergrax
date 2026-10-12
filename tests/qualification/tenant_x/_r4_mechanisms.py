@@ -28,6 +28,38 @@ _VENDOR_QUEUE_CHECKS: tuple[tuple[str, str], ...] = (
     ("intergrax/runtime/vendor_knowledge/sync_worker.py", "vendor_knowledge_sync_tenant_mismatch"),
 )
 
+_FUNCTIONAL_EVIDENCE_CHECKS: tuple[tuple[str, str], ...] = (
+    ("intergrax/contracts/functional_evidence/tenant.py", "require_tenant_id_from_exec_ctx"),
+    ("intergrax/runtime/observability/functional_evidence_recorder.py", "require_tenant_id_from_exec_ctx"),
+)
+
+_RUNTIME_EVENT_CHECKS: tuple[tuple[str, str], ...] = (
+    ("intergrax/contracts/runtime_event.py", "tenant_id"),
+    ("intergrax/runtime/events/llm_call_recording.py", "RuntimeEventType.LLM_CALL"),
+    ("intergrax/runtime/events/context_skill_recording.py", "RuntimeEventType.CONTEXT_ASSEMBLED"),
+)
+
+_TRACE_DIAG_CHECKS: tuple[tuple[str, str], ...] = (
+    ("intergrax/runtime/llm/model_context_attribution.py", "tenant_mismatch"),
+    ("intergrax/runtime/llm/model_context_attribution.py", "left_tenant = context_event.tenant_id"),
+)
+
+_QUEUE_WORKER_CHECKS: tuple[tuple[str, str], ...] = (
+    ("intergrax/queueing/worker/execution.py", "execution_identity.tenant_id"),
+    ("intergrax/queueing/providers/document_store/document_store_task_queue.py", "tenant_id=request.tenant_id"),
+)
+
+_EXTENSION_SEAM_CHECKS: tuple[tuple[str, str], ...] = (
+    ("intergrax/runtime/nexus/context/context_engine.py", "record_context_assembled_from_engine"),
+    ("intergrax/runtime/nexus/context/context_manager.py", '"tenant_id": task.tenant_id'),
+)
+
+_CONTEXT_ASSEMBLY_FAMILY_CHECKS: tuple[tuple[str, str], ...] = (
+    ("intergrax/runtime/events/context_skill_recording.py", "record_context_assembled_from_engine"),
+    ("intergrax/runtime/nexus/context/context_manager.py", "record_context_assembly"),
+    ("intergrax/runtime/nexus/context/context_manager.py", '"tenant_id": task.tenant_id'),
+)
+
 
 def _binding_from_checks(
     checks: tuple[tuple[str, str], ...],
@@ -39,20 +71,28 @@ def _binding_from_checks(
 
 
 def build_r4_families() -> tuple[R4FamilyRow, ...]:
+    ctx_asm_binding, ctx_asm_ev = _binding_from_checks(_CONTEXT_ASSEMBLY_FAMILY_CHECKS)
     ctx_model_binding, ctx_model_ev = _binding_from_checks(_CONTEXT_MODEL_CHECKS)
     ctx_view_binding, ctx_view_ev = _binding_from_checks(_CONTEXT_VIEW_CHECKS)
     bg_binding, bg_ev = _binding_from_checks(_BACKGROUND_IDENTITY_CHECKS)
     vk_binding, vk_ev = _binding_from_checks(_VENDOR_QUEUE_CHECKS)
+    fe_binding, fe_ev = _binding_from_checks(_FUNCTIONAL_EVIDENCE_CHECKS)
+    ev_binding, ev_ev = _binding_from_checks(_RUNTIME_EVENT_CHECKS)
+    trace_binding, trace_ev = _binding_from_checks(_TRACE_DIAG_CHECKS)
+    qw_binding, qw_ev = _binding_from_checks(_QUEUE_WORKER_CHECKS)
+    ext_binding, ext_ev = _binding_from_checks(_EXTENSION_SEAM_CHECKS)
     return (
         R4FamilyRow(
             family_id="A.context_assembly",
             family_label="context assembly",
-            binding=R4FamilyBinding.TENANT_BOUND,
+            binding=ctx_asm_binding,
             authoritative_tenant_source=(
-                "record_context_assembled_from_engine: peek_active_runtime_event_tenant_id; "
-                "record_context_assembly: metadata tenant_id (caller-supplied)"
+                "engine: peek_active_runtime_event_tenant_id; "
+                "ContextManager production: task.tenant_id → metadata (canonical last); "
+                "raw record_context_assembly: caller-controlled metadata"
             ),
-            evidence=(
+            evidence=ctx_asm_ev
+            + (
                 "intergrax/runtime/events/context_skill_recording.py::record_context_assembly",
                 "intergrax/runtime/events/context_skill_recording.py::record_context_assembled_from_engine",
             ),
@@ -77,32 +117,24 @@ def build_r4_families() -> tuple[R4FamilyRow, ...]:
         R4FamilyRow(
             family_id="D.runtime_functional_evidence",
             family_label="runtime functional evidence",
-            binding=R4FamilyBinding.TENANT_BOUND,
+            binding=fe_binding,
             authoritative_tenant_source="require_tenant_id_from_exec_ctx(exec_ctx)",
-            evidence=(
-                "intergrax/contracts/functional_evidence/tenant.py::require_tenant_id_from_exec_ctx",
-                "intergrax/runtime/observability/functional_evidence_recorder.py",
-            ),
+            evidence=fe_ev,
         ),
         R4FamilyRow(
             family_id="E.runtime_events",
             family_label="runtime events (CONTEXT_ASSEMBLED / LLM_CALL / background lifecycle)",
-            binding=R4FamilyBinding.TENANT_BOUND,
+            binding=ev_binding,
             authoritative_tenant_source="RuntimeEvent.tenant_id on typed lifecycle families",
-            evidence=(
-                "intergrax/contracts/runtime_event.py::RuntimeEvent",
-                "intergrax/background_tasks/events.py",
-            ),
+            evidence=ev_ev
+            + ("intergrax/background_tasks/events.py",),
         ),
         R4FamilyRow(
             family_id="F.trace_diagnostics",
             family_label="trace / diagnostics",
-            binding=R4FamilyBinding.TENANT_BOUND,
-            authoritative_tenant_source="observational carrier — no tenant mint on attribution path",
-            evidence=(
-                "intergrax/runtime/llm/model_context_attribution.py",
-                "tests/qualification/trace_x/test_trace_x_p4_model_context_attribution.py",
-            ),
+            binding=trace_binding,
+            authoritative_tenant_source="observational compare — no tenant mint on attribution path",
+            evidence=trace_ev,
             notes="ILLEGAL_AUTHORITY count must remain 0",
         ),
         R4FamilyRow(
@@ -115,12 +147,9 @@ def build_r4_families() -> tuple[R4FamilyRow, ...]:
         R4FamilyRow(
             family_id="H.queue_worker_transport",
             family_label="queue / worker transport",
-            binding=R4FamilyBinding.TENANT_BOUND,
-            authoritative_tenant_source="TaskRequest.tenant_id at enqueue + worker intake",
-            evidence=(
-                "intergrax/queueing/providers/document_store.py::DocumentStoreTaskWorker",
-                "intergrax/runtime/background_execution/bootstrap.py",
-            ),
+            binding=qw_binding,
+            authoritative_tenant_source="TaskRequest.tenant_id at enqueue + execution_identity.tenant_id at worker",
+            evidence=qw_ev,
         ),
         R4FamilyRow(
             family_id="I.async_domain_workers",
@@ -132,11 +161,9 @@ def build_r4_families() -> tuple[R4FamilyRow, ...]:
         R4FamilyRow(
             family_id="J.extension_context_async_seam",
             family_label="extension / context async seam",
-            binding=R4FamilyBinding.TENANT_BOUND,
-            authoritative_tenant_source="extensions receive bound scope — no tenant mint in R4 paths",
-            evidence=(
-                "intergrax/runtime/nexus/context/context_engine.py::record_context_assembled_from_engine",
-            ),
+            binding=ext_binding,
+            authoritative_tenant_source="engine active scope + ContextManager task.tenant_id metadata bind",
+            evidence=ext_ev,
             notes="architecture change required if extension becomes tenant authority",
         ),
     )

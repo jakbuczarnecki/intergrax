@@ -7,11 +7,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from tests.qualification.tenant_x._propagation import TENANT_PROPAGATION_GAPS, PropagationEdgeStatus
+from tests.qualification.tenant_x._r4_call_sites import (
+    build_record_context_assembly_inventory,
+    build_record_llm_call_inventory,
+)
 from tests.qualification.tenant_x._r4_chain import (
     build_r4_e2e_chain,
+    context_model_chain_counts,
     context_model_chain_proven,
+    evidence_event_chain_counts,
+    queue_worker_chain_counts,
     r4_chain_invalid_count,
     r4_chain_missing_count,
+    r4_chain_proven_count,
 )
 from tests.qualification.tenant_x._r4_matrices import (
     ASYNC_DOMAIN_WORKER_MATRIX,
@@ -83,6 +91,18 @@ class TenantXR4QualificationReport:
     substitution_legal_non_tenant: int
     substitution_unknown: int
     context_model_gap_proven: bool
+    record_context_assembly_callers_total: int
+    record_context_assembly_canonically_bound: int
+    record_context_assembly_unsafe: int
+    record_context_assembly_unknown_callers: int
+    record_llm_call_callers_total: int
+    record_llm_call_canonical_tenant: int
+    record_llm_call_validated_explicit: int
+    record_llm_call_untrusted_explicit: int
+    record_llm_call_unknown: int
+    e2e_chain_proven: int
+    e2e_chain_missing: int
+    e2e_chain_invalid: int
     attribution_optional_tenant_class: str
     b2b_nordea_verdict: str
     r4_ready_for_audit: bool
@@ -194,8 +214,19 @@ def build_r4_qualification_report() -> TenantXR4QualificationReport:
     gap_proven = _context_model_gap_proven()
     chain_missing = r4_chain_missing_count()
     chain_invalid = r4_chain_invalid_count()
+    chain_proven = r4_chain_proven_count()
+    cm_chain = context_model_chain_counts()
+    qw_chain = queue_worker_chain_counts()
+    ev_chain = evidence_event_chain_counts()
+
+    ctx_asm_inv = build_record_context_assembly_inventory()
+    llm_inv = build_record_llm_call_inventory()
 
     remediation: list[str] = []
+    if ctx_asm_inv.unknown or ctx_asm_inv.caller_controlled_unsafe:
+        remediation.append("TENANT-X-R4-R1 - record_context_assembly production caller reconciliation")
+    if llm_inv.unknown or llm_inv.untrusted_explicit_tenant:
+        remediation.append("TENANT-X-R4-R1 - record_llm_call_runtime_event tenant param reconciliation")
     if unknown_families:
         remediation.append("TENANT-X-R4-R1 - critical R4 family UNKNOWN reconciliation")
     if not gap_proven or cm_m or cm_i:
@@ -220,6 +251,16 @@ def build_r4_qualification_report() -> TenantXR4QualificationReport:
         and gap_proven
         and cm_m == 0
         and cm_i == 0
+        and cm_chain[1] == 0
+        and cm_chain[2] == 0
+        and qw_chain[1] == 0
+        and qw_chain[2] == 0
+        and ev_chain[1] == 0
+        and ev_chain[2] == 0
+        and ctx_asm_inv.unknown == 0
+        and ctx_asm_inv.caller_controlled_unsafe == 0
+        and llm_inv.unknown == 0
+        and llm_inv.untrusted_explicit_tenant == 0
         and chain_missing == 0
         and chain_invalid == 0
         and ct_allow == 0
@@ -285,6 +326,18 @@ def build_r4_qualification_report() -> TenantXR4QualificationReport:
         substitution_legal_non_tenant=sub_legal,
         substitution_unknown=sub_unk,
         context_model_gap_proven=gap_proven,
+        record_context_assembly_callers_total=ctx_asm_inv.production_callers_total,
+        record_context_assembly_canonically_bound=ctx_asm_inv.canonically_bound,
+        record_context_assembly_unsafe=ctx_asm_inv.caller_controlled_unsafe,
+        record_context_assembly_unknown_callers=ctx_asm_inv.unknown,
+        record_llm_call_callers_total=llm_inv.production_callers_total,
+        record_llm_call_canonical_tenant=llm_inv.canonical_tenant,
+        record_llm_call_validated_explicit=llm_inv.validated_explicit_tenant,
+        record_llm_call_untrusted_explicit=llm_inv.untrusted_explicit_tenant,
+        record_llm_call_unknown=llm_inv.unknown,
+        e2e_chain_proven=chain_proven,
+        e2e_chain_missing=chain_missing,
+        e2e_chain_invalid=chain_invalid,
         attribution_optional_tenant_class=optional_class,
         b2b_nordea_verdict="READY WITH PLATFORM GAPS",
         r4_ready_for_audit=ready,
@@ -293,6 +346,9 @@ def build_r4_qualification_report() -> TenantXR4QualificationReport:
 
 
 def summarize_r4_metrics(report: TenantXR4QualificationReport) -> dict[str, int | str | bool | tuple[str, ...]]:
+    cm_chain = context_model_chain_counts()
+    qw_chain = queue_worker_chain_counts()
+    ev_chain = evidence_event_chain_counts()
     return {
         "r4_families_total": report.r4_families_total,
         "tenant_bound_families": report.tenant_bound_families,
@@ -337,6 +393,27 @@ def summarize_r4_metrics(report: TenantXR4QualificationReport) -> dict[str, int 
         "substitution_legal_non_tenant": report.substitution_legal_non_tenant,
         "substitution_unknown": report.substitution_unknown,
         "context_model_gap_proven": report.context_model_gap_proven,
+        "record_context_assembly_callers_total": report.record_context_assembly_callers_total,
+        "record_context_assembly_canonically_bound": report.record_context_assembly_canonically_bound,
+        "record_context_assembly_unsafe": report.record_context_assembly_unsafe,
+        "record_context_assembly_unknown_callers": report.record_context_assembly_unknown_callers,
+        "record_llm_call_callers_total": report.record_llm_call_callers_total,
+        "record_llm_call_canonical_tenant": report.record_llm_call_canonical_tenant,
+        "record_llm_call_validated_explicit": report.record_llm_call_validated_explicit,
+        "record_llm_call_untrusted_explicit": report.record_llm_call_untrusted_explicit,
+        "record_llm_call_unknown": report.record_llm_call_unknown,
+        "context_model_chain_proven": cm_chain[0],
+        "context_model_chain_missing": cm_chain[1],
+        "context_model_chain_invalid": cm_chain[2],
+        "queue_worker_chain_proven": qw_chain[0],
+        "queue_worker_chain_missing": qw_chain[1],
+        "queue_worker_chain_invalid": qw_chain[2],
+        "evidence_event_chain_proven": ev_chain[0],
+        "evidence_event_chain_missing": ev_chain[1],
+        "evidence_event_chain_invalid": ev_chain[2],
+        "e2e_chain_proven": report.e2e_chain_proven,
+        "e2e_chain_missing": report.e2e_chain_missing,
+        "e2e_chain_invalid": report.e2e_chain_invalid,
         "e2e_chain_transitions": len(build_r4_e2e_chain()),
         "b2b_nordea": report.b2b_nordea_verdict,
         "remediation_children": report.remediation_children,

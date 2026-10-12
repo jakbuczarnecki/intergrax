@@ -99,8 +99,9 @@ TENANT_PROPAGATION_GAPS: Final[tuple[PropagationEdgeGap, ...]] = (
     PropagationEdgeGap(
         gap_id="gap.context_model_scope",
         description=(
-            "CLOSED @ TENANT-X-R4 — execution/context tenant → CONTEXT_ASSEMBLED → LLM_CALL → "
-            "try_attribute_model_call_to_context (current-HEAD structural + adversarial)"
+            "context/model continuity = PROVEN_CURRENT_HEAD at R4 qualification scope "
+            "(per-transition Chain 1 + production call-site inventory); "
+            "pending independent R4 audit — not FRZ promotion"
         ),
         frz_ten_criteria=("FRZ-TEN-02", "FRZ-TEN-11"),
         status=PropagationEdgeStatus.PROVEN,

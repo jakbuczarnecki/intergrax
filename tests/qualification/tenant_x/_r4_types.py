@@ -62,6 +62,23 @@ class R4ContextTenantSourceClass(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class R4ContextAssemblyPathClass(StrEnum):
+    """Helper vs production call-site authority (TENANT-X-R4-R1)."""
+
+    RAW_HELPER_CALLER_CONTROLLED = "RAW_HELPER_CALLER_CONTROLLED"
+    PRODUCTION_CALLSITE_CANONICALLY_BOUND = "PRODUCTION_CALLSITE_CANONICALLY_BOUND"
+    UNKNOWN_CALLSITE = "UNKNOWN_CALLSITE"
+
+
+class R4LlmCallTenantParamClass(StrEnum):
+    CANONICAL_EXECUTION_TENANT = "CANONICAL_EXECUTION_TENANT"
+    VALIDATED_BOUND_TENANT = "VALIDATED_BOUND_TENANT"
+    UNTRUSTED_CALLER_TENANT = "UNTRUSTED_CALLER_TENANT"
+    AMBIENT_RUNTIME_TENANT = "AMBIENT_RUNTIME_TENANT"
+    TEST_ONLY = "TEST_ONLY"
+    UNKNOWN = "UNKNOWN"
+
+
 class R4EventTenantSourceClass(StrEnum):
     DIRECT_FROM_CANONICAL_EXECUTION = "DIRECT_FROM_CANONICAL_EXECUTION"
     VALIDATED_FROM_BOUND_CONTEXT = "VALIDATED_FROM_BOUND_CONTEXT"
@@ -113,6 +130,8 @@ class R4MatrixRow:
         | R4ExtensionTenantClass
         | R4SubstitutionClass
         | R4ContextTenantSourceClass
+        | R4ContextAssemblyPathClass
+        | R4LlmCallTenantParamClass
         | R4EventTenantSourceClass
         | R4AttributionTenantOptionalClass
     )
@@ -120,4 +139,4 @@ class R4MatrixRow:
     tenant_expression: str = ""
 
 
-R4_EXPECTED_BASELINE_HEAD: Final[str] = "5d9f6887f21f5313bedbcc38eced5cf8b306cc92"
+R4_EXPECTED_BASELINE_HEAD: Final[str] = "311281da537c7afa4f16378ac5da9dbfa97829de"

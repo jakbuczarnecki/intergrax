@@ -51,7 +51,7 @@ def test_tx_r4_q02_family_inventory_bounded() -> None:
 
 def test_tx_r4_q03_e2e_chain_transitions_present() -> None:
     chain = build_r4_e2e_chain()
-    assert len(chain) == 10
+    assert len(chain) == 11
     assert all(t.fail_closed for t in chain)
     assert all(t.verdict == R4ChainVerdict.PROVEN_CURRENT_HEAD for t in chain)
 
@@ -64,7 +64,7 @@ def test_tx_r4_q04_required_matrices_non_empty() -> None:
     assert len(BACKGROUND_EXECUTION_IDENTITY_MATRIX) >= 4
     assert len(QUEUE_WORKER_CONTINUITY_MATRIX) >= 3
     assert len(ASYNC_DOMAIN_WORKER_MATRIX) >= 3
-    assert len(EXTENSION_SCOPE_MATRIX) >= 2
+    assert len(EXTENSION_SCOPE_MATRIX) >= 3
     assert len(MISSING_DEFAULT_GLOBAL_MATRIX) >= 4
     assert len(CROSS_TENANT_R4_MATRIX) >= 7
 
@@ -114,5 +114,11 @@ def test_tx_r4_q11_report_ready_for_audit() -> None:
     report = build_r4_qualification_report()
     metrics = summarize_r4_metrics(report)
     assert metrics["r4_families_total"] == 10
+    assert report.record_context_assembly_unknown_callers == 0
+    assert report.record_context_assembly_unsafe == 0
+    assert report.record_llm_call_unknown == 0
+    assert report.record_llm_call_untrusted_explicit == 0
+    assert metrics["context_model_chain_missing"] == 0
+    assert metrics["e2e_chain_proven"] == 11
     assert report.r4_ready_for_audit
     assert report.remediation_children == ()

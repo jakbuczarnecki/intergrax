@@ -10,10 +10,12 @@ from tests.qualification.tenant_x._r4_mechanisms import build_r4_families
 from tests.qualification.tenant_x._r4_types import (
     R4AttributionTenantOptionalClass,
     R4ChainVerdict,
+    R4ContextAssemblyPathClass,
     R4ContextTenantSourceClass,
     R4CrossTenantClass,
     R4EventTenantSourceClass,
     R4ExtensionTenantClass,
+    R4LlmCallTenantParamClass,
     R4MatrixRow,
     R4ObservabilityRole,
     R4SubstitutionClass,
@@ -197,10 +199,17 @@ EXTENSION_SCOPE_MATRIX: Final[tuple[R4MatrixRow, ...]] = (
         evidence=("engine path uses active runtime event tenant scope",),
     ),
     R4MatrixRow(
-        row_id="context_metadata_path",
-        surface_hint="record_context_assembly metadata tenant",
-        verdict=R4ExtensionTenantClass.PRESERVED,
-        evidence=("caller metadata — attribution still fail-closed on mismatch",),
+        row_id="context_metadata_helper_raw",
+        surface_hint="record_context_assembly(metadata tenant_id)",
+        verdict=R4ContextAssemblyPathClass.RAW_HELPER_CALLER_CONTROLLED,
+        evidence=("metadata.get('tenant_id') — non-authoritative helper surface",),
+    ),
+    R4MatrixRow(
+        row_id="context_manager_metadata_path",
+        surface_hint="context_manager.py production caller",
+        verdict=R4ContextAssemblyPathClass.PRODUCTION_CALLSITE_CANONICALLY_BOUND,
+        evidence=('metadata={**bundle_metadata, "tenant_id": task.tenant_id}',),
+        tenant_expression="task.tenant_id",
     ),
 )
 
@@ -273,6 +282,28 @@ CROSS_TENANT_R4_MATRIX: Final[tuple[R4MatrixRow, ...]] = (
         surface_hint="trace_x_p4 e2e attribution",
         verdict=R4CrossTenantClass.SAME_TENANT_PROVEN,
         evidence=("test_txp4_q12_primary_context_model_e2e_attribution",),
+    ),
+)
+
+LLM_CALL_TENANT_SOURCE_MATRIX: Final[tuple[R4MatrixRow, ...]] = (
+    R4MatrixRow(
+        row_id="maybe_record_llm_from_usage",
+        surface_hint="maybe_record_llm_call_from_usage_end",
+        verdict=R4LlmCallTenantParamClass.CANONICAL_EXECUTION_TENANT,
+        evidence=("tenant_id=evidence.tenant_id",),
+        tenant_expression="evidence.tenant_id",
+    ),
+    R4MatrixRow(
+        row_id="record_llm_ambient_fallback",
+        surface_hint="record_llm_call_runtime_event resolved_tenant",
+        verdict=R4LlmCallTenantParamClass.AMBIENT_RUNTIME_TENANT,
+        evidence=("peek_active_runtime_event_tenant_id when tenant_id omitted",),
+    ),
+    R4MatrixRow(
+        row_id="record_llm_direct_production",
+        surface_hint="production direct record_llm_call_runtime_event",
+        verdict=R4LlmCallTenantParamClass.TEST_ONLY,
+        evidence=("no production module outside llm_call_recording.py",),
     ),
 )
 
