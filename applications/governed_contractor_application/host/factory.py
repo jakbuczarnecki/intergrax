@@ -133,7 +133,7 @@ def create_governed_contractor_backend_app(
             document_store=document_store,
             key_value_cache=key_value_cache,
         )
-        if production_mode:
+        if production_mode and key_value_cache is not None:
             env = resolve_reference_production_strict_host_environment(env)
             manifest_for_runtime = manifest.model_copy(update={"environment": env})
     collaborative_work_integration_profile = None
