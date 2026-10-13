@@ -86,17 +86,35 @@ def _release_lifecycle_owned_stores(
     return errors
 
 
+def _raise_primary_with_cleanup_errors(
+    primary_exc: BaseException,
+    cleanup_errors: list[BaseException],
+    *,
+    message: str,
+) -> None:
+    if cleanup_errors:
+        raise ExceptionGroup(message, [primary_exc, *cleanup_errors]) from primary_exc
+    raise primary_exc
+
+
 def _raise_startup_failure_with_cleanup(
     startup_exc: BaseException,
     cleanup_errors: list[BaseException],
 ) -> None:
-    if cleanup_errors:
-        raise ExceptionGroup(
+    _raise_primary_with_cleanup_errors(
+        startup_exc,
+        cleanup_errors,
+        message=(
             "reference production process lifecycle startup failed; "
-            "errors while releasing acquired resources",
-            [startup_exc, *cleanup_errors],
-        ) from startup_exc
-    raise startup_exc
+            "errors while releasing acquired resources"
+        ),
+    )
+
+
+def _cleanup_errors_from_close_failure(cleanup_exc: BaseException) -> list[BaseException]:
+    if isinstance(cleanup_exc, BaseExceptionGroup):
+        return list(cleanup_exc.exceptions)
+    return [cleanup_exc]
 
 
 class ReferenceProductionProcessLifecycleError(ValueError):
@@ -163,7 +181,21 @@ class ReferenceProductionProcessLifecycle:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> bool:
-        self.close_process_resources()
+        body_exc = exc
+        try:
+            self.close_process_resources()
+        except BaseException as cleanup_exc:
+            if body_exc is None:
+                raise
+            cleanup_errors = _cleanup_errors_from_close_failure(cleanup_exc)
+            _raise_primary_with_cleanup_errors(
+                body_exc,
+                cleanup_errors,
+                message=(
+                    "reference production process lifecycle context exited with an error; "
+                    "errors while closing resources"
+                ),
+            )
         return False
 
 
@@ -213,20 +245,14 @@ def open_reference_production_process_lifecycle(
             continuation_state_file,
             missing_file_policy=missing_file_policy,
         )
-    except Exception:
+    except BaseException as startup_exc:
         cleanup_errors = _release_lifecycle_owned_stores(
             continuation_store=None,
             owned_invocation=owned_invocation,
             continuation_closed=True,
             invocation_closed=False,
         )
-        if cleanup_errors:
-            raise ExceptionGroup(
-                "failed opening continuation store; errors while releasing "
-                "acquired provider invocation store",
-                cleanup_errors,
-            ) from cleanup_errors[0]
-        raise
+        _raise_startup_failure_with_cleanup(startup_exc, cleanup_errors)
 
     try:
         if composition_builder is not None:
@@ -268,14 +294,14 @@ def open_reference_production_process_lifecycle(
             _owned_continuation_store=continuation_store,
             _owned_invocation_store=owned_invocation,
         )
-    except Exception as exc:
+    except BaseException as startup_exc:
         cleanup_errors = _release_lifecycle_owned_stores(
             continuation_store=continuation_store,
             owned_invocation=owned_invocation,
             continuation_closed=False,
             invocation_closed=False,
         )
-        _raise_startup_failure_with_cleanup(exc, cleanup_errors)
+        _raise_startup_failure_with_cleanup(startup_exc, cleanup_errors)
 
 
 __all__ = [

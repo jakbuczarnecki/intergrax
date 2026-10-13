@@ -610,3 +610,179 @@ def test_pis_02_r1_external_invocation_store_stays_open_after_lifecycle_failure(
 
     external.put_invocation(_invocation("inv-external-survives"))
     assert external.get_invocation("inv-external-survives") is not None
+
+
+def _pis_02_r2_open_kwargs(tmp_path: Path):
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    return {
+        "continuation_state_file": tmp_path / "continuation.json",
+        "provider_invocation_db": tmp_path / "provider_invocations.db",
+        "env": env,
+        "missing_file_policy": "empty",
+        "composition_builder": _strict_composition_builder(tmp_path),
+    }
+
+
+def test_pis_02_r2_continuation_open_fails_sqlite_close_succeeds_retains_original(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    original = RuntimeError("continuation-open-failed")
+
+    with patch(
+        "intergrax.applications._shared.reference_production_process_lifecycle."
+        "open_production_execution_continuation_state_store",
+        side_effect=original,
+    ):
+        with pytest.raises(RuntimeError) as exc_info:
+            open_reference_production_process_lifecycle(**kwargs)
+
+    assert exc_info.value is original
+
+
+def test_pis_02_r2_continuation_open_fails_sqlite_close_fails_retains_both(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    original = RuntimeError("continuation-open-failed")
+    sqlite_close = RuntimeError("sqlite-close-failed")
+
+    with (
+        patch(
+            "intergrax.applications._shared.reference_production_process_lifecycle."
+            "open_production_execution_continuation_state_store",
+            side_effect=original,
+        ),
+        patch.object(
+            SQLiteProviderInvocationStore,
+            "close",
+            side_effect=sqlite_close,
+        ),
+    ):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            open_reference_production_process_lifecycle(**kwargs)
+
+    group = exc_info.value
+    assert group.exceptions[0] is original
+    assert group.exceptions[1] is sqlite_close
+
+
+def test_pis_02_r2_composition_build_fails_both_close_fail_retains_all_causes(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    build_fail = RuntimeError("composition-build-failed")
+    continuation_close = RuntimeError("continuation-close-failed")
+    sqlite_close = RuntimeError("sqlite-close-failed")
+
+    def _failing_builder(
+        store: SerializedSealExecutionContinuationStateStore,
+        invocation_store: ProviderInvocationStore,
+    ) -> ProductionProcessComposition:
+        del store, invocation_store
+        raise build_fail
+
+    kwargs["composition_builder"] = _failing_builder
+
+    with (
+        patch.object(
+            SerializedSealExecutionContinuationStateStore,
+            "close",
+            side_effect=continuation_close,
+        ),
+        patch.object(
+            SQLiteProviderInvocationStore,
+            "close",
+            side_effect=sqlite_close,
+        ),
+    ):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            open_reference_production_process_lifecycle(**kwargs)
+
+    group = exc_info.value
+    assert group.exceptions[0] is build_fail
+    assert continuation_close in group.exceptions
+    assert sqlite_close in group.exceptions
+
+
+def test_pis_02_r2_context_body_fails_both_close_succeed_retains_original(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    body_fail = RuntimeError("context-body-failed")
+
+    with pytest.raises(RuntimeError) as exc_info:
+        with open_reference_production_process_lifecycle(**kwargs):
+            raise body_fail
+
+    assert exc_info.value is body_fail
+
+
+def test_pis_02_r2_context_body_fails_continuation_close_fails_retains_both(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    body_fail = RuntimeError("context-body-failed")
+    continuation_close = RuntimeError("continuation-close-failed")
+
+    with patch.object(
+        SerializedSealExecutionContinuationStateStore,
+        "close",
+        side_effect=continuation_close,
+    ):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            with open_reference_production_process_lifecycle(**kwargs):
+                raise body_fail
+
+    group = exc_info.value
+    assert group.exceptions[0] is body_fail
+    assert group.exceptions[1] is continuation_close
+
+
+def test_pis_02_r2_context_body_fails_both_close_fail_retains_all_causes(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    body_fail = RuntimeError("context-body-failed")
+    continuation_close = RuntimeError("continuation-close-failed")
+    sqlite_close = RuntimeError("sqlite-close-failed")
+
+    with (
+        patch.object(
+            SerializedSealExecutionContinuationStateStore,
+            "close",
+            side_effect=continuation_close,
+        ),
+        patch.object(
+            SQLiteProviderInvocationStore,
+            "close",
+            side_effect=sqlite_close,
+        ),
+    ):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            with open_reference_production_process_lifecycle(**kwargs):
+                raise body_fail
+
+    group = exc_info.value
+    assert group.exceptions[0] is body_fail
+    assert continuation_close in group.exceptions
+    assert sqlite_close in group.exceptions
+
+
+def test_pis_02_r2_normal_shutdown_one_close_fails_propagates_cleanup_error(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    continuation_close = RuntimeError("continuation-close-failed")
+
+    with patch.object(
+        SerializedSealExecutionContinuationStateStore,
+        "close",
+        side_effect=continuation_close,
+    ):
+        with pytest.raises(RuntimeError) as exc_info:
+            with open_reference_production_process_lifecycle(**kwargs) as lifecycle:
+                assert lifecycle.composition is not None
+
+    assert exc_info.value is continuation_close
