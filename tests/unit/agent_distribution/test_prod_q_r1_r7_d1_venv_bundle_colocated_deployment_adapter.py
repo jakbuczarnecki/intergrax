@@ -24,6 +24,9 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
+from intergrax.agent_distribution.venv_bundle_colocated_runtime_resource import (
+    ColocatedVenvRuntimeResource,
+)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
@@ -98,9 +101,13 @@ def _prepare_ready(
     adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
     revision: RuntimeRevision,
     locator: str,
+    *,
+    authorize_admission: bool = False,
 ) -> str:
     prepared = adapter.prepare(revision, artifact_locator=locator)
     adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
+    if authorize_admission:
+        adapter.authorize_serving_execution_admission(prepared.serving_unit_ref)
     return prepared.serving_unit_ref
 
 
@@ -179,9 +186,12 @@ def test_unit_without_traffic_admission_before_readiness(tmp_path: Path) -> None
     )
     revision = _revision_for("rev-adm", digest=digest, lock=lock)
     prepared = adapter.prepare(revision, artifact_locator=locator)
-    with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
+    with pytest.raises(VenvBundleColocatedDeploymentError, match="resources are invalid"):
         adapter.admit_unit_execution(prepared.serving_unit_ref)
     adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
+    with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
+        adapter.admit_unit_execution(prepared.serving_unit_ref)
+    adapter.authorize_serving_execution_admission(prepared.serving_unit_ref)
     adapter.admit_unit_execution(prepared.serving_unit_ref)
     adapter.release_unit_execution(prepared.serving_unit_ref)
 
@@ -340,7 +350,7 @@ def test_begin_drain_blocks_admission(tmp_path: Path) -> None:
         trusted_artifact_parent_roots=[tmp_path],
     )
     revision = _revision_for("rev-drain", digest=digest, lock=lock)
-    unit_ref = _prepare_ready(adapter, revision, locator)
+    unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
     adapter.admit_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
@@ -354,7 +364,7 @@ def test_drain_completion_reflects_in_flight(tmp_path: Path) -> None:
         trusted_artifact_parent_roots=[tmp_path],
     )
     revision = _revision_for("rev-inflight", digest=digest, lock=lock)
-    unit_ref = _prepare_ready(adapter, revision, locator)
+    unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
     adapter.admit_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     policy = DrainPolicy(timeout_seconds=30.0)
@@ -373,7 +383,7 @@ def test_drain_timeout_evidence(tmp_path: Path) -> None:
         trusted_artifact_parent_roots=[tmp_path],
     )
     revision = _revision_for("rev-to", digest=digest, lock=lock)
-    unit_ref = _prepare_ready(adapter, revision, locator)
+    unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
     adapter.admit_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     policy = DrainPolicy(timeout_seconds=0.01)
@@ -420,6 +430,48 @@ def test_resume_does_not_resurrect_stopped_unit(tmp_path: Path) -> None:
 def test_alternate_adapter_satisfies_protocol() -> None:
     alt: RuntimeDeploymentAdapter = FakeInMemoryRuntimeDeploymentAdapter()
     assert hasattr(alt, "attest_serving_unit")
+
+
+def test_runtime_initialization_failure_cleans_up(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, digest, locator, lock = _bundle(tmp_path)
+    adapter = VenvBundleColocatedRuntimeDeploymentAdapter(
+        trusted_artifact_parent_roots=[tmp_path],
+    )
+    revision = _revision_for("rev-init-fail", digest=digest, lock=lock)
+
+    def _fail_initialize(self: ColocatedVenvRuntimeResource) -> str:
+        raise RuntimeError("warmup failed")
+
+    monkeypatch.setattr(ColocatedVenvRuntimeResource, "initialize", _fail_initialize)
+    prepared = adapter.prepare(revision, artifact_locator=locator)
+    with pytest.raises(VenvBundleColocatedDeploymentError, match="warmup failed"):
+        adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
+    with pytest.raises(ServingUnitAttestationError, match="unknown"):
+        adapter.attest_serving_unit(
+            revision,
+            request=ServingUnitAttestationRequest(
+                application_id=_APP,
+                application_environment_id=_ENV,
+                runtime_revision_id="rev-init-fail",
+                serving_unit_ref=prepared.serving_unit_ref,
+                materialization_artifact_digest=digest,
+                artifact_locator=locator,
+            ),
+        )
+
+
+def test_runtime_initialization_success_evidence(tmp_path: Path) -> None:
+    root, digest, locator, lock = _bundle(tmp_path)
+    adapter = VenvBundleColocatedRuntimeDeploymentAdapter(
+        trusted_artifact_parent_roots=[tmp_path],
+    )
+    revision = _revision_for("rev-init-ok", digest=digest, lock=lock)
+    prepared = adapter.prepare(revision, artifact_locator=locator)
+    evidence = adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
+    assert "venv-colocated-runtime:" in evidence
 
 
 def test_deployment_port_has_no_applications_import() -> None:

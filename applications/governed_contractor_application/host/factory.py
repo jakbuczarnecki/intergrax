@@ -30,8 +30,14 @@ from intergrax.contracts.execution_continuation_state_store import (
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.applications._shared.colocated_serving_unit_task_execution import (
+    ColocatedServingUnitAdmissionTaskExecutionPort,
+)
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
+)
+from intergrax.applications._shared.serving_runtime_handoff import (
+    validate_serving_runtime_handoff_against_projection_evidence,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.plugin_bootstrap import (
@@ -103,6 +109,16 @@ def create_governed_contractor_backend_app(
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
+    if (
+        registry_projection is not None
+        and process_composition is not None
+        and process_composition.serving_runtime_handoff is not None
+    ):
+        validate_serving_runtime_handoff_against_projection_evidence(
+            process_composition.serving_runtime_handoff,
+            runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+            materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+        )
     resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
@@ -201,6 +217,14 @@ def create_governed_contractor_backend_app(
         key_value_cache=profile_persistence_kwargs.key_value_cache,
     )
     host_execution = runtime.execution
+    if (
+        process_composition is not None
+        and process_composition.serving_runtime_handoff is not None
+    ):
+        host_execution = ColocatedServingUnitAdmissionTaskExecutionPort(
+            host_execution,
+            process_composition.serving_runtime_handoff,
+        )
     registry = runtime.registry
     platform = bootstrap_harness_host_platform(runtime)
     if observability_export is not None and observability_export.enabled:

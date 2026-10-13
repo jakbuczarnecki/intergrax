@@ -34,6 +34,7 @@ from intergrax.applications._shared.roster_agent_contract_authority import (
 )
 from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolutionError,
+    RuntimeAgentFactoryResolver,
 )
 from intergrax.applications._shared.venv_bundle_runtime_agent_factory_resolver import (
     build_production_runtime_agent_factory_resolver,
@@ -171,6 +172,7 @@ def assemble_production_registry_projection_input_bundle(
     artifact_locator: str,
     materialization_artifact_digest: str,
     roster_contract_authority: RosterAgentContractAuthority,
+    factory_resolver: RuntimeAgentFactoryResolver | None = None,
 ) -> RegistryProjectionInputBundle:
     """Internal assembly from already-resolved canonical lifecycle authority."""
     _validate_revision_roster_lock_authority(
@@ -184,17 +186,19 @@ def assemble_production_registry_projection_input_bundle(
             "manifest application_id mismatch with runtime revision"
         )
 
-    artifact_root = resolve_production_artifact_root(artifact_locator)
-    try:
-        factory_resolver = build_production_runtime_agent_factory_resolver(
-            runtime_revision=runtime_revision,
-            artifact_root=artifact_root,
-            expected_artifact_digest=materialization_artifact_digest,
-        )
-    except RuntimeAgentFactoryResolutionError as exc:
-        raise ProductionRegistryProjectionInputError(str(exc)) from exc
+    resolved_factory_resolver = factory_resolver
+    if resolved_factory_resolver is None:
+        artifact_root = resolve_production_artifact_root(artifact_locator)
+        try:
+            resolved_factory_resolver = build_production_runtime_agent_factory_resolver(
+                runtime_revision=runtime_revision,
+                artifact_root=artifact_root,
+                expected_artifact_digest=materialization_artifact_digest,
+            )
+        except RuntimeAgentFactoryResolutionError as exc:
+            raise ProductionRegistryProjectionInputError(str(exc)) from exc
 
-    lock = factory_resolver.materialized_runtime_lock
+    lock = resolved_factory_resolver.materialized_runtime_lock
     _validate_revision_roster_lock_authority(
         runtime_revision=runtime_revision,
         effective_roster=effective_roster,
@@ -207,7 +211,7 @@ def assemble_production_registry_projection_input_bundle(
         effective_roster=effective_roster,
         manifest=manifest,
         build_context=build_context,
-        factory_resolver=factory_resolver,
+        factory_resolver=resolved_factory_resolver,
         builders=None,
         materialization_artifact_digest=materialization_artifact_digest,
         roster_contract_authority=roster_contract_authority,

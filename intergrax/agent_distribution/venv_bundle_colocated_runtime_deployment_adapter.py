@@ -29,6 +29,9 @@ from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
 )
+from intergrax.agent_distribution.venv_bundle_colocated_runtime_resource import (
+    ColocatedVenvRuntimeResource,
+)
 from intergrax.agent_distribution.venv_bundle_deployment_artifact import (
     VenvBundleDeploymentArtifactError,
     discover_venv_bundle_site_packages,
@@ -100,14 +103,16 @@ class _ColocatedVenvPhysicalUnit:
     site_packages: Path
     runtime_lock: MaterializedRuntimeLock
     lifecycle_state: DeploymentInstanceState
+    runtime_resource: ColocatedVenvRuntimeResource
     admission: _UnitAdmissionGate = field(default_factory=_UnitAdmissionGate)
     readiness_evidence_ref: str | None = None
+    serving_admission_authorized: bool = False
     drain_started_monotonic: float | None = None
-    resource_handle: threading.Event = field(default_factory=threading.Event)
     binding_key: str = ""
 
     def invalidate_resources(self) -> None:
-        self.resource_handle.clear()
+        self.runtime_resource.invalidate()
+        self.serving_admission_authorized = False
         self.admission.begin_drain()
 
 
@@ -136,8 +141,30 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         unit.admission.admit_execution()
 
     def release_unit_execution(self, serving_unit_ref: str) -> None:
-        unit = self._require_live_unit(serving_unit_ref)
+        unit = self._require_unit(serving_unit_ref)
         unit.admission.release_execution()
+
+    def authorize_serving_execution_admission(self, serving_unit_ref: str) -> None:
+        """Open execution admission after sanctioned activation/serving handoff (not readiness)."""
+        unit = self._require_unit(serving_unit_ref)
+        if unit.lifecycle_state not in {
+            DeploymentInstanceState.READY,
+            DeploymentInstanceState.SERVING,
+        }:
+            raise VenvBundleColocatedDeploymentError(
+                "serving unit is not eligible for execution admission"
+            )
+        if not unit.runtime_resource.is_live:
+            raise VenvBundleColocatedDeploymentError(
+                "serving unit physical runtime is not initialized"
+            )
+        unit.serving_admission_authorized = True
+        unit.admission.open_admission()
+        unit.lifecycle_state = DeploymentInstanceState.SERVING
+
+    def artifact_root_for_serving_unit(self, serving_unit_ref: str) -> Path:
+        """Expose immutable artifact root for composition-side resolver binding."""
+        return self._require_unit(serving_unit_ref).artifact_root
 
     def _binding_key(self, revision: RuntimeRevision) -> str:
         digest = revision.materialization_artifact_digest or ""
@@ -198,6 +225,12 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         site_packages = discover_venv_bundle_site_packages(artifact_root)
         return artifact_root, runtime_lock, site_packages
 
+    def _remove_unit(self, unit_ref: str, unit: _ColocatedVenvPhysicalUnit) -> None:
+        unit.invalidate_resources()
+        self._units.pop(unit_ref, None)
+        if unit.binding_key:
+            self._binding_index.pop(unit.binding_key, None)
+
     def prepare(
         self,
         revision: RuntimeRevision,
@@ -225,30 +258,32 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
                             materialization_artifact_digest=digest,
                         )
 
-        unit_ref = f"{_UNIT_REF_PREFIX}{secrets.token_hex(12)}"
-        try:
-            artifact_root, runtime_lock, site_packages = self._inspect_artifact(
-                revision, artifact_locator
+            try:
+                artifact_root, runtime_lock, site_packages = self._inspect_artifact(
+                    revision, artifact_locator
+                )
+            except VenvBundleDeploymentArtifactError as exc:
+                raise VenvBundleColocatedDeploymentError(str(exc)) from exc
+
+            unit_ref = f"{_UNIT_REF_PREFIX}{secrets.token_hex(12)}"
+            runtime_resource = ColocatedVenvRuntimeResource(
+                site_packages=site_packages,
+                artifact_digest=digest,
             )
-        except VenvBundleDeploymentArtifactError as exc:
-            raise VenvBundleColocatedDeploymentError(str(exc)) from exc
-
-        unit = _ColocatedVenvPhysicalUnit(
-            serving_unit_ref=unit_ref,
-            application_id=revision.application_id,
-            application_environment_id=revision.application_environment_id,
-            runtime_revision_id=revision.runtime_revision_id,
-            materialization_artifact_digest=digest,
-            artifact_locator=artifact_locator,
-            artifact_root=artifact_root,
-            site_packages=site_packages,
-            runtime_lock=runtime_lock,
-            lifecycle_state=DeploymentInstanceState.PREPARING,
-            binding_key=binding,
-        )
-        unit.resource_handle.set()
-
-        with self._lock:
+            unit = _ColocatedVenvPhysicalUnit(
+                serving_unit_ref=unit_ref,
+                application_id=revision.application_id,
+                application_environment_id=revision.application_environment_id,
+                runtime_revision_id=revision.runtime_revision_id,
+                materialization_artifact_digest=digest,
+                artifact_locator=artifact_locator,
+                artifact_root=artifact_root,
+                site_packages=site_packages,
+                runtime_lock=runtime_lock,
+                lifecycle_state=DeploymentInstanceState.PREPARING,
+                runtime_resource=runtime_resource,
+                binding_key=binding,
+            )
             self._units[unit_ref] = unit
             self._binding_index[binding] = unit_ref
 
@@ -268,10 +303,6 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             raise VenvBundleColocatedDeploymentError(
                 "cannot mark stopped serving unit ready"
             )
-        if not unit.resource_handle.is_set():
-            raise VenvBundleColocatedDeploymentError(
-                "serving unit physical resources are not live"
-            )
         try:
             verify_venv_bundle_artifact_bytes(
                 unit.artifact_root, unit.materialization_artifact_digest
@@ -280,25 +311,38 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             verify_venv_bundle_lock_matches_revision(revision, lock)
             site_packages = discover_venv_bundle_site_packages(unit.artifact_root)
         except VenvBundleDeploymentArtifactError as exc:
+            self._fail_unit(serving_unit_ref, unit)
             raise VenvBundleColocatedDeploymentError(str(exc)) from exc
 
         if site_packages != unit.site_packages:
+            self._fail_unit(serving_unit_ref, unit)
             raise VenvBundleColocatedDeploymentError(
                 "site-packages binding changed since unit allocation"
             )
         if revision.runtime_revision_id != unit.runtime_revision_id:
+            self._fail_unit(serving_unit_ref, unit)
             raise VenvBundleColocatedDeploymentError("revision identity mismatch")
+
+        try:
+            warmup = unit.runtime_resource.initialize()
+        except RuntimeError as exc:
+            self._fail_unit(serving_unit_ref, unit)
+            raise VenvBundleColocatedDeploymentError(str(exc)) from exc
 
         evidence = (
             f"venv-colocated-readiness:{unit.serving_unit_ref}:"
             f"digest={unit.materialization_artifact_digest}:"
             f"lock={unit.runtime_lock.lock_digest}:"
-            f"site={site_packages.name}"
+            f"site={site_packages.name}:{warmup}"
         )
         unit.readiness_evidence_ref = evidence
         unit.lifecycle_state = DeploymentInstanceState.READY
-        unit.admission.open_admission()
         return evidence
+
+    def _fail_unit(self, serving_unit_ref: str, unit: _ColocatedVenvPhysicalUnit) -> None:
+        with self._lock:
+            unit.lifecycle_state = DeploymentInstanceState.FAILED
+            self._remove_unit(serving_unit_ref, unit)
 
     def begin_drain(
         self,
@@ -363,9 +407,9 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             raise VenvBundleColocatedDeploymentError(
                 "stopped serving unit cannot be resumed"
             )
-        if not unit.resource_handle.is_set():
+        if not unit.runtime_resource.is_live:
             raise VenvBundleColocatedDeploymentError(
-                "serving unit physical resources are absent"
+                "serving unit physical runtime is not initialized"
             )
         if unit.lifecycle_state not in {
             DeploymentInstanceState.READY,
@@ -373,6 +417,8 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             DeploymentInstanceState.DRAINING,
         }:
             raise VenvBundleColocatedDeploymentError("serving unit cannot be resumed")
+        unit.admission.begin_drain()
+        unit.serving_admission_authorized = False
         unit.lifecycle_state = DeploymentInstanceState.READY
         unit.drain_started_monotonic = None
         evidence = unit.readiness_evidence_ref or self.check_readiness(
@@ -430,7 +476,7 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
                 "serving unit is not live",
                 reason_code="unit_not_live",
             )
-        if not unit.resource_handle.is_set():
+        if not unit.runtime_resource.is_live:
             raise ServingUnitAttestationError(
                 "serving unit physical resources are not live",
                 reason_code="unit_not_live",
@@ -466,6 +512,6 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         unit = self._require_unit(serving_unit_ref)
         if unit.lifecycle_state is DeploymentInstanceState.STOPPED:
             raise VenvBundleColocatedDeploymentError("serving unit is stopped")
-        if not unit.resource_handle.is_set():
+        if not unit.runtime_resource.is_live:
             raise VenvBundleColocatedDeploymentError("serving unit resources are invalid")
         return unit
