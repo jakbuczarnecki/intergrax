@@ -46,6 +46,7 @@ from intergrax.applications._shared.reference_production_process_lifecycle impor
     ReferenceProductionProcessLifecycleError,
     open_reference_production_process_lifecycle,
 )
+from intergrax.contracts.execution_continuation import ExecutionContinuationError
 from intergrax.contracts.provider_invocation import ProviderInvocation
 from intergrax.contracts.provider_invocation_store import (
     ProviderInvocationPersistenceError,
@@ -435,3 +436,177 @@ def test_pis_02_g_unresolved_intent_blocks_dispatch_after_restart(
         assert calls == 0
     finally:
         lifecycle_b.close_process_resources()
+
+
+def test_pis_02_r1_missing_continuation_releases_owned_sqlite(tmp_path: Path) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    invocation_db = tmp_path / "provider_invocations.db"
+    state_file = tmp_path / "continuation.json"
+
+    with pytest.raises(ExecutionContinuationError, match="missing"):
+        open_reference_production_process_lifecycle(
+            continuation_state_file=state_file,
+            provider_invocation_db=invocation_db,
+            env=env,
+            missing_file_policy="fail",
+            composition_builder=_strict_composition_builder(tmp_path),
+        )
+
+    reopened = open_provider_invocation_store_at(invocation_db)
+    reopened.close()
+
+
+def test_pis_02_r1_continuation_writer_lock_conflict_releases_owned_sqlite(
+    tmp_path: Path,
+) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    invocation_db = tmp_path / "provider_invocations.db"
+    state_file = tmp_path / "continuation.json"
+    holder = open_production_execution_continuation_state_store(
+        state_file,
+        missing_file_policy="empty",
+    )
+    try:
+        with pytest.raises(ExecutionContinuationError, match="conflicting"):
+            open_reference_production_process_lifecycle(
+                continuation_state_file=state_file,
+                provider_invocation_db=invocation_db,
+                env=env,
+                missing_file_policy="empty",
+                composition_builder=_strict_composition_builder(tmp_path),
+            )
+    finally:
+        holder.close()
+
+    reopened = open_provider_invocation_store_at(invocation_db)
+    reopened.close()
+
+
+def test_pis_02_r1_composition_builder_failure_releases_both_owned_stores(
+    tmp_path: Path,
+) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    state_file = tmp_path / "continuation.json"
+    invocation_db = tmp_path / "provider_invocations.db"
+
+    def _failing_builder(
+        store: SerializedSealExecutionContinuationStateStore,
+        invocation_store: ProviderInvocationStore,
+    ) -> ProductionProcessComposition:
+        del store, invocation_store
+        raise RuntimeError("composition construction failed")
+
+    with pytest.raises(RuntimeError, match="composition construction failed"):
+        open_reference_production_process_lifecycle(
+            continuation_state_file=state_file,
+            provider_invocation_db=invocation_db,
+            env=env,
+            missing_file_policy="empty",
+            composition_builder=_failing_builder,
+        )
+
+    continuation = open_production_execution_continuation_state_store(
+        state_file,
+        missing_file_policy="empty",
+    )
+    continuation.close()
+    reopened = open_provider_invocation_store_at(invocation_db)
+    reopened.close()
+
+
+def test_pis_02_r1_injected_invocation_close_failure_still_closes_continuation(
+    tmp_path: Path,
+) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    lifecycle = open_reference_production_process_lifecycle(
+        continuation_state_file=tmp_path / "continuation.json",
+        provider_invocation_db=tmp_path / "provider_invocations.db",
+        env=env,
+        missing_file_policy="empty",
+        composition_builder=_strict_composition_builder(tmp_path),
+    )
+    owned_invocation = lifecycle._owned_invocation_store
+    assert owned_invocation is not None
+    with (
+        patch.object(
+            owned_invocation,
+            "close",
+            side_effect=RuntimeError("injected invocation close failure"),
+        ),
+        patch.object(lifecycle._owned_continuation_store, "close") as continuation_close,
+    ):
+        with pytest.raises(RuntimeError, match="injected invocation close failure"):
+            lifecycle.close_process_resources()
+        continuation_close.assert_called_once()
+
+
+def test_pis_02_r1_injected_continuation_close_failure_still_closes_invocation(
+    tmp_path: Path,
+) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    lifecycle = open_reference_production_process_lifecycle(
+        continuation_state_file=tmp_path / "continuation.json",
+        provider_invocation_db=tmp_path / "provider_invocations.db",
+        env=env,
+        missing_file_policy="empty",
+        composition_builder=_strict_composition_builder(tmp_path),
+    )
+    owned_invocation = lifecycle._owned_invocation_store
+    assert owned_invocation is not None
+    with (
+        patch.object(
+            lifecycle._owned_continuation_store,
+            "close",
+            side_effect=RuntimeError("injected continuation close failure"),
+        ),
+        patch.object(owned_invocation, "close") as invocation_close,
+    ):
+        with pytest.raises(RuntimeError, match="injected continuation close failure"):
+            lifecycle.close_process_resources()
+        invocation_close.assert_called_once()
+
+
+def test_pis_02_r1_repeated_close_after_successful_cleanup_is_harmless(
+    tmp_path: Path,
+) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    lifecycle = open_reference_production_process_lifecycle(
+        continuation_state_file=tmp_path / "continuation.json",
+        provider_invocation_db=tmp_path / "provider_invocations.db",
+        env=env,
+        missing_file_policy="empty",
+        composition_builder=_strict_composition_builder(tmp_path),
+    )
+    lifecycle.close_process_resources()
+    lifecycle.close_process_resources()
+
+
+def test_pis_02_r1_external_invocation_store_stays_open_after_lifecycle_failure(
+    tmp_path: Path,
+) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    external = DurableTestProviderInvocationStore()
+
+    with patch(
+        "intergrax.applications._shared.reference_production_process_lifecycle."
+        "wire_governed_reference_production_launcher",
+        side_effect=RuntimeError("injected lifecycle wiring failure"),
+    ):
+        with pytest.raises(RuntimeError, match="injected lifecycle wiring failure"):
+            open_reference_production_process_lifecycle(
+                continuation_state_file=tmp_path / "continuation.json",
+                provider_invocation_store=external,
+                env=env,
+                missing_file_policy="empty",
+                composition_builder=_strict_composition_builder(tmp_path),
+            )
+
+    external.put_invocation(_invocation("inv-external-survives"))
+    assert external.get_invocation("inv-external-survives") is not None

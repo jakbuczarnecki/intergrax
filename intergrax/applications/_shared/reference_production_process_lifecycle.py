@@ -48,6 +48,57 @@ if TYPE_CHECKING:
     )
 
 
+def _close_owned_resource(
+    close: Callable[[], None],
+    *,
+    mark_closed: Callable[[], None],
+) -> BaseException | None:
+    try:
+        close()
+    except BaseException as exc:
+        return exc
+    mark_closed()
+    return None
+
+
+def _release_lifecycle_owned_stores(
+    *,
+    continuation_store: SerializedSealExecutionContinuationStateStore | None,
+    owned_invocation: SQLiteProviderInvocationStore | None,
+    continuation_closed: bool,
+    invocation_closed: bool,
+) -> list[BaseException]:
+    errors: list[BaseException] = []
+    if continuation_store is not None and not continuation_closed:
+        err = _close_owned_resource(
+            continuation_store.close,
+            mark_closed=lambda: None,
+        )
+        if err is not None:
+            errors.append(err)
+    if owned_invocation is not None and not invocation_closed:
+        err = _close_owned_resource(
+            owned_invocation.close,
+            mark_closed=lambda: None,
+        )
+        if err is not None:
+            errors.append(err)
+    return errors
+
+
+def _raise_startup_failure_with_cleanup(
+    startup_exc: BaseException,
+    cleanup_errors: list[BaseException],
+) -> None:
+    if cleanup_errors:
+        raise ExceptionGroup(
+            "reference production process lifecycle startup failed; "
+            "errors while releasing acquired resources",
+            [startup_exc, *cleanup_errors],
+        ) from startup_exc
+    raise startup_exc
+
+
 class ReferenceProductionProcessLifecycleError(ValueError):
     """Invalid reference production process lifecycle wiring."""
 
@@ -79,13 +130,29 @@ class ReferenceProductionProcessLifecycle:
 
     def close_process_resources(self) -> None:
         """Release lifecycle-owned continuation and invocation resources exactly once."""
+        cleanup_errors: list[BaseException] = []
         if not self._continuation_closed:
-            self._owned_continuation_store.close()
-            self._continuation_closed = True
+            err = _close_owned_resource(
+                self._owned_continuation_store.close,
+                mark_closed=lambda: setattr(self, "_continuation_closed", True),
+            )
+            if err is not None:
+                cleanup_errors.append(err)
         owned_invocation = self._owned_invocation_store
         if owned_invocation is not None and not self._invocation_closed:
-            owned_invocation.close()
-            self._invocation_closed = True
+            err = _close_owned_resource(
+                owned_invocation.close,
+                mark_closed=lambda: setattr(self, "_invocation_closed", True),
+            )
+            if err is not None:
+                cleanup_errors.append(err)
+        if cleanup_errors:
+            if len(cleanup_errors) == 1:
+                raise cleanup_errors[0]
+            raise ExceptionGroup(
+                "errors while closing reference production process lifecycle resources",
+                cleanup_errors,
+            )
 
     def __enter__(self) -> ReferenceProductionProcessLifecycle:
         return self
@@ -141,10 +208,26 @@ def open_reference_production_process_lifecycle(
         owned_invocation = open_provider_invocation_store_at(provider_invocation_db)
         resolved_invocation = owned_invocation
 
-    continuation_store = open_production_execution_continuation_state_store(
-        continuation_state_file,
-        missing_file_policy=missing_file_policy,
-    )
+    try:
+        continuation_store = open_production_execution_continuation_state_store(
+            continuation_state_file,
+            missing_file_policy=missing_file_policy,
+        )
+    except Exception:
+        cleanup_errors = _release_lifecycle_owned_stores(
+            continuation_store=None,
+            owned_invocation=owned_invocation,
+            continuation_closed=True,
+            invocation_closed=False,
+        )
+        if cleanup_errors:
+            raise ExceptionGroup(
+                "failed opening continuation store; errors while releasing "
+                "acquired provider invocation store",
+                cleanup_errors,
+            ) from cleanup_errors[0]
+        raise
+
     try:
         if composition_builder is not None:
             if resolved_invocation is None:
@@ -185,11 +268,14 @@ def open_reference_production_process_lifecycle(
             _owned_continuation_store=continuation_store,
             _owned_invocation_store=owned_invocation,
         )
-    except Exception:
-        if owned_invocation is not None:
-            owned_invocation.close()
-        continuation_store.close()
-        raise
+    except Exception as exc:
+        cleanup_errors = _release_lifecycle_owned_stores(
+            continuation_store=continuation_store,
+            owned_invocation=owned_invocation,
+            continuation_closed=False,
+            invocation_closed=False,
+        )
+        _raise_startup_failure_with_cleanup(exc, cleanup_errors)
 
 
 __all__ = [
