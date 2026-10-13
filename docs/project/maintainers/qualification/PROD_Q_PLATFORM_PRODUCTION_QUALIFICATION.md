@@ -88,7 +88,7 @@ Derived from tenant-relevant classified inventory + TENANT-X ancestry — **not*
 
 ## PROD-Q-R1-R7-ADR-01 — Deployment authority (architecture)
 
-**Disposition:** **READY FOR ARCHITECTURE DECISION** (ADR **R1** corrective for audit **B01–B03**) — does **not** close **PROD-Q-R1** or **FRZ-PRD-04/05**. Serving-unit semantics (`serving_unit_ref` ≠ artifact path); production composition via proposed `open_production_process_lifecycle` (reference graph **not** auto-qualified). Detail: [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md).
+**Disposition:** **READY FOR ARCHITECTURE DECISION** (ADR **R2** corrective for audit **B01–B05**; **R1 rejected**) — does **not** close **PROD-Q-R1** or **FRZ-PRD-04/05**. **B04:** GCA lacks `ServingUnitRuntimeBinding` handoff from adapter prepare → strict host. **B05:** `prepare_candidate` READY reuse without `attest_serving_unit`. Proposed §4.5 Protocol delta + **R7-D0** before D1. Detail: [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md).
 
 ## Known blockers & recommended children (provisional)
 
