@@ -24,8 +24,15 @@ from intergrax.applications._shared.serving_runtime_handoff import (
     authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
 )
+from datetime import UTC, datetime
+
 from intergrax.agent_distribution.activation import ActivationCommitResult
+from intergrax.agent_distribution.in_memory_stores import AgentDistributionStoreState
+from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
 from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
+from testing_support.agent_distribution.serving_execution_admission_fixtures import (
+    seed_canonical_serving_execution_stores,
+)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
@@ -38,6 +45,46 @@ from testing_support.agent_distribution.venv_bundle_deployment_fixtures import (
     write_minimal_venv_bundle,
 )
 pytestmark = [pytest.mark.unit]
+
+
+def _canonical_commit_and_stores(
+    revision,
+    deployment_instance: DeploymentInstanceRecord,
+) -> tuple[
+    ActivationCommitResult,
+    object,
+    object,
+    object,
+]:
+    activated_at = datetime.now(UTC)
+    active_revision = revision.model_copy(
+        update={
+            "revision_state": RuntimeRevisionState.ACTIVE,
+            "activated_at": activated_at,
+        },
+    )
+    serving_record = ApplicationEnvironmentServingRecord(
+        application_id=revision.application_id,
+        application_environment_id=revision.application_environment_id,
+        traffic_serving_revision_id=revision.runtime_revision_id,
+        serving_pointer_revision=1,
+    )
+    serving_instance = deployment_instance.model_copy(
+        update={"instance_state": DeploymentInstanceState.SERVING},
+    )
+    state = AgentDistributionStoreState()
+    serving_store, instance_store, revision_store = seed_canonical_serving_execution_stores(
+        state=state,
+        revision=revision,
+        serving_record=serving_record,
+        deployment_instance=serving_instance,
+    )
+    commit = ActivationCommitResult(
+        serving_record=serving_record,
+        activated_revision=active_revision,
+        candidate_instance=serving_instance,
+    )
+    return commit, serving_store, instance_store, revision_store
 
 
 def _minimal_projection_bundle(tmp_path: Path):
@@ -131,7 +178,7 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
         attestation,
         deployment_instance,
         bundle,
-        _revision,
+        revision,
         _digest,
     ) = _minimal_projection_bundle(tmp_path)
     composition = create_reference_production_process_composition()
@@ -149,20 +196,17 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
     assert updated.serving_runtime_handoff is handoff
     with pytest.raises(VenvBundleColocatedDeploymentError):
         adapter.admit_unit_execution(unit_ref)
-    commit = ActivationCommitResult(
-        serving_record=ApplicationEnvironmentServingRecord(
-            application_id="app_a",
-            application_environment_id="env-prod",
-            traffic_serving_revision_id="rev-handoff",
-            serving_pointer_revision=1,
-        ),
-        activated_revision=_revision,
-        candidate_instance=deployment_instance,
+    commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
+        revision,
+        deployment_instance,
     )
     authorize_colocated_serving_execution_after_activation(
         activation_commit=commit,
         handoff=handoff,
         admission_authority=adapter,
+        serving_store=serving_store,
+        deployment_instance_store=instance_store,
+        revision_store=revision_store,
     )
     adapter.admit_unit_execution(unit_ref)
     adapter.release_unit_execution(unit_ref)
@@ -220,7 +264,7 @@ async def test_colocated_admission_wrapper_accounts_in_flight(tmp_path: Path) ->
         attestation,
         deployment_instance,
         bundle,
-        _revision,
+        revision,
         _digest,
     ) = _minimal_projection_bundle(tmp_path)
     composition = create_reference_production_process_composition()
@@ -234,20 +278,17 @@ async def test_colocated_admission_wrapper_accounts_in_flight(tmp_path: Path) ->
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
-    commit = ActivationCommitResult(
-        serving_record=ApplicationEnvironmentServingRecord(
-            application_id="app_a",
-            application_environment_id="env-prod",
-            traffic_serving_revision_id="rev-handoff",
-            serving_pointer_revision=1,
-        ),
-        activated_revision=_revision,
-        candidate_instance=deployment_instance,
+    commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
+        revision,
+        deployment_instance,
     )
     authorize_colocated_serving_execution_after_activation(
         activation_commit=commit,
         handoff=handoff,
         admission_authority=adapter,
+        serving_store=serving_store,
+        deployment_instance_store=instance_store,
+        revision_store=revision_store,
     )
     inner = AsyncMock()
     inner.execute = AsyncMock(return_value=object())

@@ -27,9 +27,18 @@ from intergrax.agent_distribution.runtime_revision import (
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_resource import (
     ColocatedVenvRuntimeResource,
 )
+from intergrax.agent_distribution.in_memory_stores import AgentDistributionStoreState
+from intergrax.agent_distribution.serving_execution_admission import (
+    verify_current_serving_execution_admission_eligibility,
+)
+from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
+from intergrax.agent_distribution.deployment import DeploymentInstanceRecord, DeploymentInstanceState
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
+)
+from testing_support.agent_distribution.serving_execution_admission_fixtures import (
+    seed_canonical_serving_execution_stores,
 )
 from intergrax.agent_distribution.venv_bundle_deployment_artifact import (
     VenvBundleDeploymentArtifactError,
@@ -107,7 +116,38 @@ def _prepare_ready(
     prepared = adapter.prepare(revision, artifact_locator=locator)
     adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
     if authorize_admission:
-        adapter.authorize_serving_execution_admission(prepared.serving_unit_ref)
+        state = AgentDistributionStoreState()
+        serving_record = ApplicationEnvironmentServingRecord(
+            application_id=revision.application_id,
+            application_environment_id=revision.application_environment_id,
+            traffic_serving_revision_id=revision.runtime_revision_id,
+            serving_pointer_revision=1,
+        )
+        deployment_instance = DeploymentInstanceRecord(
+            application_id=revision.application_id,
+            application_environment_id=revision.application_environment_id,
+            runtime_revision_id=revision.runtime_revision_id,
+            serving_unit_ref=prepared.serving_unit_ref,
+            instance_state=DeploymentInstanceState.READY,
+            readiness_evidence_ref="evidence",
+        )
+        serving_store, instance_store, revision_store = seed_canonical_serving_execution_stores(
+            state=state,
+            revision=revision,
+            serving_record=serving_record,
+            deployment_instance=deployment_instance,
+        )
+        grant = verify_current_serving_execution_admission_eligibility(
+            serving_store=serving_store,
+            deployment_instance_store=instance_store,
+            revision_store=revision_store,
+            application_id=revision.application_id,
+            application_environment_id=revision.application_environment_id,
+            runtime_revision_id=revision.runtime_revision_id,
+            serving_unit_ref=prepared.serving_unit_ref,
+            materialization_artifact_digest=revision.materialization_artifact_digest or "",
+        )
+        adapter.authorize_serving_execution_admission(grant)
     return prepared.serving_unit_ref
 
 
@@ -191,7 +231,38 @@ def test_unit_without_traffic_admission_before_readiness(tmp_path: Path) -> None
     adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
         adapter.admit_unit_execution(prepared.serving_unit_ref)
-    adapter.authorize_serving_execution_admission(prepared.serving_unit_ref)
+    state = AgentDistributionStoreState()
+    serving_record = ApplicationEnvironmentServingRecord(
+        application_id=revision.application_id,
+        application_environment_id=revision.application_environment_id,
+        traffic_serving_revision_id=revision.runtime_revision_id,
+        serving_pointer_revision=1,
+    )
+    deployment_instance = DeploymentInstanceRecord(
+        application_id=revision.application_id,
+        application_environment_id=revision.application_environment_id,
+        runtime_revision_id=revision.runtime_revision_id,
+        serving_unit_ref=prepared.serving_unit_ref,
+        instance_state=DeploymentInstanceState.READY,
+        readiness_evidence_ref="evidence",
+    )
+    serving_store, instance_store, revision_store = seed_canonical_serving_execution_stores(
+        state=state,
+        revision=revision,
+        serving_record=serving_record,
+        deployment_instance=deployment_instance,
+    )
+    grant = verify_current_serving_execution_admission_eligibility(
+        serving_store=serving_store,
+        deployment_instance_store=instance_store,
+        revision_store=revision_store,
+        application_id=revision.application_id,
+        application_environment_id=revision.application_environment_id,
+        runtime_revision_id=revision.runtime_revision_id,
+        serving_unit_ref=prepared.serving_unit_ref,
+        materialization_artifact_digest=revision.materialization_artifact_digest or "",
+    )
+    adapter.authorize_serving_execution_admission(grant)
     adapter.admit_unit_execution(prepared.serving_unit_ref)
     adapter.release_unit_execution(prepared.serving_unit_ref)
 

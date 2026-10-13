@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -33,6 +34,9 @@ from intergrax.agent_distribution.runtime_revision import (
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
+from intergrax.agent_distribution.serving_execution_admission import (
+    ServingExecutionAdmissionError,
+)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
@@ -64,6 +68,7 @@ from testing_support.agent_distribution.venv_bundle_deployment_fixtures import (
 )
 
 from tests.unit.applications.test_prod_q_r1_r7_d1b_serving_runtime_handoff import (
+    _canonical_commit_and_stores,
     _minimal_projection_bundle,
 )
 
@@ -111,14 +116,28 @@ def test_authorize_denied_without_activation_commit(tmp_path: Path) -> None:
             traffic_serving_revision_id="other-revision",
             serving_pointer_revision=1,
         ),
-        activated_revision=revision,
-        candidate_instance=deployment_instance,
+        activated_revision=revision.model_copy(
+            update={
+                "revision_state": RuntimeRevisionState.ACTIVE,
+                "activated_at": datetime.now(UTC),
+            },
+        ),
+        candidate_instance=deployment_instance.model_copy(
+            update={"instance_state": DeploymentInstanceState.SERVING},
+        ),
+    )
+    _commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
+        revision,
+        deployment_instance,
     )
     with pytest.raises(ServingRuntimeHandoffError, match="serving pointer"):
         authorize_colocated_serving_execution_after_activation(
             activation_commit=stale_commit,
             handoff=handoff,
             admission_authority=adapter,
+            serving_store=serving_store,
+            deployment_instance_store=instance_store,
+            revision_store=revision_store,
         )
 
 
@@ -127,15 +146,9 @@ def test_bind_after_activation_opens_admission(tmp_path: Path) -> None:
         _minimal_projection_bundle(tmp_path)
     )
     composition = create_reference_production_process_composition()
-    commit = ActivationCommitResult(
-        serving_record=ApplicationEnvironmentServingRecord(
-            application_id="app_a",
-            application_environment_id="env-prod",
-            traffic_serving_revision_id=revision.runtime_revision_id,
-            serving_pointer_revision=1,
-        ),
-        activated_revision=revision,
-        candidate_instance=deployment_instance,
+    commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
+        revision,
+        deployment_instance,
     )
     updated = bind_colocated_serving_runtime_after_activation(
         composition=composition,
@@ -145,7 +158,9 @@ def test_bind_after_activation_opens_admission(tmp_path: Path) -> None:
         projection_input=bundle,
         colocated_accessor=accessor,
         admission_authority=adapter,
-        colocated_execution_admission=accessor,
+        serving_store=serving_store,
+        deployment_instance_store=instance_store,
+        revision_store=revision_store,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
@@ -158,7 +173,10 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
     adapter, accessor, unit_ref, attestation, deployment_instance, bundle, revision, _ = (
         _minimal_projection_bundle(tmp_path)
     )
-    commit = _commit_for(revision, deployment_instance)
+    commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
+        revision,
+        deployment_instance,
+    )
     updated = bind_colocated_serving_runtime_after_activation(
         composition=create_reference_production_process_composition(),
         activation_commit=commit,
@@ -167,7 +185,9 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
         projection_input=bundle,
         colocated_accessor=accessor,
         admission_authority=adapter,
-        colocated_execution_admission=accessor,
+        serving_store=serving_store,
+        deployment_instance_store=instance_store,
+        revision_store=revision_store,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
@@ -178,6 +198,9 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
             activation_commit=commit,
             handoff=handoff,
             admission_authority=adapter,
+            serving_store=serving_store,
+            deployment_instance_store=instance_store,
+            revision_store=revision_store,
         )
 
 
@@ -229,42 +252,45 @@ def test_physical_binding_warmup_evidence_reaches_accessor_cache(tmp_path: Path)
     assert "venv-colocated-runtime:" in binding.physical_runtime_warmup_evidence
 
 
-def _commit_for(revision, deployment_instance) -> ActivationCommitResult:
-    return ActivationCommitResult(
-        serving_record=ApplicationEnvironmentServingRecord(
-            application_id=revision.application_id,
-            application_environment_id=revision.application_environment_id,
-            traffic_serving_revision_id=revision.runtime_revision_id,
-            serving_pointer_revision=1,
-        ),
-        activated_revision=revision,
-        candidate_instance=deployment_instance,
-    )
-
-
 @pytest.mark.asyncio
 async def test_gca_admission_wrapper_blocked_under_drain(tmp_path: Path) -> None:
     adapter, accessor, unit_ref, attestation, deployment_instance, bundle, revision, _ = (
         _minimal_projection_bundle(tmp_path)
     )
+    commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
+        revision,
+        deployment_instance,
+    )
     composition = bind_colocated_serving_runtime_after_activation(
         composition=create_reference_production_process_composition(),
-        activation_commit=_commit_for(revision, deployment_instance),
+        activation_commit=commit,
         attestation=attestation,
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
         admission_authority=adapter,
-        colocated_execution_admission=accessor,
+        serving_store=serving_store,
+        deployment_instance_store=instance_store,
+        revision_store=revision_store,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
     handoff = composition.serving_runtime_handoff
     assert handoff is not None
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
+    current = instance_store.get_instance(
+        revision.application_id,
+        revision.application_environment_id,
+        revision.runtime_revision_id,
+    )
+    assert current is not None
+    instance_store.update_instance(
+        current.model_copy(update={"instance_state": DeploymentInstanceState.DRAINING}),
+        expected_state=DeploymentInstanceState.SERVING,
+    )
     inner = AsyncMock()
     port = ColocatedServingUnitAdmissionTaskExecutionPort(inner, handoff)
-    with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
+    with pytest.raises(ServingExecutionAdmissionError, match="not in serving state"):
         await port.execute(Task(tenant_id="t", user_id="u", message="x"))
 
 
@@ -273,15 +299,21 @@ async def test_gca_admission_wrapper_releases_on_exception(tmp_path: Path) -> No
     adapter, accessor, unit_ref, attestation, deployment_instance, bundle, revision, _ = (
         _minimal_projection_bundle(tmp_path)
     )
+    commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
+        revision,
+        deployment_instance,
+    )
     composition = bind_colocated_serving_runtime_after_activation(
         composition=create_reference_production_process_composition(),
-        activation_commit=_commit_for(revision, deployment_instance),
+        activation_commit=commit,
         attestation=attestation,
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
         admission_authority=adapter,
-        colocated_execution_admission=accessor,
+        serving_store=serving_store,
+        deployment_instance_store=instance_store,
+        revision_store=revision_store,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
@@ -347,7 +379,9 @@ def test_activation_commit_then_bind_end_to_end(tmp_path: Path) -> None:
         projection_input=bundle,
         colocated_accessor=accessor,
         admission_authority=adapter,
-        colocated_execution_admission=accessor,
+        serving_store=InMemoryApplicationEnvironmentServingStore(state),
+        deployment_instance_store=InMemoryDeploymentInstanceStore(state),
+        revision_store=revision_store,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )

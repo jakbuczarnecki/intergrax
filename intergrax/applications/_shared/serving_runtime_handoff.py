@@ -13,11 +13,24 @@ from pydantic import BaseModel, ConfigDict, Field
 from intergrax.agent_distribution.activation import ActivationCommitResult
 from intergrax.agent_distribution.deployment import (
     DeploymentInstanceRecord,
+    DeploymentInstanceState,
     ServingUnitAttestation,
 )
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
+    RuntimeRevisionState,
+)
+from intergrax.agent_distribution.serving_execution_admission import (
+    ServingExecutionAdmissionError,
+    ServingExecutionAdmissionGrant,
+    assert_activation_commit_matches_current_serving,
+    verify_current_serving_execution_admission_eligibility,
+)
+from intergrax.agent_distribution.stores import (
+    ApplicationEnvironmentServingStore,
+    DeploymentInstanceStore,
+    RuntimeRevisionStore,
 )
 from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
 from intergrax.applications._shared.runtime_agent_factory_resolver import (
@@ -61,8 +74,10 @@ class ColocatedServingUnitExecutionAdmission(Protocol):
 class ColocatedServingExecutionAdmissionAuthority(Protocol):
     """Opens physical execution admission on the deployment adapter after activation."""
 
-    def authorize_serving_execution_admission(self, serving_unit_ref: str) -> None:
-        """Authorize new execution work for one attested serving unit."""
+    def authorize_serving_execution_admission(
+        self, grant: ServingExecutionAdmissionGrant
+    ) -> None:
+        """Authorize new execution work for one canonically eligible serving unit."""
 
 
 class ServingUnitIdentity(BaseModel):
@@ -183,12 +198,24 @@ def authorize_colocated_serving_execution_after_activation(
     activation_commit: ActivationCommitResult,
     handoff: ServingRuntimeHandoff,
     admission_authority: ColocatedServingExecutionAdmissionAuthority,
+    serving_store: ApplicationEnvironmentServingStore,
+    deployment_instance_store: DeploymentInstanceStore,
+    revision_store: RuntimeRevisionStore,
 ) -> None:
     """Bridge authoritative activation commit evidence to physical execution admission."""
     identity = handoff.identity
     serving = activation_commit.serving_record
     activated = activation_commit.activated_revision
     candidate = activation_commit.candidate_instance
+
+    if activated.revision_state is not RuntimeRevisionState.ACTIVE:
+        raise ServingRuntimeHandoffError(
+            "activated revision is not active for execution admission"
+        )
+    if candidate.instance_state is not DeploymentInstanceState.SERVING:
+        raise ServingRuntimeHandoffError(
+            "activation commit deployment instance is not serving"
+        )
 
     if serving.traffic_serving_revision_id != identity.runtime_revision_id:
         raise ServingRuntimeHandoffError(
@@ -219,7 +246,33 @@ def authorize_colocated_serving_execution_after_activation(
             "candidate deployment instance revision mismatch with handoff"
         )
 
-    admission_authority.authorize_serving_execution_admission(identity.serving_unit_ref)
+    current_serving = serving_store.get_serving_record(
+        identity.application_id,
+        identity.application_environment_id,
+    )
+    if current_serving is None:
+        raise ServingRuntimeHandoffError("canonical serving record is missing")
+    try:
+        assert_activation_commit_matches_current_serving(
+            activation_commit_serving=serving,
+            current_serving=current_serving,
+        )
+        grant = verify_current_serving_execution_admission_eligibility(
+            serving_store=serving_store,
+            deployment_instance_store=deployment_instance_store,
+            revision_store=revision_store,
+            application_id=identity.application_id,
+            application_environment_id=identity.application_environment_id,
+            runtime_revision_id=identity.runtime_revision_id,
+            serving_unit_ref=identity.serving_unit_ref,
+            materialization_artifact_digest=identity.materialization_artifact_digest,
+        )
+    except ServingExecutionAdmissionError as exc:
+        raise ServingRuntimeHandoffError(str(exc)) from exc
+    if grant.serving_pointer_revision != serving.serving_pointer_revision:
+        raise ServingRuntimeHandoffError("serving pointer revision mismatch with grant")
+
+    admission_authority.authorize_serving_execution_admission(grant)
 
 
 def validate_serving_runtime_handoff_against_projection_evidence(

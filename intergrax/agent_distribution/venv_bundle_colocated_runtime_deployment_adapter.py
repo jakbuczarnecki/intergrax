@@ -29,6 +29,9 @@ from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
 )
+from intergrax.agent_distribution.serving_execution_admission import (
+    ServingExecutionAdmissionGrant,
+)
 from intergrax.agent_distribution.colocated_venv_unit_runtime_binding import (
     ColocatedVenvUnitRuntimeBinding,
 )
@@ -147,9 +150,27 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         unit = self._require_unit(serving_unit_ref)
         unit.admission.release_execution()
 
-    def authorize_serving_execution_admission(self, serving_unit_ref: str) -> None:
-        """Open execution admission after sanctioned activation/serving handoff (not readiness)."""
-        unit = self._require_unit(serving_unit_ref)
+    def authorize_serving_execution_admission(
+        self, grant: ServingExecutionAdmissionGrant
+    ) -> None:
+        """Open execution admission for one typed canonical grant (not identifier-only)."""
+        unit = self._require_live_unit(grant.serving_unit_ref)
+        if unit.application_id != grant.application_id:
+            raise VenvBundleColocatedDeploymentError(
+                "serving execution admission grant application mismatch"
+            )
+        if unit.application_environment_id != grant.application_environment_id:
+            raise VenvBundleColocatedDeploymentError(
+                "serving execution admission grant environment mismatch"
+            )
+        if unit.runtime_revision_id != grant.runtime_revision_id:
+            raise VenvBundleColocatedDeploymentError(
+                "serving execution admission grant revision mismatch"
+            )
+        if unit.materialization_artifact_digest != grant.materialization_artifact_digest:
+            raise VenvBundleColocatedDeploymentError(
+                "serving execution admission grant digest mismatch"
+            )
         if unit.serving_admission_authorized:
             raise VenvBundleColocatedDeploymentError(
                 "serving execution admission already authorized for unit"
