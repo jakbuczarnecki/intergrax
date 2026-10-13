@@ -116,21 +116,44 @@ def r1_http_reproduction_requested() -> bool:
     )
 
 
-def _terminate_subprocess_tree(proc: subprocess.Popen[str]) -> None:
-    if proc.poll() is not None:
-        return
+def _owned_process_group_id_for(proc: subprocess.Popen[str]) -> int | None:
+    """Session/process-group identity for the bounded subprocess (not the current process)."""
     if sys.platform == "win32":
-        subprocess.run(
-            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
-            cwd=repo_root(),
-            capture_output=True,
-            check=False,
-        )
-    else:
+        return proc.pid
+    try:
+        return os.getpgid(proc.pid)
+    except (ProcessLookupError, OSError):
+        return None
+
+
+def _terminate_subprocess_tree(
+    proc: subprocess.Popen[str],
+    *,
+    owned_process_group_id: int | None,
+) -> None:
+    parent_alive = proc.poll() is None
+    if sys.platform == "win32":
+        if parent_alive and owned_process_group_id is not None:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(owned_process_group_id)],
+                cwd=repo_root(),
+                capture_output=True,
+                check=False,
+            )
+    elif owned_process_group_id is not None:
         try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-        except (ProcessLookupError, OSError):
-            proc.kill()
+            os.killpg(owned_process_group_id, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except OSError:
+            if parent_alive:
+                proc.kill()
+    elif parent_alive:
+        proc.kill()
+    if proc.stdout is not None:
+        proc.stdout.close()
+    if proc.stderr is not None:
+        proc.stderr.close()
     try:
         proc.wait(timeout=5)
     except subprocess.TimeoutExpired:
@@ -156,11 +179,12 @@ def run_prod_q_bounded_subprocess(
     if sys.platform != "win32":
         popen_kwargs["start_new_session"] = True
     proc = subprocess.Popen(cmd, **popen_kwargs)
+    owned_process_group_id = _owned_process_group_id_for(proc)
     try:
         stdout, stderr = proc.communicate(timeout=timeout_sec)
         return proc.returncode, stdout + stderr, False
     except subprocess.TimeoutExpired:
-        _terminate_subprocess_tree(proc)
+        _terminate_subprocess_tree(proc, owned_process_group_id=owned_process_group_id)
         try:
             stdout, stderr = proc.communicate(timeout=5)
         except subprocess.TimeoutExpired:

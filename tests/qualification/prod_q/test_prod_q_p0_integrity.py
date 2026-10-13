@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 from dataclasses import replace
 from pathlib import Path
@@ -72,6 +73,38 @@ with open(marker_path, "w", encoding="utf-8") as handle:
     handle.write(str(child.pid))
 time.sleep(300)
 """
+
+_PARENT_EXITS_CHILD_INHERITS_PIPES_SCRIPT = r"""
+import os
+import subprocess
+import sys
+
+marker = sys.argv[1]
+child = subprocess.Popen(
+    [sys.executable, "-c", "import time; time.sleep(300)"],
+    stdout=sys.stdout,
+    stderr=sys.stderr,
+)
+with open(marker + ".child_pid", "w", encoding="utf-8") as handle:
+    handle.write(str(child.pid))
+os._exit(0)
+"""
+
+
+def _terminate_pid(pid: int) -> None:
+    if not _process_still_running(pid):
+        return
+    if sys.platform == "win32":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)],
+            capture_output=True,
+            check=False,
+        )
+    else:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 
 def _process_still_running(pid: int) -> bool:
@@ -219,6 +252,42 @@ def test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed(
     assert record.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER
 
 
+def test_prod_q_p0_int_d7_timeout_terminates_owned_child_after_parent_exits(
+    tmp_path,
+) -> None:
+    if sys.platform == "win32":
+        pytest.skip(
+            "Windows: after parent exit, bounded subprocess cannot verify owned "
+            "descendant termination without a job-object ownership mechanism "
+            "(STOP — ARCHITECTURE DECISION REQUIRED)"
+        )
+    unrelated = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    marker = tmp_path / "parent_exit_probe"
+    child_pid: int | None = None
+    try:
+        exit_code, _tail, timed_out = run_prod_q_bounded_subprocess(
+            [sys.executable, "-c", _PARENT_EXITS_CHILD_INHERITS_PIPES_SCRIPT, str(marker)],
+            timeout_sec=2,
+        )
+        assert timed_out is True
+        assert exit_code is None
+        child_pid_path = Path(f"{marker}.child_pid")
+        if not child_pid_path.is_file():
+            pytest.fail("child pid marker not written before parent exit")
+        child_pid = int(child_pid_path.read_text(encoding="utf-8").strip())
+        assert not _process_still_running(child_pid)
+        assert _process_still_running(unrelated.pid)
+    finally:
+        if child_pid is not None:
+            _terminate_pid(child_pid)
+        _terminate_pid(unrelated.pid)
+
+
 def test_prod_q_p0_int_d7_timeout_terminates_parent_and_child(tmp_path) -> None:
     marker = tmp_path / "tree_probe"
     _exit_code, _tail, timed_out = run_prod_q_bounded_subprocess(
@@ -250,19 +319,7 @@ def test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process(tmp_path)
         assert timed_out is True
         assert _process_still_running(unrelated.pid)
     finally:
-        if _process_still_running(unrelated.pid):
-            if sys.platform == "win32":
-                subprocess.run(
-                    ["taskkill", "/F", "/T", "/PID", str(unrelated.pid)],
-                    capture_output=True,
-                    check=False,
-                )
-            else:
-                unrelated.kill()
-                try:
-                    unrelated.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    pass
+        _terminate_pid(unrelated.pid)
 
 
 def test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable() -> None:
