@@ -117,13 +117,15 @@ def r1_http_reproduction_requested() -> bool:
 
 
 def _owned_process_group_id_for(proc: subprocess.Popen[str]) -> int | None:
-    """Session/process-group identity for the bounded subprocess (not the current process)."""
-    if sys.platform == "win32":
-        return proc.pid
-    try:
-        return os.getpgid(proc.pid)
-    except (ProcessLookupError, OSError):
+    """Session/process-group identity for the bounded subprocess (not the current process).
+
+    On POSIX, ``start_new_session=True`` makes the direct child the session leader;
+    its PID is the owned process-group ID. Do not call ``os.getpgid`` here — the
+    direct parent may exit before timeout while descendants in the same group remain.
+    """
+    if proc.pid is None:
         return None
+    return proc.pid
 
 
 def _terminate_subprocess_tree(

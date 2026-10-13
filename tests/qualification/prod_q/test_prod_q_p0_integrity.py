@@ -15,6 +15,7 @@ import pytest
 import sys
 
 from tests.qualification.prod_q._p0_certification import (
+    _owned_process_group_id_for,
     _parse_sqlite_reproduction_tail,
     build_provider_dispositions,
     build_r1_sqlite_disposition,
@@ -118,6 +119,18 @@ def _process_still_running(pid: int) -> bool:
             return False
         kernel32.CloseHandle(handle)
         return True
+    return _posix_actively_running(pid)
+
+
+def _posix_actively_running(pid: int) -> bool:
+    """True only when PID exists and is not a zombie (kill(0) alone is insufficient)."""
+    status_path = Path(f"/proc/{pid}/status")
+    if status_path.is_file():
+        for line in status_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.startswith("State:"):
+                state = line.split()[1]
+                return state != "Z"
+        return False
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -217,6 +230,30 @@ def test_prod_q_p0_int_d7_http_reproduction_timeout_disposition(
     assert record.finding_disposition == ProdQFindingDisposition.ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED
     assert record.reproduction_classification == SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE
     assert record.evidence_state == ProductionReadinessEvidenceState.BLOCKER
+
+
+def test_prod_q_p0_int_d7_owned_pgid_is_popen_pid_without_getpgid_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if sys.platform == "win32":
+        pytest.skip(
+            "POSIX-only: owned process-group ID is the Popen PID under start_new_session"
+        )
+
+    def _getpgid_must_not_run(_pid: int) -> int:
+        raise AssertionError("owned PGID must not depend on os.getpgid after parent exit race")
+
+    monkeypatch.setattr(os, "getpgid", _getpgid_must_not_run)
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    try:
+        assert _owned_process_group_id_for(proc) == proc.pid
+    finally:
+        _terminate_pid(proc.pid)
 
 
 def test_prod_q_p0_int_d7_bounded_subprocess_completes_normally() -> None:
