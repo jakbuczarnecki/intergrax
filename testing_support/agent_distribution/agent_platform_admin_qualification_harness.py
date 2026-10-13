@@ -247,6 +247,7 @@ def build_agent_platform_admin_qualification_stack(
             activation_store=InMemoryApplicationEnvironmentActivationStore(state),
             deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
             projection_coordinator=FakeRuntimeServingProjectionCoordinator(),
+            materialization_store=materialization_store,
         ),
         graph_builder=CandidateRuntimeGraphBuilder(metadata_provider),
         materialization_service=RuntimeMaterializationService(

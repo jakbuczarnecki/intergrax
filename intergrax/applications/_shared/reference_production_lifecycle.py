@@ -134,6 +134,7 @@ def wire_reference_production_lifecycle_services(
         activation_store=InMemoryApplicationEnvironmentActivationStore(state),
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
         projection_coordinator=projection_coordinator,
+        materialization_store=stores.materialization_store,
     )
     return ReferenceProductionLifecycleServices(
         activation_service=activation_service,
@@ -168,6 +169,7 @@ def wire_durable_reference_production_lifecycle_services(
         activation_store=durable_store_bundle.activation_store,
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
         projection_coordinator=projection_coordinator,
+        materialization_store=durable_store_bundle.materialization_store,
     )
     return ReferenceProductionLifecycleServices(
         activation_service=activation_service,

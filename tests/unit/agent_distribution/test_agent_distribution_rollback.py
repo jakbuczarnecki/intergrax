@@ -23,7 +23,11 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
+    InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
+)
+from testing_support.agent_distribution.activation_materialization_fixtures import (
+    persist_materialization_for_revision,
 )
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
@@ -52,7 +56,7 @@ def _revision(
         platform_version="0.1.0",
         effective_roster_revision_id="roster-hash",
         materialized_runtime_lock_id=f"lock-{revision_id}",
-        materialized_runtime_lock_digest=f"lock-digest-{revision_id}",
+        materialized_runtime_lock_digest="sha256:" + ("2" * 64),
         runtime_graph_digest=f"graph-digest-{revision_id}",
         materialization_artifact_digest=artifact,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
@@ -70,6 +74,7 @@ def _bootstrap_active_pair() -> tuple[ActivationService, RuntimeRevisionService,
     deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
     projection = FakeRuntimeServingProjectionCoordinator()
     revision_service = RuntimeRevisionService(revision_store)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
     activation = ActivationService(
         revision_store=revision_store,
         deployment_instance_store=deployment_store,
@@ -77,6 +82,7 @@ def _bootstrap_active_pair() -> tuple[ActivationService, RuntimeRevisionService,
         activation_store=activation_store,
         deployment_adapter=deployment_adapter,
         projection_coordinator=projection,
+        materialization_store=materialization_store,
     )
 
     for revision_id, artifact in (("rev-n", _ARTIFACT_N), ("rev-n1", _ARTIFACT_N1)):
@@ -84,6 +90,11 @@ def _bootstrap_active_pair() -> tuple[ActivationService, RuntimeRevisionService,
         revision_service.persist_candidate_revision(candidate)
         validated = _revision(revision_id, state=RuntimeRevisionState.VALIDATED, artifact=artifact)
         revision_service.mark_validated(revision_id, validated_revision=validated)
+        persist_materialization_for_revision(
+            materialization_store,
+            validated,
+            artifact_locator=f"artifact://{artifact}",
+        )
 
     activation.prepare_candidate(
         application_id=_APP,

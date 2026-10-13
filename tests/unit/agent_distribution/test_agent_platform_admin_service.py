@@ -275,6 +275,7 @@ def build_admin_stack(
             activation_store=InMemoryApplicationEnvironmentActivationStore(state),
             deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
             projection_coordinator=FakeRuntimeServingProjectionCoordinator(),
+            materialization_store=materialization_store,
         ),
         "graph_builder": CandidateRuntimeGraphBuilder(metadata_provider),
         "materialization_service": RuntimeMaterializationService(

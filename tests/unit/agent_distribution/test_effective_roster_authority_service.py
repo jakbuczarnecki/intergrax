@@ -266,6 +266,7 @@ def test_admin_can_compose_with_custom_snapshot_store_and_authority() -> None:
             activation_store=InMemoryApplicationEnvironmentActivationStore(state),
             deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
             projection_coordinator=object(),  # type: ignore[arg-type]
+            materialization_store=InMemoryRuntimeMaterializationStore(state),
         ),
     )
     assert service._effective_roster_authority is authority

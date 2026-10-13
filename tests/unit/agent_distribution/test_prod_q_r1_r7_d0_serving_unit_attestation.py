@@ -31,7 +31,11 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
+    InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
+)
+from testing_support.agent_distribution.activation_materialization_fixtures import (
+    persist_materialization_for_revision,
 )
 from intergrax.agent_distribution.materialization import MaterializationOutput
 from intergrax.agent_distribution.runtime_revision import (
@@ -64,7 +68,7 @@ def _revision(
         platform_version="0.1.0",
         effective_roster_revision_id="roster-hash",
         materialized_runtime_lock_id="lock-1",
-        materialized_runtime_lock_digest="lock-digest",
+        materialized_runtime_lock_digest="sha256:" + ("2" * 64),
         runtime_graph_digest="graph-digest",
         materialization_artifact_digest=artifact_digest,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
@@ -106,6 +110,7 @@ class _D0Harness:
         self.deployment_store = InMemoryDeploymentInstanceStore(self.state)
         self.serving_store = InMemoryApplicationEnvironmentServingStore(self.state)
         self.activation_store = InMemoryApplicationEnvironmentActivationStore(self.state)
+        self.materialization_store = InMemoryRuntimeMaterializationStore(self.state)
         self.revision_service = RuntimeRevisionService(self.revision_store)
         self.deployment_adapter = deployment_adapter or FakeInMemoryRuntimeDeploymentAdapter()
         self.activation = ActivationService(
@@ -115,10 +120,22 @@ class _D0Harness:
             activation_store=self.activation_store,
             deployment_adapter=self.deployment_adapter,
             projection_coordinator=FakeRuntimeServingProjectionCoordinator(),
+            materialization_store=self.materialization_store,
         )
 
-    def seed_validated(self, revision_id: str, **kwargs: str) -> None:
-        _persist_validated(self.revision_service, revision_id, **kwargs)
+    def seed_validated(
+        self,
+        revision_id: str,
+        *,
+        artifact_locator: str = _LOCATOR,
+        **kwargs: str,
+    ) -> None:
+        validated = _persist_validated(self.revision_service, revision_id, **kwargs)
+        persist_materialization_for_revision(
+            self.materialization_store,
+            validated,
+            artifact_locator=artifact_locator,
+        )
 
     def prepare(self, revision_id: str, *, locator: str = _LOCATOR) -> DeploymentInstanceRecord:
         result = self.activation.prepare_candidate(
@@ -138,6 +155,7 @@ class _D0Harness:
             activation_store=self.activation_store,
             deployment_adapter=adapter,
             projection_coordinator=FakeRuntimeServingProjectionCoordinator(),
+            materialization_store=self.materialization_store,
         )
 
 
@@ -175,7 +193,7 @@ def test_d0_04_wrong_artifact_locator_fails_closed() -> None:
     harness = _D0Harness()
     harness.seed_validated("rev-1")
     harness.prepare("rev-1")
-    with pytest.raises(RuntimeActivationError, match="attestation failed"):
+    with pytest.raises(RuntimeActivationError, match="artifact locator authority mismatch"):
         harness.prepare("rev-1", locator=f"artifact://{_OTHER_ARTIFACT}")
 
 
@@ -374,6 +392,7 @@ def test_d0_11_alternate_adapter_satisfies_protocol() -> None:
         activation_store=harness.activation_store,
         deployment_adapter=adapter,
         projection_coordinator=FakeRuntimeServingProjectionCoordinator(),
+        materialization_store=harness.materialization_store,
     )
     harness.seed_validated("rev-alt")
     ready = harness.prepare("rev-alt")
@@ -392,6 +411,43 @@ def test_d0_13_deployment_module_has_no_applications_imports() -> None:
         if isinstance(node, ast.ImportFrom):
             module = node.module or ""
             assert "applications" not in module
+
+
+_FILE_LOCATOR = f"file:///tmp/runtime-bundle/{_ARTIFACT}"
+
+
+def test_r1_01_prepare_file_locator_commit_without_locator_mismatch() -> None:
+    harness = _D0Harness()
+    harness.seed_validated("rev-file", artifact_locator=_FILE_LOCATOR)
+    harness.prepare("rev-file", locator=_FILE_LOCATOR)
+    result = harness.activation.commit_activation(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-file",
+        expected_prior_traffic_revision_id=None,
+        expected_serving_pointer_revision=0,
+        expected_artifact_digest=_ARTIFACT,
+    )
+    assert result.value.serving_record.traffic_serving_revision_id == "rev-file"
+
+
+def test_r1_02_same_digest_wrong_locator_fails_closed() -> None:
+    harness = _D0Harness()
+    harness.seed_validated("rev-1", artifact_locator=_FILE_LOCATOR)
+    harness.prepare("rev-1", locator=_FILE_LOCATOR)
+    with pytest.raises(RuntimeActivationError, match="artifact locator authority mismatch"):
+        harness.prepare("rev-1", locator=_LOCATOR)
+
+
+def test_r1_03_stale_adapter_blocks_ready_reuse() -> None:
+    test_d0_02_persisted_ready_empty_adapter_after_restart_fails()
+
+
+def test_r1_07_missing_materialization_authority_fails_closed() -> None:
+    harness = _D0Harness()
+    _persist_validated(harness.revision_service, "rev-missing")
+    with pytest.raises(RuntimeActivationError, match="canonical materialization authority missing"):
+        harness.prepare("rev-missing", locator=_LOCATOR)
 
 
 def test_d0_14_attestation_does_not_grant_traffic_authority() -> None:

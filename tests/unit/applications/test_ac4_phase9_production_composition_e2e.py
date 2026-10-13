@@ -397,6 +397,7 @@ def _build_test_lifecycle_services(
         activation_store=InMemoryApplicationEnvironmentActivationStore(state),
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
         projection_coordinator=projection_coordinator,
+        materialization_store=stores.materialization_store,
     )
     return ReferenceProductionLifecycleServices(
         activation_service=activation_service,
