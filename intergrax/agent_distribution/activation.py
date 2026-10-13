@@ -579,6 +579,13 @@ class ActivationService:
     ) -> TransitionResult[ActivationCommitResult]:
         if revision.revision_state is not RuntimeRevisionState.ACTIVE:
             raise RuntimeActivationConflict("serving pointer already targets revision but state is not active")
+        self._assert_environment_match(
+            revision,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if serving.traffic_serving_revision_id != revision.runtime_revision_id:
+            raise RuntimeActivationConflict("idempotent commit serving pointer revision mismatch")
         instance = self._deployment_instance_store.get_instance(
             application_id,
             application_environment_id,
@@ -586,6 +593,12 @@ class ActivationService:
         )
         if instance is None or instance.instance_state is not DeploymentInstanceState.SERVING:
             raise RuntimeActivationConflict("idempotent commit requires serving deployment instance")
+        artifact_locator = self._require_canonical_artifact_locator(revision)
+        self._attest_ready_deployment_instance(
+            revision=revision,
+            instance=instance,
+            artifact_locator=artifact_locator,
+        )
         return TransitionResult(
             value=ActivationCommitResult(
                 serving_record=serving,
@@ -603,6 +616,13 @@ class ActivationService:
         prior_revision_id: str,
     ) -> TransitionResult[RollbackResult]:
         restored = self._require_revision(prior_revision_id)
+        self._assert_environment_match(
+            restored,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if serving.traffic_serving_revision_id != prior_revision_id:
+            raise RuntimeActivationConflict("idempotent rollback serving pointer does not match restored revision")
         instance = self._deployment_instance_store.get_instance(
             application_id,
             application_environment_id,
@@ -610,6 +630,15 @@ class ActivationService:
         )
         if instance is None or instance.instance_state is not DeploymentInstanceState.SERVING:
             raise RuntimeRollbackError("idempotent rollback requires serving prior instance")
+        artifact_locator = self._require_canonical_artifact_locator(
+            restored,
+            rollback=True,
+        )
+        self._attest_ready_deployment_instance(
+            revision=restored,
+            instance=instance,
+            artifact_locator=artifact_locator,
+        )
         return TransitionResult(
             value=RollbackResult(
                 serving_record=serving,
