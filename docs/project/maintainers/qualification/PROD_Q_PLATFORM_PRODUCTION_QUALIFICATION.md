@@ -88,13 +88,13 @@ Derived from tenant-relevant classified inventory + TENANT-X ancestry — **not*
 
 ## PROD-Q-R1-R7-ADR-01 — Deployment authority (architecture)
 
-**Disposition:** **READY FOR ARCHITECTURE DECISION** / **ADR RATIFICATION PENDING** (ADR **R4** @ `2b44cee94fc654136d68353a04dedc5973eb6a8b`) — does **not** close **PROD-Q-R1** or **FRZ-PRD-04/05**. **B04:** missing `ServingRuntimeHandoff` (**R7-D1b**). **B05:** **closed in activation @ HEAD** (`attest_serving_unit` on READY reuse / idempotent paths). **B06/B07:** ADR + import graph. **D0/D0-R2** accepted (scoped); **D1 blocked** until operator ratifies ADR. Detail: [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md).
+**Disposition:** **ARCHITECTURE RATIFIED BY OPERATOR — IMPLEMENTATION NOT QUALIFIED** · **READY FOR AUDIT** (ADR **R5**; ratification **START_HEAD** `c6eb303e2234262e8acad7b09b5eb789dea891cf`; D0 code evidence `2b44cee94fc654136d68353a04dedc5973eb6a8b`) — does **not** close **PROD-Q-R1**, **PROD-Q-R7**, or **FRZ-PRD-04/05**. **DEC-01–DEC-08 RATIFIED** (operator authorization in controlling ChatGPT conversation; recorded in Git — not production proof). **Next implementation:** **PROD-Q-R1-R7-D1** (+ **D1b** per ADR §14.2). **B04:** missing `ServingRuntimeHandoff` (**R7-D1b**). **B05:** **closed in activation @ D0 SHA** (`attest_serving_unit` on READY reuse / idempotent paths). Detail: [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md).
 
 ## Known blockers & recommended children (provisional)
 
 ```text
 PROD-Q-R1 — Production Startup / Dependency Materialization Corrective (R1-SQLITE-ENV-01)
-PROD-Q-R1-R7 — Production deployment adapter & lifecycle wiring (blocked on ADR-01 ratification)
+PROD-Q-R1-R7 — Production deployment adapter & lifecycle wiring (ADR-01 **RATIFIED**; **D1** next — not qualified)
 PROD-Q-P1 — External sandbox provider production qualification (E2B, Modal, Daytona)
 PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure
 PROD-Q-P3 — Production operability surface (health/readiness/operator semantics wiring)
