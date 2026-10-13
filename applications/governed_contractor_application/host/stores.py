@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -25,6 +26,7 @@ from intergrax.contracts.provider_invocation import (
 )
 from intergrax.contracts.provider_invocation_store import (
     ProviderInvocationConflictError,
+    ProviderInvocationIntentWriteResult,
     ProviderInvocationOutcomeConflictError,
     provider_invocation_outcomes_equivalent,
     provider_invocations_equivalent,
@@ -141,20 +143,37 @@ class InMemoryProviderInvocationStore:
     def __init__(self) -> None:
         self._invocations: dict[str, ProviderInvocation] = {}
         self._outcomes: dict[str, ProviderInvocationOutcome] = {}
+        self._lock = threading.RLock()
 
     @property
     def is_durable(self) -> bool:
         return False
 
-    def put_invocation(self, invocation: ProviderInvocation) -> None:
-        existing = self._invocations.get(invocation.invocation_id)
-        if existing is not None:
-            if not provider_invocations_equivalent(existing, invocation):
+    def insert_invocation_if_absent(
+        self,
+        invocation: ProviderInvocation,
+    ) -> ProviderInvocationIntentWriteResult:
+        with self._lock:
+            existing = self._invocations.get(invocation.invocation_id)
+            if existing is not None:
+                if provider_invocations_equivalent(existing, invocation):
+                    return ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP
                 raise ProviderInvocationConflictError(
                     f"provider invocation conflict:{invocation.invocation_id}",
                 )
-            return
-        self._invocations[invocation.invocation_id] = invocation
+            self._invocations[invocation.invocation_id] = invocation
+            return ProviderInvocationIntentWriteResult.INSERTED
+
+    def put_invocation(self, invocation: ProviderInvocation) -> None:
+        with self._lock:
+            existing = self._invocations.get(invocation.invocation_id)
+            if existing is not None:
+                if not provider_invocations_equivalent(existing, invocation):
+                    raise ProviderInvocationConflictError(
+                        f"provider invocation conflict:{invocation.invocation_id}",
+                    )
+                return
+            self._invocations[invocation.invocation_id] = invocation
 
     def get_invocation(self, invocation_id: str) -> ProviderInvocation | None:
         return self._invocations.get(invocation_id)

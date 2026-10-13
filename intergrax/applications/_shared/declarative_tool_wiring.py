@@ -23,6 +23,9 @@ from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
 from intergrax.runtime.execution.application_declarative_tool_composition import (
     build_production_runtime_tool_invoker,
 )
+from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
+    resolve_dependency_concurrency_admission_configuration,
+)
 from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
     materialize_tool_dependency_attempt_boundary,
 )
@@ -107,8 +110,12 @@ def build_declarative_invoker_for_application_host(
             agent_registry=agent_registry,
         )
         governance = build_agent_runtime_governance_boundary(capability_grants=grants)
-    dependency_boundary = materialize_tool_dependency_attempt_boundary(
+    admission_configuration = resolve_dependency_concurrency_admission_configuration(
         environment.reliability_profile.dependency_concurrency_admission,
+        production_mode=production_mode,
+    )
+    dependency_boundary = materialize_tool_dependency_attempt_boundary(
+        admission_configuration,
         production_mode=production_mode,
     )
     return build_declarative_invoker_from_tool_wiring(

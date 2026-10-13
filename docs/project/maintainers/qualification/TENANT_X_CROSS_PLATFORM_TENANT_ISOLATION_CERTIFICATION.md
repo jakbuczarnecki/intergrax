@@ -1,6 +1,6 @@
 # TENANT-X — Cross-Platform Tenant Isolation Certification
 
-**Status:** **TENANT-X-P0** = **CLOSED / independently accepted** @ `3b1a86b138750a1ab289ac328151feecb9f7496c` · **TENANT-X-R1** = **CLOSED / independently accepted** @ `220fd6e9c5c59fb7bae6c789ebee0484d8bc7c0e` · **TENANT-X-R2** = **CLOSED / independently accepted** @ `9bc53dfad65dc20d327d7c7340953264c5d69c7a` · **TENANT-X-R3** = **CLOSED / independently accepted** @ `c3e708febf6a138258f65ca0fa391925fa3e2ad8` · **TENANT-X-R4** = **CLOSED / independently accepted** @ `d903a8dfaf7acaa53b013e2f7074fde9814441d2` · **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** (FINAL executable evidence integrity false-PASS) · **TENANT-X-FINAL-R1** = **READY FOR AUDIT** (corrective child; not **CLOSED**) · **TENANT-X-FINAL** parent = **BLOCKED ON R1 INDEPENDENT AUDIT** · **TENANT-X** = **OPEN** / **BLOCKED ON FINAL** · **FRZ-TEN-01..12** = **OPEN** · **new FRZ-TEN PASS = 0**
+**Status:** **TENANT-X-P0** = **CLOSED** · **TENANT-X-R1** = **CLOSED** · **TENANT-X-R2** = **CLOSED** · **TENANT-X-R3** = **CLOSED** · **TENANT-X-R4** = **CLOSED** · **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** · **TENANT-X-FINAL-R1** @ `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec` = **REJECTED** · **TENANT-X-FINAL-R1-R1** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` = **CLOSED / independently accepted** · **TENANT-X-FINAL** = **CLOSED / independently accepted** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` · **TENANT-X** = **CLOSED / independently accepted** · **FRZ-TEN-01..12** = **PASS** · **PROD-Q** = **NEXT / CURRENT** · **global tenant isolation certification** = **PASS** (TENANT-X scope)
 
 **Branch:** `development`
 
@@ -31,6 +31,11 @@
 | **TENANT-X-R4-R1-R1** | **REJECTED / superseded** | `eec0d0ef3b77b53ca49cbbb8aada1bf7dcb97b7c` |
 | **TENANT-X-R4-R1-R1-R1** | **CLOSED / independently accepted** | `d903a8dfaf7acaa53b013e2f7074fde9814441d2` |
 | **TENANT-X-R4** | **CLOSED / independently accepted** | `d903a8dfaf7acaa53b013e2f7074fde9814441d2` |
+| **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` | **REJECTED** | `940e6219ecf95d3202236a51b2fa284403583e5f` |
+| **TENANT-X-FINAL-R1** @ `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec` | **REJECTED** | `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec` |
+| **TENANT-X-FINAL-R1-R1** | **CLOSED / independently accepted** | `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` |
+| **TENANT-X-FINAL** (parent) | **CLOSED / independently accepted** | `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` |
+| **TENANT-X** (parent) | **CLOSED / independently accepted** | `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` |
 
 Historical rejected or intermediate qualification commits may remain in lineage; they must **not** be presented as final evidence. R1 accepted chain includes the final capability-routing sentinel reconciliation. R2 accepted chain includes the final mechanically-derived tenant-isolation verdict correction.
 
@@ -122,24 +127,28 @@ context/model continuity = INVALID / unresolved
 
 - gap: checkpoint tenant → resumed/recovered execution tenant not globally current-HEAD proven
 
-## FRZ status (no promotion)
+## FRZ status (FINAL reconciliation @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`)
 
 ```text
-FRZ-TEN-01 = OPEN
-FRZ-TEN-02 = OPEN
-FRZ-TEN-03 = OPEN
-FRZ-TEN-04 = OPEN
-FRZ-TEN-05 = OPEN
-FRZ-TEN-06 = OPEN
-FRZ-TEN-07 = OPEN
-FRZ-TEN-08 = OPEN
-FRZ-TEN-09 = OPEN
-FRZ-TEN-10 = OPEN
-FRZ-TEN-11 = OPEN
-FRZ-TEN-12 = OPEN
+FRZ-TEN PASS = 12
+FRZ-TEN OPEN = 0
+FRZ-TEN BLOCKED = 0
+
+FRZ-TEN-01 = PASS
+FRZ-TEN-02 = PASS
+FRZ-TEN-03 = PASS
+FRZ-TEN-04 = PASS
+FRZ-TEN-05 = PASS
+FRZ-TEN-06 = PASS
+FRZ-TEN-07 = PASS
+FRZ-TEN-08 = PASS
+FRZ-TEN-09 = PASS
+FRZ-TEN-10 = PASS
+FRZ-TEN-11 = PASS
+FRZ-TEN-12 = PASS
 ```
 
-P0 is discovery evidence, not final FRZ evidence.
+P0 discovery rows above remain historical inventory evidence only.
 
 ## Certification wave decomposition (canonical order)
 
@@ -150,7 +159,8 @@ P0 is discovery evidence, not final FRZ evidence.
 | **TENANT-X-R2** | **CLOSED** | Provider / configuration / credential isolation — accepted @ `9bc53dfa…`; **FRZ-TEN-05, 06, 11** (scoped); mechanical SSOT: `tests/qualification/tenant_x/_r2_*.py`, `test_tenant_x_r2_fast.py`, `test_tenant_x_r2_current_head.py` |
 | **TENANT-X-R3** | **CLOSED** | State / Checkpoint / Recovery Tenant Continuity Certification — accepted @ `c3e708fe…`; **FRZ-TEN-04, 08** (scoped); `checkpoint → recovery` **PROVEN_CURRENT_HEAD**; mechanical SSOT: `tests/qualification/tenant_x/_r3_*.py`, `test_tenant_x_r3_fast.py`, `test_tenant_x_r3_current_head.py` |
 | **TENANT-X-R4** | **CLOSED** | Evidence / Context / Async Cross-Boundary Continuity — accepted @ `d903a8df…`; **FRZ-TEN-02, 03, 07, 11** (+ supporting **01, 10, 12**); `gap.context_model_scope` **PROVEN_CURRENT_HEAD**; mechanical SSOT: `tests/qualification/tenant_x/_r4_*.py`, `test_tenant_x_r4_fast.py`, `test_tenant_x_r4_current_head.py`, `test_r4_call_site_scanner.py` |
-| **TENANT-X-FINAL** | **READY FOR AUDIT** | Cross-platform adversarial reconciliation after R1–R4 **CLOSED**; **FRZ-TEN-01..12** typed reconciliation + F1–F10 matrix on current HEAD |
+| **TENANT-X-FINAL** | **CLOSED** @ `5ccb72fc…` | Cross-platform adversarial reconciliation; **FRZ-TEN-01..12** = **PASS**; F1–F10 matrix @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` |
+| **PROD-Q** | **NEXT / CURRENT** | Mandatory next stage after **TENANT-X** parent closure — not entered in FINAL bookkeeping |
 
 **TENANT-X-FINAL** mandatory adversarial matrix (minimum):
 
@@ -175,7 +185,7 @@ context/model continuity           = PROVEN_CURRENT_HEAD (owner = R4 qualificati
 
 Do **not** implement a new global `TenantContext`; do **not** create new authority merely to simplify qualification.
 
-**PROD-Q:** not entered from P0 closure.
+**PROD-Q:** **NEXT / CURRENT** after **TENANT-X** parent **CLOSED** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` (not entered during FINAL implementation).
 
 ## UNKNOWN family backlog
 
@@ -462,11 +472,13 @@ NO
 
 **Rejected baseline (exact SHA):** **TENANT-X-FINAL** @ `940e6219ecf95d3202236a51b2fa284403583e5f` = **REJECTED** — FINAL executable evidence integrity false-PASS: caller-controlled runnable boolean; string-only `executable_evidence`; F9 semantic underproof; F10 expected/observed mismatch; hardcoded production delta.
 
-**Corrective child:** **TENANT-X-FINAL-R1** = **READY FOR AUDIT** (not **CLOSED**; independent exact-SHA audit required). Parent **TENANT-X-FINAL** = **BLOCKED ON R1 INDEPENDENT AUDIT**.
+**Rejected corrective (exact SHA):** **TENANT-X-FINAL-R1** @ `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec` = **REJECTED** — caller-supplied execution injection on authoritative report builder; F9 reconciliation without mandatory sub-evidence; F9 widen proof type-only.
 
-**START_HEAD (FINAL-R1 corrective baseline):** `940e6219ecf95d3202236a51b2fa284403583e5f`
+**Corrective child:** **TENANT-X-FINAL-R1-R1** = **CLOSED / independently accepted** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`. Parent **TENANT-X-FINAL** = **CLOSED / independently accepted** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`.
 
-**Current HEAD (qualification execution):** recorded at gate runtime via `git rev-parse HEAD` (must be descendant of accepted R1–R4 evidence SHAs).
+**Accepted evidence baseline (independent exact-SHA audit):** `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`
+
+**START_HEAD (FINAL-R1-R1 corrective baseline, historical):** `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec`
 
 **Accepted R1–R4 evidence SHAs (reconciled, not re-closed):**
 
@@ -481,7 +493,7 @@ NO
 
 **Production delta (FINAL):** **0**
 
-**Mechanical SSOT:** `tests/qualification/tenant_x/_final_*.py` · `test_tenant_x_final_fast.py` · `test_tenant_x_final_current_head.py` · `test_tenant_x_final_r1_integrity.py` — canonical path `run_final_adversarial_matrix()` → `reconcile_final_adversarial_execution()` → `build_final_qualification_report()` (no caller-controlled readiness boolean).
+**Mechanical SSOT:** `tests/qualification/tenant_x/_final_*.py` · `test_tenant_x_final_fast.py` · `test_tenant_x_final_current_head.py` · `test_tenant_x_final_r1_integrity.py` · `test_tenant_x_final_r1_r1_integrity.py` — canonical path `build_final_qualification_report()` → `run_final_adversarial_matrix()` → `reconcile_final_adversarial_execution()` (authoritative builder accepts no caller execution injection; pure reconciliation is mutation-test-only).
 
 ### Mandatory adversarial matrix (F1–F10)
 
@@ -500,26 +512,24 @@ NO
 
 Executable negatives compose R1–R4 SSOT (`_final_adversarial.py`); F9 dedicated replace/drop/widen-or-structural proof (`_final_execution.py`); typed per-class execution via `FINAL_ADVERSARIAL_EXECUTABLE_REGISTRY`.
 
-### FRZ-TEN-01..12 FINAL reconciliation (global checklist remains **OPEN**)
-
-Each row verdict **`RECONCILED_READY_FOR_AUDIT`** means: accepted wave evidence on ancestry chain, R1–R4 `*_ready_for_audit` on current HEAD, adversarial proof referenced, composed cross-tenant **ALLOWED** / **UNKNOWN** = **0** — **not** global **FRZ-TEN PASS**.
+### FRZ-TEN-01..12 FINAL reconciliation (global checklist **PASS** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`)
 
 | ID | Primary owner | FINAL reconciliation verdict |
 | --- | --- | --- |
-| **FRZ-TEN-01** | **R1** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-02** | **R4** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-03** | **R4** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-04** | **R3** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-05** | **R2** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-06** | **R2** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-07** | **R4** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-08** | **R3** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-09** | **R1** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-10** | **FINAL** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-11** | **R2** | **RECONCILED_READY_FOR_AUDIT** |
-| **FRZ-TEN-12** | **FINAL** | **RECONCILED_READY_FOR_AUDIT** |
+| **FRZ-TEN-01** | **R1** | **PASS** |
+| **FRZ-TEN-02** | **R4** | **PASS** |
+| **FRZ-TEN-03** | **R4** | **PASS** |
+| **FRZ-TEN-04** | **R3** | **PASS** |
+| **FRZ-TEN-05** | **R2** | **PASS** |
+| **FRZ-TEN-06** | **R2** | **PASS** |
+| **FRZ-TEN-07** | **R4** | **PASS** |
+| **FRZ-TEN-08** | **R3** | **PASS** |
+| **FRZ-TEN-09** | **R1** | **PASS** |
+| **FRZ-TEN-10** | **FINAL** | **PASS** |
+| **FRZ-TEN-11** | **R2** | **PASS** |
+| **FRZ-TEN-12** | **FINAL** | **PASS** |
 
-**Identity invariant:** `required_frz_ten_ids == reconciled_frz_ten_ids` (**12** / **12** by exact ID) · **unclassified = 0** · **FINAL blockers = 0** · **cross-tenant ALLOWED = 0** · **cross-tenant UNKNOWN = 0**
+**Identity invariant:** `required_frz_ten_ids == reconciled_frz_ten_ids` (**12** / **12** by exact ID) · **unclassified = 0** · **FINAL blockers = 0** · **cross-tenant ALLOWED = 0** · **cross-tenant UNKNOWN = 0** · **FRZ-TEN reconciliation = 12/12**
 
 ### Tenant Isolation Audit (FINAL parent scope)
 
@@ -535,39 +545,72 @@ async/recovery continuity: R3 recovery + R4 queue/background negatives
 cross-tenant path: composed matrices — ALLOWED 0 / UNKNOWN 0
 fail-closed behavior: F8 composed missing-tenant negatives
 adversarial evidence: test_tenant_x_final_fast.py + composed _final_adversarial
-result: PASS (qualification READY FOR AUDIT — not global FRZ-TEN PASS)
+result: PASS (global tenant isolation certification @ TENANT-X scope)
 ```
 
-### Post-Step Enterprise Discovery (TENANT-X-FINAL qualification)
+### Accepted FINAL evidence summary @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`
+
+```text
+F1-F10:
+expected = 10
+executed = 10
+missing = 0
+duplicates = 0
+unknown = 0
+not executed = 0
+failed = 0
+outcome mismatches = 0
+
+F9 specialized evidence = PASS
+F10 preservation = PASS
+
+FRZ-TEN reconciliation = 12/12
+cross-tenant ALLOWED = 0
+cross-tenant UNKNOWN = 0
+production delta = 0
+```
+
+### TENANT-X parent closure
+
+**P0** + **R1** + **R2** + **R3** + **R4** + **FINAL** = **CLOSED / independently accepted** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`.
+
+```text
+global tenant isolation certification = PASS
+```
+
+Does **not** close unrelated production/security/reliability criteria owned by **PROD-Q** or later mandatory stages.
+
+**Canonical transition:**
+
+```text
+TENANT-X
+   CLOSED
+     ↓
+PROD-Q
+   NEXT / CURRENT
+```
+
+### Post-Step Enterprise Discovery (TENANT-X-FINAL independent acceptance bookkeeping)
 
 ```text
 Classification:
 NO ROADMAP CHANGE REQUIRED
 
 New current-parent blockers:
-independent exact-SHA audit of TENANT-X-FINAL qualification commit
+none
 
 New future mandatory debt:
-none beyond independent FINAL closure audit
+existing PROD-Q / later roadmap obligations only
 
 New candidate roadmap stages:
 none
 
 FRZ coverage gaps:
-FRZ-TEN-01..12 remain OPEN on freeze checklist until independent auditor promotes PASS
+none in FRZ-TEN after TENANT-X closure
 
 New ownership / boundary / authority concerns:
-none newly discovered by FINAL qualification wave
+none
 
 Roadmap amendment required:
 NO
-```
-
-**Explicit non-closure:**
-
-```text
-TENANT-X-FINAL ≠ CLOSED
-TENANT-X ≠ CLOSED
-FRZ-TEN-* ≠ PASS
-PROD-Q ≠ started
 ```

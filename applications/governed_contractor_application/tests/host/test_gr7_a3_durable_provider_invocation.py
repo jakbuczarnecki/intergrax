@@ -56,6 +56,7 @@ from intergrax.contracts.provider_invocation import (
 )
 from intergrax.contracts.provider_invocation_store import (
     ProviderInvocationConflictError,
+    ProviderInvocationIntentWriteResult,
     ProviderInvocationPersistenceError,
     ProviderInvocationStore,
 )
@@ -84,15 +85,24 @@ class RecordingProviderInvocationStore:
     def is_durable(self) -> bool:
         return True
 
-    def put_invocation(self, invocation: ProviderInvocation) -> None:
+    def insert_invocation_if_absent(
+        self,
+        invocation: ProviderInvocation,
+    ) -> ProviderInvocationIntentWriteResult:
         self.intent_puts += 1
         if self.fail_intent:
             raise ProviderInvocationPersistenceError("injected intent failure")
         if invocation.invocation_id in self.invocations:
             if self.invocations[invocation.invocation_id] != invocation:
                 raise ProviderInvocationConflictError("conflict")
-            return
+            return ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP
         self.invocations[invocation.invocation_id] = invocation
+        return ProviderInvocationIntentWriteResult.INSERTED
+
+    def put_invocation(self, invocation: ProviderInvocation) -> None:
+        result = self.insert_invocation_if_absent(invocation)
+        if result is ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP:
+            return
 
     def get_invocation(self, invocation_id: str) -> ProviderInvocation | None:
         return self.invocations.get(invocation_id)

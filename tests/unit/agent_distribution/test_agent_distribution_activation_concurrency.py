@@ -26,7 +26,11 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
+    InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
+)
+from testing_support.agent_distribution.activation_materialization_fixtures import (
+    persist_materialization_for_revision,
 )
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
@@ -64,7 +68,7 @@ def _revision(
         platform_version="0.1.0",
         effective_roster_revision_id="roster-hash",
         materialized_runtime_lock_id="lock-1",
-        materialized_runtime_lock_digest="lock-digest",
+        materialized_runtime_lock_digest="sha256:" + ("2" * 64),
         runtime_graph_digest="graph-digest",
         materialization_artifact_digest=_ARTIFACT,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
@@ -94,6 +98,7 @@ class SharedActivationHarness:
         )
         self.deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
         self.projection = FakeRuntimeServingProjectionCoordinator()
+        self.materialization_store = InMemoryRuntimeMaterializationStore(self.state)
         self.revision_service_a = RuntimeRevisionService(self.revision_store_a)
         self.revision_service_b = RuntimeRevisionService(self.revision_store_b)
         self.activation_a = ActivationService(
@@ -103,6 +108,7 @@ class SharedActivationHarness:
             activation_store=self.activation_store_a,
             deployment_adapter=self.deployment_adapter,
             projection_coordinator=self.projection,
+            materialization_store=self.materialization_store,
         )
         self.activation_b = ActivationService(
             revision_store=self.revision_store_b,
@@ -111,6 +117,7 @@ class SharedActivationHarness:
             activation_store=self.activation_store_b,
             deployment_adapter=self.deployment_adapter,
             projection_coordinator=self.projection,
+            materialization_store=self.materialization_store,
         )
 
     def seed_validated(self, revision_id: str) -> RuntimeRevision:
@@ -119,6 +126,11 @@ class SharedActivationHarness:
         validated = _revision(revision_id)
         self.revision_service_a.mark_validated(
             revision_id, validated_revision=validated
+        )
+        persist_materialization_for_revision(
+            self.materialization_store,
+            validated,
+            artifact_locator=_LOCATOR,
         )
         return validated
 

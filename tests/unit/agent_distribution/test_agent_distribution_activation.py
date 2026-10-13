@@ -30,7 +30,11 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
+    InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
+)
+from testing_support.agent_distribution.activation_materialization_fixtures import (
+    persist_materialization_for_revision,
 )
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
@@ -62,7 +66,7 @@ def _revision(
         platform_version="0.1.0",
         effective_roster_revision_id="roster-hash",
         materialized_runtime_lock_id="lock-1",
-        materialized_runtime_lock_digest="lock-digest",
+        materialized_runtime_lock_digest="sha256:" + ("2" * 64),
         runtime_graph_digest="graph-digest",
         materialization_artifact_digest=artifact_digest,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
@@ -104,6 +108,7 @@ class ActivationHarness:
         self.deployment_store = InMemoryDeploymentInstanceStore(self.state)
         self.serving_store = InMemoryApplicationEnvironmentServingStore(self.state)
         self.activation_store = InMemoryApplicationEnvironmentActivationStore(self.state)
+        self.materialization_store = InMemoryRuntimeMaterializationStore(self.state)
         self.deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
         self.projection = FakeRuntimeServingProjectionCoordinator()
         self.revision_service = RuntimeRevisionService(self.revision_store)
@@ -114,6 +119,7 @@ class ActivationHarness:
             activation_store=self.activation_store,
             deployment_adapter=self.deployment_adapter,
             projection_coordinator=self.projection,
+            materialization_store=self.materialization_store,
         )
 
     def seed_validated(
@@ -123,14 +129,21 @@ class ActivationHarness:
         application_id: str = _APP,
         environment: str = _ENV_PROD,
         artifact_digest: str = _ARTIFACT,
+        artifact_locator: str = _LOCATOR,
     ) -> RuntimeRevision:
-        return _persist_validated(
+        validated = _persist_validated(
             self.revision_service,
             revision_id,
             application_id=application_id,
             environment=environment,
             artifact_digest=artifact_digest,
         )
+        persist_materialization_for_revision(
+            self.materialization_store,
+            validated,
+            artifact_locator=artifact_locator,
+        )
+        return validated
 
     def prepare(
         self,

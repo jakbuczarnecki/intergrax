@@ -140,6 +140,7 @@ class ExecutionContinuationErrorCode(StrEnum):
     INCOMPLETE_EXECUTION_IDENTITY = "incomplete_execution_identity"
     NON_DURABLE_CONTINUATION_STORE = "non_durable_continuation_store"
     CORRUPT_CONTINUATION_STATE = "corrupt_continuation_state"
+    RECONCILIATION_REQUIRED = "reconciliation_required"
 
 
 class ExecutionContinuationError(ValueError):

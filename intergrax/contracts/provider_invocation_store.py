@@ -5,11 +5,19 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from enum import StrEnum
 
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
 )
+
+
+class ProviderInvocationIntentWriteResult(StrEnum):
+    """Atomic first-writer admission fact for dispatch eligibility (ADR-03 §2.3)."""
+
+    INSERTED = "INSERTED"
+    EQUIVALENT_NOOP = "EQUIVALENT_NOOP"
 
 
 class ProviderInvocationStoreError(RuntimeError):
@@ -62,6 +70,19 @@ class ProviderInvocationStore(ABC):
         """
 
     @abstractmethod
+    def insert_invocation_if_absent(
+        self,
+        invocation: ProviderInvocation,
+    ) -> ProviderInvocationIntentWriteResult:
+        """
+        Atomically insert intent or return ``EQUIVALENT_NOOP`` when equivalent.
+
+        Conflicting payload for the same ``invocation_id`` raises
+        ``ProviderInvocationConflictError``. Infrastructure failures raise
+        ``ProviderInvocationPersistenceError``.
+        """
+
+    @abstractmethod
     def get_invocation(self, invocation_id: str) -> ProviderInvocation | None:
         """Load invocation intent or ``None``."""
 
@@ -81,6 +102,7 @@ class ProviderInvocationStore(ABC):
 
 __all__ = [
     "ProviderInvocationConflictError",
+    "ProviderInvocationIntentWriteResult",
     "ProviderInvocationOutcomeConflictError",
     "ProviderInvocationPersistenceError",
     "ProviderInvocationStore",

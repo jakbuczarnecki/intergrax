@@ -34,7 +34,11 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
     InMemoryEffectiveRosterSnapshotStore,
+    InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
+)
+from testing_support.agent_distribution.activation_materialization_fixtures import (
+    persist_materialization_for_revision,
 )
 from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
@@ -173,7 +177,7 @@ def _revision(
         effective_roster_revision_id=roster_revision_id,
         installed_agent_package_digests=(digest,),
         materialized_runtime_lock_id=f"lock-{revision_id}",
-        materialized_runtime_lock_digest=f"lock-digest-{revision_id}",
+        materialized_runtime_lock_digest="sha256:" + ("2" * 64),
         runtime_graph_digest=f"graph-digest-{revision_id}",
         materialization_artifact_digest=artifact,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
@@ -210,6 +214,7 @@ def build_emergency_harness(
     deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
     projection = FakeRuntimeServingProjectionCoordinator()
     revision_service = RuntimeRevisionService(revision_store)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
     activation = ActivationService(
         revision_store=revision_store,
         deployment_instance_store=deployment_store,
@@ -217,6 +222,7 @@ def build_emergency_harness(
         activation_store=activation_store,
         deployment_adapter=deployment_adapter,
         projection_coordinator=projection,
+        materialization_store=materialization_store,
     )
     emergency = AgentEmergencyRevocationService(
         serving_store=serving_store,
@@ -261,6 +267,11 @@ def build_emergency_harness(
             digest=digest,
         )
         revision_service.mark_validated(revision_id, validated_revision=validated)
+        persist_materialization_for_revision(
+            materialization_store,
+            validated,
+            artifact_locator=f"artifact://{artifact}",
+        )
 
     activation.prepare_candidate(
         application_id=_APP,
@@ -451,6 +462,7 @@ def test_no_prior_revision_blocks_emergency_response() -> None:
     deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
     projection = FakeRuntimeServingProjectionCoordinator()
     revision_service = RuntimeRevisionService(revision_store)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
     activation = ActivationService(
         revision_store=revision_store,
         deployment_instance_store=deployment_store,
@@ -458,6 +470,7 @@ def test_no_prior_revision_blocks_emergency_response() -> None:
         activation_store=activation_store,
         deployment_adapter=deployment_adapter,
         projection_coordinator=projection,
+        materialization_store=materialization_store,
     )
     emergency = AgentEmergencyRevocationService(
         serving_store=serving_store,
@@ -485,6 +498,11 @@ def test_no_prior_revision_blocks_emergency_response() -> None:
         digest=_DIGEST_N1,
     )
     revision_service.mark_validated("rev-n1", validated_revision=validated)
+    persist_materialization_for_revision(
+        materialization_store,
+        validated,
+        artifact_locator=f"artifact://{_ARTIFACT_N1}",
+    )
     activation.prepare_candidate(
         application_id=_APP,
         application_environment_id=_ENV,

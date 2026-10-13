@@ -11,6 +11,7 @@ from tests.qualification.tenant_x._final_types import FinalProductionDeltaEviden
 from tests.qualification.tenant_x._final_wave_evidence import current_git_head_sha
 
 TENANT_X_FINAL_REJECTED_BASE_SHA: Final[str] = "940e6219ecf95d3202236a51b2fa284403583e5f"
+TENANT_X_FINAL_R1_REJECTED_BASE_SHA: Final[str] = "036dcbd732e01a412a2cd86a81f6c1b040c9c2ec"
 
 _PRODUCTION_PREFIXES: Final[tuple[str, ...]] = (
     "intergrax/",

@@ -30,8 +30,14 @@ from intergrax.contracts.execution_continuation_state_store import (
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.applications._shared.colocated_serving_unit_task_execution import (
+    ColocatedServingUnitAdmissionTaskExecutionPort,
+)
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
+)
+from intergrax.applications._shared.serving_runtime_handoff import (
+    validate_serving_runtime_handoff_against_projection_evidence,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.plugin_bootstrap import (
@@ -63,6 +69,9 @@ from intergrax.applications._shared.product_observability_dashboard_wiring impor
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
     HarnessHostOrchestrationTopologyReliabilityCompositionError,
+)
+from intergrax.runtime.execution.continuation.durability_policy import (
+    validate_execution_continuation_for_composition,
 )
 from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
     build_governed_contractor_production_orchestration_topology_submission_port,
@@ -100,6 +109,16 @@ def create_governed_contractor_backend_app(
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
+    if (
+        registry_projection is not None
+        and process_composition is not None
+        and process_composition.serving_runtime_handoff is not None
+    ):
+        validate_serving_runtime_handoff_against_projection_evidence(
+            process_composition.serving_runtime_handoff,
+            runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+            materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+        )
     resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
@@ -115,6 +134,22 @@ def create_governed_contractor_backend_app(
         if process_composition is not None
         else None
     )
+    resolved_execution_continuation_state_store = execution_continuation_state_store
+    if process_composition is not None:
+        composition_continuation_store = (
+            process_composition.execution_continuation_state_store
+        )
+        if composition_continuation_store is not None:
+            if (
+                execution_continuation_state_store is not None
+                and execution_continuation_state_store is not composition_continuation_store
+            ):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host rejects conflicting "
+                    "execution_continuation_state_store injection; bind via "
+                    "ProductionProcessComposition.execution_continuation_state_store",
+                )
+            resolved_execution_continuation_state_store = composition_continuation_store
     if strict_topology_reliability and provider_invocation_store is None:
         raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
             "strict governed contractor production host requires "
@@ -133,7 +168,7 @@ def create_governed_contractor_backend_app(
             document_store=document_store,
             key_value_cache=key_value_cache,
         )
-        if production_mode:
+        if production_mode and key_value_cache is not None:
             env = resolve_reference_production_strict_host_environment(env)
             manifest_for_runtime = manifest.model_copy(update={"environment": env})
     collaborative_work_integration_profile = None
@@ -143,6 +178,13 @@ def create_governed_contractor_backend_app(
                 manifest_for_runtime,
                 trace_db_path=trace_db_path,
             )
+        )
+    if production_mode:
+        validate_execution_continuation_for_composition(
+            production_mode=True,
+            state_store=resolved_execution_continuation_state_store,
+            continuation_explicitly_wired=False,
+            continuation_disabled=False,
         )
     runtime = build_harness_host_runtime(
         manifest_for_runtime,
@@ -163,7 +205,7 @@ def create_governed_contractor_backend_app(
             settings,
         ),
         active_execution_task_scope=resolved_host_runtime.active_execution_task_scope,
-        execution_continuation_state_store=execution_continuation_state_store,
+        execution_continuation_state_store=resolved_execution_continuation_state_store,
         provider_invocation_store=provider_invocation_store,
         require_strict_orchestration_topology_reliability=strict_topology_reliability,
         strict_orchestration_topology_submission_port_builder=(
@@ -175,6 +217,14 @@ def create_governed_contractor_backend_app(
         key_value_cache=profile_persistence_kwargs.key_value_cache,
     )
     host_execution = runtime.execution
+    if (
+        process_composition is not None
+        and process_composition.serving_runtime_handoff is not None
+    ):
+        host_execution = ColocatedServingUnitAdmissionTaskExecutionPort(
+            host_execution,
+            process_composition.serving_runtime_handoff,
+        )
     registry = runtime.registry
     platform = bootstrap_harness_host_platform(runtime)
     if observability_export is not None and observability_export.enabled:

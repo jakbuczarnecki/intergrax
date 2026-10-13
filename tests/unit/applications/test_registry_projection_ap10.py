@@ -19,7 +19,11 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
+    InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
+)
+from testing_support.agent_distribution.activation_materialization_fixtures import (
+    persist_materialization_for_revision,
 )
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
 from intergrax.agent_distribution.runtime_revision import (
@@ -505,6 +509,12 @@ def test_activation_uses_prepared_projection() -> None:
     deployment_store = InMemoryDeploymentInstanceStore(state)
     serving_store = InMemoryApplicationEnvironmentServingStore(state)
     activation_store = InMemoryApplicationEnvironmentActivationStore(state)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
+    persist_materialization_for_revision(
+        materialization_store,
+        bundle.runtime_revision,
+        artifact_locator=f"artifact://{_ARTIFACT}",
+    )
     activation = ActivationService(
         revision_store=revision_store,
         deployment_instance_store=deployment_store,
@@ -512,6 +522,7 @@ def test_activation_uses_prepared_projection() -> None:
         activation_store=activation_store,
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
         projection_coordinator=coordinator,
+        materialization_store=materialization_store,
     )
     activation.prepare_candidate(
         application_id=_APP,
@@ -541,6 +552,12 @@ def test_projection_prepare_failure_blocks_activation_commit() -> None:
     deployment_store = InMemoryDeploymentInstanceStore(state)
     serving_store = InMemoryApplicationEnvironmentServingStore(state)
     activation_store = InMemoryApplicationEnvironmentActivationStore(state)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
+    persist_materialization_for_revision(
+        materialization_store,
+        bundle.runtime_revision,
+        artifact_locator=f"artifact://{_ARTIFACT}",
+    )
     activation = ActivationService(
         revision_store=revision_store,
         deployment_instance_store=deployment_store,
@@ -548,6 +565,7 @@ def test_projection_prepare_failure_blocks_activation_commit() -> None:
         activation_store=activation_store,
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
         projection_coordinator=coordinator,
+        materialization_store=materialization_store,
     )
     activation.prepare_candidate(
         application_id=_APP,
@@ -1296,6 +1314,12 @@ def test_resolver_failure_blocks_ap9_cutover() -> None:
     deployment_store = InMemoryDeploymentInstanceStore(state)
     serving_store = InMemoryApplicationEnvironmentServingStore(state)
     activation_store = InMemoryApplicationEnvironmentActivationStore(state)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
+    persist_materialization_for_revision(
+        materialization_store,
+        bundle.runtime_revision,
+        artifact_locator=f"artifact://{_ARTIFACT}",
+    )
     activation = ActivationService(
         revision_store=revision_store,
         deployment_instance_store=deployment_store,
@@ -1303,6 +1327,7 @@ def test_resolver_failure_blocks_ap9_cutover() -> None:
         activation_store=activation_store,
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
         projection_coordinator=coordinator,
+        materialization_store=materialization_store,
     )
     activation.prepare_candidate(
         application_id=_APP,

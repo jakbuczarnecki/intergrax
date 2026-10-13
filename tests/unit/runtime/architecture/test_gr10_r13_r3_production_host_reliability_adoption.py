@@ -154,7 +154,39 @@ class ReconstructableDurableProviderInvocationStore:
     def is_durable(self) -> bool:
         return True
 
+    def insert_invocation_if_absent(
+        self,
+        invocation: ProviderInvocation,
+    ):
+        from intergrax.contracts.provider_invocation_store import (
+            ProviderInvocationConflictError,
+            ProviderInvocationIntentWriteResult,
+            provider_invocations_equivalent,
+        )
+
+        existing = self._backing.invocations.get(invocation.invocation_id)
+        if existing is not None:
+            if provider_invocations_equivalent(existing, invocation):
+                return ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP
+            raise ProviderInvocationConflictError(
+                f"provider invocation conflict:{invocation.invocation_id}",
+            )
+        self._backing.invocations[invocation.invocation_id] = invocation
+        return ProviderInvocationIntentWriteResult.INSERTED
+
     def put_invocation(self, invocation: ProviderInvocation) -> None:
+        from intergrax.contracts.provider_invocation_store import (
+            ProviderInvocationConflictError,
+            provider_invocations_equivalent,
+        )
+
+        existing = self._backing.invocations.get(invocation.invocation_id)
+        if existing is not None:
+            if not provider_invocations_equivalent(existing, invocation):
+                raise ProviderInvocationConflictError(
+                    f"provider invocation conflict:{invocation.invocation_id}",
+                )
+            return
         self._backing.invocations[invocation.invocation_id] = invocation
 
     def get_invocation(self, invocation_id: str) -> ProviderInvocation | None:

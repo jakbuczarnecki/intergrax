@@ -50,6 +50,180 @@ def _identity_matches(
     )
 
 
+def _active_for_identity_in_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    identity: ExecutionContinuationIdentity,
+) -> list[PendingExecutionContinuation]:
+    return [
+        pending
+        for pending in by_id.values()
+        if _identity_matches(pending, identity)
+        and not execution_continuation_lifecycle_is_terminal(pending.lifecycle_state)
+    ]
+
+
+def resolve_current_episode_in_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    current_by_identity: dict[tuple[str, str, str, str], str],
+    identity: ExecutionContinuationIdentity,
+) -> PendingExecutionContinuation | None:
+    active = _active_for_identity_in_maps(by_id, identity)
+    if len(active) > 1:
+        raise ExecutionContinuationError(
+            "multiple active continuation episodes for identity",
+            code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+        )
+    key = _identity_key(identity)
+    current_id = current_by_identity.get(key)
+    if current_id is not None:
+        current = by_id.get(current_id)
+        if current is None or not _identity_matches(current, identity):
+            raise ExecutionContinuationError(
+                "current continuation pointer inconsistent with identity",
+                code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+            )
+        if len(active) == 1 and active[0].continuation_id != current_id:
+            raise ExecutionContinuationError(
+                "active continuation episode disagrees with current pointer",
+                code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+            )
+        return current
+    if len(active) == 1:
+        return active[0]
+    matches = [
+        pending for pending in by_id.values() if _identity_matches(pending, identity)
+    ]
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    raise ExecutionContinuationError(
+        "ambiguous continuation identity without current episode pointer",
+        code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+    )
+
+
+def begin_current_episode_if_predecessor_allows_in_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    current_by_identity: dict[tuple[str, str, str, str], str],
+    pending: PendingExecutionContinuation,
+) -> bool:
+    if pending.continuation_id in by_id:
+        return False
+    active = _active_for_identity_in_maps(by_id, pending.identity)
+    if len(active) > 1:
+        raise ExecutionContinuationError(
+            "multiple active continuation episodes for identity",
+            code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+        )
+    key = _identity_key(pending.identity)
+    current_id = current_by_identity.get(key)
+    if current_id is not None:
+        predecessor = by_id.get(current_id)
+        if predecessor is None or not _identity_matches(predecessor, pending.identity):
+            raise ExecutionContinuationError(
+                "current continuation pointer inconsistent with identity",
+                code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+            )
+        if not execution_continuation_lifecycle_permits_successor_episode(
+            predecessor.lifecycle_state,
+        ):
+            raise ExecutionContinuationError(
+                "current continuation episode does not permit successor",
+                code=ExecutionContinuationErrorCode.INVALID_TRANSITION,
+            )
+    elif active:
+        raise ExecutionContinuationError(
+            "active continuation episode without current pointer",
+            code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+        )
+    by_id[pending.continuation_id] = pending
+    current_by_identity[key] = pending.continuation_id
+    return True
+
+
+def insert_if_absent_in_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    pending: PendingExecutionContinuation,
+) -> bool:
+    if pending.continuation_id in by_id:
+        return False
+    by_id[pending.continuation_id] = pending
+    return True
+
+
+def compare_and_swap_in_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    *,
+    continuation_id: str,
+    expected: PendingExecutionContinuation,
+    updated: PendingExecutionContinuation,
+) -> bool:
+    if (
+        continuation_id != expected.continuation_id
+        or continuation_id != updated.continuation_id
+    ):
+        return False
+    current = by_id.get(continuation_id)
+    if current is None or current != expected:
+        return False
+    by_id[continuation_id] = updated
+    return True
+
+
+def build_durable_export_payload_from_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    current_by_identity: dict[tuple[str, str, str, str], str],
+) -> StructuredJsonObject:
+    """Build export envelope; caller must hold backing lock."""
+    records = {
+        continuation_id: pending.model_dump(mode="json")
+        for continuation_id, pending in by_id.items()
+    }
+    current_entries = [
+        {
+            "task_id": key[0],
+            "run_id": key[1],
+            "attempt_id": key[2],
+            "execution_id": key[3],
+            "continuation_id": continuation_id,
+        }
+        for key, continuation_id in current_by_identity.items()
+    ]
+    return copy.deepcopy(
+        {
+            "schema_version": DURABLE_CONTINUATION_STATE_SCHEMA_V1,
+            "records": records,
+            "current_by_identity": current_entries,
+        },
+    )
+
+
+def snapshot_backing_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    current_by_identity: dict[tuple[str, str, str, str], str],
+) -> tuple[
+    dict[str, PendingExecutionContinuation],
+    dict[tuple[str, str, str, str], str],
+]:
+    return copy.deepcopy(by_id), copy.deepcopy(current_by_identity)
+
+
+def restore_backing_maps(
+    by_id: dict[str, PendingExecutionContinuation],
+    current_by_identity: dict[tuple[str, str, str, str], str],
+    snapshot: tuple[
+        dict[str, PendingExecutionContinuation],
+        dict[tuple[str, str, str, str], str],
+    ],
+) -> None:
+    snap_by_id, snap_current = snapshot
+    by_id.clear()
+    by_id.update(snap_by_id)
+    current_by_identity.clear()
+    current_by_identity.update(snap_current)
+
+
 class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
     """Process-local continuation store with real compare-and-swap under a lock."""
 
@@ -98,47 +272,15 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
         pending: PendingExecutionContinuation,
     ) -> bool:
         with self._lock:
-            if pending.continuation_id in self._by_id:
-                return False
-            active = self._active_for_identity_locked(pending.identity)
-            if len(active) > 1:
-                raise ExecutionContinuationError(
-                    "multiple active continuation episodes for identity",
-                    code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
-                )
-            key = _identity_key(pending.identity)
-            current_id = self._current_by_identity.get(key)
-            if current_id is not None:
-                predecessor = self._by_id.get(current_id)
-                if predecessor is None or not _identity_matches(
-                    predecessor, pending.identity
-                ):
-                    raise ExecutionContinuationError(
-                        "current continuation pointer inconsistent with identity",
-                        code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
-                    )
-                if not execution_continuation_lifecycle_permits_successor_episode(
-                    predecessor.lifecycle_state,
-                ):
-                    raise ExecutionContinuationError(
-                        "current continuation episode does not permit successor",
-                        code=ExecutionContinuationErrorCode.INVALID_TRANSITION,
-                    )
-            elif active:
-                raise ExecutionContinuationError(
-                    "active continuation episode without current pointer",
-                    code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
-                )
-            self._by_id[pending.continuation_id] = pending
-            self._current_by_identity[key] = pending.continuation_id
-            return True
+            return begin_current_episode_if_predecessor_allows_in_maps(
+                self._by_id,
+                self._current_by_identity,
+                pending,
+            )
 
     def insert_if_absent(self, pending: PendingExecutionContinuation) -> bool:
         with self._lock:
-            if pending.continuation_id in self._by_id:
-                return False
-            self._by_id[pending.continuation_id] = pending
-            return True
+            return insert_if_absent_in_maps(self._by_id, pending)
 
     def compare_and_swap(
         self,
@@ -147,70 +289,22 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
         expected: PendingExecutionContinuation,
         updated: PendingExecutionContinuation,
     ) -> bool:
-        if (
-            continuation_id != expected.continuation_id
-            or continuation_id != updated.continuation_id
-        ):
-            return False
         with self._lock:
-            current = self._by_id.get(continuation_id)
-            if current is None or current != expected:
-                return False
-            self._by_id[continuation_id] = updated
-            return True
-
-    def _active_for_identity_locked(
-        self,
-        identity: ExecutionContinuationIdentity,
-    ) -> list[PendingExecutionContinuation]:
-        return [
-            pending
-            for pending in self._by_id.values()
-            if _identity_matches(pending, identity)
-            and not execution_continuation_lifecycle_is_terminal(
-                pending.lifecycle_state
+            return compare_and_swap_in_maps(
+                self._by_id,
+                continuation_id=continuation_id,
+                expected=expected,
+                updated=updated,
             )
-        ]
 
     def _resolve_current_episode_locked(
         self,
         identity: ExecutionContinuationIdentity,
     ) -> PendingExecutionContinuation | None:
-        active = self._active_for_identity_locked(identity)
-        if len(active) > 1:
-            raise ExecutionContinuationError(
-                "multiple active continuation episodes for identity",
-                code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
-            )
-        key = _identity_key(identity)
-        current_id = self._current_by_identity.get(key)
-        if current_id is not None:
-            current = self._by_id.get(current_id)
-            if current is None or not _identity_matches(current, identity):
-                raise ExecutionContinuationError(
-                    "current continuation pointer inconsistent with identity",
-                    code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
-                )
-            if len(active) == 1 and active[0].continuation_id != current_id:
-                raise ExecutionContinuationError(
-                    "active continuation episode disagrees with current pointer",
-                    code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
-                )
-            return current
-        if len(active) == 1:
-            return active[0]
-        matches = [
-            pending
-            for pending in self._by_id.values()
-            if _identity_matches(pending, identity)
-        ]
-        if not matches:
-            return None
-        if len(matches) == 1:
-            return matches[0]
-        raise ExecutionContinuationError(
-            "ambiguous continuation identity without current episode pointer",
-            code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+        return resolve_current_episode_in_maps(
+            self._by_id,
+            self._current_by_identity,
+            identity,
         )
 
 
@@ -253,27 +347,10 @@ def export_durable_continuation_state(
 ) -> StructuredJsonObject:
     """Export a deep, JSON-compatible durable snapshot (no mutable aliases to backing)."""
     with backing._lock:
-        records = {
-            continuation_id: pending.model_dump(mode="json")
-            for continuation_id, pending in backing._by_id.items()
-        }
-        current_entries = [
-            {
-                "task_id": key[0],
-                "run_id": key[1],
-                "attempt_id": key[2],
-                "execution_id": key[3],
-                "continuation_id": continuation_id,
-            }
-            for key, continuation_id in backing._current_by_identity.items()
-        ]
-    return copy.deepcopy(
-        {
-            "schema_version": DURABLE_CONTINUATION_STATE_SCHEMA_V1,
-            "records": records,
-            "current_by_identity": current_entries,
-        },
-    )
+        return build_durable_export_payload_from_maps(
+            backing._by_id,
+            backing._current_by_identity,
+        )
 
 
 def _identity_from_durable_key_fields(
@@ -428,10 +505,17 @@ __all__ = [
     "InMemoryExecutionContinuationStateStore",
     "ReconstructedDurableExecutionContinuationStateStore",
     "backing_execution_continuation_state_store",
+    "begin_current_episode_if_predecessor_allows_in_maps",
+    "build_durable_export_payload_from_maps",
+    "compare_and_swap_in_maps",
     "default_execution_continuation_state_store",
     "execution_continuation_state_store_from_durable_export",
     "export_durable_continuation_state",
+    "insert_if_absent_in_maps",
     "reconstructed_durable_execution_continuation_state_store",
+    "resolve_current_episode_in_maps",
+    "restore_backing_maps",
     "restore_durable_continuation_backing",
+    "snapshot_backing_maps",
     "wire_execution_continuation_state_store",
 ]

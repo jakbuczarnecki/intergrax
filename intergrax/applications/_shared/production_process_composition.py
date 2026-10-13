@@ -27,6 +27,10 @@ if TYPE_CHECKING:
         AgentCapabilityApplicationComposition,
         ProductionAgentCapabilityRuntime,
     )
+    from intergrax.applications._shared.serving_runtime_handoff import ServingRuntimeHandoff
+    from intergrax.contracts.execution_continuation_state_store import (
+        ExecutionContinuationStateStore,
+    )
     from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 
 
@@ -37,12 +41,15 @@ class ProductionProcessComposition:
     agent_platform_runtime: ProductionAgentPlatformRuntime
     agent_capability_runtime: ProductionAgentCapabilityRuntime | None = None
     provider_invocation_store: ProviderInvocationStore | None = None
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None
+    serving_runtime_handoff: ServingRuntimeHandoff | None = None
 
 
 def create_reference_production_process_composition(
     *,
     application_composition: AgentCapabilityApplicationComposition | None = None,
     provider_invocation_store: ProviderInvocationStore | None = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
 ) -> ProductionProcessComposition:
     """Create one reference production process composition with fresh process-local stores."""
     agent_platform_runtime = build_production_agent_platform_runtime()
@@ -60,6 +67,7 @@ def create_reference_production_process_composition(
         agent_platform_runtime=agent_platform_runtime,
         agent_capability_runtime=capability_runtime,
         provider_invocation_store=provider_invocation_store,
+        execution_continuation_state_store=execution_continuation_state_store,
     )
 
 

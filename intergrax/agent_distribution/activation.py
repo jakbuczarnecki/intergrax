@@ -19,16 +19,23 @@ from intergrax.agent_distribution.deployment import (
     DrainPolicy,
     DrainStatus,
     RuntimeDeploymentAdapter,
+    ServingUnitAttestation,
+    ServingUnitAttestationError,
+    ServingUnitAttestationRequest,
 )
 from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
     RuntimeActivationConflict,
     RuntimeActivationError,
     RuntimeDrainError,
+    RuntimeMaterializationConflict,
     RuntimeReadinessError,
     RuntimeRollbackError,
 )
 from intergrax.agent_distribution.events import TransitionResult, distribution_event
+from intergrax.agent_distribution.runtime_materialization_record import (
+    validate_runtime_materialization_record_matches_revision,
+)
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
@@ -36,6 +43,7 @@ from intergrax.agent_distribution.stores import (
     ApplicationEnvironmentServingRecord,
     ApplicationEnvironmentServingStore,
     DeploymentInstanceStore,
+    RuntimeMaterializationStore,
     RuntimeRevisionStore,
 )
 
@@ -131,6 +139,7 @@ class ActivationService:
         activation_store: ApplicationEnvironmentActivationStore,
         deployment_adapter: RuntimeDeploymentAdapter,
         projection_coordinator: RuntimeServingProjectionCoordinator,
+        materialization_store: RuntimeMaterializationStore,
         artifact_revalidation: ArtifactRevalidationHook | None = None,
     ) -> None:
         self._revision_store = revision_store
@@ -140,6 +149,7 @@ class ActivationService:
         self._activation_store = activation_store
         self._deployment_adapter = deployment_adapter
         self._projection_coordinator = projection_coordinator
+        self._materialization_store = materialization_store
         self._artifact_revalidation = artifact_revalidation or ArtifactRevalidationHook(
             validate=_default_artifact_revalidation
         )
@@ -166,20 +176,30 @@ class ActivationService:
             if revision.materialization_artifact_digest is None:
                 raise RuntimeActivationError("validated revision lacks materialization artifact identity")
 
+            authoritative_locator = self._require_canonical_artifact_locator(revision)
+            normalized_locator = artifact_locator.strip()
+            if not normalized_locator:
+                raise RuntimeActivationError("artifact locator must be non-empty")
+            if normalized_locator != authoritative_locator:
+                raise RuntimeActivationError("artifact locator authority mismatch")
+
             existing = self._deployment_instance_store.get_instance(
                 application_id,
                 application_environment_id,
                 runtime_revision_id,
             )
             if existing is not None and existing.instance_state is DeploymentInstanceState.READY:
-                if existing.serving_unit_ref is None or existing.readiness_evidence_ref is None:
-                    raise RuntimeActivationError("ready deployment instance lacks readiness evidence")
+                self._attest_ready_deployment_instance(
+                    revision=revision,
+                    instance=existing,
+                    artifact_locator=authoritative_locator,
+                )
                 return TransitionResult(value=existing)
 
             now = datetime.now(UTC)
             prepared = self._deployment_adapter.prepare(
                 revision,
-                artifact_locator=artifact_locator,
+                artifact_locator=authoritative_locator,
             )
             if prepared.materialization_artifact_digest != revision.materialization_artifact_digest:
                 raise RuntimeActivationError("deployment artifact identity mismatch")
@@ -262,9 +282,11 @@ class ActivationService:
                 raise RuntimeActivationError("commit requires validated runtime revision")
 
             self._require_ready_instance(
+                revision=revision,
                 application_id=application_id,
                 application_environment_id=application_environment_id,
                 runtime_revision_id=runtime_revision_id,
+                artifact_locator=self._require_canonical_artifact_locator(revision),
             )
 
             self._projection_coordinator.prepare_projection(runtime_revision_id)
@@ -557,6 +579,13 @@ class ActivationService:
     ) -> TransitionResult[ActivationCommitResult]:
         if revision.revision_state is not RuntimeRevisionState.ACTIVE:
             raise RuntimeActivationConflict("serving pointer already targets revision but state is not active")
+        self._assert_environment_match(
+            revision,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if serving.traffic_serving_revision_id != revision.runtime_revision_id:
+            raise RuntimeActivationConflict("idempotent commit serving pointer revision mismatch")
         instance = self._deployment_instance_store.get_instance(
             application_id,
             application_environment_id,
@@ -564,6 +593,12 @@ class ActivationService:
         )
         if instance is None or instance.instance_state is not DeploymentInstanceState.SERVING:
             raise RuntimeActivationConflict("idempotent commit requires serving deployment instance")
+        artifact_locator = self._require_canonical_artifact_locator(revision)
+        self._attest_ready_deployment_instance(
+            revision=revision,
+            instance=instance,
+            artifact_locator=artifact_locator,
+        )
         return TransitionResult(
             value=ActivationCommitResult(
                 serving_record=serving,
@@ -581,6 +616,13 @@ class ActivationService:
         prior_revision_id: str,
     ) -> TransitionResult[RollbackResult]:
         restored = self._require_revision(prior_revision_id)
+        self._assert_environment_match(
+            restored,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if serving.traffic_serving_revision_id != prior_revision_id:
+            raise RuntimeActivationConflict("idempotent rollback serving pointer does not match restored revision")
         instance = self._deployment_instance_store.get_instance(
             application_id,
             application_environment_id,
@@ -588,6 +630,15 @@ class ActivationService:
         )
         if instance is None or instance.instance_state is not DeploymentInstanceState.SERVING:
             raise RuntimeRollbackError("idempotent rollback requires serving prior instance")
+        artifact_locator = self._require_canonical_artifact_locator(
+            restored,
+            rollback=True,
+        )
+        self._attest_ready_deployment_instance(
+            revision=restored,
+            instance=instance,
+            artifact_locator=artifact_locator,
+        )
         return TransitionResult(
             value=RollbackResult(
                 serving_record=serving,
@@ -632,11 +683,28 @@ class ActivationService:
                         "record_revision": instance.record_revision + 1,
                     }
                 )
-                return self._deployment_instance_store.update_instance(
+                persisted = self._deployment_instance_store.update_instance(
                     ready,
                     expected_state=instance.instance_state,
                     expected_record_revision=instance.record_revision,
                 )
+                self._attest_ready_deployment_instance(
+                    revision=prior_revision,
+                    instance=persisted,
+                    artifact_locator=self._require_canonical_artifact_locator(
+                        prior_revision,
+                        rollback=True,
+                    ),
+                )
+                return persisted
+            self._attest_ready_deployment_instance(
+                revision=prior_revision,
+                instance=instance,
+                artifact_locator=self._require_canonical_artifact_locator(
+                    prior_revision,
+                    rollback=True,
+                ),
+            )
             return instance
 
         if prior_revision.materialization_artifact_digest is None:
@@ -656,7 +724,10 @@ class ActivationService:
         prior_revision: RuntimeRevision,
     ) -> DeploymentInstanceRecord:
         """Reuse prior immutable artifact — no revision rebuild."""
-        artifact_locator = f"artifact://{prior_revision.materialization_artifact_digest}"
+        artifact_locator = self._require_canonical_artifact_locator(
+            prior_revision,
+            rollback=True,
+        )
         now = datetime.now(UTC)
         prepared = self._deployment_adapter.prepare(
             prior_revision,
@@ -691,9 +762,11 @@ class ActivationService:
     def _require_ready_instance(
         self,
         *,
+        revision: RuntimeRevision,
         application_id: str,
         application_environment_id: str,
         runtime_revision_id: str,
+        artifact_locator: str,
     ) -> DeploymentInstanceRecord:
         instance = self._deployment_instance_store.get_instance(
             application_id,
@@ -712,7 +785,103 @@ class ActivationService:
             raise RuntimeActivationError("commit requires ready deployment instance")
         if instance.readiness_evidence_ref is None:
             raise RuntimeActivationError("ready deployment instance lacks readiness evidence")
+        self._attest_ready_deployment_instance(
+            revision=revision,
+            instance=instance,
+            artifact_locator=artifact_locator,
+        )
         return instance
+
+    def _require_canonical_artifact_locator(
+        self,
+        revision: RuntimeRevision,
+        *,
+        rollback: bool = False,
+    ) -> str:
+        error_cls = RuntimeRollbackError if rollback else RuntimeActivationError
+        record = self._materialization_store.get_by_revision(revision.runtime_revision_id)
+        if record is None:
+            raise error_cls("canonical materialization authority missing")
+        try:
+            validate_runtime_materialization_record_matches_revision(revision, record)
+        except RuntimeMaterializationConflict as exc:
+            raise error_cls("canonical materialization authority mismatch") from exc
+        return record.artifact_locator
+
+    def _attest_ready_deployment_instance(
+        self,
+        *,
+        revision: RuntimeRevision,
+        instance: DeploymentInstanceRecord,
+        artifact_locator: str,
+        tenant_id: str | None = None,
+    ) -> ServingUnitAttestation:
+        if instance.serving_unit_ref is None:
+            raise RuntimeActivationError("ready deployment instance lacks serving unit ref")
+        if instance.readiness_evidence_ref is None:
+            raise RuntimeActivationError("ready deployment instance lacks readiness evidence")
+        digest = revision.materialization_artifact_digest
+        if digest is None:
+            raise RuntimeActivationError("validated revision lacks materialization artifact identity")
+        request = ServingUnitAttestationRequest(
+            application_id=instance.application_id,
+            application_environment_id=instance.application_environment_id,
+            runtime_revision_id=instance.runtime_revision_id,
+            serving_unit_ref=instance.serving_unit_ref,
+            materialization_artifact_digest=digest,
+            artifact_locator=artifact_locator,
+            tenant_id=tenant_id,
+        )
+        self._assert_environment_match(
+            revision,
+            application_id=instance.application_id,
+            application_environment_id=instance.application_environment_id,
+        )
+        if request.runtime_revision_id != revision.runtime_revision_id:
+            raise RuntimeActivationError("deployment instance revision mismatch")
+        if request.materialization_artifact_digest != digest:
+            raise RuntimeActivationError("deployment artifact identity mismatch")
+        try:
+            attestation = self._deployment_adapter.attest_serving_unit(
+                revision,
+                request=request,
+            )
+        except ServingUnitAttestationError as exc:
+            raise RuntimeActivationError("serving unit attestation failed") from exc
+        self._validate_serving_unit_attestation(
+            request=request,
+            attestation=attestation,
+        )
+        return attestation
+
+    @staticmethod
+    def _validate_serving_unit_attestation(
+        *,
+        request: ServingUnitAttestationRequest,
+        attestation: ServingUnitAttestation,
+    ) -> None:
+        if not attestation.physical_unit_live:
+            raise RuntimeActivationError("serving unit attestation reports unit not live")
+        bound_fields = (
+            ("application_id", request.application_id, attestation.application_id),
+            (
+                "application_environment_id",
+                request.application_environment_id,
+                attestation.application_environment_id,
+            ),
+            ("runtime_revision_id", request.runtime_revision_id, attestation.runtime_revision_id),
+            ("serving_unit_ref", request.serving_unit_ref, attestation.serving_unit_ref),
+            (
+                "materialization_artifact_digest",
+                request.materialization_artifact_digest,
+                attestation.materialization_artifact_digest,
+            ),
+        )
+        for field_name, expected, observed in bound_fields:
+            if expected != observed:
+                raise RuntimeActivationError(
+                    f"serving unit attestation {field_name} mismatch"
+                )
 
     @staticmethod
     def _assert_environment_match(
