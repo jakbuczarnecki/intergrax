@@ -91,7 +91,8 @@ def test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape() -> None
     assert report.matrix.frz_criteria_classified == 33
     assert report.matrix.families_covered == 23
     assert report.tenant_audit.verdict == "DERIVED_PASS_REUSE_TENANT_X"
-    assert report.r1_sqlite.reproduction_executed is True
+    assert report.r1_sqlite.reproduction_executed is False
+    assert report.r1_sqlite.reproduction_classification.value == "NOT_EXECUTED"
     assert report.r1_sqlite.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER
     assert report.ownership_reconciliation.semantic_mechanism_count > 0
     assert len(report.recommended_children) >= 3

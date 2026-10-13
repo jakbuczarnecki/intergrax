@@ -67,12 +67,12 @@ Each of the **23** families has a typed `FamilyCoverageRecord` in `build_family_
 | --- | --- |
 | ID | `R1-SQLITE-ENV-01` |
 | PROD-Q impact | **IN-SCOPE BLOCKER** for **FRZ-PRD-04** |
-| Reproduction | **Executed** under isolated `INTERGRAX_RELATIONAL_DB`; failure classified from traceback (`ExecutionContinuationError` and/or `ToolDependencyAttemptBoundaryMaterializationError` → **DEPENDENCY_MATERIALIZATION**, not default-DB SQLite corruption) |
+| Reproduction | **Opt-in** (`INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION=1`, 60s bounded subprocess); fast gates use in-process isolated bootstrap only (`NOT_EXECUTED`). When executed, failure classified from pytest `E` lines (`ExecutionContinuationError` / `ToolDependencyAttemptBoundaryMaterializationError` → **DEPENDENCY_MATERIALIZATION**). Timeout → **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** (never startup PASS). |
 | Recommended child | **PROD-Q-R1** |
 
 ## PROD-Q-R1-R3 — Startup evidence & SQLite isolation
 
-**Disposition:** **READY FOR AUDIT** @ `9c0fbc5702c56cd28c81ee8af687be2c518f38be` — does **not** close **PROD-Q-R1** or **FRZ-PRD-04**. Preserves **PROD-Q-R1-R1** / **PROD-Q-R1-R2** corrections; reconciles P0 GCA HTTP reproduction with current-HEAD continuation gate. Detail: [`PROD_Q_R1_R3_STARTUP_SQLITE_ISOLATION.md`](PROD_Q_R1_R3_STARTUP_SQLITE_ISOLATION.md).
+**Disposition:** **READY FOR AUDIT** (**PROD-Q-R1-R3-R1**) — does **not** close **PROD-Q-R1** or **FRZ-PRD-04**. Portable SQLite probes + bounded opt-in HTTP reproduction; preserves **PROD-Q-R1-R1** / **PROD-Q-R1-R2**. Detail: [`PROD_Q_R1_R3_STARTUP_SQLITE_ISOLATION.md`](PROD_Q_R1_R3_STARTUP_SQLITE_ISOLATION.md).
 
 ## Provider qualification disposition
 

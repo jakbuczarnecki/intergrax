@@ -8,11 +8,16 @@ from dataclasses import replace
 
 import pytest
 
+import sys
+
 from tests.qualification.prod_q._p0_certification import (
+    _parse_sqlite_reproduction_tail,
     build_provider_dispositions,
     build_r1_sqlite_disposition,
     build_tenant_isolation_audit,
+    run_prod_q_bounded_subprocess,
 )
+from tests.qualification.prod_q._p0_types import ProdQFindingDisposition
 from tests.qualification.prod_q._p0_classification import classify_candidate, classification_by_candidate_id
 from tests.qualification.prod_q._p0_discovery import (
     _module_defines_symbol,
@@ -94,18 +99,69 @@ def test_prod_q_p0_int_d6_frz_registry_33_unique() -> None:
     assert len(frozenset(ids)) == 33
 
 
-def test_prod_q_p0_int_d7_sqlite_reproduction_executed() -> None:
+def test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION", raising=False)
+    build_r1_sqlite_disposition.cache_clear()
+    record = build_r1_sqlite_disposition()
+    assert record.reproduction_executed is False
+    assert record.reproduction_classification == SqliteReproductionClassification.NOT_EXECUTED
+    assert record.evidence_state == ProductionReadinessEvidenceState.BLOCKER
+    assert record.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER
+    assert record.sqlite_bootstrap_observed is True
+
+
+def test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence() -> None:
+    exit_code, _tail, timed_out = run_prod_q_bounded_subprocess(
+        [sys.executable, "-c", "import time; time.sleep(120)"],
+        timeout_sec=1,
+    )
+    assert timed_out is True
+    assert exit_code is None
+
+
+def test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass() -> None:
+    classification, *_rest = _parse_sqlite_reproduction_tail("subprocess timeout")
+    assert classification == SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE
+    assert classification != SqliteReproductionClassification.PRODUCTION_DEFECT
+
+
+def test_prod_q_p0_int_d7_http_reproduction_timeout_disposition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION", "1")
+
+    def _fake_bounded(*_args, **_kwargs):
+        return None, "subprocess timeout", True
+
+    monkeypatch.setattr(
+        "tests.qualification.prod_q._p0_certification.run_prod_q_bounded_subprocess",
+        _fake_bounded,
+    )
     build_r1_sqlite_disposition.cache_clear()
     record = build_r1_sqlite_disposition()
     assert record.reproduction_executed is True
-    assert record.reproduction_exit_code is not None
-    assert record.reproduction_classification != SqliteReproductionClassification.PRODUCTION_DEFECT
-    if record.reproduction_exit_code != 0:
-        assert record.strict_dependency_materialization_observed is True
-        assert (
-            "ToolDependencyAttemptBoundaryMaterializationError" in record.failing_exception_type
-            or "ExecutionContinuationError" in record.failing_exception_type
-        )
+    assert record.finding_disposition == ProdQFindingDisposition.ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED
+    assert record.reproduction_classification == SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE
+
+
+def test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable() -> None:
+    continuation_tail = (
+        "E   intergrax.contracts.execution_continuation.ExecutionContinuationError: "
+        "production composition requires an explicit ExecutionContinuationStateStore"
+    )
+    admission_tail = (
+        "E   intergrax.runtime.resilience.dependency_attempt_boundary_composition."
+        "ToolDependencyAttemptBoundaryMaterializationError: strict production requires"
+    )
+    cont_class, cont_exc, *_ = _parse_sqlite_reproduction_tail(continuation_tail)
+    adm_class, adm_exc, *_ = _parse_sqlite_reproduction_tail(admission_tail)
+    assert cont_class == SqliteReproductionClassification.DEPENDENCY_MATERIALIZATION
+    assert adm_class == SqliteReproductionClassification.DEPENDENCY_MATERIALIZATION
+    assert "ExecutionContinuationError" in cont_exc
+    assert "ToolDependencyAttemptBoundaryMaterializationError" in adm_exc
+    assert cont_exc != adm_exc
 
 
 def test_prod_q_p0_int_d8_provider_bundle_not_registered_alone() -> None:

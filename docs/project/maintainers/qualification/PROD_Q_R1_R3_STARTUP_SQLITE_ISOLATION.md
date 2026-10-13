@@ -2,13 +2,15 @@
 
 **Disposition:** **READY FOR AUDIT** (does not close **PROD-Q-R1** or **FRZ-PRD-04**)
 
-**START_HEAD:** `9c0fbc5702c56cd28c81ee8af687be2c518f38be` · **Branch:** `development` · **Parent:** **PROD-Q-R1** — **BLOCKED**
+**Stage:** **PROD-Q-R1-R3-R1** — portable SQLite fixtures + bounded opt-in HTTP reproduction (no hidden nested pytest on fast gates)
+
+**START_HEAD:** `80d7fd1c90b7e3e258c8a1963f9eaa2d9bdacb93` · **Branch:** `development` · **Parent:** **PROD-Q-R1** — **BLOCKED**
 
 ## Mission outcome
 
 | Scenario | Result |
 | --- | --- |
-| **A — SQLite isolation** | Default `build/intergrax.db` remains **non-SQLite** (`%3\|…\|FAIL\|…`). `INTERGRAX_RELATIONAL_DB` routes relational paths to a fresh file; `sqlite3` can create a valid **SQLite format 3** file at that path without touching `build/intergrax.db`. |
+| **A — SQLite isolation** | Default `build/intergrax.db` is **probed only** (valid SQLite / corrupt / missing / unreadable — none fail fast gates). Negative SQLite uses a **tmp_path** corrupt fixture. `INTERGRAX_RELATIONAL_DB` routes relational paths to a fresh file; `sqlite3` can create a valid **SQLite format 3** file at that path without mutating the developer default DB. |
 | **B — strict missing dependency** | **PASS** — `tests/unit/applications/shared/test_strict_host_dependency_concurrency_admission.py` (PROD-Q-R1-R1): `ToolDependencyAttemptBoundaryMaterializationError` when `dependency_concurrency_admission` absent in strict mode. |
 | **C — supported lightweight strict wiring** | **PARTIAL** — `create_governed_contractor_backend_app(document_store=…)` requires explicit durable `ExecutionContinuationStateStore` before `build_harness_host_runtime` (PROD-Q-R1-R2). Full HTTP harness still stops at the same boundary until admission + remaining strict deps are wired; **not** a production PASS. |
 | **D — P0 reproduction reconciliation** | GCA HTTP reproduction @ isolated `INTERGRAX_RELATIONAL_DB` now fails first on **`ExecutionContinuationError`** (`NON_DURABLE_CONTINUATION_STORE`), not corrupted default SQLite. With durable continuation injected, failure advances to **`ToolDependencyAttemptBoundaryMaterializationError`** (strict admission) — aligns with historical P0 classification as **DEPENDENCY_MATERIALIZATION**, not SQLite defect. |
@@ -39,7 +41,7 @@ uv run pytest tests/unit/applications/governed_contractor/test_prod_q_r1_r3_star
 uv run pytest tests/unit/applications/shared/test_strict_host_dependency_concurrency_admission.py tests/unit/applications/governed_contractor/test_prod_q_r1_r2_gca_startup_continuation.py -p no:xdist -q
 ```
 
-GCA HTTP reproduction (P0 subprocess): `applications/governed_contractor_application/tests/host/test_governed_contractor_canonical_execution.py::test_governed_contractor_http_root_uses_canonical_execution_facade` with `INTERGRAX_RELATIONAL_DB` → **ExecutionContinuationError** @ current HEAD.
+GCA HTTP reproduction (opt-in P0 subprocess, **60s** bounded, `INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION=1`): `applications/governed_contractor_application/tests/host/test_governed_contractor_canonical_execution.py::test_governed_contractor_http_root_uses_canonical_execution_facade` with `INTERGRAX_RELATIONAL_DB`. Fast qualification uses in-process isolated bootstrap evidence only (`reproduction_classification=NOT_EXECUTED`).
 
 ## FRZ / blockers
 

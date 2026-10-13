@@ -31,6 +31,9 @@ from tests.qualification.prod_q._p0_types import (
     TenantIsolationAuditProdQ,
 )
 
+_R1_HTTP_REPRODUCTION_ENV = "INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION"
+_R1_REPRODUCTION_TIMEOUT_SEC = 60
+
 HISTORICAL_EVIDENCE: tuple[HistoricalEvidenceItem, ...] = (
     HistoricalEvidenceItem("TENANT-X", "5ccb72fccd4e3820ebdc9c18008afe6f7d59f558", True),
     HistoricalEvidenceItem("CTRL-X", "318a4d835534ef5c48575f4649551c957dacd8ea", True),
@@ -82,21 +85,90 @@ def historical_evidence_sha_mismatches() -> tuple[tuple[str, str], ...]:
     return tuple(mismatches)
 
 
-def probe_default_relational_db_header() -> str:
-    path = repo_root() / "build" / "intergrax.db"
+def classify_sqlite_header_bytes(data: bytes) -> str:
+    if data.startswith(b"SQLite format 3"):
+        return "SQLITE_HEADER"
+    if not data:
+        return "EMPTY"
+    return data[:24].hex()
+
+
+def probe_sqlite_header_at_path(path: Path) -> str:
     if not path.is_file():
         return "MISSING"
     try:
         data = path.read_bytes()[:16]
     except OSError:
         return "UNREADABLE"
-    if data.startswith(b"SQLite format 3"):
-        return "SQLITE_HEADER"
-    return data[:24].hex()
+    return classify_sqlite_header_bytes(data)
+
+
+def probe_default_relational_db_header() -> str:
+    return probe_sqlite_header_at_path(repo_root() / "build" / "intergrax.db")
+
+
+def r1_http_reproduction_requested() -> bool:
+    return os.environ.get(_R1_HTTP_REPRODUCTION_ENV, "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+def _terminate_subprocess_tree(proc: subprocess.Popen[str]) -> None:
+    if proc.poll() is not None:
+        return
+    if sys.platform == "win32":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+            cwd=repo_root(),
+            capture_output=True,
+            check=False,
+        )
+    else:
+        proc.kill()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def run_prod_q_bounded_subprocess(
+    cmd: list[str],
+    *,
+    env: dict[str, str] | None = None,
+    cwd: Path | None = None,
+    timeout_sec: int = _R1_REPRODUCTION_TIMEOUT_SEC,
+) -> tuple[int | None, str, bool]:
+    """Run a subprocess with a hard timeout; return (exit_code, combined_output, timed_out)."""
+    workdir = cwd or repo_root()
+    proc = subprocess.Popen(
+        cmd,
+        cwd=workdir,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout_sec)
+        return proc.returncode, stdout + stderr, False
+    except subprocess.TimeoutExpired:
+        _terminate_subprocess_tree(proc)
+        try:
+            stdout, stderr = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = "", ""
+        tail = (stdout + stderr)[-4000:]
+        return None, tail or "subprocess timeout", True
 
 
 def _isolated_db_path() -> Path:
     return repo_root() / ".tmp" / "session" / "prod-q-p0-r1" / "isolated-relational.db"
+
+
+def _http_reproduction_db_path() -> Path:
+    return _isolated_db_path().with_name("isolated-relational-http-repro.db")
 
 
 def _parse_sqlite_reproduction_tail(
@@ -112,13 +184,22 @@ def _parse_sqlite_reproduction_tail(
     failing_location = ""
     for line in tail.splitlines():
         stripped = line.strip()
-        if stripped.endswith("Error") or "Error:" in stripped or "Exception:" in stripped:
-            if "FAILURES" not in stripped and "warnings summary" not in stripped:
-                failing_exception = stripped
+        if "E   " in stripped and (
+            "ToolDependencyAttemptBoundaryMaterializationError" in stripped
+            or "ExecutionContinuationError" in stripped
+        ):
+            failing_exception = stripped.split("E   ", 1)[-1].strip()
+        elif stripped.startswith("E   ") and (
+            stripped.endswith("Error")
+            or "Error:" in stripped
+            or "Exception:" in stripped
+        ):
+            failing_exception = stripped.split("E   ", 1)[-1].strip()
         if ".py:" in stripped and (
             "intergrax" in stripped or "applications" in stripped
         ):
-            failing_location = stripped
+            if "FAILURES" not in stripped:
+                failing_location = stripped
 
     lowered = tail.lower()
     sqlite_bootstrap = "sqlite" in lowered or "intergrax_relational_db" in lowered
@@ -137,14 +218,6 @@ def _parse_sqlite_reproduction_tail(
             failing_location,
             sqlite_bootstrap,
             True,
-        )
-    if "SQLite format 3" in tail or "collaborative" in lowered:
-        return (
-            SqliteReproductionClassification.DEPENDENCY_MATERIALIZATION,
-            failing_exception,
-            failing_location,
-            True,
-            False,
         )
     if "ModuleNotFoundError" in tail or "No module named" in tail:
         return (
@@ -171,19 +244,45 @@ def _parse_sqlite_reproduction_tail(
     )
 
 
+def _isolated_sqlite_bootstrap_evidence() -> tuple[str, bool]:
+    import sqlite3
+    import uuid
+
+    isolated = _isolated_db_path()
+    isolated.parent.mkdir(parents=True, exist_ok=True)
+    target = isolated
+    if target.exists():
+        try:
+            target.unlink()
+        except OSError:
+            target = isolated.with_name(f"isolated-relational-bootstrap-{uuid.uuid4().hex}.db")
+    with sqlite3.connect(target) as connection:
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS prod_q_r1_isolated_probe (id INTEGER PRIMARY KEY)"
+        )
+        connection.commit()
+    ok = target.read_bytes()[:16].startswith(b"SQLite format 3")
+    return f"in_process_isolated_bootstrap_ok={ok}; path={target}", ok
+
+
 def _execute_r1_sqlite_reproduction() -> tuple[
-    int,
+    int | None,
     str,
     SqliteReproductionClassification,
     str,
     str,
     bool,
     bool,
+    bool,
+    ProdQFindingDisposition,
 ]:
-    isolated = _isolated_db_path()
+    isolated = _http_reproduction_db_path()
     isolated.parent.mkdir(parents=True, exist_ok=True)
     if isolated.exists():
-        isolated.unlink()
+        try:
+            isolated.unlink()
+        except OSError:
+            pass
     env = os.environ.copy()
     env["INTERGRAX_RELATIONAL_DB"] = str(isolated)
     cmd = [
@@ -197,53 +296,94 @@ def _execute_r1_sqlite_reproduction() -> tuple[
         "--tb=line",
     ]
     try:
-        proc = subprocess.run(
-            cmd,
-            cwd=repo_root(),
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=240,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+        exit_code, combined, timed_out = run_prod_q_bounded_subprocess(cmd, env=env)
+    except OSError as exc:
         return (
-            -1,
+            None,
             str(exc),
             SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE,
             "",
             "",
             False,
             False,
+            False,
+            ProdQFindingDisposition.ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED,
         )
-    tail = (proc.stdout + proc.stderr)[-4000:]
-    if proc.returncode == 0:
+    tail = combined[-4000:]
+    if timed_out:
         return (
-            proc.returncode,
+            None,
+            tail,
+            SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE,
+            "",
+            "",
+            False,
+            False,
+            True,
+            ProdQFindingDisposition.ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED,
+        )
+    if exit_code == 0:
+        return (
+            exit_code,
             tail,
             SqliteReproductionClassification.TEST_ISOLATION_OR_HARNESS,
             "",
             "",
             True,
             False,
+            True,
+            ProdQFindingDisposition.IN_SCOPE_BLOCKER,
         )
     classification, exc_type, location, sqlite_boot, strict_mat = _parse_sqlite_reproduction_tail(
         tail
     )
-    return proc.returncode, tail, classification, exc_type, location, sqlite_boot, strict_mat
+    return (
+        exit_code,
+        tail,
+        classification,
+        exc_type,
+        location,
+        sqlite_boot,
+        strict_mat,
+        True,
+        ProdQFindingDisposition.IN_SCOPE_BLOCKER,
+    )
 
 
 @lru_cache(maxsize=1)
 def build_r1_sqlite_disposition() -> R1SqliteEnv01Disposition:
     probe = probe_default_relational_db_header()
     command = (
-        "uv run --with cryptography pytest "
+        f"set {_R1_HTTP_REPRODUCTION_ENV}=1 && uv run --with cryptography pytest "
         f"{_R1_GCA_NODE} -p no:xdist -q"
     )
-    exit_code, summary, classification, exc_type, location, sqlite_boot, strict_mat = (
-        _execute_r1_sqlite_reproduction()
-    )
-    executed = exit_code >= 0
+    bootstrap_summary, bootstrap_ok = _isolated_sqlite_bootstrap_evidence()
+    if r1_http_reproduction_requested():
+        (
+            exit_code,
+            summary,
+            classification,
+            exc_type,
+            location,
+            sqlite_boot,
+            strict_mat,
+            executed,
+            finding_disposition,
+        ) = _execute_r1_sqlite_reproduction()
+        combined_summary = summary[:500] if summary else ""
+    else:
+        executed = False
+        exit_code = None
+        classification = SqliteReproductionClassification.NOT_EXECUTED
+        exc_type = ""
+        location = ""
+        sqlite_boot = bootstrap_ok
+        strict_mat = False
+        finding_disposition = ProdQFindingDisposition.IN_SCOPE_BLOCKER
+        combined_summary = (
+            f"{bootstrap_summary}; http_reproduction=skipped "
+            f"(set {_R1_HTTP_REPRODUCTION_ENV}=1 to execute bounded nested pytest)"
+        )[:500]
     return R1SqliteEnv01Disposition(
         finding_id="R1-SQLITE-ENV-01",
         default_db_path="build/intergrax.db",
@@ -257,9 +397,9 @@ def build_r1_sqlite_disposition() -> R1SqliteEnv01Disposition:
         failing_trace_location=location,
         sqlite_bootstrap_observed=sqlite_boot,
         strict_dependency_materialization_observed=strict_mat,
-        reproduction_summary=summary[:500] if summary else "",
+        reproduction_summary=combined_summary,
         evidence_state=ProductionReadinessEvidenceState.BLOCKER,
-        finding_disposition=ProdQFindingDisposition.IN_SCOPE_BLOCKER,
+        finding_disposition=finding_disposition,
         recommended_child="PROD-Q-R1",
         reproduction_command=command,
     )
