@@ -9,6 +9,7 @@ import json
 import threading
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -21,8 +22,10 @@ from intergrax.contracts.execution_continuation import (
 )
 from intergrax.contracts.governed_continuation_correlation import ContinuationReason
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
-from intergrax.runtime.execution.continuation.durable_serialized_seal_store import (
+from intergrax.runtime.execution.continuation.durable_state_file import (
     AmbiguousDurablePersistError,
+)
+from intergrax.runtime.execution.continuation.durable_serialized_seal_store import (
     SerializedSealExecutionContinuationStateStore,
     open_serialized_seal_execution_continuation_state_store,
     reload_serialized_seal_store_from_disk,
@@ -246,6 +249,176 @@ def test_writer_lock_conflict_fail_closed(state_path: Path) -> None:
     first.close()
     second = _open(state_path)
     second.close()
+
+
+def test_neg_seal_14_pre_replace_failure_safe_rollback(state_path: Path) -> None:
+    store = _open(state_path)
+    persistence = store._file_persistence
+    original_write = persistence._atomic_write
+
+    def fail_before_replace(_payload: object) -> None:
+        raise ExecutionContinuationError(
+            "injected pre-replace failure",
+            code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+        )
+
+    persistence._atomic_write = fail_before_replace  # type: ignore[method-assign]
+    pending = _pending()
+    with pytest.raises(ExecutionContinuationError) as exc:
+        store.begin_current_episode_if_predecessor_allows(pending)
+    assert exc.value.code is ExecutionContinuationErrorCode.STORE_QUERY_FAILED
+    assert store.load(_CONT) is None
+    assert not store.reconciliation_required
+    persistence._atomic_write = original_write  # type: ignore[method-assign]
+    store.close()
+
+
+def test_neg_seal_15_ambiguous_replace_reconciliation_no_rollback(
+    state_path: Path,
+) -> None:
+    store = _open(state_path)
+    assert store.begin_current_episode_if_predecessor_allows(_pending(revision=1))
+    on_disk_before = json.loads(state_path.read_text(encoding="utf-8"))
+    current = store.load(_CONT)
+    assert current is not None
+
+    real_replace = Path.replace
+
+    def fail_replace(self: Path, target: Path) -> Path:
+        if self == state_path.with_suffix(state_path.suffix + ".tmp"):
+            raise OSError("simulated ambiguous replace")
+        return real_replace(self, target)
+
+    with patch.object(Path, "replace", fail_replace):
+        with pytest.raises(ExecutionContinuationError) as exc:
+            store.compare_and_swap(
+                continuation_id=_CONT,
+                expected=current,
+                updated=current.model_copy(update={"revision": 2}),
+            )
+    assert exc.value.code is ExecutionContinuationErrorCode.RECONCILIATION_REQUIRED
+    assert store.reconciliation_required
+    loaded = store.load(_CONT)
+    assert loaded is not None
+    assert loaded.revision == 2
+    on_disk_after = json.loads(state_path.read_text(encoding="utf-8"))
+    assert on_disk_after == on_disk_before
+    store.close()
+
+
+def test_neg_seal_16_concurrent_mutator_cannot_bypass_reconciliation(
+    state_path: Path,
+) -> None:
+    store = _open(state_path)
+    assert store.begin_current_episode_if_predecessor_allows(_pending(revision=1))
+    persist_entered = threading.Event()
+    release_persist = threading.Event()
+    results: list[ExecutionContinuationErrorCode | None] = []
+
+    def slow_ambiguous(_payload: object) -> None:
+        persist_entered.set()
+        assert release_persist.wait(timeout=2.0)
+        raise AmbiguousDurablePersistError("injected ambiguous")
+
+    store._persist_export_payload = slow_ambiguous  # type: ignore[method-assign]
+    current = store.load(_CONT)
+    assert current is not None
+
+    def mutator_a() -> None:
+        try:
+            store.compare_and_swap(
+                continuation_id=_CONT,
+                expected=current,
+                updated=current.model_copy(update={"revision": 99}),
+            )
+        except ExecutionContinuationError:
+            pass
+
+    def mutator_b() -> None:
+        assert persist_entered.wait(timeout=2.0)
+        try:
+            store.insert_if_absent(_pending(continuation_id="cont_bypass"))
+        except ExecutionContinuationError as exc:
+            results.append(exc.code)
+
+    ta = threading.Thread(target=mutator_a)
+    tb = threading.Thread(target=mutator_b)
+    ta.start()
+    tb.start()
+    release_persist.set()
+    ta.join(timeout=3.0)
+    tb.join(timeout=3.0)
+    assert store.reconciliation_required
+    assert results == [ExecutionContinuationErrorCode.RECONCILIATION_REQUIRED]
+    store.close()
+
+
+def test_neg_seal_17_reload_synchronized_with_mutations(state_path: Path) -> None:
+    store = _open(state_path)
+    assert store.begin_current_episode_if_predecessor_allows(_pending())
+
+    def ambiguous(_payload: object) -> None:
+        raise AmbiguousDurablePersistError("ambiguous")
+
+    store._persist_export_payload = ambiguous  # type: ignore[method-assign]
+    with pytest.raises(ExecutionContinuationError):
+        store.begin_current_episode_if_predecessor_allows(
+            _pending(continuation_id="cont_two"),
+        )
+    store._persist_export_payload = (
+        store._file_persistence.atomic_write_export_payload
+    )
+    reload_started = threading.Event()
+    reload_release = threading.Event()
+    original_load = store._file_persistence.load_export_payload
+
+    def slow_load() -> object:
+        reload_started.set()
+        assert reload_release.wait(timeout=2.0)
+        return original_load()
+
+    store._file_persistence.load_export_payload = slow_load  # type: ignore[method-assign]
+    mutation_finished = threading.Event()
+
+    def reload_worker() -> None:
+        reload_serialized_seal_store_from_disk(store)
+
+    def mutate_worker() -> None:
+        reload_started.wait(timeout=2.0)
+        try:
+            store.insert_if_absent(_pending(continuation_id="cont_race"))
+        except ExecutionContinuationError:
+            pass
+        mutation_finished.set()
+
+    tr = threading.Thread(target=reload_worker)
+    tm = threading.Thread(target=mutate_worker)
+    tr.start()
+    tm.start()
+    time.sleep(0.05)
+    assert not mutation_finished.is_set()
+    reload_release.set()
+    tr.join(timeout=3.0)
+    tm.join(timeout=3.0)
+    assert mutation_finished.is_set()
+    assert not store.reconciliation_required
+    store.close()
+
+
+def test_neg_seal_18_corrupt_init_releases_writer_lock(state_path: Path) -> None:
+    state_path.write_text("not-json", encoding="utf-8")
+    with pytest.raises(ExecutionContinuationError) as exc:
+        _open(state_path)
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
+
+    state_path.unlink()
+    good = _open(state_path, missing_file_policy="empty")
+    assert good.begin_current_episode_if_predecessor_allows(_pending())
+    good.close()
+
+    reopened = _open(state_path)
+    assert reopened.load(_CONT) is not None
+    reopened.close()
 
 
 def test_reload_after_reconciliation(state_path: Path) -> None:

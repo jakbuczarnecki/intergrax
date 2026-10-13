@@ -21,6 +21,10 @@ from intergrax.runtime.execution.continuation.persistence import (
 )
 
 
+class AmbiguousDurablePersistError(Exception):
+    """T5 replace outcome cannot be classified as success or failure."""
+
+
 class ExecutionContinuationDurableStateFilePersistence:
     """Pluginable file persistence for official durable continuation export envelope."""
 
@@ -79,12 +83,20 @@ class ExecutionContinuationDurableStateFilePersistence:
         temp_path = self._path.with_suffix(self._path.suffix + ".tmp")
         try:
             temp_path.write_text(serialized, encoding="utf-8")
-            temp_path.replace(self._path)
         except OSError as exc:
             raise ExecutionContinuationError(
                 "failed to persist durable continuation state",
                 code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
             ) from exc
+        try:
+            temp_path.replace(self._path)
+        except OSError as exc:
+            raise AmbiguousDurablePersistError(
+                "durable continuation persist outcome is ambiguous after replace",
+            ) from exc
 
 
-__all__ = ["ExecutionContinuationDurableStateFilePersistence"]
+__all__ = [
+    "AmbiguousDurablePersistError",
+    "ExecutionContinuationDurableStateFilePersistence",
+]

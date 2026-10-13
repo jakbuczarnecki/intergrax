@@ -20,6 +20,7 @@ from intergrax.contracts.execution_continuation_state_store import (
 from intergrax.contracts.structured_json_value import StructuredJsonObject
 from intergrax.hosting.instance._native_lock import NativeFileLock, NativeFileLockError
 from intergrax.runtime.execution.continuation.durable_state_file import (
+    AmbiguousDurablePersistError,
     ExecutionContinuationDurableStateFilePersistence,
 )
 from intergrax.runtime.execution.continuation.persistence import (
@@ -40,10 +41,6 @@ MissingContinuationFilePolicy = Literal["empty", "fail"]
 
 class _PersistOutcome(Protocol):
     def __call__(self, payload: StructuredJsonObject) -> None: ...
-
-
-class AmbiguousDurablePersistError(Exception):
-    """T5 outcome cannot be classified as success or failure."""
 
 
 class SerializedSealExecutionContinuationStateStore(ExecutionContinuationStateStore):
@@ -159,10 +156,10 @@ class SerializedSealExecutionContinuationStateStore(ExecutionContinuationStateSt
             )
 
     def _run_sealed_mutation(self, mutate: Callable[[], bool]) -> bool:
-        self._assert_mutation_allowed()
         lock = self._backing._lock
         lock.acquire()
         try:
+            self._assert_mutation_allowed()
             snapshot = snapshot_backing_maps(
                 self._backing._by_id,
                 self._backing._current_by_identity,
@@ -225,16 +222,19 @@ def open_serialized_seal_execution_continuation_state_store(
         ) from exc
 
     file_persistence = ExecutionContinuationDurableStateFilePersistence(state_file)
-    if state_file.is_file():
-        backing = file_persistence.restore_backing()
-    elif missing_file_policy == "empty":
-        backing = ExecutionContinuationDurableBacking()
-    else:
+    try:
+        if state_file.is_file():
+            backing = file_persistence.restore_backing()
+        elif missing_file_policy == "empty":
+            backing = ExecutionContinuationDurableBacking()
+        else:
+            raise ExecutionContinuationError(
+                "durable continuation state file is missing",
+                code=ExecutionContinuationErrorCode.NOT_FOUND,
+            )
+    except Exception:
         writer_lock.close()
-        raise ExecutionContinuationError(
-            "durable continuation state file is missing",
-            code=ExecutionContinuationErrorCode.NOT_FOUND,
-        )
+        raise
 
     return SerializedSealExecutionContinuationStateStore(
         backing=backing,
@@ -248,14 +248,18 @@ def reload_serialized_seal_store_from_disk(
     store: SerializedSealExecutionContinuationStateStore,
 ) -> None:
     """Reload backing from the on-disk envelope (reconciliation path)."""
-    payload = store._file_persistence.load_export_payload()
-    restored = restore_durable_continuation_backing(payload)
-    with store._backing._lock:
+    lock = store._backing._lock
+    lock.acquire()
+    try:
+        payload = store._file_persistence.load_export_payload()
+        restored = restore_durable_continuation_backing(payload)
         store._backing._by_id.clear()
         store._backing._by_id.update(restored._by_id)
         store._backing._current_by_identity.clear()
         store._backing._current_by_identity.update(restored._current_by_identity)
-    store._reconciliation_required = False
+        store._reconciliation_required = False
+    finally:
+        lock.release()
 
 
 __all__ = [
