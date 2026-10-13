@@ -4,7 +4,8 @@
 |-------|-------|
 | **Status** | **PENDING / NOT APPROVED** — architecture decision required before implementation |
 | **Date** | 2026-10-13 |
-| **START_HEAD (analysis)** | `ea428c3e055da5d664295e1405842a1e100c2688` |
+| **START_HEAD (analysis)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
+| **ADR-02 (backend)** | [`PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md`](PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md) — **PENDING**; physical persistence not production-qualified @ START_HEAD |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
 | **Related evidence** | **PROD-Q-R1-R4** [`PROD_Q_R1_R4_PRODUCTION_STARTUP_PATH.md`](PROD_Q_R1_R4_PRODUCTION_STARTUP_PATH.md) · GR-10-R12 qualification · STATE-X `ExecutionContinuationStateStore` inventory |
@@ -54,7 +55,7 @@ The sanctioned GCA production entry `create_governed_contractor_process_app(proc
 | **A** | “Backend kwarg is sufficient” | N/A | **No** — sanctioned path cannot call backend with store today | N/A | N/A | **Rejected** — fails PROD-Q-R1-R4 evidence |
 | **C** | Parallel store from harness defaults | **No** — forbidden | Violates durability policy | No | **Invalidates** GR-10-R12 | **Rejected** |
 
-**Recommended (pending approval):** **B1**, with durable instance construction specified in a follow-on implementation ADR slice (whether B1 alone uses an existing qualification backing factory or waits on B2-style platform persistence is an implementation sub-decision; **no new persistence backend** in PROD-Q-R1-ADR-01 scope).
+**Recommended (pending approval):** **B1** — independently re-confirmed @ `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` (composition ownership only). **Durable backend selection and process-lifetime persistence lifecycle** are **out of scope here** and remain **unresolved** — see **PROD-Q-R1-ADR-02** (`STOP — ARCHITECTURE DECISION REQUIRED` for production-qualified physical store). B1 does **not** imply startup-qualified or fully implemented continuation durability.
 
 ---
 
@@ -62,8 +63,9 @@ The sanctioned GCA production entry `create_governed_contractor_process_app(proc
 
 - **Construct / retain:** Once per production **process**, at the same lifecycle tier as `ProductionProcessComposition` (deploy/activate or reference launcher), not per HTTP request or per `build_harness_host_runtime` call.
 - **Share:** Single store instance injected into harness → Nexus (existing GR-10-R12 invariant).
-- **Crash/restart:** Survives only if `is_durable is True` on a restart-qualified implementation; recovery uses existing GR-5 continuation episode rules (no second authority).
-- **Close:** Process shutdown / composition teardown (symmetric to other composition-owned durable ports); no implicit in-memory fallback in strict mode.
+- **Crash/restart:** Survives only if `is_durable is True` on a restart-qualified implementation **and** an accepted physical backend has persisted state to durable media per **ADR-02** seal policy. `is_durable` alone does not imply on-disk survival.
+- **Close:** Process shutdown / composition teardown may invoke an ADR-02–approved seal hook; **shutdown without a successful seal does not guarantee crash durability** — acknowledged in-memory CAS can be lost if the process dies before media write.
+- **No implicit in-memory fallback** in strict mode.
 
 ---
 
@@ -73,7 +75,7 @@ The sanctioned GCA production entry `create_governed_contractor_process_app(proc
 STOP — ARCHITECTURE DECISION REQUIRED
 ```
 
-**Option A** (existing binding sufficient for sanctioned entry): **not supported** at `ea428c3e055da5d664295e1405842a1e100c2688`.
+**Option A** (existing binding sufficient for sanctioned entry): **not supported** at `27e713748f2bc6f2acb8f751b728bf4c80c1d37f`.
 
 **Option C** (duplicate ownership): **not observed** — gap is missing binding, not overlapping stores.
 
