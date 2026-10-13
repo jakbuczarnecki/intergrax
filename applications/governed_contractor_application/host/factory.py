@@ -64,6 +64,9 @@ from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
     HarnessHostOrchestrationTopologyReliabilityCompositionError,
 )
+from intergrax.runtime.execution.continuation.durability_policy import (
+    validate_execution_continuation_for_composition,
+)
 from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
     build_governed_contractor_production_orchestration_topology_submission_port,
 )
@@ -143,6 +146,13 @@ def create_governed_contractor_backend_app(
                 manifest_for_runtime,
                 trace_db_path=trace_db_path,
             )
+        )
+    if production_mode:
+        validate_execution_continuation_for_composition(
+            production_mode=True,
+            state_store=execution_continuation_state_store,
+            continuation_explicitly_wired=False,
+            continuation_disabled=False,
         )
     runtime = build_harness_host_runtime(
         manifest_for_runtime,
