@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
 from functools import lru_cache
@@ -126,7 +127,10 @@ def _terminate_subprocess_tree(proc: subprocess.Popen[str]) -> None:
             check=False,
         )
     else:
-        proc.kill()
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            proc.kill()
     try:
         proc.wait(timeout=5)
     except subprocess.TimeoutExpired:
@@ -142,14 +146,16 @@ def run_prod_q_bounded_subprocess(
 ) -> tuple[int | None, str, bool]:
     """Run a subprocess with a hard timeout; return (exit_code, combined_output, timed_out)."""
     workdir = cwd or repo_root()
-    proc = subprocess.Popen(
-        cmd,
-        cwd=workdir,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    popen_kwargs: dict[str, object] = {
+        "cwd": workdir,
+        "env": env,
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "text": True,
+    }
+    if sys.platform != "win32":
+        popen_kwargs["start_new_session"] = True
+    proc = subprocess.Popen(cmd, **popen_kwargs)
     try:
         stdout, stderr = proc.communicate(timeout=timeout_sec)
         return proc.returncode, stdout + stderr, False
@@ -319,7 +325,7 @@ def _execute_r1_sqlite_reproduction() -> tuple[
             "",
             False,
             False,
-            True,
+            False,
             ProdQFindingDisposition.ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED,
         )
     if exit_code == 0:

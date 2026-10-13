@@ -4,7 +4,10 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -54,6 +57,41 @@ from tests.qualification.prod_q._p0_types import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
+
+_PARENT_SPAWNS_CHILD_SCRIPT = r"""
+import subprocess
+import sys
+import time
+
+marker = sys.argv[1]
+child = subprocess.Popen(
+    [sys.executable, "-c", "import time; time.sleep(300)"],
+)
+marker_path = marker + ".child_pid"
+with open(marker_path, "w", encoding="utf-8") as handle:
+    handle.write(str(child.pid))
+time.sleep(300)
+"""
+
+
+def _process_still_running(pid: int) -> bool:
+    if sys.platform == "win32":
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        synchronize = 0x00100000
+        handle = kernel32.OpenProcess(synchronize, False, pid)
+        if not handle:
+            return False
+        kernel32.CloseHandle(handle)
+        return True
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
 
 
 def test_prod_q_p0_int_d1_unknown_indicator_blocks() -> None:
@@ -141,9 +179,90 @@ def test_prod_q_p0_int_d7_http_reproduction_timeout_disposition(
     )
     build_r1_sqlite_disposition.cache_clear()
     record = build_r1_sqlite_disposition()
-    assert record.reproduction_executed is True
+    assert record.reproduction_executed is False
+    assert record.reproduction_exit_code is None
     assert record.finding_disposition == ProdQFindingDisposition.ENVIRONMENT_TEST_ISSUE_EVIDENCE_REQUIRED
     assert record.reproduction_classification == SqliteReproductionClassification.ENVIRONMENT_UNAVAILABLE
+    assert record.evidence_state == ProductionReadinessEvidenceState.BLOCKER
+
+
+def test_prod_q_p0_int_d7_bounded_subprocess_completes_normally() -> None:
+    exit_code, tail, timed_out = run_prod_q_bounded_subprocess(
+        [sys.executable, "-c", "print('prod_q_probe')"],
+        timeout_sec=5,
+    )
+    assert timed_out is False
+    assert exit_code == 0
+    assert "prod_q_probe" in tail
+
+
+def test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION", "1")
+
+    def _fake_bounded(*_args, **_kwargs):
+        tail = (
+            "E   intergrax.contracts.execution_continuation.ExecutionContinuationError: "
+            "production composition requires an explicit ExecutionContinuationStateStore"
+        )
+        return 1, tail, False
+
+    monkeypatch.setattr(
+        "tests.qualification.prod_q._p0_certification.run_prod_q_bounded_subprocess",
+        _fake_bounded,
+    )
+    build_r1_sqlite_disposition.cache_clear()
+    record = build_r1_sqlite_disposition()
+    assert record.reproduction_executed is True
+    assert record.reproduction_exit_code == 1
+    assert record.finding_disposition == ProdQFindingDisposition.IN_SCOPE_BLOCKER
+
+
+def test_prod_q_p0_int_d7_timeout_terminates_parent_and_child(tmp_path) -> None:
+    marker = tmp_path / "tree_probe"
+    _exit_code, _tail, timed_out = run_prod_q_bounded_subprocess(
+        [sys.executable, "-c", _PARENT_SPAWNS_CHILD_SCRIPT, str(marker)],
+        timeout_sec=2,
+    )
+    assert timed_out is True
+    child_pid_path = Path(f"{marker}.child_pid")
+    if not child_pid_path.is_file():
+        pytest.skip("child pid marker not written before timeout on this host")
+    child_pid = int(child_pid_path.read_text(encoding="utf-8").strip())
+    assert not _process_still_running(child_pid)
+
+
+def test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process(tmp_path) -> None:
+    unrelated_marker = tmp_path / "unrelated.pid"
+    unrelated = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    unrelated_marker.write_text(str(unrelated.pid), encoding="utf-8")
+    try:
+        marker = tmp_path / "bounded_probe"
+        _exit_code, _tail, timed_out = run_prod_q_bounded_subprocess(
+            [sys.executable, "-c", _PARENT_SPAWNS_CHILD_SCRIPT, str(marker)],
+            timeout_sec=2,
+        )
+        assert timed_out is True
+        assert _process_still_running(unrelated.pid)
+    finally:
+        if _process_still_running(unrelated.pid):
+            if sys.platform == "win32":
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(unrelated.pid)],
+                    capture_output=True,
+                    check=False,
+                )
+            else:
+                unrelated.kill()
+                try:
+                    unrelated.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
 
 
 def test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable() -> None:
