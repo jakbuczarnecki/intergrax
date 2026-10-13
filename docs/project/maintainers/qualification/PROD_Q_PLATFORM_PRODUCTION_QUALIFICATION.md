@@ -74,6 +74,10 @@ Each of the **23** families has a typed `FamilyCoverageRecord` in `build_family_
 
 **Disposition:** **READY FOR AUDIT** (**PROD-Q-R1-R3-R1**) — does **not** close **PROD-Q-R1** or **FRZ-PRD-04**. Portable SQLite probes + bounded opt-in HTTP reproduction; preserves **PROD-Q-R1-R1** / **PROD-Q-R1-R2**. Detail: [`PROD_Q_R1_R3_STARTUP_SQLITE_ISOLATION.md`](PROD_Q_R1_R3_STARTUP_SQLITE_ISOLATION.md).
 
+## PROD-Q-R1-R5 — Strict startup, admission & lifecycle
+
+**Disposition:** **READY FOR AUDIT** — does **not** close **PROD-Q-R1** or **FRZ-PRD-04**. Real sanctioned `create_governed_contractor_process_app` harness startup (DUR-02 composition continuation); documents launcher-owned `close()` gap. Detail: [`PROD_Q_R1_R5_STRICT_STARTUP_LIFECYCLE.md`](PROD_Q_R1_R5_STRICT_STARTUP_LIFECYCLE.md).
+
 ## Provider qualification disposition
 
 Evidence layers: `implementation_exists` → `registration_callable_exists` (`register.py`) → `sanctioned_composition_reachable` (`bootstrap_m6_p6.py`) → `registered` (derived) → `configured` / `effective` / `qualified` / `production_approved` (not evidenced on P0). Live qualification remains **EXTERNAL_PROVIDER_EVIDENCE_REQUIRED**.
