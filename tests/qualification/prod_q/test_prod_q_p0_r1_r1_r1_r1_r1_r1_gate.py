@@ -205,6 +205,8 @@ def test_historical_resolved_current_unresolved_active_p1_blocker() -> None:
     broken = replace(
         factory,
         module="intergrax/integrations/providers/sandbox_host/e2b/missing_bundle.py",
+        ownership_resolution=OwnershipResolutionState.NOT_YET_RESOLVED,
+        composition_owner="COMPOSITION_UNRESOLVED",
     )
     mutated = tuple(broken if record.candidate_id == factory.candidate_id else record for record in inventory)
     concerns = build_semantic_concern_records(mutated)

@@ -1,6 +1,8 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ecccdbf2dae2d6200993a9c4196682b090` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1** @ `d9af6e3420997febd676c4bf28ddac230978a098` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1** @ `3d664dae4f5704a28dfc5aecf9191444cf9c75c2` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1** @ `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · corrective chain through **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** @ `0046075484cd85da9a220f6f537c48ad94dd8078` = **READY FOR AUDIT** · **PROD-Q-P0** inventory wave = **READY FOR AUDIT** (independent GitHub SHA audit pending) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+
+**Evidence lock HEAD (P0 mechanical SSOT):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · **production delta = 0**
 
 **Branch:** `development`
 
