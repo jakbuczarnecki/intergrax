@@ -51,6 +51,7 @@ from intergrax.contracts.execution_continuation import (
 )
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.contracts.governed_continuation_correlation import ContinuationReason
+from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from testing_support.builder import canonical_run_id_for_tests, canonical_task_id_for_tests
 from intergrax.runtime.execution.continuation.durable_serialized_seal_store import (
     SerializedSealExecutionContinuationStateStore,
@@ -66,10 +67,6 @@ from testing_support.host_fixture_wiring import (
     install_diagnostic_cursor_secret,
     install_host_llm_stub,
 )
-from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
-    DurableTestProviderInvocationStore,
-)
-
 pytestmark = [pytest.mark.unit]
 
 
@@ -96,6 +93,7 @@ def _seed_active_registry_projection(
 def _strict_composition_builder(tmp_path: Path):
     def _build(
         store: SerializedSealExecutionContinuationStateStore,
+        invocation_store: ProviderInvocationStore,
     ) -> ProductionProcessComposition:
         platform_persistence = build_reference_production_platform_persistence(
             db_path=tmp_path / "platform-kv.db",
@@ -104,7 +102,7 @@ def _strict_composition_builder(tmp_path: Path):
             agent_platform_runtime=build_production_agent_platform_runtime(
                 platform_persistence=platform_persistence,
             ),
-            provider_invocation_store=DurableTestProviderInvocationStore(),
+            provider_invocation_store=invocation_store,
             execution_continuation_state_store=store,
         )
 
@@ -185,6 +183,7 @@ def test_launcher_owned_normal_startup_serve_and_shutdown_releases_writer_lease(
 
     with open_reference_production_process_lifecycle(
         continuation_state_file=state_file,
+        provider_invocation_db=tmp_path / "provider_invocations.db",
         env=env,
         missing_file_policy="empty",
         composition_builder=_strict_composition_builder(tmp_path),
@@ -241,6 +240,7 @@ def test_launcher_owned_startup_failure_releases_writer_lease(
     with pytest.raises(RuntimeError, match="injected startup failure"):
         with open_reference_production_process_lifecycle(
             continuation_state_file=state_file,
+            provider_invocation_db=tmp_path / "provider_invocations.db",
             env=env,
             missing_file_policy="empty",
             composition_builder=_strict_composition_builder(tmp_path),
@@ -277,6 +277,7 @@ def test_factory_shutdown_does_not_close_composition_owned_store(
 
     lifecycle = open_reference_production_process_lifecycle(
         continuation_state_file=state_file,
+        provider_invocation_db=tmp_path / "provider_invocations.db",
         env=env,
         missing_file_policy="empty",
         composition_builder=_strict_composition_builder(tmp_path),
