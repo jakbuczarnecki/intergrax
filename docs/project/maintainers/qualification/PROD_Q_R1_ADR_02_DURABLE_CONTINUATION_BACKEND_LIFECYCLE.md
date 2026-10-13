@@ -7,7 +7,7 @@
 | **START_HEAD (ADR-02-R1)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
 | **START_HEAD (ADR-02-R2)** | `3a8a8301b993a18a0a6419a21b417b7ee564ecd9` |
 | **START_HEAD (ADR-02-R3)** | `cd295d7c97ef8a123b4ec4f02540a9a4bce3436d` |
-| **FINAL_COMMIT (docs only)** | *(set at commit — ADR-02-R3)* |
+| **FINAL_COMMIT (docs only)** | `13bca1fe27001689ae98d8a16f4ec5bd000048c7` |
 | **Revision** | **ADR-02-R3** — serialized mutation / persistence transaction boundary (corrects R2) |
 | **Prior revision** | **ADR-02-R2** — **REJECTED** (independent audit: invalid lock release before durable commit; §2.2.0) |
 | **Branch** | `development` |
