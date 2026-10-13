@@ -86,6 +86,17 @@ def _release_lifecycle_owned_stores(
     return errors
 
 
+def _raise_grouped_exceptions(
+    message: str,
+    exceptions: list[BaseException],
+    *,
+    from_exc: BaseException | None = None,
+) -> None:
+    if all(isinstance(exc, Exception) for exc in exceptions):
+        raise ExceptionGroup(message, exceptions) from from_exc
+    raise BaseExceptionGroup(message, exceptions) from from_exc
+
+
 def _raise_primary_with_cleanup_errors(
     primary_exc: BaseException,
     cleanup_errors: list[BaseException],
@@ -93,7 +104,11 @@ def _raise_primary_with_cleanup_errors(
     message: str,
 ) -> None:
     if cleanup_errors:
-        raise ExceptionGroup(message, [primary_exc, *cleanup_errors]) from primary_exc
+        _raise_grouped_exceptions(
+            message,
+            [primary_exc, *cleanup_errors],
+            from_exc=primary_exc,
+        )
     raise primary_exc
 
 
@@ -167,7 +182,7 @@ class ReferenceProductionProcessLifecycle:
         if cleanup_errors:
             if len(cleanup_errors) == 1:
                 raise cleanup_errors[0]
-            raise ExceptionGroup(
+            _raise_grouped_exceptions(
                 "errors while closing reference production process lifecycle resources",
                 cleanup_errors,
             )

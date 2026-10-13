@@ -786,3 +786,164 @@ def test_pis_02_r2_normal_shutdown_one_close_fails_propagates_cleanup_error(
                 assert lifecycle.composition is not None
 
     assert exc_info.value is continuation_close
+
+
+class _Pis02NonExceptionBase(BaseException):
+    """BaseException that is not an Exception — for R3 grouping regression."""
+
+
+def test_pis_02_r3_startup_keyboard_interrupt_sqlite_close_fails_base_exception_group(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    original = KeyboardInterrupt()
+    sqlite_close = RuntimeError("sqlite-close-failed")
+
+    with (
+        patch(
+            "intergrax.applications._shared.reference_production_process_lifecycle."
+            "open_production_execution_continuation_state_store",
+            side_effect=original,
+        ),
+        patch.object(
+            SQLiteProviderInvocationStore,
+            "close",
+            side_effect=sqlite_close,
+        ),
+    ):
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            open_reference_production_process_lifecycle(**kwargs)
+
+    group = exc_info.value
+    assert type(group) is BaseExceptionGroup
+    assert group.exceptions[0] is original
+    assert group.exceptions[1] is sqlite_close
+
+
+def test_pis_02_r3_context_system_exit_continuation_close_fails_base_exception_group(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    body_exc = SystemExit(42)
+    continuation_close = RuntimeError("continuation-close-failed")
+
+    with patch.object(
+        SerializedSealExecutionContinuationStateStore,
+        "close",
+        side_effect=continuation_close,
+    ):
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            with open_reference_production_process_lifecycle(**kwargs):
+                raise body_exc
+
+    group = exc_info.value
+    assert type(group) is BaseExceptionGroup
+    assert group.exceptions[0] is body_exc
+    assert group.exceptions[1] is continuation_close
+
+
+def test_pis_02_r3_context_keyboard_interrupt_both_close_fail_base_exception_group(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    body_exc = KeyboardInterrupt()
+    continuation_close = RuntimeError("continuation-close-failed")
+    sqlite_close = RuntimeError("sqlite-close-failed")
+
+    with (
+        patch.object(
+            SerializedSealExecutionContinuationStateStore,
+            "close",
+            side_effect=continuation_close,
+        ),
+        patch.object(
+            SQLiteProviderInvocationStore,
+            "close",
+            side_effect=sqlite_close,
+        ),
+    ):
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            with open_reference_production_process_lifecycle(**kwargs):
+                raise body_exc
+
+    group = exc_info.value
+    assert type(group) is BaseExceptionGroup
+    assert group.exceptions[0] is body_exc
+    assert continuation_close in group.exceptions
+    assert sqlite_close in group.exceptions
+
+
+def test_pis_02_r3_close_non_exception_base_still_attempts_other_resource_cleanup(
+    tmp_path: Path,
+) -> None:
+    settings = GovernedContractorBackendSettings.from_env()
+    env = build_governed_contractor_environment_profile(settings)
+    lifecycle = open_reference_production_process_lifecycle(
+        continuation_state_file=tmp_path / "continuation.json",
+        provider_invocation_db=tmp_path / "provider_invocations.db",
+        env=env,
+        missing_file_policy="empty",
+        composition_builder=_strict_composition_builder(tmp_path),
+    )
+    owned_invocation = lifecycle._owned_invocation_store
+    assert owned_invocation is not None
+    continuation_base = _Pis02NonExceptionBase("continuation-close-base")
+    sqlite_close = RuntimeError("sqlite-close-failed")
+
+    with (
+        patch.object(
+            lifecycle._owned_continuation_store,
+            "close",
+            side_effect=continuation_base,
+        ),
+        patch.object(owned_invocation, "close", side_effect=sqlite_close) as invocation_close,
+    ):
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            lifecycle.close_process_resources()
+
+    invocation_close.assert_called_once()
+    group = exc_info.value
+    assert type(group) is BaseExceptionGroup
+    assert continuation_base in group.exceptions
+    assert sqlite_close in group.exceptions
+
+
+def test_pis_02_r3_runtime_error_pairs_still_raise_exception_group_not_base(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    original = RuntimeError("continuation-open-failed")
+    sqlite_close = RuntimeError("sqlite-close-failed")
+
+    with (
+        patch(
+            "intergrax.applications._shared.reference_production_process_lifecycle."
+            "open_production_execution_continuation_state_store",
+            side_effect=original,
+        ),
+        patch.object(
+            SQLiteProviderInvocationStore,
+            "close",
+            side_effect=sqlite_close,
+        ),
+    ):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            open_reference_production_process_lifecycle(**kwargs)
+
+    group = exc_info.value
+    assert type(group) is ExceptionGroup
+    assert group.exceptions[0] is original
+    assert group.exceptions[1] is sqlite_close
+
+
+def test_pis_02_r3_no_cleanup_errors_preserves_original_exception_identity(
+    tmp_path: Path,
+) -> None:
+    kwargs = _pis_02_r2_open_kwargs(tmp_path)
+    body_fail = KeyboardInterrupt()
+
+    with pytest.raises(KeyboardInterrupt) as exc_info:
+        with open_reference_production_process_lifecycle(**kwargs):
+            raise body_fail
+
+    assert exc_info.value is body_fail
