@@ -826,6 +826,21 @@ class ApplicationEnvironmentProfile(BaseModel):
         reliability = self.reliability_profile.model_copy(
             update={"long_running_scheduler_enabled": True},
         )
+        if reliability.dependency_concurrency_admission is None:
+            from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
+                build_reference_host_tool_dependency_concurrency_admission,
+            )
+
+            max_inflight = orchestration.max_inflight_nodes
+            if max_inflight is not None and max_inflight > 0:
+                admission = build_reference_host_tool_dependency_concurrency_admission(
+                    self.capabilities.tools,
+                    max_concurrent_calls=max_inflight,
+                )
+                if admission is not None:
+                    reliability = reliability.model_copy(
+                        update={"dependency_concurrency_admission": admission},
+                    )
         updates: dict[str, Any] = {
             "cognition": self.cognition.model_copy(
                 update={"orchestration": orchestration},

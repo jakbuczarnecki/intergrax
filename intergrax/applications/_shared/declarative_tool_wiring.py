@@ -112,7 +112,6 @@ def build_declarative_invoker_for_application_host(
         governance = build_agent_runtime_governance_boundary(capability_grants=grants)
     admission_configuration = resolve_dependency_concurrency_admission_configuration(
         environment.reliability_profile.dependency_concurrency_admission,
-        tool_wiring=tool_wiring,
         production_mode=production_mode,
     )
     dependency_boundary = materialize_tool_dependency_attempt_boundary(
