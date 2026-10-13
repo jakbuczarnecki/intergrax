@@ -960,8 +960,9 @@ Historical **R4** questions below are **answered by ratification** (DEC-01–DEC
 | Field | Value |
 |-------|-------|
 | **Evidence doc** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) |
-| **Code HEAD (audit)** | `36492c847000fe67ef0081bbf3d54f2a3f56d5d3` |
+| **Code HEAD (audit)** | `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41` |
 | **Corrective evidence (D1-R5-R1)** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) §11 |
+| **DEC-09 ratification gate** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) §12 |
 | **Implementation child** | **PROD-Q-R1-R7-D1-R6** (bounded; **no** code in D1-R5 / D1-R5-R1) |
 
 ### DEC-09 (proposed) — A1 single activation domain for serving admission
