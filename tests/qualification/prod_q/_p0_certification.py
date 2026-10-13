@@ -126,6 +126,8 @@ def _parse_sqlite_reproduction_tail(
         "ToolDependencyAttemptBoundaryMaterializationError" in tail
         or "dependency_attempt_boundary_composition" in tail
         or "strict production requires" in lowered
+        or "ExecutionContinuationError" in tail
+        or "production composition requires an explicit ExecutionContinuationStateStore" in tail
     )
 
     if strict_materialization:
