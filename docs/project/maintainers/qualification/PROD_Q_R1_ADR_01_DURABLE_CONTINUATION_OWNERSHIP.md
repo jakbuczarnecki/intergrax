@@ -2,10 +2,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **PENDING / NOT APPROVED** — architecture decision required before implementation |
+| **Status** | **ACCEPTED (architecture)** — **B1** ratified @ `392c1ac360baa7f69beab6eb691e45adfc1f4bcb`; composition field **not implemented** in DUR-01 slice |
 | **Date** | 2026-10-13 |
 | **START_HEAD (analysis)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
-| **ADR-02 (backend)** | [`PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md`](PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md) — **PENDING**; **ADR-02-R3** defines serialized seal-before-ACK transaction (not approved); **ADR-02-R2** rejected; physical persistence not production-qualified @ HEAD |
+| **ADR-02 (backend)** | [`PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md`](PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md) — **ACCEPTED (Option A / T1–T7)**; façade slice `SerializedSealExecutionContinuationStateStore` — **IMPLEMENTED / NOT PRODUCTION-QUALIFIED** until independent audit |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
 | **Related evidence** | **PROD-Q-R1-R4** [`PROD_Q_R1_R4_PRODUCTION_STARTUP_PATH.md`](PROD_Q_R1_R4_PRODUCTION_STARTUP_PATH.md) · GR-10-R12 qualification · STATE-X `ExecutionContinuationStateStore` inventory |
@@ -55,7 +55,7 @@ The sanctioned GCA production entry `create_governed_contractor_process_app(proc
 | **A** | “Backend kwarg is sufficient” | N/A | **No** — sanctioned path cannot call backend with store today | N/A | N/A | **Rejected** — fails PROD-Q-R1-R4 evidence |
 | **C** | Parallel store from harness defaults | **No** — forbidden | Violates durability policy | No | **Invalidates** GR-10-R12 | **Rejected** |
 
-**Recommended (pending approval):** **B1** — independently re-confirmed @ `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` (composition ownership only). **Durable backend selection and process-lifetime persistence lifecycle** are **out of scope here** and remain **unresolved** — see **PROD-Q-R1-ADR-02** (`STOP — ARCHITECTURE DECISION REQUIRED` for production-qualified physical store). B1 does **not** imply startup-qualified or fully implemented continuation durability.
+**Accepted:** **B1** — independently re-confirmed @ `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` (composition ownership only). **Durable backend selection and process-lifetime persistence lifecycle** are **out of scope here** and remain **unresolved** — see **PROD-Q-R1-ADR-02** (`STOP — ARCHITECTURE DECISION REQUIRED` for production-qualified physical store). B1 does **not** imply startup-qualified or fully implemented continuation durability.
 
 ---
 
@@ -71,11 +71,9 @@ The sanctioned GCA production entry `create_governed_contractor_process_app(proc
 
 ## 6. Explicit disposition
 
-```text
-STOP — ARCHITECTURE DECISION REQUIRED
-```
+**Option A** (existing binding sufficient for sanctioned entry): **not supported** — **B1** binding still required for sanctioned GCA path.
 
-**Option A** (existing binding sufficient for sanctioned entry): **not supported** at `27e713748f2bc6f2acb8f751b728bf4c80c1d37f`.
+**Physical implementation @ DUR-01 slice:** does **not** represent production-qualified deployment; independent GitHub audit required.
 
 **Option C** (duplicate ownership): **not observed** — gap is missing binding, not overlapping stores.
 

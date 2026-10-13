@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **PENDING / NOT APPROVED** |
+| **Status** | **ACCEPTED (Option A + ADR-02-R3 T1–T7)** — implementation slice **NOT PRODUCTION-QUALIFIED** |
 | **Date** | 2026-10-13 |
 | **START_HEAD (ADR-02-R1)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
 | **START_HEAD (ADR-02-R2)** | `3a8a8301b993a18a0a6419a21b417b7ee564ecd9` |
@@ -29,9 +29,7 @@ Can an **existing production-qualified** `ExecutionContinuationStateStore` imple
 
 **Classification: Case B** — existing file + export/restore mechanism is **reusable**; **production-qualified durability lifecycle is incomplete** without an accepted seal policy and composition owner.
 
-```text
-STOP — ARCHITECTURE DECISION REQUIRED (backend / lifecycle)
-```
+**Ratified @ `392c1ac360baa7f69beab6eb691e45adfc1f4bcb`:** Option **A** + §2.2.2 **T1**–**T7** serialized seal-before-ACK. First code slice: `intergrax/runtime/execution/continuation/durable_serialized_seal_store.py` — **audit pending**; does **not** close PROD-Q-R1 or FRZ-PRD-04.
 
 | Layer | Verdict |
 |-------|---------|
@@ -421,8 +419,8 @@ Independent of B1 merge, backend must show:
 |----|-------|
 | **PROD-Q-R1** | **BLOCKED** |
 | **FRZ-PRD-04** | **OPEN** |
-| **ADR-01 B1** | **PENDING / NOT APPROVED** |
-| **ADR-02 backend** | **PENDING / NOT APPROVED** (this record) |
+| **ADR-01 B1** | **ACCEPTED** — composition field deferred past DUR-01 slice |
+| **ADR-02 backend** | **ACCEPTED (T1–T7)** — façade implemented; **NOT PRODUCTION-QUALIFIED** |
 | **Unresolved for closure** | **Explicit approval** of ADR-02-R3 §2.2.2 serialized seal-before-ACK (**T1**–**T7**); B1 composition field; production façade + lock-held helpers; qualification true-restart on sanctioned launcher path |
 
 **Independent-audit blockers (ADR-02-R3):**

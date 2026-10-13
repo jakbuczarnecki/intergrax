@@ -36,6 +36,10 @@ class ExecutionContinuationDurableStateFilePersistence:
         backing: ExecutionContinuationDurableBacking,
     ) -> None:
         payload = export_durable_continuation_state(backing)
+        self.atomic_write_export_payload(payload)
+
+    def atomic_write_export_payload(self, payload: StructuredJsonObject) -> None:
+        """Persist a complete durable export envelope (caller holds backing lock for T1–T7)."""
         self._atomic_write(payload)
 
     def load_export_payload(self) -> StructuredJsonObject:
