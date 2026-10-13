@@ -5,7 +5,7 @@
 | **Status** | **PENDING / NOT APPROVED** |
 | **Date** | 2026-10-13 |
 | **START_HEAD (analysis)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
-| **FINAL_COMMIT (docs only)** | `402851511b42329d695166e853b40929ebf580ef` |
+| **FINAL_COMMIT (docs only)** | `5e0b42aae5f7c8c166fb063289a0484372f6fed1` |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
 | **Related** | **ADR-01** [`PROD_Q_R1_ADR_01_DURABLE_CONTINUATION_OWNERSHIP.md`](PROD_Q_R1_ADR_01_DURABLE_CONTINUATION_OWNERSHIP.md) (**B1** composition ownership, PENDING) · GR-5-R2 · GR-10-R12 · STATE-X **SX-F17** · COMPAT-X `execution_continuation_durable_state.v1` |
