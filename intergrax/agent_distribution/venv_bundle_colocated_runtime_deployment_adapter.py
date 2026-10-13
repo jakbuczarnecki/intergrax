@@ -31,6 +31,7 @@ from intergrax.agent_distribution.runtime_revision import (
 )
 from intergrax.agent_distribution.serving_execution_admission import (
     ServingExecutionAdmissionGrant,
+    consume_serving_execution_admission_grant,
 )
 from intergrax.agent_distribution.colocated_venv_unit_runtime_binding import (
     ColocatedVenvUnitRuntimeBinding,
@@ -154,6 +155,7 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         self, grant: ServingExecutionAdmissionGrant
     ) -> None:
         """Open execution admission for one typed canonical grant (not identifier-only)."""
+        consume_serving_execution_admission_grant(grant)
         unit = self._require_live_unit(grant.serving_unit_ref)
         if unit.application_id != grant.application_id:
             raise VenvBundleColocatedDeploymentError(

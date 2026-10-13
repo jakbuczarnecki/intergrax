@@ -29,6 +29,7 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_resource import 
 )
 from intergrax.agent_distribution.in_memory_stores import AgentDistributionStoreState
 from intergrax.agent_distribution.serving_execution_admission import (
+    run_serving_execution_admission_critical_section,
     verify_current_serving_execution_admission_eligibility,
 )
 from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
@@ -137,17 +138,20 @@ def _prepare_ready(
             serving_record=serving_record,
             deployment_instance=deployment_instance,
         )
-        grant = verify_current_serving_execution_admission_eligibility(
-            serving_store=serving_store,
-            deployment_instance_store=instance_store,
-            revision_store=revision_store,
-            application_id=revision.application_id,
-            application_environment_id=revision.application_environment_id,
-            runtime_revision_id=revision.runtime_revision_id,
-            serving_unit_ref=prepared.serving_unit_ref,
-            materialization_artifact_digest=revision.materialization_artifact_digest or "",
-        )
-        adapter.authorize_serving_execution_admission(grant)
+        def _authorize() -> None:
+            grant = verify_current_serving_execution_admission_eligibility(
+                serving_store=serving_store,
+                deployment_instance_store=instance_store,
+                revision_store=revision_store,
+                application_id=revision.application_id,
+                application_environment_id=revision.application_environment_id,
+                runtime_revision_id=revision.runtime_revision_id,
+                serving_unit_ref=prepared.serving_unit_ref,
+                materialization_artifact_digest=revision.materialization_artifact_digest or "",
+            )
+            adapter.authorize_serving_execution_admission(grant)
+
+        run_serving_execution_admission_critical_section(serving_store, _authorize)
     return prepared.serving_unit_ref
 
 
@@ -252,17 +256,20 @@ def test_unit_without_traffic_admission_before_readiness(tmp_path: Path) -> None
         serving_record=serving_record,
         deployment_instance=deployment_instance,
     )
-    grant = verify_current_serving_execution_admission_eligibility(
-        serving_store=serving_store,
-        deployment_instance_store=instance_store,
-        revision_store=revision_store,
-        application_id=revision.application_id,
-        application_environment_id=revision.application_environment_id,
-        runtime_revision_id=revision.runtime_revision_id,
-        serving_unit_ref=prepared.serving_unit_ref,
-        materialization_artifact_digest=revision.materialization_artifact_digest or "",
-    )
-    adapter.authorize_serving_execution_admission(grant)
+    def _authorize() -> None:
+        grant = verify_current_serving_execution_admission_eligibility(
+            serving_store=serving_store,
+            deployment_instance_store=instance_store,
+            revision_store=revision_store,
+            application_id=revision.application_id,
+            application_environment_id=revision.application_environment_id,
+            runtime_revision_id=revision.runtime_revision_id,
+            serving_unit_ref=prepared.serving_unit_ref,
+            materialization_artifact_digest=revision.materialization_artifact_digest or "",
+        )
+        adapter.authorize_serving_execution_admission(grant)
+
+    run_serving_execution_admission_critical_section(serving_store, _authorize)
     adapter.admit_unit_execution(prepared.serving_unit_ref)
     adapter.release_unit_execution(prepared.serving_unit_ref)
 

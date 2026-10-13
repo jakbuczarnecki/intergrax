@@ -25,6 +25,7 @@ from intergrax.agent_distribution.serving_execution_admission import (
     ServingExecutionAdmissionError,
     ServingExecutionAdmissionGrant,
     assert_activation_commit_matches_current_serving,
+    run_serving_execution_admission_critical_section,
     verify_current_serving_execution_admission_eligibility,
 )
 from intergrax.agent_distribution.stores import (
@@ -246,33 +247,41 @@ def authorize_colocated_serving_execution_after_activation(
             "candidate deployment instance revision mismatch with handoff"
         )
 
-    current_serving = serving_store.get_serving_record(
-        identity.application_id,
-        identity.application_environment_id,
-    )
-    if current_serving is None:
-        raise ServingRuntimeHandoffError("canonical serving record is missing")
-    try:
-        assert_activation_commit_matches_current_serving(
-            activation_commit_serving=serving,
-            current_serving=current_serving,
+    def _authorize_under_canonical_authority() -> None:
+        current_serving = serving_store.get_serving_record(
+            identity.application_id,
+            identity.application_environment_id,
         )
-        grant = verify_current_serving_execution_admission_eligibility(
-            serving_store=serving_store,
-            deployment_instance_store=deployment_instance_store,
-            revision_store=revision_store,
-            application_id=identity.application_id,
-            application_environment_id=identity.application_environment_id,
-            runtime_revision_id=identity.runtime_revision_id,
-            serving_unit_ref=identity.serving_unit_ref,
-            materialization_artifact_digest=identity.materialization_artifact_digest,
+        if current_serving is None:
+            raise ServingRuntimeHandoffError("canonical serving record is missing")
+        try:
+            assert_activation_commit_matches_current_serving(
+                activation_commit_serving=serving,
+                current_serving=current_serving,
+            )
+            grant = verify_current_serving_execution_admission_eligibility(
+                serving_store=serving_store,
+                deployment_instance_store=deployment_instance_store,
+                revision_store=revision_store,
+                application_id=identity.application_id,
+                application_environment_id=identity.application_environment_id,
+                runtime_revision_id=identity.runtime_revision_id,
+                serving_unit_ref=identity.serving_unit_ref,
+                materialization_artifact_digest=identity.materialization_artifact_digest,
+            )
+        except ServingExecutionAdmissionError as exc:
+            raise ServingRuntimeHandoffError(str(exc)) from exc
+        if grant.serving_pointer_revision != serving.serving_pointer_revision:
+            raise ServingRuntimeHandoffError("serving pointer revision mismatch with grant")
+        admission_authority.authorize_serving_execution_admission(grant)
+
+    try:
+        run_serving_execution_admission_critical_section(
+            serving_store,
+            _authorize_under_canonical_authority,
         )
     except ServingExecutionAdmissionError as exc:
         raise ServingRuntimeHandoffError(str(exc)) from exc
-    if grant.serving_pointer_revision != serving.serving_pointer_revision:
-        raise ServingRuntimeHandoffError("serving pointer revision mismatch with grant")
-
-    admission_authority.authorize_serving_execution_admission(grant)
 
 
 def validate_serving_runtime_handoff_against_projection_evidence(

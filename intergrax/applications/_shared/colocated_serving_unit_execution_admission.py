@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from intergrax.agent_distribution.serving_execution_admission import (
+    ServingExecutionAdmissionError,
+    run_serving_execution_admission_critical_section,
     verify_current_serving_execution_admission_eligibility,
 )
 from intergrax.agent_distribution.stores import (
@@ -44,17 +46,28 @@ class StoreBackedColocatedServingUnitExecutionAdmission:
             raise ServingRuntimeHandoffError(
                 "execution admission serving unit ref disagrees with handoff identity"
             )
-        verify_current_serving_execution_admission_eligibility(
-            serving_store=self.serving_store,
-            deployment_instance_store=self.deployment_instance_store,
-            revision_store=self.revision_store,
-            application_id=self.identity.application_id,
-            application_environment_id=self.identity.application_environment_id,
-            runtime_revision_id=self.identity.runtime_revision_id,
-            serving_unit_ref=self.identity.serving_unit_ref,
-            materialization_artifact_digest=self.identity.materialization_artifact_digest,
-        )
-        self.physical_gate.admit_execution(serving_unit_ref)
+
+        def _admit_under_canonical_authority() -> None:
+            verify_current_serving_execution_admission_eligibility(
+                serving_store=self.serving_store,
+                deployment_instance_store=self.deployment_instance_store,
+                revision_store=self.revision_store,
+                application_id=self.identity.application_id,
+                application_environment_id=self.identity.application_environment_id,
+                runtime_revision_id=self.identity.runtime_revision_id,
+                serving_unit_ref=self.identity.serving_unit_ref,
+                materialization_artifact_digest=self.identity.materialization_artifact_digest,
+                issue_canonical_grant=False,
+            )
+            self.physical_gate.admit_execution(serving_unit_ref)
+
+        try:
+            run_serving_execution_admission_critical_section(
+                self.serving_store,
+                _admit_under_canonical_authority,
+            )
+        except ServingExecutionAdmissionError as exc:
+            raise ServingRuntimeHandoffError(str(exc)) from exc
 
     def release_execution(self, serving_unit_ref: str) -> None:
         if serving_unit_ref != self.identity.serving_unit_ref:

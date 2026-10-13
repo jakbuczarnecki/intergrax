@@ -5,11 +5,20 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+import secrets
+import threading
+from collections.abc import Callable
+
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from intergrax.agent_distribution.deployment import DeploymentInstanceState
 from intergrax.agent_distribution.errors import AgentDistributionError
 from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
+from intergrax.agent_distribution.in_memory_stores import (
+    AgentDistributionStoreState,
+    InMemoryApplicationEnvironmentServingStore,
+    run_under_activation_domain,
+)
 from intergrax.agent_distribution.stores import (
     ApplicationEnvironmentServingRecord,
     ApplicationEnvironmentServingStore,
@@ -19,13 +28,16 @@ from intergrax.agent_distribution.stores import (
 
 _NON_EMPTY = Field(min_length=1)
 
+_PENDING_GRANT_ISSUANCES: dict[str, tuple[str, str, str, str, str, int]] = {}
+_ACTIVATION_CRITICAL_DEPTH = threading.local()
+
 
 class ServingExecutionAdmissionError(AgentDistributionError):
     """Current canonical serving state does not permit execution admission."""
 
 
 class ServingExecutionAdmissionGrant(BaseModel):
-    """Typed physical admission token bound to one canonical serving snapshot."""
+    """Typed snapshot of canonical serving eligibility — not authority without issuance."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -35,6 +47,80 @@ class ServingExecutionAdmissionGrant(BaseModel):
     serving_unit_ref: str = _NON_EMPTY
     materialization_artifact_digest: str = _NON_EMPTY
     serving_pointer_revision: int = Field(ge=0)
+    _issuance_nonce: str | None = PrivateAttr(default=None)
+
+
+def _grant_fingerprint(
+    grant: ServingExecutionAdmissionGrant,
+) -> tuple[str, str, str, str, str, int]:
+    return (
+        grant.application_id,
+        grant.application_environment_id,
+        grant.runtime_revision_id,
+        grant.serving_unit_ref,
+        grant.materialization_artifact_digest,
+        grant.serving_pointer_revision,
+    )
+
+
+def _register_canonical_grant_issuance(grant: ServingExecutionAdmissionGrant) -> None:
+    nonce = grant._issuance_nonce
+    if nonce is None:
+        raise ServingExecutionAdmissionError("canonical grant issuance is missing")
+    _PENDING_GRANT_ISSUANCES[nonce] = _grant_fingerprint(grant)
+
+
+def consume_serving_execution_admission_grant(
+    grant: ServingExecutionAdmissionGrant,
+) -> None:
+    """Consume one canonical grant before physical admission may open (fail closed)."""
+    nonce = grant._issuance_nonce
+    if nonce is None:
+        raise ServingExecutionAdmissionError(
+            "serving execution admission grant was not issued by canonical authority"
+        )
+    if getattr(_ACTIVATION_CRITICAL_DEPTH, "depth", 0) < 1:
+        raise ServingExecutionAdmissionError(
+            "serving execution admission grant consumption requires activation critical section"
+        )
+    fingerprint = _PENDING_GRANT_ISSUANCES.pop(nonce, None)
+    if fingerprint is None or fingerprint != _grant_fingerprint(grant):
+        raise ServingExecutionAdmissionError(
+            "serving execution admission grant issuance is invalid or already consumed"
+        )
+
+
+def shared_activation_domain_state_from_serving_store(
+    serving_store: ApplicationEnvironmentServingStore,
+) -> AgentDistributionStoreState | None:
+    if isinstance(serving_store, InMemoryApplicationEnvironmentServingStore):
+        return serving_store.state
+    return None
+
+
+def require_shared_activation_domain_state(
+    serving_store: ApplicationEnvironmentServingStore,
+) -> AgentDistributionStoreState:
+    state = shared_activation_domain_state_from_serving_store(serving_store)
+    if state is None:
+        raise ServingExecutionAdmissionError(
+            "serving execution admission requires shared activation domain store state"
+        )
+    return state
+
+
+def run_serving_execution_admission_critical_section[T](
+    serving_store: ApplicationEnvironmentServingStore,
+    fn: Callable[[], T],
+) -> T:
+    """Serialize execution admission against activation pointer transitions on one bundle."""
+    state = require_shared_activation_domain_state(serving_store)
+    prior_depth = getattr(_ACTIVATION_CRITICAL_DEPTH, "depth", 0)
+    _ACTIVATION_CRITICAL_DEPTH.depth = prior_depth + 1
+    try:
+        return run_under_activation_domain(state, fn)
+    finally:
+        _ACTIVATION_CRITICAL_DEPTH.depth = prior_depth
 
 
 def _require_serving_record(
@@ -59,6 +145,7 @@ def verify_current_serving_execution_admission_eligibility(
     runtime_revision_id: str,
     serving_unit_ref: str,
     materialization_artifact_digest: str,
+    issue_canonical_grant: bool = True,
 ) -> ServingExecutionAdmissionGrant:
     """Read authoritative stores and fail closed unless execution may be admitted now."""
     serving = _require_serving_record(
@@ -107,7 +194,7 @@ def verify_current_serving_execution_admission_eligibility(
             "deployment instance serving unit does not match requested unit"
         )
 
-    return ServingExecutionAdmissionGrant(
+    grant = ServingExecutionAdmissionGrant(
         application_id=application_id,
         application_environment_id=application_environment_id,
         runtime_revision_id=runtime_revision_id,
@@ -115,6 +202,10 @@ def verify_current_serving_execution_admission_eligibility(
         materialization_artifact_digest=materialization_artifact_digest,
         serving_pointer_revision=serving.serving_pointer_revision,
     )
+    if issue_canonical_grant:
+        object.__setattr__(grant, "_issuance_nonce", secrets.token_hex(16))
+        _register_canonical_grant_issuance(grant)
+    return grant
 
 
 def assert_activation_commit_matches_current_serving(
@@ -152,5 +243,9 @@ __all__ = [
     "ServingExecutionAdmissionError",
     "ServingExecutionAdmissionGrant",
     "assert_activation_commit_matches_current_serving",
+    "consume_serving_execution_admission_grant",
+    "require_shared_activation_domain_state",
+    "run_serving_execution_admission_critical_section",
+    "shared_activation_domain_state_from_serving_store",
     "verify_current_serving_execution_admission_eligibility",
 ]

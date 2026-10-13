@@ -64,6 +64,15 @@ def _activation_domain(state: AgentDistributionStoreState, store_lock: threading
             yield
 
 
+def run_under_activation_domain[T](
+    state: AgentDistributionStoreState,
+    fn: Callable[[], T],
+) -> T:
+    """Serialize with activation commit/rollback on one shared ``AgentDistributionStoreState``."""
+    with state._activation_lock:
+        return fn()
+
+
 @dataclass
 class AgentDistributionStoreState:
     """Shared durable backing state — survives store instance recreation.

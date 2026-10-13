@@ -290,7 +290,7 @@ async def test_gca_admission_wrapper_blocked_under_drain(tmp_path: Path) -> None
     )
     inner = AsyncMock()
     port = ColocatedServingUnitAdmissionTaskExecutionPort(inner, handoff)
-    with pytest.raises(ServingExecutionAdmissionError, match="not in serving state"):
+    with pytest.raises(ServingRuntimeHandoffError, match="not in serving state"):
         await port.execute(Task(tenant_id="t", user_id="u", message="x"))
 
 

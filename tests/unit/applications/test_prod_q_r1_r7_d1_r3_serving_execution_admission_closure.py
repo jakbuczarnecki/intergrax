@@ -178,5 +178,5 @@ def test_superseded_pointer_blocks_per_execution_admission(tmp_path: Path) -> No
     )
     admission = handoff.colocated_execution_admission
     assert admission is not None
-    with pytest.raises(ServingExecutionAdmissionError, match="does not target"):
+    with pytest.raises(ServingRuntimeHandoffError, match="does not target"):
         admission.admit_execution(unit_ref)
