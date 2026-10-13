@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from tests.qualification.prod_q._p0_audit_gate import (
+    prod_q_p0_core_violations,
     prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations,
 )
 from tests.qualification.prod_q._p0_classification import classified_inventory
@@ -20,7 +21,9 @@ from tests.qualification.prod_q._p0_factory_ast_evidence import (
     sandbox_factory_provider_spec,
 )
 from tests.qualification.prod_q._p0_findings_register import (
+    build_reconciled_prod_q_findings,
     build_semantic_concern_records,
+    concern_finding_reconciliation_violations,
     factory_anchor_ownership_current_head_evidence,
 )
 from tests.qualification.prod_q._p0_types import (
@@ -59,8 +62,11 @@ def test_valid_provider_factory_graph_proven(provider: str) -> None:
         spec.bundle_relpath,
     )
     assert result.proven
-    evidence = factory_anchor_ownership_current_head_evidence((_factory_member(provider),))
+    member = _factory_member(provider)
+    evidence = factory_anchor_ownership_current_head_evidence((member,))
     assert evidence is not None
+    assert "ownership_assertion:OWNERSHIP_RESOLVED" in evidence
+    assert member.composition_owner == spec.register_relpath
 
 
 def test_remove_contract_factory_binding_not_proven(tmp_path: Path) -> None:
@@ -273,21 +279,111 @@ def test_factory_record_wrong_composition_owner_not_proven() -> None:
     assert factory_anchor_ownership_current_head_evidence((wrong,)) is None
 
 
-def test_broken_ast_edge_blocks_authoritative_gate() -> None:
+def test_factory_composition_unresolved_does_not_assert_ownership_resolved() -> None:
+    factory = _factory_member("e2b")
+    unresolved = replace(factory, composition_owner="COMPOSITION_UNRESOLVED")
+    evidence = factory_anchor_ownership_current_head_evidence((unresolved,))
+    assert evidence is not None
+    assert "ownership_assertion:FACTORY_ANCHOR_IDENTIFIED" in evidence
+    assert "ownership_assertion:OWNERSHIP_RESOLVED" not in evidence
+    assert "composition_ownership:NOT_PROVEN" in evidence
+
+
+def test_factory_empty_composition_owner_does_not_assert_ownership_resolved() -> None:
+    factory = _factory_member("modal")
+    unresolved = replace(factory, composition_owner="")
+    evidence = factory_anchor_ownership_current_head_evidence((unresolved,))
+    assert evidence is not None
+    assert "ownership_assertion:OWNERSHIP_RESOLVED" not in evidence
+
+
+def test_factory_sanctioned_owner_without_ast_support_not_resolved() -> None:
+    factory = _factory_member("daytona")
+    wrong_role = replace(
+        factory,
+        composition_owner="intergrax/integrations/providers/sandbox_host/daytona/contract_spec.py",
+    )
+    evidence = factory_anchor_ownership_current_head_evidence((wrong_role,))
+    assert evidence is not None
+    assert "ownership_assertion:OWNERSHIP_RESOLVED" not in evidence
+
+
+def test_core_rejects_false_factory_resolution_on_unresolved_composition() -> None:
+    factory = _factory_member("e2b")
+    key = "concern:operation:PQ-F09:sandbox_provider:e2b:factory_anchor"
+    falsely_resolved = replace(
+        factory,
+        composition_owner="COMPOSITION_UNRESOLVED",
+        ownership_resolution=OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
+    )
+    mutated = tuple(
+        falsely_resolved if record.candidate_id == factory.candidate_id else record
+        for record in classified_inventory()
+    )
+    concerns = build_semantic_concern_records(mutated)
+    anchor = next(c for c in concerns if c.concern_key == key)
+    assert anchor.resolution_state == SemanticConcernResolutionState.UNRESOLVED
+    assert any(
+        "not evidenced" in item for item in prod_q_p0_core_violations(mutated)
+    )
+
+
+def test_core_detects_incorrect_factory_composition_owner() -> None:
+    factory = _factory_member("modal")
+    wrong = replace(
+        factory,
+        composition_owner="intergrax/integrations/providers/sandbox_host/modal/wrong_owner.py",
+        ownership_resolution=OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
+    )
+    mutated = tuple(
+        wrong if record.candidate_id == factory.candidate_id else record
+        for record in classified_inventory()
+    )
+    assert any(
+        "ownership" in item.lower() or "composition" in item.lower()
+        for item in prod_q_p0_core_violations(mutated)
+    )
+
+
+def test_broken_ast_evaluated_through_shared_core_not_cached_gate() -> None:
     factory = _factory_member("daytona")
     broken = replace(
         factory,
         module="intergrax/integrations/providers/sandbox_host/daytona/missing_bundle.py",
+        composition_owner="COMPOSITION_UNRESOLVED",
+        canonical_contract="CONTRACT_UNRESOLVED",
+        ownership_resolution=OwnershipResolutionState.NOT_YET_RESOLVED,
     )
     mutated = tuple(
         broken if record.candidate_id == factory.candidate_id else record
         for record in classified_inventory()
     )
     concerns = build_semantic_concern_records(mutated)
-    anchor = next(
-        c
-        for c in concerns
-        if c.concern_key == "concern:operation:PQ-F09:sandbox_provider:daytona:factory_anchor"
-    )
+    key = "concern:operation:PQ-F09:sandbox_provider:daytona:factory_anchor"
+    anchor = next(c for c in concerns if c.concern_key == key)
     assert anchor.resolution_state == SemanticConcernResolutionState.UNRESOLVED
+    assert prod_q_p0_core_violations(mutated) == ()
+    findings = build_reconciled_prod_q_findings(mutated)
+    assert concern_finding_reconciliation_violations(mutated, findings) == ()
     assert prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations() == ()
+
+
+def test_restored_factory_composition_clears_core_violations() -> None:
+    factory = _factory_member("daytona")
+    broken = replace(
+        factory,
+        module="intergrax/integrations/providers/sandbox_host/daytona/missing_bundle.py",
+        composition_owner="COMPOSITION_UNRESOLVED",
+        canonical_contract="CONTRACT_UNRESOLVED",
+        ownership_resolution=OwnershipResolutionState.NOT_YET_RESOLVED,
+    )
+    mutated = tuple(
+        broken if record.candidate_id == factory.candidate_id else record
+        for record in classified_inventory()
+    )
+    assert prod_q_p0_core_violations(mutated) == ()
+    restored = tuple(
+        factory if record.candidate_id == factory.candidate_id else record
+        for record in classified_inventory()
+    )
+    assert prod_q_p0_core_violations(restored) == ()

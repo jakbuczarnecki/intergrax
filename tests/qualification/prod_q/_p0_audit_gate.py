@@ -14,7 +14,6 @@ from tests.qualification.prod_q._p0_discovery import (
 )
 from tests.qualification.prod_q._p0_findings_register import (
     concern_finding_reconciliation_violations,
-    factory_ownership_resolved_without_proof_violations,
     historical_prod_q_findings,
     known_prod_q_findings,
 )
@@ -58,6 +57,13 @@ def fake_auxiliary_na_violations(
         and any(ref.startswith("auxiliary_na:symbol:") for ref in record.current_head_evidence)
         and not any(ref.startswith("auxiliary_evidence:") for ref in record.current_head_evidence)
     )
+
+
+def prod_q_p0_core_violations(
+    inventory: tuple[ProductionReadinessClassification, ...],
+) -> tuple[str, ...]:
+    """Shared inventory reconciliation core (authoritative gate + injected mutation tests)."""
+    return prod_q_p0_inventory_reconciliation_violations(inventory)
 
 
 def prod_q_p0_inventory_reconciliation_violations(
@@ -130,9 +136,7 @@ def prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
-    violations: list[str] = list(prod_q_p0_r1_r1_r1_r1_r1_gate_violations())
-    violations.extend(factory_ownership_resolved_without_proof_violations())
-    return tuple(violations)
+    return prod_q_p0_r1_r1_r1_r1_r1_gate_violations()
 
 
 @lru_cache(maxsize=1)

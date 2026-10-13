@@ -7,6 +7,9 @@ from __future__ import annotations
 from functools import lru_cache
 
 from tests.qualification.prod_q._p0_discovery import raw_discovery_candidates
+from tests.qualification.prod_q._p0_findings_register import (
+    enrich_sandbox_factory_anchor_classification,
+)
 from tests.qualification.prod_q._p0_types import (
     CandidateInventoryStatus,
     DiscoveryKind,
@@ -495,7 +498,9 @@ def _finalize_classified_inventory(
 
     justifications = build_auxiliary_justifications(raw, preliminary)
     return tuple(
-        apply_auxiliary_finalization(record, justifications.get(record.candidate_id))
+        enrich_sandbox_factory_anchor_classification(
+            apply_auxiliary_finalization(record, justifications.get(record.candidate_id))
+        )
         for record in preliminary
     )
 

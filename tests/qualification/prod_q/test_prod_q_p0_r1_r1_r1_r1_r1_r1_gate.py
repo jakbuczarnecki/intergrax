@@ -151,8 +151,10 @@ def test_factory_composition_unresolved_inventory_still_structurally_proven() ->
         for record in classified_inventory()
         if record.symbol == "create_e2b_sandbox_host_integration"
     )
-    assert factory.composition_owner == "COMPOSITION_UNRESOLVED"
-    assert factory_anchor_ownership_current_head_evidence((factory,)) is not None
+    assert factory.composition_owner.endswith("/register.py")
+    evidence = factory_anchor_ownership_current_head_evidence((factory,))
+    assert evidence is not None
+    assert "ownership_assertion:OWNERSHIP_RESOLVED" in evidence
 
 
 def test_factory_with_current_contract_owner_composition_resolved() -> None:

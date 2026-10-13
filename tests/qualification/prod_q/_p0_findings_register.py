@@ -5,11 +5,14 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import replace
 from functools import lru_cache
 
 from tests.qualification.prod_q._p0_discovery import repo_root
 from tests.qualification.prod_q._p0_factory_ast_evidence import analyze_sandbox_factory_ast_evidence
 from tests.qualification.prod_q._p0_types import (
+    OwnershipResolutionState,
+    ProductionReadinessOwner,
     ConcernFindingReconciliationMetrics,
     ProdQFindingDisposition,
     ProdQKnownFinding,
@@ -281,10 +284,45 @@ def _sandbox_provider_key(module_path: str) -> str | None:
     return None
 
 
+def _factory_anchor_ownership_resolved_in_evidence(evidence: tuple[str, ...]) -> bool:
+    return "ownership_assertion:OWNERSHIP_RESOLVED" in evidence
+
+
+def enrich_sandbox_factory_anchor_classification(
+    record: ProductionReadinessClassification,
+) -> ProductionReadinessClassification:
+    """Derive registration composition owner from current-HEAD AST when structurally proven."""
+    if not any(ref.startswith("discovery:anchor.registry") for ref in record.current_head_evidence):
+        return record
+    provider = _sandbox_provider_key(record.module)
+    if provider is None:
+        return record
+    if not record.symbol.startswith("create_") or not record.symbol.endswith("_sandbox_host_integration"):
+        return record
+    expected_bundle = f"intergrax/integrations/providers/sandbox_host/{provider}/bundle.py"
+    if record.module != expected_bundle:
+        return record
+    ast_result = analyze_sandbox_factory_ast_evidence(
+        repo_root(),
+        provider,
+        record.symbol,
+        record.module,
+    )
+    if not ast_result.proven:
+        return record
+    return replace(
+        record,
+        semantic_owner=ProductionReadinessOwner.SANDBOX_HOST_PROVIDER,
+        canonical_contract=_CANONICAL_SANDBOX_HOST_INTEGRATION_CONTRACT,
+        composition_owner=ast_result.registration_composition_owner,
+        ownership_resolution=OwnershipResolutionState.RESOLVED_WITH_CURRENT_HEAD_EVIDENCE,
+    )
+
+
 def factory_anchor_ownership_current_head_evidence(
     members: tuple[ProductionReadinessClassification, ...],
 ) -> tuple[str, ...] | None:
-    """FACTORY_ANCHOR_IDENTIFIED + OWNERSHIP_RESOLVED evidence, or None (fail-closed)."""
+    """FACTORY_ANCHOR_IDENTIFIED evidence; OWNERSHIP_RESOLVED only when composition is verified."""
     if not members:
         return None
     member = members[0]
@@ -326,7 +364,12 @@ def factory_anchor_ownership_current_head_evidence(
     ):
         return None
 
-    return (
+    composition_verified = (
+        member.composition_owner not in _UNRESOLVED_COMPOSITION_MARKERS
+        and member.composition_owner == ast_result.registration_composition_owner
+    )
+
+    evidence: list[str] = [
         f"factory_identified:{member.module}:{member.symbol}",
         f"canonical_contract:{_CANONICAL_SANDBOX_HOST_INTEGRATION_CONTRACT}",
         "semantic_owner:sandbox_host_provider",
@@ -335,16 +378,28 @@ def factory_anchor_ownership_current_head_evidence(
         f"registration_composition_owner:{ast_result.registration_composition_owner}",
         *ast_result.evidence_refs,
         "ownership_assertion:FACTORY_ANCHOR_IDENTIFIED",
-        "ownership_assertion:OWNERSHIP_RESOLVED",
-        "runtime_registration:NOT_PROVEN",
-        "production_qualification:PROD-Q-P1_required",
+    ]
+    if composition_verified:
+        evidence.append("ownership_assertion:OWNERSHIP_RESOLVED")
+        evidence.append(
+            f"composition_owner_verified:{ast_result.registration_composition_owner}",
+        )
+    else:
+        evidence.append("composition_ownership:NOT_PROVEN")
+    evidence.extend(
+        (
+            "runtime_registration:NOT_PROVEN",
+            "production_qualification:PROD-Q-P1_required",
+        )
     )
+    return tuple(evidence)
 
 
 def _factory_anchor_currently_resolved(
     members: tuple[ProductionReadinessClassification, ...],
 ) -> bool:
-    return factory_anchor_ownership_current_head_evidence(members) is not None
+    evidence = factory_anchor_ownership_current_head_evidence(members)
+    return evidence is not None and _factory_anchor_ownership_resolved_in_evidence(evidence)
 
 
 def _active_findings_by_concern(
@@ -423,7 +478,7 @@ def build_semantic_concern_records(
         factory_resolved = False
         if concern_key.endswith(":factory_anchor"):
             factory_evidence = factory_anchor_ownership_current_head_evidence(tuple(members)) or ()
-            factory_resolved = bool(factory_evidence)
+            factory_resolved = _factory_anchor_ownership_resolved_in_evidence(factory_evidence)
 
         source_evidence = tuple(sample.current_head_evidence)
         if factory_evidence:
@@ -585,8 +640,15 @@ def factory_ownership_resolved_without_proof_violations(
         if not member_records:
             violations.append(f"{concern.concern_key}: factory anchor resolved without members")
             continue
-        if factory_anchor_ownership_current_head_evidence(member_records) is None:
+        evidence = factory_anchor_ownership_current_head_evidence(member_records)
+        if evidence is None or not _factory_anchor_ownership_resolved_in_evidence(evidence):
             violations.append(f"{concern.concern_key}: factory OWNERSHIP_RESOLVED without proof")
+            continue
+        for member in member_records:
+            if member.composition_owner in _UNRESOLVED_COMPOSITION_MARKERS:
+                violations.append(
+                    f"{concern.concern_key}: factory OWNERSHIP_RESOLVED with unresolved composition owner",
+                )
     return tuple(violations)
 
 

@@ -1,10 +1,10 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ecccdbf2dae2d6200993a9c4196682b090` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1** @ `d9af6e3420997febd676c4bf28ddac230978a098` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1** @ `3d664dae4f5704a28dfc5aecf9191444cf9c75c2` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** · **PROD-Q-P0-R1** @ `34f780b00d18499a1aef166985806cd78ba809b4` = **REJECTED** · **PROD-Q-P0-R1-R1** @ `58fb6ce8b4734f7f9fc8d4ebb047624ab9d036f8` = **REJECTED** · **PROD-Q-P0-R1-R1-R1** @ `ab8db1531c0017984dad7f8797f251b365319285` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1** @ `0ccc64ecccdbf2dae2d6200993a9c4196682b090` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1** @ `d9af6e3420997febd676c4bf28ddac230978a098` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1** @ `3d664dae4f5704a28dfc5aecf9191444cf9c75c2` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1** @ `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e` = **REJECTED** · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** = **READY FOR AUDIT** · **PROD-Q-P0** = **BLOCKED ON INDEPENDENT AUDIT** · **PROD-Q** = **BLOCKED** · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1-R1-R1-R1-R1-R1-R1 baseline):** `3d664dae4f5704a28dfc5aecf9191444cf9c75c2`
+**START_HEAD (P0-R1-R1-R1-R1-R1-R1-R1-R1 baseline):** `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e`
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 
@@ -12,11 +12,11 @@
 
 **Freeze checklist (unchanged OPEN rows):** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 
-## PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1 purpose
+## PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1 purpose
 
-Close **factory ownership AST evidence** gaps on **PROD-Q-P0** only (**production delta = 0**): sandbox factory `FACTORY_ANCHOR_IDENTIFIED` / `OWNERSHIP_RESOLVED` requires bounded AST proof of `declare_integration_contract`, `CONTRACT_SPECS`, integration inheritance, typed `bundle.py` factory return path, and sanctioned `register_from_manifest` wiring — substring/comment pseudo-evidence is rejected; `REGISTERED_AT_RUNTIME` and live provider qualification remain **PROD-Q-P1**; historical bundle-anchor dispositions are **lineage only**; authoritative gate **`PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1`** in `_p0_audit_gate.py`.
+Close **composition ownership** and **authoritative gate integrity** gaps on **PROD-Q-P0** only (**production delta = 0**): `OWNERSHIP_RESOLVED` requires verified `registration_composition_owner` (not `COMPOSITION_UNRESOLVED`); AST-derived registration composition enrichment is explicit; mutation tests use shared **`prod_q_p0_core_violations(inventory)`**; historical bundle-anchor dispositions remain **lineage only**; live provider qualification remains **PROD-Q-P1**.
 
-**Lineage:** **PROD-Q-P0-R1-R1-R1-R1-R1-R1** @ `3d664dae…` = **REJECTED** (independent audit: substring factory ownership). P0-R1-R1-R1-R1-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
+**Lineage:** **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1** @ `e8c89016…` = **REJECTED** (unresolved composition false positive; cached gate mutation bypass). P0-R1-R1-R1-R1-R1-R1-R1-R1 does **not** close **PROD-Q** or promote global FRZ PASS.
 
 Gate SSOT: `tests/qualification/prod_q/_p0_audit_gate.py` (`PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1`) · findings register: `_p0_findings_register.py` · factory AST evidence: `_p0_factory_ast_evidence.py` · auxiliary justification: `_p0_ownership.py` · bounded static AST call graph: `_p0_discovery.py`.
 
