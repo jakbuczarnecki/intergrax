@@ -347,6 +347,9 @@ from intergrax.agent_distribution.deployment import (
     FakeInMemoryRuntimeDeploymentAdapter,
     PreparedDeployment,
     RuntimeDeploymentAdapter,
+    ServingUnitAttestation,
+    ServingUnitAttestationError,
+    ServingUnitAttestationRequest,
 )
 from intergrax.agent_distribution.materialization import (
     ApplicationBuildContext,
@@ -721,6 +724,9 @@ __all__ = [
     "RepositoryDependencyDeclaration",
     "ResolvedDependencyClosure",
     "PreparedDeployment",
+    "ServingUnitAttestation",
+    "ServingUnitAttestationError",
+    "ServingUnitAttestationRequest",
     "RollbackAtomicCommitResult",
     "RollbackResult",
     "RollbackRuntimeRevisionRequest",
