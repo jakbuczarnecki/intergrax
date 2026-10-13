@@ -86,10 +86,15 @@ Evidence layers: `implementation_exists` → `registration_callable_exists` (`re
 
 Derived from tenant-relevant classified inventory + TENANT-X ancestry — **not** hardcoded `PASS`. Historical **FRZ-TEN** not reopened.
 
+## PROD-Q-R1-R7-ADR-01 — Deployment authority (architecture)
+
+**Disposition:** **READY FOR ARCHITECTURE DECISION** — does **not** close **PROD-Q-R1** or **FRZ-PRD-04/05**. Proposed first topology: **VENV_BUNDLE** + external immutable artifact + co-located production `RuntimeDeploymentAdapter`; sanctioned composition root remains lifecycle opener → launcher → activated GCA. Detail: [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md).
+
 ## Known blockers & recommended children (provisional)
 
 ```text
 PROD-Q-R1 — Production Startup / Dependency Materialization Corrective (R1-SQLITE-ENV-01)
+PROD-Q-R1-R7 — Production deployment adapter & lifecycle wiring (blocked on ADR-01 ratification)
 PROD-Q-P1 — External sandbox provider production qualification (E2B, Modal, Daytona)
 PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure
 PROD-Q-P3 — Production operability surface (health/readiness/operator semantics wiring)
