@@ -3,8 +3,9 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **READY FOR ARCHITECTURE DECISION** (proposed — **not ratified**) |
+| **Revision** | **R1** — independent-audit corrective (**B01–B03**) |
 | **Date** | 2026-10-13 |
-| **Baseline SHA** | `7ac1da1499897a4f61d4f26fd2e6477dd4dfed9c` |
+| **Baseline SHA** | `e4e82e356fbdd0a2a6dac8de3dfb17567e299f44` (prior ADR draft @ `7ac1da1499897a4f61d4f26fd2e6477dd4dfed9c`) |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
 | **Slice** | **PROD-Q-R1-R7-ADR-01** (architecture only; **no implementation** in this commit) |
@@ -19,7 +20,7 @@
 
 | Item | Value |
 |------|-------|
-| **Evidence lock** | `7ac1da1499897a4f61d4f26fd2e6477dd4dfed9c` |
+| **Evidence lock** | `e4e82e356fbdd0a2a6dac8de3dfb17567e299f44` |
 | **Mandatory stage** | **PROD-Q** (CURRENT per freeze checklist) |
 | **Parent program** | **PROD-Q-R1** — Production Startup / Dependency Materialization Corrective — **BLOCKED** |
 | **This slice** | Architecture decision for deployment authority only |
@@ -36,6 +37,14 @@ Production strict serving for GCA is intentionally **fail-closed** until an **ac
 There is **no** non-fake `RuntimeDeploymentAdapter` implementation in the repository. Physical readiness therefore cannot be evidenced on a production path: activation orchestration is structurally correct but **deployment truth is simulated**. Registry projection for production is constrained to **`MaterializationTopology.VENV_BUNDLE`** with **immutable on-disk artifacts** (`production_registry_projection_input_bundle.py`), while default in-tree **VENV_BUNDLE materialization** remains **unsupported** (`UnsupportedVenvBundleMaterializationAdapter` in `materialization_adapters.py`) — production assumes **externally produced** bundle directories referenced by `file://` (or qualification `test://`) locators.
 
 Process ownership for strict GCA startup is partially qualified (**R5/R6**) via `open_reference_production_process_lifecycle`, but **deploy/activate** still uses fake deployment, and **GCA `main.run()`** is not a sanctioned production entry.
+
+### 2.1 Independent-audit blockers (disposition)
+
+| ID | Root cause (prior draft) | Corrective disposition (R1) |
+|----|--------------------------|-----------------------------|
+| **R7-ADR-B01 — Readiness conflation** | Prior text tied “physical readiness” to **artifact directory + digest + import-scope warmup** without a distinct **serving-unit** identity; `FakeInMemoryRuntimeDeploymentAdapter.check_readiness` can succeed from a dict key alone — indistinguishable from “artifact exists”. | **Decision A** defines `PreparedDeployment.serving_unit_ref` as an **adapter-issued opaque unit handle**, not `artifact_locator`, not filesystem path, not digest. **Artifact immutability** is proven upstream (`RuntimeRevision.materialization_artifact_digest`, `resolve_production_artifact_root`); **unit readiness** is proven only by `prepare` + `check_readiness` on that handle. Durable `DeploymentInstanceState.READY` **never** implies traffic eligibility. |
+| **R7-ADR-B02 — Reference authority promotion** | Prior draft named `open_reference_production_process_lifecycle` / `ReferenceProductionLifecycleLauncher` as the **sanctioned production composition root** without classifying every non-adapter dependency; implied injection of a production adapter **qualifies** the reference graph. | **Decision B** separates **composition authority** (`wire_production_process_lifecycle` — proposed name) from **reference lab wiring**. Reference modules stay **REFERENCE-ONLY** or **REUSABLE CONTRACT / NOT YET QUALIFIED** until each dependency is explicitly sourced. Injecting `RuntimeDeploymentAdapter` **does not** production-qualify `ReferenceProductionLifecycleLauncher` or reference governance wiring. |
+| **R7-ADR-B03 — In-process lifecycle ambiguity** | “Co-located single-process serving unit” was undefined for prepare/readiness vs **SERVING** vs crash/restart; risk of treating process boot as deployment truth. | **Decision A (A1)** + **Decision C** bind lifecycle to `DeploymentInstanceState` transitions (`PREPARING` → `READY` → `SERVING` via activation store commit), adapter drain/stop, and **post-crash reconciliation** (durable READY ≠ live unit). Process opener owns continuation/invocation only — **not** serving-unit identity. |
 
 ---
 
@@ -73,7 +82,7 @@ Process ownership for strict GCA startup is partially qualified (**R5/R6**) via 
 | Control-plane mutation auth | `ControlPlaneMutationAuthorizationBoundary` | **Governance** (runtime) | `build_reference_production_control_plane_mutation_boundary` via `reference_production_governance_wiring.py` | `authorize_scoped_control_plane_mutation` in launcher (`control_plane_governance.py`) | `ControlPlaneMutationAuthorizationEvidence` on denial |
 | Tenant binding | `ApplicationEnvironmentTenantResolver` | Agent Distribution + Governance | `StaticApplicationEnvironmentTenantResolver` in reference wiring | Admission + activation authorization | Environment → tenant map |
 | Principal | `RequestIdentity` | Contracts | Service principal from host profile | `deploy_and_activate(..., principal=...)` | Not deployment persistence |
-| Reference-only policy | Harness mutation boundary builders | Reference / lab | `harness_control_plane_policy_wiring.py` | Reference production only | **Not** production-qualified without operator-approved production policy profile |
+| Reference-only policy | Harness mutation boundary builders | Reference / lab | `harness_control_plane_policy_wiring.py` | Reference production only | **Not** production-qualified without operator-approved production policy profile (**B02**) |
 
 ### D. Runtime / process
 
@@ -97,9 +106,55 @@ Process ownership for strict GCA startup is partially qualified (**R5/R6**) via 
 
 ---
 
-## 4. Decision D1 — First supported production topology
+## 4. Decision A — Serving-unit identity and readiness (B01, B03)
 
-**Decision (proposed):** **`MaterializationTopology.VENV_BUNDLE`** with **externally materialized immutable artifact directory** (`file://` locator), **co-located single-process serving unit** in the **same OS process** that will host strict GCA after activation.
+### 4.1 Physical meaning of `PreparedDeployment.serving_unit_ref`
+
+`serving_unit_ref` is an **opaque, adapter-allocated handle** naming one **runtime serving unit** (one revision binding in one environment context). It **must not** be:
+
+- the `artifact_locator` string;
+- a filesystem path or digest used as a stand-in for a unit;
+- a fabricated token returned without adapter-side unit state.
+
+The handle is created in `RuntimeDeploymentAdapter.prepare` and carried on `DeploymentInstanceRecord.serving_unit_ref`. **Artifact immutability** is established separately (`RuntimeRevision.materialization_artifact_digest`, `resolve_production_artifact_root`, `PreparedDeployment.materialization_artifact_digest` equality check in `ActivationService.prepare_candidate`). **Unit readiness** is established only by `check_readiness(revision, serving_unit_ref=…)` and stored as `readiness_evidence_ref`.
+
+**Traffic eligibility** requires, in order: validated revision → READY instance (with evidence) → Governance-permitted `commit_activation` → serving pointer CAS → instance `SERVING` (activation store) → GCA strict factory admission. **READY without SERVING** explicitly means: *physical unit may exist and be validated, but production traffic is forbidden*.
+
+### 4.2 Topology options (legitimate; not conflated with artifact checks)
+
+| Option | Summary | When chosen |
+|--------|---------|-------------|
+| **A1 — Co-located, non-serving in-process unit** | Adapter allocates an **isolated in-process slot** (typed config + internal registry) bound to digest; slot is warmed/validated without admitting ASGI traffic. | **First production topology** for VENV_BUNDLE (§5) — narrowest evidenced path; **not** chosen merely to avoid subprocess (see A2). |
+| **A2 — Externally managed serving unit** | Adapter delegates to another OS process or supervisor; `prepare`/`check_readiness` observe that unit’s health boundary. | **Valid future** `RuntimeDeploymentAdapter` implementation; requires explicit supervisor contract in D1 follow-on, not reference launcher subprocess ambiguity. |
+
+**Rejected for Decision A:** treating “immutable artifact directory exists” or “factory resolver import succeeded” as `serving_unit_ref` or as sufficient `check_readiness` — that is **artifact readiness**, not **serving-unit readiness** (B01).
+
+### 4.3 Ten-point contract (chosen path **A1** for first production)
+
+| # | Question | A1 answer (first production) | A2 answer (future adapter) |
+|---|----------|------------------------------|----------------------------|
+| 1 | Who constructs the runtime unit? | **Production `RuntimeDeploymentAdapter` (D1)** inside the launcher process | **Adapter** via supervisor API |
+| 2 | When relative to activation? | During `prepare_candidate` → **before** `commit_activation` | Same ordering |
+| 3 | What does `prepare()` create? | Adapter-internal **serving slot** + returns `PreparedDeployment(serving_unit_ref, materialization_artifact_digest)` | Externally started worker + handle |
+| 4 | What does `check_readiness()` observe? | Slot bound to digest; artifact root re-validated; **production factory resolver** can construct agent runtime for revision **without** serving pointer / ASGI listen | Supervisor health + digest binding |
+| 5 | What readiness evidence proves? | Typed evidence ref (e.g. structured record id) that **unit checks passed** — not “directory listed” | Supervisor-reported readiness boundary |
+| 6 | Identity without fabricated readiness? | Handle maps to adapter state machine entry; failed checks → `FAILED` instance, no READY | Handle maps to supervised process identity |
+| 7 | Eligible for serving only after authorization? | `commit_activation` after Governance + `_require_ready_instance`; pointer commit promotes instance to **SERVING** in store | Same activation gate |
+| 8 | `begin_drain` / `check_drain` / `stop` / `resume_serving`? | Adapter signals slot: stop new work, drain in-flight per `DrainPolicy`, `stop` terminates slot; rollback uses `resume_serving` when viable (`activation.py`) | Adapter maps to supervisor drain/stop |
+| 9 | Identity after process crash? | **Handle is stale** — adapter state is gone; durable READY/SERVING record **does not** prove live unit | Supervisor may or may not survive; reconcile via adapter |
+| 10 | Durable record vs absent runtime? | Reconciliation: if pointer says active but adapter cannot attest handle → **re-prepare** or **fail-closed** (no traffic); never infer liveness from `readiness_evidence_ref` alone | Same discipline via adapter attest API |
+
+### 4.4 `RuntimeDeploymentAdapter` contract sufficiency
+
+Existing `RuntimeDeploymentAdapter` (`deployment.py`) **can express** Decision A semantics: `prepare` docstring (“without production traffic”), typed `PreparedDeployment`, `check_readiness` returning evidence ref, drain/stop/resume. **No port amendment required** for A1/A2 if D1 adapter implements non-fabricated unit state.
+
+**Architectural STOP (implementation):** If D1 cannot implement checks (4–5) without widening the Protocol (e.g. dict payloads, reflection, or path-as-ref), **STOP** and propose minimal typed amendment in a **separate** architecture slice — **not** in R7-D1 code without ADR addendum.
+
+---
+
+## 5. Decision D1 — First supported production topology (implements Decision A1)
+
+**Decision (proposed):** **`MaterializationTopology.VENV_BUNDLE`** with **externally materialized immutable artifact directory** (`file://` locator), **co-located in-process serving unit (A1)** in the **same OS process** that will host strict GCA after activation.
 
 **Evidence:**
 
@@ -108,7 +163,7 @@ Process ownership for strict GCA startup is partially qualified (**R5/R6**) via 
 | Production registry projection | **Enforced** (`_validate_revision_roster_lock_authority` requires VENV_BUNDLE) | Fails assembly | Fails assembly |
 | Runtime factory resolver | `implemented` | `deferred` | `deferred` |
 | Artifact already materialized | **Yes** — operator/CI produces directory; locator in materialization store | Would require image registry + runtime — not projection-qualified | Not evidenced |
-| Physical serving unit | **In-process slot** bound to artifact digest + import scope warmup (`build_production_runtime_agent_factory_resolver`) | Container/scheduling — no production resolver | Sidecar provider — deferred |
+| Physical serving unit | **A1 in-process slot** (`serving_unit_ref` ≠ path); digest binding + resolver warmup are **inputs to** `check_readiness`, not substitutes for unit handle | Container/scheduling — no production resolver | Sidecar provider — deferred |
 | Readiness without live cloud | **Yes** — filesystem + resolver + revision digest match | Needs Docker/registry infra | Needs sandbox provider |
 | Deployment state across restart | **Durable** via `SqliteDeploymentInstanceStore` + serving stores (when wired); adapter state must not be sole truth | Same contract, more moving parts | Not evidenced |
 | In-tree materialization | **Explicitly unsupported** — does **not** block first topology if artifact is pre-built | Supported for lab builds | Unsupported |
@@ -124,40 +179,76 @@ Process ownership for strict GCA startup is partially qualified (**R5/R6**) via 
 
 ---
 
-## 5. Decision D2 — Canonical semantic ownership & composition root
+## 6. Decision B — Production composition authority (B02)
 
-**Semantic owners (unchanged):**
+### 6.1 Semantic owners (exactly one per concern)
 
-| Concern | Owner |
-|---------|-------|
-| Deployment orchestration semantics | **Agent Distribution** — `ActivationService` + `RuntimeDeploymentAdapter` port |
-| Deployment instance facts | **Agent Distribution** — `DeploymentInstanceStore` |
-| Activation / serving pointer | **Agent Distribution** — activation + serving stores |
-| Registry projection truth | **AP-10** — coordinator + inputs from canonical revision authority |
-| Control-plane mutations | **Governance** — `ControlPlaneMutationAuthorizationBoundary` |
-| Execution / continuation / invocation | **Execution contracts** — stores on `ProductionProcessComposition` |
-| Application HTTP host | **GCA** — consumer of activated composition |
+| Concern | Semantic owner | Notes |
+|---------|----------------|-------|
+| Deployment orchestration | **Agent Distribution** — `ActivationService` + `RuntimeDeploymentAdapter` | GCA must not call adapter |
+| Activation / serving pointer commit | **Agent Distribution** — `ActivationService.commit_activation` | Governance does not mutate pointer |
+| Governance mutation authorization | **Governance** — `ControlPlaneMutationAuthorizationBoundary` | Proposal ≠ permission |
+| Deployment / serving durable facts | **Agent Distribution** — `DeploymentInstanceStore`, serving + activation stores | READY ≠ live unit |
+| Registry projection | **AP-10** — `ApplicationRegistryProjectionCoordinator` + production input bundle | Non-authoritative for deployment instance |
+| Runtime / process resources (OS) | **External launcher** + adapter-managed unit | Not GCA `run()` |
+| Registry projection input assembly | **Applications shared** — `production_registry_projection_input_bundle.py` | AC-3 semantics |
+| GCA | **Application consumer** — strict ASGI after activation | No deploy authority |
 
-**Exactly one sanctioned production composition root (proposed):**
+**Composition owner (sanctioned wiring only):** one **production composition function** (proposed: `wire_production_process_lifecycle` / `open_production_process_lifecycle` in `reference_production_process_lifecycle.py` or successor module) that **only** binds already-qualified ports. It **must not** introduce deployment or activation semantics beyond calling existing `ActivationService` / launcher methods.
+
+**Not production-qualified by adapter injection:** `ReferenceProductionLifecycleLauncher`, `wire_reference_production_lifecycle_services`, `wire_governed_reference_production_launcher`, `build_reference_production_control_plane_mutation_boundary` remain **reference-named** until production wiring slice (**R7-D2**) proves reachability with **zero** fake adapter and **operator-approved** governance profile.
+
+### 6.2 Minimum authorized production composition path (target)
 
 ```text
-open_reference_production_process_lifecycle(...)   # rename optional later; behavior = production opener
-  → ProductionProcessComposition (single AP store bundle + durable continuation + invocation)
-  → wire_governed_reference_production_launcher(...)
-       → ReferenceProductionLifecycleLauncher
-            → deploy_and_activate (Governance + ActivationService + PRODUCTION deployment adapter)
-  → create_governed_contractor_process_app(process_composition=composition)
+External launcher
+  → open_production_process_lifecycle(...)          # NEW: composition owner; no FakeInMemory adapter default
+       → ProductionProcessComposition
+       → SqliteAgentDistributionStoreBundle (durable deployment + serving + revision)
+       → wire_production_lifecycle_services(
+            deployment_adapter=<PRODUCTION RuntimeDeploymentAdapter>,
+            governance_boundary=<PRODUCTION ControlPlaneMutationAuthorizationBoundary>,
+            projection stores = durable,
+          )
+       → ReferenceProductionLifecycleLauncher (or production-renamed type) — orchestration only
+            → deploy_and_activate → ActivationService (unchanged semantics)
+  → create_governed_contractor_process_app(process_composition=...)
+  → ASGI server (external) — traffic only after activation + strict admission
 ```
 
-**Before (current HEAD):** same graph with **`FakeInMemoryRuntimeDeploymentAdapter`** and reference governance boundary.
+**Before (current HEAD):** `open_reference_production_process_lifecycle` → `FakeInMemoryRuntimeDeploymentAdapter` + in-memory projection inputs + reference governance boundary.
 
-**After (target):** same graph with **`VenvBundleColocatedRuntimeDeploymentAdapter`** (name illustrative) injected at lifecycle wiring; **no** second activation authority in GCA.
+**After (target):** production composition function with **explicit required** `deployment_adapter` and **no** fake default; reference entry points remain for lab/tests.
 
-`applications/governed_contractor_application/host/main.py` **must remain** a consumer — **not** deployment root. **`run()`** must **not** become deploy authority; external launcher opens lifecycle, activates, then starts ASGI (uvicorn/hypercorn) with `create_app(process_composition=...)`.
+### 6.3 Dependency classification matrix (production path)
+
+| Dependency | Classification | Valid production source |
+|------------|----------------|-------------------------|
+| `ActivationService` | **PRODUCTION-QUALIFIED** (orchestration contract) | `intergrax/agent_distribution/activation.py` — unchanged semantics |
+| `RuntimeDeploymentAdapter` (production impl) | **MISSING** → **R7-D1** | New `VenvBundleColocated…` (illustrative); not fake |
+| `FakeInMemoryRuntimeDeploymentAdapter` | **TEST-ONLY** | Unit/orchestration tests; forbidden on strict production graph |
+| `SqliteAgentDistributionStoreBundle` / `SqliteDeploymentInstanceStore` | **PRODUCTION-QUALIFIED** (contract) | `sqlite_stores.py` — **R7-D2** must wire on production path |
+| `InMemoryDeploymentInstanceStore` (reference wiring) | **REFERENCE-ONLY** | Lab single-process proofs only |
+| `assemble_production_registry_projection_input_bundle` | **PRODUCTION-QUALIFIED** (contract) | `production_registry_projection_input_bundle.py` |
+| `RegistryProjectionInputStore` (in-memory on reference path) | **REUSABLE CONTRACT / NOT YET QUALIFIED** | **R7-D3** — durable inputs required for restart |
+| `build_production_runtime_agent_factory_resolver` | **PRODUCTION-QUALIFIED** (VENV_BUNDLE) | `venv_bundle_runtime_agent_factory_resolver.py` — used inside D1 readiness, not as deployment owner |
+| Governance principal + policy | **REUSABLE CONTRACT / NOT YET QUALIFIED** | Operator production mutation profile — **not** `build_reference_production_control_plane_mutation_boundary` alone |
+| `ControlPlaneMutationAuthorizationBoundary` | **PRODUCTION-QUALIFIED** (interface) | Implementation must be production profile |
+| Serving pointer stores | **PRODUCTION-QUALIFIED** (contract) | SQLite bundle on production path |
+| Continuation store (`open_production_execution_continuation_state_store`) | **PRODUCTION-QUALIFIED** | ADR-02 path — **R5/R6** |
+| `SQLiteProviderInvocationStore` | **PRODUCTION-QUALIFIED** (contract) | PIS-ADR-03 — **R6** |
+| `ReferenceProductionLifecycleLauncher.deploy_and_activate` | **REUSABLE CONTRACT / NOT YET QUALIFIED** | Callable orchestration; qualified only when **full** dependency column satisfied |
+| `open_reference_production_process_lifecycle` | **REFERENCE-ONLY** | Must not be named production entry without `open_production_process_lifecycle` |
+| `UnsupportedVenvBundleMaterializationAdapter` | **REFERENCE-ONLY** (explicit fail) | External CI produces bundles |
+| GCA `create_governed_contractor_process_app` | **PRODUCTION-QUALIFIED** (consumer) | Requires activated composition |
+| GCA `main.run()` | **REFERENCE-ONLY** / forbidden unactivated | **R7-D4** launcher documentation |
+| Application process owner | **External launcher** | Owns `open_production_process_lifecycle` context + ASGI |
+
+`applications/governed_contractor_application/host/main.py` **must remain** a consumer — **not** deployment root. **`run()`** must **not** become deploy authority.
 
 ---
 
-## 6. Decision D3 — Provider replaceability & injection
+## 7. Decision D3 — Provider replaceability & injection
 
 **Decision (proposed):**
 
@@ -170,11 +261,12 @@ Production qualification must prove **structural replaceability**: second test d
 
 ---
 
-## 7. Decision D4 — Physical readiness vs execution readiness
+## 8. Decision D4 — Physical readiness vs execution readiness
 
 | Layer | What can be proven | Owner of truth | Must not substitute |
 |-------|-------------------|----------------|---------------------|
-| **Physical deployment** | Artifact directory exists; digest matches revision; import-scope / factory resolver succeeds; optional policy cert refs on revision | **`RuntimeDeploymentAdapter.check_readiness`** → evidence ref stored on `DeploymentInstanceRecord` | Manual registry seeding; diagnostics HTTP 200 alone |
+| **Artifact immutability** (pre-unit) | Directory exists; digest matches revision; locator allowed by `resolve_production_artifact_root` | Revision store + projection assembly | Equating path existence with `serving_unit_ref` |
+| **Physical serving unit** | Adapter-allocated unit handle; slot checks + digest binding; factory resolver as **readiness input** only | **`RuntimeDeploymentAdapter.prepare` + `check_readiness`** → `serving_unit_ref` + `readiness_evidence_ref` | Manual registry seeding; diagnostics HTTP 200 alone |
 | **Activation gate** | Validated revision; READY instance; governance ALLOW | **`ActivationService.commit_activation`** | Skipping `prepare_candidate` |
 | **Serving pointer** | Atomic pointer CAS | **`ApplicationEnvironmentActivationStore`** | In-memory test doubles on production path |
 | **Registry projection** | Inputs match activated revision + digest | **`ApplicationRegistryProjectionCoordinator`** + `production_registry_projection_input_bundle` | Manifest defaults at host startup |
@@ -185,7 +277,7 @@ Deployment adapter **does not** prove business-level health endpoints; GCA readi
 
 ---
 
-## 8. Decision D5 — Process ownership
+## 9. Decision D5 — Process ownership
 
 | Question | Decision (proposed) |
 |----------|---------------------|
@@ -199,86 +291,115 @@ Implementing **`main.run()`** as mandatory production entry: **rejected**. Produ
 
 ---
 
-## 9. Decision D6 — Failure and recovery matrix
+## 10. Decision D — Recovery and operational invariants (negative matrix)
 
-| Failure | Truth owner | Action owner | Serving permitted? |
-|---------|-------------|--------------|-------------------|
-| Invalid/missing artifact path | Adapter + projection assembly | Adapter `prepare` / assembly fail-closed | **No** |
-| Missing digest on revision | `RuntimeRevision` store | `prepare_candidate` raises | **No** |
-| Deployment prepare failure | `DeploymentInstanceStore` → FAILED | `ActivationService` persists FAILED | **No** |
-| Readiness failure | Instance FAILED + evidence ref | Adapter + activation | **No** |
-| Governance denial | Governance boundary | Launcher raises `ReferenceProductionLifecycleGovernanceBlockedError` | **No** |
-| Activation conflict (stale pointer) | Serving store | `atomic_commit_activation` | **No** (prior pointer unchanged) |
-| Projection prepare failure | Coordinator | `commit_activation` aborts before pointer commit | **No** |
-| Commit failure after projection prepare | Serving store unchanged | Operator recovery / rollback slice | **No** |
-| Startup crash before ASGI listen | Process lifecycle | `__exit__` closes continuation/invocation (R6); deployment instance may remain READY — **restart must reconcile** | **No** |
-| Restart after activation | Serving + revision stores (durable) | Launcher skips re-deploy if READY instance valid; else re-prepare | **Only if** pointer + instance reconciled |
-| Stale serving pointer | Serving store CAS | Activation conflict — operator refresh | **No** on failed commit |
-| Wrong tenant/revision/env | Revision + governance scope | Admission/activation auth deny | **No** |
-| Shutdown / drain timeout | Instance DRAINING/FAILED | `complete_drain` + adapter `stop` per policy | **Draining** — no new traffic on old unit |
-| Drain cleanup failure | Instance evidence refs | Operator; adapter `stop` retry semantics | **Policy-bound** |
-| Unresolved provider invocation | `ProviderInvocationStore` (PIS) | Execution recovery policies — **separate from deployment** | Deployment does not auto-serve |
+**Invariant:** A durable `DeploymentInstanceState.READY` or `SERVING` record **never** alone implies a currently alive serving unit after crash or adapter loss.
 
-**No exactly-once** claim for adapter `prepare` across crashes — idempotency via `DeploymentInstanceRecord` states and digest-keyed `serving_unit_ref` discipline.
+| # | Condition | Authoritative durable fact | Recovery action owner | Traffic permitted? | Evidence required | Regression proof (indicative) |
+|---|-----------|---------------------------|----------------------|-------------------|-------------------|------------------------------|
+| 1 | Artifact missing, corrupt, wrong digest | Revision / materialization record unchanged or FAILED instance | Projection assembly + adapter `prepare` fail-closed | **No** | Digest mismatch evidence on instance | Wrong digest → FAILED, no commit |
+| 2 | Runtime factory construction failure | Instance → FAILED after readiness attempt | D1 adapter + `ActivationService` | **No** | `failure_evidence_ref` / readiness error | Factory throws → no READY |
+| 3 | Serving unit not ready | PREPARING or FAILED instance | Adapter `check_readiness` | **No** | Absent/invalid `readiness_evidence_ref` | Readiness fail → no commit |
+| 4 | Governance denial | No pointer change | Launcher / operator | **No** | `ControlPlaneMutationAuthorizationEvidence` | DENY → no activation |
+| 5 | Activation failure after readiness | READY instance may exist; pointer unchanged | `ActivationService` / operator | **No** | Serving store revision unchanged | Commit error → pointer stable |
+| 6 | Startup failure after activation | Pointer may be committed; instance SERVING in store | Launcher + process lifecycle close (R6) | **No** (process exit) | Serving record + failed host bootstrap | Strict factory fail-closed |
+| 7 | Process crash after serving pointer commit | Durable pointer + SERVING/READY records | Restart reconciliation: adapter attest or re-prepare | **No** until reconciled | Live unit attestation or new prepare cycle | Restart test: no traffic on stale handle |
+| 8 | Durable READY, physical unit absent | READY record with stale `serving_unit_ref` | Operator/launcher: mark failed or re-prepare | **No** | Adapter cannot attest handle | READY ≠ traffic gate alone |
+| 9 | Restart with stale `serving_unit_ref` | Instance record vs adapter state mismatch | D1 adapter + `prepare_candidate` idempotency rules | **No** until new readiness | New evidence ref after re-prepare | Stale ref rejection |
+| 10 | Drain timeout | DRAINING + policy snapshot | `complete_drain` + `DrainPolicy.action_on_timeout` | **No** new on drained unit | Drain `evidence_ref` | Timeout → STOP/MARK_FAILED |
+| 11 | Failure during `stop` | DRAINING/FAILED instance | Adapter retry + operator | **Policy-bound** | `failure_evidence_ref` on stop | Stop error surfaced |
+| 12 | Wrong tenant/environment/revision | Revision scope mismatch | Governance + `ActivationService` guards | **No** | Scope denial evidence | Cross-tenant activation denied |
+| 13 | Concurrent activation | Serving store CAS | `atomic_commit_activation` conflict | **No** on loser | `RuntimeActivationConflict` | Concurrent commit test |
+| 14 | Previous revision rollback/resume | Prior instance STOPPED/DRAINING | `resume_serving` + rollback paths | **Only** after rollback commit | New readiness ref on resume | Rollback qualification |
+| 15 | Unresolved external `ProviderInvocation` | PIS durable ambiguity | Execution recovery (PIS) — not deployment | Deployment does not widen authority | PIS store state | No duplicate deploy side effect |
+| 16 | Unsupported topology (OCI/sidecar) | Revision rejected at assembly | `production_registry_projection_input_bundle` | **No** | Assembly error | OCI revision rejected |
+| 17 | Missing production Governance configuration | No ALLOW for mutations | Fail-closed at boundary | **No** | Deny evidence | Unconfigured policy → deny |
+
+**No exactly-once** for adapter `prepare` across crashes — idempotency via `DeploymentInstanceRecord` states and digest-keyed unit discipline.
+
+### Architectural STOP conditions (recovery)
+
+- Inferring liveness from `readiness_evidence_ref` or artifact path without adapter attestation → **STOP**.
+- Promoting reference governance boundary as production without operator profile → **STOP** (B02).
+- GCA or ASGI factory performing `prepare_candidate` → **STOP** (authority widening).
 
 ---
 
-## 10. End-to-end sequence (target production)
+## 11. Decision C — Process lifecycle sequence (no circular dependencies)
+
+**Separation (mandatory):** **Physical preparation ≠ Governance permission ≠ activation ≠ execution admission ≠ serving traffic.**
+
+| Phase | Allowed before activation? | Owner | Restrictions |
+|-------|---------------------------|-------|--------------|
+| Immutable artifact preparation (out of band) | Yes | External CI / operator | No platform traffic |
+| Revision admission + `mark_validated` | Yes (control plane) | Agent Distribution + Governance admission | No serving pointer |
+| Governance permission for activation mutations | Required before commit | Governance | Not execution |
+| `prepare_candidate` (physical unit) | Yes | `ActivationService` + adapter | **No** serving pointer; instance READY only |
+| Projection input registration + `prepare_projection` | Only inside `commit_activation` after ready | Coordinator | Fail-closed on mismatch |
+| `commit_activation` (pointer CAS) | N/A — defines activation | `ActivationService` | Promotes instance SERVING in store |
+| `open_production_process_lifecycle` / composition open | Yes, but strict GCA **not** serving until activated | Launcher | May open continuation/invocation stores |
+| `create_governed_contractor_process_app` | After composition bound to **activated** stores | GCA | Fail-closed if unactivated |
+| ASGI listen / traffic | After activation + strict admission | External ASGI | Diagnostics non-authoritative |
 
 ```text
-1. External materialization → immutable VENV bundle directory + digest (out of band)
-2. Control plane: admit revision (Governance) → VALIDATED in RuntimeRevisionStore
-3. Register materialization record (artifact_locator) in materialization_store
-4. assemble_production_registry_projection_input_bundle / register projection input
-5. Launcher.deploy_and_activate:
-     a. Governance: admission + activation mutations
-     b. ActivationService.prepare_candidate → adapter prepare + check_readiness → READY instance
-     c. ActivationService.commit_activation → projection prepare + serving pointer CAS
+1. External materialization → immutable VENV bundle + digest (out of band)
+2. Governance: admit revision → VALIDATED in RuntimeRevisionStore
+3. Register materialization record (artifact_locator)
+4. Register projection input (production bundle assembly)
+5. open_production_process_lifecycle (durable Sqlite bundle + production adapter + production governance)
+6. Launcher.deploy_and_activate:
+     a. Governance: activation-scoped mutations (ALLOW)
+     b. ActivationService.prepare_candidate → adapter prepare + check_readiness → READY (no traffic)
+     c. ActivationService.commit_activation → prepare_projection + serving pointer CAS → SERVING instance
      d. begin_drain prior unit (if any)
-5. open_reference_production_process_lifecycle (if not already open) with durable stores
-6. create_governed_contractor_process_app(process_composition)
-7. ASGI server serve (external)
-8. Shutdown: drain/complete_drain (ops) → lifecycle.close_process_resources → adapter stop
+7. create_governed_contractor_process_app(process_composition)
+8. ASGI server serve (external) — traffic enablement
+9. Serving lifetime — execution admission via strict factory (downstream)
+10. Shutdown: complete_drain (ops) → lifecycle.close_process_resources (R6) → adapter stop
+11. Restart: reconcile pointer vs adapter attestation (Decision D §7–9) before traffic
 ```
+
+**Forbidden:** deployment authority inside GCA; `run()` deploy; opening ASGI before step 6c completes.
 
 ---
 
-## 11. Mandatory architecture invariants (disposition)
+## 13. Mandatory architecture invariants (disposition)
 
 | Invariant | Satisfied by proposed decisions? |
 |-----------|----------------------------------|
 | Contracts over implementations | **Yes** — Protocol port retained |
 | Layer boundaries | **Yes** — no GCA → adapter import required |
-| Exactly-one semantic owner per concern | **Yes** — table §5 |
-| Exactly-one composition root | **Yes** — lifecycle opener |
+| Exactly-one semantic owner per concern | **Yes** — §6.1 |
+| Exactly-one sanctioned composition owner | **Yes** — `open_production_process_lifecycle` (proposed) |
 | Strong typing | **Yes** — Pydantic + Protocol; adapter config must stay typed |
 | Pluginability / replaceability | **Yes** — injection at wiring |
 | No fake on production path | **Pending R7-D1/D2** — **IN-SCOPE BLOCKER** today |
 | No Governance bypass | **Yes** — launcher path preserved |
 | Fail-closed activation | **Yes** — existing `ActivationService` |
-| Diagnostics non-authoritative | **Yes** — §7 |
+| READY ≠ live serving unit | **Yes** — Decision A + D |
+| Diagnostics non-authoritative | **Yes** — §8 |
 
-**Contract changes:** **None required** for first topology if co-located VENV adapter implements existing `RuntimeDeploymentAdapter`. Subprocess/OCI adapters later **must not** widen `ActivationService` semantics.
+**Contract changes:** **None required** for first topology if co-located VENV adapter implements Decision A. Subprocess/OCI adapters later **must not** widen `ActivationService` semantics.
 
 If co-located adapter needs `materialization_output` on `prepare`: optional parameter already exists — use typed `MaterializationOutput` from store, not ad-hoc dicts.
 
 ---
 
-## 12. Minimal implementation slices (dependency order)
+## 14. Minimal implementation slices (dependency order)
 
 | Child | Owner | Scope | STOP condition |
 |-------|-------|-------|----------------|
-| **PROD-Q-R1-R7-D1** | Agent Distribution + Applications wiring | One production `RuntimeDeploymentAdapter` for VENV_BUNDLE co-located: `prepare`/`check_readiness`/`drain`/`stop` with real artifact + digest checks | Cannot prove readiness without filesystem test fixture |
-| **PROD-Q-R1-R7-D2** | Applications shared lifecycle | Inject adapter + durable `SqliteDeploymentInstanceStore` bundle; remove fake default on production code path | Duplicate activation wiring in GCA |
+| **PROD-Q-R1-R7-D1** | Agent Distribution + Applications wiring | Production `RuntimeDeploymentAdapter` (A1): opaque `serving_unit_ref`, non-fabricated `check_readiness`, drain/stop/resume | Readiness reduces to artifact path existence only |
+| **PROD-Q-R1-R7-D2** | Applications shared lifecycle | `open_production_process_lifecycle` + required production adapter; durable `SqliteAgentDistributionStoreBundle`; **no** fake default | Duplicate activation wiring in GCA |
 | **PROD-Q-R1-R7-D3** | Applications + Agent Distribution | Production projection input store durability + post-restart reconciliation of serving pointer vs READY instance | Manual in-memory projection seeding required |
 | **PROD-Q-R1-R7-D4** | GCA + lifecycle | Documented launcher → uvicorn factory; optional thin CLI — **no** `run()` deploy logic | GCA required to deploy itself |
-| **PROD-Q-R1-R7-Q** | Qualification | End-to-end + adversarial proof matrix §13 | Any fake adapter reachable from strict production graph |
+| **PROD-Q-R1-R7-Q** | Qualification | End-to-end + adversarial proof matrix §15; Decision D rows 1–17 | Any fake adapter reachable from strict production graph |
 
 Consolidation: **D1+D2** inseparable for first production path — may merge if single PR boundary agreed.
 
 ---
 
-## 13. Future proof matrix (implementation — not executed in this ADR)
+## 15. Future proof matrix (implementation — not executed in this ADR)
 
 Qualification must include **behavioral** tests (indicative paths):
 
@@ -288,7 +409,8 @@ Qualification must include **behavioral** tests (indicative paths):
 
 | Gate | Intent |
 |------|--------|
-| Physical prepare/readiness | Real artifact dir wrong digest → FAILED instance, no commit |
+| Physical prepare/readiness | Wrong digest → FAILED; readiness cannot pass on path-as-ref alone |
+| Serving unit identity | `serving_unit_ref` ≠ `artifact_locator`; adapter attestation after crash |
 | Provider-neutral injection | Alternate stub adapter, same `ActivationService` |
 | Authorized activation | Governance ALLOW → pointer bump |
 | Denied / stale / cross-tenant | Governance DENY; CAS conflict |
@@ -308,7 +430,7 @@ Qualification must include **behavioral** tests (indicative paths):
 
 ---
 
-## 14. Applicable FRZ requirements (evidence contribution only — no PASS)
+## 16. Applicable FRZ requirements (evidence contribution only — no PASS)
 
 | ID | Relevance |
 |----|-----------|
@@ -326,14 +448,15 @@ Qualification must include **behavioral** tests (indicative paths):
 
 ---
 
-## 15. Enterprise audit matrix
+## 17. Enterprise audit matrix
 
 | Category | Decision / finding |
 |----------|-------------------|
 | Boundaries | Tier-0/1 AD semantics stay in `intergrax/agent_distribution`; GCA consumes only |
 | Communication | Launcher orchestrates; no hidden deploy in ASGI factory |
 | Composition | Single `ProductionProcessComposition` root |
-| Ownership | Tables §3, §5 — one owner per row |
+| Ownership | Tables §3, §6.1 — one owner per row |
+| B01–B03 corrective | Decision A/B/C/D — no artifact/unit conflation; no reference promotion |
 | Contracts | `RuntimeDeploymentAdapter` unchanged |
 | Abstraction | Adapter port isolates physical topology |
 | Strong typing | Pydantic records; proposed adapter config typed |
@@ -350,7 +473,7 @@ Qualification must include **behavioral** tests (indicative paths):
 
 ---
 
-## 16. Unresolved findings (classification)
+## 18. Unresolved findings (classification)
 
 | Finding | Classification | Child / action |
 |---------|----------------|----------------|
@@ -365,18 +488,19 @@ Qualification must include **behavioral** tests (indicative paths):
 
 ---
 
-## 17. Unresolved questions (operator ratification)
+## 19. Unresolved questions (operator ratification)
 
-1. Accept **co-located in-process** VENV serving unit as first production topology (vs mandating subprocess worker in D1)?
+1. Ratify **Decision A1** (co-located in-process unit) as first topology vs require **A2** subprocess supervisor in D1?
 2. Mandate **`SqliteAgentDistributionStoreBundle`** for all production deployment/serving persistence (vs hybrid in-memory projection inputs)?
 3. Production **control-plane mutation policy** profile: extend reference boundary or new sanctioned production boundary module?
 4. External **materialization pipeline** ownership (CI digest attestation) — platform vs application team?
+5. Approve proposed names **`open_production_process_lifecycle`** / **`wire_production_lifecycle_services`** as composition owner API?
 
 ---
 
-## 18. Exit recommendation
+## 20. Exit recommendation
 
-**READY FOR ARCHITECTURE DECISION** — operator ratification of **D1–D6** and composition root §5. Upon ratification, implement **PROD-Q-R1-R7-D1** then **R7-D2**; keep **PROD-Q-R1** **BLOCKED** until independent GitHub audit of implementation slices and §13 proofs.
+**READY FOR ARCHITECTURE DECISION** — operator ratification of **Decision A–D**, **D1**, and **§6** composition path. Upon ratification, implement **PROD-Q-R1-R7-D1** then **R7-D2**; keep **PROD-Q-R1** **BLOCKED** until independent GitHub audit of implementation slices and §15 proofs.
 
 **Maximum outcome of this commit:** architecture proposal only — **no** production adapter, **no** FRZ PASS, **no** roadmap CLOSED.
 

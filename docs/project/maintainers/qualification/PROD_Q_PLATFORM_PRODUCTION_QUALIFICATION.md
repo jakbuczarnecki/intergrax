@@ -88,7 +88,7 @@ Derived from tenant-relevant classified inventory + TENANT-X ancestry — **not*
 
 ## PROD-Q-R1-R7-ADR-01 — Deployment authority (architecture)
 
-**Disposition:** **READY FOR ARCHITECTURE DECISION** — does **not** close **PROD-Q-R1** or **FRZ-PRD-04/05**. Proposed first topology: **VENV_BUNDLE** + external immutable artifact + co-located production `RuntimeDeploymentAdapter`; sanctioned composition root remains lifecycle opener → launcher → activated GCA. Detail: [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md).
+**Disposition:** **READY FOR ARCHITECTURE DECISION** (ADR **R1** corrective for audit **B01–B03**) — does **not** close **PROD-Q-R1** or **FRZ-PRD-04/05**. Serving-unit semantics (`serving_unit_ref` ≠ artifact path); production composition via proposed `open_production_process_lifecycle` (reference graph **not** auto-qualified). Detail: [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md).
 
 ## Known blockers & recommended children (provisional)
 
