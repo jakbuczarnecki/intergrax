@@ -960,8 +960,9 @@ Historical **R4** questions below are **answered by ratification** (DEC-01–DEC
 | Field | Value |
 |-------|-------|
 | **Evidence doc** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) |
-| **Code HEAD (audit)** | `7495bcdd5abaf3f279f363af7cb1f45e869ba32b` |
-| **Implementation child** | **PROD-Q-R1-R7-D1-R6** (bounded; **no** code in D1-R5) |
+| **Code HEAD (audit)** | `36492c847000fe67ef0081bbf3d54f2a3f56d5d3` |
+| **Corrective evidence (D1-R5-R1)** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) §11 |
+| **Implementation child** | **PROD-Q-R1-R7-D1-R6** (bounded; **no** code in D1-R5 / D1-R5-R1) |
 
 ### DEC-09 (proposed) — A1 single activation domain for serving admission
 
@@ -970,12 +971,15 @@ Historical **R4** questions below are **answered by ratification** (DEC-01–DEC
 | # | Proposed rule |
 |---|----------------|
 | 1 | **One sanctioned OS process** per application environment under A1 owns the live colocated adapter, the production composition, and **one** durable Agent Distribution store bundle instance (`SqliteAgentDistributionDatabase` or shared in-memory `AgentDistributionStoreState`). |
-| 2 | All serving pointer mutations and execution admission for that environment **must** serialize through **one activation domain** — extend `run_under_activation_domain` to SQLite via the existing database activation lock (not a new permission store). |
+| 2 | All serving pointer mutations and execution admission for that environment **must** linearize through **one provider-neutral activation domain** exposed by that bundle — **not** a second permission registry. @ HEAD, in-memory domain = `AgentDistributionStoreState._activation_lock` + `run_under_activation_domain`; SQLite mutations = `SqliteAgentDistributionDatabase.mutation_transaction` (`BEGIN IMMEDIATE` on **one** connection per transaction). **D1-R5-R1 gap:** the Python `_activation_lock` is **process-local**; it does **not** exclude a second OS process opening the same file. Admission on SQLite today **fails closed** (`require_shared_activation_domain_state` → no shared in-memory state). **Ratification requires** accepting the bounded **DEC-09-EXT** contract in evidence §11 (composition startup gate + domain bridge + consistent read boundary) — **not** claiming cross-process exclusivity from the lock alone. |
 | 3 | **No consumable serving grant token.** Eligibility is established **at the operation boundary** inside the activation domain; physical in-flight accounting follows immediately or via a single handoff-open inside the same domain. |
-| 4 | **Per-execution admission** (GCA task path) re-reads canonical stores under the domain, then calls adapter physical gate — no historical snapshot conferring authorization. |
-| 5 | **Unsupported:** independent processes sharing one SQLite file without store-coordinated admission (**OPTION B**); multiple `ActivationService` instances without shared domain; identifier-only `admit_unit_execution` on sanctioned production wiring. Unsupported configurations **fail closed** (**FRZ-PRD-03**). |
+| 4 | **Per-execution admission** (GCA task path) re-reads canonical stores under the domain, then calls adapter physical gate — no historical snapshot conferring authorization. Multi-store verify must use a **defined consistency boundary** (single in-memory snapshot or one SQLite read transaction / in-flight mutation state) — independent `_refresh()` → `load_state()` per store is **not** a qualified snapshot (@ HEAD). |
+| 5 | **Unsupported:** second OS process as writer on the same environment store path without **OPTION B** coordination; multiple `ActivationService` instances without shared domain; two `SqliteAgentDistributionDatabase` objects in one process without shared `_db` reference; identifier-only `admit_unit_execution` on sanctioned production wiring; admin/recovery tools mutating serving state outside the sanctioned composition unless explicitly qualified under **OPTION B**. Unsupported configurations **fail closed** at composition validation (**FRZ-PRD-03**). |
 | 6 | **OPTION B** (cross-process store-coordinated admission) remains a **future** ratification candidate — **not** part of DEC-09. |
+| 7 | **OPTION A2 (read-only peer):** external SQLite readers are **not** production-qualified @ HEAD; SQLite does not cryptographically enforce read-only when the file is writable. A2 is **documentation-only** until file-permission or separate read replica contract is ratified. |
 
 **Rejected (D1-R4 audit):** process-global grant issuance registry; `object.__setattr__` on frozen grant models; separable verify-then-consume grant across pointer CAS.
 
-**Qualification impact:** **PROD-Q-R1-R7-D1** / **D1b** remain **BLOCKED** until **D1-R6** implements DEC-09 (if ratified) and independent audit passes. **FRZ-PRD-04/05/08** remain **OPEN**.
+**STOP — ARCHITECTURE DECISION REQUIRED (D1-R5-R1, does not block DEC-09 proposal text):** Operator must ratify **DEC-09-EXT — `ActivationDomainCoordinator` (name indicative)** before **D1-R6** may claim production-ready A1 ordering on SQLite: (a) composition-owned **topology validation** (single process, single `SqliteAgentDistributionDatabase`, single `ActivationService`, shared store bundle); (b) **domain bridge** replacing in-memory-only `run_serving_execution_admission_critical_section`; (c) **consistent eligibility read** + physical reservation ordering; (d) explicit **unsupported-writer rejection** semantics. **Forbidden without separate authorization:** OS file lock, PID lease file, custom lease table, or shadow permission DB. **Not ratified in this revision.**
+
+**Qualification impact:** **PROD-Q-R1-R7-D1** / **D1b** remain **BLOCKED** until **D1-R6** implements DEC-09 **and DEC-09-EXT** (if ratified) and independent audit passes. **FRZ-PRD-04/05/08/11** remain **OPEN**.

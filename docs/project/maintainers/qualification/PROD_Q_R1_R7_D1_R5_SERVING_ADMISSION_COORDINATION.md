@@ -4,7 +4,8 @@
 |-------|-------|
 | **Status** | **READY FOR AUDIT** (architecture / evidence only — **no production code**) |
 | **Branch** | `development` |
-| **START_HEAD** | `7495bcdd5abaf3f279f363af7cb1f45e869ba32b` |
+| **START_HEAD** | `36492c847000fe67ef0081bbf3d54f2a3f56d5d3` |
+| **Corrective child (this wave)** | **PROD-Q-R1-R7-D1-R5-R1** — SQLite activation domain & single-writer enforcement (§11) |
 | **Parent** | **PROD-Q-R1-R7** — **BLOCKED** |
 | **Corrective parent** | **PROD-Q-R1-R7-D1** / **D1b** — **BLOCKED** (independent **D1-R4** audit **REJECTED**) |
 | **Prior corrective** | **PROD-Q-R1-R7-D1-R4** — **REJECTED** (independent GitHub audit) |
@@ -18,7 +19,7 @@
 | Check | Result |
 |-------|--------|
 | Branch | `development` |
-| HEAD | `7495bcdd5abaf3f279f363af7cb1f45e869ba32b` (= **EXPECTED_START_HEAD**) |
+| HEAD | `36492c847000fe67ef0081bbf3d54f2a3f56d5d3` (= **EXPECTED_START_HEAD** for D1-R5-R1) |
 | Program | **PROD-Q** — **CURRENT / BLOCKED** (roadmap) |
 | Parent ordering | **PROD-Q-R1** **BLOCKED** → **PROD-Q-R1-R7** **BLOCKED** → **D1-R5** corrective (no unrelated stage) |
 | **DEC-01–DEC-08** | **RATIFIED** (ADR-01-R5) |
@@ -36,7 +37,7 @@
 
 ---
 
-## 2. Closed-world inventory (@ `7495bcdd…`)
+## 2. Closed-world inventory (@ `36492c84…`)
 
 Legend: **CS** = concurrency / serialization domain.
 
@@ -79,7 +80,7 @@ Legend: **CS** = concurrency / serialization domain.
 | `admit_unit_execution` direct | Public on adapter | **D1-R6:** production wiring uses store-backed port only; tests may call adapter directly |
 | Grant forgery | Nonce registry | **Remove** registry (**D1-R6**) |
 
-**Mandatory condition status:** Enforceable **iff** operator accepts **DEC-09 (proposed)** A1 topology contract and **D1-R6** extends activation domain to SQLite + removes grant split. **Not** enforceable for multi-process launcher + worker without OPTION B.
+**Mandatory condition status:** Enforceable **iff** operator accepts **DEC-09 (proposed)** + **DEC-09-EXT** (§11) and **D1-R6** implements domain bridge + topology validation + removes grant split. **Not** enforceable for multi-process launcher + worker without OPTION B; **not** enforceable from `_activation_lock` alone (**D1-R5-R1**).
 
 ### OPTION B — Store-coordinated admission (**NOT RECOMMENDED for A1 first wave**)
 
@@ -242,5 +243,159 @@ All global FRZ remain **OPEN**.
 | D1-R4 tests green ≠ audit PASS | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** for qual closure |
 
 **Roadmap disposition:** **PROD-Q-R1** stays **BLOCKED**; **D1/D1b** stay **BLOCKED** pending **D1-R6** + audit; do not promote roadmap row to CLOSED.
+
+---
+
+## 11. PROD-Q-R1-R7-D1-R5-R1 — SQLite activation domain & single-writer (corrective)
+
+| Field | Value |
+|-------|-------|
+| **Parent** | **PROD-Q-R1-R7-D1-R5** (coordination proposal — not ratified) |
+| **Status** | **READY FOR AUDIT** (evidence only) |
+| **Does not ratify** | **DEC-09**, **DEC-09-EXT**, **D1**, **D1b** |
+
+### 11.1 Root cause confirmation (ROOT-01 … ROOT-05)
+
+| ID | Finding @ `36492c84…` | Code anchor |
+|----|----------------------|-------------|
+| **ROOT-01** | `SqliteAgentDistributionDatabase._activation_lock` is `threading.RLock` — shared only within one Python object / process (`sqlite_stores.py` L135–137, L276–277). | Second process opening the same path does not acquire this lock. |
+| **ROOT-02** | `mutation_transaction()` = object lock + `BEGIN IMMEDIATE` + load/mutate/save on **one** connection (L276–289). Execution admission has **no** equivalent qualified boundary on SQLite (`serving_execution_admission.py` L101–108 raises for non-in-memory serving store). | Pointer CAS uses `_mutate`; per-exec admit uses `run_serving_execution_admission_critical_section` → **blocked** on SQLite bundle today. |
+| **ROOT-03** | SQLite store reads call `_refresh()` → `db.load_state()` on a **new** connection per call (`_SqliteMutationMixin` L496–497, L841–847). `verify_current_serving_execution_admission_eligibility` performs **three** independent refreshes (serving, revision, instance). | Not one transactional snapshot; generations can disagree under concurrent mutation (another connection/process). |
+| **ROOT-04** | No API rejects: second `SqliteAgentDistributionDatabase(db_path)`; second process; duplicated launcher; admin tool; separate writer connection. | `runtime_locks` table exists in schema but is **not** wired as environment writer lease @ HEAD. |
+| **ROOT-05** | D1-R4 shadow authority: `_PENDING_GRANT_ISSUANCES` + nonce (`serving_execution_admission.py` L31–90). DEC-09 rejects replacement via another registry/flag. | DEC-09-EXT must be **domain serialization**, not a token store. |
+
+**Nested-transaction hazard (implementation-grounded):** `_mutate` is non-reentrant across connections: a second `mutation_transaction` on the same thread would block on `_activation_lock` (RLock re-enters) but open a **second** `BEGIN IMMEDIATE` — risk of `SQLITE_BUSY`, deadlock, or partial ordering. **D1-R6** must not nest `_mutate` inside an admission CS without proof; prefer **one** coordinator entry that holds the active transaction state for reads + ordered physical side effect.
+
+### 11.2 Extended closed-world matrix (mutations + admission)
+
+| Contract / operation | Semantic owner | Composition owner | Caller | Store / backend | Lock | Transaction boundary | Cross-process | Failure |
+|---------------------|----------------|-------------------|--------|-----------------|------|----------------------|---------------|---------|
+| `prepare_candidate` / `commit_activation` | `ActivationService` | prod / ref launcher | launcher, tests | SQLite `_mutate` / in-mem | `ActivationService._environment_lock` (per service instance) + store | `mutation_transaction` / in-mem `_activation_lock` | **None** (Python lock) | fail-closed AD errors |
+| `atomic_swap_serving_revision` | serving store | — | `ActivationService` | SQLite / in-mem | via `_mutate` / `_activation_lock` | single IMMEDIATE txn | second process can write same file | CAS mismatch → error |
+| `verify_current_serving_execution_admission_eligibility` | `serving_execution_admission` | handoff / store-backed port | handoff, `StoreBackedColocatedServingUnitExecutionAdmission` | per-store `_refresh` | none | **none** (multi-read) | uncoordinated | `ServingExecutionAdmissionError` |
+| `run_serving_execution_admission_critical_section` | same | Applications | store-backed admit | in-mem only @ HEAD | `run_under_activation_domain` | in-mem mutex | N/A | **fail closed** SQLite |
+| `StoreBackedColocatedServingUnitExecutionAdmission.admit_execution` | AD verify + adapter physical | bind path | GCA task port | shared stores | inherits CS | verify + `admit_execution` not atomic on SQLite | blocked today | `ServingRuntimeHandoffError` wrap |
+| `admit_unit_execution` | — (physical) | — | accessor, tests | adapter gate | adapter `RLock` | none | none | identifier-only bypass if reachable |
+| `SqliteRuntimeRegistryProjectionDescriptorStore.put` | AP-10 descriptor | — | coordinator | separate `BEGIN IMMEDIATE` on `_db._connect()` | store `_lock` | **parallel** txn to AD bundle | same file contention | `SQLITE_BUSY` / `ValueError` |
+
+**Serving / ACTIVE record writers (closed world):** `ActivationService` (`prepare_candidate`, `commit_activation`, rollback/drain/stop orchestration) → `DeploymentInstanceStore.update_instance`, `ApplicationEnvironmentServingStore.atomic_swap_serving_revision`, `ApplicationEnvironmentActivationStore.atomic_commit_*`, `RuntimeRevisionService` state transitions; tests and future admin CLIs if wired to same stores. **No** GCA / Governance direct serving mutation @ HEAD.
+
+### 11.3 A1 authority boundary (evidence-backed answers)
+
+**A. Single-writer ownership**
+
+| # | Answer |
+|---|--------|
+| 1 | **Intended** owner: one sanctioned OS process running production composition (`wire_production_process_lifecycle` / durable opener) holding one `VenvBundleColocatedRuntimeDeploymentAdapter` + one `SqliteAgentDistributionStoreBundle.database`. |
+| 2 | **Yes** — any process may construct `SqliteAgentDistributionDatabase(path)`; no rejection @ HEAD. |
+| 3 | **Yes** — second object can call `_mutate` / store APIs and mutate serving records if file is writable. |
+| 4 | **None today.** **Proposed:** composition **startup topology validation** (DEC-09-EXT) fail-closed before traffic; does **not** by itself prevent a hostile second process — see OPTION A vs A2. |
+| 5 | Two concurrent startups: **undefined** @ HEAD; SQLite last-writer wins / `SQLITE_BUSY` — not a deterministic winner contract. |
+| 6 | Abrupt termination: durable READY/SERVING remains; physical unit gone — D0 attest on reuse; **no** writer lease cleanup. |
+| 7 | Stale vs live ownership: **not distinguished** in storage; only adapter attestation on activation paths in **same** process. |
+| 8 | Admin rollback tools: **same gap** — must be same composition graph or **OPTION B**. |
+
+**B. SQLite transactional semantics**
+
+- **Activation mutations:** qualified **per operation** via `mutation_transaction` (IMMEDIATE + full-state snapshot in memory).
+- **Admission ordering:** **not qualified** on SQLite; in-memory path serializes with pointer transitions only when `InMemoryApplicationEnvironmentServingStore` shares `AgentDistributionStoreState`.
+- **Proposed DEC-09-EXT ordering (one CS entry):** (1) enter domain bridge (process-local mutex + optional hold active IMMEDIATE txn for read generation); (2) load consistent serving + revision + instance view; (3) pointer/generation check; (4) physical `admit_execution`; (5) release domain — on exception rollback txn, **no** admission permission; on `SQLITE_BUSY` bounded retry then fail-closed.
+- **Independent connections during held write txn:** additional `load_state()` connections may observe stale or concurrent states; must not be used for eligibility inside the same logical operation without shared txn/coordinator.
+
+**C. Topology classification**
+
+| Topology | Disposition |
+|----------|-------------|
+| One `ActivationService` + one in-mem `AgentDistributionStoreState` | **SUPPORTED WITH PROOF** (tests use `run_serving_execution_admission_critical_section`) |
+| Two `ActivationService` instances, shared in-mem state | **MUST FAIL CLOSED** (separate `_environment_lock` maps) |
+| One `SqliteAgentDistributionDatabase`, multiple stores on same `_db` | **SUPPORTED** for mutations (shared `_activation_lock`); admission **REQUIRES NEW ARCHITECTURE** (domain bridge) |
+| Two `SqliteAgentDistributionDatabase` same path | **MUST FAIL CLOSED** (duplicate writer objects; lock not shared) |
+| Two connections, one process | Reads via `_refresh`; writes serialize per object — cross-connection snapshot **REQUIRES NEW ARCHITECTURE** for admission |
+| Two OS processes, one SQLite file | **MUST FAIL CLOSED** for A1 writer claim; **OPTION B** or strict external ops forbiddance |
+
+### 11.4 Options disposition
+
+| Option | Summary | @ HEAD |
+|--------|---------|--------|
+| **A1 — Strict process-exclusive owner** | One process owns adapter + mutations + admission. | **Recommended** for DEC-01 A1 **iff** operator ratifies DEC-09 + **DEC-09-EXT**: composition validation + SQLite domain bridge + consistent read — **not production-ready** until D1-R6 + audit. Exclusivity vs **hostile** second process: **not enforceable** without authorized lease mechanism → operational + fail-closed config. |
+| **A2 — Readers in second process** | Second process may read SQLite. | **REQUIRES NEW ARCHITECTURE** to prove read-only; SQLite file permissions are **environment** concern, not platform contract @ HEAD. Writer attempt: **undefined** — treat as **MUST FAIL CLOSED** for qualification. |
+| **B — Store-coordinated multi-process** | Shared coordination contract for transitions. | **Alternative**; SQLite could be first store **only** with new ratified coordinator spanning processes — **not** ratified; defer. |
+
+**STOP — ARCHITECTURE DECISION REQUIRED:** Ratify **DEC-09-EXT** (`ActivationDomainCoordinator` protocol + composition binding) before D1-R6 claims SQLite admission PASS.
+
+### 11.5 Recommended architecture (proposal — not permission)
+
+| Element | Owner |
+|---------|-------|
+| Semantic activation / serving truth | **Agent Distribution** (`ActivationService`, canonical stores) |
+| Composition / topology gate | **Applications shared** production lifecycle opener |
+| Physical unit + in-flight gate | **VenvBundleColocatedRuntimeDeploymentAdapter** |
+| Execution admission verify | **Agent Distribution** (`serving_execution_admission` — no grant registry) |
+| GCA | Consumer via `StoreBackedColocatedServingUnitExecutionAdmission` only |
+| Enforcement point | **Composition startup** (reject unsupported topology) + **domain bridge** at admit / pointer mutation linearization |
+| Unsupported | Multi-process writers; duplicate DB objects; grant tokens; direct accessor admit on prod graph |
+
+### 11.6 Serialization model (linearization points)
+
+| Operation | Precondition | Owning contract | Pointer / txn domain | Physical effect | On failure |
+|-----------|--------------|-----------------|----------------------|-----------------|------------|
+| Forward activation | validated revision, governance | `ActivationService.commit_activation` | `mutation_transaction` / env lock | prior drain optional | rollback activation txn |
+| Rollback | ACTIVE target | `ActivationService` + `atomic_commit_rollback` | same | adapter stop/drain | fail-closed |
+| Open serving admission (handoff) | SERVING + attested unit | handoff bind | **in-mem CS today** | `open_admission` / gate | no durable permission |
+| Reserve in-flight execution | current pointer + SERVING instance | store-backed admit | **domain bridge (proposed)** | `admit_execution` | no reservation |
+| Begin drain | SERVING | `ActivationService.begin_drain` | env lock + adapter | close gate | — |
+| Close admission | drain policy | adapter + AD | adapter lock | gate closed | — |
+| Stop unit | drain complete | adapter `stop` | adapter | unit stopped | FAILED state |
+
+**Ordering rules (proposal):** Admission **after** pointer swap with **stale identity** → **reject**. Admission **before** swap with **live** pointer at verify time → **legitimate**; after swap, new admits see new pointer; in-flight drain rules unchanged. Prior activation **result objects** never authorize execution.
+
+### 11.7 D1-R6 scope delta (conditional on ratification)
+
+| File | Current → required | Owner | Test | Forbidden |
+|------|-------------------|-------|------|-----------|
+| `serving_execution_admission.py` | in-mem-only CS → **domain bridge** + remove grant registry | AD | SQLite concurrent pointer/admit tests | new nonce registry |
+| `sqlite_stores.py` | isolated txns → **coordinator hook** (no schema) | AD | busy/rollback tests | OS file lock |
+| `in_memory_stores.py` | `run_under_activation_domain` → implement shared protocol | AD | in-mem regression | — |
+| `colocated_serving_unit_execution_admission.py` | call bridge | Apps | GCA port tests | bypass verify |
+| `serving_runtime_handoff.py` | gate open inside domain | Apps | handoff tests | grant object |
+| `venv_bundle_colocated_runtime_deployment_adapter.py` | domain-scoped open; narrow `admit_unit_execution` | AD | adapter tests | second authority |
+| `venv_bundle_colocated_serving_unit_runtime_accessor.py` | guard direct admit | Apps | negative wiring | prod reachability |
+| `production_process_composition.py` / lifecycle opener | **topology validation** | Apps | fail-closed startup tests | silent multi-writer |
+| `reference_production_lifecycle.py` | align durable wiring | Apps | D1/D1b regressions | duplicate bundle |
+
+### 11.8 Acceptance specification (32 points — **NOT PASS** until D1-R6 implemented)
+
+Items 1–30 from §7 remain; add:
+
+31. **D0/D1/D1b** rollback and attestation tests remain green after domain bridge.
+
+32. Material failures emit actionable evidence **without** creating authority (no READY inference, no grant).
+
+(§7 items 1–30 unchanged — design evidence does **not** mark PASS.)
+
+### 11.9 Enterprise audit matrix (D1-R5-R1)
+
+| Requirement | HEAD evidence | Proposed target | Status | Gap |
+|-------------|---------------|-----------------|--------|-----|
+| Cross-process single-writer | none | composition gate + ops policy | **BLOCKED** | no lease @ HEAD |
+| SQLite admission CS | fail-closed | DEC-09-EXT bridge | **BLOCKED** | D1-R6 |
+| Consistent multi-store read | independent `_refresh` | coordinator snapshot | **BLOCKED** | D1-R6 |
+| No shadow registry | grant dict exists | remove | **BLOCKED** | D1-R6 |
+| FRZ-PRD-03 unsupported topology | partial docs | startup validation | **OPEN** | D1-R6 |
+| FRZ-PRD-11 concurrency | in-mem tests only | SQLite determinism | **OPEN** | D1-R6 |
+
+### 11.10 Tenant Isolation Audit (D1-R5-R1 scope)
+
+**Scope:** single application environment activation domain; tenant binding via `ApplicationEnvironmentTenantResolver` + governance on control-plane mutation — **unchanged**. **State isolation:** serving records keyed by `(application_id, application_environment_id)`; cross-environment write requires store API with distinct keys — no new tenant leak introduced by proposal. **Cross-process same file:** operational misconfiguration could merge environments only if operators share one DB for multiple envs — **fail-closed topology validation** must forbid unintended sharing (**FRZ-TEN** supporting). **N/A:** per-tenant SQLite file sharding — not in DEC-09 scope.
+
+### 11.11 Post-step discovery & roadmap completeness
+
+| Question | Result |
+|----------|--------|
+| New parent blocker? | **No** — corrective under **D1-R5** / **D1/D1b**; **PROD-Q-R1-R7** remains **BLOCKED**. |
+| Mandatory task misclassified as debt? | **No** — D1-R6 explicitly carries SQLite domain + grant removal. |
+| Additional children? | **D1-R6** only after **DEC-09** + **DEC-09-EXT** ratification; no new roadmap row. |
+| Canonical ordering intact? | **Yes** — D1-R5-R1 does not reorder roadmap stages. |
+| Downstream FRZ change? | **FRZ-PRD-11** gains explicit SQLite concurrency evidence requirement when D1-R6 lands. |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
