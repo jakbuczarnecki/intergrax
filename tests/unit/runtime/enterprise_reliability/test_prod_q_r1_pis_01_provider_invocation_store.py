@@ -273,11 +273,16 @@ class _CommitBoundaryTestStore(SQLiteProviderInvocationStore):
         conn: sqlite3.Connection,
         *,
         pending_invocation_id: str | None = None,
+        pending_outcome_id: str | None = None,
     ) -> None:
         type(self)._active_fail_commit = self.fail_commit
         type(self)._active_noop_rollback = self.noop_rollback
         try:
-            super()._commit_transaction(conn, pending_invocation_id=pending_invocation_id)
+            super()._commit_transaction(
+                conn,
+                pending_invocation_id=pending_invocation_id,
+                pending_outcome_id=pending_outcome_id,
+            )
         finally:
             type(self)._active_fail_commit = False
             type(self)._active_noop_rollback = False
@@ -486,3 +491,162 @@ def test_pis_n22_no_dispatch_when_store_sealed_after_uncertain_write(
         gate.dispatch_after_intent_persisted(inv, _execute)
     assert calls == 0
     store_reopened.close()
+
+
+class _MarkerFaultTestStore(_CommitBoundaryTestStore):
+    fail_marker_persist: bool = False
+
+    def _persist_uncertain_write_marker(self) -> None:
+        if self.fail_marker_persist:
+            raise ProviderInvocationPersistenceError("simulated marker persist failure")
+        super()._persist_uncertain_write_marker()
+
+
+def _uncertain_write_meta_present(db_path: Path) -> bool:
+    conn = _open_raw_sqlite(db_path)
+    try:
+        row = conn.execute(
+            "SELECT value FROM provider_invocation_store_meta WHERE key = ?",
+            ("durable_write_uncertain",),
+        ).fetchone()
+        return row is not None and row[0] == "1"
+    finally:
+        conn.close()
+
+
+def test_pis_n23_uncertainty_marker_persistence_failure_surfaces(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "marker-fail.db"
+    store = _MarkerFaultTestStore(db_path)
+    inv = _invocation("inv-marker-fail")
+    store.fail_commit = True
+    store.noop_rollback = True
+    store.fail_marker_persist = True
+
+    with pytest.raises(
+        ProviderInvocationPersistenceError,
+        match="marker persist failure|write-uncertainty marker",
+    ):
+        store.insert_invocation_if_absent(inv)
+
+    assert not _uncertain_write_meta_present(db_path)
+    with pytest.raises(ProviderInvocationPersistenceError, match="uncertain"):
+        store.get_invocation(inv.invocation_id)
+    store.close()
+
+
+def test_pis_n24_restart_after_marker_persistence_failure_no_durable_seal(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "marker-fail-restart.db"
+    store = _MarkerFaultTestStore(db_path)
+    inv = _invocation("inv-marker-restart")
+    store.fail_commit = True
+    store.fail_marker_persist = True
+
+    with pytest.raises(ProviderInvocationPersistenceError):
+        store.insert_invocation_if_absent(inv)
+    assert not _uncertain_write_meta_present(db_path)
+    store.close()
+
+    reopened = open_provider_invocation_store_at(db_path)
+    assert reopened.get_invocation(inv.invocation_id) is None
+    assert reopened.insert_invocation_if_absent(inv) is (
+        ProviderInvocationIntentWriteResult.INSERTED
+    )
+    reopened.close()
+
+
+def test_pis_n25_outcome_ambiguous_commit_marks_uncertain_on_reopen(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "outcome-uncertain.db"
+    store = _CommitBoundaryTestStore(db_path)
+    inv = _invocation("inv-outcome-uncertain")
+    store.put_invocation(inv)
+    outcome = _outcome("inv-outcome-uncertain")
+    store.fail_commit = True
+    store.noop_rollback = True
+
+    with pytest.raises(ProviderInvocationPersistenceError):
+        store.put_outcome(outcome)
+
+    store.close()
+    reopened = open_provider_invocation_store_at(db_path)
+    with pytest.raises(ProviderInvocationPersistenceError, match="uncertain"):
+        reopened.get_outcome(outcome.invocation_id)
+    assert _uncertain_write_meta_present(db_path)
+    reopened.close()
+
+
+def test_pis_n26_outcome_rollback_failure_marks_uncertain_in_process(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "outcome-rollback-fail.db"
+    store = _CommitBoundaryTestStore(db_path)
+    inv = _invocation("inv-outcome-rb-fail")
+    store.put_invocation(inv)
+    outcome = _outcome("inv-outcome-rb-fail")
+
+    class _RollbackFailOnOutcome(_CommitBoundaryTestStore):
+        @classmethod
+        def _connection_rollback(cls, conn: sqlite3.Connection) -> None:
+            if getattr(cls, "_active_outcome_rollback_fail", False):
+                raise sqlite3.OperationalError("simulated outcome rollback failure")
+            super()._connection_rollback(conn)
+
+        def put_outcome(self, outcome: ProviderInvocationOutcome) -> None:
+            type(self)._active_outcome_rollback_fail = self.fail_commit
+            try:
+                super().put_outcome(outcome)
+            finally:
+                type(self)._active_outcome_rollback_fail = False
+
+    rb_store = _RollbackFailOnOutcome(db_path)
+    rb_store.fail_commit = True
+    with pytest.raises(ProviderInvocationPersistenceError):
+        rb_store.put_outcome(outcome)
+    with pytest.raises(ProviderInvocationPersistenceError, match="uncertain"):
+        rb_store.get_outcome(outcome.invocation_id)
+    rb_store.close()
+
+
+def test_pis_n27_safe_repeated_intent_admission_after_reopen(tmp_path: Path) -> None:
+    db_path = tmp_path / "intent-reopen.db"
+    inv = _invocation("inv-reopen-admit")
+    store_a = open_provider_invocation_store_at(db_path)
+    assert store_a.insert_invocation_if_absent(inv) is (
+        ProviderInvocationIntentWriteResult.INSERTED
+    )
+    store_a.close()
+
+    store_b = open_provider_invocation_store_at(db_path)
+    assert store_b.insert_invocation_if_absent(inv) is (
+        ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP
+    )
+    store_b.close()
+
+
+def test_pis_n28_no_second_execute_when_durable_intent_without_outcome(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "intent-no-redispatch.db"
+    inv = _invocation("inv-existing-intent")
+    store_a = open_provider_invocation_store_at(db_path)
+    store_a.put_invocation(inv)
+    store_a.close()
+
+    store_b = open_provider_invocation_store_at(db_path)
+    gate = GovernedProviderInvocationDispatchGate(store=store_b, clock=lambda: _T0)
+    calls = 0
+
+    def _execute() -> str:
+        nonlocal calls
+        calls += 1
+        return "ok"
+
+    with pytest.raises(ProviderInvocationPersistenceError, match="dispatch_not_admitted"):
+        gate.dispatch_after_intent_persisted(inv, _execute)
+    assert calls == 0
+    store_b.close()

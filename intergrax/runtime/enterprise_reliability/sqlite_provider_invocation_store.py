@@ -223,6 +223,7 @@ class SQLiteProviderInvocationStore(ProviderInvocationStore):
         )
 
     def _persist_uncertain_write_marker(self) -> None:
+        """Best-effort separate transaction; not atomic with the failed write txn."""
         try:
             conn = sqlite3.connect(self._db_path)
             try:
@@ -236,8 +237,10 @@ class SQLiteProviderInvocationStore(ProviderInvocationStore):
                 conn.commit()
             finally:
                 conn.close()
-        except sqlite3.Error:
-            pass
+        except sqlite3.Error as exc:
+            raise ProviderInvocationPersistenceError(
+                "failed to persist durable provider invocation write-uncertainty marker",
+            ) from exc
 
     def _bootstrap_schema(self) -> None:
         with self._managed_connection() as conn:
@@ -295,11 +298,23 @@ class SQLiteProviderInvocationStore(ProviderInvocationStore):
         ).fetchone()
         return row is not None
 
+    def _outcome_row_visible(
+        self,
+        conn: sqlite3.Connection,
+        invocation_id: str,
+    ) -> bool:
+        row = conn.execute(
+            "SELECT 1 FROM provider_invocation_outcomes WHERE invocation_id = ?",
+            (invocation_id,),
+        ).fetchone()
+        return row is not None
+
     def _commit_transaction(
         self,
         conn: sqlite3.Connection,
         *,
         pending_invocation_id: str | None = None,
+        pending_outcome_id: str | None = None,
     ) -> None:
         try:
             self._connection_commit(conn)
@@ -314,6 +329,9 @@ class SQLiteProviderInvocationStore(ProviderInvocationStore):
             uncertain = not rollback_ok
             if rollback_ok and pending_invocation_id is not None:
                 if self._invocation_row_visible(conn, pending_invocation_id):
+                    uncertain = True
+            if rollback_ok and pending_outcome_id is not None:
+                if self._outcome_row_visible(conn, pending_outcome_id):
                     uncertain = True
 
             if uncertain:
@@ -413,7 +431,10 @@ class SQLiteProviderInvocationStore(ProviderInvocationStore):
                         "INSERT INTO provider_invocation_outcomes (invocation_id, payload) VALUES (?, ?)",
                         (outcome.invocation_id, _encode_outcome(outcome)),
                     )
-                    self._commit_transaction(conn)
+                    self._commit_transaction(
+                        conn,
+                        pending_outcome_id=outcome.invocation_id,
+                    )
                 except (
                     ProviderInvocationOutcomeConflictError,
                     ProviderInvocationPersistenceError,
