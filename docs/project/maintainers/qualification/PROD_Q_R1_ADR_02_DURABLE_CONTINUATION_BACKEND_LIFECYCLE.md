@@ -6,8 +6,10 @@
 | **Date** | 2026-10-13 |
 | **START_HEAD (ADR-02-R1)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
 | **START_HEAD (ADR-02-R2)** | `3a8a8301b993a18a0a6419a21b417b7ee564ecd9` |
-| **FINAL_COMMIT (docs only)** | `92079cac3f5031437639fa3ed22b0a1cb267b040` |
-| **Revision** | **ADR-02-R2** — atomic mutation / concurrency / crash-durability semantics |
+| **START_HEAD (ADR-02-R3)** | `cd295d7c97ef8a123b4ec4f02540a9a4bce3436d` |
+| **FINAL_COMMIT (docs only)** | *(set at commit — ADR-02-R3)* |
+| **Revision** | **ADR-02-R3** — serialized mutation / persistence transaction boundary (corrects R2) |
+| **Prior revision** | **ADR-02-R2** — **REJECTED** (independent audit: invalid lock release before durable commit; §2.2.0) |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
 | **Related** | **ADR-01** [`PROD_Q_R1_ADR_01_DURABLE_CONTINUATION_OWNERSHIP.md`](PROD_Q_R1_ADR_01_DURABLE_CONTINUATION_OWNERSHIP.md) (**B1** composition ownership, PENDING) · GR-5-R2 · GR-10-R12 · STATE-X **SX-F17** · COMPAT-X `execution_continuation_durable_state.v1` |
@@ -55,11 +57,11 @@ STOP — ARCHITECTURE DECISION REQUIRED (backend / lifecycle)
 
 ---
 
-## 2.2 ADR-02-R2 — Atomic continuation durability (independent recommendation)
+## 2.2 ADR-02-R3 — Serialized durable mutation transaction (independent recommendation)
 
-**Scope:** persistence semantics for production `ExecutionContinuationStateStore` — atomicity, concurrency, crash durability only. **No production code in this revision.**
+**Scope:** persistence semantics for production `ExecutionContinuationStateStore` — single transaction boundary covering validation, CAS, snapshot, persist, publication, ACK. **No production code in this revision.**
 
-**Evidence @ `3a8a8301b993a18a0a6419a21b417b7ee564ecd9`:** behavior of `InMemoryExecutionContinuationStateStore` / shared `ExecutionContinuationDurableBacking`, `ExecutionContinuationDurableStateFilePersistence._atomic_write`, and `ExecutionContinuationService` CAS acknowledgement unchanged from ADR-02-R1 inventory.
+**Evidence @ `cd295d7c97ef8a123b4ec4f02540a9a4bce3436d`:** `ExecutionContinuationDurableBacking._lock` is a non-reentrant `threading.Lock` (`persistence.py`); public store methods and `export_durable_continuation_state` each acquire it independently; `persist_from_backing` exports under lock then writes **outside** lock (`durable_state_file.py`); service ACK follows in-memory CAS only (`service.py`).
 
 ```text
 STOP — ARCHITECTURE DECISION REQUIRED (mutation commit protocol + seal policy acceptance)
@@ -67,99 +69,154 @@ STOP — ARCHITECTURE DECISION REQUIRED (mutation commit protocol + seal policy 
 
 **Maximum status:** **READY FOR ARCHITECTURE DECISION** (not CLOSED).
 
+### 2.2.0 ADR-02-R2 audit disposition (why R3 exists)
+
+Independent audit **rejected ADR-02-R2 §2.2.2 P0–P5** because **P3 released `backing._lock` before durable commit completed**. That ordering:
+
+- allowed **in-process readers** to observe a mutation that might still be rolled back on seal failure;
+- allowed a **second mutator** to advance backing and seal while the first seal was still in flight → **reverse-order durable snapshots**;
+- made **rollback after a concurrent successful seal** unsafe (could regress durable authority);
+- left **in-memory authority ahead of disk** visible to other threads during the vulnerability window.
+
+R3 replaces P0–P5 with one **serialized transaction** that holds the serialization lock across validation, in-memory apply, snapshot, and physical persist, using **lock-held internal mutation/export** (not nested public store calls).
+
 ### 2.2.1 Non-atomic fact (do not assume)
 
-`compare_and_swap` / `begin_current_episode_if_predecessor_allows` and `persist_from_backing` are **independent steps**. Today:
+`compare_and_swap` / `begin_current_episode_if_predecessor_allows` and `persist_from_backing` are **independent steps** on the current code path:
 
 1. Service methods return the updated `PendingExecutionContinuation` **only after in-memory CAS returns `True`** (`service.py`).
 2. File seal is **never** invoked from the store or service on that path.
-3. `export_durable_continuation_state` snapshots `records` + `current_by_identity` under `backing._lock`; `_atomic_write` uses `*.tmp` + `Path.replace` with **no** `fsync` / directory sync (`durable_state_file.py`).
+3. `export_durable_continuation_state` snapshots under `backing._lock`; `_atomic_write` uses `*.tmp` + `Path.replace` with **no** `fsync` / directory sync (`durable_state_file.py`).
 
 Therefore **semantic commit** (in-memory CAS) and **durable commit** (media write) are not coupled unless an explicit production protocol is accepted and implemented.
 
 ### 2.2.2 Mutation transaction — required production protocol (proposed)
 
-**Name:** **synchronous seal-before-ACK** (single-writer, per successful mutating store operation).
+**Name:** **serialized seal-before-ACK** (single-writer, one lock scope per successful mutating store operation).
 
-**Authority:** one `ExecutionContinuationDurableBacking` per process composition; one `ExecutionContinuationDurableStateFilePersistence` (or accepted delegate) owned by the **composition lifecycle** (ADR-01 **B1** binding). **No second CAS engine** — reuse `InMemoryExecutionContinuationStateStore` logic on shared backing (`BackingExecutionContinuationStateStore` / production façade).
+**Authority:** one `ExecutionContinuationDurableBacking` per process composition; one `ExecutionContinuationDurableStateFilePersistence` (or accepted delegate) owned by the **composition lifecycle** (ADR-01 **B1** binding). **No second CAS engine** — reuse the **same** CAS / episode-begin semantics as `InMemoryExecutionContinuationStateStore` on shared backing; production façade orchestrates the transaction only.
 
 **Mutating operations in scope:** `compare_and_swap`, `begin_current_episode_if_predecessor_allows`, and any future production path that changes backing without going through those methods (**forbidden**).
 
-**Commit phases (logical — not one atomic CPU instruction):**
+**Single serialized transaction (logical phases — one `backing._lock` acquisition on the mutating path):**
 
-| Phase | Action | Visible to concurrent readers in-process |
-|-------|--------|------------------------------------------|
-| **P0** | Acquire `backing._lock` | Readers block on lock (existing store behavior) |
-| **P1** | Execute CAS / episode-begin semantics (existing `persistence.py` logic) | If P1 fails → release lock, return `False` (no seal) |
-| **P2** | Build export payload **while holding lock** (same snapshot rule as `export_durable_continuation_state`) | In-memory state reflects P1; disk unchanged |
-| **P3** | Release lock, perform `_atomic_write` (temp + replace) | In-process readers may observe post-P1 memory; **on-disk** still prior generation until replace succeeds |
-| **P4** | On P3 success → return `True` to caller (service ACK) | After replace: restart sees new envelope |
-| **P5** | On P3 failure → **rollback P1 under lock** (restore `expected` snapshot / episode pointers) → raise `STORE_QUERY_FAILED` or return `False` per method contract | Memory matches last successful seal |
+| Phase | Action | Reader / mutator visibility |
+|-------|--------|------------------------------|
+| **T1** | Acquire `backing._lock` once at production façade entry (mutating methods only) | All `load` / resolve paths block until **T7** |
+| **T2** | Validate expected state (CAS equality / episode-predecessor rules) via **lock-held internal primitives** — **not** public `compare_and_swap` / `begin_current_episode_if_predecessor_allows` (those re-acquire `_lock` → **deadlock**) | Unchanged backing if validation fails |
+| **T3** | Apply mutation to backing (same semantics as today's `persistence.py` bodies under lock) | Still uncommitted from caller's perspective until **T7** |
+| **T4** | Build complete durable snapshot payload from backing **under the same lock** (equivalent to `export_durable_continuation_state` without nested acquire) | Snapshot matches post-**T3** backing |
+| **T5** | Physical persist: `_atomic_write` (temp + `Path.replace`) **while still holding `backing._lock`** | Disk unchanged until replace succeeds; in-process observers still blocked |
+| **T6** | **Publication:** on **T5** success, backing and on-disk envelope are aligned for this mutation; no separate in-memory publish step | Committed state |
+| **T7** | Release lock; return `True` to caller (**ACK**) | Readers observe committed state |
 
-**ACK rule (qualification default):** `ExecutionContinuationService` must not observe a successful mutating store result unless **P3 completed**. Equivalently: production store façade **must not** return `True` from `compare_and_swap` / `begin_current_episode_if_predecessor_allows` until durable seal succeeds.
+**Validation failure (T2):** release lock; return `False` / raise per existing contract; **no** **T4**–**T5**.
 
-**Idempotent client / lost response:** If P3 succeeded but the caller did not receive the response (timeout, process kill after seal), a retry with the same `expected` revision receives **`False` / `STALE_REVISION`** at service layer; the durable snapshot already holds `updated` — client must **read** current episode (`load` / `resolve_current_episode_for_identity`). No second durable regression.
+**Persist failure (T5) with known failure:** roll back **T3** under the **same** lock **before** **T7** when rollback is safe (no ACK was delivered; no concurrent mutator ran — guaranteed by lock). Release lock; return `False` or raise `STORE_QUERY_FAILED`; disk remains at last successful **T5**.
 
-**Required behavior — edge cases:**
+**ACK rule (qualification default):** `ExecutionContinuationService` must not observe a successful mutating store result unless **T5** completed successfully. Production façade **must not** return `True` until **T5** succeeds.
 
-| Scenario | Required behavior |
-|----------|-------------------|
-| CAS succeeds, physical write fails | **Rollback P1**; no durable advance; caller **must not** treat mutation as committed; restart loads prior envelope |
-| Process crashes after P1, before P3 | In-memory lost; disk = prior seal → **acknowledged mutation lost** (acceptable only if ACK rule enforced: no ACK before P3; crash mid-P3 leaves prior file intact due to replace-before-rename) |
-| Process crashes during `write_text` on `.tmp` | Main file unchanged; restart = prior seal |
-| P3 succeeds, caller loses response | Durable state = `updated`; retry fails STALE; read path converges |
-| Concurrent reader during unfinished commit | In-process: may see post-P1 memory until rollback or successful P3; **cross-process** readers only see disk after replace — never partial main file |
-| Concurrent mutator | Serialized by `backing._lock` in P0–P2; second mutator gets CAS `False` or episode-begin `False` / errors — **no duplicate CAS engine** |
+**Idempotent client / lost response:** If **T5** succeeded and **T7** returned `True` but the caller did not observe the response, retry with the same `expected` receives **`False` / `STALE_REVISION`** at service layer; durable snapshot already holds `updated` — client must **read** current episode. No durable regression from retry.
 
-**Canonical persistence primitives:** `export_durable_continuation_state` + `ExecutionContinuationDurableStateFilePersistence._atomic_write` **can** implement P2–P3 but **do not** today implement P0–P5 as a single store contract. Existing primitives are **necessary, not sufficient**.
+**Locking evaluation:** existing `backing._lock` **is sufficient** to serialize the full transaction **if** the production façade (a) holds it across **T1**–**T6**, and (b) invokes **lock-assumed** mutation + export helpers instead of public store methods or `export_durable_continuation_state`. Holding the lock across I/O blocks readers and other mutators for seal latency — **accepted** for minimal Option A (single-writer process).
+
+**Rejected patterns:**
+
+| Pattern | Why rejected |
+|---------|----------------|
+| R2 **P3** (release lock, then `_atomic_write`) | Uncommitted in-memory visibility; concurrent seal reordering; unsafe rollback |
+| External lock + call public `compare_and_swap` | Non-reentrant deadlock |
+| Async / batched seal without epoch gate | Out-of-order `replace` → stale snapshot can overwrite newer seal |
+| Second in-memory authority / shadow CAS | Violates single semantic owner |
+
+**Implementation boundary (architecture only — not authorized in this commit):**
+
+- Extract or duplicate **lock-held** CAS / episode-begin / export snapshot builders from `persistence.py` (e.g. `_*_locked` helpers) callable only when `backing._lock` is already held.
+- Production façade calls `_atomic_write` (or a thin delegate) from **T5** without calling `persist_from_backing` as-is (that function releases lock between export and write).
+- Read methods continue to use short `with backing._lock` sections; they never overlap committed visibility with uncommitted **T3** because mutators hold the lock through **T5**.
+
+**Canonical persistence primitives:** `_atomic_write` + envelope schema are **necessary**; `export_durable_continuation_state` / `persist_from_backing` **as wired today** are **not sufficient** for **T1**–**T7** without the lock-held split above.
 
 ### 2.2.3 Concurrency — serialization and durability ordering
 
+| Actor | During transaction **T1**–**T6** (lock held) | After **T7** |
+|-------|-----------------------------------------------|--------------|
+| **Reader** (`load`, resolve) | Blocks; **cannot** observe uncommitted **T3** | Sees last committed backing |
+| **Mutator A** | Holds lock | — |
+| **Mutator B** | Blocks on **T1**; cannot start until A reaches **T7** | Sees A's commit or CAS conflict on retry |
+| **Cross-process reader** | N/A (single-writer file) | Sees disk only after A's completed **T5** (`replace`) |
+
 | Constraint | Rule |
 |------------|------|
-| **Writers** | **Single production process** per continuation file (existing qualification assumption). Multi-writer file access **not** in scope. |
-| **Mutation serialization** | All mutating store entry points hold `backing._lock` for P1–P2; at most one mutator advances backing at a time (existing lock). |
-| **Durability ordering** | **Synchronous seal-before-ACK** ties durability order to mutation order: seal *N* completes before mutator *N+1* receives lock for P1. **No async / batched seal** on the production qualification path without a new ADR (async allows out-of-order `replace` completion → snapshot regression). |
-| **Optional future** | If async seal is ever proposed: envelope must carry monotonic `snapshot_epoch`; media apply must reject `epoch <= durable_epoch` — **not** implemented @ R2 HEAD; **rejected** for minimal production scope. |
-| **Identity invariants** | Unchanged GR-5: single current episode per four-ID; CAS on `continuation_id` + full snapshot equality; no alternate recovery path. |
+| **Writers** | **Single production process** per continuation file. Multi-writer file access **not** in scope. |
+| **Mutation serialization** | At most one mutating transaction per backing; lock spans **T1**–**T6** inclusive. |
+| **Durability ordering** | Seal *N* completes (**T5**) before mutator *N+1* acquires lock (**T1**). **No async seal** on qualification path without new ADR + monotonic `snapshot_epoch` reject-old apply. |
+| **Identity invariants** | Unchanged GR-5: four-ID current episode; CAS on `continuation_id` + full snapshot equality; no alternate recovery authority. |
 
-### 2.2.4 Crash durability matrix (honest guarantees)
+### 2.2.4 Persistence failure and crash semantics
 
-Backend for minimal scope: **Option A** file envelope (`execution_continuation_durable_state.v1`) + temp + `Path.replace` @ R2 HEAD.
+Backend for minimal scope: **Option A** — `execution_continuation_durable_state.v1` + temp + `Path.replace` @ R3 HEAD.
 
-| Event | In-process state after recovery | On-disk after recovery | Qualified durable semantics |
-|-------|--------------------------------|------------------------|----------------------------|
-| Normal exit without final seal | N/A (new process) | Last **successful P3** | Last sealed snapshot |
-| Process crash / `SIGKILL` after ACK (post-P3) | Empty | Last sealed snapshot | **Restart-qualified** to last ACK |
-| Crash after P1, before P3 (protocol violation) | Empty | Prior seal | **Data loss** — prevented by seal-before-ACK, not by atomic CAS |
-| Crash during `.tmp` write | Empty | Prior main file | Prior seal |
-| Crash during `replace` | Empty | FS-dependent; typical POSIX: old or new complete file, not torn main file | **Atomic rename** level |
-| OS crash / power loss | Empty | FS + hardware dependent | **Not qualified @ R2 HEAD** — no `fsync`/`fdatasync` on file or directory, no storage sync evidence |
+#### 2.2.4.1 Persistence failure matrix (runtime)
 
-**Distinction:**
+| Scenario | In-memory after handling | On-disk | Caller ACK | Required store behavior |
+|----------|--------------------------|---------|------------|-------------------------|
+| Failure **before** `replace` (e.g. `.tmp` `write_text` error) | Rolled back **T3** under lock if safe | Prior envelope intact | **No** | `False` / `STORE_QUERY_FAILED` |
+| Exception **during** `replace` | Rolled back **T3** if durable outcome **known** prior; if **unknown**, **no** optimistic rollback | Prior or new complete file per FS; may be **ambiguous** | **No** unless **T5** known success | If outcome **uncertain** → **fail-closed** / `RECONCILIATION_REQUIRED` (§2.2.4.3) |
+| **T5** success, ACK lost on wire | Committed | Updated envelope | Service may retry STALE | Durable truth = committed; read converges |
+| Process crash **before** **T5** completes | Lost (new process) | Prior envelope (`.tmp` may be orphan) | **No** (ACK only after **T5**) | Restart loads prior seal |
+| Process crash **after** **T5**, before/during **T7** | Lost | Updated if `replace` completed | Uncertain to client; durable holds commit | Restart loads new envelope; client reads converge |
+| **T5** success, crash before **T7** | Lost | Updated | Client uncertain | Same as row above — **no second seal regression** when lock serialization enforced |
 
-- **Atomic rename (crash consistency):** a completed `replace` exposes a full prior or full next JSON envelope; qualification already covers corrupt/missing main file fail-closed.
-- **Stable-media / power-loss durability:** **not claimed** for Option A @ R2 HEAD. Promotion requires explicit sync policy + evidence (separate qualification), not inference from `replace`.
+**Rollback safety:** rollback of **T3** is **mandated** only when (1) ACK not yet released, (2) lock still held, (3) durable outcome of **T5** is **known failed**. **Do not** roll back memory to a stale snapshot if durable media may already reflect a **newer** successful **T5** (R2 failure mode). Uncertain I/O → reconciliation, not silent rollback.
 
-### 2.2.5 Ownership (unchanged intent, R2 precision)
+#### 2.2.4.2 Crash / restart matrix (process-crash consistency)
+
+| Event | On-disk after recovery | Restart-qualified semantics |
+|-------|------------------------|----------------------------|
+| Normal exit | Last successful **T5** | Last sealed snapshot |
+| `SIGKILL` after ACK (**T7**) | Last successful **T5** | Matches last ACK |
+| Crash during `.tmp` write | Prior main file | Prior seal |
+| Crash during `replace` | FS-dependent; typical: old **or** new complete file, not torn main | **Atomic rename** level only |
+| OS crash / power loss | FS + hardware dependent | **Not qualified** — no `fsync` / dir sync @ HEAD |
+
+#### 2.2.4.3 Commit outcome uncertain after I/O failure
+
+If **T5** cannot classify success vs failure (partial write, ambiguous `replace`, driver error without stable post-condition):
+
+- Production store enters **explicit fail-closed** or **`RECONCILIATION_REQUIRED`** state: **no further mutating** operations on that backing until reload from disk or operator-approved reconciliation proves whether main file matches memory.
+- **Must not** continue with divergent in-memory vs durable authority.
+- **Must not** assume rollback is safe.
+
+### 2.2.5 Durability levels and PROD-Q qualification stance
+
+| Level | Claimed @ Option A + §2.2.2? | Notes |
+|-------|------------------------------|-------|
+| **Process-crash consistency** (single-writer, seal-before-ACK) | **Yes — target of this protocol** | ACK only after **T5**; lock prevents uncommitted visibility |
+| **Atomic file replacement** (`Path.replace`) | **Yes — bounded** | Completed replace → prior or next full envelope |
+| **OS-crash / power-loss durability** | **No** | `Path.replace` without `fsync` / directory sync; **do not claim** |
+
+**PROD-Q reference qualification:** serialized seal-before-ACK + rename-level atomicity is **sufficient as the documented default** for HITL pause/resume restart **subject to independent audit** of the production façade implementing **T1**–**T7**. **FRZ-PRD-04** remains **OPEN** until full PROD-Q chain PASS. **Power-loss / stable-media** durability remains an **OPEN** additional requirement (separate sync policy ADR + evidence) — not inferable from `replace` alone.
+
+### 2.2.6 Ownership (unchanged intent, R3 precision)
 
 | Role | Owner @ proposed production shape |
 |------|-------------------------------------|
 | **Semantic / CAS authority** | `ExecutionContinuationStateStore` contract; logic in `persistence.py` on shared backing — **one** engine |
 | **Composition / injection** | ADR-01 **B1** — `ProductionProcessComposition` retains one store instance, shared harness → Nexus |
 | **Physical persistence** | Composition-scoped `ExecutionContinuationDurableStateFilePersistence` (path policy at deploy); **only** component that calls `_atomic_write` for continuation |
-| **Mutation→durability coupling** | **New** production store façade (see §2.2.6) — lifecycle owner invokes seal policy; **not** `ExecutionContinuationService` |
+| **Mutation→durability coupling** | **New** production store façade (see §2.2.7) — lifecycle owner invokes seal policy; **not** `ExecutionContinuationService` |
 | **Recovery** | Startup: `load_state_store()` → `ReconstructedDurableExecutionContinuationStateStore`; **no** parallel export/import recovery authority |
 
-### 2.2.6 Backend decision — Options A / B / C (@ R2 HEAD)
+### 2.2.7 Backend decision — Options A / B / C (@ R3 HEAD)
 
 | Option | Verdict | Contract consequences | Migration / smallest valid implementation | Crash guarantees | Limitations |
 |--------|---------|----------------------|-------------------------------------------|------------------|-------------|
-| **A. File persistence + proven mutation→durability protocol** | **RECOMMENDED (pending approval)** | Production store implements §2.2.2 on shared backing + existing envelope; `is_durable=True` only when façade wired; service unchanged | ADR-01 B1 field + factory: restore on activate; **one new class** (e.g. file-backed façade over `BackingExecutionContinuationStateStore`) implementing seal-before-ACK; reuse `ExecutionContinuationDurableStateFilePersistence` | Post-P3 restart per §2.2.4; rename-level atomicity | Single-writer; seal latency on every mutation; no power-loss claim without sync ADR |
-| **B. Existing transactional adapter via continuation contract** | **REJECTED for PROD-Q-R1 minimal scope** | Would require mapping full store CAS + current-episode invariants into row/KV transactions | No continuation-shaped adapter @ HEAD (`ProductionPlatformPersistence` / SQLite patterns serve other domains, e.g. `SQLiteDecisionFinalizationPersistence`, execution lineage `execute_partition_atomic_batch`) | SQLite `synchronous=FULL` proven **only** for those contracts | New schema + adapter = **Option C** work; risk of conflating continuation with terminal/KV stores |
-| **C. New production adapter unavoidable** | **PARTIAL — façade required, not new semantics** | If **A** accepted: new code is **coupling façade + lifecycle**, not a second CAS or alternate envelope | Same as A; optional later: sync-hardened writer or DB backend **replaces P3 implementation** only | Depends on chosen physical layer | Cannot avoid new production type until an existing store implements §2.2.2 — **none** @ R2 HEAD |
+| **A. File persistence + §2.2.2 serialized transaction** | **RECOMMENDED (pending approval)** | Production store implements **T1**–**T7** on shared backing + existing envelope; `is_durable=True` only when façade wired; service unchanged | ADR-01 B1 field + factory: restore on activate; **one new class** (file-backed façade) + **lock-held** helpers; reuse `_atomic_write` | Post-**T5** restart per §2.2.4; rename-level atomicity | Lock held across I/O; single-writer; no power-loss claim without sync ADR |
+| **B. Existing transactional adapter via continuation contract** | **REJECTED for PROD-Q-R1 minimal scope** | Would require mapping full store CAS + current-episode invariants into row/KV transactions | No continuation-shaped adapter @ HEAD (`ProductionPlatformPersistence` / SQLite patterns serve other domains) | SQLite `synchronous=FULL` proven **only** for those contracts | New schema + adapter = **Option C** work |
+| **C. New production adapter unavoidable** | **PARTIAL — façade required, not new semantics** | If **A** accepted: new code is **coupling façade + lifecycle + lock-held helpers**, not a second CAS or alternate envelope | Same as A; optional later: sync-hardened writer replaces **T5** implementation only | Depends on chosen physical layer | Cannot avoid new production type until an existing store implements §2.2.2 — **none** @ R3 HEAD |
 
-If §2.2.2 **seal-before-ACK** is rejected in favor of weaker cadence (e.g. shutdown-only or async seal), retain:
+If §2.2.2 **serialized seal-before-ACK** is rejected in favor of weaker cadence (e.g. shutdown-only or async seal), retain:
 
 ```text
 STOP — ARCHITECTURE DECISION REQUIRED
@@ -167,25 +224,31 @@ STOP — ARCHITECTURE DECISION REQUIRED
 
 and do **not** ship a provisional wrapper without accepted policy.
 
-### 2.2.7 Minimum implementation stages (after ADR acceptance only)
+### 2.2.8 Minimum implementation stages (after ADR acceptance only)
 
-1. **Accept** §2.2.2 seal-before-ACK + §2.2.4 crash claims (rename-level only).
+1. **Accept** §2.2.2 **T1**–**T7** + §2.2.4–§2.2.5 durability claims (process-crash + rename-level only).
 2. **ADR-01 B1:** composition owns backing + file persistence path + store façade reference.
-3. **Implement** production store façade: mutating methods execute §2.2.2 P0–P5; read methods delegate under `backing._lock` only (no seal).
+3. **Implement** production store façade: mutating methods execute §2.2.2 **T1**–**T7** via lock-held helpers (no nested public CAS); read methods use short lock sections only (no seal).
 4. **Startup:** `load_state_store()` or empty backing + missing-file policy; **no** `wire_execution_continuation_state_store(None)` on strict path.
-5. **Qualification:** GR-10-R12 true process restart on composition path; negative suite §2.2.8; STATE-X SX-F17 reconciliation; FRZ-PRD-04 remains **OPEN** until independent PASS.
+5. **Qualification:** GR-10-R12 true process restart on composition path; negative suite §2.2.9; STATE-X SX-F17 reconciliation; FRZ-PRD-04 remains **OPEN** until independent PASS.
 
-### 2.2.8 Required negative qualification tests (architecture-mandated)
+### 2.2.9 Required negative qualification tests (architecture-mandated)
 
 | ID | Intent |
 |----|--------|
-| **NEG-SEAL-01** | Inject P3 failure after successful P1 → in-memory rollback; disk unchanged; service does not return success |
-| **NEG-SEAL-02** | Post-P3 restart in new OS process → loaded state matches last ACK mutation (records + `current_by_identity`) |
+| **NEG-SEAL-01** | Inject **T5** failure after successful **T3** → in-memory rollback under lock; disk unchanged; service does not return success |
+| **NEG-SEAL-02** | Post-**T5** restart in new OS process → loaded state matches last ACK mutation (records + `current_by_identity`) |
 | **NEG-SEAL-03** | Corrupt / truncated main file → `CORRUPT_CONTINUATION_STATE` on load (existing unit pattern) |
-| **NEG-SEAL-04** | Concurrent mutators: one succeeds, other `STALE_REVISION` / CAS `False`; durable file equals successful mutation only |
+| **NEG-SEAL-04** | Concurrent mutators: one completes **T7**, other `STALE_REVISION` / CAS `False`; durable file equals successful mutation only |
 | **NEG-SEAL-05** | `is_durable=True` store without seal wiring → static/composition gate **fail closed** (no silent in-memory production authority) |
 | **NEG-SEAL-06** | Lost-response simulation: after ACK, retry same CAS with old `expected` → STALE; `load` returns committed `updated` |
-| **NEG-SEAL-07** | Documented **non-goal:** power-loss without sync — test must not assert survival unless sync ADR adds P3-bis sync |
+| **NEG-SEAL-07** | Documented **non-goal:** power-loss without sync — test must not assert survival unless sync ADR adds post-**T5** fsync/dir-sync |
+| **NEG-SEAL-08** | Concurrent mutations A then B: durable seal order matches commit order; **no** reverse-order durable seals (regression guard for R2 P3) |
+| **NEG-SEAL-09** | Reader during in-flight transaction: cannot observe **T3** state before **T7** (blocked on `backing._lock`) |
+| **NEG-SEAL-10** | **T5** failure on mutator A does not erase or regress durable state from a prior successful **T5** on another identity / earlier commit |
+| **NEG-SEAL-11** | Stale in-flight seal (hypothetical async or miswired path) cannot `replace` a newer on-disk envelope — qualification uses serialized **T1**–**T7** only; miswire must fail closed |
+| **NEG-SEAL-12** | Simulated ambiguous **T5** outcome → store enters fail-closed / reconciliation-required; no further mutating ACK until reconciled |
+| **NEG-SEAL-13** | Façade does not call public `compare_and_swap` / `export_durable_continuation_state` while holding `backing._lock` (deadlock / static guard) |
 
 ---
 
@@ -286,12 +349,19 @@ Production GCA @ START_HEAD: no edge from factory/composition to file persistenc
 
 ### Mutation → durability → acknowledgement flow
 
+**Current @ HEAD (not production-qualified):**
+
 ```text
-Client → ExecutionContinuationService.apply_resolution / resume / _commit_lifecycle_transition
-  → store.compare_and_swap (in-process, lock)
-  → on True: return updated PendingExecutionContinuation to caller  [ACK]
-  → (no automatic step) persist_from_backing
-  → optional later: export snapshot → atomic file replace  [DURABLE only if seal runs]
+Client → ExecutionContinuationService → store.compare_and_swap (short lock)
+  → on True: ACK to caller
+  → (no automatic seal) persist_from_backing [export under lock, write outside lock]
+```
+
+**Required after ADR-02-R3 acceptance (architecture target — not implemented @ HEAD):**
+
+```text
+Client → ExecutionContinuationService → production façade mutator
+  → T1..T7: single lock scope — validate, CAS, snapshot, _atomic_write, ACK
 ```
 
 ### Crash / restart failure matrix
@@ -353,7 +423,18 @@ Independent of B1 merge, backend must show:
 | **FRZ-PRD-04** | **OPEN** |
 | **ADR-01 B1** | **PENDING / NOT APPROVED** |
 | **ADR-02 backend** | **PENDING / NOT APPROVED** (this record) |
-| **Unresolved for closure** | **Explicit approval** of ADR-02-R2 §2.2.2 seal-before-ACK; B1 composition field; production façade implementation; qualification true-restart on sanctioned launcher path |
+| **Unresolved for closure** | **Explicit approval** of ADR-02-R3 §2.2.2 serialized seal-before-ACK (**T1**–**T7**); B1 composition field; production façade + lock-held helpers; qualification true-restart on sanctioned launcher path |
+
+**Independent-audit blockers (ADR-02-R3):**
+
+| Blocker | Verification target |
+|---------|---------------------|
+| **Lock scope** | Production mutating path holds `backing._lock` from **T1** through **T5**; no public store/export call that re-acquires `_lock` |
+| **Visibility** | No reader observes pre-**T7** mutation; NEG-SEAL-09 |
+| **Seal ordering** | NEG-SEAL-08 / NEG-SEAL-11 |
+| **Failure / ambiguity** | NEG-SEAL-01, NEG-SEAL-12; no silent memory–disk divergence |
+| **Durability claims** | Process-crash + `replace` only; power-loss **OPEN** (§2.2.5) |
+| **R2 regression** | Any seal-after-unlock design remains **invalid** |
 
 ---
 
@@ -361,7 +442,7 @@ Independent of B1 merge, backend must show:
 
 1. **ADR-01 B1:** `ProductionProcessComposition.execution_continuation_state_store` (or approved lifecycle handle) + GCA forward — binding only.
 2. **ADR-02:** composition-scoped factory: restore on activate, shared `ExecutionContinuationDurableBacking`, inject `ReconstructedDurableExecutionContinuationStateStore` (or approved delegate) with **`is_durable=True` only when seal policy is wired**.
-3. **Seal policy implementation (ADR-02-R2):** production store façade — §2.2.2 P0–P5 (seal-before-ACK, rollback on seal failure); reuse export + file atomic write; **no** new episode/CAS semantics.
+3. **Seal policy implementation (ADR-02-R3):** production store façade — §2.2.2 **T1**–**T7** (lock-held serialized seal-before-ACK); reuse `_atomic_write` + lock-held export; **no** new episode/CAS semantics.
 4. Qualification: GR-10-R12 true process restart + corrupt file fail-closed on composition path; STATE-X SX-F17 row update; production delta = 0.
 
 **Not in scope:** alternate envelope, second continuation authority, production wiring in this analysis commit.
