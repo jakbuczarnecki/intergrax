@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -228,17 +229,13 @@ def test_pis_n12_concurrent_gate_at_most_one_execute(
     assert len(errors) == 11
 
 
-def test_pis_n13_uncertain_commit_no_dispatch(sqlite_store: SQLiteProviderInvocationStore) -> None:
+def test_pis_n13_uncertain_commit_no_dispatch(
+    sqlite_store: SQLiteProviderInvocationStore,
+) -> None:
     inv = _invocation("inv-uncertain")
-
-    class _UncertainInsert(SQLiteProviderInvocationStore):
-        def insert_invocation_if_absent(self, invocation: ProviderInvocation):
-            raise ProviderInvocationPersistenceError("commit outcome unknown")
-
-    gate = GovernedProviderInvocationDispatchGate(
-        store=_UncertainInsert(sqlite_store.db_path),
-        clock=lambda: _T0,
-    )
+    boundary_store = _CommitBoundaryTestStore(sqlite_store.db_path)
+    boundary_store.fail_commit = True
+    gate = GovernedProviderInvocationDispatchGate(store=boundary_store, clock=lambda: _T0)
     calls = 0
 
     def _execute() -> str:
@@ -246,6 +243,246 @@ def test_pis_n13_uncertain_commit_no_dispatch(sqlite_store: SQLiteProviderInvoca
         calls += 1
         return "ok"
 
-    with pytest.raises(ProviderInvocationPersistenceError, match="unknown"):
+    with pytest.raises(ProviderInvocationPersistenceError):
         gate.dispatch_after_intent_persisted(inv, _execute)
     assert calls == 0
+    assert boundary_store.get_invocation(inv.invocation_id) is None
+    boundary_store.close()
+
+
+class _CommitBoundaryTestStore(SQLiteProviderInvocationStore):
+    """Injects SQLite commit/rollback failures at the store commit boundary."""
+
+    fail_commit: bool = False
+    noop_rollback: bool = False
+
+    @classmethod
+    def _connection_commit(cls, conn: sqlite3.Connection) -> None:
+        if getattr(cls, "_active_fail_commit", False):
+            raise sqlite3.OperationalError("simulated commit failure at boundary")
+        super()._connection_commit(conn)
+
+    @classmethod
+    def _connection_rollback(cls, conn: sqlite3.Connection) -> None:
+        if getattr(cls, "_active_noop_rollback", False):
+            return
+        super()._connection_rollback(conn)
+
+    def _commit_transaction(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        pending_invocation_id: str | None = None,
+    ) -> None:
+        type(self)._active_fail_commit = self.fail_commit
+        type(self)._active_noop_rollback = self.noop_rollback
+        try:
+            super()._commit_transaction(conn, pending_invocation_id=pending_invocation_id)
+        finally:
+            type(self)._active_fail_commit = False
+            type(self)._active_noop_rollback = False
+
+
+def _open_raw_sqlite(db_path: Path) -> sqlite3.Connection:
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    return conn
+
+
+def test_pis_n14_malformed_invocation_json_fails_closed(
+    sqlite_store: SQLiteProviderInvocationStore,
+) -> None:
+    conn = _open_raw_sqlite(sqlite_store.db_path)
+    conn.execute(
+        "INSERT INTO provider_invocation_intents (invocation_id, payload) VALUES (?, ?)",
+        ("inv-bad-json", "{not-json"),
+    )
+    conn.commit()
+    conn.close()
+    with pytest.raises(ProviderInvocationPersistenceError, match="corrupt"):
+        sqlite_store.get_invocation("inv-bad-json")
+
+
+def test_pis_n15_malformed_outcome_json_fails_closed(
+    sqlite_store: SQLiteProviderInvocationStore,
+) -> None:
+    conn = _open_raw_sqlite(sqlite_store.db_path)
+    conn.execute(
+        "INSERT INTO provider_invocation_outcomes (invocation_id, payload) VALUES (?, ?)",
+        ("inv-bad-outcome", "[]"),
+    )
+    conn.commit()
+    conn.close()
+    with pytest.raises(ProviderInvocationPersistenceError, match="corrupt|invalid"):
+        sqlite_store.get_outcome("inv-bad-outcome")
+
+
+def test_pis_n16_invalid_typed_invocation_payload_fails_closed(
+    sqlite_store: SQLiteProviderInvocationStore,
+) -> None:
+    conn = _open_raw_sqlite(sqlite_store.db_path)
+    conn.execute(
+        "INSERT INTO provider_invocation_intents (invocation_id, payload) VALUES (?, ?)",
+        (
+            "inv-bad-typed",
+            '{"schema_version":"provider_invocation.v1","invocation_id":"x"}',
+        ),
+    )
+    conn.commit()
+    conn.close()
+    with pytest.raises(ProviderInvocationPersistenceError, match="invalid"):
+        sqlite_store.get_invocation("inv-bad-typed")
+
+
+def test_pis_n17_missing_schema_metadata_fails_closed(tmp_path: Path) -> None:
+    db_path = tmp_path / "missing-meta.db"
+    conn = _open_raw_sqlite(db_path)
+    conn.execute(
+        """
+        CREATE TABLE provider_invocation_store_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+        """,
+    )
+    conn.execute(
+        """
+        CREATE TABLE provider_invocation_intents (
+            invocation_id TEXT PRIMARY KEY,
+            payload TEXT NOT NULL
+        );
+        """,
+    )
+    conn.execute(
+        """
+        CREATE TABLE provider_invocation_outcomes (
+            invocation_id TEXT PRIMARY KEY,
+            payload TEXT NOT NULL
+        );
+        """,
+    )
+    conn.commit()
+    conn.close()
+    with pytest.raises(ProviderInvocationPersistenceError, match="missing"):
+        open_provider_invocation_store_at(db_path)
+
+
+def test_pis_n18_unsupported_schema_version_fails_closed(tmp_path: Path) -> None:
+    db_path = tmp_path / "future-schema.db"
+    conn = _open_raw_sqlite(db_path)
+    for ddl in (
+        """
+        CREATE TABLE provider_invocation_store_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE provider_invocation_intents (
+            invocation_id TEXT PRIMARY KEY,
+            payload TEXT NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE provider_invocation_outcomes (
+            invocation_id TEXT PRIMARY KEY,
+            payload TEXT NOT NULL
+        );
+        """,
+    ):
+        conn.execute(ddl)
+    conn.execute(
+        "INSERT INTO provider_invocation_store_meta (key, value) VALUES (?, ?)",
+        ("schema_version", "99"),
+    )
+    conn.commit()
+    conn.close()
+    with pytest.raises(ProviderInvocationPersistenceError, match="unsupported"):
+        open_provider_invocation_store_at(db_path)
+
+
+def test_pis_n19_incomplete_table_inventory_fails_closed(tmp_path: Path) -> None:
+    db_path = tmp_path / "incomplete.db"
+    conn = _open_raw_sqlite(db_path)
+    conn.execute(
+        """
+        CREATE TABLE provider_invocation_store_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+        """,
+    )
+    conn.execute(
+        "INSERT INTO provider_invocation_store_meta (key, value) VALUES (?, ?)",
+        ("schema_version", "1"),
+    )
+    conn.commit()
+    conn.close()
+    with pytest.raises(ProviderInvocationPersistenceError, match="incomplete"):
+        open_provider_invocation_store_at(db_path)
+
+
+def test_pis_n20_corrupt_read_on_insert_path_preserves_conflict(
+    sqlite_store: SQLiteProviderInvocationStore,
+) -> None:
+    inv = _invocation("inv-insert-decode")
+    sqlite_store.put_invocation(inv)
+    conn = _open_raw_sqlite(sqlite_store.db_path)
+    conn.execute(
+        "UPDATE provider_invocation_intents SET payload = ? WHERE invocation_id = ?",
+        ("{}", "inv-insert-decode"),
+    )
+    conn.commit()
+    conn.close()
+    with pytest.raises(ProviderInvocationPersistenceError):
+        sqlite_store.insert_invocation_if_absent(inv)
+    other = inv.model_copy(update={"task_id": "task-other"})
+    with pytest.raises(ProviderInvocationPersistenceError):
+        sqlite_store.insert_invocation_if_absent(other)
+
+
+def test_pis_n21_commit_boundary_marks_uncertain_when_row_survives(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "uncertain-commit.db"
+    store = _CommitBoundaryTestStore(db_path)
+    inv = _invocation("inv-survives-commit")
+    store.fail_commit = True
+    store.noop_rollback = True
+
+    with pytest.raises(ProviderInvocationPersistenceError):
+        store.insert_invocation_if_absent(inv)
+
+    store.close()
+    reopened = open_provider_invocation_store_at(db_path)
+    with pytest.raises(ProviderInvocationPersistenceError, match="uncertain"):
+        reopened.get_invocation(inv.invocation_id)
+    reopened.close()
+
+
+def test_pis_n22_no_dispatch_when_store_sealed_after_uncertain_write(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "no-dispatch-uncertain.db"
+    store = _CommitBoundaryTestStore(db_path)
+    inv = _invocation("inv-no-dispatch")
+    store.fail_commit = True
+    store.noop_rollback = True
+
+    with pytest.raises(ProviderInvocationPersistenceError):
+        store.insert_invocation_if_absent(inv)
+    store.close()
+
+    store_reopened = open_provider_invocation_store_at(db_path)
+    gate = GovernedProviderInvocationDispatchGate(store=store_reopened, clock=lambda: _T0)
+    calls = 0
+
+    def _execute() -> str:
+        nonlocal calls
+        calls += 1
+        return "ok"
+
+    with pytest.raises(ProviderInvocationPersistenceError, match="uncertain"):
+        gate.dispatch_after_intent_persisted(inv, _execute)
+    assert calls == 0
+    store_reopened.close()
