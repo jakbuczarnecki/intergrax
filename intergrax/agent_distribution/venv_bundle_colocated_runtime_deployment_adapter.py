@@ -29,6 +29,9 @@ from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
 )
+from intergrax.agent_distribution.colocated_venv_unit_runtime_binding import (
+    ColocatedVenvUnitRuntimeBinding,
+)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_resource import (
     ColocatedVenvRuntimeResource,
 )
@@ -147,6 +150,10 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
     def authorize_serving_execution_admission(self, serving_unit_ref: str) -> None:
         """Open execution admission after sanctioned activation/serving handoff (not readiness)."""
         unit = self._require_unit(serving_unit_ref)
+        if unit.serving_admission_authorized:
+            raise VenvBundleColocatedDeploymentError(
+                "serving execution admission already authorized for unit"
+            )
         if unit.lifecycle_state not in {
             DeploymentInstanceState.READY,
             DeploymentInstanceState.SERVING,
@@ -165,6 +172,28 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
     def artifact_root_for_serving_unit(self, serving_unit_ref: str) -> Path:
         """Expose immutable artifact root for composition-side resolver binding."""
         return self._require_unit(serving_unit_ref).artifact_root
+
+    def colocated_unit_runtime_binding(
+        self,
+        serving_unit_ref: str,
+    ) -> ColocatedVenvUnitRuntimeBinding:
+        """Return typed physical runtime binding for composition-side factory resolution."""
+        unit = self._require_live_unit(serving_unit_ref)
+        warmup = unit.runtime_resource.warmup_evidence
+        if warmup is None:
+            raise VenvBundleColocatedDeploymentError(
+                "serving unit physical runtime is not initialized"
+            )
+        return ColocatedVenvUnitRuntimeBinding(
+            serving_unit_ref=unit.serving_unit_ref,
+            application_id=unit.application_id,
+            application_environment_id=unit.application_environment_id,
+            runtime_revision_id=unit.runtime_revision_id,
+            materialization_artifact_digest=unit.materialization_artifact_digest,
+            artifact_root=unit.artifact_root,
+            site_packages=unit.site_packages,
+            physical_runtime_warmup_evidence=warmup,
+        )
 
     def _binding_key(self, revision: RuntimeRevision) -> str:
         digest = revision.materialization_artifact_digest or ""

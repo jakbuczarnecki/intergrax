@@ -4,17 +4,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.agent_distribution.activation import ActivationCommitResult
 from intergrax.agent_distribution.deployment import (
     DeploymentInstanceRecord,
     ServingUnitAttestation,
 )
-from intergrax.agent_distribution.runtime_revision import MaterializationTopology
+from intergrax.agent_distribution.runtime_revision import (
+    MaterializationTopology,
+    RuntimeRevision,
+)
 from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
 from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolver,
@@ -37,8 +41,8 @@ class ColocatedServingUnitRuntimeAccessor(Protocol):
         self,
         *,
         serving_unit_ref: str,
-        revision: object,
-        artifact_root: object,
+        revision: RuntimeRevision,
+        artifact_root: Path,
     ) -> RuntimeAgentFactoryResolver:
         """Return resolver for one warmed colocated unit; lifetime = process."""
         ...
@@ -52,6 +56,13 @@ class ColocatedServingUnitExecutionAdmission(Protocol):
 
     def release_execution(self, serving_unit_ref: str) -> None:
         """Release one in-flight execution slot."""
+
+
+class ColocatedServingExecutionAdmissionAuthority(Protocol):
+    """Opens physical execution admission on the deployment adapter after activation."""
+
+    def authorize_serving_execution_admission(self, serving_unit_ref: str) -> None:
+        """Authorize new execution work for one attested serving unit."""
 
 
 class ServingUnitIdentity(BaseModel):
@@ -100,10 +111,12 @@ def establish_serving_runtime_handoff(
     colocated_accessor: ColocatedServingUnitRuntimeAccessor | None,
     colocated_execution_admission: ColocatedServingUnitExecutionAdmission | None = None,
     topology: MaterializationTopology,
-    artifact_root: object | None = None,
-    authorize_execution_admission: Callable[[str], None] | None = None,
+    artifact_root: Path | None = None,
 ) -> tuple[ServingRuntimeHandoff, ProductionProcessComposition]:
-    """Bind attested unit identity to the authoritative projection resolver instance."""
+    """Bind attested unit identity to the authoritative projection resolver instance.
+
+    Does not grant execution permission or mutate serving admission state.
+    """
     from intergrax.applications._shared.production_process_composition import (
         ProductionProcessComposition,
     )
@@ -149,8 +162,6 @@ def establish_serving_runtime_handoff(
         )
 
     identity = serving_unit_identity_from_attestation(attestation, topology=topology)
-    if authorize_execution_admission is not None:
-        authorize_execution_admission(attestation.serving_unit_ref)
 
     handoff = ServingRuntimeHandoff(
         identity=identity,
@@ -165,6 +176,50 @@ def establish_serving_runtime_handoff(
         serving_runtime_handoff=handoff,
     )
     return handoff, updated
+
+
+def authorize_colocated_serving_execution_after_activation(
+    *,
+    activation_commit: ActivationCommitResult,
+    handoff: ServingRuntimeHandoff,
+    admission_authority: ColocatedServingExecutionAdmissionAuthority,
+) -> None:
+    """Bridge authoritative activation commit evidence to physical execution admission."""
+    identity = handoff.identity
+    serving = activation_commit.serving_record
+    activated = activation_commit.activated_revision
+    candidate = activation_commit.candidate_instance
+
+    if serving.traffic_serving_revision_id != identity.runtime_revision_id:
+        raise ServingRuntimeHandoffError(
+            "activation serving pointer does not match handoff runtime revision"
+        )
+    if serving.application_id != identity.application_id:
+        raise ServingRuntimeHandoffError(
+            "activation serving record application mismatch with handoff identity"
+        )
+    if serving.application_environment_id != identity.application_environment_id:
+        raise ServingRuntimeHandoffError(
+            "activation serving record environment mismatch with handoff identity"
+        )
+    if activated.runtime_revision_id != identity.runtime_revision_id:
+        raise ServingRuntimeHandoffError(
+            "activated revision does not match handoff identity"
+        )
+    if activated.materialization_artifact_digest != identity.materialization_artifact_digest:
+        raise ServingRuntimeHandoffError(
+            "activated revision digest does not match handoff identity"
+        )
+    if candidate.serving_unit_ref != identity.serving_unit_ref:
+        raise ServingRuntimeHandoffError(
+            "candidate deployment instance serving unit mismatch with handoff"
+        )
+    if candidate.runtime_revision_id != identity.runtime_revision_id:
+        raise ServingRuntimeHandoffError(
+            "candidate deployment instance revision mismatch with handoff"
+        )
+
+    admission_authority.authorize_serving_execution_admission(identity.serving_unit_ref)
 
 
 def validate_serving_runtime_handoff_against_projection_evidence(
@@ -189,11 +244,13 @@ def validate_serving_runtime_handoff_against_projection_evidence(
 
 
 __all__ = [
+    "ColocatedServingExecutionAdmissionAuthority",
     "ColocatedServingUnitExecutionAdmission",
     "ColocatedServingUnitRuntimeAccessor",
     "ServingRuntimeHandoff",
     "ServingRuntimeHandoffError",
     "ServingUnitIdentity",
+    "authorize_colocated_serving_execution_after_activation",
     "establish_serving_runtime_handoff",
     "serving_unit_identity_from_attestation",
     "validate_serving_runtime_handoff_against_projection_evidence",

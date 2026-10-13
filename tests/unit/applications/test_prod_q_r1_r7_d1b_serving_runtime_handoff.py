@@ -21,9 +21,13 @@ from intergrax.applications._shared.production_process_composition import (
 from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
 from intergrax.applications._shared.serving_runtime_handoff import (
     ServingRuntimeHandoffError,
+    authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
 )
+from intergrax.agent_distribution.activation import ActivationCommitResult
+from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
+    VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 from intergrax.applications._shared.venv_bundle_colocated_serving_unit_runtime_accessor import (
@@ -140,10 +144,26 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
         colocated_execution_admission=accessor,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
-        authorize_execution_admission=adapter.authorize_serving_execution_admission,
     )
     assert handoff.runtime_agent_factory_resolver is bundle.factory_resolver
     assert updated.serving_runtime_handoff is handoff
+    with pytest.raises(VenvBundleColocatedDeploymentError):
+        adapter.admit_unit_execution(unit_ref)
+    commit = ActivationCommitResult(
+        serving_record=ApplicationEnvironmentServingRecord(
+            application_id="app_a",
+            application_environment_id="env-prod",
+            traffic_serving_revision_id="rev-handoff",
+            serving_pointer_revision=1,
+        ),
+        activated_revision=_revision,
+        candidate_instance=deployment_instance,
+    )
+    authorize_colocated_serving_execution_after_activation(
+        activation_commit=commit,
+        handoff=handoff,
+        admission_authority=adapter,
+    )
     adapter.admit_unit_execution(unit_ref)
     adapter.release_unit_execution(unit_ref)
 
@@ -213,7 +233,21 @@ async def test_colocated_admission_wrapper_accounts_in_flight(tmp_path: Path) ->
         colocated_execution_admission=accessor,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
-        authorize_execution_admission=adapter.authorize_serving_execution_admission,
+    )
+    commit = ActivationCommitResult(
+        serving_record=ApplicationEnvironmentServingRecord(
+            application_id="app_a",
+            application_environment_id="env-prod",
+            traffic_serving_revision_id="rev-handoff",
+            serving_pointer_revision=1,
+        ),
+        activated_revision=_revision,
+        candidate_instance=deployment_instance,
+    )
+    authorize_colocated_serving_execution_after_activation(
+        activation_commit=commit,
+        handoff=handoff,
+        admission_authority=adapter,
     )
     inner = AsyncMock()
     inner.execute = AsyncMock(return_value=object())
