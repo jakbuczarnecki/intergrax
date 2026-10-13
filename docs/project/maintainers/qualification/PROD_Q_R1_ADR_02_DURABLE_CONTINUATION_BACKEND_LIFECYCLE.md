@@ -6,7 +6,7 @@
 | **Date** | 2026-10-13 |
 | **START_HEAD (ADR-02-R1)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
 | **START_HEAD (ADR-02-R2)** | `3a8a8301b993a18a0a6419a21b417b7ee564ecd9` |
-| **FINAL_COMMIT (docs only)** | `9807f2dcda996753a2dbd2c09b857eb6ed34e2d8` |
+| **FINAL_COMMIT (docs only)** | `92079cac3f5031437639fa3ed22b0a1cb267b040` |
 | **Revision** | **ADR-02-R2** — atomic mutation / concurrency / crash-durability semantics |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
