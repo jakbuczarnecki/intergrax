@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+import threading
 from typing import Literal, Protocol
 
 from intergrax.contracts.execution_continuation import (
@@ -67,6 +68,8 @@ class SerializedSealExecutionContinuationStateStore(ExecutionContinuationStateSt
             else file_persistence.atomic_write_export_payload
         )
         self._reconciliation_required = False
+        self._closed = False
+        self._close_guard = threading.Lock()
 
     @property
     def is_durable(self) -> bool:
@@ -78,7 +81,12 @@ class SerializedSealExecutionContinuationStateStore(ExecutionContinuationStateSt
 
     def close(self) -> None:
         """Release single-writer file lease (process shutdown)."""
-        self._writer_lock.close()
+        with self._close_guard:
+            with self._backing._lock:
+                if self._closed:
+                    return
+                self._closed = True
+                self._writer_lock.close()
 
     def load(self, continuation_id: str) -> PendingExecutionContinuation | None:
         with self._backing._lock:
@@ -149,6 +157,16 @@ class SerializedSealExecutionContinuationStateStore(ExecutionContinuationStateSt
         )
 
     def _assert_mutation_allowed(self) -> None:
+        if self._closed:
+            raise ExecutionContinuationError(
+                "durable continuation store is closed",
+                code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+            )
+        if not self._writer_lock.held:
+            raise ExecutionContinuationError(
+                "durable continuation writer lease is not held",
+                code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+            )
         if self._reconciliation_required:
             raise ExecutionContinuationError(
                 "durable continuation store requires reconciliation before further mutations",
@@ -156,49 +174,50 @@ class SerializedSealExecutionContinuationStateStore(ExecutionContinuationStateSt
             )
 
     def _run_sealed_mutation(self, mutate: Callable[[], bool]) -> bool:
-        lock = self._backing._lock
-        lock.acquire()
-        try:
-            self._assert_mutation_allowed()
-            snapshot = snapshot_backing_maps(
-                self._backing._by_id,
-                self._backing._current_by_identity,
-            )
-            applied = mutate()
-            if not applied:
-                return False
-            payload = build_durable_export_payload_from_maps(
-                self._backing._by_id,
-                self._backing._current_by_identity,
-            )
+        with self._close_guard:
+            lock = self._backing._lock
+            lock.acquire()
             try:
-                self._persist_export_payload(payload)
-            except AmbiguousDurablePersistError:
-                self._reconciliation_required = True
-                raise ExecutionContinuationError(
-                    "durable continuation persist outcome is ambiguous",
-                    code=ExecutionContinuationErrorCode.RECONCILIATION_REQUIRED,
-                ) from None
-            except ExecutionContinuationError:
-                restore_backing_maps(
+                self._assert_mutation_allowed()
+                snapshot = snapshot_backing_maps(
                     self._backing._by_id,
                     self._backing._current_by_identity,
-                    snapshot,
                 )
-                raise
-            except OSError as exc:
-                restore_backing_maps(
+                applied = mutate()
+                if not applied:
+                    return False
+                payload = build_durable_export_payload_from_maps(
                     self._backing._by_id,
                     self._backing._current_by_identity,
-                    snapshot,
                 )
-                raise ExecutionContinuationError(
-                    "failed to persist durable continuation state",
-                    code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
-                ) from exc
-            return True
-        finally:
-            lock.release()
+                try:
+                    self._persist_export_payload(payload)
+                except AmbiguousDurablePersistError:
+                    self._reconciliation_required = True
+                    raise ExecutionContinuationError(
+                        "durable continuation persist outcome is ambiguous",
+                        code=ExecutionContinuationErrorCode.RECONCILIATION_REQUIRED,
+                    ) from None
+                except ExecutionContinuationError:
+                    restore_backing_maps(
+                        self._backing._by_id,
+                        self._backing._current_by_identity,
+                        snapshot,
+                    )
+                    raise
+                except OSError as exc:
+                    restore_backing_maps(
+                        self._backing._by_id,
+                        self._backing._current_by_identity,
+                        snapshot,
+                    )
+                    raise ExecutionContinuationError(
+                        "failed to persist durable continuation state",
+                        code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+                    ) from exc
+                return True
+            finally:
+                lock.release()
 
 
 def open_serialized_seal_execution_continuation_state_store(

@@ -118,6 +118,22 @@ def create_governed_contractor_backend_app(
         if process_composition is not None
         else None
     )
+    resolved_execution_continuation_state_store = execution_continuation_state_store
+    if process_composition is not None:
+        composition_continuation_store = (
+            process_composition.execution_continuation_state_store
+        )
+        if composition_continuation_store is not None:
+            if (
+                execution_continuation_state_store is not None
+                and execution_continuation_state_store is not composition_continuation_store
+            ):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host rejects conflicting "
+                    "execution_continuation_state_store injection; bind via "
+                    "ProductionProcessComposition.execution_continuation_state_store",
+                )
+            resolved_execution_continuation_state_store = composition_continuation_store
     if strict_topology_reliability and provider_invocation_store is None:
         raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
             "strict governed contractor production host requires "
@@ -150,7 +166,7 @@ def create_governed_contractor_backend_app(
     if production_mode:
         validate_execution_continuation_for_composition(
             production_mode=True,
-            state_store=execution_continuation_state_store,
+            state_store=resolved_execution_continuation_state_store,
             continuation_explicitly_wired=False,
             continuation_disabled=False,
         )
@@ -173,7 +189,7 @@ def create_governed_contractor_backend_app(
             settings,
         ),
         active_execution_task_scope=resolved_host_runtime.active_execution_task_scope,
-        execution_continuation_state_store=execution_continuation_state_store,
+        execution_continuation_state_store=resolved_execution_continuation_state_store,
         provider_invocation_store=provider_invocation_store,
         require_strict_orchestration_topology_reliability=strict_topology_reliability,
         strict_orchestration_topology_submission_port_builder=(
