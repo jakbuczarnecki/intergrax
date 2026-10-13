@@ -21,9 +21,12 @@ from intergrax.contracts.provider_invocation import (
 )
 from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+from intergrax.contracts.provider_invocation_store import (
+    ProviderInvocationIntentWriteResult,
+)
 from intergrax.runtime.enterprise_reliability.provider_invocation_lifecycle import (
+    admit_provider_invocation_intent,
     build_classified_provider_invocation_outcome,
-    persist_provider_invocation_intent,
     persist_provider_invocation_outcome,
 )
 from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_early_lifecycle import (
@@ -123,17 +126,16 @@ class ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary(
             operation_id=operation_id,
             idempotency_key=idempotency_key,
         )
-        prior_invocation = self.store.get_invocation(invocation.invocation_id)
         prior_outcome = self.store.get_outcome(invocation.invocation_id)
         if prior_outcome is not None:
             self._raise_for_persisted_outcome(prior_outcome)
-        if prior_invocation is not None:
+
+        recorded_at = self.clock()
+        admission = admit_provider_invocation_intent(self.store, invocation)
+        if admission is ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP:
             raise OrchestrationConsequentialEffectUncertaintyError(
                 "durable invocation intent without persisted outcome — effect may have occurred",
             )
-
-        recorded_at = self.clock()
-        persist_provider_invocation_intent(self.store, invocation)
         emit_intent_persisted(
             invocation=invocation,
             tenant_id=self.tenant_id,

@@ -14,6 +14,7 @@ from intergrax.contracts.provider_invocation import (
 )
 from intergrax.contracts.provider_invocation_store import (
     ProviderInvocationConflictError,
+    ProviderInvocationIntentWriteResult,
     ProviderInvocationOutcomeConflictError,
     ProviderInvocationPersistenceError,
     ProviderInvocationStore,
@@ -22,6 +23,19 @@ from intergrax.contracts.provider_invocation_store import (
     provider_invocations_equivalent,
 )
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+
+
+def admit_provider_invocation_intent(
+    store: ProviderInvocationStore,
+    invocation: ProviderInvocation,
+) -> ProviderInvocationIntentWriteResult:
+    """Atomic first-writer admission — dispatch only when ``INSERTED``."""
+    try:
+        return store.insert_invocation_if_absent(invocation)
+    except ProviderInvocationStoreError:
+        raise
+    except Exception as exc:  # noqa: BLE001 — port boundary
+        raise ProviderInvocationPersistenceError(str(exc)) from exc
 
 
 def persist_provider_invocation_intent(
@@ -91,6 +105,7 @@ def build_classified_provider_invocation_outcome(
 
 
 __all__ = [
+    "admit_provider_invocation_intent",
     "build_classified_provider_invocation_outcome",
     "persist_provider_invocation_intent",
     "persist_provider_invocation_outcome",

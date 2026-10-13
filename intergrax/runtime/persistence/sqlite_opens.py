@@ -23,6 +23,10 @@ from intergrax.runtime.organization.stores.sqlite_organization_profile_store imp
 from intergrax.runtime.task_memory.stores.sqlite_task_memory_store import (
     SQLiteTaskMemoryStore,
 )
+from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store import (
+    SQLiteProviderInvocationStore,
+    open_provider_invocation_store_at as _open_provider_invocation_store_at,
+)
 from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 
 
@@ -69,6 +73,10 @@ def open_organization_profile_store_at(path: Path) -> SQLiteOrganizationProfileS
 
 def open_user_profile_store_at(path: Path) -> SQLiteUserProfileStore:
     return SQLiteUserProfileStore(db_path=str(_ensure_parent(path)))
+
+
+def open_provider_invocation_store_at(path: Path) -> SQLiteProviderInvocationStore:
+    return _open_provider_invocation_store_at(_ensure_parent(path))
 
 
 def open_delivery_ledger_at(path: Path):

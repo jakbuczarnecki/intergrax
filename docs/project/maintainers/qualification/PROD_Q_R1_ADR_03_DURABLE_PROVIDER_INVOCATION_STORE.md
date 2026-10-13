@@ -2,9 +2,9 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR ARCHITECTURE DECISION** (independent recommendation — **not ratified**) |
+| **Status** | **RATIFIED** — implementation **PROD-Q-R1-PIS-01** (`READY FOR AUDIT`) |
 | **Date** | 2026-10-13 |
-| **START_HEAD** | `5b74dec980c05bac971d9b75e85a7ddf13564780` |
+| **START_HEAD** | `a33488dae91c81b91e0b15353439962c6329647e` |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
 | **Slice** | **PROD-Q-R1-PIS-ADR-01** · **PROD-Q-R1-PIS-ADR-03-R1** (retry-safety reconciliation) · **R7 Case B** — missing production `ProviderInvocationStore` |
@@ -98,7 +98,7 @@ The port and helpers below are **fixed** for this decision. Implementation must 
 
 ## 2.3 Architecture decision required — minimal dispatch safety (implementation blocked)
 
-**STOP — ARCHITECTURE DECISION REQUIRED** before SQLite adapter + strict production wiring.
+**RATIFIED (PIS-01):** atomic `insert_invocation_if_absent` + GCA gate dispatch only on `INSERTED`.
 
 Preserve: one `ProviderInvocationStore`; one intent/outcome semantics; GR-7-A7 recovery authority; no automatic retry on unknown outcome; no second dispatch/recovery mechanism.
 
@@ -251,8 +251,8 @@ Implementation slice must add focused tests (not in this ADR slice):
 | **R1-SQLITE-ENV-01** | Remains in PROD-Q SSOT; dedicated invocation DB must respect **PROD-Q-R1-R3** isolation (no implicit `build/intergrax.db` repair) |
 | **ADR-01 / ADR-02** | Continuation ownership/backend — **orthogonal**; invocation store must **not** share continuation CAS or episode files |
 | **Operator ratification** | This document is **not** closure evidence |
-| **PIS-ADR-03-R1 dispatch safety** | **OPEN** — §2.3 decision required before implementation; GCA/orchestration parity + atomic claim |
-| **SQLite production adapter** | **OPEN** — blocked on §2.3 + ADR ratification |
+| **PIS-ADR-03-R1 dispatch safety** | **RATIFIED** — `insert_invocation_if_absent` + gate/boundary admission |
+| **SQLite production adapter** | **IMPLEMENTED** — `intergrax/runtime/enterprise_reliability/sqlite_provider_invocation_store.py` (lifecycle wiring deferred) |
 
 ---
 

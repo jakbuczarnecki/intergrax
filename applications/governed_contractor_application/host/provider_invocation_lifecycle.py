@@ -26,12 +26,16 @@ from intergrax.contracts.provider_invocation import (
 )
 from intergrax.contracts.provider_invocation_store import (
     ProviderInvocationConflictError,
+    ProviderInvocationIntentWriteResult,
     ProviderInvocationOutcomeConflictError,
     ProviderInvocationPersistenceError,
     ProviderInvocationStore,
     ProviderInvocationStoreError,
     provider_invocation_outcomes_equivalent,
     provider_invocations_equivalent,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_lifecycle import (
+    admit_provider_invocation_intent,
 )
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
 from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_early_lifecycle import (
@@ -159,7 +163,11 @@ class GovernedProviderInvocationDispatchGate:
     ) -> T:
         recorded_at = self.clock()
         try:
-            persist_provider_invocation_intent(self.store, invocation)
+            admission = admit_provider_invocation_intent(self.store, invocation)
+            if admission is ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP:
+                raise ProviderInvocationPersistenceError(
+                    "provider_invocation_intent_already_recorded_dispatch_not_admitted",
+                )
         except ProviderInvocationPersistenceError as exc:
             if reliability_dispatch is not None:
                 emit_intent_persistence_failed(
