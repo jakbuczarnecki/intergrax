@@ -2,16 +2,16 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (architecture / evidence only — **no production code**) |
+| **Status** | **ARCHITECTURE RATIFIED BY OPERATOR — IMPLEMENTATION NOT QUALIFIED** · **READY FOR AUDIT** (DEC-09 / DEC-09-EXT @ ADR **R6**; **no production code** in ratification commit) |
 | **Branch** | `development` |
-| **START_HEAD** | `36492c847000fe67ef0081bbf3d54f2a3f56d5d3` |
-| **Corrective child (this wave)** | **PROD-Q-R1-R7-D1-R5-R1** — SQLite activation domain & single-writer enforcement (§11) |
+| **START_HEAD (R6 ratification)** | `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7` |
+| **Decision-gate evidence SHA** | `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41` (§12 gate — historical) |
+| **Corrective child (prior wave)** | **PROD-Q-R1-R7-D1-R5-R1** — SQLite activation domain & single-writer enforcement (§11) |
 | **Parent** | **PROD-Q-R1-R7** — **BLOCKED** |
 | **Corrective parent** | **PROD-Q-R1-R7-D1** / **D1b** — **BLOCKED** (independent **D1-R4** audit **REJECTED**) |
 | **Prior corrective** | **PROD-Q-R1-R7-D1-R4** — **REJECTED** (independent GitHub audit) |
-| **ADR baseline** | **ADR-01-R5** — **DEC-01–DEC-08 RATIFIED** |
-| **Proposed ADR extension** | **R6 coordination** — **PROPOSED** ([`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) §22) — **not ratified** |
-| **Next implementation (after operator approval)** | **PROD-Q-R1-R7-D1-R6** — bounded corrective code wave |
+| **ADR baseline** | **ADR-01-R6** — **DEC-01–DEC-09 / DEC-09-EXT RATIFIED** ([`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) §22) |
+| **Next mandatory implementation** | **PROD-Q-R1-R7-D1-R6** — bounded corrective code wave (**not** closed by ratification) |
 | **Does not close** | **PROD-Q-R1** · **PROD-Q-R7** · **FRZ-PRD-04** · **FRZ-PRD-05** · **FRZ-PRD-08** · any global FRZ PASS |
 
 ## 1. Canonical preflight (@ audited HEAD)
@@ -19,7 +19,8 @@
 | Check | Result |
 |-------|--------|
 | Branch | `development` |
-| HEAD | `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41` (= **EXPECTED_START_HEAD** for D1-R5-R1 / **DEC-09 ratification gate**) |
+| HEAD (closed-world @ ratification) | `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7` |
+| Gate evidence SHA | `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41` |
 | Program | **PROD-Q** — **CURRENT / BLOCKED** (roadmap) |
 | Parent ordering | **PROD-Q-R1** **BLOCKED** → **PROD-Q-R1-R7** **BLOCKED** → **D1-R5** corrective (no unrelated stage) |
 | **DEC-01–DEC-08** | **RATIFIED** (ADR-01-R5) |
@@ -32,7 +33,7 @@
 |----|---------|-------------------|
 | **ARC-01** | Process-global `_PENDING_GRANT_ISSUANCES` + nonce + `consume_serving_execution_admission_grant` = second issuance authority | **Eliminate** in **D1-R6**; admission = single bounded operation under activation domain |
 | **ARC-02** | Grant verified in one critical section, consumed later; pointer can advance (stale evidence) | **Eliminate** separable consumable grant; verify + physical effect in **one** domain boundary |
-| **ARC-03** | `ActivationService._environment_locks` (per service instance), `AgentDistributionStoreState._activation_lock` (per bundle), SQLite `SqliteAgentDistributionDatabase._activation_lock` (per DB object), adapter `_UnitAdmissionGate` — not one cross-topology domain | **Document** supported vs unsupported topology; **A1 single-process** enforcement in **DEC-09 (proposed)** |
+| **ARC-03** | `ActivationService._environment_locks` (per service instance), `AgentDistributionStoreState._activation_lock` (per bundle), SQLite `SqliteAgentDistributionDatabase._activation_lock` (per DB object), adapter `_UnitAdmissionGate` — not one cross-topology domain | **Document** supported vs unsupported topology; **A1 single-process** enforcement in **DEC-09 RATIFIED** |
 | **ARC-04** | `VenvBundleColocatedServingUnitRuntimeAccessor.admit_execution` → `admit_unit_execution` without store re-verify | **Production graph** must use only `StoreBackedColocatedServingUnitExecutionAdmission`; deprecate direct accessor admit on sanctioned wiring (**D1-R6**) |
 
 ---
@@ -80,7 +81,7 @@ Legend: **CS** = concurrency / serialization domain.
 | `admit_unit_execution` direct | Public on adapter | **D1-R6:** production wiring uses store-backed port only; tests may call adapter directly |
 | Grant forgery | Nonce registry | **Remove** registry (**D1-R6**) |
 
-**Mandatory condition status:** Enforceable **iff** operator accepts **DEC-09 (proposed)** + **DEC-09-EXT** (§11) and **D1-R6** implements domain bridge + topology validation + removes grant split. **Not** enforceable for multi-process launcher + worker without OPTION B; **not** enforceable from `_activation_lock` alone (**D1-R5-R1**).
+**Mandatory condition status:** Architecture **RATIFIED** (**DEC-09** + **DEC-09-EXT** @ ADR R6). Production enforceability requires **D1-R6** (domain bridge + topology validation + grant removal). **Not** enforceable for multi-process launcher + worker without OPTION B; **not** enforceable from `_activation_lock` alone (**D1-R5-R1**).
 
 ### OPTION B — Store-coordinated admission (**NOT RECOMMENDED for A1 first wave**)
 
@@ -88,7 +89,7 @@ Cross-process ordering via durable semantic contract (leases / fencing / transac
 
 ### Recommendation
 
-**Adopt OPTION A** with **DEC-09 (proposed)** as explicit production topology gate. Defer OPTION B until a separate architecture ratification when multi-process serving is in scope.
+**Adopt OPTION A** with **DEC-09 RATIFIED** as explicit production topology gate. Defer OPTION B until a separate architecture ratification when multi-process serving is in scope.
 
 ---
 
@@ -210,7 +211,7 @@ Logical steps **inside one activation-domain critical section**:
 | Area | RATIFIED | PROPOSED | IMPLEMENTED | NOT QUALIFIED | BLOCKED |
 |------|----------|----------|-------------|---------------|---------|
 | DEC-01 A1 topology | ✓ | | partial adapter | prod qual | |
-| DEC-09 coordination | | ✓ R6 | | | |
+| DEC-09 coordination | ✓ R6 | | | | D1-R6 |
 | Grant registry authority | | remove | exists @ HEAD | | ARC-01 |
 | Store-backed per-exec admit | | | ✓ in-mem | SQLite path | |
 | OPTION B multi-process | | deferred | | | |
@@ -252,7 +253,7 @@ All global FRZ remain **OPEN**.
 |-------|-------|
 | **Parent** | **PROD-Q-R1-R7-D1-R5** (coordination proposal — not ratified) |
 | **Status** | **READY FOR AUDIT** (evidence only) |
-| **Does not ratify** | **DEC-09**, **DEC-09-EXT**, **D1**, **D1b** |
+| **Does not ratify** | **D1**, **D1b** (implementation qualification) — **DEC-09** / **DEC-09-EXT** ratified in **§13** / ADR §22 |
 
 ### 11.1 Root cause confirmation (ROOT-01 … ROOT-05)
 
@@ -321,7 +322,7 @@ All global FRZ remain **OPEN**.
 | **A2 — Readers in second process** | Second process may read SQLite. | **REQUIRES NEW ARCHITECTURE** to prove read-only; SQLite file permissions are **environment** concern, not platform contract @ HEAD. Writer attempt: **undefined** — treat as **MUST FAIL CLOSED** for qualification. |
 | **B — Store-coordinated multi-process** | Shared coordination contract for transitions. | **Alternative**; SQLite could be first store **only** with new ratified coordinator spanning processes — **not** ratified; defer. |
 
-**STOP — ARCHITECTURE DECISION REQUIRED:** Ratify **DEC-09-EXT** (`ActivationDomainCoordinator` protocol + composition binding) before D1-R6 claims SQLite admission PASS.
+**DEC-09-EXT RATIFIED** @ ADR R6 — **D1-R6** must implement `ActivationDomainCoordinator` before SQLite admission qualification claims.
 
 ### 11.5 Recommended architecture (proposal — not permission)
 
@@ -394,7 +395,7 @@ Items 1–30 from §7 remain; add:
 |----------|--------|
 | New parent blocker? | **No** — corrective under **D1-R5** / **D1/D1b**; **PROD-Q-R1-R7** remains **BLOCKED**. |
 | Mandatory task misclassified as debt? | **No** — D1-R6 explicitly carries SQLite domain + grant removal. |
-| Additional children? | **D1-R6** only after **DEC-09** + **DEC-09-EXT** ratification; no new roadmap row. |
+| Additional children? | **D1-R6** mandatory next implementation (**DEC-09** / **DEC-09-EXT** **RATIFIED** @ R6); no new roadmap row. |
 | Canonical ordering intact? | **Yes** — D1-R5-R1 does not reorder roadmap stages. |
 | Downstream FRZ change? | **FRZ-PRD-11** gains explicit SQLite concurrency evidence requirement when D1-R6 lands. |
 
@@ -405,8 +406,8 @@ Items 1–30 from §7 remain; add:
 | Field | Value |
 |-------|-------|
 | **Classification** | Corrective decision gate under **PROD-Q-R1-R7** (not a new canonical roadmap stage) |
-| **Status** | **READY FOR AUDIT** (architecture / evidence only — **no ratification**, **no D1-R6**) |
-| **START_HEAD** | `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41` |
+| **Status** | **SUPERSEDED BY §13** — gate **READY FOR AUDIT** completed; operator ratification recorded @ R6 **START_HEAD** `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7` |
+| **START_HEAD (gate authorship)** | `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41` |
 | **Answers** | Can **DEC-01 A1** admit serving on one sanctioned process + existing SQLite **without a second authority?** **Yes, conditionally** — **OPTION A** + ratified **DEC-09** + **DEC-09-EXT**, then **D1-R6** + independent audit. **Not** today @ HEAD. |
 
 ### 12.A Decision matrix
@@ -450,7 +451,7 @@ GCA ──consumer──► store-backed admission port only (no adapter import)
 | Multi-process launcher + worker (writer) | Config / process model | **Must fail closed** — not OPTION A | Startup | **Yes** when classified | **Yes** without OPTION B | — | Explicit OPTION B required message |
 | Grant forgery | Missing / bad nonce | `consume_serving_execution_admission_grant` | Authorize | **Partial** — registry is second authority (**ARC-01**) | Forged nonce without register fails | — | Remove registry in **D1-R6** |
 
-### 12.D SQLite execution-admission contract (DEC-09-EXT — **PROPOSED**)
+### 12.D SQLite execution-admission contract (DEC-09-EXT — **RATIFIED** @ ADR R6)
 
 **Operation sequence:** `current canonical eligibility → serialized in-flight reservation → (release coordination domain) → execute → release in-flight`
 
@@ -471,8 +472,6 @@ GCA ──consumer──► store-backed admission port only (no adapter import)
 1. `run_activation_domain[T](db, fn)` — process-local re-entrant mutex on the **canonical** `SqliteAgentDistributionDatabase` (extends `_activation_lock` semantics to admission path).
 2. `read_eligibility_snapshot(...)` — serving + revision + deployment from **one** loaded `AgentDistributionStoreState` generation.
 3. `reserve_colocated_execution(...)` — verify + adapter in-flight increment **before** releasing mutex **or** documented hold through reserve only (no long-lived txn across agent run).
-
-**STOP — ARCHITECTURE DECISION REQUIRED:** Operator ratifies **DEC-09-EXT** wording above before **D1-R6** starts.
 
 ### 12.E Findings F01–F06 reconciliation
 
@@ -500,15 +499,9 @@ GCA ──consumer──► store-backed admission port only (no adapter import)
 
 **Absent / not found @ HEAD:** separate `deployment.py` admission entry (orchestration lives in `activation.py` + adapter); production `open_production_process_lifecycle` may be reference-only — sanctioned path documented as `create_reference_production_process_composition` / `ReferenceProductionLifecycleLauncher` until durable opener lands (**TRACKED FREEZE DEBT**).
 
-### 12.G Decision request (operator)
+### 12.G Decision request (operator) — **RESOLVED** @ §13
 
-Authorize **exactly one** of the following (default recommendation: **1 + 2**):
-
-1. **Ratify DEC-09 (OPTION A)** — A1 single-process topology gate per ADR §22 table (rules 1–7), accepting that **hostile cross-process SQLite writers are NOT GUARANTEED** excluded without operational controls or future OPTION B.
-2. **Ratify DEC-09-EXT** — `ActivationDomainCoordinator` contract per §12.D (composition topology validation + domain bridge + consistent snapshot + ordered physical reserve; **forbidden** without separate decision: OS file lock, PID lease file, lease table, shadow permission DB).
-3. **Reject OPTION A** — record **OPTION C** disposition; keep **PROD-Q-R1-R7** **BLOCKED** until a new decision (likely OPTION B scope).
-
-**Explicit non-authorization in this gate:** opening **D1-R6** implementation, promoting DEC-09/EXT to RATIFIED in ADR without operator message, closing **PROD-Q-R1-R7** / **D1** / **D1b**, any FRZ PASS.
+Operator authorized **OPTION A + DEC-09-EXT** in controlling Cursor task **PROD-Q-R1-R7-ADR-01-R6**. Historical gate text retained for audit trail only.
 
 ### 12.H Enterprise audit matrix (ratification gate)
 
@@ -528,6 +521,94 @@ Authorize **exactly one** of the following (default recommendation: **1 + 2**):
 
 **Tenant isolation:** unchanged — environment-scoped store keys; governance on activation mutations; DEC-09 does not introduce cross-tenant shared admission state. Risk: **operational** sharing of one SQLite file across environments → **fail-closed topology validation** (FRZ-TEN supporting).
 
-**Roadmap:** **PROD-Q** → **PROD-Q-R1** **BLOCKED** → **PROD-Q-R1-R7** **BLOCKED** → **D1/D1b** **BLOCKED** → **D1-R5** / **D1-R5-R1** / **DEC-09 gate** = **READY FOR AUDIT** → next mandatory dependency: **operator ratification** then **D1-R6**. No new roadmap row; do not close parent.
+**Roadmap:** **PROD-Q** → **PROD-Q-R1** **BLOCKED** → **PROD-Q-R1-R7** **BLOCKED** → **D1/D1b** **BLOCKED** → **DEC-09 / DEC-09-EXT RATIFIED** → **D1-R6** next mandatory implementation. No new roadmap row; do not close parent.
+
+---
+
+## 13. PROD-Q-R1-R7-ADR-01-R6 — DEC-09 / DEC-09-EXT ratification record
+
+| Field | Value |
+|-------|-------|
+| **Status** | **ARCHITECTURE RATIFIED BY OPERATOR — IMPLEMENTATION NOT QUALIFIED** · **READY FOR AUDIT** |
+| **START_HEAD** | `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7` |
+| **ADR** | [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) §22 (**R6**) |
+| **Operator decision** | OPTION A + **DEC-09-EXT** per task **PROD-Q-R1-R7-ADR-01-R6** (controlling Cursor conversation) |
+| **Does not close** | **D1-R6**, **D1**, **D1b**, **PROD-Q-R1-R7**, **PROD-Q-R1**, any **FRZ** PASS |
+
+### 13.1 Supported vs unsupported topologies
+
+| Supported (initial implementation) | Excluded / deferred |
+|-----------------------------------|---------------------|
+| Single colocated physical owner (DEC-01 A1) | General distributed runtime cluster |
+| One sanctioned production composition | Multi-process worker serving (first coordinator impl.) |
+| One authoritative store bundle (`SqliteAgentDistributionDatabase` shared `_db` or shared in-mem state) | OPTION B multi-process writer without future ratification |
+| Concurrent SQLite ops on connections the backend supports — ordering via coordinator + `mutation_transaction` | Hostile arbitrary external SQLite writer (ops trust boundary) |
+
+### 13.2 D1-R6 implementation contract (exit criteria — **not PASS** at ratification)
+
+**Authority:** canonical serving eligibility owned by AD; no permission ledger; no nonce/grant issuance; no reusable historical snapshot as permission.
+
+**Coordinator:** typed `ActivationDomainCoordinator` Protocol (AD); replaceable backend; SQLite + in-memory same semantics; no `object`/`Any`/reflection/dict-string contracts.
+
+**Admission:** eligibility + in-flight reservation ordered against pointer transitions; superseded unit rejected; in-flight retained; `begin_drain` blocks new work; stop/restart fail closed.
+
+**Composition:** one sanctioned production owner; shared store bundle; no direct GCA→adapter dependency; no accessor bypass on sanctioned wiring.
+
+**Tests (future gates):** forged/stale grant negatives; no identifier-only permission; pointer/admission races; rollback/drain/stop races; SQLite multi-connection ordering; exception after physical reserve; `SQLITE_BUSY` fail-closed; restart stale unit; alternate provider structural compatibility; D0/D1/D1b regressions; tenant/environment isolation.
+
+Full 30-point matrix: §7. File scope: §6.
+
+### 13.3 Failure ordering (ratified — see ADR §22.3)
+
+Physical reservation is **not** an SQL transaction. Authorization to execute is final only after eligibility + physical reserve + coordinator release. Compensate adapter in-flight on failure — **no** assumption that SQLite rollback undoes adapter effects. Detail in ADR §22.3 and §12.D.
+
+### 13.4 Enterprise audit matrix (post-ratification)
+
+| Criterion | Current-HEAD evidence | Ratified rule | Implementation status | Remaining blocker |
+|-----------|----------------------|---------------|----------------------|-------------------|
+| Contracts over implementations | DEC-01–08 + grant @ HEAD | DEC-09/EXT Protocol | **NOT IMPLEMENTED** | **D1-R6** |
+| Layer boundaries | AGENTS.md tier rules | unchanged | **PASS** (design) | — |
+| Exactly-one semantic owner | AD stores + ARC splits | coordinator owns linearization | **BLOCKED** | **D1-R6** |
+| Exactly-one composition owner | DEC-03 | topology validation | **BLOCKED** | **D1-R6** |
+| Strong typing | grant model @ HEAD | typed coordinator | **BLOCKED** | **D1-R6** |
+| Bypass resistance | accessor admit, SQLite CS | store-backed only | **BLOCKED** | F04,F06 |
+| Governance ≠ Execution | GCA consumer | unchanged | **PASS** (design) | — |
+| SQLite txn vs physical boundary | F02,F03 | §13.3 | **BLOCKED** | **D1-R6** |
+| External writer boundary | F04 | ops trust — not detect all hostile writers | **OPEN** | FRZ-PRD-03/08 debt |
+| FRZ-PRD-04/05/08/11 | OPEN | evidence when D1-R6 lands | **OPEN** | implementation + audit |
+
+### 13.5 Tenant Isolation Audit
+
+| Dimension | Disposition |
+|-----------|-------------|
+| **Identity** | `ApplicationEnvironmentTenantResolver` + governance on control-plane mutation — **unchanged** |
+| **Propagation** | Environment-scoped store keys `(application_id, application_environment_id)` — **unchanged** |
+| **State** | No cross-tenant shared admission state introduced by DEC-09 |
+| **Provider/config** | Operational risk if one SQLite file shared across environments — **fail-closed topology validation** (**FRZ-TEN** supporting) |
+| **Evidence/trace** | Observability evidence-only — **unchanged** |
+| **Async/recovery** | D3 recovery **not** qualified; restart stale-unit rules = **D1-R6** contract |
+| **Cross-tenant negative** | No new leak path from ratification; **D1-R6** must preserve isolation tests |
+| **Negative evidence** | Forged grant / wrong env — **D1-R6** test matrix |
+
+### 13.6 Post-step roadmap completeness
+
+| Item | Disposition |
+|------|-------------|
+| **New mandatory blocker** | **PROD-Q-R1-R7-D1-R6** (implementation + independent audit) |
+| **Parent** | **PROD-Q-R1-R7** — **BLOCKED** |
+| **Program** | **PROD-Q** — **CURRENT / BLOCKED** on **PROD-Q-R1** |
+| **Dependencies** | D1-R6 after DEC-09 ratification (**satisfied**); does **not** close D1/D1b |
+| **FRZ primary** | **FRZ-PRD-03,04,05,08,11** — **OPEN** (ratification contributes architecture only) |
+| **Downstream** | EBH + final freeze gates per [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) — ordering **unchanged** |
+
+### 13.7 Unresolved findings
+
+| Class | Items |
+|-------|-------|
+| **IN-SCOPE BLOCKER** | ARC-01–04; SQLite coordinator; grant removal; topology validation — **D1-R6** |
+| **TRACKED FREEZE DEBT** | Cross-process writer exclusion; full FRZ-PRD-03/08; production `open_production_process_lifecycle` |
+| **ENVIRONMENT/TEST ISSUE** | None claimed at ratification |
+
+**Recommended next mandatory stage:** **PROD-Q-R1-R7-D1-R6** implementation wave @ post-ratification SHA — **not** self-closed by this task.
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
