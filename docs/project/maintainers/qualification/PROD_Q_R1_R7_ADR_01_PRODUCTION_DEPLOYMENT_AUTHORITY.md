@@ -950,3 +950,32 @@ Historical **R4** questions below are **answered by ratification** (DEC-01–DEC
 | **DEC-08** | Attest live unit before relying on READY/SERVING; recovery with semantic owners; no uncertain external replay | D0 attest gates; full restart reconcile **not** qualified | SQLite-inferred liveness | `ActivationService` + launcher | **D3**; **D1** must not fake recovery | **RATIFIED** | **PARTIAL** (orchestration only) |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 22. R6 coordination decision — **PROPOSED** (PROD-Q-R1-R7-D1-R5)
+
+> **Status:** **PROPOSED — NOT RATIFIED.** Does **not** amend **DEC-01–DEC-08**. Operator ratification required before implementation treats this as architecture authority.
+
+| Field | Value |
+|-------|-------|
+| **Evidence doc** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) |
+| **Code HEAD (audit)** | `7495bcdd5abaf3f279f363af7cb1f45e869ba32b` |
+| **Implementation child** | **PROD-Q-R1-R7-D1-R6** (bounded; **no** code in D1-R5) |
+
+### DEC-09 (proposed) — A1 single activation domain for serving admission
+
+**Intent:** Reconcile serving **execution admission** with **DEC-01 A1** without a second issuance authority (reject D1-R4 `_PENDING_GRANT_ISSUANCES` / nonce consumption pattern).
+
+| # | Proposed rule |
+|---|----------------|
+| 1 | **One sanctioned OS process** per application environment under A1 owns the live colocated adapter, the production composition, and **one** durable Agent Distribution store bundle instance (`SqliteAgentDistributionDatabase` or shared in-memory `AgentDistributionStoreState`). |
+| 2 | All serving pointer mutations and execution admission for that environment **must** serialize through **one activation domain** — extend `run_under_activation_domain` to SQLite via the existing database activation lock (not a new permission store). |
+| 3 | **No consumable serving grant token.** Eligibility is established **at the operation boundary** inside the activation domain; physical in-flight accounting follows immediately or via a single handoff-open inside the same domain. |
+| 4 | **Per-execution admission** (GCA task path) re-reads canonical stores under the domain, then calls adapter physical gate — no historical snapshot conferring authorization. |
+| 5 | **Unsupported:** independent processes sharing one SQLite file without store-coordinated admission (**OPTION B**); multiple `ActivationService` instances without shared domain; identifier-only `admit_unit_execution` on sanctioned production wiring. Unsupported configurations **fail closed** (**FRZ-PRD-03**). |
+| 6 | **OPTION B** (cross-process store-coordinated admission) remains a **future** ratification candidate — **not** part of DEC-09. |
+
+**Rejected (D1-R4 audit):** process-global grant issuance registry; `object.__setattr__` on frozen grant models; separable verify-then-consume grant across pointer CAS.
+
+**Qualification impact:** **PROD-Q-R1-R7-D1** / **D1b** remain **BLOCKED** until **D1-R6** implements DEC-09 (if ratified) and independent audit passes. **FRZ-PRD-04/05/08** remain **OPEN**.
