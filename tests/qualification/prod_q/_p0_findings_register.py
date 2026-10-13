@@ -5,10 +5,10 @@
 from __future__ import annotations
 
 import hashlib
-import re
 from functools import lru_cache
 
 from tests.qualification.prod_q._p0_discovery import repo_root
+from tests.qualification.prod_q._p0_factory_ast_evidence import analyze_sandbox_factory_ast_evidence
 from tests.qualification.prod_q._p0_types import (
     ConcernFindingReconciliationMetrics,
     ProdQFindingDisposition,
@@ -250,6 +250,7 @@ def _auto_finding_id(concern_key: str) -> str:
 _CANONICAL_SANDBOX_HOST_INTEGRATION_CONTRACT = (
     "intergrax.runtime.integrations.categories.devops.SandboxHostIntegrationContract"
 )
+_UNRESOLVED_COMPOSITION_MARKERS = frozenset({"COMPOSITION_UNRESOLVED", ""})
 
 _SANDBOX_FACTORY_PROVIDER_ARTIFACTS: dict[str, tuple[str, str, str, str]] = {
     "e2b": (
@@ -297,44 +298,45 @@ def factory_anchor_ownership_current_head_evidence(
     if not member.symbol.startswith("create_") or not member.symbol.endswith("_sandbox_host_integration"):
         return None
 
-    contract_spec_path, integration_path, register_path, integration_class = (
+    contract_spec_path, integration_path, register_path, _integration_class = (
         _SANDBOX_FACTORY_PROVIDER_ARTIFACTS[provider]
     )
     root = repo_root()
-    for path in (member.module, contract_spec_path, integration_path, register_path):
-        if not (root / path).is_file():
-            return None
-
-    spec_src = (root / contract_spec_path).read_text(encoding="utf-8")
-    if "SandboxHostIntegrationContract" not in spec_src:
-        return None
-    if f"integration_class={integration_class}" not in spec_src:
-        return None
-    if not re.search(rf"contract_factory\s*=\s*{member.symbol}\b", spec_src):
+    expected_bundle = f"intergrax/integrations/providers/sandbox_host/{provider}/bundle.py"
+    if member.module != expected_bundle:
         return None
 
-    integration_src = (root / integration_path).read_text(encoding="utf-8")
-    if f"class {integration_class}" not in integration_src:
-        return None
-    if "SandboxHostIntegrationContract" not in integration_src:
-        return None
-    if "SandboxHostBackend.register" not in integration_src or integration_class not in integration_src:
+    ast_result = analyze_sandbox_factory_ast_evidence(
+        root,
+        provider,
+        member.symbol,
+        member.module,
+    )
+    if not ast_result.proven:
         return None
 
-    register_src = (root / register_path).read_text(encoding="utf-8")
-    if "register_from_manifest" not in register_src:
-        return None
-    if "contract_specs=CONTRACT_SPECS" not in register_src.replace(" ", ""):
+    sanctioned_composition = {
+        ast_result.contract_declaration_owner,
+        ast_result.integration_implementation_owner,
+        ast_result.registration_composition_owner,
+    }
+    if (
+        member.composition_owner not in _UNRESOLVED_COMPOSITION_MARKERS
+        and member.composition_owner not in sanctioned_composition
+    ):
         return None
 
     return (
         f"factory_identified:{member.module}:{member.symbol}",
         f"canonical_contract:{_CANONICAL_SANDBOX_HOST_INTEGRATION_CONTRACT}",
-        f"semantic_owner:sandbox_host_provider",
-        f"composition_owner:{integration_path}",
-        f"registration_evidence:{register_path}:register_from_manifest+CONTRACT_SPECS",
-        f"contract_spec:{contract_spec_path}:declare_integration_contract",
+        "semantic_owner:sandbox_host_provider",
+        f"contract_declaration_owner:{ast_result.contract_declaration_owner}",
+        f"integration_implementation_owner:{ast_result.integration_implementation_owner}",
+        f"registration_composition_owner:{ast_result.registration_composition_owner}",
+        *ast_result.evidence_refs,
+        "ownership_assertion:FACTORY_ANCHOR_IDENTIFIED",
         "ownership_assertion:OWNERSHIP_RESOLVED",
+        "runtime_registration:NOT_PROVEN",
         "production_qualification:PROD-Q-P1_required",
     )
 

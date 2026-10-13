@@ -40,6 +40,7 @@ PROD_Q_P0_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1"
 PROD_Q_P0_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1"
 PROD_Q_P0_R1_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1-R1"
 PROD_Q_P0_R1_R1_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1-R1-R1"
+PROD_Q_P0_R1_R1_R1_R1_R1_R1_R1_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1"
 
 
 @lru_cache(maxsize=1)
@@ -119,11 +120,16 @@ def prod_q_p0_inventory_reconciliation_violations(
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
-    return prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations()
+    return prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations()
 
 
 @lru_cache(maxsize=1)
 def prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
+    return prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations()
+
+
+@lru_cache(maxsize=1)
+def prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations() -> tuple[str, ...]:
     violations: list[str] = list(prod_q_p0_r1_r1_r1_r1_r1_gate_violations())
     violations.extend(factory_ownership_resolved_without_proof_violations())
     return tuple(violations)
@@ -198,4 +204,8 @@ def prod_q_p0_r1_r1_r1_r1_r1_ready_for_audit() -> bool:
 
 
 def prod_q_p0_r1_r1_r1_r1_r1_r1_ready_for_audit() -> bool:
-    return prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations() == ()
+    return prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations() == ()
+
+
+def prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit() -> bool:
+    return prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations() == ()

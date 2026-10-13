@@ -9,10 +9,10 @@ from dataclasses import replace
 import pytest
 
 from tests.qualification.prod_q._p0_audit_gate import (
-    PROD_Q_P0_R1_R1_R1_R1_R1_R1_STAGE_ID,
+    PROD_Q_P0_R1_R1_R1_R1_R1_R1_R1_STAGE_ID,
     prod_q_p0_inventory_reconciliation_violations,
-    prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations,
-    prod_q_p0_r1_r1_r1_r1_r1_r1_ready_for_audit,
+    prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations,
+    prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit,
 )
 from tests.qualification.prod_q._p0_classification import classified_inventory, classify_candidate
 from tests.qualification.prod_q._p0_findings_register import (
@@ -44,13 +44,13 @@ from tests.qualification.prod_q._p0_types import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
-def test_prod_q_p0_r1_r1_r1_r1_r1_r1_stage_id() -> None:
-    assert PROD_Q_P0_R1_R1_R1_R1_R1_R1_STAGE_ID == "PROD-Q-P0-R1-R1-R1-R1-R1-R1"
+def test_prod_q_p0_r1_r1_r1_r1_r1_r1_r1_stage_id() -> None:
+    assert PROD_Q_P0_R1_R1_R1_R1_R1_R1_R1_STAGE_ID == "PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1"
 
 
-def test_prod_q_p0_r1_r1_r1_r1_r1_r1_ready_for_audit_gate() -> None:
-    assert prod_q_p0_r1_r1_r1_r1_r1_r1_ready_for_audit() is True
-    assert prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations() == ()
+def test_prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit_gate() -> None:
+    assert prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit() is True
+    assert prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations() == ()
 
 
 def test_private_helper_same_class_without_call_not_verified() -> None:
@@ -145,6 +145,16 @@ def test_factory_without_composition_owner_not_resolved() -> None:
     assert evidence is None
 
 
+def test_factory_composition_unresolved_inventory_still_structurally_proven() -> None:
+    factory = next(
+        record
+        for record in classified_inventory()
+        if record.symbol == "create_e2b_sandbox_host_integration"
+    )
+    assert factory.composition_owner == "COMPOSITION_UNRESOLVED"
+    assert factory_anchor_ownership_current_head_evidence((factory,)) is not None
+
+
 def test_factory_with_current_contract_owner_composition_resolved() -> None:
     inventory = classified_inventory()
     factory = next(
@@ -155,7 +165,7 @@ def test_factory_with_current_contract_owner_composition_resolved() -> None:
     evidence = factory_anchor_ownership_current_head_evidence((factory,))
     assert evidence is not None
     assert any(ref.startswith("canonical_contract:") for ref in evidence)
-    assert any(ref.startswith("composition_owner:") for ref in evidence)
+    assert any(ref.startswith("contract_declaration_owner:") for ref in evidence)
     concerns = build_semantic_concern_records(inventory)
     anchor = next(
         c
@@ -251,7 +261,7 @@ def test_legal_dual_provider_implementations_not_duplicate_owner() -> None:
 
 def test_violations_1_5_9_flip_gate_to_blocked() -> None:
     inventory = classified_inventory()
-    assert prod_q_p0_r1_r1_r1_r1_r1_r1_gate_violations() == ()
+    assert prod_q_p0_r1_r1_r1_r1_r1_r1_r1_gate_violations() == ()
 
     verified = next(record for record in inventory if is_auxiliary_discovery(record))
     stripped = replace(
