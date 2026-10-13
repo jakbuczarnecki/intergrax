@@ -351,6 +351,10 @@ from intergrax.agent_distribution.deployment import (
     ServingUnitAttestationError,
     ServingUnitAttestationRequest,
 )
+from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
+    VenvBundleColocatedDeploymentError,
+    VenvBundleColocatedRuntimeDeploymentAdapter,
+)
 from intergrax.agent_distribution.materialization import (
     ApplicationBuildContext,
     MaterializationInput,
@@ -687,6 +691,8 @@ __all__ = [
     "RuntimeMaterializationAdapter",
     "RuntimeMaterializationService",
     "FakeInMemoryRuntimeDeploymentAdapter",
+    "VenvBundleColocatedDeploymentError",
+    "VenvBundleColocatedRuntimeDeploymentAdapter",
     "FakeRuntimeMaterializationAdapter",
     "FakeRuntimeServingProjectionCoordinator",
     "UnsupportedVenvBundleMaterializationAdapter",
