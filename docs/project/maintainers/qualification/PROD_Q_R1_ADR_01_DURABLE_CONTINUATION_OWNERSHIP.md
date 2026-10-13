@@ -5,7 +5,7 @@
 | **Status** | **PENDING / NOT APPROVED** — architecture decision required before implementation |
 | **Date** | 2026-10-13 |
 | **START_HEAD (analysis)** | `27e713748f2bc6f2acb8f751b728bf4c80c1d37f` |
-| **ADR-02 (backend)** | [`PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md`](PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md) — **PENDING**; physical persistence not production-qualified @ START_HEAD |
+| **ADR-02 (backend)** | [`PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md`](PROD_Q_R1_ADR_02_DURABLE_CONTINUATION_BACKEND_LIFECYCLE.md) — **PENDING**; **ADR-02-R2** defines seal-before-ACK protocol (not approved); physical persistence not production-qualified @ HEAD |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
 | **Related evidence** | **PROD-Q-R1-R4** [`PROD_Q_R1_R4_PRODUCTION_STARTUP_PATH.md`](PROD_Q_R1_R4_PRODUCTION_STARTUP_PATH.md) · GR-10-R12 qualification · STATE-X `ExecutionContinuationStateStore` inventory |
