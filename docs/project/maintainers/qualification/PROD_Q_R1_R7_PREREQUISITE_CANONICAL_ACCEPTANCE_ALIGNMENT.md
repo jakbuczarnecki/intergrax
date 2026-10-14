@@ -18,10 +18,12 @@
 
 ## Preserved open parents
 
-- **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q** — **OPEN**
-- **D2**–**D4**, **R7-Q** — not qualified before D2 implementation
+- **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q** — **OPEN** / **NOT CLOSED**
+- **D2**, **D3**, **D4** — **READY FOR AUDIT** (implementation evidence on `development`; independent exact-SHA audit pending)
+- **PROD-Q-R1-R7-D4-R1** — **independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787` (D4-03 test-boundary corrective only; **not** D4 parent closure)
+- **PROD-Q-R1-R7-Q** — **NOT ENTERED**
 - Global **FRZ-PRD** rows — **OPEN** (no promotion)
 
-## Next mandatory implementation stage
+## Next mandatory stage (ADR lineage)
 
-**PROD-Q-R1-R7-D2** — `open_production_process_lifecycle` / `wire_production_lifecycle_services` (DEC-03).
+After independent audit of **PROD-Q-R1-R7-D4** evidence HEAD → **PROD-Q-R1-R7-Q** (E2E / provider / recovery / production-path qualification).

@@ -6,7 +6,9 @@
 | **Parent** | PROD-Q-R1-R7 |
 | **Successor** | PROD-Q-R1-R7-Q |
 | **Cursor disposition** | **READY FOR AUDIT** (not CLOSED) |
-| **Evidence HEAD** | `b3d9aced0f255d249812622647a356c0b91d76f8` |
+| **Implementation baseline** | `9b6efa8dc3993a3d00460cf1dc45d6bdabe65c72` |
+| **Evidence HEAD** | `339ffc12aa13d9c6f72b031e9c3b64cd52971787` |
+| **D4-R1 corrective** | **Independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787` — D4-03 proves `main.run()` fail-closed via public `SystemExit(1)` + stderr only; **rejects** prior `b3d9aced0f255d249812622647a356c0b91d76f8` D4-03 private `_active_production_process_lifecycle` inspection (test-boundary violation). **Does not** close **PROD-Q-R1-R7-D4** parent or **PROD-Q-R1-R7**. |
 
 ## Sanctioned entry
 
@@ -24,7 +26,7 @@ Explicit activation intent scope is validated **before** `open_production_proces
 
 | ID | Evidence |
 |----|----------|
-| **D4-03** | `test_d4_03_legacy_main_run_fail_closed` — `main.run()` → `SystemExit(1)`, stderr cites sanctioned D4 launcher/factory; `open_production_process_lifecycle` not invoked; no active lifecycle slot. |
+| **D4-03** | `test_d4_03_legacy_main_run_fail_closed` @ evidence HEAD — `main.run()` → `SystemExit(1)`; stderr cites sanctioned D4 launcher/factory; patched `open_production_process_lifecycle` not called (**public** contract only; no private lifecycle module state). |
 | **D4-21** | `test_d4_21_activation_intent_scope_mismatch_before_lifecycle` — intent revision scope ≠ `StrictProductionServingEnvironment` → `StrictProductionServingLauncherError` before lifecycle open (patched `open_production_process_lifecycle` uncalled). |
 
 ## Tenant isolation (bounded D4 review)
@@ -59,4 +61,4 @@ No autonomous global FRZ PASS.
 
 ## Recommended stage status
 
-**READY FOR AUDIT** — independent D4-R1 evidence slice complete; D4 / R7 / global freeze remain open pending external audit and R7-Q.
+**READY FOR AUDIT** — D4-R1 test-boundary correction **independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787`; full **PROD-Q-R1-R7-D4** stage closure still requires independent exact-SHA audit of evidence HEAD + **PROD-Q-R1-R7-Q** (cross-tenant E2E, provider qualification, failure recovery, production-path verification). **PROD-Q-R1-R7** / **PROD-Q** remain **NOT CLOSED**.
