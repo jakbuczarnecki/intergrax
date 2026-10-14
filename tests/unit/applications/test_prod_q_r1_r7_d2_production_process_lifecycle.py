@@ -4,8 +4,11 @@
 
 from __future__ import annotations
 
+import inspect
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -27,6 +30,7 @@ from intergrax.applications._shared.production_lifecycle import (
     wire_production_lifecycle_services,
 )
 from intergrax.applications._shared.production_process_lifecycle import (
+    ProductionProcessLifecycle,
     ProductionProcessLifecycleError,
     open_production_process_lifecycle,
 )
@@ -94,6 +98,13 @@ def _venv_adapter(tmp_path: Path) -> VenvBundleColocatedRuntimeDeploymentAdapter
 def test_d2_production_process_lifecycle_module_has_no_fake_adapter_reachability() -> None:
     text = _STRICT_PRODUCTION_MODULE.read_text(encoding="utf-8")
     assert "FakeInMemoryRuntimeDeploymentAdapter" not in text
+    assert "ReferenceProductionLifecycleLauncher" not in text
+    assert "create_reference_production_process_composition" not in text
+
+
+def test_d2_open_has_no_duplicate_bypass_parameter() -> None:
+    params = inspect.signature(open_production_process_lifecycle).parameters
+    assert "allow_duplicate_process_lifecycle" not in params
 
 
 def test_d2_open_production_process_lifecycle_wires_durable_stores_and_adapter(
@@ -324,6 +335,152 @@ def test_d2_duplicate_process_lifecycle_rejected(tmp_path: Path) -> None:
             missing_file_policy="empty",
         )
     first.close_process_resources()
+
+
+def test_d2_concurrent_open_at_most_one_active(tmp_path: Path) -> None:
+    env = _env()
+    adapter = _venv_adapter(tmp_path)
+    roots = (tmp_path / "artifacts",)
+    barrier = threading.Barrier(2)
+    results: list[ProductionProcessLifecycle | BaseException] = []
+    lock = threading.Lock()
+
+    def _open_once(suffix: str) -> None:
+        try:
+            barrier.wait(timeout=5)
+            lifecycle = open_production_process_lifecycle(
+                agent_distribution_db=tmp_path / f"ad-{suffix}.db",
+                continuation_state_file=tmp_path / f"cont-{suffix}.json",
+                deployment_adapter=adapter,
+                governance=_governance(env),
+                trusted_artifact_parent_roots=roots,
+                missing_file_policy="empty",
+            )
+            with lock:
+                results.append(lifecycle)
+        except BaseException as exc:
+            with lock:
+                results.append(exc)
+
+    t1 = threading.Thread(target=_open_once, args=("a",))
+    t2 = threading.Thread(target=_open_once, args=("b",))
+    t1.start()
+    t2.start()
+    t1.join(timeout=30)
+    t2.join(timeout=30)
+
+    successes = [r for r in results if not isinstance(r, BaseException)]
+    failures = [r for r in results if isinstance(r, BaseException)]
+    assert len(successes) == 1
+    assert len(failures) == 1
+    assert isinstance(failures[0], ProductionProcessLifecycleError)
+    successes[0].close_process_resources()
+
+
+def test_d2_failed_startup_allows_retry(tmp_path: Path) -> None:
+    env = _env()
+    adapter = _venv_adapter(tmp_path)
+    roots = (tmp_path / "artifacts",)
+    with patch(
+        "intergrax.applications._shared.production_process_lifecycle."
+        "build_durable_production_agent_platform_runtime",
+        side_effect=RuntimeError("startup_fail"),
+    ):
+        with pytest.raises(RuntimeError, match="startup_fail"):
+            open_production_process_lifecycle(
+                agent_distribution_db=tmp_path / "ad.db",
+                continuation_state_file=tmp_path / "continuation.json",
+                deployment_adapter=adapter,
+                governance=_governance(env),
+                trusted_artifact_parent_roots=roots,
+                missing_file_policy="empty",
+            )
+    with open_production_process_lifecycle(
+        agent_distribution_db=tmp_path / "ad.db",
+        continuation_state_file=tmp_path / "continuation.json",
+        deployment_adapter=adapter,
+        governance=_governance(env),
+        trusted_artifact_parent_roots=roots,
+        missing_file_policy="empty",
+    ) as lifecycle:
+        assert lifecycle.composition.agent_platform_runtime is not None
+
+
+def test_d2_reopen_after_close(tmp_path: Path) -> None:
+    env = _env()
+    adapter = _venv_adapter(tmp_path)
+    roots = (tmp_path / "artifacts",)
+    first = open_production_process_lifecycle(
+        agent_distribution_db=tmp_path / "ad.db",
+        continuation_state_file=tmp_path / "continuation.json",
+        deployment_adapter=adapter,
+        governance=_governance(env),
+        trusted_artifact_parent_roots=roots,
+        missing_file_policy="empty",
+    )
+    first.close_process_resources()
+    with open_production_process_lifecycle(
+        agent_distribution_db=tmp_path / "ad2.db",
+        continuation_state_file=tmp_path / "continuation2.json",
+        deployment_adapter=adapter,
+        governance=_governance(env),
+        trusted_artifact_parent_roots=roots,
+        missing_file_policy="empty",
+    ) as second:
+        assert second is not first
+
+
+def test_d2_non_owner_close_does_not_release_active_slot(tmp_path: Path) -> None:
+    from intergrax.applications._shared import production_process_lifecycle as ppl
+
+    env = _env()
+    adapter = _venv_adapter(tmp_path)
+    roots = (tmp_path / "artifacts",)
+    active = open_production_process_lifecycle(
+        agent_distribution_db=tmp_path / "ad.db",
+        continuation_state_file=tmp_path / "continuation.json",
+        deployment_adapter=adapter,
+        governance=_governance(env),
+        trusted_artifact_parent_roots=roots,
+        missing_file_policy="empty",
+    )
+    impostor = object()
+    ppl._release_active_production_slot(impostor)  # type: ignore[arg-type]
+    with pytest.raises(ProductionProcessLifecycleError, match="duplicate"):
+        open_production_process_lifecycle(
+            agent_distribution_db=tmp_path / "ad2.db",
+            continuation_state_file=tmp_path / "continuation2.json",
+            deployment_adapter=adapter,
+            governance=_governance(env),
+            trusted_artifact_parent_roots=roots,
+            missing_file_policy="empty",
+        )
+    active.close_process_resources()
+
+
+def test_d2_context_manager_exception_releases_slot(tmp_path: Path) -> None:
+    env = _env()
+    adapter = _venv_adapter(tmp_path)
+    roots = (tmp_path / "artifacts",)
+    with pytest.raises(RuntimeError, match="body_fail"):
+        with open_production_process_lifecycle(
+            agent_distribution_db=tmp_path / "ad.db",
+            continuation_state_file=tmp_path / "continuation.json",
+            deployment_adapter=adapter,
+            governance=_governance(env),
+            trusted_artifact_parent_roots=roots,
+            missing_file_policy="empty",
+        ):
+            raise RuntimeError("body_fail")
+    with open_production_process_lifecycle(
+        agent_distribution_db=tmp_path / "ad2.db",
+        continuation_state_file=tmp_path / "continuation2.json",
+        deployment_adapter=adapter,
+        governance=_governance(env),
+        trusted_artifact_parent_roots=roots,
+        missing_file_policy="empty",
+    ) as lifecycle:
+        assert lifecycle is not None
 
 
 def test_d2_close_is_idempotent_reject(tmp_path: Path) -> None:

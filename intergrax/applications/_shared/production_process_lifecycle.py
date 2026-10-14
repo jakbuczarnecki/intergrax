@@ -7,6 +7,7 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING
@@ -25,22 +26,20 @@ from intergrax.applications._shared.production_execution_continuation_store impo
 )
 from intergrax.applications._shared.production_lifecycle import (
     ProductionLifecycleConfigurationError,
+    ProductionLifecycleLauncher,
     ProductionLifecycleServices,
     require_production_control_plane_governance,
     wire_production_lifecycle_services,
 )
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
-    create_reference_production_process_composition,
+    assemble_durable_production_process_composition,
 )
-from intergrax.applications._shared.reference_production_lifecycle import (
-    ReferenceProductionLifecycleLauncher,
-)
-from intergrax.applications._shared.reference_production_process_lifecycle import (
-    _cleanup_errors_from_close_failure,
-    _raise_primary_with_cleanup_errors,
-    _raise_startup_failure_with_cleanup,
-    _release_lifecycle_owned_stores,
+from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
+    cleanup_errors_from_close_failure,
+    raise_primary_with_cleanup_errors,
+    raise_startup_failure_with_cleanup,
+    release_lifecycle_owned_stores,
 )
 from intergrax.contracts.execution_continuation_state_store import (
     ExecutionContinuationStateStore,
@@ -56,16 +55,21 @@ if TYPE_CHECKING:
         AgentCapabilityApplicationComposition,
     )
 
-_active_production_process_lifecycle_guard = threading.Lock()
-_active_production_process_lifecycle: "ProductionProcessLifecycle | None" = None
+
+class _ProductionSlotPhase(Enum):
+    AVAILABLE = "available"
+    OPENING = "opening"
+    ACTIVE = "active"
+
+
+_production_slot_guard = threading.Lock()
+_production_slot_phase = _ProductionSlotPhase.AVAILABLE
+_active_production_process_lifecycle: ProductionProcessLifecycle | None = None
+_production_opening_thread_id: int | None = None
 
 
 class ProductionProcessLifecycleError(ValueError):
     """Invalid production process lifecycle wiring."""
-
-
-class ProductionLifecycleLauncher(ReferenceProductionLifecycleLauncher):
-    """Production-qualified deploy/project/activate orchestration (same semantics, production wiring only)."""
 
 
 @dataclass
@@ -118,10 +122,7 @@ class ProductionProcessLifecycle:
             except BaseException as exc:
                 cleanup_errors.append(exc)
         self._process_closed = True
-        global _active_production_process_lifecycle
-        with _active_production_process_lifecycle_guard:
-            if _active_production_process_lifecycle is self:
-                _active_production_process_lifecycle = None
+        _release_active_production_slot(self)
         if cleanup_errors:
             if len(cleanup_errors) == 1:
                 raise cleanup_errors[0]
@@ -151,8 +152,8 @@ class ProductionProcessLifecycle:
         except BaseException as cleanup_exc:
             if body_exc is None:
                 raise
-            cleanup_errors = _cleanup_errors_from_close_failure(cleanup_exc)
-            _raise_primary_with_cleanup_errors(
+            cleanup_errors = cleanup_errors_from_close_failure(cleanup_exc)
+            raise_primary_with_cleanup_errors(
                 body_exc,
                 cleanup_errors,
                 message=(
@@ -161,6 +162,63 @@ class ProductionProcessLifecycle:
                 ),
             )
         return False
+
+
+def _reserve_production_opening_slot() -> None:
+    global _production_slot_phase, _production_opening_thread_id
+    thread_id = threading.get_ident()
+    with _production_slot_guard:
+        if _production_slot_phase is _ProductionSlotPhase.OPENING:
+            raise ProductionProcessLifecycleError(
+                "duplicate production process lifecycle is not permitted in one process",
+            )
+        active = _active_production_process_lifecycle
+        if (
+            _production_slot_phase is _ProductionSlotPhase.ACTIVE
+            and active is not None
+            and not active._process_closed
+        ):
+            raise ProductionProcessLifecycleError(
+                "duplicate production process lifecycle is not permitted in one process",
+            )
+        _production_slot_phase = _ProductionSlotPhase.OPENING
+        _production_opening_thread_id = thread_id
+
+
+def _abort_production_opening_slot() -> None:
+    global _production_slot_phase, _production_opening_thread_id
+    thread_id = threading.get_ident()
+    with _production_slot_guard:
+        if (
+            _production_slot_phase is _ProductionSlotPhase.OPENING
+            and _production_opening_thread_id == thread_id
+        ):
+            _production_slot_phase = _ProductionSlotPhase.AVAILABLE
+            _production_opening_thread_id = None
+
+
+def _commit_production_active_slot(lifecycle: ProductionProcessLifecycle) -> None:
+    global _production_slot_phase, _active_production_process_lifecycle, _production_opening_thread_id
+    thread_id = threading.get_ident()
+    with _production_slot_guard:
+        if (
+            _production_slot_phase is not _ProductionSlotPhase.OPENING
+            or _production_opening_thread_id != thread_id
+        ):
+            raise ProductionProcessLifecycleError(
+                "production process lifecycle opening slot was not reserved by this thread",
+            )
+        _production_slot_phase = _ProductionSlotPhase.ACTIVE
+        _active_production_process_lifecycle = lifecycle
+        _production_opening_thread_id = None
+
+
+def _release_active_production_slot(lifecycle: ProductionProcessLifecycle) -> None:
+    global _production_slot_phase, _active_production_process_lifecycle
+    with _production_slot_guard:
+        if _active_production_process_lifecycle is lifecycle:
+            _active_production_process_lifecycle = None
+            _production_slot_phase = _ProductionSlotPhase.AVAILABLE
 
 
 def open_production_process_lifecycle(
@@ -183,7 +241,6 @@ def open_production_process_lifecycle(
         ProductionProcessComposition,
     ]
     | None = None,
-    allow_duplicate_process_lifecycle: bool = False,
 ) -> ProductionProcessLifecycle:
     """
     Open one sanctioned production process lifecycle for supported A1 co-located deployment.
@@ -196,16 +253,8 @@ def open_production_process_lifecycle(
         raise ProductionProcessLifecycleError(
             "provider_invocation_db and provider_invocation_store are mutually exclusive",
         )
-    global _active_production_process_lifecycle
-    with _active_production_process_lifecycle_guard:
-        if (
-            not allow_duplicate_process_lifecycle
-            and _active_production_process_lifecycle is not None
-            and not _active_production_process_lifecycle._process_closed
-        ):
-            raise ProductionProcessLifecycleError(
-                "duplicate production process lifecycle is not permitted in one process",
-            )
+
+    _reserve_production_opening_slot()
 
     owned_invocation: SQLiteProviderInvocationStore | None = None
     resolved_invocation: ProviderInvocationStore | None = provider_invocation_store
@@ -219,13 +268,18 @@ def open_production_process_lifecycle(
             missing_file_policy=missing_file_policy,
         )
     except BaseException as startup_exc:
-        cleanup_errors = _release_lifecycle_owned_stores(
+        _abort_production_opening_slot()
+        cleanup_errors = release_lifecycle_owned_stores(
             continuation_store=None,
             owned_invocation=owned_invocation,
             continuation_closed=True,
             invocation_closed=False,
         )
-        _raise_startup_failure_with_cleanup(startup_exc, cleanup_errors)
+        raise_startup_failure_with_cleanup(
+            startup_exc,
+            cleanup_errors,
+            resource_scope="production",
+        )
         raise AssertionError("unreachable startup cleanup")
 
     durable_runtime = None
@@ -256,17 +310,11 @@ def open_production_process_lifecycle(
                 base_composition,
             )
         else:
-            composition = create_reference_production_process_composition(
+            composition = assemble_durable_production_process_composition(
+                agent_platform_runtime=agent_platform_runtime,
                 application_composition=application_composition,
                 provider_invocation_store=resolved_invocation,
                 execution_continuation_state_store=continuation_store,
-            )
-            composition = ProductionProcessComposition(
-                agent_platform_runtime=agent_platform_runtime,
-                agent_capability_runtime=composition.agent_capability_runtime,
-                provider_invocation_store=composition.provider_invocation_store,
-                execution_continuation_state_store=continuation_store,
-                serving_runtime_handoff=composition.serving_runtime_handoff,
             )
         if composition.agent_platform_runtime is not agent_platform_runtime:
             raise ProductionProcessLifecycleError(
@@ -303,25 +351,21 @@ def open_production_process_lifecycle(
             _owned_continuation_store=continuation_store,
             _owned_invocation_store=owned_invocation,
         )
-        with _active_production_process_lifecycle_guard:
-            if (
-                not allow_duplicate_process_lifecycle
-                and _active_production_process_lifecycle is not None
-                and not _active_production_process_lifecycle._process_closed
-            ):
-                raise ProductionProcessLifecycleError(
-                    "duplicate production process lifecycle is not permitted in one process",
-                )
-            _active_production_process_lifecycle = lifecycle
+        _commit_production_active_slot(lifecycle)
         return lifecycle
     except BaseException as startup_exc:
-        cleanup_errors = _release_lifecycle_owned_stores(
+        _abort_production_opening_slot()
+        cleanup_errors = release_lifecycle_owned_stores(
             continuation_store=continuation_store,
             owned_invocation=owned_invocation,
             continuation_closed=False,
             invocation_closed=False,
         )
-        _raise_startup_failure_with_cleanup(startup_exc, cleanup_errors)
+        raise_startup_failure_with_cleanup(
+            startup_exc,
+            cleanup_errors,
+            resource_scope="production",
+        )
         raise AssertionError("unreachable startup cleanup")
 
 

@@ -27,8 +27,22 @@ from intergrax.applications._shared.registry_projection import (
     ApplicationRegistryProjectionCoordinator,
     InMemoryRegistryProjectionInputStore,
 )
+from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
+from intergrax.agent_distribution.control_plane_governance import (
+    ApplicationEnvironmentTenantResolver,
+)
+from intergrax.applications._shared.deploy_activate_pipeline import (
+    DeployActivatePipelineContext,
+    run_deploy_and_activate,
+)
 from intergrax.applications._shared.reference_production_lifecycle import (
+    ReferenceProductionLifecycleResult,
     ReferenceProductionLifecycleServices,
+)
+from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
 )
 
 if TYPE_CHECKING:
@@ -143,6 +157,61 @@ def wire_production_lifecycle_services(
     )
 
 
+class ProductionLifecycleLauncher:
+    """Production deploy/project/activate — explicit services and governance only."""
+
+    def __init__(
+        self,
+        composition: ProductionProcessComposition,
+        *,
+        services: ProductionLifecycleServices,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary,
+        environment_tenant_resolver: ApplicationEnvironmentTenantResolver,
+    ) -> None:
+        if mutation_authorization_boundary is None:
+            raise ProductionLifecycleConfigurationError(
+                "production lifecycle launcher requires mutation_authorization_boundary",
+            )
+        if environment_tenant_resolver is None:
+            raise ProductionLifecycleConfigurationError(
+                "production lifecycle launcher requires environment_tenant_resolver",
+            )
+        self._composition = composition
+        self._services = services
+        self._mutation_authorization_boundary = mutation_authorization_boundary
+        self._environment_tenant_resolver = environment_tenant_resolver
+        self._pipeline = DeployActivatePipelineContext(
+            composition=composition,
+            services=services,
+            mutation_authorization_boundary=mutation_authorization_boundary,
+            environment_tenant_resolver=environment_tenant_resolver,
+        )
+
+    @property
+    def process_composition(self) -> ProductionProcessComposition:
+        return self._composition
+
+    @property
+    def services(self) -> ProductionLifecycleServices:
+        return self._services
+
+    def deploy_and_activate(
+        self,
+        projection_input: RegistryProjectionInputBundle,
+        activation_request: ActivateRuntimeRevisionRequest,
+        *,
+        principal: RequestIdentity,
+        admission_mutation_id: str,
+    ) -> ReferenceProductionLifecycleResult:
+        return run_deploy_and_activate(
+            self._pipeline,
+            projection_input,
+            activation_request,
+            principal=principal,
+            admission_mutation_id=admission_mutation_id,
+        )
+
+
 def require_production_control_plane_governance(
     governance: ProductionControlPlaneGovernance | None,
 ) -> ProductionControlPlaneGovernance:
@@ -163,6 +232,7 @@ def require_production_control_plane_governance(
 
 __all__ = [
     "ProductionLifecycleConfigurationError",
+    "ProductionLifecycleLauncher",
     "ProductionLifecycleServices",
     "reject_reference_runtime_deployment_adapter",
     "require_production_control_plane_governance",
