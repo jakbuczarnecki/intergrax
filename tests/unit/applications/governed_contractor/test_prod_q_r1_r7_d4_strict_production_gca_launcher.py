@@ -633,3 +633,67 @@ def test_d4_stale_physical_unit_after_serving(tmp_path: Path) -> None:
             composition_builder=_composition_builder(tmp_path),
             missing_continuation_file_policy="empty",
         )
+
+
+def test_d4_03_legacy_main_run_fail_closed(capsys: pytest.CaptureFixture[str]) -> None:
+    from intergrax.applications._shared import production_process_lifecycle as ppl
+    from governed_contractor_application.host.main import run
+
+    with patch(
+        "intergrax.applications._shared.production_process_lifecycle.open_production_process_lifecycle",
+    ) as open_lifecycle:
+        with pytest.raises(SystemExit) as exc_info:
+            run()
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "open_strict_production_serving_session" in err
+    assert "create_governed_contractor_strict_production_asgi_app" in err
+    assert "Do not use main.run() for deployment." in err
+    open_lifecycle.assert_not_called()
+    active = ppl._active_production_process_lifecycle
+    assert active is None or active._process_closed
+
+
+def test_d4_21_activation_intent_scope_mismatch_before_lifecycle(
+    tmp_path: Path,
+) -> None:
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+    )
+
+    storage, adapter = _storage_and_adapter(tmp_path)
+    bundle_env = _ac3_environment()
+    mismatched_serving_env = _gca_environment()
+    governance = _governance(
+        ApplicationEnvironmentProfile(profile_id=bundle_env.application_environment_id),
+    )
+    bundle, locator, *_rest = _qualified_canonical_bundle(
+        tmp_path,
+        revision_id="rev-d4-21-scope-mismatch",
+        application_id=bundle_env.application_id,
+        application_environment_id=bundle_env.application_environment_id,
+    )
+    intent = StrictProductionActivationIntent(
+        projection_input=bundle,
+        activation_request=_activation_request(bundle, locator),
+        admission_mutation_id=reference_admission_mutation_id(
+            bundle.runtime_revision.runtime_revision_id,
+        ),
+    )
+    with patch(
+        "intergrax.applications._shared.strict_production_serving_launcher.open_production_process_lifecycle",
+    ) as open_lifecycle:
+        with pytest.raises(
+            StrictProductionServingLauncherError,
+            match="activation intent revision scope does not match serving environment",
+        ):
+            open_strict_production_serving_session(
+                storage=storage,
+                environment=mismatched_serving_env,
+                governance=governance,
+                deployment_adapter=adapter,
+                activation_intent=intent,
+                composition_builder=_composition_builder(tmp_path),
+                missing_continuation_file_policy="empty",
+            )
+    open_lifecycle.assert_not_called()
