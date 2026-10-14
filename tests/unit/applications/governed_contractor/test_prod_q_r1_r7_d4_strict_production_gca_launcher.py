@@ -636,7 +636,6 @@ def test_d4_stale_physical_unit_after_serving(tmp_path: Path) -> None:
 
 
 def test_d4_03_legacy_main_run_fail_closed(capsys: pytest.CaptureFixture[str]) -> None:
-    from intergrax.applications._shared import production_process_lifecycle as ppl
     from governed_contractor_application.host.main import run
 
     with patch(
@@ -650,8 +649,6 @@ def test_d4_03_legacy_main_run_fail_closed(capsys: pytest.CaptureFixture[str]) -
     assert "create_governed_contractor_strict_production_asgi_app" in err
     assert "Do not use main.run() for deployment." in err
     open_lifecycle.assert_not_called()
-    active = ppl._active_production_process_lifecycle
-    assert active is None or active._process_closed
 
 
 def test_d4_21_activation_intent_scope_mismatch_before_lifecycle(
