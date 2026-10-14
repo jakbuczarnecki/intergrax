@@ -13,6 +13,9 @@ from intergrax.agent_distribution.deployment import (
     RuntimeDeploymentAdapter,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
+from intergrax.agent_distribution.effective_roster_authority import (
+    EffectiveRosterAuthorityService,
+)
 from intergrax.agent_distribution.sqlite_stores import SqliteAgentDistributionStoreBundle
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
@@ -23,9 +26,15 @@ from intergrax.applications._shared.colocated_serving_runtime_composition import
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
+from intergrax.applications._shared.durable_registry_projection_input_store import (
+    DescriptorBackedRegistryProjectionInputStore,
+)
 from intergrax.applications._shared.registry_projection import (
     ApplicationRegistryProjectionCoordinator,
-    InMemoryRegistryProjectionInputStore,
+    RegistryProjectionInputStore,
+)
+from intergrax.applications._shared.registry_projection_authority_resolver import (
+    RegistryProjectionAuthorityResolver,
 )
 from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
 from intergrax.agent_distribution.control_plane_governance import (
@@ -86,6 +95,27 @@ def validate_production_trusted_artifact_configuration(
             )
 
 
+def build_descriptor_backed_projection_input_store(
+    durable_store_bundle: SqliteAgentDistributionStoreBundle,
+) -> DescriptorBackedRegistryProjectionInputStore:
+    """Construct durable projection input store from canonical AD SQLite facts."""
+    effective_roster_authority = EffectiveRosterAuthorityService(
+        snapshot_store=durable_store_bundle.effective_roster_snapshot_store,
+    )
+    authority = RegistryProjectionAuthorityResolver(
+        revision_store=durable_store_bundle.revision_store,
+        effective_roster_authority=effective_roster_authority,
+        lock_store=durable_store_bundle.lock_store,
+        materialization_store=durable_store_bundle.materialization_store,
+        artifact_metadata_store=durable_store_bundle.artifact_metadata_store,
+    )
+    return DescriptorBackedRegistryProjectionInputStore(
+        revision_store=durable_store_bundle.revision_store,
+        descriptor_store=durable_store_bundle.projection_descriptor_store,
+        authority=authority,
+    )
+
+
 def validate_production_durable_store_bundle_consistency(
     composition: ProductionProcessComposition,
     durable_store_bundle: SqliteAgentDistributionStoreBundle,
@@ -130,7 +160,9 @@ def wire_production_lifecycle_services(
     )
     stores = composition.agent_platform_runtime.stores
     revision_store = durable_store_bundle.revision_store
-    projection_input_store = InMemoryRegistryProjectionInputStore()
+    projection_input_store: RegistryProjectionInputStore = (
+        build_descriptor_backed_projection_input_store(durable_store_bundle)
+    )
     descriptor_store = durable_store_bundle.projection_descriptor_store
     projection_coordinator = ApplicationRegistryProjectionCoordinator(
         revision_store=revision_store,
@@ -231,6 +263,7 @@ def require_production_control_plane_governance(
 
 
 __all__ = [
+    "build_descriptor_backed_projection_input_store",
     "ProductionLifecycleConfigurationError",
     "ProductionLifecycleLauncher",
     "ProductionLifecycleServices",

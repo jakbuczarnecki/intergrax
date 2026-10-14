@@ -119,9 +119,15 @@ def wire_durable_reference_production_lifecycle_services(
     durable_store_bundle: SqliteAgentDistributionStoreBundle,
 ) -> ReferenceProductionLifecycleServices:
     """Construct AP lifecycle services from durable SQLite store bundles."""
+    from intergrax.applications._shared.production_lifecycle import (
+        build_descriptor_backed_projection_input_store,
+    )
+
     stores = composition.agent_platform_runtime.stores
     revision_store = durable_store_bundle.revision_store
-    projection_input_store = InMemoryRegistryProjectionInputStore()
+    projection_input_store = build_descriptor_backed_projection_input_store(
+        durable_store_bundle,
+    )
     descriptor_store = durable_store_bundle.projection_descriptor_store
     projection_coordinator = ApplicationRegistryProjectionCoordinator(
         revision_store=revision_store,

@@ -39,6 +39,7 @@ from testing_support.canonical_agent_lifecycle_composition import (
     _StaticCatalogProvider,
     _build_application_composition,
     _stage15_proof_environment,
+    catalog_package_resolution_for_config,
     default_stage15_proof_config,
 )
 from intergrax.applications._shared.registry_projection_rehydrator import (
@@ -95,7 +96,16 @@ class EnterpriseAgentLifecycleProofStack:
             display_name="Canonical Ping",
             package_id_line=resolved.distribution_package_id,
         )
-        catalog_provider = _StaticCatalogProvider((catalog_entry,))
+        catalog_provider = _StaticCatalogProvider(
+            (catalog_entry,),
+            resolutions_by_version={
+                resolved.package_version: catalog_package_resolution_for_config(
+                    config=resolved,
+                    entry=catalog_entry,
+                    package_version=resolved.package_version,
+                ),
+            },
+        )
         metadata_provider = _MetadataProvider(
             {
                 resolved.metadata_ref: AgentProjectMetadata(

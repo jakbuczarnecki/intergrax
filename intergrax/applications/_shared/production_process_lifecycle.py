@@ -35,6 +35,14 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     assemble_durable_production_process_composition,
 )
+from intergrax.applications._shared.production_process_serving_reconciliation import (
+    ProductionServingReconciliationError,
+    ProductionServingReconciliationResult,
+    reconcile_production_serving_environment_on_process_open,
+)
+from intergrax.applications._shared.registry_projection_rehydrator import (
+    RuntimeRegistryProjectionRehydrator,
+)
 from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
     cleanup_errors_from_close_failure,
     raise_primary_with_cleanup_errors,
@@ -82,6 +90,9 @@ class ProductionProcessLifecycle:
     lifecycle_services: ProductionLifecycleServices
     durable_agent_distribution_db: Path
     deployment_adapter: RuntimeDeploymentAdapter
+    registry_projection_rehydrator: RuntimeRegistryProjectionRehydrator = field(
+        repr=False,
+    )
     _owned_continuation_store: SerializedSealExecutionContinuationStateStore = field(
         repr=False,
     )
@@ -100,6 +111,26 @@ class ProductionProcessLifecycle:
     @property
     def provider_invocation_store(self) -> ProviderInvocationStore | None:
         return self.composition.provider_invocation_store
+
+    def reconcile_serving_environment(
+        self,
+        application_id: str,
+        application_environment_id: str,
+        *,
+        expected_serving_pointer_revision: int | None = None,
+    ) -> ProductionServingReconciliationResult:
+        """Reconcile one environment after process restart; does not open execution admission."""
+        serving_store = (
+            self.composition.agent_platform_runtime.stores.serving_store
+        )
+        return reconcile_production_serving_environment_on_process_open(
+            lifecycle_services=self.lifecycle_services,
+            serving_store=serving_store,
+            registry_projection_rehydrator=self.registry_projection_rehydrator,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            expected_serving_pointer_revision=expected_serving_pointer_revision,
+        )
 
     def close_process_resources(self) -> None:
         """Release lifecycle-owned resources exactly once."""
@@ -232,6 +263,7 @@ def open_production_process_lifecycle(
     provider_invocation_db: Path | None = None,
     provider_invocation_store: ProviderInvocationStore | None = None,
     application_composition: AgentCapabilityApplicationComposition | None = None,
+    serving_reconciliation_targets: tuple[tuple[str, str], ...] = (),
     composition_builder: Callable[
         [
             SerializedSealExecutionContinuationStateStore,
@@ -349,7 +381,25 @@ def open_production_process_lifecycle(
             deployment_adapter=deployment_adapter,
             _owned_continuation_store=continuation_store,
             _owned_invocation_store=owned_invocation,
+            registry_projection_rehydrator=durable_runtime.registry_projection_rehydrator,
         )
+        for app_id, env_id in serving_reconciliation_targets:
+            try:
+                lifecycle.reconcile_serving_environment(app_id, env_id)
+            except ProductionServingReconciliationError as reconcile_exc:
+                _abort_production_opening_slot()
+                cleanup_errors = release_lifecycle_owned_stores(
+                    continuation_store=continuation_store,
+                    owned_invocation=owned_invocation,
+                    continuation_closed=False,
+                    invocation_closed=False,
+                )
+                raise_startup_failure_with_cleanup(
+                    reconcile_exc,
+                    cleanup_errors,
+                    resource_scope="production",
+                )
+                raise AssertionError("unreachable reconciliation cleanup")
         _commit_production_active_slot(lifecycle)
         return lifecycle
     except BaseException as startup_exc:
@@ -372,5 +422,8 @@ __all__ = [
     "ProductionLifecycleLauncher",
     "ProductionProcessLifecycle",
     "ProductionProcessLifecycleError",
+    "ProductionServingReconciliationError",
+    "ProductionServingReconciliationResult",
     "open_production_process_lifecycle",
+    "reconcile_production_serving_environment_on_process_open",
 ]

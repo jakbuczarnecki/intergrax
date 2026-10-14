@@ -239,6 +239,13 @@ def _registry_factory_wiring_digest(bundle: RegistryProjectionInputBundle) -> st
     return stable_payload_hash(seed)
 
 
+def registry_projection_input_semantic_fingerprint(
+    bundle: RegistryProjectionInputBundle,
+) -> str:
+    """Stable semantic fingerprint for idempotent projection input registration."""
+    return _bundle_semantic_fingerprint(bundle)
+
+
 class InMemoryRegistryProjectionInputStore:
     """Deterministic in-memory projection input store for tests."""
 
@@ -253,7 +260,7 @@ class InMemoryRegistryProjectionInputStore:
 
     def register(self, bundle: RegistryProjectionInputBundle) -> None:
         revision_id = bundle.runtime_revision.runtime_revision_id
-        fingerprint = _bundle_semantic_fingerprint(bundle)
+        fingerprint = registry_projection_input_semantic_fingerprint(bundle)
         with self._lock:
             existing = self._fingerprints.get(revision_id)
             if existing is not None:
@@ -593,6 +600,7 @@ __all__ = [
     "RegistryProjectionError",
     "RegistryProjectionInputBundle",
     "RegistryProjectionInputStore",
+    "registry_projection_input_semantic_fingerprint",
     "RuntimeRegistryProjectionSnapshot",
     "RuntimeRegistryProjectionStore",
     "build_registry_projection",
