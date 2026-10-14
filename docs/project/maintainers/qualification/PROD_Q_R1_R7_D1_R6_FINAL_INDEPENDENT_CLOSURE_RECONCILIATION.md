@@ -5,7 +5,7 @@
 | **Status** | **READY FOR AUDIT** (reconciliation evidence only — **does not** close D1-R6, D1, D1b, R7, R1, or PROD-Q) |
 | **Branch** | `development` |
 | **START_HEAD / AUDITED_HEAD** | `63688cb482fd8faa9776a564869694b9fc897064` |
-| **FINAL_COMMIT** | `bec01ba42b2a8e0afca857a59bed94f86725db52` (this reconciliation evidence; implementation @ **AUDITED_HEAD**) |
+| **FINAL_COMMIT** | `9522f3a5f8e0afca857a59bed94f86725db52` (this reconciliation evidence; implementation @ **AUDITED_HEAD**) |
 | **Parent** | **PROD-Q-R1-R7-D1-R6** — **BLOCKED / REJECTED** pending independent exact-SHA parent audit |
 | **ADR** | **ADR-01-R6** — **DEC-09** / **DEC-09-EXT** (ratified; unchanged) |
 
