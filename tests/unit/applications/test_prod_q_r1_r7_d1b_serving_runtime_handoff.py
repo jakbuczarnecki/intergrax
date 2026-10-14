@@ -31,6 +31,7 @@ from intergrax.agent_distribution.in_memory_stores import AgentDistributionStore
 from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
 from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
 from testing_support.agent_distribution.serving_execution_admission_fixtures import (
+    activation_domain_coordinator_for_stores,
     seed_canonical_serving_execution_stores,
 )
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
@@ -188,7 +189,7 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        colocated_execution_admission=accessor,
+        colocated_execution_admission=None,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
@@ -204,6 +205,11 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
         activation_commit=commit,
         handoff=handoff,
         admission_authority=adapter,
+        activation_domain_coordinator=activation_domain_coordinator_for_stores(
+            serving_store,
+            instance_store,
+            revision_store,
+        ),
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -252,6 +258,9 @@ def test_handoff_rejects_resolver_instance_mismatch(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_colocated_admission_wrapper_accounts_in_flight(tmp_path: Path) -> None:
+    from intergrax.applications._shared.colocated_serving_runtime_composition import (
+        bind_colocated_serving_runtime_after_activation,
+    )
     from intergrax.applications._shared.colocated_serving_unit_task_execution import (
         ColocatedServingUnitAdmissionTaskExecutionPort,
     )
@@ -267,29 +276,26 @@ async def test_colocated_admission_wrapper_accounts_in_flight(tmp_path: Path) ->
         revision,
         _digest,
     ) = _minimal_projection_bundle(tmp_path)
-    composition = create_reference_production_process_composition()
-    handoff, _updated = establish_serving_runtime_handoff(
-        composition=composition,
-        attestation=attestation,
-        deployment_instance=deployment_instance,
-        projection_input=bundle,
-        colocated_accessor=accessor,
-        colocated_execution_admission=accessor,
-        topology=MaterializationTopology.VENV_BUNDLE,
-        artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
-    )
     commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
         revision,
         deployment_instance,
     )
-    authorize_colocated_serving_execution_after_activation(
+    updated = bind_colocated_serving_runtime_after_activation(
+        composition=create_reference_production_process_composition(),
         activation_commit=commit,
-        handoff=handoff,
+        attestation=attestation,
+        deployment_instance=deployment_instance,
+        projection_input=bundle,
+        colocated_accessor=accessor,
         admission_authority=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
+        topology=MaterializationTopology.VENV_BUNDLE,
+        artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
+    handoff = updated.serving_runtime_handoff
+    assert handoff is not None
     inner = AsyncMock()
     inner.execute = AsyncMock(return_value=object())
     port = ColocatedServingUnitAdmissionTaskExecutionPort(inner, handoff)

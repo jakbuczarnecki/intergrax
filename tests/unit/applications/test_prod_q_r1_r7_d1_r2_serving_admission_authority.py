@@ -59,6 +59,9 @@ from intergrax.applications._shared.venv_bundle_colocated_serving_unit_runtime_a
     VenvBundleColocatedServingUnitRuntimeAccessor,
 )
 from intergrax.runtime.task.task import Task
+from testing_support.agent_distribution.serving_execution_admission_fixtures import (
+    activation_domain_coordinator_for_stores,
+)
 from testing_support.agent_distribution.activation_materialization_fixtures import (
     persist_materialization_for_revision,
 )
@@ -135,6 +138,11 @@ def test_authorize_denied_without_activation_commit(tmp_path: Path) -> None:
             activation_commit=stale_commit,
             handoff=handoff,
             admission_authority=adapter,
+            activation_domain_coordinator=activation_domain_coordinator_for_stores(
+                serving_store,
+                instance_store,
+                revision_store,
+            ),
             serving_store=serving_store,
             deployment_instance_store=instance_store,
             revision_store=revision_store,
@@ -198,6 +206,11 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
             activation_commit=commit,
             handoff=handoff,
             admission_authority=adapter,
+            activation_domain_coordinator=activation_domain_coordinator_for_stores(
+                serving_store,
+                instance_store,
+                revision_store,
+            ),
             serving_store=serving_store,
             deployment_instance_store=instance_store,
             revision_store=revision_store,

@@ -150,3 +150,7 @@ class RuntimeRollbackError(AgentDistributionError):
 
 class RuntimeDrainError(AgentDistributionError):
     """Drain orchestration failure or timeout outcome."""
+
+
+class ServingExecutionAdmissionError(AgentDistributionError):
+    """Current canonical serving state does not permit execution admission."""

@@ -12,6 +12,7 @@ from intergrax.agent_distribution.deployment import DeploymentInstanceState
 from intergrax.agent_distribution.runtime_revision import MaterializationTopology
 from intergrax.agent_distribution.serving_execution_admission import ServingExecutionAdmissionError
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
+    VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 from intergrax.applications._shared.colocated_serving_runtime_composition import (
@@ -25,6 +26,9 @@ from intergrax.applications._shared.serving_runtime_handoff import (
     authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
 )
+from testing_support.agent_distribution.serving_execution_admission_fixtures import (
+    activation_domain_coordinator_for_stores,
+)
 from tests.unit.applications.test_prod_q_r1_r7_d1b_serving_runtime_handoff import (
     _canonical_commit_and_stores,
     _minimal_projection_bundle,
@@ -37,7 +41,7 @@ def test_identifier_only_adapter_authorization_rejected(tmp_path: Path) -> None:
     adapter, _accessor, unit_ref, _att, _dep, _bundle, revision, _ = _minimal_projection_bundle(
         tmp_path
     )
-    with pytest.raises(AttributeError):
+    with pytest.raises(VenvBundleColocatedDeploymentError, match="activation domain coordinator"):
         adapter.authorize_serving_execution_admission(unit_ref)  # type: ignore[arg-type]
 
 
@@ -71,6 +75,11 @@ def test_ready_deployment_instance_denied_at_authorize(tmp_path: Path) -> None:
             activation_commit=ready_commit,
             handoff=handoff,
             admission_authority=adapter,
+            activation_domain_coordinator=activation_domain_coordinator_for_stores(
+                serving_store,
+                instance_store,
+                revision_store,
+            ),
             serving_store=serving_store,
             deployment_instance_store=instance_store,
             revision_store=revision_store,
@@ -106,6 +115,11 @@ def test_stale_activation_pointer_denied(tmp_path: Path) -> None:
             activation_commit=stale,
             handoff=handoff,
             admission_authority=adapter,
+            activation_domain_coordinator=activation_domain_coordinator_for_stores(
+                serving_store,
+                instance_store,
+                revision_store,
+            ),
             serving_store=serving_store,
             deployment_instance_store=instance_store,
             revision_store=revision_store,
@@ -134,8 +148,11 @@ def test_valid_current_active_serving_admitted(tmp_path: Path) -> None:
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
-    assert updated.serving_runtime_handoff is not None
-    adapter.admit_unit_execution(unit_ref)
+    handoff = updated.serving_runtime_handoff
+    assert handoff is not None
+    admission = handoff.colocated_execution_admission
+    assert admission is not None
+    admission.admit_execution(unit_ref)
 
 
 def test_superseded_pointer_blocks_per_execution_admission(tmp_path: Path) -> None:

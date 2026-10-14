@@ -29,9 +29,13 @@ from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
 )
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    ServingExecutionEligibilityEvidence,
+    assert_coordinator_issued_eligibility_evidence,
+    assert_within_coordinator_unit_admission_open,
+)
 from intergrax.agent_distribution.serving_execution_admission import (
     ServingExecutionAdmissionGrant,
-    consume_serving_execution_admission_grant,
 )
 from intergrax.agent_distribution.colocated_venv_unit_runtime_binding import (
     ColocatedVenvUnitRuntimeBinding,
@@ -143,7 +147,7 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         self._binding_index: dict[str, str] = {}
 
     def admit_unit_execution(self, serving_unit_ref: str) -> None:
-        """Sanctioned admission entry for colocated unit work (wired by composition in D1b)."""
+        """Physical in-flight reservation — not a production authorization entry point."""
         unit = self._require_live_unit(serving_unit_ref)
         unit.admission.admit_execution()
 
@@ -154,24 +158,29 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
     def authorize_serving_execution_admission(
         self, grant: ServingExecutionAdmissionGrant
     ) -> None:
-        """Open execution admission for one typed canonical grant (not identifier-only)."""
-        consume_serving_execution_admission_grant(grant)
-        unit = self._require_live_unit(grant.serving_unit_ref)
-        if unit.application_id != grant.application_id:
+        """Open execution admission for coordinator-issued eligibility evidence."""
+        evidence = grant
+        try:
+            assert_within_coordinator_unit_admission_open()
+            assert_coordinator_issued_eligibility_evidence(evidence)
+        except Exception as exc:
+            raise VenvBundleColocatedDeploymentError(str(exc)) from exc
+        unit = self._require_live_unit(evidence.serving_unit_ref)
+        if unit.application_id != evidence.application_id:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant application mismatch"
+                "serving execution admission evidence application mismatch"
             )
-        if unit.application_environment_id != grant.application_environment_id:
+        if unit.application_environment_id != evidence.application_environment_id:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant environment mismatch"
+                "serving execution admission evidence environment mismatch"
             )
-        if unit.runtime_revision_id != grant.runtime_revision_id:
+        if unit.runtime_revision_id != evidence.runtime_revision_id:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant revision mismatch"
+                "serving execution admission evidence revision mismatch"
             )
-        if unit.materialization_artifact_digest != grant.materialization_artifact_digest:
+        if unit.materialization_artifact_digest != evidence.materialization_artifact_digest:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant digest mismatch"
+                "serving execution admission evidence digest mismatch"
             )
         if unit.serving_admission_authorized:
             raise VenvBundleColocatedDeploymentError(
