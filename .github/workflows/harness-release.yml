@@ -18,7 +18,7 @@ jobs:
       - name: Environment conformance (CI profile)
         run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.2.2
+        uses: aquasecurity/setup-trivy@v0.3.1
       - name: Install Semgrep
         run: uv pip install semgrep
       - name: V-SEC STABLE promote gate (CLI scan)
