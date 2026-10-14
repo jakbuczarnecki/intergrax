@@ -36,6 +36,10 @@ from intergrax.applications._shared.production_lifecycle import (
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
+from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
+    cleanup_errors_from_close_failure,
+    raise_primary_with_cleanup_errors,
+)
 from intergrax.applications._shared.production_process_lifecycle import (
     ProductionProcessLifecycle,
     ProductionServingReconciliationError,
@@ -349,13 +353,21 @@ def open_strict_production_serving_session(
             reconciliation=reconciliation,
             readiness=readiness,
         )
-    except BaseException:
+    except BaseException as primary_exc:
         if lifecycle is not None:
             try:
                 lifecycle.close_process_resources()
-            except BaseException:
-                pass
-        raise
+            except BaseException as cleanup_exc:
+                cleanup_errors = cleanup_errors_from_close_failure(cleanup_exc)
+                raise_primary_with_cleanup_errors(
+                    primary_exc,
+                    cleanup_errors,
+                    message=(
+                        "strict production serving session startup failed; "
+                        "errors while closing process lifecycle resources"
+                    ),
+                )
+        raise primary_exc
 
 
 def require_strict_production_activation_intent_principal(

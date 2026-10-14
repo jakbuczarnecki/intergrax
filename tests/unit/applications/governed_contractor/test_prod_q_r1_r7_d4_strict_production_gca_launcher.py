@@ -34,6 +34,7 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
 from intergrax.applications._shared.production_process_lifecycle import (
+    ProductionProcessLifecycle,
     ProductionProcessLifecycleError,
     open_production_process_lifecycle,
 )
@@ -694,3 +695,64 @@ def test_d4_21_activation_intent_scope_mismatch_before_lifecycle(
                 missing_continuation_file_policy="empty",
             )
     open_lifecycle.assert_not_called()
+
+
+def _open_session_missing_serving_prerequisites_kwargs(tmp_path: Path):
+    storage, adapter = _storage_and_adapter(tmp_path)
+    env = build_governed_contractor_environment_profile(
+        GovernedContractorBackendSettings.from_env(),
+    )
+    governance = _governance(env)
+    return dict(
+        storage=storage,
+        environment=_ac3_environment(),
+        governance=governance,
+        deployment_adapter=adapter,
+        composition_builder=_composition_builder(tmp_path),
+        missing_continuation_file_policy="empty",
+    )
+
+
+def test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot(
+    tmp_path: Path,
+) -> None:
+    from intergrax.applications._shared import production_process_lifecycle as ppl
+
+    kwargs = _open_session_missing_serving_prerequisites_kwargs(tmp_path)
+    close_calls = 0
+    original_close = ProductionProcessLifecycle.close_process_resources
+
+    def _tracked_close(self: ProductionProcessLifecycle) -> None:
+        nonlocal close_calls
+        close_calls += 1
+        original_close(self)
+
+    with patch.object(
+        ProductionProcessLifecycle,
+        "close_process_resources",
+        _tracked_close,
+    ):
+        with pytest.raises(StrictProductionServingLauncherError):
+            open_strict_production_serving_session(**kwargs)
+    assert close_calls == 1
+    assert ppl._active_production_process_lifecycle is None
+    assert ppl._production_slot_phase is ppl._ProductionSlotPhase.AVAILABLE
+
+
+def test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors(
+    tmp_path: Path,
+) -> None:
+    kwargs = _open_session_missing_serving_prerequisites_kwargs(tmp_path)
+    cleanup_fail = RuntimeError("d4_r2_cleanup_fail")
+    with patch.object(
+        ProductionProcessLifecycle,
+        "close_process_resources",
+        side_effect=cleanup_fail,
+    ) as close_mock:
+        with pytest.raises(ExceptionGroup) as exc_info:
+            open_strict_production_serving_session(**kwargs)
+    close_mock.assert_called_once()
+    errors = exc_info.value.exceptions
+    assert len(errors) == 2
+    assert isinstance(errors[0], StrictProductionServingLauncherError)
+    assert errors[1] is cleanup_fail
