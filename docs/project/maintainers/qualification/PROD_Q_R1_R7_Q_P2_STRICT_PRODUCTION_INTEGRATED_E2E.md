@@ -7,7 +7,7 @@
 | **Prior child** | PROD-Q-R1-R7-Q-P1 (accepted in bounded static scope) |
 | **Branch** | `development` |
 | **START_HEAD** | `5a4bd2835d7022f56ea52cd5587ade7eb75a5fd2` |
-| **FINAL_COMMIT** | *(set on push — gate implementation commit)* |
+| **FINAL_COMMIT** | `474498c583af5e4fa661deab3591f4934793c72b` |
 | **Slice** | **P2-A** environment certification + declared D4/D1b reuse matrix; **P2-B** (happy-path + HTTP admission smoke) blocked until import-cycle corrective child |
 
 ## Tested production composition path (design intent)
