@@ -5,8 +5,8 @@
 | **Status** | **READY FOR AUDIT** |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Branch** | `development` |
-| **START_HEAD** | `ccbb19633e83de29d5b70c5e7e1689b0c29d8c07` |
-| **FINAL_COMMIT** | `fb2354ba08a06714eda611a7a41d5be19293fa3c` |
+| **START_HEAD** | `ec773c666a061896395ca1a2160fd2babd73f344` |
+| **FINAL_COMMIT** | *(set at commit — PROD-Q-R1-R7-Q-P1-R1)* |
 | **Gate implementation commit** | `ae9cfdb564ca2aecff66cdfb017495e7402870a8` |
 | **Audited production SHA** | `ccbb19633e83de29d5b70c5e7e1689b0c29d8c07` (boundary code baseline; gate delivered on FINAL_COMMIT) |
 | **Method** | Closed-world AST call-site reachability + adversarial snippet negatives; selective D2/D4 reuse |
@@ -70,13 +70,27 @@ No whole-repository scan. Direct import/callee resolution stays inside this set 
 
 **Unresolved-edge policy:** Critical imported authority calls (`open_production_process_lifecycle`, `wire_production_lifecycle_services`, `create_governed_contractor_process_app`, etc.) must resolve to a boundary module or the gate fails closed.
 
+## P1-R1 gate hardening (PROD-Q-R1-R7-Q-P1-R1)
+
+| Defect (before) | Correction |
+|-----------------|------------|
+| P1-G05 used text presence (`ready_for_traffic` in file) | AST guard: `if not session.readiness.ready_for_traffic` must `raise` before any `create_governed_contractor_process_app` call; snippet negatives for docstring-only and neutralized guards |
+| GCA deployment ctor matched local name `== suffix` only | Resolve import bindings + qualified attributes (`AlternateAdapter()`, `deployment_mod.FakeInMemory…()`) via shared `_deployment_adapter_constructor_target`; preserve `isinstance` rejection allowance |
+
+Behavioral D4 reuse: `test_d4_asgi_startup_only_after_preconditions` (unready session → `ValueError`) — run under default `conftest` when session start succeeds; P1 module itself requires `--noconftest` at this HEAD (see below).
+
 ## Adversarial negatives (snippet fixtures)
 
 | Case | Expected |
 |------|----------|
 | `FakeInMemoryRuntimeDeploymentAdapter()` in synthetic module | **Detect** |
+| `FakeInMemoryRuntimeDeploymentAdapter as AlternateAdapter` then `AlternateAdapter()` | **Detect** |
+| `deployment_mod.FakeInMemoryRuntimeDeploymentAdapter()` qualified call | **Detect** |
 | `isinstance(..., FakeInMemoryRuntimeDeploymentAdapter)` in reject helper | **Allow** |
 | `open_reference_production_process_lifecycle()` call | **Detect** |
+| ASGI factory: docstring mentions `ready_for_traffic` only | **Fail** structural guard |
+| ASGI factory: `create_governed_contractor_process_app` on not-ready branch | **Fail** |
+| ASGI factory: `if not ready_for_traffic: pass` without `raise` | **Fail** |
 
 ## Pytest evidence
 
@@ -91,9 +105,9 @@ uv run pytest -p no:xdist -q --noconftest \
   tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions
 ```
 
-**Result @ workspace:** 17 passed; cumulative wall time ~6 s (log: `.tmp/proof/prod-q-r1-r7-q-p1/pytest.log`).
+**Result @ workspace (P1-R1):** 20 passed @ `--noconftest` (~0.2 s); D4 `test_d4_asgi_startup_only_after_preconditions` 1 passed with default conftest (~3 s). Log: `.tmp/session/prod-q-r1-r7-q-p1-r1/p1-only.log`.
 
-**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** Default `tests/conftest.py` `pytest_sessionstart` triggers a circular import (`RuntimeCheckpoint` / `agent_runtime_io`) at HEAD `ccbb19633…`, so the P1 module was verified with `--noconftest`. CI may differ; independent audit should confirm default pytest entry.
+**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** Default `tests/conftest.py` `pytest_sessionstart` triggers a circular import (`RuntimeCheckpoint` ↔ `agent_runtime_io` via `intergrax.runtime.long_running` / `agent_distribution`) at HEAD `ec773c666…` when collecting `tests/qualification/prod_q/…` (INTERNALERROR before collection). **Not** ordinary freeze debt. **Separate corrective dependency (pre–final R7-Q certification):** break the `RuntimeCheckpoint` import cycle (or defer `pytest_sessionstart` model_rebuild) so qualification and default CI pytest entry collect without `--noconftest`. Do not treat `--noconftest` as proof that the default qualification entry works.
 
 ## Reused D2/D4 evidence (not duplicated)
 

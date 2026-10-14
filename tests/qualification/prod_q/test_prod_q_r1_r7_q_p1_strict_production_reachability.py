@@ -12,9 +12,12 @@ import pytest
 from tests.qualification.prod_q._prod_q_r1_r7_q_p1_strict_reachability import (
     BOUNDARY_MODULE_RELPATHS,
     STRICT_PRODUCTION_ROOTS,
+    analyze_asgi_admission_snippet,
+    analyze_gca_deployment_snippet,
     analyze_module_snippet,
     analyze_strict_production_reachability,
     assert_startup_chain_opener,
+    assert_strict_asgi_admission_guard,
     boundary_module_paths,
     production_lifecycle_rejection_import_is_guard_only,
     repo_root,
@@ -80,17 +83,11 @@ def test_p1_g04_gca_strict_factory_does_not_construct_deployment_adapters() -> N
     assert not report.gca_deployment_constructions
 
 
-def test_p1_g05_strict_asgi_admission_symbols_present() -> None:
+def test_p1_g05_strict_asgi_admission_guard_structural() -> None:
+    assert_strict_asgi_admission_guard()
     main = repo_root() / "applications/governed_contractor_application/host/main.py"
-    strict = (
-        repo_root()
-        / "applications/governed_contractor_application/host/strict_production_serving.py"
-    )
     main_text = main.read_text(encoding="utf-8")
-    strict_text = strict.read_text(encoding="utf-8")
     assert "StrictProductionAsgiPlaceholder" in main_text
-    assert "ready_for_traffic" in strict_text
-    assert "create_governed_contractor_process_app" in strict_text
 
 
 def test_p1_g06_closed_world_inventory_complete() -> None:
@@ -133,6 +130,84 @@ def reject_reference_runtime_deployment_adapter(adapter):
 """
     violations = analyze_module_snippet(snippet)
     assert not violations
+
+
+def test_p1_negative_asgi_admission_docstring_only_does_not_pass() -> None:
+    snippet = '''
+def create_governed_contractor_strict_production_asgi_app(session):
+    """session.readiness.ready_for_traffic must be checked."""
+    from governed_contractor_application.host.main import create_governed_contractor_process_app
+    return create_governed_contractor_process_app(process_composition=session.composition)
+'''
+    errors = analyze_asgi_admission_snippet(snippet)
+    assert errors
+
+
+def test_p1_negative_asgi_admission_calls_process_app_on_failure_path() -> None:
+    snippet = '''
+def create_governed_contractor_strict_production_asgi_app(session):
+    if not session.readiness.ready_for_traffic:
+        from governed_contractor_application.host.main import create_governed_contractor_process_app
+        return create_governed_contractor_process_app(process_composition=session.composition)
+    raise ValueError("unexpected")
+'''
+    errors = analyze_asgi_admission_snippet(snippet)
+    assert any("failure path" in e for e in errors)
+
+
+def test_p1_negative_asgi_admission_neutralized_guard_no_raise() -> None:
+    snippet = '''
+def create_governed_contractor_strict_production_asgi_app(session):
+    if not session.readiness.ready_for_traffic:
+        pass
+    from governed_contractor_application.host.main import create_governed_contractor_process_app
+    return create_governed_contractor_process_app(process_composition=session.composition)
+'''
+    errors = analyze_asgi_admission_snippet(snippet)
+    assert errors
+
+
+def test_p1_negative_gca_detects_direct_fake_adapter_constructor() -> None:
+    snippet = """
+from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
+
+def create_governed_contractor_strict_production_asgi_app(session):
+    FakeInMemoryRuntimeDeploymentAdapter()
+"""
+    assert analyze_gca_deployment_snippet(snippet)
+
+
+def test_p1_negative_gca_detects_aliased_fake_adapter_constructor() -> None:
+    snippet = """
+from intergrax.agent_distribution.deployment import (
+    FakeInMemoryRuntimeDeploymentAdapter as AlternateAdapter,
+)
+
+def create_governed_contractor_strict_production_asgi_app(session):
+    AlternateAdapter()
+"""
+    assert analyze_gca_deployment_snippet(snippet)
+
+
+def test_p1_negative_gca_detects_qualified_fake_adapter_constructor() -> None:
+    snippet = """
+import intergrax.agent_distribution.deployment as deployment_mod
+
+def create_governed_contractor_strict_production_asgi_app(session):
+    deployment_mod.FakeInMemoryRuntimeDeploymentAdapter()
+"""
+    assert analyze_gca_deployment_snippet(snippet)
+
+
+def test_p1_negative_gca_allows_isinstance_rejection_only() -> None:
+    snippet = """
+from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
+
+def reject_reference_runtime_deployment_adapter(adapter):
+    if isinstance(adapter, FakeInMemoryRuntimeDeploymentAdapter):
+        raise ValueError("forbidden")
+"""
+    assert not analyze_gca_deployment_snippet(snippet)
 
 
 def test_p1_negative_fixture_detects_open_reference_lifecycle_call() -> None:

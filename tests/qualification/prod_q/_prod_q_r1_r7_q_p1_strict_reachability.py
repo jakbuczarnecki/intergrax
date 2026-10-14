@@ -211,18 +211,128 @@ def _matches_prohibited(qual: str | None, local_name: str | None) -> str | None:
     return None
 
 
-def _is_isinstance_guard(node: ast.Call) -> bool:
+def _is_isinstance_guard(node: ast.Call, imports: dict[str, str] | None = None) -> bool:
     if not isinstance(node.func, ast.Name) or node.func.id != "isinstance":
         return False
     if len(node.args) < 2:
         return False
     second = node.args[1]
     if isinstance(second, ast.Name):
-        return second.id == "FakeInMemoryRuntimeDeploymentAdapter"
-    return (
-        isinstance(second, ast.Attribute)
-        and second.attr == "FakeInMemoryRuntimeDeploymentAdapter"
-    )
+        if second.id == "FakeInMemoryRuntimeDeploymentAdapter":
+            return True
+        if imports:
+            bound = imports.get(second.id, "")
+            return bound.endswith("FakeInMemoryRuntimeDeploymentAdapter")
+        return False
+    if isinstance(second, ast.Attribute) and second.attr == "FakeInMemoryRuntimeDeploymentAdapter":
+        return True
+    return False
+
+
+def _deployment_adapter_constructor_target(
+    node: ast.Call,
+    imports: dict[str, str],
+) -> str | None:
+    if _is_isinstance_guard(node, imports):
+        return None
+    qual = _call_target_qualifier(node, imports)
+    candidates: list[str] = []
+    if qual:
+        candidates.append(qual)
+    if isinstance(node.func, ast.Name):
+        candidates.append(node.func.id)
+        bound = imports.get(node.func.id)
+        if bound:
+            candidates.append(bound)
+    for cand in candidates:
+        for suffix in DEPLOYMENT_ADAPTER_CONSTRUCTOR_SUFFIXES:
+            if cand == suffix or cand.endswith(f".{suffix}"):
+                return cand
+    return None
+
+
+def _condition_is_not_ready_for_traffic(test: ast.expr) -> bool:
+    inner = test
+    negated = False
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        negated = True
+        inner = test.operand
+    if not negated:
+        return False
+    if not isinstance(inner, ast.Attribute) or inner.attr != "ready_for_traffic":
+        return False
+    readiness = inner.value
+    return isinstance(readiness, ast.Attribute) and readiness.attr == "readiness"
+
+
+def _call_resolves_to_create_governed_contractor_process_app(
+    node: ast.Call,
+    imports: dict[str, str],
+) -> bool:
+    qual = _call_target_qualifier(node, imports)
+    if qual and qual.endswith("create_governed_contractor_process_app"):
+        return True
+    if isinstance(node.func, ast.Name):
+        if node.func.id == "create_governed_contractor_process_app":
+            return True
+        bound = imports.get(node.func.id, "")
+        return bound.endswith("create_governed_contractor_process_app")
+    return False
+
+
+def _if_body_raises_without_process_app(if_node: ast.If, imports: dict[str, str]) -> bool:
+    if not _condition_is_not_ready_for_traffic(if_node.test):
+        return False
+    for sub in ast.walk(if_node):
+        if isinstance(sub, ast.Call) and _call_resolves_to_create_governed_contractor_process_app(
+            sub,
+            imports,
+        ):
+            return False
+    return any(isinstance(sub, ast.Raise) for sub in ast.walk(if_node))
+
+
+def validate_strict_asgi_admission_structure(
+    fnode: ast.AST,
+    imports: dict[str, str],
+) -> list[str]:
+    errors: list[str] = []
+    guards = [
+        node
+        for node in ast.walk(fnode)
+        if isinstance(node, ast.If) and _if_body_raises_without_process_app(node, imports)
+    ]
+    if not guards:
+        errors.append(
+            "P1-G05: strict ASGI factory must guard on session.readiness.ready_for_traffic "
+            "and raise before create_governed_contractor_process_app",
+        )
+    process_calls = [
+        node
+        for node in ast.walk(fnode)
+        if isinstance(node, ast.Call)
+        and _call_resolves_to_create_governed_contractor_process_app(node, imports)
+    ]
+    if not process_calls:
+        errors.append(
+            "P1-G05: strict ASGI factory must call create_governed_contractor_process_app "
+            "after admission",
+        )
+    for if_node in ast.walk(fnode):
+        if not isinstance(if_node, ast.If):
+            continue
+        if not _condition_is_not_ready_for_traffic(if_node.test):
+            continue
+        for sub in ast.walk(if_node):
+            if isinstance(sub, ast.Call) and _call_resolves_to_create_governed_contractor_process_app(
+                sub,
+                imports,
+            ):
+                errors.append(
+                    "P1-G05: create_governed_contractor_process_app must not run on "
+                    "not-ready failure path",
+                )
+    return errors
 
 
 def _function_qualname(module_relpath: str, name: str, class_name: str | None = None) -> str:
@@ -295,7 +405,7 @@ def analyze_module_snippet(
         for node in ast.walk(fnode):
             if not isinstance(node, ast.Call):
                 continue
-            if _is_isinstance_guard(node):
+            if _is_isinstance_guard(node, imports):
                 continue
             qual = _call_target_qualifier(node, imports)
             local: str | None = None
@@ -343,7 +453,7 @@ def analyze_strict_production_reachability() -> ReachabilityReport:
             if isinstance(node.func, ast.Name):
                 local = node.func.id
 
-            if not _is_isinstance_guard(node):
+            if not _is_isinstance_guard(node, imports):
                 matched = _matches_prohibited(qual, local)
                 if matched:
                     report.prohibited.append(
@@ -357,20 +467,17 @@ def analyze_strict_production_reachability() -> ReachabilityReport:
                     )
 
             if module_relpath in GCA_STRICT_FACTORY_RELPATHS:
-                target = qual or local
-                if target:
-                    for suffix in DEPLOYMENT_ADAPTER_CONSTRUCTOR_SUFFIXES:
-                        if target.endswith(suffix) and not _is_isinstance_guard(node):
-                            if isinstance(node.func, ast.Name) and node.func.id == suffix:
-                                report.gca_deployment_constructions.append(
-                                    ProhibitedExecution(
-                                        module_relpath=module_relpath,
-                                        qualname=fq,
-                                        lineno=node.lineno,
-                                        kind="gca_deployment_constructor",
-                                        detail=target,
-                                    ),
-                                )
+                ctor = _deployment_adapter_constructor_target(node, imports)
+                if ctor:
+                    report.gca_deployment_constructions.append(
+                        ProhibitedExecution(
+                            module_relpath=module_relpath,
+                            qualname=fq,
+                            lineno=node.lineno,
+                            kind="gca_deployment_constructor",
+                            detail=ctor,
+                        ),
+                    )
 
             callee: tuple[str, str] | None = None
             if isinstance(node.func, ast.Name) and node.func.id in record.functions:
@@ -437,9 +544,64 @@ def production_lifecycle_rejection_import_is_guard_only() -> None:
         n
         for n in ast.walk(reject)
         if isinstance(n, ast.Call)
-        and not _is_isinstance_guard(n)
+        and not _is_isinstance_guard(n, imports)
         and (
             _call_target_qualifier(n, imports) or ""
         ).endswith("FakeInMemoryRuntimeDeploymentAdapter")
     ]
     assert not fake_calls, "reject helper must not instantiate FakeInMemoryRuntimeDeploymentAdapter"
+
+
+def assert_strict_asgi_admission_guard(index: dict[str, _ModuleRecord] | None = None) -> None:
+    idx = index or _build_index()
+    rel = "applications/governed_contractor_application/host/strict_production_serving.py"
+    record = idx[rel]
+    factory = record.functions["create_governed_contractor_strict_production_asgi_app"]
+    errors = validate_strict_asgi_admission_structure(factory, record.imports)
+    if errors:
+        raise AssertionError("\n".join(errors))
+
+
+def analyze_asgi_admission_snippet(
+    source: str,
+    *,
+    function_name: str = "create_governed_contractor_strict_production_asgi_app",
+    module_label: str = "<snippet>",
+) -> list[str]:
+    tree = ast.parse(source, filename=module_label)
+    imports = _import_bindings(tree)
+    funcs, _ = _collect_functions(tree)
+    fnode = funcs.get(function_name)
+    if fnode is None:
+        return [f"missing function {function_name}"]
+    return validate_strict_asgi_admission_structure(fnode, imports)
+
+
+def analyze_gca_deployment_snippet(
+    source: str,
+    *,
+    module_relpath: str = "applications/governed_contractor_application/host/strict_production_serving.py",
+    module_label: str = "<snippet>",
+) -> list[ProhibitedExecution]:
+    if module_relpath not in GCA_STRICT_FACTORY_RELPATHS:
+        return []
+    tree = ast.parse(source, filename=module_label)
+    imports = _import_bindings(tree)
+    funcs, _ = _collect_functions(tree)
+    violations: list[ProhibitedExecution] = []
+    for fname, fnode in funcs.items():
+        for node in ast.walk(fnode):
+            if not isinstance(node, ast.Call):
+                continue
+            ctor = _deployment_adapter_constructor_target(node, imports)
+            if ctor:
+                violations.append(
+                    ProhibitedExecution(
+                        module_relpath=module_relpath,
+                        qualname=fname,
+                        lineno=node.lineno,
+                        kind="gca_deployment_constructor",
+                        detail=ctor,
+                    ),
+                )
+    return violations
