@@ -184,14 +184,16 @@ def _sqlite_busy_operational_error(exc: sqlite3.OperationalError) -> bool:
 
 
 class _SqliteAdmissionDomainLease:
-    """Activation-domain lock + one IMMEDIATE transaction until ``close()``."""
+    """One operation-owned activation-domain lock + one IMMEDIATE SQLite transaction."""
 
     __slots__ = (
         "_conn",
+        "_conn_closed",
         "_db",
         "_domain_lock_released",
         "_durable_committed",
         "_state",
+        "_transaction_active",
     )
 
     def __init__(
@@ -204,7 +206,9 @@ class _SqliteAdmissionDomainLease:
         self._conn = conn
         self._state = state
         self._domain_lock_released = False
+        self._conn_closed = False
         self._durable_committed = False
+        self._transaction_active = True
 
     @property
     def conn(self) -> sqlite3.Connection:
@@ -214,48 +218,42 @@ class _SqliteAdmissionDomainLease:
     def state(self) -> AgentDistributionStoreState:
         return self._state
 
+    @property
+    def durable_committed(self) -> bool:
+        return self._durable_committed
+
     def commit_durable(self) -> None:
+        if self._durable_committed:
+            raise ServingExecutionAdmissionError(
+                "sqlite admission coordination commit invoked more than once"
+            )
         try:
             self._conn.commit()
             self._durable_committed = True
+            self._transaction_active = False
         except sqlite3.OperationalError as exc:
+            self._transaction_active = False
             self._conn.rollback()
             raise ServingExecutionAdmissionError(
                 "sqlite admission coordination commit failed"
             ) from exc
 
     def rollback(self) -> None:
+        if not self._transaction_active or self._durable_committed:
+            return
         self._conn.rollback()
+        self._transaction_active = False
 
     def close(self) -> None:
+        if self._conn_closed:
+            return
+        self._conn_closed = True
         try:
             self._conn.close()
         finally:
             if not self._domain_lock_released:
                 self._db._activation_lock.release()
                 self._domain_lock_released = True
-
-
-def _acquire_sqlite_admission_transaction(
-    db: SqliteAgentDistributionDatabase,
-) -> tuple[sqlite3.Connection, AgentDistributionStoreState]:
-    """Low-level lease: holds ``_activation_lock`` until ``_release_sqlite_admission_transaction``."""
-    lease = _open_sqlite_admission_domain_lease(db)
-    _ACTIVE_SQLITE_ADMISSION_LEASES[lease.conn] = lease
-    return lease.conn, lease.state
-
-
-_ACTIVE_SQLITE_ADMISSION_LEASES: dict[
-    sqlite3.Connection, _SqliteAdmissionDomainLease
-] = {}
-
-
-def _release_sqlite_admission_transaction(conn: sqlite3.Connection) -> None:
-    lease = _ACTIVE_SQLITE_ADMISSION_LEASES.pop(conn, None)
-    if lease is None:
-        conn.close()
-        return
-    lease.close()
 
 
 def _open_sqlite_admission_domain_lease(
@@ -296,19 +294,16 @@ def _open_sqlite_admission_domain_lease(
 
 
 @contextmanager
-def _sqlite_admission_coordination(db: SqliteAgentDistributionDatabase):
+def _sqlite_admission_domain_lease(db: SqliteAgentDistributionDatabase):
+    """Lexical owner for one SQLite admission coordination operation."""
     lease = _open_sqlite_admission_domain_lease(db)
-    committed = False
     try:
-        yield lease.state
+        yield lease
     except Exception:
         lease.rollback()
         raise
-    else:
-        lease.commit_durable()
-        committed = True
     finally:
-        if not committed:
+        if not lease.durable_committed:
             try:
                 lease.rollback()
             except sqlite3.Error:
@@ -317,24 +312,10 @@ def _sqlite_admission_coordination(db: SqliteAgentDistributionDatabase):
 
 
 @contextmanager
-def _sqlite_admission_coordination_through_publish(
-    db: SqliteAgentDistributionDatabase,
-):
-    """Hold activation-domain lock from BEGIN through durable commit and publication."""
-    lease = _open_sqlite_admission_domain_lease(db)
-    try:
-        yield lease.state, lease
-    except Exception:
-        if not lease._durable_committed:
-            lease.rollback()
-        raise
-    finally:
-        if not lease._durable_committed:
-            try:
-                lease.rollback()
-            except sqlite3.Error:
-                pass
-        lease.close()
+def _sqlite_admission_coordination(db: SqliteAgentDistributionDatabase):
+    with _sqlite_admission_domain_lease(db) as lease:
+        yield lease.state
+        lease.commit_durable()
 
 
 def _release_physical_reservation_once(
@@ -434,16 +415,20 @@ class InMemoryActivationDomainCoordinator:
             unit_admission_open.publish_coordinator_verified_open(evidence)
             return evidence
 
-        try:
-            return run_under_activation_domain(self._state, _work)
-        except Exception:
-            if evidence is not None:
-                _compensate_unit_open_after_coordination_failure(
-                    unit_admission_open,
-                    evidence,
-                    physical_admission_affected=physical_admission_affected,
-                )
-            raise
+        with self._state._activation_lock:
+            try:
+                return _work()
+            except Exception as primary:
+                if evidence is not None:
+                    try:
+                        _compensate_unit_open_after_coordination_failure(
+                            unit_admission_open,
+                            evidence,
+                            physical_admission_affected=physical_admission_affected,
+                        )
+                    except Exception as compensation_error:
+                        raise compensation_error from primary
+                raise
 
 
 class SqliteActivationDomainCoordinator:
@@ -479,12 +464,10 @@ class SqliteActivationDomainCoordinator:
     ) -> ServingExecutionEligibilityEvidence:
         physical_admission_affected = False
         evidence: ServingExecutionEligibilityEvidence | None = None
-        try:
-            with _sqlite_admission_coordination_through_publish(
-                self._database
-            ) as (state, lease):
+        with _sqlite_admission_domain_lease(self._database) as lease:
+            try:
                 evidence = verify_serving_execution_eligibility_from_state(
-                    state, request
+                    lease.state, request
                 )
                 if expected_serving_pointer_revision is not None:
                     if (
@@ -498,16 +481,19 @@ class SqliteActivationDomainCoordinator:
                 physical_admission_affected = True
                 lease.commit_durable()
                 unit_admission_open.publish_coordinator_verified_open(evidence)
-            assert evidence is not None
-            return evidence
-        except Exception:
-            if evidence is not None:
-                _compensate_unit_open_after_coordination_failure(
-                    unit_admission_open,
-                    evidence,
-                    physical_admission_affected=physical_admission_affected,
-                )
-            raise
+            except Exception as primary:
+                if evidence is not None:
+                    try:
+                        _compensate_unit_open_after_coordination_failure(
+                            unit_admission_open,
+                            evidence,
+                            physical_admission_affected=physical_admission_affected,
+                        )
+                    except Exception as compensation_error:
+                        raise compensation_error from primary
+                raise
+        assert evidence is not None
+        return evidence
 
 
 def _shared_in_memory_state_from_stores(

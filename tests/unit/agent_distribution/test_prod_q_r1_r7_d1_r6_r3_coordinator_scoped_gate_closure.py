@@ -297,13 +297,16 @@ def test_coordination_failure_after_unit_open_compensates_gate(tmp_path: Path) -
     unit.admission.begin_drain()
     port = adapter.coordinator_verified_unit_serving_admission_open_port(unit_ref)
 
-    def _run_then_fail(state: AgentDistributionStoreState, fn):  # type: ignore[no-untyped-def]
-        fn()
+    real_apply = adapter._apply_coordinator_verified_unit_admission_open
+
+    def _apply_then_fail(evidence):  # type: ignore[no-untyped-def]
+        real_apply(evidence)
         raise RuntimeError("domain failure after unit open")
 
-    with mock.patch(
-        "intergrax.agent_distribution.activation_domain_coordinator.run_under_activation_domain",
-        side_effect=_run_then_fail,
+    with mock.patch.object(
+        adapter,
+        "_apply_coordinator_verified_unit_admission_open",
+        side_effect=_apply_then_fail,
     ):
         with pytest.raises(RuntimeError, match="domain failure"):
             coordinator.coordinate_unit_serving_admission_open(

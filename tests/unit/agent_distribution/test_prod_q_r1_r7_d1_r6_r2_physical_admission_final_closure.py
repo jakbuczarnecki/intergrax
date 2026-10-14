@@ -15,8 +15,7 @@ import pytest
 from intergrax.agent_distribution.activation_domain_coordinator import (
     ServingExecutionAdmissionRequest,
     ServingExecutionEligibilityEvidence,
-    _acquire_sqlite_admission_transaction,
-    _release_sqlite_admission_transaction,
+    _sqlite_admission_domain_lease,
     build_activation_domain_coordinator_for_sqlite_bundle,
     build_activation_domain_coordinator_for_stores,
 )
@@ -222,31 +221,28 @@ def test_s2_admitted_in_flight_survives_post_coordination_pointer_swap(
 
 def test_s4_two_sqlite_connections_serialize_admission(tmp_path: Path) -> None:
     bundle = build_sqlite_agent_distribution_store_bundle(tmp_path / "dual.db")
-    conn_a, _state_a = _acquire_sqlite_admission_transaction(bundle.database)
-    second_acquired = threading.Event()
+    with _sqlite_admission_domain_lease(bundle.database) as lease_a:
+        second_acquired = threading.Event()
 
-    def _second_connection() -> None:
-        conn_b, _state_b = _acquire_sqlite_admission_transaction(bundle.database)
-        conn_b.rollback()
-        _release_sqlite_admission_transaction(conn_b)
-        second_acquired.set()
+        def _second_connection() -> None:
+            with _sqlite_admission_domain_lease(bundle.database) as lease_b:
+                lease_b.rollback()
+            second_acquired.set()
 
-    worker = threading.Thread(target=_second_connection)
-    worker.start()
-    assert not second_acquired.wait(timeout=0.2)
-    conn_a.rollback()
-    _release_sqlite_admission_transaction(conn_a)
+        worker = threading.Thread(target=_second_connection)
+        worker.start()
+        assert not second_acquired.wait(timeout=0.2)
+        lease_a.rollback()
     worker.join(timeout=5.0)
     assert second_acquired.is_set()
 
 
 def test_s5_nested_immediate_transaction_fails_closed(tmp_path: Path) -> None:
     bundle = build_sqlite_agent_distribution_store_bundle(tmp_path / "nested.db")
-    conn, _state = _acquire_sqlite_admission_transaction(bundle.database)
-    with pytest.raises(sqlite3.OperationalError):
-        conn.execute("BEGIN IMMEDIATE")
-    conn.rollback()
-    _release_sqlite_admission_transaction(conn)
+    with _sqlite_admission_domain_lease(bundle.database) as lease:
+        with pytest.raises(sqlite3.OperationalError):
+            lease.conn.execute("BEGIN IMMEDIATE")
+        lease.rollback()
 
 
 def test_s6_sqlite_busy_retry_budget_exhausted(tmp_path: Path) -> None:
@@ -278,7 +274,8 @@ def test_s6_sqlite_busy_retry_budget_exhausted(tmp_path: Path) -> None:
 
     with mock.patch.object(bundle.database, "_connect", side_effect=_connect_with_busy_begin):
         with pytest.raises(ServingExecutionAdmissionError, match="sqlite admission coordination"):
-            _acquire_sqlite_admission_transaction(bundle.database)
+            with _sqlite_admission_domain_lease(bundle.database):
+                pass
     assert calls == 5
 
 

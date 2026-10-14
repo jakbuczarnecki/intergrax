@@ -17,8 +17,7 @@ from intergrax.agent_distribution.activation_domain_coordinator import (
     ServingExecutionAdmissionRequest,
     ServingExecutionEligibilityEvidence,
     _SqliteAdmissionDomainLease,
-    _acquire_sqlite_admission_transaction,
-    _release_sqlite_admission_transaction,
+    _sqlite_admission_domain_lease,
     _sqlite_admission_coordination,
     build_activation_domain_coordinator_for_sqlite_bundle,
     verify_serving_execution_eligibility_from_state,
@@ -287,17 +286,17 @@ def test_sqlite_commit_failure_after_physical_reserve_compensates(tmp_path: Path
 
     @contextmanager
     def _coordination_commit_fail(db):  # type: ignore[no-untyped-def]
-        conn, state = _acquire_sqlite_admission_transaction(db)
-        try:
-            yield state
-        except Exception:
-            conn.rollback()
-            raise
-        else:
-            conn.rollback()
-            raise ServingExecutionAdmissionError("sqlite admission coordination commit failed")
-        finally:
-            _release_sqlite_admission_transaction(conn)
+        with _sqlite_admission_domain_lease(db) as lease:
+            try:
+                yield lease.state
+            except Exception:
+                lease.rollback()
+                raise
+            else:
+                lease.rollback()
+                raise ServingExecutionAdmissionError(
+                    "sqlite admission coordination commit failed"
+                )
 
     with mock.patch(
         "intergrax.agent_distribution.activation_domain_coordinator._sqlite_admission_coordination",
