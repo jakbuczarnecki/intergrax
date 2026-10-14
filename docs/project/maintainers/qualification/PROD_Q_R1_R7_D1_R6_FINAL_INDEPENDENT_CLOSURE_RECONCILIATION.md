@@ -4,8 +4,9 @@
 |-------|-------|
 | **Status** | **READY FOR AUDIT** (reconciliation evidence only — **does not** close D1-R6, D1, D1b, R7, R1, or PROD-Q) |
 | **Branch** | `development` |
-| **START_HEAD / AUDITED_HEAD** | `63688cb482fd8faa9776a564869694b9fc897064` |
-| **FINAL_COMMIT** | `9522f3a5f8e0afca857a59bed94f86725db52` (this reconciliation evidence; implementation @ **AUDITED_HEAD**) |
+| **Operator START_HEAD** | `63688cb482fd8faa9776a564869694b9fc897064` (implementation baseline; **no** product-code delta on `development` after this SHA through session replay) |
+| **Session AUDITED_HEAD** | `362e0a98cbf76709497f0ee5cfddd5ef99c80471` @ replay time (includes prior reconciliation commits on `development`) |
+| **FINAL_COMMIT** | *(set by committing commit — evidence delta for this session)* |
 | **Parent** | **PROD-Q-R1-R7-D1-R6** — **BLOCKED / REJECTED** pending independent exact-SHA parent audit |
 | **ADR** | **ADR-01-R6** — **DEC-09** / **DEC-09-EXT** (ratified; unchanged) |
 
@@ -18,7 +19,13 @@ Independent audit disposition echoed from operator prompt:
 - **D1 / D1b, R7, R1, PROD-Q:** remain not closed.
 - **No R11** implementation authorized.
 
-## Cursor regression (independent replay @ AUDITED_HEAD)
+## Cursor regression (replay @ `362e0a98…` — PROD-Q-R1-R7-D1-R6-FINAL session)
+
+**Log:** `.tmp/session/D1-R6-FINAL/pytest-qualification.log` (local; not committed).
+
+**Result:** `171 passed`, `0 failed`, `0 skipped`, `1 warning`, **exit code 0**, ~11.5s wall time.
+
+## Cursor regression (prior replay @ implementation baseline `63688cb…`)
 
 **Command:**
 
@@ -115,6 +122,6 @@ PROD-Q (BLOCKED / CURRENT)
 
 - Does **not** close **D1-R6**, **D1**, **D1b**, **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q**, or any **FRZ-PRD** row.
 - Cross-process arbitrary SQLite writer resistance remains outside OPTION A trust boundary (ADR).
-- **Recommendation:** **D1-R6 is ready for independent closure review** on exact GitHub SHA `63688cb482fd8faa9776a564869694b9fc897064` after auditor confirms matrices, S3-B trace, and GCA test naming — **not** ready for autonomous CLOSED promotion.
+- **Recommendation:** **D1-R6 implementation evidence is ready for independent parent closure review** on GitHub exact SHA **`362e0a98cbf76709497f0ee5cfddd5ef99c80471`** (or **`63688cb482fd8faa9776a564869694b9fc897064`** for implementation-only diff) after auditor confirms matrices, S3-B trace, GCA test naming, and ADR/PROD-Q doc drift — **not** ready for autonomous CLOSED promotion.
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

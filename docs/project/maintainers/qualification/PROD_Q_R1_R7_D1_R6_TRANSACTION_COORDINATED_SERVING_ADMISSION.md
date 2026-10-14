@@ -9,6 +9,7 @@
 
 ## Evidence summary
 
+- **Parent reconciliation (Cursor):** [`PROD_Q_R1_R7_D1_R6_FINAL_INDEPENDENT_CLOSURE_RECONCILIATION.md`](PROD_Q_R1_R7_D1_R6_FINAL_INDEPENDENT_CLOSURE_RECONCILIATION.md) — **READY FOR AUDIT**; does **not** close parent **D1-R6**.
 - **Coordinator:** `intergrax/agent_distribution/activation_domain_coordinator.py` — in-memory + SQLite `BEGIN IMMEDIATE` snapshot; physical reserve/release with compensation on failure after reserve.
 - **Grant authority removed:** no `_PENDING_GRANT_ISSUANCES`, nonce consumption, or `_ACTIVATION_CRITICAL_DEPTH` authorization proof.
 - **Adapter:** `authorize_serving_execution_admission` requires coordinator unit-open context + sealed eligibility evidence.
