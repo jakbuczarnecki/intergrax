@@ -19,8 +19,10 @@
 ## Preserved open parents
 
 - **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q** — **OPEN** / **NOT CLOSED**
-- **D2**, **D3**, **D4** — **READY FOR AUDIT** (implementation evidence on `development`; independent exact-SHA audit pending)
-- **PROD-Q-R1-R7-D4-R1** — **independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787` (D4-03 test-boundary corrective only; **not** D4 parent closure)
+- **D2**, **D3** — **READY FOR AUDIT** (implementation evidence on `development`; independent exact-SHA audit pending)
+- **D4** — **READY FOR INDEPENDENT CLOSURE** @ evidence HEAD `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` — D4-R1 + D4-R2 corrective **independently accepted**; **not** autonomously **CLOSED** · [`PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md`](PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md)
+- **PROD-Q-R1-R7-D4-R1** — **independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787` (D4-03 test-boundary corrective only)
+- **PROD-Q-R1-R7-D4-R2** — **independently accepted** — implementation `b4336eb03a9f2d6eabed0edbbe48526c33a07957`; evidence HEAD `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` (D4-R2 test-boundary slot proof)
 - **PROD-Q-R1-R7-Q** — **NOT ENTERED**
 - Global **FRZ-PRD** rows — **OPEN** (no promotion)
 
