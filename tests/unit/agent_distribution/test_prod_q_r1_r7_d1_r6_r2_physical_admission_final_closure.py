@@ -16,6 +16,7 @@ from intergrax.agent_distribution.activation_domain_coordinator import (
     ServingExecutionAdmissionRequest,
     ServingExecutionEligibilityEvidence,
     _acquire_sqlite_admission_transaction,
+    _release_sqlite_admission_transaction,
     build_activation_domain_coordinator_for_sqlite_bundle,
     build_activation_domain_coordinator_for_stores,
 )
@@ -227,14 +228,14 @@ def test_s4_two_sqlite_connections_serialize_admission(tmp_path: Path) -> None:
     def _second_connection() -> None:
         conn_b, _state_b = _acquire_sqlite_admission_transaction(bundle.database)
         conn_b.rollback()
-        conn_b.close()
+        _release_sqlite_admission_transaction(conn_b)
         second_acquired.set()
 
     worker = threading.Thread(target=_second_connection)
     worker.start()
     assert not second_acquired.wait(timeout=0.2)
     conn_a.rollback()
-    conn_a.close()
+    _release_sqlite_admission_transaction(conn_a)
     worker.join(timeout=5.0)
     assert second_acquired.is_set()
 
@@ -245,7 +246,7 @@ def test_s5_nested_immediate_transaction_fails_closed(tmp_path: Path) -> None:
     with pytest.raises(sqlite3.OperationalError):
         conn.execute("BEGIN IMMEDIATE")
     conn.rollback()
-    conn.close()
+    _release_sqlite_admission_transaction(conn)
 
 
 def test_s6_sqlite_busy_retry_budget_exhausted(tmp_path: Path) -> None:
