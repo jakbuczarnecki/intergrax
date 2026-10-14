@@ -716,7 +716,9 @@ def _open_session_missing_serving_prerequisites_kwargs(tmp_path: Path):
 def test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot(
     tmp_path: Path,
 ) -> None:
-    from intergrax.applications._shared import production_process_lifecycle as ppl
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+    )
 
     kwargs = _open_session_missing_serving_prerequisites_kwargs(tmp_path)
     close_calls = 0
@@ -735,8 +737,21 @@ def test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_sl
         with pytest.raises(StrictProductionServingLauncherError):
             open_strict_production_serving_session(**kwargs)
     assert close_calls == 1
-    assert ppl._active_production_process_lifecycle is None
-    assert ppl._production_slot_phase is ppl._ProductionSlotPhase.AVAILABLE
+    storage = kwargs["storage"]
+    adapter = kwargs["deployment_adapter"]
+    with open_production_process_lifecycle(
+        agent_distribution_db=storage.agent_distribution_db.parent / "ad-retry.db",
+        continuation_state_file=storage.continuation_state_file.parent / "continuation-retry.json",
+        deployment_adapter=adapter,
+        governance=_governance(
+            ApplicationEnvironmentProfile(profile_id=kwargs["environment"].application_environment_id),
+        ),
+        trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
+        missing_file_policy="empty",
+        provider_invocation_db=storage.provider_invocation_db.parent / "invocation-retry.db",
+        composition_builder=kwargs["composition_builder"],
+    ) as lifecycle:
+        assert lifecycle.composition.agent_platform_runtime is not None
 
 
 def test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors(
