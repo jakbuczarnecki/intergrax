@@ -95,7 +95,7 @@ def test_ready_handoff_keeps_execution_admission_closed(tmp_path: Path) -> None:
     )
     assert handoff is not None
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
-        adapter.admit_unit_execution(unit_ref)
+        adapter.reserve_unit_execution(unit_ref)
 
 
 def test_authorize_denied_without_activation_commit(tmp_path: Path) -> None:
@@ -173,8 +173,8 @@ def test_bind_after_activation_opens_admission(tmp_path: Path) -> None:
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
     assert updated.serving_runtime_handoff is not None
-    adapter.admit_unit_execution(unit_ref)
-    adapter.release_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
+    reservation.release()
 
 
 def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
@@ -337,8 +337,8 @@ async def test_gca_admission_wrapper_releases_on_exception(tmp_path: Path) -> No
     port = ColocatedServingUnitAdmissionTaskExecutionPort(inner, handoff)
     with pytest.raises(RuntimeError, match="task failed"):
         await port.execute(Task(tenant_id="t", user_id="u", message="x"))
-    adapter.admit_unit_execution(unit_ref)
-    adapter.release_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
+    reservation.release()
 
 
 def test_activation_commit_then_bind_end_to_end(tmp_path: Path) -> None:
@@ -399,7 +399,7 @@ def test_activation_commit_then_bind_end_to_end(tmp_path: Path) -> None:
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
     assert composition.serving_runtime_handoff is not None
-    adapter.admit_unit_execution(unit_ref)
+    adapter.reserve_unit_execution(unit_ref).release()
 
 
 def test_handoff_failure_leaves_composition_unchanged(tmp_path: Path) -> None:

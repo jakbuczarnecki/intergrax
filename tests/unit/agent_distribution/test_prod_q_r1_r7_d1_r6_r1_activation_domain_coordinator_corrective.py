@@ -1,18 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""PROD-Q-R1-R7-D1-R6-R1 — admission authority, compensation & concurrency corrective."""
+"""PROD-Q-R1-R7-D1-R6-R1 — admission authority & compensation corrective (superseded by R2 tests)."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
 from unittest import mock
 
 import pytest
 from pydantic import PrivateAttr
 
 from intergrax.agent_distribution.activation_domain_coordinator import (
-    ActivationDomainCoordinatorOperationAuthority,
     ServingExecutionAdmissionRequest,
     ServingExecutionEligibilityEvidence,
     SqliteActivationDomainCoordinator,
@@ -61,11 +59,6 @@ def test_serving_execution_admission_module_has_no_grant_alias() -> None:
     import intergrax.agent_distribution.serving_execution_admission as module
 
     assert "ServingExecutionAdmissionGrant" not in module.__all__
-
-
-def test_coordinator_operation_authority_not_constructible_externally() -> None:
-    with pytest.raises(TypeError):
-        ActivationDomainCoordinatorOperationAuthority(_private=object())
 
 
 def test_reserve_exception_does_not_invoke_release_callback(tmp_path: Path) -> None:
@@ -189,10 +182,7 @@ def test_forged_evidence_cannot_open_unit_admission(tmp_path: Path) -> None:
         serving_pointer_revision=1,
     )
     with pytest.raises(VenvBundleColocatedDeploymentError, match="activation domain coordinator"):
-        adapter.open_unit_serving_admission_after_coordinator_verify(
-            forged,
-            coordinator_operation_authority=SimpleNamespace(),
-        )
+        adapter.open_unit_serving_admission_after_coordinator_verify(forged)
 
 
 def test_public_authorize_entrypoint_rejects_evidence_only(tmp_path: Path) -> None:

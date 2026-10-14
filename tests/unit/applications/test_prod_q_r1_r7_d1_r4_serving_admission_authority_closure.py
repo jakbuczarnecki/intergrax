@@ -141,4 +141,4 @@ def test_pointer_swap_before_per_execution_admit_rejected(tmp_path: Path) -> Non
 def test_direct_adapter_admit_without_authorize_still_closed(tmp_path: Path) -> None:
     adapter, _, unit_ref, _, _, _, _, _ = _minimal_projection_bundle(tmp_path)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
-        adapter.admit_unit_execution(unit_ref)
+        adapter.reserve_unit_execution(unit_ref)

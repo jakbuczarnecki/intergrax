@@ -23,7 +23,6 @@ from intergrax.agent_distribution.runtime_revision import (
 )
 from intergrax.agent_distribution.activation_domain_coordinator import (
     ActivationDomainCoordinator,
-    ActivationDomainCoordinatorOperationAuthority,
     ServingExecutionAdmissionRequest,
     ServingExecutionEligibilityEvidence,
 )
@@ -81,8 +80,6 @@ class ColocatedServingExecutionAdmissionAuthority(Protocol):
     def open_unit_serving_admission_after_coordinator_verify(
         self,
         evidence: ServingExecutionEligibilityEvidence,
-        *,
-        coordinator_operation_authority: ActivationDomainCoordinatorOperationAuthority,
     ) -> None:
         """Apply unit admission open for coordinator-verified eligibility evidence."""
 

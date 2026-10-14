@@ -30,7 +30,6 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
 )
 from intergrax.agent_distribution.activation_domain_coordinator import (
-    ActivationDomainCoordinatorOperationAuthority,
     PhysicalExecutionReservation,
     ServingExecutionEligibilityEvidence,
 )
@@ -165,6 +164,7 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         self._lock = threading.RLock()
         self._units: dict[str, _ColocatedVenvPhysicalUnit] = {}
         self._binding_index: dict[str, str] = {}
+        self._coordinator_synchronized_admission_open_depth = 0
 
     def reserve_unit_execution(
         self, serving_unit_ref: str
@@ -178,11 +178,6 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         unit.admission.admit_execution()
         return ColocatedUnitExecutionReservation(self, serving_unit_ref)
 
-    def admit_unit_execution(self, serving_unit_ref: str) -> None:
-        """Physical in-flight reservation — not a production authorization entry point."""
-        unit = self._require_live_unit(serving_unit_ref)
-        unit.admission.admit_execution()
-
     def release_unit_execution(self, serving_unit_ref: str) -> None:
         unit = self._require_unit(serving_unit_ref)
         unit.admission.release_execution()
@@ -194,19 +189,28 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             "serving execution admission requires activation domain coordinator"
         )
 
+    def _begin_coordinator_synchronized_admission_open_scope(self) -> None:
+        with self._lock:
+            self._coordinator_synchronized_admission_open_depth += 1
+
+    def _end_coordinator_synchronized_admission_open_scope(self) -> None:
+        with self._lock:
+            if self._coordinator_synchronized_admission_open_depth <= 0:
+                raise VenvBundleColocatedDeploymentError(
+                    "coordinator-synchronized admission open scope imbalance"
+                )
+            self._coordinator_synchronized_admission_open_depth -= 1
+
     def open_unit_serving_admission_after_coordinator_verify(
         self,
         evidence: ServingExecutionEligibilityEvidence,
-        *,
-        coordinator_operation_authority: ActivationDomainCoordinatorOperationAuthority,
     ) -> None:
         """Open execution admission for coordinator-verified eligibility evidence."""
-        if not isinstance(
-            coordinator_operation_authority, ActivationDomainCoordinatorOperationAuthority
-        ):
-            raise VenvBundleColocatedDeploymentError(
-                "serving execution admission requires activation domain coordinator"
-            )
+        with self._lock:
+            if self._coordinator_synchronized_admission_open_depth <= 0:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving execution admission requires activation domain coordinator"
+                )
         unit = self._require_live_unit(evidence.serving_unit_ref)
         if unit.application_id != evidence.application_id:
             raise VenvBundleColocatedDeploymentError(

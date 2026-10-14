@@ -196,7 +196,7 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
     assert handoff.runtime_agent_factory_resolver is bundle.factory_resolver
     assert updated.serving_runtime_handoff is handoff
     with pytest.raises(VenvBundleColocatedDeploymentError):
-        adapter.admit_unit_execution(unit_ref)
+        adapter.reserve_unit_execution(unit_ref)
     commit, serving_store, instance_store, revision_store = _canonical_commit_and_stores(
         revision,
         deployment_instance,
@@ -214,8 +214,8 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
         deployment_instance_store=instance_store,
         revision_store=revision_store,
     )
-    adapter.admit_unit_execution(unit_ref)
-    adapter.release_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
+    reservation.release()
 
 
 def test_handoff_rejects_resolver_instance_mismatch(tmp_path: Path) -> None:

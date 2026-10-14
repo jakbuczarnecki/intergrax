@@ -252,10 +252,10 @@ def test_unit_without_traffic_admission_before_readiness(tmp_path: Path) -> None
     revision = _revision_for("rev-adm", digest=digest, lock=lock)
     prepared = adapter.prepare(revision, artifact_locator=locator)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="resources are invalid"):
-        adapter.admit_unit_execution(prepared.serving_unit_ref)
+        adapter.reserve_unit_execution(prepared.serving_unit_ref)
     adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
-        adapter.admit_unit_execution(prepared.serving_unit_ref)
+        adapter.reserve_unit_execution(prepared.serving_unit_ref)
     state = AgentDistributionStoreState()
     serving_record = ApplicationEnvironmentServingRecord(
         application_id=revision.application_id,
@@ -285,8 +285,8 @@ def test_unit_without_traffic_admission_before_readiness(tmp_path: Path) -> None
         revision=revision,
         serving_unit_ref=prepared.serving_unit_ref,
     )
-    adapter.admit_unit_execution(prepared.serving_unit_ref)
-    adapter.release_unit_execution(prepared.serving_unit_ref)
+    reservation = adapter.reserve_unit_execution(prepared.serving_unit_ref)
+    reservation.release()
 
 
 def test_readiness_fails_before_check_readiness(tmp_path: Path) -> None:
@@ -444,11 +444,11 @@ def test_begin_drain_blocks_admission(tmp_path: Path) -> None:
     )
     revision = _revision_for("rev-drain", digest=digest, lock=lock)
     unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
-    adapter.admit_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
-        adapter.admit_unit_execution(unit_ref)
-    adapter.release_unit_execution(unit_ref)
+        adapter.reserve_unit_execution(unit_ref)
+    reservation.release()
 
 
 def test_drain_completion_reflects_in_flight(tmp_path: Path) -> None:
@@ -458,13 +458,13 @@ def test_drain_completion_reflects_in_flight(tmp_path: Path) -> None:
     )
     revision = _revision_for("rev-inflight", digest=digest, lock=lock)
     unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
-    adapter.admit_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     policy = DrainPolicy(timeout_seconds=30.0)
     assert adapter.check_drain(
         revision, serving_unit_ref=unit_ref, policy=policy
     ).completed is False
-    adapter.release_unit_execution(unit_ref)
+    reservation.release()
     assert adapter.check_drain(
         revision, serving_unit_ref=unit_ref, policy=policy
     ).completed is True
@@ -477,7 +477,7 @@ def test_drain_timeout_evidence(tmp_path: Path) -> None:
     )
     revision = _revision_for("rev-to", digest=digest, lock=lock)
     unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
-    adapter.admit_unit_execution(unit_ref)
+    adapter.reserve_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     policy = DrainPolicy(timeout_seconds=0.01)
     time.sleep(0.02)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Transaction-coordinated serving execution admission (PROD-Q-R1-R7-D1-R6-R1)."""
+"""Transaction-coordinated serving execution admission (PROD-Q-R1-R7-D1-R6-R2)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import sqlite3
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -44,28 +44,10 @@ from intergrax.agent_distribution.stores import (
 _NON_EMPTY = Field(min_length=1)
 _SQLITE_BUSY_MAX_ATTEMPTS = 5
 _SQLITE_BUSY_BASE_DELAY_S = 0.01
-_OPERATION_AUTH_SENTINEL = object()
 
 
 class ActivationDomainCoordinatorError(AgentDistributionError):
     """Activation domain coordination failed."""
-
-
-class ActivationDomainCoordinatorOperationAuthority:
-    """Coordinator-private operation marker; not constructible outside this module."""
-
-    __slots__ = ("_marker",)
-
-    def __init__(self, *, _private: object) -> None:
-        if _private is not _OPERATION_AUTH_SENTINEL:
-            raise TypeError(
-                "ActivationDomainCoordinatorOperationAuthority is coordinator-private"
-            )
-        self._marker = _private
-
-
-def _coordinator_operation_authority() -> ActivationDomainCoordinatorOperationAuthority:
-    return ActivationDomainCoordinatorOperationAuthority(_private=_OPERATION_AUTH_SENTINEL)
 
 
 class ServingExecutionAdmissionRequest(BaseModel):
@@ -105,9 +87,37 @@ class ColocatedServingUnitAdmissionPort(Protocol):
     def open_unit_serving_admission_after_coordinator_verify(
         self,
         evidence: ServingExecutionEligibilityEvidence,
-        *,
-        coordinator_operation_authority: ActivationDomainCoordinatorOperationAuthority,
     ) -> None: ...
+
+
+@runtime_checkable
+class CoordinatorSynchronizedColocatedServingUnitAdmissionPort(
+    ColocatedServingUnitAdmissionPort, Protocol
+):
+    """Adapter port that accepts admission open only during a coordinator operation."""
+
+    def _begin_coordinator_synchronized_admission_open_scope(self) -> None: ...
+
+    def _end_coordinator_synchronized_admission_open_scope(self) -> None: ...
+
+
+def _open_unit_admission_under_coordinator_operation(
+    admission_authority: ColocatedServingUnitAdmissionPort,
+    evidence: ServingExecutionEligibilityEvidence,
+) -> None:
+    if not isinstance(
+        admission_authority, CoordinatorSynchronizedColocatedServingUnitAdmissionPort
+    ):
+        raise ServingExecutionAdmissionError(
+            "admission authority does not support coordinator-synchronized open"
+        )
+    admission_authority._begin_coordinator_synchronized_admission_open_scope()
+    try:
+        admission_authority.open_unit_serving_admission_after_coordinator_verify(
+            evidence
+        )
+    finally:
+        admission_authority._end_coordinator_synchronized_admission_open_scope()
 
 
 def _eligibility_evidence_from_request(
@@ -319,9 +329,9 @@ class InMemoryActivationDomainCoordinator:
                     raise ServingExecutionAdmissionError(
                         "serving pointer revision mismatch for unit admission open"
                     )
-            admission_authority.open_unit_serving_admission_after_coordinator_verify(
+            _open_unit_admission_under_coordinator_operation(
+                admission_authority,
                 evidence,
-                coordinator_operation_authority=_coordinator_operation_authority(),
             )
             return evidence
 
@@ -366,9 +376,9 @@ class SqliteActivationDomainCoordinator:
                     raise ServingExecutionAdmissionError(
                         "serving pointer revision mismatch for unit admission open"
                     )
-            admission_authority.open_unit_serving_admission_after_coordinator_verify(
+            _open_unit_admission_under_coordinator_operation(
+                admission_authority,
                 evidence,
-                coordinator_operation_authority=_coordinator_operation_authority(),
             )
             return evidence
 
@@ -463,8 +473,8 @@ def build_activation_domain_coordinator_for_sqlite_bundle(
 __all__ = [
     "ActivationDomainCoordinator",
     "ActivationDomainCoordinatorError",
-    "ActivationDomainCoordinatorOperationAuthority",
     "ColocatedServingUnitAdmissionPort",
+    "CoordinatorSynchronizedColocatedServingUnitAdmissionPort",
     "InMemoryActivationDomainCoordinator",
     "PhysicalExecutionReservation",
     "ServingExecutionAdmissionRequest",
