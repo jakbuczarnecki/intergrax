@@ -7,7 +7,7 @@
 | **Prior child** | PROD-Q-R1-R7-Q-P1 (accepted in bounded static scope) |
 | **Branch** | `development` |
 | **START_HEAD** | `e0b16ffdb6be6d615501b8ec94671ac5c0b0d459` |
-| **ENV-1 FINAL_COMMIT** | *(pending push — see git `development` after PROD-Q-R1-R7-Q-P2-ENV-1)* |
+| **ENV-1 FINAL_COMMIT** | `1de4fb5251c08141553f9397c2aeed04815c665d` (code corrective: `ef3a50686`) |
 | **Slice** | **P2-A** environment certification + declared D4/D1b reuse matrix; **P2-B** (happy-path + HTTP admission smoke) unblocked for in-process import only; default pytest entry still **ENV-2** |
 
 ## Tested production composition path (design intent)
