@@ -1,0 +1,148 @@
+# PROD-Q-R1-R7-Q-P1 — Strict production reachability gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | **READY FOR AUDIT** |
+| **Parent** | PROD-Q-R1-R7-Q (not PASS) |
+| **Branch** | `development` |
+| **START_HEAD** | `ccbb19633e83de29d5b70c5e7e1689b0c29d8c07` |
+| **FINAL_COMMIT** | `7ac7c2a6e75376c49b5f8994b75676609cc5f4ad` |
+| **Audited production SHA** | `ccbb19633e83de29d5b70c5e7e1689b0c29d8c07` (boundary code baseline; gate delivered on FINAL_COMMIT) |
+| **Method** | Closed-world AST call-site reachability + adversarial snippet negatives; selective D2/D4 reuse |
+
+## Strict production roots (trusted entry set)
+
+| Root symbol | Module |
+|-------------|--------|
+| `open_strict_production_serving_session` | `intergrax/applications/_shared/strict_production_serving_launcher.py` |
+| `create_governed_contractor_strict_production_asgi_app` | `applications/governed_contractor_application/host/strict_production_serving.py` |
+| `create_governed_contractor_process_app` | `applications/governed_contractor_application/host/main.py` |
+| `create_app` | `applications/governed_contractor_application/host/main.py` |
+| `run` | `applications/governed_contractor_application/host/main.py` |
+
+**P1-G01 sanctioned chain (static):** `open_strict_production_serving_session` → `open_production_process_lifecycle` → `wire_production_lifecycle_services` → `reject_reference_runtime_deployment_adapter` → D3 reconciliation / activation handoff (in `production_process_lifecycle` / launcher) → GCA `create_governed_contractor_strict_production_asgi_app` → `create_governed_contractor_process_app`. Legacy `main.run()` remains fail-closed (D4-03 behavioral evidence reused).
+
+## Closed-world boundary modules
+
+1. `applications/governed_contractor_application/host/main.py`
+2. `applications/governed_contractor_application/host/strict_production_serving.py`
+3. `intergrax/applications/_shared/strict_production_serving_launcher.py`
+4. `intergrax/applications/_shared/production_host_composition.py`
+5. `intergrax/applications/_shared/strict_production_asgi_lifespan.py`
+6. `intergrax/applications/_shared/production_process_lifecycle.py`
+7. `intergrax/applications/_shared/production_lifecycle.py`
+8. `intergrax/applications/_shared/reference_production_lifecycle.py` (inventory only — not a strict root)
+9. `intergrax/applications/_shared/colocated_serving_runtime_composition.py`
+10. `intergrax/agent_distribution/deployment.py`
+
+No whole-repository scan. Direct import/callee resolution stays inside this set plus explicit application-package mapping for `governed_contractor_application.host.*`.
+
+## Allowed rejection-only imports (not execution bypass)
+
+| Symbol | Module | Use |
+|--------|--------|-----|
+| `FakeInMemoryRuntimeDeploymentAdapter` | `production_lifecycle.py` | `isinstance` guard inside `reject_reference_runtime_deployment_adapter` only |
+| `ReferenceProductionLifecycleGovernanceBlockedError` | `strict_production_serving_launcher.py` | Exception translation (not reference lifecycle opener) |
+| `ReferenceProductionLifecycleServices` / `ReferenceProductionLifecycleResult` | `production_lifecycle.py` | Type aliases / return types on production launcher (no `ReferenceProductionLifecycleLauncher` construction) |
+
+## Prohibited execution paths (gate asserts zero reachable calls)
+
+- `FakeInMemoryRuntimeDeploymentAdapter(...)` construction (not `isinstance` guards)
+- `open_reference_production_process_lifecycle(...)`
+- `ReferenceProductionLifecycleLauncher(...)`
+- `wire_reference_production_lifecycle_services(...)` / `wire_durable_reference_production_lifecycle_services(...)`
+- `create_reference_production_process_composition(...)`
+- Deployment adapter construction inside GCA strict ASGI factory modules (`strict_production_serving.py`, GCA `main.py` process factory path)
+
+## Static gate coverage
+
+| Artifact | Role |
+|----------|------|
+| `tests/qualification/prod_q/_prod_q_r1_r7_q_p1_strict_reachability.py` | Bounded AST indexer, BFS over resolved calls from strict roots |
+| `tests/qualification/prod_q/test_prod_q_r1_r7_q_p1_strict_production_reachability.py` | P1-G01–G06 assertions + adversarial snippet negatives |
+
+**Coverage boundary (explicit):**
+
+- Proves absence of **listed prohibited direct calls** on the **bounded static call graph** reachable from strict roots through same-module calls and import-resolved cross-module calls.
+- Does **not** prove full interprocedural call-graph closure: attribute dispatch (`lifecycle.launcher.deploy_and_activate`), higher-order callbacks, dynamic imports, or reflection are **out of scope**.
+- Does **not** claim global `FakeInMemory*` count = 0 outside the closed-world module set.
+
+**Unresolved-edge policy:** Critical imported authority calls (`open_production_process_lifecycle`, `wire_production_lifecycle_services`, `create_governed_contractor_process_app`, etc.) must resolve to a boundary module or the gate fails closed.
+
+## Adversarial negatives (snippet fixtures)
+
+| Case | Expected |
+|------|----------|
+| `FakeInMemoryRuntimeDeploymentAdapter()` in synthetic module | **Detect** |
+| `isinstance(..., FakeInMemoryRuntimeDeploymentAdapter)` in reject helper | **Allow** |
+| `open_reference_production_process_lifecycle()` call | **Detect** |
+
+## Pytest evidence
+
+**Command (sequential, no xdist):**
+
+```text
+uv run pytest -p no:xdist -q --noconftest \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p1_strict_production_reachability.py \
+  tests/unit/applications/test_prod_q_r1_r7_d2_production_process_lifecycle.py::test_d2_production_process_lifecycle_module_has_no_fake_adapter_reachability \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_fake_adapter_rejected \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_03_legacy_main_run_fail_closed \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions
+```
+
+**Result @ workspace:** 17 passed; cumulative wall time ~6 s (log: `.tmp/proof/prod-q-r1-r7-q-p1/pytest.log`).
+
+**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** Default `tests/conftest.py` `pytest_sessionstart` triggers a circular import (`RuntimeCheckpoint` / `agent_runtime_io`) at HEAD `ccbb19633…`, so the P1 module was verified with `--noconftest`. CI may differ; independent audit should confirm default pytest entry.
+
+## Reused D2/D4 evidence (not duplicated)
+
+- D2 `test_d2_production_process_lifecycle_module_has_no_fake_adapter_reachability` — `production_process_lifecycle.py` text negative
+- D4 `test_d4_fake_adapter_rejected` — runtime rejection on strict launcher
+- D4 `test_d4_03_legacy_main_run_fail_closed` — `main.run()` fail-closed
+- D4 `test_d4_asgi_startup_only_after_preconditions` — unready session rejected
+
+## Enterprise audit matrix (P1 scope only)
+
+| Criterion | Verdict |
+|-----------|---------|
+| Contracts over implementations | PASS — gate checks sanctioned ports/call surfaces, not adapter internals |
+| Hard layer boundaries | PASS — no production code changes; inventory respects tier boundaries |
+| Exactly-one semantic owner | PASS — strict opener / lifecycle ownership unchanged |
+| Exactly-one composition owner | PASS — GCA consumes `ProductionProcessComposition`; no new composition paths |
+| Strong typing | N/A — test-only delta |
+| A1 structural constraints | PASS — no bypass of VENV strict pin in changed scope |
+| Fail-closed | PASS — unresolved critical calls and prohibited calls fail tests |
+| Governance ≠ execution | PASS — no new activation authority |
+| Traceability | PASS — regression module + this evidence doc |
+
+## Tenant isolation audit (P1 changed scope only)
+
+**Verdict:** No change to tenant binding or resolver behavior in P1 deliverables (tests/docs only). **Not** a global tenant certification.
+
+## FRZ contributions (evidence only — global statuses unchanged)
+
+| FRZ | Contribution |
+|-----|----------------|
+| FRZ-PRD-01 | Strict single-root serving chain documented + static regression |
+| FRZ-PRD-03 | Production lifecycle wiring reachability guarded |
+| FRZ-PRD-07 | Reference/fake execution paths excluded on bounded strict graph |
+| FRZ-PRD-08 | No harness/reference lifecycle calls from strict roots (static) |
+| FRZ-SEC-04 | Fail-closed legacy entry reinforced via D4 reuse |
+| FRZ-REG-02/03/09 | Registry projection bootstrap path remains store-backed; no seeding calls on strict graph |
+
+## Findings
+
+| ID | Disposition |
+|----|-------------|
+| IN-SCOPE BLOCKER | None |
+| TRACKED FREEZE DEBT | R7-Q integrated E2E, cross-tenant pack, full conftest pytest path — unchanged |
+| ENVIRONMENT/TEST ISSUE | Root `conftest` circular import blocks default pytest session @ audited SHA |
+
+## Recommended R7-Q disposition
+
+- **PROD-Q-R1-R7-Q:** remain **BLOCKED** / not PASS (P1 is one gate only).
+- **Next bounded child:** **PROD-Q-R1-R7-Q-P2** — integrated strict-path qualification (per gate plan §E), including HTTP/runtime evidence where authorized.
+
+---
+
+Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.
