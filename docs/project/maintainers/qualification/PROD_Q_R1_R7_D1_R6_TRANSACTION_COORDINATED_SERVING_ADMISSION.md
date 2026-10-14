@@ -19,4 +19,5 @@
 ## Explicit non-claims
 
 - Does **not** close **PROD-Q-R1**, **PROD-Q-R1-R7**, **D1**, **D1b**, or any **FRZ-PRD** row.
+- **D1/D1b acceptance reconciliation:** [`PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md`](PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md).
 - Cross-process SQLite writer resistance remains **outside** OPTION A operational trust boundary.

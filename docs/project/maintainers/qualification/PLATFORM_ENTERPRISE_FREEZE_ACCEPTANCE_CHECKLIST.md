@@ -226,12 +226,12 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-CTL-12 | Cross-cutting control planes | Context Engineering: one owner; one canonical boundary; no peer execution/governance authority; typed contracts; regression protection | CTRL-X | PASS | Accepted HEAD `318a4d835534ef5c48575f4649551c957dacd8ea`; qualification doc above; `CTRL_X_PLANE_CATALOG` CX-12 (Context Engineering); proof replay 44/44. |
 | FRZ-PRD-01 | Production qualification | production qualification independent of lab/harness | PROD-Q | OPEN | — |
 | FRZ-PRD-02 | Production qualification | provider/plugin qualification enforced | PROD-Q | OPEN | **Mandatory and OPEN** — AW-7C capability qualification does not substitute for per-provider PROD-Q (E2B physical qualification deferred here). |
-| FRZ-PRD-03 | Production qualification | unsupported production configuration fails closed | PROD-Q | OPEN | — |
+| FRZ-PRD-03 | Production qualification | unsupported production configuration fails closed | PROD-Q | OPEN | D1/D1b scoped evidence: `validate_colocated_serving_admission_topology` + D1b negatives — [`PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md`](PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md); **not** global PASS. |
 | FRZ-PRD-04 | Production qualification | startup lifecycle qualified | PROD-Q | OPEN | — |
 | FRZ-PRD-05 | Production qualification | shutdown/resource cleanup qualified | PROD-Q | OPEN | — |
 | FRZ-PRD-06 | Production qualification | degraded behavior explicit | PROD-Q | OPEN | — |
 | FRZ-PRD-07 | Production qualification | strict vs lab semantics separated | PROD-Q | OPEN | — |
-| FRZ-PRD-08 | Production qualification | production-only bypass count = 0 | PROD-Q | OPEN | — |
+| FRZ-PRD-08 | Production qualification | production-only bypass count = 0 | PROD-Q | OPEN | D1/D1b scoped: grant registry absent; coordinator admission + `test_production_composition_architecture_gate.py` — same evidence doc; **strict production graph** still requires **D2** (fake adapter in reference lifecycle). |
 | FRZ-PRD-09 | Production qualification | production health/readiness/degraded-state semantics qualified | PROD-Q | OPEN | — |
 | FRZ-PRD-10 | Production qualification | terminal and critical production failures are operator-visible and actionable | PROD-Q | OPEN | — |
 | FRZ-PRD-11 | Production qualification | production capacity/overload behavior is qualified and bounded | PROD-Q | OPEN | Cross-reference Security/Reliability evidence from `CTRL-X`, `HARNESS-W4` where applicable; no duplicate semantic criteria. |

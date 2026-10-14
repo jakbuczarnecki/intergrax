@@ -11,7 +11,7 @@
 | **Corrective parent** | **PROD-Q-R1-R7-D1** / **D1b** — **BLOCKED** (independent **D1-R4** audit **REJECTED**) |
 | **Prior corrective** | **PROD-Q-R1-R7-D1-R4** — **REJECTED** (independent GitHub audit) |
 | **ADR baseline** | **ADR-01-R6** — **DEC-01–DEC-09 / DEC-09-EXT RATIFIED** ([`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) §22) |
-| **Next mandatory implementation** | **PROD-Q-R1-R7-D1-R6** — bounded corrective code wave (**not** closed by ratification) |
+| **Next mandatory implementation** | **PROD-Q-R1-R7-D1-R6** — **landed @ HEAD** (operator-accepted A1 scope); **D1/D1b formal acceptance** — [`PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md`](PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md) (**READY FOR AUDIT**) |
 | **Does not close** | **PROD-Q-R1** · **PROD-Q-R7** · **FRZ-PRD-04** · **FRZ-PRD-05** · **FRZ-PRD-08** · any global FRZ PASS |
 
 ## 1. Canonical preflight (@ audited HEAD)
