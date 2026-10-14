@@ -6,7 +6,7 @@
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Branch** | `development` |
 | **START_HEAD** | `ec773c666a061896395ca1a2160fd2babd73f344` |
-| **FINAL_COMMIT** | *(set at commit — PROD-Q-R1-R7-Q-P1-R1)* |
+| **FINAL_COMMIT** | `c54e37cff77823d173dae3a5e6e61f6aa0036737` |
 | **Gate implementation commit** | `ae9cfdb564ca2aecff66cdfb017495e7402870a8` |
 | **Audited production SHA** | `ccbb19633e83de29d5b70c5e7e1689b0c29d8c07` (boundary code baseline; gate delivered on FINAL_COMMIT) |
 | **Method** | Closed-world AST call-site reachability + adversarial snippet negatives; selective D2/D4 reuse |
