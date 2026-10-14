@@ -54,7 +54,7 @@ def test_s7_publish_failure_compensation_holds_domain_before_pointer_swap(
 
     def _compensate_hold(*args, **kwargs):  # type: ignore[no-untyped-def]
         at_compensate.set()
-        assert db._activation_lock._is_owned()  # noqa: SLF001 — qualification instrumentation
+        assert db._activation_lock.is_owned_by_current_thread()  # noqa: SLF001
         lock_held_during_compensate.set()
         assert release_compensate.wait(timeout=5.0)
         real_compensate(*args, **kwargs)
@@ -219,7 +219,7 @@ def test_activation_domain_lock_held_through_compensation_after_publish_failure(
     real_compensate = _compensate_unit_open_after_coordination_failure
 
     def _compensate_track(*args, **kwargs):  # type: ignore[no-untyped-def]
-        assert db._activation_lock._is_owned()  # noqa: SLF001
+        assert db._activation_lock.is_owned_by_current_thread()  # noqa: SLF001
         lock_held.set()
         real_compensate(*args, **kwargs)
 

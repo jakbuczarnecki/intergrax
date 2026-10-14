@@ -57,11 +57,7 @@ _ARTIFACT_B = "sha256:" + ("b" * 64)
 
 
 def _lock_released(db: object) -> bool:
-    acquired = db._activation_lock.acquire(blocking=False)  # noqa: SLF001
-    if acquired:
-        db._activation_lock.release()  # noqa: SLF001
-        return True
-    return False
+    return db._activation_lock.is_unheld()  # noqa: SLF001
 
 
 def _revision(
@@ -154,7 +150,7 @@ def _bootstrap_sqlite_activation_pair(tmp_path: Path):
 
 
 def test_s3_a_activation_service_rollback_before_b_admission(tmp_path: Path) -> None:
-    bundle, activation, coordinator, _adapter, request_b, unit_b = _bootstrap_sqlite_activation_pair(
+    bundle, activation, coordinator, adapter, request_b, unit_b = _bootstrap_sqlite_activation_pair(
         tmp_path
     )
     activation.rollback(
@@ -166,83 +162,93 @@ def test_s3_a_activation_service_rollback_before_b_admission(tmp_path: Path) -> 
     scope = bundle.serving_store.get_serving_record(_APP, _ENV)
     assert scope is not None
     assert scope.traffic_serving_revision_id == "rev-a"
-    reserves = 0
-
-    def _reserve() -> object:
-        nonlocal reserves
-        reserves += 1
-        return object()
-
+    assert adapter.in_flight_count(unit_b) == 0
     with pytest.raises(ServingExecutionAdmissionError):
         coordinator.coordinate_physical_execution_reservation(
             request_b,
-            physical_reserve=_reserve,
+            physical_reserve=lambda: adapter.reserve_unit_execution(unit_b),
         )
-    assert reserves == 0
+    assert adapter.in_flight_count(unit_b) == 0
 
 
 def test_s3_b_rollback_waits_for_inflight_sqlite_admission(tmp_path: Path) -> None:
-    bundle, activation, coordinator, _adapter, request_b, unit_b = _bootstrap_sqlite_activation_pair(
+    bundle, activation, coordinator, adapter, request_b, unit_b = _bootstrap_sqlite_activation_pair(
         tmp_path
     )
-    t1_inside = threading.Event()
+    t1_before_reserve = threading.Event()
     t2_started_rollback = threading.Event()
-    reserve_done = threading.Event()
+    t1_reserved = threading.Event()
     rollback_done = threading.Event()
+    held: list[object] = []
+    worker_errors: list[BaseException] = []
     original_verify = verify_serving_execution_eligibility_from_state
 
     def _verify_hold(state, req):  # type: ignore[no-untyped-def]
         evidence = original_verify(state, req)
-        t1_inside.set()
+        t1_before_reserve.set()
         assert t2_started_rollback.wait(timeout=5.0)
         return evidence
 
-    class _Token:
-        def release(self) -> None:
-            return None
-
-    def _reserve() -> _Token:
-        reserve_done.set()
-        return _Token()
+    def _reserve() -> object:
+        token = adapter.reserve_unit_execution(unit_b)
+        held.append(token)
+        assert adapter.in_flight_count(unit_b) == 1
+        t1_reserved.set()
+        return token
 
     def _t1() -> None:
-        with mock.patch.object(
-            adc_module,
-            "verify_serving_execution_eligibility_from_state",
-            side_effect=_verify_hold,
-        ):
-            coordinator.coordinate_physical_execution_reservation(
-                request_b,
-                physical_reserve=_reserve,
-            )
+        try:
+            with mock.patch.object(
+                adc_module,
+                "verify_serving_execution_eligibility_from_state",
+                side_effect=_verify_hold,
+            ):
+                coordinator.coordinate_physical_execution_reservation(
+                    request_b,
+                    physical_reserve=_reserve,
+                )
+        except BaseException as exc:
+            worker_errors.append(exc)
 
     def _t2() -> None:
-        assert t1_inside.wait(timeout=5.0)
-        t2_started_rollback.set()
-        activation.rollback(
-            application_id=_APP,
-            application_environment_id=_ENV,
-            expected_current_traffic_revision_id="rev-b",
-            expected_serving_pointer_revision=2,
-        )
-        rollback_done.set()
+        try:
+            assert t1_before_reserve.wait(timeout=5.0)
+            t2_started_rollback.set()
+            assert not rollback_done.wait(timeout=0.05)
+            activation.rollback(
+                application_id=_APP,
+                application_environment_id=_ENV,
+                expected_current_traffic_revision_id="rev-b",
+                expected_serving_pointer_revision=2,
+            )
+            rollback_done.set()
+        except BaseException as exc:
+            worker_errors.append(exc)
 
     t1 = threading.Thread(target=_t1)
     t2 = threading.Thread(target=_t2)
     t1.start()
     t2.start()
+    assert t1_before_reserve.wait(timeout=5.0)
+    assert t2_started_rollback.wait(timeout=5.0)
+    assert not rollback_done.is_set()
+    assert t1_reserved.wait(timeout=5.0)
+    assert rollback_done.wait(timeout=10.0)
     t1.join(timeout=10.0)
     t2.join(timeout=10.0)
-    assert reserve_done.is_set()
-    assert rollback_done.is_set()
+    assert not worker_errors
+    assert adapter.in_flight_count(unit_b) == 1
     scope = bundle.serving_store.get_serving_record(_APP, _ENV)
     assert scope is not None
     assert scope.traffic_serving_revision_id == "rev-a"
     with pytest.raises(ServingExecutionAdmissionError):
         coordinator.coordinate_physical_execution_reservation(
             request_b,
-            physical_reserve=lambda: object(),
+            physical_reserve=lambda: adapter.reserve_unit_execution(unit_b),
         )
+    assert adapter.in_flight_count(unit_b) == 1
+    held[0].release()
+    assert adapter.in_flight_count(unit_b) == 0
 
 
 def test_nested_activation_store_mutate_while_lease_holds_fails_closed(

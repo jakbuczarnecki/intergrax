@@ -176,7 +176,7 @@ def test_activation_domain_lock_held_from_begin_through_publish(tmp_path: Path) 
 
     def _commit_track(self: _SqliteAdmissionDomainLease) -> None:
         original_commit(self)
-        assert db._activation_lock._is_owned()  # noqa: SLF001 — qualification instrumentation
+        assert db._activation_lock.is_owned_by_current_thread()  # noqa: SLF001
         lock_held_at_publish.set()
     coordinator = build_activation_domain_coordinator_for_sqlite_bundle(sqlite_bundle)
     unit = adapter._units[unit_ref]
