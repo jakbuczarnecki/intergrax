@@ -25,9 +25,17 @@ from intergrax.agent_distribution.activation_domain_coordinator import (
     build_activation_domain_coordinator_for_sqlite_bundle,
     verify_serving_execution_eligibility_from_state,
 )
-from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
+from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedDeploymentError,
+    VenvBundleColocatedRuntimeDeploymentAdapter,
+)
+from testing_support.agent_distribution.venv_bundle_deployment_fixtures import (
+    file_artifact_locator,
+    write_minimal_venv_bundle,
+)
+from tests.unit.agent_distribution.test_prod_q_r1_r7_d1_venv_bundle_colocated_deployment_adapter import (
+    _authorize_adapter_execution_gate,
 )
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
@@ -52,8 +60,13 @@ pytestmark = [pytest.mark.unit]
 
 _APP = "app-a"
 _ENV = "env-prod"
-_ARTIFACT_A = "sha256:" + ("a" * 64)
-_ARTIFACT_B = "sha256:" + ("b" * 64)
+
+
+def _venv_in_flight(
+    adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
+    serving_unit_ref: str,
+) -> int:
+    return adapter._units[serving_unit_ref].admission.in_flight_count()  # noqa: SLF001
 
 
 def _lock_released(db: object) -> bool:
@@ -64,6 +77,7 @@ def _revision(
     revision_id: str,
     *,
     artifact: str,
+    lock: MaterializedRuntimeLock,
     state: RuntimeRevisionState,
 ) -> RuntimeRevision:
     return RuntimeRevision(
@@ -73,8 +87,8 @@ def _revision(
         application_release_id="rel-1",
         platform_version="0.1.0",
         effective_roster_revision_id="roster-hash",
-        materialized_runtime_lock_id=f"lock-{revision_id}",
-        materialized_runtime_lock_digest="sha256:" + ("2" * 64),
+        materialized_runtime_lock_id=lock.lock_id,
+        materialized_runtime_lock_digest=lock.lock_digest,
         runtime_graph_digest=f"graph-{revision_id}",
         materialization_artifact_digest=artifact,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
@@ -85,7 +99,9 @@ def _revision(
 
 def _bootstrap_sqlite_activation_pair(tmp_path: Path):
     bundle = build_sqlite_agent_distribution_store_bundle(tmp_path / "s3-rollback.db")
-    deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
+    deployment_adapter = VenvBundleColocatedRuntimeDeploymentAdapter(
+        trusted_artifact_parent_roots=[tmp_path],
+    )
     projection = FakeRuntimeServingProjectionCoordinator()
     revision_service = RuntimeRevisionService(bundle.revision_store)
     activation = ActivationService(
@@ -97,21 +113,38 @@ def _bootstrap_sqlite_activation_pair(tmp_path: Path):
         projection_coordinator=projection,
         materialization_store=bundle.materialization_store,
     )
-    for revision_id, artifact in (("rev-a", _ARTIFACT_A), ("rev-b", _ARTIFACT_B)):
-        candidate = _revision(revision_id, state=RuntimeRevisionState.CANDIDATE, artifact=artifact)
+    revision_materials: dict[str, tuple[str, MaterializedRuntimeLock, str]] = {}
+    for revision_id, suffix in (("rev-a", "a"), ("rev-b", "b")):
+        root = tmp_path / f"bundle-{suffix}"
+        digest, lock = write_minimal_venv_bundle(root)
+        locator = file_artifact_locator(root)
+        revision_materials[revision_id] = (digest, lock, locator)
+        candidate = _revision(
+            revision_id,
+            state=RuntimeRevisionState.CANDIDATE,
+            artifact=digest,
+            lock=lock,
+        )
         revision_service.persist_candidate_revision(candidate)
-        validated = _revision(revision_id, state=RuntimeRevisionState.VALIDATED, artifact=artifact)
+        validated = _revision(
+            revision_id,
+            state=RuntimeRevisionState.VALIDATED,
+            artifact=digest,
+            lock=lock,
+        )
         revision_service.mark_validated(revision_id, validated_revision=validated)
         persist_materialization_for_revision(
             bundle.materialization_store,
             validated,
-            artifact_locator=f"artifact://{artifact}",
+            artifact_locator=locator,
         )
+    digest_a, _lock_a, locator_a = revision_materials["rev-a"]
+    digest_b, lock_b, locator_b = revision_materials["rev-b"]
     activation.prepare_candidate(
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id="rev-a",
-        artifact_locator=f"artifact://{_ARTIFACT_A}",
+        artifact_locator=locator_a,
     )
     activation.commit_activation(
         application_id=_APP,
@@ -119,13 +152,13 @@ def _bootstrap_sqlite_activation_pair(tmp_path: Path):
         runtime_revision_id="rev-a",
         expected_prior_traffic_revision_id=None,
         expected_serving_pointer_revision=0,
-        expected_artifact_digest=_ARTIFACT_A,
+        expected_artifact_digest=digest_a,
     )
     activation.prepare_candidate(
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id="rev-b",
-        artifact_locator=f"artifact://{_ARTIFACT_B}",
+        artifact_locator=locator_b,
     )
     activation.commit_activation(
         application_id=_APP,
@@ -133,18 +166,32 @@ def _bootstrap_sqlite_activation_pair(tmp_path: Path):
         runtime_revision_id="rev-b",
         expected_prior_traffic_revision_id="rev-a",
         expected_serving_pointer_revision=1,
-        expected_artifact_digest=_ARTIFACT_B,
+        expected_artifact_digest=digest_b,
     )
-    unit_b = deployment_adapter._unit_key(
-        _revision("rev-b", state=RuntimeRevisionState.ACTIVE, artifact=_ARTIFACT_B)
-    )
+    instance_b = bundle.deployment_instance_store.get_instance(_APP, _ENV, "rev-b")
+    assert instance_b is not None and instance_b.serving_unit_ref is not None
+    unit_b = instance_b.serving_unit_ref
     coordinator = build_activation_domain_coordinator_for_sqlite_bundle(bundle)
     request_b = ServingExecutionAdmissionRequest(
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id="rev-b",
         serving_unit_ref=unit_b,
-        materialization_artifact_digest=_ARTIFACT_B,
+        materialization_artifact_digest=digest_b,
+    )
+    rev_b = _revision(
+        "rev-b",
+        state=RuntimeRevisionState.ACTIVE,
+        artifact=digest_b,
+        lock=lock_b,
+    )
+    _authorize_adapter_execution_gate(
+        deployment_adapter,
+        serving_store=bundle.serving_store,
+        instance_store=bundle.deployment_instance_store,
+        revision_store=bundle.revision_store,
+        revision=rev_b,
+        serving_unit_ref=unit_b,
     )
     return bundle, activation, coordinator, deployment_adapter, request_b, unit_b
 
@@ -162,13 +209,13 @@ def test_s3_a_activation_service_rollback_before_b_admission(tmp_path: Path) -> 
     scope = bundle.serving_store.get_serving_record(_APP, _ENV)
     assert scope is not None
     assert scope.traffic_serving_revision_id == "rev-a"
-    assert adapter.in_flight_count(unit_b) == 0
+    assert _venv_in_flight(adapter, unit_b) == 0
     with pytest.raises(ServingExecutionAdmissionError):
         coordinator.coordinate_physical_execution_reservation(
             request_b,
             physical_reserve=lambda: adapter.reserve_unit_execution(unit_b),
         )
-    assert adapter.in_flight_count(unit_b) == 0
+    assert _venv_in_flight(adapter, unit_b) == 0
 
 
 def test_s3_b_rollback_waits_for_inflight_sqlite_admission(tmp_path: Path) -> None:
@@ -192,7 +239,7 @@ def test_s3_b_rollback_waits_for_inflight_sqlite_admission(tmp_path: Path) -> No
     def _reserve() -> object:
         token = adapter.reserve_unit_execution(unit_b)
         held.append(token)
-        assert adapter.in_flight_count(unit_b) == 1
+        assert _venv_in_flight(adapter, unit_b) == 1
         t1_reserved.set()
         return token
 
@@ -237,7 +284,7 @@ def test_s3_b_rollback_waits_for_inflight_sqlite_admission(tmp_path: Path) -> No
     t1.join(timeout=10.0)
     t2.join(timeout=10.0)
     assert not worker_errors
-    assert adapter.in_flight_count(unit_b) == 1
+    assert _venv_in_flight(adapter, unit_b) == 1
     scope = bundle.serving_store.get_serving_record(_APP, _ENV)
     assert scope is not None
     assert scope.traffic_serving_revision_id == "rev-a"
@@ -246,9 +293,9 @@ def test_s3_b_rollback_waits_for_inflight_sqlite_admission(tmp_path: Path) -> No
             request_b,
             physical_reserve=lambda: adapter.reserve_unit_execution(unit_b),
         )
-    assert adapter.in_flight_count(unit_b) == 1
+    assert _venv_in_flight(adapter, unit_b) == 1
     held[0].release()
-    assert adapter.in_flight_count(unit_b) == 0
+    assert _venv_in_flight(adapter, unit_b) == 0
 
 
 def test_nested_activation_store_mutate_while_lease_holds_fails_closed(

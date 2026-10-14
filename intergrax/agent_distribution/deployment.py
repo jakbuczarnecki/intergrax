@@ -198,6 +198,7 @@ class RuntimeDeploymentAdapter(Protocol):
         materialization_output: MaterializationOutput | None = None,
     ) -> PreparedDeployment:
         """Allocate and deploy serving unit without production traffic."""
+        ...
 
     def check_readiness(
         self,
@@ -206,6 +207,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> str:
         """Return readiness evidence ref after health + certification checks."""
+        ...
 
     def begin_drain(
         self,
@@ -214,6 +216,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> None:
         """Signal serving unit to stop accepting new traffic."""
+        ...
 
     def check_drain(
         self,
@@ -223,6 +226,7 @@ class RuntimeDeploymentAdapter(Protocol):
         policy: DrainPolicy,
     ) -> DrainStatus:
         """Report whether in-flight work completed under drain policy."""
+        ...
 
     def stop(
         self,
@@ -231,6 +235,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> None:
         """Terminate serving unit after drain policy satisfied."""
+        ...
 
     def resume_serving(
         self,
@@ -239,6 +244,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> str:
         """Reuse a prior serving unit for rollback when still viable."""
+        ...
 
     def attest_serving_unit(
         self,
@@ -247,6 +253,7 @@ class RuntimeDeploymentAdapter(Protocol):
         request: ServingUnitAttestationRequest,
     ) -> ServingUnitAttestation:
         """Observe unit liveness and digest binding; evidence only — no traffic."""
+        ...
 
 
 class _FakeUnitRecord(BaseModel):
@@ -271,7 +278,6 @@ class FakeInMemoryRuntimeDeploymentAdapter:
         self._drain_pending: set[str] = set()
         self._drain_timeout_for: set[str] = set()
         self._prepare_count: dict[str, int] = {}
-        self._in_flight: dict[str, int] = {}
 
     @property
     def prepare_count(self) -> dict[str, int]:
@@ -300,28 +306,6 @@ class FakeInMemoryRuntimeDeploymentAdapter:
     def _unit_key(self, revision: RuntimeRevision) -> str:
         digest = revision.materialization_artifact_digest or "missing"
         return f"{revision.application_environment_id}:{revision.runtime_revision_id}:{digest}"
-
-    def in_flight_count(self, serving_unit_ref: str) -> int:
-        return self._in_flight.get(serving_unit_ref, 0)
-
-    def reserve_unit_execution(self, serving_unit_ref: str) -> _FakePhysicalExecutionReservation:
-        record = self._units.get(serving_unit_ref)
-        if record is None:
-            raise RuntimeError("unknown serving unit for execution reservation")
-        if record.state not in {
-            DeploymentInstanceState.READY,
-            DeploymentInstanceState.SERVING,
-            DeploymentInstanceState.DRAINING,
-        }:
-            raise RuntimeError("serving unit is not live for execution reservation")
-        self._in_flight[serving_unit_ref] = self._in_flight.get(serving_unit_ref, 0) + 1
-        return _FakePhysicalExecutionReservation(self, serving_unit_ref)
-
-    def release_unit_execution(self, serving_unit_ref: str) -> None:
-        current = self._in_flight.get(serving_unit_ref, 0)
-        if current <= 0:
-            raise RuntimeError("no in-flight execution reservation for serving unit")
-        self._in_flight[serving_unit_ref] = current - 1
 
     def prepare(
         self,
@@ -493,17 +477,3 @@ class FakeInMemoryRuntimeDeploymentAdapter:
             attested_at=datetime.now(UTC),
         )
 
-
-class _FakePhysicalExecutionReservation:
-    __slots__ = ("_adapter", "_serving_unit_ref")
-
-    def __init__(
-        self,
-        adapter: FakeInMemoryRuntimeDeploymentAdapter,
-        serving_unit_ref: str,
-    ) -> None:
-        self._adapter = adapter
-        self._serving_unit_ref = serving_unit_ref
-
-    def release(self) -> None:
-        self._adapter.release_unit_execution(self._serving_unit_ref)

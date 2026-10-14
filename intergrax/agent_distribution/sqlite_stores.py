@@ -471,7 +471,10 @@ class SqliteAgentDistributionDatabase:
                 row["payload_json"],
                 SCHEMA_MATERIALIZED_RUNTIME_LOCK_V1,
             )
-            state.locks[lock.lock_id] = lock
+            lock_id = lock.lock_id
+            if lock_id is None:
+                raise ValueError("materialized runtime lock missing lock_id")
+            state.locks[lock_id] = lock
         for row in conn.execute(
             "SELECT runtime_revision_id, payload_json FROM materializations"
         ):
@@ -485,7 +488,10 @@ class SqliteAgentDistributionDatabase:
                 row["payload_json"],
                 SCHEMA_EFFECTIVE_ROSTER_V1,
             )
-            state.effective_roster_snapshots[roster.effective_roster_revision_id] = roster
+            roster_revision_id = roster.effective_roster_revision_id
+            if roster_revision_id is None:
+                raise ValueError("effective roster missing effective_roster_revision_id")
+            state.effective_roster_snapshots[roster_revision_id] = roster
         for row in conn.execute("SELECT instance_key, payload_json FROM deployment_instances"):
             instance = decode_deployment_instance_record_payload(row["payload_json"])
             key = (
