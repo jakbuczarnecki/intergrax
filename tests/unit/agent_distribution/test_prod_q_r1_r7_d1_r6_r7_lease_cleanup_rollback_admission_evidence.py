@@ -222,25 +222,43 @@ def test_s3_b_rollback_waits_for_inflight_sqlite_admission(tmp_path: Path) -> No
     bundle, activation, coordinator, adapter, request_b, unit_b = _bootstrap_sqlite_activation_pair(
         tmp_path
     )
-    t1_before_reserve = threading.Event()
-    t2_started_rollback = threading.Event()
-    t1_reserved = threading.Event()
+    t1_pause_before_reserve = threading.Event()
+    t2_rollback_acquire_attempted = threading.Event()
+    t1_physical_reserved = threading.Event()
     rollback_done = threading.Event()
     held: list[object] = []
     worker_errors: list[BaseException] = []
+    trace: list[str] = []
+    trace_lock = threading.Lock()
+    rollback_thread_id: int | None = None
     original_verify = verify_serving_execution_eligibility_from_state
+    database = bundle.database
+    original_acquire_lock = database._acquire_activation_domain_lock
+
+    def _trace(step: str) -> None:
+        with trace_lock:
+            trace.append(step)
+
+    def _instrumented_acquire_lock() -> None:
+        if threading.get_ident() == rollback_thread_id:
+            _trace("rollback_acquire_attempted")
+            t2_rollback_acquire_attempted.set()
+        original_acquire_lock()
 
     def _verify_hold(state, req):  # type: ignore[no-untyped-def]
         evidence = original_verify(state, req)
-        t1_before_reserve.set()
-        assert t2_started_rollback.wait(timeout=5.0)
+        _trace("admission_eligibility_verified")
+        t1_pause_before_reserve.set()
+        assert t2_rollback_acquire_attempted.wait(timeout=5.0)
+        assert not t1_physical_reserved.is_set()
         return evidence
 
     def _reserve() -> object:
         token = adapter.reserve_unit_execution(unit_b)
         held.append(token)
+        _trace("physical_reservation_completed")
         assert _venv_in_flight(adapter, unit_b) == 1
-        t1_reserved.set()
+        t1_physical_reserved.set()
         return token
 
     def _t1() -> None:
@@ -254,36 +272,51 @@ def test_s3_b_rollback_waits_for_inflight_sqlite_admission(tmp_path: Path) -> No
                     request_b,
                     physical_reserve=_reserve,
                 )
+            _trace("admission_coordination_completed")
         except BaseException as exc:
             worker_errors.append(exc)
 
     def _t2() -> None:
+        nonlocal rollback_thread_id
         try:
-            assert t1_before_reserve.wait(timeout=5.0)
-            t2_started_rollback.set()
-            assert not rollback_done.wait(timeout=0.05)
+            rollback_thread_id = threading.get_ident()
+            assert t1_pause_before_reserve.wait(timeout=5.0)
             activation.rollback(
                 application_id=_APP,
                 application_environment_id=_ENV,
                 expected_current_traffic_revision_id="rev-b",
                 expected_serving_pointer_revision=2,
             )
+            _trace("rollback_completed")
             rollback_done.set()
         except BaseException as exc:
             worker_errors.append(exc)
 
-    t1 = threading.Thread(target=_t1)
-    t2 = threading.Thread(target=_t2)
-    t1.start()
-    t2.start()
-    assert t1_before_reserve.wait(timeout=5.0)
-    assert t2_started_rollback.wait(timeout=5.0)
-    assert not rollback_done.is_set()
-    assert t1_reserved.wait(timeout=5.0)
-    assert rollback_done.wait(timeout=10.0)
-    t1.join(timeout=10.0)
-    t2.join(timeout=10.0)
+    t1 = threading.Thread(target=_t1, name="s3b-admission")
+    t2 = threading.Thread(target=_t2, name="s3b-rollback")
+    with mock.patch.object(
+        database, "_acquire_activation_domain_lock", side_effect=_instrumented_acquire_lock
+    ):
+        t1.start()
+        t2.start()
+        assert t1_pause_before_reserve.wait(timeout=5.0)
+        assert t2_rollback_acquire_attempted.wait(timeout=5.0)
+        assert t1_physical_reserved.wait(timeout=5.0)
+        assert rollback_done.wait(timeout=10.0)
+        t1.join(timeout=10.0)
+        t2.join(timeout=10.0)
     assert not worker_errors
+    assert t1.is_alive() is False and t2.is_alive() is False
+    assert trace.index("admission_eligibility_verified") < trace.index(
+        "rollback_acquire_attempted"
+    )
+    assert trace.index("rollback_acquire_attempted") < trace.index(
+        "physical_reservation_completed"
+    )
+    assert trace.index("physical_reservation_completed") < trace.index(
+        "admission_coordination_completed"
+    )
+    assert trace.index("admission_coordination_completed") < trace.index("rollback_completed")
     assert _venv_in_flight(adapter, unit_b) == 1
     scope = bundle.serving_store.get_serving_record(_APP, _ENV)
     assert scope is not None

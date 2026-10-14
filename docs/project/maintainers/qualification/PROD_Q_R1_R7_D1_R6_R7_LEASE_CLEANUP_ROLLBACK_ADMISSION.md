@@ -44,7 +44,7 @@
 | ID | Test | Status |
 |----|------|--------|
 | S3-A | `test_s3_a_activation_service_rollback_before_b_admission` | PASS |
-| S3-B | `test_s3_b_rollback_waits_for_inflight_sqlite_admission` | PASS |
+| S3-B | `test_s3_b_rollback_waits_for_inflight_sqlite_admission` | PASS (R10: lock-acquire instrumentation @ `_acquire_activation_domain_lock`) |
 
 ## Commands (session evidence)
 
