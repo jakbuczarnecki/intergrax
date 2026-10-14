@@ -6,7 +6,7 @@
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Branch** | `development` |
 | **START_HEAD** | `ac367ea699e3b592272ff74a5a6d3999bf2ea707` |
-| **FINAL_COMMIT** | `c54e37cff77823d173dae3a5e6e61f6aa0036737` |
+| **FINAL_COMMIT** | `8ec496603ab2f70b3da5db350c90aba87e2488d4` |
 | **Gate implementation commit** | `ae9cfdb564ca2aecff66cdfb017495e7402870a8` |
 | **Audited production SHA** | `ccbb19633e83de29d5b70c5e7e1689b0c29d8c07` (boundary code baseline; gate delivered on FINAL_COMMIT) |
 | **Method** | Closed-world AST call-site reachability + adversarial snippet negatives; selective D2/D4 reuse |
@@ -116,6 +116,8 @@ uv run pytest -p no:xdist -q --noconftest \
 ```
 
 **Result @ workspace (P1-R1):** 20 passed @ `--noconftest` (~0.2 s); D4 `test_d4_asgi_startup_only_after_preconditions` 1 passed with default conftest (~3 s). Log: `.tmp/session/prod-q-r1-r7-q-p1-r1/p1-only.log`.
+
+**Result @ workspace (P1-R2):** 23 passed @ `--noconftest` (~0.2 s) on `test_prod_q_r1_r7_q_p1_strict_production_reachability.py` only. Log: `.tmp/session/prod-q-r1-r7-q-p1-r2/p1-only.log`.
 
 **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** Default `tests/conftest.py` `pytest_sessionstart` triggers a circular import (`RuntimeCheckpoint` ↔ `agent_runtime_io` via `intergrax.runtime.long_running` / `agent_distribution`) at HEAD `ec773c666…` when collecting `tests/qualification/prod_q/…` (INTERNALERROR before collection). **Not** ordinary freeze debt. **Separate corrective dependency (pre–final R7-Q certification):** break the `RuntimeCheckpoint` import cycle (or defer `pytest_sessionstart` model_rebuild) so qualification and default CI pytest entry collect without `--noconftest`. Do not treat `--noconftest` as proof that the default qualification entry works.
 
