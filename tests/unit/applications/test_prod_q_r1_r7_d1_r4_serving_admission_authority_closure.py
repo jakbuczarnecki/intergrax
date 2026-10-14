@@ -11,8 +11,10 @@ import pytest
 
 from intergrax.agent_distribution.deployment import DeploymentInstanceState
 from intergrax.agent_distribution.runtime_revision import MaterializationTopology
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    ServingExecutionEligibilityEvidence,
+)
 from intergrax.agent_distribution.serving_execution_admission import (
-    ServingExecutionAdmissionGrant,
     verify_current_serving_execution_admission_eligibility,
 )
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
@@ -42,8 +44,8 @@ def _forged_evidence(
     serving_unit_ref: str,
     materialization_artifact_digest: str,
     serving_pointer_revision: int,
-) -> ServingExecutionAdmissionGrant:
-    return ServingExecutionAdmissionGrant(
+) -> ServingExecutionEligibilityEvidence:
+    return ServingExecutionEligibilityEvidence(
         application_id=application_id,
         application_environment_id=application_environment_id,
         runtime_revision_id=runtime_revision_id,

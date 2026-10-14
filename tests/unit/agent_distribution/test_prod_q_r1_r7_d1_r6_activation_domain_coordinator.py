@@ -33,6 +33,11 @@ from tests.unit.applications.test_prod_q_r1_r7_d1b_serving_runtime_handoff impor
 pytestmark = [pytest.mark.unit]
 
 
+class _NoopPhysicalReservation:
+    def release(self) -> None:
+        return None
+
+
 def _request_for_revision(revision, unit_ref: str, digest: str) -> ServingExecutionAdmissionRequest:
     return ServingExecutionAdmissionRequest(
         application_id=revision.application_id,
@@ -80,16 +85,22 @@ def test_sequential_reservations_invoke_physical_hooks(tmp_path: Path) -> None:
     )
     request = _request_for_revision(revision, unit_ref, digest)
     calls = 0
+    released = 0
 
-    def _reserve() -> None:
+    class _Reservation:
+        def release(self) -> None:
+            nonlocal released
+            released += 1
+
+    def _reserve() -> _Reservation:
         nonlocal calls
         calls += 1
+        return _Reservation()
 
     for _ in range(2):
         coordinator.coordinate_physical_execution_reservation(
             request,
             physical_reserve=_reserve,
-            physical_release=lambda: None,
         )
     assert calls == 2
 
@@ -128,8 +139,7 @@ def test_wrong_environment_identity_fails_closed(tmp_path: Path) -> None:
     with pytest.raises(ServingExecutionAdmissionError, match="missing"):
         coordinator.coordinate_physical_execution_reservation(
             bad_request,
-            physical_reserve=lambda: None,
-            physical_release=lambda: None,
+            physical_reserve=lambda: _NoopPhysicalReservation(),
         )
 
 

@@ -25,10 +25,6 @@ from intergrax.agent_distribution.stores import (
     RuntimeRevisionStore,
 )
 
-# Backward-compatible alias for tests and adapter migration.
-ServingExecutionAdmissionGrant = ServingExecutionEligibilityEvidence
-
-
 def shared_activation_domain_state_from_serving_store(
     serving_store: ApplicationEnvironmentServingStore,
 ) -> AgentDistributionStoreState | None:
@@ -68,10 +64,9 @@ def verify_current_serving_execution_admission_eligibility(
     runtime_revision_id: str,
     serving_unit_ref: str,
     materialization_artifact_digest: str,
-    issue_canonical_grant: bool = True,
 ) -> ServingExecutionEligibilityEvidence:
     """Read authoritative in-memory domain state and fail closed unless execution may be admitted."""
-    del deployment_instance_store, revision_store, issue_canonical_grant
+    del deployment_instance_store, revision_store
     state = require_shared_activation_domain_state(serving_store)
     request = ServingExecutionAdmissionRequest(
         application_id=application_id,
@@ -120,7 +115,6 @@ def assert_activation_commit_matches_current_serving(
 
 __all__ = [
     "ServingExecutionAdmissionError",
-    "ServingExecutionAdmissionGrant",
     "ServingExecutionEligibilityEvidence",
     "assert_activation_commit_matches_current_serving",
     "require_shared_activation_domain_state",

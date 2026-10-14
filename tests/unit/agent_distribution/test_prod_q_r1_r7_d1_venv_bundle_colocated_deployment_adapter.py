@@ -130,7 +130,7 @@ def _authorize_adapter_execution_gate(
     )
     coordinator.coordinate_unit_serving_admission_open(
         request,
-        open_unit_admission=adapter.authorize_serving_execution_admission,
+        admission_authority=adapter,
     )
 
 

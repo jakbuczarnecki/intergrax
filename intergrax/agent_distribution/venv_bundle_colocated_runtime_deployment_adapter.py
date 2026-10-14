@@ -30,12 +30,9 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
 )
 from intergrax.agent_distribution.activation_domain_coordinator import (
+    ActivationDomainCoordinatorOperationAuthority,
+    PhysicalExecutionReservation,
     ServingExecutionEligibilityEvidence,
-    assert_coordinator_issued_eligibility_evidence,
-    assert_within_coordinator_unit_admission_open,
-)
-from intergrax.agent_distribution.serving_execution_admission import (
-    ServingExecutionAdmissionGrant,
 )
 from intergrax.agent_distribution.colocated_venv_unit_runtime_binding import (
     ColocatedVenvUnitRuntimeBinding,
@@ -57,6 +54,29 @@ _UNIT_REF_PREFIX: Final = "venv-colocated:"
 
 class VenvBundleColocatedDeploymentError(AgentDistributionError):
     """Co-located VENV deployment adapter operation failed."""
+
+
+class ColocatedUnitExecutionReservation:
+    """One physical in-flight execution slot; release at most once."""
+
+    __slots__ = ("_adapter", "_active", "_serving_unit_ref")
+
+    def __init__(
+        self,
+        adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
+        serving_unit_ref: str,
+    ) -> None:
+        self._adapter = adapter
+        self._serving_unit_ref = serving_unit_ref
+        self._active = True
+
+    def release(self) -> None:
+        if not self._active:
+            raise VenvBundleColocatedDeploymentError(
+                "execution release without matching admission"
+            )
+        self._active = False
+        self._adapter.release_unit_execution(self._serving_unit_ref)
 
 
 class _UnitAdmissionGate:
@@ -146,6 +166,18 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         self._units: dict[str, _ColocatedVenvPhysicalUnit] = {}
         self._binding_index: dict[str, str] = {}
 
+    def reserve_unit_execution(
+        self, serving_unit_ref: str
+    ) -> ColocatedUnitExecutionReservation:
+        """Reserve one in-flight execution slot after coordinator authorization."""
+        unit = self._require_live_unit(serving_unit_ref)
+        if not unit.serving_admission_authorized:
+            raise VenvBundleColocatedDeploymentError(
+                "serving unit is not admitting new execution work"
+            )
+        unit.admission.admit_execution()
+        return ColocatedUnitExecutionReservation(self, serving_unit_ref)
+
     def admit_unit_execution(self, serving_unit_ref: str) -> None:
         """Physical in-flight reservation — not a production authorization entry point."""
         unit = self._require_live_unit(serving_unit_ref)
@@ -156,15 +188,25 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         unit.admission.release_execution()
 
     def authorize_serving_execution_admission(
-        self, grant: ServingExecutionAdmissionGrant
+        self, evidence: ServingExecutionEligibilityEvidence
     ) -> None:
-        """Open execution admission for coordinator-issued eligibility evidence."""
-        evidence = grant
-        try:
-            assert_within_coordinator_unit_admission_open()
-            assert_coordinator_issued_eligibility_evidence(evidence)
-        except Exception as exc:
-            raise VenvBundleColocatedDeploymentError(str(exc)) from exc
+        raise VenvBundleColocatedDeploymentError(
+            "serving execution admission requires activation domain coordinator"
+        )
+
+    def open_unit_serving_admission_after_coordinator_verify(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+        *,
+        coordinator_operation_authority: ActivationDomainCoordinatorOperationAuthority,
+    ) -> None:
+        """Open execution admission for coordinator-verified eligibility evidence."""
+        if not isinstance(
+            coordinator_operation_authority, ActivationDomainCoordinatorOperationAuthority
+        ):
+            raise VenvBundleColocatedDeploymentError(
+                "serving execution admission requires activation domain coordinator"
+            )
         unit = self._require_live_unit(evidence.serving_unit_ref)
         if unit.application_id != evidence.application_id:
             raise VenvBundleColocatedDeploymentError(

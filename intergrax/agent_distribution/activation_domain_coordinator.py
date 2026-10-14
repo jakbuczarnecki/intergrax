@@ -1,18 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Transaction-coordinated serving execution admission (PROD-Q-R1-R7-D1-R6)."""
+"""Transaction-coordinated serving execution admission (PROD-Q-R1-R7-D1-R6-R1)."""
 
 from __future__ import annotations
 
 import sqlite3
-import threading
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.agent_distribution.deployment import DeploymentInstanceState
 from intergrax.agent_distribution.errors import (
@@ -31,19 +30,42 @@ from intergrax.agent_distribution.in_memory_stores import (
 from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
 from intergrax.agent_distribution.sqlite_stores import (
     SqliteAgentDistributionDatabase,
+    SqliteAgentDistributionStoreBundle,
     SqliteApplicationEnvironmentServingStore,
     SqliteDeploymentInstanceStore,
     SqliteRuntimeRevisionStore,
+)
+from intergrax.agent_distribution.stores import (
+    ApplicationEnvironmentServingStore,
+    DeploymentInstanceStore,
+    RuntimeRevisionStore,
 )
 
 _NON_EMPTY = Field(min_length=1)
 _SQLITE_BUSY_MAX_ATTEMPTS = 5
 _SQLITE_BUSY_BASE_DELAY_S = 0.01
-_COORDINATOR_UNIT_OPEN_DEPTH = threading.local()
+_OPERATION_AUTH_SENTINEL = object()
 
 
 class ActivationDomainCoordinatorError(AgentDistributionError):
     """Activation domain coordination failed."""
+
+
+class ActivationDomainCoordinatorOperationAuthority:
+    """Coordinator-private operation marker; not constructible outside this module."""
+
+    __slots__ = ("_marker",)
+
+    def __init__(self, *, _private: object) -> None:
+        if _private is not _OPERATION_AUTH_SENTINEL:
+            raise TypeError(
+                "ActivationDomainCoordinatorOperationAuthority is coordinator-private"
+            )
+        self._marker = _private
+
+
+def _coordinator_operation_authority() -> ActivationDomainCoordinatorOperationAuthority:
+    return ActivationDomainCoordinatorOperationAuthority(_private=_OPERATION_AUTH_SENTINEL)
 
 
 class ServingExecutionAdmissionRequest(BaseModel):
@@ -59,7 +81,7 @@ class ServingExecutionAdmissionRequest(BaseModel):
 
 
 class ServingExecutionEligibilityEvidence(BaseModel):
-    """Non-authoritative eligibility snapshot — not valid without coordinator seal."""
+    """Non-authoritative eligibility snapshot for an already-coordinated admission decision."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -69,15 +91,31 @@ class ServingExecutionEligibilityEvidence(BaseModel):
     serving_unit_ref: str = _NON_EMPTY
     materialization_artifact_digest: str = _NON_EMPTY
     serving_pointer_revision: int = Field(ge=0)
-    _coordinator_seal: str | None = PrivateAttr(default=None)
 
 
-def _issue_eligibility_evidence(
+class PhysicalExecutionReservation(Protocol):
+    """Adapter-owned physical in-flight slot; release exactly once after coordination."""
+
+    def release(self) -> None: ...
+
+
+class ColocatedServingUnitAdmissionPort(Protocol):
+    """Physical unit gate opened only from an activation domain coordinator operation."""
+
+    def open_unit_serving_admission_after_coordinator_verify(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+        *,
+        coordinator_operation_authority: ActivationDomainCoordinatorOperationAuthority,
+    ) -> None: ...
+
+
+def _eligibility_evidence_from_request(
     *,
     request: ServingExecutionAdmissionRequest,
     serving_pointer_revision: int,
 ) -> ServingExecutionEligibilityEvidence:
-    evidence = ServingExecutionEligibilityEvidence(
+    return ServingExecutionEligibilityEvidence(
         application_id=request.application_id,
         application_environment_id=request.application_environment_id,
         runtime_revision_id=request.runtime_revision_id,
@@ -85,36 +123,6 @@ def _issue_eligibility_evidence(
         materialization_artifact_digest=request.materialization_artifact_digest,
         serving_pointer_revision=serving_pointer_revision,
     )
-    object.__setattr__(evidence, "_coordinator_seal", "activation-domain-coordinator")
-    return evidence
-
-
-def assert_coordinator_issued_eligibility_evidence(
-    evidence: ServingExecutionEligibilityEvidence,
-) -> None:
-    if evidence._coordinator_seal != "activation-domain-coordinator":
-        raise ServingExecutionAdmissionError(
-            "serving execution eligibility evidence was not issued by activation domain coordinator"
-        )
-
-
-def assert_within_coordinator_unit_admission_open() -> None:
-    if getattr(_COORDINATOR_UNIT_OPEN_DEPTH, "depth", 0) < 1:
-        raise ServingExecutionAdmissionError(
-            "unit serving admission open requires activation domain coordinator"
-        )
-
-
-def _invoke_unit_admission_open(
-    evidence: ServingExecutionEligibilityEvidence,
-    open_unit_admission: Callable[[ServingExecutionEligibilityEvidence], None],
-) -> None:
-    prior_depth = getattr(_COORDINATOR_UNIT_OPEN_DEPTH, "depth", 0)
-    _COORDINATOR_UNIT_OPEN_DEPTH.depth = prior_depth + 1
-    try:
-        open_unit_admission(evidence)
-    finally:
-        _COORDINATOR_UNIT_OPEN_DEPTH.depth = prior_depth
 
 
 def verify_serving_execution_eligibility_from_state(
@@ -171,10 +179,75 @@ def verify_serving_execution_eligibility_from_state(
             "deployment instance serving unit does not match requested unit"
         )
 
-    return _issue_eligibility_evidence(
+    return _eligibility_evidence_from_request(
         request=request,
         serving_pointer_revision=serving.serving_pointer_revision,
     )
+
+
+def _sqlite_busy_operational_error(exc: sqlite3.OperationalError) -> bool:
+    message = str(exc).lower()
+    return "locked" in message or "busy" in message
+
+
+def _acquire_sqlite_admission_transaction(
+    db: SqliteAgentDistributionDatabase,
+) -> tuple[sqlite3.Connection, AgentDistributionStoreState]:
+    last_error: sqlite3.OperationalError | None = None
+    for attempt in range(1, _SQLITE_BUSY_MAX_ATTEMPTS + 1):
+        with db._activation_lock:
+            conn = db._connect()
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                state = db._load_state(conn)
+                return conn, state
+            except sqlite3.OperationalError as exc:
+                conn.rollback()
+                conn.close()
+                if _sqlite_busy_operational_error(exc) and attempt < _SQLITE_BUSY_MAX_ATTEMPTS:
+                    last_error = exc
+                    time.sleep(_SQLITE_BUSY_BASE_DELAY_S * attempt)
+                    continue
+                raise ServingExecutionAdmissionError(
+                    "sqlite admission coordination failed"
+                ) from exc
+            except Exception:
+                conn.rollback()
+                conn.close()
+                raise
+    if last_error is not None:
+        raise ServingExecutionAdmissionError(
+            "sqlite admission coordination exceeded busy retry budget"
+        ) from last_error
+    raise ServingExecutionAdmissionError("sqlite admission coordination failed")
+
+
+@contextmanager
+def _sqlite_admission_coordination(db: SqliteAgentDistributionDatabase):
+    conn, state = _acquire_sqlite_admission_transaction(db)
+    try:
+        yield state
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        try:
+            conn.commit()
+        except sqlite3.OperationalError as exc:
+            conn.rollback()
+            raise ServingExecutionAdmissionError(
+                "sqlite admission coordination commit failed"
+            ) from exc
+    finally:
+        conn.close()
+
+
+def _release_physical_reservation_once(
+    reservation: PhysicalExecutionReservation | None,
+) -> None:
+    if reservation is None:
+        return
+    reservation.release()
 
 
 class ActivationDomainCoordinator(Protocol):
@@ -184,50 +257,16 @@ class ActivationDomainCoordinator(Protocol):
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        physical_reserve: Callable[[], None],
-        physical_release: Callable[[], None],
+        physical_reserve: Callable[[], PhysicalExecutionReservation],
     ) -> ServingExecutionEligibilityEvidence: ...
 
     def coordinate_unit_serving_admission_open(
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        open_unit_admission: Callable[[ServingExecutionEligibilityEvidence], None],
+        admission_authority: ColocatedServingUnitAdmissionPort,
+        expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence: ...
-
-
-@contextmanager
-def _sqlite_admission_coordination(db: SqliteAgentDistributionDatabase):
-    last_error: sqlite3.OperationalError | None = None
-    for attempt in range(1, _SQLITE_BUSY_MAX_ATTEMPTS + 1):
-        with db._activation_lock:
-            conn = db._connect()
-            try:
-                conn.execute("BEGIN IMMEDIATE")
-                state = db._load_state(conn)
-                try:
-                    yield state
-                except Exception:
-                    conn.rollback()
-                    raise
-                else:
-                    conn.commit()
-                return
-            except sqlite3.OperationalError as exc:
-                conn.rollback()
-                if "locked" in str(exc).lower() and attempt < _SQLITE_BUSY_MAX_ATTEMPTS:
-                    last_error = exc
-                    time.sleep(_SQLITE_BUSY_BASE_DELAY_S * attempt)
-                    continue
-                raise ServingExecutionAdmissionError(
-                    "sqlite admission coordination failed"
-                ) from exc
-            finally:
-                conn.close()
-    if last_error is not None:
-        raise ServingExecutionAdmissionError(
-            "sqlite admission coordination exceeded busy retry budget"
-        ) from last_error
 
 
 class InMemoryActivationDomainCoordinator:
@@ -240,44 +279,50 @@ class InMemoryActivationDomainCoordinator:
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        physical_reserve: Callable[[], None],
-        physical_release: Callable[[], None],
+        physical_reserve: Callable[[], PhysicalExecutionReservation],
     ) -> ServingExecutionEligibilityEvidence:
-        reserved = False
+        reservation: PhysicalExecutionReservation | None = None
         evidence: ServingExecutionEligibilityEvidence | None = None
 
         def _work() -> ServingExecutionEligibilityEvidence:
-            nonlocal reserved, evidence
+            nonlocal reservation, evidence
             evidence = verify_serving_execution_eligibility_from_state(
                 self._state,
                 request,
             )
-            try:
-                physical_reserve()
-                reserved = True
-            except Exception:
-                raise
+            reservation = physical_reserve()
             return evidence
 
         try:
             return run_under_activation_domain(self._state, _work)
         except Exception:
-            if reserved:
-                physical_release()
+            _release_physical_reservation_once(reservation)
             raise
 
     def coordinate_unit_serving_admission_open(
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        open_unit_admission: Callable[[ServingExecutionEligibilityEvidence], None],
+        admission_authority: ColocatedServingUnitAdmissionPort,
+        expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence:
         def _work() -> ServingExecutionEligibilityEvidence:
             evidence = verify_serving_execution_eligibility_from_state(
                 self._state,
                 request,
             )
-            _invoke_unit_admission_open(evidence, open_unit_admission)
+            if expected_serving_pointer_revision is not None:
+                if (
+                    evidence.serving_pointer_revision
+                    != expected_serving_pointer_revision
+                ):
+                    raise ServingExecutionAdmissionError(
+                        "serving pointer revision mismatch for unit admission open"
+                    )
+            admission_authority.open_unit_serving_admission_after_coordinator_verify(
+                evidence,
+                coordinator_operation_authority=_coordinator_operation_authority(),
+            )
             return evidence
 
         return run_under_activation_domain(self._state, _work)
@@ -293,56 +338,50 @@ class SqliteActivationDomainCoordinator:
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        physical_reserve: Callable[[], None],
-        physical_release: Callable[[], None],
+        physical_reserve: Callable[[], PhysicalExecutionReservation],
     ) -> ServingExecutionEligibilityEvidence:
-        reserved = False
+        reservation: PhysicalExecutionReservation | None = None
         evidence: ServingExecutionEligibilityEvidence | None = None
         try:
             with _sqlite_admission_coordination(self._database) as state:
                 evidence = verify_serving_execution_eligibility_from_state(state, request)
-                physical_reserve()
-                reserved = True
+                reservation = physical_reserve()
             assert evidence is not None
             return evidence
         except Exception:
-            if reserved:
-                physical_release()
+            _release_physical_reservation_once(reservation)
             raise
 
     def coordinate_unit_serving_admission_open(
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        open_unit_admission: Callable[[ServingExecutionEligibilityEvidence], None],
+        admission_authority: ColocatedServingUnitAdmissionPort,
+        expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence:
         with _sqlite_admission_coordination(self._database) as state:
             evidence = verify_serving_execution_eligibility_from_state(state, request)
-            _invoke_unit_admission_open(evidence, open_unit_admission)
+            if expected_serving_pointer_revision is not None:
+                if evidence.serving_pointer_revision != expected_serving_pointer_revision:
+                    raise ServingExecutionAdmissionError(
+                        "serving pointer revision mismatch for unit admission open"
+                    )
+            admission_authority.open_unit_serving_admission_after_coordinator_verify(
+                evidence,
+                coordinator_operation_authority=_coordinator_operation_authority(),
+            )
             return evidence
 
 
 def _shared_in_memory_state_from_stores(
-    serving_store: object,
-    deployment_instance_store: object,
-    revision_store: object,
+    serving_store: InMemoryApplicationEnvironmentServingStore,
+    deployment_instance_store: InMemoryDeploymentInstanceStore,
+    revision_store: InMemoryRuntimeRevisionStore,
 ) -> AgentDistributionStoreState:
-    if not isinstance(serving_store, InMemoryApplicationEnvironmentServingStore):
-        raise ActivationDomainCoordinatorError(
-            "in-memory activation domain requires InMemoryApplicationEnvironmentServingStore"
-        )
     state = serving_store.state
-    if not isinstance(deployment_instance_store, InMemoryDeploymentInstanceStore):
-        raise ActivationDomainCoordinatorError(
-            "in-memory stores must share one AgentDistributionStoreState bundle"
-        )
     if deployment_instance_store.state is not state:
         raise ActivationDomainCoordinatorError(
             "deployment instance store does not share serving store state"
-        )
-    if not isinstance(revision_store, InMemoryRuntimeRevisionStore):
-        raise ActivationDomainCoordinatorError(
-            "in-memory stores must share one AgentDistributionStoreState bundle"
         )
     if revision_store.state is not state:
         raise ActivationDomainCoordinatorError(
@@ -352,26 +391,14 @@ def _shared_in_memory_state_from_stores(
 
 
 def _shared_sqlite_database_from_stores(
-    serving_store: object,
-    deployment_instance_store: object,
-    revision_store: object,
+    serving_store: SqliteApplicationEnvironmentServingStore,
+    deployment_instance_store: SqliteDeploymentInstanceStore,
+    revision_store: SqliteRuntimeRevisionStore,
 ) -> SqliteAgentDistributionDatabase:
-    if not isinstance(serving_store, SqliteApplicationEnvironmentServingStore):
-        raise ActivationDomainCoordinatorError(
-            "sqlite activation domain requires SqliteApplicationEnvironmentServingStore"
-        )
     database = serving_store._db
-    if not isinstance(deployment_instance_store, SqliteDeploymentInstanceStore):
-        raise ActivationDomainCoordinatorError(
-            "sqlite stores must share one SqliteAgentDistributionDatabase"
-        )
     if deployment_instance_store._db is not database:
         raise ActivationDomainCoordinatorError(
             "deployment instance store does not share sqlite database"
-        )
-    if not isinstance(revision_store, SqliteRuntimeRevisionStore):
-        raise ActivationDomainCoordinatorError(
-            "sqlite stores must share one SqliteAgentDistributionDatabase"
         )
     if revision_store._db is not database:
         raise ActivationDomainCoordinatorError(
@@ -382,39 +409,68 @@ def _shared_sqlite_database_from_stores(
 
 def build_activation_domain_coordinator_for_stores(
     *,
-    serving_store: object,
-    deployment_instance_store: object,
-    revision_store: object,
+    serving_store: ApplicationEnvironmentServingStore,
+    deployment_instance_store: DeploymentInstanceStore,
+    revision_store: RuntimeRevisionStore,
 ) -> ActivationDomainCoordinator:
     """Construct coordinator backend matching the sanctioned store bundle topology."""
-    if isinstance(serving_store, InMemoryApplicationEnvironmentServingStore):
-        state = _shared_in_memory_state_from_stores(
-            serving_store,
-            deployment_instance_store,
-            revision_store,
-        )
-        return InMemoryActivationDomainCoordinator(state)
     if isinstance(serving_store, SqliteApplicationEnvironmentServingStore):
+        if not isinstance(deployment_instance_store, SqliteDeploymentInstanceStore):
+            raise ActivationDomainCoordinatorError(
+                "sqlite stores must share one SqliteAgentDistributionDatabase"
+            )
+        if not isinstance(revision_store, SqliteRuntimeRevisionStore):
+            raise ActivationDomainCoordinatorError(
+                "sqlite stores must share one SqliteAgentDistributionDatabase"
+            )
         database = _shared_sqlite_database_from_stores(
             serving_store,
             deployment_instance_store,
             revision_store,
         )
         return SqliteActivationDomainCoordinator(database)
+    if isinstance(serving_store, InMemoryApplicationEnvironmentServingStore):
+        if not isinstance(deployment_instance_store, InMemoryDeploymentInstanceStore):
+            raise ActivationDomainCoordinatorError(
+                "in-memory stores must share one AgentDistributionStoreState bundle"
+            )
+        if not isinstance(revision_store, InMemoryRuntimeRevisionStore):
+            raise ActivationDomainCoordinatorError(
+                "in-memory stores must share one AgentDistributionStoreState bundle"
+            )
+        state = _shared_in_memory_state_from_stores(
+            serving_store,
+            deployment_instance_store,
+            revision_store,
+        )
+        return InMemoryActivationDomainCoordinator(state)
     raise ActivationDomainCoordinatorError(
         "unsupported serving store for activation domain coordinator"
+    )
+
+
+def build_activation_domain_coordinator_for_sqlite_bundle(
+    bundle: SqliteAgentDistributionStoreBundle,
+) -> ActivationDomainCoordinator:
+    """Composition-owned SQLite bundle → activation domain coordinator."""
+    return build_activation_domain_coordinator_for_stores(
+        serving_store=bundle.serving_store,
+        deployment_instance_store=bundle.deployment_instance_store,
+        revision_store=bundle.revision_store,
     )
 
 
 __all__ = [
     "ActivationDomainCoordinator",
     "ActivationDomainCoordinatorError",
+    "ActivationDomainCoordinatorOperationAuthority",
+    "ColocatedServingUnitAdmissionPort",
     "InMemoryActivationDomainCoordinator",
+    "PhysicalExecutionReservation",
     "ServingExecutionAdmissionRequest",
     "ServingExecutionEligibilityEvidence",
     "SqliteActivationDomainCoordinator",
-    "assert_coordinator_issued_eligibility_evidence",
-    "assert_within_coordinator_unit_admission_open",
+    "build_activation_domain_coordinator_for_sqlite_bundle",
     "build_activation_domain_coordinator_for_stores",
     "verify_serving_execution_eligibility_from_state",
 ]

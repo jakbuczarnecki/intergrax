@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    PhysicalExecutionReservation,
+)
 from intergrax.applications._shared.colocated_serving_unit_execution_admission import (
     ColocatedUnitPhysicalExecutionGate,
 )
@@ -20,8 +23,8 @@ class VenvBundleColocatedUnitPhysicalExecutionGate:
 
     adapter: VenvBundleColocatedRuntimeDeploymentAdapter
 
-    def admit_execution(self, serving_unit_ref: str) -> None:
-        self.adapter.admit_unit_execution(serving_unit_ref)
+    def reserve_execution(self, serving_unit_ref: str) -> PhysicalExecutionReservation:
+        return self.adapter.reserve_unit_execution(serving_unit_ref)
 
     def release_execution(self, serving_unit_ref: str) -> None:
         self.adapter.release_unit_execution(serving_unit_ref)

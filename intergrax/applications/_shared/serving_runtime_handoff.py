@@ -23,12 +23,12 @@ from intergrax.agent_distribution.runtime_revision import (
 )
 from intergrax.agent_distribution.activation_domain_coordinator import (
     ActivationDomainCoordinator,
+    ActivationDomainCoordinatorOperationAuthority,
     ServingExecutionAdmissionRequest,
     ServingExecutionEligibilityEvidence,
 )
 from intergrax.agent_distribution.serving_execution_admission import (
     ServingExecutionAdmissionError,
-    ServingExecutionAdmissionGrant,
     assert_activation_commit_matches_current_serving,
 )
 from intergrax.agent_distribution.stores import (
@@ -78,10 +78,13 @@ class ColocatedServingUnitExecutionAdmission(Protocol):
 class ColocatedServingExecutionAdmissionAuthority(Protocol):
     """Opens physical execution admission on the deployment adapter after activation."""
 
-    def authorize_serving_execution_admission(
-        self, evidence: ServingExecutionAdmissionGrant
+    def open_unit_serving_admission_after_coordinator_verify(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+        *,
+        coordinator_operation_authority: ActivationDomainCoordinatorOperationAuthority,
     ) -> None:
-        """Authorize new execution work for one canonically eligible serving unit."""
+        """Apply unit admission open for coordinator-verified eligibility evidence."""
 
 
 class ServingUnitIdentity(BaseModel):
@@ -273,17 +276,11 @@ def authorize_colocated_serving_execution_after_activation(
         materialization_artifact_digest=identity.materialization_artifact_digest,
     )
 
-    def _open_admission(evidence: ServingExecutionEligibilityEvidence) -> None:
-        if evidence.serving_pointer_revision != serving.serving_pointer_revision:
-            raise ServingRuntimeHandoffError(
-                "serving pointer revision mismatch with eligibility evidence"
-            )
-        admission_authority.authorize_serving_execution_admission(evidence)
-
     try:
         activation_domain_coordinator.coordinate_unit_serving_admission_open(
             request,
-            open_unit_admission=_open_admission,
+            admission_authority=admission_authority,
+            expected_serving_pointer_revision=serving.serving_pointer_revision,
         )
     except ServingExecutionAdmissionError as exc:
         raise ServingRuntimeHandoffError(str(exc)) from exc

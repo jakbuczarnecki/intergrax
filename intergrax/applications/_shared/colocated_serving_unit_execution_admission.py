@@ -9,6 +9,7 @@ from typing import Protocol
 
 from intergrax.agent_distribution.activation_domain_coordinator import (
     ActivationDomainCoordinator,
+    PhysicalExecutionReservation,
     ServingExecutionAdmissionRequest,
 )
 from intergrax.agent_distribution.serving_execution_admission import (
@@ -21,9 +22,9 @@ from intergrax.applications._shared.serving_runtime_handoff import (
 
 
 class ColocatedUnitPhysicalExecutionGate(Protocol):
-    """Narrow delegate for physical admit/release without identifier-only authority."""
+    """Narrow delegate for physical reserve/release without identifier-only authority."""
 
-    def admit_execution(self, serving_unit_ref: str) -> None: ...
+    def reserve_execution(self, serving_unit_ref: str) -> PhysicalExecutionReservation: ...
 
     def release_execution(self, serving_unit_ref: str) -> None: ...
 
@@ -57,8 +58,9 @@ class StoreBackedColocatedServingUnitExecutionAdmission:
         try:
             self.activation_domain_coordinator.coordinate_physical_execution_reservation(
                 request,
-                physical_reserve=lambda: self.physical_gate.admit_execution(serving_unit_ref),
-                physical_release=lambda: self.physical_gate.release_execution(serving_unit_ref),
+                physical_reserve=lambda: self.physical_gate.reserve_execution(
+                    serving_unit_ref
+                ),
             )
         except ServingExecutionAdmissionError as exc:
             raise ServingRuntimeHandoffError(str(exc)) from exc
