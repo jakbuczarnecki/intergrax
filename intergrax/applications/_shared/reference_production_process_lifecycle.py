@@ -16,6 +16,12 @@ from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING
 
+from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
+    cleanup_errors_from_close_failure,
+    raise_primary_with_cleanup_errors,
+    raise_startup_failure_with_cleanup,
+    release_lifecycle_owned_stores,
+)
 from intergrax.applications._shared.production_execution_continuation_store import (
     MissingContinuationFilePolicy,
     SerializedSealExecutionContinuationStateStore,
@@ -61,31 +67,6 @@ def _close_owned_resource(
     return None
 
 
-def _release_lifecycle_owned_stores(
-    *,
-    continuation_store: SerializedSealExecutionContinuationStateStore | None,
-    owned_invocation: SQLiteProviderInvocationStore | None,
-    continuation_closed: bool,
-    invocation_closed: bool,
-) -> list[BaseException]:
-    errors: list[BaseException] = []
-    if continuation_store is not None and not continuation_closed:
-        err = _close_owned_resource(
-            continuation_store.close,
-            mark_closed=lambda: None,
-        )
-        if err is not None:
-            errors.append(err)
-    if owned_invocation is not None and not invocation_closed:
-        err = _close_owned_resource(
-            owned_invocation.close,
-            mark_closed=lambda: None,
-        )
-        if err is not None:
-            errors.append(err)
-    return errors
-
-
 def _raise_grouped_exceptions(
     message: str,
     exceptions: list[BaseException],
@@ -95,41 +76,6 @@ def _raise_grouped_exceptions(
     if all(isinstance(exc, Exception) for exc in exceptions):
         raise ExceptionGroup(message, exceptions) from from_exc
     raise BaseExceptionGroup(message, exceptions) from from_exc
-
-
-def _raise_primary_with_cleanup_errors(
-    primary_exc: BaseException,
-    cleanup_errors: list[BaseException],
-    *,
-    message: str,
-) -> None:
-    if cleanup_errors:
-        _raise_grouped_exceptions(
-            message,
-            [primary_exc, *cleanup_errors],
-            from_exc=primary_exc,
-        )
-    raise primary_exc
-
-
-def _raise_startup_failure_with_cleanup(
-    startup_exc: BaseException,
-    cleanup_errors: list[BaseException],
-) -> None:
-    _raise_primary_with_cleanup_errors(
-        startup_exc,
-        cleanup_errors,
-        message=(
-            "reference production process lifecycle startup failed; "
-            "errors while releasing acquired resources"
-        ),
-    )
-
-
-def _cleanup_errors_from_close_failure(cleanup_exc: BaseException) -> list[BaseException]:
-    if isinstance(cleanup_exc, BaseExceptionGroup):
-        return list(cleanup_exc.exceptions)
-    return [cleanup_exc]
 
 
 class ReferenceProductionProcessLifecycleError(ValueError):
@@ -202,8 +148,8 @@ class ReferenceProductionProcessLifecycle:
         except BaseException as cleanup_exc:
             if body_exc is None:
                 raise
-            cleanup_errors = _cleanup_errors_from_close_failure(cleanup_exc)
-            _raise_primary_with_cleanup_errors(
+            cleanup_errors = cleanup_errors_from_close_failure(cleanup_exc)
+            raise_primary_with_cleanup_errors(
                 body_exc,
                 cleanup_errors,
                 message=(
@@ -261,13 +207,17 @@ def open_reference_production_process_lifecycle(
             missing_file_policy=missing_file_policy,
         )
     except BaseException as startup_exc:
-        cleanup_errors = _release_lifecycle_owned_stores(
+        cleanup_errors = release_lifecycle_owned_stores(
             continuation_store=None,
             owned_invocation=owned_invocation,
             continuation_closed=True,
             invocation_closed=False,
         )
-        _raise_startup_failure_with_cleanup(startup_exc, cleanup_errors)
+        raise_startup_failure_with_cleanup(
+            startup_exc,
+            cleanup_errors,
+            resource_scope="reference production",
+        )
 
     try:
         if composition_builder is not None:
@@ -310,13 +260,17 @@ def open_reference_production_process_lifecycle(
             _owned_invocation_store=owned_invocation,
         )
     except BaseException as startup_exc:
-        cleanup_errors = _release_lifecycle_owned_stores(
+        cleanup_errors = release_lifecycle_owned_stores(
             continuation_store=continuation_store,
             owned_invocation=owned_invocation,
             continuation_closed=False,
             invocation_closed=False,
         )
-        _raise_startup_failure_with_cleanup(startup_exc, cleanup_errors)
+        raise_startup_failure_with_cleanup(
+            startup_exc,
+            cleanup_errors,
+            resource_scope="reference production",
+        )
 
 
 __all__ = [

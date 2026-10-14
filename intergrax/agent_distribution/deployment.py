@@ -198,6 +198,7 @@ class RuntimeDeploymentAdapter(Protocol):
         materialization_output: MaterializationOutput | None = None,
     ) -> PreparedDeployment:
         """Allocate and deploy serving unit without production traffic."""
+        ...
 
     def check_readiness(
         self,
@@ -206,6 +207,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> str:
         """Return readiness evidence ref after health + certification checks."""
+        ...
 
     def begin_drain(
         self,
@@ -214,6 +216,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> None:
         """Signal serving unit to stop accepting new traffic."""
+        ...
 
     def check_drain(
         self,
@@ -223,6 +226,7 @@ class RuntimeDeploymentAdapter(Protocol):
         policy: DrainPolicy,
     ) -> DrainStatus:
         """Report whether in-flight work completed under drain policy."""
+        ...
 
     def stop(
         self,
@@ -231,6 +235,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> None:
         """Terminate serving unit after drain policy satisfied."""
+        ...
 
     def resume_serving(
         self,
@@ -239,6 +244,7 @@ class RuntimeDeploymentAdapter(Protocol):
         serving_unit_ref: str,
     ) -> str:
         """Reuse a prior serving unit for rollback when still viable."""
+        ...
 
     def attest_serving_unit(
         self,
@@ -247,6 +253,7 @@ class RuntimeDeploymentAdapter(Protocol):
         request: ServingUnitAttestationRequest,
     ) -> ServingUnitAttestation:
         """Observe unit liveness and digest binding; evidence only — no traffic."""
+        ...
 
 
 class _FakeUnitRecord(BaseModel):
@@ -469,3 +476,4 @@ class FakeInMemoryRuntimeDeploymentAdapter:
             evidence_ref=f"attest:{request.serving_unit_ref}",
             attested_at=datetime.now(UTC),
         )
+

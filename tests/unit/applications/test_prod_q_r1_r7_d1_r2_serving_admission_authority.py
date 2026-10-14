@@ -59,6 +59,9 @@ from intergrax.applications._shared.venv_bundle_colocated_serving_unit_runtime_a
     VenvBundleColocatedServingUnitRuntimeAccessor,
 )
 from intergrax.runtime.task.task import Task
+from testing_support.agent_distribution.serving_execution_admission_fixtures import (
+    activation_domain_coordinator_for_stores,
+)
 from testing_support.agent_distribution.activation_materialization_fixtures import (
     persist_materialization_for_revision,
 )
@@ -92,7 +95,7 @@ def test_ready_handoff_keeps_execution_admission_closed(tmp_path: Path) -> None:
     )
     assert handoff is not None
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
-        adapter.admit_unit_execution(unit_ref)
+        adapter.reserve_unit_execution(unit_ref)
 
 
 def test_authorize_denied_without_activation_commit(tmp_path: Path) -> None:
@@ -134,7 +137,14 @@ def test_authorize_denied_without_activation_commit(tmp_path: Path) -> None:
         authorize_colocated_serving_execution_after_activation(
             activation_commit=stale_commit,
             handoff=handoff,
-            admission_authority=adapter,
+            unit_admission_open=adapter.coordinator_verified_unit_serving_admission_open_port(
+                unit_ref
+            ),
+            activation_domain_coordinator=activation_domain_coordinator_for_stores(
+                serving_store,
+                instance_store,
+                revision_store,
+            ),
             serving_store=serving_store,
             deployment_instance_store=instance_store,
             revision_store=revision_store,
@@ -157,7 +167,7 @@ def test_bind_after_activation_opens_admission(tmp_path: Path) -> None:
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -165,8 +175,8 @@ def test_bind_after_activation_opens_admission(tmp_path: Path) -> None:
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
     assert updated.serving_runtime_handoff is not None
-    adapter.admit_unit_execution(unit_ref)
-    adapter.release_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
+    reservation.release()
 
 
 def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
@@ -184,7 +194,7 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -197,7 +207,14 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
         authorize_colocated_serving_execution_after_activation(
             activation_commit=commit,
             handoff=handoff,
-            admission_authority=adapter,
+            unit_admission_open=adapter.coordinator_verified_unit_serving_admission_open_port(
+                unit_ref
+            ),
+            activation_domain_coordinator=activation_domain_coordinator_for_stores(
+                serving_store,
+                instance_store,
+                revision_store,
+            ),
             serving_store=serving_store,
             deployment_instance_store=instance_store,
             revision_store=revision_store,
@@ -268,7 +285,7 @@ async def test_gca_admission_wrapper_blocked_under_drain(tmp_path: Path) -> None
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -310,7 +327,7 @@ async def test_gca_admission_wrapper_releases_on_exception(tmp_path: Path) -> No
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -324,8 +341,8 @@ async def test_gca_admission_wrapper_releases_on_exception(tmp_path: Path) -> No
     port = ColocatedServingUnitAdmissionTaskExecutionPort(inner, handoff)
     with pytest.raises(RuntimeError, match="task failed"):
         await port.execute(Task(tenant_id="t", user_id="u", message="x"))
-    adapter.admit_unit_execution(unit_ref)
-    adapter.release_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
+    reservation.release()
 
 
 def test_activation_commit_then_bind_end_to_end(tmp_path: Path) -> None:
@@ -378,7 +395,7 @@ def test_activation_commit_then_bind_end_to_end(tmp_path: Path) -> None:
         deployment_instance=committed.value.candidate_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=InMemoryApplicationEnvironmentServingStore(state),
         deployment_instance_store=InMemoryDeploymentInstanceStore(state),
         revision_store=revision_store,
@@ -386,7 +403,7 @@ def test_activation_commit_then_bind_end_to_end(tmp_path: Path) -> None:
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
     )
     assert composition.serving_runtime_handoff is not None
-    adapter.admit_unit_execution(unit_ref)
+    adapter.reserve_unit_execution(unit_ref).release()
 
 
 def test_handoff_failure_leaves_composition_unchanged(tmp_path: Path) -> None:

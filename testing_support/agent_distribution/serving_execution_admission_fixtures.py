@@ -15,7 +15,23 @@ from intergrax.agent_distribution.in_memory_stores import (
     _application_environment_scope,
 )
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    ActivationDomainCoordinator,
+    build_activation_domain_coordinator_for_stores,
+)
 from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
+
+
+def activation_domain_coordinator_for_stores(
+    serving_store: InMemoryApplicationEnvironmentServingStore,
+    deployment_instance_store: InMemoryDeploymentInstanceStore,
+    revision_store: InMemoryRuntimeRevisionStore,
+) -> ActivationDomainCoordinator:
+    return build_activation_domain_coordinator_for_stores(
+        serving_store=serving_store,
+        deployment_instance_store=deployment_instance_store,
+        revision_store=revision_store,
+    )
 
 
 def seed_canonical_serving_execution_stores(
@@ -56,4 +72,7 @@ def seed_canonical_serving_execution_stores(
     return serving_store, instance_store, revision_store
 
 
-__all__ = ["seed_canonical_serving_execution_stores"]
+__all__ = [
+    "activation_domain_coordinator_for_stores",
+    "seed_canonical_serving_execution_stores",
+]

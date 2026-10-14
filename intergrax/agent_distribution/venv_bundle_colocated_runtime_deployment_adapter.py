@@ -29,9 +29,10 @@ from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
 )
-from intergrax.agent_distribution.serving_execution_admission import (
-    ServingExecutionAdmissionGrant,
-    consume_serving_execution_admission_grant,
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    CoordinatorVerifiedUnitServingAdmissionOpen,
+    PhysicalExecutionReservation,
+    ServingExecutionEligibilityEvidence,
 )
 from intergrax.agent_distribution.colocated_venv_unit_runtime_binding import (
     ColocatedVenvUnitRuntimeBinding,
@@ -53,6 +54,69 @@ _UNIT_REF_PREFIX: Final = "venv-colocated:"
 
 class VenvBundleColocatedDeploymentError(AgentDistributionError):
     """Co-located VENV deployment adapter operation failed."""
+
+
+@dataclass(frozen=True, slots=True)
+class VenvBundleCoordinatorVerifiedUnitServingAdmissionOpen:
+    """Adapter-owned unit-bound admission open port for coordinator invocation."""
+
+    _adapter: VenvBundleColocatedRuntimeDeploymentAdapter
+    _bound_serving_unit_ref: str
+
+    def apply_coordinator_verified_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        if evidence.serving_unit_ref != self._bound_serving_unit_ref:
+            raise VenvBundleColocatedDeploymentError(
+                "coordinator-verified admission open serving unit mismatch"
+            )
+        self._adapter._apply_coordinator_verified_unit_admission_open(evidence)
+
+    def publish_coordinator_verified_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        if evidence.serving_unit_ref != self._bound_serving_unit_ref:
+            raise VenvBundleColocatedDeploymentError(
+                "coordinator-verified admission publish serving unit mismatch"
+            )
+        self._adapter._publish_coordinator_verified_unit_admission_open(evidence)
+
+    def compensate_failed_coordination_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        if evidence.serving_unit_ref != self._bound_serving_unit_ref:
+            raise VenvBundleColocatedDeploymentError(
+                "coordinator-verified admission compensation serving unit mismatch"
+            )
+        self._adapter._compensate_failed_coordinator_verified_unit_admission_open(
+            evidence
+        )
+
+
+class ColocatedUnitExecutionReservation:
+    """One physical in-flight execution slot; release at most once."""
+
+    __slots__ = ("_adapter", "_active", "_serving_unit_ref")
+
+    def __init__(
+        self,
+        adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
+        serving_unit_ref: str,
+    ) -> None:
+        self._adapter = adapter
+        self._serving_unit_ref = serving_unit_ref
+        self._active = True
+
+    def release(self) -> None:
+        if not self._active:
+            raise VenvBundleColocatedDeploymentError(
+                "execution release without matching admission"
+            )
+        self._active = False
+        self._adapter.release_unit_execution(self._serving_unit_ref)
 
 
 class _UnitAdmissionGate:
@@ -114,12 +178,14 @@ class _ColocatedVenvPhysicalUnit:
     admission: _UnitAdmissionGate = field(default_factory=_UnitAdmissionGate)
     readiness_evidence_ref: str | None = None
     serving_admission_authorized: bool = False
+    coordinator_admission_open_staged: ServingExecutionEligibilityEvidence | None = None
     drain_started_monotonic: float | None = None
     binding_key: str = ""
 
     def invalidate_resources(self) -> None:
         self.runtime_resource.invalidate()
         self.serving_admission_authorized = False
+        self.coordinator_admission_open_staged = None
         self.admission.begin_drain()
 
 
@@ -142,55 +208,149 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         self._units: dict[str, _ColocatedVenvPhysicalUnit] = {}
         self._binding_index: dict[str, str] = {}
 
-    def admit_unit_execution(self, serving_unit_ref: str) -> None:
-        """Sanctioned admission entry for colocated unit work (wired by composition in D1b)."""
+    def coordinator_verified_unit_serving_admission_open_port(
+        self, serving_unit_ref: str
+    ) -> CoordinatorVerifiedUnitServingAdmissionOpen:
+        """Return a unit-bound admission open port for sanctioned coordinator wiring."""
+        self._require_unit(serving_unit_ref)
+        return VenvBundleCoordinatorVerifiedUnitServingAdmissionOpen(
+            _adapter=self,
+            _bound_serving_unit_ref=serving_unit_ref,
+        )
+
+    def reserve_unit_execution(
+        self, serving_unit_ref: str
+    ) -> ColocatedUnitExecutionReservation:
+        """Reserve one in-flight execution slot after coordinator authorization."""
         unit = self._require_live_unit(serving_unit_ref)
+        if not unit.serving_admission_authorized:
+            raise VenvBundleColocatedDeploymentError(
+                "serving unit is not admitting new execution work"
+            )
         unit.admission.admit_execution()
+        return ColocatedUnitExecutionReservation(self, serving_unit_ref)
 
     def release_unit_execution(self, serving_unit_ref: str) -> None:
         unit = self._require_unit(serving_unit_ref)
         unit.admission.release_execution()
 
     def authorize_serving_execution_admission(
-        self, grant: ServingExecutionAdmissionGrant
+        self, evidence: ServingExecutionEligibilityEvidence
     ) -> None:
-        """Open execution admission for one typed canonical grant (not identifier-only)."""
-        consume_serving_execution_admission_grant(grant)
-        unit = self._require_live_unit(grant.serving_unit_ref)
-        if unit.application_id != grant.application_id:
+        raise VenvBundleColocatedDeploymentError(
+            "serving execution admission requires activation domain coordinator"
+        )
+
+    def _evidence_matches_unit_identity(
+        self,
+        unit: _ColocatedVenvPhysicalUnit,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        if unit.application_id != evidence.application_id:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant application mismatch"
+                "serving execution admission evidence application mismatch"
             )
-        if unit.application_environment_id != grant.application_environment_id:
+        if unit.application_environment_id != evidence.application_environment_id:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant environment mismatch"
+                "serving execution admission evidence environment mismatch"
             )
-        if unit.runtime_revision_id != grant.runtime_revision_id:
+        if unit.runtime_revision_id != evidence.runtime_revision_id:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant revision mismatch"
+                "serving execution admission evidence revision mismatch"
             )
-        if unit.materialization_artifact_digest != grant.materialization_artifact_digest:
+        if unit.materialization_artifact_digest != evidence.materialization_artifact_digest:
             raise VenvBundleColocatedDeploymentError(
-                "serving execution admission grant digest mismatch"
+                "serving execution admission evidence digest mismatch"
             )
-        if unit.serving_admission_authorized:
-            raise VenvBundleColocatedDeploymentError(
-                "serving execution admission already authorized for unit"
-            )
-        if unit.lifecycle_state not in {
-            DeploymentInstanceState.READY,
-            DeploymentInstanceState.SERVING,
-        }:
-            raise VenvBundleColocatedDeploymentError(
-                "serving unit is not eligible for execution admission"
-            )
-        if not unit.runtime_resource.is_live:
-            raise VenvBundleColocatedDeploymentError(
-                "serving unit physical runtime is not initialized"
-            )
-        unit.serving_admission_authorized = True
-        unit.admission.open_admission()
-        unit.lifecycle_state = DeploymentInstanceState.SERVING
+
+    def _apply_coordinator_verified_unit_admission_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        """Stage coordinator-verified admission; gate stays closed until publish."""
+        with self._lock:
+            unit = self._require_live_unit(evidence.serving_unit_ref)
+            self._evidence_matches_unit_identity(unit, evidence)
+            if unit.serving_admission_authorized:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving execution admission already authorized for unit"
+                )
+            if unit.coordinator_admission_open_staged is not None:
+                raise VenvBundleColocatedDeploymentError(
+                    "coordinator-verified admission open already staged for unit"
+                )
+            if unit.lifecycle_state not in {
+                DeploymentInstanceState.READY,
+                DeploymentInstanceState.SERVING,
+            }:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving unit is not eligible for execution admission"
+                )
+            if not unit.runtime_resource.is_live:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving unit physical runtime is not initialized"
+                )
+            unit.coordinator_admission_open_staged = evidence
+
+    def _publish_coordinator_verified_unit_admission_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        """Publish staged admission after canonical coordination succeeded."""
+        with self._lock:
+            unit = self._require_live_unit(evidence.serving_unit_ref)
+            self._evidence_matches_unit_identity(unit, evidence)
+            staged = unit.coordinator_admission_open_staged
+            if staged is None:
+                raise VenvBundleColocatedDeploymentError(
+                    "coordinator-verified admission open is not staged for unit"
+                )
+            if staged != evidence:
+                raise VenvBundleColocatedDeploymentError(
+                    "coordinator-verified admission publish evidence mismatch"
+                )
+            if unit.serving_admission_authorized:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving execution admission already authorized for unit"
+                )
+            prior_lifecycle = unit.lifecycle_state
+            try:
+                unit.serving_admission_authorized = True
+                unit.admission.open_admission()
+                unit.lifecycle_state = DeploymentInstanceState.SERVING
+                unit.coordinator_admission_open_staged = None
+            except Exception:
+                unit.serving_admission_authorized = False
+                unit.coordinator_admission_open_staged = None
+                unit.admission.begin_drain()
+                unit.lifecycle_state = prior_lifecycle
+                raise
+
+    def _compensate_failed_coordinator_verified_unit_admission_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        with self._lock:
+            unit = self._require_unit(evidence.serving_unit_ref)
+            self._evidence_matches_unit_identity(unit, evidence)
+            staged = unit.coordinator_admission_open_staged
+            if staged is not None:
+                if staged != evidence:
+                    raise VenvBundleColocatedDeploymentError(
+                        "admission compensation staged evidence mismatch"
+                    )
+                unit.coordinator_admission_open_staged = None
+                return
+            if not unit.serving_admission_authorized:
+                return
+            if unit.admission.in_flight_count() > 0:
+                raise VenvBundleColocatedDeploymentError(
+                    "cannot compensate unit admission open while executions are in flight"
+                )
+            unit.serving_admission_authorized = False
+            unit.admission.begin_drain()
+            if unit.lifecycle_state is DeploymentInstanceState.SERVING:
+                unit.lifecycle_state = DeploymentInstanceState.READY
 
     def artifact_root_for_serving_unit(self, serving_unit_ref: str) -> Path:
         """Expose immutable artifact root for composition-side resolver binding."""
@@ -402,10 +562,12 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         *,
         serving_unit_ref: str,
     ) -> None:
-        unit = self._require_unit(serving_unit_ref)
-        unit.admission.begin_drain()
-        unit.lifecycle_state = DeploymentInstanceState.DRAINING
-        unit.drain_started_monotonic = time.monotonic()
+        with self._lock:
+            unit = self._require_unit(serving_unit_ref)
+            unit.coordinator_admission_open_staged = None
+            unit.admission.begin_drain()
+            unit.lifecycle_state = DeploymentInstanceState.DRAINING
+            unit.drain_started_monotonic = time.monotonic()
 
     def check_drain(
         self,
@@ -471,6 +633,7 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             raise VenvBundleColocatedDeploymentError("serving unit cannot be resumed")
         unit.admission.begin_drain()
         unit.serving_admission_authorized = False
+        unit.coordinator_admission_open_staged = None
         unit.lifecycle_state = DeploymentInstanceState.READY
         unit.drain_started_monotonic = None
         evidence = unit.readiness_evidence_ref or self.check_readiness(

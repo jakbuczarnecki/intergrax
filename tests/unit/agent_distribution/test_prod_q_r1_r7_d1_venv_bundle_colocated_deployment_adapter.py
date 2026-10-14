@@ -28,9 +28,8 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_resource import 
     ColocatedVenvRuntimeResource,
 )
 from intergrax.agent_distribution.in_memory_stores import AgentDistributionStoreState
-from intergrax.agent_distribution.serving_execution_admission import (
-    run_serving_execution_admission_critical_section,
-    verify_current_serving_execution_admission_eligibility,
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    ServingExecutionAdmissionRequest,
 )
 from intergrax.agent_distribution.stores import ApplicationEnvironmentServingRecord
 from intergrax.agent_distribution.deployment import DeploymentInstanceRecord, DeploymentInstanceState
@@ -39,6 +38,7 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapt
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 from testing_support.agent_distribution.serving_execution_admission_fixtures import (
+    activation_domain_coordinator_for_stores,
     seed_canonical_serving_execution_stores,
 )
 from intergrax.agent_distribution.venv_bundle_deployment_artifact import (
@@ -107,6 +107,35 @@ def _revision_for(
     )
 
 
+def _authorize_adapter_execution_gate(
+    adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
+    *,
+    serving_store: object,
+    instance_store: object,
+    revision_store: object,
+    revision: RuntimeRevision,
+    serving_unit_ref: str,
+) -> None:
+    coordinator = activation_domain_coordinator_for_stores(
+        serving_store,
+        instance_store,
+        revision_store,
+    )
+    request = ServingExecutionAdmissionRequest(
+        application_id=revision.application_id,
+        application_environment_id=revision.application_environment_id,
+        runtime_revision_id=revision.runtime_revision_id,
+        serving_unit_ref=serving_unit_ref,
+        materialization_artifact_digest=revision.materialization_artifact_digest or "",
+    )
+    coordinator.coordinate_unit_serving_admission_open(
+        request,
+        unit_admission_open=adapter.coordinator_verified_unit_serving_admission_open_port(
+            serving_unit_ref
+        ),
+    )
+
+
 def _prepare_ready(
     adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
     revision: RuntimeRevision,
@@ -138,20 +167,14 @@ def _prepare_ready(
             serving_record=serving_record,
             deployment_instance=deployment_instance,
         )
-        def _authorize() -> None:
-            grant = verify_current_serving_execution_admission_eligibility(
-                serving_store=serving_store,
-                deployment_instance_store=instance_store,
-                revision_store=revision_store,
-                application_id=revision.application_id,
-                application_environment_id=revision.application_environment_id,
-                runtime_revision_id=revision.runtime_revision_id,
-                serving_unit_ref=prepared.serving_unit_ref,
-                materialization_artifact_digest=revision.materialization_artifact_digest or "",
-            )
-            adapter.authorize_serving_execution_admission(grant)
-
-        run_serving_execution_admission_critical_section(serving_store, _authorize)
+        _authorize_adapter_execution_gate(
+            adapter,
+            serving_store=serving_store,
+            instance_store=instance_store,
+            revision_store=revision_store,
+            revision=revision,
+            serving_unit_ref=prepared.serving_unit_ref,
+        )
     return prepared.serving_unit_ref
 
 
@@ -231,10 +254,10 @@ def test_unit_without_traffic_admission_before_readiness(tmp_path: Path) -> None
     revision = _revision_for("rev-adm", digest=digest, lock=lock)
     prepared = adapter.prepare(revision, artifact_locator=locator)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="resources are invalid"):
-        adapter.admit_unit_execution(prepared.serving_unit_ref)
+        adapter.reserve_unit_execution(prepared.serving_unit_ref)
     adapter.check_readiness(revision, serving_unit_ref=prepared.serving_unit_ref)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
-        adapter.admit_unit_execution(prepared.serving_unit_ref)
+        adapter.reserve_unit_execution(prepared.serving_unit_ref)
     state = AgentDistributionStoreState()
     serving_record = ApplicationEnvironmentServingRecord(
         application_id=revision.application_id,
@@ -256,22 +279,16 @@ def test_unit_without_traffic_admission_before_readiness(tmp_path: Path) -> None
         serving_record=serving_record,
         deployment_instance=deployment_instance,
     )
-    def _authorize() -> None:
-        grant = verify_current_serving_execution_admission_eligibility(
-            serving_store=serving_store,
-            deployment_instance_store=instance_store,
-            revision_store=revision_store,
-            application_id=revision.application_id,
-            application_environment_id=revision.application_environment_id,
-            runtime_revision_id=revision.runtime_revision_id,
-            serving_unit_ref=prepared.serving_unit_ref,
-            materialization_artifact_digest=revision.materialization_artifact_digest or "",
-        )
-        adapter.authorize_serving_execution_admission(grant)
-
-    run_serving_execution_admission_critical_section(serving_store, _authorize)
-    adapter.admit_unit_execution(prepared.serving_unit_ref)
-    adapter.release_unit_execution(prepared.serving_unit_ref)
+    _authorize_adapter_execution_gate(
+        adapter,
+        serving_store=serving_store,
+        instance_store=instance_store,
+        revision_store=revision_store,
+        revision=revision,
+        serving_unit_ref=prepared.serving_unit_ref,
+    )
+    reservation = adapter.reserve_unit_execution(prepared.serving_unit_ref)
+    reservation.release()
 
 
 def test_readiness_fails_before_check_readiness(tmp_path: Path) -> None:
@@ -429,11 +446,11 @@ def test_begin_drain_blocks_admission(tmp_path: Path) -> None:
     )
     revision = _revision_for("rev-drain", digest=digest, lock=lock)
     unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
-    adapter.admit_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     with pytest.raises(VenvBundleColocatedDeploymentError, match="not admitting"):
-        adapter.admit_unit_execution(unit_ref)
-    adapter.release_unit_execution(unit_ref)
+        adapter.reserve_unit_execution(unit_ref)
+    reservation.release()
 
 
 def test_drain_completion_reflects_in_flight(tmp_path: Path) -> None:
@@ -443,13 +460,13 @@ def test_drain_completion_reflects_in_flight(tmp_path: Path) -> None:
     )
     revision = _revision_for("rev-inflight", digest=digest, lock=lock)
     unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
-    adapter.admit_unit_execution(unit_ref)
+    reservation = adapter.reserve_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     policy = DrainPolicy(timeout_seconds=30.0)
     assert adapter.check_drain(
         revision, serving_unit_ref=unit_ref, policy=policy
     ).completed is False
-    adapter.release_unit_execution(unit_ref)
+    reservation.release()
     assert adapter.check_drain(
         revision, serving_unit_ref=unit_ref, policy=policy
     ).completed is True
@@ -462,7 +479,7 @@ def test_drain_timeout_evidence(tmp_path: Path) -> None:
     )
     revision = _revision_for("rev-to", digest=digest, lock=lock)
     unit_ref = _prepare_ready(adapter, revision, locator, authorize_admission=True)
-    adapter.admit_unit_execution(unit_ref)
+    adapter.reserve_unit_execution(unit_ref)
     adapter.begin_drain(revision, serving_unit_ref=unit_ref)
     policy = DrainPolicy(timeout_seconds=0.01)
     time.sleep(0.02)

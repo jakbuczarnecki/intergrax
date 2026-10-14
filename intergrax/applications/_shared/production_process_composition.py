@@ -45,6 +45,32 @@ class ProductionProcessComposition:
     serving_runtime_handoff: ServingRuntimeHandoff | None = None
 
 
+def assemble_durable_production_process_composition(
+    *,
+    agent_platform_runtime: ProductionAgentPlatformRuntime,
+    application_composition: AgentCapabilityApplicationComposition | None = None,
+    provider_invocation_store: ProviderInvocationStore | None = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+) -> ProductionProcessComposition:
+    """Bind durable platform runtime and optional capability wiring (production opener only)."""
+    capability_runtime = None
+    if application_composition is not None:
+        from intergrax.applications._shared.production_agent_capability_runtime import (
+            build_production_agent_capability_runtime,
+        )
+
+        capability_runtime = build_production_agent_capability_runtime(
+            agent_platform_runtime=agent_platform_runtime,
+            application_composition=application_composition,
+        )
+    return ProductionProcessComposition(
+        agent_platform_runtime=agent_platform_runtime,
+        agent_capability_runtime=capability_runtime,
+        provider_invocation_store=provider_invocation_store,
+        execution_continuation_state_store=execution_continuation_state_store,
+    )
+
+
 def create_reference_production_process_composition(
     *,
     application_composition: AgentCapabilityApplicationComposition | None = None,
@@ -73,5 +99,6 @@ def create_reference_production_process_composition(
 
 __all__ = [
     "ProductionProcessComposition",
+    "assemble_durable_production_process_composition",
     "create_reference_production_process_composition",
 ]

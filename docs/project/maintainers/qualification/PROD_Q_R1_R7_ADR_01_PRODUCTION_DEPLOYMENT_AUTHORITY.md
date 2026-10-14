@@ -2,11 +2,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **ARCHITECTURE RATIFIED BY OPERATOR — IMPLEMENTATION NOT QUALIFIED** · **READY FOR AUDIT** (decision provenance only). **Next implementation:** **PROD-Q-R1-R7-D1** (handoff dependency **D1b** per §14.2). |
-| **Revision** | **R5** — operator ratification **DEC-01–DEC-08** (docs @ ratification commit on `development`; **START_HEAD** `c6eb303e2234262e8acad7b09b5eb789dea891cf`). Prior **R4** @ `c6eb303…` / code **D0** evidence @ `2b44cee94fc654136d68353a04dedc5973eb6a8b`; **R3** (**B06–B07**); **R2** partial (**B04**); **R1 rejected**. |
+| **Status** | **ARCHITECTURE RATIFIED BY OPERATOR — IMPLEMENTATION NOT QUALIFIED** · **READY FOR AUDIT** (decision provenance only). **DEC-01–DEC-09 / DEC-09-EXT** recorded; **next implementation:** **PROD-Q-R1-R7-D1-R6** (bounded code wave — **not** authorized by ratification alone). |
+| **Revision** | **R6** — operator ratification **DEC-09** + **DEC-09-EXT** (docs @ ratification commit on `development`; **START_HEAD** `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7`; decision-gate evidence @ `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41`). **R5** — **DEC-01–DEC-08** @ `c6eb303e2234262e8acad7b09b5eb789dea891cf`. Code **D0** evidence @ `2b44cee94fc654136d68353a04dedc5973eb6a8b` (unchanged). |
 | **Date** | 2026-10-13 |
-| **Ratification START_HEAD** | `c6eb303e2234262e8acad7b09b5eb789dea891cf` |
-| **Code evidence lock (D0 / §4.5A)** | `2b44cee94fc654136d68353a04dedc5973eb6a8b` (unchanged by R5 docs-only ratification) |
+| **Ratification START_HEAD (R6)** | `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7` |
+| **Ratification START_HEAD (R5)** | `c6eb303e2234262e8acad7b09b5eb789dea891cf` |
+| **Code evidence lock (D0 / §4.5A)** | `2b44cee94fc654136d68353a04dedc5973eb6a8b` (unchanged by R5/R6 docs-only ratification) |
 | **Prior ADR baseline** | `bc1f6926babf0b5fa499b1deebcda48c93cd4258` (**R3** text) |
 | **Branch** | `development` |
 | **Parent** | **PROD-Q-R1** — **BLOCKED** |
@@ -23,6 +24,16 @@
 | **DEC-01 … DEC-08** | **RATIFIED** (target architecture; production proofs **not** presumed — see §21) |
 | **Operator authorization** | Explicitly provided in the **controlling ChatGPT conversation** following independent review of **ADR-01-R4**. **Not fabricated:** no operator signature, no Git SHA for the external conversation, no unverified approval timestamp, no CI pass claimed for production behavior. |
 | **This Git commit** | Records ADR ratification provenance only; **does not** prove production functionality or close implementation gates. |
+
+### Ratification record (DEC-09 / DEC-09-EXT — R6)
+
+| Item | Disposition |
+|------|-------------|
+| **Decision status** | **ARCHITECTURE RATIFIED BY OPERATOR — IMPLEMENTATION NOT QUALIFIED** |
+| **DEC-09** · **DEC-09-EXT** | **RATIFIED** (§22; coordination semantics — **not** production qualification) |
+| **Operator authorization** | **OPTION A** (one sanctioned colocated A1 physical runtime owner), provider-neutral **`ActivationDomainCoordinator`**, SQLite **transaction-coordinated** admission (not Python `RLock` alone), canonical AD serving-state authority, consistent serving/revision/deployment eligibility snapshot, physical in-flight reservation ordered against serving-pointer mutations, **no** consumable grant / nonce / global permission registry / shadow authority, **no** full distributed serving implementation, explicit operational trust boundary for arbitrary external SQLite writers — provided in the **controlling Cursor conversation** task **PROD-Q-R1-R7-ADR-01-R6**. |
+| **Preceding decision-gate audit SHA** | `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7` (= **START_HEAD** for this ratification commit; gate evidence authored @ `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41`) |
+| **This Git commit** | Records **DEC-09** / **DEC-09-EXT** provenance only; **separate** from D1-R5-R1 / DEC-09 gate evidence commits; **does not** implement coordinator logic, **does not** authorize treating architecture as execution permission, **does not** close **D1-R6** or any FRZ PASS. |
 
 **Roadmap alignment:** Canonical [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) lists **PROD-Q** as **CURRENT / BLOCKED ON** `PROD-Q-R1`, `PROD-Q-P1..P3`. **PROD-Q-R1-R7-ADR-01** ratification does **not** independently promote **PROD-Q-R1-R7** to a closed roadmap row or close **PROD-Q-R1**.
 
@@ -948,38 +959,71 @@ Historical **R4** questions below are **answered by ratification** (DEC-01–DEC
 | **DEC-06** | External immutable `file://` VENV_BUNDLE + trusted materialization record + digest/revision/env binding | Materialization store contracts | `test://` / synthetic `artifact://` as production authority | Operator/CI artifact authority | **D1** binding; proofs before prod-ready | **RATIFIED** | **NOT YET QUALIFIED** |
 | **DEC-07** | Applications `ServingRuntimeHandoff`; runtime bound to attested unit + activated revision; frozen composition semantics | **No handoff @ HEAD** (**B04**) | Reflection; parallel resolver; global shadow registry | Apps owns handoff | **D1b** or coordinated D1+D1b | **RATIFIED** | **BLOCKED** until D1b |
 | **DEC-08** | Attest live unit before relying on READY/SERVING; recovery with semantic owners; no uncertain external replay | D0 attest gates; full restart reconcile **not** qualified | SQLite-inferred liveness | `ActivationService` + launcher | **D3**; **D1** must not fake recovery | **RATIFIED** | **PARTIAL** (orchestration only) |
+| **DEC-09** | **A1 single physical serving owner** (§22) | D1-R4 ARC @ HEAD; SQLite admit fail-closed | Distributed cluster; grant registry | AD eligibility; Apps composition | **D1-R6** | **RATIFIED** (R6) | **NOT YET QUALIFIED** |
+| **DEC-09-EXT** | **`ActivationDomainCoordinator`** (§22) | Not @ HEAD | File lock / lease without decision | AD protocol | **D1-R6** | **RATIFIED** (R6) | **NOT YET QUALIFIED** |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
 
 ---
 
-## 22. R6 coordination decision — **PROPOSED** (PROD-Q-R1-R7-D1-R5)
+## 22. R6 coordination decision — **RATIFIED** (PROD-Q-R1-R7-ADR-01-R6)
 
-> **Status:** **PROPOSED — NOT RATIFIED.** Does **not** amend **DEC-01–DEC-08**. Operator ratification required before implementation treats this as architecture authority.
+> **Status:** **ARCHITECTURE RATIFIED BY OPERATOR — IMPLEMENTATION NOT QUALIFIED** · **READY FOR AUDIT**. Extends coordination architecture **without** amending **DEC-01–DEC-08** semantics. **Does not** prove linearization @ HEAD; **D1-R6** + independent audit required for qualification claims.
 
 | Field | Value |
 |-------|-------|
-| **Evidence doc** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) |
-| **Code HEAD (audit)** | `36492c847000fe67ef0081bbf3d54f2a3f56d5d3` |
-| **Corrective evidence (D1-R5-R1)** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) §11 |
-| **Implementation child** | **PROD-Q-R1-R7-D1-R6** (bounded; **no** code in D1-R5 / D1-R5-R1) |
+| **Evidence doc** | [`PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md`](PROD_Q_R1_R7_D1_R5_SERVING_ADMISSION_COORDINATION.md) §12–§13 |
+| **Code HEAD (closed-world audit)** | `e67bd7c4317a6f55682ab2d1330aa7b79a5c63a7` |
+| **Decision-gate evidence SHA** | `fb05b7e52a21a5f698efea4fc5fc4a27c7292d41` |
+| **Ratification task** | **PROD-Q-R1-R7-ADR-01-R6** (controlling Cursor conversation) |
+| **Implementation child** | **PROD-Q-R1-R7-D1-R6** |
 
-### DEC-09 (proposed) — A1 single activation domain for serving admission
+### DEC-09 — A1 single physical serving owner
 
 **Intent:** Reconcile serving **execution admission** with **DEC-01 A1** without a second issuance authority (reject D1-R4 `_PENDING_GRANT_ISSUANCES` / nonce consumption pattern).
 
-| # | Proposed rule |
+| # | Ratified rule |
 |---|----------------|
 | 1 | **One sanctioned OS process** per application environment under A1 owns the live colocated adapter, the production composition, and **one** durable Agent Distribution store bundle instance (`SqliteAgentDistributionDatabase` or shared in-memory `AgentDistributionStoreState`). |
-| 2 | All serving pointer mutations and execution admission for that environment **must** linearize through **one provider-neutral activation domain** exposed by that bundle — **not** a second permission registry. @ HEAD, in-memory domain = `AgentDistributionStoreState._activation_lock` + `run_under_activation_domain`; SQLite mutations = `SqliteAgentDistributionDatabase.mutation_transaction` (`BEGIN IMMEDIATE` on **one** connection per transaction). **D1-R5-R1 gap:** the Python `_activation_lock` is **process-local**; it does **not** exclude a second OS process opening the same file. Admission on SQLite today **fails closed** (`require_shared_activation_domain_state` → no shared in-memory state). **Ratification requires** accepting the bounded **DEC-09-EXT** contract in evidence §11 (composition startup gate + domain bridge + consistent read boundary) — **not** claiming cross-process exclusivity from the lock alone. |
+| 2 | All serving pointer mutations and execution admission for that environment **must** linearize through **one provider-neutral activation domain** (**DEC-09-EXT** `ActivationDomainCoordinator`) — **not** a second permission registry. @ HEAD, in-memory domain = `AgentDistributionStoreState._activation_lock` + `run_under_activation_domain`; SQLite mutations = `SqliteAgentDistributionDatabase.mutation_transaction` (`BEGIN IMMEDIATE` on **one** connection per transaction). The Python `_activation_lock` is **process-local**; it does **not** exclude a second OS process opening the same file. Admission on SQLite today **fails closed** (`require_shared_activation_domain_state` → no shared in-memory state). **Ratified:** bounded **DEC-09-EXT** — **not** cross-process exclusivity from the lock alone. |
 | 3 | **No consumable serving grant token.** Eligibility is established **at the operation boundary** inside the activation domain; physical in-flight accounting follows immediately or via a single handoff-open inside the same domain. |
-| 4 | **Per-execution admission** (GCA task path) re-reads canonical stores under the domain, then calls adapter physical gate — no historical snapshot conferring authorization. Multi-store verify must use a **defined consistency boundary** (single in-memory snapshot or one SQLite read transaction / in-flight mutation state) — independent `_refresh()` → `load_state()` per store is **not** a qualified snapshot (@ HEAD). |
-| 5 | **Unsupported:** second OS process as writer on the same environment store path without **OPTION B** coordination; multiple `ActivationService` instances without shared domain; two `SqliteAgentDistributionDatabase` objects in one process without shared `_db` reference; identifier-only `admit_unit_execution` on sanctioned production wiring; admin/recovery tools mutating serving state outside the sanctioned composition unless explicitly qualified under **OPTION B**. Unsupported configurations **fail closed** at composition validation (**FRZ-PRD-03**). |
+| 4 | **Per-execution admission** (GCA: `ColocatedServingUnitAdmissionTaskExecutionPort` → `StoreBackedColocatedServingUnitExecutionAdmission`) re-reads canonical stores under the domain, then calls adapter physical gate — no historical snapshot conferring authorization. Multi-store verify must use a **defined consistency boundary** — independent per-store `_refresh()` → `load_state()` is **not** qualified (@ HEAD). |
+| 5 | **Unsupported:** second OS process as writer on the same environment store path without **OPTION B**; multi-process worker serving in the first coordinator implementation; multiple `ActivationService` instances without shared domain; two `SqliteAgentDistributionDatabase` objects in one process without shared `_db` reference; identifier-only `admit_unit_execution` on sanctioned production wiring. Unsupported configurations **must fail closed** at composition validation (supporting **FRZ-PRD-03** — **not** full PASS). |
 | 6 | **OPTION B** (cross-process store-coordinated admission) remains a **future** ratification candidate — **not** part of DEC-09. |
-| 7 | **OPTION A2 (read-only peer):** external SQLite readers are **not** production-qualified @ HEAD; SQLite does not cryptographically enforce read-only when the file is writable. A2 is **documentation-only** until file-permission or separate read replica contract is ratified. |
+| 7 | **OPTION A2 (read-only peer):** documentation-only until a separate contract is ratified. |
 
 **Rejected (D1-R4 audit):** process-global grant issuance registry; `object.__setattr__` on frozen grant models; separable verify-then-consume grant across pointer CAS.
 
-**STOP — ARCHITECTURE DECISION REQUIRED (D1-R5-R1, does not block DEC-09 proposal text):** Operator must ratify **DEC-09-EXT — `ActivationDomainCoordinator` (name indicative)** before **D1-R6** may claim production-ready A1 ordering on SQLite: (a) composition-owned **topology validation** (single process, single `SqliteAgentDistributionDatabase`, single `ActivationService`, shared store bundle); (b) **domain bridge** replacing in-memory-only `run_serving_execution_admission_critical_section`; (c) **consistent eligibility read** + physical reservation ordering; (d) explicit **unsupported-writer rejection** semantics. **Forbidden without separate authorization:** OS file lock, PID lease file, custom lease table, or shadow permission DB. **Not ratified in this revision.**
+### DEC-09-EXT — Provider-neutral `ActivationDomainCoordinator`
 
-**Qualification impact:** **PROD-Q-R1-R7-D1** / **D1b** remain **BLOCKED** until **D1-R6** implements DEC-09 **and DEC-09-EXT** (if ratified) and independent audit passes. **FRZ-PRD-04/05/08/11** remain **OPEN**.
+**Ownership:** Agent Distribution owns eligibility and activation semantics. Applications owns sanctioned production composition. The physical adapter owns unit resources, local gate state, and in-flight accounting only. GCA consumes authorized execution. Governance remains separate from execution.
+
+**Typed contract (platform Protocol):** replaceable backend; SQLite and shared in-memory implementations **must** satisfy the same semantics.
+
+| Responsibility | Owner |
+|----------------|-------|
+| Consistent canonical eligibility reads | Coordinator (AD) |
+| Serving-pointer mutation ordering vs admission | Coordinator + `mutation_transaction` |
+| Physical execution-admission reservation | Coordinator orders vs pointer; adapter in-flight |
+| Release / compensation | Coordinator + adapter (**no** DB rollback for adapter effects) |
+| Supported topology validation | Applications composition (fail-closed) |
+
+**SQLite first implementation (contract — not proven @ HEAD):** one consistent eligibility snapshot; transaction-level coordination on canonical `SqliteAgentDistributionDatabase` (not `RLock` alone); no nested unrelated `_mutate` / `_refresh` inside held txn; bounded `SQLITE_BUSY` fail-closed; no txn held across agent execution; preserve CAS semantics; no new Apps activation authority.
+
+**Forbidden without separate authorization:** new SQLite coordination schema, OS file lock, PID lease, lease table, shadow permission DB, replacing `ActivationService`, second canonical serving pointer.
+
+### 22.3 Failure ordering — durable commit vs physical reservation
+
+Physical admission reservation is **not** a SQLite transaction. **Do not** rely on database rollback to undo adapter-side effects.
+
+| Point | Ratified specification (**D1-R6** implementation contract) |
+|-------|-------------------------------------------------------------|
+| **Pointer mutations** | Durable commit inside `mutation_transaction` / `_mutate` before coordination entry completes. |
+| **Execution admission** | Eligibility under coordinator; **physical in-flight reservation after eligibility and ordered against current pointer generation, before coordinator releases admission boundary** — reservation is adapter-local. |
+| **Authorization final** | Only after consistent eligibility + successful physical reservation + coordinator release without fail-closed error — **not** from historical grant/nonce. |
+| **Reserve OK, later failure** | Explicit adapter in-flight compensation — **not** SQLite rollback. |
+| **Failed reservation** | Prevents task execution. |
+| **In-flight release** | Drain, exception, cancellation; stop/restart fail closed; stale unit rejected after restart. |
+| **External untrusted SQLite writer** | Outside application-level admission guarantee — **operational trust boundary**; does **not** close **FRZ-PRD-03** / **FRZ-PRD-08**; startup validation alone does **not** guarantee hostile-writer exclusion. |
+
+**Qualification impact:** **D1-R6** implements DEC-09 + DEC-09-EXT @ HEAD (independent parent audit pending). **D1 / D1b** formal acceptance evidence: [`PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md`](PROD_Q_R1_R7_D1_D1b_FINAL_ACCEPTANCE_EVIDENCE.md) — **READY FOR INDEPENDENT CLOSURE** (A1); ADR §14.3 ratification rows are **not** autonomously promoted to PASS. **FRZ-PRD-04/05/08/11** remain **OPEN** globally. Architecture ratification is **not** implementation acceptance.

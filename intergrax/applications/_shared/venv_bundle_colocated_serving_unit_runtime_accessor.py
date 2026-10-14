@@ -63,11 +63,5 @@ class VenvBundleColocatedServingUnitRuntimeAccessor:
         )
         return resolver
 
-    def admit_execution(self, serving_unit_ref: str) -> None:
-        self._adapter.admit_unit_execution(serving_unit_ref)
-
-    def release_execution(self, serving_unit_ref: str) -> None:
-        self._adapter.release_unit_execution(serving_unit_ref)
-
 
 __all__ = ["VenvBundleColocatedServingUnitRuntimeAccessor"]

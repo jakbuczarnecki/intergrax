@@ -529,6 +529,57 @@ class ActivationService:
                 raise drain_error
             return result
 
+    def reconcile_traffic_serving_physical_unit_after_process_restart(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        expected_serving_pointer_revision: int | None = None,
+    ) -> TransitionResult[ServingUnitAttestation | None]:
+        """Attest live serving unit for one environment after process restart (DEC-08)."""
+        with self._environment_lock(application_id, application_environment_id):
+            serving = self._serving_store.get_serving_record(
+                application_id,
+                application_environment_id,
+            )
+            if serving is None or serving.traffic_serving_revision_id is None:
+                return TransitionResult(value=None)
+            if expected_serving_pointer_revision is not None:
+                if serving.serving_pointer_revision != expected_serving_pointer_revision:
+                    raise RuntimeActivationConflict(
+                        "serving pointer revision mismatch during process restart reconciliation",
+                    )
+            revision_id = serving.traffic_serving_revision_id
+            revision = self._require_revision(revision_id)
+            self._assert_environment_match(
+                revision,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            )
+            instance = self._deployment_instance_store.get_instance(
+                application_id,
+                application_environment_id,
+                revision_id,
+            )
+            if instance is None:
+                raise RuntimeActivationError(
+                    "traffic-serving revision lacks deployment instance record",
+                )
+            if instance.instance_state not in {
+                DeploymentInstanceState.READY,
+                DeploymentInstanceState.SERVING,
+            }:
+                raise RuntimeActivationError(
+                    "deployment instance is not in a reconcilable ready/serving state",
+                )
+            artifact_locator = self._require_canonical_artifact_locator(revision)
+            attestation = self._attest_ready_deployment_instance(
+                revision=revision,
+                instance=instance,
+                artifact_locator=artifact_locator,
+            )
+            return TransitionResult(value=attestation)
+
     def mark_post_cutover_failure(
         self,
         *,

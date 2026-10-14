@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import sys
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -36,6 +37,7 @@ from intergrax.agent_distribution.agent_contract_authority import (
     PackageAgentContractAuthorityRecord,
     SCHEMA_PACKAGE_AGENT_CONTRACT_AUTHORITY_V1,
 )
+from intergrax.agent_distribution.errors import ServingExecutionAdmissionError
 from intergrax.agent_distribution.deployment import (
     SCHEMA_DEPLOYMENT_INSTANCE_RECORD_V1,
     DeploymentInstanceRecord,
@@ -126,14 +128,100 @@ def _deployment_key(
     return f"{application_id}\0{application_environment_id}\0{runtime_revision_id}"
 
 
+class _ActivationDomainSynchronization:
+    """Non-reentrant activation-domain mutex owned by ``SqliteAgentDistributionDatabase``."""
+
+    __slots__ = ("_mutex", "_owner_thread_id")
+
+    def __init__(self) -> None:
+        self._mutex = threading.Lock()
+        self._owner_thread_id: int | None = None
+
+    def acquire(self) -> None:
+        current = threading.get_ident()
+        if self._owner_thread_id == current:
+            raise ServingExecutionAdmissionError(
+                "nested activation domain lock acquisition is not supported"
+            )
+        self._mutex.acquire()
+        self._owner_thread_id = current
+
+    def release(self) -> None:
+        current = threading.get_ident()
+        if self._owner_thread_id != current:
+            raise RuntimeError("activation domain lock release by non-owning thread")
+        self._owner_thread_id = None
+        self._mutex.release()
+
+    def is_owned_by_current_thread(self) -> bool:
+        return self._owner_thread_id == threading.get_ident()
+
+    def is_unheld(self) -> bool:
+        acquired = self._mutex.acquire(blocking=False)
+        if not acquired:
+            return False
+        self._mutex.release()
+        return self._owner_thread_id is None
+
+
+def _sqlite_connection_cleanup_errors(
+    conn: sqlite3.Connection,
+    *,
+    rollback: bool,
+) -> list[sqlite3.Error]:
+    errors: list[sqlite3.Error] = []
+    if rollback:
+        try:
+            conn.rollback()
+        except sqlite3.Error as exc:
+            errors.append(exc)
+    try:
+        conn.close()
+    except sqlite3.Error as exc:
+        errors.append(exc)
+    return errors
+
+
+def _raise_sqlite_store_mutation_failure(
+    primary: BaseException,
+    cleanup_errors: list[BaseException],
+    *,
+    committed: bool,
+) -> None:
+    if cleanup_errors:
+        message = "sqlite store mutation failed; cleanup also failed"
+        if not committed:
+            message = (
+                "sqlite store mutation failed; cleanup also failed; "
+                "transaction outcome uncertain"
+            )
+        raised = ServingExecutionAdmissionError(message)
+        raised.__cause__ = primary
+        raised.__context__ = cleanup_errors[0]
+        if len(cleanup_errors) > 1:
+            for extra in cleanup_errors[1:]:
+                raised.add_note(f"additional cleanup error: {extra}")
+        raise raised
+    if isinstance(primary, ServingExecutionAdmissionError):
+        raise primary
+    if not committed and isinstance(primary, sqlite3.Error):
+        raise ServingExecutionAdmissionError("sqlite store mutation failed") from primary
+    raise primary
+
+
 class SqliteAgentDistributionDatabase:
     """Shared SQLite backing for one durable agent distribution universe."""
 
     def __init__(self, db_path: Path) -> None:
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._activation_lock = threading.RLock()
+        self._activation_domain_sync = _ActivationDomainSynchronization()
         self._init_schema()
+
+    @property
+    def _activation_lock(self) -> _ActivationDomainSynchronization:
+        """Qualification alias for activation-domain synchronization."""
+        return self._activation_domain_sync
 
     @property
     def db_path(self) -> Path:
@@ -145,6 +233,12 @@ class SqliteAgentDistributionDatabase:
         conn.execute("PRAGMA synchronous=FULL;")
         conn.row_factory = sqlite3.Row
         return conn
+
+    def _acquire_activation_domain_lock(self) -> None:
+        self._activation_domain_sync.acquire()
+
+    def _release_activation_domain_lock(self) -> None:
+        self._activation_domain_sync.release()
 
     def _init_schema(self) -> None:
         with self._connect() as conn:
@@ -274,19 +368,46 @@ class SqliteAgentDistributionDatabase:
 
     @contextmanager
     def mutation_transaction(self):
-        with self._activation_lock:
-            conn = self._connect()
+        self._acquire_activation_domain_lock()
+        conn: sqlite3.Connection | None = None
+        committed = False
+        try:
             try:
+                conn = self._connect()
                 conn.execute("BEGIN IMMEDIATE")
                 state = self._load_state(conn)
                 yield state
                 self._save_state(conn, state)
                 conn.commit()
-            except Exception:
-                conn.rollback()
-                raise
+                committed = True
             finally:
-                conn.close()
+                if conn is not None:
+                    cleanup_errors: list[BaseException] = []
+                    if not committed:
+                        cleanup_errors.extend(
+                            _sqlite_connection_cleanup_errors(conn, rollback=True)
+                        )
+                    else:
+                        cleanup_errors.extend(
+                            _sqlite_connection_cleanup_errors(conn, rollback=False)
+                        )
+                    primary = sys.exc_info()[1]
+                    if primary is not None:
+                        _raise_sqlite_store_mutation_failure(
+                            primary,
+                            cleanup_errors,
+                            committed=committed,
+                        )
+                    if cleanup_errors:
+                        if committed:
+                            raise ServingExecutionAdmissionError(
+                                "sqlite store mutation connection close failed"
+                            ) from cleanup_errors[0]
+                        raise ServingExecutionAdmissionError(
+                            "sqlite store mutation cleanup failed"
+                        ) from cleanup_errors[0]
+        finally:
+            self._release_activation_domain_lock()
 
     def load_state(self) -> AgentDistributionStoreState:
         with self._connect() as conn:
@@ -350,7 +471,10 @@ class SqliteAgentDistributionDatabase:
                 row["payload_json"],
                 SCHEMA_MATERIALIZED_RUNTIME_LOCK_V1,
             )
-            state.locks[lock.lock_id] = lock
+            lock_id = lock.lock_id
+            if lock_id is None:
+                raise ValueError("materialized runtime lock missing lock_id")
+            state.locks[lock_id] = lock
         for row in conn.execute(
             "SELECT runtime_revision_id, payload_json FROM materializations"
         ):
@@ -364,7 +488,10 @@ class SqliteAgentDistributionDatabase:
                 row["payload_json"],
                 SCHEMA_EFFECTIVE_ROSTER_V1,
             )
-            state.effective_roster_snapshots[roster.effective_roster_revision_id] = roster
+            roster_revision_id = roster.effective_roster_revision_id
+            if roster_revision_id is None:
+                raise ValueError("effective roster missing effective_roster_revision_id")
+            state.effective_roster_snapshots[roster_revision_id] = roster
         for row in conn.execute("SELECT instance_key, payload_json FROM deployment_instances"):
             instance = decode_deployment_instance_record_payload(row["payload_json"])
             key = (
@@ -845,6 +972,12 @@ class SqliteApplicationEnvironmentServingStore(
     ) -> ApplicationEnvironmentServingRecord | None:
         self._refresh()
         return super().get_serving_record(application_id, application_environment_id)
+
+    def list_traffic_serving_records(
+        self,
+    ) -> tuple[ApplicationEnvironmentServingRecord, ...]:
+        self._refresh()
+        return super().list_traffic_serving_records()
 
     def atomic_swap_serving_revision(
         self,
