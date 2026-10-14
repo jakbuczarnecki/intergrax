@@ -9,7 +9,7 @@
 | **START_HEAD** | `e0b16ffdb6be6d615501b8ec94671ac5c0b0d459` |
 | **ENV-1 FINAL_COMMIT** | `1de4fb5251c08141553f9397c2aeed04815c665d` (code corrective: `ef3a50686`) |
 | **ENV-2 START_HEAD** | `d124c11ae3c2d8ebf697461f3f50ab50ad4bf555` |
-| **ENV-2 FINAL_COMMIT** | *(pending push — see session report)* |
+| **ENV-2 FINAL_COMMIT** | `6faaedba1` |
 | **Slice** | **P2-A** environment certification + declared D4/D1b reuse matrix; **P2-B** (happy-path + HTTP admission smoke) unblocked on default pytest entry for collection/import; chain execution still **P2-B** |
 
 ## Tested production composition path (design intent)
