@@ -21,6 +21,7 @@ from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import 
     integration_import_blocker,
     load_d4_launcher_module,
     repo_root,
+    run_python_snippet,
 )
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
@@ -37,11 +38,31 @@ def test_p2_g00_qualification_baseline_ancestor() -> None:
     )
 
 
-def test_p2_g01_default_pytest_entry_blocked_by_conftest_cycle() -> None:
+def test_p2_g01_default_pytest_entry_collects_without_conftest_cycle() -> None:
     probe = default_pytest_collect_probe()
-    assert probe.returncode != 0, "expected default pytest entry to fail at audited HEAD"
+    assert probe.returncode == 0, probe.combined
     combined = probe.combined
-    assert "RuntimeCheckpoint" in combined or "INTERNALERROR" in combined
+    assert "INTERNALERROR" not in combined
+    assert "test_p2_g00_qualification_baseline_ancestor" in combined
+
+
+def test_p2_g01b_task_forward_refs_validate_in_fresh_process() -> None:
+    probe = run_python_snippet(
+        "from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint; "
+        "from intergrax.runtime.task.task import Task; "
+        "Task.model_rebuild(_types_namespace={'RuntimeCheckpoint': RuntimeCheckpoint}); "
+        "t = Task(tenant_id='t', user_id='u'); "
+        "assert t.runtime.orchestration.runtime_checkpoint is None"
+    )
+    assert probe.returncode == 0, probe.combined
+
+
+def test_p2_g01c_runtime_checkpoint_import_in_fresh_process() -> None:
+    probe = run_python_snippet(
+        "from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint; "
+        "assert RuntimeCheckpoint.model_fields"
+    )
+    assert probe.returncode == 0, probe.combined
 
 
 def test_p2_g02_strict_launcher_import_chain_succeeds() -> None:

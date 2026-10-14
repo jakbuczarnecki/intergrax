@@ -2,13 +2,15 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (partial qualification — ENV-1 import corrective applied; P2-B chain **not executed**) |
+| **Status** | **READY FOR AUDIT** (partial qualification — ENV-1 + ENV-2 applied; P2-B chain **not executed**) |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Prior child** | PROD-Q-R1-R7-Q-P1 (accepted in bounded static scope) |
 | **Branch** | `development` |
 | **START_HEAD** | `e0b16ffdb6be6d615501b8ec94671ac5c0b0d459` |
 | **ENV-1 FINAL_COMMIT** | `1de4fb5251c08141553f9397c2aeed04815c665d` (code corrective: `ef3a50686`) |
-| **Slice** | **P2-A** environment certification + declared D4/D1b reuse matrix; **P2-B** (happy-path + HTTP admission smoke) unblocked for in-process import only; default pytest entry still **ENV-2** |
+| **ENV-2 START_HEAD** | `d124c11ae3c2d8ebf697461f3f50ab50ad4bf555` |
+| **ENV-2 FINAL_COMMIT** | *(pending push — see session report)* |
+| **Slice** | **P2-A** environment certification + declared D4/D1b reuse matrix; **P2-B** (happy-path + HTTP admission smoke) unblocked on default pytest entry for collection/import; chain execution still **P2-B** |
 
 ## Tested production composition path (design intent)
 
@@ -30,7 +32,7 @@ Sanctioned strict chain (no parallel bootstrap):
 | Request-level `admit_execution` | **Not exercised** in P2-A |
 | Environment subprocess probes | **Executed** |
 | Strict launcher fresh-process import (ENV-1) | **Executed** @ ENV-1 |
-| D4/D1b negative replay (subprocess pytest) | **Runnable** when collected without ENV-2 conftest blocker |
+| D4/D1b negative replay (subprocess pytest) | **Runnable** on default pytest entry (ENV-2) |
 
 No `ready_for_traffic=True` mocks in P2 deliverables; positive tests skip fail-closed when imports fail.
 
@@ -57,7 +59,8 @@ uv run pytest -p no:xdist -q --noconftest \
 | Test | Result @ HEAD |
 |------|----------------|
 | `test_p2_g00_qualification_baseline_ancestor` | PASS |
-| `test_p2_g01_default_pytest_entry_blocked_by_conftest_cycle` | PASS (certifies INTERNALERROR) |
+| `test_p2_g01_default_pytest_entry_collects_without_conftest_cycle` | PASS @ ENV-2 (default entry regression) |
+| `test_p2_g01b` / `test_p2_g01c` | PASS @ ENV-2 (Task / RuntimeCheckpoint fresh-process probes) |
 | `test_p2_g02_strict_launcher_import_chain_succeeds` | PASS @ ENV-1 (historical cycle below) |
 | `test_env1_g01` … `test_env1_g04` (`test_prod_q_r1_r7_q_env1_strict_production_import_cycle.py`) | PASS @ ENV-1 |
 | `test_p2_g03_bounded_d4_reuse_inventory_complete` | PASS |
@@ -66,15 +69,65 @@ uv run pytest -p no:xdist -q --noconftest \
 **Default pytest entry (standard CI path, no `--noconftest`):**
 
 ```text
-uv run pytest --collect-only -q
+uv run pytest -p no:xdist --collect-only -q \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_strict_production_integrated_e2e.py
+uv run pytest -p no:xdist --collect-only -q \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p1_strict_production_reachability.py
+uv run pytest -p no:xdist --collect-only -q \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_env1_strict_production_import_cycle.py
 ```
 
-**Result:** INTERNALERROR in `tests/conftest.py` → `RuntimeCheckpoint` import cycle (`runtime_checkpoint.py` ↔ `agent_runtime_io.py` via `agent_distribution` / `runtime.architecture`). **Not** equivalent to qualification PASS.
+**Result @ ENV-2 workspace:** exit 0; P2 module **16** tests collected (14 historical + `test_p2_g01b`, `test_p2_g01c`); P1 **23** collected; ENV-1 **5** collected. No `INTERNALERROR` in `pytest_sessionstart`.
 
-## ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED
+## ENV-2 — default pytest entry and Task forward refs
 
-1. **Conftest / session start:** `pytest_sessionstart` imports `RuntimeCheckpoint` → circular import (P1 documented; still present @ `5a4bd283…`).
-2. **Strict production import (historical @ START_HEAD — corrected ENV-1):** load-time cycle when `wiring.py` was partially initialized:
+### Root cause (verified)
+
+1. **Historical default-entry failure (pre–ENV-1):** `pytest_sessionstart` imported `RuntimeCheckpoint` while `sqlite_stores` eagerly pulled `registry_projection` → `wiring` during `agent_distribution` package load — **ImportError: partially initialized module** (documented under ENV-1).
+2. **@ ENV-2 START_HEAD (`d124c11…`):** ENV-1 lazy import removed the production import cycle; default `pytest --collect-only` on the P2 module **already succeeded**. Remaining gap was **qualification drift**: `test_p2_g01` still expected failure, and `Task.model_rebuild()` in `conftest` omitted `_types_namespace`, so bare `Task.model_rebuild()` in isolation raised `PydanticUndefinedAnnotation` for nested `TaskOrchestrationState.runtime_checkpoint` (forward ref to `RuntimeCheckpoint`).
+3. **Import-order sensitivity:** `Task` must not call `model_rebuild()` at `task.py` import time while `runtime_checkpoint` is still loading (topology → `agent_distribution` → `runtime.human` → `task` re-entrancy). Session-start order **RuntimeCheckpoint first**, then `Task.model_rebuild(_types_namespace=…)` matches `runtime_checkpoint._resolve_task_contract_forward_refs()` and preserves validation.
+
+### Repro before correction (ENV-2 session)
+
+| Probe | Command | RC | Outcome |
+|-------|---------|-----|---------|
+| A P2 collect | `uv run pytest --collect-only -q -p no:xdist` P2 module | 0 | 14 tests collected |
+| B P1 collect | same, P1 module | 0 | 23 collected |
+| C ENV-1 collect | same, ENV-1 module | 0 | 5 collected |
+| D RuntimeCheckpoint | `uv run python -c "from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint"` | 0 | OK |
+| E Task rebuild alone | `uv run python -c "from intergrax.runtime.task.task import Task; Task.model_rebuild()"` | 1 | `PydanticUndefinedAnnotation: RuntimeCheckpoint` |
+| F strict order | RuntimeCheckpoint → Task.model_rebuild with namespace | 0 | OK (mirrors conftest) |
+
+**Failing qualification test before ENV-2 code/doc update:** `test_p2_g01_default_pytest_entry_blocked_by_conftest_cycle` failed with `assert 0 != 0` because collection succeeded post–ENV-1.
+
+### Corrective (ENV-2)
+
+- `tests/conftest.py`: `Task.model_rebuild(_types_namespace={"RuntimeCheckpoint": RuntimeCheckpoint})` after fully importing `RuntimeCheckpoint` (no swallowed imports; no removal of rebuild).
+- P2 regression: positive default-entry collect + fresh-process Task/RuntimeCheckpoint probes (`test_p2_g01`, `test_p2_g01b`, `test_p2_g01c`).
+
+### Verification @ ENV-2 (sequential, `-p no:xdist`, ~32 s wall)
+
+```text
+uv run pytest -p no:xdist -q \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_strict_production_integrated_e2e.py::test_p2_g01_default_pytest_entry_collects_without_conftest_cycle \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_strict_production_integrated_e2e.py::test_p2_g01b_task_forward_refs_validate_in_fresh_process \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_strict_production_integrated_e2e.py::test_p2_g01c_runtime_checkpoint_import_in_fresh_process \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_env1_strict_production_import_cycle.py
+```
+
+→ **8 passed** in ~18 s.
+
+### Remaining P2-B obligations
+
+Execute `test_p2_a01`–`test_p2_n03` on default pytest entry (no `--noconftest`), HTTP admission smoke per gate plan §E.2. **Not** claimed in ENV-2.
+
+### Architecture note
+
+Deferring `Task.model_rebuild` to `task.py` module import was attempted and **rejected** — re-entrant import while `runtime_checkpoint` is partial. No new initialization authority; conftest session start remains test-harness eager resolution aligned with production typing contract.
+
+## ENV-1 — strict production import cycle (historical)
+
+1. **Strict production import (historical @ START_HEAD — corrected ENV-1):** load-time cycle when `wiring.py` was partially initialized:
 
 ```text
 wiring.py → agent_distribution/__init__.py → venv_bundle_colocated_runtime_deployment_adapter
@@ -95,10 +148,6 @@ uv run python -c "from intergrax.applications._shared.strict_production_serving_
 
 → exit 0.
 
-**Remaining blocker — PROD-Q-R1-R7-Q-P2-ENV-2:** `pytest_sessionstart` / `tests/conftest.py` → `RuntimeCheckpoint` import cycle. Default `uv run pytest --collect-only` still INTERNALERROR until ENV-2.
-
-After ENV-2: re-run P2 module **without** `--noconftest`, then execute P2-B and record HTTP smoke per gate plan §E.2.
-
 ## Qualification matrix
 
 | Scenario | Mechanism @ HEAD | Disposition |
@@ -112,7 +161,7 @@ After ENV-2: re-run P2 module **without** `--noconftest`, then execute P2-B and 
 | Missing serving pointer | D4 `test_d4_missing_serving_pointer_after_open` | **NOT RUN** |
 | Wrong revision / scope | D4-21 + D1b `test_handoff_rejects_resolver_instance_mismatch` | **NOT RUN** |
 | Invalid artifact / trusted root | Covered by D1 adapter suites (not replayed in P2-A) | **Reuse only** |
-| Import / conftest certification | `test_p2_g01` (ENV-2), `test_p2_g02`, ENV-1 module | **PARTIAL** — strict import PASS; default pytest still blocked |
+| Import / conftest certification | `test_p2_g01`–`g01c`, `test_p2_g02`, ENV-1 module | **PASS** @ ENV-2 — default pytest collect + forward-ref probes |
 
 ## Enterprise architecture audit (P2 deliverable scope)
 
@@ -152,7 +201,7 @@ No tenant-binding code changed. Cross-tenant adversarial matrix deferred to **P3
 | PROD-Q-R1-R7-Q | **NOT QUALIFIED** |
 | Local P2 qualification PASS | **No** — cannot assert strict E2E PASS without executing chain |
 
-**Next bounded child:** **PROD-Q-R1-R7-Q-P2-ENV-2** (`RuntimeCheckpoint` / `conftest`), then **P2-B** execute `test_p2_a01`–`test_p2_n03` on default pytest entry.
+**Next bounded child:** **PROD-Q-R1-R7-Q-P2-B** — execute `test_p2_a01`–`test_p2_n03` on default pytest entry + HTTP smoke.
 
 ---
 
