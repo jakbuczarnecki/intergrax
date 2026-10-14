@@ -4,6 +4,7 @@
 |-------|-------|
 | **Status** | **READY FOR AUDIT** (corrective evidence; does **not** close D1-R6, R10, or parents) |
 | **START_HEAD** | `39663902d989bb1dc02cac8cbaa34e3f90108c24` |
+| **FINAL_COMMIT** | `5f9e737bce3d8a93c2ac298cfce8ab96c364be3b` |
 | **Parent** | **D1-R6-R9** findings addressed; **D1-R6** remains **REJECTED / pending independent closure** |
 | **ADR** | **ADR-01-R6** — **DEC-09** / **DEC-09-EXT** (ratified; unchanged) |
 
