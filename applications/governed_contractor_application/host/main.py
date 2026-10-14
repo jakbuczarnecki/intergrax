@@ -27,9 +27,13 @@ from governed_contractor_application.manifest import build_governed_contractor_m
 load_dotenv()
 
 _STRICT_RUN_MESSAGE = (
-    "Governed Contractor STRICT production requires explicit lifecycle deploy/activate "
-    "before serving. Wire ReferenceProductionLifecycleLauncher with explicit lifecycle "
-    "input, then create_governed_contractor_process_app(process_composition=...)."
+    "Governed Contractor STRICT production requires the sanctioned D4 launcher: "
+    "open_strict_production_serving_session (intergrax.applications._shared."
+    "strict_production_serving_launcher), then "
+    "create_governed_contractor_strict_production_asgi_app or uvicorn --factory "
+    "governed_contractor_application.host.strict_production_serving:"
+    "build_governed_contractor_strict_production_uvicorn_factory(session). "
+    "Do not use main.run() for deployment."
 )
 
 

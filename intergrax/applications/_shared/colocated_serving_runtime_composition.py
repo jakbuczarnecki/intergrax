@@ -14,9 +14,13 @@ from intergrax.agent_distribution.activation_domain_coordinator import (
 )
 from intergrax.agent_distribution.deployment import (
     DeploymentInstanceRecord,
+    DeploymentInstanceState,
     ServingUnitAttestation,
 )
-from intergrax.agent_distribution.runtime_revision import MaterializationTopology
+from intergrax.agent_distribution.runtime_revision import (
+    MaterializationTopology,
+    RuntimeRevisionState,
+)
 from intergrax.agent_distribution.stores import (
     ApplicationEnvironmentServingStore,
     DeploymentInstanceStore,
@@ -44,6 +48,69 @@ from intergrax.applications._shared.serving_runtime_handoff import (
 
 class ColocatedServingAdmissionTopologyError(ValueError):
     """Unsupported or inconsistent colocated serving admission wiring."""
+
+
+class ColocatedServingActivationCommitResolutionError(ValueError):
+    """Canonical activation commit evidence could not be resolved from durable stores."""
+
+
+def resolve_traffic_serving_activation_commit(
+    *,
+    serving_store: ApplicationEnvironmentServingStore,
+    revision_store: RuntimeRevisionStore,
+    deployment_instance_store: DeploymentInstanceStore,
+    application_id: str,
+    application_environment_id: str,
+) -> ActivationCommitResult:
+    """Reconstruct activation commit evidence for the current traffic-serving revision."""
+    serving = serving_store.get_serving_record(application_id, application_environment_id)
+    if serving is None:
+        raise ColocatedServingActivationCommitResolutionError(
+            "missing durable serving pointer for application environment",
+        )
+    revision_id = serving.traffic_serving_revision_id
+    if revision_id is None:
+        raise ColocatedServingActivationCommitResolutionError(
+            "serving pointer lacks traffic_serving_revision_id",
+        )
+    revision = revision_store.get_revision(revision_id)
+    if revision is None:
+        raise ColocatedServingActivationCommitResolutionError(
+            f"missing runtime revision {revision_id!r} for serving pointer",
+        )
+    if revision.revision_state is not RuntimeRevisionState.ACTIVE:
+        raise ColocatedServingActivationCommitResolutionError(
+            "traffic-serving revision is not active",
+        )
+    if (
+        revision.application_id != application_id
+        or revision.application_environment_id != application_environment_id
+    ):
+        raise ColocatedServingActivationCommitResolutionError(
+            "traffic-serving revision scope does not match application environment",
+        )
+    instance = deployment_instance_store.get_instance(
+        application_id,
+        application_environment_id,
+        revision_id,
+    )
+    if instance is None:
+        raise ColocatedServingActivationCommitResolutionError(
+            "missing deployment instance for traffic-serving revision",
+        )
+    if instance.instance_state is not DeploymentInstanceState.SERVING:
+        raise ColocatedServingActivationCommitResolutionError(
+            "deployment instance for traffic-serving revision is not serving",
+        )
+    if instance.serving_unit_ref is None:
+        raise ColocatedServingActivationCommitResolutionError(
+            "deployment instance lacks serving_unit_ref",
+        )
+    return ActivationCommitResult(
+        serving_record=serving,
+        activated_revision=revision,
+        candidate_instance=instance,
+    )
 
 
 def validate_colocated_serving_admission_topology(
@@ -128,7 +195,9 @@ def bind_colocated_serving_runtime_after_activation(
 
 
 __all__ = [
+    "ColocatedServingActivationCommitResolutionError",
     "ColocatedServingAdmissionTopologyError",
     "bind_colocated_serving_runtime_after_activation",
+    "resolve_traffic_serving_activation_commit",
     "validate_colocated_serving_admission_topology",
 ]
