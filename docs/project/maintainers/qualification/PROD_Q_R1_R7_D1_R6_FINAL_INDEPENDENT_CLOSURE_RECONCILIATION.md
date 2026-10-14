@@ -6,7 +6,7 @@
 | **Branch** | `development` |
 | **Operator START_HEAD** | `63688cb482fd8faa9776a564869694b9fc897064` (implementation baseline; **no** product-code delta on `development` after this SHA through session replay) |
 | **Session AUDITED_HEAD** | `362e0a98cbf76709497f0ee5cfddd5ef99c80471` @ replay time (includes prior reconciliation commits on `development`) |
-| **FINAL_COMMIT** | *(set by committing commit — evidence delta for this session)* |
+| **FINAL_COMMIT** | `8bd1eeb74e398a2970c752cc1efbcebb1251afa1` (this reconciliation evidence delta) |
 | **Parent** | **PROD-Q-R1-R7-D1-R6** — **BLOCKED / REJECTED** pending independent exact-SHA parent audit |
 | **ADR** | **ADR-01-R6** — **DEC-09** / **DEC-09-EXT** (ratified; unchanged) |
 
