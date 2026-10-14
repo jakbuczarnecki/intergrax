@@ -377,6 +377,102 @@ def test_d2_concurrent_open_at_most_one_active(tmp_path: Path) -> None:
     successes[0].close_process_resources()
 
 
+def test_d2_invocation_store_open_failure_releases_opening_slot(tmp_path: Path) -> None:
+    from intergrax.applications._shared import production_process_lifecycle as ppl
+
+    env = _env()
+    adapter = _venv_adapter(tmp_path)
+    roots = (tmp_path / "artifacts",)
+    injected_close = []
+
+    class _InjectedInvocationStore:
+        def close(self) -> None:
+            injected_close.append(True)
+
+    injected = _InjectedInvocationStore()
+    with patch(
+        "intergrax.applications._shared.production_process_lifecycle."
+        "open_provider_invocation_store_at",
+        side_effect=RuntimeError("invocation_open_fail"),
+    ):
+        with pytest.raises(RuntimeError, match="invocation_open_fail"):
+            open_production_process_lifecycle(
+                agent_distribution_db=tmp_path / "ad.db",
+                continuation_state_file=tmp_path / "continuation.json",
+                deployment_adapter=adapter,
+                governance=_governance(env),
+                trusted_artifact_parent_roots=roots,
+                provider_invocation_db=tmp_path / "invocation.db",
+                missing_file_policy="empty",
+            )
+    assert ppl._production_slot_phase is ppl._ProductionSlotPhase.AVAILABLE
+    assert injected_close == []
+    with open_production_process_lifecycle(
+        agent_distribution_db=tmp_path / "ad.db",
+        continuation_state_file=tmp_path / "continuation.json",
+        deployment_adapter=adapter,
+        governance=_governance(env),
+        trusted_artifact_parent_roots=roots,
+        provider_invocation_db=tmp_path / "invocation.db",
+        missing_file_policy="empty",
+    ) as lifecycle:
+        assert lifecycle.composition.agent_platform_runtime is not None
+    with open_production_process_lifecycle(
+        agent_distribution_db=tmp_path / "ad2.db",
+        continuation_state_file=tmp_path / "continuation2.json",
+        deployment_adapter=adapter,
+        governance=_governance(env),
+        trusted_artifact_parent_roots=roots,
+        provider_invocation_store=injected,
+        missing_file_policy="empty",
+    ) as second:
+        assert second.composition.agent_platform_runtime is not None
+        assert injected_close == []
+
+
+def test_d2_invocation_open_failure_with_owned_store_cleanup_error(tmp_path: Path) -> None:
+    from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store import (
+        SQLiteProviderInvocationStore,
+    )
+
+    env = _env()
+    adapter = _venv_adapter(tmp_path)
+    roots = (tmp_path / "artifacts",)
+    real_store = SQLiteProviderInvocationStore(tmp_path / "invocation.db")
+    with patch(
+        "intergrax.applications._shared.production_process_lifecycle."
+        "open_provider_invocation_store_at",
+        return_value=real_store,
+    ), patch(
+        "intergrax.applications._shared.production_process_lifecycle."
+        "open_production_execution_continuation_state_store",
+        side_effect=RuntimeError("continuation_open_fail"),
+    ), patch.object(
+        real_store,
+        "close",
+        side_effect=RuntimeError("invocation_close_fail"),
+    ):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            open_production_process_lifecycle(
+                agent_distribution_db=tmp_path / "ad.db",
+                continuation_state_file=tmp_path / "continuation.json",
+                deployment_adapter=adapter,
+                governance=_governance(env),
+                trusted_artifact_parent_roots=roots,
+                provider_invocation_db=tmp_path / "invocation.db",
+                missing_file_policy="empty",
+            )
+    errors = exc_info.value.exceptions
+    assert any(
+        isinstance(exc, RuntimeError) and str(exc) == "continuation_open_fail"
+        for exc in errors
+    )
+    assert any(
+        isinstance(exc, RuntimeError) and str(exc) == "invocation_close_fail"
+        for exc in errors
+    )
+
+
 def test_d2_failed_startup_allows_retry(tmp_path: Path) -> None:
     env = _env()
     adapter = _venv_adapter(tmp_path)

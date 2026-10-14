@@ -258,11 +258,10 @@ def open_production_process_lifecycle(
 
     owned_invocation: SQLiteProviderInvocationStore | None = None
     resolved_invocation: ProviderInvocationStore | None = provider_invocation_store
-    if provider_invocation_db is not None:
-        owned_invocation = open_provider_invocation_store_at(provider_invocation_db)
-        resolved_invocation = owned_invocation
-
     try:
+        if provider_invocation_db is not None:
+            owned_invocation = open_provider_invocation_store_at(provider_invocation_db)
+            resolved_invocation = owned_invocation
         continuation_store = open_production_execution_continuation_state_store(
             continuation_state_file,
             missing_file_policy=missing_file_policy,
