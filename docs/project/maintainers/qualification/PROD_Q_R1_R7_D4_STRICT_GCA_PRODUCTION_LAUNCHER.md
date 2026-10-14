@@ -6,7 +6,7 @@
 | **Parent** | PROD-Q-R1-R7 |
 | **Successor** | PROD-Q-R1-R7-Q |
 | **Cursor disposition** | **READY FOR AUDIT** (not CLOSED) |
-| **Evidence HEAD** | `0724d658402d2d6a86e38277115b9186ac10435e` |
+| **Evidence HEAD** | `b3d9aced0f255d249812622647a356c0b91d76f8` |
 
 ## Sanctioned entry
 
