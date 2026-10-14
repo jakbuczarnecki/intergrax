@@ -5,7 +5,7 @@
 | **Status** | **READY FOR AUDIT** |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Branch** | `development` |
-| **START_HEAD** | `ec773c666a061896395ca1a2160fd2babd73f344` |
+| **START_HEAD** | `ac367ea699e3b592272ff74a5a6d3999bf2ea707` |
 | **FINAL_COMMIT** | `c54e37cff77823d173dae3a5e6e61f6aa0036737` |
 | **Gate implementation commit** | `ae9cfdb564ca2aecff66cdfb017495e7402870a8` |
 | **Audited production SHA** | `ccbb19633e83de29d5b70c5e7e1689b0c29d8c07` (boundary code baseline; gate delivered on FINAL_COMMIT) |
@@ -77,6 +77,13 @@ No whole-repository scan. Direct import/callee resolution stays inside this set 
 | P1-G05 used text presence (`ready_for_traffic` in file) | AST guard: `if not session.readiness.ready_for_traffic` must `raise` before any `create_governed_contractor_process_app` call; snippet negatives for docstring-only and neutralized guards |
 | GCA deployment ctor matched local name `== suffix` only | Resolve import bindings + qualified attributes (`AlternateAdapter()`, `deployment_mod.FakeInMemory…()`) via shared `_deployment_adapter_constructor_target`; preserve `isinstance` rejection allowance |
 
+## P1-R2 ASGI guard branch correctness (PROD-Q-R1-R7-Q-P1-R2)
+
+| Defect (before) | Correction |
+|-----------------|------------|
+| P1-G05 `ast.walk(if)` treated `else` and nested `if` bodies as not-ready proof | Analyze only `if` body (not `orelse`); require top-level `raise` (no nested `if`); reject `process_app` on body or before guard floor lineno |
+| Raise in `else` or optional nested `if` implied admission | Snippet negatives: raise-only-in-else, nested optional `if`, process app before guard, empty `pass` body |
+
 Behavioral D4 reuse: `test_d4_asgi_startup_only_after_preconditions` (unready session → `ValueError`) — run under default `conftest` when session start succeeds; P1 module itself requires `--noconftest` at this HEAD (see below).
 
 ## Adversarial negatives (snippet fixtures)
@@ -91,6 +98,9 @@ Behavioral D4 reuse: `test_d4_asgi_startup_only_after_preconditions` (unready se
 | ASGI factory: docstring mentions `ready_for_traffic` only | **Fail** structural guard |
 | ASGI factory: `create_governed_contractor_process_app` on not-ready branch | **Fail** |
 | ASGI factory: `if not ready_for_traffic: pass` without `raise` | **Fail** |
+| ASGI factory: `raise` only in `else` of ready guard | **Fail** |
+| ASGI factory: `raise` only inside nested optional `if` on not-ready body | **Fail** |
+| ASGI factory: `create_governed_contractor_process_app` before guard | **Fail** |
 
 ## Pytest evidence
 

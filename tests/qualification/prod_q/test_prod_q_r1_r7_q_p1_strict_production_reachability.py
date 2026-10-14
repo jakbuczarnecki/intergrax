@@ -167,6 +167,46 @@ def create_governed_contractor_strict_production_asgi_app(session):
     assert errors
 
 
+def test_p1_negative_asgi_admission_raise_only_in_else_branch() -> None:
+    snippet = '''
+def create_governed_contractor_strict_production_asgi_app(session):
+    if not session.readiness.ready_for_traffic:
+        pass
+    else:
+        raise ValueError("misplaced raise")
+    from governed_contractor_application.host.main import create_governed_contractor_process_app
+    return create_governed_contractor_process_app(process_composition=session.composition)
+'''
+    errors = analyze_asgi_admission_snippet(snippet)
+    assert errors
+
+
+def test_p1_negative_asgi_admission_raise_only_in_nested_optional_if() -> None:
+    snippet = '''
+def create_governed_contractor_strict_production_asgi_app(session):
+    if not session.readiness.ready_for_traffic:
+        if session.composition is not None:
+            raise ValueError("optional nested guard")
+    from governed_contractor_application.host.main import create_governed_contractor_process_app
+    return create_governed_contractor_process_app(process_composition=session.composition)
+'''
+    errors = analyze_asgi_admission_snippet(snippet)
+    assert errors
+
+
+def test_p1_negative_asgi_admission_process_app_before_guard() -> None:
+    snippet = '''
+def create_governed_contractor_strict_production_asgi_app(session):
+    from governed_contractor_application.host.main import create_governed_contractor_process_app
+    app = create_governed_contractor_process_app(process_composition=session.composition)
+    if not session.readiness.ready_for_traffic:
+        raise ValueError("guard too late")
+    return app
+'''
+    errors = analyze_asgi_admission_snippet(snippet)
+    assert any("before" in e and "admission guard" in e for e in errors)
+
+
 def test_p1_negative_gca_detects_direct_fake_adapter_constructor() -> None:
     snippet = """
 from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter

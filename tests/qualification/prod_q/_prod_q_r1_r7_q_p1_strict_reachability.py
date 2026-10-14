@@ -280,16 +280,40 @@ def _call_resolves_to_create_governed_contractor_process_app(
     return False
 
 
-def _if_body_raises_without_process_app(if_node: ast.If, imports: dict[str, str]) -> bool:
-    if not _condition_is_not_ready_for_traffic(if_node.test):
+def _walk_statement_list(stmts: list[ast.stmt]):
+    for stmt in stmts:
+        for node in ast.walk(stmt):
+            yield node
+
+
+def _last_lineno_in_statement_list(stmts: list[ast.stmt]) -> int:
+    last = 0
+    for node in _walk_statement_list(stmts):
+        lineno = getattr(node, "lineno", None)
+        if lineno:
+            last = max(last, lineno)
+    return last
+
+
+def _guard_body_unconditionally_raises(body: list[ast.stmt], imports: dict[str, str]) -> bool:
+    """True when the not-ready ``if`` body always raises (no nested if, no process app)."""
+    if not body:
         return False
-    for sub in ast.walk(if_node):
-        if isinstance(sub, ast.Call) and _call_resolves_to_create_governed_contractor_process_app(
-            sub,
+    if any(isinstance(stmt, ast.If) for stmt in body):
+        return False
+    for node in _walk_statement_list(body):
+        if isinstance(node, ast.Call) and _call_resolves_to_create_governed_contractor_process_app(
+            node,
             imports,
         ):
             return False
-    return any(isinstance(sub, ast.Raise) for sub in ast.walk(if_node))
+    return any(isinstance(stmt, ast.Raise) for stmt in body)
+
+
+def _if_body_raises_without_process_app(if_node: ast.If, imports: dict[str, str]) -> bool:
+    if not _condition_is_not_ready_for_traffic(if_node.test):
+        return False
+    return _guard_body_unconditionally_raises(if_node.body, imports)
 
 
 def validate_strict_asgi_admission_structure(
@@ -318,12 +342,23 @@ def validate_strict_asgi_admission_structure(
             "P1-G05: strict ASGI factory must call create_governed_contractor_process_app "
             "after admission",
         )
+    if guards:
+        primary_guard = min(guards, key=lambda node: node.lineno or 0)
+        guard_floor = _last_lineno_in_statement_list(primary_guard.body)
+        for call in process_calls:
+            lineno = getattr(call, "lineno", None)
+            if lineno is not None and lineno <= guard_floor:
+                errors.append(
+                    "P1-G05: create_governed_contractor_process_app must not run before "
+                    "ready_for_traffic admission guard",
+                )
+                break
     for if_node in ast.walk(fnode):
         if not isinstance(if_node, ast.If):
             continue
         if not _condition_is_not_ready_for_traffic(if_node.test):
             continue
-        for sub in ast.walk(if_node):
+        for sub in _walk_statement_list(if_node.body):
             if isinstance(sub, ast.Call) and _call_resolves_to_create_governed_contractor_process_app(
                 sub,
                 imports,
