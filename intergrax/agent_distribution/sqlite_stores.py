@@ -36,6 +36,7 @@ from intergrax.agent_distribution.agent_contract_authority import (
     PackageAgentContractAuthorityRecord,
     SCHEMA_PACKAGE_AGENT_CONTRACT_AUTHORITY_V1,
 )
+from intergrax.agent_distribution.errors import ServingExecutionAdmissionError
 from intergrax.agent_distribution.deployment import (
     SCHEMA_DEPLOYMENT_INSTANCE_RECORD_V1,
     DeploymentInstanceRecord,
@@ -145,6 +146,18 @@ class SqliteAgentDistributionDatabase:
         conn.execute("PRAGMA synchronous=FULL;")
         conn.row_factory = sqlite3.Row
         return conn
+
+    def _acquire_activation_domain_lock(self) -> None:
+        lock = self._activation_lock
+        is_owned = getattr(lock, "_is_owned", None)
+        if is_owned is not None and is_owned():
+            raise ServingExecutionAdmissionError(
+                "nested activation domain lock acquisition is not supported"
+            )
+        lock.acquire()
+
+    def _release_activation_domain_lock(self) -> None:
+        self._activation_lock.release()
 
     def _init_schema(self) -> None:
         with self._connect() as conn:
@@ -274,8 +287,9 @@ class SqliteAgentDistributionDatabase:
 
     @contextmanager
     def mutation_transaction(self):
-        with self._activation_lock:
-            conn = self._connect()
+        self._acquire_activation_domain_lock()
+        conn = self._connect()
+        try:
             try:
                 conn.execute("BEGIN IMMEDIATE")
                 state = self._load_state(conn)
@@ -287,6 +301,8 @@ class SqliteAgentDistributionDatabase:
                 raise
             finally:
                 conn.close()
+        finally:
+            self._release_activation_domain_lock()
 
     def load_state(self) -> AgentDistributionStoreState:
         with self._connect() as conn:

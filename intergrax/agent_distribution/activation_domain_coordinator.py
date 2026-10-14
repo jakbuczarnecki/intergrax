@@ -183,6 +183,61 @@ def _sqlite_busy_operational_error(exc: sqlite3.OperationalError) -> bool:
     return "locked" in message or "busy" in message
 
 
+def _sqlite_connection_cleanup_errors(
+    conn: sqlite3.Connection,
+    *,
+    rollback: bool,
+) -> list[sqlite3.Error]:
+    errors: list[sqlite3.Error] = []
+    if rollback:
+        try:
+            conn.rollback()
+        except sqlite3.Error as exc:
+            errors.append(exc)
+    try:
+        conn.close()
+    except sqlite3.Error as exc:
+        errors.append(exc)
+    return errors
+
+
+def _release_sqlite_activation_domain_lock(db: SqliteAgentDistributionDatabase) -> None:
+    db._release_activation_domain_lock()
+
+
+def _raise_sqlite_admission_coordination_failure(
+    primary: BaseException,
+    cleanup_errors: list[sqlite3.Error],
+    *,
+    message: str = "sqlite admission coordination failed",
+) -> None:
+    if cleanup_errors:
+        raised = ServingExecutionAdmissionError(f"{message}; acquisition cleanup also failed")
+        raised.__cause__ = primary
+        raised.__context__ = cleanup_errors[0]
+        if len(cleanup_errors) > 1:
+            for extra in cleanup_errors[1:]:
+                raised.add_note(f"additional cleanup error: {extra}")
+        raise raised
+    if isinstance(primary, ServingExecutionAdmissionError):
+        raise primary
+    raise ServingExecutionAdmissionError(message) from primary
+
+
+def _cleanup_failed_sqlite_admission_acquisition(
+    db: SqliteAgentDistributionDatabase,
+    conn: sqlite3.Connection | None,
+) -> list[sqlite3.Error]:
+    cleanup_errors: list[sqlite3.Error] = []
+    if conn is not None:
+        cleanup_errors.extend(_sqlite_connection_cleanup_errors(conn, rollback=True))
+    try:
+        _release_sqlite_activation_domain_lock(db)
+    except RuntimeError as lock_exc:
+        cleanup_errors.append(sqlite3.OperationalError(str(lock_exc)))
+    return cleanup_errors
+
+
 class _SqliteAdmissionDomainLease:
     """One operation-owned activation-domain lock + one IMMEDIATE SQLite transaction."""
 
@@ -227,16 +282,34 @@ class _SqliteAdmissionDomainLease:
             raise ServingExecutionAdmissionError(
                 "sqlite admission coordination commit invoked more than once"
             )
+        commit_error: sqlite3.Error | None = None
         try:
             self._conn.commit()
+        except sqlite3.Error as exc:
+            commit_error = exc
+        else:
             self._durable_committed = True
             self._transaction_active = False
-        except sqlite3.OperationalError as exc:
-            self._transaction_active = False
+            return
+
+        rollback_error: sqlite3.Error | None = None
+        try:
             self._conn.rollback()
-            raise ServingExecutionAdmissionError(
-                "sqlite admission coordination commit failed"
-            ) from exc
+            self._transaction_active = False
+        except sqlite3.Error as exc:
+            rollback_error = exc
+            self._transaction_active = True
+        if rollback_error is not None:
+            raised = ServingExecutionAdmissionError(
+                "sqlite admission coordination commit failed; rollback also failed; "
+                "transaction outcome uncertain"
+            )
+            raised.__cause__ = commit_error
+            raised.__context__ = rollback_error
+            raise raised
+        raise ServingExecutionAdmissionError(
+            "sqlite admission coordination commit failed"
+        ) from commit_error
 
     def rollback(self) -> None:
         if not self._transaction_active or self._durable_committed:
@@ -248,12 +321,19 @@ class _SqliteAdmissionDomainLease:
         if self._conn_closed:
             return
         self._conn_closed = True
+        close_error: sqlite3.Error | None = None
         try:
             self._conn.close()
+        except sqlite3.Error as exc:
+            close_error = exc
         finally:
             if not self._domain_lock_released:
-                self._db._activation_lock.release()
+                _release_sqlite_activation_domain_lock(self._db)
                 self._domain_lock_released = True
+        if close_error is not None:
+            raise ServingExecutionAdmissionError(
+                "sqlite admission coordination connection close failed"
+            ) from close_error
 
 
 def _open_sqlite_admission_domain_lease(
@@ -261,7 +341,7 @@ def _open_sqlite_admission_domain_lease(
 ) -> _SqliteAdmissionDomainLease:
     last_error: sqlite3.OperationalError | None = None
     for attempt in range(1, _SQLITE_BUSY_MAX_ATTEMPTS + 1):
-        db._activation_lock.acquire()
+        db._acquire_activation_domain_lock()
         conn: sqlite3.Connection | None = None
         try:
             conn = db._connect()
@@ -269,10 +349,9 @@ def _open_sqlite_admission_domain_lease(
             state = db._load_state(conn)
             return _SqliteAdmissionDomainLease(db, conn, state)
         except sqlite3.OperationalError as exc:
-            if conn is not None:
-                conn.rollback()
-                conn.close()
-            db._activation_lock.release()
+            cleanup_errors = _cleanup_failed_sqlite_admission_acquisition(db, conn)
+            if cleanup_errors:
+                _raise_sqlite_admission_coordination_failure(exc, cleanup_errors)
             if _sqlite_busy_operational_error(exc) and attempt < _SQLITE_BUSY_MAX_ATTEMPTS:
                 last_error = exc
                 time.sleep(_SQLITE_BUSY_BASE_DELAY_S * attempt)
@@ -280,11 +359,10 @@ def _open_sqlite_admission_domain_lease(
             raise ServingExecutionAdmissionError(
                 "sqlite admission coordination failed"
             ) from exc
-        except Exception:
-            if conn is not None:
-                conn.rollback()
-                conn.close()
-            db._activation_lock.release()
+        except Exception as exc:
+            cleanup_errors = _cleanup_failed_sqlite_admission_acquisition(db, conn)
+            if cleanup_errors:
+                _raise_sqlite_admission_coordination_failure(exc, cleanup_errors)
             raise
     if last_error is not None:
         raise ServingExecutionAdmissionError(
