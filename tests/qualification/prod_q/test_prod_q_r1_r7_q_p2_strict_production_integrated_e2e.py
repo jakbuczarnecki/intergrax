@@ -44,11 +44,9 @@ def test_p2_g01_default_pytest_entry_blocked_by_conftest_cycle() -> None:
     assert "RuntimeCheckpoint" in combined or "INTERNALERROR" in combined
 
 
-def test_p2_g02_strict_launcher_import_chain_blocked() -> None:
+def test_p2_g02_strict_launcher_import_chain_succeeds() -> None:
     blocked = integration_import_blocker()
-    assert blocked is not None
-    assert "circular import" in blocked.lower() or "partially initialized" in blocked.lower()
-    assert "registry_projection.py" in blocked
+    assert blocked is None, f"expected strict launcher import to succeed after ENV-1: {blocked}"
 
 
 def test_p2_g03_bounded_d4_reuse_inventory_complete() -> None:
