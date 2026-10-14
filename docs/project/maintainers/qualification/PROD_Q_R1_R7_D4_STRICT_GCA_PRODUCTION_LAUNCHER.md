@@ -6,7 +6,7 @@
 | **Parent** | PROD-Q-R1-R7 |
 | **Successor** | PROD-Q-R1-R7-Q |
 | **Cursor disposition** | **READY FOR AUDIT** (not CLOSED) |
-| **Evidence HEAD** | *(set at commit — see git log)* |
+| **Evidence HEAD** | `9b6efa8dc3993a3d00460cf1dc45d6bdabe65c72` |
 
 ## Sanctioned entry
 
