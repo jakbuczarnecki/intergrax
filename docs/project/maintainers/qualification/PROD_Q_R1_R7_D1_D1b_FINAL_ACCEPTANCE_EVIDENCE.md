@@ -4,7 +4,8 @@
 |-------|-------|
 | **Status** | **READY FOR AUDIT** — recommends **READY FOR INDEPENDENT CLOSURE** for **D1** + **D1b** on **A1** scope only; **does not** mark CLOSED |
 | **Branch** | `development` |
-| **START_HEAD / AUDITED_HEAD (pre-commit)** | `c25e7efee93b64e44119eaf5366a5841d557acbf` |
+| **START_HEAD** | `c25e7efee93b64e44119eaf5366a5841d557acbf` |
+| **FINAL_COMMIT** | `17e928e4f3264ac73c4efe3a1a23741aff1617dc` |
 | **Parent** | **PROD-Q-R1-R7** — **NOT CLOSED** |
 | **D1-R6 dependency** | Operator disposition: implementation **ACCEPTED** (A1 scope); parent evidence [`PROD_Q_R1_R7_D1_R6_FINAL_INDEPENDENT_CLOSURE_RECONCILIATION.md`](PROD_Q_R1_R7_D1_R6_FINAL_INDEPENDENT_CLOSURE_RECONCILIATION.md) |
 | **Next mandatory successor (ADR §14, §21–22)** | Independent closure of **D1** + **D1b** → **PROD-Q-R1-R7-D2** (production lifecycle / `open_production_process_lifecycle`; no D2 code in this task) |
