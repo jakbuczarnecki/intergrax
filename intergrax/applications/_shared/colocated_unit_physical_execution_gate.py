@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    CoordinatorVerifiedUnitServingAdmissionOpen,
+    PhysicalExecutionReservation,
+)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
-)
-from intergrax.agent_distribution.activation_domain_coordinator import (
-    PhysicalExecutionReservation,
 )
 from intergrax.applications._shared.colocated_serving_unit_execution_admission import (
     ColocatedUnitPhysicalExecutionGate,
@@ -36,7 +37,17 @@ def as_colocated_unit_physical_gate(
     return VenvBundleColocatedUnitPhysicalExecutionGate(adapter=adapter)
 
 
+def coordinator_verified_unit_serving_admission_open_port(
+    adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
+    serving_unit_ref: str,
+) -> CoordinatorVerifiedUnitServingAdmissionOpen:
+    return adapter.coordinator_verified_unit_serving_admission_open_port(
+        serving_unit_ref
+    )
+
+
 __all__ = [
     "VenvBundleColocatedUnitPhysicalExecutionGate",
     "as_colocated_unit_physical_gate",
+    "coordinator_verified_unit_serving_admission_open_port",
 ]

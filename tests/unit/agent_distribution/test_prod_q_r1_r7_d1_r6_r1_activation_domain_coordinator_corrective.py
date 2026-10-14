@@ -181,8 +181,12 @@ def test_forged_evidence_cannot_open_unit_admission(tmp_path: Path) -> None:
         materialization_artifact_digest=digest,
         serving_pointer_revision=1,
     )
-    with pytest.raises(VenvBundleColocatedDeploymentError, match="activation domain coordinator"):
-        adapter.open_unit_serving_admission_after_coordinator_verify(forged)
+    port = adapter.coordinator_verified_unit_serving_admission_open_port(unit_ref)
+    forged_bad_digest = forged.model_copy(
+        update={"materialization_artifact_digest": "forged-digest"},
+    )
+    with pytest.raises(VenvBundleColocatedDeploymentError, match="digest mismatch"):
+        port.apply_coordinator_verified_open(forged_bad_digest)
 
 
 def test_public_authorize_entrypoint_rejects_evidence_only(tmp_path: Path) -> None:

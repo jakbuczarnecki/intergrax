@@ -23,8 +23,8 @@ from intergrax.agent_distribution.runtime_revision import (
 )
 from intergrax.agent_distribution.activation_domain_coordinator import (
     ActivationDomainCoordinator,
+    CoordinatorVerifiedUnitServingAdmissionOpen,
     ServingExecutionAdmissionRequest,
-    ServingExecutionEligibilityEvidence,
 )
 from intergrax.agent_distribution.serving_execution_admission import (
     ServingExecutionAdmissionError,
@@ -72,16 +72,6 @@ class ColocatedServingUnitExecutionAdmission(Protocol):
 
     def release_execution(self, serving_unit_ref: str) -> None:
         """Release one in-flight execution slot."""
-
-
-class ColocatedServingExecutionAdmissionAuthority(Protocol):
-    """Opens physical execution admission on the deployment adapter after activation."""
-
-    def open_unit_serving_admission_after_coordinator_verify(
-        self,
-        evidence: ServingExecutionEligibilityEvidence,
-    ) -> None:
-        """Apply unit admission open for coordinator-verified eligibility evidence."""
 
 
 class ServingUnitIdentity(BaseModel):
@@ -201,7 +191,7 @@ def authorize_colocated_serving_execution_after_activation(
     *,
     activation_commit: ActivationCommitResult,
     handoff: ServingRuntimeHandoff,
-    admission_authority: ColocatedServingExecutionAdmissionAuthority,
+    unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
     activation_domain_coordinator: ActivationDomainCoordinator,
     serving_store: ApplicationEnvironmentServingStore,
     deployment_instance_store: DeploymentInstanceStore,
@@ -276,7 +266,7 @@ def authorize_colocated_serving_execution_after_activation(
     try:
         activation_domain_coordinator.coordinate_unit_serving_admission_open(
             request,
-            admission_authority=admission_authority,
+            unit_admission_open=unit_admission_open,
             expected_serving_pointer_revision=serving.serving_pointer_revision,
         )
     except ServingExecutionAdmissionError as exc:
@@ -305,7 +295,7 @@ def validate_serving_runtime_handoff_against_projection_evidence(
 
 
 __all__ = [
-    "ColocatedServingExecutionAdmissionAuthority",
+    "CoordinatorVerifiedUnitServingAdmissionOpen",
     "ColocatedServingUnitExecutionAdmission",
     "ColocatedServingUnitRuntimeAccessor",
     "ServingRuntimeHandoff",

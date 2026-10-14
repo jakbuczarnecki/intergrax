@@ -108,7 +108,7 @@ def test_pointer_swap_before_per_execution_admit_rejected(tmp_path: Path) -> Non
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,

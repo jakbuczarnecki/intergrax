@@ -137,7 +137,9 @@ def test_authorize_denied_without_activation_commit(tmp_path: Path) -> None:
         authorize_colocated_serving_execution_after_activation(
             activation_commit=stale_commit,
             handoff=handoff,
-            admission_authority=adapter,
+            unit_admission_open=adapter.coordinator_verified_unit_serving_admission_open_port(
+                unit_ref
+            ),
             activation_domain_coordinator=activation_domain_coordinator_for_stores(
                 serving_store,
                 instance_store,
@@ -165,7 +167,7 @@ def test_bind_after_activation_opens_admission(tmp_path: Path) -> None:
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -192,7 +194,7 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -205,7 +207,9 @@ def test_duplicate_admission_authorization_rejected(tmp_path: Path) -> None:
         authorize_colocated_serving_execution_after_activation(
             activation_commit=commit,
             handoff=handoff,
-            admission_authority=adapter,
+            unit_admission_open=adapter.coordinator_verified_unit_serving_admission_open_port(
+                unit_ref
+            ),
             activation_domain_coordinator=activation_domain_coordinator_for_stores(
                 serving_store,
                 instance_store,
@@ -281,7 +285,7 @@ async def test_gca_admission_wrapper_blocked_under_drain(tmp_path: Path) -> None
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -323,7 +327,7 @@ async def test_gca_admission_wrapper_releases_on_exception(tmp_path: Path) -> No
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,
@@ -391,7 +395,7 @@ def test_activation_commit_then_bind_end_to_end(tmp_path: Path) -> None:
         deployment_instance=committed.value.candidate_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=InMemoryApplicationEnvironmentServingStore(state),
         deployment_instance_store=InMemoryDeploymentInstanceStore(state),
         revision_store=revision_store,

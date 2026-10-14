@@ -122,18 +122,12 @@ def test_operation_authority_type_removed_from_public_exports() -> None:
     assert "ActivationDomainCoordinatorOperationAuthority" not in module.__all__
 
 
-def test_open_admission_without_active_coordinator_scope_fails(tmp_path: Path) -> None:
-    adapter, unit_ref, digest, revision, *_ = _seeded_coordinator(tmp_path)
-    evidence = ServingExecutionEligibilityEvidence(
-        application_id=revision.application_id,
-        application_environment_id=revision.application_environment_id,
-        runtime_revision_id=revision.runtime_revision_id,
-        serving_unit_ref=unit_ref,
-        materialization_artifact_digest=digest,
-        serving_pointer_revision=1,
-    )
-    with pytest.raises(VenvBundleColocatedDeploymentError, match="activation domain coordinator"):
-        adapter.open_unit_serving_admission_after_coordinator_verify(evidence)
+def test_adapter_has_no_global_admission_open_entrypoint(tmp_path: Path) -> None:
+    adapter, unit_ref, *_rest = _seeded_coordinator(tmp_path)
+    assert not hasattr(adapter, "open_unit_serving_admission_after_coordinator_verify")
+    assert not hasattr(adapter, "_coordinator_synchronized_admission_open_depth")
+    port = adapter.coordinator_verified_unit_serving_admission_open_port(unit_ref)
+    assert port is not None
 
 
 def test_identifier_only_reserve_without_traffic_authorization_fails(

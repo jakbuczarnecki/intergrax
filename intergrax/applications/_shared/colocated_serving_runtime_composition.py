@@ -36,7 +36,6 @@ from intergrax.applications._shared.production_process_composition import (
 )
 from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
 from intergrax.applications._shared.serving_runtime_handoff import (
-    ColocatedServingExecutionAdmissionAuthority,
     ColocatedServingUnitRuntimeAccessor,
     authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
@@ -72,13 +71,12 @@ def bind_colocated_serving_runtime_after_activation(
     deployment_instance: DeploymentInstanceRecord,
     projection_input: RegistryProjectionInputBundle,
     colocated_accessor: ColocatedServingUnitRuntimeAccessor,
-    admission_authority: ColocatedServingExecutionAdmissionAuthority,
     serving_store: ApplicationEnvironmentServingStore,
     deployment_instance_store: DeploymentInstanceStore,
     revision_store: RuntimeRevisionStore,
     topology: MaterializationTopology,
     artifact_root: Path,
-    physical_adapter: VenvBundleColocatedRuntimeDeploymentAdapter | None = None,
+    physical_adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
 ) -> ProductionProcessComposition:
     """Establish typed handoff, then open physical admission using activation evidence only."""
     activation_domain_coordinator = validate_colocated_serving_admission_topology(
@@ -96,15 +94,10 @@ def bind_colocated_serving_runtime_after_activation(
         topology=topology,
         artifact_root=artifact_root,
     )
-    if physical_adapter is None and isinstance(
-        admission_authority, VenvBundleColocatedRuntimeDeploymentAdapter
-    ):
-        physical_adapter = admission_authority
-    if physical_adapter is None:
-        raise ColocatedServingAdmissionTopologyError(
-            "physical deployment adapter is required for colocated execution gate wiring"
-        )
     physical_gate = as_colocated_unit_physical_gate(physical_adapter)
+    unit_admission_open = physical_adapter.coordinator_verified_unit_serving_admission_open_port(
+        attestation.serving_unit_ref
+    )
     store_backed_admission = StoreBackedColocatedServingUnitExecutionAdmission(
         physical_gate=physical_gate,
         activation_domain_coordinator=activation_domain_coordinator,
@@ -125,7 +118,7 @@ def bind_colocated_serving_runtime_after_activation(
     authorize_colocated_serving_execution_after_activation(
         activation_commit=activation_commit,
         handoff=handoff,
-        admission_authority=admission_authority,
+        unit_admission_open=unit_admission_open,
         activation_domain_coordinator=activation_domain_coordinator,
         serving_store=serving_store,
         deployment_instance_store=deployment_instance_store,
@@ -136,7 +129,6 @@ def bind_colocated_serving_runtime_after_activation(
 
 __all__ = [
     "ColocatedServingAdmissionTopologyError",
-    "ColocatedServingExecutionAdmissionAuthority",
     "bind_colocated_serving_runtime_after_activation",
     "validate_colocated_serving_admission_topology",
 ]

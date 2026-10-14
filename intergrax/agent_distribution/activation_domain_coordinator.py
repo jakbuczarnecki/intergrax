@@ -9,7 +9,7 @@ import sqlite3
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Protocol, runtime_checkable
+from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -81,43 +81,20 @@ class PhysicalExecutionReservation(Protocol):
     def release(self) -> None: ...
 
 
-class ColocatedServingUnitAdmissionPort(Protocol):
-    """Physical unit gate opened only from an activation domain coordinator operation."""
+class CoordinatorVerifiedUnitServingAdmissionOpen(Protocol):
+    """Unit-bound physical admission open invoked synchronously by the coordinator."""
 
-    def open_unit_serving_admission_after_coordinator_verify(
+    def apply_coordinator_verified_open(
         self,
         evidence: ServingExecutionEligibilityEvidence,
-    ) -> None: ...
+    ) -> None:
+        """Open the bound unit for execution admission; evidence must match bound identity."""
 
-
-@runtime_checkable
-class CoordinatorSynchronizedColocatedServingUnitAdmissionPort(
-    ColocatedServingUnitAdmissionPort, Protocol
-):
-    """Adapter port that accepts admission open only during a coordinator operation."""
-
-    def _begin_coordinator_synchronized_admission_open_scope(self) -> None: ...
-
-    def _end_coordinator_synchronized_admission_open_scope(self) -> None: ...
-
-
-def _open_unit_admission_under_coordinator_operation(
-    admission_authority: ColocatedServingUnitAdmissionPort,
-    evidence: ServingExecutionEligibilityEvidence,
-) -> None:
-    if not isinstance(
-        admission_authority, CoordinatorSynchronizedColocatedServingUnitAdmissionPort
-    ):
-        raise ServingExecutionAdmissionError(
-            "admission authority does not support coordinator-synchronized open"
-        )
-    admission_authority._begin_coordinator_synchronized_admission_open_scope()
-    try:
-        admission_authority.open_unit_serving_admission_after_coordinator_verify(
-            evidence
-        )
-    finally:
-        admission_authority._end_coordinator_synchronized_admission_open_scope()
+    def compensate_failed_coordination_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        """Revert a coordination-time open after canonical persistence failed."""
 
 
 def _eligibility_evidence_from_request(
@@ -260,6 +237,17 @@ def _release_physical_reservation_once(
     reservation.release()
 
 
+def _compensate_unit_open_after_coordination_failure(
+    unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
+    evidence: ServingExecutionEligibilityEvidence,
+    *,
+    physical_opened: bool,
+) -> None:
+    if not physical_opened:
+        return
+    unit_admission_open.compensate_failed_coordination_open(evidence)
+
+
 class ActivationDomainCoordinator(Protocol):
     """Provider-neutral boundary between canonical serving state and physical reservation."""
 
@@ -274,7 +262,7 @@ class ActivationDomainCoordinator(Protocol):
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        admission_authority: ColocatedServingUnitAdmissionPort,
+        unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
         expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence: ...
 
@@ -313,10 +301,14 @@ class InMemoryActivationDomainCoordinator:
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        admission_authority: ColocatedServingUnitAdmissionPort,
+        unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
         expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence:
+        physical_opened = False
+        evidence: ServingExecutionEligibilityEvidence | None = None
+
         def _work() -> ServingExecutionEligibilityEvidence:
+            nonlocal physical_opened, evidence
             evidence = verify_serving_execution_eligibility_from_state(
                 self._state,
                 request,
@@ -329,13 +321,20 @@ class InMemoryActivationDomainCoordinator:
                     raise ServingExecutionAdmissionError(
                         "serving pointer revision mismatch for unit admission open"
                     )
-            _open_unit_admission_under_coordinator_operation(
-                admission_authority,
-                evidence,
-            )
+            unit_admission_open.apply_coordinator_verified_open(evidence)
+            physical_opened = True
             return evidence
 
-        return run_under_activation_domain(self._state, _work)
+        try:
+            return run_under_activation_domain(self._state, _work)
+        except Exception:
+            if evidence is not None:
+                _compensate_unit_open_after_coordination_failure(
+                    unit_admission_open,
+                    evidence,
+                    physical_opened=physical_opened,
+                )
+            raise
 
 
 class SqliteActivationDomainCoordinator:
@@ -366,21 +365,36 @@ class SqliteActivationDomainCoordinator:
         self,
         request: ServingExecutionAdmissionRequest,
         *,
-        admission_authority: ColocatedServingUnitAdmissionPort,
+        unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
         expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence:
-        with _sqlite_admission_coordination(self._database) as state:
-            evidence = verify_serving_execution_eligibility_from_state(state, request)
-            if expected_serving_pointer_revision is not None:
-                if evidence.serving_pointer_revision != expected_serving_pointer_revision:
-                    raise ServingExecutionAdmissionError(
-                        "serving pointer revision mismatch for unit admission open"
-                    )
-            _open_unit_admission_under_coordinator_operation(
-                admission_authority,
-                evidence,
-            )
+        physical_opened = False
+        evidence: ServingExecutionEligibilityEvidence | None = None
+        try:
+            with _sqlite_admission_coordination(self._database) as state:
+                evidence = verify_serving_execution_eligibility_from_state(
+                    state, request
+                )
+                if expected_serving_pointer_revision is not None:
+                    if (
+                        evidence.serving_pointer_revision
+                        != expected_serving_pointer_revision
+                    ):
+                        raise ServingExecutionAdmissionError(
+                            "serving pointer revision mismatch for unit admission open"
+                        )
+                unit_admission_open.apply_coordinator_verified_open(evidence)
+                physical_opened = True
+            assert evidence is not None
             return evidence
+        except Exception:
+            if evidence is not None:
+                _compensate_unit_open_after_coordination_failure(
+                    unit_admission_open,
+                    evidence,
+                    physical_opened=physical_opened,
+                )
+            raise
 
 
 def _shared_in_memory_state_from_stores(
@@ -473,8 +487,7 @@ def build_activation_domain_coordinator_for_sqlite_bundle(
 __all__ = [
     "ActivationDomainCoordinator",
     "ActivationDomainCoordinatorError",
-    "ColocatedServingUnitAdmissionPort",
-    "CoordinatorSynchronizedColocatedServingUnitAdmissionPort",
+    "CoordinatorVerifiedUnitServingAdmissionOpen",
     "InMemoryActivationDomainCoordinator",
     "PhysicalExecutionReservation",
     "ServingExecutionAdmissionRequest",

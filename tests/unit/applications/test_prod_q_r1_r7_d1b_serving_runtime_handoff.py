@@ -204,7 +204,9 @@ def test_handoff_binds_same_resolver_instance(tmp_path: Path) -> None:
     authorize_colocated_serving_execution_after_activation(
         activation_commit=commit,
         handoff=handoff,
-        admission_authority=adapter,
+        unit_admission_open=adapter.coordinator_verified_unit_serving_admission_open_port(
+            unit_ref
+        ),
         activation_domain_coordinator=activation_domain_coordinator_for_stores(
             serving_store,
             instance_store,
@@ -287,7 +289,7 @@ async def test_colocated_admission_wrapper_accounts_in_flight(tmp_path: Path) ->
         deployment_instance=deployment_instance,
         projection_input=bundle,
         colocated_accessor=accessor,
-        admission_authority=adapter,
+        physical_adapter=adapter,
         serving_store=serving_store,
         deployment_instance_store=instance_store,
         revision_store=revision_store,

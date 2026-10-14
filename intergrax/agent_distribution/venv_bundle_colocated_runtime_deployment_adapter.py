@@ -30,6 +30,7 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
 )
 from intergrax.agent_distribution.activation_domain_coordinator import (
+    CoordinatorVerifiedUnitServingAdmissionOpen,
     PhysicalExecutionReservation,
     ServingExecutionEligibilityEvidence,
 )
@@ -53,6 +54,36 @@ _UNIT_REF_PREFIX: Final = "venv-colocated:"
 
 class VenvBundleColocatedDeploymentError(AgentDistributionError):
     """Co-located VENV deployment adapter operation failed."""
+
+
+@dataclass(frozen=True, slots=True)
+class VenvBundleCoordinatorVerifiedUnitServingAdmissionOpen:
+    """Adapter-owned unit-bound admission open port for coordinator invocation."""
+
+    _adapter: VenvBundleColocatedRuntimeDeploymentAdapter
+    _bound_serving_unit_ref: str
+
+    def apply_coordinator_verified_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        if evidence.serving_unit_ref != self._bound_serving_unit_ref:
+            raise VenvBundleColocatedDeploymentError(
+                "coordinator-verified admission open serving unit mismatch"
+            )
+        self._adapter._apply_coordinator_verified_unit_admission_open(evidence)
+
+    def compensate_failed_coordination_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        if evidence.serving_unit_ref != self._bound_serving_unit_ref:
+            raise VenvBundleColocatedDeploymentError(
+                "coordinator-verified admission compensation serving unit mismatch"
+            )
+        self._adapter._compensate_failed_coordinator_verified_unit_admission_open(
+            evidence
+        )
 
 
 class ColocatedUnitExecutionReservation:
@@ -164,7 +195,16 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         self._lock = threading.RLock()
         self._units: dict[str, _ColocatedVenvPhysicalUnit] = {}
         self._binding_index: dict[str, str] = {}
-        self._coordinator_synchronized_admission_open_depth = 0
+
+    def coordinator_verified_unit_serving_admission_open_port(
+        self, serving_unit_ref: str
+    ) -> CoordinatorVerifiedUnitServingAdmissionOpen:
+        """Return a unit-bound admission open port for sanctioned coordinator wiring."""
+        self._require_unit(serving_unit_ref)
+        return VenvBundleCoordinatorVerifiedUnitServingAdmissionOpen(
+            _adapter=self,
+            _bound_serving_unit_ref=serving_unit_ref,
+        )
 
     def reserve_unit_execution(
         self, serving_unit_ref: str
@@ -189,28 +229,11 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             "serving execution admission requires activation domain coordinator"
         )
 
-    def _begin_coordinator_synchronized_admission_open_scope(self) -> None:
-        with self._lock:
-            self._coordinator_synchronized_admission_open_depth += 1
-
-    def _end_coordinator_synchronized_admission_open_scope(self) -> None:
-        with self._lock:
-            if self._coordinator_synchronized_admission_open_depth <= 0:
-                raise VenvBundleColocatedDeploymentError(
-                    "coordinator-synchronized admission open scope imbalance"
-                )
-            self._coordinator_synchronized_admission_open_depth -= 1
-
-    def open_unit_serving_admission_after_coordinator_verify(
+    def _apply_coordinator_verified_unit_admission_open(
         self,
         evidence: ServingExecutionEligibilityEvidence,
     ) -> None:
         """Open execution admission for coordinator-verified eligibility evidence."""
-        with self._lock:
-            if self._coordinator_synchronized_admission_open_depth <= 0:
-                raise VenvBundleColocatedDeploymentError(
-                    "serving execution admission requires activation domain coordinator"
-                )
         unit = self._require_live_unit(evidence.serving_unit_ref)
         if unit.application_id != evidence.application_id:
             raise VenvBundleColocatedDeploymentError(
@@ -246,6 +269,38 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         unit.serving_admission_authorized = True
         unit.admission.open_admission()
         unit.lifecycle_state = DeploymentInstanceState.SERVING
+
+    def _compensate_failed_coordinator_verified_unit_admission_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        unit = self._require_unit(evidence.serving_unit_ref)
+        if unit.application_id != evidence.application_id:
+            raise VenvBundleColocatedDeploymentError(
+                "admission compensation evidence application mismatch"
+            )
+        if unit.application_environment_id != evidence.application_environment_id:
+            raise VenvBundleColocatedDeploymentError(
+                "admission compensation evidence environment mismatch"
+            )
+        if unit.runtime_revision_id != evidence.runtime_revision_id:
+            raise VenvBundleColocatedDeploymentError(
+                "admission compensation evidence revision mismatch"
+            )
+        if unit.materialization_artifact_digest != evidence.materialization_artifact_digest:
+            raise VenvBundleColocatedDeploymentError(
+                "admission compensation evidence digest mismatch"
+            )
+        if not unit.serving_admission_authorized:
+            return
+        if unit.admission.in_flight_count() > 0:
+            raise VenvBundleColocatedDeploymentError(
+                "cannot compensate unit admission open while executions are in flight"
+            )
+        unit.serving_admission_authorized = False
+        unit.admission.begin_drain()
+        if unit.lifecycle_state is DeploymentInstanceState.SERVING:
+            unit.lifecycle_state = DeploymentInstanceState.READY
 
     def artifact_root_for_serving_unit(self, serving_unit_ref: str) -> Path:
         """Expose immutable artifact root for composition-side resolver binding."""
