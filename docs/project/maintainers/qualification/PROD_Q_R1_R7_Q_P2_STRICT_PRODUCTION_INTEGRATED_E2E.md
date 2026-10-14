@@ -2,13 +2,13 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (partial qualification — integration chain **not executed** @ HEAD) |
+| **Status** | **READY FOR AUDIT** (partial qualification — ENV-1 import corrective applied; P2-B chain **not executed**) |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Prior child** | PROD-Q-R1-R7-Q-P1 (accepted in bounded static scope) |
 | **Branch** | `development` |
-| **START_HEAD** | `5a4bd2835d7022f56ea52cd5587ade7eb75a5fd2` |
-| **FINAL_COMMIT** | `474498c583af5e4fa661deab3591f4934793c72b` |
-| **Slice** | **P2-A** environment certification + declared D4/D1b reuse matrix; **P2-B** (happy-path + HTTP admission smoke) blocked until import-cycle corrective child |
+| **START_HEAD** | `e0b16ffdb6be6d615501b8ec94671ac5c0b0d459` |
+| **ENV-1 FINAL_COMMIT** | *(pending push — see git `development` after PROD-Q-R1-R7-Q-P2-ENV-1)* |
+| **Slice** | **P2-A** environment certification + declared D4/D1b reuse matrix; **P2-B** (happy-path + HTTP admission smoke) unblocked for in-process import only; default pytest entry still **ENV-2** |
 
 ## Tested production composition path (design intent)
 
@@ -22,14 +22,15 @@ Sanctioned strict chain (no parallel bootstrap):
 
 | Component | P2-A @ HEAD |
 |-----------|-------------|
-| Governance (`ProductionControlPlaneGovernance`) | **Not exercised** (import blocked) |
-| D2 lifecycle + launcher activate | **Not exercised** |
-| A1 venv bundle adapter + readiness | **Not exercised** |
-| D3 reconciliation / D1b handoff | **Not exercised** |
-| D4 strict session + GCA ASGI factory | **Not exercised** |
-| Request-level `admit_execution` | **Not exercised** |
+| Governance (`ProductionControlPlaneGovernance`) | **Not exercised** in P2-A (P2-B pending) |
+| D2 lifecycle + launcher activate | **Not exercised** in P2-A |
+| A1 venv bundle adapter + readiness | **Not exercised** in P2-A |
+| D3 reconciliation / D1b handoff | **Not exercised** in P2-A |
+| D4 strict session + GCA ASGI factory | **Not exercised** in P2-A |
+| Request-level `admit_execution` | **Not exercised** in P2-A |
 | Environment subprocess probes | **Executed** |
-| D4/D1b negative replay (subprocess pytest) | **Skipped** (same import cycle) |
+| Strict launcher fresh-process import (ENV-1) | **Executed** @ ENV-1 |
+| D4/D1b negative replay (subprocess pytest) | **Runnable** when collected without ENV-2 conftest blocker |
 
 No `ready_for_traffic=True` mocks in P2 deliverables; positive tests skip fail-closed when imports fail.
 
@@ -57,7 +58,8 @@ uv run pytest -p no:xdist -q --noconftest \
 |------|----------------|
 | `test_p2_g00_qualification_baseline_ancestor` | PASS |
 | `test_p2_g01_default_pytest_entry_blocked_by_conftest_cycle` | PASS (certifies INTERNALERROR) |
-| `test_p2_g02_strict_launcher_import_chain_blocked` | PASS (certifies `registry_projection.py` ↔ `wiring.py` cycle) |
+| `test_p2_g02_strict_launcher_import_chain_succeeds` | PASS @ ENV-1 (historical cycle below) |
+| `test_env1_g01` … `test_env1_g04` (`test_prod_q_r1_r7_q_env1_strict_production_import_cycle.py`) | PASS @ ENV-1 |
 | `test_p2_g03_bounded_d4_reuse_inventory_complete` | PASS |
 | `test_p2_a01` … `test_p2_n03` | SKIP — ENVIRONMENT/TEST ISSUE |
 
@@ -72,22 +74,30 @@ uv run pytest --collect-only -q
 ## ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED
 
 1. **Conftest / session start:** `pytest_sessionstart` imports `RuntimeCheckpoint` → circular import (P1 documented; still present @ `5a4bd283…`).
-2. **Strict production import:** `open_strict_production_serving_session` unreachable:
+2. **Strict production import (historical @ START_HEAD — corrected ENV-1):** load-time cycle when `wiring.py` was partially initialized:
 
 ```text
 wiring.py → agent_distribution/__init__.py → venv_bundle_colocated_runtime_deployment_adapter
-→ sqlite_stores → registry_projection_descriptor → registry_projection.py:24
+→ activation_domain_coordinator → sqlite_stores (module load)
+→ registry_projection_descriptor → registry_projection.py
 → wiring.py (BuilderMap) — ImportError: partially initialized module
 ```
 
-Additional edge: `roster_agent_contract_authority.py` also imports `wiring` on the same cycle.
+**Root cause:** `sqlite_stores.py` imported `registry_projection_descriptor` at module import time. That pulled `registry_projection`, which imports `wiring` while `wiring` was still loading via `agent_distribution` package `__init__`. The dependency is required only when `SqliteRuntimeRegistryProjectionDescriptorStore.get_for_revision` decodes payloads — not at `sqlite_stores` import time.
 
-**Proposed corrective children (out of P2 scope):**
+**ENV-1 correction:** defer `registry_projection_descriptor` import to `get_for_revision` execution; keep `RuntimeRegistryProjectionDescriptor` under `TYPE_CHECKING` for `put` typing. No new composition/projection owner; same descriptor authority module.
 
-- **PROD-Q-R1-R7-Q-P2-ENV-1:** Break `applications._shared` ↔ `agent_distribution` load-time cycle (lazy wiring imports in `registry_projection.py`, `roster_agent_contract_authority.py`, and/or slim `agent_distribution/__init__.py` re-exports).
-- **PROD-Q-R1-R7-Q-P2-ENV-2:** Defer or isolate `RuntimeCheckpoint` `model_rebuild` in `tests/conftest.py` (P1 §7 — separate from P2).
+**Fresh-process probe @ ENV-1:**
 
-After ENV-1+2: re-run P2 module **without** `--noconftest`, then execute P2-B (skipped tests) and record HTTP smoke per gate plan §E.2.
+```text
+uv run python -c "from intergrax.applications._shared.strict_production_serving_launcher import open_strict_production_serving_session"
+```
+
+→ exit 0.
+
+**Remaining blocker — PROD-Q-R1-R7-Q-P2-ENV-2:** `pytest_sessionstart` / `tests/conftest.py` → `RuntimeCheckpoint` import cycle. Default `uv run pytest --collect-only` still INTERNALERROR until ENV-2.
+
+After ENV-2: re-run P2 module **without** `--noconftest`, then execute P2-B and record HTTP smoke per gate plan §E.2.
 
 ## Qualification matrix
 
@@ -102,13 +112,13 @@ After ENV-1+2: re-run P2 module **without** `--noconftest`, then execute P2-B (s
 | Missing serving pointer | D4 `test_d4_missing_serving_pointer_after_open` | **NOT RUN** |
 | Wrong revision / scope | D4-21 + D1b `test_handoff_rejects_resolver_instance_mismatch` | **NOT RUN** |
 | Invalid artifact / trusted root | Covered by D1 adapter suites (not replayed in P2-A) | **Reuse only** |
-| Import / conftest certification | `test_p2_g01`, `test_p2_g02` | **PASS** |
+| Import / conftest certification | `test_p2_g01` (ENV-2), `test_p2_g02`, ENV-1 module | **PARTIAL** — strict import PASS; default pytest still blocked |
 
 ## Enterprise architecture audit (P2 deliverable scope)
 
 | Criterion | Verdict |
 |-----------|---------|
-| Hard layer boundaries | PASS — tests/docs only; no tier violations introduced |
+| Hard layer boundaries | PASS — ENV-1 defers existing cross-tier edge; no new `applications` import from `agent_distribution` modules |
 | Contracts over implementations | PASS — P2 targets sanctioned ports (handoff, admission, launcher) |
 | Exactly-one ownership | PASS — no new activation authority or composition owner |
 | A1 strict pin | PASS — no alternate production adapter in P2 |
@@ -142,7 +152,7 @@ No tenant-binding code changed. Cross-tenant adversarial matrix deferred to **P3
 | PROD-Q-R1-R7-Q | **NOT QUALIFIED** |
 | Local P2 qualification PASS | **No** — cannot assert strict E2E PASS without executing chain |
 
-**Next bounded child:** **PROD-Q-R1-R7-Q-P2-ENV-1** (import cycle), then **P2-B** execute `test_p2_a01`–`test_p2_n03` on default pytest entry.
+**Next bounded child:** **PROD-Q-R1-R7-Q-P2-ENV-2** (`RuntimeCheckpoint` / `conftest`), then **P2-B** execute `test_p2_a01`–`test_p2_n03` on default pytest entry.
 
 ---
 
