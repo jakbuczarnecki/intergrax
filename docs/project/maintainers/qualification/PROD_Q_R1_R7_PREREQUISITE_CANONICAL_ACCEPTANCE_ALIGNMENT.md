@@ -20,12 +20,12 @@
 
 - **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q** — **OPEN** / **NOT CLOSED**
 - **D2**, **D3** — **READY FOR AUDIT** (implementation evidence on `development`; independent exact-SHA audit pending)
-- **D4** — **READY FOR INDEPENDENT CLOSURE** @ evidence HEAD `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` — D4-R1 + D4-R2 corrective **independently accepted**; **not** autonomously **CLOSED** · [`PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md`](PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md)
+- **D4** — **CLOSED / independently accepted** (operator) — implementation `9b6efa8dc3993a3d00460cf1dc45d6bdabe65c72`; evidence HEAD `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e`; pre-closure reconciliation `b96be3ba2d14f0761bc7989aeee5e86cddc52d20` · [`PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md`](PROD_Q_R1_R7_D4_STRICT_GCA_PRODUCTION_LAUNCHER.md)
 - **PROD-Q-R1-R7-D4-R1** — **independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787` (D4-03 test-boundary corrective only)
 - **PROD-Q-R1-R7-D4-R2** — **independently accepted** — implementation `b4336eb03a9f2d6eabed0edbbe48526c33a07957`; evidence HEAD `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` (D4-R2 test-boundary slot proof)
-- **PROD-Q-R1-R7-Q** — **NOT ENTERED**
+- **PROD-Q-R1-R7-Q** — **NOT ENTERED** / **not yet implemented or qualified** (next mandatory after **D4** closure)
 - Global **FRZ-PRD** rows — **OPEN** (no promotion)
 
 ## Next mandatory stage (ADR lineage)
 
-After independent audit of **PROD-Q-R1-R7-D4** evidence HEAD → **PROD-Q-R1-R7-Q** (E2E / provider / recovery / production-path qualification).
+**PROD-Q-R1-R7-D4** operator-closed @ evidence HEAD `0dd51fe…` → **PROD-Q-R1-R7-Q** (cross-tenant E2E, structural replaceability, strict production fake reachability, physical serving evidence, failure recovery, operational lifecycle and admission).

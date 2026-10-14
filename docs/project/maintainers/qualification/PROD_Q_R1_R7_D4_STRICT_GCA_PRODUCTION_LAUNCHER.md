@@ -5,11 +5,13 @@
 | **Stage** | PROD-Q-R1-R7-D4 |
 | **Parent** | PROD-Q-R1-R7 |
 | **Successor** | PROD-Q-R1-R7-Q |
-| **Cursor disposition** | **READY FOR INDEPENDENT CLOSURE** (not CLOSED) |
+| **Stage disposition** | **CLOSED / independently accepted** (operator — exact-SHA verification of implementation + evidence chain below) |
+| **Cursor closure-record disposition** | **READY FOR AUDIT** — documentation reconciliation only; Cursor does **not** independently accept its own closure-record commit |
 | **Implementation baseline** | `9b6efa8dc3993a3d00460cf1dc45d6bdabe65c72` |
 | **Evidence HEAD** | `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` |
-| **D4-R1 corrective** | **Independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787` — D4-03 proves `main.run()` fail-closed via public `SystemExit(1)` + stderr only; **rejects** prior `b3d9aced0f255d249812622647a356c0b91d76f8` D4-03 private `_active_production_process_lifecycle` inspection (test-boundary violation). **Remains valid** on evidence HEAD chain. **Does not** autonomously close **PROD-Q-R1-R7-D4** or **PROD-Q-R1-R7**. |
-| **D4-R2 corrective** | **Independently accepted** (audit disposition **PASS**) — implementation `b4336eb03a9f2d6eabed0edbbe48526c33a07957`; evidence HEAD `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` (test-boundary: slot release via public `open_production_process_lifecycle` re-open, not private `production_process_lifecycle` module state). **Does not** close **PROD-Q-R1-R7**, **PROD-Q**, or global **FRZ** rows. |
+| **Pre-closure doc reconciliation** | `b96be3ba2d14f0761bc7989aeee5e86cddc52d20` (READY FOR INDEPENDENT CLOSURE lineage) |
+| **D4-R1 corrective** | **Independently accepted** @ `339ffc12aa13d9c6f72b031e9c3b64cd52971787` — D4-03 proves `main.run()` fail-closed via public `SystemExit(1)` + stderr only; **rejects** prior `b3d9aced0f255d249812622647a356c0b91d76f8` D4-03 private `_active_production_process_lifecycle` inspection (test-boundary violation). **Remains valid** on evidence HEAD chain. Incorporated in **PROD-Q-R1-R7-D4** operator closure; **does not** close **PROD-Q-R1-R7** or **PROD-Q**. |
+| **D4-R2 corrective** | **Independently accepted** (audit disposition **PASS**) — implementation `b4336eb03a9f2d6eabed0edbbe48526c33a07957`; evidence HEAD `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` (test-boundary: slot release via public `open_production_process_lifecycle` re-open, not private `production_process_lifecycle` module state). Incorporated in **PROD-Q-R1-R7-D4** operator closure; **does not** close **PROD-Q-R1-R7**, **PROD-Q**, or global **FRZ** rows. |
 
 ## Sanctioned entry
 
@@ -76,11 +78,13 @@ No autonomous global FRZ PASS.
 
 | Slice | SHA | Independent disposition | Local D4 blocker |
 |-------|-----|-------------------------|------------------|
-| Implementation | `9b6efa8dc3993a3d00460cf1dc45d6bdabe65c72` | prior audit scope | — |
+| Implementation | `9b6efa8dc3993a3d00460cf1dc45d6bdabe65c72` | **CLOSED** (operator independent acceptance) | cleared |
 | D4-R1 | `339ffc12aa13d9c6f72b031e9c3b64cd52971787` | **ACCEPTED** (test-boundary) | cleared |
+| Rejected D4-03 evidence (historical) | `b3d9aced0f255d249812622647a356c0b91d76f8` | **REJECTED** (private lifecycle inspection) | superseded by D4-R1 |
 | D4-R2 impl | `b4336eb03a9f2d6eabed0edbbe48526c33a07957` | **ACCEPTED** (production + regressions) | cleared |
-| D4-R2 evidence HEAD | `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` | **ACCEPTED** (test-boundary slot proof) | **none** (mandatory **R7-Q** remains outside D4) |
+| D4-R2 evidence HEAD | `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e` | **ACCEPTED** (test-boundary slot proof) | cleared |
+| **PROD-Q-R1-R7-D4 (stage)** | evidence HEAD `0dd51fe…` | **CLOSED / independently accepted** (operator) | **none** — mandatory **PROD-Q-R1-R7-Q** remains **NOT ENTERED** |
 
-## Recommended stage status
+## Stage status (canonical)
 
-**READY FOR INDEPENDENT CLOSURE** — D4-R1 @ `339ffc12…` and D4-R2 corrective chain @ `0dd51fe…` **independently accepted** per supplied audit outcomes; **no** formal operator **CLOSED** recorded. **PROD-Q-R1-R7-Q** remains mandatory (cross-tenant E2E, structural replaceability, recovery, physical provider evidence, strict-path fake reachability, production admission). **PROD-Q-R1-R7** / **PROD-Q** remain **NOT CLOSED**.
+**PROD-Q-R1-R7-D4 = CLOSED / independently accepted** — operator verified implementation `9b6efa8…`, D4-R1 @ `339ffc12…`, D4-R2 @ `b4336eb…` / `0dd51fe…`; rejected historical D4-03 @ `b3d9aced…` preserved. **PROD-Q-R1-R7-Q** is the **next mandatory** stage (**NOT ENTERED** / **not yet implemented or qualified**): cross-tenant E2E, structural replaceability, strict production fake reachability, physical serving evidence, failure recovery, operational lifecycle and admission. **PROD-Q-R1-R7**, **PROD-Q-R1**, and **PROD-Q** remain **NOT CLOSED** / **BLOCKED** — D4 closure does **not** infer parent acceptance. Global **FRZ** rows remain **OPEN** (**new global PASS = 0**).
