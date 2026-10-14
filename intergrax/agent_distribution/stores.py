@@ -318,6 +318,11 @@ class ApplicationEnvironmentServingStore(Protocol):
     ) -> ApplicationEnvironmentServingRecord | None:
         """Load authoritative serving record for an application environment."""
 
+    def list_traffic_serving_records(
+        self,
+    ) -> tuple[ApplicationEnvironmentServingRecord, ...]:
+        """Enumerate environments with an active traffic-serving revision pointer."""
+
     def atomic_swap_serving_revision(
         self,
         *,

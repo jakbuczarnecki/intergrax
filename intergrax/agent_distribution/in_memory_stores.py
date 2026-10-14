@@ -748,6 +748,25 @@ class InMemoryApplicationEnvironmentServingStore:
             )
             return self._state.serving_records.get(scope)
 
+    def list_traffic_serving_records(
+        self,
+    ) -> tuple[ApplicationEnvironmentServingRecord, ...]:
+        with self._lock:
+            active = [
+                record
+                for record in self._state.serving_records.values()
+                if record.traffic_serving_revision_id is not None
+            ]
+        return tuple(
+            sorted(
+                active,
+                key=lambda record: (
+                    record.application_id,
+                    record.application_environment_id,
+                ),
+            )
+        )
+
     def atomic_swap_serving_revision(
         self,
         *,

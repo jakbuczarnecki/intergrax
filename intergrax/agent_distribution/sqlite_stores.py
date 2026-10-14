@@ -973,6 +973,12 @@ class SqliteApplicationEnvironmentServingStore(
         self._refresh()
         return super().get_serving_record(application_id, application_environment_id)
 
+    def list_traffic_serving_records(
+        self,
+    ) -> tuple[ApplicationEnvironmentServingRecord, ...]:
+        self._refresh()
+        return super().list_traffic_serving_records()
+
     def atomic_swap_serving_revision(
         self,
         *,

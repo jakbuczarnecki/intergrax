@@ -39,6 +39,7 @@ from intergrax.applications._shared.production_process_serving_reconciliation im
     ProductionServingReconciliationError,
     ProductionServingReconciliationResult,
     reconcile_production_serving_environment_on_process_open,
+    resolve_mandatory_production_serving_reconciliation_targets,
 )
 from intergrax.applications._shared.registry_projection_rehydrator import (
     RuntimeRegistryProjectionRehydrator,
@@ -383,7 +384,14 @@ def open_production_process_lifecycle(
             _owned_invocation_store=owned_invocation,
             registry_projection_rehydrator=durable_runtime.registry_projection_rehydrator,
         )
-        for app_id, env_id in serving_reconciliation_targets:
+        serving_store = durable_runtime.distribution_store_bundle.serving_store
+        reconciliation_targets = (
+            resolve_mandatory_production_serving_reconciliation_targets(
+                serving_store,
+                serving_reconciliation_targets,
+            )
+        )
+        for app_id, env_id in reconciliation_targets:
             try:
                 lifecycle.reconcile_serving_environment(app_id, env_id)
             except ProductionServingReconciliationError as reconcile_exc:

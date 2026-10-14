@@ -22,6 +22,19 @@ RECONCILIATION_OUTCOME_SKIPPED: Final = "reconciliation_skipped_no_traffic"
 RECONCILIATION_OUTCOME_READY: Final = "reconciliation_ready"
 
 
+def resolve_mandatory_production_serving_reconciliation_targets(
+    serving_store: ApplicationEnvironmentServingStore,
+    caller_supplied_targets: tuple[tuple[str, str], ...],
+) -> tuple[tuple[str, str], ...]:
+    """Union durable traffic-serving environments with caller hints (caller cannot omit active)."""
+    mandatory: dict[tuple[str, str], None] = {}
+    for record in serving_store.list_traffic_serving_records():
+        mandatory[(record.application_id, record.application_environment_id)] = None
+    for application_id, application_environment_id in caller_supplied_targets:
+        mandatory[(application_id, application_environment_id)] = None
+    return tuple(sorted(mandatory.keys()))
+
+
 class ProductionServingReconciliationError(Exception):
     """Production serving environment could not be reconciled after process restart."""
 
@@ -132,4 +145,5 @@ __all__ = [
     "RECONCILIATION_OUTCOME_READY",
     "RECONCILIATION_OUTCOME_SKIPPED",
     "reconcile_production_serving_environment_on_process_open",
+    "resolve_mandatory_production_serving_reconciliation_targets",
 ]

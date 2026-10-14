@@ -306,7 +306,6 @@ def test_d3_open_fails_reconciliation_on_empty_adapter_after_serving(
             governance=_governance(env),
             trusted_artifact_parent_roots=artifact_roots,
             missing_file_policy="empty",
-            serving_reconciliation_targets=((_APP, _ENV),),
         )
 
 

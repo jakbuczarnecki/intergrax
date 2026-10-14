@@ -46,18 +46,58 @@ class DescriptorBackedRegistryProjectionInputStore:
         self._lock = threading.Lock()
 
     def get(self, runtime_revision_id: str) -> RegistryProjectionInputBundle | None:
-        with self._lock:
-            cached = self._session_bundles.get(runtime_revision_id)
-        if cached is not None:
-            return cached
         revision = self._revision_store.get_revision(runtime_revision_id)
         if revision is None:
             return None
-        return self._reconstruct_from_durable_authority(revision)
+        application_id = revision.application_id
+        application_environment_id = revision.application_environment_id
+        try:
+            descriptor = self._descriptor_store.get_for_revision(
+                application_id,
+                application_environment_id,
+                runtime_revision_id,
+            )
+        except RegistryProjectionDescriptorError as exc:
+            raise RegistryProjectionError(str(exc)) from exc
+        if descriptor is not None:
+            return self._reconstruct_from_durable_authority(revision)
+        with self._lock:
+            return self._session_bundles.get(runtime_revision_id)
 
     def register(self, bundle: RegistryProjectionInputBundle) -> None:
         revision_id = bundle.runtime_revision.runtime_revision_id
         fingerprint = registry_projection_input_semantic_fingerprint(bundle)
+        revision = bundle.runtime_revision
+        with self._lock:
+            existing = self._fingerprints.get(revision_id)
+            if existing is not None:
+                if existing != fingerprint:
+                    raise RegistryProjectionError(
+                        f"conflicting frozen projection inputs for {revision_id!r}"
+                    )
+                return
+        try:
+            durable = self._descriptor_store.get_for_revision(
+                revision.application_id,
+                revision.application_environment_id,
+                revision_id,
+            )
+        except RegistryProjectionDescriptorError as exc:
+            raise RegistryProjectionError(str(exc)) from exc
+        if durable is not None:
+            reconstructed = self._reconstruct_from_durable_authority(revision)
+            if reconstructed is None:
+                raise RegistryProjectionError(
+                    f"durable descriptor present but authority incomplete for "
+                    f"{revision_id!r}",
+                )
+            durable_fingerprint = registry_projection_input_semantic_fingerprint(
+                reconstructed,
+            )
+            if durable_fingerprint != fingerprint:
+                raise RegistryProjectionError(
+                    f"durable descriptor authority mismatch for {revision_id!r}"
+                )
         with self._lock:
             existing = self._fingerprints.get(revision_id)
             if existing is not None:
@@ -68,30 +108,6 @@ class DescriptorBackedRegistryProjectionInputStore:
                 return
             self._session_bundles[revision_id] = bundle
             self._fingerprints[revision_id] = fingerprint
-        revision = bundle.runtime_revision
-        try:
-            durable = self._descriptor_store.get_for_revision(
-                revision.application_id,
-                revision.application_environment_id,
-                revision_id,
-            )
-        except RegistryProjectionDescriptorError as exc:
-            raise RegistryProjectionError(str(exc)) from exc
-        if durable is None:
-            return
-        try:
-            reconstructed = self._reconstruct_from_durable_authority(revision)
-        except RegistryProjectionError:
-            return
-        if reconstructed is None:
-            return
-        durable_fingerprint = registry_projection_input_semantic_fingerprint(
-            reconstructed,
-        )
-        if durable_fingerprint != fingerprint:
-            raise RegistryProjectionError(
-                f"durable descriptor authority mismatch for {revision_id!r}"
-            )
 
     def _reconstruct_from_durable_authority(
         self,
