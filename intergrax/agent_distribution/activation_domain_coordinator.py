@@ -88,13 +88,19 @@ class CoordinatorVerifiedUnitServingAdmissionOpen(Protocol):
         self,
         evidence: ServingExecutionEligibilityEvidence,
     ) -> None:
-        """Open the bound unit for execution admission; evidence must match bound identity."""
+        """Stage coordinator-verified admission; gate stays closed until publish."""
+
+    def publish_coordinator_verified_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        """Publish staged admission after canonical coordination succeeded."""
 
     def compensate_failed_coordination_open(
         self,
         evidence: ServingExecutionEligibilityEvidence,
     ) -> None:
-        """Revert a coordination-time open after canonical persistence failed."""
+        """Revert staged or published admission after canonical persistence failed."""
 
 
 def _eligibility_evidence_from_request(
@@ -241,9 +247,9 @@ def _compensate_unit_open_after_coordination_failure(
     unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
     evidence: ServingExecutionEligibilityEvidence,
     *,
-    physical_opened: bool,
+    physical_admission_affected: bool,
 ) -> None:
-    if not physical_opened:
+    if not physical_admission_affected:
         return
     unit_admission_open.compensate_failed_coordination_open(evidence)
 
@@ -304,11 +310,11 @@ class InMemoryActivationDomainCoordinator:
         unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
         expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence:
-        physical_opened = False
+        physical_admission_affected = False
         evidence: ServingExecutionEligibilityEvidence | None = None
 
         def _work() -> ServingExecutionEligibilityEvidence:
-            nonlocal physical_opened, evidence
+            nonlocal physical_admission_affected, evidence
             evidence = verify_serving_execution_eligibility_from_state(
                 self._state,
                 request,
@@ -322,7 +328,8 @@ class InMemoryActivationDomainCoordinator:
                         "serving pointer revision mismatch for unit admission open"
                     )
             unit_admission_open.apply_coordinator_verified_open(evidence)
-            physical_opened = True
+            physical_admission_affected = True
+            unit_admission_open.publish_coordinator_verified_open(evidence)
             return evidence
 
         try:
@@ -332,7 +339,7 @@ class InMemoryActivationDomainCoordinator:
                 _compensate_unit_open_after_coordination_failure(
                     unit_admission_open,
                     evidence,
-                    physical_opened=physical_opened,
+                    physical_admission_affected=physical_admission_affected,
                 )
             raise
 
@@ -368,7 +375,7 @@ class SqliteActivationDomainCoordinator:
         unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
         expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence:
-        physical_opened = False
+        physical_admission_affected = False
         evidence: ServingExecutionEligibilityEvidence | None = None
         try:
             with _sqlite_admission_coordination(self._database) as state:
@@ -384,15 +391,16 @@ class SqliteActivationDomainCoordinator:
                             "serving pointer revision mismatch for unit admission open"
                         )
                 unit_admission_open.apply_coordinator_verified_open(evidence)
-                physical_opened = True
+                physical_admission_affected = True
             assert evidence is not None
+            unit_admission_open.publish_coordinator_verified_open(evidence)
             return evidence
         except Exception:
             if evidence is not None:
                 _compensate_unit_open_after_coordination_failure(
                     unit_admission_open,
                     evidence,
-                    physical_opened=physical_opened,
+                    physical_admission_affected=physical_admission_affected,
                 )
             raise
 

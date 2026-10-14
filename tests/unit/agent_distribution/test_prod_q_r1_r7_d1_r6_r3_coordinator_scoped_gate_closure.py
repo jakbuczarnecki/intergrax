@@ -94,6 +94,11 @@ class _RecordingUnitOpenPort:
         self.applied += 1
         self._inner.apply_coordinator_verified_open(evidence)
 
+    def publish_coordinator_verified_open(
+        self, evidence: ServingExecutionEligibilityEvidence
+    ) -> None:
+        self._inner.publish_coordinator_verified_open(evidence)
+
     def compensate_failed_coordination_open(
         self, evidence: ServingExecutionEligibilityEvidence
     ) -> None:
