@@ -303,7 +303,7 @@ Operator-authorized **E.1 Batch C** — D1-R6 coordinator/admission chain module
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** — **Batch C = PASS** @ exact SHA; **E.1 overall = PARTIAL — NOT QUALIFIED** |
+| **Status** | **READY FOR AUDIT** — Batch C @ `440bfcaa…`: process exit `0`; **evidence incomplete** (C.12); **E.1 overall = PARTIAL — NOT QUALIFIED** |
 | **Task** | `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-C` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Branch** | `development` |
@@ -451,8 +451,8 @@ Per `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §E.1.1 — **NOT 
 |-------|--------|
 | **Batch A** | **PASS — accepted evidence** @ `07fcdd3de871c343744fec622cfd9ffde349b149` |
 | **Batch B** | **PASS — accepted evidence** @ `83dd002730e26262bb2f5790459fd8ed7645ce18` |
-| **Batch C** | **PASS — READY FOR AUDIT** @ `440bfcaa66f483e802f0fee194f624d38bead422` |
-| **Batch D** | **NOT EXECUTED** |
+| **Batch C** | **PROCESS EXIT 0 @ `440bfcaa…` — EVIDENCE INCOMPLETE** (C.12); not closure-grade **PASS** without captured pytest summary |
+| **Batch D** | **NOT EXECUTED** — authorization gate (below) |
 | **Batch E** | **NOT EXECUTED** |
 | **E.1** | **PARTIAL — NOT QUALIFIED** |
 | **P3** | **CLOSED — OPERATOR ACCEPTED** (unchanged) |
@@ -465,6 +465,54 @@ Per `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §E.1.1 — **NOT 
 ## C.11 Recommended next mandatory stage
 
 Operator-authorized **E.1 Batch D** — D2 production process opener + D3 (+ D3-R1) @ exact SHA per §E.1.1 (separate execution authorization).
+
+## C.12 Batch C evidence reconciliation (append-only — `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-C-RECON`)
+
+**Reconciliation task HEAD (docs only):** `70c667fa67628968e124c5b63b3cd4b74c637f32`  
+**Original Batch C EXECUTION_HEAD (unchanged):** `440bfcaa66f483e802f0fee194f624d38bead422`  
+**Original run_id:** `R7-Q-E1-BATCH-C-20261015-122426-278`  
+**Policy:** no pytest, collect-only, replay, or second process for Batch C.
+
+### Recoverability review (artifacts + local metadata only)
+
+| Source | Recoverable content |
+|--------|---------------------|
+| `run.meta.json` | Exact `command`; `utc_start` / `utc_end`; `wall_ms` `15142`; `exit_code` `0`; `process_result` `COMPLETED`; `timed_out` `false`; `root_pid` `38140`; `descendant_count_after` `0`; documented capture failure in `pytest_summary_capture` |
+| `pytest.stdout.log` | **Empty (0 bytes)** — no invocation banner, no collection line, no pytest summary |
+| `pytest.stderr.log` | **Empty (0 bytes)** |
+| Cursor terminal / session indexes | **No** matching capture for run_id / pid `38140` / UTC window |
+
+**Official finding (verbatim):**
+
+`BATCH C — PROCESS EXIT 0; TEST SUMMARY NOT CAPTURED; QUALIFICATION EVIDENCE INCOMPLETE`
+
+### Qualification impact (does not erase C.1–C.11 historical record)
+
+| Prior claim (C.3–C.4) | Reconciliation |
+|-----------------------|----------------|
+| **79 passed** / per-module **PASS** from executed pytest | **Withdrawn as executed-test evidence** — static `test_*` function inventory @ HEAD is **not** a substitute for captured pytest output |
+| Batch C aggregate **PASS** | **Superseded for closure purposes** → **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** (audit may accept process metadata only; full E.1 batch closure requires captured summary or new authorized execution identified as **not** the original run) |
+| Collection succeeded | **Not independently provable** from persisted logs — only weakly consistent with exit `0` and wall time (~15s) |
+
+Any future Batch C replay requires **new** operator authorization and a **new** run_id; it must **not** be merged with this execution’s missing-summary record.
+
+---
+
+# PROD-Q-R1-R7-Q-EXEC-E1 — Batch D authorization gate (not executed)
+
+| Field | Value |
+|-------|-------|
+| **Status** | **NOT EXECUTED** — operator authorization for **E.1 Batch D** **not granted** in task `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-D` |
+| **Required authorization** | Stage **E.1 Batch D**; **EXECUTION_HEAD** `70c667fa67628968e124c5b63b3cd4b74c637f32`; exactly three modules (D2, D3, D3-R1); one sequential pytest; 300s cumulative timeout; zero retry; STOP on fail/timeout/collection failure |
+| **Authorized command (pending)** | `uv run pytest -p no:xdist -q tests/unit/applications/test_prod_q_r1_r7_d2_production_process_lifecycle.py tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py` |
+| **Stream-capture self-check** | **NOT RUN** — prerequisite only when Batch D execution is authorized |
+| **Proof directory** | **None** — Batch D not started |
+
+## D.1 Next mandatory task
+
+1. Operator **execution authorization** for **E.1 Batch D** @ `70c667fa67628968e124c5b63b3cd4b74c637f32` (three modules, one process, 300s, zero retry).
+2. Before pytest: inert **stream-capture self-check** (no tests) — must persist stdout/stderr; **STOP** if capture fails.
+3. Optional separate decision: whether Batch C requires **new** authorized replay for closure-grade evidence (distinct run_id).
 
 ---
 
