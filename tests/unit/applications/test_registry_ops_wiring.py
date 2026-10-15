@@ -52,10 +52,15 @@ def test_register_application_upserts(tmp_path: Path) -> None:
 
     _, manifest = next(iter(iter_product_manifests()))
     gate_env = package_gate_environment(manifest.resolved_environment())
+    from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+        manifest_ci_contract_authority,
+    )
+
     package = build_application_package(
         manifest,
         gate_env,
         channel=ApplicationDistributionChannel.LOCAL,
+        contract_authority=manifest_ci_contract_authority(manifest),
     )
     entry = register_application(tmp_path, package)
     assert entry.app_id == manifest.app_id

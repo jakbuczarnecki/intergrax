@@ -15,6 +15,10 @@ from intergrax.applications._shared.package_wiring import (
     _validate_graph_spec_capabilities,
     collect_application_dependencies,
 )
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ManifestAgentContractAuthority,
+)
 from intergrax.applications.contracts.application_package import ApplicationDependencyKind
 from intergrax.applications.contracts.agent_ref import qualname_for_agent
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -119,8 +123,19 @@ def test_contract_reference_package_closure_uses_contract_id() -> None:
         agents=[AgentBinding.reference("incident_investigator")],
     )
     env = _lab_env()
-    deps = collect_application_dependencies(manifest, env)
+    authority = ManifestAgentContractAuthority(
+        contracts_by_id={
+            "incident_investigator": AgentContract(
+                id="incident_investigator",
+                name="incident_investigator",
+                description="reference catalog stub",
+                version="1.0.0",
+                capabilities=[],
+            ),
+        },
+    )
+    deps = collect_application_dependencies(manifest, env, contract_authority=authority)
     agent_deps = [dep for dep in deps if dep.kind is ApplicationDependencyKind.AGENT]
     assert len(agent_deps) == 1
     assert agent_deps[0].ref == "incident_investigator"
-    assert agent_deps[0].version_constraint == "*"
+    assert agent_deps[0].version_constraint == "=1.0.0"

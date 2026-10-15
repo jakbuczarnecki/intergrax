@@ -17,6 +17,9 @@ from intergrax.applications._shared.package_wiring import (
     build_application_package,
     validate_application_package_closure,
 )
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    manifest_ci_contract_authority,
+)
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
 from intergrax.applications.contracts.application_capability_projection import (
     application_capability_descriptor_from_manifest,
@@ -81,7 +84,12 @@ def test_manifest_binding_contract_id_consistent_across_consumers() -> None:
     assert view.contains_node(agent_node)
 
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="identity_consistency.scaffold")
-    package = build_application_package(manifest, env)
+    authority = manifest_ci_contract_authority(manifest)
+    package = build_application_package(
+        manifest,
+        env,
+        contract_authority=authority,
+    )
     agent_refs = {
         dep.ref for dep in package.dependencies if dep.kind is ApplicationDependencyKind.AGENT
     }
@@ -93,6 +101,7 @@ def test_manifest_binding_contract_id_consistent_across_consumers() -> None:
         env,
         snapshot,
         capability_graph=view,
+        contract_authority=authority,
     )
     assert violations == []
 
@@ -133,7 +142,12 @@ def test_explicit_mount_contract_id_flows_through_projection_graph_and_package()
     assert view.contains_node(f"agent:{contract_id}")
 
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="explicit_mount_identity.scaffold")
-    package = build_application_package(manifest, env)
+    authority = manifest_ci_contract_authority(manifest)
+    package = build_application_package(
+        manifest,
+        env,
+        contract_authority=authority,
+    )
     agent_refs = {
         dep.ref for dep in package.dependencies if dep.kind is ApplicationDependencyKind.AGENT
     }

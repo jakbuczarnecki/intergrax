@@ -18,7 +18,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel
 
@@ -82,10 +82,10 @@ from intergrax.agent_distribution.stores import (
     ApplicationEnvironmentServingRecord,
     RollbackAtomicCommitResult,
 )
-from intergrax.applications._shared.registry_projection_descriptor import (
-    SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
-    RuntimeRegistryProjectionDescriptor,
-)
+if TYPE_CHECKING:
+    from intergrax.applications._shared.registry_projection_descriptor import (
+        RuntimeRegistryProjectionDescriptor,
+    )
 from intergrax.agent_distribution.sqlite_payload_legacy import (
     decode_agent_artifact_metadata_payload,
     decode_application_environment_serving_record_payload,
@@ -1111,6 +1111,11 @@ class SqliteRuntimeRegistryProjectionDescriptorStore:
         application_environment_id: str,
         runtime_revision_id: str,
     ) -> RuntimeRegistryProjectionDescriptor | None:
+        from intergrax.applications._shared.registry_projection_descriptor import (
+            SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
+            RuntimeRegistryProjectionDescriptor,
+        )
+
         with self._lock:
             with self._db._connect() as conn:
                 row = conn.execute(

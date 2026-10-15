@@ -33,8 +33,23 @@ from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.applications._shared.colocated_serving_unit_task_execution import (
     ColocatedServingUnitAdmissionTaskExecutionPort,
 )
+from intergrax.applications._shared.production_control_plane_governance_wiring import (
+    ProductionControlPlaneGovernance,
+)
+from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
+    resolve_strict_production_serving_execution_tenant_binding,
+)
+from intergrax.applications._shared.strict_production_serving_http_ingress import (
+    validate_strict_production_serving_http_ingress_composition,
+)
+from intergrax.applications._shared.strict_production_serving_tenant_authority_task_execution import (
+    StrictProductionServingTenantAuthorityTaskExecutionPort,
+)
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
+)
+from intergrax.applications._shared.package_wiring import (
+    resolve_strict_package_contract_authority_for_serving_handoff,
 )
 from intergrax.applications._shared.serving_runtime_handoff import (
     validate_serving_runtime_handoff_against_projection_evidence,
@@ -98,6 +113,7 @@ def create_governed_contractor_backend_app(
     *,
     registry_projection: MaterializedRegistryProjection,
     process_composition: ProductionProcessComposition | None = None,
+    production_governance: ProductionControlPlaneGovernance | None = None,
     settings: Optional[GovernedContractorBackendSettings] = None,
     host_runtime: GovernedContractorHostRuntimeComposition | None = None,
     trace_db_path: Path | None = None,
@@ -186,6 +202,46 @@ def create_governed_contractor_backend_app(
             continuation_explicitly_wired=False,
             continuation_disabled=False,
         )
+    strict_serving_tenant_binding = None
+    if (
+        production_mode
+        and process_composition is not None
+        and process_composition.serving_runtime_handoff is not None
+    ):
+        if production_governance is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with serving_runtime_handoff "
+                "requires ProductionControlPlaneGovernance",
+            )
+        strict_serving_tenant_binding = (
+            resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+        )
+        validate_strict_production_serving_http_ingress_composition(
+            binding=strict_serving_tenant_binding,
+            api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+            include_task_control=settings.include_task_control,
+            include_interaction_routes=settings.include_interaction_routes,
+            include_mcp=settings.include_mcp,
+            identity_source=settings.identity_source,
+        )
+    package_contract_authority = None
+    if (
+        production_mode
+        and process_composition is not None
+        and process_composition.serving_runtime_handoff is not None
+    ):
+        package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+            manifest=manifest_for_runtime,
+            env=env,
+            handoff=process_composition.serving_runtime_handoff,
+            registry_projection=registry_projection,
+            registry_projection_authority=(
+                process_composition.agent_platform_runtime.registry_projection_authority
+            ),
+        )
     runtime = build_harness_host_runtime(
         manifest_for_runtime,
         env,
@@ -215,6 +271,8 @@ def create_governed_contractor_backend_app(
         ),
         document_store=profile_persistence_kwargs.document_store,
         key_value_cache=profile_persistence_kwargs.key_value_cache,
+        agent_contract_authority=package_contract_authority,
+        strict_production_serving_execution_tenant_binding=strict_serving_tenant_binding,
     )
     host_execution = runtime.execution
     if (
@@ -224,6 +282,11 @@ def create_governed_contractor_backend_app(
         host_execution = ColocatedServingUnitAdmissionTaskExecutionPort(
             host_execution,
             process_composition.serving_runtime_handoff,
+        )
+    if strict_serving_tenant_binding is not None:
+        host_execution = StrictProductionServingTenantAuthorityTaskExecutionPort(
+            host_execution,
+            binding=strict_serving_tenant_binding,
         )
     registry = runtime.registry
     platform = bootstrap_harness_host_platform(runtime)
@@ -285,6 +348,8 @@ def create_governed_contractor_backend_app(
         registry=runtime.registry,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
+        identity_source=settings.identity_source,
+        strict_serving_tenant_binding=strict_serving_tenant_binding,
     )
 
     wire_harness_product_observability_dashboard(app, runtime=runtime)

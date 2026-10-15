@@ -14,6 +14,11 @@ if TYPE_CHECKING:
     )
     from intergrax.harness.application_host import ApplicationHost
 
+from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
+    StrictProductionServingExecutionTenantBinding,
+)
+from intergrax.contracts.agent_run import RequestIdentity
+
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.applications._shared.acp_checkpoint_host_wiring import (
@@ -42,6 +47,9 @@ from intergrax.applications._shared.decision_wiring import (
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_for_application_host,
+)
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ContractAuthority,
 )
 from intergrax.applications._shared.skill_host_execution_wiring import (
     build_host_skill_catalog_wiring_from_environment,
@@ -318,6 +326,10 @@ def build_harness_host_runtime(
     strict_orchestration_topology_submission_port_builder: (
         StrictOrchestrationTopologySubmissionPortBuilder | None
     ) = None,
+    agent_contract_authority: ContractAuthority | None = None,
+    strict_production_serving_execution_tenant_binding: (
+        StrictProductionServingExecutionTenantBinding | None
+    ) = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -363,6 +375,16 @@ def build_harness_host_runtime(
         store=profile_persistence.revision_store,
     )
 
+    resolved_agent_contract_authority = agent_contract_authority
+    if resolved_agent_contract_authority is None and not production_mode:
+        from intergrax.applications._shared.roster_agent_contract_authority import (
+            materialize_manifest_contract_authority_lab_compat,
+        )
+
+        resolved_agent_contract_authority = materialize_manifest_contract_authority_lab_compat(
+            resolved_manifest,
+        )
+
     env_wiring = wire_application_environment(
         resolved_manifest,
         effective_environment,
@@ -374,6 +396,7 @@ def build_harness_host_runtime(
         llm_adapter=llm_adapter,
         application_tool_registry=application_tool_registry,
         application_skill_registry=application_skill_registry,
+        agent_contract_authority=resolved_agent_contract_authority,
     )
     from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
         PinningStoreExecutionEffectiveProfileProvenanceReader,
@@ -664,9 +687,24 @@ def build_harness_host_runtime(
             expected_active_revision_id=activation_baseline_revision_id,
         ),
     )
-    harness_execution_governance = build_harness_host_task_execution_governance(
-        governance_evidence_recorder=orchestration_governance_evidence_recorder,
-    )
+    if (
+        production_mode
+        and strict_production_serving_execution_tenant_binding is not None
+    ):
+        from intergrax.applications._shared.strict_production_host_task_execution_wiring import (
+            build_strict_production_serving_host_task_execution_governance,
+        )
+
+        harness_execution_governance = (
+            build_strict_production_serving_host_task_execution_governance(
+                binding=strict_production_serving_execution_tenant_binding,
+                governance_evidence_recorder=orchestration_governance_evidence_recorder,
+            )
+        )
+    else:
+        harness_execution_governance = build_harness_host_task_execution_governance(
+            governance_evidence_recorder=orchestration_governance_evidence_recorder,
+        )
     execution = build_environment_host_task_execution(
         orchestration,
         effective_environment,

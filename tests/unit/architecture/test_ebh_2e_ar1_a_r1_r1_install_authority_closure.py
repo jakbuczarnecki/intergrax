@@ -48,6 +48,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _STRICT_SHARED_MODULES = (
     agent_certification_wiring,
     capability_graph_deploy_gate,
+    package_wiring,
 )
 
 

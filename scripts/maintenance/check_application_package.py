@@ -16,6 +16,9 @@ for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
         sys.path.insert(0, text)
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment  # noqa: E402
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (  # noqa: E402
+    manifest_ci_contract_authority,
+)
 from intergrax.applications._shared.package_wiring import (  # noqa: E402
     build_application_package,
     load_application_package,
@@ -37,7 +40,12 @@ def check_strict_product_packages() -> list[str]:
             violations.append(f"{product_id}: wire_application_environment failed: {exc}")
             continue
 
-        package = build_application_package(manifest, gate_env)
+        authority = manifest_ci_contract_authority(manifest)
+        package = build_application_package(
+            manifest,
+            gate_env,
+            contract_authority=authority,
+        )
         violations.extend(
             validate_application_package_closure(
                 package,
@@ -45,6 +53,7 @@ def check_strict_product_packages() -> list[str]:
                 gate_env,
                 wiring.registry_snapshot,
                 capability_graph=wiring.capability_graph,
+                contract_authority=authority,
             ),
         )
         if not package.distribution.checksum:

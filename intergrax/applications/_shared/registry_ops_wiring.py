@@ -61,11 +61,17 @@ def build_application_registry_entry(
     from intergrax.applications.contracts.manifest import ApplicationManifest
 
     assert isinstance(manifest, ApplicationManifest)
+    from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+        manifest_ci_contract_authority,
+    )
+
     gate_env = package_gate_environment(manifest.resolved_environment())
+    authority = manifest_ci_contract_authority(manifest)
     package = build_application_package(
         manifest,
         gate_env,
         channel=ApplicationDistributionChannel.GIT,
+        contract_authority=authority,
     )
     health = build_application_health_score(product_id, manifest, repo_root=repo_root)
     ownership = manifest.ownership or standard_product_operational_ownership(manifest.app_id)

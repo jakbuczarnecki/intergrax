@@ -153,6 +153,15 @@ def _manifest() -> ApplicationManifest:
     )
 
 
+def _ac3_revision_bound_host_manifest() -> ApplicationManifest:
+    """Strict production host roster: declarative contract id only (revision-bound search)."""
+    return ApplicationManifest.lab(
+        app_id=_APP,
+        name="AC3 Final",
+        agents=[AgentBinding(contract_id="search")],
+    )
+
+
 def _roster(
     *,
     roster_revision_seed: str = "roster-a",

@@ -10,6 +10,9 @@ from intergrax.applications._shared.production_host_composition import (
     StrictProductionAsgiPlaceholder,
     bootstrap_production_registry_projection,
 )
+from intergrax.applications._shared.production_control_plane_governance_wiring import (
+    ProductionControlPlaneGovernance,
+)
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
@@ -40,6 +43,7 @@ _STRICT_RUN_MESSAGE = (
 def create_governed_contractor_process_app(
     *,
     process_composition: ProductionProcessComposition,
+    production_governance: ProductionControlPlaneGovernance | None = None,
     settings: GovernedContractorBackendSettings | None = None,
     host_runtime: GovernedContractorHostRuntimeComposition | None = None,
 ) -> FastAPI:
@@ -59,6 +63,7 @@ def create_governed_contractor_process_app(
             stores=process_composition.agent_platform_runtime.stores,
         ),
         process_composition=process_composition,
+        production_governance=production_governance,
         settings=resolved_settings,
         host_runtime=resolved_host_runtime,
     )

@@ -62,6 +62,7 @@ from tests.unit.applications.test_prod_q_r1_r7_d2_production_process_lifecycle i
 from tests.unit.applications.test_production_registry_startup_ac3_final import (
     _APP,
     _ENV,
+    _ac3_revision_bound_host_manifest,
     _activate_bundle,
     _activation_request,
     _authority,
@@ -231,11 +232,11 @@ def _patch_gca_manifest_for_ac3_serving(monkeypatch: pytest.MonkeyPatch) -> None
 
     monkeypatch.setattr(
         "governed_contractor_application.host.main.build_governed_contractor_manifest",
-        _manifest,
+        _ac3_revision_bound_host_manifest,
     )
     monkeypatch.setattr(
         "governed_contractor_application.host.factory.build_governed_contractor_manifest",
-        _manifest,
+        _ac3_revision_bound_host_manifest,
     )
 
     def _ac3_aligned_environment_profile(
@@ -268,13 +269,21 @@ def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
 
     fake = DeterministicExternalWorkFake()
     cw = build_in_memory_collaborative_work_repositories()
-    settings = replace(
-        settings,
-        include_mcp=False,
-        include_scheduler=False,
-        include_interaction_routes=False,
-        include_task_control=False,
-        runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+    from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
+        with_strict_http_api_keys,
+    )
+    from tests.unit.applications.test_production_registry_startup_ac3_final import _ENV
+
+    settings = with_strict_http_api_keys(
+        replace(
+            settings,
+            include_mcp=False,
+            include_scheduler=False,
+            include_interaction_routes=False,
+            include_task_control=False,
+            runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        ),
+        execution_tenant_id=_ENV,
     )
     return compose_governed_contractor_host_runtime(
         settings,

@@ -15,6 +15,13 @@ from intergrax.applications._shared.package_wiring import (
     package_id_for_app,
     validate_application_package_closure,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    StrictAgentContractAuthorityError,
+    materialize_manifest_contract_authority_lab_compat,
+)
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    manifest_ci_contract_authority,
+)
 from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests
 from intergrax.applications.contracts.application_package import ApplicationDependencyKind
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -38,7 +45,11 @@ def test_collect_dependencies_includes_agent_and_profile() -> None:
         agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pkg_demo.scaffold")
-    deps = collect_application_dependencies(manifest, env)
+    deps = collect_application_dependencies(
+        manifest,
+        env,
+        contract_authority=manifest_ci_contract_authority(manifest),
+    )
     kinds = {dep.kind for dep in deps}
     assert ApplicationDependencyKind.AGENT in kinds
     assert ApplicationDependencyKind.PROFILE_FRAGMENT in kinds
@@ -49,13 +60,19 @@ def test_strict_product_package_closure_passes() -> None:
     product_id, manifest = next(iter(iter_strict_product_manifests()))
     env = manifest.resolved_environment()
     wiring = wire_application_environment(manifest, env, conformance_check=False)
-    package = build_application_package(manifest, env)
+    authority = manifest_ci_contract_authority(manifest)
+    package = build_application_package(
+        manifest,
+        env,
+        contract_authority=authority,
+    )
     violations = validate_application_package_closure(
         package,
         manifest,
         env,
         wiring.registry_snapshot,
         capability_graph=wiring.capability_graph,
+        contract_authority=authority,
     )
     assert violations == [], f"{product_id}: {violations}"
 
@@ -97,6 +114,17 @@ def test_graph_invalid_node_still_fails_closure() -> None:
     assert any("not found on manifest roster" in violation for violation in violations)
 
 
+def test_collect_dependencies_fail_closed_without_authority() -> None:
+    manifest = ApplicationManifest.lab(
+        app_id="no_authority_demo",
+        name="No Authority Demo",
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo")],
+    )
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="no_authority_demo.scaffold")
+    with pytest.raises(StrictAgentContractAuthorityError):
+        collect_application_dependencies(manifest, env, contract_authority=None)
+
+
 def test_package_checksum_is_stable() -> None:
     manifest = ApplicationManifest.lab(
         app_id="checksum_demo",
@@ -106,7 +134,11 @@ def test_package_checksum_is_stable() -> None:
         agents=[AgentBinding.mount(EchoAgent, contract_id="echo")],
     )
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="checksum_demo.scaffold")
-    package = build_application_package(manifest, env)
+    package = build_application_package(
+        manifest,
+        env,
+        contract_authority=materialize_manifest_contract_authority_lab_compat(manifest),
+    )
     assert package.distribution.checksum == compute_package_checksum(
         package.model_copy(
             update={

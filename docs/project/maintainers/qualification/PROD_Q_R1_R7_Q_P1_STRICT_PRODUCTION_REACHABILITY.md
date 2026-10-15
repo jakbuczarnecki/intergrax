@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** |
+| **Status** | **CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED** |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Branch** | `development` |
 | **START_HEAD** | `ac367ea699e3b592272ff74a5a6d3999bf2ea707` |
@@ -121,6 +121,33 @@ uv run pytest -p no:xdist -q --noconftest \
 
 **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** Default `tests/conftest.py` `pytest_sessionstart` triggers a circular import (`RuntimeCheckpoint` ↔ `agent_runtime_io` via `intergrax.runtime.long_running` / `agent_distribution`) at HEAD `ec773c666…` when collecting `tests/qualification/prod_q/…` (INTERNALERROR before collection). **Not** ordinary freeze debt. **Separate corrective dependency (pre–final R7-Q certification):** break the `RuntimeCheckpoint` import cycle (or defer `pytest_sessionstart` model_rebuild) so qualification and default CI pytest entry collect without `--noconftest`. Do not treat `--noconftest` as proof that the default qualification entry works.
 
+## P1-DEFAULT-PYTEST qualification run (`PROD-Q-R1-R7-Q-P1-DEFAULT-PYTEST-EVIDENCE-RECORD`)
+
+| Field | Value |
+|-------|-------|
+| **run_id** | `20261015-161228-utc` |
+| **EXECUTION_HEAD** | `036912bec45ac627b6c99411c82db72f75df858f` |
+| **Authorized invocations** | Exactly **one** pytest process (zero retry) |
+| **Command** | `uv run pytest -p no:xdist -q tests/qualification/prod_q/test_prod_q_r1_r7_q_p1_strict_production_reachability.py` |
+| **Default `tests/conftest.py`** | **Enabled** (no `--noconftest`) |
+| **Capture self-check** | **PASS** (`STDOUT_CAPTURE_OK` / `STDERR_CAPTURE_OK`) |
+| **UTC start** | `2026-10-15T14:12:28.516Z` |
+| **UTC end** | `2026-10-15T14:12:32.607Z` |
+| **Wall (pytest)** | 4091 ms |
+| **Exit code** | 0 |
+| **Timeout** | None (wait ceiling 300000 ms; `timeout_result` = false) |
+| **Summary** | `23 passed in 0.51s` |
+| **Failed / skipped / xfail** | 0 / 0 / 0 |
+| **Raw evidence** | `.tmp/proof/R7-Q-P1-DEFAULT-PYTEST-20261015-161228-utc/` (`pytest.stdout.log`, `pytest.stderr.log`, `capture-selfcheck.*.log`, `run.meta.json`) |
+| **P1-G01–G06** | **PASS** (bounded static gate on this module only) |
+| **Coverage boundary** | Same as §Static gate coverage — **not** a full dynamic/HTTP production bypass proof; D2/D4 reuse **not** re-run in this invocation |
+
+**Root-cause disposition:** Historical default-`conftest` collection failure documented above @ `ec773c666…` was **not reproduced** at **EXECUTION_HEAD**; **no code repair warranted** for this evidence line.
+
+**FRZ local evidence contributions (global statuses unchanged):** FRZ-PRD-01/03/07/08, FRZ-SEC-04, FRZ-REG-02/03/09 — same bounded static P1 intent as §FRZ contributions; this run adds default-conftest qualification-entry replay only.
+
+**Parent / wave posture (P1 operator closure 2026-10-15):** **P1** = **CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED**; **P2** / **P3** = **CLOSED — scoped**; **E.1** = **CLOSED — scoped**; **PROD-Q-R1-R7-Q** = **IN PROGRESS — NOT QUALIFIED**; **PROD-Q-R1** / **PROD-Q** = **NOT CLOSED**.
+
 ## Reused D2/D4 evidence (not duplicated)
 
 - D2 `test_d2_production_process_lifecycle_module_has_no_fake_adapter_reachability` — `production_process_lifecycle.py` text negative
@@ -163,12 +190,42 @@ uv run pytest -p no:xdist -q --noconftest \
 |----|-------------|
 | IN-SCOPE BLOCKER | None |
 | TRACKED FREEZE DEBT | R7-Q integrated E2E, cross-tenant pack, full conftest pytest path — unchanged |
-| ENVIRONMENT/TEST ISSUE | Root `conftest` circular import blocks default pytest session @ audited SHA |
+| ENVIRONMENT/TEST ISSUE | Prior report @ `ec773c666…` preserved; @ `036912bec45ac627b6c99411c82db72f75df858f` default-conftest P1 module run `20261015-161228-utc` **PASS** — historical failure **not reproduced**; no corrective code required for this line |
 
 ## Recommended R7-Q disposition
 
 - **PROD-Q-R1-R7-Q:** remain **BLOCKED** / not PASS (P1 is one gate only).
 - **Next bounded child:** **PROD-Q-R1-R7-Q-P2** — integrated strict-path qualification (per gate plan §E), including HTTP/runtime evidence where authorized.
+
+## P1 Operator Closure — Scoped Static Reachability
+
+| Field | Value |
+|-------|-------|
+| **Decision** | `PROD-Q-R1-R7-Q-P1-OPERATOR-CLOSURE` |
+| **Date** | `2026-10-15` |
+| **Accepted evidence commit** | `aee2e543e53d9d6070d6d88ac023750ca4981cdd` |
+| **Execution SHA** | `036912bec45ac627b6c99411c82db72f75df858f` |
+| **Run ID** | `20261015-161228-utc` |
+| **Accepted tests** | `23 passed in 0.51s` |
+| **Exit** | `0` |
+| **Default conftest** | Enabled |
+| **Retries** | `0` |
+| **Status** | `CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED` |
+| **Scope** | P1-G01–G06 + bounded negative checks |
+| **Independent audit** | Accepted by operator against exact GitHub evidence commit |
+
+**Known limitations (operator-accepted scope):**
+
+1. AST graph covers the declared closed-world module inventory only.
+2. Does **not** prove all dynamic, reflective, or higher-order execution paths.
+3. Does **not** prove global production bypass count = 0.
+4. Does **not** replace P2/P3 integrated HTTP/ASGI evidence.
+5. Does **not** qualify all R7-Q §C dimensions.
+6. D2/D4 evidence is reused at its own recorded execution SHAs (not re-run for this closure).
+7. The historical default-conftest failure remains a historical finding; it was **not** reproduced in the successful current-HEAD test run recorded above.
+8. **No** independent pytest rerun is claimed as part of this documentation closure record.
+
+**Cursor task posture:** **READY FOR AUDIT** — closure recording requires independent audit on GitHub; operator acceptance does not autonomously certify full R7-Q qualification.
 
 ---
 

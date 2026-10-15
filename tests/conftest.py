@@ -14,12 +14,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:
-    """Resolve forward refs on Task before unit tests construct runtime Task models."""
+    """Resolve Task nested forward refs after RuntimeCheckpoint is fully defined."""
     from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
     from intergrax.runtime.task.task import Task
 
-    _ = RuntimeCheckpoint
-    Task.model_rebuild()
+    Task.model_rebuild(_types_namespace={"RuntimeCheckpoint": RuntimeCheckpoint})
 
 
 if str(ROOT) not in sys.path:

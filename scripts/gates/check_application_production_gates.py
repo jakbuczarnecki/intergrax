@@ -261,6 +261,9 @@ def check_application_package() -> list[str]:
     from intergrax.applications._shared.product_manifest_registry import (
         iter_strict_product_manifests,
     )
+    from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+        manifest_ci_contract_authority,
+    )
 
     violations: list[str] = []
     for product_id, manifest in iter_strict_product_manifests():
@@ -270,7 +273,12 @@ def check_application_package() -> list[str]:
         except Exception as exc:
             violations.append(f"{product_id}: wire failed: {exc}")
             continue
-        package = build_application_package(manifest, gate_env)
+        authority = manifest_ci_contract_authority(manifest)
+        package = build_application_package(
+            manifest,
+            gate_env,
+            contract_authority=authority,
+        )
         violations.extend(
             validate_application_package_closure(
                 package,
@@ -278,6 +286,7 @@ def check_application_package() -> list[str]:
                 gate_env,
                 wiring.registry_snapshot,
                 capability_graph=wiring.capability_graph,
+                contract_authority=authority,
             ),
         )
     return violations
