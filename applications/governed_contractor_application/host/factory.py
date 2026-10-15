@@ -36,6 +36,9 @@ from intergrax.applications._shared.colocated_serving_unit_task_execution import
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
+from intergrax.applications._shared.package_wiring import (
+    resolve_strict_package_contract_authority_for_serving_handoff,
+)
 from intergrax.applications._shared.serving_runtime_handoff import (
     validate_serving_runtime_handoff_against_projection_evidence,
 )
@@ -186,6 +189,21 @@ def create_governed_contractor_backend_app(
             continuation_explicitly_wired=False,
             continuation_disabled=False,
         )
+    package_contract_authority = None
+    if (
+        production_mode
+        and process_composition is not None
+        and process_composition.serving_runtime_handoff is not None
+    ):
+        package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+            manifest=manifest_for_runtime,
+            env=env,
+            handoff=process_composition.serving_runtime_handoff,
+            registry_projection=registry_projection,
+            registry_projection_authority=(
+                process_composition.agent_platform_runtime.registry_projection_authority
+            ),
+        )
     runtime = build_harness_host_runtime(
         manifest_for_runtime,
         env,
@@ -215,6 +233,7 @@ def create_governed_contractor_backend_app(
         ),
         document_store=profile_persistence_kwargs.document_store,
         key_value_cache=profile_persistence_kwargs.key_value_cache,
+        agent_contract_authority=package_contract_authority,
     )
     host_execution = runtime.execution
     if (

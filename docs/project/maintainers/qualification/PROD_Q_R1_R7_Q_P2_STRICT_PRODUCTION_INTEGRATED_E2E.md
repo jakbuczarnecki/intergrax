@@ -218,11 +218,90 @@ Cross-tenant adversarial certification remains **P3**.
 | Gate | Status |
 |------|--------|
 | PROD-Q-R1-R7-Q-P2 | **READY FOR AUDIT** — P2-B executed; **P2-C HTTP EVIDENCE REQUIRED** after R1 fixture fix |
-| PROD-Q-R1-R7-Q-P2-C | **ID-R1 CORRECTION APPLIED** — await independent HTTP re-qualification |
+| PROD-Q-R1-R7-Q-P2-C | **READY FOR AUDIT** — package-closure authority wiring (P2-C-IMPL-01); HTTP suite **EVIDENCE REQUIRED** |
 | PROD-Q-R1-R7-Q | **NOT QUALIFIED** |
 | Blocker class for HTTP gap | **EVIDENCE REQUIRED** (fixture integrity restored; HTTP suite not re-run in R1) |
 
 **Next mandatory roadmap stage:** parent **P3** cross-tenant matrix per gate plan.
+
+---
+
+## P2-C-IMPL-01 — package closure contract authority (@ `7d5b571e` START_HEAD)
+
+### Root cause (confirmed)
+
+`collect_application_dependencies` unconditionally invoked `materialize_manifest_contract_authority_lab_compat`, breaking strict declarative `AgentBinding(contract_id="search")` before HTTP/admission.
+
+### After (dependency graph)
+
+`create_governed_contractor_backend_app` → `resolve_strict_package_contract_authority_for_serving_handoff` (AUTH-01) → `build_harness_host_runtime(agent_contract_authority=…)` → `wire_application_environment` → `assert_manifest_package_closure(contract_authority=…)` → `collect_application_dependencies` → `resolve_roster_agent_contract` + version-pinned AGENT deps.
+
+### Changed files
+
+| Path | Role |
+|------|------|
+| `intergrax/applications/_shared/package_wiring.py` | Injected `ContractAuthority`; removed internal `lab_compat`; AUTH-01 resolver |
+| `intergrax/applications/_shared/environment_wiring.py` | `agent_contract_authority` param |
+| `intergrax/applications/_shared/harness_host_runtime.py` | Thread authority; non-strict lab explicit `lab_compat` at harness only |
+| `applications/governed_contractor_application/host/factory.py` | Strict handoff → roster authority |
+| `scripts/maintenance/check_application_package.py`, `scripts/gates/check_application_production_gates.py`, `registry_ops_wiring.py` | CI explicit `manifest_ci_contract_authority` |
+| `tests/unit/applications/test_prod_q_r1_r7_q_p2_c_package_closure_authority.py` | Targeted regression |
+| `tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_package_closure_regression.py` | Explicit lab authority on mount-negative cases |
+
+### Caller inventory (direct API)
+
+| Caller class | Disposition |
+|--------------|-------------|
+| `wire_application_environment` / `build_harness_host_runtime` | **STRICT_PRODUCTION** when GCA factory passes roster authority; **EXPLICIT_LAB_CI** via harness non-strict `lab_compat` or caller-injected manifest authority |
+| `check_application_package` / production gates | **EXPLICIT_LAB_CI** (`manifest_ci_contract_authority`) |
+| `strict_product_manifest_ci_gates` | **EXPLICIT_LAB_CI** (unchanged ownership) |
+| `capability_graph_wiring.build_environment_seed_capability_graph` | **NOT_AFFECTED** (deferred; separate seed path) |
+| Other product hosts (lab/legal/…) | **NOT_AFFECTED** — harness supplies lab authority when not strict |
+
+### Authority provenance
+
+`RosterAgentContractAuthority` from `RegistryProjectionAuthorityResolver.require_for_revision` + `roster_contract_authority_for`, bound to `ServingRuntimeHandoff` identity and `MaterializedRegistryProjection` evidence (factory).
+
+### Targeted tests (executed)
+
+```text
+uv run pytest -p no:xdist -q \
+  tests/unit/applications/test_prod_q_r1_r7_q_p2_c_package_closure_authority.py \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_package_closure_regression.py \
+  tests/unit/architecture/test_ebh_2e_ar1_a_r1_r1_install_authority_closure.py::test_strict_shared_modules_do_not_reference_lab_compat_helper
+```
+
+**Result:** 13 passed (~2.1 s). Log: `.tmp/session/prod-q-r1-r7-q-p2-c-final/pytest-rerun.log`
+
+### Deferred
+
+`test_prod_q_r1_r7_q_p2_c_http_execution_admission.py` — **EVIDENCE REQUIRED** (not run in IMPL-01).
+
+### Enterprise audit matrix (IMPL-01)
+
+| Criterion | Verdict |
+|-----------|---------|
+| Layer boundaries | **PASS** |
+| Semantic / composition ownership | **PASS** (GCA factory + existing resolver) |
+| Contracts over implementations | **PASS** |
+| Strong typing (`ContractAuthority`) | **PASS** |
+| Revision/tenant/digest continuity | **PASS** (AUTH-01 helper) |
+| No duplicate contract resolution in package_wiring | **PASS** |
+| No production `lab_compat` in package_wiring / GCA factory | **PASS** |
+| Governance ≠ Execution | **PASS** (unchanged) |
+| Package closure preserved | **PASS** |
+| Fail-closed missing authority (strict) | **PASS** |
+| HTTP integrated qualification | **NOT PROVEN** (deferred) |
+
+### FRZ (IMPL-01 evidence)
+
+| FRZ | Verdict |
+|-----|---------|
+| FRZ-PRD-08 | **NOT PROVEN** (HTTP deferred) |
+| FRZ-PRD-09 | **PASS** (handoff ↔ projection checks) |
+| FRZ-CTR-01 | **PASS** (single resolution API) |
+| FRZ-REG-02/03 | **PASS** (revision-bound roster authority) |
+| FRZ-SEC-04 | **NOT PROVEN** at HTTP layer |
 
 ---
 

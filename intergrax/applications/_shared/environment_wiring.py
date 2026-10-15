@@ -112,6 +112,7 @@ from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import ContractAuthority
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications._shared.security_assembly_resolver import (
     SecurityAssemblyError,
@@ -255,6 +256,7 @@ def wire_application_environment(
         PlatformPluginPackageQualificationBundle | None
     ) = None,
     llm_adapter: LLMAdapter | None = None,
+    agent_contract_authority: ContractAuthority | None = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -556,6 +558,7 @@ def wire_application_environment(
             env,
             registry_snapshot,
             capability_graph=capability_graph,
+            contract_authority=agent_contract_authority,
         )
         assert_application_owned_tool_conformance(
             manifest,

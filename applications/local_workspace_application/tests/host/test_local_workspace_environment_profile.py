@@ -21,6 +21,9 @@ from intergrax.applications._shared.package_wiring import (
     build_application_package,
     validate_application_package_closure,
 )
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    manifest_ci_contract_authority,
+)
 from intergrax.applications._shared.skill_wiring import build_application_skill_wiring
 from intergrax.runtime.nexus.orchestration_capabilities import (
     is_orchestration_capability,
@@ -224,13 +227,15 @@ def test_lkw_package_closure_accepts_pipeline_graph_trigger() -> None:
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     env = manifest.resolved_environment()
     wiring = wire_application_environment(manifest, env, conformance_check=False)
-    package = build_application_package(manifest, env)
+    authority = manifest_ci_contract_authority(manifest)
+    package = build_application_package(manifest, env, contract_authority=authority)
     violations = validate_application_package_closure(
         package,
         manifest,
         env,
         wiring.registry_snapshot,
         capability_graph=wiring.capability_graph,
+        contract_authority=authority,
     )
     roster_violations = [
         v for v in violations if "not found on manifest roster" in v or "graph trigger capability" in v

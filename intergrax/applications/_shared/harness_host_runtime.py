@@ -318,6 +318,7 @@ def build_harness_host_runtime(
     strict_orchestration_topology_submission_port_builder: (
         StrictOrchestrationTopologySubmissionPortBuilder | None
     ) = None,
+    agent_contract_authority: Any | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -363,6 +364,16 @@ def build_harness_host_runtime(
         store=profile_persistence.revision_store,
     )
 
+    resolved_agent_contract_authority = agent_contract_authority
+    if resolved_agent_contract_authority is None and not production_mode:
+        from intergrax.applications._shared.roster_agent_contract_authority import (
+            materialize_manifest_contract_authority_lab_compat,
+        )
+
+        resolved_agent_contract_authority = materialize_manifest_contract_authority_lab_compat(
+            resolved_manifest,
+        )
+
     env_wiring = wire_application_environment(
         resolved_manifest,
         effective_environment,
@@ -374,6 +385,7 @@ def build_harness_host_runtime(
         llm_adapter=llm_adapter,
         application_tool_registry=application_tool_registry,
         application_skill_registry=application_skill_registry,
+        agent_contract_authority=resolved_agent_contract_authority,
     )
     from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
         PinningStoreExecutionEffectiveProfileProvenanceReader,

@@ -18,6 +18,9 @@ from intergrax.applications._shared.package_wiring import (
     build_application_package,
     validate_application_package_closure,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    materialize_manifest_contract_authority_lab_compat,
+)
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
@@ -49,7 +52,8 @@ def test_mount_echo_search_surfaces_agent_roster_package_violation() -> None:
         agents=[AgentBinding.mount(EchoAgent, contract_id="search")],
     )
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
-    package = build_application_package(manifest, env)
+    authority = materialize_manifest_contract_authority_lab_compat(manifest)
+    package = build_application_package(manifest, env, contract_authority=authority)
     agent_refs = {
         dep.ref
         for dep in package.dependencies
@@ -61,6 +65,7 @@ def test_mount_echo_search_surfaces_agent_roster_package_violation() -> None:
         manifest,
         env,
         _empty_snapshot(),
+        contract_authority=authority,
     )
     assert any(
         violation.startswith("package agent dependency ")
@@ -132,11 +137,13 @@ def test_mount_echo_search_still_fails_package_closure_without_filtering() -> No
         agents=[AgentBinding.mount(EchoAgent, contract_id="search")],
     )
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
-    package = build_application_package(manifest, env)
+    authority = materialize_manifest_contract_authority_lab_compat(manifest)
+    package = build_application_package(manifest, env, contract_authority=authority)
     violations = validate_application_package_closure(
         package,
         manifest,
         env,
         _empty_snapshot(),
+        contract_authority=authority,
     )
     assert any(v.startswith("package agent dependency ") for v in violations)

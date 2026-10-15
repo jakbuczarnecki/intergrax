@@ -24,6 +24,20 @@ from intergrax.applications.contracts.application_package import (
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ContractAuthority,
+    RosterAgentContractAuthority,
+    StrictAgentContractAuthorityError,
+    resolve_roster_agent_contract,
+)
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.registry_projection_authority_resolver import (
+    RegistryProjectionAuthorityResolver,
+)
+from intergrax.applications._shared.serving_runtime_handoff import (
+    ServingRuntimeHandoff,
+    validate_serving_runtime_handoff_against_projection_evidence,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.architecture.capability_graph_applications import application_capability_node_id
 from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
@@ -47,31 +61,57 @@ def package_id_for_app(app_id: str) -> str:
     return f"com.intergrax.{app_id}"
 
 
+def resolve_strict_package_contract_authority_for_serving_handoff(
+    *,
+    manifest: ApplicationManifest,
+    env: ApplicationEnvironmentProfile,
+    handoff: ServingRuntimeHandoff,
+    registry_projection: MaterializedRegistryProjection,
+    registry_projection_authority: RegistryProjectionAuthorityResolver,
+) -> RosterAgentContractAuthority:
+    """Bind package closure to the same revision identity as serving handoff (AUTH-01)."""
+    identity = handoff.identity
+    if manifest.app_id != identity.application_id:
+        raise StrictAgentContractAuthorityError(
+            "manifest application_id disagrees with serving handoff identity",
+        )
+    if env.profile_id != identity.application_environment_id:
+        raise StrictAgentContractAuthorityError(
+            "environment profile_id disagrees with serving handoff identity",
+        )
+    validate_serving_runtime_handoff_against_projection_evidence(
+        handoff,
+        runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+        materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+    )
+    resolved = registry_projection_authority.require_for_revision(
+        application_id=identity.application_id,
+        application_environment_id=identity.application_environment_id,
+        runtime_revision_id=identity.runtime_revision_id,
+    )
+    return registry_projection_authority.roster_contract_authority_for(
+        resolved=resolved,
+        manifest=manifest,
+    )
+
+
 def collect_application_dependencies(
     manifest: ApplicationManifest,
     env: ApplicationEnvironmentProfile,
+    *,
+    contract_authority: ContractAuthority | None = None,
 ) -> list[ApplicationDependency]:
     """Collect direct dependencies from manifest and resolved environment."""
     dependencies: list[ApplicationDependency] = []
-    from intergrax.applications._shared.roster_agent_contract_authority import (
-        materialize_manifest_contract_authority_lab_compat,
-        resolve_roster_agent_contract,
-    )
-
-    manifest_contract_authority = materialize_manifest_contract_authority_lab_compat(manifest)
 
     for binding in manifest.enabled_agents():
-        if binding.contract_id and binding.agent_type is None and binding.import_path is None:
-            contract_ref = binding.contract_id
-            version_constraint = "*"
-        else:
-            contract = resolve_roster_agent_contract(
-                binding,
-                contract_authority=manifest_contract_authority,
-                allow_compatibility_resolver=False,
-            )
-            contract_ref = contract.id
-            version_constraint = f"={contract.version}"
+        contract = resolve_roster_agent_contract(
+            binding,
+            contract_authority=contract_authority,
+            allow_compatibility_resolver=False,
+        )
+        contract_ref = contract.id
+        version_constraint = f"={contract.version}"
         dependencies.append(
             ApplicationDependency(
                 kind=ApplicationDependencyKind.AGENT,
@@ -147,9 +187,14 @@ def build_application_package(
     *,
     channel: ApplicationDistributionChannel = ApplicationDistributionChannel.GIT,
     artifact_uri: str | None = None,
+    contract_authority: ContractAuthority | None = None,
 ) -> ApplicationPackage:
     """Materialize an ApplicationPackage from a live manifest and environment."""
-    dependencies = collect_application_dependencies(manifest, env)
+    dependencies = collect_application_dependencies(
+        manifest,
+        env,
+        contract_authority=contract_authority,
+    )
     package = ApplicationPackage(
         package_id=package_id_for_app(manifest.app_id),
         app_id=manifest.app_id,
@@ -191,6 +236,7 @@ def validate_application_package_closure(
     snapshot: HarnessRegistrySnapshot,
     *,
     capability_graph: EnvironmentCapabilityGraphView | None = None,
+    contract_authority: ContractAuthority | None = None,
 ) -> list[str]:
     """Verify package dependencies against wired harness catalogs."""
     violations: list[str] = []
@@ -204,7 +250,11 @@ def validate_application_package_closure(
             f"package version {package.version!r} does not match manifest {manifest.version!r}",
         )
 
-    expected = collect_application_dependencies(manifest, env)
+    expected = collect_application_dependencies(
+        manifest,
+        env,
+        contract_authority=contract_authority,
+    )
     if _dependency_keys(package.dependencies) != _dependency_keys(expected):
         violations.append("package.dependencies drift from manifest/environment materialization")
 
@@ -259,15 +309,21 @@ def assert_manifest_package_closure(
     snapshot: HarnessRegistrySnapshot,
     *,
     capability_graph: EnvironmentCapabilityGraphView | None = None,
+    contract_authority: ContractAuthority | None = None,
 ) -> None:
     """Build and validate package closure during environment wiring."""
-    package = build_application_package(manifest, env)
+    package = build_application_package(
+        manifest,
+        env,
+        contract_authority=contract_authority,
+    )
     violations = validate_application_package_closure(
         package,
         manifest,
         env,
         snapshot,
         capability_graph=capability_graph,
+        contract_authority=contract_authority,
     )
     if violations:
         raise ApplicationPackageClosureError(violations)
@@ -279,6 +335,7 @@ def build_scaffold_application_package(
     version: str,
     manifest: ApplicationManifest,
     env: ApplicationEnvironmentProfile,
+    contract_authority: ContractAuthority | None = None,
 ) -> ApplicationPackage:
     """Build a local-channel package for scaffolded applications."""
     return build_application_package(
@@ -286,6 +343,7 @@ def build_scaffold_application_package(
         env,
         channel=ApplicationDistributionChannel.LOCAL,
         artifact_uri=None,
+        contract_authority=contract_authority,
     )
 
 
