@@ -267,11 +267,6 @@ def create_governed_contractor_backend_app(
         ),
     )
     host_execution = runtime.execution
-    if strict_serving_tenant_binding is not None:
-        host_execution = StrictProductionServingTenantAuthorityTaskExecutionPort(
-            host_execution,
-            binding=strict_serving_tenant_binding,
-        )
     if (
         process_composition is not None
         and process_composition.serving_runtime_handoff is not None
@@ -279,6 +274,11 @@ def create_governed_contractor_backend_app(
         host_execution = ColocatedServingUnitAdmissionTaskExecutionPort(
             host_execution,
             process_composition.serving_runtime_handoff,
+        )
+    if strict_serving_tenant_binding is not None:
+        host_execution = StrictProductionServingTenantAuthorityTaskExecutionPort(
+            host_execution,
+            binding=strict_serving_tenant_binding,
         )
     registry = runtime.registry
     platform = bootstrap_harness_host_platform(runtime)

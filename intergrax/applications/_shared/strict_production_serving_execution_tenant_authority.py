@@ -1,7 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Strict production serving HTTP execution tenant authority (PROD-Q-R1-R7-Q-P3-A1)."""
+"""Strict production serving HTTP execution tenant authority (PROD-Q-R1-R7-Q-P3-A1).
+
+Semantic ownership: ``assert_task_tenant_matches_strict_production_serving_authority`` is the
+single tenant-authorization decision for HTTP/task execution. It is enforced at
+``StrictProductionServingTenantAuthorityTaskExecutionPort`` before colocated physical admission.
+``admit_strict_production_serving_root_governance_identity`` maps an already-authorized binding
+and trusted ``ProductionControlPlaneGovernance.principal`` to admitted root identity only.
+"""
 
 from __future__ import annotations
 
@@ -77,8 +84,11 @@ def admit_strict_production_serving_root_governance_identity(
     binding: StrictProductionServingExecutionTenantBinding,
     principal: RequestIdentity,
 ) -> AdmittedRootGovernanceIdentity:
-    """Map trusted serving authority to admitted root governance identity (not harness/lab)."""
-    assert_task_tenant_matches_strict_production_serving_authority(task, binding=binding)
+    """Map trusted serving authority to admitted root governance identity (not harness/lab).
+
+    Caller must have enforced task tenant via ``StrictProductionServingTenantAuthorityTaskExecutionPort``
+    (or an equivalent call to ``assert_task_tenant_matches_strict_production_serving_authority``).
+    """
     trusted_principal = (principal.user_id or principal.auth_subject or "").strip()
     if not trusted_principal:
         raise ValueError("strict production serving requires governance principal identity")

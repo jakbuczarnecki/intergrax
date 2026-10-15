@@ -6,8 +6,8 @@
 | **Child** | **PROD-Q-R1-R7-Q-P3-A** |
 | **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** |
 | **Branch** | `development` |
-| **START_HEAD** | `16fe72228313d80cb9aaee1042338b63ecdeb7c3` |
-| **Execution SHA** | `ff04086a7b42cf59b1dba0d8776bd911f494ccfa` |
+| **START_HEAD** | `03ea2ea9a9e793f9d311d499773b73db14a8b924` |
+| **Execution SHA** | *(set at P3-A1-R1 commit — independent audit on GitHub)* |
 
 ## Preflight
 
@@ -36,7 +36,7 @@
 | `StoreBackedColocatedServingUnitExecutionAdmission` | `colocated_serving_unit_execution_admission.py` |
 | `create_governed_contractor_strict_production_asgi_app` | `applications/governed_contractor_application/host/strict_production_serving.py` |
 | HTTP `/run` | `governed_contractor_application/serving/fastapi_router.py` |
-| Execution governance admission (HTTP) | `admit_strict_production_serving_root_governance_identity` — `strict_production_serving_execution_tenant_authority.py`; gate `StrictProductionServingTenantAuthorityTaskExecutionPort` **before** colocated `admit_execution` |
+| Execution governance admission (HTTP) | Canonical tenant gate: `StrictProductionServingTenantAuthorityTaskExecutionPort` → `assert_task_tenant_matches_strict_production_serving_authority` **before** colocated `admit_execution`; admitted identity: `admit_strict_production_serving_root_governance_identity` (trusted `RequestIdentity` principal only) |
 | Host composition tenant for topology | `factory.py` → `manifest.app_id` via `build_harness_host_runtime` |
 
 **Authoritative tenant (activation):** principal `RequestIdentity.tenant_id` vs `ApplicationEnvironmentTenantResolver.resolve_tenant_id` at `authorize_scoped_control_plane_mutation` / `TenantScopedControlPlaneMutationEvaluator`.
@@ -58,7 +58,7 @@
 - Legitimate strict session under governance B (`p3a-tenant-b`)
 - HTTP POST `/run` with `tenant_id=p3a-tenant-a` vs positive control `tenant_id=env-prod` (`application_environment_id`)
 - **Post P3-A1:** wrong-tenant rejected at `StrictProductionServingTenantAuthorityTaskExecutionPort` before colocated admission; inner delegate not called
-- **Rejection boundary:** `assert_task_tenant_matches_strict_production_serving_authority` + strict admitted identity mapper
+- **Rejection boundary:** `StrictProductionServingTenantAuthorityTaskExecutionPort` / `assert_task_tenant_matches_strict_production_serving_authority`
 
 ## Test command and results
 
@@ -109,6 +109,8 @@ No monkeypatch of tenant validator or Governance under test.
 
 ## Open blockers and next child
 
-**P3-A1 corrective (bounded):** `strict_production_serving_execution_tenant_authority.py` + host wiring + tenant gate port; governance injected from `StrictProductionServingSession.lifecycle.governance`.
+**P3-A1-R1 corrective (bounded):** strong typing on harness strict-serving params; single semantic tenant owner at tenant gate port; composition order tenant gate **outer** → colocated admission **inner**; HTTP caller auth remains infrastructure/API-key optional (not wired on `/run`).
+
+**P3-A1 corrective (prior):** `strict_production_serving_execution_tenant_authority.py` + host wiring + tenant gate port; governance injected from `StrictProductionServingSession.lifecycle.governance`.
 
 **P3-A overall:** **READY FOR AUDIT** — P3-T-01/T-02 green @ P3-A1 commit; extended T-03..T-08 matrix partially covered (unit + P2-C); full adversarial matrix remains parent **P3** scope.

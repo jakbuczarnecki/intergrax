@@ -14,6 +14,11 @@ if TYPE_CHECKING:
     )
     from intergrax.harness.application_host import ApplicationHost
 
+from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
+    StrictProductionServingExecutionTenantBinding,
+)
+from intergrax.contracts.agent_run import RequestIdentity
+
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.applications._shared.acp_checkpoint_host_wiring import (
@@ -322,8 +327,10 @@ def build_harness_host_runtime(
         StrictOrchestrationTopologySubmissionPortBuilder | None
     ) = None,
     agent_contract_authority: ContractAuthority | None = None,
-    strict_production_serving_execution_tenant_binding: Any | None = None,
-    strict_production_serving_governance_principal: Any | None = None,
+    strict_production_serving_execution_tenant_binding: (
+        StrictProductionServingExecutionTenantBinding | None
+    ) = None,
+    strict_production_serving_governance_principal: RequestIdentity | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.

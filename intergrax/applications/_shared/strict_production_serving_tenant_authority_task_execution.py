@@ -15,7 +15,7 @@ from intergrax.runtime.task.task import Task, TaskResult
 
 
 class StrictProductionServingTenantAuthorityTaskExecutionPort:
-    """Reject unauthorized task tenants before colocated serving-unit admission."""
+    """Canonical strict HTTP/task tenant gate — runs before colocated ``admit_execution``."""
 
     def __init__(
         self,
