@@ -155,6 +155,15 @@ After independent GitHub audit @ `9e46aecc`:
 
 **Recommended P3 status:** **BLOCKED** (unchanged) until ADR ratification + remaining parent gates.
 
+## 12. Append-only operator ratification ledger row (2026-10-15)
+
+| Field | Value |
+|-------|-------|
+| **Event** | Operator **ACCEPT** Alternative A (API-key strict ingress profile) |
+| **ADR status after** | **ACCEPTED — OPERATOR RATIFIED** — ADR [§16](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md#16-operator-ratification-decision-record-2026-10-15) |
+| **Task** | `PROD-Q-R1-R7-Q-P3-ADR-RATIFICATION-AND-FINAL-ACCEPTANCE-PREP` |
+| **G-01** | Architecture policy **satisfied** — independent verification of decision-record commit on GitHub still required |
+
 ## Audit note
 
 Independent auditors must verify behavior on the **implementation commit** on GitHub; this document is not sufficient for closure.

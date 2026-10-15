@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **PROPOSED — READY FOR AUDIT** (architecture proposal; **P3-A2-R1 implementation** tracked in [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md) — **not** ratified to ACCEPTED) |
+| **Status** | **ACCEPTED — OPERATOR RATIFIED** (Alternative A, qualified strict **API-key** HTTP ingress profile only — see [§16](#16-operator-ratification-decision-record-2026-10-15)) |
 | **Revision** | **R0** |
 | **Decision date** | 2026-10-15 |
 | **Branch** | `development` |
@@ -286,14 +286,14 @@ Replay: existing `test_prod_q_r1_r7_q_p3_a_cross_tenant_strict.py` + `test_prod_
 | Claim | Status |
 |-------|--------|
 | P3-A1 session-bound tenant validation | **PASS** (scoped, audited) — [`PROD_Q_R1_R7_Q_P3_A_CROSS_TENANT_STRICT_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A_CROSS_TENANT_STRICT_QUALIFICATION_EVIDENCE.md) |
-| HTTP caller authentication (strict API-key ingress profile) | **QUALIFIED @ implementation** — **not ADR-ACCEPTED** — see [§15](#15-implementation-reconciliation-ratification-readiness-2026-10-15--head-9e46aecc) + [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md) |
-| Caller-to-execution-tenant authorization | **QUALIFIED @ implementation** (same profile) — **not ADR-ACCEPTED** |
-| P3-A / P3 security closure | **BLOCKED** — F-03 closes only after **operator ADR ratification** + remaining **P3** parent gates ([`PROD_Q_R1_R7_Q_P3_FINAL_ADVERSARIAL_ACCEPTANCE_MATRIX.md`](PROD_Q_R1_R7_Q_P3_FINAL_ADVERSARIAL_ACCEPTANCE_MATRIX.md) **G-01**) |
+| HTTP caller authentication (strict API-key ingress profile) | **QUALIFIED @ implementation** + **ADR ACCEPTED** (profile-scoped) — [§16](#16-operator-ratification-decision-record-2026-10-15) · [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md) |
+| Caller-to-execution-tenant authorization | **QUALIFIED @ implementation** + **ADR ACCEPTED** (same profile) |
+| P3-A / P3 security closure | **NOT CLOSED** — ADR ratification satisfies **G-01** architecture policy only; remaining **P3** parent gates per [`PROD_Q_R1_R7_Q_P3_FINAL_ADVERSARIAL_ACCEPTANCE_MATRIX.md`](PROD_Q_R1_R7_Q_P3_FINAL_ADVERSARIAL_ACCEPTANCE_MATRIX.md) |
 | Global FRZ-SEC-01 / FRZ-SEC-04 | **OPEN** (local P3-A2 contributions only) |
 
 **Historical §14 rows** (“NOT PROVEN”, child **P3-A2-R1**) described the **pre-implementation** inventory @ `0e84b376…`. **P3-A2-R1** (`495b001d2`) and **P3-A2-R2** (`88da0c903`) are merged on **`development`** @ `9e46aecc8a03ae50ab5a8046950952e48418ca23`.
 
-**Next mandatory stage (operator):** independent GitHub audit + **ACCEPT / REJECT** decision on this ADR for Alternative A (API-key strict profile). Ratification-readiness package: [`PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md). **Do not** set status to **ACCEPTED** in documentation without explicit operator ratification.
+**Ratification:** Operator decision recorded in [§16](#16-operator-ratification-decision-record-2026-10-15) @ `2026-10-15`. Prior readiness package: [`PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md).
 
 ---
 
@@ -380,14 +380,79 @@ Implementation SHAs: **R1** `495b001d2`, **R2** `88da0c903`; continuity anchor q
 - **Observability dashboard:** optional strict deployment surface — tenant/auth threat model **NOT PROVEN** here.
 - **Global FRZ** rows remain **OPEN**; P3-A2 supplies **local** contributions only.
 
-### 15.10 Operator acceptance decision required
+### 15.10 Operator acceptance decision (superseded by §16)
 
-Independent auditor must verify code @ GitHub **`9e46aecc`** (or later merge containing R1+R2). Maintainer/operator then either:
+Historical readiness gate @ `9e46aecc`. **Operator ratification** applied **2026-10-15** — see [§16](#16-operator-ratification-decision-record-2026-10-15). Independent GitHub audit of implementation SHAs remains mandatory before **P3** wave closure.
 
-- **ACCEPT** Alternative A for production strict API-key ingress (update ADR status + decision date), or
-- **REJECT** with precise blocker reference.
+---
 
-**Cursor / agent reports do not constitute ratification.**
+## 16. Operator ratification decision record (2026-10-15)
+
+| Field | Value |
+|-------|-------|
+| **Decision** | **Alternative A — ACCEPTED** |
+| **Decision date** | **2026-10-15** |
+| **Ratification task** | `PROD-Q-R1-R7-Q-P3-ADR-RATIFICATION-AND-FINAL-ACCEPTANCE-PREP` |
+| **Architecture inventory SHA (preserved)** | `0e84b37649eadb2d188cd5b9bde984e81868e064` |
+| **Implementation evidence** | **P3-A2-R1** `495b001d258503bf5d41b9859750c86e006a3de9` · **P3-A2-R2** `88da0c903018ceb6d6a90ed80806fb1c39ac0965` |
+| **Readiness reconciliation** | [`PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md) @ `9e46aecc8a03ae50ab5a8046950952e48418ca23` |
+| **Qualification body** | [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md) |
+
+### 16.1 Accepted architecture (qualified strict production HTTP API-key ingress only)
+
+- Platform-defined **`AuthProvider`** contract (`intergrax.fastapi_core`) — **structurally extensible**; this ratification **does not** qualify JWT/OIDC or other provider profiles.
+- Existing **`ApiKeyAuthProvider`** for the **qualified strict production ingress** profile (non-empty `api_keys_map` enforced by `validate_strict_production_serving_http_ingress_composition`).
+- Mandatory HTTP authentication through **`require_auth`** on strict GCA execution-bearing routes.
+- **`identity_source=context_only`** — no HTTP-body authority upgrade.
+- **Caller-to-serving-tenant authorization** via `authorize_strict_production_serving_http_caller` against authoritative **`StrictProductionServingExecutionTenantBinding`** (strict session).
+- Per-request authenticated **`RequestIdentity`** via `request_identity_from_strict_production_http_auth` and **`bind_strict_serving_http_caller_principal`** (request-scoped ContextVar).
+- Existing **root governance identity admission** — `admit_strict_production_serving_root_governance_identity` with **caller-derived** principal (P3-A2-R2).
+- Existing **P3-A1** tenant execution gate (`StrictProductionServingTenantAuthorityTaskExecutionPort`) and **colocated execution admission** (`ColocatedServingUnitAdmissionTaskExecutionPort`).
+- **Fail-closed** rejection of unsupported alternate strict HTTP execution ingress (task-control / interaction / MCP HTTP surfaces disabled at strict factory composition).
+
+**Canonical graph @ ratification:**
+
+```text
+HTTP caller
+    → AuthProvider / ApiKeyAuthProvider
+    → RequestContextMiddleware / AuthContext
+    → require_auth
+    → authorize_strict_production_serving_http_caller
+    → RequestIdentity
+    → bind_strict_serving_http_caller_principal
+    → context_only task identity
+    → StrictProductionServingTenantAuthorityTaskExecutionPort
+    → ColocatedServingUnitAdmissionTaskExecutionPort
+    → root governance identity admission
+    → HostTaskExecutionPort
+```
+
+### 16.2 Explicit exclusions (operator-bound — not implied by ACCEPTED)
+
+| Exclusion | Disposition |
+|-----------|-------------|
+| JWT/OIDC strict production qualification | **Out of scope** — separate profile + qualification child |
+| Delegated / on-behalf-of authorization (**AUTH-09**) | **Unsupported / N/A** |
+| Unverified gateway-propagated identity (raw headers without `AuthProvider`) | **Unsupported** |
+| Dedicated HTTP stale-URL E2E under **AUTH-08** | **PARTIAL** — D3/D4 session/handoff only |
+| Async ASGI concurrency / ContextVar isolation at integrated event-loop depth (**G-08**) | **NOT PROVEN** |
+| Optional observability dashboard authentication in strict deployments | **NOT PROVEN** in P3-A2 package |
+| Global **FRZ-*** acceptance | **OPEN** — local P3 contributions only |
+| **PROD-Q-R1-R7-Q-P3** parent closure | **NOT CLOSED** by this ADR |
+| Automatic **P3** security wave closure | **Not granted** — operator P3 acceptance is separate |
+
+### 16.3 AUTH-08 / AUTH-09 disposition @ ratification
+
+| ID | Status |
+|----|--------|
+| **AUTH-08** | **PARTIAL** — stale env/revision/session enforced at session open, handoff, reconcile (D3/D4); **not** re-proven as dedicated HTTP negative in P3-A2 |
+| **AUTH-09** | **Unsupported / N/A** — no delegation semantics in qualified strict HTTP profile |
+
+### 16.4 Scope of “ACCEPTED”
+
+This record accepts **architecture and the documented API-key strict ingress profile** for production GCA strict serving sessions. It is **not** a global security qualification certificate, **not** JWT/OIDC approval, **not** gateway-trust approval, and **not** permission for Cursor or maintainers to mark **P3 CLOSED** without independent audit of the ratification commit on GitHub and operator **P3 wave acceptance**.
+
+**This §16 records operator input supplied to the ratification task; it does not replace independent GitHub audit.**
 
 ---
 

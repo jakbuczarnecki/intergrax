@@ -6,10 +6,12 @@
 | **Child** | **PROD-Q-R1-R7-Q-P3-FINAL** |
 | **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** |
 | **Branch** | `development` |
-| **START_HEAD** | `c922f2ae0a9eb4f0689ccba118ee77a77553cabc` |
-| **FINAL_COMMIT** | `5ec25b06fda7a902b382069696834417fc4659d5` |
-| **Test execution (this stage)** | **0** pytest (mandatory policy §7) |
+| **START_HEAD** | `08580d4c3983821104b8722fe61904b1b984eaf1` |
+| **FINAL_COMMIT** | *(set by ratification commit on `development`)* |
+| **Test execution (this stage)** | **0** pytest (ADR ratification + reconciliation only) |
 | **Production delta** | **0** |
+| **IG execution baseline** | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` — [`PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md) |
+| **P3-A2 ADR** | **ACCEPTED — OPERATOR RATIFIED** @ 2026-10-15 — [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md) §16 |
 
 **Canonical authorities:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) · [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) · [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) · [`PROD_Q_R1_R7_Q_P3_P0_ADVERSARIAL_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_P3_P0_ADVERSARIAL_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md)
 
@@ -41,7 +43,8 @@
 |-------|----------|-----------------------------------|--------|
 | **P3-P0** | `PROD_Q_R1_R7_Q_P3_P0_…` | Inventory baseline `b020a775…` | Gate plan only |
 | **P3-A** | `PROD_Q_R1_R7_Q_P3_A_…` | Qual execution `e24aa42a26120c02e706d9940fb95278bdee8ec8` | Integrated qual module 4/4 |
-| **P3-A2 ADR** | `PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md` | Inventory `0e84b37649eadb2d188cd5b9bde984e81868e064` | **PROPOSED** |
+| **P3-A2 ADR** | `PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md` | Inventory `0e84b37649eadb2d188cd5b9bde984e81868e064`; impl R1/R2 SHAs | **ACCEPTED — OPERATOR RATIFIED** (2026-10-15) |
+| **P3-IG** | `PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md` | Execution `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` | IG-E01 + IG-F01 **PASS** (2 pytest, prior task) |
 | **P3-A2 evidence** | `PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md` | R1 historical + R2 remediation (see child doc) | AUTH-08 **PARTIAL** |
 | **P3-B** | `PROD_Q_R1_R7_Q_P3_B_…` | Source `88da0c903018ceb6d6a90ed80806fb1c39ac0965`; 4 pytest nodes replayed | Integrated strict DENY/ASGI **deferred** |
 | **P3-C** | `PROD_Q_R1_R7_Q_P3_C_…` | `11cf7df00cbf7a76c5701d28171f5770a7e8096b` + D4 stale replay | HTTP path **not exercised** |
@@ -68,13 +71,13 @@ Legend:
 | ID | Canonical invariant | SO / trust boundary | Accepted historical evidence | Evidence SHA (primary) | Continuity @ START_HEAD | Scoped PASS | Integrated claim | NOT PROVEN / remaining | Operator decision | FRZ (contribution) | Blocks P3 closure? |
 |----|---------------------|----------------------|------------------------------|-------------------------|-------------------------|-------------|------------------|------------------------|-------------------|-------------------|-------------------|
 | **P3-T-01** | Cross-tenant control-plane activation cannot commit READY / handoff for foreign tenant | **Governance** + `ApplicationEnvironmentTenantResolver` @ `authorize_scoped_control_plane_mutation`; **Apps** launcher | D2 wrong-tenant; D4 deny; **P3-A** qual `test_p3t01_*` | `e24aa42a…` (P3-A) + D2/D4 baselines | P3-A2 docs-only delta | **PASS** (integrated qual) | Cross-tenant **activate** blocked before handoff | Split admission-ALLOW / activation-DENY policies | Only if operator requires split-policy negatives | **FRZ-SEC-01**, **FRZ-TEN-*** (scoped) | **No** (scoped sufficient pending audit) |
-| **P3-T-02** | HTTP tenant isolation + caller cannot execute under foreign serving binding | **Apps** `StrictProductionServingTenantAuthorityTaskExecutionPort`; **P3-A2** caller bind + `authorize_strict_production_serving_http_caller` | P3-A `test_p3t02_*`; P3-A2 AUTH-01–07,10; P2-C replay | `e24aa42a…` + P3-A2 R1/R2 | Implemented @ HEAD per A2 evidence | **PASS** (tenant + API-key profile) | Full **AUTH-08** HTTP stale-session negative | **G-01** ADR **PROPOSED**; **G-08** async ASGI concurrency vs thread ContextVar unit test | **Ratify ADR** (maintainer/operator ADR authority); optional ASGI concurrency hardening | **FRZ-SEC-01/04**, **FRZ-PRD-08** | **Yes** — unaccepted **mandatory security policy** (ADR) |
-| **P3-T-03** | Governance **DENY** → no prepare, READY, handoff, traffic-ready ASGI | **Governance** boundary → **AD** `run_deploy_and_activate` order | D2/D4 deny; pipeline static order | `88da0c90…` (P3-B replay) | No delta on deny wiring | **PASS** (slice) | Single strict session: DENY → no ASGI factory | Integrated DENY + ASGI roster; split-policy negative | **A vs C:** accept slice + D4 or schedule **IG-B01** (§6) | **FRZ-PRD-08**, **FRZ-SEC-04** | **Conditional** — **D** if operator accepts slice; else **C** |
+| **P3-T-02** | HTTP tenant isolation + caller cannot execute under foreign serving binding | **Apps** `StrictProductionServingTenantAuthorityTaskExecutionPort`; **P3-A2** caller bind + `authorize_strict_production_serving_http_caller` | P3-A `test_p3t02_*`; P3-A2 `test_p3a2_t01`–`t07`, `t10`; P2-C replay; R2 `test_strict_governance_admits_bound_http_caller_*` | `e24aa42a26120c02e706d9940fb95278bdee8ec8` + R1 `495b001d258503bf5d41b9859750c86e006a3de9` + R2 `88da0c903018ceb6d6a90ed80806fb1c39ac0965` | Continuity @ START_HEAD | **PASS** (scoped API-key strict profile) | Integrated qual + ADR **ACCEPTED** @ 2026-10-15 | **AUTH-08** HTTP-only stale URL **PARTIAL**; **G-08** async ASGI ContextVar **NOT PROVEN** (thread unit only) | ADR ratified — optional **IG-A01** / AUTH-08 HTTP hardening | **FRZ-SEC-01/04**, **FRZ-PRD-08** | **No** (policy accepted; audit of ratification commit pending) |
+| **P3-T-03** | Governance **DENY** → no prepare, READY, handoff, traffic-ready ASGI | **Governance** boundary → **AD** `run_deploy_and_activate` order | D2/D4 deny; P3-B 4-node replay | `88da0c903018ceb6d6a90ed80806fb1c39ac0965` | Static deny order @ HEAD | **PASS** (slice) | Single strict session: DENY → no ASGI factory | Integrated DENY + ASGI roster **optional** (**IG-B01**) | **Already determined:** slice + D4 sufficient under P3 matrix **G-03** class **A** unless operator elevates | **FRZ-PRD-08**, **FRZ-SEC-04** | **No** (class **A** default) |
 | **P3-T-04** | CAS / stale activation → loser cannot READY / handoff | **AD** coordinator + stores | D1-R6 r2, D1-R3 stale pointer | `c25e7efe…`, P3-B replay | Static coordinator ownership | **PASS** (slice) | Concurrent CAS under **strict launcher** wiring | Integrated concurrent strict CAS | Defer unless operator policy requires | **FRZ-STA-***, **FRZ-PRD-08** | **No** (class **A** + optional **C**) |
 | **P3-T-05** | Durable READY + lost physical unit → no strict session / handoff / ASGI | **AD** reconcile + attest; **Apps** strict opener | D3/D3-R1; D4 `test_d4_stale_physical_*`; P3-C replay | `f2dd8ecb…`, `0dd51fe1…`, `11cf7df0…` | Reconcile-before-commit static | **PASS** (scoped) | HTTP to GCA after partial startup | Live host deployment-table loss E2E | **G-04:** D3/D4 suffice — HTTP NI **optional** | **FRZ-PRD-09/12**, **FRZ-SEC-04** | **No** (class **A**) |
 | **P3-T-06** | Drain/stop → no new admission; in-flight governed | **AD** adapter drain + `_UnitAdmissionGate` + coordinator | D1 drain; D1-R6 R2/R4/R5; P3-D static | `17e928e4…`, `c25e7efe…` | **0** pytest P3-D; continuity claimed | **PASS** (boundary reuse) | Active strict session + in-flight GCA + `begin_drain` | Integrated strict-session drain E2E | **G-05:** accept D1/D1-R6 for P3; integrated **optional** (**E.1**-adjacent) | **FRZ-PRD-05**, **FRZ-PRD-04** | **No** (class **A**) |
-| **P3-T-07** | Failed **real A1** prepare on `activation_intent` strict path → no session/handoff | **AD** `prepare_candidate`; **Apps** `open_strict_production_serving_session` | D1/D0 slice negatives; static opener order (P3-E) | `17e928e4…`, `985ae2a5…` (doc) | Static **yes**; integrated **no** | **PARTIAL** (slice + static only) | Strict opener + fail prepare → no `serving_runtime_handoff` | **G-06** integrated assertion **mandatory** for integrated P3-T-07 claim | Schedule **IG-E01** (§6) | **FRZ-PRD-03/09**, **FRZ-SEC-04** | **Yes** (class **C**) |
-| **P3-T-08** | Same `invocation_id` / unresolved intent → no ordinary re-dispatch; GR-7 does not bypass gate | **GCA** gate + **ER** PIS; strict composition | PIS-N* @ DISPATCH-Q1; P3-F F-01–F-07 **PR**; F-10 **NI** | `f96884fd…`, `11a1203e…` | `production_external_work_composition.py` static | **PASS** (contract/static) | Strict session → external-work → no 2nd provider mutation | **G-07** integrated strict-session negative | Accept DISPATCH-Q1 + schedule **IG-F01** (§6) | **FRZ-PRD-08**, **FRZ-REL-03/05** | **Yes** (class **C**) for integrated dim **20** |
+| **P3-T-07** | Failed **real A1** prepare on `activation_intent` strict path → no session/handoff | **AD** `prepare_candidate`; **Apps** `open_strict_production_serving_session` | D1/D0 slice negatives; P3-E static; **IG-E01** `test_ig_e01_strict_activation_intent_fail_prepare_no_handoff` | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` (IG exec) + `17e928e4…`, `985ae2a57295d765e0fed613b4cd4b75cde97f77` | IG evidence @ `c4dbbe51…` | **PASS** (integrated within IG-E01 boundary) | Failed physical prepare → no session/handoff; traffic unchanged | Partial durable row field coverage per IG evidence §3 | None for integrated claim within boundary | **FRZ-PRD-03/09**, **FRZ-SEC-04** | **No** (class **C** satisfied @ IG SHA) |
+| **P3-T-08** | Same `invocation_id` / unresolved intent → no ordinary re-dispatch; GR-7 does not bypass gate | **GCA** gate + **ER** PIS; strict composition | PIS-N* @ DISPATCH-Q1; P3-F static; **IG-F01** `test_strict_session_external_work_no_second_provider_mutation_same_invocation_id` | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` + `f96884fdac73bcc8e12cb98ee3460c9e5148b393`, `11a1203e93dca70ca385faa182ac4f4fe258470e` | IG-F01 @ `c4dbbe51…` | **PASS** (composition-integrated) | Second dispatch same `invocation_id` → `dispatch_not_admitted`; provider mutations = 1 | **Full HTTP/ASGI re-entry with stable invocation identity: NOT PROVEN** | Formal **DISPATCH-Q1** parent accept still **PENDING** (evidence READY FOR AUDIT) | **FRZ-PRD-08**, **FRZ-REL-03/05** | **No** for P3 integrated gate claim; dim **20** parent remains separate |
 
 **Never upgraded in this record:** static continuity → integrated PASS.
 
@@ -84,13 +87,13 @@ Legend:
 
 | Gap | Determination | Class | Blocks P3? |
 |-----|---------------|-------|------------|
-| **G-01 P3-A2 ADR** | Implementation + qual evidence exist for API-key strict profile; ADR remains **PROPOSED — READY FOR AUDIT**. Ratification = operator/maintainer ADR acceptance per enterprise doc process; **not** auto-ACCEPTED here. Requirements: independent audit @ implementation SHA; reconcile ADR §14 stale “NOT PROVEN” rows with P3-A2 evidence doc; explicit ACCEPTED status + decision date. | **D** | **Yes** |
+| **G-01 P3-A2 ADR** | **OPERATOR RATIFIED — ACCEPTED** (Alternative A, API-key strict profile) @ 2026-10-15 — ADR [§16](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md#16-operator-ratification-decision-record-2026-10-15). **Subject to independent verification** of this decision-record commit on GitHub (implementation SHAs R1/R2 unchanged). | **D** → **closed** | **No** (audit of commit remains) |
 | **G-02 AUTH-08** | Stale env/revision/session isolation is enforced at **session open + handoff + reconcile** (D3/D4). Sufficient for **canonical P3** scope without duplicating D3/D4. Optional HTTP stale-URL test = deployment/routing hardening, not P3 closure prerequisite. | **A** (+ optional **B**) | **No** |
 | **G-03 P3-B** | Slice proves DENY/CAS cannot reach READY/handoff on D2/D4/D1-R6 paths. **Not proven:** strict graph single-fixture DENY → no ASGI; concurrent CAS on strict launcher. Former = operator **D** or one **IG-B01**; latter = optional. | **A** / optional **C** | **Conditional** |
 | **G-04 P3-C** | D4 strict stale replay + static handoff gate = mandatory invariant covered. No duplicate D3 module under P3 name. | **A** | **No** |
 | **G-05 P3-D** | D1/D1-R6 contracts cover drain/admission linearization at physical boundary. Live strict-session drain = operational E2E; defer to **E.1** unless operator elevates. | **A** | **No** |
-| **G-06 P3-E** | Static continuity **insufficient** for integrated P3-T-07. **IG-E01** required. | **C** | **Yes** |
-| **G-07 P3-F** | Store/gate **PR**; strict-session duplicate mutation **NI**. Distinct from new-invocation idempotency (**F-09**). **IG-F01** required for integrated T-08. | **C** | **Yes** |
+| **G-06 P3-E / IG-E01** | **PASS** @ `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` — integrated failed physical prepare within strict activation boundary ([`PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md) §9.2). | **C** → **closed** | **No** |
+| **G-07 P3-F / IG-F01** | **PASS** @ `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` — production external-work composition; same-`invocation_id` duplicate dispatch denied. **Limitation:** HTTP/ASGI re-entry with stable invocation identity **NOT PROVEN**. | **C** → **closed** (bounded) | **No** for P3-T-08 integrated gate claim |
 | **G-08 P3-A2 runtime** | `test_caller_principal_contextvar_isolated_across_concurrent_requests` = **thread** pool, not ASGI event-loop interleaving. Security review: **recommended optional** `IG-A01` for audit hardening; **not** mandatory if ADR + A2 qual accepted and operator waives. | **B** optional | **No** (unless operator elevates) |
 
 ---
@@ -107,7 +110,7 @@ Legend:
 
 ## 6. P3-INTEGRATION-GATE — operator-controlled
 
-**Status:** **AWAITING OPERATOR AUTHORIZATION — NOT EXECUTED** (0 pytest @ P3-FINAL).
+**Status:** **EXECUTED** @ `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` (prior task `P3-INTEGRATION-GATE-EXEC`; **not** re-run @ this ADR ratification task).
 
 Bounded package — **two essential** scenarios + **two optional**; incompatible physical states kept separate.
 
@@ -133,9 +136,9 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 
 | # | Dependency | Responsible | Effect if open |
 |---|------------|-------------|----------------|
-| 1 | **P3-A2 ADR** → **ACCEPTED** | Operator / maintainer ADR authority | P3-T-02 security policy unaccepted |
-| 2 | **DISPATCH-Q1** @ `f96884fd…` acceptance | Operator | Evidentiary chain for P3-F; does not replace **IG-F01** |
-| 3 | **P3-INTEGRATION-GATE** execution (**IG-E01**, **IG-F01**) | Operator authorization + bounded pytest | Integrated T-07/T-08 remain NOT PROVEN |
+| 1 | **P3-A2 ADR** → **ACCEPTED** | Operator / maintainer ADR authority | **Satisfied** @ 2026-10-15 — verify ratification commit on GitHub |
+| 2 | **DISPATCH-Q1** @ `f96884fdac73bcc8e12cb98ee3460c9e5148b393` formal acceptance | Operator | Record still **READY FOR AUDIT**; IG-F01 chain executed; formal parent accept **pending** |
+| 3 | **P3-INTEGRATION-GATE** (**IG-E01**, **IG-F01**) | Executed @ `c4dbbe51…` | **Satisfied** for bounded integrated claims |
 | 4 | Independent GitHub SHA audit of child + integration SHAs | External auditor | No closure on Cursor report alone |
 | 5 | Explicit **P3 wave acceptance** (not P3-FINAL auto-close) | Operator | Parent **P3** remains NOT CLOSED |
 | 6 | Production governance **mutation policy profile** (gate dim 6) | Operator environment | Parallel to P3-B; not HTTP caller auth |
@@ -172,18 +175,19 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 
 ## 10. Overall P3 readiness verdict
 
-| Verdict | **P3 — BLOCKED ON EXACT MANDATORY ITEMS** |
-|---------|-------------------------------------------|
+| Verdict | **P3 — READY FOR INDEPENDENT ACCEPTANCE** (operator decision package; **not** P3 CLOSED) |
+|---------|---------------------------------------------------------------------------------------------|
 
-**Smallest blocker set:**
+**Mandatory technical criteria @ cited evidence SHAs:** **G-01** ratified · **G-06** / **G-07** executed @ `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` · child slices **P3-T-01**–**T-08** reconciled in §3.
 
-1. **G-01** — Ratify **P3-A2 ADR** (PROPOSED → ACCEPTED) after independent implementation audit.
-2. **G-06** — Execute **IG-E01** (integrated P3-T-07).
-3. **G-07** — Execute **IG-F01** (integrated P3-T-08).
-4. Operator acceptance of consolidated child evidence @ cited SHAs (independent of this matrix).
-5. Optional **IG-B01** only if operator **rejects** slice-only **P3-T-03** integrated claim.
+**Remaining before operator may close P3 wave:**
 
-**Maximum status after this document:** **READY FOR AUDIT** — not P3 closed.
+1. Independent GitHub audit of ratification + evidence SHAs (including ADR §16 decision record).
+2. Explicit operator **P3 wave acceptance** (separate from ADR ratification).
+3. Optional: formal **DISPATCH-Q1** parent acceptance record (recommended; not re-blocking IG-F01 result).
+4. Optional **IG-B01** only if operator **rejects** slice-only **P3-T-03**.
+
+**Maximum status after this document:** **READY FOR AUDIT** — **not** P3 CLOSED.
 
 **Does not close:** **PROD-Q-R1-R7-Q-P3** · **PROD-Q-R1-R7-Q** · **PROD-Q-R1** · global **FRZ-*** · **E.1**.
 
@@ -191,9 +195,9 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 
 ## 11. Next mandatory execution stage
 
-1. Operator: **ADR ratification** (G-01) and **DISPATCH-Q1** acceptance (if not already recorded).
-2. Operator: authorize **P3-INTEGRATION-GATE** — run **IG-E01** + **IG-F01** only (single pytest invocation per test-process budget); record exact SHA.
-3. Operator: **P3 wave acceptance** decision using this matrix + child docs.
+1. Independent audit of ADR ratification commit + evidence SHAs on GitHub.
+2. Operator: **P3 wave acceptance** using [`PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md`](PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md) + this matrix.
+3. Operator: formal **DISPATCH-Q1** acceptance (if not yet recorded).
 4. Separately (not P3 blocker): **E.1** replay if required before **R7-Q PASS**.
 
 ---
@@ -202,11 +206,11 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 
 | Field | Value |
 |-------|-------|
-| **START_HEAD** | `c922f2ae0a9eb4f0689ccba118ee77a77553cabc` |
-| **FINAL_COMMIT** | `5ec25b06fda7a902b382069696834417fc4659d5` |
+| **START_HEAD** | `08580d4c3983821104b8722fe61904b1b984eaf1` |
+| **FINAL_COMMIT** | *(ratification commit)* |
 | **Origin** | `development` |
-| **Tests executed @ P3-FINAL** | **0** |
-| **Changed files** | This matrix only |
+| **Tests executed @ this reconciliation** | **0** |
+| **Changed files** | ADR §16 · this matrix · final acceptance decision package · ratification readiness §12 |
 
 ---
 
