@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **PASS — READY FOR INDEPENDENT AUDIT** (E.1 §B.7 D0–D4 regression record only; **not** **E.1 CLOSED**; **not** **R7-Q PASS**) |
+| **Status** | **E.1 CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** (2026-10-15; §16); rollup **READY FOR INDEPENDENT AUDIT** @ `8ee834e4…`; **not** **R7-Q PASS** |
 | **Task** | `PROD-Q-R1-R7-Q-EXEC-E1-FINAL-ROLLUP-AUDIT` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Branch** | `development` |
@@ -17,7 +17,7 @@
 | Layer | Verdict | Basis |
 |-------|---------|-------|
 | **E.1 §E.1.1 D0–D4 module regression record** | **PASS — READY FOR INDEPENDENT AUDIT** | Five operator-scheduled batches (A, B, D, E) + authorized **Batch C replay** supply closure-grade captured pytest summaries for all **21** §B.7 D0–D4 modules (**209** passed tests total). Each batch ran @ documented **EXECUTION_HEAD** with allowlist, `-p no:xdist`, 300s wall timeout, zero retries. |
-| **E.1 gate closure (operator)** | **NOT CLOSED** | Independent auditor/operator must confirm GitHub commits, logs, and this rollup before any **E.1 CLOSED** disposition. |
+| **E.1 gate closure (operator)** | **CLOSED — SCOPED D0–D4 REGRESSION** | Operator decision `PROD-Q-R1-R7-Q-EXEC-E1-OPERATOR-CLOSURE` (2026-10-15) @ accepted baseline `8ee834e4c570d3372f47a1381416a38cae0bd30e`; §16. **Does not** close **R7-Q** parent or any global **FRZ** row. |
 | **R7-Q parent (21 §C dimensions)** | **NOT QUALIFIED** | P1/P2/P3 + E.1 unit replay **do not** satisfy integrated strict-path, cross-tenant adversarial, operator production policy, dim **20** parent, or single-HEAD dim **21** certification per gate plan §C/D. |
 | **Program** | **PROD-Q-R1** / **PROD-Q** **NOT CLOSED**; **P3** **CLOSED — OPERATOR ACCEPTED**; **DISPATCH-Q1** **ACCEPTED — SCOPED** (unchanged) |
 
@@ -258,8 +258,8 @@ Coverage legend for **Status:** **PASS evidence** = executable proof exists @ ci
 
 | Gate | Recommendation |
 |------|----------------|
-| **E.1 D0–D4 regression record** | **Recommend READY FOR INDEPENDENT AUDIT → operator may close E.1 scoped regression** after GitHub verification |
-| **E.1 autonomic CLOSED** | **Deny** — Cursor does not close |
+| **E.1 D0–D4 regression record** | **CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** (§16; independent audit of closure-record commit on GitHub still required) |
+| **E.1 autonomic CLOSED** | **Deny** — operator closure only via explicit decision record |
 | **R7-Q PASS** | **Deny** — §C integrated gaps remain |
 | **PROD-Q-R1 / PROD-Q** | **Deny** — unchanged |
 | **FRZ global** | **Deny** — no promotions |
@@ -270,9 +270,56 @@ Coverage legend for **Status:** **PASS evidence** = executable proof exists @ ci
 
 | Field | Value |
 |-------|-------|
-| **FINAL_COMMIT (this document)** | `b0327ce8c2eebcb0512ab3fd6257349f5d0aee94` (audit START_HEAD `9000600f6e7c6812220f7d9d3532e4ab01e980ac`) |
-| **Evidence index** | `PROD_Q_R1_R7_Q_EXEC_E1_QUALIFICATION_EVIDENCE.md` |
+| **INDEPENDENTLY AUDITED ROLLUP HEAD** | `8ee834e4c570d3372f47a1381416a38cae0bd30e` |
+| **INITIAL ROLLUP CONTENT COMMIT** | `b0327ce8c2eebcb0512ab3fd6257349f5d0aee94` |
+| **OPERATOR CLOSURE RECORD** | recorded in the subsequent documentation-only commit |
+| **Evidence index** | `PROD_Q_R1_R7_Q_EXEC_E1_QUALIFICATION_EVIDENCE.md` (unchanged by operator-closure task) |
 | **Gate plan** | `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §E.1, §C |
+
+---
+
+## 16. Operator closure — scoped E.1 regression (`PROD-Q-R1-R7-Q-EXEC-E1-OPERATOR-CLOSURE`)
+
+| Field | Value |
+|-------|-------|
+| **Decision identity** | `PROD-Q-R1-R7-Q-EXEC-E1-OPERATOR-CLOSURE` |
+| **Decision date** | **2026-10-15** |
+| **Accepted baseline** | `8ee834e4c570d3372f47a1381416a38cae0bd30e` |
+| **Disposition** | **E.1 CLOSED — SCOPED D0–D4 REGRESSION** |
+| **Scope** | Exactly **21** distinct §B.7 D0–D4 test modules; **209** documented passing tests across **five** operator-authorized batches with **separate EXECUTION_HEAD** per batch; **no** single atomic 21-module pytest invocation asserted; **no** CI-published monolithic artifact claimed |
+| **Independent documentary audit** | Operator accepts independently audited final rollup @ accepted baseline (this document @ rollup HEAD above) |
+| **Production / test delta** | **None** — documentation-only closure record |
+| **New integrated / live HTTP/ASGI evidence** | **Not inferred** from this acceptance |
+
+### Accepted regression evidence (per-batch exact-SHA provenance)
+
+| Batch | EXECUTION_HEAD | Passing tests |
+|-------|----------------|---------------|
+| **A** | `07fcdd3de871c343744fec622cfd9ffde349b149` | 55 |
+| **B** | `83dd002730e26262bb2f5790459fd8ed7645ce18` | 22 |
+| **C replay** | `86993649211424305131d7d5ddce36d859d9bba9` | 79 |
+| **D** | `ec2854db82e6b2b793e6fd459ef3915251cfc464` | 37 |
+| **E** | `5fb107ef1a698a15041973ec83a141355b079ca6` | 16 |
+| **TOTAL** | Five accepted executions | **209** |
+
+### Historical Batch C distinction (immutable)
+
+| Execution | Record | Operator use |
+|-----------|--------|----------------|
+| **Original Batch C** (`PROD-Q-R1-R7-Q-EXEC-E1-BATCH-C`) | **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** (permanent) | Historical only — **not** rewritten or merged |
+| **Batch C replay** (`PROD-Q-R1-R7-Q-EXEC-E1-BATCH-C-REPLAY`) | **PASS — INDEPENDENTLY ACCEPTED** | Supplies closure-grade D1-R6 evidence for scoped E.1 acceptance |
+
+### Explicit non-closure (operator acceptance does **not** certify)
+
+- All **21** R7-Q §C dimensions (**R7-Q** parent remains **NOT QUALIFIED**).
+- Dimension **20** PIS/dispatch parent closure (**PROD-Q-R1** unresolved).
+- Dimension **21** program-level CI / single-HEAD continuity (**§C** row unchanged — **MISSING TARGETED GATE**).
+- Full production governance policy profile; trusted artifact roots/credentials profile.
+- Full strict HTTP/ASGI integrated qualification; cross-process recovery; full cross-tenant adversarial certification.
+- **PROD-Q-R1**, **PROD-Q**, any global **FRZ-*** criterion, **ARCH-FREEZE**.
+- **No** automatic additional replay; **no** new pytest authorization implied.
+
+**Cursor task status (closure recording):** **READY FOR INDEPENDENT AUDIT** — GitHub verification of the documentation-only closure commit is required; this section is not autonomous final closure.
 
 ---
 

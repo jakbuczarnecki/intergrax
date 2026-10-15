@@ -200,9 +200,11 @@ Historical D0–D4 evidence may be cited as **background** only — it does **no
 
 | Gate | Intent | Status |
 |------|--------|--------|
-| **R7-Q FULL-D0-D4-REPLAY** | Operator-approved resource budget; replays all §B.7 modules @ exact SHA for regression record | **NOT EXECUTED** — mandatory before **R7-Q PASS**; must not be silently skipped or marked PASS from slice SHAs alone |
+| **R7-Q FULL-D0-D4-REPLAY** | Operator-approved resource budget; replays all §B.7 modules @ exact SHA for scoped regression record | **CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** (2026-10-15) — **21** modules, **209** passed tests, **five** distinct execution SHAs (batches A, B, C replay, D, E); rollup audit baseline `8ee834e4c570d3372f47a1381416a38cae0bd30e`; decision `PROD-Q-R1-R7-Q-EXEC-E1-OPERATOR-CLOSURE`; evidence [`PROD_Q_R1_R7_Q_EXEC_E1_FINAL_ROLLUP_AUDIT.md`](PROD_Q_R1_R7_Q_EXEC_E1_FINAL_ROLLUP_AUDIT.md) §16. **Scope restriction:** no single atomic 21-module pytest or CI monolithic artifact asserted. Original Batch C remains **PROCESS EXIT 0 — EVIDENCE INCOMPLETE**; Batch C replay **PASS — INDEPENDENTLY ACCEPTED**. **Does not** satisfy **R7-Q PASS** (remaining §C integrated/operator-profile gates). |
 
 #### E.1.1 Execution readiness package (preparation only — **NOT EXECUTED** @ task `PROD-Q-R1-R7-Q-P3-FINAL-CLOSURE-RECORD`)
+
+*Historical at preparation time (docs baseline `28c9bc40…`, P3 closure record). Execution and operator scoped closure completed subsequently — see §E.1 table and rollup audit §16.*
 
 | Field | Value |
 |-------|-------|
@@ -227,9 +229,9 @@ Historical D0–D4 evidence may be cited as **background** only — it does **no
 | **3** | **PROD-Q-R1-R7-Q-P3** | Adversarial matrix: cross-tenant (8), DENY/CAS (7), stale READY (14), drain/stop (16), pre-readiness fail (9); strict-path PIS negatives when parent unblocks (20) | D2/D3/D4 negatives |
 | **4** | **PROD-Q-R1-R7-Q-P4** (optional) | Operator CI artifact + trusted roots (2, 17); subprocess restart (13) if not covered in P3 | Real infra only if local `tmp_path` insufficient |
 
-**STOP:** No wave may mark **PROD-Q-R1-R7-Q PASS** without independent audit @ exact SHA and completion of **E.1** when operator mandates full replay.
+**STOP:** No wave may mark **PROD-Q-R1-R7-Q PASS** without independent audit @ exact SHA; **E.1** scoped D0–D4 regression = **CLOSED — OPERATOR ACCEPTED** (2026-10-15) — **not** a substitute for remaining §C qualification.
 
-**Next mandatory stage:** **E.1** / **PROD-Q-R1-R7-Q-EXEC** — operator-controlled full D0–D4 replay (§E.1.1). **P1** = **READY FOR AUDIT** @ `8ec49660…`; **P2** = **CLOSED — operator exact-SHA acceptance** @ `8e43b160447ca43de6631fe2a1b7f99948b64f2f`; **P3** = **CLOSED — OPERATOR ACCEPTED** @ docs baseline `28c9bc40d1cdcbf62700e961677b4048c0753b85` (qualification [`PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md`](PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md)).
+**Next mandatory stage:** **R7-Q §C remaining mandatory integrated / operator-profile qualification gates** (dims **2, 3, 6, 7–11, 13–16, 17–19, 21** per §C summary; dim **20** parent **PROD-Q-R1**). **P1** = **READY FOR AUDIT** @ `8ec49660…`; **P2** = **CLOSED — operator exact-SHA acceptance** @ `8e43b160447ca43de6631fe2a1b7f99948b64f2f`; **P3** = **CLOSED — OPERATOR ACCEPTED** @ docs baseline `28c9bc40d1cdcbf62700e961677b4048c0753b85`; **E.1** = **CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** @ rollup `8ee834e4…` (qualification [`PROD_Q_R1_R7_Q_EXEC_E1_FINAL_ROLLUP_AUDIT.md`](PROD_Q_R1_R7_Q_EXEC_E1_FINAL_ROLLUP_AUDIT.md) §16).
 
 ---
 
