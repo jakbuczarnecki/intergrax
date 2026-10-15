@@ -4,10 +4,10 @@
 |-------|-------|
 | **Status** | **READY FOR AUDIT** (consolidation index only; **does not** close **P3**, **R7-Q**, **PROD-Q-R1**, or any global **FRZ-***) |
 | **Child** | **PROD-Q-R1-R7-Q-P3-FINAL** |
-| **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** |
+| **Parent** | **PROD-Q-R1-R7-Q-P3** — **CLOSED — OPERATOR ACCEPTED** (2026-10-15; recording commit **READY FOR AUDIT**) |
 | **Branch** | `development` |
-| **START_HEAD** | `413a2c8efbec1ae4255f0b487956b21fa8fb0486` |
-| **FINAL_COMMIT** | `413a2c8efbec1ae4255f0b487956b21fa8fb0486` (ratification) · final operator acceptance reconciliation in decision package §K |
+| **START_HEAD** | `28c9bc40d1cdcbf62700e961677b4048c0753b85` |
+| **Independently audited documentation baseline** | `28c9bc40d1cdcbf62700e961677b4048c0753b85` |
 | **Test execution (this stage)** | **0** pytest (ADR ratification + reconciliation only) |
 | **Production delta** | **0** |
 | **IG execution baseline** | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` — [`PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md) |
@@ -27,7 +27,7 @@
 | `EXPECTED_START_HEAD` `c922f2ae…` | **ancestor of HEAD** @ consolidation run |
 | Working tree @ run | **clean** (pre-edit) |
 | **PROD-Q-R1-R7-Q-P3-P0** | **READY FOR AUDIT** |
-| **PROD-Q-R1-R7-Q-P3** (wave) | **NOT CLOSED** — children A…F evidence packages **READY FOR AUDIT** (scoped) |
+| **PROD-Q-R1-R7-Q-P3** (wave) | **CLOSED — OPERATOR ACCEPTED** (2026-10-15) — P3-T-01…08 @ qualified depths; **IG-B01**/**IG-A01** not required |
 | **PROD-Q-R1-R7-Q** | **NOT QUALIFIED** / **IN PROGRESS** (roadmap) |
 | **PROD-Q-R1-R7** | **BLOCKED** / **NOT CLOSED** |
 | **PROD-Q-R1** | **NOT CLOSED** (dim **20** / dispatch parent) |
@@ -51,7 +51,7 @@
 | **P3-D** | `PROD_Q_R1_R7_Q_P3_D_…` | `cd7dafc887468a8dcbd59b205fe3b106011d0e69` | **0** pytest @ slice; D1/D1-R6 reuse |
 | **P3-E** | `PROD_Q_R1_R7_Q_P3_E_…` | `985ae2a57295d765e0fed613b4cd4b75cde97f77` | **0** pytest; integrated T-07 **explicit gap** |
 | **P3-F** | `PROD_Q_R1_R7_Q_P3_F_…` | `11a1203e93dca70ca385faa182ac4f4fe258470e` | **0** pytest; strict-session NI |
-| **DISPATCH-Q1** | `PROD_Q_R1_DISPATCH_Q1_…` | `f96884fdac73bcc8e12cb98ee3460c9e5148b393` | Prerequisite **READY FOR AUDIT**; operator accept before claiming P3-F entry |
+| **DISPATCH-Q1** | `PROD_Q_R1_DISPATCH_Q1_…` | `f96884fdac73bcc8e12cb98ee3460c9e5148b393` | **ACCEPTED — SCOPED / OPERATOR** (2026-10-15) |
 
 **Historical slice SHAs (reuse, not re-run @ P3-FINAL):** D0 `2b44cee…` · D1 `17e928e4…` · D1-R6 `c25e7efe…` · D3 `f2dd8ecb…` · D4 `0dd51fe1…` · P2 `8e43b1604…`
 
@@ -77,7 +77,7 @@ Legend:
 | **P3-T-05** | Durable READY + lost physical unit → no strict session / handoff / ASGI | **AD** reconcile + attest; **Apps** strict opener | D3/D3-R1; D4 `test_d4_stale_physical_*`; P3-C replay | `f2dd8ecb…`, `0dd51fe1…`, `11cf7df0…` | Reconcile-before-commit static | **PASS** (scoped) | HTTP to GCA after partial startup | Live host deployment-table loss E2E | **G-04:** D3/D4 suffice — HTTP NI **optional** | **FRZ-PRD-09/12**, **FRZ-SEC-04** | **No** (class **A**) |
 | **P3-T-06** | Drain/stop → no new admission; in-flight governed | **AD** adapter drain + `_UnitAdmissionGate` + coordinator | D1 drain; D1-R6 R2/R4/R5; P3-D static | `17e928e4…`, `c25e7efe…` | **0** pytest P3-D; continuity claimed | **PASS** (boundary reuse) | Active strict session + in-flight GCA + `begin_drain` | Integrated strict-session drain E2E | **G-05:** accept D1/D1-R6 for P3; integrated **optional** (**E.1**-adjacent) | **FRZ-PRD-05**, **FRZ-PRD-04** | **No** (class **A**) |
 | **P3-T-07** | Failed **real A1** prepare on `activation_intent` strict path → no session/handoff | **AD** `prepare_candidate`; **Apps** `open_strict_production_serving_session` | D1/D0 slice negatives; P3-E static; **IG-E01** `test_ig_e01_strict_activation_intent_fail_prepare_no_handoff` | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` (IG exec) + `17e928e4…`, `985ae2a57295d765e0fed613b4cd4b75cde97f77` | IG evidence @ `c4dbbe51…` | **PASS** (integrated within IG-E01 boundary) | Failed physical prepare → no session/handoff; traffic unchanged | Partial durable row field coverage per IG evidence §3 | None for integrated claim within boundary | **FRZ-PRD-03/09**, **FRZ-SEC-04** | **No** (class **C** satisfied @ IG SHA) |
-| **P3-T-08** | Same `invocation_id` / unresolved intent → no ordinary re-dispatch; GR-7 does not bypass gate | **GCA** gate + **ER** PIS; strict composition | PIS-N* @ DISPATCH-Q1; P3-F static; **IG-F01** `test_strict_session_external_work_no_second_provider_mutation_same_invocation_id` | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` + `f96884fdac73bcc8e12cb98ee3460c9e5148b393`, `11a1203e93dca70ca385faa182ac4f4fe258470e` | IG-F01 @ `c4dbbe51…` | **PASS** (composition-integrated) | Second dispatch same `invocation_id` → `dispatch_not_admitted`; provider mutations = 1 | **Full HTTP/ASGI re-entry with stable invocation identity: NOT PROVEN** | Formal **DISPATCH-Q1** parent accept still **PENDING** (evidence READY FOR AUDIT) | **FRZ-PRD-08**, **FRZ-REL-03/05** | **No** for P3 integrated gate claim; dim **20** parent remains separate |
+| **P3-T-08** | Same `invocation_id` / unresolved intent → no ordinary re-dispatch; GR-7 does not bypass gate | **GCA** gate + **ER** PIS; strict composition | PIS-N* @ DISPATCH-Q1; P3-F static; **IG-F01** `test_strict_session_external_work_no_second_provider_mutation_same_invocation_id` | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` + `f96884fdac73bcc8e12cb98ee3460c9e5148b393`, `11a1203e93dca70ca385faa182ac4f4fe258470e` | IG-F01 @ `c4dbbe51…` | **PASS** (composition-integrated) | Second dispatch same `invocation_id` → `dispatch_not_admitted`; provider mutations = 1 | **Full HTTP/ASGI re-entry with stable invocation identity: NOT PROVEN** | **DISPATCH-Q1 ACCEPTED — SCOPED / OPERATOR** (2026-10-15) | **FRZ-PRD-08**, **FRZ-REL-03/05** | **No** for P3 integrated gate claim; dim **20** parent remains separate |
 
 **Never upgraded in this record:** static continuity → integrated PASS.
 
@@ -104,7 +104,7 @@ Legend:
 |-------|----------------------|----------|
 | **Unit / contract / slice** | Behavior at module boundary with canonical evaluator/store/adapter | D1-R6 r2, PIS-N11, P3-B 4-node replay |
 | **Static continuity** | Production ordering/reachability @ HEAD without re-execution | P3-E opener bind order; P3-F composition wiring |
-| **Integrated strict-path** | `open_strict_production_serving_session` (+ HTTP/ASGI/external-work as scenario requires) | P3-A T-01/T-02 qual; **missing** T-07, T-08 NI rows |
+| **Integrated strict-path** | `open_strict_production_serving_session` (+ HTTP/ASGI/external-work as scenario requires) | P3-A T-01/T-02 qual; IG-E01 T-07; IG-F01 T-08 (composition — HTTP re-entry **NOT PROVEN**) |
 
 ---
 
@@ -137,10 +137,10 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 | # | Dependency | Responsible | Effect if open |
 |---|------------|-------------|----------------|
 | 1 | **P3-A2 ADR** → **ACCEPTED** | Operator / maintainer ADR authority | **Satisfied** @ 2026-10-15 — verify ratification commit on GitHub |
-| 2 | **DISPATCH-Q1** @ `f96884fdac73bcc8e12cb98ee3460c9e5148b393` formal acceptance | Operator | Record still **READY FOR AUDIT**; IG-F01 chain executed; formal parent accept **pending** |
+| 2 | **DISPATCH-Q1** @ `f96884fdac73bcc8e12cb98ee3460c9e5148b393` formal acceptance | Operator | **Satisfied** — **ACCEPTED — SCOPED / OPERATOR** (2026-10-15); does **not** close **PROD-Q-R1** |
 | 3 | **P3-INTEGRATION-GATE** (**IG-E01**, **IG-F01**) | Executed @ `c4dbbe51…` | **Satisfied** for bounded integrated claims |
 | 4 | Independent GitHub SHA audit of child + integration SHAs | External auditor | No closure on Cursor report alone |
-| 5 | Explicit **P3 wave acceptance** (not P3-FINAL auto-close) | Operator | Parent **P3** remains NOT CLOSED |
+| 5 | Explicit **P3 wave acceptance** (not P3-FINAL auto-close) | Operator | **Satisfied** — **CLOSED — OPERATOR ACCEPTED** (2026-10-15) |
 | 6 | Production governance **mutation policy profile** (gate dim 6) | Operator environment | Parallel to P3-B; not HTTP caller auth |
 
 **Not in P3-FINAL scope:** **E.1** full D0–D4 replay · global **FRZ-*** PASS · **PROD-Q-R1** parent closure · JWT/OIDC strict profile.
@@ -175,30 +175,27 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 
 ## 10. Overall P3 readiness verdict
 
-| Verdict | **P3 — READY FOR INDEPENDENT ACCEPTANCE** (operator decision package; **not** P3 CLOSED) |
+| Verdict | **P3 — CLOSED — OPERATOR ACCEPTED** (wave); closure **recording** commit **READY FOR AUDIT** |
 |---------|---------------------------------------------------------------------------------------------|
 
-**Mandatory technical criteria @ cited evidence SHAs:** **G-01** ratified · **G-06** / **G-07** executed @ `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` · child slices **P3-T-01**–**T-08** reconciled in §3.
+**Mandatory technical criteria @ cited evidence SHAs:** **G-01** ratified · **G-06** / **G-07** executed @ `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` · child slices **P3-T-01**–**T-08** reconciled in §3 · **DISPATCH-Q1** scoped operator acceptance recorded.
 
-**Remaining before operator may close P3 wave:**
+**Remaining (post operator wave closure):**
 
-1. Independent GitHub audit of ratification + evidence SHAs (including ADR §16 decision record).
-2. Explicit operator **P3 wave acceptance** (separate from ADR ratification).
-3. Optional: formal **DISPATCH-Q1** parent acceptance record (recommended; not re-blocking IG-F01 result).
-4. Optional **IG-B01** only if operator **rejects** slice-only **P3-T-03**.
+1. Independent GitHub audit of closure **recording** commit + evidence SHAs.
+2. **E.1** full D0–D4 replay — **NOT EXECUTED** (requires operator execution authorization).
+3. Optional **IG-B01** / **IG-A01** only if operator elevates hardening (not required for this wave).
 
-**Maximum status after this document:** **READY FOR AUDIT** — **not** P3 CLOSED.
+**Maximum Cursor task status:** **READY FOR AUDIT** — operator P3 closure is a **recorded decision**, not autonomous certification.
 
-**Does not close:** **PROD-Q-R1-R7-Q-P3** · **PROD-Q-R1-R7-Q** · **PROD-Q-R1** · global **FRZ-*** · **E.1**.
+**Does not close:** **PROD-Q-R1-R7-Q** (parent **NOT QUALIFIED**) · **PROD-Q-R1** · global **FRZ-*** PASS.
 
 ---
 
 ## 11. Next mandatory execution stage
 
-1. Independent audit of ADR ratification commit + evidence SHAs on GitHub.
-2. Operator: **P3 wave acceptance** using [`PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md`](PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md) + this matrix.
-3. Operator: formal **DISPATCH-Q1** acceptance (if not yet recorded).
-4. Separately (not P3 blocker): **E.1** replay if required before **R7-Q PASS**.
+1. Independent audit of P3 closure recording commit on GitHub.
+2. **E.1** / **PROD-Q-R1-R7-Q-EXEC** — operator-controlled full D0–D4 replay per gate plan §E.1.1 (**READY FOR EXECUTION AUTHORIZATION**).
 
 ---
 

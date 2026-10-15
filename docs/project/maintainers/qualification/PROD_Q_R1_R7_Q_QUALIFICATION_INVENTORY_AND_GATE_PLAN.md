@@ -202,6 +202,22 @@ Historical D0–D4 evidence may be cited as **background** only — it does **no
 |------|--------|--------|
 | **R7-Q FULL-D0-D4-REPLAY** | Operator-approved resource budget; replays all §B.7 modules @ exact SHA for regression record | **NOT EXECUTED** — mandatory before **R7-Q PASS**; must not be silently skipped or marked PASS from slice SHAs alone |
 
+#### E.1.1 Execution readiness package (preparation only — **NOT EXECUTED** @ task `PROD-Q-R1-R7-Q-P3-FINAL-CLOSURE-RECORD`)
+
+| Field | Value |
+|-------|-------|
+| **Parent / stage** | **PROD-Q-R1-R7-Q** → gate **E.1** / child identity **PROD-Q-R1-R7-Q-EXEC** (full D0–D4 replay) |
+| **Documentation baseline @ preparation** | `28c9bc40d1cdcbf62700e961677b4048c0753b85` (`development`) |
+| **Prerequisite gates** | **PROD-Q-R1-R7-Q-P3** = **CLOSED — OPERATOR ACCEPTED** (2026-10-15); **P1**/**P2** evidence preserved; **D4** independently accepted @ `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e`; **E.1** does **not** inherit PASS from P3 integration tests |
+| **Execution order (mandatory)** | **D0** attestation → **D1** physical deployment adapter → **D1b** runtime handoff (+ **D1-R2…R4** admission closure modules) → **D1-R6** coordinator/admission chain → **D2** production process opener → **D3** (+ **D3-R1**) restart/reconcile → **D4** strict GCA launcher; then adjacent **PROD-Q-R1** PIS modules in §B.7 only when operator schedule includes dim **20** replay |
+| **Canonical test modules (@ §B.7 — exact paths)** | **D0/D0-R2:** `tests/unit/agent_distribution/test_prod_q_r1_r7_d0_serving_unit_attestation.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d0_r2_idempotent_attestation.py` · **D1:** `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_venv_bundle_colocated_deployment_adapter.py` · **D1b + D1-R2…R4:** `tests/unit/applications/test_prod_q_r1_r7_d1b_serving_runtime_handoff.py`, `tests/unit/applications/test_prod_q_r1_r7_d1_r2_serving_admission_authority.py`, `tests/unit/applications/test_prod_q_r1_r7_d1_r3_serving_execution_admission_closure.py`, `tests/unit/applications/test_prod_q_r1_r7_d1_r4_serving_admission_authority_closure.py` · **D1-R6:** `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_activation_domain_coordinator.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r1_activation_domain_coordinator_corrective.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r2_physical_admission_final_closure.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r3_coordinator_scoped_gate_closure.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r4_physical_gate_atomicity.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r5_serving_admission_linearization.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r6_coordination_lease_ownership.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r7_lease_cleanup_rollback_admission_evidence.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r8_transaction_safety_closure.py`, `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r9_physical_admission_contract_equivalence.py` · **D2:** `tests/unit/applications/test_prod_q_r1_r7_d2_production_process_lifecycle.py` · **D3/D3-R1:** `tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py`, `tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py` · **D4:** `tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py` · **PROD-Q-R1 adjacent:** `tests/unit/runtime/enterprise_reliability/test_prod_q_r1_pis_01_*.py`, `tests/unit/applications/governed_contractor/test_prod_q_r1_r*.py` (glob — resolve exact files @ execution SHA) |
+| **Historical evidence baselines (reuse reference)** | D0/D1/D1b/D1-R6/D2/D3/D4 SHAs cited in P3 decision package §A; P3 slice SHAs **not** substitutes for replay @ execution SHA |
+| **Resource / timeout policy** | §F: **one** sequential `uv run pytest <paths> -p no:xdist` per operator-approved batch; **≤5 minutes cumulative per Cursor task** unless operator expands budget; **no** parallel `uv`/Python jobs; **no** automatic retries; STOP on timeout/failure — do not force-push or silently reconcile |
+| **Operator approval** | Explicit **execution authorization** required — preparation task does **not** grant E.1 run consent |
+| **Evidence capture** | Logs under `.tmp/proof/<run-id>/`; record exact execution SHA; qualification deliverable **PROD-Q-R1-R7-Q-EXEC** |
+| **Remaining R7-Q dimensions** | §C matrix (21 dimensions) — P3 closes wave **3** only; dims **1–21** parent **NOT QUALIFIED** until independent audit + **E.1** when mandated |
+| **Verdict** | **READY FOR EXECUTION AUTHORIZATION** (prerequisites for documented replay inventory met; **E.1 NOT EXECUTED**) |
+
 ### E.2 Wave children
 
 | Wave | Child ID | Scope | Reuses |
@@ -213,7 +229,7 @@ Historical D0–D4 evidence may be cited as **background** only — it does **no
 
 **STOP:** No wave may mark **PROD-Q-R1-R7-Q PASS** without independent audit @ exact SHA and completion of **E.1** when operator mandates full replay.
 
-**Next mandatory child:** **PROD-Q-R1-R7-Q-P3** — adversarial cross-tenant matrix (wave 3). **P1** = **READY FOR AUDIT** @ `8ec49660…`; **P2** = **CLOSED — operator exact-SHA acceptance** @ implementation `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (qualification [`PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md`](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md)).
+**Next mandatory stage:** **E.1** / **PROD-Q-R1-R7-Q-EXEC** — operator-controlled full D0–D4 replay (§E.1.1). **P1** = **READY FOR AUDIT** @ `8ec49660…`; **P2** = **CLOSED — operator exact-SHA acceptance** @ `8e43b160447ca43de6631fe2a1b7f99948b64f2f`; **P3** = **CLOSED — OPERATOR ACCEPTED** @ docs baseline `28c9bc40d1cdcbf62700e961677b4048c0753b85` (qualification [`PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md`](PROD_Q_R1_R7_Q_P3_FINAL_ACCEPTANCE_DECISION_PACKAGE.md)).
 
 ---
 
