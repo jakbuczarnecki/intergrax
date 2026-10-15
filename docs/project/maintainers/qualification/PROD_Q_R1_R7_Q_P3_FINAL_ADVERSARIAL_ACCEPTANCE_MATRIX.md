@@ -6,8 +6,8 @@
 | **Child** | **PROD-Q-R1-R7-Q-P3-FINAL** |
 | **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** |
 | **Branch** | `development` |
-| **START_HEAD** | `08580d4c3983821104b8722fe61904b1b984eaf1` |
-| **FINAL_COMMIT** | *(set by ratification commit on `development`)* |
+| **START_HEAD** | `413a2c8efbec1ae4255f0b487956b21fa8fb0486` |
+| **FINAL_COMMIT** | `413a2c8efbec1ae4255f0b487956b21fa8fb0486` (ratification) · final operator acceptance reconciliation in decision package §K |
 | **Test execution (this stage)** | **0** pytest (ADR ratification + reconciliation only) |
 | **Production delta** | **0** |
 | **IG execution baseline** | `c4dbbe51398ffe96d911b7bc866f1fdeb69c9bb1` — [`PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_INTEGRATION_GATE_QUALIFICATION_EVIDENCE.md) |
@@ -206,8 +206,8 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 
 | Field | Value |
 |-------|-------|
-| **START_HEAD** | `08580d4c3983821104b8722fe61904b1b984eaf1` |
-| **FINAL_COMMIT** | *(ratification commit)* |
+| **START_HEAD** | `413a2c8efbec1ae4255f0b487956b21fa8fb0486` |
+| **FINAL_COMMIT** | *(see decision package §K after P3-FINAL-OPERATOR-ACCEPTANCE commit)* |
 | **Origin** | `development` |
 | **Tests executed @ this reconciliation** | **0** |
 | **Changed files** | ADR §16 · this matrix · final acceptance decision package · ratification readiness §12 |
