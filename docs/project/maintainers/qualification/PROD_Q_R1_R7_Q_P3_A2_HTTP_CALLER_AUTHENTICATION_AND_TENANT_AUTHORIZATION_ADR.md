@@ -124,7 +124,7 @@ HTTP authenticate → HTTP caller-to-tenant authorize → build Task from truste
 | **AUTH-09** | Delegated / multi-tenant on-behalf-of | **Not supported** in closed-world @ SHA | **403** unless future ADR adds scoped delegation evidence | Document N/A; no guesswork |
 | **AUTH-10** | Unauthorized provider effects | Caller deny **before** `admit_execution` | Inner delegate + provider dispatch **not** invoked | Spy on `TaskBoundAgenticDelegate.execute` + admission counters (P2-C / P3-A pattern) |
 
-**Current state @ SHA (pre-implementation):** AUTH-01, AUTH-02 (caller leg), AUTH-04–07, AUTH-10 (caller leg) are **not proven**; P3-A1 covers only **body tenant vs binding** (subset of AUTH-02).
+**Historical state @ architecture inventory SHA (`0e84b376…`):** AUTH-01, AUTH-02 (caller leg), AUTH-04–07, AUTH-10 (caller leg) were **not proven**; P3-A1 covered only **body tenant vs binding** (subset of AUTH-02). **Current implementation reconciliation:** [§15](#15-implementation-reconciliation-ratification-readiness-2026-10-15--head-9e46aecc).
 
 ---
 
@@ -285,13 +285,109 @@ Replay: existing `test_prod_q_r1_r7_q_p3_a_cross_tenant_strict.py` + `test_prod_
 
 | Claim | Status |
 |-------|--------|
-| P3-A1 session-bound tenant validation | **PASS** (scoped, audited) |
-| HTTP caller authentication | **NOT PROVEN** |
-| Caller-to-execution-tenant authorization | **NOT PROVEN** |
-| P3-A security closure | **BLOCKED** (F-03) |
-| Global FRZ-SEC-01 / FRZ-SEC-04 | **OPEN** |
+| P3-A1 session-bound tenant validation | **PASS** (scoped, audited) — [`PROD_Q_R1_R7_Q_P3_A_CROSS_TENANT_STRICT_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A_CROSS_TENANT_STRICT_QUALIFICATION_EVIDENCE.md) |
+| HTTP caller authentication (strict API-key ingress profile) | **QUALIFIED @ implementation** — **not ADR-ACCEPTED** — see [§15](#15-implementation-reconciliation-ratification-readiness-2026-10-15--head-9e46aecc) + [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md) |
+| Caller-to-execution-tenant authorization | **QUALIFIED @ implementation** (same profile) — **not ADR-ACCEPTED** |
+| P3-A / P3 security closure | **BLOCKED** — F-03 closes only after **operator ADR ratification** + remaining **P3** parent gates ([`PROD_Q_R1_R7_Q_P3_FINAL_ADVERSARIAL_ACCEPTANCE_MATRIX.md`](PROD_Q_R1_R7_Q_P3_FINAL_ADVERSARIAL_ACCEPTANCE_MATRIX.md) **G-01**) |
+| Global FRZ-SEC-01 / FRZ-SEC-04 | **OPEN** (local P3-A2 contributions only) |
 
-**Recommended next bounded implementation child:** **PROD-Q-R1-R7-Q-P3-A2-R1** — implement §7–§9, run §10 qualification, operator audit @ implementation SHA.
+**Historical §14 rows** (“NOT PROVEN”, child **P3-A2-R1**) described the **pre-implementation** inventory @ `0e84b376…`. **P3-A2-R1** (`495b001d2`) and **P3-A2-R2** (`88da0c903`) are merged on **`development`** @ `9e46aecc8a03ae50ab5a8046950952e48418ca23`.
+
+**Next mandatory stage (operator):** independent GitHub audit + **ACCEPT / REJECT** decision on this ADR for Alternative A (API-key strict profile). Ratification-readiness package: [`PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_ADR_RATIFICATION_READINESS_EVIDENCE.md). **Do not** set status to **ACCEPTED** in documentation without explicit operator ratification.
+
+---
+
+## 15. Implementation reconciliation (ratification readiness @ 2026-10-15 · HEAD `9e46aecc`)
+
+**Purpose:** Reconcile §0–§13 (written against inventory `0e84b376…`) with **implemented** Alternative A on current `development`. Preserve §1–§7 as **historical gap analysis**; treat this section as **current HEAD truth** for auditors.
+
+### 15.1 Ratification target
+
+| Item | Value |
+|------|-------|
+| Profile | **Alternative A** — `fastapi_core` `AuthProvider` + `require_auth` + `identity_source=context_only` |
+| Qualified ingress | **API-key map required** at strict handoff composition (`validate_strict_production_serving_http_ingress_composition`) |
+| Out of this decision | JWT/OIDC profile · gateway header trust · AUTH-09 delegation |
+
+### 15.2 Canonical authentication ownership
+
+| Concern | Semantic owner | Composition |
+|---------|----------------|-------------|
+| HTTP authenticate | `AuthProvider` (`ApiKeyAuthProvider` when keys configured) via `RequestContextMiddleware` | `intergrax/fastapi_core/app_factory.py` |
+| Route enforcement | `require_auth` | `applications/governed_contractor_application/serving/fastapi_router.py` (strict ingress only) |
+| Forbidden | Harness `apply_harness_auth_middleware` on strict GCA `/run` | — |
+
+### 15.3 Caller-to-tenant authorization
+
+| Contract | Owner | Callers |
+|----------|-------|---------|
+| `authorize_strict_production_serving_http_caller` | `intergrax/applications/_shared/strict_production_serving_http_caller_authorization.py` | `GovernedContractorRunService.run_task` (strict binding present) |
+| Session execution tenant | `StrictProductionServingExecutionTenantBinding` (unchanged P3-A1) | Factory → `mount_governed_contractor_routes` |
+
+### 15.4 Trusted identity propagation
+
+```text
+HTTP → AuthContext (middleware) → require_auth
+  → authorize_strict_production_serving_http_caller
+  → request_identity_from_strict_production_http_auth → RequestIdentity
+  → bind_strict_serving_http_caller_principal (ContextVar, request scope)
+  → _resolve_identity (context_only; body cannot upgrade)
+  → StrictProductionServingTenantAuthorityTaskExecutionPort
+  → ColocatedServingUnitAdmissionTaskExecutionPort
+  → build_strict_production_serving_host_task_execution_governance
+       → get_strict_serving_http_caller_principal
+       → admit_strict_production_serving_root_governance_identity(principal=caller)
+```
+
+### 15.5 Factory fail-closed configuration
+
+`create_governed_contractor_backend_app` when `production_mode` + `serving_runtime_handoff`: calls `validate_strict_production_serving_http_ingress_composition` — rejects missing API keys, non-`context_only` identity, enabled task-control / interaction / MCP HTTP surfaces (`applications/governed_contractor_application/host/factory.py`).
+
+### 15.6 Route / bypass inventory (strict + handoff)
+
+See qualification evidence doc **Static route inventory**. Summary: unauthenticated path to `HostTaskExecutionPort` agent dispatch **not reachable**; `/health` open by threat-model disposition; `/runs` uses `require_scope` + auth but **not** governed-contractor agent harness; observability dashboard **optional** — auth disposition **NOT PROVEN** in P3-A2 package.
+
+### 15.7 AUTH-01 — AUTH-10 @ HEAD (evidence continuity)
+
+| ID | Ratification readiness | Blocks operator ACCEPT? |
+|----|------------------------|-------------------------|
+| AUTH-01 | **PASS** — qual `test_p3a2_t01_*` @ R1 chain | No |
+| AUTH-02 | **PASS** — `test_p3a2_t07_*` + P3-A1 | No |
+| AUTH-03 | **PASS** — `test_p3a2_t03_*` | No |
+| AUTH-04 | **PASS** — `test_p3a2_t02_*` | No |
+| AUTH-05 | **PASS** — `test_p3a2_t05_*` | No |
+| AUTH-06 | **PASS** — R2 unit `test_strict_governance_admits_bound_http_caller_*` (final admitted principal); T-06 HTTP supplementary | No |
+| AUTH-07 | **PASS** — `test_p3a2_t04_*` | No |
+| AUTH-08 | **PARTIAL** — D3/D4 session/handoff; not HTTP-only stale-URL E2E | No within canonical P3 scope (**G-08** optional) |
+| AUTH-09 | **N/A** — unsupported; `test_auth09_strict_http_profile_has_no_delegation_semantics` | No |
+| AUTH-10 | **PASS** — `test_p3a2_t10_*` | No |
+
+Implementation SHAs: **R1** `495b001d2`, **R2** `88da0c903`; continuity anchor qual `test_p3a2_g00_qualification_baseline_ancestor` (ancestor `77fe07634` ADR commit).
+
+### 15.8 Supported / unsupported ingress profiles
+
+| Profile | Status |
+|---------|--------|
+| Strict production + handoff + API keys + `context_only` | **Qualified** (this ratification target) |
+| JWT/OIDC strict | **OPEN** — separate qualification |
+| `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED` | Operator break-glass — **not** qualified profile |
+| Trusted gateway headers without `AuthProvider` | **Unsupported** |
+
+### 15.9 Residual limitations (explicit)
+
+- **AUTH-08:** session/handoff stale routing — not re-proven as dedicated HTTP negative in P3-A2.
+- **Async concurrency:** `test_caller_principal_contextvar_isolated_across_concurrent_requests` uses **thread** pool only — **not** ASGI event-loop interleaving proof.
+- **Observability dashboard:** optional strict deployment surface — tenant/auth threat model **NOT PROVEN** here.
+- **Global FRZ** rows remain **OPEN**; P3-A2 supplies **local** contributions only.
+
+### 15.10 Operator acceptance decision required
+
+Independent auditor must verify code @ GitHub **`9e46aecc`** (or later merge containing R1+R2). Maintainer/operator then either:
+
+- **ACCEPT** Alternative A for production strict API-key ingress (update ADR status + decision date), or
+- **REJECT** with precise blocker reference.
+
+**Cursor / agent reports do not constitute ratification.**
 
 ---
 
