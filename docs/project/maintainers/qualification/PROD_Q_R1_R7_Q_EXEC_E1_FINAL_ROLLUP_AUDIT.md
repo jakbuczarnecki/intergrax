@@ -270,7 +270,7 @@ Coverage legend for **Status:** **PASS evidence** = executable proof exists @ ci
 
 | Field | Value |
 |-------|-------|
-| **FINAL_COMMIT (this document)** | `45f12d074` (parent `9000600f6e7c6812220f7d9d3532e4ab01e980ac`) |
+| **FINAL_COMMIT (this document)** | `b0327ce8c2eebcb0512ab3fd6257349f5d0aee94` (audit START_HEAD `9000600f6e7c6812220f7d9d3532e4ab01e980ac`) |
 | **Evidence index** | `PROD_Q_R1_R7_Q_EXEC_E1_QUALIFICATION_EVIDENCE.md` |
 | **Gate plan** | `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §E.1, §C |
 
