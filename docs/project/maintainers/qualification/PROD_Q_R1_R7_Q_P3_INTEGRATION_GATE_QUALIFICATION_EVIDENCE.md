@@ -41,11 +41,11 @@ Both nodes: **IMPLEMENTED — NOT EXECUTED — AWAITING OPERATOR AUTHORIZATION**
 
 **Boundary:** `open_strict_production_serving_session` → `activation_intent` → `deploy_and_activate` / `run_deploy_and_activate` (admission satisfied) → `ActivationService.prepare_candidate` → real A1 `prepare`.
 
-**Proof adapter reached:** non-invasive `prepare` call-count spy wraps the real `VenvBundleColocatedRuntimeDeploymentAdapter.prepare` method (delegates to class implementation); assertion `prepare_calls >= 1` after the negative path. `prepare_candidate` and `deploy_and_activate` are **not** mocked or replaced.
+**Proof adapter reached:** non-invasive `prepare` spy wraps the real `VenvBundleColocatedRuntimeDeploymentAdapter.prepare` (delegates to class implementation) and records each invocation’s `runtime_revision_id`; after the negative path, assertion requires `rev-ig-e01-fail` in that record (baseline `rev-ig-e01-good` prepare alone is insufficient). `prepare_candidate` and `deploy_and_activate` are **not** mocked or replaced.
 
 **Real:** strict opener, D2/D4 lifecycle storage, SQLite AD stores, A1 adapter, governance wiring, canonical bundle seeding (`test_prod_q_r1_r7_d4_strict_production_gca_launcher` helpers).
 
-**Instrumented only:** `prepare` call counter (spy delegate).
+**Instrumented only:** `prepare` revision-id recorder (spy delegate).
 
 **Expected negative outcomes:** `VenvBundleColocatedDeploymentError` matching digest failure before session return; no returned `StrictProductionServingSession` for failed intent; traffic pointer unchanged; prior good revision still opens traffic-ready session with valid `ServingRuntimeHandoff` and colocated admission; lifecycle cleanup on failed strict open (opener `except` closes process resources).
 

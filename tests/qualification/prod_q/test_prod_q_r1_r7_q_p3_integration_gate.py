@@ -19,6 +19,9 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapt
 from intergrax.applications._shared.production_process_lifecycle import (
     open_production_process_lifecycle,
 )
+from intergrax.applications._shared.production_registry_projection_input_bundle import (
+    resolve_production_artifact_root,
+)
 from intergrax.applications._shared.registry_projection_input_bundle import (
     reference_admission_mutation_id,
 )
@@ -53,9 +56,9 @@ def _traffic_revision_id(stores) -> str | None:
 
 def _attach_prepare_call_spy(
     adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
-) -> list[int]:
-    """Non-invasive call counter on the real A1 ``prepare`` implementation."""
-    calls: list[int] = [0]
+) -> list[str]:
+    """Non-invasive recorder of ``runtime_revision_id`` per real A1 ``prepare`` call."""
+    prepare_revision_ids: list[str] = []
     real_prepare = VenvBundleColocatedRuntimeDeploymentAdapter.prepare
 
     def _spy_prepare(
@@ -65,7 +68,7 @@ def _attach_prepare_call_spy(
         artifact_locator: str,
         materialization_output=None,
     ):
-        calls[0] += 1
+        prepare_revision_ids.append(revision.runtime_revision_id)
         return real_prepare(
             self,
             revision,
@@ -74,7 +77,7 @@ def _attach_prepare_call_spy(
         )
 
     adapter.prepare = types.MethodType(_spy_prepare, adapter)
-    return calls
+    return prepare_revision_ids
 
 
 def _corrupt_on_disk_bundle_without_changing_admission_digests(artifact_root) -> None:
@@ -94,7 +97,7 @@ def test_ig_e01_strict_activation_intent_fail_prepare_no_handoff(tmp_path) -> No
         ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
     )
     composition_builder = d4._composition_builder(tmp_path)
-    prepare_calls = _attach_prepare_call_spy(adapter)
+    prepare_revision_ids = _attach_prepare_call_spy(adapter)
 
     with open_production_process_lifecycle(
         agent_distribution_db=storage.agent_distribution_db,
@@ -154,6 +157,10 @@ def test_ig_e01_strict_activation_intent_fail_prepare_no_handoff(tmp_path) -> No
         _corrupt_on_disk_bundle_without_changing_admission_digests(fail_artifact_root)
 
     assert fail_bundle is not None and fail_locator is not None
+    resolved_fail_root = resolve_production_artifact_root(fail_locator)
+    assert resolved_fail_root == fail_artifact_root.resolve()
+    corrupted_marker = resolved_fail_root / "site-packages" / "bundle_marker.py"
+    assert 'ig-e01-physical-corruption' in corrupted_marker.read_text(encoding="utf-8")
     fail_intent = StrictProductionActivationIntent(
         projection_input=fail_bundle,
         activation_request=_activation_request(fail_bundle, fail_locator),
@@ -174,7 +181,10 @@ def test_ig_e01_strict_activation_intent_fail_prepare_no_handoff(tmp_path) -> No
             missing_continuation_file_policy="empty",
         )
     assert failed_session is None
-    assert prepare_calls[0] >= 1, "IG-E01 requires real A1 adapter.prepare invocation"
+    assert "rev-ig-e01-fail" in prepare_revision_ids, (
+        "IG-E01 requires real A1 adapter.prepare for failed revision "
+        "(baseline rev-ig-e01-good prepare is not sufficient evidence)"
+    )
 
     traffic_after_fail = _traffic_revision_id(stores)
     assert traffic_after_fail == traffic_before
