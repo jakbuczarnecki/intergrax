@@ -78,7 +78,7 @@ Both nodes: **IMPLEMENTED — NOT EXECUTED — AWAITING OPERATOR AUTHORIZATION**
 
 | Field | Value |
 |-------|--------|
-| **FINAL_COMMIT** | *(see session report after push)* |
+| **FINAL_COMMIT** | `40f3bbd82fc79da99e0a212c6ccd84a00fc90756` |
 | **Files added** | Two qualification tests + this evidence record |
 
 ## 8. Operator authorization
