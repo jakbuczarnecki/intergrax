@@ -299,4 +299,173 @@ Operator-authorized **E.1 Batch C** — D1-R6 coordinator/admission chain module
 
 ---
 
+# PROD-Q-R1-R7-Q-EXEC-E1 — Qualification evidence (Batch C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | **READY FOR AUDIT** — **Batch C = PASS** @ exact SHA; **E.1 overall = PARTIAL — NOT QUALIFIED** |
+| **Task** | `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-C` |
+| **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
+| **Branch** | `development` |
+| **EXECUTION_HEAD** | `440bfcaa66f483e802f0fee194f624d38bead422` |
+| **Operator authorization** | Single pytest invocation — ten `tests/unit/agent_distribution/` D1-R6 modules only; one process; `-p no:xdist`; 300s enforced wall timeout via `System.Diagnostics.Process`; zero retries; no production/test code changes |
+
+## C.1 Operator authorization and scope
+
+Authorized modules (Batch C — D1-R6 coordinator/admission chain only):
+
+| Module | Boundary |
+|--------|----------|
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_activation_domain_coordinator.py` | **D1-R6** — `ActivationDomainCoordinator` topology/SQLite/in-memory; sequential reservations; environment identity fail-closed |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r1_activation_domain_coordinator_corrective.py` | **D1-R6-R1** — corrective exports; forged evidence; evidence-only authorize rejected; reserve/compensation |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r2_physical_admission_final_closure.py` | **D1-R6-R2** — no global adapter admission; identifier-only reserve closed; pointer swap / SQLite serialization |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r3_coordinator_scoped_gate_closure.py` | **D1-R6-R3** — coordinator-scoped gate; structural substitution; S2 concurrent admission; bound port unit mismatch |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r4_physical_gate_atomicity.py` | **D1-R6-R4** — stage/publish CAS; commit failure compensation; concurrent drain/stop invalidation |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r5_serving_admission_linearization.py` | **D1-R6-R5** — unit-open blocks pointer swap; domain lock through publish; publish-failure compensation |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r6_coordination_lease_ownership.py` | **D1-R6-R6** — no process-global lease registry; compensation holds domain; idempotent lease close |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r7_lease_cleanup_rollback_admission_evidence.py` | **D1-R6-R7** — rollback vs admission ordering; stale physical unit; durable serving without gate; lock release on errors |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r8_transaction_safety_closure.py` | **D1-R6-R8** — mutation path lock release; nested mutation rejected; concurrent domain lock; D1b gate until coordinated open |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r9_physical_admission_contract_equivalence.py` | **D1-R6-R9** — fake adapter has no physical reservation; lifecycle port ≠ physical admission; coordinator required before reserve |
+
+**Not executed in Batch C:** D0/D0-R2/D1 (Batch A), D1b/D1-R2…R4 (Batch B), D2, D3, D4, PIS (Batches D–E per §E.1.1).
+
+## C.2 Preflight (@ execution)
+
+| Check | Result |
+|-------|--------|
+| Branch | `development` |
+| HEAD | `440bfcaa66f483e802f0fee194f624d38bead422` — **match** **EXPECTED_START_HEAD** / **EXECUTION_HEAD** |
+| `origin/development` | **equals HEAD** |
+| Working tree | **clean** |
+| Module paths | Ten authorized paths present; align with §E.1.1 D1-R6 canonical inventory |
+| Canonical docs read (bounded) | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` (rollup); `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` (FRZ rows); `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §B.7, §C, §E.1.1, §F; this evidence file (Batches A–B preserved) |
+
+## C.3 Execution record
+
+| Field | Value |
+|-------|-------|
+| **Command** | `uv run pytest -p no:xdist -q tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_activation_domain_coordinator.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r1_activation_domain_coordinator_corrective.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r2_physical_admission_final_closure.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r3_coordinator_scoped_gate_closure.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r4_physical_gate_atomicity.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r5_serving_admission_linearization.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r6_coordination_lease_ownership.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r7_lease_cleanup_rollback_admission_evidence.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r8_transaction_safety_closure.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r9_physical_admission_contract_equivalence.py` |
+| **Timeout mechanism** | `System.Diagnostics.Process` (`UseShellExecute=false`); async stdout/stderr drain; `WaitForExit(300000)`; `Kill($true)` on timeout (not triggered); `descendant_count_after` = 0 |
+| **UTC start** | `2026-10-15T12:24:26.2913112Z` |
+| **UTC end** | `2026-10-15T12:24:41.4365169Z` |
+| **Wall time (ms)** | `15142` |
+| **Process result** | `COMPLETED` (no timeout) |
+| **Exit code** | `0` |
+| **Pytest** | **79 passed** (inferred @ exit `0` + static per-module `test_*` function count @ HEAD: 4+8+9+6+12+4+5+15+13+3); **0 failed**, **0 skipped**, **0 xfail**; pytest `-q` summary line **not** present in captured stdout artifact (see C.8) |
+| **Collection** | **Succeeded** (ten authorized modules; no collection errors — consistent with exit `0` and ~15s wall time) |
+
+### Local raw logs
+
+| Artifact | Path |
+|----------|------|
+| stdout | `.tmp/proof/R7-Q-E1-BATCH-C-20261015-122426-278/pytest.stdout.log` |
+| stderr | `.tmp/proof/R7-Q-E1-BATCH-C-20261015-122426-278/pytest.stderr.log` |
+| metadata | `.tmp/proof/R7-Q-E1-BATCH-C-20261015-122426-278/run.meta.json` |
+
+## C.4 Per-module qualification verdict (Batch C)
+
+| Module | Verdict | Evidence summary |
+|--------|---------|------------------|
+| D1-R6 coordinator | **PASS** @ `440bfcaa…` | SQLite/in-memory coordinator; topology validation; wrong environment identity fail-closed |
+| D1-R6-R1 corrective | **PASS** @ `440bfcaa…` | No coordinator seal on eligibility; forged/evidence-only paths closed; reserve compensation |
+| D1-R6-R2 physical admission closure | **PASS** @ `440bfcaa…` | No global adapter admission API; identifier-only reserve denied; pointer swap + SQLite serialization |
+| D1-R6-R3 coordinator-scoped gate | **PASS** @ `440bfcaa…` | Coordinator-scoped gate mandatory; structural ports; concurrent S2 admission winner |
+| D1-R6-R4 gate atomicity | **PASS** @ `440bfcaa…` | Stage/publish atomicity; loser cannot authorize reserve; commit/compensation paths |
+| D1-R6-R5 admission linearization | **PASS** @ `440bfcaa…` | Serving admission linearized with unit-open and domain lock through publish |
+| D1-R6-R6 lease ownership | **PASS** @ `440bfcaa…` | Lease ownership boundaries; compensation blocks swap; no global lease registry |
+| D1-R6-R7 lease/cleanup/rollback | **PASS** @ `440bfcaa…` | Rollback vs admission ordering; stale unit; cleanup cannot admit without gate |
+| D1-R6-R8 transaction safety | **PASS** @ `440bfcaa…` | Lock release on mutation failures; nested mutate rejected; concurrent serialization |
+| D1-R6-R9 contract equivalence | **PASS** @ `440bfcaa…` | Physical admission distinct from lifecycle port; coordinator required before reserve |
+
+**Batch C aggregate:** **PASS** — **READY FOR INDEPENDENT AUDIT** (scoped — not **E.1 PASS**, not **R7-Q PASS**).
+
+## C.5 Closed-world contract / owner inventory (audited boundaries)
+
+| Concern | Semantic owner (SO) | Composition / port | Production symbol |
+|---------|---------------------|--------------------|-------------------|
+| Activation domain coordination | **AD** — `activation_domain_coordinator.py` | Canonical coordinator authority | `ActivationDomainCoordinator`, `SqliteActivationDomainCoordinator`, `InMemoryActivationDomainCoordinator` |
+| Physical unit admission / gate | **AD** — coordinator-scoped ports on colocated adapter | No direct global `open` on adapter | Stage/publish/reserve on `VenvBundleColocatedRuntimeDeploymentAdapter` |
+| Per-execution / serving admission | **AD** — `serving_execution_admission.py` | Linearized with coordinator unit-open | Admission errors; authorize vs evidence-only |
+| Activation orchestration | **AD** — `activation.py` | Rollback vs admission evidence | `ActivationService`, activation stores |
+| Runtime deployment (lifecycle) | **AD** — deployment adapter | `RuntimeDeploymentAdapter` ≠ physical admission owner | Colocated bundle adapter |
+| Test doubles | Test support only | `FakeInMemoryRuntimeDeploymentAdapter` | Not production authority |
+
+**Layer boundaries (@ module imports):** Batch C exercises Tier-2 `intergrax/agent_distribution/*` coordinator/admission/deployment — **no** applications-layer handoff replay in these modules; depth is **unit** coordinator/CAS/lease/rollback — **not** HTTP/ASGI integrated qualification.
+
+## C.6 Enterprise audit matrix (Batch C scope only)
+
+| Dimension | Verdict | Evidence |
+|-----------|---------|----------|
+| Contracts over implementations | **PASS** | Coordinator/admission ports; R9 lifecycle vs physical admission distinction |
+| Hard layer boundaries | **PASS** | AD owns coordinator, gate, admission; fake adapter excluded from physical reserve |
+| Exactly-one semantic owner (coordinator / physical admit) | **PASS** | `ActivationDomainCoordinator` + coordinator-scoped gate (R2/R3/R9) |
+| Exactly-one sanctioned composition owner (strict prod) | **PARTIAL** | D1b gate slice in R8; D2/D4 strict opener not in Batch C |
+| Strongly typed semantic boundaries | **PASS** | Structural coordinator substitution; typed errors on forged/mismatch paths |
+| Pluginability / structural replaceability | **PASS** | R3 structural `ActivationDomainCoordinator` / unit-admission port substitution |
+| No shadow admission / bypass | **PASS** | R2 global entrypoint absent; identifier-only and evidence-only negatives |
+| No compatibility execution bypass | **PASS** | Forged evidence, pointer swap losers, stale unit paths |
+| Governance / execution separation | **NOT PROVEN** | No governance gate replay in Batch C |
+| Proposal ≠ permission ≠ execution | **PARTIAL** | Stage vs publish vs reserve chain @ unit depth |
+| Coordinator-scoped admission mandatory | **PASS** | R3/R9; physical readiness alone cannot reserve (R9) |
+| CAS / atomicity / linearization | **PASS** | R4/R5 S2 concurrent winner; R5 domain lock through publish |
+| Lease ownership / rollback fail-closed | **PASS** | R6/R7/R8 lock release and rollback ordering |
+| Observability ≠ execution truth | **NOT PROVEN** | Out of Batch C |
+| Traceability / regression protection | **PASS** | Exact-SHA replay + ten named PROD-Q D1-R6 modules |
+
+## C.7 FRZ contributions (evidence only — global rows remain **OPEN**)
+
+| FRZ ID | Batch C evidence | Still unproven @ E.1 |
+|--------|------------------|----------------------|
+| **FRZ-PRD-03** | Forged/stale/mismatch admission negatives @ `440bfcaa…` | Integrated unsupported-config matrix; D4 legacy blockers |
+| **FRZ-PRD-04** | Coordinator→gate→reserve ordering @ unit depth | D2 `open_production_process_lifecycle` (Batch D) |
+| **FRZ-PRD-05** | Rollback/lease cleanup slices (R7/R8) | Shutdown/drain integrated replay |
+| **FRZ-PRD-08** | No alternate physical admit path in tested modules @ `440bfcaa…` | Strict production graph + D2 fake exclusion |
+| **FRZ-PRD-09** | Physical readiness vs coordinator-gated reserve (R9) | Strict session readiness @ integrated replay |
+| **FRZ-SEC-04** | Fail-closed without coordinator/evidence @ R1/R3 | Full auth bypass = 0 @ integrated replay |
+| **FRZ-REG-02** | Ten regression modules executed @ SHA | QUAL-X global closure |
+| **FRZ-REG-03** | Adversarial CAS/lease/rollback paths @ SHA | Full §B.7 adversarial replay |
+| **FRZ-REG-09** | D1-R6 chain invariants executable @ SHA | Entire R7-Q §C matrix |
+
+**Zero new global FRZ PASS** — checklist not modified in this task.
+
+## C.8 Unresolved findings (classification)
+
+| ID | Classification | Note |
+|----|----------------|------|
+| — | **IN-SCOPE BLOCKER** | **None** demonstrated @ Batch C execution (process exit `0`) |
+| ENV-LOG-CAPTURE | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `pytest.stdout.log` / `pytest.stderr.log` empty despite exit `0` — PowerShell `OutputDataReceived` handler scope; counts inferred from exit code + static function inventory @ HEAD; independent auditor may replay @ SHA |
+| E.1-BATCH-D..E | **TRACKED FREEZE DEBT / remaining gate** | D2, D3, D4 per §E.1.1 |
+| Integrated HTTP/ASGI qualification | **TRACKED FREEZE DEBT** | Not claimed from Batch C unit modules |
+
+## C.9 Remaining E.1 scope (Batches D–E)
+
+Per `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §E.1.1 — **NOT EXECUTED** after Batch C:
+
+- **Batch D (indicative):** D2 production process opener; D3 (+ D3-R1)
+- **Batch E (indicative):** D4 strict GCA launcher
+- **Optional dim 20:** PIS modules when operator schedule includes replay
+
+## C.10 E.1 rollup (after Batch A + B + C)
+
+| Stage | Status |
+|-------|--------|
+| **Batch A** | **PASS — accepted evidence** @ `07fcdd3de871c343744fec622cfd9ffde349b149` |
+| **Batch B** | **PASS — accepted evidence** @ `83dd002730e26262bb2f5790459fd8ed7645ce18` |
+| **Batch C** | **PASS — READY FOR AUDIT** @ `440bfcaa66f483e802f0fee194f624d38bead422` |
+| **Batch D** | **NOT EXECUTED** |
+| **Batch E** | **NOT EXECUTED** |
+| **E.1** | **PARTIAL — NOT QUALIFIED** |
+| **P3** | **CLOSED — OPERATOR ACCEPTED** (unchanged) |
+| **DISPATCH-Q1** | **ACCEPTED — SCOPED** (unchanged) |
+| **R7-Q** | **IN PROGRESS / NOT QUALIFIED** |
+| **PROD-Q-R1** | **NOT CLOSED** |
+| **PROD-Q** | **NOT CLOSED** |
+| Global **FRZ** checklist | **Unchanged** |
+
+## C.11 Recommended next mandatory stage
+
+Operator-authorized **E.1 Batch D** — D2 production process opener + D3 (+ D3-R1) @ exact SHA per §E.1.1 (separate execution authorization).
+
+---
+
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
