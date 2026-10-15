@@ -12,7 +12,7 @@
 | **Ratification scope** | Architecture **3.A + 3.C** only — **not** certification of every production entrypoint or global architectural freeze |
 | **Baseline ADR** | [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) (**R6** — ratified deployment authority; does not close this slice) |
 | **Gate plan** | [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) · P2 qualification record [`PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md`](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md) |
-| **Does not close** | **PROD-Q-R1-R7-Q-P2** · **PROD-Q-R1-R7-Q** · **PROD-Q-R1-R7** · **PROD-Q** · any **FRZ-PRD** global PASS |
+| **Does not close** | **PROD-Q-R1-R7-Q** · **PROD-Q-R1-R7** · **PROD-Q** · any **FRZ-PRD** global PASS |
 
 ---
 
