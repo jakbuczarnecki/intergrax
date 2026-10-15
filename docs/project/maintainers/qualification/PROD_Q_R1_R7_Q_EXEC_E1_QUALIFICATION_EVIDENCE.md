@@ -498,21 +498,176 @@ Any future Batch C replay requires **new** operator authorization and a **new** 
 
 ---
 
-# PROD-Q-R1-R7-Q-EXEC-E1 — Batch D authorization gate (not executed)
+# PROD-Q-R1-R7-Q-EXEC-E1 — Qualification evidence (Batch D)
 
 | Field | Value |
 |-------|-------|
-| **Status** | **NOT EXECUTED** — operator authorization for **E.1 Batch D** **not granted** in task `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-D` |
-| **Required authorization** | Stage **E.1 Batch D**; **EXECUTION_HEAD** `70c667fa67628968e124c5b63b3cd4b74c637f32`; exactly three modules (D2, D3, D3-R1); one sequential pytest; 300s cumulative timeout; zero retry; STOP on fail/timeout/collection failure |
-| **Authorized command (pending)** | `uv run pytest -p no:xdist -q tests/unit/applications/test_prod_q_r1_r7_d2_production_process_lifecycle.py tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py` |
-| **Stream-capture self-check** | **NOT RUN** — prerequisite only when Batch D execution is authorized |
-| **Proof directory** | **None** — Batch D not started |
+| **Status** | **READY FOR AUDIT** — **Batch D = PASS** @ exact SHA; **E.1 overall = PARTIAL — NOT QUALIFIED** |
+| **Task** | `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-D` |
+| **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
+| **Branch** | `development` |
+| **EXECUTION_HEAD** | `ec2854db82e6b2b793e6fd459ef3915251cfc464` |
+| **Operator authorization** | Single execution — exactly three `tests/unit/applications/` modules (D2, D3, D3-R1); one sequential `uv run pytest`; `-p no:xdist`; 300s enforced wall timeout via `System.Diagnostics.Process`; inert stream-capture self-check before pytest; zero retries; no production/test code changes |
 
-## D.1 Next mandatory task
+## D.1 Operator authorization and scope
 
-1. Operator **execution authorization** for **E.1 Batch D** @ `70c667fa67628968e124c5b63b3cd4b74c637f32` (three modules, one process, 300s, zero retry).
-2. Before pytest: inert **stream-capture self-check** (no tests) — must persist stdout/stderr; **STOP** if capture fails.
-3. Optional separate decision: whether Batch C requires **new** authorized replay for closure-grade evidence (distinct run_id).
+Authorized modules (Batch D — D2 / D3 / D3-R1 only):
+
+| Module | Boundary |
+|--------|----------|
+| `tests/unit/applications/test_prod_q_r1_r7_d2_production_process_lifecycle.py` | **D2** — canonical `open_production_process_lifecycle`; typed lifecycle + injected `RuntimeDeploymentAdapter`; governance/tenant negatives; fake-adapter exclusion; replaceable adapter wiring; fail-closed open/slot cleanup |
+| `tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py` | **D3** — durable descriptor/projection vs physical deployment; post-restart reconcile; stale physical unit; empty adapter; idempotent reconcile |
+| `tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py` | **D3-R1** — mandatory reconcile targets; projection register integrity; stale physical without caller bypass; slot release on reconcile failure |
+
+**Not executed in Batch D:** D0–D1-R6 (Batches A–C), D4, PIS (Batch E per §E.1.1).
+
+## D.2 Preflight (@ execution)
+
+| Check | Result |
+|-------|--------|
+| Branch | `development` |
+| HEAD | `ec2854db82e6b2b793e6fd459ef3915251cfc464` — **match** **EXPECTED_START_HEAD** / **EXECUTION_HEAD** |
+| `origin/development` | **equals HEAD** |
+| Working tree | **clean** |
+| Module paths | Present; match §B.7 / §E.1.1 canonical Batch D triplet |
+| Canonical docs read (bounded) | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` (rollup); `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` (FRZ rows); `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §B.7, §C, §E.1.1, §F; this evidence file (Batches A–C + C.12 preserved) |
+
+## D.3 Stream-capture self-check (mandatory — before pytest)
+
+| Field | Value |
+|-------|-------|
+| **Mechanism** | `System.Diagnostics.Process` (`UseShellExecute=false`, redirected streams); `ReadToEndAsync()` on stdout/stderr **started immediately after** `Start()`; await after `WaitForExit` |
+| **Child (inert)** | `cmd.exe /c echo STDOUT_CAPTURE_OK&& echo STDERR_CAPTURE_OK 1>&2` — no pytest; no production code |
+| **Expected markers** | stdout: `STDOUT_CAPTURE_OK`; stderr: `STDERR_CAPTURE_OK` |
+| **Result** | **PASS** — markers present in persisted files; exit `0`; no timeout |
+| **UTC** | `2026-10-15T12:41:07.5506499Z` → `2026-10-15T12:41:07.6226017Z` (72 ms) |
+
+| Artifact | Path |
+|----------|------|
+| self-check stdout | `.tmp/proof/R7-Q-E1-BATCH-D-20261015-144107-401/capture-selfcheck.stdout.log` |
+| self-check stderr | `.tmp/proof/R7-Q-E1-BATCH-D-20261015-144107-401/capture-selfcheck.stderr.log` |
+
+## D.4 Execution record (pytest)
+
+| Field | Value |
+|-------|-------|
+| **Command** | `uv run pytest -p no:xdist -q tests/unit/applications/test_prod_q_r1_r7_d2_production_process_lifecycle.py tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py` |
+| **Timeout mechanism** | `WaitForExit(300000)`; `Kill($true)` on timeout (**not triggered**); async `ReadToEndAsync` drain (no synchronous pre-exit pipe read) |
+| **UTC start** | `2026-10-15T12:41:07.7105012Z` |
+| **UTC end** | `2026-10-15T12:41:19.7621622Z` |
+| **Wall time (ms)** | `12051` |
+| **Process result** | `COMPLETED` (no timeout) |
+| **Exit code** | `0` |
+| **Pytest summary (exact captured stdout)** | `37 passed in 5.95s` (progress line `..................................... [100%]` present) |
+| **Counts** | **37 passed**, **0 failed**, **0 skipped**, **0 xfail** |
+| **Collection** | **Succeeded** — three authorized modules only |
+| **Process termination** | Pytest `uv` child `HasExited=true`; post-exit host probe: **no** `python`/`pytest` with `intergrax` path; unrelated host `uv`/python processes remain (other workspaces) — **not** attributed to this run |
+
+### Local raw logs
+
+| Artifact | Path |
+|----------|------|
+| stdout | `.tmp/proof/R7-Q-E1-BATCH-D-20261015-144107-401/pytest.stdout.log` |
+| stderr | `.tmp/proof/R7-Q-E1-BATCH-D-20261015-144107-401/pytest.stderr.log` |
+| metadata | `.tmp/proof/R7-Q-E1-BATCH-D-20261015-144107-401/run.meta.json` |
+
+## D.5 Per-module qualification verdict (Batch D)
+
+| Module | Tests @ run | Verdict | Evidence summary |
+|--------|-------------|---------|------------------|
+| D2 production process lifecycle | 18 | **PASS** @ `ec2854db…` | Canonical opener only; fake adapter / missing governance / tenant mismatch fail-closed; typed replaceable adapter; duplicate/concurrent open guarded; invocation open failure releases slot + cleanup rows |
+| D3 restart reconciliation | 8 | **PASS** @ `ec2854db…` | Descriptor-backed projection survives SQLite restart; missing descriptor blocks reconstruction; reconcile attests serving / rejects stale physical; open fails on empty adapter after serving; idempotent retry |
+| D3-R1 recovery projection integrity | 11 | **PASS** @ `ec2854db…` | Mandatory durable traffic targets; caller cannot omit active environment; open reconciles active serving or clean no-traffic; stale physical without caller targets fails; register rejects durable mismatch / failed register does not publish |
+
+**Batch D aggregate:** **PASS — READY FOR AUDIT** (scoped — not **E.1 PASS**, not **R7-Q PASS**; not strict GCA/HTTP E2E).
+
+## D.6 Closed-world contract / owner inventory (audited boundaries)
+
+| Concern | Semantic owner (SO) | Composition / port | Symbol / caller |
+|---------|---------------------|--------------------|-----------------|
+| Production process open | **Applications** — `production_process_lifecycle.py` | `wire_production_lifecycle_services`; injected `RuntimeDeploymentAdapter`, governance, tenant resolver | `open_production_process_lifecycle` |
+| Durable projection inputs | **AP-10 seam** — descriptor / registry projection stores | D2/D3 wiring in opener + reconcile pipeline | `DescriptorBackedRegistryProjectionInputStore`, `register` / `get` |
+| Restart reconcile | **Applications** — `production_process_serving_reconciliation.py` | Invoked from process open / D3-R1 mandatory targets | `reconcile_traffic_serving_physical_unit_after_process_restart` (and related) |
+| Physical readiness vs durable | **AD** attestation + **Apps** reconcile | D3 pipeline — no false readiness from stale/missing physical rows | D3 stale / empty-adapter negatives |
+| Admission authority | **AD** coordinator chain (Batch C) + **Apps** opener | D3 does **not** bypass D1-R6 admission — unit depth only | Cross-batch: admission not re-proven in Batch D |
+
+**Layer boundaries (@ module imports):** Batch D exercises Tier-3 `applications/shared/*` production lifecycle and reconciliation — **no** new shadow opener; fake adapter reachability negated at D2 module boundary.
+
+## D.7 Enterprise audit matrix (Batch D scope only)
+
+| Invariant | Verdict | Note |
+|-----------|---------|------|
+| Contracts over implementations | **PASS** | `RuntimeDeploymentAdapter` injection + typed lifecycle session |
+| Hard tier boundaries | **PASS** | Apps opener tests; AD port via injection — no applications→agents violation in exercised paths |
+| Exactly-one semantic owner (lifecycle open) | **PASS** | `open_production_process_lifecycle` canonical |
+| Exactly-one sanctioned composition owner (strict prod) | **PARTIAL** | D2 wiring proven; D4 strict GCA launcher not in Batch D |
+| Strong typing | **PASS** | Store bundle mismatch / handoff-style errors at D2 |
+| Pluginability / replaceability (D2 port) | **PASS** | `test_d2_typed_replaceable_adapter_wiring` |
+| No shadow lifecycle / reconciliation authority | **PASS** | No alternate opener; reconcile via sanctioned pipeline |
+| No alternate production opener / fake bypass | **PASS** | Fake adapter rejected; module has no fake reachability |
+| Governance ≠ execution | **PARTIAL** | D2 governance deny slice only — not full integrated policy profile |
+| Fail-closed | **PASS** | Governance/tenant/store/open failures exercised |
+| Durable state ≠ physical readiness | **PASS** | D3 stale physical / empty adapter |
+| Recovery projection integrity | **PASS** | D3-R1 register / mandatory targets |
+| Lifecycle cleanup | **PASS** | D2 slot release on invocation open failure; D3-R1 opening slot on reconcile failure |
+| Traceability / regression protection | **PASS** | 37 executable regressions @ SHA |
+| Observability ≠ execution truth | **NOT PROVEN** | Out of Batch D |
+| Strict GCA / HTTP E2E | **NOT PROVEN** | Batch D boundary — unit modules only |
+
+## D.8 FRZ contributions (evidence only — global rows remain **OPEN**)
+
+| FRZ ID | Batch D evidence | Still unproven @ E.1 |
+|--------|------------------|----------------------|
+| **FRZ-PRD-03** | Unsupported/fake/missing-governance production paths fail-closed @ D2 | Integrated unsupported-config matrix; operator production profile |
+| **FRZ-PRD-04** | D2 open failure slot release + lifecycle rows @ `ec2854db…` | Integrated strict-session lifecycle @ HEAD |
+| **FRZ-PRD-05** | D2 cleanup-on-failure slices | Integrated drain/shutdown replay |
+| **FRZ-PRD-08** | D2 fake exclusion + no shadow opener @ unit depth | Full strict graph reachability (P1 / Batch E) |
+| **FRZ-PRD-09** | D3 stale physical / empty adapter — no false readiness | Strict session readiness @ integrated replay |
+| **FRZ-PRD-12** | D3 restart reconcile + D3-R1 recovery projection @ `ec2854db…` | Subprocess restart strict serving (dim 13) |
+| **FRZ-SEC-04** | D2 governance deny fail-closed slice | Full auth bypass = 0 @ integrated replay |
+| **FRZ-REG-02** | Three regression modules passed @ SHA | QUAL-X global closure |
+| **FRZ-REG-03** | D2/D3/D3-R1 negative paths executed @ SHA | Full §B.7 adversarial replay |
+| **FRZ-REG-09** | D2/D3/D3-R1 invariants executable @ SHA | Entire R7-Q §C matrix |
+
+**Zero new global FRZ PASS** — checklist not modified in this task.
+
+## D.9 Unresolved findings (classification)
+
+| ID | Classification | Note |
+|----|----------------|------|
+| — | **IN-SCOPE BLOCKER** | **None** demonstrated @ Batch D execution |
+| — | **ENVIRONMENT/TEST ISSUE** | **None** — exit 0, capture complete, no timeout |
+| Batch C evidence gap | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | C.12 **unchanged** — empty pytest stdout @ `440bfcaa…`; **not** remediated by Batch D success |
+| E.1-BATCH-E | **TRACKED FREEZE DEBT / remaining gate** | D4 strict GCA launcher per §E.1.1 |
+| Integrated HTTP/ASGI qualification | **TRACKED FREEZE DEBT** | Not claimed from Batch D unit modules |
+
+## D.10 Remaining E.1 scope (Batch E)
+
+Per `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §E.1.1 — **NOT EXECUTED** after Batch D:
+
+- **Batch E (indicative):** D4 strict GCA launcher (`tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py`)
+- **Optional dim 20:** PIS modules when operator schedule includes replay
+
+## D.11 E.1 rollup (after Batches A–D)
+
+| Stage | Status |
+|-------|--------|
+| **Batch A** | **PASS — AUDITED** @ `07fcdd3de871c343744fec622cfd9ffde349b149` (unchanged) |
+| **Batch B** | **PASS — AUDITED** @ `83dd002730e26262bb2f5790459fd8ed7645ce18` (unchanged) |
+| **Batch C** | **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** @ `440bfcaa…` (C.12 preserved; **not** promoted by Batch D) |
+| **Batch D** | **PASS — READY FOR AUDIT** @ `ec2854db82e6b2b793e6fd459ef3915251cfc464` |
+| **Batch E** | **NOT EXECUTED** |
+| **E.1** | **PARTIAL — NOT QUALIFIED** |
+| **P3** | **CLOSED — OPERATOR ACCEPTED** (unchanged) |
+| **DISPATCH-Q1** | **ACCEPTED — SCOPED** (unchanged) |
+| **R7-Q** | **IN PROGRESS — NOT QUALIFIED** |
+| **PROD-Q-R1** | **NOT CLOSED** |
+| **PROD-Q** | **NOT CLOSED** |
+| Global **FRZ** checklist | **Unchanged** |
+
+## D.12 Recommended next mandatory stage
+
+Operator-authorized **E.1 Batch E** — D4 strict GCA launcher @ exact SHA per §E.1.1 (separate execution authorization). Optional operator decision: new authorized **Batch C** replay for closure-grade captured summary (distinct run_id; not merged with C.12 record).
 
 ---
 
