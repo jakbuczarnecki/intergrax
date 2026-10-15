@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** |
+| **Status** | **CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED** |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Branch** | `development` |
 | **START_HEAD** | `ac367ea699e3b592272ff74a5a6d3999bf2ea707` |
@@ -146,7 +146,7 @@ uv run pytest -p no:xdist -q --noconftest \
 
 **FRZ local evidence contributions (global statuses unchanged):** FRZ-PRD-01/03/07/08, FRZ-SEC-04, FRZ-REG-02/03/09 — same bounded static P1 intent as §FRZ contributions; this run adds default-conftest qualification-entry replay only.
 
-**Parent / wave posture (unchanged):** **P1** = **READY FOR AUDIT**; **P2** / **P3** = **CLOSED — scoped**; **E.1** = **CLOSED — scoped**; **PROD-Q-R1-R7-Q** = **IN PROGRESS — NOT QUALIFIED**; **PROD-Q-R1** / **PROD-Q** = **NOT CLOSED**.
+**Parent / wave posture (P1 operator closure 2026-10-15):** **P1** = **CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED**; **P2** / **P3** = **CLOSED — scoped**; **E.1** = **CLOSED — scoped**; **PROD-Q-R1-R7-Q** = **IN PROGRESS — NOT QUALIFIED**; **PROD-Q-R1** / **PROD-Q** = **NOT CLOSED**.
 
 ## Reused D2/D4 evidence (not duplicated)
 
@@ -196,6 +196,36 @@ uv run pytest -p no:xdist -q --noconftest \
 
 - **PROD-Q-R1-R7-Q:** remain **BLOCKED** / not PASS (P1 is one gate only).
 - **Next bounded child:** **PROD-Q-R1-R7-Q-P2** — integrated strict-path qualification (per gate plan §E), including HTTP/runtime evidence where authorized.
+
+## P1 Operator Closure — Scoped Static Reachability
+
+| Field | Value |
+|-------|-------|
+| **Decision** | `PROD-Q-R1-R7-Q-P1-OPERATOR-CLOSURE` |
+| **Date** | `2026-10-15` |
+| **Accepted evidence commit** | `aee2e543e53d9d6070d6d88ac023750ca4981cdd` |
+| **Execution SHA** | `036912bec45ac627b6c99411c82db72f75df858f` |
+| **Run ID** | `20261015-161228-utc` |
+| **Accepted tests** | `23 passed in 0.51s` |
+| **Exit** | `0` |
+| **Default conftest** | Enabled |
+| **Retries** | `0` |
+| **Status** | `CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED` |
+| **Scope** | P1-G01–G06 + bounded negative checks |
+| **Independent audit** | Accepted by operator against exact GitHub evidence commit |
+
+**Known limitations (operator-accepted scope):**
+
+1. AST graph covers the declared closed-world module inventory only.
+2. Does **not** prove all dynamic, reflective, or higher-order execution paths.
+3. Does **not** prove global production bypass count = 0.
+4. Does **not** replace P2/P3 integrated HTTP/ASGI evidence.
+5. Does **not** qualify all R7-Q §C dimensions.
+6. D2/D4 evidence is reused at its own recorded execution SHAs (not re-run for this closure).
+7. The historical default-conftest failure remains a historical finding; it was **not** reproduced in the successful current-HEAD test run recorded above.
+8. **No** independent pytest rerun is claimed as part of this documentation closure record.
+
+**Cursor task posture:** **READY FOR AUDIT** — closure recording requires independent audit on GitHub; operator acceptance does not autonomously certify full R7-Q qualification.
 
 ---
 
