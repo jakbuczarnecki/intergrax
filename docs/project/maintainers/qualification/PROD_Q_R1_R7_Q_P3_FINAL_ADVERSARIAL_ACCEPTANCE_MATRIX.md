@@ -7,7 +7,7 @@
 | **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** |
 | **Branch** | `development` |
 | **START_HEAD** | `c922f2ae0a9eb4f0689ccba118ee77a77553cabc` |
-| **FINAL_COMMIT** | `d322cb3c80f6ec08b8058f680f181866c5398043` |
+| **FINAL_COMMIT** | `5ec25b06fda7a902b382069696834417fc4659d5` |
 | **Test execution (this stage)** | **0** pytest (mandatory policy §7) |
 | **Production delta** | **0** |
 
@@ -203,7 +203,7 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 | Field | Value |
 |-------|-------|
 | **START_HEAD** | `c922f2ae0a9eb4f0689ccba118ee77a77553cabc` |
-| **FINAL_COMMIT** | `d322cb3c80f6ec08b8058f680f181866c5398043` |
+| **FINAL_COMMIT** | `5ec25b06fda7a902b382069696834417fc4659d5` |
 | **Origin** | `development` |
 | **Tests executed @ P3-FINAL** | **0** |
 | **Changed files** | This matrix only |
