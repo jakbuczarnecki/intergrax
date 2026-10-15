@@ -7,7 +7,7 @@
 | **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** |
 | **Branch** | `development` |
 | **START_HEAD** | `03ea2ea9a9e793f9d311d499773b73db14a8b924` |
-| **Execution SHA** | *(set at P3-A1-R1 commit — independent audit on GitHub)* |
+| **Execution SHA** | `e24aa42a26120c02e706d9940fb95278bdee8ec8` |
 
 ## Preflight
 
