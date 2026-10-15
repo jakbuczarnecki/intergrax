@@ -205,5 +205,5 @@ No **REG** promotion.
 | Field | Value |
 |-------|-------|
 | **START_HEAD** | `f96884fdac73bcc8e12cb98ee3460c9e5148b393` |
-| **FINAL_COMMIT** | *(post-commit SHA after push — see `origin/development`)* |
+| **FINAL_COMMIT** | `bde2cf62a921da7882b66b97b9aa14581af141d4` |
 | **Tests executed** | **0** |
