@@ -5,8 +5,8 @@
 | **Status** | **READY FOR AUDIT — TESTS NOT EXECUTED** |
 | **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** (parent status unchanged) |
 | **Branch** | `development` |
-| **START_HEAD** | `16f48d0fc545bb114e0579c8e4591a506991ee87` |
-| **Source SHA (pre-commit)** | `16f48d0fc545bb114e0579c8e4591a506991ee87` |
+| **START_HEAD** | `7a5f3524dc2648a8161db397d48d86a2d59b2410` |
+| **Source SHA (pre-commit)** | `7a5f3524dc2648a8161db397d48d86a2d59b2410` |
 | **Pytest executed** | **0** |
 | **Production code delta** | **0** |
 
@@ -17,7 +17,7 @@
 | Check | Result |
 |-------|--------|
 | Branch | `development` |
-| HEAD vs **EXPECTED_START_HEAD** | **match** @ `16f48d0fc545bb114e0579c8e4591a506991ee87` |
+| HEAD vs **EXPECTED_START_HEAD** | **match** @ `7a5f3524dc2648a8161db397d48d86a2d59b2410` |
 | Working tree @ task start | **clean** |
 | Canonical docs | Roadmap / freeze checklist / R7-Q gate plan / P3-P0 / P3-FINAL matrix / P3-E & P3-F evidence / DISPATCH-Q1 / ADR-03 / P3-A2 ADR — read for scope alignment (no FRZ promotion) |
 | **PROD-Q-R1-ADR-03** | **RATIFIED** |
@@ -35,15 +35,23 @@ Both nodes: **IMPLEMENTED — NOT EXECUTED — AWAITING OPERATOR AUTHORIZATION**
 
 ## 3. IG-E01 — boundary and expectations
 
-**Boundary:** `open_strict_production_serving_session` → `activation_intent` → `ProductionLifecycleLauncher.deploy_and_activate` → `ActivationService.prepare_candidate` → real `VenvBundleColocatedRuntimeDeploymentAdapter.prepare` (tampered `materialization_artifact_digest` vs on-disk bundle).
+**Prior false-positive risk:** mutating only `runtime_revision.materialization_artifact_digest` while leaving projection input and `ActivateRuntimeRevisionRequest` unchanged makes `run_deploy_and_activate` fail at admission digest consistency (`ReferenceProductionLifecycleError`) **before** `ActivationService.prepare_candidate` — a pytest pass would not prove integrated P3-T-07.
+
+**Corrected physical failure mechanism:** after D4 `_qualified_canonical_bundle` seeds a fully consistent `RegistryProjectionInputBundle`, `RuntimeRevision`, locator, and `expected_artifact_digest`, the test corrupts on-disk venv bundle bytes (`bundle_marker.py`) **without** changing any admission fields. `deploy_and_activate` admission-input validation succeeds; the **first** expected failure is `VenvBundleColocatedRuntimeDeploymentAdapter.prepare` → `verify_venv_bundle_artifact_bytes` digest mismatch (`VenvBundleColocatedDeploymentError`, D1 `test_wrong_digest_rejected` class).
+
+**Boundary:** `open_strict_production_serving_session` → `activation_intent` → `deploy_and_activate` / `run_deploy_and_activate` (admission satisfied) → `ActivationService.prepare_candidate` → real A1 `prepare`.
+
+**Proof adapter reached:** non-invasive `prepare` call-count spy wraps the real `VenvBundleColocatedRuntimeDeploymentAdapter.prepare` method (delegates to class implementation); assertion `prepare_calls >= 1` after the negative path. `prepare_candidate` and `deploy_and_activate` are **not** mocked or replaced.
 
 **Real:** strict opener, D2/D4 lifecycle storage, SQLite AD stores, A1 adapter, governance wiring, canonical bundle seeding (`test_prod_q_r1_r7_d4_strict_production_gca_launcher` helpers).
 
-**Not mocked:** `prepare_candidate`, `deploy_and_activate`, `commit_activation`, `open_strict_production_serving_session`.
+**Instrumented only:** `prepare` call counter (spy delegate).
 
-**Expected negative outcomes:** exception before session return (`VenvBundleColocatedDeploymentError` and/or `StrictProductionServingLauncherError`); no returned `StrictProductionServingSession` for failed intent; traffic pointer unchanged; prior good revision still opens traffic-ready session with valid `ServingRuntimeHandoff` and colocated admission.
+**Expected negative outcomes:** `VenvBundleColocatedDeploymentError` matching digest failure before session return; no returned `StrictProductionServingSession` for failed intent; traffic pointer unchanged; prior good revision still opens traffic-ready session with valid `ServingRuntimeHandoff` and colocated admission; lifecycle cleanup on failed strict open (opener `except` closes process resources).
 
-**Gap:** does not assert every partial durable row / FAILED instance field (bounded to traffic pointer + handoff continuity).
+**Limitations:** does not assert every partial durable row / FAILED deployment instance field; does not spy `prepare_candidate` separately (prepare spy is the physical boundary witness); post-failure traffic checks use the same durable store handle opened during good-revision activation (SQLite paths unchanged).
+
+**Node ID:** `tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff`
 
 ## 4. IG-F01 — identity and boundary
 
@@ -78,8 +86,8 @@ Both nodes: **IMPLEMENTED — NOT EXECUTED — AWAITING OPERATOR AUTHORIZATION**
 
 | Field | Value |
 |-------|--------|
-| **FINAL_COMMIT** | `40f3bbd82fc79da99e0a212c6ccd84a00fc90756` |
-| **Files added** | Two qualification tests + this evidence record |
+| **FINAL_COMMIT** | `6952f1c4c3acaba6fa5952ba3e8606d07557c7c7` |
+| **Files touched @ correction** | `test_prod_q_r1_r7_q_p3_integration_gate.py`, this evidence record |
 
 ## 8. Operator authorization
 
