@@ -7,7 +7,7 @@ Semantic ownership: ``assert_task_tenant_matches_strict_production_serving_autho
 single tenant-authorization decision for HTTP/task execution. It is enforced at
 ``StrictProductionServingTenantAuthorityTaskExecutionPort`` before colocated physical admission.
 ``admit_strict_production_serving_root_governance_identity`` maps an already-authorized binding
-and trusted ``ProductionControlPlaneGovernance.principal`` to admitted root identity only.
+and trusted per-request HTTP ``RequestIdentity`` (P3-A2) to admitted root identity only.
 """
 
 from __future__ import annotations

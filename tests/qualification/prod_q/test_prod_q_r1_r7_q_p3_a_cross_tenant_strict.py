@@ -58,6 +58,11 @@ from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import 
     load_d4_launcher_module,
     repo_root,
 )
+from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
+    _QUAL_USER,
+    strict_http_auth_headers,
+    with_strict_http_api_keys,
+)
 from tests.unit.applications.test_production_registry_startup_ac3_final import (
     _APP,
     _ENV,
@@ -161,7 +166,7 @@ def _completed_task_result() -> TaskResult:
 def _run_request_json(tenant_id: str) -> dict[str, str]:
     return {
         "tenant_id": tenant_id,
-        "user_id": "p3a-operator",
+        "user_id": _QUAL_USER,
         "message": "cross-tenant admission probe",
         "capability": "external_contractor.adapt",
     }
@@ -444,14 +449,18 @@ def test_p3t02_wrong_tenant_http_does_not_invoke_inner_execution(
             _test_policy_bundle,
         )
 
-        settings = replace(
-            GovernedContractorBackendSettings.from_env(),
-            include_mcp=False,
-            include_scheduler=False,
-            include_interaction_routes=False,
-            include_task_control=False,
-            default_agent_id="search",
-            runtime_policy_bundle=_test_policy_bundle(),
+        authoritative_host_tenant = environment.application_environment_id
+        settings = with_strict_http_api_keys(
+            replace(
+                GovernedContractorBackendSettings.from_env(),
+                include_mcp=False,
+                include_scheduler=False,
+                include_interaction_routes=False,
+                include_task_control=False,
+                default_agent_id="search",
+                runtime_policy_bundle=_test_policy_bundle(),
+            ),
+            execution_tenant_id=authoritative_host_tenant,
         )
         host_runtime = d4._host_runtime_for_startup(settings)
         app = create_governed_contractor_strict_production_asgi_app(
@@ -463,26 +472,24 @@ def test_p3t02_wrong_tenant_http_does_not_invoke_inner_execution(
         assert handoff is not None
         unit_ref = handoff.identity.serving_unit_ref
         run_url = f"{settings.route_prefix}{_RUN_ROUTE_SUFFIX}"
-        authoritative_host_tenant = environment.application_environment_id
 
         with patch(_INNER_DELEGATE, inner_mock):
             with TestClient(app) as client:
                 wrong = client.post(run_url, json=_run_request_json(_TENANT_A))
                 inner_mock.assert_not_called()
                 assert _physical_in_flight(adapter, unit_ref) == 0
+                assert wrong.status_code == 401
 
                 positive = client.post(
                     run_url,
                     json=_run_request_json(authoritative_host_tenant),
+                    headers=strict_http_auth_headers(),
                 )
 
         assert positive.status_code == 200
         assert positive.json()["state"] == TaskState.COMPLETED.value
         assert inner_mock.call_count == 1
         assert _physical_in_flight(adapter, unit_ref) == 0
-        assert wrong.status_code in {200, 502}
-        if wrong.status_code == 200:
-            assert wrong.json()["state"] != TaskState.COMPLETED.value
     finally:
         if not session._closed:
             session.close()

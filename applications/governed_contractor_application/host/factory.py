@@ -39,6 +39,9 @@ from intergrax.applications._shared.production_control_plane_governance_wiring i
 from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
     resolve_strict_production_serving_execution_tenant_binding,
 )
+from intergrax.applications._shared.strict_production_serving_http_ingress import (
+    validate_strict_production_serving_http_ingress_composition,
+)
 from intergrax.applications._shared.strict_production_serving_tenant_authority_task_execution import (
     StrictProductionServingTenantAuthorityTaskExecutionPort,
 )
@@ -216,6 +219,14 @@ def create_governed_contractor_backend_app(
                 governance=production_governance,
             )
         )
+        validate_strict_production_serving_http_ingress_composition(
+            binding=strict_serving_tenant_binding,
+            api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+            include_task_control=settings.include_task_control,
+            include_interaction_routes=settings.include_interaction_routes,
+            include_mcp=settings.include_mcp,
+            identity_source=settings.identity_source,
+        )
     package_contract_authority = None
     if (
         production_mode
@@ -262,9 +273,6 @@ def create_governed_contractor_backend_app(
         key_value_cache=profile_persistence_kwargs.key_value_cache,
         agent_contract_authority=package_contract_authority,
         strict_production_serving_execution_tenant_binding=strict_serving_tenant_binding,
-        strict_production_serving_governance_principal=(
-            production_governance.principal if production_governance is not None else None
-        ),
     )
     host_execution = runtime.execution
     if (
@@ -340,6 +348,8 @@ def create_governed_contractor_backend_app(
         registry=runtime.registry,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
+        identity_source=settings.identity_source,
+        strict_serving_tenant_binding=strict_serving_tenant_binding,
     )
 
     wire_harness_product_observability_dashboard(app, runtime=runtime)

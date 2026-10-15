@@ -40,6 +40,10 @@ from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import 
     load_d4_launcher_module,
     repo_root,
 )
+from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
+    strict_http_auth_headers,
+    with_strict_http_api_keys,
+)
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
@@ -170,9 +174,11 @@ def _completed_task_result() -> TaskResult:
 
 
 def _run_request_json(tenant_id: str) -> dict[str, str]:
+    from tests.qualification.prod_q._prod_q_strict_http_caller_auth import _QUAL_USER
+
     return {
         "tenant_id": tenant_id,
-        "user_id": "p2c-operator",
+        "user_id": _QUAL_USER,
         "message": "http admission continuity",
         "capability": "external_contractor.adapt",
     }
@@ -198,22 +204,6 @@ def _build_strict_http_fixture(
     assert session.readiness.ready_for_traffic is True
     assert session.composition.serving_runtime_handoff is not None
 
-    settings = replace(
-        GovernedContractorBackendSettings.from_env(),
-        include_mcp=False,
-        include_scheduler=False,
-        include_interaction_routes=False,
-        include_task_control=False,
-        default_agent_id="search",
-        runtime_policy_bundle=_gr6_production_policy_bundle(),
-    )
-    host_runtime = d4._host_runtime_for_startup(settings)
-    app = create_governed_contractor_strict_production_asgi_app(
-        session,
-        settings=settings,
-        host_runtime=host_runtime,
-    )
-
     handoff = session.serving_runtime_handoff
     assert handoff is not None
     admission = handoff.colocated_execution_admission
@@ -226,6 +216,25 @@ def _build_strict_http_fixture(
 
     env = session.environment
     tenant_id = env.application_environment_id
+    settings = with_strict_http_api_keys(
+        replace(
+            GovernedContractorBackendSettings.from_env(),
+            include_mcp=False,
+            include_scheduler=False,
+            include_interaction_routes=False,
+            include_task_control=False,
+            default_agent_id="search",
+            runtime_policy_bundle=_gr6_production_policy_bundle(),
+        ),
+        execution_tenant_id=tenant_id,
+        wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
+    )
+    host_runtime = d4._host_runtime_for_startup(settings)
+    app = create_governed_contractor_strict_production_asgi_app(
+        session,
+        settings=settings,
+        host_runtime=host_runtime,
+    )
     return _StrictHttpAdmissionFixture(
         session=session,
         app=app,
@@ -274,6 +283,7 @@ def test_p2c_01_positive_http_admission_continuity(
             response = client.post(
                 fixture.run_url,
                 json=_run_request_json(fixture.tenant_id),
+                headers=strict_http_auth_headers(),
             )
 
     assert response.status_code == 200
@@ -306,6 +316,7 @@ def test_p2c_02_admission_deny_prevents_inner_execution(
             response = client.post(
                 fixture.run_url,
                 json=_run_request_json(fixture.tenant_id),
+                headers=strict_http_auth_headers(),
             )
 
     assert response.status_code == 502
@@ -332,6 +343,7 @@ def test_p2c_03_release_after_successful_execution(
             response = client.post(
                 fixture.run_url,
                 json=_run_request_json(fixture.tenant_id),
+                headers=strict_http_auth_headers(),
             )
     assert response.status_code == 200
     assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
@@ -353,6 +365,7 @@ def test_p2c_04_release_after_inner_execution_failure(
             response = client.post(
                 fixture.run_url,
                 json=_run_request_json(fixture.tenant_id),
+                headers=strict_http_auth_headers(),
             )
 
     assert response.status_code == 502
@@ -389,5 +402,6 @@ def test_p2c_05_identity_and_scope_continuity(
             response = client.post(
                 fixture.run_url,
                 json=_run_request_json(fixture.tenant_id),
+                headers=strict_http_auth_headers(),
             )
     assert response.status_code == 200

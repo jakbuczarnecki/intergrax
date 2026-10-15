@@ -18,7 +18,9 @@ from intergrax.applications._shared.strict_production_serving_execution_tenant_a
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
 )
-from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
+    get_strict_serving_http_caller_principal,
+)
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 from intergrax.runtime.task.task import Task
 
@@ -26,16 +28,16 @@ from intergrax.runtime.task.task import Task
 def build_strict_production_serving_host_task_execution_governance(
     *,
     binding: StrictProductionServingExecutionTenantBinding,
-    principal: RequestIdentity,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> HarnessHostTaskExecutionGovernance:
-    """Strict GCA serving — explicit tenant-bound admitted identity (not harness mapper)."""
+    """Strict GCA serving — admitted identity from per-request HTTP caller principal."""
 
     def _admit(task: Task) -> AdmittedRootGovernanceIdentity:
+        caller_principal = get_strict_serving_http_caller_principal()
         return admit_strict_production_serving_root_governance_identity(
             task,
             binding=binding,
-            principal=principal,
+            principal=caller_principal,
         )
 
     return HarnessHostTaskExecutionGovernance(

@@ -330,7 +330,6 @@ def build_harness_host_runtime(
     strict_production_serving_execution_tenant_binding: (
         StrictProductionServingExecutionTenantBinding | None
     ) = None,
-    strict_production_serving_governance_principal: RequestIdentity | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -692,10 +691,6 @@ def build_harness_host_runtime(
         production_mode
         and strict_production_serving_execution_tenant_binding is not None
     ):
-        if strict_production_serving_governance_principal is None:
-            raise ValueError(
-                "strict production serving host requires governance principal identity",
-            )
         from intergrax.applications._shared.strict_production_host_task_execution_wiring import (
             build_strict_production_serving_host_task_execution_governance,
         )
@@ -703,7 +698,6 @@ def build_harness_host_runtime(
         harness_execution_governance = (
             build_strict_production_serving_host_task_execution_governance(
                 binding=strict_production_serving_execution_tenant_binding,
-                principal=strict_production_serving_governance_principal,
                 governance_evidence_recorder=orchestration_governance_evidence_recorder,
             )
         )

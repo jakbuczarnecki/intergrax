@@ -269,13 +269,21 @@ def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
 
     fake = DeterministicExternalWorkFake()
     cw = build_in_memory_collaborative_work_repositories()
-    settings = replace(
-        settings,
-        include_mcp=False,
-        include_scheduler=False,
-        include_interaction_routes=False,
-        include_task_control=False,
-        runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+    from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
+        with_strict_http_api_keys,
+    )
+    from tests.unit.applications.test_production_registry_startup_ac3_final import _ENV
+
+    settings = with_strict_http_api_keys(
+        replace(
+            settings,
+            include_mcp=False,
+            include_scheduler=False,
+            include_interaction_routes=False,
+            include_task_control=False,
+            runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        ),
+        execution_tenant_id=_ENV,
     )
     return compose_governed_contractor_host_runtime(
         settings,

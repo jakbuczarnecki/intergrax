@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **PROPOSED — READY FOR AUDIT** (architecture + qualification plan only; **no implementation** in this child) |
+| **Status** | **PROPOSED — READY FOR AUDIT** (architecture proposal; **P3-A2-R1 implementation** tracked in [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_QUALIFICATION_EVIDENCE.md) — **not** ratified to ACCEPTED) |
 | **Revision** | **R0** |
 | **Decision date** | 2026-10-15 |
 | **Branch** | `development` |
