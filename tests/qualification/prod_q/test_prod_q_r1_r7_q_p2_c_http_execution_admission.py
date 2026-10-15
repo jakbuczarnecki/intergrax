@@ -28,7 +28,7 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from testing_support.host_fixture_wiring import (
     host_wiring_test_environment,
@@ -115,21 +115,12 @@ def _strict_http_environment_profile(
 
 
 def _ac3_serving_manifest_for_package_closure() -> ApplicationManifest:
-    """GCA HTTP host manifest: declarative contract_id matches Echo AgentContract.id."""
-    from echo.echo_agent import EchoAgent
-    from tests.unit.applications.test_production_registry_startup_ac3_final import _APP
-
-    return ApplicationManifest.lab(
-        app_id=_APP,
-        name="AC3 Final",
-        agents=[
-            AgentBinding.mount(
-                EchoAgent,
-                contract_id="echo",
-                capabilities=["echo.basic"],
-            ),
-        ],
+    """GCA HTTP host manifest: declarative contract_id aligned with AC3 revision registry."""
+    from tests.unit.applications.test_production_registry_startup_ac3_final import (
+        _ac3_revision_bound_host_manifest,
     )
+
+    return _ac3_revision_bound_host_manifest()
 
 
 def _gr6_production_policy_bundle() -> ImmutableRuntimePolicyBundle:

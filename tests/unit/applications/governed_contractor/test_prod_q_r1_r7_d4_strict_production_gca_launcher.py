@@ -62,6 +62,7 @@ from tests.unit.applications.test_prod_q_r1_r7_d2_production_process_lifecycle i
 from tests.unit.applications.test_production_registry_startup_ac3_final import (
     _APP,
     _ENV,
+    _ac3_revision_bound_host_manifest,
     _activate_bundle,
     _activation_request,
     _authority,
@@ -231,11 +232,11 @@ def _patch_gca_manifest_for_ac3_serving(monkeypatch: pytest.MonkeyPatch) -> None
 
     monkeypatch.setattr(
         "governed_contractor_application.host.main.build_governed_contractor_manifest",
-        _manifest,
+        _ac3_revision_bound_host_manifest,
     )
     monkeypatch.setattr(
         "governed_contractor_application.host.factory.build_governed_contractor_manifest",
-        _manifest,
+        _ac3_revision_bound_host_manifest,
     )
 
     def _ac3_aligned_environment_profile(

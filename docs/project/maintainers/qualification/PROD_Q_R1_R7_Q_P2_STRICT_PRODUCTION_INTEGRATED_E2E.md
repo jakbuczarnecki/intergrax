@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (P2-B chain; **P2-C HTTP** evidence **EVIDENCE REQUIRED** post P2-C-R1 @ `3d1a603`) |
+| **Status** | **READY FOR AUDIT** (P2-B chain; **P2-C HTTP** **EVIDENCE REQUIRED** post P2-C-ID-R1 @ `d1a03c5`) |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Prior children** | P1 (static reachability); P2-ENV-1 (import cycle); P2-ENV-2 (default pytest entry) |
 | **Branch** | `development` |
@@ -92,9 +92,55 @@ uv run pytest -p no:xdist -q \
 
 **Regression (executed in R1 session):** `tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_package_closure_regression.py` — `contract_id="search"` mount surfaces agent-roster violation; `contract_id="echo"` has zero agent-roster violations.
 
-**Deferred:** full P2-C HTTP module (`test_prod_q_r1_r7_q_p2_c_http_execution_admission.py`) — **not re-run** in R1; independent controlled qualification required before HTTP PASS.
+**Deferred:** full P2-C HTTP module — **not re-run** in R1; superseded by P2-C-ID-R1 fixture shape below.
 
-## P2-C HTTP → admission continuity (@ prior evidence `7ff73cc`; fixture superseded by R1)
+## P2-C-ID-R1 — canonical contract identity (@ START_HEAD `d1a03c5`)
+
+**Conflict (pre-fix):** `AgentBinding.mount(EchoAgent, contract_id="search")` on GCA host — package materialization resolves `AgentContract.id == "echo"`; governance uses declarative `contract_id == "search"` (revision registry key). `contract_id="echo"` mount fixed package roster drift but broke governance (`echo` not registered).
+
+**After identity graph:**
+
+```text
+AC3 activation bundle (_manifest lab mount — install authority seed only)
+    logical_agent_id = search · registry key = search
+            |
+            v
+GCA strict host (_ac3_revision_bound_host_manifest)
+    AgentBinding(contract_id="search") — no agent_type / import_path
+            |
+            +--> resolve_binding_contract_id → search
+            +--> capability_grants_from_application_manifest → registry contract search
+            +--> default_agent_id = search (settings)
+            |
+            v
+ServingRuntimeHandoff → ColocatedServingUnitAdmissionTaskExecutionPort (unchanged)
+```
+
+**Canonical contract:** typed `AgentBinding(contract_id="search")` (`manifest.py` model validator — same shape as `reference()`, not used for harness execution). Strict production host does not class-mount revision-bound agents; execution remains revision resolver + D1b handoff (ID-05).
+
+**Validators:** `resolve_binding_contract_id`, `validated_capabilities_for_binding`, `collect_application_dependencies` (declarative branch §64–66), `validate_application_package_closure` — **unmodified**.
+
+**Capability parity (ID-04):** governance reads `AgentContract.capabilities` from revision-bound registry (`echo.basic` for `search` in AC3 projection); manifest binding carries **no** conflicting `capabilities=[...]` list.
+
+**Lightweight regression (@ ID-R1 session):**
+
+```text
+uv run pytest -p no:xdist -q \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_package_closure_regression.py
+```
+
+| Metric | Value |
+|--------|-------|
+| **Passed** | 5 |
+| **Failed** | 0 |
+| **Pytest reported** | ~2 s |
+| **Log** | `.tmp/session/prod-q-r1-r7-q-p2-c-id-r1/pytest.log` |
+
+**ID-01 note:** full `build_application_package` + `validate_application_package_closure` for contract-id-only bindings still fails in **lab_compat** `materialize_manifest_contract_authority_lab_compat` (pre-existing); strict GCA serving path does not invoke `assert_manifest_package_closure`. Declarative AGENT ref `search` is defined in production `collect_application_dependencies` for bindings without `agent_type`/`import_path`.
+
+**Deferred:** P2-C HTTP module — independent run required before HTTP PASS / FRZ promotion.
+
+## P2-C HTTP → admission continuity (@ prior evidence `7ff73cc`; fixture superseded by ID-R1)
 
 **Module:** `tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py`
 
@@ -117,7 +163,7 @@ uv run pytest -p no:xdist -q \
 
 **Real vs stub:** admission port, handoff, adapter in-flight accounting **real**; `install_host_llm_stub` + `TaskBoundAgenticDelegate.execute` **stub** (below admission wrapper). No mock of `create_governed_contractor_process_app`, routing, or `admit_execution` / `release_execution`.
 
-**Qualification seams (documented):** AC3 activation bundle (D4) + R1 GCA host manifest (`contract_id="echo"` aligned with AgentContract.id), wiring-safe env (`otel_enabled=False`, `dependency_concurrency_admission`); **no** package-closure filter (R1).
+**Qualification seams (documented):** AC3 activation bundle (D4 `_manifest` seed) + ID-R1 GCA host (`_ac3_revision_bound_host_manifest`, declarative `search`), wiring-safe env; **no** package-closure filter.
 
 | Case | Evidence |
 |------|----------|
@@ -172,7 +218,7 @@ Cross-tenant adversarial certification remains **P3**.
 | Gate | Status |
 |------|--------|
 | PROD-Q-R1-R7-Q-P2 | **READY FOR AUDIT** — P2-B executed; **P2-C HTTP EVIDENCE REQUIRED** after R1 fixture fix |
-| PROD-Q-R1-R7-Q-P2-C | **CORRECTION APPLIED** — await independent HTTP re-qualification |
+| PROD-Q-R1-R7-Q-P2-C | **ID-R1 CORRECTION APPLIED** — await independent HTTP re-qualification |
 | PROD-Q-R1-R7-Q | **NOT QUALIFIED** |
 | Blocker class for HTTP gap | **EVIDENCE REQUIRED** (fixture integrity restored; HTTP suite not re-run in R1) |
 
