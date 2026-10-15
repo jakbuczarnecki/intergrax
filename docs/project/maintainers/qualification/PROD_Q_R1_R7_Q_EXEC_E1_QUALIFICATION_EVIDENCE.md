@@ -842,4 +842,196 @@ Per gate plan §C (21 dimensions): P3 closed wave **3** only; parent **R7-Q NOT 
 
 ---
 
+# Batch C — Independent Evidence Replay @ 86993649211424305131d7d5ddce36d859d9bba9
+
+| Field | Value |
+|-------|-------|
+| **Status** | **BATCH C REPLAY = PASS — READY FOR INDEPENDENT AUDIT** (scoped — not **E.1 PASS**, not **R7-Q PASS**) |
+| **Task** | `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-C-REPLAY` |
+| **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
+| **Branch** | `development` |
+| **REPLAY EXECUTION_HEAD** | `86993649211424305131d7d5ddce36d859d9bba9` |
+| **New run_id** | `R7-Q-E1-BATCH-C-REPLAY-20261015-130830-804` |
+| **Original Batch C reference (unchanged)** | `R7-Q-E1-BATCH-C-20261015-122426-278` @ `440bfcaa66f483e802f0fee194f624d38bead422` — **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** (C.12) |
+| **Operator authorization** | `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-C-REPLAY` — exactly ten D1-R6 modules; one sequential `uv run pytest`; `-p no:xdist`; 300s `WaitForExit` + `Kill($true)`; inert `ReadToEndAsync` stream self-check before pytest; zero retries; no production/test code changes; **new execution** (not merged with C.12) |
+
+## CR.1 Operator authorization and scope (replay)
+
+Authorized modules (identical closed-world allowlist to original Batch C):
+
+| Module | Boundary |
+|--------|----------|
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_activation_domain_coordinator.py` | **D1-R6** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r1_activation_domain_coordinator_corrective.py` | **D1-R6-R1** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r2_physical_admission_final_closure.py` | **D1-R6-R2** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r3_coordinator_scoped_gate_closure.py` | **D1-R6-R3** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r4_physical_gate_atomicity.py` | **D1-R6-R4** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r5_serving_admission_linearization.py` | **D1-R6-R5** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r6_coordination_lease_ownership.py` | **D1-R6-R6** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r7_lease_cleanup_rollback_admission_evidence.py` | **D1-R6-R7** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r8_transaction_safety_closure.py` | **D1-R6-R8** |
+| `tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r9_physical_admission_contract_equivalence.py` | **D1-R6-R9** |
+
+## CR.2 Preflight (@ replay execution)
+
+| Check | Result |
+|-------|--------|
+| Branch | `development` |
+| HEAD | `86993649211424305131d7d5ddce36d859d9bba9` — **match** **EXPECTED_START_HEAD** / **EXECUTION_HEAD** |
+| `origin/development` | **equals HEAD** |
+| Working tree | **clean** (pre-execution) |
+| Module paths | Ten authorized paths present |
+| Canonical docs read (bounded) | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` (rollup); `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` (FRZ rows); `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §B.7, §C, §E.1, §E.1.1, §F; this evidence file (Batches A–E + C.12 preserved) |
+
+## CR.3 Stream-capture self-check (mandatory — before pytest)
+
+| Field | Value |
+|-------|-------|
+| **Mechanism** | `System.Diagnostics.Process` (`UseShellExecute=false`, redirected streams); `ReadToEndAsync()` on stdout/stderr **started immediately after** `Start()`; await after `WaitForExit` |
+| **Child (inert)** | `cmd.exe /c "echo STDOUT_CAPTURE_OK&& echo STDERR_CAPTURE_OK 1>&2"` |
+| **Result** | **PASS** — stdout marker `STDOUT_CAPTURE_OK`; stderr marker `STDERR_CAPTURE_OK`; exit `0`; no timeout |
+| **UTC** | `2026-10-15T13:08:30.8372174Z` → `2026-10-15T13:08:30.9565689Z` (119 ms) |
+
+| Artifact | Path |
+|----------|------|
+| self-check stdout | `.tmp/proof/R7-Q-E1-BATCH-C-REPLAY-20261015-130830-804/capture-selfcheck.stdout.log` |
+| self-check stderr | `.tmp/proof/R7-Q-E1-BATCH-C-REPLAY-20261015-130830-804/capture-selfcheck.stderr.log` |
+
+## CR.4 Execution record (pytest — new run)
+
+| Field | Value |
+|-------|-------|
+| **Command** | `uv run pytest -p no:xdist -q tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_activation_domain_coordinator.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r1_activation_domain_coordinator_corrective.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r2_physical_admission_final_closure.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r3_coordinator_scoped_gate_closure.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r4_physical_gate_atomicity.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r5_serving_admission_linearization.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r6_coordination_lease_ownership.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r7_lease_cleanup_rollback_admission_evidence.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r8_transaction_safety_closure.py tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r9_physical_admission_contract_equivalence.py` |
+| **Timeout mechanism** | `WaitForExit(300000)`; `Kill($true)` on timeout (**not triggered**); async `ReadToEndAsync` drain |
+| **UTC start** | `2026-10-15T13:08:31.5248063Z` |
+| **UTC end** | `2026-10-15T13:08:47.2118639Z` |
+| **Wall time (ms)** | `15686` |
+| **Process result** | `COMPLETED` (no timeout) |
+| **Exit code** | `0` |
+| **Pytest summary (exact captured stdout)** | `79 passed in 7.42s` (progress lines to `[100%]` present) |
+| **Counts** | **79 passed**, **0 failed**, **0 skipped**, **0 xfail** |
+| **Collection** | **Succeeded** — ten authorized modules only |
+| **Process termination** | `uv` root PID `50332`; `descendant_count_after=0` |
+
+### Local raw logs
+
+| Artifact | Path |
+|----------|------|
+| stdout | `.tmp/proof/R7-Q-E1-BATCH-C-REPLAY-20261015-130830-804/pytest.stdout.log` |
+| stderr | `.tmp/proof/R7-Q-E1-BATCH-C-REPLAY-20261015-130830-804/pytest.stderr.log` |
+| metadata | `.tmp/proof/R7-Q-E1-BATCH-C-REPLAY-20261015-130830-804/run.meta.json` |
+
+## CR.5 Per-module qualification verdict (Batch C replay)
+
+| Module | Verdict | Evidence summary |
+|--------|---------|------------------|
+| D1-R6 coordinator | **PASS** @ `86993649…` | Coordinator topology/SQLite/in-memory; environment identity fail-closed |
+| D1-R6-R1 corrective | **PASS** @ `86993649…` | Forged/evidence-only paths closed; reserve compensation |
+| D1-R6-R2 physical admission closure | **PASS** @ `86993649…` | No global adapter admission; identifier-only reserve denied |
+| D1-R6-R3 coordinator-scoped gate | **PASS** @ `86993649…` | Coordinator-scoped gate mandatory; concurrent S2 admission |
+| D1-R6-R4 gate atomicity | **PASS** @ `86993649…` | Stage/publish CAS; commit/compensation paths |
+| D1-R6-R5 admission linearization | **PASS** @ `86993649…` | Serving admission linearized with unit-open and domain lock |
+| D1-R6-R6 lease ownership | **PASS** @ `86993649…` | Lease boundaries; no global lease registry |
+| D1-R6-R7 lease/cleanup/rollback | **PASS** @ `86993649…` | Rollback vs admission ordering; stale unit; cleanup without gate blocked |
+| D1-R6-R8 transaction safety | **PASS** @ `86993649…` | Lock release on mutation failures; nested mutate rejected |
+| D1-R6-R9 contract equivalence | **PASS** @ `86993649…` | Physical admission ≠ lifecycle port; coordinator required before reserve |
+
+**Batch C replay aggregate:** **PASS — READY FOR INDEPENDENT AUDIT** (does **not** retroactively complete original Batch C @ `440bfcaa…`).
+
+## CR.6 Closed-world contract / owner inventory (replay audit)
+
+| Concern | Semantic owner (SO) | Composition / port | Production symbol |
+|---------|---------------------|--------------------|-------------------|
+| Activation domain coordination | **AD** — `activation_domain_coordinator.py` | Canonical coordinator authority | `ActivationDomainCoordinator`, `SqliteActivationDomainCoordinator`, `InMemoryActivationDomainCoordinator` |
+| Physical unit admission / gate | **AD** — coordinator-scoped ports on colocated adapter | No direct global `open` on adapter | Stage/publish/reserve on `VenvBundleColocatedRuntimeDeploymentAdapter` |
+| Per-execution / serving admission | **AD** — `serving_execution_admission.py` | Linearized with coordinator unit-open | Admission errors; authorize vs evidence-only |
+| Activation orchestration | **AD** — `activation.py` | Rollback vs admission evidence | `ActivationService`, activation stores |
+| Runtime deployment (lifecycle) | **AD** — deployment adapter | `RuntimeDeploymentAdapter` ≠ physical admission owner | Colocated bundle adapter |
+| Test doubles | Test support only | `FakeInMemoryRuntimeDeploymentAdapter` | Not production authority |
+
+**Layer boundaries:** Tier-2 `intergrax/agent_distribution/*` only — **not** HTTP/ASGI integrated qualification.
+
+## CR.7 Enterprise audit matrix (Batch C replay scope)
+
+| Dimension | Verdict | Evidence |
+|-----------|---------|----------|
+| `ActivationDomainCoordinator` canonical ownership | **PASS** | D1-R6 base + R1 corrective modules |
+| Coordinator-scoped physical admission | **PASS** | R2/R3/R9 |
+| No identifier-only / physical-readiness bypass | **PASS** | R2/R9 negatives |
+| Exactly-one semantic owner | **PASS** | Coordinator + gate chain |
+| Exactly-one sanctioned composition owner @ tested depth | **PARTIAL** | D1b slice in R8; D2/D4 not in replay |
+| Strong typing / structural replaceability | **PASS** | R3 structural substitution |
+| CAS / stage/publish / atomicity | **PASS** | R4 |
+| Serving admission linearization | **PASS** | R5 |
+| Lease ownership / isolation | **PASS** | R6 |
+| Cleanup / rollback ordering | **PASS** | R7 |
+| Transaction safety | **PASS** | R8 |
+| Physical admission vs lifecycle port | **PASS** | R9 |
+| Fail-closed invalid/stale/forged authority | **PASS** | R1/R3/R7 |
+| Governance distinct from execution | **NOT PROVEN** | Out of replay scope |
+| Proposal ≠ permission ≠ execution | **PARTIAL** | Stage/publish/reserve @ unit depth |
+| No shadow coordinator/gate/registry | **PASS** | Tested negatives |
+| No downstream authority expansion | **PASS** | AD boundary only |
+| Observability non-authoritative | **NOT PROVEN** | Out of replay scope |
+| Live HTTP/ASGI / cross-process production | **NOT PROVEN** | Unit modules only |
+
+## CR.8 FRZ evidence contributions (replay — global checklist unchanged)
+
+| FRZ ID | Replay evidence @ `86993649…` | Still unproven @ R7-Q |
+|--------|-------------------------------|------------------------|
+| **FRZ-PRD-03** | Forged/stale/mismatch admission negatives | Integrated unsupported-config matrix |
+| **FRZ-PRD-04** | Coordinator→gate→reserve ordering @ unit depth | Full integrated lifecycle |
+| **FRZ-PRD-05** | Rollback/lease cleanup slices | Shutdown/drain integrated replay |
+| **FRZ-PRD-08** | No alternate physical admit path in tested modules | Strict production graph |
+| **FRZ-PRD-09** | Physical readiness vs coordinator-gated reserve | Strict session readiness @ integrated replay |
+| **FRZ-SEC-04** | Fail-closed without coordinator/evidence | Full auth bypass = 0 @ integrated replay |
+| **FRZ-REG-02** | Captured pytest summary @ replay SHA | QUAL-X global closure |
+| **FRZ-REG-03** | Adversarial CAS/lease/rollback paths executed | Full §B.7 adversarial replay |
+| **FRZ-REG-09** | D1-R6 chain invariants executable @ replay SHA | Entire R7-Q §C matrix + independent audit |
+
+**Zero new global FRZ PASS.**
+
+## CR.9 Blockers, environment issues, tracked freeze debt
+
+| Item | Classification | Detail |
+|------|----------------|--------|
+| — | **IN-SCOPE BLOCKER** | **None** @ replay execution (exit `0`, summary captured) |
+| Original Batch C @ `440bfcaa…` | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | C.12 record **unchanged** — empty logs; replay is **separate** run_id |
+| Integrated HTTP/ASGI qualification | **TRACKED FREEZE DEBT** | Not claimed from unit replay |
+| R7-Q §C parent qualification | **TRACKED FREEZE DEBT** | Requires independent E.1 rollup audit |
+
+## CR.10 Relationship to original Batch C / C.12
+
+| Record | Status |
+|--------|--------|
+| Original Batch C @ `440bfcaa…` / `R7-Q-E1-BATCH-C-20261015-122426-278` | **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** — **permanent**; C.12 **not** rewritten |
+| Batch C replay @ `86993649…` / `R7-Q-E1-BATCH-C-REPLAY-20261015-130830-804` | **PASS — READY FOR INDEPENDENT AUDIT** — closure-grade captured summary |
+
+Replay satisfies missing captured-summary requirement for **independent audit of D1-R6 @ replay SHA**; it does **not** merge with or upgrade the original run metadata.
+
+## CR.11 E.1 rollup (after Batch C replay — canonical batches unchanged)
+
+| Stage | Status |
+|-------|--------|
+| **Batch A** | **PASS — AUDITED** @ `07fcdd3de871c343744fec622cfd9ffde349b149` (unchanged) |
+| **Batch B** | **PASS — AUDITED** @ `83dd002730e26262bb2f5790459fd8ed7645ce18` (unchanged) |
+| **Batch C original** | **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** @ `440bfcaa…` (C.12 preserved) |
+| **Batch C replay** | **PASS — READY FOR INDEPENDENT AUDIT** @ `86993649211424305131d7d5ddce36d859d9bba9` |
+| **Batch D** | **PASS — AUDITED** @ `ec2854db82e6b2b793e6fd459ef3915251cfc464` (unchanged) |
+| **Batch E** | **PASS — READY FOR AUDIT** @ `5fb107ef1a698a15041973ec83a141355b079ca6` (unchanged) |
+| **E.1** | **PARTIAL — NOT QUALIFIED** (independent rollup audit pending; replay does **not** close E.1) |
+| **P3** | **CLOSED — OPERATOR ACCEPTED** (unchanged) |
+| **DISPATCH-Q1** | **ACCEPTED — SCOPED** (unchanged) |
+| **R7-Q** | **IN PROGRESS — NOT QUALIFIED** |
+| **PROD-Q-R1** | **NOT CLOSED** |
+| **PROD-Q** | **NOT CLOSED** |
+| Global **FRZ** checklist | **Unchanged** |
+
+## CR.12 Recommended next mandatory stage
+
+1. **Independent E.1 rollup audit** across Batches A–E + Batch C replay @ commits on `origin/development`.
+2. **R7-Q** §C gap analysis and parent qualification gates per inventory — **not** auto-closed by replay.
+
+---
+
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
