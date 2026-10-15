@@ -7,7 +7,7 @@
 | **Prior children** | P1 (static reachability); P2-ENV-1 (import cycle); P2-ENV-2 (default pytest entry) |
 | **Branch** | `development` |
 | **P2-FINAL-ACCEPTANCE START_HEAD** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` |
-| **P2-FINAL-ACCEPTANCE FINAL_COMMIT** | *(this documentation reconciliation commit on `development`)* |
+| **P2-FINAL-ACCEPTANCE FINAL_COMMIT** | `56b061d5ae352d2e07610305e1aed589b135e9c3` |
 | **P2-B execution SHA** | `4dfbf4e80bc0e752b958f125d1f548b17a7751e1` (historical — **no** current-HEAD full-module replay) |
 | **P2-C HTTP execution SHA** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (user-reported run + partial session log) |
 | **ENV-1 FINAL_COMMIT** | `1de4fb5251c08141553f9397c2aeed04815c665d` |
