@@ -671,4 +671,175 @@ Operator-authorized **E.1 Batch E** — D4 strict GCA launcher @ exact SHA per �
 
 ---
 
+# PROD-Q-R1-R7-Q-EXEC-E1 — Qualification evidence (Batch E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | **READY FOR AUDIT** — **Batch E = PASS** @ exact SHA; **E.1 overall = PARTIAL — NOT QUALIFIED** |
+| **Task** | `PROD-Q-R1-R7-Q-EXEC-E1-BATCH-E` |
+| **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
+| **Branch** | `development` |
+| **EXECUTION_HEAD** | `5fb107ef1a698a15041973ec83a141355b079ca6` |
+| **Operator authorization** | Single execution — exactly one module `tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py` (D4); one sequential `uv run pytest`; `-p no:xdist`; 300s enforced wall timeout via `System.Diagnostics.Process`; inert stream-capture self-check before pytest; zero retries; no production/test code changes |
+
+## E.1 Operator authorization and scope
+
+Authorized module (Batch E — D4 strict production GCA launcher only):
+
+| Module | Boundary |
+|--------|----------|
+| `tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py` | **D4** — canonical `open_strict_production_serving_session` + `create_governed_contractor_strict_production_asgi_app`; D2 lifecycle wiring; colocated `VenvBundleColocatedRuntimeDeploymentAdapter`; governance deny / missing governance; fake-adapter rejection; readiness-gated ASGI; handoff consumption; stale physical / duplicate lifecycle; legacy `main.run()` fail-closed; activation-intent scope mismatch; startup failure cleanup (D4-R2) |
+
+**Not executed in Batch E:** D0–D3 (Batches A–D @ prior SHAs), optional dim **20** PIS modules (§E.1.1).
+
+## E.2 Preflight (@ execution)
+
+| Check | Result |
+|-------|--------|
+| Branch | `development` |
+| HEAD | `5fb107ef1a698a15041973ec83a141355b079ca6` — **match** **EXPECTED_START_HEAD** / **EXECUTION_HEAD** |
+| `origin/development` | **equals HEAD** |
+| Working tree | **clean** |
+| Module path | Present; matches §B.7 / §E.1.1 canonical Batch E (D4) |
+| Canonical docs read (bounded) | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` (rollup); `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` (FRZ rows); `PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md` §B.7, §C, §E.1, §E.1.1, §F; this evidence file (Batches A–D + C.12 preserved) |
+
+## E.3 Stream-capture self-check (mandatory — before pytest)
+
+| Field | Value |
+|-------|-------|
+| **Mechanism** | `System.Diagnostics.Process` (`UseShellExecute=false`, redirected streams); `ReadToEndAsync()` on stdout/stderr **started immediately after** `Start()`; await after `WaitForExit` |
+| **Child (inert)** | `cmd.exe /c "echo STDOUT_CAPTURE_OK&& echo STDERR_CAPTURE_OK 1>&2"` — no pytest; no production code |
+| **Expected markers** | stdout: `STDOUT_CAPTURE_OK`; stderr: `STDERR_CAPTURE_OK` |
+| **Result** | **PASS** — markers present in persisted files; exit `0`; no timeout |
+| **UTC** | `2026-10-15T12:51:47.9262918Z` → `2026-10-15T12:51:47.9909360Z` (63 ms) |
+
+| Artifact | Path |
+|----------|------|
+| self-check stdout | `.tmp/proof/R7-Q-E1-BATCH-E-20261015-145147-880/capture-selfcheck.stdout.log` |
+| self-check stderr | `.tmp/proof/R7-Q-E1-BATCH-E-20261015-145147-880/capture-selfcheck.stderr.log` |
+
+## E.4 Execution record (pytest)
+
+| Field | Value |
+|-------|-------|
+| **Command** | `uv run pytest -p no:xdist -q tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py` |
+| **Timeout mechanism** | `WaitForExit(300000)`; `Kill($true)` on timeout (**not triggered**); async `ReadToEndAsync` drain |
+| **UTC start** | `2026-10-15T12:51:48.5851573Z` |
+| **UTC end** | `2026-10-15T12:52:00.6173501Z` |
+| **Wall time (ms)** | `12032` |
+| **Process result** | `COMPLETED` (no timeout) |
+| **Exit code** | `0` |
+| **Pytest summary (exact captured stdout)** | `16 passed in 6.55s` (progress line `................ [100%]` present) |
+| **Counts** | **16 passed**, **0 failed**, **0 skipped**, **0 xfail** |
+| **Collection** | **Succeeded** — single authorized module only |
+| **Process termination** | `uv` root PID `15280`; `HasExited=true`; `descendant_count_after=0` |
+
+### Local raw logs
+
+| Artifact | Path |
+|----------|------|
+| stdout | `.tmp/proof/R7-Q-E1-BATCH-E-20261015-145147-880/pytest.stdout.log` |
+| stderr | `.tmp/proof/R7-Q-E1-BATCH-E-20261015-145147-880/pytest.stderr.log` |
+| metadata | `.tmp/proof/R7-Q-E1-BATCH-E-20261015-145147-880/run.meta.json` |
+
+## E.5 Per-module qualification verdict (Batch E)
+
+| Module | Tests @ run | Verdict | Evidence summary |
+|--------|-------------|---------|------------------|
+| D4 strict production GCA launcher | 16 | **PASS** @ `5fb107ef…` | Canonical strict launcher session + GCA ASGI factory; D2 `open_production_process_lifecycle` integration; explicit activation intent; readiness gates traffic; fake adapter excluded; governance required/deny fail-closed; stale physical / missing serving pointer blocked; duplicate lifecycle guarded; legacy `main.run()` blocked; scope mismatch before lifecycle open; fail-closed cleanup on startup failure |
+
+**Batch E aggregate:** **PASS — READY FOR INDEPENDENT AUDIT** (scoped — not **E.1 PASS**, not **R7-Q PASS**; unit depth — not distributed HTTP/ASGI deployment qualification).
+
+## E.6 Semantic / composition owner inventory (@ inspected symbols)
+
+| Concern | Owner (canonical) | Batch E evidence | Notes |
+|---------|-------------------|------------------|-------|
+| Strict production serving session | `intergrax.applications._shared.strict_production_serving_launcher.open_strict_production_serving_session` | Open/close, activation, negatives | Typed `StrictProduction*` contracts |
+| Production process lifecycle | `intergrax.applications._shared.production_process_lifecycle.open_production_process_lifecycle` | D4 uses D2 opener — no shadow launcher in tests | Exactly-one process slot |
+| GCA strict ASGI surface | `governed_contractor_application.host.strict_production_serving.create_governed_contractor_strict_production_asgi_app` | Handoff binding + readiness gate + shutdown | Apps layer over shared launcher |
+| Host composition | `compose_governed_contractor_host_runtime` | Qualification wiring in module helpers | Tier-3 over Tier-2 AD |
+| Physical deployment adapter | `VenvBundleColocatedRuntimeDeploymentAdapter` | Positive paths; `FakeInMemoryRuntimeDeploymentAdapter` rejected | No reference adapter in strict path |
+| Governance | `ProductionControlPlaneGovernance` + D2 `_governance` | Missing/deny paths | Distinct from execution admission ordering (prior batches) |
+
+**Layer boundaries:** Tier-3 `governed_contractor_application` + `intergrax.applications._shared` over Tier-2 `intergrax.agent_distribution` — **no** `intergrax/` importing `applications/`; tests use `TestClient` locally — **not** cross-process production deployment.
+
+## E.7 Enterprise audit matrix (Batch E scope only)
+
+| Criterion | Verdict @ Batch E | Notes |
+|-----------|-------------------|-------|
+| Canonical strict-production GCA launcher | **PASS** | Session + ASGI factory under test |
+| Exactly-one sanctioned composition owner (strict prod) | **PARTIAL** | GCA factory consumes validated handoff @ unit depth; full enterprise graph not replayed in one module |
+| Approved runtime lifecycle contracts | **PASS** | D2 lifecycle + typed session close/cleanup |
+| No reference/test adapter in strict composition | **PASS** | Fake adapter explicitly rejected |
+| No weaker execution-profile fallback | **PASS** | Legacy `main.run()` fail-closed |
+| Governance ≠ execution admission | **PARTIAL** | Governance deny/missing proven; coordinator-gated admission from Batch C not re-run @ this SHA in Batch E |
+| Fail-closed missing/invalid dependencies | **PASS** | Governance, serving pointer, readiness, scope mismatch |
+| Tenant/environment authority | **PARTIAL** | Scope mismatch test; not full adversarial matrix |
+| Runtime handoff / serving identity | **PASS** | Handoff bound to GCA factory; stale physical blocked |
+| Physical readiness ≠ execution permission | **PARTIAL** | Readiness struct gates ASGI; full admission chain cross-batch |
+| No direct-adapter admission bypass | **PASS** | Fake adapter blocked at strict launcher |
+| Strongly typed semantic contracts | **PASS** | `StrictProduction*` / lifecycle types |
+| Hard tier boundaries | **PASS** | Import graph @ module under test |
+| Fail-closed init/cleanup | **PASS** | D4-R2 startup failure + slot release |
+| Observability ≠ execution truth | **NOT PROVEN** | Out of Batch E |
+| Live HTTP/ASGI / distributed deployment | **NOT PROVEN** | Unit `TestClient` only — evidence boundary |
+
+## E.8 FRZ evidence mapping (local contributions only — global checklist unchanged)
+
+| FRZ ID | Batch E evidence | Still unproven @ R7-Q |
+|--------|------------------|------------------------|
+| **FRZ-PRD-03** | Strict GCA launcher + session contracts @ unit depth | Full production topology @ program gate |
+| **FRZ-PRD-04** | D2 lifecycle + D4 session open/close @ SHA | Integrated lifecycle across all dims |
+| **FRZ-PRD-05** | Colocated adapter-only strict path; fake excluded | Cross-tenant deployment variants |
+| **FRZ-PRD-08** | No shadow GCA opener; legacy entry blocked | P1 integrated strict graph |
+| **FRZ-PRD-09** | Readiness-gated ASGI @ unit depth | Operational serving qualification |
+| **FRZ-PRD-12** | Handoff consumption @ factory boundary | End-to-end serving-unit identity in deployment |
+| **FRZ-SEC-04** | Governance deny / missing governance fail-closed | Full SEC adversarial replay |
+| **FRZ-REG-02** | Exact-SHA captured pytest record @ `5fb107ef…` | CI artifact parity for full §B.7 |
+| **FRZ-REG-03** | D4 negative paths executed @ SHA | Full §B.7 adversarial replay |
+| **FRZ-REG-09** | D4 invariants executable @ SHA | Entire R7-Q §C matrix + independent audit |
+
+## E.9 Blockers, environment issues, tracked freeze debt
+
+| Item | Classification | Detail |
+|------|----------------|--------|
+| — | **IN-SCOPE BLOCKER** | **None** demonstrated @ Batch E execution |
+| Batch C evidence gap | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | C.12 **unchanged** — empty pytest stdout @ `440bfcaa…`; **not** remediated by Batch E |
+| Optional PIS / dim **20** | **TRACKED FREEZE DEBT** | Not in Batch E authorization |
+| Integrated HTTP/ASGI / distributed qualification | **TRACKED FREEZE DEBT** | Not claimed from Batch E unit module |
+| R7-Q §C parent qualification | **TRACKED FREEZE DEBT** | Requires independent audit across E.1 batches + remaining program gates |
+
+## E.10 Remaining Batch C evidence gap
+
+Batch C @ `440bfcaa66f483e802f0fee194f624d38bead422` remains **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** per **C.12**. Batch E success does **not** rewrite Batch C as PASS or merge run records.
+
+## E.11 Remaining R7-Q §C qualification requirements
+
+Per gate plan §C (21 dimensions): P3 closed wave **3** only; parent **R7-Q NOT QUALIFIED** until independent audit, **E.1** batch evidence review (including Batch C gap policy), optional PIS replay, and program-level gates — **not** closed by Batch E alone.
+
+## E.12 E.1 rollup (after Batches A–E)
+
+| Stage | Status |
+|-------|--------|
+| **Batch A** | **PASS — AUDITED** @ `07fcdd3de871c343744fec622cfd9ffde349b149` (unchanged) |
+| **Batch B** | **PASS — AUDITED** @ `83dd002730e26262bb2f5790459fd8ed7645ce18` (unchanged) |
+| **Batch C** | **PROCESS EXIT 0 — EVIDENCE INCOMPLETE** @ `440bfcaa…` (C.12 preserved) |
+| **Batch D** | **PASS — AUDITED** @ `ec2854db82e6b2b793e6fd459ef3915251cfc464` (unchanged) |
+| **Batch E** | **PASS — READY FOR AUDIT** @ `5fb107ef1a698a15041973ec83a141355b079ca6` |
+| **E.1** | **PARTIAL — NOT QUALIFIED** (all scheduled batches executed @ various SHAs; Batch C closure-grade summary missing; independent audit pending) |
+| **P3** | **CLOSED — OPERATOR ACCEPTED** (unchanged) |
+| **DISPATCH-Q1** | **ACCEPTED — SCOPED** (unchanged) |
+| **R7-Q** | **IN PROGRESS — NOT QUALIFIED** |
+| **PROD-Q-R1** | **NOT CLOSED** |
+| **PROD-Q** | **NOT CLOSED** |
+| Global **FRZ** checklist | **Unchanged** |
+
+## E.13 Recommended next mandatory stage
+
+1. **Independent audit** of E.1 Batch E evidence @ commit on `origin/development` (this record).
+2. Operator decision: **new authorized Batch C replay** (distinct `run_id`; not merged with C.12) if closure-grade captured summary required for E.1 batch rollup.
+3. **R7-Q** parent qualification / **PROD-Q-R1** gates per inventory — **not** auto-closed after Batch E.
+
+---
+
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
