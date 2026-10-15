@@ -154,6 +154,8 @@ Private VPC / localhost bind without app auth.
 
 **Primary: Alternative A** as the canonical production contract, with **Alternative B** allowed only as a **deployment profile** that terminates in the same `AuthProvider` + caller authorization port (no duplicate semantics).
 
+**Qualified strict HTTP profile (P3-A2-R1 / R2 — first production wave):** Operator acceptance and adversarial qualification for the **colocated strict GCA serving session** assume **explicit API-key ingress** — non-empty `GovernedContractorBackendSettings.api_keys_map` enforced by `validate_strict_production_serving_http_ingress_composition`. That guard is the composition contract for this wave; it is **not** a claim that only `ApiKeyAuthProvider` may ever implement `AuthProvider`. **JWT/OIDC or other `AuthProvider` variants** remain **OPEN** until a separately scoped qualification child extends composition guards and runs the same AUTH matrix against that profile.
+
 **Rationale @ inventory SHA:** Settings already mandate API keys + `context_only` in prod, but `/run` ignores them; implementing A closes the documented policy–code gap with minimal new architecture. No sanctioned gateway identity module exists to adopt as Alternative B alone.
 
 ---
@@ -272,7 +274,7 @@ Replay: existing `test_prod_q_r1_r7_q_p3_a_cross_tenant_strict.py` + `test_prod_
 | Dependency | Status |
 |------------|--------|
 | Operator-approved production mutation policy profile (P3 gate dim 6) | OPEN — separate from HTTP caller |
-| JWT/OIDC `AuthProvider` configuration contract for enterprise IdP | Optional profile; API key sufficient for first qualification wave |
+| JWT/OIDC `AuthProvider` configuration contract for enterprise IdP | **OPEN** — out of P3-A2-R1/R2 qualified profile (API-key map required at strict ingress composition) |
 | Gateway strip/propagate specification | Document in deployment runbook when Alternative B used |
 | AUTH-09 delegation model | Not defined — explicit non-goal |
 | Task control / MCP / interaction routes in strict prod | Product decision: disable vs unify auth |

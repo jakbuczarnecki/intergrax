@@ -285,6 +285,3 @@ def test_p3a2_t11_agents_route_requires_authentication(
             fixture.session.close()
 
 
-def test_p3a2_auth09_delegation_not_applicable_by_contract() -> None:
-    """Closed-world @ ADR: no on-behalf-of delegation model — AUTH-09 N/A."""
-    assert True

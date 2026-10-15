@@ -14,6 +14,7 @@ from intergrax.applications._shared.strict_production_serving_http_caller_author
     authorize_strict_production_serving_http_caller,
     request_identity_from_strict_production_http_auth,
 )
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.fastapi_core.auth.context import AuthContext
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -61,3 +62,23 @@ def test_request_identity_requires_user_and_tenant() -> None:
     )
     assert identity.tenant_id == "env-prod"
     assert identity.user_id == "operator"
+
+
+def test_auth09_strict_http_profile_has_no_delegation_semantics() -> None:
+    """AUTH-09 — NOT APPLICABLE: strict HTTP maps AuthContext to direct RequestIdentity only."""
+    identity = request_identity_from_strict_production_http_auth(
+        AuthContext(
+            is_authenticated=True,
+            tenant_id="env-prod",
+            user_id="operator",
+            scopes=("*",),
+        ),
+    )
+    assert set(RequestIdentity.model_fields) == {
+        "tenant_id",
+        "user_id",
+        "principal_type",
+        "auth_subject",
+    }
+    assert identity.user_id == "operator"
+    assert identity.auth_subject == "operator"
