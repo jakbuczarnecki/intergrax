@@ -2,12 +2,14 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (P2-B chain; **P2-C HTTP** **EVIDENCE REQUIRED** post P2-C-ID-R1 @ `d1a03c5`) |
+| **Status** | **READY FOR AUDIT** (operator P2 acceptance — **not** parent **PROD-Q-R1-R7-Q PASS**) |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Prior children** | P1 (static reachability); P2-ENV-1 (import cycle); P2-ENV-2 (default pytest entry) |
 | **Branch** | `development` |
-| **P2-B START_HEAD** | `4dfbf4e80bc0e752b958f125d1f548b17a7751e1` |
-| **P2-B evidence commit** | *(see git `FINAL_COMMIT` in session report — doc-only delta)* |
+| **P2-FINAL-ACCEPTANCE START_HEAD** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` |
+| **P2-FINAL-ACCEPTANCE FINAL_COMMIT** | *(this documentation reconciliation commit on `development`)* |
+| **P2-B execution SHA** | `4dfbf4e80bc0e752b958f125d1f548b17a7751e1` (historical — **no** current-HEAD full-module replay) |
+| **P2-C HTTP execution SHA** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (user-reported run + partial session log) |
 | **ENV-1 FINAL_COMMIT** | `1de4fb5251c08141553f9397c2aeed04815c665d` |
 | **ENV-2 FINAL_COMMIT** | `6faaedba1` |
 
@@ -140,22 +142,27 @@ uv run pytest -p no:xdist -q \
 
 **Deferred:** P2-C HTTP module — independent run required before HTTP PASS / FRZ promotion.
 
-## P2-C HTTP → admission continuity (@ prior evidence `7ff73cc`; fixture superseded by ID-R1)
+## P2-C HTTP → admission continuity (@ `8e43b1604`; fixture per P2-C-ID-R1)
 
 **Module:** `tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py`
 
-**Command:**
+**User-reported command (mandatory entry — no `--noconftest`, `-p no:xdist`):**
 
 ```text
 uv run pytest -p no:xdist -q \
   tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py
 ```
 
+**Evidence SHA:** `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (`fix(p2-c): typed ContractAuthority on harness host and snapshot continuity tests`).
+
 | Metric | Value |
 |--------|-------|
-| **Passed** | 6 |
+| **Passed** | 6 (`test_p2c_g00` + `test_p2c_01`–`05`) |
 | **Skipped** | 0 |
-| **Pytest reported** | ~16 s (local) |
+| **Pytest reported** | **16.40 s** (partial session capture) |
+| **Partial log** | `.tmp/session/prod-q-r1-r7-q-p2-c-final/pytest.log` — **summary tail only** (not a full execution transcript; no per-test stdout/stderr archive) |
+
+**Prior exploratory run (@ `7ff73cc`, superseded fixture):** retained as background only — **not** cited as current-HEAD qualification.
 
 **Route / schema:** `POST {route_prefix}/run` default `POST /v1/governed_contractor/run`; body `GovernedContractorRunRequestV1` (`message`, `capability`, `tenant_id`, …).
 
@@ -217,12 +224,101 @@ Cross-tenant adversarial certification remains **P3**.
 
 | Gate | Status |
 |------|--------|
-| PROD-Q-R1-R7-Q-P2 | **READY FOR AUDIT** — P2-B executed; **P2-C HTTP EVIDENCE REQUIRED** after R1 fixture fix |
-| PROD-Q-R1-R7-Q-P2-C | **READY FOR AUDIT** — package-closure authority wiring (P2-C-IMPL-01); HTTP suite **EVIDENCE REQUIRED** |
-| PROD-Q-R1-R7-Q | **NOT QUALIFIED** |
-| Blocker class for HTTP gap | **EVIDENCE REQUIRED** (fixture integrity restored; HTTP suite not re-run in R1) |
+| PROD-Q-R1-R7-Q-P2 | **READY FOR AUDIT** — operator acceptance candidate; **not** autonomous PASS |
+| PROD-Q-R1-R7-Q-P2-C | **READY FOR AUDIT** — IMPL-01 @ `7d5b571e`+; HTTP @ `8e43b1604` (partial log) |
+| PROD-Q-R1-R7-Q-P2-C-ADR-01 | **PROPOSED** — ratification **governance dependency** for architectural closure of authority injection (see below) |
+| PROD-Q-R1-R7-Q | **NOT QUALIFIED** — P3 + **E.1** full replay remain mandatory per gate plan |
+| PROD-Q-R1-R7 / PROD-Q | **NOT CLOSED** |
 
-**Next mandatory roadmap stage:** parent **P3** cross-tenant matrix per gate plan.
+**Next mandatory roadmap stage:** **PROD-Q-R1-R7-Q-P3** adversarial cross-tenant matrix per [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) §E.2 wave 3.
+
+---
+
+## PROD-Q-R1-R7-Q-P2-FINAL-ACCEPTANCE (documentation reconciliation @ START_HEAD `8e43b1604`)
+
+**Mission:** reconcile accepted code + execution evidence only. **No** pytest/HTTP replay in this task.
+
+### Evidence reconciliation (layers)
+
+| Layer | SHA / source | Role in record |
+|-------|----------------|----------------|
+| **P2-B historical execution** | `4dfbf4e80bc0e752b958f125d1f548b17a7751e1` | Full integrated module: 16 passed, 58.51 s — log `.tmp/session/prod-q-r1-r7-q-p2-b/p2-full-run.log` |
+| **P2-B static continuity** | `4dfbf4e` → `8e43b1604` | `git diff` **empty** for `strict_production_serving.py` and `test_prod_q_r1_r7_q_p2_strict_production_integrated_e2e.py` — P2-B invariants unchanged at HEAD |
+| **P2-C HTTP current-HEAD execution** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` | User-reported command above; partial log `6 passed in 16.40s` |
+| **P2-C-IMPL-01 code** | from `7d5b571e` through `8e43b1604` | `RosterAgentContractAuthority` injection; no production `lab_compat` in package wiring / GCA strict path |
+| **Independent GitHub code audit (P2-C)** | operator-scheduled | Static review of IMPL-01 + HTTP module against exact SHA — **cited as external evidence class**, not Cursor assertion |
+| **Deferred P3** | — | Cross-tenant adversarial matrix (gate plan wave 3); **R7-Q FULL-D0-D4-REPLAY** (§E.1) **NOT EXECUTED** |
+
+### P2-N01 determination
+
+| Field | Value |
+|-------|-------|
+| **Verdict** | **PASS — historical execution + verified static continuity** |
+| **Invariant** | `create_governed_contractor_strict_production_asgi_app` raises before `create_governed_contractor_process_app` when `session.readiness.ready_for_traffic` is false |
+| **Code @ HEAD** | `applications/governed_contractor_application/host/strict_production_serving.py` L35–39 (unchanged vs P2-B SHA) |
+| **Historical test** | `test_p2_n01_unready_session_rejects_gca_factory` @ P2-B run — mutates `StrictProductionServingReadiness`, expects `ValueError` matching `not ready for traffic` |
+| **Bypass resistance** | P2-C package-closure / authority changes occur **downstream** of `create_governed_contractor_process_app`; they cannot satisfy unready session without passing the early guard |
+| **Current-HEAD pytest replay** | **Not claimed** for P2-B module |
+
+### ADR-01 disposition ([`PROD_Q_R1_R7_Q_P2_C_ADR_01_CANONICAL_PACKAGE_CLOSURE_CONTRACT_AUTHORITY.md`](PROD_Q_R1_R7_Q_P2_C_ADR_01_CANONICAL_PACKAGE_CLOSURE_CONTRACT_AUTHORITY.md))
+
+| Item | Record |
+|------|--------|
+| **Status** | **PROPOSED** — **not** operator-accepted; Cursor does **not** mark ACCEPTED |
+| **Implementation alignment** | Preferred **3.A + 3.C** implemented: typed `ContractAuthority` injection, `resolve_strict_package_contract_authority_for_serving_handoff`, production GCA factory passes `RosterAgentContractAuthority`, no implicit `lab_compat` on strict integrated path |
+| **Qualification support** | P2-C HTTP @ `8e43b1604` exercises unmocked `create_governed_contractor_process_app` through admission port |
+| **Ratification recommendation** | **ACCEPT** after independent exact-SHA audit confirms: single roster authority provenance, revision-bound identity, package-closure preservation, fail-closed missing authority, no lab fallback on strict production |
+| **Governance dependency** | If operator policy requires formal ADR before architectural sign-off on P2-C, **parent P2 operator acceptance** should record **ADR-01 ratification pending** or **ratified @ SHA** — does not retroactively block documented code evidence |
+
+### Parent acceptance matrix (mandatory P2 criteria)
+
+| Criterion | Semantic owner | Composition owner | HEAD | Historical SHA | Code / contract proof | Execution / gate proof | Continuity | Verdict | FRZ (local contribution) |
+|-----------|----------------|-------------------|------|----------------|----------------------|------------------------|------------|---------|--------------------------|
+| P1 prerequisite reachability | Apps + AD | D4 strict launcher | `8e43b1604` | P1 @ `8ec49660…` | P1 qualification record | P1 static + selective D2/D4 reuse | P1 **READY FOR AUDIT** | **PASS** (prerequisite) | FRZ-PRD-07, FRZ-PRD-08 |
+| ENV-1 import cycle | Runtime / AD wiring | `sqlite_stores` lazy import | `8e43b1604` | `1de4fb52…` | lazy `get_for_revision` | fresh-process import @ ENV-1 session | static | **PASS** | FRZ-PRD-03 |
+| ENV-2 default pytest entry | Harness tests | `tests/conftest.py` | `8e43b1604` | `6faaedba1` | Task forward-ref fix | collection @ ENV-2 | static | **PASS** | FRZ-PRD-03 |
+| P2-G00–G03 import/collection | Qualification | pytest default entry | `8e43b1604` | `4dfbf4e` | same module paths | **executed @ `4dfbf4e`** | file unchanged HEAD | **PASS** (historical + continuity) | FRZ-PRD-03, FRZ-PRD-04 |
+| P2-A01 positive chain + identity | AD + Apps | D4 `_open_with_activation` | `8e43b1604` | `4dfbf4e` | `assert_identity_continuity` | **executed @ `4dfbf4e`** | module unchanged | **PASS** (historical + continuity) | FRZ-PRD-04, FRZ-PRD-09 |
+| P2-A02 GCA strict handoff | Apps GCA | `create_governed_contractor_strict_production_asgi_app` | `8e43b1604` | `4dfbf4e` | handoff object identity | **executed @ `4dfbf4e`** (mocked inner app builder) | unchanged | **PASS** (historical + continuity) | FRZ-PRD-12 |
+| **P2-N01** unready → no GCA | Apps GCA | `strict_production_serving.py` guard | `8e43b1604` | `4dfbf4e` | L35–39 before `create_governed_contractor_process_app` | `test_p2_n01` @ `4dfbf4e` | **git diff empty** | **PASS** (historical + static continuity) | FRZ-SEC-04, FRZ-PRD-09 |
+| P2-N02 D4 negative replay | D4 launcher | subprocess D4 tests | `8e43b1604` | `4dfbf4e` | D4 module names in P2 test | **executed @ `4dfbf4e`** | D4 tests independent | **PASS** (historical) | FRZ-PRD-07, FRZ-SEC-04 |
+| P2-N03 resolver handoff mismatch | D1b handoff | D1b qualification test | `8e43b1604` | `4dfbf4e` | typed handoff rejection | **executed @ `4dfbf4e`** | — | **PASS** (historical) | FRZ-PRD-08 |
+| P2-C-ID-R1 contract identity | AD registry + Apps manifest | GCA `_ac3_revision_bound_host_manifest` | `8e43b1604` | `d1a03c5` | declarative `AgentBinding(contract_id="search")` | regression module 5 passed @ ID-R1 | code retained | **PASS** | FRZ-REG-02/03 |
+| P2-C-R1 unfiltered closure | Apps wiring | `validate_application_package_closure` | `8e43b1604` | `3d1a603` | no agent-roster filter monkeypatch | regression @ R1 session | — | **PASS** | FRZ-PRD-08 |
+| P2-C-IMPL-01 roster authority | AD install + projection | GCA `factory.py` → harness | `8e43b1604` | `7d5b571e` | `package_wiring.resolve_strict_package_contract_authority_for_serving_handoff` | 13 passed targeted @ IMPL-01 session | through `8e43b1604` | **PASS** (static + targeted exec) | FRZ-CTR-01, FRZ-REG-02/03 |
+| P2-C HTTP admission smoke | Apps admission port | unmocked strict ASGI app | `8e43b1604` | — | HTTP module graph in §P2-C | **6 passed @ `8e43b1604`** (partial log) | post-IMPL-01 | **PASS** (HEAD execution; partial transcript) | FRZ-PRD-08, FRZ-PRD-09 |
+| P2-B full module @ HEAD | — | — | `8e43b1604` | — | — | **not re-run** | static only | **NOT PROVEN** @ HEAD | — |
+| R7-Q E.1 full D0–D4 replay | R7-Q parent | gate plan §E.1 | — | slice SHAs | — | **NOT EXECUTED** | — | **NOT PROVEN** | all FRZ global OPEN |
+| P3 cross-tenant adversarial | R7-Q | wave 3 | — | — | — | **deferred** | — | **NOT PROVEN** | FRZ-TEN-* |
+
+**P2 operator acceptance recommendation:** **READY FOR AUDIT** — mandatory rows above show **no FAIL**; **NOT PROVEN** rows are explicitly scoped (HEAD P2-B replay, parent E.1, P3). **Does not** close **PROD-Q-R1-R7-Q** or promote global **FRZ-*** PASS.
+
+### Enterprise audit (P2 final — evidence continuity)
+
+| Criterion | Verdict | Notes |
+|-----------|---------|-------|
+| Hard layer boundaries | **PASS** | No new cross-tier imports in P2 evidence chain |
+| Exactly-one semantic owner | **PASS** | AD roster/install authority; Apps GCA composition |
+| Exactly-one composition owner | **PASS** | D4 opener + strict GCA factory |
+| Typed contracts | **PASS** | `ContractAuthority`, handoff, admission port |
+| Pluginability / replaceability | **PASS** | D4 fake-adapter negatives in P2-B matrix |
+| Bypass resistance | **PASS** | P2-N01 guard + D4 deny paths |
+| Governance ≠ Execution | **PASS** | governance on activation; admission port separate |
+| Authority non-expansion | **PASS** | closure injection does not widen governance |
+| Fail-closed | **PASS** | unready session, DENY admission (P2C-02) |
+| Traceability | **PASS** | SHA-tagged commands; partial log labeled |
+| Evidence continuity | **PASS** with explicit gaps | P2-B @ `4dfbf4e` + static diff; P2-C @ HEAD |
+| Regression protection | **PASS** | targeted P2-C unit/regression modules |
+
+**Canonical roadmap / freeze checklist:** not updated in this task (operator-owned).
+
+### Unresolved findings
+
+1. P2-B integrated module **not** replayed at `8e43b1604` (static continuity only).
+2. P2-C HTTP log is **partial** — not a full execution transcript.
+3. **ADR-01** remains **PROPOSED** until operator ratification.
+4. **`capability_graph_wiring`** `lab_compat` seed path — follow-up per ADR §5 (non-blocker for P2-C HTTP evidence).
+5. **R7-Q FULL-D0-D4-REPLAY** and **P3** mandatory before parent **R7-Q PASS**.
 
 ---
 
@@ -273,9 +369,9 @@ uv run pytest -p no:xdist -q \
 
 **Result:** 13 passed (~2.1 s). Log: `.tmp/session/prod-q-r1-r7-q-p2-c-final/pytest-rerun.log`
 
-### Deferred
+### Deferred (post-IMPL-01)
 
-`test_prod_q_r1_r7_q_p2_c_http_execution_admission.py` — **EVIDENCE REQUIRED** (not run in IMPL-01).
+`test_prod_q_r1_r7_q_p2_c_http_execution_admission.py` — executed @ **`8e43b1604`** in user session (see §P2-C HTTP); not re-run in this acceptance documentation task.
 
 ### Enterprise audit matrix (IMPL-01)
 
@@ -291,17 +387,17 @@ uv run pytest -p no:xdist -q \
 | Governance ≠ Execution | **PASS** (unchanged) |
 | Package closure preserved | **PASS** |
 | Fail-closed missing authority (strict) | **PASS** |
-| HTTP integrated qualification | **NOT PROVEN** (deferred) |
+| HTTP integrated qualification | **PASS** @ `8e43b1604` (partial log — see §P2-C) |
 
-### FRZ (IMPL-01 evidence)
+### FRZ (IMPL-01 + P2-C HTTP evidence)
 
 | FRZ | Verdict |
 |-----|---------|
-| FRZ-PRD-08 | **NOT PROVEN** (HTTP deferred) |
-| FRZ-PRD-09 | **PASS** (handoff ↔ projection checks) |
+| FRZ-PRD-08 | **PASS** (local P2-C HTTP — **not** global FRZ PASS) |
+| FRZ-PRD-09 | **PASS** (handoff ↔ projection + P2C-05) |
 | FRZ-CTR-01 | **PASS** (single resolution API) |
 | FRZ-REG-02/03 | **PASS** (revision-bound roster authority) |
-| FRZ-SEC-04 | **NOT PROVEN** at HTTP layer |
+| FRZ-SEC-04 | **PASS** (P2C-02 DENY + P2-N01 — local scope) |
 
 ---
 

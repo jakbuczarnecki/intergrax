@@ -6,8 +6,8 @@
 | **Revision** | **R0** |
 | **Date** | 2026-10-15 |
 | **Branch** | `development` |
-| **Evidence HEAD** | `0f4f1c06cdc79144ad70c7e5296e0a53ff6c97ed` |
-| **Parent** | **PROD-Q-R1-R7-Q-P2** — **BLOCKED** (P2-C HTTP / integrated closure) |
+| **Evidence HEAD** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (IMPL-01 + P2-C HTTP qualification chain) |
+| **Parent** | **PROD-Q-R1-R7-Q-P2** — **READY FOR AUDIT** (operator acceptance — implementation + HTTP evidence reconciled in P2 qualification record) |
 | **Baseline ADR** | [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) (**R6** — ratified deployment authority; does not close this slice) |
 | **Gate plan** | [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) · P2 qualification record [`PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md`](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md) |
 | **Does not close** | **PROD-Q-R1-R7-Q-P2** · **PROD-Q-R1-R7-Q** · **PROD-Q-R1-R7** · **PROD-Q** · any **FRZ-PRD** global PASS |
@@ -256,11 +256,13 @@ create_governed_contractor_strict_production_asgi_app
 
 | Blocker | Owner |
 |---------|-------|
-| Operator acceptance of **PROPOSED** ADR | Operator |
-| Implementation wave **PROD-Q-R1-R7-Q-P2-C-IMPL-01** (bounded) | Engineering |
-| Independent exact-SHA audit of implementation | Auditor |
-| P2-C HTTP re-qualification after impl | Qualification |
+| Operator **ratification** of **PROPOSED** ADR (status remains **PROPOSED** until accepted) | Operator |
+| Independent exact-SHA audit of IMPL-01 @ `8e43b1604` | Auditor |
+| P2-B full integrated module replay @ current HEAD (optional regression; static continuity recorded) | Operator-scheduled qualification |
 | `capability_graph_wiring` lab_compat on seed graph (if strict wiring hits seed path) | Follow-up architecture check |
+| Parent **PROD-Q-R1-R7-Q** closure (P3 + E.1 replay) | R7-Q program |
+
+**Closed since R0:** IMPL-01 implementation; P2-C HTTP module execution @ `8e43b1604` (partial log — see P2 qualification record).
 
 ---
 
@@ -268,6 +270,19 @@ create_governed_contractor_strict_production_asgi_app
 
 | Item | Value |
 |------|-------|
-| **Maximum status** | **READY FOR AUDIT** (decision proposal only) |
-| **Parent PROD-Q-R1-R7-Q-P2** | Remains **BLOCKED** until implementation + HTTP evidence |
+| **Maximum status** | **READY FOR AUDIT** (decision proposal — **not** ACCEPTED) |
+| **Parent PROD-Q-R1-R7-Q-P2** | **READY FOR AUDIT** — code + HTTP evidence; ADR ratification is a **governance** step, not a substitute for independent code audit |
 | **FRZ promotion** | **None** |
+
+---
+
+## 11. Ratification recommendation (P2-FINAL-ACCEPTANCE @ `8e43b1604`)
+
+**Recommend operator ACCEPT** of ADR-01 (3.A + 3.C) after independent GitHub SHA audit confirms:
+
+- `RosterAgentContractAuthority` is the sole strict-production contract metadata source on the GCA integrated path.
+- Typed injection through `wire_application_environment` / `collect_application_dependencies` — no implicit `materialize_manifest_contract_authority_lab_compat` on that path.
+- Package-closure and version pinning preserved; fail-closed when authority missing.
+- P2-C HTTP qualification @ `8e43b1604` demonstrates unmocked strict assembly through admission port.
+
+**Do not** treat this section as ADR acceptance. If operator policy requires ratified ADR before architectural sign-off, record **ADR pending** on P2 operator acceptance — does not invalidate reconciled execution evidence.
