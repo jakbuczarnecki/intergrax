@@ -28,6 +28,7 @@ from intergrax.applications._shared.roster_agent_contract_authority import (
 )
 from intergrax.applications._shared.serving_runtime_handoff import (
     ServingRuntimeHandoff,
+    ServingRuntimeHandoffError,
     ServingUnitIdentity,
 )
 from intergrax.applications._shared.strict_product_manifest_ci_gates import (
@@ -140,6 +141,66 @@ def test_wrong_contract_id_fail_closed(tmp_path: Path) -> None:
             env,
             contract_authority=bundle.roster_contract_authority,
         )
+
+
+def test_stale_handoff_revision_rejected_before_authority_resolution(
+    tmp_path: Path,
+) -> None:
+    platform, bundle, projection, manifest, revision = _seed_declarative_revision_bundle(
+        tmp_path,
+    )
+    handoff = ServingRuntimeHandoff(
+        identity=ServingUnitIdentity(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id="stale-revision-id",
+            serving_unit_ref="unit-1",
+            materialization_artifact_digest=revision.materialization_artifact_digest or "",
+            materialization_topology=MaterializationTopology.VENV_BUNDLE,
+        ),
+        runtime_agent_factory_resolver=bundle.factory_resolver,
+    )
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
+    with pytest.raises(ServingRuntimeHandoffError, match="revision disagrees"):
+        resolve_strict_package_contract_authority_for_serving_handoff(
+            manifest=manifest,
+            env=env,
+            handoff=handoff,
+            registry_projection=projection,
+            registry_projection_authority=platform.registry_projection_authority,
+        )
+
+
+def test_serving_handoff_authority_matches_projection_bundle_contracts(
+    tmp_path: Path,
+) -> None:
+    platform, bundle, projection, manifest, revision = _seed_declarative_revision_bundle(
+        tmp_path,
+    )
+    handoff = ServingRuntimeHandoff(
+        identity=ServingUnitIdentity(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id=revision.runtime_revision_id,
+            serving_unit_ref="unit-1",
+            materialization_artifact_digest=revision.materialization_artifact_digest or "",
+            materialization_topology=MaterializationTopology.VENV_BUNDLE,
+        ),
+        runtime_agent_factory_resolver=bundle.factory_resolver,
+    )
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
+    handoff_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+        manifest=manifest,
+        env=env,
+        handoff=handoff,
+        registry_projection=projection,
+        registry_projection_authority=platform.registry_projection_authority,
+    )
+    binding = manifest.enabled_agents()[0]
+    bundle_contract = bundle.roster_contract_authority.contract_for_binding(binding)
+    handoff_contract = handoff_authority.contract_for_binding(binding)
+    assert handoff_contract.id == bundle_contract.id
+    assert handoff_contract.version == bundle_contract.version
 
 
 def test_wrong_environment_rejected_before_package_validation(tmp_path: Path) -> None:

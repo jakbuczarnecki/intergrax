@@ -43,6 +43,9 @@ from intergrax.applications._shared.decision_wiring import (
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_for_application_host,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ContractAuthority,
+)
 from intergrax.applications._shared.skill_host_execution_wiring import (
     build_host_skill_catalog_wiring_from_environment,
 )
@@ -318,7 +321,7 @@ def build_harness_host_runtime(
     strict_orchestration_topology_submission_port_builder: (
         StrictOrchestrationTopologySubmissionPortBuilder | None
     ) = None,
-    agent_contract_authority: Any | None = None,
+    agent_contract_authority: ContractAuthority | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
