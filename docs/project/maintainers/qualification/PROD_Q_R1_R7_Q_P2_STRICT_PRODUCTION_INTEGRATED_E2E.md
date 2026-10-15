@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (P2-B chain + **P2-C HTTP→admission continuity** @ `7ff73cc` START_HEAD) |
+| **Status** | **READY FOR AUDIT** (P2-B chain; **P2-C HTTP** evidence **EVIDENCE REQUIRED** post P2-C-R1 @ `3d1a603`) |
 | **Parent** | PROD-Q-R1-R7-Q (not PASS) |
 | **Prior children** | P1 (static reachability); P2-ENV-1 (import cycle); P2-ENV-2 (default pytest entry) |
 | **Branch** | `development` |
@@ -80,7 +80,21 @@ uv run pytest -p no:xdist -q \
 | Wrong revision / resolver handoff | D1b `test_handoff_rejects_resolver_instance_mismatch` (`test_p2_n03`) | **PASS** |
 | Default pytest entry / import prerequisites | `test_p2_g01`–`g02` | **PASS** |
 
-## P2-C HTTP → admission continuity (@ START_HEAD `7ff73cc`)
+## P2-C-R1 — package closure integrity corrective (@ START_HEAD `3d1a603`)
+
+**Finding:** P2-C filtered `validate_application_package_closure` violations prefixed with `package agent dependency `, masking AGENT roster mismatches.
+
+**Suppressed dependency (pre-fix):** `package agent dependency 'echo' not on enabled roster` — AC3 lab mount used `contract_id="search"` while `echo.contract` materializes `AgentContract.id == "echo"`.
+
+**Fixture correction:** GCA strict HTTP manifest patch uses `AgentBinding.mount(EchoAgent, contract_id="echo", …)` (aligned with AgentContract.id); effective roster slot `search` unchanged on activation bundle; **removed** `package_wiring.validate_application_package_closure` monkeypatch. Canonical validator **unfiltered**.
+
+**Typing:** `_StrictHttpAdmissionFixture.app: FastAPI`; `runtime_policy_bundle: ImmutableRuntimePolicyBundle` via gr6 helper guard (no `# type: ignore`).
+
+**Regression (executed in R1 session):** `tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_package_closure_regression.py` — `contract_id="search"` mount surfaces agent-roster violation; `contract_id="echo"` has zero agent-roster violations.
+
+**Deferred:** full P2-C HTTP module (`test_prod_q_r1_r7_q_p2_c_http_execution_admission.py`) — **not re-run** in R1; independent controlled qualification required before HTTP PASS.
+
+## P2-C HTTP → admission continuity (@ prior evidence `7ff73cc`; fixture superseded by R1)
 
 **Module:** `tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py`
 
@@ -103,7 +117,7 @@ uv run pytest -p no:xdist -q \
 
 **Real vs stub:** admission port, handoff, adapter in-flight accounting **real**; `install_host_llm_stub` + `TaskBoundAgenticDelegate.execute` **stub** (below admission wrapper). No mock of `create_governed_contractor_process_app`, routing, or `admit_execution` / `release_execution`.
 
-**Qualification seams (documented):** AC3-aligned manifest patch (D4), wiring-safe env (`otel_enabled=False`, `dependency_concurrency_admission`), lab package-closure filter for echo/search contract id — **does not** bypass admission.
+**Qualification seams (documented):** AC3 activation bundle (D4) + R1 GCA host manifest (`contract_id="echo"` aligned with AgentContract.id), wiring-safe env (`otel_enabled=False`, `dependency_concurrency_admission`); **no** package-closure filter (R1).
 
 | Case | Evidence |
 |------|----------|
@@ -157,9 +171,10 @@ Cross-tenant adversarial certification remains **P3**.
 
 | Gate | Status |
 |------|--------|
-| PROD-Q-R1-R7-Q-P2 | **READY FOR AUDIT** — P2-B + **P2-C HTTP admission** |
+| PROD-Q-R1-R7-Q-P2 | **READY FOR AUDIT** — P2-B executed; **P2-C HTTP EVIDENCE REQUIRED** after R1 fixture fix |
+| PROD-Q-R1-R7-Q-P2-C | **CORRECTION APPLIED** — await independent HTTP re-qualification |
 | PROD-Q-R1-R7-Q | **NOT QUALIFIED** |
-| Blocker class for HTTP gap | **EVIDENCE REQUIRED** (not IN-SCOPE production defect on executed chain) |
+| Blocker class for HTTP gap | **EVIDENCE REQUIRED** (fixture integrity restored; HTTP suite not re-run in R1) |
 
 **Next mandatory roadmap stage:** parent **P3** cross-tenant matrix per gate plan.
 

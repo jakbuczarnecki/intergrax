@@ -9,6 +9,7 @@ from typing import Final
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
@@ -27,6 +28,8 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from testing_support.host_fixture_wiring import (
     host_wiring_test_environment,
     install_diagnostic_cursor_secret,
@@ -40,7 +43,7 @@ from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import 
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
-_EXPECTED_START_HEAD: Final = "7ff73cc7c14c1fddb15b7a6470d2ea3bf9d367c3"
+_EXPECTED_START_HEAD: Final = "3d1a603f9454d17bd15f28c07a9e7731bae2b3de"
 _RUN_ROUTE_SUFFIX: Final = "/run"
 _INNER_DELEGATE = (
     "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute"
@@ -50,7 +53,7 @@ _INNER_DELEGATE = (
 @dataclass(frozen=True, slots=True)
 class _StrictHttpAdmissionFixture:
     session: StrictProductionServingSession
-    app: object
+    app: FastAPI
     adapter: VenvBundleColocatedRuntimeDeploymentAdapter
     unit_ref: str
     run_url: str
@@ -111,41 +114,50 @@ def _strict_http_environment_profile(
     )
 
 
-def _patch_gca_strict_http_wiring(monkeypatch: pytest.MonkeyPatch, d4) -> None:
-    """AC3-aligned manifest (D4) + wiring-safe env; lab package-closure quirk filtered."""
-    import intergrax.applications._shared.package_wiring as package_wiring
+def _ac3_serving_manifest_for_package_closure() -> ApplicationManifest:
+    """GCA HTTP host manifest: declarative contract_id matches Echo AgentContract.id."""
+    from echo.echo_agent import EchoAgent
+    from tests.unit.applications.test_production_registry_startup_ac3_final import _APP
 
+    return ApplicationManifest.lab(
+        app_id=_APP,
+        name="AC3 Final",
+        agents=[
+            AgentBinding.mount(
+                EchoAgent,
+                contract_id="echo",
+                capabilities=["echo.basic"],
+            ),
+        ],
+    )
+
+
+def _gr6_production_policy_bundle() -> ImmutableRuntimePolicyBundle:
+    from applications.governed_contractor_application.tests.host.test_gr6_wire_production_decision_governance import (
+        _test_policy_bundle,
+    )
+
+    bundle = _test_policy_bundle()
+    if not isinstance(bundle, ImmutableRuntimePolicyBundle):
+        raise TypeError("expected ImmutableRuntimePolicyBundle from gr6 test helper")
+    return bundle
+
+
+def _patch_gca_strict_http_wiring(monkeypatch: pytest.MonkeyPatch, d4) -> None:
+    """AC3-aligned manifest (D4) + wiring-safe env; canonical package closure unfiltered."""
     d4._patch_gca_manifest_for_ac3_serving(monkeypatch)
     for module in (
         "governed_contractor_application.host.main",
         "governed_contractor_application.host.factory",
     ):
         monkeypatch.setattr(
+            f"{module}.build_governed_contractor_manifest",
+            _ac3_serving_manifest_for_package_closure,
+        )
+        monkeypatch.setattr(
             f"{module}.build_governed_contractor_environment_profile",
             _strict_http_environment_profile,
         )
-
-    _real_validate = package_wiring.validate_application_package_closure
-
-    def _qualification_package_closure(
-        package,
-        manifest,
-        env,
-        snapshot,
-        **kwargs,
-    ):
-        violations = _real_validate(package, manifest, env, snapshot, **kwargs)
-        return [
-            item
-            for item in violations
-            if not item.startswith("package agent dependency ")
-        ]
-
-    monkeypatch.setattr(
-        package_wiring,
-        "validate_application_package_closure",
-        _qualification_package_closure,
-    )
 
 
 def _physical_in_flight(
@@ -195,10 +207,6 @@ def _build_strict_http_fixture(
     assert session.readiness.ready_for_traffic is True
     assert session.composition.serving_runtime_handoff is not None
 
-    from applications.governed_contractor_application.tests.host.test_gr6_wire_production_decision_governance import (
-        _test_policy_bundle,
-    )
-
     settings = replace(
         GovernedContractorBackendSettings.from_env(),
         include_mcp=False,
@@ -206,7 +214,7 @@ def _build_strict_http_fixture(
         include_interaction_routes=False,
         include_task_control=False,
         default_agent_id="search",
-        runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        runtime_policy_bundle=_gr6_production_policy_bundle(),
     )
     host_runtime = d4._host_runtime_for_startup(settings)
     app = create_governed_contractor_strict_production_asgi_app(
@@ -244,6 +252,7 @@ def _close_serving_unit_admission(
     adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
     serving_unit_ref: str,
 ) -> None:
+    # Physical admission seam (D1 R6 serving-admission proofs); authority port unchanged.
     unit = adapter._units[serving_unit_ref]
     unit.serving_admission_authorized = False
 
