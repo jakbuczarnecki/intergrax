@@ -2,12 +2,14 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **PROPOSED** (architecture decision preparation only — **not** operator-accepted) |
-| **Revision** | **R0** |
-| **Date** | 2026-10-15 |
+| **Status** | **ACCEPTED — operator-ratified** (2026-10-15) |
+| **Revision** | **R0** (ratified — no semantic redesign) |
+| **Decision date** | 2026-10-15 |
 | **Branch** | `development` |
-| **Evidence HEAD** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (IMPL-01 + P2-C HTTP qualification chain) |
-| **Parent** | **PROD-Q-R1-R7-Q-P2** — **READY FOR AUDIT** (operator acceptance — implementation + HTTP evidence reconciled in P2 qualification record) |
+| **Implementation evidence SHA** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (IMPL-01 + P2-C HTTP qualification chain) |
+| **Ratification** | Operator closure **PROD-Q-R1-R7-Q-P2-OPERATOR-CLOSURE** on `development` (documentation record; independent GitHub SHA audit pending on closure commit) |
+| **Parent** | **PROD-Q-R1-R7-Q-P2** — **CLOSED — operator exact-SHA acceptance** (does **not** close **PROD-Q-R1-R7-Q** or **PROD-Q**) |
+| **Ratification scope** | Architecture **3.A + 3.C** only — **not** certification of every production entrypoint or global architectural freeze |
 | **Baseline ADR** | [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) (**R6** — ratified deployment authority; does not close this slice) |
 | **Gate plan** | [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) · P2 qualification record [`PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md`](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md) |
 | **Does not close** | **PROD-Q-R1-R7-Q-P2** · **PROD-Q-R1-R7-Q** · **PROD-Q-R1-R7** · **PROD-Q** · any **FRZ-PRD** global PASS |
@@ -180,7 +182,7 @@ create_governed_contractor_strict_production_asgi_app
 | No Governance widening | Yes | Yes | Yes |
 | Fail-closed missing/stale contract | Yes | Partial | Yes (but breaks lab) |
 
-**Decision:** **Unresolved for operator acceptance** — **recommended implementation package: 3.A + 3.C**, with optional **3.B** cross-check in `validate_application_package_closure` when `registry_projection` is supplied to wiring.
+**Decision (operator-ratified 2026-10-15):** **ACCEPTED — 3.A + 3.C**, with optional **3.B** cross-check in `validate_application_package_closure` when `registry_projection` is supplied to wiring (optional — not required for P2 closure). **3.B** alone and **3.C** alone remain **rejected** as standalone fixes (see matrix §3.D).
 
 ---
 
@@ -256,8 +258,7 @@ create_governed_contractor_strict_production_asgi_app
 
 | Blocker | Owner |
 |---------|-------|
-| Operator **ratification** of **PROPOSED** ADR (status remains **PROPOSED** until accepted) | Operator |
-| Independent exact-SHA audit of IMPL-01 @ `8e43b1604` | Auditor |
+| Independent exact-SHA audit of operator ratification + IMPL-01 @ `8e43b160447ca43de6631fe2a1b7f99948b64f2f` | Auditor |
 | P2-B full integrated module replay @ current HEAD (optional regression; static continuity recorded) | Operator-scheduled qualification |
 | `capability_graph_wiring` lab_compat on seed graph (if strict wiring hits seed path) | Follow-up architecture check |
 | Parent **PROD-Q-R1-R7-Q** closure (P3 + E.1 replay) | R7-Q program |
@@ -270,19 +271,22 @@ create_governed_contractor_strict_production_asgi_app
 
 | Item | Value |
 |------|-------|
-| **Maximum status** | **READY FOR AUDIT** (decision proposal — **not** ACCEPTED) |
-| **Parent PROD-Q-R1-R7-Q-P2** | **READY FOR AUDIT** — code + HTTP evidence; ADR ratification is a **governance** step, not a substitute for independent code audit |
-| **FRZ promotion** | **None** |
+| **Maximum status** | **ACCEPTED — operator-ratified** (independent exact-SHA audit of closure commit still required) |
+| **Parent PROD-Q-R1-R7-Q-P2** | **CLOSED — operator exact-SHA acceptance** — implementation @ `8e43b1604`; ADR ratification records architecture authority; **not** a substitute for independent code audit |
+| **FRZ promotion** | **None** (local P2 contributions only) |
 
 ---
 
-## 11. Ratification recommendation (P2-FINAL-ACCEPTANCE @ `8e43b1604`)
+## 11. Operator ratification record (implementation @ `8e43b160447ca43de6631fe2a1b7f99948b64f2f`)
 
-**Recommend operator ACCEPT** of ADR-01 (3.A + 3.C) after independent GitHub SHA audit confirms:
+**Accepted architecture (3.A + 3.C), subject to documented conditions:**
 
-- `RosterAgentContractAuthority` is the sole strict-production contract metadata source on the GCA integrated path.
-- Typed injection through `wire_application_environment` / `collect_application_dependencies` — no implicit `materialize_manifest_contract_authority_lab_compat` on that path.
-- Package-closure and version pinning preserved; fail-closed when authority missing.
-- P2-C HTTP qualification @ `8e43b1604` demonstrates unmocked strict assembly through admission port.
+- Strict production contract metadata authority: **`RosterAgentContractAuthority`** via **`RegistryProjectionAuthorityResolver`** and trusted revision/roster/artifact metadata.
+- Explicit typed **`ContractAuthority`** injection through sanctioned GCA composition (`resolve_strict_package_contract_authority_for_serving_handoff` → `build_harness_host_runtime` → `wire_application_environment` → `assert_manifest_package_closure` → `collect_application_dependencies`).
+- Exactly **one** canonical package-closure validator (`assert_manifest_package_closure` / `validate_application_package_closure` — no second mechanism).
+- **`ManifestAgentContractAuthority`** / `materialize_manifest_contract_authority_lab_compat` **explicit** for lab/CI only; **zero** implicit lab compatibility fallback on strict production integrated path.
+- **No** additional registry, semantic owner, authorization authority, or execution path.
 
-**Do not** treat this section as ADR acceptance. If operator policy requires ratified ADR before architectural sign-off, record **ADR pending** on P2 operator acceptance — does not invalidate reconciled execution evidence.
+**Evidence basis (not re-executed in ratification task):** P2-C HTTP @ `8e43b1604` (6 passed / partial log); IMPL-01 static chain; P2 qualification record [`PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md`](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md).
+
+**Does not claim:** global **FRZ-*** PASS; **PROD-Q-R1-R7-Q** PASS; full external business execution (terminal delegate / LLM stubbed).

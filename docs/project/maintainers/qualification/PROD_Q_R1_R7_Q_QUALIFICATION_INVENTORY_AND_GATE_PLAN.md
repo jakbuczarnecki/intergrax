@@ -213,7 +213,7 @@ Historical D0–D4 evidence may be cited as **background** only — it does **no
 
 **STOP:** No wave may mark **PROD-Q-R1-R7-Q PASS** without independent audit @ exact SHA and completion of **E.1** when operator mandates full replay.
 
-**Next mandatory child:** **PROD-Q-R1-R7-Q-P1 — Strict Production Reachability Gate**.
+**Next mandatory child:** **PROD-Q-R1-R7-Q-P3** — adversarial cross-tenant matrix (wave 3). **P1** = **READY FOR AUDIT** @ `8ec49660…`; **P2** = **CLOSED — operator exact-SHA acceptance** @ implementation `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (qualification [`PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md`](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md)).
 
 ---
 

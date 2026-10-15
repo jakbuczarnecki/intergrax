@@ -2,12 +2,14 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (operator P2 acceptance — **not** parent **PROD-Q-R1-R7-Q PASS**) |
-| **Parent** | PROD-Q-R1-R7-Q (not PASS) |
-| **Prior children** | P1 (static reachability); P2-ENV-1 (import cycle); P2-ENV-2 (default pytest entry) |
+| **Status** | **CLOSED — operator exact-SHA acceptance** (independent GitHub SHA audit pending on operator-closure documentation commit) |
+| **Parent** | PROD-Q-R1-R7-Q (**NOT QUALIFIED** — P3 + §E.1 remain mandatory) |
+| **Prior children** | P1 (**READY FOR AUDIT** — prerequisite evidence); P2-ENV-1 (import cycle); P2-ENV-2 (default pytest entry) |
 | **Branch** | `development` |
 | **P2-FINAL-ACCEPTANCE START_HEAD** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` |
 | **P2-FINAL-ACCEPTANCE FINAL_COMMIT** | `56b061d5ae352d2e07610305e1aed589b135e9c3` |
+| **P2-OPERATOR-CLOSURE START_HEAD** | `5093ba77acac5c6091a1fd1b393287999a8c2b06` |
+| **Accepted ADR** | [`PROD_Q_R1_R7_Q_P2_C_ADR_01_CANONICAL_PACKAGE_CLOSURE_CONTRACT_AUTHORITY.md`](PROD_Q_R1_R7_Q_P2_C_ADR_01_CANONICAL_PACKAGE_CLOSURE_CONTRACT_AUTHORITY.md) — **ACCEPTED — operator-ratified** (2026-10-15) @ implementation `8e43b1604` |
 | **P2-B execution SHA** | `4dfbf4e80bc0e752b958f125d1f548b17a7751e1` (historical — **no** current-HEAD full-module replay) |
 | **P2-C HTTP execution SHA** | `8e43b160447ca43de6631fe2a1b7f99948b64f2f` (user-reported run + partial session log) |
 | **ENV-1 FINAL_COMMIT** | `1de4fb5251c08141553f9397c2aeed04815c665d` |
@@ -224,10 +226,10 @@ Cross-tenant adversarial certification remains **P3**.
 
 | Gate | Status |
 |------|--------|
-| PROD-Q-R1-R7-Q-P2 | **READY FOR AUDIT** — operator acceptance candidate; **not** autonomous PASS |
-| PROD-Q-R1-R7-Q-P2-C | **READY FOR AUDIT** — IMPL-01 @ `7d5b571e`+; HTTP @ `8e43b1604` (partial log) |
-| PROD-Q-R1-R7-Q-P2-C-ADR-01 | **PROPOSED** — ratification **governance dependency** for architectural closure of authority injection (see below) |
-| PROD-Q-R1-R7-Q | **NOT QUALIFIED** — P3 + **E.1** full replay remain mandatory per gate plan |
+| PROD-Q-R1-R7-Q-P2 | **CLOSED — operator exact-SHA acceptance** — evidence chain below; independent audit pending |
+| PROD-Q-R1-R7-Q-P2-C | **CLOSED** (within P2) — IMPL-01 @ `7d5b571e`→`8e43b1604`; HTTP 6/6 @ `8e43b1604` (partial log) |
+| PROD-Q-R1-R7-Q-P2-C-ADR-01 | **ACCEPTED — operator-ratified** (2026-10-15) — design **3.A + 3.C** @ `8e43b1604` |
+| PROD-Q-R1-R7-Q | **NOT QUALIFIED** — **P3** next mandatory child; **E.1** full replay **NOT EXECUTED** |
 | PROD-Q-R1-R7 / PROD-Q | **NOT CLOSED** |
 
 **Next mandatory roadmap stage:** **PROD-Q-R1-R7-Q-P3** adversarial cross-tenant matrix per [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) §E.2 wave 3.
@@ -264,11 +266,11 @@ Cross-tenant adversarial certification remains **P3**.
 
 | Item | Record |
 |------|--------|
-| **Status** | **PROPOSED** — **not** operator-accepted; Cursor does **not** mark ACCEPTED |
-| **Implementation alignment** | Preferred **3.A + 3.C** implemented: typed `ContractAuthority` injection, `resolve_strict_package_contract_authority_for_serving_handoff`, production GCA factory passes `RosterAgentContractAuthority`, no implicit `lab_compat` on strict integrated path |
-| **Qualification support** | P2-C HTTP @ `8e43b1604` exercises unmocked `create_governed_contractor_process_app` through admission port |
-| **Ratification recommendation** | **ACCEPT** after independent exact-SHA audit confirms: single roster authority provenance, revision-bound identity, package-closure preservation, fail-closed missing authority, no lab fallback on strict production |
-| **Governance dependency** | If operator policy requires formal ADR before architectural sign-off on P2-C, **parent P2 operator acceptance** should record **ADR-01 ratification pending** or **ratified @ SHA** — does not retroactively block documented code evidence |
+| **Status** | **ACCEPTED — operator-ratified** (2026-10-15) @ implementation evidence `8e43b160447ca43de6631fe2a1b7f99948b64f2f` |
+| **Implementation alignment** | **3.A + 3.C** implemented: typed `ContractAuthority` injection, `resolve_strict_package_contract_authority_for_serving_handoff`, production GCA factory passes `RosterAgentContractAuthority`, no implicit `lab_compat` on strict integrated path |
+| **Qualification support** | P2-C HTTP @ `8e43b1604` exercises unmocked `create_governed_contractor_process_app` through admission port (stubbed terminal/LLM — not full external business execution) |
+| **Distinction** | ADR ratification ≠ global production certification; **FRZ-*** remain **OPEN**; **PROD-Q-R1-R7-Q** remains **NOT QUALIFIED** |
+| **Auditor obligation** | Independent exact-SHA audit still required on operator-closure documentation commit |
 
 ### Parent acceptance matrix (mandatory P2 criteria)
 
@@ -291,7 +293,7 @@ Cross-tenant adversarial certification remains **P3**.
 | R7-Q E.1 full D0–D4 replay | R7-Q parent | gate plan §E.1 | — | slice SHAs | — | **NOT EXECUTED** | — | **NOT PROVEN** | all FRZ global OPEN |
 | P3 cross-tenant adversarial | R7-Q | wave 3 | — | — | — | **deferred** | — | **NOT PROVEN** | FRZ-TEN-* |
 
-**P2 operator acceptance recommendation:** **READY FOR AUDIT** — mandatory rows above show **no FAIL**; **NOT PROVEN** rows are explicitly scoped (HEAD P2-B replay, parent E.1, P3). **Does not** close **PROD-Q-R1-R7-Q** or promote global **FRZ-*** PASS.
+**P2 operator acceptance (closure):** **CLOSED — operator exact-SHA acceptance** — mandatory rows above show **no FAIL**; **NOT PROVEN** rows are explicitly scoped (HEAD P2-B replay, parent E.1, P3). **Does not** close **PROD-Q-R1-R7-Q** or promote global **FRZ-*** PASS. **Next mandatory stage:** **PROD-Q-R1-R7-Q-P3**.
 
 ### Enterprise audit (P2 final — evidence continuity)
 
@@ -310,15 +312,14 @@ Cross-tenant adversarial certification remains **P3**.
 | Evidence continuity | **PASS** with explicit gaps | P2-B @ `4dfbf4e` + static diff; P2-C @ HEAD |
 | Regression protection | **PASS** | targeted P2-C unit/regression modules |
 
-**Canonical roadmap / freeze checklist:** not updated in this task (operator-owned).
+### Unresolved findings (post-operator-closure)
 
-### Unresolved findings
-
-1. P2-B integrated module **not** replayed at `8e43b1604` (static continuity only).
+1. P2-B integrated module **not** replayed at `8e43b1604` (static continuity only — `git diff` empty for P2-B paths vs `4dfbf4e`).
 2. P2-C HTTP log is **partial** — not a full execution transcript.
-3. **ADR-01** remains **PROPOSED** until operator ratification.
-4. **`capability_graph_wiring`** `lab_compat` seed path — follow-up per ADR §5 (non-blocker for P2-C HTTP evidence).
-5. **R7-Q FULL-D0-D4-REPLAY** and **P3** mandatory before parent **R7-Q PASS**.
+3. **`capability_graph_wiring`** `lab_compat` seed path — follow-up per ADR §5 (non-blocker for P2-C HTTP evidence).
+4. **R7-Q FULL-D0-D4-REPLAY** (§E.1) and **P3** mandatory before parent **R7-Q PASS**.
+5. **P1** remains **READY FOR AUDIT** (prerequisite satisfied for P2; independent P1 closure not claimed).
+6. Independent GitHub SHA audit pending on operator-closure documentation commit.
 
 ---
 
