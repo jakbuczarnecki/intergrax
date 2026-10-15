@@ -207,7 +207,7 @@ Bounded package — **two essential** scenarios + **two optional**; incompatible
 | Field | Value |
 |-------|-------|
 | **START_HEAD** | `413a2c8efbec1ae4255f0b487956b21fa8fb0486` |
-| **FINAL_COMMIT** | *(see decision package §K after P3-FINAL-OPERATOR-ACCEPTANCE commit)* |
+| **FINAL_COMMIT** | `f2674075bf7f1605a2ebaa5444742de7ee280666` |
 | **Origin** | `development` |
 | **Tests executed @ this reconciliation** | **0** |
 | **Changed files** | ADR §16 · this matrix · final acceptance decision package · ratification readiness §12 |
