@@ -69,6 +69,7 @@ Legend: **SO** semantic owner · **CO** composition owner · **PC** production c
 | **Accepted negatives (slice)** | `test_d2_wrong_tenant_resolver_blocks`, `test_d2_governance_deny_is_fail_closed` (`test_prod_q_r1_r7_d2_production_process_lifecycle.py`); D4 `test_d4_governance_deny_blocks_activation` |
 | **Uncovered adversarial invariant** | Cross-tenant **strict-path** E2E: activate/serve under env B with resolver/principal A; HTTP admission under wrong tenant; handoff bind with mismatched tenant on durable stores |
 | **Bypass risks** | Direct store mutation without governance (out of production opener path); reference lifecycle (`open_reference_*`) — excluded by P1/P2 strict graph |
+| **Child ADR (F-03)** | **PROD-Q-R1-R7-Q-P3-A2** — HTTP caller auth + caller-to-tenant authorization — [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md) (**PROPOSED — READY FOR AUDIT** @ `0e84b37649eadb2d188cd5b9bde984e81868e064`) |
 | **FRZ** | **FRZ-SEC-01**, applicable **FRZ-TEN-*** (R7-Q contribution only — **no global TENANT-X re-pass**) |
 
 ### P3-B — DENY / CAS / authority safety (gate dim **7**)

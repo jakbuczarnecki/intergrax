@@ -109,6 +109,8 @@ No monkeypatch of tenant validator or Governance under test.
 
 ## Open blockers and next child
 
+**F-03 / P3-A2 (architecture @ `0e84b37649eadb2d188cd5b9bde984e81868e064`):** HTTP caller authentication and caller-to-tenant authorization — **PROPOSED ADR** [`PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md`](PROD_Q_R1_R7_Q_P3_A2_HTTP_CALLER_AUTHENTICATION_AND_TENANT_AUTHORIZATION_ADR.md) (**READY FOR AUDIT**). Implementation child **P3-A2-R1** recommended; globals unchanged.
+
 **P3-A1-R1 corrective (bounded):** strong typing on harness strict-serving params; single semantic tenant owner at tenant gate port; composition order tenant gate **outer** → colocated admission **inner**; HTTP caller auth remains infrastructure/API-key optional (not wired on `/run`).
 
 **P3-A1 corrective (prior):** `strict_production_serving_execution_tenant_authority.py` + host wiring + tenant gate port; governance injected from `StrictProductionServingSession.lifecycle.governance`.
