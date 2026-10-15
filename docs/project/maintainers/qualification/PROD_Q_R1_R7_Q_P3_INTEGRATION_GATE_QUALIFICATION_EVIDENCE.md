@@ -86,7 +86,7 @@ Both nodes: **IMPLEMENTED — NOT EXECUTED — AWAITING OPERATOR AUTHORIZATION**
 
 | Field | Value |
 |-------|--------|
-| **FINAL_COMMIT** | `6952f1c4c3acaba6fa5952ba3e8606d07557c7c7` |
+| **FINAL_COMMIT** | `784278882b167a8d143654a90db2b914504815f6` |
 | **Files touched @ correction** | `test_prod_q_r1_r7_q_p3_integration_gate.py`, this evidence record |
 
 ## 8. Operator authorization
