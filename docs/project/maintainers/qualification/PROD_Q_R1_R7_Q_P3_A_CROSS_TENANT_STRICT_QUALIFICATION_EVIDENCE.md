@@ -2,12 +2,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (evidence package); qualification outcome **FAIL** on HTTP tenant isolation |
+| **Status** | **READY FOR AUDIT** (evidence package); qualification outcome **PASS** on P3-A1 corrective scope |
 | **Child** | **PROD-Q-R1-R7-Q-P3-A** |
 | **Parent** | **PROD-Q-R1-R7-Q-P3** — **NOT CLOSED** |
 | **Branch** | `development` |
-| **START_HEAD** | `5d6d688fb006807beca151599210fc14b5510956` |
-| **Execution SHA** | `e8f08ec456834b117400dca866a5abb7dcb354af` |
+| **START_HEAD** | `16fe72228313d80cb9aaee1042338b63ecdeb7c3` |
+| **Execution SHA** | `d9717e374` |
 
 ## Preflight
 
@@ -36,12 +36,12 @@
 | `StoreBackedColocatedServingUnitExecutionAdmission` | `colocated_serving_unit_execution_admission.py` |
 | `create_governed_contractor_strict_production_asgi_app` | `applications/governed_contractor_application/host/strict_production_serving.py` |
 | HTTP `/run` | `governed_contractor_application/serving/fastapi_router.py` |
-| Execution governance admission (HTTP) | `admit_harness_root_governance_identity` — `intergrax/applications/_shared/harness_admitted_root_governance_identity.py` (maps **request** `task.tenant_id`) |
+| Execution governance admission (HTTP) | `admit_strict_production_serving_root_governance_identity` — `strict_production_serving_execution_tenant_authority.py`; gate `StrictProductionServingTenantAuthorityTaskExecutionPort` **before** colocated `admit_execution` |
 | Host composition tenant for topology | `factory.py` → `manifest.app_id` via `build_harness_host_runtime` |
 
 **Authoritative tenant (activation):** principal `RequestIdentity.tenant_id` vs `ApplicationEnvironmentTenantResolver.resolve_tenant_id` at `authorize_scoped_control_plane_mutation` / `TenantScopedControlPlaneMutationEvaluator`.
 
-**HTTP request tenant:** body field `tenant_id` on `GovernedContractorRunRequestV1` — **not** authenticated; admitted via harness identity mapper unless a separate gate rejects mismatch.
+**HTTP request tenant:** body field `tenant_id` — **untrusted**; must equal `ServingRuntimeHandoff.identity.application_environment_id` (P2-C continuity); admitted identity uses `ProductionControlPlaneGovernance.principal`, not forged body `user_id`.
 
 ## Scenarios
 
@@ -56,9 +56,9 @@
 ### P3-T-02 — Wrong-tenant HTTP
 
 - Legitimate strict session under governance B (`p3a-tenant-b`)
-- HTTP POST `/run` with `tenant_id=p3a-tenant-a` vs positive control `tenant_id=app_a` (manifest host tenant)
-- **Observed:** wrong-tenant request **invoked** `TaskBoundAgenticDelegate.execute` (colocated admission acquired; no canonical tenant deny before inner execution)
-- **Rejection boundary expected:** fail-closed compare of request tenant to serving-session authority — **not present** on strict GCA HTTP path @ HEAD
+- HTTP POST `/run` with `tenant_id=p3a-tenant-a` vs positive control `tenant_id=env-prod` (`application_environment_id`)
+- **Post P3-A1:** wrong-tenant rejected at `StrictProductionServingTenantAuthorityTaskExecutionPort` before colocated admission; inner delegate not called
+- **Rejection boundary:** `assert_task_tenant_matches_strict_production_serving_authority` + strict admitted identity mapper
 
 ## Test command and results
 
@@ -71,9 +71,11 @@ uv run pytest -p no:xdist -q tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_a
 | `test_p3a_g00_qualification_baseline_ancestor` | PASS |
 | `test_p3t01_cross_tenant_activation_blocked_before_handoff` | PASS |
 | `test_p3t01_legitimate_tenant_b_state_unchanged_after_cross_tenant_attempt` | PASS |
-| `test_p3t02_wrong_tenant_http_does_not_invoke_inner_execution` | **FAIL** — inner delegate called on wrong tenant |
+| `test_p3t02_wrong_tenant_http_does_not_invoke_inner_execution` | **PASS** |
 
-**Summary:** 3 passed, 1 failed (~15s).
+**P3-A1 regression (same module):** 4/4 passed (~22s with unit slice).
+
+**P2-C HTTP regression:** `test_prod_q_r1_r7_q_p2_c_http_execution_admission.py` 6/6 passed (same run).
 
 ## Real / stub boundary
 
@@ -87,28 +89,26 @@ No monkeypatch of tenant validator or Governance under test.
 
 | Criterion | P3-T-01 | P3-T-02 |
 |-----------|---------|---------|
-| Tenant isolation | **PASS** | **FAIL** |
-| Layer boundaries (Gov vs execution) | **PASS** at control-plane | **FAIL** — HTTP metadata drives admitted identity |
-| Semantic ownership | Governance owns activation tenant | Execution harness owns HTTP admit @ HEAD |
-| Fail-closed | **PASS** | **NOT PROVEN** |
-| No shadow authorization | **PASS** | N/A |
-| Physical admission without authz | N/A | **FAIL** — admission + inner invoke |
-| Regression protection | Tests added | Tests fail until corrective child |
+| Tenant isolation | **PASS** | **PASS** (P3-A1) |
+| Layer boundaries (Gov vs execution) | **PASS** at control-plane | **PASS** — trusted handoff + governance principal |
+| Semantic ownership | Governance owns activation tenant | Apps strict serving tenant authority owns HTTP gate |
+| Fail-closed | **PASS** | **PASS** |
+| No shadow authorization | **PASS** | **PASS** |
+| Physical admission without authz | N/A | **PASS** — tenant gate before `admit_execution` |
+| Regression protection | Tests added | P2-C replay green |
 
 ## FRZ mapping (contribution only — globals unchanged)
 
 | ID | P3-T-01 | P3-T-02 |
 |----|---------|---------|
-| **FRZ-SEC-01** | PASS | FAIL |
-| **FRZ-SEC-04** | PASS | FAIL |
-| **FRZ-PRD-08** | PASS | FAIL |
+| **FRZ-SEC-01** | PASS | PASS (local P3-A1) |
+| **FRZ-SEC-04** | PASS | PASS (local P3-A1) |
+| **FRZ-PRD-08** | PASS | PASS (local P3-A1) |
 | **FRZ-PRD-09** | PASS (no rogue READY) | PASS (session stable) |
 | **FRZ-REG-02/03/09** | Evidence + tests | Evidence records FAIL |
 
 ## Open blockers and next child
 
-**ARCHITECTURE DECISION REQUIRED** — strict GCA HTTP execution must bind admitted root governance identity (and admission) to authoritative serving-session tenant (control-plane / manifest host tenant), not unauthenticated `GovernedContractorRunRequestV1.tenant_id` via `admit_harness_root_governance_identity`.
+**P3-A1 corrective (bounded):** `strict_production_serving_execution_tenant_authority.py` + host wiring + tenant gate port; governance injected from `StrictProductionServingSession.lifecycle.governance`.
 
-**Mandatory corrective child (bounded):** e.g. **PROD-Q-R1-R7-Q-P3-A1** — production admitted-identity port for strict serving HTTP (no ad-hoc route string compare); re-run P3-T-02 module.
-
-**P3-A overall:** **FAIL** for end-to-end tenant isolation; **READY FOR AUDIT** of this evidence commit.
+**P3-A overall:** **READY FOR AUDIT** — P3-T-01/T-02 green @ P3-A1 commit; extended T-03..T-08 matrix partially covered (unit + P2-C); full adversarial matrix remains parent **P3** scope.

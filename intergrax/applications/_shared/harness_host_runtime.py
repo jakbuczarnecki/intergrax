@@ -322,6 +322,8 @@ def build_harness_host_runtime(
         StrictOrchestrationTopologySubmissionPortBuilder | None
     ) = None,
     agent_contract_authority: ContractAuthority | None = None,
+    strict_production_serving_execution_tenant_binding: Any | None = None,
+    strict_production_serving_governance_principal: Any | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -679,9 +681,29 @@ def build_harness_host_runtime(
             expected_active_revision_id=activation_baseline_revision_id,
         ),
     )
-    harness_execution_governance = build_harness_host_task_execution_governance(
-        governance_evidence_recorder=orchestration_governance_evidence_recorder,
-    )
+    if (
+        production_mode
+        and strict_production_serving_execution_tenant_binding is not None
+    ):
+        if strict_production_serving_governance_principal is None:
+            raise ValueError(
+                "strict production serving host requires governance principal identity",
+            )
+        from intergrax.applications._shared.strict_production_host_task_execution_wiring import (
+            build_strict_production_serving_host_task_execution_governance,
+        )
+
+        harness_execution_governance = (
+            build_strict_production_serving_host_task_execution_governance(
+                binding=strict_production_serving_execution_tenant_binding,
+                principal=strict_production_serving_governance_principal,
+                governance_evidence_recorder=orchestration_governance_evidence_recorder,
+            )
+        )
+    else:
+        harness_execution_governance = build_harness_host_task_execution_governance(
+            governance_evidence_recorder=orchestration_governance_evidence_recorder,
+        )
     execution = build_environment_host_task_execution(
         orchestration,
         effective_environment,

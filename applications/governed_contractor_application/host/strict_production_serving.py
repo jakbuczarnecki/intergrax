@@ -39,6 +39,7 @@ def create_governed_contractor_strict_production_asgi_app(
         )
     app = create_governed_contractor_process_app(
         process_composition=session.composition,
+        production_governance=session.lifecycle.governance,
         settings=settings,
         host_runtime=host_runtime,
     )

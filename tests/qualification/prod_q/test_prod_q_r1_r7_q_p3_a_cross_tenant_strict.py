@@ -463,7 +463,7 @@ def test_p3t02_wrong_tenant_http_does_not_invoke_inner_execution(
         assert handoff is not None
         unit_ref = handoff.identity.serving_unit_ref
         run_url = f"{settings.route_prefix}{_RUN_ROUTE_SUFFIX}"
-        authoritative_host_tenant = _APP
+        authoritative_host_tenant = environment.application_environment_id
 
         with patch(_INNER_DELEGATE, inner_mock):
             with TestClient(app) as client:
