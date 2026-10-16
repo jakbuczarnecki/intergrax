@@ -8,7 +8,7 @@
 | **Branch** | `development` |
 | **START_HEAD** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` |
 | **SOURCE_EVIDENCE_SHA** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` — implementation + §C pytest selection evaluated here |
-| **FINAL_COMMIT** | *(set at commit time — documentation-only delta; not a test-execution SHA)* |
+| **FINAL_COMMIT** | `9850d3e40cddfed2e00eb90631ec462380d6f0f3` — documentation-only delta; **not** a test-execution SHA |
 | **Maximum disposition** | **READY FOR AUDIT** (independent operator acceptance pending) |
 
 **Disposition rule:** Historical **P1 / P2 / P3 / E.1 / DISPATCH-Q1 / D1–D4** acceptance **≠** **R7-Q QUALIFIED**. This record consolidates **§C integrated gates** and reconciles them against the P0 gate plan without re-running closed waves.
