@@ -8,9 +8,9 @@
 | **Canonical stage** | R7-Q §C — DIM18 + DIM19 @ current HEAD |
 | **Branch** | `development` |
 | **START_HEAD** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` |
-| **EXECUTION_SHA** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` |
-| **FINAL_COMMIT / AUDITED_HEAD** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` |
-| **origin/development** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` (synchronized) |
+| **EXECUTION_SHA** (pytest @ code under test) | `9aef3f0946bffe22244243eeb6c569858ebc2e88` |
+| **EVIDENCE_COMMIT / AUDITED_HEAD** | `9f18d4a07` (record on `development`; verify on GitHub) |
+| **origin/development** | synchronized after evidence push |
 | **Maximum disposition** | **READY FOR AUDIT** |
 
 **Production code delta:** **0** (evidence record only; no new tests in this task).
