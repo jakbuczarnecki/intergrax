@@ -248,21 +248,25 @@ def revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_c
     """
     Revoke physical admission when the canonical session-close drain path failed first.
 
-    Uses the same adapter ``begin_drain`` port as ``begin_colocated_serving_execution_drain_on_strict_session_close``.
-    No-op when admission was never bound or the revision record needed for the sanctioned port is absent.
+    Uses adapter-owned unit drain; when durable revision evidence is absent, revokes via
+    the bound ``serving_unit_ref`` only (no fabricated revision).
     """
     if handoff.colocated_execution_admission is None:
         return
     if not isinstance(deployment_adapter, VenvBundleColocatedRuntimeDeploymentAdapter):
-        return
+        raise ColocatedServingAdmissionTopologyError(
+            "strict session close emergency revocation requires "
+            "VenvBundleColocatedRuntimeDeploymentAdapter",
+        )
     identity = handoff.identity
     revision = revision_store.get_revision(identity.runtime_revision_id)
-    if revision is None:
+    if revision is not None:
+        deployment_adapter.begin_drain(
+            revision,
+            serving_unit_ref=identity.serving_unit_ref,
+        )
         return
-    deployment_adapter.begin_drain(
-        revision,
-        serving_unit_ref=identity.serving_unit_ref,
-    )
+    deployment_adapter.begin_drain_for_bound_serving_unit(identity.serving_unit_ref)
 
 
 __all__ = [

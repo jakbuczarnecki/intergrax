@@ -42,6 +42,7 @@ from intergrax.applications._shared.production_process_composition import (
 )
 from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
     cleanup_errors_from_close_failure,
+    raise_grouped_exceptions,
     raise_primary_with_cleanup_errors,
 )
 from intergrax.applications._shared.production_process_lifecycle import (
@@ -149,7 +150,7 @@ class StrictProductionServingSession:
                 "strict production serving session close incomplete; "
                 "process lifecycle resources already released",
             )
-        drain_primary: BaseException | None = None
+        shutdown_errors: list[BaseException] = []
         handoff = self.lifecycle.composition.serving_runtime_handoff
         if handoff is not None:
             stores = self.lifecycle.composition.agent_platform_runtime.stores
@@ -166,30 +167,45 @@ class StrictProductionServingSession:
             ) as exc:
                 drain_primary = StrictProductionServingLauncherError(str(exc))
                 drain_primary.__cause__ = exc
-                revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close(
-                    deployment_adapter=deployment_adapter,
-                    handoff=handoff,
-                    revision_store=stores.revision_store,
-                )
+                shutdown_errors.append(drain_primary)
+                try:
+                    revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close(
+                        deployment_adapter=deployment_adapter,
+                        handoff=handoff,
+                        revision_store=stores.revision_store,
+                    )
+                except (
+                    ColocatedServingAdmissionTopologyError,
+                    VenvBundleColocatedDeploymentError,
+                ) as revoke_exc:
+                    revoke_error = StrictProductionServingLauncherError(str(revoke_exc))
+                    revoke_error.__cause__ = revoke_exc
+                    shutdown_errors.append(revoke_error)
         try:
             self.lifecycle.close_process_resources()
         except BaseException as cleanup_exc:
             cleanup_errors = cleanup_errors_from_close_failure(cleanup_exc)
-            if drain_primary is not None:
-                raise_primary_with_cleanup_errors(
-                    drain_primary,
-                    cleanup_errors,
-                    message=(
+            if shutdown_errors:
+                raise_grouped_exceptions(
+                    (
                         "strict production serving session close failed during "
                         "execution drain; errors while closing process lifecycle "
                         "resources"
                     ),
+                    [*shutdown_errors, *cleanup_errors],
+                    from_exc=shutdown_errors[0],
                 )
             raise
-        if drain_primary is None:
+        if not shutdown_errors:
             self._closed = True
-        if drain_primary is not None:
-            raise drain_primary
+            return
+        if len(shutdown_errors) == 1:
+            raise shutdown_errors[0]
+        raise_grouped_exceptions(
+            "strict production serving session close failed during execution drain",
+            shutdown_errors,
+            from_exc=shutdown_errors[0],
+        )
 
 
 def _require_venv_production_adapter(

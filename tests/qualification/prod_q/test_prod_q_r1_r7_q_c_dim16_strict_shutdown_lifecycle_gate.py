@@ -7,6 +7,7 @@ from __future__ import annotations
 import concurrent.futures
 import subprocess
 import threading
+from dataclasses import replace
 from pathlib import Path
 from typing import Final
 from unittest.mock import AsyncMock, patch
@@ -22,6 +23,8 @@ from intergrax.agent_distribution.deployment import (
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
+    _ColocatedVenvPhysicalUnit,
+    _UnitAdmissionGate,
 )
 from intergrax.applications._shared.colocated_serving_runtime_composition import (
     ColocatedServingAdmissionTopologyError,
@@ -52,7 +55,7 @@ from tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admissio
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
-_EXPECTED_START_HEAD: Final = "acb30109c6107f5b55b85a3d88efcc7ef833facb"
+_EXPECTED_START_HEAD: Final = "ceaca27f4b51995ceaf9af9db775eea7d708d800"
 _D1_R6_ROLLBACK_EVIDENCE: Final = (
     "tests/unit/agent_distribution/"
     "test_prod_q_r1_r7_d1_r6_r2_physical_admission_final_closure.py"
@@ -358,6 +361,176 @@ def test_c_dim16_08_lifespan_and_repeated_close(
         assert session._closed is True
         with pytest.raises(StrictProductionServingLauncherError, match="already closed"):
             session.close()
+
+
+def test_c_dim16_f01_missing_revision_physical_unit_still_revoked(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """DIM16-F01 — missing revision record; emergency path revokes bound physical unit."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim16-f01-missing-rev",
+    ) as fixture:
+        stores = fixture.session.lifecycle.composition.agent_platform_runtime.stores
+        revision_store = stores.revision_store
+        original_get = revision_store.get_revision
+
+        def _revision_unavailable(runtime_revision_id: str):
+            if runtime_revision_id == fixture.runtime_revision_id:
+                return None
+            return original_get(runtime_revision_id)
+
+        monkeypatch.setattr(revision_store, "get_revision", _revision_unavailable)
+        unit = fixture.adapter._units[fixture.unit_ref]
+        assert unit.admission.admission_closed() is False
+        inner_mock = AsyncMock(return_value=_completed_task_result())
+        with patch(_INNER_DELEGATE, inner_mock):
+            with TestClient(fixture.app) as client:
+                with pytest.raises(
+                    StrictProductionServingLauncherError,
+                    match="missing runtime revision",
+                ):
+                    fixture.session.close()
+                denied = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
+        assert unit.admission.admission_closed() is True
+        assert unit.lifecycle_state is DeploymentInstanceState.DRAINING
+        assert denied.status_code == 502
+        inner_mock.assert_not_called()
+        assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
+        assert fixture.session._closed is False
+        assert fixture.session.lifecycle._process_closed is True
+        _assert_production_slot_released()
+
+
+def test_c_dim16_f02_drain_and_emergency_revocation_both_fail(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """DIM16-F02 — drain and emergency revocation fail; lifecycle cleanup still runs once."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim16-f02-both-revoke-fail",
+    ) as fixture:
+        drain_fail = ColocatedServingAdmissionTopologyError("dim16-f02-drain-fail")
+        revoke_fail = ColocatedServingAdmissionTopologyError("dim16-f02-revoke-fail")
+        close_calls = 0
+        original_close = ProductionProcessLifecycle.close_process_resources
+
+        def _tracked_close(self: ProductionProcessLifecycle) -> None:
+            nonlocal close_calls
+            close_calls += 1
+            original_close(self)
+
+        unit = fixture.adapter._units[fixture.unit_ref]
+        assert unit.admission.admission_closed() is False
+        with patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "begin_colocated_serving_execution_drain_on_strict_session_close"
+            ),
+            side_effect=drain_fail,
+        ), patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close"
+            ),
+            side_effect=revoke_fail,
+        ), patch.object(
+            ProductionProcessLifecycle,
+            "close_process_resources",
+            _tracked_close,
+        ):
+            with pytest.raises(ExceptionGroup) as exc_info:
+                fixture.session.close()
+        errors = exc_info.value.exceptions
+        assert len(errors) == 2
+        assert isinstance(errors[0], StrictProductionServingLauncherError)
+        assert isinstance(errors[1], StrictProductionServingLauncherError)
+        assert "dim16-f02-drain-fail" in str(errors[0])
+        assert "dim16-f02-revoke-fail" in str(errors[1])
+        assert close_calls == 1
+        assert unit.admission.admission_closed() is False
+        assert fixture.session._closed is False
+        assert fixture.session.lifecycle._process_closed is True
+        _assert_production_slot_released()
+
+
+def test_c_dim16_f03_drain_revoke_and_cleanup_all_fail(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """DIM16-F03 — preserve drain, revocation, and cleanup failures without duplicate cleanup."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim16-f03-triple-fail",
+    ) as fixture:
+        drain_fail = ColocatedServingAdmissionTopologyError("dim16-f03-drain-fail")
+        revoke_fail = ColocatedServingAdmissionTopologyError("dim16-f03-revoke-fail")
+        cleanup_fail = RuntimeError("dim16-f03-cleanup-fail")
+        with patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "begin_colocated_serving_execution_drain_on_strict_session_close"
+            ),
+            side_effect=drain_fail,
+        ), patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close"
+            ),
+            side_effect=revoke_fail,
+        ), patch.object(
+            ProductionProcessLifecycle,
+            "close_process_resources",
+            side_effect=cleanup_fail,
+        ) as close_mock:
+            with pytest.raises(ExceptionGroup) as exc_info:
+                fixture.session.close()
+        errors = exc_info.value.exceptions
+        assert len(errors) == 3
+        assert isinstance(errors[0], StrictProductionServingLauncherError)
+        assert isinstance(errors[1], StrictProductionServingLauncherError)
+        assert errors[2] is cleanup_fail
+        close_mock.assert_called_once()
+        assert fixture.session._closed is False
+        assert not fixture.session.lifecycle._process_closed
+
+
+def test_c_dim16_f06_emergency_revocation_unit_isolation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """DIM16-F06 — emergency revocation closes only the bound serving unit."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim16-f06-isolation",
+    ) as fixture:
+        bound = fixture.adapter._units[fixture.unit_ref]
+        sibling_ref = f"{fixture.unit_ref}-sibling"
+        sibling_gate = _UnitAdmissionGate()
+        sibling_gate.open_admission()
+        sibling = replace(
+            bound,
+            serving_unit_ref=sibling_ref,
+            admission=sibling_gate,
+            binding_key=f"{bound.binding_key}:sibling",
+        )
+        fixture.adapter._units[sibling_ref] = sibling
+        assert bound.admission.admission_closed() is False
+        assert sibling.admission.admission_closed() is False
+        fixture.session.close()
+        assert bound.admission.admission_closed() is True
+        assert sibling.admission.admission_closed() is False
+        assert fixture.session._closed is True
 
 
 # Late import avoids circular patch targets in dim16-04/05.
