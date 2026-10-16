@@ -8,8 +8,8 @@
 | **Dependent** | **PROD-Q-R1-R7-Q** §C **DIM20** — evidence input only |
 | **Branch** | `development` |
 | **START_HEAD** | `478ddb3ae07252fbc7b5ffc77f9d5059d9c40985` |
-| **EXECUTION_SHA** | `cce5062561ed7cb308b65550b05c5968ae1e63ff` |
-| **FINAL_COMMIT / AUDITED_HEAD** | `cce5062561ed7cb308b65550b05c5968ae1e63ff` |
+| **EXECUTION_SHA** | `6138dd011f6d2b99977ee0f2df17f8c25a300e03` |
+| **FINAL_COMMIT / AUDITED_HEAD** | `6138dd011f6d2b99977ee0f2df17f8c25a300e03` |
 | **Production code delta** | **0** (test-harness alignment only) |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą finalnego zamknięcia zadania.**
@@ -159,5 +159,5 @@ uv run pytest -p no:xdist \
 |-------|-------|
 | **origin** | `origin/development` |
 | **START_HEAD** | `478ddb3ae07252fbc7b5ffc77f9d5059d9c40985` |
-| **FINAL_COMMIT** | `cce5062561ed7cb308b65550b05c5968ae1e63ff` |
+| **FINAL_COMMIT** | `6138dd011f6d2b99977ee0f2df17f8c25a300e03` |
 | **origin** | `https://github.com/jakbuczarnecki/intergrax.git` → `origin/development` |
