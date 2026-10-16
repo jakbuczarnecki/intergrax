@@ -15,6 +15,7 @@ from intergrax.agent_distribution.activation_domain_coordinator import (
 from intergrax.agent_distribution.deployment import (
     DeploymentInstanceRecord,
     DeploymentInstanceState,
+    RuntimeDeploymentAdapter,
     ServingUnitAttestation,
 )
 from intergrax.agent_distribution.runtime_revision import (
@@ -41,6 +42,7 @@ from intergrax.applications._shared.production_process_composition import (
 from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
 from intergrax.applications._shared.serving_runtime_handoff import (
     ColocatedServingUnitRuntimeAccessor,
+    ServingRuntimeHandoff,
     authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
 )
@@ -194,9 +196,35 @@ def bind_colocated_serving_runtime_after_activation(
     return updated
 
 
+def begin_colocated_serving_execution_drain_on_strict_session_close(
+    *,
+    deployment_adapter: RuntimeDeploymentAdapter,
+    handoff: ServingRuntimeHandoff,
+    revision_store: RuntimeRevisionStore,
+) -> None:
+    """Revoke new physical execution admission for the bound handoff unit (session close owner)."""
+    if handoff.colocated_execution_admission is None:
+        return
+    if not isinstance(deployment_adapter, VenvBundleColocatedRuntimeDeploymentAdapter):
+        raise ColocatedServingAdmissionTopologyError(
+            "strict session close requires VenvBundleColocatedRuntimeDeploymentAdapter",
+        )
+    identity = handoff.identity
+    revision = revision_store.get_revision(identity.runtime_revision_id)
+    if revision is None:
+        raise ColocatedServingAdmissionTopologyError(
+            f"missing runtime revision {identity.runtime_revision_id!r} for session close drain",
+        )
+    deployment_adapter.begin_drain(
+        revision,
+        serving_unit_ref=identity.serving_unit_ref,
+    )
+
+
 __all__ = [
     "ColocatedServingActivationCommitResolutionError",
     "ColocatedServingAdmissionTopologyError",
+    "begin_colocated_serving_execution_drain_on_strict_session_close",
     "bind_colocated_serving_runtime_after_activation",
     "resolve_traffic_serving_activation_commit",
     "validate_colocated_serving_admission_topology",

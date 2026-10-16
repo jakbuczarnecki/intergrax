@@ -26,7 +26,10 @@ from governed_contractor_application.host.strict_production_serving import (
 )
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
-from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
+from intergrax.agent_distribution.deployment import (
+    DeploymentInstanceState,
+    FakeInMemoryRuntimeDeploymentAdapter,
+)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
@@ -368,6 +371,25 @@ def test_d4_active_state_served_after_reconciliation(tmp_path: Path) -> None:
     assert session.readiness.ready_for_traffic is True
     assert session.serving_runtime_handoff is not None
     session.close()
+
+
+def test_d4_session_close_drains_colocated_execution_admission(tmp_path: Path) -> None:
+    session = _open_with_activation(
+        tmp_path,
+        environment=_ac3_environment(),
+        revision_id="rev-d4-close-drain",
+    )
+    handoff = session.serving_runtime_handoff
+    assert handoff is not None
+    adapter = session.lifecycle.deployment_adapter
+    assert isinstance(adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+    unit_ref = handoff.identity.serving_unit_ref
+    unit = adapter._units[unit_ref]
+    assert unit.serving_admission_authorized is True
+    assert unit.admission.admission_closed() is False
+    session.close()
+    assert unit.lifecycle_state is DeploymentInstanceState.DRAINING
+    assert unit.admission.admission_closed() is True
 
 
 def test_d4_explicit_activation_uses_d2_launcher(tmp_path: Path) -> None:

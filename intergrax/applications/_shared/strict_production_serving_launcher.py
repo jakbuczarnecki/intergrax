@@ -17,6 +17,8 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapt
 )
 from intergrax.applications._shared.colocated_serving_runtime_composition import (
     ColocatedServingActivationCommitResolutionError,
+    ColocatedServingAdmissionTopologyError,
+    begin_colocated_serving_execution_drain_on_strict_session_close,
     bind_colocated_serving_runtime_after_activation,
     resolve_traffic_serving_activation_commit,
 )
@@ -140,6 +142,17 @@ class StrictProductionServingSession:
             raise StrictProductionServingLauncherError(
                 "strict production serving session already closed",
             )
+        handoff = self.lifecycle.composition.serving_runtime_handoff
+        if handoff is not None:
+            stores = self.lifecycle.composition.agent_platform_runtime.stores
+            try:
+                begin_colocated_serving_execution_drain_on_strict_session_close(
+                    deployment_adapter=self.lifecycle.deployment_adapter,
+                    handoff=handoff,
+                    revision_store=stores.revision_store,
+                )
+            except ColocatedServingAdmissionTopologyError as exc:
+                raise StrictProductionServingLauncherError(str(exc)) from exc
         self.lifecycle.close_process_resources()
         self._closed = True
 

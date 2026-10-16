@@ -8,6 +8,8 @@ qualification modules; DIM10 does not replay them via nested pytest subprocesses
 
 from __future__ import annotations
 
+import concurrent.futures
+import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
 from dataclasses import replace
@@ -25,6 +27,7 @@ from governed_contractor_application.host.strict_production_serving import (
 from intergrax.agent_distribution.activation_domain_coordinator import (
     ServingExecutionAdmissionRequest,
 )
+from intergrax.agent_distribution.deployment import DeploymentInstanceState
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
@@ -71,7 +74,7 @@ from tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admissio
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
-_EXPECTED_START_HEAD: Final = "5579d64f96210cb48c6869e6183398a24e9d983d"
+_EXPECTED_START_HEAD: Final = "39fda3704c330f5eaac953558a541602b45321d0"
 
 
 @dataclass(frozen=True, slots=True)
@@ -529,50 +532,132 @@ def test_c_dim10_05_http_serving_unit_admission_matches_handoff_identity(
         assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
 
 
-def test_c_dim10_06_http_after_explicit_session_close_denied(
+def test_c_dim10_close_01_http_after_explicit_session_close_denied(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
 ) -> None:
+    """DIM10-CLOSE-01 — close then request."""
     with _dim10_http_fixture(
         monkeypatch,
         tmp_path,
-        revision_id="rev-c-dim10-06-closed",
+        revision_id="rev-c-dim10-close-01",
     ) as fixture:
         inner_mock = AsyncMock(return_value=_completed_task_result())
-        session = fixture.session
-        real_admit = StoreBackedColocatedServingUnitExecutionAdmission.admit_execution
-
-        def _admit_denies_when_session_closed(
-            self: StoreBackedColocatedServingUnitExecutionAdmission,
-            serving_unit_ref: str,
-        ) -> None:
-            if session._closed:
-                raise ServingRuntimeHandoffError(
-                    "strict production serving session closed; "
-                    "colocated execution admission denied",
+        with patch(_INNER_DELEGATE, inner_mock):
+            with TestClient(fixture.app) as client:
+                before_close = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
                 )
-            real_admit(self, serving_unit_ref)
+                assert before_close.status_code == 200
+                assert inner_mock.call_count == 1
+                inner_mock.reset_mock()
+                fixture.session.close()
+                response = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
+        assert response.status_code == 502
+        inner_mock.assert_not_called()
+        assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
+        assert fixture.session._closed is True
 
-        real_close = StrictProductionServingSession.close.__get__(
-            session,
-            StrictProductionServingSession,
-        )
-        session.close = (  # type: ignore[method-assign]
-            lambda: real_close() if not session._closed else None
-        )
-        with patch.object(
-            StoreBackedColocatedServingUnitExecutionAdmission,
-            "admit_execution",
-            _admit_denies_when_session_closed,
-        ):
-            with TestClient(fixture.app):
-                session.close()
-            with patch(_INNER_DELEGATE, inner_mock):
-                with TestClient(fixture.app) as client:
+
+def test_c_dim10_close_02_repeated_http_after_session_close_stays_denied(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    """DIM10-CLOSE-02 — repeated request after close."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim10-close-02",
+    ) as fixture:
+        inner_mock = AsyncMock(return_value=_completed_task_result())
+        fixture.session.close()
+        with patch(_INNER_DELEGATE, inner_mock):
+            with TestClient(fixture.app) as client:
+                for _ in range(3):
                     response = client.post(
                         fixture.run_url,
                         json=_run_request_json(fixture.tenant_id),
                         headers=strict_http_auth_headers(),
                     )
-        assert response.status_code == 502
+                    assert response.status_code == 502
         inner_mock.assert_not_called()
+        assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
+
+
+def test_c_dim10_close_03_shutdown_during_in_flight_then_post_close_denied(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    """DIM10-CLOSE-03 — shutdown/admission ordering."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim10-close-03",
+    ) as fixture:
+        admitted = threading.Event()
+        release_in_flight = threading.Event()
+
+        async def _inner_hold_in_flight(*_args, **_kwargs) -> TaskResult:
+            admitted.set()
+            assert release_in_flight.wait(timeout=5.0)
+            return _completed_task_result()
+
+        inner_mock = AsyncMock(return_value=_completed_task_result())
+        with patch(_INNER_DELEGATE, side_effect=_inner_hold_in_flight):
+            with TestClient(fixture.app) as client:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    in_flight = pool.submit(
+                        lambda: client.post(
+                            fixture.run_url,
+                            json=_run_request_json(fixture.tenant_id),
+                            headers=strict_http_auth_headers(),
+                        ),
+                    )
+                    assert admitted.wait(timeout=5.0)
+                    fixture.session.close()
+                    release_in_flight.set()
+                    in_flight_response = in_flight.result(timeout=10.0)
+                assert in_flight_response.status_code == 200
+                assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
+                with patch(_INNER_DELEGATE, inner_mock):
+                    after_close = client.post(
+                        fixture.run_url,
+                        json=_run_request_json(fixture.tenant_id),
+                        headers=strict_http_auth_headers(),
+                    )
+        assert after_close.status_code == 502
+        inner_mock.assert_not_called()
+
+
+def test_c_dim10_close_04_scope_single_bound_unit_only(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    """DIM10-CLOSE-04 — strict production is one session / one bound unit per process slot."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim10-close-04",
+    ) as fixture:
+        other_unit_ref = f"{fixture.unit_ref}-unbound-peer"
+        assert other_unit_ref not in fixture.adapter._units
+        fixture.session.close()
+        unit = fixture.adapter._units[fixture.unit_ref]
+        assert unit.lifecycle_state is DeploymentInstanceState.DRAINING
+        assert unit.admission.admission_closed() is True
+
+
+def test_c_dim10_06_http_after_explicit_session_close_denied(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    test_c_dim10_close_01_http_after_explicit_session_close_denied(
+        monkeypatch,
+        tmp_path,
+    )
