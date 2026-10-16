@@ -143,7 +143,7 @@ uv run pytest -p no:xdist \
 | Class | Item |
 |-------|------|
 | **IN-SCOPE BLOCKER** | **PROD-Q-R1** parent closure (deployment/lifecycle slices D2/D3 audit, broader PROD-Q-R1 gates) |
-| **IN-SCOPE BLOCKER** | Full strict-session **HTTP → same invocation_id** integration (called out in P3-F / IG-F01) |
+| **IN-SCOPE BLOCKER** | ~~Full strict-session HTTP → same invocation_id integration~~ → **PROD-Q-R1-STRICT-HTTP-INVOCATION-IDENTITY-QUALIFICATION** (**READY FOR AUDIT**); **PROD-Q-R1** parent still **NOT CLOSED** |
 | **TRACKED FREEZE DEBT** | Global **FRZ-PRD-08**, **FRZ-REL-*** |
 | **ENVIRONMENT/TEST ISSUE** | PIS-02 host tests required harness authority patch @ START_HEAD — **resolved** in **FINAL_COMMIT** (test-only) |
 
