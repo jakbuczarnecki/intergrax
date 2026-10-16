@@ -239,7 +239,7 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 
 | Package | Contents | Depends on | Parallelizable |
 |---------|----------|------------|----------------|
-| **B — operator production profiles** | DIM6 mutation policy; DIM17 config/credentials negatives; trusted artifact roots | Operator fixtures | With C prep |
+| **B — operator production profiles** | DIM6 mutation policy; DIM17 config/credentials negatives; trusted artifact roots | Operator fixtures | **Package B pytest + evidence** [`PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md) — **READY FOR AUDIT**; DIM6/DIM17 operator profile **OPEN** |
 | **C — reachability @ HEAD** | Re-run P1 roots + DIM11 if launcher/graph changes; DIM18/19 drift check | None for static | With B |
 | **P — PROD-Q-R1 parent** | DIM20 strict external-work / PIS ambiguity | PROD-Q-R1 program | **Not** parallel to claiming R7-Q QUALIFIED |
 | **D — final qualification decision** | Roll up B+C+P + operator sign-off on this §C record | B, P minimum | **Last** |
