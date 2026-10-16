@@ -183,6 +183,7 @@ def build_test_registry_projection(
     package_digest: str = _TEST_DIGEST,
     artifact_digest: str = _TEST_ARTIFACT,
     settings: object | None = None,
+    agent_contract_authority: object | None = None,
 ) -> MaterializedRegistryProjection:
     """Build a revision-bound projection for harness/factory integration tests."""
     bundle = build_test_registry_projection_bundle(
@@ -196,6 +197,7 @@ def build_test_registry_projection(
         package_digest=package_digest,
         artifact_digest=artifact_digest,
         settings=settings,
+        agent_contract_authority=agent_contract_authority,
     )
     return build_registry_projection(bundle)
 
@@ -212,6 +214,7 @@ def build_test_registry_projection_bundle(
     package_digest: str = _TEST_DIGEST,
     artifact_digest: str = _TEST_ARTIFACT,
     settings: object | None = None,
+    agent_contract_authority: object | None = None,
 ) -> RegistryProjectionInputBundle:
     """Build frozen AP-10 projection inputs for lifecycle activation tests."""
     manifest = _manifest_with_contract_ids(manifest)
@@ -249,11 +252,18 @@ def build_test_registry_projection_bundle(
     ctx = ApplicationBuildContext.for_manifest(manifest)
     if settings is not None:
         from intergrax.applications._shared.environment_wiring import wire_application_environment
+        from intergrax.applications._shared.roster_agent_contract_authority import (
+            materialize_manifest_contract_authority_lab_compat,
+        )
 
+        resolved_authority = agent_contract_authority
+        if resolved_authority is None:
+            resolved_authority = materialize_manifest_contract_authority_lab_compat(manifest)
         ctx = wire_application_environment(
             manifest,
             environment,
             settings=settings,
+            agent_contract_authority=resolved_authority,
         ).build_context
     return RegistryProjectionInputBundle(
         runtime_revision=revision,

@@ -155,7 +155,44 @@ def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
     )
 
 
-def _build_serving_app(lifecycle, *, settings: GovernedContractorBackendSettings, host_runtime):
+def _install_reference_host_lab_contract_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.applications._shared import harness_host_runtime as harness_host_runtime_mod
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        materialize_manifest_contract_authority_lab_compat,
+    )
+
+    _real_build = harness_host_runtime_mod.build_harness_host_runtime
+
+    def _build_with_lab_contract_authority(*args, **kwargs):
+        if kwargs.get("agent_contract_authority") is None:
+            manifest = args[0] if args else kwargs["manifest"]
+            kwargs["agent_contract_authority"] = (
+                materialize_manifest_contract_authority_lab_compat(manifest)
+            )
+        return _real_build(*args, **kwargs)
+
+    monkeypatch.setattr(
+        harness_host_runtime_mod,
+        "build_harness_host_runtime",
+        _build_with_lab_contract_authority,
+    )
+    monkeypatch.setattr(
+        "governed_contractor_application.host.factory.build_harness_host_runtime",
+        _build_with_lab_contract_authority,
+    )
+
+
+def _build_serving_app(
+    lifecycle,
+    *,
+    settings: GovernedContractorBackendSettings,
+    host_runtime,
+    monkeypatch: pytest.MonkeyPatch | None = None,
+):
+    if monkeypatch is not None:
+        _install_reference_host_lab_contract_authority(monkeypatch)
     manifest = build_governed_contractor_manifest()
     env = build_governed_contractor_environment_profile(settings)
     projection = build_test_registry_projection(
@@ -229,6 +266,7 @@ def test_pis_02_b_gca_and_orchestration_share_composition_invocation_store(
             lifecycle,
             settings=settings,
             host_runtime=host_runtime,
+            monkeypatch=monkeypatch,
         )
         harness = app.state.harness_runtime
         topology = harness.orchestration_topology
@@ -294,6 +332,7 @@ def test_pis_02_d_normal_shutdown_closes_invocation_store(
         lifecycle,
         settings=settings,
         host_runtime=host_runtime,
+        monkeypatch=monkeypatch,
     )
     with TestClient(app):
         store.put_invocation(_invocation())
@@ -346,6 +385,7 @@ def test_pis_02_f_strict_rejection_conflicting_and_missing_bindings(
     tmp_path: Path,
 ) -> None:
     install_diagnostic_cursor_secret(monkeypatch)
+    _install_reference_host_lab_contract_authority(monkeypatch)
     settings = GovernedContractorBackendSettings.from_env()
     env = build_governed_contractor_environment_profile(settings)
     external = DurableTestProviderInvocationStore()
@@ -388,6 +428,7 @@ def test_pis_02_f_strict_rejection_conflicting_and_missing_bindings(
                 lifecycle,
                 settings=settings,
                 host_runtime=_host_runtime_for_startup(settings),
+                monkeypatch=monkeypatch,
             )
     finally:
         lifecycle.close_process_resources()
