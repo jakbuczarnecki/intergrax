@@ -112,4 +112,4 @@ uv run pytest -p no:xdist \
 |-------|-------|
 | **origin** | `origin/development` |
 | **START_HEAD** | `e5e5d326184b23d3eb93786e60db7a4c2154499d` |
-| **FINAL_COMMIT** | *(see commit pushing this record)* |
+| **FINAL_COMMIT / AUDITED_HEAD** | `53cf2ff8c4172afa5e0cbd7303cec4fbb016186f` |
