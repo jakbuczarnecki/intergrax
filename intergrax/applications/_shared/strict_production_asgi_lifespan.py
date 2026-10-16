@@ -45,7 +45,7 @@ def attach_strict_production_serving_lifespan(
         try:
             yield
         finally:
-            if not session._closed:
+            if not session._closed and not session.lifecycle._process_closed:
                 session.close()
 
     return apply_lifespans(app, cast(LifespanFn, _lifespan))

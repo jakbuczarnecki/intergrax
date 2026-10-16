@@ -239,10 +239,37 @@ def begin_colocated_serving_execution_drain_on_strict_session_close(
     )
 
 
+def revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close(
+    *,
+    deployment_adapter: RuntimeDeploymentAdapter,
+    handoff: ServingRuntimeHandoff,
+    revision_store: RuntimeRevisionStore,
+) -> None:
+    """
+    Revoke physical admission when the canonical session-close drain path failed first.
+
+    Uses the same adapter ``begin_drain`` port as ``begin_colocated_serving_execution_drain_on_strict_session_close``.
+    No-op when admission was never bound or the revision record needed for the sanctioned port is absent.
+    """
+    if handoff.colocated_execution_admission is None:
+        return
+    if not isinstance(deployment_adapter, VenvBundleColocatedRuntimeDeploymentAdapter):
+        return
+    identity = handoff.identity
+    revision = revision_store.get_revision(identity.runtime_revision_id)
+    if revision is None:
+        return
+    deployment_adapter.begin_drain(
+        revision,
+        serving_unit_ref=identity.serving_unit_ref,
+    )
+
+
 __all__ = [
     "ColocatedServingActivationCommitResolutionError",
     "ColocatedServingAdmissionTopologyError",
     "begin_colocated_serving_execution_drain_on_strict_session_close",
+    "revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close",
     "bind_colocated_serving_runtime_after_activation",
     "resolve_traffic_serving_activation_commit",
     "validate_colocated_serving_admission_topology",

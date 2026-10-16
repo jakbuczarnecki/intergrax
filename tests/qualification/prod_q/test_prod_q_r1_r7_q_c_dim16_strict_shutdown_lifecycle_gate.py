@@ -219,6 +219,7 @@ def test_c_dim16_04_drain_failure_still_cleans_lifecycle_resources(
             close_calls += 1
             original_close(self)
 
+        inner_mock = AsyncMock(return_value=_completed_task_result())
         with patch(
             (
                 "intergrax.applications._shared.strict_production_serving_launcher."
@@ -229,18 +230,26 @@ def test_c_dim16_04_drain_failure_still_cleans_lifecycle_resources(
             ProductionProcessLifecycle,
             "close_process_resources",
             _tracked_close,
-        ):
-            with pytest.raises(
-                StrictProductionServingLauncherError,
-                match="dim16-injected-drain-fail",
-            ):
-                fixture.session.close()
+        ), patch(_INNER_DELEGATE, inner_mock):
+            with TestClient(fixture.app) as client:
+                with pytest.raises(
+                    StrictProductionServingLauncherError,
+                    match="dim16-injected-drain-fail",
+                ):
+                    fixture.session.close()
+                denied = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
         assert close_calls == 1
-        assert fixture.session._closed is True
+        assert fixture.session._closed is False
         assert fixture.session.lifecycle._process_closed is True
         _assert_production_slot_released()
         unit = fixture.adapter._units[fixture.unit_ref]
-        assert unit.admission.admission_closed() is False
+        assert unit.admission.admission_closed() is True
+        assert denied.status_code == 502
+        inner_mock.assert_not_called()
 
 
 def test_c_dim16_05_drain_failure_and_cleanup_failure_together(

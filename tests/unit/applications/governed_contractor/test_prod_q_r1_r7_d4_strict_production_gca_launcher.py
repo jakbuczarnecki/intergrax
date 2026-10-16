@@ -820,7 +820,7 @@ def test_d4_r2_session_close_drain_failure_still_closes_process_resources(
         with pytest.raises(StrictProductionServingLauncherError, match="d4_close_drain_fail"):
             session.close()
     assert close_calls == 1
-    assert session._closed is True
+    assert session._closed is False
 
 
 def test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors(

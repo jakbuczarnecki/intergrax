@@ -253,7 +253,7 @@ def _dim10_http_fixture(
             resolve_factory_observations=resolve_factory_observations,
         )
     finally:
-        if not session._closed:
+        if not session._closed and not session.lifecycle._process_closed:
             session.close()
 
 

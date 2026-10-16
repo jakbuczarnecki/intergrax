@@ -13,12 +13,14 @@ from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionReq
 from intergrax.agent_distribution.deployment import RuntimeDeploymentAdapter
 from intergrax.agent_distribution.runtime_revision import MaterializationTopology
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
+    VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 from intergrax.applications._shared.colocated_serving_runtime_composition import (
     ColocatedServingActivationCommitResolutionError,
     ColocatedServingAdmissionTopologyError,
     begin_colocated_serving_execution_drain_on_strict_session_close,
+    revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close,
     bind_colocated_serving_runtime_after_activation,
     resolve_traffic_serving_activation_commit,
 )
@@ -142,19 +144,33 @@ class StrictProductionServingSession:
             raise StrictProductionServingLauncherError(
                 "strict production serving session already closed",
             )
+        if self.lifecycle._process_closed:
+            raise StrictProductionServingLauncherError(
+                "strict production serving session close incomplete; "
+                "process lifecycle resources already released",
+            )
         drain_primary: BaseException | None = None
         handoff = self.lifecycle.composition.serving_runtime_handoff
         if handoff is not None:
             stores = self.lifecycle.composition.agent_platform_runtime.stores
+            deployment_adapter = self.lifecycle.deployment_adapter
             try:
                 begin_colocated_serving_execution_drain_on_strict_session_close(
-                    deployment_adapter=self.lifecycle.deployment_adapter,
+                    deployment_adapter=deployment_adapter,
                     handoff=handoff,
                     revision_store=stores.revision_store,
                 )
-            except ColocatedServingAdmissionTopologyError as exc:
+            except (
+                ColocatedServingAdmissionTopologyError,
+                VenvBundleColocatedDeploymentError,
+            ) as exc:
                 drain_primary = StrictProductionServingLauncherError(str(exc))
                 drain_primary.__cause__ = exc
+                revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close(
+                    deployment_adapter=deployment_adapter,
+                    handoff=handoff,
+                    revision_store=stores.revision_store,
+                )
         try:
             self.lifecycle.close_process_resources()
         except BaseException as cleanup_exc:
@@ -170,7 +186,8 @@ class StrictProductionServingSession:
                     ),
                 )
             raise
-        self._closed = True
+        if drain_primary is None:
+            self._closed = True
         if drain_primary is not None:
             raise drain_primary
 
