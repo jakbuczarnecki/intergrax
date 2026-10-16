@@ -105,6 +105,11 @@ class _RecordingUnitOpenPort:
         self.compensated += 1
         self._inner.compensate_failed_coordination_open(evidence)
 
+    def reconcile_coordinator_verified_existing_open(
+        self, evidence: ServingExecutionEligibilityEvidence
+    ) -> None:
+        self._inner.reconcile_coordinator_verified_existing_open(evidence)
+
 
 def test_coordinator_exports_exclude_depth_scope_protocols() -> None:
     import intergrax.agent_distribution.activation_domain_coordinator as module

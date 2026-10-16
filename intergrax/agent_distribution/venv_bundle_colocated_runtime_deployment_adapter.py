@@ -95,6 +95,16 @@ class VenvBundleCoordinatorVerifiedUnitServingAdmissionOpen:
             evidence
         )
 
+    def reconcile_coordinator_verified_existing_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        if evidence.serving_unit_ref != self._bound_serving_unit_ref:
+            raise VenvBundleColocatedDeploymentError(
+                "coordinator-verified admission reopen serving unit mismatch"
+            )
+        self._adapter._reconcile_coordinator_verified_unit_admission_open(evidence)
+
 
 class ColocatedUnitExecutionReservation:
     """One physical in-flight execution slot; release at most once."""
@@ -179,6 +189,7 @@ class _ColocatedVenvPhysicalUnit:
     readiness_evidence_ref: str | None = None
     serving_admission_authorized: bool = False
     coordinator_admission_open_staged: ServingExecutionEligibilityEvidence | None = None
+    coordinator_verified_published_pointer_revision: int | None = None
     drain_started_monotonic: float | None = None
     binding_key: str = ""
 
@@ -186,6 +197,7 @@ class _ColocatedVenvPhysicalUnit:
         self.runtime_resource.invalidate()
         self.serving_admission_authorized = False
         self.coordinator_admission_open_staged = None
+        self.coordinator_verified_published_pointer_revision = None
         self.admission.begin_drain()
 
 
@@ -319,12 +331,54 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
                 unit.admission.open_admission()
                 unit.lifecycle_state = DeploymentInstanceState.SERVING
                 unit.coordinator_admission_open_staged = None
+                unit.coordinator_verified_published_pointer_revision = (
+                    evidence.serving_pointer_revision
+                )
             except Exception:
                 unit.serving_admission_authorized = False
                 unit.coordinator_admission_open_staged = None
+                unit.coordinator_verified_published_pointer_revision = None
                 unit.admission.begin_drain()
                 unit.lifecycle_state = prior_lifecycle
                 raise
+
+    def _reconcile_coordinator_verified_unit_admission_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        """Confirm live physical admission matches coordinator evidence (no new authority)."""
+        with self._lock:
+            unit = self._require_live_unit(evidence.serving_unit_ref)
+            self._evidence_matches_unit_identity(unit, evidence)
+            if unit.coordinator_admission_open_staged is not None:
+                raise VenvBundleColocatedDeploymentError(
+                    "coordinator-verified admission open is staged during lifecycle reopen"
+                )
+            if unit.lifecycle_state is not DeploymentInstanceState.SERVING:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving unit is not in serving lifecycle state for admission reopen"
+                )
+            if not unit.serving_admission_authorized:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving execution admission is not authorized for lifecycle reopen"
+                )
+            if unit.admission.admission_closed():
+                raise VenvBundleColocatedDeploymentError(
+                    "serving unit admission gate is closed for lifecycle reopen"
+                )
+            if not unit.runtime_resource.is_live:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving unit physical runtime is not initialized for lifecycle reopen"
+                )
+            published_pointer = unit.coordinator_verified_published_pointer_revision
+            if published_pointer is None:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving unit lacks coordinator-verified admission pointer evidence"
+                )
+            if published_pointer != evidence.serving_pointer_revision:
+                raise VenvBundleColocatedDeploymentError(
+                    "serving pointer revision mismatch for lifecycle admission reopen"
+                )
 
     def _compensate_failed_coordinator_verified_unit_admission_open(
         self,
@@ -348,6 +402,7 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
                     "cannot compensate unit admission open while executions are in flight"
                 )
             unit.serving_admission_authorized = False
+            unit.coordinator_verified_published_pointer_revision = None
             unit.admission.begin_drain()
             if unit.lifecycle_state is DeploymentInstanceState.SERVING:
                 unit.lifecycle_state = DeploymentInstanceState.READY
@@ -634,6 +689,7 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
         unit.admission.begin_drain()
         unit.serving_admission_authorized = False
         unit.coordinator_admission_open_staged = None
+        unit.coordinator_verified_published_pointer_revision = None
         unit.lifecycle_state = DeploymentInstanceState.READY
         unit.drain_started_monotonic = None
         evidence = unit.readiness_evidence_ref or self.check_readiness(

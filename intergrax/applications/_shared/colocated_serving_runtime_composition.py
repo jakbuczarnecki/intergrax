@@ -28,6 +28,7 @@ from intergrax.agent_distribution.stores import (
     RuntimeRevisionStore,
 )
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
+    VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 from intergrax.applications._shared.colocated_serving_unit_execution_admission import (
@@ -43,6 +44,7 @@ from intergrax.applications._shared.registry_projection import RegistryProjectio
 from intergrax.applications._shared.serving_runtime_handoff import (
     ColocatedServingUnitRuntimeAccessor,
     ServingRuntimeHandoff,
+    ServingRuntimeHandoffError,
     authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
 )
@@ -56,25 +58,13 @@ class ColocatedServingActivationCommitResolutionError(ValueError):
     """Canonical activation commit evidence could not be resolved from durable stores."""
 
 
-def _physical_unit_already_serving_for_attestation(
-    physical_adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
-    attestation: ServingUnitAttestation,
-) -> bool:
-    """True when a live unit is already execution-eligible for the attested identity."""
-    unit = physical_adapter._units.get(attestation.serving_unit_ref)
-    if unit is None:
-        return False
-    if not unit.serving_admission_authorized or unit.admission.admission_closed():
-        return False
-    if unit.lifecycle_state is not DeploymentInstanceState.SERVING:
-        return False
-    return (
-        unit.application_id == attestation.application_id
-        and unit.application_environment_id == attestation.application_environment_id
-        and unit.runtime_revision_id == attestation.runtime_revision_id
-        and unit.serving_unit_ref == attestation.serving_unit_ref
-        and unit.materialization_artifact_digest == attestation.materialization_artifact_digest
-    )
+def _physical_serving_admission_grant_conflict(exc: BaseException) -> bool:
+    current: BaseException | None = exc
+    while current is not None:
+        if "already authorized" in str(current).lower():
+            return True
+        current = current.__cause__
+    return False
 
 
 def resolve_traffic_serving_activation_commit(
@@ -205,16 +195,22 @@ def bind_colocated_serving_runtime_after_activation(
         execution_continuation_state_store=updated.execution_continuation_state_store,
         serving_runtime_handoff=handoff,
     )
-    if not _physical_unit_already_serving_for_attestation(physical_adapter, attestation):
-        authorize_colocated_serving_execution_after_activation(
-            activation_commit=activation_commit,
-            handoff=handoff,
-            unit_admission_open=unit_admission_open,
-            activation_domain_coordinator=activation_domain_coordinator,
-            serving_store=serving_store,
-            deployment_instance_store=deployment_instance_store,
-            revision_store=revision_store,
-        )
+    admission_authorize = authorize_colocated_serving_execution_after_activation
+    admission_kwargs = {
+        "activation_commit": activation_commit,
+        "handoff": handoff,
+        "unit_admission_open": unit_admission_open,
+        "activation_domain_coordinator": activation_domain_coordinator,
+        "serving_store": serving_store,
+        "deployment_instance_store": deployment_instance_store,
+        "revision_store": revision_store,
+    }
+    try:
+        admission_authorize(**admission_kwargs, admission_bind_mode="grant")
+    except (ServingRuntimeHandoffError, VenvBundleColocatedDeploymentError) as exc:
+        if not _physical_serving_admission_grant_conflict(exc):
+            raise
+        admission_authorize(**admission_kwargs, admission_bind_mode="reopen")
     return updated
 
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -196,6 +196,7 @@ def authorize_colocated_serving_execution_after_activation(
     serving_store: ApplicationEnvironmentServingStore,
     deployment_instance_store: DeploymentInstanceStore,
     revision_store: RuntimeRevisionStore,
+    admission_bind_mode: Literal["grant", "reopen"] = "grant",
 ) -> None:
     """Bridge authoritative activation commit evidence to physical execution admission."""
     identity = handoff.identity
@@ -264,11 +265,18 @@ def authorize_colocated_serving_execution_after_activation(
     )
 
     try:
-        activation_domain_coordinator.coordinate_unit_serving_admission_open(
-            request,
-            unit_admission_open=unit_admission_open,
-            expected_serving_pointer_revision=serving.serving_pointer_revision,
-        )
+        if admission_bind_mode == "reopen":
+            activation_domain_coordinator.coordinate_unit_serving_admission_reopen(
+                request,
+                unit_admission_open=unit_admission_open,
+                expected_serving_pointer_revision=serving.serving_pointer_revision,
+            )
+        else:
+            activation_domain_coordinator.coordinate_unit_serving_admission_open(
+                request,
+                unit_admission_open=unit_admission_open,
+                expected_serving_pointer_revision=serving.serving_pointer_revision,
+            )
     except ServingExecutionAdmissionError as exc:
         raise ServingRuntimeHandoffError(str(exc)) from exc
 
