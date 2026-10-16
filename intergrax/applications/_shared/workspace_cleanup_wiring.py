@@ -100,6 +100,21 @@ def purge_all_workspace_sessions(
     return shadow_disposed, sandbox_disposed
 
 
+def make_harness_host_runtime_shutdown_lifespan(
+    runtime: HarnessHostRuntime,
+) -> LifespanFn:
+    """FastAPI lifespan that closes harness-owned runtime resources on host shutdown."""
+
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            runtime.close()
+
+    return _lifespan
+
+
 def make_workspace_cleanup_lifespan(
     shadow_manager: ShadowWorkspaceManager | None,
     sandbox_manager: SandboxSessionManager | None,
@@ -132,6 +147,7 @@ def build_factory_lifespans(
     for scheduler in schedulers or ():
         if scheduler is not None:
             lifespans.append(make_scheduler_lifespan(scheduler))
+    lifespans.append(make_harness_host_runtime_shutdown_lifespan(runtime))
     return lifespans
 
 

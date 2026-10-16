@@ -38,6 +38,9 @@ from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
     IdempotencyPreEffectCoordinator,
 )
 from intergrax.tools.registry import ToolProfile
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     build_agent_runtime_governance_boundary,
 )
@@ -127,3 +130,14 @@ def build_declarative_invoker_for_application_host(
         dependency_attempt_boundary=dependency_boundary,
         production_mode=production_mode,
     )
+
+
+def close_declarative_catalog_tool_invoker(
+    invoker: ExecutionBoundDeclarativeToolInvoker | None,
+) -> None:
+    """Shut down catalog declarative ``RuntimeToolInvoker`` admission (host lifecycle owner)."""
+    if invoker is None:
+        return
+    if not isinstance(invoker, CatalogDeclarativeToolInvoker):
+        return
+    invoker.tool_invoker.close()

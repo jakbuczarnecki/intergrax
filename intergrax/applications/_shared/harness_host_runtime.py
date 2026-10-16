@@ -208,6 +208,9 @@ from intergrax.applications.contracts.profile_resolution.store import (
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.execution.application_declarative_tool_composition import (
+    CatalogDeclarativeToolInvoker,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -267,6 +270,7 @@ class HarnessHostRuntime:
     ) = None
     _host_diagnostic_dependencies: HostDiagnosticReadDependencies | None = None
     orchestration_topology: HarnessHostOrchestrationTopologyWiring | None = None
+    _owned_declarative_tool_invoker: CatalogDeclarativeToolInvoker | None = None
 
     @property
     def host_diagnostic_dependencies(self) -> HostDiagnosticReadDependencies | None:
@@ -274,7 +278,7 @@ class HarnessHostRuntime:
         return self._host_diagnostic_dependencies
 
     def close(self) -> None:
-        """Stop event bus delivery and release bounded sink workers (W5-B2)."""
+        """Stop tool admission, event bus delivery, and bounded sink workers (W5-B2)."""
         close_harness_host_runtime(self)
 
 
@@ -763,12 +767,18 @@ def build_harness_host_runtime(
             meaningful_side_effect_wiring.owned_collaborative_work_persistence
         ),
         _host_diagnostic_dependencies=host_diagnostic_dependencies,
+        _owned_declarative_tool_invoker=declarative_tool_invoker,
     )
     return host_runtime
 
 
 def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
-    """Bounded shutdown for harness host event delivery (W5-B2)."""
+    """Bounded shutdown for harness host tool admission and event delivery (W5-B2)."""
+    from intergrax.applications._shared.declarative_tool_wiring import (
+        close_declarative_catalog_tool_invoker,
+    )
+
+    close_declarative_catalog_tool_invoker(runtime._owned_declarative_tool_invoker)
     from intergrax.applications._shared.harness_host_composition import (
         resolve_harness_host_event_bus,
     )
