@@ -142,6 +142,7 @@ class StrictProductionServingSession:
             raise StrictProductionServingLauncherError(
                 "strict production serving session already closed",
             )
+        drain_primary: BaseException | None = None
         handoff = self.lifecycle.composition.serving_runtime_handoff
         if handoff is not None:
             stores = self.lifecycle.composition.agent_platform_runtime.stores
@@ -152,9 +153,26 @@ class StrictProductionServingSession:
                     revision_store=stores.revision_store,
                 )
             except ColocatedServingAdmissionTopologyError as exc:
-                raise StrictProductionServingLauncherError(str(exc)) from exc
-        self.lifecycle.close_process_resources()
+                drain_primary = StrictProductionServingLauncherError(str(exc))
+                drain_primary.__cause__ = exc
+        try:
+            self.lifecycle.close_process_resources()
+        except BaseException as cleanup_exc:
+            cleanup_errors = cleanup_errors_from_close_failure(cleanup_exc)
+            if drain_primary is not None:
+                raise_primary_with_cleanup_errors(
+                    drain_primary,
+                    cleanup_errors,
+                    message=(
+                        "strict production serving session close failed during "
+                        "execution drain; errors while closing process lifecycle "
+                        "resources"
+                    ),
+                )
+            raise
         self._closed = True
+        if drain_primary is not None:
+            raise drain_primary
 
 
 def _require_venv_production_adapter(
