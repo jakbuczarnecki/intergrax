@@ -9,7 +9,7 @@
 | **Branch** | `development` |
 | **START_HEAD** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` |
 | **EXECUTION_SHA** (pytest @ code under test) | `9aef3f0946bffe22244243eeb6c569858ebc2e88` |
-| **EVIDENCE_COMMIT / AUDITED_HEAD** | `9f18d4a07` (record on `development`; verify on GitHub) |
+| **EVIDENCE_COMMIT / AUDITED_HEAD** | `4b32f4ddf396f3aa564f5b9ecf82ac89da034e53` |
 | **origin/development** | synchronized after evidence push |
 | **Maximum disposition** | **READY FOR AUDIT** |
 
