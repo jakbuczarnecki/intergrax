@@ -777,25 +777,52 @@ def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
     from intergrax.applications._shared.declarative_tool_wiring import (
         close_declarative_catalog_tool_invoker,
     )
-
-    close_declarative_catalog_tool_invoker(runtime._owned_declarative_tool_invoker)
     from intergrax.applications._shared.harness_host_composition import (
         resolve_harness_host_event_bus,
+    )
+    from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
+        raise_grouped_exceptions,
     )
     from intergrax.applications._shared.runtime_event_delivery_wiring import (
         close_application_runtime_event_delivery,
     )
 
-    bus = resolve_harness_host_event_bus(runtime)
-    close_application_runtime_event_delivery(
-        runtime.env_wiring.event_delivery,
-        event_bus=bus,
-    )
+    cleanup_errors: list[BaseException] = []
+
+    try:
+        close_declarative_catalog_tool_invoker(runtime._owned_declarative_tool_invoker)
+    except BaseException as exc:
+        cleanup_errors.append(exc)
+
+    try:
+        bus = resolve_harness_host_event_bus(runtime)
+        close_application_runtime_event_delivery(
+            runtime.env_wiring.event_delivery,
+            event_bus=bus,
+        )
+    except BaseException as exc:
+        cleanup_errors.append(exc)
+
     host_diagnostic_dependencies = runtime.host_diagnostic_dependencies
     if host_diagnostic_dependencies is not None:
-        close_host_owned_diagnostic_persistence(
-            host_diagnostic_dependencies.persistence
-        )
+        try:
+            close_host_owned_diagnostic_persistence(
+                host_diagnostic_dependencies.persistence
+            )
+        except BaseException as exc:
+            cleanup_errors.append(exc)
+
     owned_persistence = runtime._owned_collaborative_work_persistence
     if owned_persistence is not None:
-        owned_persistence.close()
+        try:
+            owned_persistence.close()
+        except BaseException as exc:
+            cleanup_errors.append(exc)
+
+    if cleanup_errors:
+        if len(cleanup_errors) == 1:
+            raise cleanup_errors[0]
+        raise_grouped_exceptions(
+            "errors while closing harness host runtime resources",
+            cleanup_errors,
+        )
