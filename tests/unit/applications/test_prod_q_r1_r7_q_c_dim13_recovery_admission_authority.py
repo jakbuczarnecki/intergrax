@@ -104,6 +104,7 @@ def test_dim13_recovery_rebind_uses_reopen_not_duplicate_grant(tmp_path: Path) -
         revision_store=revision_store,
         topology=MaterializationTopology.VENV_BUNDLE,
         artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
+        admission_bind_mode="reopen",
     )
     assert unit.coordinator_verified_published_pointer_revision == pointer_before
     adapter.reserve_unit_execution(unit_ref).release()
@@ -140,6 +141,7 @@ def test_dim13_recovery_reopen_rejected_after_drain(tmp_path: Path) -> None:
             revision_store=revision_store,
             topology=MaterializationTopology.VENV_BUNDLE,
             artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
+            admission_bind_mode="reopen",
         )
 
 
@@ -176,6 +178,41 @@ def test_dim13_recovery_reopen_rejected_on_identity_mismatch(tmp_path: Path) -> 
             revision_store=revision_store,
             topology=MaterializationTopology.VENV_BUNDLE,
             artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
+            admission_bind_mode="reopen",
+        )
+
+
+def test_dim13_grant_after_physical_authorization_fails_closed(tmp_path: Path) -> None:
+    composition = create_reference_production_process_composition()
+    (
+        adapter,
+        accessor,
+        unit_ref,
+        attestation,
+        deployment_instance,
+        bundle,
+        _revision,
+        commit,
+        serving_store,
+        instance_store,
+        revision_store,
+        _,
+    ) = _bind_once(tmp_path, composition)
+    with pytest.raises(VenvBundleColocatedDeploymentError, match="already authorized"):
+        bind_colocated_serving_runtime_after_activation(
+            composition=create_reference_production_process_composition(),
+            activation_commit=commit,
+            attestation=attestation,
+            deployment_instance=deployment_instance,
+            projection_input=bundle,
+            colocated_accessor=accessor,
+            physical_adapter=adapter,
+            serving_store=serving_store,
+            deployment_instance_store=instance_store,
+            revision_store=revision_store,
+            topology=MaterializationTopology.VENV_BUNDLE,
+            artifact_root=adapter.artifact_root_for_serving_unit(unit_ref),
+            admission_bind_mode="grant",
         )
 
 

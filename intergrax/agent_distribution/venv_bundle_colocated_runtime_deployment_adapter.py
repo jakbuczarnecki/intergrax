@@ -230,6 +230,27 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             _bound_serving_unit_ref=serving_unit_ref,
         )
 
+    def unit_serving_execution_admission_open_for_lifecycle_reopen(
+        self,
+        serving_unit_ref: str,
+    ) -> bool:
+        """Report whether physical admission matches coordinator lifecycle reopen preconditions."""
+        with self._lock:
+            unit = self._units.get(serving_unit_ref)
+            if unit is None:
+                return False
+            if unit.coordinator_admission_open_staged is not None:
+                return False
+            if unit.lifecycle_state is not DeploymentInstanceState.SERVING:
+                return False
+            if not unit.serving_admission_authorized:
+                return False
+            if unit.admission.admission_closed():
+                return False
+            if not unit.runtime_resource.is_live:
+                return False
+            return unit.coordinator_verified_published_pointer_revision is not None
+
     def reserve_unit_execution(
         self, serving_unit_ref: str
     ) -> ColocatedUnitExecutionReservation:

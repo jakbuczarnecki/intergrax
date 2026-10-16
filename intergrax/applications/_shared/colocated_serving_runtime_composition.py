@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from intergrax.agent_distribution.activation import ActivationCommitResult
 from intergrax.agent_distribution.activation_domain_coordinator import (
@@ -28,7 +29,6 @@ from intergrax.agent_distribution.stores import (
     RuntimeRevisionStore,
 )
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
-    VenvBundleColocatedDeploymentError,
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 from intergrax.applications._shared.colocated_serving_unit_execution_admission import (
@@ -44,7 +44,6 @@ from intergrax.applications._shared.registry_projection import RegistryProjectio
 from intergrax.applications._shared.serving_runtime_handoff import (
     ColocatedServingUnitRuntimeAccessor,
     ServingRuntimeHandoff,
-    ServingRuntimeHandoffError,
     authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
 )
@@ -56,15 +55,6 @@ class ColocatedServingAdmissionTopologyError(ValueError):
 
 class ColocatedServingActivationCommitResolutionError(ValueError):
     """Canonical activation commit evidence could not be resolved from durable stores."""
-
-
-def _physical_serving_admission_grant_conflict(exc: BaseException) -> bool:
-    current: BaseException | None = exc
-    while current is not None:
-        if "already authorized" in str(current).lower():
-            return True
-        current = current.__cause__
-    return False
 
 
 def resolve_traffic_serving_activation_commit(
@@ -157,6 +147,7 @@ def bind_colocated_serving_runtime_after_activation(
     topology: MaterializationTopology,
     artifact_root: Path,
     physical_adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
+    admission_bind_mode: Literal["grant", "reopen"] | None = None,
 ) -> ProductionProcessComposition:
     """Establish typed handoff, then open physical admission using activation evidence only."""
     activation_domain_coordinator = validate_colocated_serving_admission_topology(
@@ -195,6 +186,17 @@ def bind_colocated_serving_runtime_after_activation(
         execution_continuation_state_store=updated.execution_continuation_state_store,
         serving_runtime_handoff=handoff,
     )
+    resolved_admission_bind_mode: Literal["grant", "reopen"] = (
+        admission_bind_mode
+        if admission_bind_mode is not None
+        else (
+            "reopen"
+            if physical_adapter.unit_serving_execution_admission_open_for_lifecycle_reopen(
+                attestation.serving_unit_ref,
+            )
+            else "grant"
+        )
+    )
     admission_authorize = authorize_colocated_serving_execution_after_activation
     admission_kwargs = {
         "activation_commit": activation_commit,
@@ -205,12 +207,10 @@ def bind_colocated_serving_runtime_after_activation(
         "deployment_instance_store": deployment_instance_store,
         "revision_store": revision_store,
     }
-    try:
-        admission_authorize(**admission_kwargs, admission_bind_mode="grant")
-    except (ServingRuntimeHandoffError, VenvBundleColocatedDeploymentError) as exc:
-        if not _physical_serving_admission_grant_conflict(exc):
-            raise
-        admission_authorize(**admission_kwargs, admission_bind_mode="reopen")
+    admission_authorize(
+        **admission_kwargs,
+        admission_bind_mode=resolved_admission_bind_mode,
+    )
     return updated
 
 
