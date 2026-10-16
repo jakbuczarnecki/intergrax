@@ -27,8 +27,11 @@ from intergrax.agent_distribution.activation_domain_coordinator import (
 )
 from intergrax.applications._shared.colocated_serving_unit_execution_admission import (
     StoreBackedColocatedServingUnitExecutionAdmission,
-    serving_execution_admission_request_from_identity,
 )
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.applications._shared.serving_runtime_handoff import ServingUnitIdentity
 from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
     StrictProductionServingExecutionTenantBinding,
@@ -74,6 +77,23 @@ _RUN_ROUTE_SUFFIX: Final = "/run"
 _INNER_DELEGATE = (
     "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute"
 )
+_STRICT_PRODUCTION_GOVERNANCE_ADMIT = (
+    "intergrax.applications._shared.strict_production_host_task_execution_wiring."
+    "admit_strict_production_serving_root_governance_identity"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _CapturedServingAdmissionEvidence:
+    request: ServingExecutionAdmissionRequest
+
+
+@dataclass(frozen=True, slots=True)
+class _CapturedGovernanceAdmissionEvidence:
+    task: Task
+    binding: StrictProductionServingExecutionTenantBinding
+    principal: RequestIdentity
+    admitted: AdmittedRootGovernanceIdentity
 
 
 @dataclass(frozen=True, slots=True)
@@ -440,17 +460,27 @@ def test_p2c_05_identity_and_scope_continuity(
 
     admission = handoff.colocated_execution_admission
     assert admission is not None
-    admission_requests: list[ServingExecutionAdmissionRequest] = []
+    coordinator = admission.activation_domain_coordinator
+    real_coordinate = coordinator.coordinate_physical_execution_reservation
+    serving_admission_evidence: list[_CapturedServingAdmissionEvidence] = []
+    admit_execution_serving_unit_refs: list[str] = []
     real_admit = StoreBackedColocatedServingUnitExecutionAdmission.admit_execution
+
+    def _recording_coordinate_physical_execution_reservation(
+        request: ServingExecutionAdmissionRequest,
+        *,
+        physical_reserve,
+    ):
+        serving_admission_evidence.append(
+            _CapturedServingAdmissionEvidence(request=request),
+        )
+        return real_coordinate(request, physical_reserve=physical_reserve)
 
     def _recording_admit(
         self: StoreBackedColocatedServingUnitExecutionAdmission,
         serving_unit_ref: str,
     ) -> None:
-        admission_requests.append(
-            serving_execution_admission_request_from_identity(self.identity),
-        )
-        assert serving_unit_ref == authoritative.serving_unit_ref
+        admit_execution_serving_unit_refs.append(serving_unit_ref)
         real_admit(self, serving_unit_ref)
 
     tenant_tasks: list[Task] = []
@@ -474,12 +504,37 @@ def test_p2c_05_identity_and_scope_continuity(
         _recording_tenant_assert,
     )
 
+    governance_admission_evidence: list[_CapturedGovernanceAdmissionEvidence] = []
+
+    def _recording_governance_admit(
+        task: Task,
+        *,
+        binding: StrictProductionServingExecutionTenantBinding,
+        principal: RequestIdentity,
+    ) -> AdmittedRootGovernanceIdentity:
+        admitted = admit_strict_production_serving_root_governance_identity(
+            task,
+            binding=binding,
+            principal=principal,
+        )
+        governance_admission_evidence.append(
+            _CapturedGovernanceAdmissionEvidence(
+                task=task,
+                binding=binding,
+                principal=principal,
+                admitted=admitted,
+            ),
+        )
+        return admitted
+
     inner_calls = 0
 
     async def _inner_at_http_execution_seam(*_args, **_kwargs) -> TaskResult:
         nonlocal inner_calls
         inner_calls += 1
-        require_active_execution_identity()
+        run_id, attempt_id = require_active_execution_identity()
+        assert run_id
+        assert attempt_id
         principal = get_strict_serving_http_caller_principal()
         assert principal.tenant_id == binding.authoritative_execution_tenant_id
         assert principal.tenant_id == fixture.tenant_id
@@ -488,20 +543,30 @@ def test_p2c_05_identity_and_scope_continuity(
         task = tenant_tasks[-1]
         assert task.tenant_id == fixture.tenant_id
         assert tenant_bindings[-1] == binding
-        admitted = admit_strict_production_serving_root_governance_identity(
-            task,
-            binding=binding,
-            principal=principal,
+        assert governance_admission_evidence
+        governance = governance_admission_evidence[-1]
+        assert governance.task.task_id == task.task_id
+        assert governance.binding == binding
+        assert governance.principal.user_id == _QUAL_USER
+        assert governance.principal.tenant_id == fixture.tenant_id
+        assert (
+            governance.admitted.tenant_id == binding.authoritative_execution_tenant_id
         )
-        assert admitted.tenant_id == binding.authoritative_execution_tenant_id
         assert binding.application_id == authoritative.application_id
         assert binding.application_environment_id == authoritative.application_environment_id
         return _completed_task_result()
 
     with patch.object(
+        coordinator,
+        "coordinate_physical_execution_reservation",
+        side_effect=_recording_coordinate_physical_execution_reservation,
+    ), patch.object(
         StoreBackedColocatedServingUnitExecutionAdmission,
         "admit_execution",
         _recording_admit,
+    ), patch(
+        _STRICT_PRODUCTION_GOVERNANCE_ADMIT,
+        side_effect=_recording_governance_admit,
     ), patch(_INNER_DELEGATE, side_effect=_inner_at_http_execution_seam):
         with TestClient(fixture.app) as client:
             response = client.post(
@@ -511,10 +576,19 @@ def test_p2c_05_identity_and_scope_continuity(
             )
     assert response.status_code == 200
     assert inner_calls == 1
-    assert len(admission_requests) == 1
+    assert len(serving_admission_evidence) == 1
+    assert len(governance_admission_evidence) == 1
+    captured_admission = serving_admission_evidence[0]
+    assert admit_execution_serving_unit_refs == [authoritative.serving_unit_ref]
     _assert_serving_admission_matches_handoff(
-        admission_requests[0],
+        captured_admission.request,
         authoritative=authoritative,
+    )
+    captured_governance = governance_admission_evidence[0]
+    assert captured_governance.binding.application_id == authoritative.application_id
+    assert (
+        captured_governance.binding.application_environment_id
+        == authoritative.application_environment_id
     )
     assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
 
