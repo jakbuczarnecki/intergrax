@@ -27,7 +27,7 @@ Primary companion sources:
 
 DeepSeek/external audit findings may motivate work, but repository code, canonical contracts, architecture documents and independently audited GitHub commits are the authority for closure.
 
-**Whole-program goal:** reach a **formally freezable enterprise architecture** with evidence-backed certainty—before scenario work—on boundaries, ownership, contracts, typing, pluginability, Governance, Execution, Observability, Traceability, Persistence, Compatibility, **configuration-driven provider/vendor/model/backend activation and absence of hard-coded production selection**, Production qualification and regression protection; then **preserve** that enterprise quality during future scenario-driven evolution through a continuously diagnosable, executable full-platform audit. After `ARCH-FREEZE`, fundamental architecture is frozen; scenarios must not be used to discover known fundamental architecture gaps. Enterprise architecture quality must remain **continuously auditable on demand** after freeze (baseline comparison, drift classification, actionable reports).
+**Whole-program goal:** reach a **formally freezable enterprise architecture** with evidence-backed certainty—before scenario work—on boundaries, ownership, contracts, typing, pluginability, Governance, Execution, Observability, Traceability, Persistence, Compatibility, **configuration-driven provider/vendor/model/backend activation and absence of hard-coded production selection**, Production qualification and regression protection, and **enterprise evolvability & change safety** (`EVOL-X`); then **preserve** that enterprise quality during future scenario-driven evolution through a continuously diagnosable, executable full-platform audit and qualified change-impact / regression-selection discipline. After `ARCH-FREEZE`, fundamental architecture is frozen; scenarios must not be used to discover known fundamental architecture gaps. Enterprise architecture quality must remain **continuously auditable on demand** after freeze (baseline comparison, drift classification, actionable reports).
 
 ---
 
@@ -63,7 +63,8 @@ Every stage in this roadmap must preserve and revalidate these rules where appli
 26. **Durable recovery explicit** — where the platform holds durable state, backup/restore must be **supported and qualified** or **explicitly outside platform responsibility with evidence**. Restore must not create new authority, new identity, divergent truth or accept stale state as canonical.
 27. **Production operability** — a system qualified as production-ready must explicitly expose or classify health, readiness, degraded state, terminal failure and operator-actionable failure information, plus recovery procedure/responsibility for critical failure modes. Observability alone does not satisfy operability when only a log exists without actionable operator semantics.
 28. **Tenant isolation is end-to-end and non-negotiable.** Tenant context must be explicit where tenant scope applies, preserved across all semantic, composition, execution, persistence, recovery, provider, evidence, observability and asynchronous boundaries, and may never silently disappear, change tenant, widen to global scope or allow cross-tenant access. Cross-tenant behavior is legal only through an explicit typed contract, explicit authority and auditable policy. Missing tenant identity must fail closed where tenant identity is required.
-29. **Vendor/backend neutrality and replaceability are auditable acceptance requirements** — every production-effective infrastructure/vendor/backend dependency must be inventoried, classified, and (where extensibility is claimed) qualified for structural and behavioral replaceability through existing sanctioned configuration/composition owners. Historical **CONFIG-X** closure is preserved evidence, not automatic proof of current-HEAD absence of core hardcoding, shadow selection, silent fallback, or unqualified extensibility claims. Universal hardcoding detection and cross-layer replaceability certification are mandatory before **ARCH-FREEZE** (primary stages **EBH-5**, **EBH-6**, **DUP-X**, **ROADMAP-REPLAY-X**, **EBH-7**, **ENT-AUDIT-X**). Evidence schemas: [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](../qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md); program detail §3.0.8.
+29. **Vendor/backend neutrality and replaceability are auditable acceptance requirements** — every production-effective infrastructure/vendor/backend dependency must be inventoried, classified, and (where extensibility is claimed) qualified for structural and behavioral replaceability through existing sanctioned configuration/composition owners. Historical **CONFIG-X** closure is preserved evidence, not automatic proof of current-HEAD absence of core hardcoding, shadow selection, silent fallback, or unqualified extensibility claims. Universal hardcoding detection and cross-layer replaceability certification are mandatory before **ARCH-FREEZE** (primary stages **EBH-5**, **EBH-6**, **DUP-X**, **ROADMAP-REPLAY-X**, **EBH-7**, **EVOL-X**, **ENT-AUDIT-X**). Evidence schemas: [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](../qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md); program detail §3.0.8.
+30. **Enterprise evolvability is a first-class, measurable capability** — platform, application, agent, scenario, workflow, contract, policy, integration and configuration changes must be **impact-aware**, **isolation-bounded**, **compatibility-governed**, **regression-protected**, **deploy/recover qualified**, and **observable for diagnosis** without Observability/Diagnostics becoming execution or policy authority. **`EVOL-X`** qualifies this capability on current HEAD before **`ENT-AUDIT-X`** / **`ARCH-FREEZE`**; **`ENT-AUDIT-X`** continuously enforces the accepted baseline afterward (§3.0.9, §3.1). Unknown change impact must trigger **conservative** qualification — never a regression bypass.
 
 **Tenant isolation hard rules (where tenant scope applies):**
 
@@ -214,7 +215,8 @@ Minimum planned linkage:
 | **DUP-X** | **OWN, CTR, BND, TYP, PLG, RPL, CFG, EXE, GOV, STA, TRC, REG, OBS** — duplicate/shadow/bypass + shadow provider/registry/store selection | TEN |
 | **ROADMAP-REPLAY-X** | **all families touched by replay** + **vendor-neutrality evidence revalidation** (CONFIG-X PASS ≠ current-HEAD PASS) | TEN |
 | EBH-7 | all enterprise families + **zero unresolved prohibited vendor hardcoding** | TEN |
-| ENT-AUDIT-X | all enterprise families as audit coverage + REG + FRZ + DEBT + DOC + **VBN executable checks** + **TEN** | TEN (executable continuous enforcement) |
+| **EVOL-X** | **EVOL** + supporting **CMP**, **REG**, **STA**, **REC**, **PLG**, **CTR**, **CFG**, **RPL**, **PRD** (qualified subsets) | TEN |
+| ENT-AUDIT-X | all enterprise families as audit coverage + REG + FRZ + DEBT + DOC + **VBN executable checks** + **EVOL** (continuous) + **TEN** | TEN (executable continuous enforcement) |
 | ARCH-FREEZE | FRZ, DEBT, DOC + all remaining + **mandatory VBN artifacts** (§3.0.8) | TEN (final acceptance) |
 | **SCENARIO-READINESS-X** | product/delivery readiness + **contract-only scenario** + **representative alternate infra config** (§3.0.7/§3.0.8) | TEN |
 
@@ -427,11 +429,12 @@ If a new blocker is discovered:
 | EBH-6 | Final Architecture Recertification | **Current-HEAD cross-platform recertification** after all local, Harness, Governance, control-plane, state, compatibility and production-qualification work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection — **including every `FRZ-*` criterion and invariant added to the freeze program after historical `EBH-2*` local hardening.** **Mandatory:** universal vendor/backend hardcoding audit (§3.0.8) producing/updating `CORE_HARDCODING_FINDINGS_REGISTER` and `CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT`; reconcile prior **CONFIG-X** concern inventory vs current HEAD. Historical `EBH-2*` closure is **not** sufficient alone for final `TYP`, `BND`, `OWN`, `CTR`, `PLG` PASS if later stages changed the audited surface. **EBH-2\*** = primary/local hardening and evidence; **EBH-6** = final current-HEAD architecture-family recertification. | [ ] PLANNED |
 | **DUP-X** | Cross-Architecture Duplicate Mechanism & Bypass Certification | **FINAL PRE-REPLAY / MANDATORY** — brutal closed-world current-HEAD audit focused exclusively on semantic duplication, parallel mechanisms and bypass risk across the whole platform. Build a responsibility-level inventory and prove **exactly one semantic owner + exactly one canonical contract/registry/resolver/dispatcher/store/selection/materialization/admission/composition owner wherever the responsibility is singular**. Detect and remediate duplicate/near-duplicate execution ingresses, dispatchers, handler registries, provider/config resolvers, factories, registries, policy/admission engines, retry/recovery loops, schedulers, state/persistence stores, caches, provenance/evidence stores, intent mechanisms, selectors, target resolvers, compatibility branches, legacy shims, observability/diagnostic truth paths, **shadow provider registries, duplicate database/backend selection mechanisms, local storage authorities, parallel telemetry exporters, and vendor-specific parallel execution paths** and per-domain copies of cross-platform mechanisms. Legitimate source-specific typed adapters are allowed only when they converge immediately into one shared semantic core and do not own parallel truth/authority. **No finding may be waived as historical CLOSED evidence.** Every suspected duplicate must be classified as: canonical owner, thin typed adapter, legitimate distinct responsibility, remediation blocker, or proven N/A with evidence. `DUP-X` cannot close with unresolved duplicate/shadow/bypass findings. **Depends on:** `EBH-6`. **Next:** `ROADMAP-REPLAY-X`. | **[ ] FINAL / MANDATORY** |
 | **ROADMAP-REPLAY-X** | Full Program Current-HEAD Revalidation | **FINAL / MANDATORY** — Re-run the complete enterprise roadmap from the earliest relevant stage to current HEAD and prove that later changes have not invalidated earlier certifications or reopened architecture drift. Every historical CLOSED stage is evidence, not automatic current PASS — **including CONFIG-X / FRZ-CFG PASS and scoped replaceability proofs**; **revalidate vendor-neutrality and replaceability evidence** (`CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT` delta). Revalidate original invariants and exit criteria; later changes must not invalidate earlier ownership/boundaries/contracts/authority; stale evidence and stale assumptions must be detected; a real violation reopens the affected historical semantic parent; replay remains BLOCKED while any reopened stage is unresolved. **Mechanical prerequisites:** `reopened historical stages` = 0; `unresolved replay blockers` = 0; `roadmap drift` = 0; `historical evidence invalidated by later changes` = 0; `unclassified replay findings` = 0; `vendor_neutrality_replay_failures` = 0. **Depends on:** `DUP-X`. **Next:** `EBH-7`. | **[ ] FINAL / MANDATORY** |
-| **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior, **end-to-end tenant isolation proven on current HEAD across subsystem boundaries — not inferred from individual component closure alone**, and **complete evidence that every declared extensible mechanism is either replaceability-qualified (RPL-H) or blocked with an explicit unresolved finding — zero unresolved `PROHIBITED-*` vendor hardcoding in applicable frozen scope**. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6** and **`ROADMAP-REPLAY-X` = CLOSED**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. | **[ ] FINAL / MANDATORY** |
-| **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after final enterprise certification, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates instead of duplicating them; adds cross-cutting static/structural checks including **mandatory executable vendor/backend hardcoding, shadow-registry, and unauthorized-fallback regression checks** (§3.0.8 / §3.1); one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X`. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **mandatory vendor/backend evidence artifacts accepted on current HEAD** (`VENDOR_BACKEND_DEPENDENCY_INVENTORY`, `CORE_HARDCODING_FINDINGS_REGISTER`, `CROSS_LAYER_REPLACEABILITY_MATRIX`, `ALLOWED_FIXED_SUBSTRATE_DECISIONS`, `VENDOR_SELECTION_REACHABILITY_EVIDENCE`, `ALTERNATIVE_BACKEND_BEHAVIORAL_PROOF`, `CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT` per [evidence spec](../qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md)); **`in-scope PROHIBITED-* vendor hardcoding unresolved` = 0**; **`promised extensibility without RPL qualification` = 0**; **`SKILL-X` = CLOSED** (independent exact-SHA evidence; scope per §3.0.4); **`TOOL-LIFE-X` = CLOSED** (independent exact-SHA evidence; lifecycle scope per §3.0.5); **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.6); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). **Next mandatory stage after closure:** **`SCENARIO-READINESS-X`**. | **[ ] FINAL / MANDATORY** |
+| **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior, **end-to-end tenant isolation proven on current HEAD across subsystem boundaries — not inferred from individual component closure alone**, and **complete evidence that every declared extensible mechanism is either replaceability-qualified (RPL-H) or blocked with an explicit unresolved finding — zero unresolved `PROHIBITED-*` vendor hardcoding in applicable frozen scope**. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6** and **`ROADMAP-REPLAY-X` = CLOSED**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. **Depends on:** **`ROADMAP-REPLAY-X` = CLOSED**. **Next:** **`EVOL-X`**. | **[ ] FINAL / MANDATORY** |
+| **EVOL-X** | Enterprise Evolvability & Change Safety Certification | **FINAL / MANDATORY** — qualify Integrax as an enterprise platform whose evolution is **predictable, impact-aware, isolation-bounded, compatibility-governed, safely deployable, recoverable, regression-protected and change-diagnosable** without creating a second release, governance, execution, contract, qualification or deployment authority. Builds on and **does not duplicate** **`QUAL-X`** (regression infrastructure), **`COMPAT-X`** (compatibility policy), **`STATE-X`/`FRZ-REC-*`** (recovery semantics), **`ROADMAP-REPLAY-X`** (historical program replay), or **`ENT-AUDIT-X`** (continuous audit runner). Full discovery dimensions **EVOL-01..10**, gap inventory, metrics, experiment matrix **S1..S8**, scope boundaries and **`FRZ-EVOL-*`** mapping: §3.0.9. **Depends on:** **`EBH-7` = CLOSED**. **Next:** **`ENT-AUDIT-X`**. **Status:** docs/plan discovery complete @ roadmap amendment — **not started**; **production delta = 0** until implementation waves explicitly opened; maximum program status until independent closure: **READY FOR AUDIT**. | **[ ] PLANNED / MANDATORY** (roadmap discovery **READY FOR AUDIT**) |
+| **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after **`EBH-7`** and **`EVOL-X` = CLOSED**, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates and **`EVOL-X`**-accepted change-impact / regression-selection artifacts instead of duplicating them; adds cross-cutting static/structural checks including **mandatory executable vendor/backend hardcoding, shadow-registry, and unauthorized-fallback regression checks** (§3.0.8 / §3.1); one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X` or **`EVOL-X`**. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. **Depends on:** **`EVOL-X` = CLOSED**. | **[ ] FINAL / MANDATORY** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires **`EBH-7`**, **`EVOL-X`**, and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **mandatory vendor/backend evidence artifacts accepted on current HEAD** (`VENDOR_BACKEND_DEPENDENCY_INVENTORY`, `CORE_HARDCODING_FINDINGS_REGISTER`, `CROSS_LAYER_REPLACEABILITY_MATRIX`, `ALLOWED_FIXED_SUBSTRATE_DECISIONS`, `VENDOR_SELECTION_REACHABILITY_EVIDENCE`, `ALTERNATIVE_BACKEND_BEHAVIORAL_PROOF`, `CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT` per [evidence spec](../qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md)); **`in-scope PROHIBITED-* vendor hardcoding unresolved` = 0**; **`promised extensibility without RPL qualification` = 0**; **`SKILL-X` = CLOSED** (independent exact-SHA evidence; scope per §3.0.4); **`TOOL-LIFE-X` = CLOSED** (independent exact-SHA evidence; lifecycle scope per §3.0.5); **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.6); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`EBH-7` = CLOSED**; **`EVOL-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). **Next mandatory stage after closure:** **`SCENARIO-READINESS-X`**. | **[ ] FINAL / MANDATORY** |
 | **SCENARIO-READINESS-X** | Scenario Delivery Velocity & Boundary Integration Certification | **Mandatory post-freeze pre-scenario validation.** Answers: *On formally frozen Intergrax, can a real business process be built and run very quickly as a thin, separately deployable component between existing customer systems—without core platform changes, scenario-local bypasses, or new platform mechanisms?* Reference validation scenario: **business settlement / reconciliation** through boundary adapters and typed contracts (not a specific customer production rollout). Certifies boundary-integrated deployment, typed input/output, deterministic-first rules, platform HITL/trace/evidence reuse, delivery-velocity metrics, friction inventory/classification, **representative alternate configuration for selected infrastructure/provider concerns** (platform-claimed replaceability only — §3.0.8), **no scenario-embedded vendor/backend selection logic**, and **Intergrax Scenario Delivery Kit** standardization analysis. **Depends on:** **`ARCH-FREEZE` = CLOSED**. **Next:** **`SCENARIO-GATE`**. Full scope, metrics, acceptance criteria, friction taxonomy, frozen-architecture rule, and relationship to scenario program: §3.0.7. **Implementation status:** docs/plan only — **not started**; **production delta = 0** until implementation waves are explicitly opened. | **[ ] PLANNED / MANDATORY** |
-| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **`SCENARIO-READINESS-X` does not start scenario-driven platform development** — it certifies post-freeze delivery readiness; only **`SCENARIO-READINESS-X` = CLOSED** enables entry to the formal scenario program opened by this gate. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED**, **`SCENARIO-READINESS-X` ≠ CLOSED**, or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`SCENARIO-READINESS-X` = CLOSED**, **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, **freeze-SHA enterprise audit = PASS**, and **unresolved platform-level architecture blockers discovered during `SCENARIO-READINESS-X` = 0**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `ARCH-FREEZE`, `SCENARIO-READINESS-X`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **`SCENARIO-READINESS-X` does not start scenario-driven platform development** — it certifies post-freeze delivery readiness; only **`SCENARIO-READINESS-X` = CLOSED** enables entry to the formal scenario program opened by this gate. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED**, **`SCENARIO-READINESS-X` ≠ CLOSED**, or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`SCENARIO-READINESS-X` = CLOSED**, **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, **freeze-SHA enterprise audit = PASS**, and **unresolved platform-level architecture blockers discovered during `SCENARIO-READINESS-X` = 0**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `EVOL-X`, `ARCH-FREEZE`, `SCENARIO-READINESS-X`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Post-freeze scenario evolution must honor **`EVOL-X`** / **`FRZ-EVOL-*`** contracts via **`ENT-AUDIT-X`** (no scenario-local regression bypass). Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
 
 ### 3.0.1 Transferred Scenario #24 capabilities — mandatory order before EBH-3 / EBH-4
 
@@ -557,7 +560,7 @@ GOV-X1
 
 **Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED; do **not** mark PASS until independent exact-SHA closure. Roadmap/plan authority only until then.
 
-**Position:** after **`QUAL-X`**, before **`TOOL-LIFE-X`**. Mandatory before Tool execution lifecycle certification, cross-platform scale certification and before final enterprise architecture freeze / release certification (`EBH-7`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
+**Position:** after **`QUAL-X`**, before **`TOOL-LIFE-X`**. Mandatory before Tool execution lifecycle certification, cross-platform scale certification and before final enterprise architecture freeze / release certification (`EBH-7`, `EVOL-X`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 
 **Canonical late-stage dependency chain (adapted to §3 order):**
 
@@ -567,7 +570,7 @@ earlier correctness / production certifications
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary platform question:**
@@ -670,7 +673,7 @@ Observability must reconstruct effective Skill influence where enterprise tracea
 
 **Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED; do **not** mark PASS until independent exact-SHA closure. Roadmap/plan authority only until then.
 
-**Position:** after **`SKILL-X`**, before **`DIST-SCALE-X`**. Mandatory before cross-platform scale certification and before final enterprise architecture freeze / release certification (`EBH-7`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
+**Position:** after **`SKILL-X`**, before **`DIST-SCALE-X`**. Mandatory before cross-platform scale certification and before final enterprise architecture freeze / release certification (`EBH-7`, `EVOL-X`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 
 **Canonical late-stage dependency chain (adapted to §3 order):**
 
@@ -680,7 +683,7 @@ earlier correctness / production certifications
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary platform question:**
@@ -879,7 +882,7 @@ Do not certify lifecycle correctness through mocks alone where real behavior mat
 
 **Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED. This section is roadmap/plan authority only until independent exact-SHA closure.
 
-**Position:** after **`TOOL-LIFE-X`**, before **`EBH-5`**. Mandatory before final enterprise architecture freeze / release certification (`EBH-7`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
+**Position:** after **`TOOL-LIFE-X`**, before **`EBH-5`**. Mandatory before final enterprise architecture freeze / release certification (`EBH-7`, `EVOL-X`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 
 **Canonical late-stage dependency chain (adapted to §3 order):**
 
@@ -888,7 +891,7 @@ CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
 
 **Primary business / platform question:**
@@ -1130,7 +1133,7 @@ No silent fallback to unsafe provider/store.
 
 ```text
 … → DIST-SCALE-X
-→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE
 → SCENARIO-READINESS-X
 → SCENARIO-GATE
 ```
@@ -1140,6 +1143,8 @@ No silent fallback to unsafe provider/store.
 > Czy na formalnie zamrożonym Intergrax można bardzo szybko zbudować i uruchomić realny proces biznesowy jako cienki, osobno deployowalny komponent pomiędzy istniejącymi systemami klienta — bez zmian core platformy, bez scenario-local bypassów i bez tworzenia nowych mechanizmów platformowych?
 
 This stage runs **after** architecture freeze. It is **not** a customer production rollout and **not** the start of scenario-driven platform development. It is a **reference scenario-readiness test** of the frozen platform.
+
+**`EVOL-X` continuity (mandatory):** scenario delivery and onboarding must use **`EVOL-X`**-accepted change-impact and regression-selection contracts (via **`ENT-AUDIT-X`** baseline/drift runs). Scenario-local shortcuts that bypass impact analysis, conservative regression, or compatibility checks are **forbidden**. New scenarios must satisfy experiment-class **S8** expectations (sanctioned extension surfaces only).
 
 #### Reference validation scenario
 
@@ -1319,7 +1324,7 @@ The stage must produce an analysis of what should be standardized as **`Intergra
 
 **Status:** **`PLANNED / MANDATORY`** — specification and acceptance gates only until **EBH-5** implementation waves open. **Does not** revoke **CONFIG-X** PASS or autonomously change any stage status.
 
-**Position:** primary certification **EBH-5** (after **`DIST-SCALE-X`**); hardcoding re-audit **EBH-6**; duplicate/shadow closure **DUP-X**; evidence replay **ROADMAP-REPLAY-X**; whole-platform convergence **EBH-7**; continuous enforcement **ENT-AUDIT-X**; final acceptance **ARCH-FREEZE**; post-freeze reference proof **SCENARIO-READINESS-X**.
+**Position:** primary certification **EBH-5** (after **`DIST-SCALE-X`**); hardcoding re-audit **EBH-6**; duplicate/shadow closure **DUP-X**; evidence replay **ROADMAP-REPLAY-X**; whole-platform convergence **EBH-7**; evolvability & change safety **EVOL-X**; continuous enforcement **ENT-AUDIT-X**; final acceptance **ARCH-FREEZE**; post-freeze reference proof **SCENARIO-READINESS-X**.
 
 **Evidence schemas (normative):** [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](../qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md).
 
@@ -1458,6 +1463,129 @@ Replaceability does **not** require interchangeable incompatible technologies �
 
 **`production delta = 0`** until **EBH-5** / **EBH-6** implementation waves explicitly open. This §3.0.8 amendment does not run the audit or create PASS artifacts.
 
+### 3.0.9 `EVOL-X` — Enterprise Evolvability & Change Safety Certification
+
+**Status:** **`PLANNED / MANDATORY`** — roadmap/discovery amendment **READY FOR AUDIT** @ baseline `c7894c929bbc02d63a139640df5afda8e8faf1e5`; **not started**; **not CLOSED**; **production delta = 0** until implementation waves explicitly open.
+
+**Position:** after **`EBH-7`**, before **`ENT-AUDIT-X`**.
+
+```text
+… → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE → …
+```
+
+**Strategic objective:** establish **Enterprise Evolvability & Change Safety** as a first-class, measurable, continuously enforceable platform capability so that applications, agents, scenarios, workflows, policies, integrations, contracts and infrastructure implementations can evolve **without uncontrolled regressions** across unrelated capabilities. This is **not** test coverage alone — it is qualified **change discipline** end-to-end.
+
+**Primary question:** *Given a proposed or applied change on current HEAD, can the platform determine impact, required regression/qualification, compatibility and deployment/recovery risk — and fail closed when impact is unknown — without creating a competing release or governance authority?*
+
+**Authority / non-duplication (mandatory):**
+
+| Existing stage | Relationship to `EVOL-X` |
+|---|---|
+| **QUAL-X** | Owns qualification/regression **infrastructure** credibility (`FRZ-REG-*`). `EVOL-X` consumes gates/suites; does not replace QUAL-X closure. |
+| **COMPAT-X** | Owns contract/schema/event/plugin **compatibility policy** (`FRZ-CMP-*` PASS). `EVOL-X` proves **change-time** application of that policy to consumers and persisted artifacts. |
+| **STATE-X / `FRZ-REC-*`** | Owns durability/recovery **semantics**. `EVOL-X` adds **scenario/workflow definition evolution** vs in-flight execution rules (EVOL-04). |
+| **ROADMAP-REPLAY-X** | Revalidates **historical** stage evidence on current HEAD. `EVOL-X` qualifies **forward** change safety; replay remains mandatory and separate. |
+| **ENT-AUDIT-X** | Owns **continuous** enterprise audit runner, baseline SHA, drift report. `EVOL-X` produces accepted **change-impact graph**, regression-selection contract and deployment-safety evidence that **ENT-AUDIT-X** orchestrates post-freeze — not re-implements. |
+| **Governance / Execution** | Unchanged semantic owners. `EVOL-X` must not mint permission, schedule work, or approve releases. |
+| **PROD-Q / R7-Q** | Sequence **unchanged** by this amendment. `EVOL-X` does not insert production-qualification waves. |
+
+Post-freeze change classification remains governed by [`INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md`](../qualification/INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md); `EVOL-X` **aligns** with Class A/B/C gates but does not replace that SSOT after freeze.
+
+#### Existing capabilities (current HEAD discovery @ `c7894c929bbc02d63a139640df5afda8e8faf1e5`)
+
+| Area | Existing evidence / owner | Gap for `EVOL-X` |
+|---|---|---|
+| Contract/schema evolution policy | **COMPAT-X** CLOSED; `FRZ-CMP-01..08` PASS | No closed-world **consumer impact closure** for arbitrary contract edits; policy ≠ automated blast-radius proof |
+| Regression gates & inventories | Partial **QUAL-X** contributors; many `FRZ-REG-*` OPEN | No **semantic change-impact graph** driving test selection; filename/heuristic-only selection insufficient (EVOL-01, EVOL-05) |
+| Tenant / state isolation | **TENANT-X** CLOSED; **STATE-X** / `FRZ-STA-*`, `FRZ-REC-*` PASS | Isolation proven at certification time; **cross-scenario blast radius** and shared-registry coupling not evolvability-certified (EVOL-02) |
+| Plugin/replaceability | **EBH-5** (planned), **CONFIG-X**, partial **FRZ-PLG-*** / **FRZ-RPL-*** | Extensibility without core edit not systematically measured (EVOL-08) |
+| Recovery / replay | **STATE-X** recovery matrices; fork **NOT SUPPORTED** | **Workflow/scenario definition versioning** vs in-flight instances not enterprise-qualified (EVOL-04) |
+| Deployment / rollback | **PROD-Q** partial (launcher, strict paths); no versioned scenario deploy stage | **Durable-state-aware** rollback/refusal not qualified (EVOL-06) |
+| Drift / baseline | **ENT-AUDIT-X** planned (`CHANGED-SINCE`, baseline SHA) | Change-impact and regression-selection artifacts **not yet** accepted pre-freeze |
+| Capability-graph impact | **CTRL-X** CTL-11 deploy/impact analysis (scoped) | Not whole-platform change-impact authority |
+
+#### Discovery dimensions (EVOL-01..10)
+
+| ID | Dimension | Current HEAD assessment (discovery) | Target capability |
+|---|---|---|---|
+| **EVOL-01** | Change impact analysis | Layer/import gates, contract inventories (**COMPAT-X**), partial dependency graphs in qualification docs — **no** single semantic impact graph from change → contracts → apps → scenarios → tests → owners | Given a proposed change: affected contracts, applications, scenarios, tests, owners, runtime effects — **not** filename-only |
+| **EVOL-02** | Change isolation | **TENANT-X**, composition boundaries, **DUP-X** (planned) address parts of blast radius | Scenario/app evolution with **minimal explainable** blast radius; shared mutable state/registries classified |
+| **EVOL-03** | Contract & schema evolution | **COMPAT-X** policies + migration obligations | Executable proof that compatible/incompatible edits are detected and consumers enumerated |
+| **EVOL-04** | Scenario evolution & replay | **STATE-X** event/replay/recovery; no enterprise scenario-definition versioning matrix | Safe in-place vs versioned vs rejected scenario changes with in-flight executions |
+| **EVOL-05** | Intelligent regression protection | Static gates + broad suites; **QUAL-X** not closed | Impact-graph-driven selection + **mandatory safety suites**; unknown impact → conservative full qualification |
+| **EVOL-06** | Safe deployment & rollback | **PROD-Q** operability fragments; no qualified versioned scenario deploy | Rollback safe only with **durable state + contract** evidence; unsafe rollback explicitly refused |
+| **EVOL-07** | Change diagnostics & observability | Trace/evidence planes (**TRACE-X**); audit planned | Operator questions answerable from **passive** telemetry + qualification records — not execution authority |
+| **EVOL-08** | Extensibility without core modification | Plugin contracts (**EBH-2\***, **CONFIG-X**, **COMPAT-X-R4**) | Measured rate of core edits required for new apps/agents/scenarios/providers |
+| **EVOL-09** | Continuous qualification after freeze | **ENT-AUDIT-X** §3.1 post-freeze policy; post-freeze governance doc | Requalification triggers, evidence freshness, drift vs freeze baseline — **architecture freeze ≠ feature freeze** |
+| **EVOL-10** | Developer/operator change workflow | CI/pytest gates; roadmap stage discipline | End-to-end workflow (propose → impact → tests → deploy check → evidence) via **existing** CI/CLI/qualification owners |
+
+#### Proposed enterprise metrics (operator ratification required — **no achieved values claimed**)
+
+| Metric ID | Description | Proposed acceptance threshold (ratify before closure) |
+|---|---|---|
+| **EVOL-M-01** | Changes with complete impact assessment (classified change surface + owner) | **≥ 95%** of in-scope platform changes in qualification window |
+| **EVOL-M-02** | Change-impact graph node/edge coverage vs closed-world inventory | **≥ 90%** of inventoried contract/composition edges covered |
+| **EVOL-M-03** | Regression selection precision (selected tests all relevant) | **≥ 98%** on controlled experiment set **S1..S6** |
+| **EVOL-M-04** | Regression selection safety (no mandatory suite skipped when impact unknown) | **100%** — unknown impact → conservative path |
+| **EVOL-M-05** | Unintended regressions caught pre-deploy (experiment **S6**) | **100%** detection in qualification fixtures |
+| **EVOL-M-06** | Cross-application regression escape rate (post-qualification) | **0** in **S1..S8** matrix |
+| **EVOL-M-07** | Contract compatibility violations detected before merge | **100%** on **S2**, **S5** incompatible arms |
+| **EVOL-M-08** | Qualified rollback or explicit unsafe refusal (**S7**) | **100%** correct outcomes |
+| **EVOL-M-09** | Median time to attribute regression to introducing change (qualified incidents) | Operator-defined SLA (record at **EVOL-X** closure) |
+| **EVOL-M-10** | New scenarios requiring platform-core edits (**S8**) | **0** unauthorized core edits; extensions via sanctioned surfaces only |
+| **EVOL-M-11** | Enterprise baseline evidence freshness after material platform change | **≤ 1** scenario-wave audit cycle (per **ENT-AUDIT-X** policy) |
+
+#### Representative change-safety experiments (qualification matrix — **specifications only**)
+
+Controlled fixtures and executable evidence required at **EVOL-X** implementation/qualification; **not** permission to implement now.
+
+| ID | Experiment | Pass intent |
+|---|---|---|
+| **S1** | Local agent change | Modify one agent; unrelated scenarios **unchanged** (behavioral + regression proof) |
+| **S2** | Shared contract evolution | Evolve shared contract; **all** impacted consumers detected |
+| **S3** | Workflow evolution | Scenario change with **in-flight** executions on older definition — safe versioned path or explicit rejection |
+| **S4** | Provider replacement | Replace implementation behind existing contract without consumer rewrite |
+| **S5** | State migration | Compatible migration succeeds; incompatible change **blocked** with explicit failure |
+| **S6** | Negative regression | Deliberate unsafe dependency/regression **must** fail qualification gate |
+| **S7** | Deployment rollback | Safe rollback demonstrated **or** explicit refusal when durable state forbids |
+| **S8** | New application | Add representative application **without** unrelated app logic changes or new core owner |
+
+#### Mandatory qualification outcomes (parent closure)
+
+- Closed-world **change-surface inventory** (agents, scenarios, workflows, tools/skills, contracts, policies, providers, config keys, shared platform components) with semantic owners.
+- Accepted **change-impact graph** artifact (typed edges: contract consumption, composition, scenario binding, test ownership) — **not** path/filename heuristics alone.
+- **Regression selection contract**: mapping change class → minimum suites + mandatory safety suites; **unknown impact → conservative qualification** enforced mechanically.
+- **Scenario/workflow evolution matrix** (EVOL-04) aligned with **STATE-X** / **COMPAT-X** — no assumption that in-flight instances adopt arbitrary new definitions.
+- **Deployment/rollback qualification record** for representative versioned deploy paths (or explicit **N/A — WITH EVIDENCE** for out-of-scope deploy technology).
+- **S1..S8** experiment evidence on exact SHA (pass/fail explicit; no placeholder PASS).
+- **`FRZ-EVOL-*`** criteria advanced per checklist (independent audit).
+
+#### Mechanical exit criteria (parent — all required)
+
+- `unclassified change surfaces` = 0;
+- `impact graph orphan consumers` = 0 for **S2** reference contract;
+- `unknown-impact regression bypass` = 0;
+- `scenario in-flight unsafe definition adoption` = 0 in **S3**;
+- `unqualified rollback claimed safe` = 0 in **S7**;
+- `new scenario unauthorized core modification` = 0 in **S8**;
+- independent exact-SHA audit **accepted**.
+
+#### Scope boundaries
+
+**In scope:** impact analysis, isolation evidence, compatibility-at-change-time, scenario evolution rules, regression selection discipline, deploy/rollback qualification, change diagnostics, extensibility measurement, post-freeze continuity hooks into **ENT-AUDIT-X**.
+
+**Out of scope / forbidden:** second release-approval authority; parallel governance/execution path; replacing **PROD-Q** sequence; implementing full CI product in this roadmap task; autonomously marking **FRZ-EVOL-*** or global **FRZ** PASS.
+
+#### Post-freeze continuous enforcement
+
+After **`ARCH-FREEZE`**, **`ENT-AUDIT-X`** remains the **executable** enforcement owner. **`SCENARIO-READINESS-X`** and scenario onboarding must consume **`EVOL-X`**-accepted impact/regression contracts. Each meaningful scenario/platform wave triggers enterprise audit (§3.1); material changes to frozen surfaces follow post-freeze governance Class B/C. **`FRZ-EVOL-*`** requalification triggers defined in freeze checklist.
+
+#### First implementation / qualification wave (later — not opened by this task)
+
+**`EVOL-X-P0`** — closed-world change-surface inventory, impact-graph gap analysis, and experiment fixture design (**production delta = 0** until wave explicitly opened).
+
+**Depends on:** **`EBH-7` = CLOSED**. **Next mandatory stage after parent closure:** **`ENT-AUDIT-X`**.
+
 ### 3.1 `ENT-AUDIT-X` — Continuous Enterprise Architecture Audit System
 
 **Responsibility split (`QUAL-X` vs `ENT-AUDIT-X`):**
@@ -1466,6 +1594,7 @@ Replaceability does **not** require interchangeable incompatible technologies �
 |---|---|
 | **QUAL-X** | Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built? |
 | **ENT-AUDIT-X** | Run the whole platform as one audit: does current platform still satisfy enterprise invariants, where exactly is drift, and what was violated? |
+| **EVOL-X** | Is the platform **qualified** to evolve safely (impact, isolation, compatibility-at-change, regression selection, deploy/rollback, diagnostics) before the audit system is frozen for continuous use? |
 
 **Stage purpose:** build and certify a persistent, executable system that (1) can run on any future HEAD/SHA; (2) analyzes the whole platform against frozen enterprise invariants; (3) orchestrates existing qualification/gates rather than duplicating them; (4) performs its own cross-cutting static/structural checks; (5) emits one actionable report; (6) compares current state to the accepted enterprise baseline; (7) remains required after scenario development starts.
 
@@ -1590,6 +1719,7 @@ Every parent-level closure from this point forward must explicitly assess the ap
 | Durable restore | Backup/restore responsibility is explicit; restore cannot create divergent truth, authority or identity. |
 | Operability | Production health/readiness/degraded/failure state is actionable and observable to operators at the promised platform boundary. |
 | Compatibility / evolution | Frozen contracts/schemas/events/plugins have explicit versioning, migration, deprecation and compatibility policy. |
+| Enterprise evolvability | Change impact, blast radius, regression selection, scenario evolution rules, deploy/rollback safety and change diagnostics qualified per **EVOL-X** / **`FRZ-EVOL-*`** (not documentation-only). |
 | Production qualification | Production mode is independently qualified; lab/harness success is not accepted as production proof. |
 | Freeze readiness | No unresolved architecture state remains inside the declared frozen platform scope. |
 | Tenant isolation | Tenant identity explicit where required; propagated across boundaries; child scope ⊆ parent; no cross-tenant state/evidence/authority bleed; missing tenant fails closed; adversarial cross-tenant negatives where applicable. |
@@ -1798,7 +1928,8 @@ Update this section only after independent exact-SHA audit.
 | SKILL-X | — | PLANNED / MANDATORY — Agent Skills lifecycle/composition/governance certification (`QUAL-X` → `SKILL-X` → `TOOL-LIFE-X`); full scope §3.0.4; **not started**; **production delta = 0** until implementation opened. |
 | TOOL-LIFE-X | — | PLANNED / MANDATORY — Tool execution lifecycle, timeout, cancellation & retry certification (`SKILL-X` → `TOOL-LIFE-X` → `DIST-SCALE-X`); full scope §3.0.5; **not started**; **production delta = 0** until implementation opened. |
 | DIST-SCALE-X | — | PLANNED / MANDATORY — cross-platform data-intensive distributed scale & resilience certification (`TOOL-LIFE-X` → `DIST-SCALE-X` → `EBH-5`); full scope §3.0.6; mandatory before `ARCH-FREEZE`; **production delta = 0** until implementation opened; not started. |
-| ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE; exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
+| EVOL-X | — | PLANNED / MANDATORY — Enterprise Evolvability & Change Safety (`EBH-7` → `EVOL-X` → `ENT-AUDIT-X`); full scope §3.0.9; roadmap discovery **READY FOR AUDIT**; **not started**; **production delta = 0** until **EVOL-X-P0** opened. |
+| ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE (after `EVOL-X`); exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
 | ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. **Next:** `SCENARIO-READINESS-X`. |
 | SCENARIO-READINESS-X | — | PLANNED / MANDATORY — post-freeze scenario delivery velocity & boundary integration certification (`ARCH-FREEZE` → `SCENARIO-READINESS-X` → `SCENARIO-GATE`); full scope §3.0.7; **not started**; **production delta = 0** until implementation opened. |
 | SCENARIO-GATE | — | BLOCKED — formal Enterprise → Scenario transition; requires `SCENARIO-READINESS-X` = CLOSED among other mandatory prerequisites (§3). |
@@ -1905,7 +2036,8 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - canonical Tool invocation lifecycle certified (`TOOL-LIFE-X` after `SKILL-X`);
 - cross-platform data-intensive scale and resilience certified on real adapters (`DIST-SCALE-X` after `TOOL-LIFE-X`);
 - final enterprise closure through `EBH-7`;
-- reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X`);
+- enterprise evolvability & change safety certified (`EVOL-X` after `EBH-7`);
+- reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X` after `EVOL-X`);
 - exact-SHA enterprise audit baseline recorded at `ARCH-FREEZE`;
 - actionable enterprise drift report available on demand;
 - formal `ARCH-FREEZE` (checklist-complete, green freeze-SHA enterprise audit) before `SCENARIO-READINESS-X`;
@@ -1944,3 +2076,34 @@ YES — SCENARIO-READINESS-X inserted between ARCH-FREEZE and SCENARIO-GATE
 **Classification:** `NEW ROADMAP STAGE REQUIRED`
 
 **Cursor stage status (this amendment):** `READY FOR AUDIT` — not `CLOSED`.
+
+---
+
+### Post-Step Enterprise Discovery & Roadmap Completeness Audit (roadmap amendment — `EVOL-X`)
+
+```text
+Task: ROADMAP-EVOL-X-ENTERPRISE-EVOLVABILITY-RECOGNITION
+START_HEAD baseline (operator): c7894c929bbc02d63a139640df5afda8e8faf1e5
+
+New current-parent blockers:
+none — roadmap-only amendment; PROD-Q remains NEXT / CURRENT
+
+New future mandatory stage:
+EVOL-X — Enterprise Evolvability & Change Safety (EBH-7 → EVOL-X → ENT-AUDIT-X)
+
+New candidate child wave (not opened):
+EVOL-X-P0 — change-surface inventory & impact-graph gap analysis
+
+FRZ coverage gaps addressed:
+FRZ-EVOL-01..10 introduced (all OPEN); primary closer EVOL-X; continuous enforcement ENT-AUDIT-X
+
+New ownership / boundary / authority concerns:
+none — STOP not required; EVOL-X explicitly forbidden from second release/governance/execution authority
+
+Roadmap amendment required:
+YES — EVOL-X inserted between EBH-7 and ENT-AUDIT-X; §3.0.9 added
+```
+
+**Classification:** `NEW ROADMAP STAGE REQUIRED`
+
+**Cursor stage status (this amendment):** `READY FOR AUDIT` — **EVOL-X** not `CLOSED`; no global **FRZ** PASS.
