@@ -208,3 +208,87 @@ Unchanged for production D3 scope; **D3-06** corruption module remains **PASS**;
 ### FRZ contribution (scoped)
 
 **FRZ-PRD-12** lifecycle + descriptor evidence; **FRZ-REG-*** regression gates green — no global FRZ PASS.
+
+---
+
+## D3-R1 UAEP event and hook boundary qualification (Cursor)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-D3-R1-UAEP-EVENT-AND-HOOK-BOUNDARY-QUALIFICATION` |
+| **Parent** | `PROD-Q-R1-R7-D3` |
+| **START_HEAD / AUDITED_HEAD** | `7400c345127a54b03b411de6044d290ad70d911a` |
+| **Production delta** | **0** (qualification + contract tests only) |
+| **Max status** | **READY FOR AUDIT** |
+
+### Gate A — `ContextAssemblyPayloadV4` / `CONTEXT_ASSEMBLED`
+
+| Check | Result |
+|-------|--------|
+| Policy SSOT requires `context_assembly.v4` | **PASS** — `runtime_event_payload_policy.py` |
+| UAEP producer emits V4 + `CONTEXT_BUILDING` phase | **PASS** — `uaep_executor._emit_context_assembled` |
+| Authoritative validation on durable write boundary | **PASS** — `assert_runtime_event_schema` → `assert_canonical_production_runtime_event_payload` (`validating_runtime_event_store`) |
+| Trace/correlation on UAEP emission | **PASS** — `correlation_id=ctx.correlation_id or ctx.task_id` unchanged |
+| Historical v2 consumers (codec) | **NOT REGRESSED** — `spine_payload_codec` still decodes v1–v4; write path strict v4 only |
+| Gate A overall | **PASS** |
+
+**Ownership:** producer `UaepExecutor._emit_context_assembled`; payload policy owner `runtime_event_payload_policy`; validation owner `schema_guard` + `payload_registry`.
+
+### Gate B — Prompt Defense / hook violation boundary
+
+| Check | Result |
+|-------|--------|
+| Why non-`LlmInferenceHookPayload` at `BEFORE_CONTEXT_BUILD` | UAEP reflex builds `HookContext` with `runtime_state` only (`uaep_executor.py`); graph engine path uses `LlmInferenceHookPayload` (`context_manager.py`) |
+| `PromptDefenseMiddleware` scope | **PASS (contract)** — only `BEFORE_CONTEXT_BUILD`; requires `LlmInferenceHookPayload` (`application_security_wiring.py`) |
+| Mismatch handling | **Fail-closed BLOCK** (not alternate typed boundary on UAEP path) |
+| `hook_runtime_guard` phase vs catalog | **FAIL** — `_emit_hook_violation` passes `phase=ctx.phase` (`CONTEXT_BUILDING`); `event_catalog` maps `DOMAIN_SIGNAL` → `STEP_EXECUTION`; durable validation raises `RuntimeEventSchemaError` |
+| Publish failure vs security evidence | **PARTIAL** — execution still blocked; violation audit event may not persist when validating store/bus path enforces schema |
+| Strict product security + UAEP | **NOT PROVEN** — harness disables `prompt_defense_enabled` only for stage15 proof (`canonical_agent_lifecycle_composition.py`); not production equivalence |
+| Gate B overall | **FAIL** (architecture decision required before production closure) |
+
+**Decision gate:** **STOP — ARCHITECTURE DECISION REQUIRED** (child ADR recommended: align UAEP hook payload with `LlmInferenceHookPayload` *vs* extend Prompt Defense to `ContextBuildHookPayload` *vs* catalog phase resolution for platform hook signals *vs* exempt reflex agents — recommendation: **UAEP payload alignment** with graph path per existing guardrail/Prompt Defense contract and `ContextBuildHookPayload` as Tier-0 alternate only if middleware contract is explicitly widened).
+
+### Source / caller inventory (scoped)
+
+| Artifact | Role |
+|----------|------|
+| `intergrax/runtime/nexus/uaep/uaep_executor.py` | UAEP hook + `CONTEXT_ASSEMBLED` producer |
+| `intergrax/runtime/nexus/context/context_manager.py` | Reference `BEFORE_CONTEXT_BUILD` typed payload |
+| `intergrax/runtime/events/runtime_event_payload_policy.py` | Event payload SSOT |
+| `intergrax/runtime/events/payloads/canonical.py` | `ContextAssemblyPayloadV4` |
+| `intergrax/runtime/middleware/hook_runtime_guard.py` | Hook violation `DOMAIN_SIGNAL` publisher |
+| `intergrax/applications/_shared/application_security_wiring.py` | `PromptDefenseMiddleware` |
+| `intergrax/contracts/middleware_hook_semantics.py` | `LlmInferenceHookPayload`, `ContextBuildHookPayload` |
+| `testing_support/canonical_agent_lifecycle_composition.py` | Stage15 harness (prompt defense off for UAEP proof) |
+
+### Test evidence (@ AUDITED_HEAD)
+
+```text
+uv run pytest -p no:xdist -q \
+  tests/unit/runtime/nexus/test_uaep_context_assembled_event_contract.py \
+  tests/unit/applications/test_application_security_wiring.py::test_prompt_defense_blocks_before_context_build_without_llm_payload \
+  tests/unit/runtime/middleware/test_hook_runtime_guard.py::test_hook_violation_domain_signal_with_context_building_phase_fails_schema_guard \
+  tests/unit/runtime/events/test_runtime_event_payload_policy.py \
+  tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py::test_canonical_agent_lifecycle_reaches_serving_and_execution
+```
+
+Log: `.tmp/session/PROD-Q-R1-R7-D3-R1-UAEP-EVENT-AND-HOOK-BOUNDARY-QUALIFICATION/pytest-final.log` (**10 passed**)
+
+### Parent blocking
+
+| Parent | Disposition |
+|--------|-------------|
+| **PROD-Q-R1-R7-D3** (durable projection / restart) | **READY FOR AUDIT** — production D3 scope unchanged |
+| **Strict lifecycle + product prompt defense on UAEP** | **BLOCKED** until Gate B ADR + implementation |
+
+### FRZ (scoped; global **OPEN**)
+
+**FRZ-PRD-12**, **FRZ-SEC-01/04/07**, **FRZ-REG-02/03** — evidence contribution only; **new global FRZ PASS = 0**.
+
+### Unresolved findings
+
+| Class | Item |
+|-------|------|
+| **ARCHITECTURE DECISION REQUIRED** | UAEP `BEFORE_CONTEXT_BUILD` hook shape vs `PromptDefenseMiddleware` under `prompt_defense_enabled=True` |
+| **TRACKED FREEZE DEBT** | `hook_runtime_guard` `DOMAIN_SIGNAL` phase override vs `event_catalog` |
+| **QUALIFICATION GAP** | Canonical lifecycle E2E does not exercise active Prompt Defense on UAEP path |

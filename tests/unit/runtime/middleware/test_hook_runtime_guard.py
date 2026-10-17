@@ -15,8 +15,18 @@ from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookRe
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookError
 from intergrax.runtime.middleware.base import RuntimeMiddleware
+from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError, assert_runtime_event_schema
+from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
 from intergrax.runtime.middleware.hook_runtime_guard import invoke_guarded_hook
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -133,6 +143,29 @@ async def test_pipeline_non_allow_emits_hook_blocked_event() -> None:
         and event.event_kind == "platform.hook.hook_blocked"
         for event in events
     )
+
+
+def test_hook_violation_domain_signal_with_context_building_phase_fails_schema_guard() -> None:
+    """Documents catalog phase for DOMAIN_SIGNAL vs hook_runtime_guard ctx.phase override."""
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    try:
+        event = build_platform_signal_event(
+            kind="platform.hook.hook_blocked",
+            task_id=task_id,
+            run_id=run_id,
+            phase=ExecutionPhase.CONTEXT_BUILDING,
+            payload={"hook_name": "PromptDefenseMiddleware"},
+        )
+    finally:
+        reset_active_execution_identity(token)
+    with pytest.raises(RuntimeEventSchemaError, match="phase mismatch"):
+        assert_runtime_event_schema(event)
 
 
 @pytest.mark.asyncio

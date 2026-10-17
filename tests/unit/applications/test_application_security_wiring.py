@@ -69,6 +69,22 @@ async def test_prompt_defense_middleware_blocks_injection_pattern() -> None:
     assert result.action == HookAction.BLOCK
 
 
+@pytest.mark.asyncio
+async def test_prompt_defense_blocks_before_context_build_without_llm_payload() -> None:
+    """UAEP reflex path supplies runtime_state only — fail-closed under strict prompt defense."""
+    middleware = PromptDefenseMiddleware(default_prompt_defense_profile())
+    ctx = HookContext(
+        task_id="task-uaep",
+        run_id="run-uaep",
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        runtime_state={"prompt": "benign task"},
+    )
+    result = await middleware.before(HookPoint.BEFORE_CONTEXT_BUILD, ctx)
+    assert result.action == HookAction.BLOCK
+    assert result.reason is not None
+    assert "LlmInferenceHookPayload" in result.reason
+
+
 def test_register_application_security_hooks_wires_all_enabled_defenses() -> None:
     registry = AgentRegistry()
     loop = NexusLoop(registry)
