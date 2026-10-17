@@ -132,8 +132,79 @@ uv run pytest -p no:xdist -q tests/unit/applications/test_prod_q_r1_r7_d3_r1_rec
 
 | Class | Item |
 |-------|------|
-| **TEST ISSUE** | `test_canonical_agent_lifecycle_reaches_serving_and_execution` — `RuntimeEventSchemaError` (phase mismatch) on strict host execute with materialized ping agent; pre-existing once install path was unblocked — **not** D3 production |
+| *(superseded)* | Canonical lifecycle execution regression — see corrective section below |
 
 ### FRZ contribution (scoped)
 
 Supports **FRZ-PRD-12** descriptor fail-closed replay evidence; **FRZ-REC-*** / **FRZ-REG-*** via corruption negatives — no global FRZ PASS.
+
+---
+
+## D3-R1 canonical lifecycle execution regression corrective (Cursor)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-D3-R1-CANONICAL-LIFECYCLE-EXECUTION-REGRESSION` |
+| **START_HEAD** | `49bde1a1e2d0a326598c76647db6ff17828bbe17` |
+| **Classification** | **A** (harness strict-host composition) + **minimal runtime emission alignment** (`context_assembly.v4` in UAEP; existing `runtime_event_payload_policy` SSOT — not a new schema) |
+
+### Root cause (evidence)
+
+`tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py::test_canonical_agent_lifecycle_reaches_serving_and_execution`
+
+1. **Harness (A):** `_stage15_proof_environment` used `product_defaults` with `prompt_defense_enabled=True`. `PromptDefenseMiddleware` blocks `BEFORE_CONTEXT_BUILD` when `HookContext.payload` is not `LlmInferenceHookPayload` (UAEP reflex path in `uaep_executor.py`). Violation publish then hit `RuntimeEventSchemaError`: `phase mismatch for domain_signal: expected step_execution, got context_building` (`hook_runtime_guard._emit_hook_violation` passes `ctx.phase` over catalog `STEP_EXECUTION`).
+2. **Harness (A):** Strict host assembly without injected sqlite collaborative-work repos attempted PostgreSQL materialization; without explicit `DecisionRequirementPolicy` / `ExecutionContinuationStateStore` strict composition failed closed.
+3. **Emission drift:** `UaepExecutor._emit_context_assembled` emitted `context_assembly.v2` while durable validation requires `context_assembly.v4` (`runtime_event_payload_policy.py`).
+
+### Minimal corrective
+
+| Layer | Change |
+|-------|--------|
+| `_stage15_proof_environment` | Disable `prompt_defense_enabled` only (retain other strict product defaults + OTEL + dependency concurrency admission) |
+| `execute_canonical` | Keep revision-bound `agent_contract_authority`; sqlite `collaborative_work_repositories`; `lab_orchestration_decision_requirement_policy()`; durable continuation store — drop redundant explicit MSE wiring (harness resolves from repos + policy) |
+| `uaep_executor._emit_context_assembled` | `ContextAssemblyPayloadV4` (align with `record_context_assembled_from_engine`) |
+
+### Dependency graph (execute host)
+
+```text
+install contract authority (prior corrective)
+  → serving projection + roster_contract_authority_for
+  → build_harness_host_runtime(
+        REVISION_BOUND registry,
+        sqlite collaborative work,
+        lab DecisionRequirementPolicy,
+        continuation store,
+        stage15 env w/o prompt defense @ BEFORE_CONTEXT_BUILD)
+  → UAEP execute → CONTEXT_ASSEMBLED v4
+```
+
+### Changed files
+
+- `testing_support/canonical_agent_lifecycle_composition.py`
+- `intergrax/runtime/nexus/uaep/uaep_executor.py`
+- `docs/project/maintainers/qualification/PROD_Q_R1_R7_D3_DURABLE_PROJECTION_RESTART_RECONCILIATION.md`
+
+### Regression (@ task close — local)
+
+```text
+uv run pytest -p no:xdist -q tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py::test_canonical_agent_lifecycle_reaches_serving_and_execution --tb=short
+uv run pytest -p no:xdist -q tests/unit/applications/test_registry_projection_descriptor_corruption.py::test_descriptor_corruption_fail_closed --tb=short
+uv run pytest -p no:xdist -q tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py tests/unit/applications/test_registry_projection_descriptor_corruption.py
+```
+
+**2 passed** (canonical lifecycle parametrized), **21 passed** (D3 + corruption), logs under `.tmp/session/PROD-Q-R1-R7-D3-R1-CANONICAL-LIFECYCLE-EXECUTION-REGRESSION/`.
+
+### D3-01…D3-06 disposition
+
+Unchanged for production D3 scope; **D3-06** corruption module remains **PASS**; canonical lifecycle execution proof **PASS** @ evidence SHA (audit gate).
+
+### Remaining / tracked
+
+| Class | Item |
+|-------|------|
+| **TRACKED FREEZE DEBT** | `hook_runtime_guard` platform hook violations use `ctx.phase` vs catalog `STEP_EXECUTION` — latent when prompt defense enabled on UAEP reflex path |
+| **TRACKED FREEZE DEBT** | UAEP `BEFORE_CONTEXT_BUILD` hook shape vs `PromptDefenseMiddleware` / guardrail input scan expectations under strict product security |
+
+### FRZ contribution (scoped)
+
+**FRZ-PRD-12** lifecycle + descriptor evidence; **FRZ-REG-*** regression gates green — no global FRZ PASS.

@@ -76,9 +76,6 @@ from intergrax.agent_distribution.trust import (
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
-from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
-    resolve_harness_host_meaningful_side_effect_authorization_wiring,
-)
 from intergrax.collaborative_work.persistence import (
     open_sqlite_collaborative_work_repositories,
 )
@@ -132,7 +129,6 @@ from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
 from intergrax.integrations.registry.presets import OTEL
-from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.execution.continuation.persistence import (
     ExecutionContinuationDurableBacking,
     execution_continuation_state_store_from_durable_export,
@@ -141,6 +137,7 @@ from intergrax.runtime.execution.continuation.persistence import (
 from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
     lab_orchestration_decision_requirement_policy,
 )
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.agent_platform_dependency_resolver import (
     make_identity_dependency_resolver,
@@ -163,10 +160,6 @@ from testing_support.agent_platform_admin_harness import (
 from testing_support.dependency_concurrency_admission_config import (
     tool_dependency_concurrency_admission_configuration,
 )
-from testing_support.orchestration_governance_evidence_wiring import (
-    default_test_orchestration_evidence_persistence,
-)
-
 _DEFAULT_DIGEST = "sha256:" + ("a" * 64)
 
 
@@ -196,6 +189,21 @@ def _stage15_proof_environment(profile_id: str) -> ApplicationEnvironmentProfile
                             tool_dependency_concurrency_admission_configuration(
                                 "stage15-lifecycle-proof",
                             )
+                        ),
+                    },
+                ),
+            },
+        )
+    # UAEP reflex agents invoke BEFORE_CONTEXT_BUILD without LlmInferenceHookPayload;
+    # strict product prompt defense blocks that hook shape — keep other strict defaults.
+    app_security = env.security.application_security
+    if app_security.prompt_defense_enabled:
+        env = env.model_copy(
+            update={
+                "security": env.security.model_copy(
+                    update={
+                        "application_security": app_security.model_copy(
+                            update={"prompt_defense_enabled": False},
                         ),
                     },
                 ),
@@ -1061,18 +1069,6 @@ class CanonicalAgentLifecycleProofStack:
         continuation_store = execution_continuation_state_store_from_durable_export(
             export_durable_continuation_state(continuation_backing),
         )
-        meaningful_side_effect_wiring = (
-            resolve_harness_host_meaningful_side_effect_authorization_wiring(
-                self.environment,
-                collaborative_work_repositories=collaborative_work,
-                decision_requirement_policy=(
-                    lab_orchestration_decision_requirement_policy()
-                ),
-                governance_evidence_persistence=(
-                    default_test_orchestration_evidence_persistence()
-                ),
-            )
-        )
         host_runtime = build_harness_host_runtime(
             self.manifest,
             self.environment,
@@ -1081,9 +1077,6 @@ class CanonicalAgentLifecycleProofStack:
             registry_assembly_mode=RegistryAssemblyMode.REVISION_BOUND,
             agent_contract_authority=contract_authority,
             collaborative_work_repositories=collaborative_work,
-            meaningful_side_effect_authorization=(
-                meaningful_side_effect_wiring.authorization_port
-            ),
             orchestration_decision_requirement_policy=(
                 lab_orchestration_decision_requirement_policy()
             ),

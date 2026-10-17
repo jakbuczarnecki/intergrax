@@ -61,7 +61,7 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads.canonical import (
-    ContextAssemblyPayloadV2,
+    ContextAssemblyPayloadV4,
     DecisionPayloadV1,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -1329,7 +1329,7 @@ class UAEPExecutor:
     ) -> None:
         if self._event_bus is None:
             return
-        typed = ContextAssemblyPayloadV2(
+        typed = ContextAssemblyPayloadV4(
             node_id=node_id,
             context_original_chars=context_original_chars,
             context_final_chars=context_final_chars,
