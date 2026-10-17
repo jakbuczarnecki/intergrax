@@ -8,9 +8,9 @@
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Program** | **PROD-Q** — **OPEN / BLOCKED** (children) |
 | **Branch** | `development` |
-| **VERIFIED_BASELINE** | `f5432dbe5164b5e3d38f50d4354c1885bc3b7677` |
+| **VERIFIED_BASELINE** | `1b6f9405b939525756dc05ff2c45575ee19d8100` |
 | **START_HEAD (this task)** | `e744e5b9d6e7a4661603ad82e46e3af90130f638` |
-| **AUDITED_HEAD / FINAL_COMMIT** | `f5432dbe5164b5e3d38f50d4354c1885bc3b7677` |
+| **AUDITED_HEAD / FINAL_COMMIT** | `1b6f9405b939525756dc05ff2c45575ee19d8100` |
 | **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` (F02-05/F02-09 qual + prior gate record) |
 | **PRODUCTION_IMPLEMENTATION_SHA** | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` (`DIM16-F02: fail-closed physical admission on strict session close`) |
 | **AUDITED_HEAD (prior Package D)** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
@@ -59,7 +59,7 @@
 | STRICT-HTTP-R1–R5 | `4fac9482e…` @ `AUDITED_HEAD` | Test-boundary lineage |
 | P1 execution | `036912bec45ac627b6c99411c82db72f75df858f` | DIM11/18 static |
 | Independent audit HEAD (prior) | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` | Superseded for F02-05/09 |
-| Package D dossier HEAD | `f5432dbe5164b5e3d38f50d4354c1885bc3b7677` | This record @ audit |
+| Package D dossier HEAD | `1b6f9405b939525756dc05ff2c45575ee19d8100` | This record @ audit |
 
 ---
 

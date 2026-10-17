@@ -8,7 +8,7 @@
 | **Branch** | `development` |
 | **START_HEAD** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` |
 | **SOURCE_EVIDENCE_SHA** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` — implementation + §C pytest selection evaluated here |
-| **FINAL_COMMIT** | `f5432dbe5164b5e3d38f50d4354c1885bc3b7677` — Package D final dossier @ `PROD-Q-R1-R7-Q-C-PACKAGE-D-FINAL-ACCEPTANCE-DOSSIER` |
+| **FINAL_COMMIT** | `1b6f9405b939525756dc05ff2c45575ee19d8100` — Package D final dossier @ `PROD-Q-R1-R7-Q-C-PACKAGE-D-FINAL-ACCEPTANCE-DOSSIER` |
 | **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` — F02-05/F02-09 qual nodes |
 | **Package D readiness** | [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) @ `FINAL_COMMIT` — **READY FOR AUDIT** |
 | **Maximum disposition** | **READY FOR AUDIT** (independent operator acceptance pending) |
@@ -250,7 +250,7 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 | **B — operator production profiles** | DIM6 mutation policy; DIM17 config/credentials negatives; trusted artifact roots | Operator fixtures | **Package B pytest + evidence** [`PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md) — **READY FOR AUDIT**; DIM6/DIM17 operator profile **OPEN** |
 | **C — reachability @ HEAD** | Re-run P1 roots + DIM11 if launcher/graph changes; DIM18/19 drift check | None for static | With B |
 | **P — PROD-Q-R1 parent** | DIM20 strict external-work / PIS ambiguity | PROD-Q-R1 program | **Not** parallel to claiming R7-Q QUALIFIED |
-| **D — final qualification decision** | Roll up B+C+P + operator sign-off on this §C record | B, P minimum | **Last** — Package D dossier **READY FOR AUDIT** @ `f5432dbe5164b5e3d38f50d4354c1885bc3b7677` — F02 open-gate **historical**; DIM16 **audit-ready**, not operator CLOSED |
+| **D — final qualification decision** | Roll up B+C+P + operator sign-off on this §C record | B, P minimum | **Last** — Package D dossier **READY FOR AUDIT** @ `1b6f9405b939525756dc05ff2c45575ee19d8100` — F02 open-gate **historical**; DIM16 **audit-ready**, not operator CLOSED |
 
 **Recommended next mandatory task:** Operator audit of this record @ `FINAL_COMMIT`, then **Package B** evidence capture (DIM6/DIM17) or **Package P** PROD-Q-R1 progression — whichever program owner prioritizes; **do not** mark **R7-Q QUALIFIED** until Packages B, P, and D complete.
 
