@@ -69,7 +69,7 @@
 
 | Item | Status |
 |------|--------|
-| R7-Q §C “remaining-gates” inventory report (tracked) | **NOT FOUND** in repository — disposition from operator task brief + session log only |
+| R7-Q §C “remaining-gates” reconciliation (tracked) | [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) @ `AUDITED_HEAD` aligned with `SOURCE_EVIDENCE_SHA` evidence |
 | Session log | **VERIFIED** — `.tmp/session/PROD-Q-R1-R7-Q-C-REMAINING-GATES-CLOSURE-INVENTORY/pytest-section-c.log` |
 
 ### B.2 Execution summary
