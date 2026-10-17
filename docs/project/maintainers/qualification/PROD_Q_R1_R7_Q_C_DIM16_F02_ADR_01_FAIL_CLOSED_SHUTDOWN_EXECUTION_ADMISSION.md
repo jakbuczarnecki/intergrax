@@ -3,20 +3,31 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **DECISION CANDIDATE — NOT APPROVED** · **READY FOR AUDIT** (architecture preparation only) |
-| **Implementation** | **BLOCKED — ARCHITECTURE DECISION REQUIRED** until operator ratifies this record |
-| **Revision** | **R0** |
+| **Implementation** | **BLOCKED** until operator ratifies this record |
+| **Revision** | **R1** (contract closure — `PROD-Q-R1-R7-Q-C-DIM16-F02-ADR-01-R1-CONTRACT-CLOSURE`) |
 | **Date** | 2026-10-17 |
 | **Branch** | `development` |
-| **Source SHA (exact)** | `4def1fde38b25a56b9defc4453ffded46545c456` |
-| **Audited baseline** | `4def1fde38b25a56b9defc4453ffded46545c456` (= **HEAD** at authoring) |
+| **Source SHA (exact)** | `d3be032d4ddbbbbb0f2b00ffbd93bfd38c1f3d11` |
+| **Audited baseline** | `d3be032d4ddbbbbb0f2b00ffbd93bfd38c1f3d11` (= **HEAD** @ R1 amendment) |
+| **Prior revision** | **R0** @ `4def1fde38b25a56b9defc4453ffded46545c456` — preferred **B + minimal A** without protocol-level admission-close port or first-deny-failure semantics |
 | **Parent program** | **PROD-Q-R1-R7-Q** → **PROD-Q-R1-R7-Q-C** (Package D) |
-| **Controlling task** | `PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-CONTRACT-DECISION` |
-| **Parent architecture** | [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) (**R6** — DEC-09 physical A1 owner + coordinator admission; **does not** specify dual-failure shutdown ordering) |
+| **Parent architecture** | [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) (**R6** — DEC-09 physical A1 owner + coordinator admission) |
 | **Qualification evidence** | [`PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md) §E · [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) §5 |
 | **Does not close** | **PROD-Q-R1-R7-Q** · **PROD-Q-R1-R7** · **PROD-Q** · **DIM16** · any global **FRZ-*** PASS |
 | **Production delta (this task)** | **0** |
 
-**Competing ADR check:** No accepted ADR defines fail-closed physical execution admission when **both** sanctioned session-close drain hooks fail. [`ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md`](../architecture/ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md) governs **recovery resume admission**, not strict serving shutdown. This record is the bounded child decision candidate; it does **not** supersede **PROD-Q-R1-R7-ADR-01** deployment authority.
+**Competing ADR check:** No accepted ADR supersedes this bounded child. Recovery admission remains [`ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md`](../architecture/ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md).
+
+---
+
+## R1 — Unresolved findings closed in this revision
+
+| ID | R0 gap | R1 resolution |
+|----|--------|----------------|
+| **U1** | `begin_drain_for_bound_serving_unit` is concrete-adapter API; **not** guaranteed by `RuntimeDeploymentAdapter` | **Protocol extension (§5)** — typed `close_serving_unit_execution_admission`; venv `begin_drain_for_bound_serving_unit` becomes implementation detail |
+| **U2** | Fail-closed ordering implied gate closure when composition helpers fail, but not when **admission-close itself** fails before gate mutation | **Explicit first-deny-failure policy (§8)** — no claim of deny without successful port completion; cleanup gated on successful admission close |
+
+**R0 retained:** Apps orchestration ordering (**B**), single AD physical gate owner, no HTTP guard, no second admission authority, session incomplete on shutdown errors.
 
 ---
 
@@ -24,316 +35,304 @@
 
 `StrictProductionServingSession.close()` (`intergrax/applications/_shared/strict_production_serving_launcher.py`):
 
-1. Invokes `begin_colocated_serving_execution_drain_on_strict_session_close` (revision-store–dependent Apps composition helper).
-2. On `ColocatedServingAdmissionTopologyError` / `VenvBundleColocatedDeploymentError`, invokes `revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close`.
-3. When **both** raise, appends errors but still calls `close_process_resources()` if cleanup does not fail.
-4. Sets `self._closed = True` **only** when `shutdown_errors` is empty — dual failure leaves `session._closed is False` while `lifecycle._process_closed is True`.
-5. Does **not** establish a third, independent physical admission-deny path.
+1. Calls revision-dependent `begin_colocated_serving_execution_drain_on_strict_session_close` first.
+2. On failure, calls `revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close`.
+3. When **both** raise (including before adapter is reached), still runs `close_process_resources()` if cleanup succeeds.
+4. Sets `_closed = True` only when `shutdown_errors` is empty — dual helper failure leaves `session._closed is False` while `lifecycle._process_closed is True`.
+5. No **independent**, revision-agnostic, **protocol-level** admission-close step precedes fallible helpers.
 
-**Negative qualification (committed, failing):**
+**Negative qualification (committed, failing @ SHA):**
 
 - `tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_post_close_01_execution_deny_after_dual_shutdown_failure`
-- Provenance: F02-shaped close with patched drain + emergency revoke failures; post-close HTTP **200** + inner delegate invoked; expected **502** and no inner execution.
-- `test_c_dim16_f02_drain_and_emergency_revocation_both_fail` — documents `unit.admission.admission_closed() is False` after dual failure.
+- `test_c_dim16_f02_drain_and_emergency_revocation_both_fail` — `unit.admission.admission_closed() is False` after dual helper failure.
 
-**Invariant gap:**
+**Invariant (target, post-ratification implementation):**
 
-> Once strict serving shutdown begins, no new execution may be admitted to the retiring serving session or physical serving unit, even if normal drain and emergency revocation operations fail.
+> After strict serving shutdown **begins** (§7), no new physical execution reservation may succeed for the bound `serving_unit_ref`, even when canonical drain and emergency revocation helpers fail.
+
+**Not claimed @ HEAD or by this ADR alone:** deny before the enforceable admission-close port completes successfully.
 
 ---
 
-## 2. Before ownership / composition / execution graph
+## 2. Before / target ownership and dependency graph
+
+### 2.1 Before (@ `d3be032d…`)
 
 ```text
-StrictProductionServingSession.close()          [Apps — composition owner for session shutdown]
+StrictProductionServingSession.close()                    [Apps — composition owner]
   ├─ begin_colocated_serving_execution_drain_on_strict_session_close
-  │     └─ revision_store.get_revision → deployment_adapter.begin_drain(revision, unit_ref)
+  │     ├─ isinstance(VenvBundleColocatedRuntimeDeploymentAdapter)
+  │     ├─ revision_store.get_revision (may raise before adapter)
+  │     └─ RuntimeDeploymentAdapter.begin_drain(revision, serving_unit_ref)
   │           └─ VenvBundle…begin_drain_for_bound_serving_unit → _UnitAdmissionGate.begin_drain()
-  ├─ (on failure) revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close
-  │     └─ revision present → same begin_drain path; revision absent → begin_drain_for_bound_serving_unit only
-  ├─ ProductionProcessLifecycle.close_process_resources()   [Apps — process slot / PIS / stores]
+  ├─ (on failure) revoke_colocated…fail_closed…
+  │     └─ revision path OR begin_drain_for_bound_serving_unit (non-protocol)
+  ├─ ProductionProcessLifecycle.close_process_resources()
   └─ session._closed := (shutdown_errors empty)
 
-HTTP POST → ColocatedServingUnitAdmissionTaskExecutionPort.execute   [Apps — per-request wrapper]
+HTTP POST → ColocatedServingUnitAdmissionTaskExecutionPort
   └─ StoreBackedColocatedServingUnitExecutionAdmission.admit_execution
         └─ ActivationDomainCoordinator.coordinate_physical_execution_reservation
-              └─ verify_serving_execution_eligibility_from_state + physical_reserve()
-                    └─ VenvBundleColocatedUnitPhysicalExecutionGate.reserve_execution
-                          └─ adapter.reserve_unit_execution → _UnitAdmissionGate.admit_execution
+              └─ VenvBundleColocatedUnitPhysicalExecutionGate → reserve_unit_execution
+                    └─ _UnitAdmissionGate.admit_execution
 ```
 
-**Semantic owners (unchanged @ HEAD):**
+### 2.2 Target (after ratified implementation)
 
-| Concern | Owner | Contract |
-|---------|-------|----------|
-| Physical execution admission (in-flight gate) | **Agent Distribution** — `VenvBundleColocatedRuntimeDeploymentAdapter` + `_UnitAdmissionGate` | Adapter-owned; checked in `reserve_unit_execution` |
-| Canonical serving eligibility | **AD** — `ActivationDomainCoordinator` + `verify_serving_execution_eligibility_from_state` | `ServingExecutionAdmissionRequest` |
-| Session shutdown orchestration | **Apps** — `StrictProductionServingSession.close` | Public session API |
-| Per-request execution handoff | **Apps** — `ColocatedServingUnitAdmissionTaskExecutionPort` | `ServingRuntimeHandoff.colocated_execution_admission` |
-| Process lifecycle / slot | **Apps** — `ProductionProcessLifecycle` | Not an execution admission authority |
+```text
+StrictProductionServingSession.close()
+  ├─ [NEW FIRST] close_colocated_serving_execution_admission_on_strict_session_close
+  │     └─ RuntimeDeploymentAdapter.close_serving_unit_execution_admission(serving_unit_ref)
+  │           └─ adapter-owned gate deny (revision-independent)
+  ├─ begin_colocated_serving_execution_drain_on_strict_session_close   [drain evidence / lifecycle]
+  ├─ (on failure) revoke_colocated…fail_closed…   [secondary; must not reopen admission]
+  ├─ close_process_resources()   [only if admission close succeeded — §8.3]
+  └─ session._closed per existing error aggregation
 
----
+Drain completion (orthogonal):
+  RuntimeDeploymentAdapter.check_drain(revision, serving_unit_ref, policy) → in-flight observation
+```
 
-## 3. Decision questions (D01–D12) — evidence @ SHA
+| Concern | Semantic owner | Sanctioned composition owner |
+|---------|----------------|------------------------------|
+| Physical execution admission (in-flight gate) | **Agent Distribution** — `_UnitAdmissionGate` via `VenvBundleColocatedRuntimeDeploymentAdapter` | N/A (authority, not orchestration) |
+| Admission-close port surface | **Agent Distribution** — `RuntimeDeploymentAdapter` extension | Injected `deployment_adapter` on lifecycle |
+| Session shutdown orchestration | N/A | **Apps** — `StrictProductionServingSession.close` |
+| Per-request execution handoff | **Apps** — `ColocatedServingUnitAdmissionTaskExecutionPort` | GCA strict factory |
+| Coordinator eligibility | **AD** — `ActivationDomainCoordinator` | Apps admission wrapper |
 
-| ID | Answer |
-|----|--------|
-| **D01 Authority** | **AD** physical gate (`_UnitAdmissionGate`, `reserve_unit_execution`) is the **only** mechanism that denies new physical in-flight slots. Coordinator eligibility is necessary but **not sufficient** when the gate remains open (`serving_admission_authorized` + open gate still admit). |
-| **D02 Composition** | **Apps** `StrictProductionServingSession.close` invokes AD drain/revoke helpers; it must not become execution authority. |
-| **D03 Ordering** | **Before** new execution can be denied after failed hooks: `_UnitAdmissionGate._admission_closed` must be **True** (or equivalent protocol-level deny). **Before** `close_process_resources()`: fail-closed physical admission closure for the **bound** `serving_unit_ref` must be **attempted** and **must not depend** on revision-store success alone. Process cleanup must not imply admission closure today. |
-| **D04 Fail-closed** | When drain **and** emergency revoke raise, an **independent** bound-unit physical admission closure must still run (adapter-owned), errors aggregated, admission remain closed for new requests. |
-| **D05 Public contract** | `RuntimeDeploymentAdapter.begin_drain` / unit-scoped drain semantics + `ServingRuntimeHandoff` identity (`serving_unit_ref`); **not** `ProductionProcessLifecycle._process_closed` as HTTP guard. Optional: documented session-close ordering on `StrictProductionServingSession` (Apps public type). |
-| **D06 In-flight** | Operations already admitted via `_UnitAdmissionGate` / `ColocatedUnitExecutionReservation` complete under existing drain semantics (`check_drain`, in-flight count); shutdown begin-deny applies to **new** reservations only. |
-| **D07 Concurrency** | Linearization: `_UnitAdmissionGate` lock + coordinator `run_under_activation_domain` / SQLite IMMEDIATE snapshot for eligibility; race: request between shutdown start and gate close — **fix must close gate before or atomically with** shutdown entry (adapter lock), not after fallible revision lookup. |
-| **D08 Recovery** | After dual failure + `close_process_resources`, `session._closed` is False but `_process_closed` True — **retry `close()` is rejected**; ASGI lifespan may skip `session.close()`. New session must **not** inherit stale handoff; new activation/open path required. |
-| **D09 Ownership release** | **Yes, today** `close_process_resources()` can run while gate open — **not permitted** under target invariant; independent gate enforcement required. |
-| **D10 Errors** | Preserve `ExceptionGroup` / chained causes for drain, revoke, cleanup; **do not** set `_closed = True` on partial admission failure; do not swallow original shutdown errors. |
-| **D11 Isolation** | `begin_drain_for_bound_serving_unit(serving_unit_ref)` is unit-scoped (`test_c_dim16_f06_emergency_revocation_unit_isolation`). |
-| **D12 Replaceability** | Behavior must be expressible via **`RuntimeDeploymentAdapter`** unit drain port, not private `_UnitAdmissionGate` reads from Apps. |
+**Governing deployment / physical admission authority:** [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) DEC-01 A1 + DEC-09 coordinator ordering; this ADR is a **bounded child** for strict session shutdown only.
 
 ---
 
-## 4. Candidate comparison (A / B / C)
+## 3. Protocol vs capability decision (A / B)
 
-### Candidate A — Harden existing physical admission authority (AD)
+| Option | Verdict |
+|--------|---------|
+| **A — Extend `RuntimeDeploymentAdapter`** with a dedicated, revision-independent **admission-close** operation | **SELECTED** |
+| **B — Separate AD capability Protocol** composed beside deployment adapter | **REJECTED** for this slice |
 
-| Dimension | Assessment |
-|-----------|------------|
-| Semantic owner | AD adapter + gate (unchanged) |
-| Composition owner | Apps still calls adapter |
-| Public contract | Extend/document adapter: **idempotent fail-closed admission close** is first effect of any shutdown drain entry |
-| Layer boundary | **Low** — stays in AD |
-| Authority changes | **None** |
-| Concurrency | Gate lock already serializes admit vs `begin_drain` |
-| Failure/recovery | If adapter unreachable/raises before gate mutation, gap remains unless orchestration also guarantees bound-unit close |
-| In-flight | Unchanged |
-| Replaceability | **Strong** — protocol-level |
-| Production files | `venv_bundle_colocated_runtime_deployment_adapter.py`; possibly `deployment.py` docstring |
-| Regression | F02-POST-CLOSE-01; dim16-01/04/06/F03 |
-| Blockers | **Composition layer can fail before adapter** (missing revision in `begin_colocated_serving_execution_drain_on_strict_session_close`); patches in qual simulate total helper failure — production needs orchestration ordering **with** A |
-| ADR | Amendment to deployment drain semantics under **ADR-01** footprint |
+**Rationale:**
 
-### Candidate B — Strengthen session-close orchestration (Apps)
+- Physical admission is already **deployment-adapter-owned** under parent ADR-01; a parallel capability contract would duplicate semantic ownership and invite shadow composition paths.
+- `begin_drain(revision, …)` is **revision-correlated** and today conflates admission closure with DRAINING lifecycle side effects on the venv backend; strict shutdown needs **admission closure without durable revision lookup**.
+- **Structural replaceability (FRZ-RPL-*):** one topology-neutral port with typed unsupported-topology failure beats `isinstance` + concrete `begin_drain_for_bound_serving_unit` for the **authoritative** deny transition.
+- **Rejected:** forcing unrelated backends to fake in-process gates — backends **without** unit-scoped execution admission implement the port as **unsupported** (typed error) or documented no-op only where parent ADR already defines equivalent external behavior (not in strict A1 venv path).
 
-| Dimension | Assessment |
-|-----------|------------|
-| Semantic owner | AD gate (unchanged); Apps orders calls |
-| Composition owner | `StrictProductionServingSession.close` + `colocated_serving_runtime_composition.py` |
-| Public contract | **Session-close ordering invariant** documented; new sanctioned helper e.g. `close_bound_colocated_physical_admission_fail_closed_on_strict_session_close` calling `begin_drain_for_bound_serving_unit` **first** |
-| Layer boundary | **Low** — Apps invokes public adapter API only |
-| Authority changes | **None** (no HTTP guard, no second gate) |
-| Concurrency | Must call bound-unit close **before** `close_process_resources` and **before** fallible revision path |
-| Failure/recovery | Gate closed even when revision drain fails; errors still raised for operator visibility |
-| In-flight | Unchanged |
-| Replaceability | Uses `RuntimeDeploymentAdapter` / bound unit ref from handoff |
-| Production files | `strict_production_serving_launcher.py`, `colocated_serving_runtime_composition.py` |
-| Regression | F02-POST-CLOSE-01 (primary) |
-| Blockers | Requires operator approval of **ordering contract**; `isinstance(..., VenvBundle...)` in helpers today — replaceability gap already present @ HEAD |
-| ADR | **This record (mandatory)** |
-
-### Candidate C — Couple store-backed admission to lifecycle termination
-
-| Dimension | Assessment |
-|-----------|------------|
-| Semantic owner | **Ambiguous** — Apps admission reads lifecycle/session private flags |
-| Composition owner | Apps |
-| Public contract | Would require new typed “serving session terminating” port on handoff |
-| Layer boundary | **High** — cross-layer lifecycle import or private field |
-| Authority changes | **Risk of shadow authority** at HTTP/task layer |
-| Concurrency | TOCTOU unless same linearization as physical gate |
-| Failure/recovery | `_process_closed` without gate close = false deny |
-| Replaceability | **Weak** — lifecycle coupling |
-| Blockers | Violates D05/D13; **not recommended** |
-| ADR | Would require broader contract — **rejected as primary** |
-
-### Comparison summary
-
-| | A | B | C |
-|---|:---:|:---:|:---:|
-| Preserves single physical admission owner | ✓ | ✓ | ✗ |
-| Closes gap when composition helpers fail before adapter | partial | **✓** | ✗ |
-| No HTTP-specific guard | ✓ | ✓ | ✓ |
-| No duplicate gate | ✓ | ✓ | ✗ |
-| Replaceability | ✓ | ✓ (with existing adapter pin) | ✗ |
+**Apps orchestration (R0 Candidate B)** remains mandatory: composition calls the **new port first**, before fallible revision-store helpers — this is ordering, not a second admission owner.
 
 ---
 
-## 5. Proposed preferred decision (candidate — not approved)
+## 4. Final contract shape (typed API)
 
-**Prefer Candidate B**, implemented **together with** minimal **Candidate A** hardening:
+### 4.1 Admission closure (new)
 
-1. **Ordering (B):** At the start of `StrictProductionServingSession.close` (when `handoff.colocated_execution_admission` is present), invoke a sanctioned Apps helper that calls **only** `deployment_adapter.begin_drain_for_bound_serving_unit(handoff.identity.serving_unit_ref)` (or protocol equivalent) **before** revision-dependent drain and **before** `close_process_resources()`. Treat admission closure as **must-attempt**; aggregate errors from subsequent canonical drain/revoke without reopening admission.
+```python
+def close_serving_unit_execution_admission(
+    self,
+    *,
+    serving_unit_ref: str,
+) -> None:
+    """Deny new physical execution reservations for this serving unit; idempotent."""
+```
 
-2. **Idempotency (A):** Adapter `begin_drain_for_bound_serving_unit` remains safe to call multiple times; `begin_drain` on revision path must not reopen admission after closure.
+| Field | Semantics |
+|-------|-----------|
+| **Semantic owner** | AD physical gate (`_UnitAdmissionGate.begin_drain` effect on venv A1) |
+| **Composition owner** | Apps session-close helper → `deployment_adapter` |
+| **Preconditions** | `serving_unit_ref` identifies bound unit for active strict handoff; adapter holds unit record (venv) or backend equivalent |
+| **Postconditions** | New `reserve_unit_execution` / `admit_execution` **must** fail closed for that unit; **does not** by itself complete drain |
+| **Idempotency** | Repeated calls are no-ops at gate level |
+| **Failure semantics** | Propagate `VenvBundleColocatedDeploymentError` or port-specific deployment errors; **no gate mutation** if call fails before adapter commits deny |
+| **Backend obligations** | Venv A1: set `_admission_closed = True` under gate lock; may set DRAINING metadata consistent with existing `begin_drain_for_bound_serving_unit` |
+| **Unsupported topology** | Raise typed `ColocatedServingAdmissionTopologyError` (or sanctioned deployment error) — strict colocated path already requires venv adapter @ HEAD |
+| **Tenant / unit scope** | `serving_unit_ref` only; no cross-unit effect (`test_c_dim16_f06`) |
 
-3. **Explicit non-goals:** No new HTTP 502 branch; no check of `_process_closed` in `ColocatedServingUnitAdmissionTaskExecutionPort`; no coordinator bypass.
+### 4.2 Drain completion (existing, clarified)
 
-**If operator rejects ordering amendment:** status remains **STOP — ARCHITECTURE DECISION REQUIRED**; F02 blocker persists.
+| Operation | Role |
+|-----------|------|
+| `begin_drain(revision, serving_unit_ref)` | Lifecycle / evidence path; **must not reopen** admission after `close_serving_unit_execution_admission`; on venv, delegates admission close if not already closed |
+| `check_drain(revision, serving_unit_ref, policy)` | **Observation only** — in-flight count, timeout policy; independent of whether admission already closed |
+| `stop` / `resume_serving` | Unchanged parent ADR semantics; `resume_serving` **must not** reopen admission without sanctioned coordinator re-authorization |
 
----
+### 4.3 Conflation forbidden
 
-## 6. Public contract consequences (if ratified)
-
-| Contract | Change |
-|----------|--------|
-| `StrictProductionServingSession.close()` | Documented: **fail-closed physical admission closure** for bound unit precedes process resource cleanup; dual hook failure does not leave admission open. |
-| `begin_colocated_serving_execution_drain_on_strict_session_close` | May become second-phase **lifecycle/drain evidence** rather than sole admission closer. |
-| `RuntimeDeploymentAdapter.begin_drain` | Clarify: unit-scoped admission deny is mandatory effect; revision argument is correlation, not admission prerequisite. |
-| `ServingRuntimeHandoff` / coordinator | **No** new execution authority; eligibility rules unchanged. |
-
----
-
-## 7. Concurrent request vs shutdown
-
-| Phase | Behavior (target) |
-|-------|-------------------|
-| Request wins race before shutdown | Admitted under existing coordinator + gate rules |
-| Shutdown starts | Bound-unit gate closed under adapter lock → subsequent `reserve_unit_execution` raises → `ServingRuntimeHandoffError` → HTTP **502** (existing mapping) |
-| Request during drain errors | Gate already closed → deny even if revision drain raises |
-
-**Linearization point:** `_UnitAdmissionGate._lock` inside `begin_drain` / `admit_execution`, invoked from adapter before fallible Apps composition returns.
-
----
-
-## 8. In-flight execution
-
-Existing drain semantics: in-flight work decrements via `release_execution`; `check_drain` observes in-flight count. Shutdown **denies new** admissions; does **not** require killing in-flight tasks in this slice (aligned with `test_c_dim16_01`, D1 drain tests).
+Admission closure and drain completion **must not** be merged into a single Apps concept. Session close **must** invoke admission close explicitly; drain helpers remain for revision-correlated evidence and emergency paths.
 
 ---
 
-## 9. Recovery and retry
+## 5. Impact on adapters and callers
 
-| State after dual failure | Current HEAD | Target |
-|--------------------------|--------------|--------|
-| `session._closed` | False | False (close incomplete) |
-| `lifecycle._process_closed` | True | True |
-| Admission gate | **Open (defect)** | **Closed** |
-| Retry `close()` | Rejected | Rejected — operator must open **new** session |
-| Reuse unit | Qual uses same adapter instance — production must not re-authorize without new activation |
-
----
-
-## 10. Error propagation
-
-Preserve two-error `ExceptionGroup` for F02; add admission-close failure as additional context only if bound-unit close itself fails. **F03** triple-failure ordering unchanged in intent. Do not mark session closed successfully when shutdown_errors non-empty.
+| Component | Change |
+|-----------|--------|
+| `deployment.py` | Add protocol method + document separation |
+| `FakeInMemoryRuntimeDeploymentAdapter` | Implement deny bit per `serving_unit_ref` (test double) |
+| `VenvBundleColocatedRuntimeDeploymentAdapter` | `close_serving_unit_execution_admission` ≡ gate close; `begin_drain_for_bound_serving_unit` calls it |
+| `colocated_serving_runtime_composition.py` | New sanctioned helper using **protocol only** for first deny; reduce reliance on concrete method for authoritative close |
+| `strict_production_serving_launcher.py` | Order: admission close → drain → revoke → cleanup (conditional §8) |
+| `ColocatedServingUnitAdmissionTaskExecutionPort` | **No** lifecycle/private gate reads |
+| `ActivationDomainCoordinator` | **No** new owner |
 
 ---
 
-## 11. Tenant and serving-unit isolation
+## 6. Concurrency and ordering
 
-Fail-closed closure is keyed by `handoff.identity.serving_unit_ref` only (`test_c_dim16_f06`). Tenant binding on HTTP path unchanged (`StrictProductionServingTenantAuthorityTaskExecutionPort`).
+**Linearization:** `_UnitAdmissionGate._lock` serializes `admit_execution` vs `begin_drain` / admission close; venv adapter `_lock` serializes unit lifecycle mutations.
+
+| Term | Definition |
+|------|------------|
+| **Shutdown begins (enforceable)** | `close_serving_unit_execution_admission` **returns successfully** for the bound `serving_unit_ref` — gate deny committed under adapter lock |
+| **Not shutdown begins** | First line of `StrictProductionServingSession.close()`, failed revision lookup, or helper raise **before** successful admission close |
+
+| Case | New execution | Notes |
+|------|---------------|-------|
+| Admitted before successful admission close | Allowed to complete in-flight policy | Existing DIM16-02 |
+| Attempt after successful admission close | **Denied** → `ServingRuntimeHandoffError` → HTTP **502** | POST-CLOSE-01 target |
+| Concurrent race before close succeeds | May admit | Documented window; closes with gate lock |
+| Repeated drain / revoke failures after close succeeds | Denied | Gate stays closed |
+| `resume_serving` | Requires fresh coordinator authorization; gate closed on resume path today | No stale resurrection |
+| Sibling units | Unaffected | F06 |
 
 ---
 
-## 12. Replaceability
+## 7. Fail-closed and failure-before-deny matrix
 
-Target implementation must route through **`RuntimeDeploymentAdapter`** drain APIs, not direct `_UnitAdmissionGate` mutation from Apps. Long-term: reduce `isinstance(VenvBundleColocatedRuntimeDeploymentAdapter)` in composition helpers via protocol extension — **tracked freeze debt**, not in this decision’s implementation scope.
+**Critical rule:** Fail-closed **execution deny** is guaranteed **only after** successful admission-close port completion. A failed admission-close attempt **does not** imply deny.
+
+| # | Situation | Authoritative admission state | New execution | Cleanup allowed | Process slot release | Session complete | Retry `close()` | Error propagation | Operator |
+|---|-----------|------------------------------|---------------|-----------------|----------------------|------------------|-----------------|-------------------|----------|
+| 1 | Admission close **succeeded** | Closed | **No** | Yes (subject to F03) | After cleanup policy | Only if no shutdown errors | Rejected if `_process_closed` | Drain/revoke errors preserved | No |
+| 2 | Close succeeded; drain continuation failed | Closed | **No** | Yes @ current F02 tests | Yes @ HEAD F02 | No | Rejected | ExceptionGroup | No |
+| 3 | Admission close **failed before gate mutation** | **Unchanged** (may be open) | **Yes** until deny succeeds | **No** (R1 policy) | **No** | No | Allowed if slot not released | Admission-close error primary | **Yes** — deny not achieved |
+| 4 | Partial / ambiguous failure | Treat as **3** unless adapter documents commit | Assume open | **No** | **No** | No | Per slot state | Original + close error | **Yes** |
+| 5 | Close succeeded; cleanup failed | Closed | **No** | N/A (failed) | **No** / partial | No | Per F03 | Triple aggregate | Maybe |
+| 6 | Caller interrupted mid-close | If close completed → 1; else → 3 | Per state | Per §8 | Per lifecycle flags | No | Per DIM16-08 | Preserve partial | Per case |
+| 7 | Concurrent admit before close succeeds | Open until close | May succeed | — | — | — | — | — | No |
+| 8 | Concurrent admit after close succeeds | Closed | **Denied** | — | — | — | — | 502 path | No |
+
+**Case 3 architecture note:** @ HEAD, cleanup runs after helper failures without gate close — **defect**. Target implementation **withholds** `close_process_resources()` when admission close fails. No invented fallback chain. If operator rejects withholding cleanup, status returns to **STOP — ARCHITECTURE DECISION REQUIRED**.
 
 ---
 
-## 13. F02 exit-criteria matrix (F02-01 … F02-15)
+## 8. Cleanup, partial close, retry, recovery
 
-| ID | Requirement | Historical evidence @ SHA | After fix evidence needed |
-|----|-------------|---------------------------|---------------------------|
-| F02-01 | Normal shutdown denies new executions | **VALID** — `test_c_dim16_01` | Re-run @ impl SHA |
+- **Partial close:** `session._closed is False` with possible `_process_closed is True` remains valid when shutdown errors non-empty (existing DIM16-F02).
+- **Retry:** Second `close()` rejected when `_process_closed` — operator must start **new** session with new activation; no stale handoff reuse.
+- **Recovery:** After dual **helper** failure with **successful** admission close, gate **closed** even if `_closed` False — POST-CLOSE-01 target.
+- **In-flight:** Existing `release_execution` + `check_drain`; shutdown does not kill in-flight tasks in this slice (DIM16-01/02).
+
+---
+
+## 9. F02 exit criteria (F02-01 … F02-15)
+
+| ID | Requirement | Evidence @ `d3be032d…` | Post-implementation |
+|----|-------------|------------------------|---------------------|
+| F02-01 | Normal shutdown denies new executions | **VALID** — `test_c_dim16_01` | Re-run |
 | F02-02 | Drain fail + successful emergency revoke denies | **VALID** — `test_c_dim16_04` | Re-run |
-| F02-03 | Drain + revoke fail still denies admission | **FAIL** — F02 unit + POST-CLOSE-01 | **NEW** — same tests must PASS |
-| F02-04 | HTTP after failed close never reaches inner | **FAIL** — POST-CLOSE-01 | **NEW** |
-| F02-05 | Concurrent shutdown/request ordering documented | **NOT PROVEN** | Qual + §7 record |
-| F02-06 | In-flight policy explicit | **PARTIAL** — dim16-01 drain state | Reconfirm |
-| F02-07 | Cleanup fail preserves deny invariant | **NOT PROVEN** — F03 focuses errors | F03 + admission assert extension |
-| F02-08 | Repeated/partial close cannot resurrect admission | **PARTIAL** — dim16-07 reopen | Re-run + new asserts |
-| F02-09 | New session no stale authorization | **NOT PROVEN** at DIM16 depth | P2 identity continuity reuse |
+| F02-03 | Drain + revoke fail still denies admission | **FAIL** — F02 + POST-CLOSE-01 | PASS after impl |
+| F02-04 | HTTP after failed close never reaches inner | **FAIL** — POST-CLOSE-01 | PASS |
+| F02-05 | Concurrent shutdown/request documented | **NOT PROVEN** | §6 + qual |
+| F02-06 | In-flight policy explicit | **PARTIAL** — dim16-02 | Reconfirm |
+| F02-07 | Cleanup fail preserves deny | **NOT PROVEN** | F03 + gate assert |
+| F02-08 | Partial close cannot resurrect admission | **PARTIAL** — dim16-07 | Re-run |
+| F02-09 | New session no stale authorization | **NOT PROVEN** | P2 continuity |
 | F02-10 | Sibling units unaffected | **VALID** — `test_c_dim16_f06` | Re-run |
-| F02-11 | Tenant boundary unchanged | **VALID** — P3-A scoped | No regression |
-| F02-12 | All shutdown errors observable | **VALID** — F02/F03 ExceptionGroup | Preserve |
-| F02-13 | No second admission authority | **Design constraint** | Architecture gate review |
-| F02-14 | Public contracts + replaceability | **PARTIAL** — VenvBundle isinstance | Document amendment |
-| F02-15 | Regression auditable @ exact SHA | **VALID** — failing test committed | PASS @ impl SHA |
+| F02-11 | Tenant boundary unchanged | **VALID** — P3-A | No regression |
+| F02-12 | Shutdown errors observable | **VALID** — F02/F03 | Preserve |
+| F02-13 | No second admission authority | **PASS (design R1)** | Arch review @ impl |
+| F02-14 | Public contracts + replaceability | **PARTIAL** — isinstance @ HEAD | Protocol method |
+| F02-15 | Regression auditable @ SHA | **VALID** — red test committed | PASS @ impl SHA |
+
+**Static vs dynamic:** F02-05, F02-07, F02-09 may require evidence beyond 120s budget — operator authorization for extended qual.
 
 ---
 
-## 14. Qualification-boundary debt (autouse fixture)
+## 10. Future implementation specification (not executed)
 
-`test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` — `@pytest.fixture(autouse=True) _isolate_production_process_lifecycle_slot` reads `production_process_lifecycle._active_production_process_lifecycle` and `_process_closed` (**private module slot**).
+| File | Action |
+|------|--------|
+| `intergrax/agent_distribution/deployment.py` | Add `close_serving_unit_execution_admission` to Protocol + fake |
+| `intergrax/agent_distribution/venv_bundle_colocated_runtime_deployment_adapter.py` | Implement; align `begin_drain_for_bound_serving_unit` |
+| `intergrax/applications/_shared/colocated_serving_runtime_composition.py` | `close_colocated_serving_execution_admission_on_strict_session_close` |
+| `intergrax/applications/_shared/strict_production_serving_launcher.py` | Order + conditional cleanup |
+| `tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` | POST-CLOSE-01 green; optional admission-close-fail case |
 
-| Item | Disposition |
-|------|-------------|
-| Classification | **TRACKED FREEZE DEBT** (qualification boundary) |
-| This task | **Do not expand** private-slot pattern |
-| Implementation dependency | **Not blocking** — F02 POST-CLOSE uses `_dim10_http_fixture` + public `session.close()`; fixture debt is parallel hygiene (cf. D4-R1) |
-| Future | Owned session registry or sanctioned qual boundary per strict HTTP evidence docs |
+**Forbidden:** second HTTP guard; Apps mutating `_UnitAdmissionGate`; new governance approval; dynamic `getattr` / method probing.
 
----
+**Architecture STOP:** second admission owner; cleanup after failed admission close without operator waiver; type-check-only adapter dispatch for authoritative deny.
 
-## 15. Proposed implementation file scope (post-ratification only)
-
-| File | Role |
-|------|------|
-| `intergrax/applications/_shared/strict_production_serving_launcher.py` | Order fail-closed admission step |
-| `intergrax/applications/_shared/colocated_serving_runtime_composition.py` | Sanctioned bound-unit fail-closed helper |
-| `intergrax/agent_distribution/venv_bundle_colocated_runtime_deployment_adapter.py` | Idempotent admission close (if needed) |
-| `intergrax/agent_distribution/deployment.py` | Protocol documentation only (optional) |
-| `tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` | F02/F02-POST-CLOSE-01 must PASS |
-
-**Forbidden:** HTTP router changes as primary fix; private gate mutation from Apps; new admission owner.
+**Bounded verification plan (later task):** `F02-POST-CLOSE-01` first; then F02/F03 + dim16-01/04/06/07; one `uv run pytest … -p no:xdist` ≤60s per command, ≤120s total; no broad qual module without operator OK.
 
 ---
 
-## 16. Operator decision required
+## 11. Qualification-boundary debt
+
+`test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` autouse `_isolate_production_process_lifecycle_slot` — **TRACKED FREEZE DEBT**; not expanded in this task.
+
+---
+
+## 12. Operator decision required
 
 | # | Question |
 |---|----------|
-| 1 | Ratify **Candidate B + minimal A** ordering as canonical session-close semantics? |
-| 2 | Accept **contract amendment** to `StrictProductionServingSession.close` / drain helper responsibilities? |
-| 3 | Authorize bounded implementation child (single pytest module replay, test-process budget per operator rules)? |
+| 1 | Ratify **protocol admission-close (A)** + **Apps first-call ordering (B)**? |
+| 2 | Ratify **cleanup withheld** when admission close fails (§7 case 3)? |
+| 3 | Authorize bounded implementation child (single dim16 pytest module, test-process budget)? |
 
 ---
 
-## 17. Applicable FRZ (scoped — no promotion)
+## 13. FRZ mapping (scoped — no global promotion)
 
-| FRZ | Mapping @ SHA |
-|-----|----------------|
-| **FRZ-PRD-05** | **FAIL / OPEN** for full shutdown qualification — dual-failure admission gap breaks “shutdown/resource cleanup qualified” at Package D depth |
-| **FRZ-PRD-08** | **PARTIAL** — post-close execution reaches inner path (bypass of intended physical deny) |
-| **FRZ-REG-03** | **PASS (scoped)** — negative test **detects** defect (failing regression committed); fulfillment requires test PASS after fix |
-| **FRZ-SEC-04** | **NOT PROVEN** for this slice — no new auth bypass; execution after failed shutdown is reliability/admission |
-| **FRZ-REL-*** | **PARTIAL** — resource release vs admission inconsistency |
-| **FRZ-TEN-*** | **NOT IMPACTED** — unit/tenant scope unchanged |
-| **FRZ-CTR / OWN / RPL** | **PASS (design)** — no new owner if B+A ratified |
-
----
-
-## 18. Enterprise audit matrix @ SHA
-
-| Criterion | Result |
-|-----------|--------|
-| Hard layer boundaries | **PASS** (design target) |
-| Communication direction | Apps → AD ports; no reverse authority |
-| Exactly-one semantic ownership (admission) | **PASS** (AD physical gate) |
-| Exactly-one composition ownership (session close) | **PASS** (Apps session) |
-| Contracts over implementations | **PARTIAL** — VenvBundle isinstance in close helpers |
-| Strong typed boundaries | **PASS** |
-| Pluginability | **PARTIAL** — strict A1 pin |
-| Structural replaceability | **PARTIAL** |
-| No bypasses / shadow authorities | **FAIL** @ HEAD — open gate after shutdown |
-| Fail-closed admission | **FAIL** @ HEAD for F02 path |
-| Tenant / unit isolation | **PASS** |
-| Observability non-authoritative | **PASS** |
-| Traceability / evidence continuity | **PASS** — SHA + failing test |
-| Regression protection | **PASS** — committed negative |
-| Recovery contracts | **PARTIAL** — session retry blocked |
+| FRZ | @ `d3be032d…` (current) | Intended post-implementation |
+|-----|---------------------------|------------------------------|
+| **FRZ-PRD-05** | **OPEN / PARTIAL** — F02 blocker | Scoped re-eval after POST-CLOSE PASS |
+| **FRZ-PRD-08** | **PARTIAL** — post-close execution | PASS candidate after F02-04 |
+| **FRZ-REG-03** | **PASS (scoped)** — red test detects defect | PASS after fix |
+| **FRZ-SEC-04** | **NOT PROVEN** | Unchanged slice |
+| **FRZ-REL-*** | **PARTIAL** | Admission vs slot consistency improved |
+| **FRZ-TEN-*** | **NOT IMPACTED** | — |
+| **FRZ-BND-*** | **PASS (design)** | Apps→AD port only |
+| **FRZ-OWN-*** | **PASS (design)** | Single AD gate owner |
+| **FRZ-CTR-*** | **PARTIAL→PASS (design R1)** | Typed port vs isinstance |
+| **FRZ-TYP-*** | **PARTIAL** | Protocol extension |
+| **FRZ-RPL-*** | **PARTIAL** | Protocol-level deny |
 
 ---
 
-## 19. Roadmap disposition (canonical tracker)
+## 14. Enterprise audit matrix @ R1 decision
 
-| Item | Recommended status |
-|------|-------------------|
-| This ADR slice | **READY FOR AUDIT** |
-| **PROD-Q-R1-R7-Q-C** Package D | Remains **READY FOR AUDIT** with **DIM16/F02 IN-SCOPE BLOCKER** |
+| Criterion | Verdict | Evidence |
+|-----------|---------|----------|
+| Hard layer boundaries | **PASS** | Design — Apps orchestrates, AD owns gate |
+| Communication direction | **PASS** | Apps → `RuntimeDeploymentAdapter` |
+| Exactly-one semantic ownership (admission) | **PASS** | AD gate |
+| Exactly-one composition ownership (session close) | **PASS** | `StrictProductionServingSession` |
+| Contracts over implementations | **PARTIAL** | R1 selects protocol; isinstance @ HEAD |
+| Strong typing | **PASS** | Named port method |
+| Pluginability | **PARTIAL** | Strict A1 pin @ HEAD |
+| Structural replaceability | **PARTIAL** | Improves at impl |
+| No bypass / shadow authorities | **FAIL** @ HEAD | Open gate after dual helper fail |
+| No duplicated mechanisms | **PASS** | Single gate |
+| Governance vs execution | **PASS** | Unchanged |
+| Fail-closed execution | **FAIL** @ HEAD; **NOT PROVEN** post-impl | Red POST-CLOSE-01 |
+| Concurrency safety | **PARTIAL** | Gate lock documented |
+| In-flight / recovery | **PARTIAL** | §7–8 |
+| Unit / tenant isolation | **PASS** | F06 / P3 |
+| Observability non-authoritative | **PASS** | — |
+| Traceability | **PASS** | SHA + failing test |
+| Regression protection | **PASS** | Committed qual |
+
+---
+
+## 15. Roadmap disposition
+
+| Item | Status |
+|------|--------|
+| This ADR R1 | **READY FOR AUDIT** |
+| Package D | **READY FOR AUDIT** + **DIM16/F02 IN-SCOPE BLOCKER** until impl |
 | **PROD-Q** | **CURRENT / BLOCKED** (unchanged) |
-| Next proposed action | Operator ratifies **ADR-01**; then bounded implementation child with **one** targeted `pytest` on dim16 module |
+| **Next task** | `PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-HARDENING` — implement §10 after operator ratification |
 
 ---
 
