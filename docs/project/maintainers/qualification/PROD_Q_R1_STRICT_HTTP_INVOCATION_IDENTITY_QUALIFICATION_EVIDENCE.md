@@ -81,8 +81,9 @@ uv run pytest -p no:xdist \
 
 | Metric | Value |
 |--------|-------|
-| **Result** | **16 passed**, 0 failed, 0 skipped (**R1-R1** corrective adds **R01–R05**; **R06** = **H01–H08** unchanged) |
-| **Log** | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log` |
+| **Result** | **19 passed**, 0 failed, 0 skipped (**R1-R2** adds **R07–R09**; **R06** = **H01–H08** unchanged) |
+| **Execution SHA** | See §11 **FINAL_COMMIT** |
+| **Log** | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R2/pytest-r2.log` |
 
 ---
 
@@ -149,11 +150,9 @@ uv run pytest -p no:xdist \
 | **F02** | `if "already closed" in str(exc): continue` — forbidden string lifecycle classification | Removed; ASGI lifespan may close via public `close()` — **qualification ownership envelope** records successful close and releases registry **without** message inspection |
 | **F03** | `BaseException` bucket could mishandle interrupts / typing at teardown boundary | Teardown collects **`Exception`** only; `KeyboardInterrupt` / `SystemExit` propagate; single failure re-raised; `ExceptionGroup` when multiple |
 
-### Ownership after correction
+### Ownership after R1-R1 (superseded by R1-R2 §11)
 
-- Fixtures receive **`register_owned_strict_http_invocation_session` return value** (ownership envelope delegating public session surface).
-- Explicit successful `close()` (fixture teardown or strict ASGI lifespan) sets **`qualification_close_completed`** and allows registry release without double-close on inner session.
-- Ambiguous / failed close leaves registration populated → **`assert_no_leaked_owned_strict_http_invocation_sessions`** fails the next test (**R02**).
+- Historical: ownership envelope — **removed** in **PROD-Q-R1-STRICT-HTTP-R1-R2** (typing boundary defect).
 
 ### Regression tests (R01–R05)
 
@@ -165,7 +164,48 @@ uv run pytest -p no:xdist \
 | **R04** | Reverse-order multi-session close |
 | **R05** | No silent global `production_process_lifecycle` slot reset in support module |
 
+### Remaining limitations (R1-R1)
+
+- Superseded by §11.
+
+---
+
+## 11. Corrective lineage — PROD-Q-R1-STRICT-HTTP-R1-R2
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-STRICT-HTTP-R1-R2** |
+| **Parent** | **PROD-Q-R1-STRICT-HTTP-R1** |
+| **START_HEAD** | `a1e2228f9304bf368d0aebd63265385097459554` |
+| **FINAL_COMMIT** | *(set at push — operator GitHub SHA audit)* |
+| **Production delta** | **0** |
+
+### Root cause
+
+| ID | Issue | Correction |
+|----|-------|------------|
+| **T01** | `_QualificationOwnedStrictProductionServingSession.__getattr__` bridged incompatible semantic types | Removed wrapper; registry holds **concrete** `StrictProductionServingSession` for fixtures |
+| **T02** | `register_owned_*` declared concrete session but returned envelope | Returns **same** session instance passed to `create_governed_contractor_strict_production_asgi_app` (**R07**) |
+| **T03** | Regression doubles used `# type: ignore[arg-type]` | Narrow **`_OwnedStrictHttpInvocationSessionCloseTarget` Protocol** + `register_owned_strict_http_invocation_close_target_for_regression` (**R01–R04** only) |
+| **T04** | ASGI lifespan public `close()` vs registry teardown | Release when `StrictProductionServingSession._closed` is already **True** after lifespan — **no** exception-message classification (**R09**, **R03** preserved) |
+
+### Ownership after R1-R2
+
+- Production-facing ASGI composition receives **genuine** `StrictProductionServingSession` (**R07**).
+- Registry tracks session identity; teardown uses public `close()` or `_closed` observation on **concrete** session only (qualification boundary — not a production API).
+- Failed `close()` retains registration (**R02**); registry slice has no reflection / typing suppression (**R08**).
+
+### Regression tests (R01–R09)
+
+| ID | Intent |
+|----|--------|
+| **R01–R05** | Unchanged intent (R1-R1) |
+| **R06** | **H01–H08** unchanged |
+| **R07** | Fixture session is concrete `StrictProductionServingSession` |
+| **R08** | Registry support slice: no `__getattr__` / `getattr` / `type: ignore` / `cast` / `Any` |
+| **R09** | Post–`TestClient` lifespan close, registry teardown succeeds without false failure |
+
 ### Remaining limitations
 
+- No production public “session closed” observable beyond failed second `close()` — qualification uses `_closed` on **concrete** session at teardown boundary only (aligned with other PROD-Q strict HTTP gates).
 - No production API to introspect unknown leaked global lifecycle slots (unchanged).
-- Envelope is **qualification-test-boundary only** — not a production contract.

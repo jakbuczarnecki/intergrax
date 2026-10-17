@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Final
+from typing import Final, Protocol, runtime_checkable
 
 import pytest
 from fastapi import FastAPI
@@ -89,47 +89,41 @@ _QUAL_PROVIDER: Final = "gec3_deterministic_fake"
 _QUAL_SCOPE_DIGEST: Final = "sha256:" + ("aa" * 32)
 _QUAL_T0: Final = datetime(2026, 10, 16, 12, 0, 0, tzinfo=timezone.utc)
 
-class _QualificationOwnedStrictProductionServingSession:
-    """Qualification ownership envelope — records successful public close for registry release."""
 
-    __slots__ = ("_qualification_close_completed", "_session")
+@runtime_checkable
+class _OwnedStrictHttpInvocationSessionCloseTarget(Protocol):
+    """Narrow regression-only close surface — not a production session substitute."""
 
-    def __init__(self, session: StrictProductionServingSession) -> None:
-        self._session = session
-        self._qualification_close_completed = False
-
-    @property
-    def qualification_close_completed(self) -> bool:
-        return self._qualification_close_completed
-
-    def close(self) -> None:
-        if self._qualification_close_completed:
-            raise StrictProductionServingLauncherError(
-                "qualification-owned strict HTTP invocation session teardown already completed",
-            )
-        try:
-            self._session.close()
-        except StrictProductionServingLauncherError:
-            raise
-        else:
-            self._qualification_close_completed = True
-
-    def __getattr__(self, name: str) -> object:
-        return getattr(self._session, name)
+    def close(self) -> None: ...
 
 
 _owned_strict_http_invocation_sessions: list[
-    _QualificationOwnedStrictProductionServingSession
+    StrictProductionServingSession | _OwnedStrictHttpInvocationSessionCloseTarget
 ] = []
+
+
+def _strict_production_session_closed_by_public_contract(
+    session: StrictProductionServingSession | _OwnedStrictHttpInvocationSessionCloseTarget,
+) -> bool:
+    """True when strict ASGI lifespan already completed public session close (R09)."""
+    if isinstance(session, StrictProductionServingSession):
+        return session._closed
+    return False
 
 
 def register_owned_strict_http_invocation_session(
     session: StrictProductionServingSession,
 ) -> StrictProductionServingSession:
     """Track one strict serving session opened by qualification fixtures for teardown."""
-    owned = _QualificationOwnedStrictProductionServingSession(session)
-    _owned_strict_http_invocation_sessions.append(owned)
-    return owned
+    _owned_strict_http_invocation_sessions.append(session)
+    return session
+
+
+def register_owned_strict_http_invocation_close_target_for_regression(
+    target: _OwnedStrictHttpInvocationSessionCloseTarget,
+) -> None:
+    """Register a deterministic close double for R01–R04 registry regression tests only."""
+    _owned_strict_http_invocation_sessions.append(target)
 
 
 def assert_no_leaked_owned_strict_http_invocation_sessions() -> None:
@@ -150,7 +144,7 @@ def close_registered_owned_strict_http_invocation_sessions() -> None:
     errors: list[Exception] = []
     while _owned_strict_http_invocation_sessions:
         owned = _owned_strict_http_invocation_sessions[-1]
-        if owned.qualification_close_completed:
+        if _strict_production_session_closed_by_public_contract(owned):
             _owned_strict_http_invocation_sessions.pop()
             continue
         try:
@@ -462,6 +456,7 @@ __all__ = [
     "owned_strict_http_invocation_session_registration_count",
     "build_sanctioned_external_work_runtime",
     "build_strict_http_invocation_qual_fixture",
+    "register_owned_strict_http_invocation_close_target_for_regression",
     "register_owned_strict_http_invocation_session",
     "execute_sanctioned_create_with_invocation",
     "external_work_adapter_metadata",

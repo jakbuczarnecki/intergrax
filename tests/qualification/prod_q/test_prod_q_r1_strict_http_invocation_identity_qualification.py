@@ -16,7 +16,9 @@ import pytest
 
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingLauncherError,
+    StrictProductionServingSession,
 )
+from starlette.testclient import TestClient
 
 from applications.governed_contractor_application.host.provider_invocation_lifecycle import (
     GovernedProviderInvocationDispatchGate,
@@ -49,6 +51,7 @@ from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support 
     build_strict_http_invocation_qual_fixture,
     close_registered_owned_strict_http_invocation_sessions,
     owned_strict_http_invocation_session_registration_count,
+    register_owned_strict_http_invocation_close_target_for_regression,
     register_owned_strict_http_invocation_session,
     execute_sanctioned_create_with_invocation,
     external_work_adapter_metadata,
@@ -495,7 +498,7 @@ class _QualOwnedSessionDouble:
 
 def test_r01_owned_session_registry_releases_after_successful_close() -> None:
     session = _QualOwnedSessionDouble(label="r01")
-    register_owned_strict_http_invocation_session(session)  # type: ignore[arg-type]
+    register_owned_strict_http_invocation_close_target_for_regression(session)
     assert owned_strict_http_invocation_session_registration_count() == 1
     close_registered_owned_strict_http_invocation_sessions()
     assert owned_strict_http_invocation_session_registration_count() == 0
@@ -507,7 +510,7 @@ def test_r02_failed_close_keeps_registry_evidence_and_blocks_next_test() -> None
         label="r02",
         close_error=StrictProductionServingLauncherError("r02 close failed"),
     )
-    register_owned_strict_http_invocation_session(session)  # type: ignore[arg-type]
+    register_owned_strict_http_invocation_close_target_for_regression(session)
     with pytest.raises(StrictProductionServingLauncherError, match="r02 close failed"):
         close_registered_owned_strict_http_invocation_sessions()
     assert owned_strict_http_invocation_session_registration_count() == 1
@@ -525,7 +528,7 @@ def test_r03_already_closed_message_does_not_suppress_close_failure() -> None:
             "strict production serving session already closed",
         ),
     )
-    register_owned_strict_http_invocation_session(session)  # type: ignore[arg-type]
+    register_owned_strict_http_invocation_close_target_for_regression(session)
     with pytest.raises(StrictProductionServingLauncherError, match="already closed"):
         close_registered_owned_strict_http_invocation_sessions()
     assert owned_strict_http_invocation_session_registration_count() == 1
@@ -538,9 +541,9 @@ def test_r04_multiple_owned_sessions_close_in_reverse_registration_order() -> No
     first = _QualOwnedSessionDouble(label="first", close_order=order)
     second = _QualOwnedSessionDouble(label="second", close_order=order)
     third = _QualOwnedSessionDouble(label="third", close_order=order)
-    register_owned_strict_http_invocation_session(first)  # type: ignore[arg-type]
-    register_owned_strict_http_invocation_session(second)  # type: ignore[arg-type]
-    register_owned_strict_http_invocation_session(third)  # type: ignore[arg-type]
+    register_owned_strict_http_invocation_close_target_for_regression(first)
+    register_owned_strict_http_invocation_close_target_for_regression(second)
+    register_owned_strict_http_invocation_close_target_for_regression(third)
     close_registered_owned_strict_http_invocation_sessions()
     assert order == ["third", "second", "first"]
     assert owned_strict_http_invocation_session_registration_count() == 0
@@ -555,3 +558,55 @@ def test_r05_qualification_support_never_resets_global_production_lifecycle_slot
     assert "_active_production_process_lifecycle" not in text
     assert "_process_closed" not in text
     assert "close_process_resources" not in text
+    assert "__getattr__" not in text
+    assert "getattr(" not in text
+
+
+def _owned_strict_http_invocation_registry_support_source() -> str:
+    support_path = (
+        Path(__file__).resolve().parent / "_prod_q_strict_http_invocation_identity_support.py"
+    )
+    text = support_path.read_text(encoding="utf-8")
+    start = text.index("_owned_strict_http_invocation_sessions")
+    end = text.index("@dataclass(frozen=True, slots=True)\nclass StrictHttpInvocationQualFixture")
+    return text[start:end]
+
+
+def test_r07_strict_http_fixture_passes_concrete_strict_production_session_to_asgi(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-r07-concrete-session",
+    )
+    assert isinstance(fixture.session, StrictProductionServingSession)
+    assert type(fixture.session) is StrictProductionServingSession
+
+
+def test_r08_qualification_support_has_no_reflection_or_typing_suppression_at_boundary() -> None:
+    text = _owned_strict_http_invocation_registry_support_source()
+    assert "__getattr__" not in text
+    assert "getattr(" not in text
+    assert "setattr(" not in text
+    assert "type: ignore" not in text
+    assert " cast(" not in text
+    assert ": Any" not in text
+
+
+def test_r09_asgi_lifespan_close_does_not_fail_owned_session_registry_teardown(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-r09-lifespan-close",
+    )
+    assert owned_strict_http_invocation_session_registration_count() == 1
+    with TestClient(fixture.app):
+        pass
+    assert fixture.session._closed is True
+    close_registered_owned_strict_http_invocation_sessions()
+    assert owned_strict_http_invocation_session_registration_count() == 0

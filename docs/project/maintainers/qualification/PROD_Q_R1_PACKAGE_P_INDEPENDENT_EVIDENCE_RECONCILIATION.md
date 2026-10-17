@@ -118,6 +118,17 @@
 | **Pytest** | `test_prod_q_r1_strict_http_invocation_identity_qualification.py` — **16 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log`) |
 | **Remaining limitation** | Envelope is test-boundary only; unknown global slot without owned handle still fail-closed at production open |
 
+### 5.4 Corrective (PROD-Q-R1-STRICT-HTTP-R1-R2)
+
+| Item | Detail |
+|------|--------|
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** at push) |
+| **START_HEAD** | `a1e2228f9304bf368d0aebd63265385097459554` |
+| **Finding** | **T01–T04** — `__getattr__` envelope violated strong typing; ASGI received non-concrete session type |
+| **Fix** | Registry holds concrete `StrictProductionServingSession`; regression Protocol for R01–R04 doubles only; `_closed` release after ASGI lifespan (**R09**) |
+| **Negative evidence** | **R01–R09**; **R06** = **H01–H08** |
+| **Pytest** | same module — **19 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R2/pytest-r2.log`) |
+
 ---
 
 ## 6. Enterprise audit (@ AUDITED_HEAD)
