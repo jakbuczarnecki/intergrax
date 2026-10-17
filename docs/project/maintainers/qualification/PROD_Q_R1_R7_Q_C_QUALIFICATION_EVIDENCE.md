@@ -178,6 +178,7 @@ Executed @ `SOURCE_EVIDENCE_SHA` in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown
 | Cleanup after one / two / three failures | `test_c_dim16_f03` — triple failure preserves three errors; single `close_process_resources` attempt |
 | Primary + additional error preservation | `test_c_dim16_05`, F02/F03 ExceptionGroup ordering |
 | **Both drain and emergency revocation fail (F02)** | Admission may remain **open** (`admission_closed() is False`); session `_closed` may remain **False** while process lifecycle marked closed — **visibly incomplete shutdown** |
+| **F02 post-close HTTP (F02-POST-CLOSE-01)** | `test_c_dim16_f02_post_close_01_*` — **EXECUTED FAIL** @ Package D §5.5: HTTP **200** + inner invoked after dual-failure close; **IN-SCOPE BLOCKER** — not PASS |
 | Normal in-flight / drain | Positive drain paths + HTTP 502 when admission denied mid-drain |
 | **F06** scope | Unit isolation only — sibling serving unit not closed by bound-unit emergency revocation |
 | Rollback | **D1-R6** owns activation rollback — not reimplemented in §C |

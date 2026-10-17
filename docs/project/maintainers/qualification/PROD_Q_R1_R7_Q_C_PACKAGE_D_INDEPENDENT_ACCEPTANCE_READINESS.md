@@ -8,9 +8,11 @@
 | **Program** | **PROD-Q** — **OPEN / BLOCKED** (children) |
 | **Branch** | `development` |
 | **VERIFIED_BASELINE** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
-| **START_HEAD / AUDITED_HEAD** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
-| **Production delta** | **0** |
-| **Test execution (this task)** | **0** — read-only git + source + qualification records |
+| **START_HEAD** | `63bbf46f77431708ab06c6756d9e9e95f19d1b27` |
+| **AUDITED_HEAD (prior Package D)** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
+| **F02-POST-CLOSE child** | `PROD-Q-R1-R7-Q-C-DIM16-F02-POST-CLOSE-EXECUTION-DENY` — see §5.5 |
+| **Production delta (F02 child)** | **0** — qualification + documentation only |
+| **Test execution (F02 child)** | **1** focused pytest — §5.5 |
 
 **Disposition rule:** Executable §C evidence @ cited SHAs **≠** operator acceptance. Historical **P1 / P2 / P3 / E.1 / D1–D4 CLOSED** rows are background only. This record **does not** relabel documentary reconciliation as production acceptance.
 
@@ -29,7 +31,7 @@
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
 | **Mandatory order (R7-Q §C)** | Integrated evidence executed → Packages B/C evidence → **Package D** (this) → operator profiles (**DIM6**, **DIM17**) → **PROD-Q-R1** Package P acceptance (**DIM20**) → parent rollup — **order preserved** |
 | **Accepted prerequisites (reusable, not R7-Q PASS)** | P1/P2/P3/E.1 operator-closed waves @ cited SHAs; §C hub @ `93c17a95…`; Package B/C **READY FOR AUDIT** |
-| **Blockers retained** | DIM6/DIM17 operator profiles; DIM16/F02 shutdown execution-deny gap; DIM20 parent Package P; D2/D3 independent acceptance (parallel program debt) |
+| **Blockers retained** | DIM6/DIM17 operator profiles; **DIM16/F02 post-close execution deny — EXECUTED FAIL** (§5.5); DIM20 parent Package P; D2/D3 independent acceptance (parallel program debt) |
 | **Applicable FRZ** | Contribution-only mapping §8 — **new global FRZ PASS = 0** |
 | **HEAD drift (strict production product graph)** | **None** on `intergrax/applications/_shared/*`, `intergrax/agent_distribution/*`, GCA strict host between Package C exec `9aef3f09…` and `AUDITED_HEAD`; post–Package P commits on qualification path are **STRICT-HTTP-R1–R5** test-boundary correctives (`ea2e929b3`…`4fac9482e`) — **production delta 0** |
 
@@ -148,6 +150,64 @@ HTTP execution stack:
 
 **DIM16 overall:** retain **PARTIAL — LIMITATION**; **R7-Q remains BLOCKED** for FRZ-PRD-05 full acceptance until F02 child resolves or operator explicitly accepts operational risk (outside this audit’s recommendation).
 
+### 5.5 F02-POST-CLOSE-01 — executed qualification (child task on `development`, commit in §11 report)
+
+**Scope:** After F02-shaped `StrictProductionServingSession.close()` (drain fail, emergency revoke fail, `close_process_resources` once), submit a new authenticated HTTP `POST` on the sanctioned strict GCA path (`_dim10_http_fixture` — same stack as DIM16-04 contrast).
+
+**Execution path (static + exercised):**
+
+```text
+HTTP POST (GCA strict ASGI)
+  → GovernedContractorRunHandler (fastapi_router.py) — auth + tenant bind
+  → StrictProductionServingTenantAuthorityTaskExecutionPort.execute — tenant authority only
+  → ColocatedServingUnitAdmissionTaskExecutionPort.execute — no lifecycle/session closure read
+  → StoreBackedColocatedServingUnitExecutionAdmission.admit_execution
+  → ActivationDomainCoordinator.coordinate_physical_execution_reservation
+       (verify_serving_execution_eligibility_from_state + physical_reserve)
+  → VenvBundleColocatedUnitPhysicalExecutionGate.reserve_execution
+  → VenvBundleColocatedRuntimeDeploymentAdapter.reserve_unit_execution
+  → _UnitAdmissionGate.admit_execution (admission_closed flag)
+  → inner HostTaskExecutionPort (_INNER_DELEGATE in qual)
+```
+
+| Transition | Owner | Contract / state read | Admission decision | Rejection when | After F02 dual failure |
+|------------|-------|----------------------|--------------------|----------------|-------------------------|
+| HTTP → GCA handler | **Apps** GCA | `strict_serving_tenant_binding`, `AuthContext` | Caller authorized for bound tenant | 401 if auth missing | Unchanged — request still **authorized** |
+| Tenant port | **Apps** shared | Task tenant vs binding | Pass-through to colocated port | Tenant mismatch | Unchanged |
+| Colocated execution port | **Apps** shared | `ServingRuntimeHandoff.colocated_execution_admission` | Calls `admit_execution` per request | Missing admission port → `RuntimeError` | **No** `_process_closed` / `session._closed` check |
+| Store-backed admission | **Apps** shared | Handoff identity + coordinator | `coordinate_physical_execution_reservation` | `ServingRuntimeHandoffError` on AD denial | Eligibility store still wired; **no** shutdown coupling |
+| Coordinator | **AD** | SQLite/in-memory AD state | Eligibility evidence then `physical_reserve()` | `ServingExecutionAdmissionError` | Not invalidated by `close_process_resources` alone |
+| Physical gate | **AD** A1 adapter | `serving_admission_authorized`, `_UnitAdmissionGate` | `admit_execution` if gate open | `admission_closed` or unauthorized unit | **Gate remains open** when drain+revoke hooks fail (F02) |
+| Inner delegate | **Apps** host runtime | N/A | Execute task | Only if admission chain succeeds | **Reached** when gate open + eligibility OK |
+
+**F02-POST-CLOSE-01 answers:**
+
+| # | Question | Result |
+|---|----------|--------|
+| 1 | Fresh request through current gates? | **Yes** — post-close HTTP returned **200** (not 502). |
+| 2 | Production resources released? | **Yes** — `lifecycle._process_closed is True`; production slot released (F02 path unchanged). |
+| 3 | Execution reaches inner delegate? | **Yes** — `inner_mock` invoked after failed close (qual patch on `_INNER_DELEGATE`). |
+| 4 | Prior admission authorization reusable? | **Yes** — `unit.admission.admission_closed() is False`; `serving_admission_authorized` remains effective on live unit. |
+| 5 | Independent fail-closed invariant? | **No** — no layer enforces “process closed ⇒ deny physical execution” when sanctioned drain+revoke both fail. |
+| 6 | Missing protection owner | **Apps** — execution admission wrapper + session-close contract completion; **AD** — physical drain/revoke ports (failed under test). |
+| 7 | HTTP guard duplicate authority? | **Would duplicate** if added at router — canonical deny belongs at **existing** `ColocatedServingUnitAdmissionTaskExecutionPort` / session-close fail-closed completion, not a second HTTP admission mechanism. |
+
+**Test:** `tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_post_close_01_execution_deny_after_dual_shutdown_failure`
+
+| Field | Value |
+|-------|-------|
+| Executed | **Yes** — operator resource policy satisfied (single process, ~15s, `-p no:xdist`) |
+| Exit code | **1** (assertion failure — safety property **not** met) |
+| Observed | `denied.status_code == 200` (expected **502**); inner delegate **called** |
+| Close errors | `ExceptionGroup` with drain + revoke messages preserved |
+| Test-boundary debt | Module **autouse** `_isolate_production_process_lifecycle_slot` (private slot read) **pre-existing**; F02-POST-CLOSE-01 does **not** add private-slot reset or new private access — uses public `session`, `app`, `TestClient` only |
+
+**F02 safety verdict:** **IN-SCOPE BLOCKER CONFIRMED** — dual shutdown failure can permit sanctioned execution after process lifecycle cleanup. A 502 from an accidental broken resource is **not** observed; the path is **successful execution**, not controlled denial.
+
+**Smallest admissible next action (no implementation in this task):** child **`PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-HARDENING`** — minimal product change at **Apps** owner: either (a) fail-closed admission deny when `StrictProductionServingSession.close` records dual drain+revoke failure before/alongside `close_process_resources`, or (b) `ColocatedServingUnitAdmissionTaskExecutionPort` denies when bound strict process lifecycle is closed — **one** mechanism, no HTTP duplicate. **STOP — ARCHITECTURE DECISION REQUIRED** only if (b) is deemed to change admission semantics vs lifecycle coupling; default recommendation is (a) completing session-close contract.
+
+Historical F02 limitations (§5.1, §C hub §E) **preserved**; Package D operator acceptance **not** claimed from this red test alone.
+
 ---
 
 ## 6. Operator dependencies (explicit)
@@ -233,24 +293,23 @@ HTTP execution stack:
 
 ## 10. Recommended next executable task
 
-1. **`PROD-Q-R1-R7-Q-C-DIM16-F02-POST-CLOSE-EXECUTION-DENY`** — single bounded pytest module extension (F02 fixture + post-close HTTP assert `502` / inner not called); if red, minimal fail-closed guard at `ColocatedServingUnitAdmissionTaskExecutionPort` or session-close contract per owner review — **production delta only if guard required**.
-2. In parallel (operator): Package B §3 capture + **PROD-Q-R1-PACKAGE-P** independent acceptance @ `AUDITED_HEAD`.
+1. **`PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-HARDENING`** — implement minimal guard per §5.5; re-run F02-POST-CLOSE-01 until green; **production delta only with owner-approved contract**.
+2. In parallel (operator): Package B §3 capture + **PROD-Q-R1-PACKAGE-P** independent acceptance.
 
-**Smallest evidence if implementation deferred:** one test as above — classified **EVIDENCE REQUIRED** (not executed in Package D).
+**Completed:** `PROD-Q-R1-R7-Q-C-DIM16-F02-POST-CLOSE-EXECUTION-DENY` — red qualification committed on `development` (FINAL_COMMIT in task report).
 
 ---
 
-## 11. Commands executed (this task)
+## 11. Commands executed (F02 child)
 
 ```text
 git branch --show-current
 git rev-parse HEAD
-git merge-base --is-ancestor b07b7f77b06dfa28213d2c992a60b8a86d3eeba3 HEAD
-git log --oneline 3df10b2a..b07b7f77
-git log --oneline 3937e939..b07b7f77 -- intergrax applications tests
+git merge-base --is-ancestor 63bbf46f77431708ab06c6756d9e9e95f19d1b27 HEAD
+uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_post_close_01_execution_deny_after_dual_shutdown_failure -q --tb=short
 ```
 
-**Pytest:** not executed (budget = 0).
+**Pytest:** **1** run — exit **1**, ~15s wall (see §5.5).
 
 ---
 

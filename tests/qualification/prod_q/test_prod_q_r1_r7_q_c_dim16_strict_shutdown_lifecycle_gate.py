@@ -462,6 +462,61 @@ def test_c_dim16_f02_drain_and_emergency_revocation_both_fail(
         _assert_production_slot_released()
 
 
+def test_c_dim16_f02_post_close_01_execution_deny_after_dual_shutdown_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """F02-POST-CLOSE-01 — after dual drain/revoke failure + lifecycle cleanup, HTTP must not execute."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim16-f02-post-close-01",
+    ) as fixture:
+        drain_fail = ColocatedServingAdmissionTopologyError("dim16-f02-post-close-drain-fail")
+        revoke_fail = ColocatedServingAdmissionTopologyError(
+            "dim16-f02-post-close-revoke-fail",
+        )
+        inner_mock = AsyncMock(return_value=_completed_task_result())
+        with patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "begin_colocated_serving_execution_drain_on_strict_session_close"
+            ),
+            side_effect=drain_fail,
+        ), patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close"
+            ),
+            side_effect=revoke_fail,
+        ), patch(_INNER_DELEGATE, inner_mock):
+            with TestClient(fixture.app) as client:
+                before = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
+                assert before.status_code == 200
+                assert inner_mock.call_count == 1
+                inner_mock.reset_mock()
+                with pytest.raises(ExceptionGroup) as exc_info:
+                    fixture.session.close()
+                errors = exc_info.value.exceptions
+                assert len(errors) == 2
+                assert "dim16-f02-post-close-drain-fail" in str(errors[0])
+                assert "dim16-f02-post-close-revoke-fail" in str(errors[1])
+                unit = fixture.adapter._units[fixture.unit_ref]
+                assert unit.admission.admission_closed() is False
+                assert fixture.session.lifecycle._process_closed is True
+                denied = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
+        assert denied.status_code == 502
+        inner_mock.assert_not_called()
+
+
 def test_c_dim16_f03_drain_revoke_and_cleanup_all_fail(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
