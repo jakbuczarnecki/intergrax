@@ -152,6 +152,17 @@
 | **Negative evidence** | **R01–R12**; **R06** = **H01–H08** (historical) |
 | **Pytest** | Bounded **R09–R12**: **4 passed**, exit **0**, ~16s (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R4/pytest-r09-r12.log`); **no** full module replay |
 
+### 5.7 Corrective (PROD-Q-R1-STRICT-HTTP-R1-R5)
+
+| Item | Detail |
+|------|--------|
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `a95005bab264f2a8af396d9d425033733671a511`) |
+| **START_HEAD** | `a9a189f1899af1f05ea96f8cf3b4c6065760c405` |
+| **Finding** | **P05** — `ExceptionGroup` received `BaseException` members (`KeyboardInterrupt` / other non-`Exception` fatals) in dual-failure unwind |
+| **Fix** | Type-correct qualification lifespan policy: `Exception` aggregation only; fatal `BaseException` propagates without completion record; **R13** negative (fake `TestClient`) |
+| **Negative evidence** | **R01–R13**; **R06** = **H01–H08** (historical) |
+| **Pytest** | Bounded **R13**: **1 passed**, exit **0**, ~15s (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R5/pytest-r13.log`); **no** full module replay |
+
 ---
 
 ## 6. Enterprise audit (@ AUDITED_HEAD)
@@ -195,7 +206,7 @@
 
 | Item | Value |
 |------|-------|
-| Pytest replay | STRICT-HTTP-R1-R4 @ bounded **R09–R12** — **4 passed**, exit **0**, ~16s (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R4/pytest-r09-r12.log`); historical STRICT-HTTP-R1-R1 **16/16** and prior replays preserved |
+| Pytest replay | STRICT-HTTP-R1-R5 @ bounded **R13** — **1 passed**, exit **0**, ~15s (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R5/pytest-r13.log`); historical STRICT-HTTP-R1-R4 **R09–R12** and prior replays preserved |
 | Residual processes | **none** (no `uv` test invocation) |
 
 Historical logs: `.tmp/session/PROD-Q-R1-PIS-STRICT-EXTERNAL-WORK-QUALIFICATION/pytest-full.log`, `.tmp/session/PROD-Q-R1-STRICT-HTTP-INVOCATION-IDENTITY-QUALIFICATION/pytest.log`.

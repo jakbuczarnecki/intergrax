@@ -43,6 +43,7 @@ from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store i
     SQLiteProviderInvocationStore,
 )
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import repo_root
+from tests.qualification.prod_q import _prod_q_strict_http_invocation_identity_support as _strict_http_support
 from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
     assert_no_leaked_owned_strict_http_invocation_sessions,
     build_sanctioned_external_work_runtime,
@@ -692,3 +693,39 @@ def test_r12_asgi_lifespan_body_and_shutdown_failure_preserves_both_without_comp
         fixture.session,
     )
     assert owned_strict_http_invocation_session_registration_count() == 1
+
+
+def test_r13_asgi_lifespan_fatal_shutdown_propagates_without_invalid_exception_group(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-r13-lifespan-fatal-shutdown",
+    )
+
+    class _FakeTestClient:
+        def __init__(self, _app: object) -> None:
+            pass
+
+        def __enter__(self) -> object:
+            return object()
+
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_val: BaseException | None,
+            exc_tb: object,
+        ) -> bool:
+            if exc_type is None:
+                raise KeyboardInterrupt("r13 fatal shutdown during unwind")
+            return False
+
+    monkeypatch.setattr(_strict_http_support, "TestClient", _FakeTestClient)
+    with pytest.raises(KeyboardInterrupt, match="r13 fatal shutdown"):
+        with strict_http_qualification_asgi_lifespan(fixture):
+            raise ValueError("r13 body failed")
+    assert not owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )

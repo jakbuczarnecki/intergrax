@@ -307,3 +307,48 @@ uv run pytest -p no:xdist \
 
 - Completion record still means **successful public `TestClient` / ASGI context exit** only — not merely entering `finally`.
 - **R1-R3** limitation “body exception → no record” — **superseded** for successful-shutdown path (**R11**).
+
+---
+
+## 14. Corrective lineage — PROD-Q-R1-STRICT-HTTP-R1-R5
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-STRICT-HTTP-R1-R5** |
+| **Parent** | **PROD-Q-R1-STRICT-HTTP-R1** |
+| **START_HEAD** | `a9a189f1899af1f05ea96f8cf3b4c6065760c405` |
+| **FINAL_COMMIT** | `a95005bab264f2a8af396d9d425033733671a511` |
+| **Production delta** | **0** |
+
+### Root cause
+
+| ID | Issue | Correction |
+|----|-------|------------|
+| **P05** | `strict_http_qualification_asgi_lifespan` aggregated `BaseException` members into `ExceptionGroup`, which accepts only `Exception` — fatal shutdown/body paths could raise `TypeError` and mask real failures | Track body failures as `Exception` only; re-raise non-`Exception` `BaseException` without aggregation or completion bookkeeping |
+
+### Exception-path matrix (qualification ASGI lifespan)
+
+| Body | Shutdown | Completion record | Propagated error |
+|------|----------|-------------------|------------------|
+| OK | OK | **Yes** | — |
+| `Exception` | OK | **Yes** | Original body exception |
+| OK | `Exception` | **No** | Shutdown exception |
+| `Exception` | `Exception` | **No** | `ExceptionGroup` (body + shutdown) |
+| Fatal `BaseException` | — | **No** | Fatal propagates (no `ExceptionGroup`) |
+| `Exception` | Fatal `BaseException` | **No** | Fatal propagates (no `ExceptionGroup`) |
+| Session not owned | — | **No close/reset via this helper** | unchanged |
+
+### Regression tests (R01–R13)
+
+| ID | Intent |
+|----|--------|
+| **R01–R12** | Unchanged intent (R1-R4) |
+| **R13** | Body `Exception` + fatal shutdown during `TestClient` unwind → `KeyboardInterrupt` propagates; **no** completion record; **no** invalid `ExceptionGroup` / `TypeError` (fake `TestClient` — no full ASGI replay) |
+
+### Bounded pytest (@ R1-R5 agent session)
+
+| Selection | Result | Log |
+|-----------|--------|-----|
+| `::test_r13_asgi_lifespan_fatal_shutdown_propagates_without_invalid_exception_group` | **1 passed**, exit **0**, ~15s | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R5/pytest-r13.log` |
+
+**Not executed @ R1-R5:** full module run or **R09–R12** replay (operator authorization / task budget).
