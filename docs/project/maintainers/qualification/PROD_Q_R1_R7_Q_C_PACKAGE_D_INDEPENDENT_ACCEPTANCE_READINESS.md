@@ -10,7 +10,7 @@
 | **Branch** | `development` |
 | **VERIFIED_BASELINE** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
 | **START_HEAD (this task)** | `9d6337ae232c64b484ce097c607df54c2de77596` |
-| **FINAL_COMMIT** | *(set @ push — evidence gate)* |
+| **FINAL_COMMIT** | `a3af292786d92f4195ac0e453b07310a7d0283ff` |
 | **PRODUCTION_IMPLEMENTATION_SHA** | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` (`DIM16-F02: fail-closed physical admission on strict session close`) |
 | **AUDITED_HEAD (prior Package D)** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
 | **F02 hardening ADR** | [`PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md`](PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md) **R1** |
