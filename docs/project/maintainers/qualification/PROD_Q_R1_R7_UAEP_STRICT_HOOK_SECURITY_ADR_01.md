@@ -397,7 +397,7 @@ uv run pytest -p no:xdist -q \
 | Item | Value |
 |------|-------|
 | **START_HEAD** | `84c1e550fd847ba9e19bcc87742ca086e888bf2a` |
-| **FINAL_COMMIT** | *(set at push — see D3 reconciliation § IMPL-01)* |
+| **FINAL_COMMIT** | `dbf1c3596c90146e3819ad17e0dc9b0c3c4664d7` |
 | **B1** | `uaep_executor.py` — `LlmInferenceHookPayload` + `MiddlewareExecutionSubjectFacet` at `BEFORE_CONTEXT_BUILD` |
 | **B2** | `hook_runtime_guard.py` — omit `phase=ctx.phase`; `source_execution_phase` in payload |
 | **Harness** | `canonical_agent_lifecycle_composition.py` — removed stage-15 `prompt_defense_enabled=False` workaround |
