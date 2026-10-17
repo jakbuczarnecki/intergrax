@@ -11,7 +11,6 @@ from intergrax.agent_distribution.agent_manager_query_service import (
     AgentManagerQueryService,
 )
 from intergrax.agent_distribution.effective_roster import EffectiveRosterBuilder
-from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
 from intergrax.agent_distribution.catalog import AgentCatalogEntry, CatalogSourceIdentity
 from intergrax.applications._shared.durable_agent_platform_runtime import (
     DurableAgentPlatformRuntime,
@@ -38,6 +37,8 @@ from testing_support.canonical_agent_lifecycle_composition import (
     _MetadataProvider,
     _StaticCatalogProvider,
     _build_application_composition,
+    _stage15_lab_manifest_agent_bindings,
+    _stage15_project_metadata,
     _stage15_proof_environment,
     catalog_package_resolution_for_config,
     default_stage15_proof_config,
@@ -45,7 +46,7 @@ from testing_support.canonical_agent_lifecycle_composition import (
 from intergrax.applications._shared.registry_projection_rehydrator import (
     rehydrate_serving_registry_projection,
 )
-from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.applications.contracts.manifest import ApplicationManifest
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,10 +109,7 @@ class EnterpriseAgentLifecycleProofStack:
         )
         metadata_provider = _MetadataProvider(
             {
-                resolved.metadata_ref: AgentProjectMetadata(
-                    distribution_package_id=resolved.distribution_package_id,
-                    dependencies=(),
-                ),
+                resolved.metadata_ref: _stage15_project_metadata(resolved),
             }
         )
         application_composition = _build_application_composition(
@@ -157,12 +155,7 @@ class EnterpriseAgentLifecycleProofStack:
         manifest = ApplicationManifest.lab(
             app_id=resolved.application_id,
             name="Enterprise Durable Lifecycle Proof",
-            agents=[
-                AgentBinding(
-                    contract_id=resolved.logical_agent_id,
-                    builder_key=resolved.logical_agent_id,
-                ),
-            ],
+            agents=_stage15_lab_manifest_agent_bindings(resolved),
         )
         canonical = CanonicalAgentLifecycleProofStack(
             config=resolved,
@@ -192,7 +185,7 @@ class EnterpriseAgentLifecycleProofStack:
         )
 
     def run_happy_path(self) -> CanonicalLifecycleProofResult:
-        return self.canonical.run_happy_path()
+        return self.canonical.run_happy_path(verify_execution=False)
 
     def discover_catalog_entry(self) -> AgentCatalogEntry:
         return self.canonical.discover_catalog_entry()

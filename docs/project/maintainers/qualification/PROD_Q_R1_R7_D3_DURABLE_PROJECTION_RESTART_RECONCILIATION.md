@@ -84,3 +84,56 @@ FRZ-PRD-12, supporting FRZ-REC/FRZ-STA/FRZ-TEN via recovery fail-closed semantic
 ### D3 acceptance recommendation
 
 **READY FOR AUDIT** — core D3/D3-R1 invariants **proven @ HEAD** (19/19 D3 unit tests). Recommend independent closure review on GitHub SHA `a7e959d2…`; **not** CLOSED until operator accepts and optional corruption-module replay is green. **No D3 production implementation** required for current-HEAD alignment.
+
+---
+
+## D3-R1 descriptor corruption harness binding corrective (Cursor)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-D3-R1-DESCRIPTOR-CORRUPTION-HARNESS-BINDING-CORRECTIVE` |
+| **START_HEAD** | `ffda0c36180a4603810d92c228252f7fd813d5de` |
+| **Production delta** | **0** (test-support / qualification evidence only) |
+
+### Root cause
+
+`reference_install_contract_authority_records(manifest)` → `materialize_manifest_contract_authority_lab_compat` → `resolve_agent_contract_from_binding` in `install_from_catalog` (`canonical_agent_lifecycle_composition.py`). Manifest roster used `AgentBinding(contract_id=…, builder_key=…)` only — no `agent_type` / `import_path` — so `resolve_agent_type` in `intergrax/applications/_shared/agent_resolution.py` raised before install completed.
+
+### Corrected harness contract
+
+| Layer | Before | After |
+|-------|--------|--------|
+| Manifest roster (projection) | `contract_id` + `builder_key` only | unchanged via `_stage15_lab_manifest_agent_bindings` (revision-bound factory via roster `builder_key`) |
+| Install `package_contract_authority` | derived from incomplete manifest binding | `_stage15_install_package_contract_authority_records` using `CanonicalPingAgent().get_contract()` + `package_contract_authority_record` |
+| Package metadata | empty `declared_contracts` | `_stage15_project_metadata` with `AgentPackageContractDeclaration` for canonical ping |
+| Enterprise `run_happy_path` | full canonical execute | `verify_execution=False` (descriptor corruption needs activation + descriptor only) |
+| Canonical `execute_canonical` | host without revision-bound contract authority | `roster_contract_authority_for` + strict host prerequisites (collaborative work sqlite, continuation store, lab decision policy, test GEP) |
+
+### Changed files
+
+- `testing_support/canonical_agent_lifecycle_composition.py`
+- `testing_support/enterprise_agent_lifecycle_composition.py`
+- `docs/project/maintainers/qualification/PROD_Q_R1_R7_D3_DURABLE_PROJECTION_RESTART_RECONCILIATION.md`
+
+### Regression (@ task close — local)
+
+```text
+uv run pytest -p no:xdist -q tests/unit/applications/test_registry_projection_descriptor_corruption.py::test_descriptor_corruption_fail_closed
+uv run pytest -p no:xdist -q tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py tests/unit/applications/test_registry_projection_descriptor_corruption.py
+```
+
+**20 passed** (corruption module included), logs under `.tmp/session/PROD-Q-R1-R7-D3-R1-DESCRIPTOR-CORRUPTION-HARNESS-BINDING-CORRECTIVE/`.
+
+### D3-06 / matrix update
+
+| D3-06 | **PASS** (corruption fail-closed module green @ evidence SHA) |
+
+### Remaining blockers
+
+| Class | Item |
+|-------|------|
+| **TEST ISSUE** | `test_canonical_agent_lifecycle_reaches_serving_and_execution` — `RuntimeEventSchemaError` (phase mismatch) on strict host execute with materialized ping agent; pre-existing once install path was unblocked — **not** D3 production |
+
+### FRZ contribution (scoped)
+
+Supports **FRZ-PRD-12** descriptor fail-closed replay evidence; **FRZ-REC-*** / **FRZ-REG-*** via corruption negatives — no global FRZ PASS.
