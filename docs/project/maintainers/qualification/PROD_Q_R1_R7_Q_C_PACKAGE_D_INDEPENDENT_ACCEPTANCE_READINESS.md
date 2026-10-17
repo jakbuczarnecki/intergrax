@@ -3,19 +3,20 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **READY FOR AUDIT** — closed-world independent acceptance-readiness audit; **does not** close **PROD-Q-R1-R7-Q**, **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q**, **DIM16**, or promote any global **FRZ-*** row |
-| **Task** | `PROD-Q-R1-R7-Q-C-DIM16-POST-HARDENING-ACCEPTANCE-RECONCILIATION` (reconciles prior Package D @ `b07b7f77…`) |
-| **Prior task** | `PROD-Q-R1-R7-Q-C-PACKAGE-D-INDEPENDENT-ACCEPTANCE-READINESS` |
+| **Task** | `PROD-Q-R1-R7-Q-C-DIM16-FINAL-ACCEPTANCE-EVIDENCE-GATE` (supersedes reconciliation record for F02-05/F02-09 evidence) |
+| **Prior tasks** | `PROD-Q-R1-R7-Q-C-DIM16-POST-HARDENING-ACCEPTANCE-RECONCILIATION` @ `9d6337ae…`; Package D readiness @ `b07b7f77…` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Program** | **PROD-Q** — **OPEN / BLOCKED** (children) |
 | **Branch** | `development` |
 | **VERIFIED_BASELINE** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
-| **START_HEAD (this task)** | `b4e329d121dcfdc81e4ad7899414fc9b4047605b` |
+| **START_HEAD (this task)** | `9d6337ae232c64b484ce097c607df54c2de77596` |
+| **FINAL_COMMIT** | *(set @ push — evidence gate)* |
 | **PRODUCTION_IMPLEMENTATION_SHA** | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` (`DIM16-F02: fail-closed physical admission on strict session close`) |
 | **AUDITED_HEAD (prior Package D)** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
 | **F02 hardening ADR** | [`PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md`](PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md) **R1** |
 | **F02-POST-CLOSE lineage** | Red: `PROD-Q-R1-R7-Q-C-DIM16-F02-POST-CLOSE-EXECUTION-DENY` @ pre-impl; green @ `4aeb585ea…` — §5.5–§5.6 |
-| **Production delta (reconciliation)** | **0** — documentation only (`4aeb585ea…`→`HEAD` strict graph unchanged) |
-| **Test execution (reconciliation)** | **1** module pytest @ `HEAD` — §11 |
+| **Production delta (this task)** | **0** — qualification tests + evidence docs only |
+| **Test execution (this task)** | New F02-05/F02-09 node IDs @ `FINAL_COMMIT` — §11 |
 
 **Disposition rule:** Executable §C evidence @ cited SHAs **≠** operator acceptance. Historical **P1 / P2 / P3 / E.1 / D1–D4 CLOSED** rows are background only. This record **does not** relabel documentary reconciliation as production acceptance.
 
@@ -34,7 +35,7 @@
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
 | **Mandatory order (R7-Q §C)** | Integrated evidence executed → Packages B/C evidence → **Package D** (this) → operator profiles (**DIM6**, **DIM17**) → **PROD-Q-R1** Package P acceptance (**DIM20**) → parent rollup — **order preserved** |
 | **Accepted prerequisites (reusable, not R7-Q PASS)** | P1/P2/P3/E.1 operator-closed waves @ cited SHAs; §C hub @ `93c17a95…`; Package B/C **READY FOR AUDIT** |
-| **Blockers retained** | DIM6/DIM17 operator profiles; **DIM16/F02-05 / F02-09 — NOT PROVEN** @ evidence depth (§5.7); **DIM16/F02 open-gate — mitigated @ impl SHA, independent audit pending** (§5.6); DIM20 parent Package P; D2/D3 independent acceptance (parallel program debt) |
+| **Blockers retained** | DIM6/DIM17 operator profiles; **DIM16/F02-09** post-drain **new strict session reopen** — **PARTIAL** (§5.7); **DIM16 independent audit** @ `4aeb585ea…` + this gate; DIM20 parent Package P; D2/D3 independent acceptance (parallel program debt) |
 | **Applicable FRZ** | Contribution-only mapping §8 — **new global FRZ PASS = 0** |
 | **HEAD drift (strict production product graph)** | **None** between `4aeb585ea…` (F02 impl) and reconciliation `HEAD`; only doc alignment `b4e329d12` after impl — **production delta 0** |
 
@@ -237,16 +238,16 @@ HTTP POST (GCA strict ASGI)
 | F02-02 | **PASS (scoped)** | `test_c_dim16_04` |
 | F02-03 | **PASS (scoped)** | `test_c_dim16_f02_drain_and_emergency_revocation_both_fail` — gate closed post-impl |
 | F02-04 | **PASS (scoped)** | `test_c_dim16_f02_post_close_01_*` — replay @ §5.6 |
-| F02-05 | **NOT PROVEN** | Static: `_UnitAdmissionGate` lock serializes `admit_execution` vs `begin_drain`; D1-R6-R4 concurrent gate tests; **no** strict-session concurrent HTTP+`close()` behavioral proof |
+| F02-05 | **PASS (scoped, newly executed)** | `test_c_dim16_f02_05_*` @ `FINAL_COMMIT` — Ordering A: in-flight + concurrent `close()`; Ordering B: post-close HTTP **502**; gate `admission_closed()`; `_UnitAdmissionGate` lock @ `venv_bundle_colocated_runtime_deployment_adapter.py` |
 | F02-06 | **PASS (scoped)** | `test_c_dim16_02` in-flight + drain; `release_execution` / `check_drain` |
 | F02-07 | **PASS (scoped)** | `test_c_dim16_f03_*` asserts `admission_closed() is True` after triple failure |
 | F02-08 | **PASS (scoped)** | `test_c_dim16_07`, `test_c_dim16_08` |
-| F02-09 | **NOT PROVEN** | DIM10/P2 identity continuity + DIM14 stale READY @ §C SHAs — **no** dedicated post-close new-session stale-auth negative in dim16 |
+| F02-09 | **PARTIAL** | **PASS (scoped):** `test_c_dim16_f02_09_*` @ `FINAL_COMMIT` — strict `close()` → stale handoff direct admit + stale ASGI HTTP denied; pre-close HTTP **200**. **NOT PROVEN:** immediate `open_strict_production_serving_session` after drain-close (unit `DRAINING` / attestation `unit_not_live`) — reuse **DIM13-02/03** + **DIM14-03/04** for sanctioned recovery epoch; does **not** block F02-09 stale-authority slice |
 | F02-10 | **PASS (scoped)** | `test_c_dim16_f06` |
 | F02-11 | **PASS (scoped)** | P3-A / DIM8 lineage — relevance @ `HEAD` unchanged |
 | F02-12 | **PASS (scoped)** | F02/F03 ExceptionGroup preservation |
 | F02-13 | **PASS (static)** | Single AD physical gate + Apps close CO — no second HTTP admission owner |
-| F02-14 | **PARTIAL** | `RuntimeDeploymentAdapter.close_serving_unit_execution_admission` on Protocol; `isinstance` drain helpers remain on `VenvBundleColocatedRuntimeDeploymentAdapter` |
+| F02-14 | **PARTIAL — TRACKED FREEZE DEBT (C)** | **Authoritative deny:** `close_serving_unit_execution_admission` on `RuntimeDeploymentAdapter` @ ADR R1. **Residual:** `isinstance(VenvBundleColocatedRuntimeDeploymentAdapter)` in revision-dependent drain/revoke helpers (`colocated_serving_runtime_composition.py`) — **accepted strict-colocated topology constraint** per parent ADR DEC-09 + F02 ADR R1 §3; **not** a DIM16 parent blocker; future **EBH-5 / FRZ-RPL-*** without redesigning admission authority |
 | F02-15 | **PASS (scoped)** | Module @ `4aeb585ea…` + reconciliation replay @ `HEAD` |
 
 ---
@@ -286,12 +287,12 @@ HTTP POST (GCA strict ASGI)
 | Exact-SHA execution provenance | **PASS** | DIM16 module replay @ `HEAD` (§11); §C @ `93c17a95…` not re-run |
 | Evidence relevance @ current HEAD | **PASS** | `4aeb585ea…`→`HEAD` production delta **0** |
 | Contract behavior vs implementation | **PASS** (scoped F02) | ADR R1 close ordering matches launcher @ `4aeb585ea…` |
-| Negative tests | **PARTIAL** | F02 POST-CLOSE green; **F02-05** concurrent strict-session gap |
+| Negative tests | **PASS** (scoped F02) | F02 POST-CLOSE green; **F02-05** behavioral @ `FINAL_COMMIT`; F02-09 stale handoff @ `FINAL_COMMIT` |
 | Ownership / layer boundaries | **PASS** | AD / Apps / Governance separation on exercised paths |
 | Sanctioned composition | **PASS** | Single strict launcher chain |
 | Strong typing | **PASS** (scoped) | Exercised §C paths + admission-close Protocol |
 | Governance ≠ Execution | **PARTIAL** | DIM6 prod policy not evidenced |
-| Fail-closed | **PARTIAL** | DIM9/14/15 strong; F02 mitigated; F02-05/09 open |
+| Fail-closed | **PASS** (scoped F02) | DIM9/14/15 + F02 mitigated; F02-05 proven; F02-09 stale slice proven |
 | Tenant isolation | **PASS** (scoped) | DIM8 |
 | Traceability / regression | **PASS** (scoped) | §C modules + E.1 lineage |
 
@@ -305,7 +306,7 @@ HTTP POST (GCA strict ASGI)
 |--------|----------------------|
 | **FRZ-PRD-03** | Scoped **PASS** via DIM2/9 §C — **not** DIM17 prod profile |
 | **FRZ-PRD-04** | Scoped **PASS** via DIM10/13 §C |
-| **FRZ-PRD-05** | **OPEN / PARTIAL** — DIM16 positives + F02 mitigated @ `4aeb585ea…`; F02-05/09 gaps |
+| **FRZ-PRD-05** | **OPEN / PARTIAL** — DIM16 F02-05/F02-09 stale slice @ `FINAL_COMMIT`; independent audit pending |
 | **FRZ-PRD-07** | Scoped **PASS** via DIM18/19 + P1/Package C |
 | **FRZ-PRD-08** | Scoped **PASS** via DIM7/11/15 §C + Package P partial (DIM20) |
 | **FRZ-PRD-09** | Scoped **PASS** via DIM3/14 §C |
@@ -314,7 +315,7 @@ HTTP POST (GCA strict ASGI)
 | **FRZ-TEN-*** | Scoped contribution via DIM8 — no global promotion |
 | **FRZ-GOV-*** | **No PASS** — DIM6 open |
 | **FRZ-REL-*** | Package P slice only — parent open |
-| **FRZ-REG-02/03/09** | **PARTIAL** — REG-03 contribution via dim16 @ `HEAD`; F02-05 not proven |
+| **FRZ-REG-02/03/09** | **PARTIAL** — REG-03 contribution via dim16 @ `FINAL_COMMIT`; F02-05 executed |
 | **new global FRZ PASS** | **0** |
 
 ---
@@ -323,14 +324,13 @@ HTTP POST (GCA strict ASGI)
 
 | Order | Blocker | Class |
 |-------|---------|-------|
-| 1 | **DIM16/F02-05** concurrent shutdown/request | **NOT PROVEN** — optional future qual or operator acceptance of static+D1-R6-R4 lineage |
-| 2 | **DIM16/F02-09** stale authorization on new session | **NOT PROVEN** — owner: P2/DIM14 continuity evidence depth |
-| 3 | **DIM16** independent audit of `4aeb585ea…` | Process — **READY FOR AUDIT** |
-| 4 | **DIM6** operator production mutation policy | **ENVIRONMENT — EVIDENCE REQUIRED** |
-| 5 | **DIM17** operator production credentials/topology | **ENVIRONMENT — EVIDENCE REQUIRED** |
-| 6 | **DIM20** / **PROD-Q-R1** Package P independent acceptance | **PARENT DEPENDENCY** |
-| 7 | Operator sign-off on §C rollup (dims 2,3,7–15,18,19,21) | Process |
-| 8 | D2/D3 independent acceptance | Parallel program debt |
+| 1 | **DIM16/F02-09** post-drain immediate strict reopen | **TRACKED FREEZE DEBT** — recovery via DIM13/DIM14; not stale-handoff blocker |
+| 2 | **DIM16** independent audit of `4aeb585ea…` + F02-05/09 @ `FINAL_COMMIT` | Process — **READY FOR AUDIT** |
+| 3 | **DIM6** operator production mutation policy | **ENVIRONMENT — EVIDENCE REQUIRED** |
+| 4 | **DIM17** operator production credentials/topology | **ENVIRONMENT — EVIDENCE REQUIRED** |
+| 5 | **DIM20** / **PROD-Q-R1** Package P independent acceptance | **PARENT DEPENDENCY** |
+| 6 | Operator sign-off on §C rollup (dims 2,3,7–15,18,19,21) | Process |
+| 7 | D2/D3 independent acceptance | Parallel program debt |
 
 **Package D operator acceptance eligibility:** **Conditional** — rollup dims 2,3,7–15,18,19,21 remain **ELIGIBLE FOR OPERATOR ACCEPTANCE** @ §C depth; **DIM16** remains **PARTIAL**; **not** eligible to claim **R7-Q QUALIFIED** without B, P, process gates.
 
@@ -338,27 +338,27 @@ HTTP POST (GCA strict ASGI)
 
 ## 10. Recommended next executable task
 
-1. **Operator independent audit** — DIM16 @ `4aeb585ea…` + this reconciliation record @ `FINAL_COMMIT`.
-2. Optional bounded qual: **F02-05** strict-session concurrent negative (only if operator requires behavioral proof).
-3. In parallel (operator): Package B §3 capture + **PROD-Q-R1-PACKAGE-P** independent acceptance.
+1. **Operator independent audit** — DIM16 @ `4aeb585ea…` + this evidence gate @ `FINAL_COMMIT`.
+2. In parallel (operator): Package B §3 capture + **PROD-Q-R1-PACKAGE-P** independent acceptance.
 
-**Completed:** `PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-HARDENING` @ `4aeb585ea…`; `PROD-Q-R1-R7-Q-C-DIM16-POST-HARDENING-ACCEPTANCE-RECONCILIATION` (this task).
+**Completed:** `PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-HARDENING` @ `4aeb585ea…`; `PROD-Q-R1-R7-Q-C-DIM16-FINAL-ACCEPTANCE-EVIDENCE-GATE` (this task).
 
 ---
 
-## 11. Commands executed (reconciliation @ `HEAD`)
+## 11. Commands executed (evidence gate @ `FINAL_COMMIT`)
 
 ```text
 git branch --show-current
 git rev-parse HEAD
-git fetch origin development
+git merge-base --is-ancestor 9d6337ae232c64b484ce097c607df54c2de77596 HEAD
 git merge-base --is-ancestor 4aeb585ea83b076a17d065d1febfb18b9b2caca4 HEAD
-git merge-base --is-ancestor b4e329d121dcfdc81e4ad7899414fc9b4047605b HEAD
-git diff 4aeb585ea83b076a17d065d1febfb18b9b2caca4..HEAD --stat -- intergrax/applications intergrax/agent_distribution applications
-uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py -q --tb=line
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_05_concurrent_shutdown_and_physical_admission_serialization \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_09_new_strict_session_rejects_stale_handoff_execution_authorization \
+  -q --tb=line
 ```
 
-**Pytest:** **1** run — **15 passed**, ~27s wall, exit **0** (log: `.tmp/session/DIM16-POST-HARDENING-RECON/pytest-dim16.log`).
+**Pytest:** **1** run — **3 passed** (F02-05 parametrized ×2 + F02-09), ~18s wall, exit **0** (log: `.tmp/session/DIM16-FINAL-ACCEPTANCE-EVIDENCE-GATE/pytest-new-f02.log`).
 
 ---
 

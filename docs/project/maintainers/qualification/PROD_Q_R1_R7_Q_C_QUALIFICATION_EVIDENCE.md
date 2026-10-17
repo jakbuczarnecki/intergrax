@@ -169,7 +169,7 @@ Properties are **proved** only where §C execution or cited prior wave applies @
 
 ## E. DIM16 qualification limitations
 
-Executed @ `SOURCE_EVIDENCE_SHA` in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` (15 tests @ F02 impl candidate SHA).
+Executed in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` — **18** node IDs @ F02 evidence gate `FINAL_COMMIT` (15 baseline + F02-05 ×2 + F02-09); production impl @ `4aeb585ea…`.
 
 | Topic | Recorded behavior |
 |-------|-----------------|
@@ -191,7 +191,10 @@ Post-F02 implementation: authoritative deny precedes revision-dependent drain he
 | Classification | Verdict |
 |----------------|---------|
 | **IN-SCOPE BLOCKER** (F02 open-gate / POST-CLOSE) @ pre-impl SHA | **Mitigated @ `4aeb585ea…`** — reconciliation replay **15 passed** @ `b4e329d12…` (§ Package D §5.6); **READY FOR AUDIT**, not CLOSED |
-| Recommended disposition | **SCOPED ACCEPTANCE CANDIDATE** pending independent audit; **F02-05/09** remain **NOT PROVEN**; **F02-07** satisfied by `test_c_dim16_f03` gate assertion |
+| **F02-05 concurrent shutdown vs admission** | `test_c_dim16_f02_05_*` — **PASS (newly executed @ FINAL_COMMIT)** |
+| **F02-09 stale handoff after strict close** | `test_c_dim16_f02_09_*` — **PASS (scoped)**; post-drain immediate reopen — **NOT PROVEN** (DIM13/DIM14 recovery lineage) |
+| **F02-14 replaceability** | **PARTIAL — TRACKED FREEZE DEBT (C)** — protocol admission-close; residual `isinstance` on drain helpers |
+| Recommended disposition | **SCOPED ACCEPTANCE CANDIDATE** pending independent audit; **F02-07** @ `test_c_dim16_f03` |
 
 ---
 
