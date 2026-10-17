@@ -49,6 +49,7 @@ from governed_contractor_application.host.governed_contractor_host_runtime_compo
     compose_governed_contractor_host_runtime,
 )
 from intergrax.applications._shared.strict_production_serving_launcher import (
+    StrictProductionServingLauncherError,
     StrictProductionServingSession,
 )
 from intergrax.contracts.external_work_provider_capabilities import (
@@ -87,6 +88,46 @@ _QUAL_PRINCIPAL: Final = "http-inv-qual-principal"
 _QUAL_PROVIDER: Final = "gec3_deterministic_fake"
 _QUAL_SCOPE_DIGEST: Final = "sha256:" + ("aa" * 32)
 _QUAL_T0: Final = datetime(2026, 10, 16, 12, 0, 0, tzinfo=timezone.utc)
+
+_owned_strict_http_invocation_sessions: list[StrictProductionServingSession] = []
+
+
+def register_owned_strict_http_invocation_session(
+    session: StrictProductionServingSession,
+) -> None:
+    """Track one strict serving session opened by qualification fixtures for teardown."""
+    _owned_strict_http_invocation_sessions.append(session)
+
+
+def assert_no_leaked_owned_strict_http_invocation_sessions() -> None:
+    if _owned_strict_http_invocation_sessions:
+        raise AssertionError(
+            "owned strict HTTP invocation qualification session leaked from a prior test; "
+            "close via StrictProductionServingSession.close() before the next test",
+        )
+
+
+def close_registered_owned_strict_http_invocation_sessions() -> None:
+    """Close owned sessions in reverse open order using the public session contract."""
+    errors: list[BaseException] = []
+    while _owned_strict_http_invocation_sessions:
+        session = _owned_strict_http_invocation_sessions.pop()
+        try:
+            session.close()
+        except StrictProductionServingLauncherError as exc:
+            if "already closed" in str(exc):
+                continue
+            errors.append(exc)
+        except BaseException as exc:
+            errors.append(exc)
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        first = errors[0]
+        raise ExceptionGroup(
+            "owned strict HTTP invocation qualification session close failed",
+            errors,
+        ) from first
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,6 +269,7 @@ def build_strict_http_invocation_qual_fixture(
         environment=d4._ac3_environment(),
         revision_id=revision_id,
     )
+    register_owned_strict_http_invocation_session(session)
     assert session.readiness.ready_for_traffic is True
 
     env = session.environment
@@ -372,8 +414,11 @@ def execute_sanctioned_create_with_invocation(
 
 __all__ = [
     "StrictHttpInvocationQualFixture",
+    "assert_no_leaked_owned_strict_http_invocation_sessions",
+    "close_registered_owned_strict_http_invocation_sessions",
     "build_sanctioned_external_work_runtime",
     "build_strict_http_invocation_qual_fixture",
+    "register_owned_strict_http_invocation_session",
     "execute_sanctioned_create_with_invocation",
     "external_work_adapter_metadata",
     "external_work_http_metadata",

@@ -38,8 +38,10 @@ from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store i
 )
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import repo_root
 from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+    assert_no_leaked_owned_strict_http_invocation_sessions,
     build_sanctioned_external_work_runtime,
     build_strict_http_invocation_qual_fixture,
+    close_registered_owned_strict_http_invocation_sessions,
     execute_sanctioned_create_with_invocation,
     external_work_adapter_metadata,
     external_work_http_metadata,
@@ -87,16 +89,10 @@ _EXPECTED_START_HEAD: Final = "e5e5d326184b23d3eb93786e60db7a4c2154499d"
 
 
 @pytest.fixture(autouse=True)
-def _isolate_production_process_lifecycle_slot() -> None:
-    from intergrax.applications._shared import production_process_lifecycle as ppl
-
-    active = ppl._active_production_process_lifecycle
-    if active is not None and not active._process_closed:
-        active.close_process_resources()
+def _owned_strict_http_invocation_session_lifecycle() -> None:
+    assert_no_leaked_owned_strict_http_invocation_sessions()
     yield
-    active_after = ppl._active_production_process_lifecycle
-    if active_after is not None and not active_after._process_closed:
-        active_after.close_process_resources()
+    close_registered_owned_strict_http_invocation_sessions()
 
 
 def test_g00_qualification_baseline_ancestor() -> None:

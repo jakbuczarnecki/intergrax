@@ -66,7 +66,7 @@
 | **H05** | Tenant HTTP deny + PIS isolation | P3-A2 + PIS | tenant on metadata + store keys | `cb276479…` | `cb276479…` | `test_h05_*` | **YES** | Ready for independent audit | Package P slice only | Test-boundary blocker |
 | **H06–H08** | Conflict, concurrency, session wiring | Gate + session | PIS + strict session | `cb276479…` | `cb276479…` | `test_h06_*`…`test_h08_*` | **YES** | Ready for independent audit | — | Test-boundary blocker |
 | **IG-F01** | Strict composition repeat dispatch negative | GCA composition | `build_governed_external_work_*` | P3-F / DISPATCH chain | static (P3-F) | `test_prod_q_r1_r7_q_p3_f_strict_repeat_dispatch_negative.py` | **YES** | Operator accepted within P3 wave (scoped) | Not HTTP-integrated duplicate dispatch | — |
-| **DIM20** | R7-Q parent PIS / strict external-work dependency | **PROD-Q-R1** | Package P rollup | this reconciliation | AUDITED_HEAD | matrix above | **YES** | **Ready for independent audit** (evidence slice) | Cannot **PASS** until Package P test-boundary blocker cleared + operator acceptance | **IN-SCOPE BLOCKER** (test boundary) |
+| **DIM20** | R7-Q parent PIS / strict external-work dependency | **PROD-Q-R1** | Package P rollup + STRICT-HTTP-R1 | this reconciliation | FINAL_COMMIT | matrix above + §5.2 | **YES** | **Ready for independent audit** (evidence slice) | Operator acceptance; parent **NOT CLOSED** | **TRACKED** (awaiting audit @ FINAL_COMMIT) |
 
 **Not claimed:** full HTTP → orchestration → PIS → provider execution chain; HTTP-level business idempotency; caller-supplied stable invocation identity on strict HTTP; provider-side exactly-once.
 
@@ -81,21 +81,30 @@
 
 ---
 
-## 5. Mandatory finding — private test-boundary access
+## 5. STRICT-HTTP-R1 corrective — private test-boundary access (resolved @ execution SHA pending commit)
+
+### 5.1 Original finding (pre-R1)
 
 **Location:** `tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py` — autouse fixture `_isolate_production_process_lifecycle_slot`.
 
 **Private access:** `production_process_lifecycle._active_production_process_lifecycle`, `ProductionProcessLifecycle._process_closed`.
 
-**Purpose:** isolate single production lifecycle slot between qualification tests; call public `close_process_resources()` on leaked instances.
+**Purpose (rejected):** silently discover and close unknown module-level lifecycle slots between tests.
 
-**Public alternative reviewed:** `StrictProductionServingSession.close()` (per-fixture teardown) — sufficient for **post-test** cleanup when fixture holds `session`; **no** sanctioned public API to discover/clear a leaked module-level slot **before** the next test without reading private module state (`__all__` exports only `open_production_process_lifecycle`).
+### 5.2 Corrective (PROD-Q-R1-STRICT-HTTP-R1)
 
-**Cross-boundary imports:** module also imports test-private helpers (`_INNER_DELEGATE`, `_RecordingRepeatPort`, `_CREATE_CONTRACT`, etc.) — **within qualification/test ownership**; the **production_process_lifecycle** private slot access is the **mandatory** violation.
+| Item | Detail |
+|------|--------|
+| **Status** | **READY FOR AUDIT** (test-boundary corrective; **production delta = 0**; execution SHA = **FINAL_COMMIT**) |
+| **Changed code** | `_prod_q_strict_http_invocation_identity_support.py` — register owned `StrictProductionServingSession` after `_open_with_activation`; `close_registered_owned_strict_http_invocation_sessions()` via public `session.close()`; `assert_no_leaked_owned_strict_http_invocation_sessions()` before each test. Test module — autouse `_owned_strict_http_invocation_session_lifecycle` replaces `_isolate_production_process_lifecycle_slot`. |
+| **Before ownership** | Global autouse read private slot state and called `close_process_resources()` on unknown lifecycles (masked leaks). |
+| **After ownership** | Qualification fixtures **own** sessions; teardown closes only registered handles; prior-test leak → `AssertionError` (no silent slot clear). Unknown global slot without owned handle → next `open` fails closed (production contract). |
+| **Public contracts reused** | `StrictProductionServingSession.close()`; `ProductionProcessLifecycle.close_process_resources()` only inside session close (unchanged production path). |
+| **Negative evidence** | Autouse teardown (**N01**/**N02**); close errors not swallowed (**N03**); pre-test leak guard (**N04**); sequential module run 11/11 (**N05**); H01–H08 unchanged (**N06**). |
+| **Pytest** | `uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py` — **11 passed**, exit **0** @ FINAL_COMMIT (see §8). |
+| **Remaining limitation** | No public API to introspect an unknown leaked global slot; qualification must not invent one — rely on owned-session contract + fail-closed open. |
 
-**Disposition:** **`IN-SCOPE BLOCKER`** — **PROD-Q-R1-STRICT-HTTP-R1** (canonical owner: `intergrax/applications/_shared/production_process_lifecycle.py` + qualification module). Pattern: **D4-R1** test-boundary corrective (public lifecycle/session teardown contract or qualification-scoped isolation without module-private reads). **Do not** claim complete Package P acceptance until resolved.
-
-**STOP — ARCHITECTURE DECISION REQUIRED** only if new HTTP identity contract is proposed — **not required** for this blocker.
+**STOP — ARCHITECTURE DECISION REQUIRED** only if new HTTP identity or lifecycle discovery contract is proposed — **not required** for this corrective.
 
 ---
 
@@ -118,8 +127,8 @@
 | Tenant isolation | **PASS** | H05 + PIS key isolation in same module |
 | Observability | **N/A** | Out of Package P scope |
 | Evidence traceability | **PASS** | Pinned SHAs in qualification records |
-| Regression | **PASS** | 98 + 11 historical pytest @ execution SHAs |
-| Test boundaries | **BLOCKED** | §5 private lifecycle slot access |
+| Regression | **PASS** | 98 + 11 historical pytest @ execution SHAs; STRICT-HTTP-R1 replay 11/11 @ FINAL_COMMIT |
+| Test boundaries | **PASS** (scoped) | §5 STRICT-HTTP-R1 — no `production_process_lifecycle` private slot reads in strict HTTP module |
 
 ---
 
@@ -140,7 +149,7 @@
 
 | Item | Value |
 |------|-------|
-| Pytest replay | **not run** — execution SHAs are ancestors of AUDITED_HEAD; no contract/composition delta; no fixture correction applied |
+| Pytest replay | STRICT-HTTP-R1 @ FINAL_COMMIT — `test_prod_q_r1_strict_http_invocation_identity_qualification.py` **11 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1/pytest.log`) |
 | Residual processes | **none** (no `uv` test invocation) |
 
 Historical logs: `.tmp/session/PROD-Q-R1-PIS-STRICT-EXTERNAL-WORK-QUALIFICATION/pytest-full.log`, `.tmp/session/PROD-Q-R1-STRICT-HTTP-INVOCATION-IDENTITY-QUALIFICATION/pytest.log`.
@@ -151,8 +160,8 @@ Historical logs: `.tmp/session/PROD-Q-R1-PIS-STRICT-EXTERNAL-WORK-QUALIFICATION/
 
 | Question | Answer |
 |----------|--------|
-| Package P eligible for independent operator acceptance? | **READY FOR AUDIT** for evidence **slice** (DISPATCH scoped accepted; PIS-STRICT + STRICT-HTTP qual records); **not** complete acceptance while §5 **BLOCKED** |
-| **DIM20** advance? | To **READY FOR INDEPENDENT AUDIT** (parent dependency evidence reconciled) — **not** **PASS** / **CLOSED** |
-| Recommended next executable task | **PROD-Q-R1-STRICT-HTTP-R1** — qualification test-boundary lifecycle isolation (then focused replay of strict HTTP module) |
+| Package P eligible for independent operator acceptance? | **READY FOR AUDIT** for evidence **slice** (DISPATCH scoped accepted; PIS-STRICT + STRICT-HTTP qual + STRICT-HTTP-R1 corrective); operator audit of §5.2 @ FINAL_COMMIT |
+| **DIM20** advance? | **READY FOR INDEPENDENT AUDIT** (strict HTTP invocation evidence + R1 boundary corrective) — **not** **PASS** / **CLOSED** |
+| Recommended next executable task | Operator independent audit of Package P reconciliation + STRICT-HTTP-R1 @ FINAL_COMMIT; then R7-Q §C remaining integrated gates per gate plan |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

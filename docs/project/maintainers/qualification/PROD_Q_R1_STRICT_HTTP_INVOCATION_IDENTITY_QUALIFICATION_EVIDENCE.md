@@ -106,10 +106,24 @@ uv run pytest -p no:xdist \
 
 ---
 
-## 8. Git report (@ FINAL_COMMIT)
+## 8. Corrective lineage — PROD-Q-R1-STRICT-HTTP-R1
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-STRICT-HTTP-R1** |
+| **Finding** | Autouse `_isolate_production_process_lifecycle_slot` read `production_process_lifecycle._active_production_process_lifecycle` / `_process_closed` |
+| **Fix** | Owned-session registry + public `StrictProductionServingSession.close()` teardown; no pre-test silent slot clearing |
+| **Production delta** | **0** |
+| **Historical execution** | `cb276479cf76fe0bc269f448a868ea2026ebdae9` (pre-R1 module run) — preserved |
+| **R1 replay** | 11/11 @ FINAL_COMMIT on `development` (see Package P reconciliation §5.2 / §8) |
+
+---
+
+## 9. Git report (@ FINAL_COMMIT)
 
 | Field | Value |
 |-------|-------|
 | **origin** | `origin/development` |
 | **START_HEAD** | `e5e5d326184b23d3eb93786e60db7a4c2154499d` |
-| **FINAL_COMMIT / AUDITED_HEAD** | `cb276479cf76fe0bc269f448a868ea2026ebdae9` |
+| **Pre-R1 AUDITED_HEAD** | `cb276479cf76fe0bc269f448a868ea2026ebdae9` |
+| **FINAL_COMMIT / AUDITED_HEAD** | `6654eaffcddbd33daf5a0b9f6ba665372fff92d5` |
