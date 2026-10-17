@@ -190,8 +190,8 @@ Post-F02 implementation: authoritative deny precedes revision-dependent drain he
 
 | Classification | Verdict |
 |----------------|---------|
-| **IN-SCOPE BLOCKER** (F02 open-gate / POST-CLOSE) @ pre-impl SHA | **Mitigated @ impl SHA (agent)** — **READY FOR AUDIT**, not CLOSED |
-| Recommended disposition | **SCOPED ACCEPTANCE CANDIDATE** pending independent audit; F02-05/07/09 remain **NOT PROVEN** |
+| **IN-SCOPE BLOCKER** (F02 open-gate / POST-CLOSE) @ pre-impl SHA | **Mitigated @ `4aeb585ea…`** — reconciliation replay **15 passed** @ `b4e329d12…` (§ Package D §5.6); **READY FOR AUDIT**, not CLOSED |
+| Recommended disposition | **SCOPED ACCEPTANCE CANDIDATE** pending independent audit; **F02-05/09** remain **NOT PROVEN**; **F02-07** satisfied by `test_c_dim16_f03` gate assertion |
 
 ---
 
