@@ -81,8 +81,8 @@ uv run pytest -p no:xdist \
 
 | Metric | Value |
 |--------|-------|
-| **Result** | **11 passed**, 0 failed, 0 skipped |
-| **Log** | `.tmp/session/PROD-Q-R1-STRICT-HTTP-INVOCATION-IDENTITY-QUALIFICATION/pytest.log` |
+| **Result** | **16 passed**, 0 failed, 0 skipped (**R1-R1** corrective adds **R01–R05**; **R06** = **H01–H08** unchanged) |
+| **Log** | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log` |
 
 ---
 
@@ -127,4 +127,45 @@ uv run pytest -p no:xdist \
 | **START_HEAD** | `e5e5d326184b23d3eb93786e60db7a4c2154499d` |
 | **Pre-R1 AUDITED_HEAD** | `cb276479cf76fe0bc269f448a868ea2026ebdae9` |
 | **STRICT-HTTP-R1 implementation** | `ea2e929b352c6e09c13d4cec817ab0c64cf87396` |
-| **FINAL_COMMIT / AUDITED_HEAD** | `075005b7de1c740dc3017337a11f40ae6591e471` (implementation + evidence pin; `origin/development`) |
+| **STRICT-HTTP-R1-R1 corrective** | **FINAL_COMMIT** on `development` (registry cleanup safety **F01–F03**; see §10) |
+| **Prior evidence pin** | `075005b7de1c740dc3017337a11f40ae6591e471` / `1aa8725cbfbbff0c21aab50c62094b680f56511b` (preserved lineage) |
+
+---
+
+## 10. Corrective lineage — PROD-Q-R1-STRICT-HTTP-R1-R1
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-STRICT-HTTP-R1-R1** |
+| **Parent** | **PROD-Q-R1-STRICT-HTTP-R1** |
+| **START_HEAD** | `1aa8725cbfbbff0c21aab50c62094b680f56511b` |
+| **Production delta** | **0** |
+
+### F01–F03 root causes
+
+| ID | Root cause | Correction |
+|----|------------|------------|
+| **F01** | Registry `pop()` before `session.close()` — failed close dropped ownership evidence | Close in LIFO order; **pop only after successful** envelope `close()`; failed close **retains** registration |
+| **F02** | `if "already closed" in str(exc): continue` — forbidden string lifecycle classification | Removed; ASGI lifespan may close via public `close()` — **qualification ownership envelope** records successful close and releases registry **without** message inspection |
+| **F03** | `BaseException` bucket could mishandle interrupts / typing at teardown boundary | Teardown collects **`Exception`** only; `KeyboardInterrupt` / `SystemExit` propagate; single failure re-raised; `ExceptionGroup` when multiple |
+
+### Ownership after correction
+
+- Fixtures receive **`register_owned_strict_http_invocation_session` return value** (ownership envelope delegating public session surface).
+- Explicit successful `close()` (fixture teardown or strict ASGI lifespan) sets **`qualification_close_completed`** and allows registry release without double-close on inner session.
+- Ambiguous / failed close leaves registration populated → **`assert_no_leaked_owned_strict_http_invocation_sessions`** fails the next test (**R02**).
+
+### Regression tests (R01–R05)
+
+| ID | Intent |
+|----|--------|
+| **R01** | Successful cleanup clears registry |
+| **R02** | Failed close preserves evidence and blocks subsequent test |
+| **R03** | `already closed` message does not suppress failure |
+| **R04** | Reverse-order multi-session close |
+| **R05** | No silent global `production_process_lifecycle` slot reset in support module |
+
+### Remaining limitations
+
+- No production API to introspect unknown leaked global lifecycle slots (unchanged).
+- Envelope is **qualification-test-boundary only** — not a production contract.

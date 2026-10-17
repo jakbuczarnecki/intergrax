@@ -89,14 +89,47 @@ _QUAL_PROVIDER: Final = "gec3_deterministic_fake"
 _QUAL_SCOPE_DIGEST: Final = "sha256:" + ("aa" * 32)
 _QUAL_T0: Final = datetime(2026, 10, 16, 12, 0, 0, tzinfo=timezone.utc)
 
-_owned_strict_http_invocation_sessions: list[StrictProductionServingSession] = []
+class _QualificationOwnedStrictProductionServingSession:
+    """Qualification ownership envelope — records successful public close for registry release."""
+
+    __slots__ = ("_qualification_close_completed", "_session")
+
+    def __init__(self, session: StrictProductionServingSession) -> None:
+        self._session = session
+        self._qualification_close_completed = False
+
+    @property
+    def qualification_close_completed(self) -> bool:
+        return self._qualification_close_completed
+
+    def close(self) -> None:
+        if self._qualification_close_completed:
+            raise StrictProductionServingLauncherError(
+                "qualification-owned strict HTTP invocation session teardown already completed",
+            )
+        try:
+            self._session.close()
+        except StrictProductionServingLauncherError:
+            raise
+        else:
+            self._qualification_close_completed = True
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._session, name)
+
+
+_owned_strict_http_invocation_sessions: list[
+    _QualificationOwnedStrictProductionServingSession
+] = []
 
 
 def register_owned_strict_http_invocation_session(
     session: StrictProductionServingSession,
-) -> None:
+) -> StrictProductionServingSession:
     """Track one strict serving session opened by qualification fixtures for teardown."""
-    _owned_strict_http_invocation_sessions.append(session)
+    owned = _QualificationOwnedStrictProductionServingSession(session)
+    _owned_strict_http_invocation_sessions.append(owned)
+    return owned
 
 
 def assert_no_leaked_owned_strict_http_invocation_sessions() -> None:
@@ -107,19 +140,29 @@ def assert_no_leaked_owned_strict_http_invocation_sessions() -> None:
         )
 
 
+def owned_strict_http_invocation_session_registration_count() -> int:
+    """Return how many owned sessions remain registered (qualification teardown contract)."""
+    return len(_owned_strict_http_invocation_sessions)
+
+
 def close_registered_owned_strict_http_invocation_sessions() -> None:
     """Close owned sessions in reverse open order using the public session contract."""
-    errors: list[BaseException] = []
+    errors: list[Exception] = []
     while _owned_strict_http_invocation_sessions:
-        session = _owned_strict_http_invocation_sessions.pop()
+        owned = _owned_strict_http_invocation_sessions[-1]
+        if owned.qualification_close_completed:
+            _owned_strict_http_invocation_sessions.pop()
+            continue
         try:
-            session.close()
+            owned.close()
         except StrictProductionServingLauncherError as exc:
-            if "already closed" in str(exc):
-                continue
             errors.append(exc)
-        except BaseException as exc:
+            break
+        except Exception as exc:
             errors.append(exc)
+            break
+        else:
+            _owned_strict_http_invocation_sessions.pop()
     if len(errors) == 1:
         raise errors[0]
     if errors:
@@ -269,7 +312,7 @@ def build_strict_http_invocation_qual_fixture(
         environment=d4._ac3_environment(),
         revision_id=revision_id,
     )
-    register_owned_strict_http_invocation_session(session)
+    session = register_owned_strict_http_invocation_session(session)
     assert session.readiness.ready_for_traffic is True
 
     env = session.environment
@@ -416,6 +459,7 @@ __all__ = [
     "StrictHttpInvocationQualFixture",
     "assert_no_leaked_owned_strict_http_invocation_sessions",
     "close_registered_owned_strict_http_invocation_sessions",
+    "owned_strict_http_invocation_session_registration_count",
     "build_sanctioned_external_work_runtime",
     "build_strict_http_invocation_qual_fixture",
     "register_owned_strict_http_invocation_session",

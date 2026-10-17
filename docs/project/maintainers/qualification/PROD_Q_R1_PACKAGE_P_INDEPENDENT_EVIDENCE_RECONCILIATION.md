@@ -106,6 +106,18 @@
 
 **STOP — ARCHITECTURE DECISION REQUIRED** only if new HTTP identity or lifecycle discovery contract is proposed — **not required** for this corrective.
 
+### 5.3 Corrective (PROD-Q-R1-STRICT-HTTP-R1-R1)
+
+| Item | Detail |
+|------|--------|
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** on `development`) |
+| **START_HEAD** | `1aa8725cbfbbff0c21aab50c62094b680f56511b` |
+| **Finding** | **F01** pop-before-close; **F02** exception-message suppression; **F03** `BaseException` teardown bucket |
+| **Fix** | LIFO close with pop-after-success; qualification ownership envelope for explicit close completion; `Exception`-bounded teardown errors |
+| **Negative evidence** | **R01–R05** in strict HTTP qualification module; **R06** = **H01–H08** replay |
+| **Pytest** | `test_prod_q_r1_strict_http_invocation_identity_qualification.py` — **16 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log`) |
+| **Remaining limitation** | Envelope is test-boundary only; unknown global slot without owned handle still fail-closed at production open |
+
 ---
 
 ## 6. Enterprise audit (@ AUDITED_HEAD)
@@ -149,7 +161,7 @@
 
 | Item | Value |
 |------|-------|
-| Pytest replay | STRICT-HTTP-R1 @ FINAL_COMMIT — `test_prod_q_r1_strict_http_invocation_identity_qualification.py` **11 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1/pytest.log`) |
+| Pytest replay | STRICT-HTTP-R1-R1 @ FINAL_COMMIT — `test_prod_q_r1_strict_http_invocation_identity_qualification.py` **16 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log`); historical STRICT-HTTP-R1 **11/11** preserved |
 | Residual processes | **none** (no `uv` test invocation) |
 
 Historical logs: `.tmp/session/PROD-Q-R1-PIS-STRICT-EXTERNAL-WORK-QUALIFICATION/pytest-full.log`, `.tmp/session/PROD-Q-R1-STRICT-HTTP-INVOCATION-IDENTITY-QUALIFICATION/pytest.log`.

@@ -7,10 +7,16 @@ from __future__ import annotations
 import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Final
 from unittest.mock import AsyncMock, patch
 
 import pytest
+
+from intergrax.applications._shared.strict_production_serving_launcher import (
+    StrictProductionServingLauncherError,
+)
 
 from applications.governed_contractor_application.host.provider_invocation_lifecycle import (
     GovernedProviderInvocationDispatchGate,
@@ -42,6 +48,8 @@ from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support 
     build_sanctioned_external_work_runtime,
     build_strict_http_invocation_qual_fixture,
     close_registered_owned_strict_http_invocation_sessions,
+    owned_strict_http_invocation_session_registration_count,
+    register_owned_strict_http_invocation_session,
     execute_sanctioned_create_with_invocation,
     external_work_adapter_metadata,
     external_work_http_metadata,
@@ -467,3 +475,83 @@ def test_h03b_sanctioned_recovery_repeat_when_policy_allows(
     assert repeat_port.calls == 1
     assert result.provider_mutation_count == 1
     assert repeat_port.last_idempotency_key == inv.idempotency_key
+
+
+@dataclass
+class _QualOwnedSessionDouble:
+    """Deterministic close double for owned-session registry regression tests."""
+
+    label: str
+    close_error: Exception | None = None
+    close_calls: int = 0
+    close_order: list[str] = field(default_factory=list)
+
+    def close(self) -> None:
+        self.close_calls += 1
+        self.close_order.append(self.label)
+        if self.close_error is not None:
+            raise self.close_error
+
+
+def test_r01_owned_session_registry_releases_after_successful_close() -> None:
+    session = _QualOwnedSessionDouble(label="r01")
+    register_owned_strict_http_invocation_session(session)  # type: ignore[arg-type]
+    assert owned_strict_http_invocation_session_registration_count() == 1
+    close_registered_owned_strict_http_invocation_sessions()
+    assert owned_strict_http_invocation_session_registration_count() == 0
+    assert session.close_calls == 1
+
+
+def test_r02_failed_close_keeps_registry_evidence_and_blocks_next_test() -> None:
+    session = _QualOwnedSessionDouble(
+        label="r02",
+        close_error=StrictProductionServingLauncherError("r02 close failed"),
+    )
+    register_owned_strict_http_invocation_session(session)  # type: ignore[arg-type]
+    with pytest.raises(StrictProductionServingLauncherError, match="r02 close failed"):
+        close_registered_owned_strict_http_invocation_sessions()
+    assert owned_strict_http_invocation_session_registration_count() == 1
+    with pytest.raises(AssertionError, match="leaked from a prior test"):
+        assert_no_leaked_owned_strict_http_invocation_sessions()
+    session.close_error = None
+    close_registered_owned_strict_http_invocation_sessions()
+    assert owned_strict_http_invocation_session_registration_count() == 0
+
+
+def test_r03_already_closed_message_does_not_suppress_close_failure() -> None:
+    session = _QualOwnedSessionDouble(
+        label="r03",
+        close_error=StrictProductionServingLauncherError(
+            "strict production serving session already closed",
+        ),
+    )
+    register_owned_strict_http_invocation_session(session)  # type: ignore[arg-type]
+    with pytest.raises(StrictProductionServingLauncherError, match="already closed"):
+        close_registered_owned_strict_http_invocation_sessions()
+    assert owned_strict_http_invocation_session_registration_count() == 1
+    session.close_error = None
+    close_registered_owned_strict_http_invocation_sessions()
+
+
+def test_r04_multiple_owned_sessions_close_in_reverse_registration_order() -> None:
+    order: list[str] = []
+    first = _QualOwnedSessionDouble(label="first", close_order=order)
+    second = _QualOwnedSessionDouble(label="second", close_order=order)
+    third = _QualOwnedSessionDouble(label="third", close_order=order)
+    register_owned_strict_http_invocation_session(first)  # type: ignore[arg-type]
+    register_owned_strict_http_invocation_session(second)  # type: ignore[arg-type]
+    register_owned_strict_http_invocation_session(third)  # type: ignore[arg-type]
+    close_registered_owned_strict_http_invocation_sessions()
+    assert order == ["third", "second", "first"]
+    assert owned_strict_http_invocation_session_registration_count() == 0
+
+
+def test_r05_qualification_support_never_resets_global_production_lifecycle_slot() -> None:
+    support_path = (
+        Path(__file__).resolve().parent / "_prod_q_strict_http_invocation_identity_support.py"
+    )
+    text = support_path.read_text(encoding="utf-8")
+    assert "production_process_lifecycle" not in text
+    assert "_active_production_process_lifecycle" not in text
+    assert "_process_closed" not in text
+    assert "close_process_resources" not in text
