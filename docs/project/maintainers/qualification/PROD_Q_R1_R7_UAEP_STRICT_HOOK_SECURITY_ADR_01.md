@@ -423,7 +423,7 @@ Command in §19; log under `.tmp/session/PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-
 | **Q1 START_HEAD** | `31d02c9a6ca0ba139cf07ea11188da983c1580c6` |
 | **Typed-envelope corrective** | `PROD-Q-R1-R7-UAEP-HOOK-VIOLATION-TYPED-EVIDENCE-CORRECTIVE` |
 | **Corrective START_HEAD** | `d8ec844da5824ee6368112fd140aa9ec65746cf2` |
-| **FINAL_COMMIT** | *(record at push — independent audit SHA)* |
+| **FINAL_COMMIT** | `a9b4b752b63b55634e56211d9a13a741c6527319` |
 | **Gate B status** | **READY FOR AUDIT** (typed envelope + durable acceptance) |
 | **Maximum status** | Bounded qualification only; global **FRZ-*** unchanged |
 
