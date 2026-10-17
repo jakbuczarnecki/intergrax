@@ -13,6 +13,10 @@ import pytest
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.events.validating_evidence_persistence_port import (
+    ValidatingEvidencePersistencePort,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookError
@@ -246,6 +250,87 @@ async def test_hook_violation_emits_catalog_phase_and_source_execution_phase() -
         assert_runtime_event_schema(
             event.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING})
         )
+
+
+@pytest.mark.asyncio
+async def test_hook_blocked_emitted_signal_fails_full_schema_guard_without_typed_envelope() -> None:
+    """Q1-A gap: phase/catalog fixed (IMPL-01); typed payload envelope still missing."""
+    bus = RuntimeEventBus()
+    events: list = []
+    bus.subscribe(lambda event: events.append(event))
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    ctx = HookContext(
+        task_id=task_id,
+        run_id=run_id,
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        runtime_state={},
+    )
+
+    async def _block() -> HookResult:
+        return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+    try:
+        await invoke_guarded_hook(
+            hook_name="demo_block",
+            point=HookPoint.BEFORE_CONTEXT_BUILD,
+            ctx=ctx,
+            coro_factory=_block,
+            timeout_seconds=1.0,
+            event_bus=bus,
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+    event = events[0]
+    with pytest.raises(RuntimeEventSchemaError, match="typed payload envelope"):
+        assert_runtime_event_schema(event)
+
+
+@pytest.mark.asyncio
+async def test_hook_blocked_durable_path_rejected_by_validating_persistence_port() -> None:
+    """Q1-B gap: MANDATORY durability policy applies but validating port rejects the write."""
+    store = InMemoryRuntimeEventStore()
+    bus = RuntimeEventBus(persistence=store, record_history=False)
+    assert isinstance(bus.persistence, ValidatingEvidencePersistencePort)
+
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    ctx = HookContext(
+        task_id=task_id,
+        run_id=run_id,
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        runtime_state={},
+    )
+
+    async def _block() -> HookResult:
+        return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+    try:
+        with pytest.raises(RuntimeEventSchemaError, match="typed payload envelope"):
+            await invoke_guarded_hook(
+                hook_name="demo_block",
+                point=HookPoint.BEFORE_CONTEXT_BUILD,
+                ctx=ctx,
+                coro_factory=_block,
+                timeout_seconds=1.0,
+                event_bus=bus,
+            )
+    finally:
+        reset_active_execution_identity(token)
+
+    assert store.list_positioned_for_run(run_id, tenant_id="") == []
+    assert bus.history == []
 
 
 @pytest.mark.asyncio

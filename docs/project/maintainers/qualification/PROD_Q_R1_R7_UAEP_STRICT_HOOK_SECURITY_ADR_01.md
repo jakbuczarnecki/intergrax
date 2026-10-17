@@ -415,4 +415,50 @@ Command in §19; log under `.tmp/session/PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-
 
 ---
 
+## 24. Q1 durable evidence qualification (Gate B closure)
+
+| Item | Value |
+|------|-------|
+| **Task** | `PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-Q1-DURABLE-EVIDENCE-QUALIFICATION` |
+| **START_HEAD** | `31d02c9a6ca0ba139cf07ea11188da983c1580c6` |
+| **FINAL_COMMIT** | *(record at push — independent audit SHA)* |
+| **Q1 status** | **NOT READY FOR AUDIT** — **IN-SCOPE BLOCKER** (typed payload envelope) |
+| **Maximum status** | Bounded qualification only; global **FRZ-*** unchanged |
+
+### IN-SCOPE BLOCKER (production change required — out of Q1 scope)
+
+IMPL-01 fixed catalog **phase** (B2). `platform.hook.hook_blocked` still emits a raw dict payload without `payload_schema_id`. At the sanctioned write boundary, `ValidatingEvidencePersistencePort.append` → `assert_runtime_event_schema` fails with: `extension event_kind 'platform.hook.hook_blocked' requires registered typed payload envelope` (`payload_registry.py`). Policy classifies the signal as **MANDATORY** durable (`evidence_durability.py` + `RetentionClass.OPERATIONAL` default on platform kind); persistence is not optional — the event cannot be committed until a typed envelope is registered (pattern: `platform.security.*` in `intergrax/runtime/security/payloads.py` + bootstrap).
+
+**Proposed child task:** register typed payloads + emission path for `platform.hook.hook_blocked` / `hook_error` / `hook_timeout` without altering security policy owners.
+
+### Q1-A — schema validation
+
+- **Phase (PASS):** `test_hook_violation_emits_catalog_phase_and_source_execution_phase`; negative `test_platform_hook_blocked_with_context_building_phase_override_fails_schema_guard`.
+- **Full schema (FAIL — blocker):** `test_hook_blocked_emitted_signal_fails_full_schema_guard_without_typed_envelope`.
+
+### Q1-B — durable evidence
+
+- **FAIL (blocker):** `test_hook_blocked_durable_path_rejected_by_validating_persistence_port` — `invoke_guarded_hook` → `RuntimeEventBus.publish` → `ValidatingEvidencePersistencePort`; store remains empty; not bus history.
+
+### Q1-C — fail-closed (reused IMPL-01 harness)
+
+- `tests/unit/agents/test_uaep_executor.py::test_uaep_prompt_defense_blocks_injection_without_build_context`
+- `tests/unit/runtime/middleware/test_hook_runtime_guard.py::test_hook_violation_publish_failure_does_not_allow_execution`
+
+### Q1-D — owner inventory (read-only confirmation)
+
+| Concern | Owner |
+|---------|--------|
+| Catalog phase authority | `spine_consolidation.py` / `get_platform_kind_entry` |
+| UAEP hook input | `uaep_executor.py` |
+| Prompt Defense policy | `application_security_wiring.py` |
+| Middleware composition | `pipeline.py` |
+| Violation signal emission | `hook_runtime_guard.py` |
+| Schema guard | `schema_guard.py` |
+| Durable commit | `event_bus.py` → `ValidatingEvidencePersistencePort` → store |
+
+Session log: `.tmp/session/PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-Q1/`.
+
+---
+
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
