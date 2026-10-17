@@ -292,3 +292,46 @@ Log: `.tmp/session/PROD-Q-R1-R7-D3-R1-UAEP-EVENT-AND-HOOK-BOUNDARY-QUALIFICATION
 | **ARCHITECTURE DECISION REQUIRED** | UAEP `BEFORE_CONTEXT_BUILD` hook shape vs `PromptDefenseMiddleware` under `prompt_defense_enabled=True` |
 | **TRACKED FREEZE DEBT** | `hook_runtime_guard` `DOMAIN_SIGNAL` phase override vs `event_catalog` |
 | **QUALIFICATION GAP** | Canonical lifecycle E2E does not exercise active Prompt Defense on UAEP path |
+
+---
+
+## IMPL-01 UAEP strict hook security (Cursor; child ADR A+E)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-IMPL-01` |
+| **ADR** | [`PROD_Q_R1_R7_UAEP_STRICT_HOOK_SECURITY_ADR_01.md`](PROD_Q_R1_R7_UAEP_STRICT_HOOK_SECURITY_ADR_01.md) — **ACCEPTED — OPERATOR RATIFIED A+E** |
+| **START_HEAD** | `84c1e550fd847ba9e19bcc87742ca086e888bf2a` |
+| **FINAL_COMMIT** | *(set at push)* |
+
+### Historical failure evidence (preserved)
+
+D3-R1 UAEP hook boundary qualification documented **Gate B FAIL** (untyped UAEP payload, harness prompt-defense disable, `hook_runtime_guard` phase mismatch). See § **D3-R1 UAEP event and hook boundary qualification** above.
+
+### Implementation delta
+
+| Gate | Change |
+|------|--------|
+| **B1** | `uaep_executor.py` — `LlmInferenceHookPayload(prompt=request.message or None)` + tenant subject facet |
+| **B2** | `hook_runtime_guard.py` — catalog phase; `source_execution_phase` diagnostic |
+| **Harness** | Stage-15 restores `prompt_defense_enabled` product default |
+
+### Scoped qualification (post-IMPL)
+
+| Check | Result |
+|-------|--------|
+| UAEP typed payload @ `BEFORE_CONTEXT_BUILD` | **PASS** — `test_uaep_executor.py` |
+| Prompt Defense allow/block on UAEP path | **PASS** — `test_uaep_executor.py`, `test_application_security_wiring.py` |
+| Hook violation schema + diagnostics | **PASS** — `test_hook_runtime_guard.py` |
+| Telemetry publish failure ≠ ALLOW | **PASS** — `test_hook_runtime_guard.py` |
+| D3 recovery / restart / descriptor corruption | **PASS** — mandatory regression command |
+| Canonical lifecycle + active Prompt Defense | **PASS** — `test_canonical_agent_lifecycle_reaches_serving_and_execution` |
+
+### Unresolved (post-IMPL)
+
+| Class | Item |
+|-------|------|
+| **TRACKED FREEZE DEBT** | Global **FRZ-*** and **PROD-Q-R1-R7** closure remain operator-gated |
+| **INDEPENDENT AUDIT** | IMPL-01 **READY FOR AUDIT** — not CLOSED |
+
+**Does not** promote D3 production security slice to accepted; **does not** infer production recovery acceptance from Stage 15 alone.

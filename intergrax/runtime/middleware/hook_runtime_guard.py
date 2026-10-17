@@ -101,7 +101,6 @@ async def _emit_hook_violation(
             node_id=ctx.node_id,
             agent_id=ctx.agent_id,
             step_id=ctx.step_id,
-            phase=ctx.phase,
             severity=severity,
             correlation_id=ctx.task_id,
             payload={
@@ -110,6 +109,7 @@ async def _emit_hook_violation(
                 "action": result.action.value,
                 "reason": result.reason,
                 "violation_kind": violation_kind,
+                "source_execution_phase": ctx.phase.value,
             },
         )
     )

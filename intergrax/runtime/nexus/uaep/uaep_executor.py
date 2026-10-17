@@ -44,6 +44,10 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.middleware_hook_semantics import (
+    LlmInferenceHookPayload,
+    MiddlewareExecutionSubjectFacet,
+)
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.request_identity_spine import (
     assert_untrusted_metadata_identity_compatible,
@@ -310,6 +314,12 @@ class UAEPExecutor:
             node_id=exec_ctx.node_id,
             agent_id=contract.id,
             phase=ExecutionPhase.CONTEXT_BUILDING,
+            subject=MiddlewareExecutionSubjectFacet(
+                tenant_id=canonical_runtime_request_tenant_id(request) or None,
+            ),
+            payload=LlmInferenceHookPayload(
+                prompt=request.message or None,
+            ),
             runtime_state={
                 "prompt": request.message or "",
                 "tenant_id": request.tenant_id or "",

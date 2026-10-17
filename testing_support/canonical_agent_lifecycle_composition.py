@@ -194,21 +194,6 @@ def _stage15_proof_environment(profile_id: str) -> ApplicationEnvironmentProfile
                 ),
             },
         )
-    # UAEP reflex agents invoke BEFORE_CONTEXT_BUILD without LlmInferenceHookPayload;
-    # strict product prompt defense blocks that hook shape — keep other strict defaults.
-    app_security = env.security.application_security
-    if app_security.prompt_defense_enabled:
-        env = env.model_copy(
-            update={
-                "security": env.security.model_copy(
-                    update={
-                        "application_security": app_security.model_copy(
-                            update={"prompt_defense_enabled": False},
-                        ),
-                    },
-                ),
-            },
-        )
     return env
 
 

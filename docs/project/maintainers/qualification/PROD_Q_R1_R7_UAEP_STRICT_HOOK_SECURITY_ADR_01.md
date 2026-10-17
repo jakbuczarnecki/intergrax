@@ -2,17 +2,22 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **PROPOSED — ARCHITECTURE DECISION REQUIRED** |
+| **Status** | **ACCEPTED — OPERATOR RATIFIED A+E** |
 | **Revision** | **R0** |
-| **Decision date** | — (pending operator ratification) |
+| **Decision date** | **2026-10-17** |
+| **Decision** | **B1 = Alternative A** · **B2 = Alternative E** |
+| **Approved implementation** | **IMPL-01** (`PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-IMPL-01`) |
+| **Ratification authority** | Explicit operator decision (`ACCEPT A+E`) |
+| **Evidence baseline (ratification)** | `84c1e550fd847ba9e19bcc87742ca086e888bf2a` |
 | **Branch** | `development` |
-| **START_HEAD / evidence inventory SHA** | `be21ef1a9016d21f67ecc2af53fcff8555606cde` |
+| **START_HEAD / evidence inventory SHA** | `be21ef1a9016d21f67ecc2af53fcff8555606cde` (historical proposal inventory) |
 | **Parent program** | **PROD-Q-R1-R7** — **NOT CLOSED** |
 | **Related stage** | **PROD-Q-R1-R7-D3** — durable projection/restart **READY FOR AUDIT**; strict UAEP security path **NOT QUALIFIED** |
 | **Qualification predecessor** | [`PROD_Q_R1_R7_D3_DURABLE_PROJECTION_RESTART_RECONCILIATION.md`](PROD_Q_R1_R7_D3_DURABLE_PROJECTION_RESTART_RECONCILIATION.md) § D3-R1 UAEP event and hook boundary (**Gate B FAIL**) |
 | **Baseline middleware ADR** | **ADR-CTRL-X-001** (Accepted) — typed middleware hook ownership; this ADR **refines producer obligations** for UAEP `BEFORE_CONTEXT_BUILD`; does **not** reopen HookPoint / pipeline / Tier-0 payload union ownership |
 | **Does not close** | **PROD-Q-R1-R7** · **PROD-Q-R1-R7-D3** (production security slice) · **PROD-Q-R1-R7-Q** · **PROD-Q** · any global **FRZ-*** PASS |
-| **Production delta (this task)** | **0** — documentation only |
+| **Production delta (IMPL-01)** | **B1 + B2** — UAEP typed hook payload; hook violation catalog phase (see §23) |
+| **Historical proposal status** | **PROPOSED — ARCHITECTURE DECISION REQUIRED** (§1–§22 preserved) |
 
 **Competing ADR check:** No accepted ADR already resolves UAEP `BEFORE_CONTEXT_BUILD` payload vs `PromptDefenseMiddleware` or `hook_runtime_guard` platform-signal phase override. **ADR-CTRL-X-001** mandates typed payloads at hook boundaries but does not specify UAEP reflex producer shape. **No conflict — proceed as bounded child ADR.**
 
@@ -382,6 +387,31 @@ uv run pytest -p no:xdist -q \
 > **Ratify PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-ADR-01 R0 as ACCEPTED with recommended combination B1=Alternative A (UAEP `LlmInferenceHookPayload` at `BEFORE_CONTEXT_BUILD`) and B2=Alternative E (catalog-canonical platform hook violation phase with diagnostic source phase in payload), authorizing implementation task `PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-IMPL-01`?**
 
 **Responses:** `ACCEPT A+E` · `ACCEPT WITH AMENDMENT (specify B/C/F)` · `REJECT`
+
+**Operator response (recorded):** `ACCEPT A+E` — authorizes IMPL-01 only; does **not** close PROD-Q-R1-R7, D3 production security slice, PROD-Q, or global **FRZ-***.
+
+---
+
+## 23. IMPL-01 implementation reference (Cursor)
+
+| Item | Value |
+|------|-------|
+| **START_HEAD** | `84c1e550fd847ba9e19bcc87742ca086e888bf2a` |
+| **FINAL_COMMIT** | *(set at push — see D3 reconciliation § IMPL-01)* |
+| **B1** | `uaep_executor.py` — `LlmInferenceHookPayload` + `MiddlewareExecutionSubjectFacet` at `BEFORE_CONTEXT_BUILD` |
+| **B2** | `hook_runtime_guard.py` — omit `phase=ctx.phase`; `source_execution_phase` in payload |
+| **Harness** | `canonical_agent_lifecycle_composition.py` — removed stage-15 `prompt_defense_enabled=False` workaround |
+| **Maximum status** | **READY FOR AUDIT** — independent acceptance not granted by this section |
+
+### Before / after owner graph (implementation)
+
+**Before:** UAEP `EmptyMiddlewareHookPayload` + harness prompt-defense off; hook violations with off-catalog top-level `phase`.
+
+**After:** UAEP aligns with graph typed payload; platform hook violations use catalog `STEP_EXECUTION` with diagnostic `source_execution_phase`; stage-15 exercises product prompt defense default.
+
+### Test evidence (mandatory core regression)
+
+Command in §19; log under `.tmp/session/PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-IMPL-01/`.
 
 ---
 
