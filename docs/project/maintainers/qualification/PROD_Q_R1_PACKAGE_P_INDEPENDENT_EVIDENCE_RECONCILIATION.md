@@ -133,7 +133,7 @@
 
 | Item | Detail |
 |------|--------|
-| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** @ push) |
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `e1f2f75e6b087720a8e816efd756895e8e13f5cd`) |
 | **START_HEAD** | `011d058c723ffd3d49f022a4d29e83f8d6ab5462` |
 | **Finding** | **P01–P03** — qualification read `session._closed` for R09/registry release (private production field) |
 | **Fix** | `strict_http_qualification_asgi_lifespan` records successful `TestClient` shutdown; registry release without `_closed`; **R10** negative |
