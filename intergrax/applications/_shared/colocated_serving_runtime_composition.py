@@ -214,6 +214,20 @@ def bind_colocated_serving_runtime_after_activation(
     return updated
 
 
+def close_colocated_serving_execution_admission_on_strict_session_close(
+    *,
+    deployment_adapter: RuntimeDeploymentAdapter,
+    handoff: ServingRuntimeHandoff,
+) -> None:
+    """Close physical execution admission for the bound handoff unit (revision-independent)."""
+    if handoff.colocated_execution_admission is None:
+        return
+    identity = handoff.identity
+    deployment_adapter.close_serving_unit_execution_admission(
+        serving_unit_ref=identity.serving_unit_ref,
+    )
+
+
 def begin_colocated_serving_execution_drain_on_strict_session_close(
     *,
     deployment_adapter: RuntimeDeploymentAdapter,
@@ -272,6 +286,7 @@ def revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_c
 __all__ = [
     "ColocatedServingActivationCommitResolutionError",
     "ColocatedServingAdmissionTopologyError",
+    "close_colocated_serving_execution_admission_on_strict_session_close",
     "begin_colocated_serving_execution_drain_on_strict_session_close",
     "revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close",
     "bind_colocated_serving_runtime_after_activation",

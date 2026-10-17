@@ -632,16 +632,26 @@ class VenvBundleColocatedRuntimeDeploymentAdapter:
             unit.lifecycle_state = DeploymentInstanceState.FAILED
             self._remove_unit(serving_unit_ref, unit)
 
+    def close_serving_unit_execution_admission(
+        self,
+        *,
+        serving_unit_ref: str,
+    ) -> None:
+        """Deny new physical execution reservations for this serving unit (idempotent)."""
+        with self._lock:
+            unit = self._require_unit(serving_unit_ref)
+            unit.admission.begin_drain()
+
     def begin_drain_for_bound_serving_unit(self, serving_unit_ref: str) -> None:
         """
         Close physical execution admission for one bound unit (adapter-owned gate).
 
         Used when session-close drain must not depend on durable revision evidence.
         """
+        self.close_serving_unit_execution_admission(serving_unit_ref=serving_unit_ref)
         with self._lock:
             unit = self._require_unit(serving_unit_ref)
             unit.coordinator_admission_open_staged = None
-            unit.admission.begin_drain()
             unit.lifecycle_state = DeploymentInstanceState.DRAINING
             unit.drain_started_monotonic = time.monotonic()
 

@@ -456,7 +456,7 @@ def test_c_dim16_f02_drain_and_emergency_revocation_both_fail(
         assert "dim16-f02-drain-fail" in str(errors[0])
         assert "dim16-f02-revoke-fail" in str(errors[1])
         assert close_calls == 1
-        assert unit.admission.admission_closed() is False
+        assert unit.admission.admission_closed() is True
         assert fixture.session._closed is False
         assert fixture.session.lifecycle._process_closed is True
         _assert_production_slot_released()
@@ -506,7 +506,7 @@ def test_c_dim16_f02_post_close_01_execution_deny_after_dual_shutdown_failure(
                 assert "dim16-f02-post-close-drain-fail" in str(errors[0])
                 assert "dim16-f02-post-close-revoke-fail" in str(errors[1])
                 unit = fixture.adapter._units[fixture.unit_ref]
-                assert unit.admission.admission_closed() is False
+                assert unit.admission.admission_closed() is True
                 assert fixture.session.lifecycle._process_closed is True
                 denied = client.post(
                     fixture.run_url,
@@ -555,6 +555,51 @@ def test_c_dim16_f03_drain_revoke_and_cleanup_all_fail(
         assert isinstance(errors[1], StrictProductionServingLauncherError)
         assert errors[2] is cleanup_fail
         close_mock.assert_called_once()
+        unit = fixture.adapter._units[fixture.unit_ref]
+        assert unit.admission.admission_closed() is True
+        assert fixture.session._closed is False
+        assert not fixture.session.lifecycle._process_closed
+
+
+def test_c_dim16_f02_admission_close_failure_withholds_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """DIM16-F02 — failed first admission-close does not release process slot or close gate."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-c-dim16-f02-admission-close-fail",
+    ) as fixture:
+        close_fail = VenvBundleColocatedDeploymentError(
+            "dim16-f02-admission-close-fail",
+        )
+        close_calls = 0
+        original_close = ProductionProcessLifecycle.close_process_resources
+
+        def _tracked_close(self: ProductionProcessLifecycle) -> None:
+            nonlocal close_calls
+            close_calls += 1
+            original_close(self)
+
+        unit = fixture.adapter._units[fixture.unit_ref]
+        assert unit.admission.admission_closed() is False
+        with patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "close_colocated_serving_execution_admission_on_strict_session_close"
+            ),
+            side_effect=close_fail,
+        ), patch.object(
+            ProductionProcessLifecycle,
+            "close_process_resources",
+            _tracked_close,
+        ):
+            with pytest.raises(StrictProductionServingLauncherError) as exc_info:
+                fixture.session.close()
+        assert "dim16-f02-admission-close-fail" in str(exc_info.value)
+        assert close_calls == 0
+        assert unit.admission.admission_closed() is False
         assert fixture.session._closed is False
         assert not fixture.session.lifecycle._process_closed
 

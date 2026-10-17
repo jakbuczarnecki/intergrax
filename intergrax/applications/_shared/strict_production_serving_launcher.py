@@ -19,6 +19,7 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapt
 from intergrax.applications._shared.colocated_serving_runtime_composition import (
     ColocatedServingActivationCommitResolutionError,
     ColocatedServingAdmissionTopologyError,
+    close_colocated_serving_execution_admission_on_strict_session_close,
     begin_colocated_serving_execution_drain_on_strict_session_close,
     revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close,
     bind_colocated_serving_runtime_after_activation,
@@ -151,25 +152,27 @@ class StrictProductionServingSession:
                 "process lifecycle resources already released",
             )
         shutdown_errors: list[BaseException] = []
+        admission_close_committed = True
         handoff = self.lifecycle.composition.serving_runtime_handoff
         if handoff is not None:
             stores = self.lifecycle.composition.agent_platform_runtime.stores
             deployment_adapter = self.lifecycle.deployment_adapter
             try:
-                begin_colocated_serving_execution_drain_on_strict_session_close(
+                close_colocated_serving_execution_admission_on_strict_session_close(
                     deployment_adapter=deployment_adapter,
                     handoff=handoff,
-                    revision_store=stores.revision_store,
                 )
             except (
                 ColocatedServingAdmissionTopologyError,
                 VenvBundleColocatedDeploymentError,
             ) as exc:
-                drain_primary = StrictProductionServingLauncherError(str(exc))
-                drain_primary.__cause__ = exc
-                shutdown_errors.append(drain_primary)
+                admission_close_committed = False
+                close_error = StrictProductionServingLauncherError(str(exc))
+                close_error.__cause__ = exc
+                shutdown_errors.append(close_error)
+            if admission_close_committed:
                 try:
-                    revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close(
+                    begin_colocated_serving_execution_drain_on_strict_session_close(
                         deployment_adapter=deployment_adapter,
                         handoff=handoff,
                         revision_store=stores.revision_store,
@@ -177,25 +180,47 @@ class StrictProductionServingSession:
                 except (
                     ColocatedServingAdmissionTopologyError,
                     VenvBundleColocatedDeploymentError,
-                ) as revoke_exc:
-                    revoke_error = StrictProductionServingLauncherError(str(revoke_exc))
-                    revoke_error.__cause__ = revoke_exc
-                    shutdown_errors.append(revoke_error)
-        try:
-            self.lifecycle.close_process_resources()
-        except BaseException as cleanup_exc:
-            cleanup_errors = cleanup_errors_from_close_failure(cleanup_exc)
-            if shutdown_errors:
-                raise_grouped_exceptions(
-                    (
-                        "strict production serving session close failed during "
-                        "execution drain; errors while closing process lifecycle "
-                        "resources"
-                    ),
-                    [*shutdown_errors, *cleanup_errors],
-                    from_exc=shutdown_errors[0],
-                )
-            raise
+                ) as exc:
+                    drain_primary = StrictProductionServingLauncherError(str(exc))
+                    drain_primary.__cause__ = exc
+                    shutdown_errors.append(drain_primary)
+                    try:
+                        revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close(
+                            deployment_adapter=deployment_adapter,
+                            handoff=handoff,
+                            revision_store=stores.revision_store,
+                        )
+                    except (
+                        ColocatedServingAdmissionTopologyError,
+                        VenvBundleColocatedDeploymentError,
+                    ) as revoke_exc:
+                        revoke_error = StrictProductionServingLauncherError(str(revoke_exc))
+                        revoke_error.__cause__ = revoke_exc
+                        shutdown_errors.append(revoke_error)
+        if admission_close_committed:
+            try:
+                self.lifecycle.close_process_resources()
+            except BaseException as cleanup_exc:
+                cleanup_errors = cleanup_errors_from_close_failure(cleanup_exc)
+                if shutdown_errors:
+                    raise_grouped_exceptions(
+                        (
+                            "strict production serving session close failed during "
+                            "execution drain; errors while closing process lifecycle "
+                            "resources"
+                        ),
+                        [*shutdown_errors, *cleanup_errors],
+                        from_exc=shutdown_errors[0],
+                    )
+                raise
+        elif shutdown_errors:
+            if len(shutdown_errors) == 1:
+                raise shutdown_errors[0]
+            raise_grouped_exceptions(
+                "strict production serving session close failed before execution admission deny",
+                shutdown_errors,
+                from_exc=shutdown_errors[0],
+            )
         if not shutdown_errors:
             self._closed = True
             return

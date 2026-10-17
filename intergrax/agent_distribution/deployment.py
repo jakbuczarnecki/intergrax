@@ -218,6 +218,14 @@ class RuntimeDeploymentAdapter(Protocol):
         """Signal serving unit to stop accepting new traffic."""
         ...
 
+    def close_serving_unit_execution_admission(
+        self,
+        *,
+        serving_unit_ref: str,
+    ) -> None:
+        """Deny new physical execution reservations for this serving unit."""
+        ...
+
     def check_drain(
         self,
         revision: RuntimeRevision,
@@ -275,6 +283,8 @@ class FakeInMemoryRuntimeDeploymentAdapter:
         self._fail_prepare_for: set[str] = set()
         self._fail_readiness_for: set[str] = set()
         self._fail_begin_drain_for: set[str] = set()
+        self._fail_close_execution_admission_for: set[str] = set()
+        self._execution_admission_closed: set[str] = set()
         self._drain_pending: set[str] = set()
         self._drain_timeout_for: set[str] = set()
         self._prepare_count: dict[str, int] = {}
@@ -291,6 +301,9 @@ class FakeInMemoryRuntimeDeploymentAdapter:
 
     def fail_begin_drain(self, serving_unit_ref: str) -> None:
         self._fail_begin_drain_for.add(serving_unit_ref)
+
+    def fail_close_execution_admission(self, serving_unit_ref: str) -> None:
+        self._fail_close_execution_admission_for.add(serving_unit_ref)
 
     def force_drain_timeout(self, serving_unit_ref: str) -> None:
         self._drain_timeout_for.add(serving_unit_ref)
@@ -367,6 +380,18 @@ class FakeInMemoryRuntimeDeploymentAdapter:
             update={"state": DeploymentInstanceState.DRAINING}
         )
         self._drain_pending.add(serving_unit_ref)
+
+    def close_serving_unit_execution_admission(
+        self,
+        *,
+        serving_unit_ref: str,
+    ) -> None:
+        if serving_unit_ref in self._fail_close_execution_admission_for:
+            raise RuntimeError("simulated close_serving_unit_execution_admission failure")
+        record = self._units.get(serving_unit_ref)
+        if record is None:
+            raise RuntimeError("unknown serving unit for execution admission close")
+        self._execution_admission_closed.add(serving_unit_ref)
 
     def check_drain(
         self,

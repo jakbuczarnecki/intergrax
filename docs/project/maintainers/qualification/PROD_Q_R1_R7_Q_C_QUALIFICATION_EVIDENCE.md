@@ -169,7 +169,7 @@ Properties are **proved** only where §C execution or cited prior wave applies @
 
 ## E. DIM16 qualification limitations
 
-Executed @ `SOURCE_EVIDENCE_SHA` in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` (13 tests).
+Executed @ `SOURCE_EVIDENCE_SHA` in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` (15 tests @ F02 impl candidate SHA).
 
 | Topic | Recorded behavior |
 |-------|-----------------|
@@ -177,20 +177,21 @@ Executed @ `SOURCE_EVIDENCE_SHA` in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown
 | Coordinator / adapter ownership | Launcher + adapter ports; no duplicate rollback implementation (`test_c_dim16_06` reuses **D1-R6** evidence) |
 | Cleanup after one / two / three failures | `test_c_dim16_f03` — triple failure preserves three errors; single `close_process_resources` attempt |
 | Primary + additional error preservation | `test_c_dim16_05`, F02/F03 ExceptionGroup ordering |
-| **Both drain and emergency revocation fail (F02)** | Admission may remain **open** (`admission_closed() is False`); session `_closed` may remain **False** while process lifecycle marked closed — **visibly incomplete shutdown** |
-| **F02 post-close HTTP (F02-POST-CLOSE-01)** | `test_c_dim16_f02_post_close_01_*` — **EXECUTED FAIL** @ Package D §5.5: HTTP **200** + inner invoked after dual-failure close; **IN-SCOPE BLOCKER** — not PASS |
+| **Both drain and emergency revocation fail (F02)** | After F02 hardening @ impl SHA: first protocol admission-close **succeeds**; gate **closed**; drain+revoke doubles still raise; session `_closed` may remain **False** while cleanup runs — **scoped re-audit required** |
+| **F02 post-close HTTP (F02-POST-CLOSE-01)** | `test_c_dim16_f02_post_close_01_*` — **PASS (agent session @ impl SHA)** — HTTP **502**, inner not invoked; **not** operator-independent audit PASS |
+| **F02 admission-close failure before deny** | `test_c_dim16_f02_admission_close_failure_withholds_cleanup` — cleanup withheld; gate unchanged |
 | Normal in-flight / drain | Positive drain paths + HTTP 502 when admission denied mid-drain |
 | **F06** scope | Unit isolation only — sibling serving unit not closed by bound-unit emergency revocation |
 | Rollback | **D1-R6** owns activation rollback — not reimplemented in §C |
 
 ### E.1 Mandatory exit criterion evaluation (F02 / open gate)
 
-P0 gate plan requires integrated drain/stop during **active strict serving**, not universal guarantee that admission closes when **both** drain and revocation hooks fail under test doubles. F02 documents **fail-closed error surfacing** (ExceptionGroup, slot release, no duplicate cleanup) while leaving admission state **honestly inconsistent**. That outcome is a **scoped residual**, not relabeled PASS.
+Post-F02 implementation: authoritative deny precedes revision-dependent drain helpers; dual helper failure no longer leaves admission open when first close succeeds. Independent exact-SHA audit still required before DIM16/F02 blocker removal.
 
 | Classification | Verdict |
 |----------------|---------|
-| **IN-SCOPE BLOCKER** for R7-Q parent qualification via this record | **None declared** — residual is explicit; operator may impose stricter product policy in Package D |
-| Recommended disposition | **SCOPED ACCEPTANCE CANDIDATE** with F02/F03 residuals recorded |
+| **IN-SCOPE BLOCKER** (F02 open-gate / POST-CLOSE) @ pre-impl SHA | **Mitigated @ impl SHA (agent)** — **READY FOR AUDIT**, not CLOSED |
+| Recommended disposition | **SCOPED ACCEPTANCE CANDIDATE** pending independent audit; F02-05/07/09 remain **NOT PROVEN** |
 
 ---
 
