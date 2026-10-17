@@ -158,7 +158,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 
 ## 8. Minimum ordered follow-up tasks
 
-1. **PROD-Q-R1-R7-Q-C-PACKAGE-D** — Independent operator audit of [`PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md) + this reconciliation @ GitHub `AUDITED_HEAD` commit chain.
+1. **PROD-Q-R1-R7-Q-C-PACKAGE-D** — [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) **READY FOR AUDIT** @ `b07b7f77…` — operator/GitHub independent audit; **DIM16/F02** remains **IN-SCOPE BLOCKER** until child evidence.
 2. **Operator evidence capture** — Package B §3 list (DIM6 B6-01, DIM17 prod profile, trusted artifact roots).
 3. **PROD-Q-R1-PACKAGE-P** — Independent operator acceptance @ `AUDITED_HEAD` ([`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md)).
 4. **PROD-Q-R1** parent progression — remaining ADR children per roadmap (outside this reconciliation scope).
