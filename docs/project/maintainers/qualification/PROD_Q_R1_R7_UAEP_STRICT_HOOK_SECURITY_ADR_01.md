@@ -419,36 +419,40 @@ Command in §19; log under `.tmp/session/PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-
 
 | Item | Value |
 |------|-------|
-| **Task** | `PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-Q1-DURABLE-EVIDENCE-QUALIFICATION` |
-| **START_HEAD** | `31d02c9a6ca0ba139cf07ea11188da983c1580c6` |
+| **Q1 task** | `PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-Q1-DURABLE-EVIDENCE-QUALIFICATION` |
+| **Q1 START_HEAD** | `31d02c9a6ca0ba139cf07ea11188da983c1580c6` |
+| **Typed-envelope corrective** | `PROD-Q-R1-R7-UAEP-HOOK-VIOLATION-TYPED-EVIDENCE-CORRECTIVE` |
+| **Corrective START_HEAD** | `d8ec844da5824ee6368112fd140aa9ec65746cf2` |
 | **FINAL_COMMIT** | *(record at push — independent audit SHA)* |
-| **Q1 status** | **NOT READY FOR AUDIT** — **IN-SCOPE BLOCKER** (typed payload envelope) |
+| **Gate B status** | **READY FOR AUDIT** (typed envelope + durable acceptance) |
 | **Maximum status** | Bounded qualification only; global **FRZ-*** unchanged |
 
-### IN-SCOPE BLOCKER (production change required — out of Q1 scope)
+### Production delta (typed envelope corrective)
 
-IMPL-01 fixed catalog **phase** (B2). `platform.hook.hook_blocked` still emits a raw dict payload without `payload_schema_id`. At the sanctioned write boundary, `ValidatingEvidencePersistencePort.append` → `assert_runtime_event_schema` fails with: `extension event_kind 'platform.hook.hook_blocked' requires registered typed payload envelope` (`payload_registry.py`). Policy classifies the signal as **MANDATORY** durable (`evidence_durability.py` + `RetentionClass.OPERATIONAL` default on platform kind); persistence is not optional — the event cannot be committed until a typed envelope is registered (pattern: `platform.security.*` in `intergrax/runtime/security/payloads.py` + bootstrap).
-
-**Proposed child task:** register typed payloads + emission path for `platform.hook.hook_blocked` / `hook_error` / `hook_timeout` without altering security policy owners.
+- **`PlatformHookViolationPayloadV1`** (`platform.hook.violation.v1`) — one family contract for `platform.hook.hook_blocked` / `hook_error` / `hook_timeout`; fields `hook_name`, `point`, `action`, `reason`, `violation_kind`, `source_execution_phase`.
+- Registered via **`CANONICAL_PAYLOAD_TYPES`** / **`bootstrap_canonical_payload_registry`** (no parallel registry).
+- **`hook_runtime_guard._emit_hook_violation`** — sole emission change: `runtime_event_with_payload` after `build_platform_signal_event`.
 
 ### Q1-A — schema validation
 
 - **Phase (PASS):** `test_hook_violation_emits_catalog_phase_and_source_execution_phase`; negative `test_platform_hook_blocked_with_context_building_phase_override_fails_schema_guard`.
-- **Full schema (FAIL — blocker):** `test_hook_blocked_emitted_signal_fails_full_schema_guard_without_typed_envelope`.
+- **Full schema (PASS):** `test_hook_blocked_emitted_signal_passes_full_schema_guard_with_typed_envelope`; negative `test_hook_blocked_emitted_signal_rejects_unknown_payload_schema_version`.
 
 ### Q1-B — durable evidence
 
-- **FAIL (blocker):** `test_hook_blocked_durable_path_rejected_by_validating_persistence_port` — `invoke_guarded_hook` → `RuntimeEventBus.publish` → `ValidatingEvidencePersistencePort`; store remains empty; not bus history.
+- **PASS:** `test_hook_blocked_durable_path_accepted_by_validating_persistence_port` — `invoke_guarded_hook` → `RuntimeEventBus.publish` → `ValidatingEvidencePersistencePort` → `InMemoryRuntimeEventStore.list_positioned_for_run`; kind, phase, typed payload, execution identity match source.
 
 ### Q1-C — fail-closed (reused IMPL-01 harness)
 
-- `tests/unit/agents/test_uaep_executor.py::test_uaep_prompt_defense_blocks_injection_without_build_context`
-- `tests/unit/runtime/middleware/test_hook_runtime_guard.py::test_hook_violation_publish_failure_does_not_allow_execution`
+- `tests/unit/agents/test_uaep_executor.py::test_uaep_prompt_defense_blocks_injection_without_build_context` — **PASS**
+- `tests/unit/runtime/middleware/test_hook_runtime_guard.py::test_hook_violation_publish_failure_does_not_allow_execution` — **PASS**
 
 ### Q1-D — owner inventory (read-only confirmation)
 
 | Concern | Owner |
 |---------|--------|
+| Typed payload family | `intergrax/runtime/events/payloads/platform_families.py` |
+| Canonical registration | `payloads/__init__.py` · `payload_registry.bootstrap_canonical_payload_registry` |
 | Catalog phase authority | `spine_consolidation.py` / `get_platform_kind_entry` |
 | UAEP hook input | `uaep_executor.py` |
 | Prompt Defense policy | `application_security_wiring.py` |
@@ -457,7 +461,17 @@ IMPL-01 fixed catalog **phase** (B2). `platform.hook.hook_blocked` still emits a
 | Schema guard | `schema_guard.py` |
 | Durable commit | `event_bus.py` → `ValidatingEvidencePersistencePort` → store |
 
-Session log: `.tmp/session/PROD-Q-R1-R7-UAEP-STRICT-HOOK-SECURITY-Q1/`.
+### Controlled test evidence (corrective)
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/runtime/middleware/test_hook_runtime_guard.py \
+  tests/unit/agents/test_uaep_executor.py::test_uaep_prompt_defense_blocks_injection_without_build_context
+```
+
+Session log: `.tmp/session/UAEP-HOOK-TYPED-ENVELOPE/` (12 passed; exit 0).
+
+**Recommendation:** After independent audit of FINAL_COMMIT, close the Gate B chain (IMPL-01 + Q1 + typed envelope) without a further qualification child unless new scope is opened.
 
 ---
 

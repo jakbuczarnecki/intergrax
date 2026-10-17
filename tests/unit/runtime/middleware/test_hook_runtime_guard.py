@@ -21,6 +21,8 @@ from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookRe
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookError
 from intergrax.runtime.middleware.base import RuntimeMiddleware
+from intergrax.runtime.events.payload_registry import validate_payload_envelope
+from intergrax.runtime.events.payloads.platform_families import PlatformHookViolationPayloadV1
 from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError, assert_runtime_event_schema
 from intergrax.runtime.events.spine_consolidation import (
     build_platform_signal_event,
@@ -245,7 +247,10 @@ async def test_hook_violation_emits_catalog_phase_and_source_execution_phase() -
     assert catalog is not None
     assert event.phase is catalog.phase
     assert event.phase is ExecutionPhase.STEP_EXECUTION
-    assert event.payload["source_execution_phase"] == ExecutionPhase.CONTEXT_BUILDING.value
+    typed = validate_payload_envelope(event.payload)
+    assert isinstance(typed, PlatformHookViolationPayloadV1)
+    assert typed.source_execution_phase is ExecutionPhase.CONTEXT_BUILDING
+    assert_runtime_event_schema(event)
     with pytest.raises(RuntimeEventSchemaError, match="phase mismatch"):
         assert_runtime_event_schema(
             event.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING})
@@ -253,8 +258,8 @@ async def test_hook_violation_emits_catalog_phase_and_source_execution_phase() -
 
 
 @pytest.mark.asyncio
-async def test_hook_blocked_emitted_signal_fails_full_schema_guard_without_typed_envelope() -> None:
-    """Q1-A gap: phase/catalog fixed (IMPL-01); typed payload envelope still missing."""
+async def test_hook_blocked_emitted_signal_passes_full_schema_guard_with_typed_envelope() -> None:
+    """Q1-A acceptance: invoke_guarded_hook emission passes assert_runtime_event_schema."""
     bus = RuntimeEventBus()
     events: list = []
     bus.subscribe(lambda event: events.append(event))
@@ -288,23 +293,59 @@ async def test_hook_blocked_emitted_signal_fails_full_schema_guard_without_typed
         reset_active_execution_identity(token)
 
     event = events[0]
-    with pytest.raises(RuntimeEventSchemaError, match="typed payload envelope"):
+    assert_runtime_event_schema(event)
+    typed = validate_payload_envelope(event.payload)
+    assert isinstance(typed, PlatformHookViolationPayloadV1)
+    assert typed.hook_name == "demo_block"
+    assert typed.point is HookPoint.BEFORE_CONTEXT_BUILD
+
+
+@pytest.mark.asyncio
+async def test_hook_blocked_emitted_signal_rejects_unknown_payload_schema_version() -> None:
+    bus = RuntimeEventBus()
+    events: list = []
+    bus.subscribe(lambda event: events.append(event))
+    with _emitting_hook_context(phase=ExecutionPhase.CONTEXT_BUILDING) as ctx:
+
+        async def _block() -> HookResult:
+            return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+        await invoke_guarded_hook(
+            hook_name="demo_block",
+            point=HookPoint.BEFORE_CONTEXT_BUILD,
+            ctx=ctx,
+            coro_factory=_block,
+            timeout_seconds=1.0,
+            event_bus=bus,
+        )
+
+    emitted = events[0]
+    event = emitted.model_copy(
+        update={
+            "payload": {
+                **emitted.payload,
+                "payload_schema_version": 99,
+            }
+        }
+    )
+    with pytest.raises(RuntimeEventSchemaError, match="payload_schema_version mismatch"):
         assert_runtime_event_schema(event)
 
 
 @pytest.mark.asyncio
-async def test_hook_blocked_durable_path_rejected_by_validating_persistence_port() -> None:
-    """Q1-B gap: MANDATORY durability policy applies but validating port rejects the write."""
+async def test_hook_blocked_durable_path_accepted_by_validating_persistence_port() -> None:
+    """Q1-B acceptance: BLOCK published once; store retains schema-valid event."""
     store = InMemoryRuntimeEventStore()
     bus = RuntimeEventBus(persistence=store, record_history=False)
     assert isinstance(bus.persistence, ValidatingEvidencePersistencePort)
 
     run_id = mint_run_id()
     task_id = mint_task_id()
+    execution_id = mint_execution_id()
     token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        execution_id=execution_id,
     )
     ctx = HookContext(
         task_id=task_id,
@@ -317,20 +358,30 @@ async def test_hook_blocked_durable_path_rejected_by_validating_persistence_port
         return HookResult(action=HookAction.BLOCK, reason="policy_denied")
 
     try:
-        with pytest.raises(RuntimeEventSchemaError, match="typed payload envelope"):
-            await invoke_guarded_hook(
-                hook_name="demo_block",
-                point=HookPoint.BEFORE_CONTEXT_BUILD,
-                ctx=ctx,
-                coro_factory=_block,
-                timeout_seconds=1.0,
-                event_bus=bus,
-            )
+        result = await invoke_guarded_hook(
+            hook_name="demo_block",
+            point=HookPoint.BEFORE_CONTEXT_BUILD,
+            ctx=ctx,
+            coro_factory=_block,
+            timeout_seconds=1.0,
+            event_bus=bus,
+        )
     finally:
         reset_active_execution_identity(token)
 
-    assert store.list_positioned_for_run(run_id, tenant_id="") == []
-    assert bus.history == []
+    assert result.action is HookAction.BLOCK
+    stored = store.list_positioned_for_run(run_id, tenant_id="")
+    assert len(stored) == 1
+    event = stored[0].event
+    assert event.event_kind == "platform.hook.hook_blocked"
+    assert event.run_id == run_id
+    assert event.task_id == task_id
+    assert event.execution_id == execution_id
+    assert_runtime_event_schema(event)
+    typed = validate_payload_envelope(event.payload)
+    assert isinstance(typed, PlatformHookViolationPayloadV1)
+    assert typed.hook_name == "demo_block"
+    assert typed.source_execution_phase is ExecutionPhase.CONTEXT_BUILDING
 
 
 @pytest.mark.asyncio
