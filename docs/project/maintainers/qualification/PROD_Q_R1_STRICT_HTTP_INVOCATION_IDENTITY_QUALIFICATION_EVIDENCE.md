@@ -258,3 +258,52 @@ uv run pytest -p no:xdist \
 
 - No production public “session already closed” observable — qualification must not invent one; ASGI-lifespan completion is recorded only at test boundary after successful `TestClient` shutdown.
 - No production API to introspect unknown leaked global lifecycle slots (unchanged).
+
+---
+
+## 13. Corrective lineage — PROD-Q-R1-STRICT-HTTP-R1-R4
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-STRICT-HTTP-R1-R4** |
+| **Parent** | **PROD-Q-R1-STRICT-HTTP-R1** |
+| **START_HEAD** | `f8edb258fb214f399022854ff17a17d85293e922` |
+| **FINAL_COMMIT** | `34965949f0095b9878d5b4cba976f5cfc25c7889` |
+| **Production delta** | **0** |
+
+### Root cause
+
+| ID | Issue | Correction |
+|----|-------|------------|
+| **P04** | `@contextmanager` body exception skipped post-`with TestClient` bookkeeping — successful ASGI shutdown not recorded; registry redundant `close()` could add misleading teardown failure | Capture body exception inside `TestClient`; on successful `TestClient` `__exit__`, record completion then re-raise body exception; dual failure → `ExceptionGroup` without completion record |
+
+### Exception-path matrix (qualification ASGI lifespan)
+
+| Body | Shutdown | Completion record | Propagated error |
+|------|----------|-------------------|------------------|
+| OK | OK | **Yes** | — |
+| Fail | OK | **Yes** | Original body exception |
+| OK | Fail | **No** | Shutdown exception |
+| Fail | Fail | **No** | `ExceptionGroup` (body + shutdown) |
+| Session not owned | — | **No close/reset via this helper** | unchanged |
+
+### Regression tests (R01–R12)
+
+| ID | Intent |
+|----|--------|
+| **R01–R10** | Unchanged intent (R1-R3) |
+| **R11** | Body failure + successful shutdown → completion recorded; registry teardown without false failure |
+| **R12** | Body + shutdown failure → no completion record; both exceptions preserved |
+
+### Bounded pytest (@ R1-R4 agent session)
+
+| Selection | Result | Log |
+|-----------|--------|-----|
+| `-k "test_r09_asgi_lifespan_close or test_r10_asgi_lifespan_exit or test_r11_asgi_lifespan_body or test_r12_asgi_lifespan_body"` | **4 passed**, exit **0**, ~16s | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R4/pytest-r09-r12.log` |
+
+**Not executed @ R1-R4:** full **22/22** module run (operator authorization required per task budget).
+
+### Ownership after R1-R4
+
+- Completion record still means **successful public `TestClient` / ASGI context exit** only — not merely entering `finally`.
+- **R1-R3** limitation “body exception → no record” — **superseded** for successful-shutdown path (**R11**).

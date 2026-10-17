@@ -142,11 +142,25 @@ def strict_http_qualification_asgi_lifespan(
     fixture: StrictHttpInvocationQualFixture,
 ) -> Generator[TestClient, None, None]:
     """Run TestClient ASGI lifespan; record completion only on full successful exit."""
-    with TestClient(fixture.app) as client:
-        yield client
+    body_exc: BaseException | None = None
+    try:
+        with TestClient(fixture.app) as client:
+            try:
+                yield client
+            except BaseException as exc:
+                body_exc = exc
+    except BaseException as shutdown_exc:
+        if body_exc is not None:
+            raise ExceptionGroup(
+                "strict HTTP qualification ASGI lifespan exit failed after body failure",
+                [body_exc, shutdown_exc],
+            ) from shutdown_exc
+        raise
     record_owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
         fixture.session,
     )
+    if body_exc is not None:
+        raise body_exc
 
 
 def register_owned_strict_http_invocation_session(

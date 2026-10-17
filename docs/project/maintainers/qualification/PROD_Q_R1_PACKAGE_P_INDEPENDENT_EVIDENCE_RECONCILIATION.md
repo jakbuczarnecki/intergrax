@@ -141,6 +141,17 @@
 | **Pytest** | Bounded: `-k test_r0` **8 passed** + `test_r10` **1 passed** + **H01** smoke **1 passed** (logs `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R3/`); **no** full **20/20** module replay |
 | **Remaining limitation** | No production session-closed introspection API; test bookkeeping is not lifecycle authority |
 
+### 5.6 Corrective (PROD-Q-R1-STRICT-HTTP-R1-R4)
+
+| Item | Detail |
+|------|--------|
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `34965949f0095b9878d5b4cba976f5cfc25c7889`) |
+| **START_HEAD** | `f8edb258fb214f399022854ff17a17d85293e922` |
+| **Finding** | **P04** — qualification `strict_http_qualification_asgi_lifespan` did not record successful ASGI shutdown when `TestClient` body raised (contextmanager unwind skipped post-`with` bookkeeping) |
+| **Fix** | Exception-safe control flow: defer body re-raise until after successful `TestClient` exit; dual failure `ExceptionGroup`; **R11** / **R12** |
+| **Negative evidence** | **R01–R12**; **R06** = **H01–H08** (historical) |
+| **Pytest** | Bounded **R09–R12**: **4 passed**, exit **0**, ~16s (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R4/pytest-r09-r12.log`); **no** full module replay |
+
 ---
 
 ## 6. Enterprise audit (@ AUDITED_HEAD)
@@ -184,7 +195,7 @@
 
 | Item | Value |
 |------|-------|
-| Pytest replay | STRICT-HTTP-R1-R1 @ `afc466d669b2e119e0de1d90d0c40c6debad848d` — `test_prod_q_r1_strict_http_invocation_identity_qualification.py` **16 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log`); historical STRICT-HTTP-R1 **11/11** preserved |
+| Pytest replay | STRICT-HTTP-R1-R4 @ bounded **R09–R12** — **4 passed**, exit **0**, ~16s (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R4/pytest-r09-r12.log`); historical STRICT-HTTP-R1-R1 **16/16** and prior replays preserved |
 | Residual processes | **none** (no `uv` test invocation) |
 
 Historical logs: `.tmp/session/PROD-Q-R1-PIS-STRICT-EXTERNAL-WORK-QUALIFICATION/pytest-full.log`, `.tmp/session/PROD-Q-R1-STRICT-HTTP-INVOCATION-IDENTITY-QUALIFICATION/pytest.log`.

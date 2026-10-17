@@ -644,3 +644,51 @@ def test_r10_asgi_lifespan_exit_failure_does_not_record_completed_lifecycle(
         fixture.session,
     )
     assert owned_strict_http_invocation_session_registration_count() == 1
+
+
+def test_r11_asgi_lifespan_body_failure_still_records_completed_shutdown(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-r11-lifespan-body-failure",
+    )
+    assert owned_strict_http_invocation_session_registration_count() == 1
+    with pytest.raises(ValueError, match="r11 body failed"):
+        with strict_http_qualification_asgi_lifespan(fixture):
+            raise ValueError("r11 body failed")
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+    close_registered_owned_strict_http_invocation_sessions()
+    assert owned_strict_http_invocation_session_registration_count() == 0
+
+
+def test_r12_asgi_lifespan_body_and_shutdown_failure_preserves_both_without_completion_record(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-r12-lifespan-dual-failure",
+    )
+
+    def _close_raises() -> None:
+        raise StrictProductionServingLauncherError("r12 lifespan close failed")
+
+    with patch.object(fixture.session, "close", _close_raises):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            with strict_http_qualification_asgi_lifespan(fixture):
+                raise ValueError("r12 body failed")
+    group = exc_info.value
+    assert len(group.exceptions) == 2
+    assert isinstance(group.exceptions[0], ValueError)
+    assert isinstance(group.exceptions[1], StrictProductionServingLauncherError)
+
+    assert not owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+    assert owned_strict_http_invocation_session_registration_count() == 1
