@@ -3,13 +3,13 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **OPERATOR-APPROVED (bounded scope)** · **READY FOR AUDIT** — architecture R1–R4 ratified 2026-10-17; **not** independently implementation-certified |
-| **Implementation** | **DELIVERED** @ `8a1fd5e1c1b3211501034795c34071f7061d21d0` (task `PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-HARDENING`) — pending exact-SHA audit |
+| **Implementation** | **DELIVERED** @ `4aeb585ea83b076a17d065d1febfb18b9b2caca4` (task `PROD-Q-R1-R7-Q-C-DIM16-F02-FAIL-CLOSED-ADMISSION-HARDENING`) — pending exact-SHA audit |
 | **Revision** | **R1** (contract closure — `PROD-Q-R1-R7-Q-C-DIM16-F02-ADR-01-R1-CONTRACT-CLOSURE`) |
 | **Date** | 2026-10-17 |
 | **Branch** | `development` |
 | **Source baseline (task START_HEAD)** | `fd78e918ed9e5a40bb4456ce008028bcbbaaa154` |
 | **Architecture source SHA (R1 record)** | `d3be032d4ddbbbbb0f2b00ffbd93bfd38c1f3d11` |
-| **Audited baseline** | Pending independent audit @ `8a1fd5e1c1b3211501034795c34071f7061d21d0` |
+| **Audited baseline** | Pending independent audit @ `4aeb585ea83b076a17d065d1febfb18b9b2caca4` |
 | **Prior revision** | **R0** @ `4def1fde38b25a56b9defc4453ffded46545c456` — preferred **B + minimal A** without protocol-level admission-close port or first-deny-failure semantics |
 | **Parent program** | **PROD-Q-R1-R7-Q** → **PROD-Q-R1-R7-Q-C** (Package D) |
 | **Parent architecture** | [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) (**R6** — DEC-09 physical A1 owner + coordinator admission) |
@@ -21,7 +21,7 @@
 
 **Approved limitations:** Fail-closed execution deny only after successful `close_serving_unit_execution_admission`; ambiguous/failed first close follows failure-before-deny policy (no ordinary-path `close_process_resources()`).
 
-**Bounded test evidence (@ `8a1fd5e1c1b3211501034795c34071f7061d21d0`):** `uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` — 15 passed, ~28s (agent session 2026-10-17).
+**Bounded test evidence (@ `4aeb585ea83b076a17d065d1febfb18b9b2caca4`):** `uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` — 15 passed, ~28s (agent session 2026-10-17).
 
 **Competing ADR check:** No accepted ADR supersedes this bounded child. Recovery admission remains [`ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md`](../architecture/ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md).
 
