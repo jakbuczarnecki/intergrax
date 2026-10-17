@@ -81,9 +81,9 @@ uv run pytest -p no:xdist \
 
 | Metric | Value |
 |--------|-------|
-| **Result** | **19 passed**, 0 failed, 0 skipped (**R1-R2** adds **R07–R09**; **R06** = **H01–H08** unchanged) |
-| **Execution SHA** | See §11 **FINAL_COMMIT** |
-| **Log** | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R2/pytest-r2.log` |
+| **Result** | Historical **19 passed** @ R1-R2 FINAL_COMMIT; **R1-R3** adds **R10** (module **20** tests — **no** full-module replay @ R1-R3 without operator authorization) |
+| **Execution SHA** | See §12 **FINAL_COMMIT** (R1-R3) |
+| **Log** | R1-R2: `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R2/pytest-r2.log`; R1-R3 bounded: `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R3/pytest-r.log`, `pytest-r10.log`, `test_h01` smoke |
 
 ---
 
@@ -205,7 +205,56 @@ uv run pytest -p no:xdist \
 | **R08** | Registry support slice: no `__getattr__` / `getattr` / `type: ignore` / `cast` / `Any` |
 | **R09** | Post–`TestClient` lifespan close, registry teardown succeeds without false failure |
 
+### Remaining limitations (superseded by R1-R3 §12)
+
+- R1-R2 `_closed` observation at qualification boundary — **removed** in **PROD-Q-R1-STRICT-HTTP-R1-R3**.
+
+---
+
+## 12. Corrective lineage — PROD-Q-R1-STRICT-HTTP-R1-R3
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-STRICT-HTTP-R1-R3** |
+| **Parent** | **PROD-Q-R1-STRICT-HTTP-R1** |
+| **START_HEAD** | `011d058c723ffd3d49f022a4d29e83f8d6ab5462` |
+| **FINAL_COMMIT** | *(set @ push — operator audit on GitHub)* |
+| **Production delta** | **0** |
+
+### Root cause
+
+| ID | Issue | Correction |
+|----|-------|------------|
+| **P01** | R1-R2 teardown read `StrictProductionServingSession._closed` (private field) | Test-owned bookkeeping: record **only** after **successful** `TestClient` / ASGI lifespan exit via `strict_http_qualification_asgi_lifespan` |
+| **P02** | **R09** asserted `fixture.session._closed` | Assert qualification ASGI-lifespan completion record + registry release — **no** private session field reads |
+| **P03** | Direct `TestClient` at H04/H05/R09 bypassed shared lifespan contract | All bounded module `TestClient` entry points route through `strict_http_qualification_asgi_lifespan` (incl. `post_strict_http_run`) |
+
+### Ownership after R1-R3
+
+- Production `StrictProductionServingSession.close()` remains the **sole** lifecycle close authority (ASGI lifespan unchanged).
+- Qualification bookkeeping is **test-local** (`_sessions_with_completed_qualification_asgi_lifespan`); it **does not** call `close()` and is cleared when registry releases the session.
+- Registry teardown skips redundant `close()` only when ASGI lifespan completion was **explicitly recorded** after full successful `TestClient` exit (**R09**).
+- Lifespan exit failure or `TestClient` body exception → **no** record (**R10**); registry retains ownership; fail-closed teardown unchanged (**R02**).
+
+### Regression tests (R01–R10)
+
+| ID | Intent |
+|----|--------|
+| **R01–R09** | Unchanged intent (R1-R2); **R09** uses public bookkeeping only |
+| **R10** | Failed ASGI lifespan `close()` does not record completed lifecycle |
+| **R06** | **H01–H08** unchanged (smoke: **H01** @ R1-R3 bounded run only) |
+
+### Bounded pytest (@ R1-R3 agent session)
+
+| Selection | Result | Log |
+|-----------|--------|-----|
+| `-k test_r0` (**R01–R05**, **R07–R09**) | **8 passed**, exit **0**, ~19s | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R3/pytest-r.log` |
+| `::test_r10_*` | **1 passed**, exit **0**, ~15s | `pytest-r10.log` |
+| `::test_h01_baseline_strict_http_and_sanctioned_external_work` | **1 passed**, exit **0**, ~16s | (session smoke) |
+
+**Not executed @ R1-R3:** full **20/20** module run (operator authorization required per task budget).
+
 ### Remaining limitations
 
-- No production public “session closed” observable beyond failed second `close()` — qualification uses `_closed` on **concrete** session at teardown boundary only (aligned with other PROD-Q strict HTTP gates).
+- No production public “session already closed” observable — qualification must not invent one; ASGI-lifespan completion is recorded only at test boundary after successful `TestClient` shutdown.
 - No production API to introspect unknown leaked global lifecycle slots (unchanged).

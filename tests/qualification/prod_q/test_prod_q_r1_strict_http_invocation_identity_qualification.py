@@ -18,8 +18,6 @@ from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingLauncherError,
     StrictProductionServingSession,
 )
-from starlette.testclient import TestClient
-
 from applications.governed_contractor_application.host.provider_invocation_lifecycle import (
     GovernedProviderInvocationDispatchGate,
 )
@@ -50,6 +48,7 @@ from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support 
     build_sanctioned_external_work_runtime,
     build_strict_http_invocation_qual_fixture,
     close_registered_owned_strict_http_invocation_sessions,
+    owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan,
     owned_strict_http_invocation_session_registration_count,
     register_owned_strict_http_invocation_close_target_for_regression,
     register_owned_strict_http_invocation_session,
@@ -61,6 +60,7 @@ from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support 
     list_intent_invocation_ids,
     post_strict_http_run,
     run_request_json,
+    strict_http_qualification_asgi_lifespan,
 )
 from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
     _WRONG_TENANT_KEY,
@@ -275,7 +275,6 @@ def test_h04_independent_identical_http_requests_distinct_execution_identity(
         revision_id="rev-h04-dup-payload",
     )
     payload = _run_request_json(fixture.tenant_id)
-    from starlette.testclient import TestClient
 
     async def _inner_fresh(*_args, **_kwargs):
         return _completed_task_result()
@@ -285,7 +284,7 @@ def test_h04_independent_identical_http_requests_distinct_execution_identity(
         new_callable=AsyncMock,
         side_effect=_inner_fresh,
     ):
-        with TestClient(fixture.app) as client:
+        with strict_http_qualification_asgi_lifespan(fixture) as client:
             first_resp = client.post(
                 fixture.run_url,
                 json=payload,
@@ -313,7 +312,6 @@ def test_h05_tenant_isolation_http_and_pis(
         tmp_path,
         revision_id="rev-h05-tenant",
     )
-    from starlette.testclient import TestClient
     from tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission import (
         _run_request_json,
     )
@@ -339,7 +337,7 @@ def test_h05_tenant_isolation_http_and_pis(
         "inv-h05-tenant-b",
     )
 
-    with TestClient(fixture.app) as client:
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
         denied = client.post(
             fixture.run_url,
             json=_run_request_json(fixture.tenant_id),
@@ -557,6 +555,7 @@ def test_r05_qualification_support_never_resets_global_production_lifecycle_slot
     assert "production_process_lifecycle" not in text
     assert "_active_production_process_lifecycle" not in text
     assert "_process_closed" not in text
+    assert "._closed" not in text
     assert "close_process_resources" not in text
     assert "__getattr__" not in text
     assert "getattr(" not in text
@@ -605,8 +604,43 @@ def test_r09_asgi_lifespan_close_does_not_fail_owned_session_registry_teardown(
         revision_id="rev-r09-lifespan-close",
     )
     assert owned_strict_http_invocation_session_registration_count() == 1
-    with TestClient(fixture.app):
+    with strict_http_qualification_asgi_lifespan(fixture):
         pass
-    assert fixture.session._closed is True
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
     close_registered_owned_strict_http_invocation_sessions()
     assert owned_strict_http_invocation_session_registration_count() == 0
+    assert not owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+
+def test_r10_asgi_lifespan_exit_failure_does_not_record_completed_lifecycle(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-r10-lifespan-exit-failure",
+    )
+    assert not owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+    def _close_raises() -> None:
+        raise StrictProductionServingLauncherError("r10 lifespan close failed")
+
+    with patch.object(fixture.session, "close", _close_raises):
+        with pytest.raises(
+            StrictProductionServingLauncherError,
+            match="r10 lifespan close failed",
+        ):
+            with strict_http_qualification_asgi_lifespan(fixture):
+                pass
+
+    assert not owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+    assert owned_strict_http_invocation_session_registration_count() == 1

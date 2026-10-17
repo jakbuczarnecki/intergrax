@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -100,15 +102,51 @@ class _OwnedStrictHttpInvocationSessionCloseTarget(Protocol):
 _owned_strict_http_invocation_sessions: list[
     StrictProductionServingSession | _OwnedStrictHttpInvocationSessionCloseTarget
 ] = []
+_sessions_with_completed_qualification_asgi_lifespan: set[int] = set()
 
 
-def _strict_production_session_closed_by_public_contract(
+def record_owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+    session: StrictProductionServingSession,
+) -> None:
+    """Record successful ASGI lifespan shutdown for owned-session teardown (R09)."""
+    _sessions_with_completed_qualification_asgi_lifespan.add(id(session))
+
+
+def owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+    session: StrictProductionServingSession,
+) -> bool:
+    """Whether qualification code recorded completed ASGI lifespan for this session."""
+    return id(session) in _sessions_with_completed_qualification_asgi_lifespan
+
+
+def _release_completed_qualification_asgi_lifespan_bookkeeping(
+    session: StrictProductionServingSession | _OwnedStrictHttpInvocationSessionCloseTarget,
+) -> None:
+    if isinstance(session, StrictProductionServingSession):
+        _sessions_with_completed_qualification_asgi_lifespan.discard(id(session))
+
+
+def _strict_production_session_released_by_completed_qualification_asgi_lifespan(
     session: StrictProductionServingSession | _OwnedStrictHttpInvocationSessionCloseTarget,
 ) -> bool:
-    """True when strict ASGI lifespan already completed public session close (R09)."""
+    """True when qualification recorded public session close via completed ASGI lifespan."""
     if isinstance(session, StrictProductionServingSession):
-        return session._closed
+        return owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+            session,
+        )
     return False
+
+
+@contextmanager
+def strict_http_qualification_asgi_lifespan(
+    fixture: StrictHttpInvocationQualFixture,
+) -> Generator[TestClient, None, None]:
+    """Run TestClient ASGI lifespan; record completion only on full successful exit."""
+    with TestClient(fixture.app) as client:
+        yield client
+    record_owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
 
 
 def register_owned_strict_http_invocation_session(
@@ -144,8 +182,11 @@ def close_registered_owned_strict_http_invocation_sessions() -> None:
     errors: list[Exception] = []
     while _owned_strict_http_invocation_sessions:
         owned = _owned_strict_http_invocation_sessions[-1]
-        if _strict_production_session_closed_by_public_contract(owned):
+        if _strict_production_session_released_by_completed_qualification_asgi_lifespan(
+            owned,
+        ):
             _owned_strict_http_invocation_sessions.pop()
+            _release_completed_qualification_asgi_lifespan_bookkeeping(owned)
             continue
         try:
             owned.close()
@@ -157,6 +198,7 @@ def close_registered_owned_strict_http_invocation_sessions() -> None:
             break
         else:
             _owned_strict_http_invocation_sessions.pop()
+            _release_completed_qualification_asgi_lifespan_bookkeeping(owned)
     if len(errors) == 1:
         raise errors[0]
     if errors:
@@ -402,7 +444,7 @@ def post_strict_http_run(
     fixture: StrictHttpInvocationQualFixture,
     payload: dict[str, object],
 ) -> dict[str, object]:
-    with TestClient(fixture.app) as client:
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
         response = client.post(
             fixture.run_url,
             json=payload,
@@ -462,7 +504,9 @@ __all__ = [
     "external_work_adapter_metadata",
     "external_work_http_metadata",
     "list_intent_invocation_ids",
+    "owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan",
     "post_strict_http_run",
     "run_request_json",
+    "strict_http_qualification_asgi_lifespan",
     "_QUAL_T0",
 ]

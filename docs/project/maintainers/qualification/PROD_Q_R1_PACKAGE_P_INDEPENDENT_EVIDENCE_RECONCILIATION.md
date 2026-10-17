@@ -129,6 +129,18 @@
 | **Negative evidence** | **R01–R09**; **R06** = **H01–H08** |
 | **Pytest** | same module — **19 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R2/pytest-r2.log`) |
 
+### 5.5 Corrective (PROD-Q-R1-STRICT-HTTP-R1-R3)
+
+| Item | Detail |
+|------|--------|
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** @ push) |
+| **START_HEAD** | `011d058c723ffd3d49f022a4d29e83f8d6ab5462` |
+| **Finding** | **P01–P03** — qualification read `session._closed` for R09/registry release (private production field) |
+| **Fix** | `strict_http_qualification_asgi_lifespan` records successful `TestClient` shutdown; registry release without `_closed`; **R10** negative |
+| **Negative evidence** | **R01–R10**; **R06** = **H01–H08** (historical + **H01** smoke @ R1-R3 only) |
+| **Pytest** | Bounded: `-k test_r0` **8 passed** + `test_r10` **1 passed** + **H01** smoke **1 passed** (logs `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R3/`); **no** full **20/20** module replay |
+| **Remaining limitation** | No production session-closed introspection API; test bookkeeping is not lifecycle authority |
+
 ---
 
 ## 6. Enterprise audit (@ AUDITED_HEAD)
