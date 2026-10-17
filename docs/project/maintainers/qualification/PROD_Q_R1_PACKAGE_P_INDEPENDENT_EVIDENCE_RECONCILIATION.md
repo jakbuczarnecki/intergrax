@@ -122,7 +122,7 @@
 
 | Item | Detail |
 |------|--------|
-| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** at push) |
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `577805b6c11c55fb3bcf040f3a1b6ab00df1f0bb`) |
 | **START_HEAD** | `a1e2228f9304bf368d0aebd63265385097459554` |
 | **Finding** | **T01–T04** — `__getattr__` envelope violated strong typing; ASGI received non-concrete session type |
 | **Fix** | Registry holds concrete `StrictProductionServingSession`; regression Protocol for R01–R04 doubles only; `_closed` release after ASGI lifespan (**R09**) |

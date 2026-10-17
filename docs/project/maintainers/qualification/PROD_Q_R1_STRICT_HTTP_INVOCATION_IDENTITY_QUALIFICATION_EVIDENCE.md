@@ -177,7 +177,7 @@ uv run pytest -p no:xdist \
 | **Task** | **PROD-Q-R1-STRICT-HTTP-R1-R2** |
 | **Parent** | **PROD-Q-R1-STRICT-HTTP-R1** |
 | **START_HEAD** | `a1e2228f9304bf368d0aebd63265385097459554` |
-| **FINAL_COMMIT** | *(set at push — operator GitHub SHA audit)* |
+| **FINAL_COMMIT** | `577805b6c11c55fb3bcf040f3a1b6ab00df1f0bb` |
 | **Production delta** | **0** |
 
 ### Root cause
