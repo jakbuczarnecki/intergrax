@@ -145,7 +145,7 @@
 
 | Item | Detail |
 |------|--------|
-| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `34965949f0095b9878d5b4cba976f5cfc25c7889`) |
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `566228eb6830254286373d2bbabed4f22d97ffce`) |
 | **START_HEAD** | `f8edb258fb214f399022854ff17a17d85293e922` |
 | **Finding** | **P04** — qualification `strict_http_qualification_asgi_lifespan` did not record successful ASGI shutdown when `TestClient` body raised (contextmanager unwind skipped post-`with` bookkeeping) |
 | **Fix** | Exception-safe control flow: defer body re-raise until after successful `TestClient` exit; dual failure `ExceptionGroup`; **R11** / **R12** |
