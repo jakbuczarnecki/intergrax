@@ -110,7 +110,7 @@
 
 | Item | Detail |
 |------|--------|
-| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** on `development`) |
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `afc466d669b2e119e0de1d90d0c40c6debad848d`) |
 | **START_HEAD** | `1aa8725cbfbbff0c21aab50c62094b680f56511b` |
 | **Finding** | **F01** pop-before-close; **F02** exception-message suppression; **F03** `BaseException` teardown bucket |
 | **Fix** | LIFO close with pop-after-success; qualification ownership envelope for explicit close completion; `Exception`-bounded teardown errors |
@@ -161,7 +161,7 @@
 
 | Item | Value |
 |------|-------|
-| Pytest replay | STRICT-HTTP-R1-R1 @ FINAL_COMMIT — `test_prod_q_r1_strict_http_invocation_identity_qualification.py` **16 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log`); historical STRICT-HTTP-R1 **11/11** preserved |
+| Pytest replay | STRICT-HTTP-R1-R1 @ `afc466d669b2e119e0de1d90d0c40c6debad848d` — `test_prod_q_r1_strict_http_invocation_identity_qualification.py` **16 passed**, exit **0** (log `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R1/pytest.log`); historical STRICT-HTTP-R1 **11/11** preserved |
 | Residual processes | **none** (no `uv` test invocation) |
 
 Historical logs: `.tmp/session/PROD-Q-R1-PIS-STRICT-EXTERNAL-WORK-QUALIFICATION/pytest-full.log`, `.tmp/session/PROD-Q-R1-STRICT-HTTP-INVOCATION-IDENTITY-QUALIFICATION/pytest.log`.

@@ -127,7 +127,7 @@ uv run pytest -p no:xdist \
 | **START_HEAD** | `e5e5d326184b23d3eb93786e60db7a4c2154499d` |
 | **Pre-R1 AUDITED_HEAD** | `cb276479cf76fe0bc269f448a868ea2026ebdae9` |
 | **STRICT-HTTP-R1 implementation** | `ea2e929b352c6e09c13d4cec817ab0c64cf87396` |
-| **STRICT-HTTP-R1-R1 corrective** | **FINAL_COMMIT** on `development` (registry cleanup safety **F01–F03**; see §10) |
+| **STRICT-HTTP-R1-R1 corrective / FINAL_COMMIT** | `afc466d669b2e119e0de1d90d0c40c6debad848d` (registry cleanup safety **F01–F03**; see §10) |
 | **Prior evidence pin** | `075005b7de1c740dc3017337a11f40ae6591e471` / `1aa8725cbfbbff0c21aab50c62094b680f56511b` (preserved lineage) |
 
 ---
