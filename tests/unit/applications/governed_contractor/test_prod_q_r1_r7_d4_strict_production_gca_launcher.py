@@ -26,7 +26,10 @@ from governed_contractor_application.host.strict_production_serving import (
 )
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
-from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
+from intergrax.agent_distribution.deployment import (
+    DeploymentInstanceState,
+    FakeInMemoryRuntimeDeploymentAdapter,
+)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
@@ -368,6 +371,25 @@ def test_d4_active_state_served_after_reconciliation(tmp_path: Path) -> None:
     assert session.readiness.ready_for_traffic is True
     assert session.serving_runtime_handoff is not None
     session.close()
+
+
+def test_d4_session_close_drains_colocated_execution_admission(tmp_path: Path) -> None:
+    session = _open_with_activation(
+        tmp_path,
+        environment=_ac3_environment(),
+        revision_id="rev-d4-close-drain",
+    )
+    handoff = session.serving_runtime_handoff
+    assert handoff is not None
+    adapter = session.lifecycle.deployment_adapter
+    assert isinstance(adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+    unit_ref = handoff.identity.serving_unit_ref
+    unit = adapter._units[unit_ref]
+    assert unit.serving_admission_authorized is True
+    assert unit.admission.admission_closed() is False
+    session.close()
+    assert unit.lifecycle_state is DeploymentInstanceState.DRAINING
+    assert unit.admission.admission_closed() is True
 
 
 def test_d4_explicit_activation_uses_d2_launcher(tmp_path: Path) -> None:
@@ -761,6 +783,78 @@ def test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_sl
         composition_builder=kwargs["composition_builder"],
     ) as lifecycle:
         assert lifecycle.composition.agent_platform_runtime is not None
+
+
+def test_d4_r2_session_close_drain_failure_still_closes_process_resources(
+    tmp_path: Path,
+) -> None:
+    from intergrax.applications._shared.colocated_serving_runtime_composition import (
+        ColocatedServingAdmissionTopologyError,
+    )
+
+    session = _open_with_activation(
+        tmp_path,
+        environment=_ac3_environment(),
+        revision_id="rev-d4-close-drain-fail",
+    )
+    drain_fail = ColocatedServingAdmissionTopologyError("d4_close_drain_fail")
+    close_calls = 0
+    original_close = ProductionProcessLifecycle.close_process_resources
+
+    def _tracked_close(self: ProductionProcessLifecycle) -> None:
+        nonlocal close_calls
+        close_calls += 1
+        original_close(self)
+
+    with patch(
+        (
+            "intergrax.applications._shared.strict_production_serving_launcher."
+            "begin_colocated_serving_execution_drain_on_strict_session_close"
+        ),
+        side_effect=drain_fail,
+    ), patch.object(
+        ProductionProcessLifecycle,
+        "close_process_resources",
+        _tracked_close,
+    ):
+        with pytest.raises(StrictProductionServingLauncherError, match="d4_close_drain_fail"):
+            session.close()
+    assert close_calls == 1
+    assert session._closed is False
+
+
+def test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors(
+    tmp_path: Path,
+) -> None:
+    from intergrax.applications._shared.colocated_serving_runtime_composition import (
+        ColocatedServingAdmissionTopologyError,
+    )
+
+    session = _open_with_activation(
+        tmp_path,
+        environment=_ac3_environment(),
+        revision_id="rev-d4-close-both-fail",
+    )
+    drain_fail = ColocatedServingAdmissionTopologyError("d4_close_drain_fail")
+    cleanup_fail = RuntimeError("d4_close_cleanup_fail")
+    with patch(
+        (
+            "intergrax.applications._shared.strict_production_serving_launcher."
+            "begin_colocated_serving_execution_drain_on_strict_session_close"
+        ),
+        side_effect=drain_fail,
+    ), patch.object(
+        ProductionProcessLifecycle,
+        "close_process_resources",
+        side_effect=cleanup_fail,
+    ):
+        with pytest.raises(ExceptionGroup) as exc_info:
+            session.close()
+    errors = exc_info.value.exceptions
+    assert len(errors) == 2
+    assert isinstance(errors[0], StrictProductionServingLauncherError)
+    assert errors[1] is cleanup_fail
+    assert session._closed is False
 
 
 def test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors(

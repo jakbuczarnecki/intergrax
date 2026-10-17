@@ -127,3 +127,12 @@ def build_declarative_invoker_for_application_host(
         dependency_attempt_boundary=dependency_boundary,
         production_mode=production_mode,
     )
+
+
+def close_declarative_catalog_tool_invoker(
+    invoker: CatalogDeclarativeToolInvoker | None,
+) -> None:
+    """Shut down host-owned catalog declarative ``RuntimeToolInvoker`` admission."""
+    if invoker is None:
+        return
+    invoker.tool_invoker.close()

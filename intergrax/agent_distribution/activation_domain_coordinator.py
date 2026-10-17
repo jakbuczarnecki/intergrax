@@ -102,6 +102,12 @@ class CoordinatorVerifiedUnitServingAdmissionOpen(Protocol):
     ) -> None:
         """Revert staged or published admission after canonical persistence failed."""
 
+    def reconcile_coordinator_verified_existing_open(
+        self,
+        evidence: ServingExecutionEligibilityEvidence,
+    ) -> None:
+        """Confirm physical admission already matches coordinator-verified evidence (lifecycle reopen)."""
+
 
 def _eligibility_evidence_from_request(
     *,
@@ -433,6 +439,29 @@ class ActivationDomainCoordinator(Protocol):
         expected_serving_pointer_revision: int | None = None,
     ) -> ServingExecutionEligibilityEvidence: ...
 
+    def coordinate_unit_serving_admission_reopen(
+        self,
+        request: ServingExecutionAdmissionRequest,
+        *,
+        unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
+        expected_serving_pointer_revision: int | None = None,
+    ) -> ServingExecutionEligibilityEvidence: ...
+
+
+def _verify_unit_admission_evidence(
+    state: AgentDistributionStoreState,
+    request: ServingExecutionAdmissionRequest,
+    *,
+    expected_serving_pointer_revision: int | None,
+) -> ServingExecutionEligibilityEvidence:
+    evidence = verify_serving_execution_eligibility_from_state(state, request)
+    if expected_serving_pointer_revision is not None:
+        if evidence.serving_pointer_revision != expected_serving_pointer_revision:
+            raise ServingExecutionAdmissionError(
+                "serving pointer revision mismatch for unit admission open"
+            )
+    return evidence
+
 
 class InMemoryActivationDomainCoordinator:
     """Shared in-memory Agent Distribution activation domain coordinator."""
@@ -476,18 +505,11 @@ class InMemoryActivationDomainCoordinator:
 
         def _work() -> ServingExecutionEligibilityEvidence:
             nonlocal physical_admission_affected, evidence
-            evidence = verify_serving_execution_eligibility_from_state(
+            evidence = _verify_unit_admission_evidence(
                 self._state,
                 request,
+                expected_serving_pointer_revision=expected_serving_pointer_revision,
             )
-            if expected_serving_pointer_revision is not None:
-                if (
-                    evidence.serving_pointer_revision
-                    != expected_serving_pointer_revision
-                ):
-                    raise ServingExecutionAdmissionError(
-                        "serving pointer revision mismatch for unit admission open"
-                    )
             unit_admission_open.apply_coordinator_verified_open(evidence)
             physical_admission_affected = True
             unit_admission_open.publish_coordinator_verified_open(evidence)
@@ -507,6 +529,25 @@ class InMemoryActivationDomainCoordinator:
                     except Exception as compensation_error:
                         raise compensation_error from primary
                 raise
+
+    def coordinate_unit_serving_admission_reopen(
+        self,
+        request: ServingExecutionAdmissionRequest,
+        *,
+        unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
+        expected_serving_pointer_revision: int | None = None,
+    ) -> ServingExecutionEligibilityEvidence:
+        def _work() -> ServingExecutionEligibilityEvidence:
+            evidence = _verify_unit_admission_evidence(
+                self._state,
+                request,
+                expected_serving_pointer_revision=expected_serving_pointer_revision,
+            )
+            unit_admission_open.reconcile_coordinator_verified_existing_open(evidence)
+            return evidence
+
+        with self._state._activation_lock:
+            return _work()
 
 
 class SqliteActivationDomainCoordinator:
@@ -544,17 +585,11 @@ class SqliteActivationDomainCoordinator:
         evidence: ServingExecutionEligibilityEvidence | None = None
         with _sqlite_admission_domain_lease(self._database) as lease:
             try:
-                evidence = verify_serving_execution_eligibility_from_state(
-                    lease.state, request
+                evidence = _verify_unit_admission_evidence(
+                    lease.state,
+                    request,
+                    expected_serving_pointer_revision=expected_serving_pointer_revision,
                 )
-                if expected_serving_pointer_revision is not None:
-                    if (
-                        evidence.serving_pointer_revision
-                        != expected_serving_pointer_revision
-                    ):
-                        raise ServingExecutionAdmissionError(
-                            "serving pointer revision mismatch for unit admission open"
-                        )
                 unit_admission_open.apply_coordinator_verified_open(evidence)
                 physical_admission_affected = True
                 lease.commit_durable()
@@ -571,6 +606,22 @@ class SqliteActivationDomainCoordinator:
                         raise compensation_error from primary
                 raise
         assert evidence is not None
+        return evidence
+
+    def coordinate_unit_serving_admission_reopen(
+        self,
+        request: ServingExecutionAdmissionRequest,
+        *,
+        unit_admission_open: CoordinatorVerifiedUnitServingAdmissionOpen,
+        expected_serving_pointer_revision: int | None = None,
+    ) -> ServingExecutionEligibilityEvidence:
+        with _sqlite_admission_domain_lease(self._database) as lease:
+            evidence = _verify_unit_admission_evidence(
+                lease.state,
+                request,
+                expected_serving_pointer_revision=expected_serving_pointer_revision,
+            )
+            unit_admission_open.reconcile_coordinator_verified_existing_open(evidence)
         return evidence
 
 

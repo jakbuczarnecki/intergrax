@@ -372,14 +372,24 @@ class SqliteAgentDistributionDatabase:
         conn: sqlite3.Connection | None = None
         committed = False
         try:
+            mutation_failure: BaseException | None = None
             try:
-                conn = self._connect()
-                conn.execute("BEGIN IMMEDIATE")
-                state = self._load_state(conn)
-                yield state
-                self._save_state(conn, state)
-                conn.commit()
-                committed = True
+                try:
+                    conn = self._connect()
+                    conn.execute("BEGIN IMMEDIATE")
+                    state = self._load_state(conn)
+                    try:
+                        yield state
+                        self._save_state(conn, state)
+                        conn.commit()
+                        committed = True
+                    except BaseException as exc:
+                        mutation_failure = exc
+                        raise
+                except BaseException as exc:
+                    if mutation_failure is None:
+                        mutation_failure = exc
+                    raise
             finally:
                 if conn is not None:
                     cleanup_errors: list[BaseException] = []
@@ -391,10 +401,9 @@ class SqliteAgentDistributionDatabase:
                         cleanup_errors.extend(
                             _sqlite_connection_cleanup_errors(conn, rollback=False)
                         )
-                    primary = sys.exc_info()[1]
-                    if primary is not None:
+                    if mutation_failure is not None:
                         _raise_sqlite_store_mutation_failure(
-                            primary,
+                            mutation_failure,
                             cleanup_errors,
                             committed=committed,
                         )

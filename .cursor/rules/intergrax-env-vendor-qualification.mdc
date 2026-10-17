@@ -1,0 +1,32 @@
+---
+description: Environment configuration and vendor integration qualification guardrails
+alwaysApply: true
+---
+
+# Intergrax — env config & vendor qualification
+
+**Authority (semantic detail):** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../../docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](../../docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) (`FRZ-*`), [`VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md`](../../docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md). **Evidence layout:** [intergrax-session-artifacts.mdc](intergrax-session-artifacts.mdc) (`.tmp/` only).
+
+## Environment configuration
+
+- Environment-specific values **must** enter through **environment variables** and existing **approved typed configuration contracts** (Integrations/platform settings modules — not ad-hoc literals in product code).
+- **Forbidden:** hardcoded credentials, API keys, secrets, or production vendor endpoints in source, tests committed as qualification proof, or agent/session artifacts.
+- **Missing mandatory configuration:** fail closed at composition/startup — no silent defaults that widen authority or bypass contracts.
+- **Diagnostic overrides:** explicit operator intent, temporary, isolated (prefer `.tmp/session/<task-id>/` overlays), restored after use; never checked into tracked trees.
+- **Logging & evidence:** no secrets in logs, subprocess argv, process-tree snapshots, or qualification bundles; redact or omit — see session-artifacts rule for capture paths.
+
+## Vendor integration qualification
+
+- Prefer **Docker / Testcontainers** for real infrastructure when suitable: **pinned** service versions, readiness probes, bounded teardown.
+- **Cloud-only** integrations: use controlled vendor **sandbox** environments when live integration proof is required.
+- **Contract stubs, fakes, or in-process doubles** are not real vendor integration evidence — label scope accordingly in qualification records.
+- Preserve **platform-defined contracts**, provider **replaceability**, and **sanctioned composition ownership** (`FRZ-CTR-*`, `FRZ-OWN-*`, `FRZ-BND-*` in freeze checklist); no vendor-specific shortcuts at semantic boundaries (`intergrax/` ↔ `agents/` ↔ `applications/` layering unchanged).
+
+## Current C10/C15 restriction (operator freeze)
+
+Until explicitly lifted by operator roadmap/qualification update — **do not change**:
+
+- Preserve the **original Windows** execution environment for this workstream.
+- **No Docker migration**, **no new vendor integrations**, **no production configuration** changes.
+- **Diagnostic pytest** (broad/unbounded suites, harness replay): requires **separate operator authorization**; respect [intergrax-test-process-budget.mdc](intergrax-test-process-budget.mdc).
+- **R7-Q**, **PROD-Q**, and global **`FRZ-*` statuses** remain unchanged by Cursor rule or tooling edits alone — gate plan: [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](../../docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md).

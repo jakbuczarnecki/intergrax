@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from intergrax.agent_distribution.activation import ActivationCommitResult
 from intergrax.agent_distribution.activation_domain_coordinator import (
@@ -15,6 +16,7 @@ from intergrax.agent_distribution.activation_domain_coordinator import (
 from intergrax.agent_distribution.deployment import (
     DeploymentInstanceRecord,
     DeploymentInstanceState,
+    RuntimeDeploymentAdapter,
     ServingUnitAttestation,
 )
 from intergrax.agent_distribution.runtime_revision import (
@@ -41,6 +43,7 @@ from intergrax.applications._shared.production_process_composition import (
 from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
 from intergrax.applications._shared.serving_runtime_handoff import (
     ColocatedServingUnitRuntimeAccessor,
+    ServingRuntimeHandoff,
     authorize_colocated_serving_execution_after_activation,
     establish_serving_runtime_handoff,
 )
@@ -144,6 +147,7 @@ def bind_colocated_serving_runtime_after_activation(
     topology: MaterializationTopology,
     artifact_root: Path,
     physical_adapter: VenvBundleColocatedRuntimeDeploymentAdapter,
+    admission_bind_mode: Literal["grant", "reopen"] | None = None,
 ) -> ProductionProcessComposition:
     """Establish typed handoff, then open physical admission using activation evidence only."""
     activation_domain_coordinator = validate_colocated_serving_admission_topology(
@@ -182,21 +186,109 @@ def bind_colocated_serving_runtime_after_activation(
         execution_continuation_state_store=updated.execution_continuation_state_store,
         serving_runtime_handoff=handoff,
     )
-    authorize_colocated_serving_execution_after_activation(
-        activation_commit=activation_commit,
-        handoff=handoff,
-        unit_admission_open=unit_admission_open,
-        activation_domain_coordinator=activation_domain_coordinator,
-        serving_store=serving_store,
-        deployment_instance_store=deployment_instance_store,
-        revision_store=revision_store,
+    resolved_admission_bind_mode: Literal["grant", "reopen"] = (
+        admission_bind_mode
+        if admission_bind_mode is not None
+        else (
+            "reopen"
+            if physical_adapter.unit_serving_execution_admission_open_for_lifecycle_reopen(
+                attestation.serving_unit_ref,
+            )
+            else "grant"
+        )
+    )
+    admission_authorize = authorize_colocated_serving_execution_after_activation
+    admission_kwargs = {
+        "activation_commit": activation_commit,
+        "handoff": handoff,
+        "unit_admission_open": unit_admission_open,
+        "activation_domain_coordinator": activation_domain_coordinator,
+        "serving_store": serving_store,
+        "deployment_instance_store": deployment_instance_store,
+        "revision_store": revision_store,
+    }
+    admission_authorize(
+        **admission_kwargs,
+        admission_bind_mode=resolved_admission_bind_mode,
     )
     return updated
+
+
+def close_colocated_serving_execution_admission_on_strict_session_close(
+    *,
+    deployment_adapter: RuntimeDeploymentAdapter,
+    handoff: ServingRuntimeHandoff,
+) -> None:
+    """Close physical execution admission for the bound handoff unit (revision-independent)."""
+    if handoff.colocated_execution_admission is None:
+        return
+    identity = handoff.identity
+    deployment_adapter.close_serving_unit_execution_admission(
+        serving_unit_ref=identity.serving_unit_ref,
+    )
+
+
+def begin_colocated_serving_execution_drain_on_strict_session_close(
+    *,
+    deployment_adapter: RuntimeDeploymentAdapter,
+    handoff: ServingRuntimeHandoff,
+    revision_store: RuntimeRevisionStore,
+) -> None:
+    """Revoke new physical execution admission for the bound handoff unit (session close owner)."""
+    if handoff.colocated_execution_admission is None:
+        return
+    if not isinstance(deployment_adapter, VenvBundleColocatedRuntimeDeploymentAdapter):
+        raise ColocatedServingAdmissionTopologyError(
+            "strict session close requires VenvBundleColocatedRuntimeDeploymentAdapter",
+        )
+    identity = handoff.identity
+    revision = revision_store.get_revision(identity.runtime_revision_id)
+    if revision is None:
+        raise ColocatedServingAdmissionTopologyError(
+            f"missing runtime revision {identity.runtime_revision_id!r} for session close drain",
+        )
+    deployment_adapter.begin_drain(
+        revision,
+        serving_unit_ref=identity.serving_unit_ref,
+    )
+
+
+def revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close(
+    *,
+    deployment_adapter: RuntimeDeploymentAdapter,
+    handoff: ServingRuntimeHandoff,
+    revision_store: RuntimeRevisionStore,
+) -> None:
+    """
+    Revoke physical admission when the canonical session-close drain path failed first.
+
+    Uses adapter-owned unit drain; when durable revision evidence is absent, revokes via
+    the bound ``serving_unit_ref`` only (no fabricated revision).
+    """
+    if handoff.colocated_execution_admission is None:
+        return
+    if not isinstance(deployment_adapter, VenvBundleColocatedRuntimeDeploymentAdapter):
+        raise ColocatedServingAdmissionTopologyError(
+            "strict session close emergency revocation requires "
+            "VenvBundleColocatedRuntimeDeploymentAdapter",
+        )
+    identity = handoff.identity
+    revision = revision_store.get_revision(identity.runtime_revision_id)
+    if revision is not None:
+        deployment_adapter.begin_drain(
+            revision,
+            serving_unit_ref=identity.serving_unit_ref,
+        )
+        return
+    deployment_adapter.begin_drain_for_bound_serving_unit(identity.serving_unit_ref)
 
 
 __all__ = [
     "ColocatedServingActivationCommitResolutionError",
     "ColocatedServingAdmissionTopologyError",
+    "close_colocated_serving_execution_admission_on_strict_session_close",
+    "begin_colocated_serving_execution_drain_on_strict_session_close",
+    "revoke_colocated_serving_execution_admission_fail_closed_on_strict_session_close",
     "bind_colocated_serving_runtime_after_activation",
     "resolve_traffic_serving_activation_commit",
     "validate_colocated_serving_admission_topology",

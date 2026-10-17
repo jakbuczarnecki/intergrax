@@ -231,7 +231,7 @@ Historical D0–D4 evidence may be cited as **background** only — it does **no
 
 **STOP:** No wave may mark **PROD-Q-R1-R7-Q PASS** without independent audit @ exact SHA; **E.1** scoped D0–D4 regression = **CLOSED — OPERATOR ACCEPTED** (2026-10-15) — **not** a substitute for remaining §C qualification.
 
-**Next mandatory stage:** **R7-Q §C remaining mandatory integrated / operator-profile qualification gates** (dims **2, 3, 6, 7–11, 13–16, 17–19, 21** per §C summary; dim **20** parent **PROD-Q-R1**). **P1** = **READY FOR AUDIT** @ `8ec49660…`; **P2** = **CLOSED — operator exact-SHA acceptance** @ `8e43b160447ca43de6631fe2a1b7f99948b64f2f`; **P3** = **CLOSED — OPERATOR ACCEPTED** @ docs baseline `28c9bc40d1cdcbf62700e961677b4048c0753b85`; **E.1** = **CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** @ rollup `8ee834e4…` (qualification [`PROD_Q_R1_R7_Q_EXEC_E1_FINAL_ROLLUP_AUDIT.md`](PROD_Q_R1_R7_Q_EXEC_E1_FINAL_ROLLUP_AUDIT.md) §16).
+**Next mandatory stage:** **R7-Q §C remaining gates — independent acceptance + operator profiles** — reconciliation [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) @ current `development` HEAD (dims **2, 3, 6, 7–11, 13–16, 17–19, 21**; dim **20** parent **PROD-Q-R1** Package P). Integrated pytest evidence @ `93c17a95…` ([`PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md)); Package B/C records **READY FOR AUDIT**. **P1** = **CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED**; **P2** = **CLOSED — operator exact-SHA acceptance** @ `8e43b160…`; **P3** = **CLOSED — OPERATOR ACCEPTED** @ `28c9bc40…`; **E.1** = **CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** @ rollup `8ee834e4…`.
 
 ---
 
