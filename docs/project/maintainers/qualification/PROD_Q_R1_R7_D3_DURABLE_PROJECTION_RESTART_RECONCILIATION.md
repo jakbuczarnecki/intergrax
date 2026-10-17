@@ -25,3 +25,62 @@ uv run pyright intergrax/applications/_shared/durable_registry_projection_input_
 ## D2 alignment note
 
 Operator disposition: D2 remains **ACCEPTED / READY FOR AUDIT** within A1; this stage does not reopen D2 implementation.
+
+---
+
+## Current-HEAD independent acceptance audit (Cursor)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-D2-D3-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE` (D3 slice) |
+| **AUDITED_HEAD** | `a7e959d2d3171924c506ab9483e466543aef39b1` |
+| **Implementation tip** | `f2dd8ecbbff8561a50ec10321ddef62d345b65a9` (D3-R1) — **identical** to AUDITED_HEAD for D3-owned modules |
+| **Production delta** | **0** (audit-only) |
+
+### Drift vs D3-R1 evidence SHA
+
+No file changes on `durable_registry_projection_input_store.py`, `production_process_serving_reconciliation.py`, or D3 reconciliation hooks in `production_process_lifecycle.py` since `f2dd8ecbb…`. Post-D3-R1 work (**DIM13**, **DIM16**, D4 launcher) composes **through** `open_production_process_lifecycle` / reconciliation without altering D3 semantic owners.
+
+### D3 criterion matrix (@ HEAD)
+
+| Label | Map | Result | Evidence |
+|-------|-----|--------|----------|
+| D3-01 | durable descriptor authority | **PASS** | D3-R1 register validation + mismatch negatives |
+| D3-02 | reconstruction continuity | **PASS** | descriptor-backed reconstruct + SQLite restart test |
+| D3-03 | physical liveness reconciliation | **PASS** | `reconcile_traffic_serving_physical_unit_after_process_restart` tests |
+| D3-04 | no stale serving resurrection | **PASS** | stale physical / empty adapter / mandatory targets |
+| D3-05 | recovery sequencing | **PASS** | open-path reconciliation before slot commit; coordinator `prepare_projection` in pipeline test |
+| D3-06 | regression / error continuity | **PARTIAL** | D3-R1 + D3 negatives **PASS**; `test_registry_projection_descriptor_corruption.py` **FAIL** at harness setup (see below) |
+
+### Targeted regression (@ AUDITED_HEAD)
+
+```text
+uv run pytest -p no:xdist -q \
+  tests/unit/applications/test_prod_q_r1_r7_d3_r1_recovery_projection_integrity.py \
+  tests/unit/applications/test_prod_q_r1_r7_d3_production_restart_reconciliation.py \
+  tests/unit/applications/test_registry_projection_descriptor_corruption.py
+```
+
+**19 passed, 1 failed** (exit **1**), ~15s cumulative with D2 module in same run — log: `.tmp/session/PROD-Q-R1-R7-D2-D3-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE/pytest.log`
+
+**Failure:** `test_descriptor_corruption_fail_closed` — `EnterpriseAgentLifecycleProofStack.run_happy_path()` → `AgentBinding requires agent_type or import_path` in `agent_resolution.py` (test-support / catalog binding drift; **not** D3 production module delta).
+
+**DIM13/DIM14:** not replayed in this task (qualification gates under `tests/qualification/prod_q/`); D3 unit scope covers mandatory reconciliation and descriptor-store paths. Integrated DIM13 evidence remains at historical §C SHAs per roadmap.
+
+### Unresolved finding
+
+| Class | Item | Action |
+|-------|------|--------|
+| **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Rehydrator corruption regression via `EnterpriseAgentLifecycleProofStack` | Bounded harness/catalog binding repair + re-run **one** test module; **not** a D3 production invariant violation |
+
+### Risk review (D3-relevant)
+
+Risks 6–14 from task brief: **PASS** via D3-R1 mandatory targets, stale physical negatives, reconciliation-before-slot, tenant/store binding in D2 module where shared. Risk 15 (DIM16 shutdown): **no D3 authority expansion** — physical admission close is downstream of D3 reconciliation contract.
+
+### FRZ contribution (scoped; global rows **OPEN**)
+
+FRZ-PRD-12, supporting FRZ-REC/FRZ-STA/FRZ-TEN via recovery fail-closed semantics — evidence contribution only.
+
+### D3 acceptance recommendation
+
+**READY FOR AUDIT** — core D3/D3-R1 invariants **proven @ HEAD** (19/19 D3 unit tests). Recommend independent closure review on GitHub SHA `a7e959d2…`; **not** CLOSED until operator accepts and optional corruption-module replay is green. **No D3 production implementation** required for current-HEAD alignment.
