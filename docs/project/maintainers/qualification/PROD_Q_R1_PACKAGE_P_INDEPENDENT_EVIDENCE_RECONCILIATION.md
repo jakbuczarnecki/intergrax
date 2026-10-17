@@ -156,7 +156,7 @@
 
 | Item | Detail |
 |------|--------|
-| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `a95005bab264f2a8af396d9d425033733671a511`) |
+| **Status** | **READY FOR AUDIT** (**production delta = 0**; **FINAL_COMMIT** `4fac9482edd60120cfcec3a498709e2c4335b040`) |
 | **START_HEAD** | `a9a189f1899af1f05ea96f8cf3b4c6065760c405` |
 | **Finding** | **P05** — `ExceptionGroup` received `BaseException` members (`KeyboardInterrupt` / other non-`Exception` fatals) in dual-failure unwind |
 | **Fix** | Type-correct qualification lifespan policy: `Exception` aggregation only; fatal `BaseException` propagates without completion record; **R13** negative (fake `TestClient`) |

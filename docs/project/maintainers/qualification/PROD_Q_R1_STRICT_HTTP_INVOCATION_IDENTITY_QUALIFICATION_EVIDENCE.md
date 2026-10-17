@@ -317,7 +317,7 @@ uv run pytest -p no:xdist \
 | **Task** | **PROD-Q-R1-STRICT-HTTP-R1-R5** |
 | **Parent** | **PROD-Q-R1-STRICT-HTTP-R1** |
 | **START_HEAD** | `a9a189f1899af1f05ea96f8cf3b4c6065760c405` |
-| **FINAL_COMMIT** | `a95005bab264f2a8af396d9d425033733671a511` |
+| **FINAL_COMMIT** | `4fac9482edd60120cfcec3a498709e2c4335b040` |
 | **Production delta** | **0** |
 
 ### Root cause
