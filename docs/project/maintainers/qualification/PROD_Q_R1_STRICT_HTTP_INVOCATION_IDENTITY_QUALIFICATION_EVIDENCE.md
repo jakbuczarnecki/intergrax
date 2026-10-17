@@ -126,4 +126,5 @@ uv run pytest -p no:xdist \
 | **origin** | `origin/development` |
 | **START_HEAD** | `e5e5d326184b23d3eb93786e60db7a4c2154499d` |
 | **Pre-R1 AUDITED_HEAD** | `cb276479cf76fe0bc269f448a868ea2026ebdae9` |
-| **FINAL_COMMIT / AUDITED_HEAD** | `ea2e929b352c6e09c13d4cec817ab0c64cf87396` |
+| **STRICT-HTTP-R1 implementation** | `ea2e929b352c6e09c13d4cec817ab0c64cf87396` |
+| **FINAL_COMMIT / AUDITED_HEAD** | `075005b7de1c740dc3017337a11f40ae6591e471` (implementation + evidence pin; `origin/development`) |
