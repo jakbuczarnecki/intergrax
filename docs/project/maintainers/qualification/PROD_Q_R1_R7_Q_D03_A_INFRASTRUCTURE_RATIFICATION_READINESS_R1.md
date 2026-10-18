@@ -15,6 +15,7 @@
 | Production delta | **0** |
 | FRZ promotion | **0** |
 | Test execution | `pytest = 0`; `uv run = 0` |
+| OD-D03-A-06 inventory | Prepared against `12092a111b6c64fce2ea4a7aa45e9728ce787649`. Rule and classifications are in §7.5. No duration is adopted. The decision stays unresolved. |
 
 This record consolidates operator decisions OD-D03-A-03 through OD-D03-A-08. It does not copy the technical proposal. Accepted policy and accepted architectural direction are not proof of cloud infrastructure, not ratification of a backend, and not authorization to implement, provision, purchase, migrate, add a contract, or open a runtime port.
 
@@ -300,8 +301,8 @@ The operator did not adopt a production duration. Non-weakening configurable ret
 
 Recommend that the operator:
 
-1. Keep deletion protection as a locked immutable policy plus a legal hold that remains until dual-controlled decommission.
-2. Set the numeric retention only after declaring backup/PITR ages and the investigation window. The number must exceed those ages.
+1. Keep deletion protection as a locked time-based immutable policy plus a separate operational preservation hold that remains until dual-controlled decommission. That hold is not evidence of a legal duty. A legal-purpose hold is a further control, used only when a legal or contractual duty is declared.
+2. Set the numeric retention only from the §7.5 rule, after every required input is declared. The number must exceed the longest applicable restorable age plus the investigation window, and it must meet any applicable legal or contractual minimum. No input in §7.5 is known, so no number is adopted.
 3. Treat the proposal's ten-year figure as an unadopted candidate, not as a regulatory finding.
 
 If the operator cannot supply those ages and still wants a number, the number is an explicit policy choice and must be labeled as such.
@@ -333,13 +334,90 @@ Vendor fact re-verified 2026-10-18 from Microsoft Learn, [data redundancy](https
 |---|---|
 | Supporting evidence | Proposal §6.2, §8.2, §8.3, and §9.4. Azure redundancy page inspected for this package. Immutability mechanics are cited from the proposal's 2026-10-18 vendor list and were not re-fetched page-by-page here. |
 | Remaining assumption | Locked WORM with protected appends, plus a hold, can be configured on the selected account type. That configuration is not present. |
-| Exact missing evidence | Operator backup ages and investigation window; chosen numeric retention; legal-hold owner; proof the policy is locked; rollover and crash tests; DR test showing prefix loss does not resume CREATE. |
+| Exact missing evidence | The five named inputs in §7.5. No duration is adopted. Also still missing: legal-hold owner; proof the policy is locked; rollover and crash tests; DR test showing prefix loss does not resume CREATE. |
 | Responsible authority | Operator for duration, hold, and decommission. Later authorized sandbox qualification for recovery behavior. |
-| Acceptance criteria | Operator records a duration justified by declared ages, or explicitly adopts an unjustified number as policy. Operator accepts every recovery rule in §7.3, including no restore-in-place and no zero-loss claim for Azure geo-replication. |
+| Acceptance criteria | Operator records a duration justified by the §7.5 rule, or explicitly adopts an unjustified number as policy. Operator accepts every recovery rule in §7.3, including no restore-in-place and no zero-loss claim for Azure geo-replication. |
 | Rejection criteria | Ratifying ten years as if a statute required it; treating secondary reads as current; automatic CREATE after an unknown append or a regional failover. |
 | Blocker classification | **IN-SCOPE BLOCKER** |
 | Operator decision required | Production duration remains unresolved. No duration is adopted here, including ten years. |
 | Evidence state | Non-weakening configurable retention: **preserved**. LOCAL-01 already rejects lowering the duration, lowering the ceiling, or clearing the hold. Production duration: **OPERATOR CONFIRMATION REQUIRED**. Configured WORM and recovery drills: **EXECUTION EVIDENCE REQUIRED**. Not cloud infrastructure proof. |
+
+### 7.5 Retention decision model
+
+This subsection is the OD-D03-A-06 decision inventory. It does not resolve the decision, does not adopt a duration, and does not authorize provisioning or implementation.
+
+#### 7.5.1 Closed-world inventory
+
+Sources inspected for values: this record §4.3, §7.1–§7.4, and §8.2; the proposal §5.3, §6.1–§6.3, §8.3, §9.4, §16.1–§16.2, and §17; the conditional-direction record; LOCAL-01; PLATFORM-POLICY-CONFIG-01; `HistoryContinuityRetentionPolicy` in `intergrax/contracts/governance/history_continuity.py`. Local SQLite, tests, fixtures, sample configuration, and provider defaults are not duration sources.
+
+| Topic | What the sources contain | Class |
+|---|---|---|
+| `PIS_MAX_RESTORABLE_AGE` | No production age. Proposal §16.1 records the current per-process SQLite PIS as not a global production history. §7.3 and proposal §8.3 require deny on PIS rollback and give no window. | **OPERATOR INPUT REQUIRED**. Local SQLite is **NOT APPLICABLE — WITH EVIDENCE** as a production duration. |
+| `GCA_MAX_RESTORABLE_AGE` | No production age. The same recovery rules name GCA rollback and give no window. | **OPERATOR INPUT REQUIRED** |
+| `ANCHOR_PRIMARY_MAX_RESTORABLE_AGE` | No production age. Proposal §6.1 and §17.1 cite Spanner backup and PITR capability and record no window. | **OPERATOR INPUT REQUIRED**. An unstated vendor default is not a policy. |
+| Primary backup and PITR | Restore capability is cited. Restore-in-place is forbidden by §7.3. No backup retention and no PITR window is recorded. | Rule: **DOCUMENTED CURRENT POLICY**. Duration: **OPERATOR INPUT REQUIRED**. Vendor pages without a recorded window: **HISTORICAL / NOT VERIFIED** as a value. |
+| `INVESTIGATION_WINDOW` | §7.1 names the window and states that it is not in the canonical record. | **OPERATOR INPUT REQUIRED** |
+| `REQUIRED_LEGAL_OR_CONTRACTUAL_MINIMUM` | No statute and no contract is cited. §7.1 states that ten years is not a documented legal obligation. | **OPERATOR INPUT REQUIRED**. Absence is not zero and is not a declaration that no duty exists. |
+| Ten-year witness retention and `ELCR-ACTIVE` | Proposal OP-TRUST-04 and §16.2 ask the operator to ratify them. §7.2 does not adopt them. | **HISTORICAL / NOT VERIFIED** |
+| Local retention mechanism | `retention_seconds` must sit inside `ceiling_seconds`. `legal_hold` must be true. No permission can lower the duration, lower the ceiling, or clear the hold. The contract text says this is not a production period. PLATFORM-POLICY-CONFIG-01 states that the ceiling is not legal retention or WORM. | **DOCUMENTED CURRENT POLICY** for the non-weakening local mechanism. Not a production duration. |
+| Environment retirement and recovery | §7.1 requires release of hold and retention only by dual control after formal retirement. §7.3 states the recovery rules. No retirement procedure and no named approvers are recorded. | Recovery rules: **DOCUMENTED CURRENT POLICY**, untested. Retirement procedure: **OPERATOR INPUT REQUIRED**. |
+| Security investigation window | Same unset window as `INVESTIGATION_WINDOW`. | **OPERATOR INPUT REQUIRED** |
+| Audit-sink retention | §8.2 treats cloud audit retention as a separate unquantified charge. It is not the witness duration. | **OPERATOR INPUT REQUIRED**, and not a substitute for witness retention. |
+| Backup, restore, and decommission authorities | §4.3 records role classes only: Spanner administrators, Azure witness administrators under dual control, and a separate PIS/GCA backup role that must not hold anchor roles. §7.4 names the operator for duration, hold, and decommission. No person, group, or account is named. | Role separation: **DOCUMENTED CURRENT POLICY** as accepted policy, not as verified principals. Named operators: **OPERATOR INPUT REQUIRED**. |
+
+#### 7.5.2 Controls that are not interchangeable
+
+| Control | Meaning in this decision | Binding evidence |
+|---|---|---|
+| Time-based immutable retention | A locked duration. After it ends, deletion becomes possible. | Not adopted. Azure locked container retention is a cited vendor primitive, not a configured policy. |
+| Operational preservation hold | Stops time-based expiry from removing evidence while the environment is still active. | Local `legal_hold=True` is this operational flag. It is not WORM and not a legal finding. |
+| Dual-controlled environment decommission | The only stated path for releasing that preservation hold, after formal retirement, by separated authorities. | Required by §7.1. The procedure is not written and no approvers are named. |
+| Legal-purpose hold | A hold for an actual legal or contractual matter. | Not declared. It is not created by naming the operational flag `legal_hold`, and not created by the unadopted label `ELCR-ACTIVE`. |
+
+The selected pair is not reported as incapable of locked time-based retention plus a separate hold. Proposal §17.2 cites Azure container immutability for locked retention, protected appends, and legal holds. Those pages were not re-fetched for this inventory, and no configured account exists. That is missing execution evidence, not a reason to choose a weaker store. If a later authorized sandbox shows that append blobs cannot keep protected appends under both a locked time-based policy and a distinct hold, stop: `STOP — ARCHITECTURE DECISION REQUIRED`. Do not unlock retention, clear the local hold, shorten witness history, or change provider inside this gate.
+
+#### 7.5.3 Calculation rule
+
+```text
+longest_restorable_age = max(
+    PIS_MAX_RESTORABLE_AGE,
+    GCA_MAX_RESTORABLE_AGE,
+    ANCHOR_PRIMARY_MAX_RESTORABLE_AGE,
+)
+required_time_based_retention > longest_restorable_age + INVESTIGATION_WINDOW
+```
+
+When `REQUIRED_LEGAL_OR_CONTRACTUAL_MINIMUM` is declared and applicable, `required_time_based_retention` must also be greater than or equal to that minimum. A missing input is not zero. The rule is not evaluated. No duration is proposed for approval.
+
+The operational preservation hold remains in force for the life of the active environment even after a future duration is chosen. Decommission does not become legal-hold release. A declared legal duty adds a legal-purpose hold; it does not rename the operational flag.
+
+#### 7.5.4 Mandatory recovery and deletion guarantees
+
+§7.3 stays in force, including all of the following:
+
+- Primary rollback denies and quarantines. Restore goes to a new database and a new authority incarnation. There is no restore-in-place.
+- Witness rollback, including a geo-replicated prefix, denies and quarantines. Prefix loss does not resume CREATE.
+- An unknown append outcome requires an exact read-back. Timeout is not success.
+- A partial transition resolves only that same transition identity.
+- A missing witness does not allow CREATE.
+- Recovery does not silently restore an older authority incarnation and does not bypass the latest verified witness.
+- Retention expiry does not silently remove required evidence while the environment remains active.
+
+These guarantees are accepted design rules. They are not drilled.
+
+#### 7.5.5 Operator decision, future evidence, and status
+
+Smallest missing set, all required before any number:
+
+1. `PIS_MAX_RESTORABLE_AGE`
+2. `GCA_MAX_RESTORABLE_AGE`
+3. `ANCHOR_PRIMARY_MAX_RESTORABLE_AGE`
+4. `INVESTIGATION_WINDOW`
+5. `REQUIRED_LEGAL_OR_CONTRACTUAL_MINIMUM`, or an explicit operator declaration that no legal or contractual minimum applies, with the source of that declaration.
+
+Future infrastructure qualification, not opened here: locked policy proof; a configured operational preservation hold that is labeled separately from any legal-purpose hold; a dual-controlled decommission record; crash, rollover, and unknown-append tests; a disaster-recovery test that prefix loss does not resume CREATE and that an older incarnation does not become current.
+
+OD-D03-A-06 stays unresolved. The parent conditional direction stays **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**. D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, and every global `FRZ-*` stay open. New `FRZ-*` PASS = 0. No architecture stop is reached: the gap is missing operator inputs and missing cloud proof, and the accepted local non-weakening checks stay unchanged.
 
 ## 8. OD-D03-A-07 — Cost, SLO, and operating model
 
@@ -504,7 +582,7 @@ Real Spanner and Azure behavior requires a future explicit authorization to use 
 | OD-D03-A-03 | **ACCEPTED POLICY.** Independent administrative trust domains. OP-TRUST-07 is accepted residual risk, conditional on later proof of real administrative independence. | No | Expanded identity graph. Rejection of OP-TRUST-07 was not made. |
 | OD-D03-A-04 | **ACCEPTED POLICY.** Environment-scoped history with mandatory tenant isolation. Tenant-specific anchors stay inactive. | No | Execution evidence of isolation for this mechanism. |
 | OD-D03-A-05 | **ACCEPTED POLICY.** Minimum privilege, separated operational capabilities, short-lived workload federation, and prohibition of ordinary runtime administrator credentials. | No | Actual IAM. No second transition service is authorized. |
-| OD-D03-A-06 | Configurable retention with non-weakening protection is **preserved**. Production duration is **unresolved**. Ten years is not adopted. | No | A duration justified by declared backup ages, or an explicit labeled policy choice. Neither is recorded here. |
+| OD-D03-A-06 | Configurable retention with non-weakening protection is **preserved**. Production duration is **unresolved**. §7.5 classifies all five duration inputs as operator-required and adopts no number. Ten years is not adopted. | No | The five §7.5 inputs, then a duration computed from that rule, or an explicit labeled policy choice. Neither is recorded here. |
 | OD-D03-A-07 | Safety and recovery invariants are **preserved**. Prices, capacity, and achieved SLO are **unresolved**. No production numeric parameter is adopted. | No | Current quotes, a capacity choice, and an explicit accept or reject of each §8.4 target without weakening safety. |
 | OD-D03-A-08 | **ACCEPTED ARCHITECTURAL DIRECTION.** Vendor-neutral typed contracts, one sanctioned governance/composition path, controlled configuration, structural replaceability, no duplicate PIS/GCA, no new CREATE gate, fail-closed defaults. | No | Code, configuration binding, and RPL-A..H. This acceptance does not authorize that work. |
 
@@ -676,7 +754,7 @@ This delta does not certify the platform or the freeze.
 |---|---|
 | OD-D03-A-03, OD-D03-A-04, and OD-D03-A-05 are accepted policy only. OD-D03-A-08 is an accepted architectural direction only. None is cloud infrastructure proof | **IN-SCOPE BLOCKER** for infrastructure ratification and parent closure. The policy choice itself is no longer waiting |
 | No inspected IAM or administrator graph. Real administrative independence is unproven | **IN-SCOPE BLOCKER** |
-| OD-D03-A-06 production duration is unresolved. Ten years is not adopted. Backup ages are unknown. Non-weakening retention stays in force | **IN-SCOPE BLOCKER** for a production duration. Not a license to weaken LOCAL-01 retention checks |
+| OD-D03-A-06 production duration is unresolved. §7.5 leaves all five duration inputs operator-required and adopts no number. Ten years is not adopted. Non-weakening retention stays in force | **IN-SCOPE BLOCKER** for a production duration. Not a license to weaken LOCAL-01 retention checks |
 | OD-D03-A-07 prices, capacity, and achieved SLO are absent. Safety and recovery invariants stay in force. No production numeric parameter is adopted | **IN-SCOPE BLOCKER** for budget and SLO acceptance |
 | D03-A01–A23 have not been executed; managed-service behavior needs a future authorized sandbox | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED**. The unmet acceptance condition remains an **IN-SCOPE BLOCKER** |
 | OP-TRUST-07 is an accepted residual risk, conditional on later proof of real administrative independence | **MISSING EXECUTION EVIDENCE** for that proof. Not an architecture stop |
@@ -779,10 +857,118 @@ Not opened. It keeps cloud IAM and the real administrative-independence graph, v
 |---|---|---|---|---|
 | D03-A-POL-01 | IN_SCOPE_BLOCKER | parent D03-A | Parent stays blocked | Accepted policy is not infrastructure proof |
 | D03-A-POL-02 | MISSING_EXECUTION_EVIDENCE | FRZ-SEC-04 | Blocks cloud ratification | IAM and administrative independence are unproven |
-| D03-A-POL-03 | IN_SCOPE_BLOCKER | OD-D03-A-06 / OD-D03-A-07 | Blocks production numbers | Duration, prices, capacity, and achieved SLO are unresolved |
+| D03-A-POL-03 | IN_SCOPE_BLOCKER | OD-D03-A-06 / OD-D03-A-07 | Blocks production numbers | Duration, prices, capacity, and achieved SLO are unresolved. §7.5 adopts no retention number |
 | D03-A-POL-04 | TRACKED_FREEZE_DEBT | FRZ-RPL-* | No portability claim | Structural replaceability is direction only |
 | D03-A-POL-05 | N/A_WITH_EVIDENCE | n/a | n/a | Platform-policy child is later CLOSED — SCOPED at `02e48d9fa61d116346da613271cc5e8b77e08cc6`. That acceptance is not infrastructure proof. This readiness delta adds no code |
 
 No finding is self-certified as enterprise compliance. Cursor status of this documentation commit is at most **READY FOR AUDIT**.
+
+## 17. ECAP delta for the OD-D03-A-06 retention inventory
+
+Prepared against `12092a111b6c64fce2ea4a7aa45e9728ce787649`. Changed files are this qualification record and one roadmap ledger sentence. No production symbol, import, composition wiring, configuration key, or caller. Production-effective reachability: **no**. Semantic owner remains `ProductionControlPlaneGovernance`. Composition remains `compose_history_continuity_authority`. Architecture and ownership delta: **0**. `pytest = 0`. New global `FRZ-*` PASS = **0**. Checklist statuses below are the current checklist column. Historical PASS is not extended. Documentation does not qualify runtime behavior.
+
+| Step | Result |
+|---|---|
+| A1 | This markdown record and the roadmap sentence for this readiness row. No public code symbol. |
+| A2 | No import, composition wiring, or configuration key. |
+| A3 | No production caller. |
+| A4 | Owners unchanged. LOCAL-01 and PLATFORM-POLICY-CONFIG-01 mechanisms are not edited. |
+| A5 | Production-effective reachability: **no**. |
+| A6 | Per-ID table below. No status change. |
+| A7 | `FRZ-CFG-*` and `FRZ-TEN-*` historical PASS stay scoped to their accepted platforms. They do not cover this retention decision. |
+| A8 | No regression gate. `pytest = 0`. |
+
+Applicability: **CITED** means §7.5 states an obligation and does not satisfy it. **NOT-EXERCISED** means this delta does not reach that criterion. **PASS-NOT-EXTENDED** means the checklist PASS remains historical. Evidence level for every row: **DOC-ONLY**.
+
+| ID | Checklist | Applicability | Evidence level |
+|---|---|---|---|
+| `FRZ-REL-01` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-REL-02` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-REL-03` | OPEN | CITED. Same-transition resolution is restated and not proven. | DOC-ONLY |
+| `FRZ-REL-04` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-REL-05` | OPEN | CITED. Unknown append requires exact read-back. Not proven. | DOC-ONLY |
+| `FRZ-REL-06` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-REL-07` | OPEN | CITED. No automatic resumption after prefix loss. Not proven. | DOC-ONLY |
+| `FRZ-REL-08` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-REL-09` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-REL-10` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-REL-11` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-01` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-02` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-03` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-04` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-05` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-06` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-07` | OPEN | CITED. Ten years is not treated as a legal finding. The claim stays bounded and OPEN. | DOC-ONLY |
+| `FRZ-SEC-08` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-SEC-09` | OPEN | CITED. Retention and deletion responsibility is stated as unresolved. | DOC-ONLY |
+| `FRZ-SEC-10` | OPEN | CITED. Cloud retention configuration remains infrastructure evidence, not present. | DOC-ONLY |
+| `FRZ-PRD-01` | OPEN | CITED. Local retention checks are not production qualification. | DOC-ONLY |
+| `FRZ-PRD-02` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-PRD-03` | OPEN | CITED. No silent default duration is introduced. Fail-closed behavior is not newly qualified. | DOC-ONLY |
+| `FRZ-PRD-04` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-PRD-05` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-PRD-06` | OPEN | CITED. Quarantine rules are restated and not qualified. | DOC-ONLY |
+| `FRZ-PRD-07` | OPEN | CITED. Local SQLite is excluded as a production duration source. | DOC-ONLY |
+| `FRZ-PRD-08` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-PRD-09` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-PRD-10` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-PRD-11` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-PRD-12` | OPEN | CITED. Recovery and decommission procedure is required and not written. | DOC-ONLY |
+| `FRZ-OWN-01` | OPEN | NOT-EXERCISED. Owner unchanged. | DOC-ONLY |
+| `FRZ-OWN-02` | OPEN | NOT-EXERCISED. No new contract. | DOC-ONLY |
+| `FRZ-OWN-03` | OPEN | NOT-EXERCISED. Composition unchanged. | DOC-ONLY |
+| `FRZ-OWN-04` | OPEN | NOT-EXERCISED. No shadow authority. | DOC-ONLY |
+| `FRZ-OWN-05` | OPEN | NOT-EXERCISED. No duplicated mechanism. | DOC-ONLY |
+| `FRZ-CTR-01` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-CTR-02` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-CTR-03` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-CTR-04` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-CTR-05` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-CTR-06` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-TYP-01` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-TYP-02` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-TYP-03` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-TYP-04` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-TYP-05` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-TYP-06` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-BND-01` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-BND-02` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-BND-03` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-BND-04` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-BND-05` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-BND-06` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-CFG-01` | PASS | PASS-NOT-EXTENDED. No production duration literal. | DOC-ONLY |
+| `FRZ-CFG-02` | PASS | PASS-NOT-EXTENDED. Missing inputs stay unresolved rather than defaulted. | DOC-ONLY |
+| `FRZ-CFG-03` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-CFG-04` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-CFG-05` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-CFG-06` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-CFG-07` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-CFG-08` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-01` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-02` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-03` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-04` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-05` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-06` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-07` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-08` | PASS | PASS-NOT-EXTENDED. Restore rules do not waive tenant identity and do not re-prove it. | DOC-ONLY |
+| `FRZ-TEN-09` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-10` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-11` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-TEN-12` | PASS | PASS-NOT-EXTENDED | DOC-ONLY |
+| `FRZ-RPL-01` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-RPL-02` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-RPL-03` | OPEN | NOT-EXERCISED | DOC-ONLY |
+| `FRZ-RPL-04` | OPEN | NOT-EXERCISED | DOC-ONLY |
+
+| Finding ID | Class | Label |
+|---|---|---|
+| D03-A-RET-01 | IN-SCOPE BLOCKER | All five §7.5 duration inputs are unknown. OD-D03-A-06 is not resolved. Parent D03-A stays blocked. |
+| D03-A-RET-02 | TRACKED FREEZE DEBT | Global `FRZ-*` rows stay at the checklist status above. `FRZ-CFG-*` and `FRZ-TEN-*` PASS are not extended. IMPL-01, R7-Q, and PROD-Q stay open. |
+| D03-A-RET-03 | ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED | Locked retention, the preservation hold, decommission, and §7.3 recovery drills have no infrastructure execution. |
+
+No infrastructure qualification and no production execution occurred. No finding is self-certified as enterprise compliance. Cursor status of this documentation change is at most **READY FOR AUDIT**.
 
 Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.
