@@ -87,6 +87,23 @@ class ExternalContractorAdapterAgent(ReflexAgent):
             require_sanctioned_external_work_mutations
         )
 
+    def inject_sanctioned_external_work_host_dependencies(
+        self,
+        *,
+        external_work: ExternalWorkIntegration,
+        authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None,
+        sanctioned_operation_port: SanctionedExternalWorkOperationPort,
+        require_sanctioned_external_work_mutations: bool,
+    ) -> ExternalContractorAdapterAgent:
+        """Apply strict GCA host ports to this artifact-authorized instance (same identity)."""
+        self._external_work = external_work
+        self._authorization_boundary = authorization_boundary
+        self._sanctioned_operation_port = sanctioned_operation_port
+        self._require_sanctioned_external_work_mutations = (
+            require_sanctioned_external_work_mutations
+        )
+        return self
+
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         from intergrax.agents.defaults import harness_production_mode
 

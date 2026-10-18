@@ -40,7 +40,7 @@ def materialize_with_strict_external_work_host_dependencies(
             "strict external work host injection requires "
             "require_sanctioned_external_work_mutations=True",
         )
-    return ExternalContractorAdapterAgent(
+    return agent.inject_sanctioned_external_work_host_dependencies(
         external_work=external_work,
         authorization_boundary=authorization_boundary,
         sanctioned_operation_port=sanctioned_operation_port,

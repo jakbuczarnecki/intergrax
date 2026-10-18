@@ -105,9 +105,15 @@ def _minimal_revision() -> RuntimeRevision:
     )
 
 
-def _artifact_external_contractor_factory():
+def _artifact_external_contractor_factory(
+    *,
+    instances: list[ExternalContractorAdapterAgent] | None = None,
+):
     def _factory(_ctx: ApplicationBuildContext[Any], _binding: AgentBinding):
-        return ExternalContractorAdapterAgent()
+        agent = ExternalContractorAdapterAgent()
+        if instances is not None:
+            instances.append(agent)
+        return agent
 
     return _factory
 
@@ -123,6 +129,50 @@ class _RecordingDelegate:
         if self.fail:
             raise RuntimeAgentFactoryResolutionError("delegate resolution failed")
         return self.factory
+
+
+def test_g_r3_03_wrapped_materialization_invokes_delegate_and_factory_once() -> None:
+    authoritative_instances: list[ExternalContractorAdapterAgent] = []
+    factory = _artifact_external_contractor_factory(instances=authoritative_instances)
+    factory_calls = 0
+
+    def _counting_factory(ctx, binding):
+        nonlocal factory_calls
+        factory_calls += 1
+        return factory(ctx, binding)
+
+    delegate = _RecordingDelegate(factory=_counting_factory)
+    ac3_key = _factory_key(_DIGEST, AgentBindingFactoryReference(builder_key="ac3"))
+    injection = StrictExternalWorkHostAgentInjection(
+        external_work=MagicMock(spec=ExternalWorkIntegration),
+        authorization_boundary=None,
+        sanctioned_operation_port=MagicMock(),
+    )
+    resolver = HostOverridingRuntimeAgentFactoryResolver(
+        delegate,
+        override=HostRuntimeAgentFactoryOverride(
+            factory_keys=frozenset({ac3_key}),
+            wrap_authoritative_factory=build_strict_external_work_authoritative_factory_wrapper(
+                injection,
+            ),
+        ),
+    )
+    wrapped = resolver.resolve_factory(
+        runtime_revision=_minimal_revision(),
+        package_digest=_DIGEST,
+        factory_reference=AgentBindingFactoryReference(builder_key="ac3"),
+    )
+    manifest = ApplicationManifest.lab(app_id="app-r3", name="R3", agents=[])
+    ctx = ApplicationBuildContext.for_manifest(manifest)
+    binding = AgentBinding.mount(
+        ExternalContractorAdapterAgent,
+        contract_id="external_contractor_adapter",
+    )
+    agent = wrapped(ctx, binding)
+    assert len(delegate.calls) == 1
+    assert factory_calls == 1
+    assert len(authoritative_instances) == 1
+    assert agent is authoritative_instances[0]
 
 
 def test_g_r3_01_ac3_resolver_invokes_delegate_before_wrap() -> None:
@@ -229,7 +279,10 @@ def test_n_r3_02_wrong_agent_type_rejected_at_materialization() -> None:
 def test_g_r3_02_injection_applies_sanctioned_port_and_require_flag() -> None:
     port = MagicMock()
     integration = MagicMock(spec=ExternalWorkIntegration)
-    delegate = _RecordingDelegate(factory=_artifact_external_contractor_factory())
+    authoritative_instances: list[ExternalContractorAdapterAgent] = []
+    delegate = _RecordingDelegate(
+        factory=_artifact_external_contractor_factory(instances=authoritative_instances),
+    )
     ac3_key = _factory_key(_DIGEST, AgentBindingFactoryReference(builder_key="ac3"))
     injection = StrictExternalWorkHostAgentInjection(
         external_work=integration,
@@ -257,7 +310,8 @@ def test_g_r3_02_injection_applies_sanctioned_port_and_require_flag() -> None:
         contract_id="external_contractor_adapter",
     )
     agent = wrapped(ctx, binding)
-    assert isinstance(agent, ExternalContractorAdapterAgent)
+    assert len(authoritative_instances) == 1
+    assert agent is authoritative_instances[0]
     assert agent._sanctioned_operation_port is port
     assert agent._require_sanctioned_external_work_mutations is True
     assert agent._external_work is integration
