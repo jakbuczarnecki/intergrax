@@ -4,12 +4,41 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from contextlib import contextmanager
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 import sqlite3
 from unittest.mock import patch
 
 import pytest
+
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_RUN_ID,
+    EXTERNAL_WORK_TEST_TASK_ID,
+    allow_adapter,
+)
+from external_contractor_adapter.tests.fakes.deterministic_external_work import (
+    DeterministicExternalWorkFake,
+)
+from governed_contractor_application.host.offline_demo import build_demo_policy_bundle
+from governed_contractor_application.host.provider_invocation_lifecycle import (
+    GovernedProviderInvocationDispatchGate,
+)
+from governed_contractor_application.host.stores import (
+    InMemoryProviderInvocationStore,
+)
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    reset_active_execution_identity,
+    validate_task_id,
+)
+from intergrax.contracts.external_work_provider_capabilities import (
+    quote_first_partner_capability_fixture,
+)
+from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
+    RuntimePolicyBundleEvaluator,
+)
 
 from governed_contractor_application.host.governed_external_work_host_stores import (
     validate_production_governed_external_work_host_store_bundle,
@@ -37,6 +66,60 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 # NOT PROVEN at authoring time — resource budget pytest=0; execute only after operator approval:
 # uv run pytest -p no:xdist tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_gca_sqlite_durable_recovery.py -q
+
+_T0 = datetime(2026, 7, 21, 11, 0, 0, tzinfo=timezone.utc)
+_TASK = str(EXTERNAL_WORK_TEST_TASK_ID)
+_RUN = str(EXTERNAL_WORK_TEST_RUN_ID)
+
+
+@contextmanager
+def _active_execution(execution_id: str):
+    token = bind_active_execution_identity(
+        task_id=validate_task_id(_TASK),
+        run_id=_RUN,
+        execution_id=execution_id,
+        attempt_id=mint_attempt_id(),
+    )
+    try:
+        yield execution_id
+    finally:
+        reset_active_execution_identity(token)
+
+
+def _sqlite_orchestrator(tmp_path: Path, db_name: str = "gca.db"):
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        tmp_path / db_name,
+    )
+    bundle = build_demo_policy_bundle(issued_at=_T0)
+    policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
+    fake = DeterministicExternalWorkFake()
+    invocation_store = InMemoryProviderInvocationStore()
+    adapter, _ = allow_adapter(
+        fake,
+        policy=policy,
+        tenant_id="tenant-a",
+        workspace_id="ws-a",
+        principal_id="principal-a",
+        active_task_id=_TASK,
+        invocation_dispatch=GovernedProviderInvocationDispatchGate(
+            store=invocation_store,
+            clock=lambda: _T0,
+        ),
+    )
+    orch = GovernedExternalWorkOrchestrator(
+        adapter=adapter,
+        policy=policy,
+        bundle=bundle,
+        attestor=None,
+        capabilities=quote_first_partner_capability_fixture(provider_id="gec3_deterministic_fake"),
+        execution_store=backend.bundle.execution_store,
+        receipt_store=backend.bundle.receipt_store,
+        bundle_store=backend.bundle.bundle_store,
+        continuation_store=backend.bundle.continuation_store,
+        provider_invocation_store=invocation_store,
+        clock=lambda: _T0,
+    )
+    return orch, fake, backend
 
 
 def _sample_bundle_record(execution_id: str) -> GovernedExternalWorkCreateFollowOnRecordV1:
@@ -371,6 +454,143 @@ def test_strict_gca_session_open_failure_closes_owned_backend(tmp_path: Path) ->
         GovernedExternalWorkHostState.REQUESTED,
     )
     reopened.close()
+
+
+def test_execution_outcome_unknown_denies_follow_on_resolution_without_provider(
+    tmp_path: Path,
+) -> None:
+    execution_id = "exec-unknown-follow-on"
+    orch, fake, backend = _sqlite_orchestrator(tmp_path)
+    backend.bundle.execution_store.put_state(
+        execution_id,
+        GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN,
+    )
+    calls_before = fake.create_calls
+    assert (
+        orch.resolve_create_adapter_result_for_follow_on(
+            execution_id,
+            tenant_id="tenant-a",
+            principal_id="principal-a",
+        )
+        is None
+    )
+    assert fake.create_calls == calls_before
+    backend.close()
+
+
+def test_execution_outcome_unknown_without_ger_blocks_orchestrator_create(
+    tmp_path: Path,
+) -> None:
+    execution_id = "exec-unknown-no-ger"
+    orch, fake, backend = _sqlite_orchestrator(tmp_path)
+    backend.bundle.execution_store.put_state(
+        execution_id,
+        GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN,
+    )
+    calls_before = fake.create_calls
+    with _active_execution(execution_id):
+        step = orch.create(
+            task_id=_TASK,
+            run_id=_RUN,
+            principal_id="principal-a",
+            tenant_id="tenant-a",
+            metadata={"idempotency_key": "idem-unknown"},
+            execution_id=execution_id,
+        )
+    assert step.state is GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN
+    assert step.reason == "create_redispatch_prohibited"
+    assert fake.create_calls == calls_before
+    backend.close()
+
+
+def test_uncertainty_marker_read_error_fail_closed_on_reopen(tmp_path: Path) -> None:
+    db = tmp_path / "gca.db"
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    backend.close()
+    with patch(
+        "governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle."
+        "_SqliteGovernedExternalWorkHostDatabase._read_uncertain_write_flag",
+        side_effect=GovernedExternalWorkHostPersistenceError(
+            "gca host store uncertainty marker unreadable",
+        ),
+    ):
+        with pytest.raises(
+            GovernedExternalWorkHostPersistenceError,
+            match="uncertainty marker unreadable",
+        ):
+            open_sqlite_governed_external_work_host_store_bundle_at(db)
+
+
+def test_uncertainty_marker_read_error_denies_production_bundle_admission(
+    tmp_path: Path,
+) -> None:
+    db = tmp_path / "gca.db"
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    backend.close()
+    with patch(
+        "governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle."
+        "_SqliteGovernedExternalWorkHostDatabase._read_uncertain_write_flag",
+        side_effect=GovernedExternalWorkHostPersistenceError(
+            "gca host store uncertainty marker unreadable",
+        ),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError):
+            reopened = open_sqlite_governed_external_work_host_store_bundle_at(db)
+            validate_production_governed_external_work_host_store_bundle(
+                reopened.bundle,
+            )
+
+
+def test_f03_ambiguous_commit_marker_persist_failure_reopen_fail_closed(
+    tmp_path: Path,
+) -> None:
+    db = tmp_path / "gca.db"
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    with (
+        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
+        patch.object(
+            backend._db,
+            "_persist_uncertain_write_flag",
+            side_effect=sqlite3.OperationalError("meta write failed"),
+        ),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError):
+            backend.bundle.execution_store.put_state(
+                "exec-f03-reopen",
+                GovernedExternalWorkHostState.REQUESTED,
+            )
+    backend.close()
+
+    with pytest.raises(
+        GovernedExternalWorkHostPersistenceError,
+        match="missing gca host store schema metadata",
+    ):
+        open_sqlite_governed_external_work_host_store_bundle_at(db)
+
+
+def test_f03_reopen_blocks_orchestrator_create_after_ambiguous_commit(
+    tmp_path: Path,
+) -> None:
+    db = tmp_path / "gca-orch.db"
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    execution_id = "exec-f03-create-block"
+    with (
+        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
+        patch.object(
+            backend._db,
+            "_persist_uncertain_write_flag",
+            side_effect=sqlite3.OperationalError("meta write failed"),
+        ),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError):
+            backend.bundle.execution_store.put_state(
+                execution_id,
+                GovernedExternalWorkHostState.REQUESTED,
+            )
+    backend.close()
+
+    with pytest.raises(GovernedExternalWorkHostPersistenceError):
+        _sqlite_orchestrator(tmp_path, db_name="gca-orch.db")
 
 
 def test_policy_bundle_round_trip(tmp_path: Path) -> None:

@@ -804,6 +804,7 @@ class GovernedExternalWorkOrchestrator:
         if state in {
             GovernedExternalWorkHostState.CREATE_IN_PROGRESS,
             GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE,
+            GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN,
             GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_PENDING,
             GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED,
             GovernedExternalWorkHostState.QUOTE_RECEIVED,

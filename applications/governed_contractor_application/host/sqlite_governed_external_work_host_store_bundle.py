@@ -157,8 +157,10 @@ class _SqliteGovernedExternalWorkHostDatabase:
                 "SELECT value FROM gca_host_store_meta WHERE key = ?",
                 (_UNCERTAIN_WRITE_META_KEY,),
             ).fetchone()
-        except sqlite3.Error:
-            return False
+        except sqlite3.Error as exc:
+            raise GovernedExternalWorkHostPersistenceError(
+                "gca host store uncertainty marker unreadable",
+            ) from exc
         return row is not None and row["value"] == "1"
 
     @staticmethod
@@ -170,6 +172,21 @@ class _SqliteGovernedExternalWorkHostDatabase:
             """,
             (_UNCERTAIN_WRITE_META_KEY, "1"),
         )
+
+    def _invalidate_schema_metadata_for_fail_closed_reopen(self) -> None:
+        """Best-effort durable deny when uncertain marker cannot be persisted."""
+        try:
+            raw = sqlite3.connect(self._db_path, timeout=30.0)
+            try:
+                raw.execute(
+                    "DELETE FROM gca_host_store_meta WHERE key = ?",
+                    (_SCHEMA_META_KEY,),
+                )
+                raw.commit()
+            finally:
+                raw.close()
+        except sqlite3.Error:
+            return
 
     def _mark_writes_uncertain(self, conn: sqlite3.Connection | None = None) -> None:
         self._writes_uncertain = True
@@ -188,7 +205,7 @@ class _SqliteGovernedExternalWorkHostDatabase:
             finally:
                 raw.close()
         except sqlite3.Error:
-            return
+            self._invalidate_schema_metadata_for_fail_closed_reopen()
 
     @staticmethod
     def _execute(
