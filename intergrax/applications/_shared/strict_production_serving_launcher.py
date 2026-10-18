@@ -41,6 +41,9 @@ from intergrax.applications._shared.production_lifecycle import (
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
+from intergrax.contracts.governed_external_work_host_store_lifecycle import (
+    OwnedGovernedExternalWorkHostStoreBundle,
+)
 from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
     cleanup_errors_from_close_failure,
     raise_grouped_exceptions,
@@ -94,6 +97,7 @@ class StrictProductionProcessStorage:
     agent_distribution_db: Path
     continuation_state_file: Path
     provider_invocation_db: Path
+    governed_external_work_host_db: Path
     trusted_artifact_parent_roots: tuple[Path, ...]
 
 
@@ -350,6 +354,9 @@ def open_strict_production_serving_session(
         ProductionProcessComposition,
     ]
     | None = None,
+    owned_governed_external_work_host_store_bundle: (
+        OwnedGovernedExternalWorkHostStoreBundle | None
+    ) = None,
 ) -> StrictProductionServingSession:
     """
     Open one strict production serving session: lifecycle, reconciliation, handoff binding.
@@ -386,6 +393,9 @@ def open_strict_production_serving_session(
                 provider_invocation_db=storage.provider_invocation_db,
                 application_composition=application_composition,
                 composition_builder=composition_builder,
+                owned_governed_external_work_host_store_bundle=(
+                    owned_governed_external_work_host_store_bundle
+                ),
                 serving_reconciliation_targets=(
                     (environment.application_id, environment.application_environment_id),
                 ),

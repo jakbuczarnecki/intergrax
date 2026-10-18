@@ -730,6 +730,8 @@ class GovernedExternalWorkOrchestrator:
             return None
         if state is GovernedExternalWorkHostState.EXECUTION_FAILED:
             return None
+        if state is GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE:
+            return None
         result = self._execution_store.get_result(execution_id)
         if not isinstance(result, GovernedExecutionResultV2):
             return None
@@ -777,10 +779,10 @@ class GovernedExternalWorkOrchestrator:
                     execution_id,
                 )
                 if follow_on is None:
-                    failed = GovernedExternalWorkHostState.EXECUTION_FAILED
-                    self._execution_store.put_state(execution_id, failed)
+                    incomplete = GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE
+                    self._execution_store.put_state(execution_id, incomplete)
                     return OrchestratorStepResult(
-                        state=failed,
+                        state=incomplete,
                         execution_id=execution_id,
                         adapter_result=None,
                         governed_result=existing_result,
@@ -1095,10 +1097,10 @@ class GovernedExternalWorkOrchestrator:
                 ValueError,
                 GovernedExecutionCreateFollowOnConflictError,
             ):
-                failed = GovernedExternalWorkHostState.EXECUTION_FAILED
-                self._execution_store.put_state(execution_id, failed)
+                incomplete = GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE
+                self._execution_store.put_state(execution_id, incomplete)
                 return OrchestratorStepResult(
-                    state=failed,
+                    state=incomplete,
                     execution_id=execution_id,
                     adapter_result=adapter_result,
                     governed_result=ger,

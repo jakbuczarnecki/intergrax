@@ -99,7 +99,8 @@ def test_c_dim2_02_negative_missing_artifact_fail_closed(tmp_path: Path) -> None
     governance = d4._governance(
         ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
     )
-    composition_builder = d4._composition_builder(tmp_path)
+    gca_kwargs = d4._lifecycle_gca_kwargs(storage)
+    composition_builder = gca_kwargs["composition_builder"]
     from intergrax.applications._shared.production_process_lifecycle import (
         open_production_process_lifecycle,
     )
@@ -113,6 +114,9 @@ def test_c_dim2_02_negative_missing_artifact_fail_closed(tmp_path: Path) -> None
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
         composition_builder=composition_builder,
+        owned_governed_external_work_host_store_bundle=gca_kwargs[
+            "owned_governed_external_work_host_store_bundle"
+        ],
         serving_reconciliation_targets=(
             (environment.application_id, environment.application_environment_id),
         ),
@@ -142,7 +146,7 @@ def test_c_dim2_02_negative_missing_artifact_fail_closed(tmp_path: Path) -> None
             governance=governance,
             deployment_adapter=adapter,
             activation_intent=intent,
-            composition_builder=composition_builder,
+            **gca_kwargs,
             missing_continuation_file_policy="empty",
         )
 
@@ -157,7 +161,8 @@ def test_c_dim2_03_negative_wrong_digest_fail_closed_on_strict_activation(
     governance = d4._governance(
         ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
     )
-    composition_builder = d4._composition_builder(tmp_path)
+    gca_kwargs = d4._lifecycle_gca_kwargs(storage)
+    composition_builder = gca_kwargs["composition_builder"]
     from intergrax.applications._shared.production_process_lifecycle import (
         open_production_process_lifecycle,
     )
@@ -171,6 +176,9 @@ def test_c_dim2_03_negative_wrong_digest_fail_closed_on_strict_activation(
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
         composition_builder=composition_builder,
+        owned_governed_external_work_host_store_bundle=gca_kwargs[
+            "owned_governed_external_work_host_store_bundle"
+        ],
         serving_reconciliation_targets=(
             (environment.application_id, environment.application_environment_id),
         ),
@@ -198,7 +206,7 @@ def test_c_dim2_03_negative_wrong_digest_fail_closed_on_strict_activation(
             governance=governance,
             deployment_adapter=adapter,
             activation_intent=intent,
-            composition_builder=composition_builder,
+            **gca_kwargs,
             missing_continuation_file_policy="empty",
         )
 
@@ -223,6 +231,7 @@ def test_c_dim2_05_negative_untrusted_artifact_root_fail_closed(tmp_path: Path) 
         agent_distribution_db=tmp_path / "ad-untrusted.db",
         continuation_state_file=tmp_path / "continuation-untrusted.json",
         provider_invocation_db=tmp_path / "invocation-untrusted.db",
+        governed_external_work_host_db=tmp_path / "gca_host-untrusted.db",
         trusted_artifact_parent_roots=roots,
     )
     adapter = VenvBundleColocatedRuntimeDeploymentAdapter(
@@ -232,7 +241,8 @@ def test_c_dim2_05_negative_untrusted_artifact_root_fail_closed(tmp_path: Path) 
     governance = d4._governance(
         ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
     )
-    composition_builder = d4._composition_builder(tmp_path)
+    gca_kwargs = d4._lifecycle_gca_kwargs(storage)
+    composition_builder = gca_kwargs["composition_builder"]
     from intergrax.applications._shared.production_process_lifecycle import (
         open_production_process_lifecycle,
     )
@@ -246,6 +256,9 @@ def test_c_dim2_05_negative_untrusted_artifact_root_fail_closed(tmp_path: Path) 
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
         composition_builder=composition_builder,
+        owned_governed_external_work_host_store_bundle=gca_kwargs[
+            "owned_governed_external_work_host_store_bundle"
+        ],
         serving_reconciliation_targets=(
             (environment.application_id, environment.application_environment_id),
         ),
@@ -272,7 +285,7 @@ def test_c_dim2_05_negative_untrusted_artifact_root_fail_closed(tmp_path: Path) 
             governance=governance,
             deployment_adapter=adapter,
             activation_intent=intent,
-            composition_builder=composition_builder,
+            **gca_kwargs,
             missing_continuation_file_policy="empty",
         )
 
@@ -368,7 +381,8 @@ def test_c_dim3_03_negative_stale_ready_physical_unit_denied_on_reopen(
     governance = d4._governance(
         ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
     )
-    composition_builder = d4._composition_builder(tmp_path)
+    gca_kwargs = d4._lifecycle_gca_kwargs(storage)
+    composition_builder = gca_kwargs["composition_builder"]
     from intergrax.applications._shared.production_process_lifecycle import (
         open_production_process_lifecycle,
     )
@@ -382,6 +396,9 @@ def test_c_dim3_03_negative_stale_ready_physical_unit_denied_on_reopen(
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
         composition_builder=composition_builder,
+        owned_governed_external_work_host_store_bundle=gca_kwargs[
+            "owned_governed_external_work_host_store_bundle"
+        ],
         serving_reconciliation_targets=(
             (environment.application_id, environment.application_environment_id),
         ),
@@ -409,6 +426,6 @@ def test_c_dim3_03_negative_stale_ready_physical_unit_denied_on_reopen(
             environment=environment,
             governance=governance,
             deployment_adapter=fresh_adapter,
-            composition_builder=composition_builder,
+            **gca_kwargs,
             missing_continuation_file_policy="empty",
         )

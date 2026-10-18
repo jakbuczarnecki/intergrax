@@ -21,6 +21,10 @@ from governed_contractor_application.host.governed_contractor_host_runtime_compo
     compose_governed_contractor_host_runtime,
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from governed_contractor_application.host.strict_gca_production_process_composition import (
+    build_strict_durable_gca_composition_builder,
+    open_owned_sqlite_governed_external_work_host_stores,
+)
 from governed_contractor_application.host.strict_production_serving import (
     create_governed_contractor_strict_production_asgi_app,
 )
@@ -113,6 +117,7 @@ def _storage_and_adapter(
         agent_distribution_db=tmp_path / "ad.db",
         continuation_state_file=tmp_path / "continuation.json",
         provider_invocation_db=tmp_path / "invocation.db",
+        governed_external_work_host_db=tmp_path / "gca_host.db",
         trusted_artifact_parent_roots=roots,
     )
     adapter = VenvBundleColocatedRuntimeDeploymentAdapter(
@@ -212,20 +217,23 @@ def _ac3_environment() -> StrictProductionServingEnvironment:
     )
 
 
-def _composition_builder(tmp_path: Path):
-    def _build(
-        store: SerializedSealExecutionContinuationStateStore,
-        invocation_store: ProviderInvocationStore,
-        base: ProductionProcessComposition,
-    ) -> ProductionProcessComposition:
-        return ProductionProcessComposition(
-            agent_platform_runtime=base.agent_platform_runtime,
-            agent_capability_runtime=base.agent_capability_runtime,
-            provider_invocation_store=invocation_store,
-            execution_continuation_state_store=store,
-        )
+def _open_durable_gca_host_stores(storage: StrictProductionProcessStorage):
+    return open_owned_sqlite_governed_external_work_host_stores(
+        storage.governed_external_work_host_db,
+    )
 
-    return _build
+
+def _composition_builder_for_storage(storage: StrictProductionProcessStorage):
+    owned = _open_durable_gca_host_stores(storage)
+    return owned, build_strict_durable_gca_composition_builder(owned)
+
+
+def _lifecycle_gca_kwargs(storage: StrictProductionProcessStorage) -> dict[str, object]:
+    owned, builder = _composition_builder_for_storage(storage)
+    return {
+        "composition_builder": builder,
+        "owned_governed_external_work_host_store_bundle": owned,
+    }
 
 
 def _patch_gca_manifest_for_ac3_serving(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -318,7 +326,7 @@ def _open_with_activation(
         trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
-        composition_builder=_composition_builder(tmp_path),
+        **_lifecycle_gca_kwargs(storage),
         serving_reconciliation_targets=(
             (environment.application_id, environment.application_environment_id),
         ),
@@ -342,7 +350,7 @@ def _open_with_activation(
         environment=environment,
         governance=governance,
         deployment_adapter=adapter,
-        composition_builder=_composition_builder(tmp_path),
+        **_lifecycle_gca_kwargs(storage),
         missing_continuation_file_policy="empty",
     )
 
@@ -410,7 +418,7 @@ def test_d4_explicit_activation_uses_d2_launcher(tmp_path: Path) -> None:
         trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
-        composition_builder=_composition_builder(tmp_path),
+        **_lifecycle_gca_kwargs(storage),
     ) as lifecycle:
         bundle, locator, *_rest = _qualified_canonical_bundle(
             tmp_path,
@@ -432,7 +440,7 @@ def test_d4_explicit_activation_uses_d2_launcher(tmp_path: Path) -> None:
         governance=governance,
         deployment_adapter=adapter,
         activation_intent=intent,
-        composition_builder=_composition_builder(tmp_path),
+        **_lifecycle_gca_kwargs(storage),
         missing_continuation_file_policy="empty",
     )
     assert session.composition.serving_runtime_handoff is not None
@@ -538,7 +546,7 @@ def test_d4_governance_deny_blocks_activation(tmp_path: Path) -> None:
         trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
-        composition_builder=_composition_builder(tmp_path),
+        **_lifecycle_gca_kwargs(storage),
     ) as lifecycle:
         bundle, locator, *_rest = _qualified_canonical_bundle(
             tmp_path,
@@ -561,7 +569,7 @@ def test_d4_governance_deny_blocks_activation(tmp_path: Path) -> None:
             governance=governance,
             deployment_adapter=adapter,
             activation_intent=intent,
-            composition_builder=_composition_builder(tmp_path),
+            **_lifecycle_gca_kwargs(storage),
             missing_continuation_file_policy="empty",
         )
 
@@ -578,7 +586,7 @@ def test_d4_missing_serving_pointer_after_open(tmp_path: Path) -> None:
             environment=_ac3_environment(),
             governance=governance,
             deployment_adapter=adapter,
-            composition_builder=_composition_builder(tmp_path),
+            **_lifecycle_gca_kwargs(storage),
             missing_continuation_file_policy="empty",
         )
 
@@ -614,7 +622,7 @@ def test_d4_duplicate_process_lifecycle(tmp_path: Path) -> None:
             environment=_ac3_environment(),
             governance=governance,
             deployment_adapter=adapter,
-            composition_builder=_composition_builder(tmp_path),
+            **_lifecycle_gca_kwargs(storage),
             missing_continuation_file_policy="empty",
         )
     session.close()
@@ -637,7 +645,7 @@ def test_d4_stale_physical_unit_after_serving(tmp_path: Path) -> None:
         trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
         missing_file_policy="empty",
         provider_invocation_db=storage.provider_invocation_db,
-        composition_builder=_composition_builder(tmp_path),
+        **_lifecycle_gca_kwargs(storage),
     ) as lifecycle:
         bundle, locator, *_rest = _qualified_canonical_bundle(
             tmp_path,
@@ -662,7 +670,7 @@ def test_d4_stale_physical_unit_after_serving(tmp_path: Path) -> None:
             environment=environment,
             governance=governance,
             deployment_adapter=fresh_adapter,
-            composition_builder=_composition_builder(tmp_path),
+            **_lifecycle_gca_kwargs(storage),
             missing_continuation_file_policy="empty",
         )
 
@@ -722,7 +730,7 @@ def test_d4_21_activation_intent_scope_mismatch_before_lifecycle(
                 governance=governance,
                 deployment_adapter=adapter,
                 activation_intent=intent,
-                composition_builder=_composition_builder(tmp_path),
+                **_lifecycle_gca_kwargs(storage),
                 missing_continuation_file_policy="empty",
             )
     open_lifecycle.assert_not_called()
@@ -739,7 +747,7 @@ def _open_session_missing_serving_prerequisites_kwargs(tmp_path: Path):
         environment=_ac3_environment(),
         governance=governance,
         deployment_adapter=adapter,
-        composition_builder=_composition_builder(tmp_path),
+        **_lifecycle_gca_kwargs(storage),
         missing_continuation_file_policy="empty",
     )
 
