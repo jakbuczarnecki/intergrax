@@ -6,31 +6,37 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+import sqlite3
+from unittest.mock import patch
+
 import pytest
 
 from governed_contractor_application.host.governed_external_work_host_stores import (
-    GovernedExternalWorkHostStoreBundle,
     validate_production_governed_external_work_host_store_bundle,
 )
 from governed_contractor_application.host.lifecycle_states import (
     GovernedExternalWorkHostState,
+)
+from governed_contractor_application.host.orchestrator import (
+    GovernedExternalWorkOrchestrator,
 )
 from governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle import (
     GovernedExternalWorkHostPersistenceError,
     open_sqlite_governed_external_work_host_store_bundle_at,
 )
 from governed_contractor_application.host.stores import GovernedExecutionCreateFollowOnConflictError
+from external_contractor_adapter.side_effect_actions import ACTION_CREATE_EXTERNAL_WORK
+from intergrax.contracts.governed_execution_result import GovernedExecutionResultV2
 from intergrax.contracts.governed_external_work_create_follow_on import (
     GovernedExternalWorkCreateFollowOnRecordV1,
 )
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
+from tests.unit.contracts.test_governed_execution_result import _ger_v2
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 # NOT PROVEN at authoring time — resource budget pytest=0; execute only after operator approval:
-# uv run pytest -p no:xdist tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_gca_sqlite_durable_recovery.py::test_sqlite_ger_round_trip_close_reopen_new_backend -q
-# uv run pytest -p no:xdist tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_gca_sqlite_durable_recovery.py::test_f02_persist_round_trip_close_reopen -q
-# uv run pytest -p no:xdist tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_gca_sqlite_durable_recovery.py::test_sqlite_host_state_round_trip_close_reopen_new_backend -q
+# uv run pytest -p no:xdist tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_gca_sqlite_durable_recovery.py -q
 
 
 def _sample_bundle_record(execution_id: str) -> GovernedExternalWorkCreateFollowOnRecordV1:
@@ -76,6 +82,21 @@ def test_sqlite_bundle_reports_durable_and_validates_for_production(
     validate_production_governed_external_work_host_store_bundle(backend.bundle)
     assert backend.bundle.is_durable is True
     backend.close()
+
+
+def test_sqlite_ger_round_trip_close_reopen_new_backend(tmp_path: Path) -> None:
+    db = tmp_path / "gca.db"
+    execution_id = "exec-ger-1"
+    ger = _ger_v2(execution_id=execution_id, action=ACTION_CREATE_EXTERNAL_WORK)
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    backend.bundle.execution_store.put_result(ger)
+    backend.close()
+    reopened = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    loaded = reopened.bundle.execution_store.get_result(execution_id)
+    assert loaded is not None
+    assert str(loaded.execution_id) == execution_id
+    assert loaded.action == ACTION_CREATE_EXTERNAL_WORK
+    reopened.close()
 
 
 def test_sqlite_host_state_round_trip_close_reopen_new_backend(tmp_path: Path) -> None:
@@ -151,6 +172,205 @@ def test_closed_sqlite_backend_rejects_writes(tmp_path: Path) -> None:
             "x",
             GovernedExternalWorkHostState.REQUESTED,
         )
+
+
+def test_sqlite_backend_double_close_is_safe(tmp_path: Path) -> None:
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        tmp_path / "gca.db",
+    )
+    backend.close()
+    backend.close()
+
+
+def test_sqlite_write_failure_surfaces_persistence_error(tmp_path: Path) -> None:
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        tmp_path / "gca.db",
+    )
+    ger = _ger_v2(execution_id="exec-write-fail")
+    with patch.object(
+        backend._db,
+        "_execute",
+        side_effect=GovernedExternalWorkHostPersistenceError("disk full"),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError, match="disk full"):
+            backend.bundle.execution_store.put_result(ger)
+    backend.close()
+
+
+def test_ambiguous_commit_persists_uncertain_flag_and_reopen_fail_closed(
+    tmp_path: Path,
+) -> None:
+    db = tmp_path / "gca.db"
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    with (
+        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
+        patch.object(
+            sqlite3.Connection,
+            "rollback",
+            side_effect=sqlite3.OperationalError("rollback"),
+        ),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError):
+            backend.bundle.execution_store.put_state(
+                "exec-uncertain",
+                GovernedExternalWorkHostState.REQUESTED,
+            )
+    backend.close()
+
+    reopened = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    with pytest.raises(
+        GovernedExternalWorkHostPersistenceError,
+        match="transaction outcome uncertain",
+    ):
+        reopened.bundle.execution_store.get_state("exec-uncertain")
+    reopened.close()
+
+
+def test_commit_failure_with_rollback_success_marks_uncertain_and_reopen_fail_closed(
+    tmp_path: Path,
+) -> None:
+    db = tmp_path / "gca.db"
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    with patch.object(
+        sqlite3.Connection,
+        "commit",
+        side_effect=sqlite3.OperationalError("commit failed"),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError, match="commit failed"):
+            backend.bundle.execution_store.put_state(
+                "exec-commit-ambiguous",
+                GovernedExternalWorkHostState.REQUESTED,
+            )
+    backend.close()
+
+    reopened = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    with pytest.raises(
+        GovernedExternalWorkHostPersistenceError,
+        match="transaction outcome uncertain",
+    ):
+        reopened.bundle.execution_store.get_state("exec-commit-ambiguous")
+    reopened.close()
+
+
+def test_uncertain_marker_persistence_failure_still_fail_closed_in_process(
+    tmp_path: Path,
+) -> None:
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        tmp_path / "gca.db",
+    )
+    with (
+        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
+        patch.object(
+            backend._db,
+            "_persist_uncertain_write_flag",
+            side_effect=sqlite3.OperationalError("meta write failed"),
+        ),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError):
+            backend.bundle.execution_store.put_state(
+                "exec-marker-fail",
+                GovernedExternalWorkHostState.REQUESTED,
+            )
+    with pytest.raises(
+        GovernedExternalWorkHostPersistenceError,
+        match="transaction outcome uncertain",
+    ):
+        backend.bundle.execution_store.get_state("exec-marker-fail")
+    backend.close()
+
+
+def test_sqlite_read_failure_not_treated_as_missing_record(tmp_path: Path) -> None:
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        tmp_path / "gca.db",
+    )
+    with patch.object(
+        backend._db,
+        "_execute",
+        side_effect=GovernedExternalWorkHostPersistenceError("database disk image is malformed"),
+    ):
+        with pytest.raises(GovernedExternalWorkHostPersistenceError, match="malformed"):
+            backend.bundle.execution_store.get_create_follow_on_record("missing")
+    backend.close()
+
+
+def test_host_finalization_incomplete_without_ger_blocks_create_redispatch(
+    tmp_path: Path,
+) -> None:
+    db = tmp_path / "gca.db"
+    execution_id = "exec-incomplete-only"
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    backend.bundle.execution_store.put_state(
+        execution_id,
+        GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE,
+    )
+    orch = GovernedExternalWorkOrchestrator.__new__(GovernedExternalWorkOrchestrator)
+    orch._execution_store = backend.bundle.execution_store
+    blocked = orch._prohibit_ordinary_create_redispatch(execution_id)
+    assert blocked is not None
+    assert blocked.state is GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE
+    assert blocked.reason == "create_redispatch_prohibited"
+    assert blocked.governed_result is None
+    backend.close()
+
+
+def test_ger_without_f02_sets_incomplete_on_redispatch_probe(tmp_path: Path) -> None:
+    db = tmp_path / "gca.db"
+    execution_id = "exec-ger-no-f02"
+    ger = _ger_v2(execution_id=execution_id, action=ACTION_CREATE_EXTERNAL_WORK)
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
+    backend.bundle.execution_store.put_result(ger)
+    orch = GovernedExternalWorkOrchestrator.__new__(GovernedExternalWorkOrchestrator)
+    orch._execution_store = backend.bundle.execution_store
+    blocked = orch._prohibit_ordinary_create_redispatch(execution_id)
+    assert blocked is not None
+    assert blocked.state is GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE
+    assert blocked.reason == "create_follow_on_record_missing_redispatch_prohibited"
+    assert isinstance(blocked.governed_result, GovernedExecutionResultV2)
+    backend.close()
+
+
+def test_strict_gca_session_open_failure_closes_owned_backend(tmp_path: Path) -> None:
+    from governed_contractor_application.host.strict_gca_production_process_composition import (
+        open_gca_strict_production_serving_session,
+    )
+    from intergrax.applications._shared.strict_production_serving_launcher import (
+        StrictProductionProcessStorage,
+        StrictProductionServingEnvironment,
+    )
+    from tests.unit.applications.test_prod_q_r1_r7_d2_production_process_lifecycle import (
+        _governance,
+    )
+
+    storage = StrictProductionProcessStorage(
+        agent_distribution_db=tmp_path / "dist.db",
+        continuation_state_file=tmp_path / "continuation.json",
+        provider_invocation_db=tmp_path / "pis.db",
+        trusted_artifact_parent_roots=(tmp_path,),
+        governed_external_work_host_db=tmp_path / "gca.db",
+    )
+    environment = StrictProductionServingEnvironment(
+        application_id="app",
+        application_environment_id="env",
+    )
+    with patch(
+        "governed_contractor_application.host.strict_gca_production_process_composition.open_strict_production_serving_session",
+        side_effect=RuntimeError("startup failed"),
+    ):
+        with pytest.raises(RuntimeError, match="startup failed"):
+            open_gca_strict_production_serving_session(
+                storage=storage,
+                environment=environment,
+                governance=_governance(),
+                deployment_adapter=object(),  # type: ignore[arg-type]
+            )
+    reopened = open_sqlite_governed_external_work_host_store_bundle_at(
+        storage.governed_external_work_host_db,
+    )
+    reopened.bundle.execution_store.put_state(
+        "after-leak-check",
+        GovernedExternalWorkHostState.REQUESTED,
+    )
+    reopened.close()
 
 
 def test_policy_bundle_round_trip(tmp_path: Path) -> None:

@@ -803,6 +803,7 @@ class GovernedExternalWorkOrchestrator:
         state = self._execution_store.get_state(execution_id)
         if state in {
             GovernedExternalWorkHostState.CREATE_IN_PROGRESS,
+            GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE,
             GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_PENDING,
             GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED,
             GovernedExternalWorkHostState.QUOTE_RECEIVED,
@@ -1079,7 +1080,29 @@ class GovernedExternalWorkOrchestrator:
             execution_started_at=started_at,
             execution_completed_at=completed,
         )
-        self._execution_store.put_result(ger)
+        try:
+            self._execution_store.put_result(ger)
+        except ValueError as exc:
+            if after_create and action == ACTION_CREATE_EXTERNAL_WORK:
+                incomplete = GovernedExternalWorkHostState.HOST_FINALIZATION_INCOMPLETE
+                try:
+                    self._execution_store.put_state(execution_id, incomplete)
+                except ValueError:
+                    pass
+                return OrchestratorStepResult(
+                    state=incomplete,
+                    execution_id=execution_id,
+                    adapter_result=adapter_result,
+                    governed_result=None,
+                    attestation=None,
+                    receipt=None,
+                    reason="ger_persistence_failed",
+                    external_effect_outcome=(
+                        reliability.effect_outcome if reliability is not None else None
+                    ),
+                    reliability_admission=reliability,
+                )
+            raise exc
         if (
             after_create
             and action == ACTION_CREATE_EXTERNAL_WORK

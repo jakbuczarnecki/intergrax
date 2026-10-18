@@ -162,6 +162,46 @@ class _SqliteGovernedExternalWorkHostDatabase:
         return row is not None and row["value"] == "1"
 
     @staticmethod
+    def _persist_uncertain_write_flag(conn: sqlite3.Connection) -> None:
+        conn.execute(
+            """
+            INSERT INTO gca_host_store_meta (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
+            (_UNCERTAIN_WRITE_META_KEY, "1"),
+        )
+
+    def _mark_writes_uncertain(self, conn: sqlite3.Connection | None = None) -> None:
+        self._writes_uncertain = True
+        if conn is not None:
+            try:
+                self._persist_uncertain_write_flag(conn)
+                conn.commit()
+                return
+            except sqlite3.Error:
+                pass
+        try:
+            raw = sqlite3.connect(self._db_path, timeout=30.0)
+            try:
+                self._persist_uncertain_write_flag(raw)
+                raw.commit()
+            finally:
+                raw.close()
+        except sqlite3.Error:
+            return
+
+    @staticmethod
+    def _execute(
+        conn: sqlite3.Connection,
+        sql: str,
+        params: tuple[object, ...] = (),
+    ) -> sqlite3.Cursor:
+        try:
+            return conn.execute(sql, params)
+        except sqlite3.Error as exc:
+            raise GovernedExternalWorkHostPersistenceError(str(exc)) from exc
+
+    @staticmethod
     def _create_schema_v1(conn: sqlite3.Connection) -> None:
         conn.execute(
             """
@@ -278,7 +318,9 @@ class _SqliteGovernedExternalWorkHostDatabase:
             try:
                 conn.rollback()
             except sqlite3.Error:
-                self._writes_uncertain = True
+                pass
+            # COMMIT failure is ambiguous even when rollback() succeeds.
+            self._mark_writes_uncertain(conn)
             raise GovernedExternalWorkHostPersistenceError(str(exc)) from exc
 
 
@@ -296,7 +338,8 @@ class _SqliteGovernedExecutionStore:
         key = str(result.execution_id)
         payload = canonical_json_text(result.model_dump(mode="json"))
         with self._db._managed_connection() as conn:
-            conn.execute(
+            self._db._execute(
+                conn,
                 """
                 INSERT INTO gca_execution_results (execution_id, payload) VALUES (?, ?)
                 ON CONFLICT(execution_id) DO UPDATE SET payload = excluded.payload
@@ -307,7 +350,8 @@ class _SqliteGovernedExecutionStore:
 
     def get_result(self, execution_id: str) -> AnyGovernedExecutionResult | None:
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 "SELECT payload FROM gca_execution_results WHERE execution_id = ?",
                 (execution_id,),
             ).fetchone()
@@ -324,7 +368,8 @@ class _SqliteGovernedExecutionStore:
         state: GovernedExternalWorkHostState,
     ) -> None:
         with self._db._managed_connection() as conn:
-            conn.execute(
+            self._db._execute(
+                conn,
                 """
                 INSERT INTO gca_execution_states (execution_id, state_value) VALUES (?, ?)
                 ON CONFLICT(execution_id) DO UPDATE SET state_value = excluded.state_value
@@ -335,7 +380,8 @@ class _SqliteGovernedExecutionStore:
 
     def get_state(self, execution_id: str) -> GovernedExternalWorkHostState | None:
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 "SELECT state_value FROM gca_execution_states WHERE execution_id = ?",
                 (execution_id,),
             ).fetchone()
@@ -348,7 +394,8 @@ class _SqliteGovernedExecutionStore:
 
     def put_event_json(self, execution_id: str, event_json: str) -> None:
         with self._db._managed_connection() as conn:
-            conn.execute(
+            self._db._execute(
+                conn,
                 """
                 INSERT INTO gca_execution_events (execution_id, event_json) VALUES (?, ?)
                 ON CONFLICT(execution_id) DO UPDATE SET event_json = excluded.event_json
@@ -359,7 +406,8 @@ class _SqliteGovernedExecutionStore:
 
     def get_event_json(self, execution_id: str) -> str | None:
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 "SELECT event_json FROM gca_execution_events WHERE execution_id = ?",
                 (execution_id,),
             ).fetchone()
@@ -377,7 +425,8 @@ class _SqliteGovernedExecutionStore:
             raise ValueError("follow_on_execution_id_key_mismatch")
         payload = canonical_json_text(record.model_dump(mode="json"))
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 "SELECT payload FROM gca_create_follow_on WHERE execution_id = ?",
                 (key,),
             ).fetchone()
@@ -390,7 +439,8 @@ class _SqliteGovernedExecutionStore:
                 raise GovernedExecutionCreateFollowOnConflictError(
                     f"conflicting_create_follow_on_record:{key}",
                 )
-            conn.execute(
+            self._db._execute(
+                conn,
                 "INSERT INTO gca_create_follow_on (execution_id, payload) VALUES (?, ?)",
                 (key, payload),
             )
@@ -401,7 +451,8 @@ class _SqliteGovernedExecutionStore:
         execution_id: str,
     ) -> GovernedExternalWorkCreateFollowOnRecordV1 | None:
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 "SELECT payload FROM gca_create_follow_on WHERE execution_id = ?",
                 (execution_id,),
             ).fetchone()
@@ -430,7 +481,8 @@ class _SqliteProofReceiptStore:
     def put_receipt(self, execution_id: str, receipt: ExecutionEvidenceProofReceipt) -> None:
         payload = canonical_json_text(receipt.model_dump(mode="json"))
         with self._db._managed_connection() as conn:
-            conn.execute(
+            self._db._execute(
+                conn,
                 """
                 INSERT INTO gca_proof_receipts (execution_id, payload) VALUES (?, ?)
                 ON CONFLICT(execution_id) DO UPDATE SET payload = excluded.payload
@@ -441,7 +493,8 @@ class _SqliteProofReceiptStore:
 
     def get_receipt(self, execution_id: str) -> ExecutionEvidenceProofReceipt | None:
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 "SELECT payload FROM gca_proof_receipts WHERE execution_id = ?",
                 (execution_id,),
             ).fetchone()
@@ -466,7 +519,8 @@ class _SqlitePolicyBundleArtifactStore:
     def put_bundle(self, bundle: ImmutableRuntimePolicyBundle) -> None:
         payload = canonical_json_text(bundle.model_dump(mode="json"))
         with self._db._managed_connection() as conn:
-            conn.execute(
+            self._db._execute(
+                conn,
                 """
                 INSERT INTO gca_policy_bundles (bundle_id, version, payload) VALUES (?, ?, ?)
                 ON CONFLICT(bundle_id, version) DO UPDATE SET payload = excluded.payload
@@ -481,7 +535,8 @@ class _SqlitePolicyBundleArtifactStore:
         version: str,
     ) -> ImmutableRuntimePolicyBundle | None:
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 """
                 SELECT payload FROM gca_policy_bundles
                 WHERE bundle_id = ? AND version = ?
@@ -515,7 +570,8 @@ class _SqliteContinuationStateStore:
     ) -> None:
         payload = canonical_json_text(continuation.model_dump(mode="json"))
         with self._db._managed_connection() as conn:
-            conn.execute(
+            self._db._execute(
+                conn,
                 """
                 INSERT INTO gca_continuations (task_id, payload) VALUES (?, ?)
                 ON CONFLICT(task_id) DO UPDATE SET payload = excluded.payload
@@ -526,7 +582,8 @@ class _SqliteContinuationStateStore:
 
     def get_continuation(self, task_id: str) -> GovernedContinuationRequest | None:
         with self._db._managed_connection() as conn:
-            row = conn.execute(
+            row = self._db._execute(
+                conn,
                 "SELECT payload FROM gca_continuations WHERE task_id = ?",
                 (task_id,),
             ).fetchone()

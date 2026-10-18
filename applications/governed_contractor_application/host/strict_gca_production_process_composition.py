@@ -91,17 +91,21 @@ def open_gca_strict_production_serving_session(
     owned_gca = open_owned_sqlite_governed_external_work_host_stores(
         storage.governed_external_work_host_db,
     )
-    session = open_strict_production_serving_session(
-        storage=storage,
-        environment=environment,
-        governance=governance,
-        deployment_adapter=deployment_adapter,
-        activation_intent=activation_intent,
-        missing_continuation_file_policy=missing_continuation_file_policy,
-        application_composition=application_composition,
-        composition_builder=build_strict_durable_gca_composition_builder(owned_gca),
-        owned_governed_external_work_host_store_bundle=owned_gca,
-    )
+    try:
+        session = open_strict_production_serving_session(
+            storage=storage,
+            environment=environment,
+            governance=governance,
+            deployment_adapter=deployment_adapter,
+            activation_intent=activation_intent,
+            missing_continuation_file_policy=missing_continuation_file_policy,
+            application_composition=application_composition,
+            composition_builder=build_strict_durable_gca_composition_builder(owned_gca),
+            owned_governed_external_work_host_store_bundle=owned_gca,
+        )
+    except BaseException:
+        owned_gca.close()
+        raise
     return session, owned_gca
 
 
