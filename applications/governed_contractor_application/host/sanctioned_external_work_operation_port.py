@@ -4,16 +4,13 @@
 
 from __future__ import annotations
 
-from collections.abc import MutableMapping
-from typing import Any
-
-from external_contractor_adapter.schemas.adapt_result import ExternalWorkAdapterResult
 from governed_contractor_application.host.orchestrator import (
     GovernedExternalWorkOrchestrator,
     META_PROVIDER_INVOCATION_ID,
     OrchestratorStepResult,
 )
 from intergrax.contracts.sanctioned_external_work_operation import (
+    SanctionedExternalWorkDomainSummary,
     SanctionedExternalWorkMutationOperation,
     SanctionedExternalWorkOperationPort,
     SanctionedExternalWorkOperationRequest,
@@ -22,19 +19,13 @@ from intergrax.contracts.sanctioned_external_work_operation import (
 
 
 class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperationPort):
-    """Session-scoped orchestrator facade with authoritative create snapshot cache."""
+    """Session-scoped orchestrator facade — prior-create authority is the orchestrator only."""
 
     def __init__(
         self,
         orchestrator: GovernedExternalWorkOrchestrator,
-        *,
-        create_result_by_execution_id: MutableMapping[str, ExternalWorkAdapterResult]
-        | None = None,
     ) -> None:
         self._orchestrator = orchestrator
-        self._create_results: MutableMapping[str, ExternalWorkAdapterResult] = (
-            create_result_by_execution_id if create_result_by_execution_id is not None else {}
-        )
 
     def execute(
         self,
@@ -66,7 +57,7 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
             run_id=str(payload.run_id),
             principal_id=payload.principal_id,
             tenant_id=payload.tenant_id,
-            metadata=dict(payload.metadata),
+            metadata=payload.adapter_metadata.to_adapter_metadata(),
             execution_id=str(payload.execution_id) if payload.execution_id is not None else None,
         )
         return self._map_step(step, operation=SanctionedExternalWorkMutationOperation.CREATE)
@@ -82,7 +73,11 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
                 reason="sanctioned_accept_payload_missing",
             )
         execution_id = str(payload.execution_id)
-        create_result = self._resolve_prior_create_result(execution_id)
+        create_result = self._resolve_prior_create_result(
+            execution_id,
+            tenant_id=payload.tenant_id,
+            principal_id=payload.principal_id,
+        )
         if create_result is None:
             return SanctionedExternalWorkOperationResult(
                 admitted=False,
@@ -96,7 +91,7 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
             idempotency_key=payload.acceptance_idempotency_key,
             principal_id=payload.principal_id,
             tenant_id=payload.tenant_id,
-            metadata=dict(payload.metadata),
+            metadata=payload.adapter_metadata.to_adapter_metadata(),
         )
         return self._map_step(
             step,
@@ -114,7 +109,11 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
                 reason="sanctioned_cancel_payload_missing",
             )
         execution_id = str(payload.execution_id)
-        create_result = self._resolve_prior_create_result(execution_id)
+        create_result = self._resolve_prior_create_result(
+            execution_id,
+            tenant_id=payload.tenant_id,
+            principal_id=payload.principal_id,
+        )
         if create_result is None:
             return SanctionedExternalWorkOperationResult(
                 admitted=False,
@@ -127,18 +126,22 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
             principal_id=payload.principal_id,
             tenant_id=payload.tenant_id,
             idempotency_key=payload.idempotency_key,
-            metadata=dict(payload.metadata),
+            metadata=payload.adapter_metadata.to_adapter_metadata(),
         )
         return self._map_step(step, operation=SanctionedExternalWorkMutationOperation.CANCEL)
 
     def _resolve_prior_create_result(
         self,
         execution_id: str,
+        *,
+        tenant_id: str,
+        principal_id: str,
     ) -> ExternalWorkAdapterResult | None:
-        cached = self._create_results.get(execution_id)
-        if cached is not None and cached.snapshot is not None:
-            return cached
-        return None
+        return self._orchestrator.resolve_create_adapter_result_for_follow_on(
+            execution_id,
+            tenant_id=tenant_id,
+            principal_id=principal_id,
+        )
 
     def _map_step(
         self,
@@ -147,29 +150,28 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
         operation: SanctionedExternalWorkMutationOperation,
     ) -> SanctionedExternalWorkOperationResult:
         adapter = step.adapter_result
-        if (
-            operation is SanctionedExternalWorkMutationOperation.CREATE
-            and adapter is not None
-            and adapter.snapshot is not None
-            and step.execution_id
-        ):
-            self._create_results[step.execution_id] = adapter
         provider_invocation_id: str | None = None
         if adapter is not None and adapter.metadata:
             raw = adapter.metadata.get(META_PROVIDER_INVOCATION_ID)
             if raw is not None and str(raw).strip():
                 provider_invocation_id = str(raw).strip()
-        domain_summary: dict[str, Any]
         if adapter is not None:
-            domain_summary = dict(adapter.to_domain_summary())
+            domain_summary = SanctionedExternalWorkDomainSummary.from_adapter_summary(
+                adapter.to_domain_summary(),
+                sanctioned_operation=operation.value,
+                host_state=step.state.value,
+                execution_id=step.execution_id,
+                provider_invocation_id=provider_invocation_id,
+            )
         else:
-            domain_summary = {"used": False, "reason": step.reason}
-        domain_summary["sanctioned_operation"] = operation.value
-        domain_summary["host_state"] = step.state.value
-        if step.execution_id:
-            domain_summary["execution_id"] = step.execution_id
-        if provider_invocation_id:
-            domain_summary["provider_invocation_id"] = provider_invocation_id
+            domain_summary = SanctionedExternalWorkDomainSummary(
+                used=False,
+                reason=step.reason,
+                sanctioned_operation=operation.value,
+                host_state=step.state.value,
+                execution_id=step.execution_id,
+                provider_invocation_id=provider_invocation_id,
+            )
         admitted = adapter is not None and adapter.used
         return SanctionedExternalWorkOperationResult(
             admitted=admitted,

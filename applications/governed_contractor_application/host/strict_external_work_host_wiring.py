@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from external_contractor_adapter.schemas.adapt_result import ExternalWorkAdapterResult
 from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
     GovernedContractorHostRuntimeComposition,
     resolve_production_runtime_policy_bundle_from_settings,
@@ -20,11 +19,9 @@ from governed_contractor_application.host.sanctioned_external_work_operation_por
     GovernedSanctionedExternalWorkOperationPort,
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
-from governed_contractor_application.host.stores import (
-    InMemoryContinuationStateStore,
-    InMemoryGovernedExecutionStore,
-    InMemoryPolicyBundleArtifactStore,
-    InMemoryProofReceiptStore,
+from governed_contractor_application.host.governed_external_work_host_stores import (
+    GovernedExternalWorkHostStoreBundle,
+    build_process_scoped_governed_external_work_host_stores,
 )
 from intergrax.contracts.external_work_provider_capabilities import (
     quote_first_partner_capability_fixture,
@@ -42,7 +39,7 @@ class GovernedExternalWorkHostSessionResources:
 
     production_runtime: GovernedExternalWorkProductionRuntime
     operation_port: SanctionedExternalWorkOperationPort
-    create_result_by_execution_id: dict[str, ExternalWorkAdapterResult]
+    host_stores: GovernedExternalWorkHostStoreBundle
 
 
 def build_strict_external_work_host_session_resources(
@@ -52,8 +49,9 @@ def build_strict_external_work_host_session_resources(
     host_runtime: GovernedContractorHostRuntimeComposition,
     provider_invocation_store: ProviderInvocationStore,
     execution_tenant_id: str,
-    workspace_id: str = "default-workspace",
-    principal_id: str = "strict-host-principal",
+    workspace_id: str,
+    principal_id: str,
+    host_stores: GovernedExternalWorkHostStoreBundle | None = None,
     provider_id: str = "gec3_deterministic_fake",
 ) -> GovernedExternalWorkHostSessionResources:
     if host_runtime.collaborative_work_repositories is None:
@@ -64,8 +62,12 @@ def build_strict_external_work_host_session_resources(
         raise ValueError(
             "strict external work host wiring requires active_execution_task_scope",
         )
+    if not workspace_id.strip():
+        raise ValueError("strict external work host wiring requires workspace_id")
+    if not principal_id.strip():
+        raise ValueError("strict external work host wiring requires principal_id")
     policy_bundle = resolve_production_runtime_policy_bundle_from_settings(settings)
-    create_cache: dict[str, ExternalWorkAdapterResult] = {}
+    resolved_stores = host_stores or build_process_scoped_governed_external_work_host_stores()
     production_runtime = build_governed_external_work_production_runtime(
         integration,
         tenant_id=execution_tenant_id,
@@ -78,21 +80,20 @@ def build_strict_external_work_host_session_resources(
         ),
         policy_bundle=policy_bundle,
         collaborative_work_repositories=host_runtime.collaborative_work_repositories,
-        execution_store=InMemoryGovernedExecutionStore(),
-        receipt_store=InMemoryProofReceiptStore(),
-        bundle_store=InMemoryPolicyBundleArtifactStore(),
-        continuation_store=InMemoryContinuationStateStore(),
+        execution_store=resolved_stores.execution_store,
+        receipt_store=resolved_stores.receipt_store,
+        bundle_store=resolved_stores.bundle_store,
+        continuation_store=resolved_stores.continuation_store,
         provider_invocation_store=provider_invocation_store,
         attestor=host_runtime.host_attestor,
     )
     operation_port = GovernedSanctionedExternalWorkOperationPort(
         production_runtime.orchestrator,
-        create_result_by_execution_id=create_cache,
     )
     return GovernedExternalWorkHostSessionResources(
         production_runtime=production_runtime,
         operation_port=operation_port,
-        create_result_by_execution_id=create_cache,
+        host_stores=resolved_stores,
     )
 
 

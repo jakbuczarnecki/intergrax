@@ -23,14 +23,42 @@ from intergrax.contracts.execution_identity import (
     validate_task_id,
 )
 from intergrax.contracts.sanctioned_external_work_operation import (
+    META_ADAPTER_BUDGET_LIMIT,
+    META_ADAPTER_CORRELATION_ID,
+    META_ADAPTER_IDEMPOTENCY_KEY,
+    META_ADAPTER_PROVIDER_ID,
+    META_ADAPTER_REQUESTED_CAPABILITY,
+    META_ADAPTER_SCOPE_DESCRIPTION,
+    META_ADAPTER_SCOPE_DIGEST,
+    META_ADAPTER_SKIP_ENRICHMENT,
+    META_ADAPTER_WORKSPACE_REF,
     META_PRIOR_EXECUTION_ID,
     META_SANCTIONED_MUTATION_OPERATION,
     SanctionedExternalWorkAcceptQuoteRequest,
+    SanctionedExternalWorkAdapterInvocationMetadata,
     SanctionedExternalWorkCancelRequest,
     SanctionedExternalWorkCreateRequest,
     SanctionedExternalWorkMutationOperation,
     SanctionedExternalWorkOperationRequest,
 )
+
+
+def _adapter_metadata_from_step(metadata: Mapping[str, Any]) -> SanctionedExternalWorkAdapterInvocationMetadata:
+    skip_raw = metadata.get(META_ADAPTER_SKIP_ENRICHMENT)
+    skip: bool | None = None
+    if skip_raw is not None:
+        skip = bool(skip_raw)
+    return SanctionedExternalWorkAdapterInvocationMetadata(
+        provider_id=_optional_meta_str(metadata, META_ADAPTER_PROVIDER_ID),
+        scope_description=_optional_meta_str(metadata, META_ADAPTER_SCOPE_DESCRIPTION),
+        scope_digest=_optional_meta_str(metadata, META_ADAPTER_SCOPE_DIGEST),
+        idempotency_key=_optional_meta_str(metadata, META_ADAPTER_IDEMPOTENCY_KEY),
+        correlation_id=_optional_meta_str(metadata, META_ADAPTER_CORRELATION_ID),
+        workspace_ref=_optional_meta_str(metadata, META_ADAPTER_WORKSPACE_REF),
+        budget_limit=_optional_meta_str(metadata, META_ADAPTER_BUDGET_LIMIT),
+        requested_capability=_optional_meta_str(metadata, META_ADAPTER_REQUESTED_CAPABILITY),
+        skip_enrichment=skip,
+    )
 
 
 def resolve_sanctioned_operation_from_metadata(
@@ -73,7 +101,7 @@ def resolve_sanctioned_operation_from_metadata(
                 principal_id=principal_id,
                 tenant_id=tenant_id,
                 execution_id=execution_id,
-                metadata=dict(metadata),
+                adapter_metadata=_adapter_metadata_from_step(metadata),
                 message=message,
             ),
         )
@@ -98,7 +126,7 @@ def resolve_sanctioned_operation_from_metadata(
                 tenant_id=tenant_id,
                 acceptance=acceptance,
                 acceptance_idempotency_key=acceptance_key,
-                metadata=dict(metadata),
+                adapter_metadata=_adapter_metadata_from_step(metadata),
             ),
         )
 
@@ -113,7 +141,7 @@ def resolve_sanctioned_operation_from_metadata(
                 principal_id=principal_id,
                 tenant_id=tenant_id,
                 idempotency_key=idem,
-                metadata=dict(metadata),
+                adapter_metadata=_adapter_metadata_from_step(metadata),
             ),
         )
 

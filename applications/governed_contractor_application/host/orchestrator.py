@@ -77,6 +77,11 @@ from intergrax.contracts.governed_execution_result import (
     GovernedExecutionResultV2,
     external_work_provider_operation_for_decision_action,
 )
+from intergrax.contracts.governed_external_work_create_follow_on import (
+    CREATE_ACTION_EXTERNAL_WORK_CREATE,
+    GovernedExternalWorkCreateFollowOnRecordV1,
+    compute_snapshot_content_digest,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -120,6 +125,7 @@ from governed_contractor_application.host.lifecycle_states import (
 )
 from governed_contractor_application.host.stores import (
     ContinuationStateStore,
+    GovernedExecutionCreateFollowOnConflictError,
     GovernedExecutionStore,
     PolicyBundleArtifactStore,
     ProofReceiptStore,
@@ -306,6 +312,9 @@ class GovernedExternalWorkOrchestrator:
         except ValueError as exc:
             return self._identity_gate_failure(reason=str(exc))
         exec_id = str(identity.execution_id)
+        redispatch_block = self._prohibit_ordinary_create_redispatch(exec_id)
+        if redispatch_block is not None:
+            return redispatch_block
         self._execution_store.put_state(
             exec_id, GovernedExternalWorkHostState.REQUESTED
         )
@@ -706,6 +715,145 @@ class GovernedExternalWorkOrchestrator:
     def get_receipt(self, execution_id: str) -> ExecutionEvidenceProofReceipt | None:
         return self._receipt_store.get_receipt(execution_id)
 
+    def resolve_create_adapter_result_for_follow_on(
+        self,
+        execution_id: str,
+        *,
+        tenant_id: str,
+        principal_id: str,
+    ) -> ExternalWorkAdapterResult | None:
+        """Load authoritative CREATE adapter view for accept/cancel — fail closed."""
+        state = self._execution_store.get_state(execution_id)
+        if state is None:
+            return None
+        if state is GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN:
+            return None
+        if state is GovernedExternalWorkHostState.EXECUTION_FAILED:
+            return None
+        result = self._execution_store.get_result(execution_id)
+        if not isinstance(result, GovernedExecutionResultV2):
+            return None
+        if result.action != ACTION_CREATE_EXTERNAL_WORK:
+            return None
+        if str(result.tenant_id) != tenant_id.strip():
+            return None
+        if str(result.principal_id) != principal_id.strip():
+            return None
+        try:
+            record = self._execution_store.get_create_follow_on_record(execution_id)
+        except ValueError:
+            return None
+        if record is None:
+            return None
+        if str(record.execution_id) != execution_id:
+            return None
+        if record.create_provider_invocation_id != result.provider_invocation.invocation_id:
+            return None
+        if (
+            str(record.task_id) != str(result.task_id)
+            or str(record.run_id) != str(result.run_id)
+            or str(record.attempt_id) != str(result.attempt_id)
+        ):
+            return None
+        return ExternalWorkAdapterResult(
+            used=True,
+            reason="prior_create_follow_on_record",
+            snapshot=record.snapshot,
+            provider=record.provider,
+            status=record.snapshot.status,
+            metadata={
+                META_PROVIDER_INVOCATION_ID: record.create_provider_invocation_id,
+            },
+        )
+
+    def _prohibit_ordinary_create_redispatch(
+        self,
+        execution_id: str,
+    ) -> OrchestratorStepResult | None:
+        existing_result = self._execution_store.get_result(execution_id)
+        if isinstance(existing_result, GovernedExecutionResultV2):
+            if existing_result.action == ACTION_CREATE_EXTERNAL_WORK:
+                follow_on = self._execution_store.get_create_follow_on_record(
+                    execution_id,
+                )
+                if follow_on is None:
+                    failed = GovernedExternalWorkHostState.EXECUTION_FAILED
+                    self._execution_store.put_state(execution_id, failed)
+                    return OrchestratorStepResult(
+                        state=failed,
+                        execution_id=execution_id,
+                        adapter_result=None,
+                        governed_result=existing_result,
+                        attestation=None,
+                        receipt=None,
+                        reason="create_follow_on_record_missing_redispatch_prohibited",
+                    )
+                return OrchestratorStepResult(
+                    state=self._execution_store.get_state(execution_id)
+                    or GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED,
+                    execution_id=execution_id,
+                    adapter_result=None,
+                    governed_result=existing_result,
+                    attestation=None,
+                    receipt=None,
+                    reason="create_redispatch_prohibited",
+                )
+        state = self._execution_store.get_state(execution_id)
+        if state in {
+            GovernedExternalWorkHostState.CREATE_IN_PROGRESS,
+            GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_PENDING,
+            GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED,
+            GovernedExternalWorkHostState.QUOTE_RECEIVED,
+            GovernedExternalWorkHostState.AWAITING_HUMAN,
+        }:
+            return OrchestratorStepResult(
+                state=state,
+                execution_id=execution_id,
+                adapter_result=None,
+                governed_result=existing_result if isinstance(
+                    existing_result,
+                    GovernedExecutionResultV2,
+                ) else None,
+                attestation=None,
+                receipt=None,
+                reason="create_redispatch_prohibited",
+            )
+        return None
+
+    def _write_create_follow_on_record(
+        self,
+        *,
+        ger: GovernedExecutionResultV2,
+        adapter_result: ExternalWorkAdapterResult,
+        invocation: ProviderInvocation,
+        principal_id: str,
+        tenant_id: str | None,
+    ) -> None:
+        if adapter_result.snapshot is None:
+            raise ValueError("create_follow_on_requires_snapshot")
+        if ger.action != ACTION_CREATE_EXTERNAL_WORK:
+            raise ValueError("create_follow_on_requires_create_ger")
+        snapshot = adapter_result.snapshot
+        recorded_at = self._clock()
+        record = GovernedExternalWorkCreateFollowOnRecordV1(
+            execution_id=ger.execution_id,
+            task_id=ger.task_id,
+            run_id=ger.run_id,
+            attempt_id=ger.attempt_id,
+            tenant_id=str(tenant_id or ger.tenant_id),
+            principal_id=principal_id,
+            create_action=CREATE_ACTION_EXTERNAL_WORK_CREATE,
+            create_provider_invocation_id=invocation.invocation_id,
+            snapshot=snapshot,
+            provider=adapter_result.provider,
+            snapshot_content_digest=compute_snapshot_content_digest(snapshot),
+            recorded_at=recorded_at,
+        )
+        self._execution_store.put_create_follow_on_record(
+            str(ger.execution_id),
+            record,
+        )
+
     def _finalize_side_effect(
         self,
         *,
@@ -930,6 +1078,38 @@ class GovernedExternalWorkOrchestrator:
             execution_completed_at=completed,
         )
         self._execution_store.put_result(ger)
+        if (
+            after_create
+            and action == ACTION_CREATE_EXTERNAL_WORK
+            and adapter_result.snapshot is not None
+        ):
+            try:
+                self._write_create_follow_on_record(
+                    ger=ger,
+                    adapter_result=adapter_result,
+                    invocation=inv,
+                    principal_id=principal_id,
+                    tenant_id=tenant_id,
+                )
+            except (
+                ValueError,
+                GovernedExecutionCreateFollowOnConflictError,
+            ):
+                failed = GovernedExternalWorkHostState.EXECUTION_FAILED
+                self._execution_store.put_state(execution_id, failed)
+                return OrchestratorStepResult(
+                    state=failed,
+                    execution_id=execution_id,
+                    adapter_result=adapter_result,
+                    governed_result=ger,
+                    attestation=None,
+                    receipt=None,
+                    reason="create_follow_on_record_persistence_failed",
+                    external_effect_outcome=(
+                        reliability.effect_outcome if reliability is not None else None
+                    ),
+                    reliability_admission=reliability,
+                )
         self._execution_store.put_state(
             execution_id,
             GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_PENDING,

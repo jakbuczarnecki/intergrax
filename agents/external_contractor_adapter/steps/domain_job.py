@@ -75,7 +75,7 @@ async def run_domain_job(
         except ValueError as exc:
             return _fail_closed_domain_payload(str(exc))
         port_result = sanctioned_operation_port.execute(operation_request)
-        summary = dict(port_result.domain_summary)
+        summary = port_result.domain_summary.to_step_dict()
         reason = port_result.adapter_reason or port_result.reason
         answer = (
             f"external_contractor_adapter: {reason}"

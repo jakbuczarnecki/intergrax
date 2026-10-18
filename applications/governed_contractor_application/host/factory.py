@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Optional
 
@@ -103,6 +104,9 @@ from governed_contractor_application.host.production_external_work_composition i
 from governed_contractor_application.host.strict_external_work_host_wiring import (
     attach_sanctioned_external_work_to_host_runtime,
     build_strict_external_work_host_session_resources,
+)
+from governed_contractor_application.host.strict_revision_bound_agent_registry_rebind import (
+    rebind_strict_sanctioned_external_contractor_adapter_registry,
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.collaborative_work_integration_profile import (
@@ -246,16 +250,36 @@ def create_governed_contractor_backend_app(
             execution_tenant_for_external_work = (
                 strict_serving_tenant_binding.authoritative_execution_tenant_id
             )
+        if strict_serving_tenant_binding is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor external work requires "
+                "strict_serving_tenant_binding for workspace identity",
+            )
+        strict_workspace_id = (
+            f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+            f"{strict_serving_tenant_binding.application_environment_id}"
+        )
         external_work_session_resources = build_strict_external_work_host_session_resources(
             resolved_host_runtime.external_work_integration,
             settings=settings,
             host_runtime=resolved_host_runtime,
             provider_invocation_store=provider_invocation_store,
             execution_tenant_id=execution_tenant_for_external_work,
+            workspace_id=strict_workspace_id,
+            principal_id="strict-composition-session-unbound",
         )
         resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
             resolved_host_runtime,
             operation_port=external_work_session_resources.operation_port,
+        )
+    elif (
+        strict_topology_reliability
+        and resolved_host_runtime.external_work_integration is not None
+        and settings.runtime_policy_bundle is None
+    ):
+        raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+            "strict governed contractor production host with external work integration "
+            "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
         )
     elif (
         strict_topology_reliability
@@ -319,6 +343,16 @@ def create_governed_contractor_backend_app(
         agent_contract_authority=package_contract_authority,
         strict_production_serving_execution_tenant_binding=strict_serving_tenant_binding,
     )
+    if external_work_session_resources is not None:
+        runtime = replace(
+            runtime,
+            registry=rebind_strict_sanctioned_external_contractor_adapter_registry(
+                runtime.registry,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+                build_context=runtime.env_wiring.build_context,
+            ),
+        )
     host_execution = runtime.execution
     if (
         process_composition is not None
