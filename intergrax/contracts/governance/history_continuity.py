@@ -4,7 +4,8 @@
 """Vendor-neutral ELCR-IIRW history-continuity contracts (D03-A-LOCAL-01).
 
 The record is a governance continuity head, not a provider-invocation ledger.
-No cloud backend, retention period, or CREATE admission is selected here.
+No cloud backend, production retention period, or CREATE admission is selected
+here. Activation policy is declarative configuration, not IAM evidence.
 """
 
 from __future__ import annotations
@@ -70,6 +71,56 @@ class HistoryContinuityAdapterKind(StrEnum):
     LOCAL_DETERMINISTIC = "local_deterministic"
 
 
+class HistoryContinuityHistoryScope(StrEnum):
+    """Where one continuity history is anchored.
+
+    Tenant scope exists so a tenant-specific anchor can be rejected. It is
+    not permission to activate one.
+    """
+
+    ENVIRONMENT = "environment"
+    TENANT = "tenant"
+
+
+class HistoryContinuityRuntimeCredentialMode(StrEnum):
+    """Runtime credential selection. This contract stores no secret material.
+
+    Only ``LOCAL_NO_RUNTIME_CREDENTIAL`` may activate this gate. The other
+    modes are explicit rejections. Naming workload federation does not
+    implement federation and does not acquire a credential.
+    """
+
+    LOCAL_NO_RUNTIME_CREDENTIAL = "local_no_runtime_credential"
+    STATIC_LONG_LIVED = "static_long_lived"
+    ADMINISTRATOR = "administrator"
+    WORKLOAD_FEDERATION = "workload_federation"
+
+
+def administrator_identities_are_independent(primary: object, witness: object) -> bool:
+    """Declarative distinctness. Not an IAM export or a directory lookup."""
+
+    if type(primary) is not str or type(witness) is not str:
+        return False
+    if not primary or not witness:
+        return False
+    if primary != primary.strip() or witness != witness.strip():
+        return False
+    return primary.casefold() != witness.casefold()
+
+
+def separated_capabilities_are_exact(capabilities: object) -> bool:
+    """True only for the five existing duties, each present once."""
+
+    if type(capabilities) is not tuple:
+        return False
+    expected = frozenset(ContinuityPermission)
+    if len(capabilities) != len(expected):
+        return False
+    if any(type(item) is not ContinuityPermission for item in capabilities):
+        return False
+    return frozenset(capabilities) == expected
+
+
 class HistoryContinuityRetentionPolicy(BaseModel):
     """Configurable retention held inside a hard ceiling. Not a production period."""
 
@@ -88,8 +139,78 @@ class HistoryContinuityRetentionPolicy(BaseModel):
         return self
 
 
+class HistoryContinuityAdministrativeIdentities(BaseModel):
+    """Primary and witness administrator identifiers. Not verified principals."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    primary_administrator_id: str = _NON_BLANK
+    witness_administrator_id: str = _NON_BLANK
+
+    @field_validator("primary_administrator_id", "witness_administrator_id")
+    @classmethod
+    def _unambiguous(cls, value: str) -> str:
+        if value != value.strip():
+            raise ValueError("administrator identity is ambiguous")
+        return _reject_blank(value)
+
+    @model_validator(mode="after")
+    def _independent(self) -> HistoryContinuityAdministrativeIdentities:
+        if not administrator_identities_are_independent(
+            self.primary_administrator_id,
+            self.witness_administrator_id,
+        ):
+            raise ValueError("primary and witness administrators must be distinct")
+        return self
+
+
+class HistoryContinuityActivationPolicy(BaseModel):
+    """Declarative activation constraints. Not a grant and not cloud IAM proof."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    history_scope: HistoryContinuityHistoryScope
+    administrators: HistoryContinuityAdministrativeIdentities
+    runtime_credential_mode: HistoryContinuityRuntimeCredentialMode
+    separated_capabilities: tuple[ContinuityPermission, ...]
+
+    @field_validator("history_scope")
+    @classmethod
+    def _environment_scope_only(
+        cls,
+        value: HistoryContinuityHistoryScope,
+    ) -> HistoryContinuityHistoryScope:
+        if value is not HistoryContinuityHistoryScope.ENVIRONMENT:
+            raise ValueError("only environment-scoped history may activate")
+        return value
+
+    @field_validator("runtime_credential_mode")
+    @classmethod
+    def _supported_credential_mode(
+        cls,
+        value: HistoryContinuityRuntimeCredentialMode,
+    ) -> HistoryContinuityRuntimeCredentialMode:
+        if value is not HistoryContinuityRuntimeCredentialMode.LOCAL_NO_RUNTIME_CREDENTIAL:
+            raise ValueError("runtime credential mode is not accepted")
+        return value
+
+    @field_validator("separated_capabilities")
+    @classmethod
+    def _capabilities_stay_distinct(
+        cls,
+        value: tuple[ContinuityPermission, ...],
+    ) -> tuple[ContinuityPermission, ...]:
+        if not separated_capabilities_are_exact(value):
+            raise ValueError("operational capabilities must stay the five distinct duties")
+        return value
+
+
 class HistoryContinuityActivation(BaseModel):
-    """Explicit adapter activation. Absence is not representable as a default-on."""
+    """Explicit adapter activation. Absence is not representable as a default-on.
+
+    ``policy`` selects whether this gate may open. It does not authorize a
+    caller, store a secret, or prove administrative independence.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -98,6 +219,7 @@ class HistoryContinuityActivation(BaseModel):
     application_id: str = _NON_BLANK
     environment_id: str = _NON_BLANK
     retention: HistoryContinuityRetentionPolicy
+    policy: HistoryContinuityActivationPolicy
 
     @field_validator("enabled")
     @classmethod
@@ -116,6 +238,67 @@ class HistoryContinuityActivation(BaseModel):
         if self.adapter is not HistoryContinuityAdapterKind.LOCAL_DETERMINISTIC:
             raise ValueError("adapter is not activated for this gate")
         return self
+
+    @model_validator(mode="after")
+    def _admitted(self) -> HistoryContinuityActivation:
+        if not history_continuity_activation_is_admitted(self):
+            raise ValueError("history continuity activation is not admitted")
+        return self
+
+
+def _present_identifier(value: object) -> bool:
+    return type(value) is str and bool(value.strip())
+
+
+def _retention_shape_holds(retention: object) -> bool:
+    if type(retention) is not HistoryContinuityRetentionPolicy:
+        return False
+    duration = retention.retention_seconds
+    ceiling = retention.ceiling_seconds
+    if type(duration) is not int or type(ceiling) is not int:
+        return False
+    if duration < 1 or ceiling < 1 or duration > ceiling:
+        return False
+    return retention.legal_hold is True
+
+
+def history_continuity_activation_is_admitted(activation: object) -> bool:
+    """Return whether typed activation may open the local qualification adapter.
+
+    This is a configuration predicate. It is not caller authorization, not a
+    credential check, and not proof of administrative independence.
+    """
+
+    if type(activation) is not HistoryContinuityActivation:
+        return False
+    if getattr(activation, "enabled", None) is not True:
+        return False
+    if getattr(activation, "adapter", None) is not HistoryContinuityAdapterKind.LOCAL_DETERMINISTIC:
+        return False
+    if not _present_identifier(getattr(activation, "application_id", None)):
+        return False
+    if not _present_identifier(getattr(activation, "environment_id", None)):
+        return False
+    if not _retention_shape_holds(getattr(activation, "retention", None)):
+        return False
+    policy = getattr(activation, "policy", None)
+    if type(policy) is not HistoryContinuityActivationPolicy:
+        return False
+    if policy.history_scope is not HistoryContinuityHistoryScope.ENVIRONMENT:
+        return False
+    if policy.runtime_credential_mode is not (
+        HistoryContinuityRuntimeCredentialMode.LOCAL_NO_RUNTIME_CREDENTIAL
+    ):
+        return False
+    administrators = getattr(policy, "administrators", None)
+    if type(administrators) is not HistoryContinuityAdministrativeIdentities:
+        return False
+    if not administrator_identities_are_independent(
+        getattr(administrators, "primary_administrator_id", None),
+        getattr(administrators, "witness_administrator_id", None),
+    ):
+        return False
+    return separated_capabilities_are_exact(getattr(policy, "separated_capabilities", None))
 
 
 class ContinuityScope(BaseModel):

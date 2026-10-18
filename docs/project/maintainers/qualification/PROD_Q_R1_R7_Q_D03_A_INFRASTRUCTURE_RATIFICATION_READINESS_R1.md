@@ -684,26 +684,26 @@ This delta does not certify the platform or the freeze.
 | RPL-A..H and `FRZ-RPL-*` are not demonstrated. Accepted structural replaceability is direction only | **TRACKED FREEZE DEBT** |
 | D03-B global PIS and D03-C cross-store continuity remain unmet | **IN-SCOPE BLOCKER** as existing independent stages. This package does not open a new child task for them |
 | RA-GZRS unplanned failover can expose a prefix | **IN-SCOPE BLOCKER** for any design that would resume CREATE from that prefix. The preserved rule is quarantine |
-| `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` is proposed in §15 and is not authorized | **N/A — WITH EVIDENCE**. This delta does not enter it |
+| `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` is proposed in §15 and is not authorized | **N/A — WITH EVIDENCE** for this readiness delta. A later operator authorization entered the child as **READY FOR AUDIT**. That entry is not infrastructure proof |
 
 No finding is self-certified as enterprise compliance.
 
 ## 14. Roadmap position
 
-Do not close D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*`. Do not change OD-D03-A-01. Do not expand OD-D03-A-02 beyond the conditional preferred pair. Do not reopen D03-A-LOCAL-01. Do not authorize implementation.
+Do not close D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*`. Do not change OD-D03-A-01. Do not expand OD-D03-A-02 beyond the conditional preferred pair. Do not reopen D03-A-LOCAL-01. This readiness artifact does not itself authorize cloud integration or production activation.
 
 Status of this artifact only:
 
 **READY FOR AUDIT — D03-A POLICY CONSOLIDATION — ACCEPTED POLICY IS NOT INFRASTRUCTURE PROOF**
 
-§15 names the next child and does not enter it. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
+§15 names the platform-policy child. That child is entered separately as **READY FOR AUDIT** and does not close this readiness gate. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
 
-## 15. Proposed next child — not authorized
+## 15. Platform policy configuration child
 
 | Field | Value |
 |---|---|
 | Proposed name | `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` |
-| Status | **PROPOSED — NOT AUTHORIZED — NOT ENTERED** |
+| Status | **IMPLEMENTED — READY FOR AUDIT**. Not cloud infrastructure proof. Does not close the parent. [Evidence](PROD_Q_R1_R7_Q_D03_A_PLATFORM_POLICY_CONFIG_01.md) |
 | Parent | `PROD-Q-R1-R7-Q-D03-A-CONDITIONAL-INFRASTRUCTURE-DIRECTION` — remains OPEN / BLOCKED |
 | Predecessor | This readiness consolidation, after independent exact-SHA audit. D03-A-LOCAL-01 stays closed at `302e7fa74b745d10f9552df0a6eb9c702d5ce033` and is not modified |
 | Not a parent of | D03-B, D03-C, cloud IAM, vendor adapters, cost, disaster recovery, or production SLO |
@@ -737,7 +737,7 @@ The child is the smallest platform slice that uses accepted OD-D03-A-03, OD-D03-
 | Not callers | `GovernedProviderInvocationDispatchGate`, `open_production_process_lifecycle` |
 | Unchanged stores | `ProviderInvocationStore` and GCA. No duplicate PIS or GCA |
 
-A later authorization identifies the exact configuration fields and the contract tests. This section does not add them. If that work needs a second composition owner, a new CREATE gate, a duplicate PIS or GCA, or a change to accepted LOCAL-01 semantics: `STOP — ARCHITECTURE DECISION REQUIRED`.
+Operator authorization 2026-10-18 implemented this shape on the existing contract and composition. This section does not add cloud proof. If that work had needed a second composition owner, a new CREATE gate, a duplicate PIS or GCA, or a change to accepted LOCAL-01 semantics: `STOP — ARCHITECTURE DECISION REQUIRED`. That stop was not reached.
 
 ### 15.2 Expected solution shape
 

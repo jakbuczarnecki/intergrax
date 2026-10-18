@@ -37,8 +37,12 @@ from intergrax.contracts.governance.history_continuity import (
     ContinuityScope,
     HistoryBinding,
     HistoryContinuityActivation,
+    HistoryContinuityActivationPolicy,
     HistoryContinuityAdapterKind,
+    HistoryContinuityAdministrativeIdentities,
+    HistoryContinuityHistoryScope,
     HistoryContinuityRetentionPolicy,
+    HistoryContinuityRuntimeCredentialMode,
 )
 from intergrax.contracts.runtime_policy_bundle import (
     PolicyBundleRule,
@@ -138,6 +142,20 @@ def _retention() -> HistoryContinuityRetentionPolicy:
     )
 
 
+def _activation_policy() -> HistoryContinuityActivationPolicy:
+    return HistoryContinuityActivationPolicy(
+        history_scope=HistoryContinuityHistoryScope.ENVIRONMENT,
+        administrators=HistoryContinuityAdministrativeIdentities(
+            primary_administrator_id="primary-admin",
+            witness_administrator_id="witness-admin",
+        ),
+        runtime_credential_mode=(
+            HistoryContinuityRuntimeCredentialMode.LOCAL_NO_RUNTIME_CREDENTIAL
+        ),
+        separated_capabilities=tuple(ContinuityPermission),
+    )
+
+
 def _activation() -> HistoryContinuityActivation:
     return HistoryContinuityActivation(
         enabled=True,
@@ -145,6 +163,7 @@ def _activation() -> HistoryContinuityActivation:
         application_id=_APP,
         environment_id=_ENV,
         retention=_retention(),
+        policy=_activation_policy(),
     )
 
 
@@ -469,6 +488,7 @@ def test_retention_hard_limits_and_writer_cannot_weaken() -> None:
             application_id=_APP,
             environment_id=_ENV,
             retention=_retention(),
+            policy=_activation_policy(),
         )
     assert list(HistoryContinuityAdapterKind) == [
         HistoryContinuityAdapterKind.LOCAL_DETERMINISTIC,

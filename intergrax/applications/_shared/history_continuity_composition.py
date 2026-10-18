@@ -16,8 +16,8 @@ from intergrax.applications._shared.production_control_plane_governance_wiring i
 from intergrax.contracts.agent_run import canonical_principal_id_from_request_identity
 from intergrax.contracts.governance.history_continuity import (
     HistoryContinuityActivation,
-    HistoryContinuityAdapterKind,
     HistoryContinuityAuthority,
+    history_continuity_activation_is_admitted,
 )
 from intergrax.runtime.governance.local_history_continuity import (
     InactiveHistoryContinuityAuthority,
@@ -29,11 +29,14 @@ def compose_history_continuity_authority(
     governance: ProductionControlPlaneGovernance,
     activation: HistoryContinuityActivation | None,
 ) -> HistoryContinuityAuthority:
-    """Compose the local continuity authority, or a deny-only authority."""
+    """Compose the local continuity authority, or a deny-only authority.
 
-    if activation is None or activation.enabled is not True:
-        return InactiveHistoryContinuityAuthority()
-    if activation.adapter is not HistoryContinuityAdapterKind.LOCAL_DETERMINISTIC:
+    Policy admission runs before tenant resolution. A defect in that predicate
+    is not caught here. Only issuer and resolver failures use the existing
+    fail-closed handler.
+    """
+
+    if activation is None or not history_continuity_activation_is_admitted(activation):
         return InactiveHistoryContinuityAuthority()
     try:
         issuer = canonical_principal_id_from_request_identity(governance.principal)
