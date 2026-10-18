@@ -46,6 +46,9 @@ from intergrax.contracts.external_work_provider_capabilities import (
 )
 from external_contractor_adapter.side_effect_actions import ACTION_CREATE_EXTERNAL_WORK
 from intergrax.contracts.provider_invocation import ProviderInvocation
+from intergrax.contracts.provider_invocation_store import (
+    ProviderInvocationIntentWriteResult,
+)
 from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store import (
     SQLiteProviderInvocationStore,
     open_provider_invocation_store_at,
@@ -174,6 +177,9 @@ def test_impl01_same_create_retry_no_second_provider_dispatch(tmp_path: Path) ->
     )
     assert fake.create_calls == 1
     inv_id = first.governed_result.provider_invocation.invocation_id
+    intent_after_first = pis.get_invocation(inv_id)
+    assert intent_after_first is not None
+    outcome_after_first = pis.get_outcome(inv_id)
 
     execution_store._states.clear()
     execution_store._results.clear()
@@ -189,8 +195,12 @@ def test_impl01_same_create_retry_no_second_provider_dispatch(tmp_path: Path) ->
     assert fake.create_calls == 1
     assert second.governed_result is None
     assert second.state is GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN
-    assert pis.get_invocation(inv_id) is not None
-    assert pis.get_outcome(inv_id) is None
+    assert pis.get_invocation(inv_id) == intent_after_first
+    assert (
+        pis.insert_invocation_if_absent(intent_after_first)
+        is ProviderInvocationIntentWriteResult.EQUIVALENT_NOOP
+    )
+    assert pis.get_outcome(inv_id) == outcome_after_first
 
 
 def test_impl01_sqlite_pis_restart_same_create_no_second_dispatch(tmp_path: Path) -> None:
@@ -273,14 +283,31 @@ def test_impl01_legacy_random_invocation_id_preserved_when_ger_survives(tmp_path
     )
     pis.insert_invocation_if_absent(legacy_inv)
 
-    from tests.unit.contracts.test_governed_execution_result import _ger_v2
+    from tests.unit.contracts.test_governed_execution_result import (
+        _ger_v2,
+        _outcome,
+        _proof,
+    )
 
     ger = _ger_v2(
         execution_id=str(execution_id),
         task_id=str(task_id),
         run_id=str(run_id),
         attempt_id=str(attempt_id),
+        tenant_id=_TENANT,
+        principal_id=_PRINCIPAL,
+        idempotency_key=_CREATE_IDEMP,
         provider_invocation=legacy_inv,
+        provider_outcome=_outcome(invocation_id=legacy_id),
+        proof=_proof(
+            task_id=str(task_id),
+            run_id=str(run_id),
+            tenant_id=_TENANT,
+            principal_id=_PRINCIPAL,
+            provider_id=_PROVIDER,
+            idempotency_key=_CREATE_IDEMP,
+            action=ACTION_CREATE_EXTERNAL_WORK,
+        ),
     )
     execution_store.put_result(ger)
 
