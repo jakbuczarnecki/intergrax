@@ -2,16 +2,18 @@
 
 | Field | Value |
 |---|---|
-| Status | **READY FOR AUDIT** |
+| Status | **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** |
 | Date | 2026-10-18 |
 | Baseline | `c41c788f15a480dc59ffcb68717044ce5a30adaf` |
+| Accepted implementation SHA | `02e48d9fa61d116346da613271cc5e8b77e08cc6` |
+| Audit basis | Independent static code/contract review of that exact SHA accepted the scoped child. This documentation reconciliation does not rerun tests and is not that SHA. |
 | Parent | `PROD-Q-R1-R7-Q-D03-A-CONDITIONAL-INFRASTRUCTURE-DIRECTION` — remains OPEN / BLOCKED |
 | Predecessor shape | Readiness §15. This record is the implementation evidence, not a rewrite of that document |
 | LOCAL-01 | Unchanged behavior. `intergrax/runtime/governance/local_history_continuity.py` was not edited |
 | Production admission delta | **0** |
 | FRZ | **not promoted**. New `FRZ-*` PASS = **0** |
 
-Cursor may report **READY FOR AUDIT** only. This record does not close D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*`. It is not cloud infrastructure proof, IAM proof, a production retention period, or a replaceability demonstration.
+Independent static review accepted the implementation SHA within this child scope. The implementer report of 13 selected tests passed and targeted Ruff PASS was not independently rerun and is not execution certification. This record does not close D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*`. Cloud, multi-replica, production IAM, and disaster recovery are not qualified. Accepted policy is not infrastructure proof. LOCAL-01 stays CLOSED at `302e7fa74b745d10f9552df0a6eb9c702d5ce033`. OD-D03-A-06 and OD-D03-A-07 stay unresolved. This documentation reconciliation is **READY FOR AUDIT** and is not self-declared CLOSED.
 
 ## What the commit adds
 
@@ -70,7 +72,7 @@ HistoryContinuityActivation + HistoryContinuityActivationPolicy
 | A5 | Production-effective reachability: **no** |
 | A6 | Families below. No `FRZ-*` status change |
 | A7 | Historical PASS is not extended. LOCAL-01 acceptance is not reopened |
-| A8 | Targeted nodes below. The existing module's repository discovery test was not run |
+| A8 | Implementer targeted nodes below were not rerun. `pytest = 0`. The existing module's repository discovery test was not run |
 
 ## Tenant Isolation Audit
 
@@ -95,7 +97,7 @@ BLOCKED means this child does not extend historical `FRZ-TEN-*` PASS and does no
 
 `pytest-timeout` is not installed. The process was capped at 60 seconds externally.
 
-Recorded run, matching this tree: **13 passed in 0.71s**. Exit was the pytest summary, not a timeout.
+Implementer report, not independently rerun by this reconciliation (`pytest = 0`, `uv = 0`): **13 passed in 0.71s**. Exit was the pytest summary, not a timeout. That report is not execution certification.
 
 ```text
 uv run pytest -p no:xdist
@@ -127,7 +129,7 @@ Not executed, and not a global regression PASS:
 
 ## Applicable FRZ
 
-Checklist status is unchanged. Evidence here is scoped code plus the targeted tests. It is not freeze evidence.
+Checklist status is unchanged. New `FRZ-*` PASS = 0. Historical PASS is not extended. Independent evidence for this child is static review of the implementation SHA. The implementer test report is not freeze evidence and was not rerun.
 
 | Family | Checklist status | This child |
 |---|---|---|
@@ -140,6 +142,9 @@ Checklist status is unchanged. Evidence here is scoped code plus the targeted te
 | `FRZ-TEN-01`..`12` | PASS | Historical PASS. Not extended. Local scope and mismatch checks only |
 | `FRZ-SEC-01`, `FRZ-SEC-04` | OPEN | No production auth bypass was added. IAM is not implemented |
 | `FRZ-RPL-01`..`04` | OPEN | RPL-A..H not claimed |
+| `FRZ-PLG-08` | OPEN | No dynamic registration |
+| `FRZ-REL-01`..`11` | OPEN | Not qualified. Checklist historical notes are not extended |
+| `FRZ-PRD-01`..`12` | OPEN | Production admission delta is 0. Not qualified |
 
 ## Findings
 

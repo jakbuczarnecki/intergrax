@@ -684,7 +684,7 @@ This delta does not certify the platform or the freeze.
 | RPL-A..H and `FRZ-RPL-*` are not demonstrated. Accepted structural replaceability is direction only | **TRACKED FREEZE DEBT** |
 | D03-B global PIS and D03-C cross-store continuity remain unmet | **IN-SCOPE BLOCKER** as existing independent stages. This package does not open a new child task for them |
 | RA-GZRS unplanned failover can expose a prefix | **IN-SCOPE BLOCKER** for any design that would resume CREATE from that prefix. The preserved rule is quarantine |
-| `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` is proposed in §15 and is not authorized | **N/A — WITH EVIDENCE** for this readiness delta. A later operator authorization entered the child as **READY FOR AUDIT**. That entry is not infrastructure proof |
+| `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` was later accepted within child scope | **N/A — WITH EVIDENCE** for this readiness delta. The child is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `02e48d9fa61d116346da613271cc5e8b77e08cc6`. Independent static review accepted that scoped configuration. Implementer tests were not independently rerun. That acceptance is not infrastructure proof |
 
 No finding is self-certified as enterprise compliance.
 
@@ -696,14 +696,14 @@ Status of this artifact only:
 
 **READY FOR AUDIT — D03-A POLICY CONSOLIDATION — ACCEPTED POLICY IS NOT INFRASTRUCTURE PROOF**
 
-§15 names the platform-policy child. That child is entered separately as **READY FOR AUDIT** and does not close this readiness gate. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
+§15 names the platform-policy child. That child is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `02e48d9fa61d116346da613271cc5e8b77e08cc6` and does not close this readiness gate. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
 
 ## 15. Platform policy configuration child
 
 | Field | Value |
 |---|---|
 | Proposed name | `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` |
-| Status | **IMPLEMENTED — READY FOR AUDIT**. Not cloud infrastructure proof. Does not close the parent. [Evidence](PROD_Q_R1_R7_Q_D03_A_PLATFORM_POLICY_CONFIG_01.md) |
+| Status | **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `02e48d9fa61d116346da613271cc5e8b77e08cc6`. Independent static review only. Not cloud infrastructure proof. Does not close the parent. [Evidence](PROD_Q_R1_R7_Q_D03_A_PLATFORM_POLICY_CONFIG_01.md) |
 | Parent | `PROD-Q-R1-R7-Q-D03-A-CONDITIONAL-INFRASTRUCTURE-DIRECTION` — remains OPEN / BLOCKED |
 | Predecessor | This readiness consolidation, after independent exact-SHA audit. D03-A-LOCAL-01 stays closed at `302e7fa74b745d10f9552df0a6eb9c702d5ce033` and is not modified |
 | Not a parent of | D03-B, D03-C, cloud IAM, vendor adapters, cost, disaster recovery, or production SLO |
@@ -715,7 +715,7 @@ OD-D03-A-01 class (ratified, unchanged)
   -> OD-D03-A-02 conditional preferred pair (unchanged, not full ratification)
        -> D03-A-LOCAL-01 (closed; do not modify)
        -> this policy consolidation (READY FOR AUDIT; not parent closure)
-            -> PLATFORM-POLICY-CONFIG-01 (proposed only)
+            -> PLATFORM-POLICY-CONFIG-01 (CLOSED — SCOPED / INDEPENDENTLY ACCEPTED at `02e48d9fa61d116346da613271cc5e8b77e08cc6`; not infrastructure proof)
                  -> dependent qualification gate (not opened):
                     trust-domain graph, IAM, vendor integration,
                     OD-D03-A-06 production duration,
@@ -781,7 +781,7 @@ Not opened. It keeps cloud IAM and the real administrative-independence graph, v
 | D03-A-POL-02 | MISSING_EXECUTION_EVIDENCE | FRZ-SEC-04 | Blocks cloud ratification | IAM and administrative independence are unproven |
 | D03-A-POL-03 | IN_SCOPE_BLOCKER | OD-D03-A-06 / OD-D03-A-07 | Blocks production numbers | Duration, prices, capacity, and achieved SLO are unresolved |
 | D03-A-POL-04 | TRACKED_FREEZE_DEBT | FRZ-RPL-* | No portability claim | Structural replaceability is direction only |
-| D03-A-POL-05 | N/A_WITH_EVIDENCE | n/a | n/a | Proposed child is not entered. This delta adds no code |
+| D03-A-POL-05 | N/A_WITH_EVIDENCE | n/a | n/a | Platform-policy child is later CLOSED — SCOPED at `02e48d9fa61d116346da613271cc5e8b77e08cc6`. That acceptance is not infrastructure proof. This readiness delta adds no code |
 
 No finding is self-certified as enterprise compliance. Cursor status of this documentation commit is at most **READY FOR AUDIT**.
 
