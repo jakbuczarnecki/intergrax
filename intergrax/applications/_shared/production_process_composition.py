@@ -21,6 +21,9 @@ from intergrax.applications._shared.production_agent_platform_runtime import (
     ProductionAgentPlatformRuntime,
     build_production_agent_platform_runtime,
 )
+from intergrax.contracts.governed_external_work_host_store_bundle import (
+    GovernedExternalWorkHostStoreBundlePort,
+)
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.production_agent_capability_runtime import (
@@ -42,6 +45,9 @@ class ProductionProcessComposition:
     agent_capability_runtime: ProductionAgentCapabilityRuntime | None = None
     provider_invocation_store: ProviderInvocationStore | None = None
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None
+    governed_external_work_host_store_bundle: (
+        GovernedExternalWorkHostStoreBundlePort | None
+    ) = None
     serving_runtime_handoff: ServingRuntimeHandoff | None = None
 
 

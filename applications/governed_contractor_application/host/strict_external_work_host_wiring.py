@@ -10,6 +10,10 @@ from governed_contractor_application.host.governed_contractor_host_runtime_compo
     GovernedContractorHostRuntimeComposition,
     resolve_production_runtime_policy_bundle_from_settings,
 )
+from governed_contractor_application.host.governed_external_work_host_stores import (
+    GovernedExternalWorkHostStoreBundle,
+    validate_production_governed_external_work_host_store_bundle,
+)
 from governed_contractor_application.host.production_external_work_composition import (
     GovernedExternalWorkProductionRuntime,
     build_governed_external_work_production_runtime,
@@ -19,12 +23,8 @@ from governed_contractor_application.host.sanctioned_external_work_operation_por
     GovernedSanctionedExternalWorkOperationPort,
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
-from governed_contractor_application.host.governed_external_work_host_stores import (
-    GovernedExternalWorkHostStoreBundle,
-    build_process_scoped_governed_external_work_host_stores,
-)
 from intergrax.contracts.external_work_provider_capabilities import (
-    quote_first_partner_capability_fixture,
+    ExternalWorkProviderCapabilities,
 )
 from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.contracts.sanctioned_external_work_operation import (
@@ -51,8 +51,8 @@ def build_strict_external_work_host_session_resources(
     execution_tenant_id: str,
     workspace_id: str,
     principal_id: str,
-    host_stores: GovernedExternalWorkHostStoreBundle | None = None,
-    provider_id: str = "gec3_deterministic_fake",
+    host_stores: GovernedExternalWorkHostStoreBundle,
+    capabilities: ExternalWorkProviderCapabilities,
 ) -> GovernedExternalWorkHostSessionResources:
     if host_runtime.collaborative_work_repositories is None:
         raise ValueError(
@@ -66,24 +66,24 @@ def build_strict_external_work_host_session_resources(
         raise ValueError("strict external work host wiring requires workspace_id")
     if not principal_id.strip():
         raise ValueError("strict external work host wiring requires principal_id")
+    validate_production_governed_external_work_host_store_bundle(host_stores)
     policy_bundle = resolve_production_runtime_policy_bundle_from_settings(settings)
-    resolved_stores = host_stores or build_process_scoped_governed_external_work_host_stores()
     production_runtime = build_governed_external_work_production_runtime(
         integration,
         tenant_id=execution_tenant_id,
         workspace_id=workspace_id,
         principal_id=principal_id,
         task_scope=host_runtime.active_execution_task_scope,
-        capabilities=quote_first_partner_capability_fixture(provider_id=provider_id),
+        capabilities=capabilities,
         decision_requirement_policy=resolve_production_decision_requirement_policy(
             host_runtime,
         ),
         policy_bundle=policy_bundle,
         collaborative_work_repositories=host_runtime.collaborative_work_repositories,
-        execution_store=resolved_stores.execution_store,
-        receipt_store=resolved_stores.receipt_store,
-        bundle_store=resolved_stores.bundle_store,
-        continuation_store=resolved_stores.continuation_store,
+        execution_store=host_stores.execution_store,
+        receipt_store=host_stores.receipt_store,
+        bundle_store=host_stores.bundle_store,
+        continuation_store=host_stores.continuation_store,
         provider_invocation_store=provider_invocation_store,
         attestor=host_runtime.host_attestor,
     )
@@ -93,7 +93,7 @@ def build_strict_external_work_host_session_resources(
     return GovernedExternalWorkHostSessionResources(
         production_runtime=production_runtime,
         operation_port=operation_port,
-        host_stores=resolved_stores,
+        host_stores=host_stores,
     )
 
 

@@ -68,6 +68,8 @@ class GovernedContractorBackendSettings(ApplicationSettingsEnvHost, IntergraxApp
     # Declarative policy pack (immutable config artifact — not a live runtime service).
     runtime_policy_bundle: ImmutableRuntimePolicyBundle | None = None
     attestation_required: bool = False
+    strict_external_work_provider_id: str | None = None
+    strict_external_work_provider_descriptor_digest: str | None = None
 
     # ------------------------------------------------------------------
     # Application-specific settings
@@ -146,6 +148,11 @@ class GovernedContractorBackendSettings(ApplicationSettingsEnvHost, IntergraxApp
                     "GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED=true."
                 )
 
+        strict_provider_id = env.optional_str("STRICT_EXTERNAL_WORK_PROVIDER_ID")
+        strict_provider_digest = env.optional_str(
+            "STRICT_EXTERNAL_WORK_PROVIDER_DESCRIPTOR_DIGEST",
+        )
+
         return {
             "default_agent_id": agent_id,
             "identity_source": identity_source,
@@ -156,5 +163,11 @@ class GovernedContractorBackendSettings(ApplicationSettingsEnvHost, IntergraxApp
             "interaction_execute_default": env.bool(
                 "INTERACTION_EXECUTE_DEFAULT",
                 default=cls._field_default("interaction_execute_default"),  # type: ignore[arg-type]
+            ),
+            "strict_external_work_provider_id": (
+                strict_provider_id.strip() if strict_provider_id else None
+            ),
+            "strict_external_work_provider_descriptor_digest": (
+                strict_provider_digest.strip() if strict_provider_digest else None
             ),
         }

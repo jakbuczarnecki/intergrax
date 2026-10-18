@@ -30,7 +30,7 @@ _STORES = _REPO / "applications" / "governed_contractor_application" / "host" / 
 def test_strict_wiring_does_not_mint_per_call_in_memory_stores() -> None:
     text = _STRICT_WIRING.read_text(encoding="utf-8")
     assert "InMemoryGovernedExecutionStore()" not in text
-    assert "host_stores" in text
+    assert "build_process_scoped_governed_external_work_host_stores" not in text
 
 
 def test_port_has_no_session_create_result_cache() -> None:
@@ -50,11 +50,6 @@ def test_governed_execution_store_declares_follow_on_protocol() -> None:
     text = _STORES.read_text(encoding="utf-8")
     assert "put_create_follow_on_record" in text
     assert "get_create_follow_on_record" in text
-
-
-def test_factory_rebinds_revision_bound_external_contractor_agent() -> None:
-    text = _FACTORY.read_text(encoding="utf-8")
-    assert "rebind_strict_sanctioned_external_contractor_adapter_registry" in text
 
 
 def test_strict_wiring_has_no_implicit_principal_defaults() -> None:

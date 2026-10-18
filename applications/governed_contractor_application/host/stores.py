@@ -102,6 +102,10 @@ class ContinuationStateStore(Protocol):
 
 
 class InMemoryGovernedExecutionStore:
+    @property
+    def is_durable(self) -> bool:
+        return False
+
     def __init__(self) -> None:
         self._results: dict[str, AnyGovernedExecutionResult] = {}
         self._states: dict[str, GovernedExternalWorkHostState] = {}
@@ -154,6 +158,10 @@ class InMemoryGovernedExecutionStore:
 
 
 class InMemoryProofReceiptStore:
+    @property
+    def is_durable(self) -> bool:
+        return False
+
     def __init__(self) -> None:
         self._receipts: dict[str, ExecutionEvidenceProofReceipt] = {}
 
@@ -165,6 +173,10 @@ class InMemoryProofReceiptStore:
 
 
 class InMemoryPolicyBundleArtifactStore:
+    @property
+    def is_durable(self) -> bool:
+        return False
+
     def __init__(self) -> None:
         self._bundles: dict[tuple[str, str], ImmutableRuntimePolicyBundle] = {}
 
@@ -235,6 +247,10 @@ class InMemoryProviderInvocationStore:
 
 
 class InMemoryContinuationStateStore:
+    @property
+    def is_durable(self) -> bool:
+        return False
+
     def __init__(self) -> None:
         self._items: dict[str, GovernedContinuationRequest] = {}
 
@@ -251,6 +267,10 @@ class InMemoryContinuationStateStore:
 
 class FilesystemHostStore:
     """Filesystem-backed demo store (no distributed event store)."""
+
+    @property
+    def is_durable(self) -> bool:
+        return False
 
     def __init__(self, root: Path) -> None:
         self.root = Path(root)
