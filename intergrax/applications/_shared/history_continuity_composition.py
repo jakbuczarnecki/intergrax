@@ -48,5 +48,7 @@ def compose_history_continuity_authority(
     return _open_local_history_continuity(
         tenant_resolver=governance.environment_tenant_resolver,
         activation=activation,
+        authorization_boundary=governance.mutation_authorization_boundary,
+        principal=governance.principal,
         issuer_principal_id=issuer,
     )

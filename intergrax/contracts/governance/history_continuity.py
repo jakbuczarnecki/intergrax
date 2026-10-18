@@ -134,6 +134,8 @@ class ContinuityScope(BaseModel):
 
 
 class ContinuityPermissionGrant(BaseModel):
+    """Caller claim of principal and capability. Not authorization by itself."""
+
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     principal_id: str = _NON_BLANK

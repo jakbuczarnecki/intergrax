@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ from intergrax.agent_distribution.control_plane_governance import (
 )
 from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_reference_production_control_plane_mutation_boundary,
+    build_reference_production_lifecycle_policy_bundle,
 )
 from intergrax.applications._shared.history_continuity_composition import (
     compose_history_continuity_authority,
@@ -38,9 +40,23 @@ from intergrax.contracts.governance.history_continuity import (
     HistoryContinuityAdapterKind,
     HistoryContinuityRetentionPolicy,
 )
+from intergrax.contracts.runtime_policy_bundle import (
+    PolicyBundleRule,
+    build_immutable_runtime_policy_bundle,
+)
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.governance.control_plane_mutation_policy import (
+    bundle_backed_control_plane_mutation_evaluator,
+)
 from intergrax.runtime.governance.local_history_continuity import (
     LocalContinuityCrashPoint,
     LocalDeterministicHistoryContinuity,
+    continuity_authorization_action,
+)
+from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
+    RuntimePolicyBundleEvaluator,
 )
 
 _REPO = Path(__file__).resolve().parents[3]
@@ -49,11 +65,51 @@ _APP = "app-1"
 _ENV = "env-1"
 
 
+def _continuity_boundary(
+    allowed: frozenset[ContinuityPermission] | None = None,
+    *,
+    extra_actions: tuple[str, ...] = (),
+) -> ControlPlaneMutationAuthorizationBoundary:
+    permissions = set(ContinuityPermission) if allowed is None else set(allowed)
+    rules = [
+        PolicyBundleRule(
+            rule_id=f"history_continuity.{permission.value}",
+            description=f"Allow {permission.value}",
+            match_action=continuity_authorization_action(permission),
+            effect="allow",
+        )
+        for permission in sorted(permissions, key=lambda item: item.value)
+    ]
+    rules.extend(
+        PolicyBundleRule(
+            rule_id=f"history_continuity.extra.{index}",
+            description="Unsupported continuity action",
+            match_action=action,
+            effect="allow",
+        )
+        for index, action in enumerate(extra_actions)
+    )
+    bundle = build_immutable_runtime_policy_bundle(
+        bundle_id="d03a.local.history_continuity",
+        version="1.0.0",
+        rules=rules,
+        issued_at=datetime(2026, 10, 18, tzinfo=timezone.utc),
+    )
+    return ControlPlaneMutationAuthorizationBoundary(
+        evaluator=bundle_backed_control_plane_mutation_evaluator(
+            RuntimePolicyBundleEvaluator(bundle),
+        ),
+    )
+
+
 def _governance(
     principal_tenant: str = "tenant-a",
     resolver_tenant: str = "tenant-a",
+    *,
+    allowed: frozenset[ContinuityPermission] | None = None,
+    extra_actions: tuple[str, ...] = (),
+    boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> ProductionControlPlaneGovernance:
-    env = ApplicationEnvironmentProfile(profile_id=principal_tenant)
     return ProductionControlPlaneGovernance(
         principal=RequestIdentity(
             tenant_id=principal_tenant,
@@ -61,8 +117,10 @@ def _governance(
             principal_type=PrincipalType.SERVICE,
             auth_subject=_ISSUER,
         ),
-        mutation_authorization_boundary=build_reference_production_control_plane_mutation_boundary(
-            env,
+        mutation_authorization_boundary=(
+            _continuity_boundary(allowed, extra_actions=extra_actions)
+            if boundary is None
+            else boundary
         ),
         environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver(
             tenant_id=resolver_tenant,
@@ -120,8 +178,13 @@ def _binding(
     )
 
 
-def _authority() -> LocalDeterministicHistoryContinuity:
-    authority = compose_history_continuity_authority(_governance(), _activation())
+def _authority(
+    governance: ProductionControlPlaneGovernance | None = None,
+) -> LocalDeterministicHistoryContinuity:
+    authority = compose_history_continuity_authority(
+        _governance() if governance is None else governance,
+        _activation(),
+    )
     assert isinstance(authority, LocalDeterministicHistoryContinuity)
     return authority
 
@@ -525,7 +588,7 @@ def test_crash_after_witness_recover_commits() -> None:
     assert recovered.head.binding.pis_committed_watermark == 2
 
 
-def test_primary_rollback_quarantines_without_silent_allow() -> None:
+def test_primary_rollback_denies_without_unsealing() -> None:
     authority = _authority()
     head = _initialize(authority)
     advanced = _advance(authority, head)
@@ -541,10 +604,11 @@ def test_primary_rollback_quarantines_without_silent_allow() -> None:
     assert recovered.denial is ContinuityDenialCode.CONTINUITY_REVISION_STALE
     assert recovered.head is not None
     assert recovered.head.revision == 1
-    assert recovered.head.status is ContinuityHeadStatus.QUARANTINED
+    assert recovered.head.status is ContinuityHeadStatus.ACTIVE
     assert recovered.witness_high_watermark == 2
     assert (
-        _advance(authority, recovered.head).denial is ContinuityDenialCode.QUARANTINED
+        _advance(authority, recovered.head).denial
+        is ContinuityDenialCode.CONTINUITY_REVISION_STALE
     )
 
 
@@ -564,8 +628,147 @@ def test_witness_rollback_denies_mismatch() -> None:
     assert recovered.denial is ContinuityDenialCode.WITNESS_MISMATCH
     assert recovered.head is not None
     assert recovered.head.revision == 2
-    assert recovered.head.status is ContinuityHeadStatus.QUARANTINED
+    assert recovered.head.status is ContinuityHeadStatus.ACTIVE
     assert recovered.witness_high_watermark == 1
+
+
+def test_forged_and_unauthorized_continuity_permissions() -> None:
+    actions = {continuity_authorization_action(item) for item in ContinuityPermission}
+    assert actions == {
+        "history_continuity.write",
+        "history_continuity.initialize",
+        "history_continuity.reconcile",
+        "history_continuity.invalidate",
+        "history_continuity.recover",
+    }
+    lifecycle_actions = {
+        rule.match_action for rule in build_reference_production_lifecycle_policy_bundle().rules
+    }
+    assert actions.isdisjoint(lifecycle_actions)
+
+    unsupported = _authority(
+        _governance(
+            allowed=frozenset(),
+            extra_actions=("history_continuity.unsupported",),
+        )
+    )
+    assert (
+        unsupported.initialize(
+            _grant(ContinuityPermission.INITIALIZE),
+            _scope(),
+            _binding(),
+        ).denial
+        is ContinuityDenialCode.PERMISSION_DENIED
+    )
+    forged = ContinuityPermissionGrant.model_construct(
+        principal_id=_ISSUER,
+        permission="history_continuity.write",
+    )
+    assert (
+        _authority().initialize(forged, _scope(), _binding()).denial
+        is ContinuityDenialCode.PERMISSION_DENIED
+    )
+
+    limited = _authority(
+        _governance(
+            allowed=frozenset(
+                {ContinuityPermission.INITIALIZE, ContinuityPermission.WRITE},
+            ),
+        )
+    )
+    head = _initialize(limited)
+    assert (
+        limited.recover(_grant(ContinuityPermission.RECOVER), _scope()).denial
+        is ContinuityDenialCode.PERMISSION_DENIED
+    )
+    assert (
+        limited.reconcile(
+            _grant(ContinuityPermission.RECONCILE),
+            _scope(),
+            expected_revision=head.revision,
+            expected_fencing_token=head.fencing_token,
+            binding=_binding(2, 1),
+        ).denial
+        is ContinuityDenialCode.PERMISSION_DENIED
+    )
+    assert (
+        limited.invalidate(
+            _grant(ContinuityPermission.INVALIDATE),
+            _scope(),
+            expected_revision=head.revision,
+            expected_fencing_token=head.fencing_token,
+            status=ContinuityHeadStatus.QUARANTINED,
+        ).denial
+        is ContinuityDenialCode.PERMISSION_DENIED
+    )
+    assert head.status is ContinuityHeadStatus.ACTIVE
+    lifecycle = compose_history_continuity_authority(
+        _governance(
+            boundary=build_reference_production_control_plane_mutation_boundary(
+                ApplicationEnvironmentProfile(profile_id="tenant-a"),
+            ),
+        ),
+        _activation(),
+    )
+    assert isinstance(lifecycle, LocalDeterministicHistoryContinuity)
+    assert (
+        lifecycle.initialize(
+            _grant(ContinuityPermission.INITIALIZE),
+            _scope(),
+            _binding(),
+        ).denial
+        is ContinuityDenialCode.PERMISSION_DENIED
+    )
+
+
+def test_altered_witness_metadata_denies_without_unsealing() -> None:
+    alterations = (
+        {"environment_id": "env-forged"},
+        {"revision": 9},
+        {"fencing_token": "9"},
+        {"transition_id": "env-1:1:forged"},
+        {"binding_digest": "f" * 64},
+        {"status": ContinuityHeadStatus.QUARANTINED},
+        {"identity_epoch": 4},
+    )
+    for changes in alterations:
+        authority = _authority()
+        head = _initialize(authority)
+        authority.testing_alter_witness(head.revision, **changes)
+        observed = authority.read_head(_grant(ContinuityPermission.WRITE), _scope())
+        assert observed.denial is ContinuityDenialCode.WITNESS_MISMATCH, changes
+        assert observed.head is not None
+        assert observed.head.status is ContinuityHeadStatus.ACTIVE
+        assert observed.head.revision == 1
+        assert observed.head.identity_epoch == 1
+        recovered = authority.recover(_grant(ContinuityPermission.RECOVER), _scope())
+        assert recovered.outcome is ContinuityOutcome.DENIED
+        assert recovered.denial is ContinuityDenialCode.WITNESS_MISMATCH, changes
+        assert recovered.head is not None
+        assert recovered.head.status is ContinuityHeadStatus.ACTIVE
+        assert recovered.head.revision == 1
+
+
+def test_inconsistent_recovery_does_not_commit_or_unseal() -> None:
+    authority = _authority()
+    head = _initialize(authority)
+    authority.arm_local_crash(LocalContinuityCrashPoint.AFTER_WITNESS_SEAL)
+    crashed = _advance(authority, head)
+    assert crashed.denial is ContinuityDenialCode.TRANSITION_UNRESOLVED
+    authority.testing_alter_witness(
+        head.revision + 1,
+        status=ContinuityHeadStatus.QUARANTINED,
+    )
+    recovered = authority.recover(_grant(ContinuityPermission.RECOVER), _scope())
+    assert recovered.denial is ContinuityDenialCode.WITNESS_MISMATCH
+    assert recovered.head is not None
+    assert recovered.head.revision == 1
+    assert recovered.head.status is ContinuityHeadStatus.ACTIVE
+    again = authority.recover(_grant(ContinuityPermission.RECOVER), _scope())
+    assert again.denial is ContinuityDenialCode.WITNESS_MISMATCH
+    assert again.head is not None
+    assert again.head.revision == 1
+    assert again.head.status is ContinuityHeadStatus.ACTIVE
 
 
 def test_direct_construction_and_production_paths_stay_closed() -> None:
@@ -573,6 +776,13 @@ def test_direct_construction_and_production_paths_stay_closed() -> None:
         LocalDeterministicHistoryContinuity(
             tenant_resolver=StaticApplicationEnvironmentTenantResolver(tenant_id="tenant-a"),
             activation=_activation(),
+            authorization_boundary=_continuity_boundary(),
+            principal=RequestIdentity(
+                tenant_id="tenant-a",
+                user_id=_ISSUER,
+                principal_type=PrincipalType.SERVICE,
+                auth_subject=_ISSUER,
+            ),
             issuer_principal_id=_ISSUER,
             composition_token=object(),
         )
