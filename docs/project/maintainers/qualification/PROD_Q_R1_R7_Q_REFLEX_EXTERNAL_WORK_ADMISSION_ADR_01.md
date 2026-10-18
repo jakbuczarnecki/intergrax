@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **NOT YET RATIFIED** · **READY FOR AUDIT** (architecture + blueprint only) |
+| **Status** | **RATIFIED — SCOPED ARCHITECTURE DECISION / OPERATOR APPROVED** (2026-10-18; implementation not yet performed) |
 | **Date** | 2026-10-18 |
 | **Branch** | `development` |
 | **START_HEAD / evidence SHA** | `d460186cc8929bb3689fe8afd9cb56294de3afe0` |
@@ -193,7 +193,7 @@ Strict production composition **rejects** agent wiring that permits mutating ext
 
 **Ratify A + B:** strict reflex HTTP → **`GovernedExternalWorkOrchestrator`** for mutating paths; strict composition **fail-closed** when reflex agent lacks sanctioned production external-work runtime handle.
 
-**[OPERATOR DECISION REQUIRED]** Exact wiring surface: extend `GovernedContractorHostRuntimeComposition` with `GovernedExternalWorkProductionRuntime` (or orchestrator-only protocol) vs. new host port — see §9.
+**RATIFIED WIRING RULE:** GCA host injects a **narrow, platform-defined, strongly typed external-work operation port** into Tier-2 agent composition; no dependency from the agent on `applications/` or `GovernedExternalWorkProductionRuntime`. Reuse the existing orchestrator behind this port. Exact signature must be checked against current contract ownership in IMPL-01; architecture conflicts require STOP, not an untyped callback.
 
 ---
 
@@ -371,12 +371,16 @@ Deterministic tests (child task) must prove:
 
 ---
 
-## 13. Remaining operator decisions
+## 13. Operator ratification — 2026-10-18
 
-1. **Ratify A+B** vs. A-only (fail-closed deferred).
-2. **Wiring surface:** `GovernedExternalWorkProductionRuntime` on host composition vs. narrow orchestrator protocol in `intergrax/contracts`.
-3. **Reflex operation scope:** integrate `create` only in v1 vs. accept/cancel in same child.
-4. **Whether interpretation B** becomes mandatory for Package P closure (currently **not required** per reconciliation §4.1).
+**Formal architecture decision: RATIFIED — SCOPED.** Operator explicitly approved the four choices below following independent GitHub review of ADR commit `c918c2fff0f41f064690025de3deb8da471b58ff`:
+
+1. **A+B required together:** the existing sanctioned `GovernedExternalWorkOrchestrator` controls strict reflex mutating external-work, and strict composition must fail closed without sanctioned durable invocation admission.
+2. **Typed seam:** use a **narrow platform-defined strongly typed port injected from GCA host** into Tier-2. The agent must not import `applications/`, store implementations, or host runtime concrete types. The port may expose only the required create/accept/cancel operations; no generic `Callable[..., Any]`, `object`, reflection, or metadata pseudo-contract. Exactly-one semantic owner and exactly-one composition owner remain mandatory.
+3. **All three mutation classes in one IMPL-01:** create, accept_quote, cancel. Observational reads remain separately classified. Non-strict lab/demo direct behavior can remain only outside strict production.
+4. **Package P interpretation A unchanged:** earlier scoped acceptance is not retroactively broadened. Integrated interpretation B is mandatory for the **R7-Q integrated gate**, not for historical scoped Package P closure.
+
+**Implementation authorization is bounded by these invariants, not a preapproval of any particular code patch.** If a narrow port requires a new semantic owner, widens downstream authority, or conflicts with a ratified architecture, **STOP — ARCHITECTURE DECISION REQUIRED** before writing production code. IMPL-01 must supply tests and independent audit. This ratification does **not** close Package P, DIM20, R7-Q, PROD-Q or any global FRZ criterion.
 
 ---
 
@@ -392,4 +396,4 @@ pytest  → 0 (documentation-only task)
 
 ---
 
-**Status statement:** This document is **NOT YET RATIFIED**. It does not approve implementation, close **PROD-Q-R1-R7-Q**, or qualify **R7-Q**.
+**Status statement:** This architecture decision is **RATIFIED — SCOPED** by operator on 2026-10-18. IMPL-01 remains unimplemented/unqualified; **PROD-Q-R1-R7-Q**, **R7-Q**, **DIM20** and global FRZ remain open.
