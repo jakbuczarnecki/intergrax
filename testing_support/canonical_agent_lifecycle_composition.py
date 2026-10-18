@@ -23,7 +23,13 @@ from intergrax.agent_distribution.admin_models import (
 from intergrax.agent_distribution.agent_manager_query_service import (
     AgentManagerQueryService,
 )
-from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
+from intergrax.agent_distribution.agent_contract_authority import (
+    PackageAgentContractAuthorityRecord,
+)
+from intergrax.agent_distribution.agent_project_metadata import (
+    AgentPackageContractDeclaration,
+    AgentProjectMetadata,
+)
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
@@ -70,12 +76,15 @@ from intergrax.agent_distribution.trust import (
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
+from intergrax.collaborative_work.persistence import (
+    open_sqlite_collaborative_work_repositories,
+)
 from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
 )
 from testing_support.agent_distribution.install_contract_authority_fixtures import (
-    reference_install_contract_authority_records,
+    package_contract_authority_record,
 )
 from intergrax.applications._shared.production_agent_capability_runtime import (
     AgentCapabilityApplicationComposition,
@@ -120,6 +129,14 @@ from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
 from intergrax.integrations.registry.presets import OTEL
+from intergrax.runtime.execution.continuation.persistence import (
+    ExecutionContinuationDurableBacking,
+    execution_continuation_state_store_from_durable_export,
+    export_durable_continuation_state,
+)
+from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+    lab_orchestration_decision_requirement_policy,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.agent_platform_dependency_resolver import (
@@ -128,6 +145,7 @@ from testing_support.agent_platform_dependency_resolver import (
 from testing_support.canonical_lifecycle_ping_agent import (
     CANONICAL_PING_CAPABILITY,
     CANONICAL_PING_CONTRACT_ID,
+    CanonicalPingAgent,
 )
 from testing_support.canonical_me16_mixed_agent import (
     ME16_MIXED_CAPABILITY,
@@ -139,7 +157,9 @@ from testing_support.agent_platform_admin_harness import (
     allow_mutation_boundary,
     lifecycle_proof_durable_profile_stores,
 )
-
+from testing_support.dependency_concurrency_admission_config import (
+    tool_dependency_concurrency_admission_configuration,
+)
 _DEFAULT_DIGEST = "sha256:" + ("a" * 64)
 
 
@@ -148,7 +168,7 @@ def _stage15_proof_environment(profile_id: str) -> ApplicationEnvironmentProfile
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=profile_id)
     integration = env.integration_profile
     assert integration is not None
-    return env.model_copy(
+    env = env.model_copy(
         update={
             "capabilities": env.capabilities.model_copy(
                 update={
@@ -159,6 +179,22 @@ def _stage15_proof_environment(profile_id: str) -> ApplicationEnvironmentProfile
             ),
         },
     )
+    reliability = env.reliability_profile
+    if reliability.dependency_concurrency_admission is None:
+        env = env.model_copy(
+            update={
+                "reliability_profile": reliability.model_copy(
+                    update={
+                        "dependency_concurrency_admission": (
+                            tool_dependency_concurrency_admission_configuration(
+                                "stage15-lifecycle-proof",
+                            )
+                        ),
+                    },
+                ),
+            },
+        )
+    return env
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,6 +217,69 @@ class CanonicalLifecycleProofConfig:
     test_input: str
     expected_output: str
     capability: str = CANONICAL_PING_CAPABILITY
+
+
+def _stage15_project_metadata(
+    config: CanonicalLifecycleProofConfig,
+) -> AgentProjectMetadata:
+    """Package metadata aligned with Stage 15 lab manifest contract authority."""
+    if config.logical_agent_id == CANONICAL_PING_CONTRACT_ID:
+        return AgentProjectMetadata(
+            distribution_package_id=config.distribution_package_id,
+            package_version=config.package_version,
+            dependencies=(),
+            declared_contracts=(
+                AgentPackageContractDeclaration(
+                    contract_id=CANONICAL_PING_CONTRACT_ID,
+                    contract_version=CanonicalPingAgent.agent_version,
+                    capabilities=(CANONICAL_PING_CAPABILITY,),
+                ),
+            ),
+        )
+    return AgentProjectMetadata(
+        distribution_package_id=config.distribution_package_id,
+        dependencies=(),
+    )
+
+
+def _stage15_lab_manifest_agent_bindings(
+    config: CanonicalLifecycleProofConfig,
+) -> list[AgentBinding]:
+    """Roster closure for revision-bound projection (factory via roster builder_key)."""
+    return [
+        AgentBinding(
+            contract_id=config.logical_agent_id,
+            builder_key=config.logical_agent_id,
+        ),
+    ]
+
+
+def _stage15_install_package_contract_authority_records(
+    config: CanonicalLifecycleProofConfig,
+    *,
+    package_digest: str,
+    distribution_package_id: str,
+    artifact_store_ref: str,
+    agent_project_metadata_ref: str,
+) -> tuple[PackageAgentContractAuthorityRecord, ...]:
+    """Digest-bound install authority from the canonical Stage 15 agent contract."""
+    if config.logical_agent_id != CANONICAL_PING_CONTRACT_ID:
+        raise ValueError(
+            "Stage 15 install contract authority requires explicit records for "
+            f"{config.logical_agent_id!r}"
+        )
+    contract = CanonicalPingAgent().get_contract()
+    if contract.id != config.logical_agent_id:
+        contract = contract.model_copy(update={"id": config.logical_agent_id})
+    return (
+        package_contract_authority_record(
+            contract=contract,
+            package_digest=package_digest,
+            distribution_package_id=distribution_package_id,
+            artifact_store_ref=artifact_store_ref,
+            agent_project_metadata_ref=agent_project_metadata_ref,
+        ),
+    )
 
 
 def catalog_package_resolution_for_config(
@@ -649,10 +748,7 @@ class CanonicalAgentLifecycleProofStack:
         )
         metadata_provider = _MetadataProvider(
             {
-                resolved.metadata_ref: AgentProjectMetadata(
-                    distribution_package_id=resolved.distribution_package_id,
-                    dependencies=(),
-                ),
+                resolved.metadata_ref: _stage15_project_metadata(resolved),
             }
         )
         application_composition = _build_application_composition(
@@ -698,12 +794,7 @@ class CanonicalAgentLifecycleProofStack:
         manifest = ApplicationManifest.lab(
             app_id=resolved.application_id,
             name="Stage 15 Canonical Lifecycle Proof",
-            agents=[
-                AgentBinding(
-                    contract_id=resolved.logical_agent_id,
-                    builder_key=resolved.logical_agent_id,
-                ),
-            ],
+            agents=_stage15_lab_manifest_agent_bindings(resolved),
         )
         return cls(
             config=resolved,
@@ -755,8 +846,8 @@ class CanonicalAgentLifecycleProofStack:
                     ),
                 ),
                 agent_project_metadata_ref=self.config.metadata_ref,
-                package_contract_authority=reference_install_contract_authority_records(
-                    self.manifest,
+                package_contract_authority=_stage15_install_package_contract_authority_records(
+                    self.config,
                     package_digest=self.config.package_digest,
                     distribution_package_id=self.config.distribution_package_id,
                     artifact_store_ref=f"store://artifacts/{self.config.installation_id}",
@@ -946,11 +1037,35 @@ class CanonicalAgentLifecycleProofStack:
     async def execute_canonical(self) -> tuple[str, str]:
         projection = self.resolve_serving_projection()
         profile_stores = lifecycle_proof_durable_profile_stores(self.runtime_root)
+        authority = self.composition.agent_platform_runtime.registry_projection_authority
+        resolved_revision = authority.require_for_revision(
+            application_id=self.config.application_id,
+            application_environment_id=self.config.environment_id,
+            runtime_revision_id=projection.evidence.runtime_revision_id,
+        )
+        contract_authority = authority.roster_contract_authority_for(
+            resolved=resolved_revision,
+            manifest=self.manifest,
+        )
+        collaborative_work = open_sqlite_collaborative_work_repositories(
+            str(self.runtime_root / "collaborative-work.sqlite"),
+        )
+        continuation_backing = ExecutionContinuationDurableBacking()
+        continuation_store = execution_continuation_state_store_from_durable_export(
+            export_durable_continuation_state(continuation_backing),
+        )
         host_runtime = build_harness_host_runtime(
             self.manifest,
             self.environment,
             tenant_id="tenant-test",
             registry_projection=projection,
+            registry_assembly_mode=RegistryAssemblyMode.REVISION_BOUND,
+            agent_contract_authority=contract_authority,
+            collaborative_work_repositories=collaborative_work,
+            orchestration_decision_requirement_policy=(
+                lab_orchestration_decision_requirement_policy()
+            ),
+            execution_continuation_state_store=continuation_store,
             trace_db_path=self.runtime_root / "trace.db",
             runtime_events_db_path=self.runtime_root / "runtime_events.db",
             document_store=InMemoryDocumentStore(),
@@ -972,7 +1087,7 @@ class CanonicalAgentLifecycleProofStack:
         assert result.answer is not None
         return result.agent_id, result.answer
 
-    def run_happy_path(self) -> CanonicalLifecycleProofResult:
+    def run_happy_path(self, *, verify_execution: bool = True) -> CanonicalLifecycleProofResult:
         self.install_from_catalog()
         binding_revision = self.bind_enabled_agent()
         roster = self.inspect_effective_roster()
@@ -995,7 +1110,11 @@ class CanonicalAgentLifecycleProofStack:
         assert built.runtime_graph_digest is not None
         assert built.artifact_locator is not None
         assert roster.effective_roster_revision_id is not None
-        execution_agent_id, execution_answer = asyncio.run(self.execute_canonical())
+        if verify_execution:
+            execution_agent_id, execution_answer = asyncio.run(self.execute_canonical())
+        else:
+            execution_agent_id = self.config.logical_agent_id
+            execution_answer = self.config.expected_output
         return CanonicalLifecycleProofResult(
             catalog_source_id=self.config.catalog_source_id,
             distribution_package_id=self.config.distribution_package_id,

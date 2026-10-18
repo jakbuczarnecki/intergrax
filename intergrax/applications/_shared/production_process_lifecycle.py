@@ -53,6 +53,9 @@ from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
 from intergrax.contracts.execution_continuation_state_store import (
     ExecutionContinuationStateStore,
 )
+from intergrax.contracts.governed_external_work_host_store_lifecycle import (
+    OwnedGovernedExternalWorkHostStoreBundle,
+)
 from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store import (
     SQLiteProviderInvocationStore,
@@ -101,8 +104,12 @@ class ProductionProcessLifecycle:
         default=None,
         repr=False,
     )
+    _owned_governed_external_work_host_store_bundle: (
+        OwnedGovernedExternalWorkHostStoreBundle | None
+    ) = field(default=None, repr=False)
     _continuation_closed: bool = field(default=False, repr=False)
     _invocation_closed: bool = field(default=False, repr=False)
+    _governed_external_work_host_store_closed: bool = field(default=False, repr=False)
     _process_closed: bool = field(default=False, repr=False)
 
     @property
@@ -151,6 +158,13 @@ class ProductionProcessLifecycle:
             try:
                 owned_invocation.close()
                 self._invocation_closed = True
+            except BaseException as exc:
+                cleanup_errors.append(exc)
+        owned_gca = self._owned_governed_external_work_host_store_bundle
+        if owned_gca is not None and not self._governed_external_work_host_store_closed:
+            try:
+                owned_gca.close()
+                self._governed_external_work_host_store_closed = True
             except BaseException as exc:
                 cleanup_errors.append(exc)
         self._process_closed = True
@@ -274,6 +288,9 @@ def open_production_process_lifecycle(
         ProductionProcessComposition,
     ]
     | None = None,
+    owned_governed_external_work_host_store_bundle: (
+        OwnedGovernedExternalWorkHostStoreBundle | None
+    ) = None,
 ) -> ProductionProcessLifecycle:
     """
     Open one sanctioned production process lifecycle for supported A1 co-located deployment.
@@ -361,6 +378,25 @@ def open_production_process_lifecycle(
                 raise ProductionProcessLifecycleError(
                     "composition must bind resolved provider_invocation_store",
                 )
+        if owned_governed_external_work_host_store_bundle is not None:
+            bound_bundle = composition.governed_external_work_host_store_bundle
+            if bound_bundle is None:
+                raise ProductionProcessLifecycleError(
+                    "composition must bind governed_external_work_host_store_bundle "
+                    "when owned_governed_external_work_host_store_bundle is supplied",
+                )
+            if (
+                bound_bundle is not
+                owned_governed_external_work_host_store_bundle.host_store_bundle
+            ):
+                raise ProductionProcessLifecycleError(
+                    "composition governed_external_work_host_store_bundle must match "
+                    "owned_governed_external_work_host_store_bundle instance",
+                )
+            if not bound_bundle.is_durable:
+                raise ProductionProcessLifecycleError(
+                    "owned governed external work host store bundle is not durable",
+                )
         lifecycle_services = wire_production_lifecycle_services(
             composition,
             durable_store_bundle=durable_runtime.distribution_store_bundle,
@@ -382,6 +418,9 @@ def open_production_process_lifecycle(
             deployment_adapter=deployment_adapter,
             _owned_continuation_store=continuation_store,
             _owned_invocation_store=owned_invocation,
+            _owned_governed_external_work_host_store_bundle=(
+                owned_governed_external_work_host_store_bundle
+            ),
             registry_projection_rehydrator=durable_runtime.registry_projection_rehydrator,
         )
         serving_store = durable_runtime.distribution_store_bundle.serving_store

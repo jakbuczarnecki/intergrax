@@ -35,7 +35,9 @@ from intergrax.agent_distribution.stores import (
     DeploymentInstanceStore,
     RuntimeRevisionStore,
 )
-from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
+from intergrax.applications._shared.registry_projection import (
+    RegistryProjectionInputBundle,
+)
 from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolver,
 )
@@ -94,6 +96,7 @@ class ServingRuntimeHandoff:
     identity: ServingUnitIdentity
     runtime_agent_factory_resolver: RuntimeAgentFactoryResolver
     colocated_execution_admission: ColocatedServingUnitExecutionAdmission | None = None
+    registry_projection_input_bundle: RegistryProjectionInputBundle | None = None
 
 
 def serving_unit_identity_from_attestation(
@@ -176,12 +179,16 @@ def establish_serving_runtime_handoff(
         identity=identity,
         runtime_agent_factory_resolver=projection_resolver,
         colocated_execution_admission=colocated_execution_admission,
+        registry_projection_input_bundle=projection_input,
     )
     updated = ProductionProcessComposition(
         agent_platform_runtime=composition.agent_platform_runtime,
         agent_capability_runtime=composition.agent_capability_runtime,
         provider_invocation_store=composition.provider_invocation_store,
         execution_continuation_state_store=composition.execution_continuation_state_store,
+        governed_external_work_host_store_bundle=(
+            composition.governed_external_work_host_store_bundle
+        ),
         serving_runtime_handoff=handoff,
     )
     return handoff, updated

@@ -44,6 +44,10 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.middleware_hook_semantics import (
+    LlmInferenceHookPayload,
+    MiddlewareExecutionSubjectFacet,
+)
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.request_identity_spine import (
     assert_untrusted_metadata_identity_compatible,
@@ -61,7 +65,7 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads.canonical import (
-    ContextAssemblyPayloadV2,
+    ContextAssemblyPayloadV4,
     DecisionPayloadV1,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -310,6 +314,12 @@ class UAEPExecutor:
             node_id=exec_ctx.node_id,
             agent_id=contract.id,
             phase=ExecutionPhase.CONTEXT_BUILDING,
+            subject=MiddlewareExecutionSubjectFacet(
+                tenant_id=canonical_runtime_request_tenant_id(request) or None,
+            ),
+            payload=LlmInferenceHookPayload(
+                prompt=request.message or None,
+            ),
             runtime_state={
                 "prompt": request.message or "",
                 "tenant_id": request.tenant_id or "",
@@ -1329,7 +1339,7 @@ class UAEPExecutor:
     ) -> None:
         if self._event_bus is None:
             return
-        typed = ContextAssemblyPayloadV2(
+        typed = ContextAssemblyPayloadV4(
             node_id=node_id,
             context_original_chars=context_original_chars,
             context_final_chars=context_final_chars,

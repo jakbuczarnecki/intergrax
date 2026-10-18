@@ -178,12 +178,14 @@ def bind_colocated_serving_runtime_after_activation(
         identity=handoff.identity,
         runtime_agent_factory_resolver=handoff.runtime_agent_factory_resolver,
         colocated_execution_admission=store_backed_admission,
+        registry_projection_input_bundle=handoff.registry_projection_input_bundle,
     )
     updated = updated.__class__(
         agent_platform_runtime=updated.agent_platform_runtime,
         agent_capability_runtime=updated.agent_capability_runtime,
         provider_invocation_store=updated.provider_invocation_store,
         execution_continuation_state_store=updated.execution_continuation_state_store,
+        governed_external_work_host_store_bundle=updated.governed_external_work_host_store_bundle,
         serving_runtime_handoff=handoff,
     )
     resolved_admission_bind_mode: Literal["grant", "reopen"] = (

@@ -8,7 +8,9 @@
 | **Branch** | `development` |
 | **START_HEAD** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` |
 | **SOURCE_EVIDENCE_SHA** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` — implementation + §C pytest selection evaluated here |
-| **FINAL_COMMIT** | `9850d3e40cddfed2e00eb90631ec462380d6f0f3` — documentation-only delta; **not** a test-execution SHA |
+| **FINAL_COMMIT** | `1b6f9405b939525756dc05ff2c45575ee19d8100` — Package D final dossier @ `PROD-Q-R1-R7-Q-C-PACKAGE-D-FINAL-ACCEPTANCE-DOSSIER` |
+| **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` — F02-05/F02-09 qual nodes |
+| **Package D readiness** | [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) @ `FINAL_COMMIT` — **READY FOR AUDIT** |
 | **Maximum disposition** | **READY FOR AUDIT** (independent operator acceptance pending) |
 
 **Disposition rule:** Historical **P1 / P2 / P3 / E.1 / DISPATCH-Q1 / D1–D4** acceptance **≠** **R7-Q QUALIFIED**. This record consolidates **§C integrated gates** and reconciles them against the P0 gate plan without re-running closed waves.
@@ -109,7 +111,7 @@ uv run pytest -p no:xdist \
 | `test_prod_q_r1_r7_q_c_dim13_strict_process_restart_recovery_gate.py` | 5 |
 | `test_prod_q_r1_r7_q_c_dim14_stale_physical_unit_fail_closed_gate.py` | 7 |
 | `test_prod_q_r1_r7_q_c_dim15_integrated_execution_admission_gate.py` | 8 |
-| `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` | 13 |
+| `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` | 18 @ `a3af29278…` (15 baseline + F02-05 ×2 + F02-09) |
 | `test_prod_q_r1_r7_q_c_dim13_recovery_admission_authority.py` (unit) | 5 |
 | **Total** | **83** |
 
@@ -136,7 +138,7 @@ uv run pytest -p no:xdist \
 | **13** | Recovery after restart | **AD** + **Apps** | D3 reconcile + attest | `test_prod_q_r1_r7_q_c_dim13_*` + unit recovery authority | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C + authority unit) | Pending §C acceptance | — | FRZ-PRD-12, FRZ-REC-* | **READY FOR AUDIT** |
 | **14** | Stale READY / physical-unit loss | **AD** | Reconcile fail-closed | `test_prod_q_r1_r7_q_c_dim14_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | Pending §C acceptance | — | FRZ-PRD-12, FRZ-PRD-09 | **READY FOR AUDIT** |
 | **15** | HTTP execution admission | **Apps** + **AD** | `StoreBackedColocatedServingUnitExecutionAdmission` | `test_prod_q_r1_r7_q_c_dim15_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | P3 partial overlap; §C integrated | — | FRZ-SEC-04, FRZ-PRD-08 | **READY FOR AUDIT** |
-| **16** | Drain, stop, rollback | **AD** | Adapter drain + launcher close | `test_prod_q_r1_r7_q_c_dim16_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** with **documented limitations** (§E) | Pending §C acceptance | See §E — no code change in this task | FRZ-PRD-05 | **READY FOR AUDIT** (scoped; residuals explicit) |
+| **16** | Drain, stop, rollback | **AD** | Adapter drain + launcher close | `test_prod_q_r1_r7_q_c_dim16_*` (+ F02-05/09 @ `a3af29278…`) | `93c17a95…`; impl `4aeb585ea…`; F02 qual `a3af29278…` | **Current** | **VERIFIED** with **documented limitations** (§E) | Independent audit pending — Package D §5.7–§5.8 | F02-14 EBH-5 debt; S2b freeze debt | FRZ-PRD-05 | **READY FOR AUDIT** (scoped; not CLOSED) |
 | **17** | Unsupported topology + missing prod config | **AD** + **Apps** | Topology guards | D1/D1b/D4 slices only | `17e928e4f3264ac73c4efe3a1a23741aff1617dc` | Lab negatives only | **MISSING** | D1 slice acceptance | **Package B** — production credentials/config negative profile | FRZ-PRD-03 | **OPEN** — `ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED` |
 | **18** | Fake adapter reachability = 0 on strict graph | **Apps** | DEC-03 strict graph | P1 module + §C DIM11 reuse | P1 `036912be…`; §C `93c17a95…` | **Current** via DIM11 @ §C SHA | **VERIFIED** @ `SOURCE_EVIDENCE_SHA` (integrated static closure) | P1 operator closed | **Package C** — confirm no drift vs P1 roots if HEAD advances | FRZ-PRD-07, FRZ-PRD-08 | **READY FOR AUDIT** @ §C+P1 lineage |
 | **19** | No silent fallback to reference paths | **Apps** | Single strict opener | DIM11 `test_c_dim11_02`, `05`; D4-03 historical | `93c17a95…`; `0dd51fe1…` | **Current** behavioral @ §C | **VERIFIED** (§C) + historical D4 | Pending §C acceptance | Package C static re-audit on major launcher edits | FRZ-PRD-07, FRZ-PRD-08 | **READY FOR AUDIT** |
@@ -169,7 +171,7 @@ Properties are **proved** only where §C execution or cited prior wave applies @
 
 ## E. DIM16 qualification limitations
 
-Executed @ `SOURCE_EVIDENCE_SHA` in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` (15 tests @ F02 impl candidate SHA).
+Executed in `test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py` — **18** node IDs @ F02 evidence gate `a3af292786d92f4195ac0e453b07310a7d0283ff` (15 baseline + F02-05 ×2 + F02-09); production impl @ `4aeb585ea…`.
 
 | Topic | Recorded behavior |
 |-------|-----------------|
@@ -191,7 +193,11 @@ Post-F02 implementation: authoritative deny precedes revision-dependent drain he
 | Classification | Verdict |
 |----------------|---------|
 | **IN-SCOPE BLOCKER** (F02 open-gate / POST-CLOSE) @ pre-impl SHA | **Mitigated @ `4aeb585ea…`** — reconciliation replay **15 passed** @ `b4e329d12…` (§ Package D §5.6); **READY FOR AUDIT**, not CLOSED |
-| Recommended disposition | **SCOPED ACCEPTANCE CANDIDATE** pending independent audit; **F02-05/09** remain **NOT PROVEN**; **F02-07** satisfied by `test_c_dim16_f03` gate assertion |
+| **F02-05 concurrent shutdown vs admission** | `test_c_dim16_f02_05_*` — **PASS (newly executed @ `a3af29278…`)** |
+| **F02-09 stale handoff (S1)** | `test_c_dim16_f02_09_*` — **PASS (scoped)** @ `a3af29278…` |
+| **F02-09 fresh session / epoch (S2)** | S2a process-restart recovery **PROVEN (scoped)** @ DIM13-02/03; S2b in-process reopen — **TRACKED FREEZE DEBT (C)** — see Package D §5.8 |
+| **F02-14 replaceability** | **PARTIAL — TRACKED FREEZE DEBT (C)** — protocol admission-close; residual `isinstance` on drain helpers |
+| Recommended disposition | Package D **B — SCOPED / PARTIAL ACCEPTANCE CANDIDATE**; DIM16 F02 matrix audit-ready @ `a3af29278…`; **no** further DIM16 child unless operator requires S2b qual |
 
 ---
 
@@ -244,7 +250,7 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 | **B — operator production profiles** | DIM6 mutation policy; DIM17 config/credentials negatives; trusted artifact roots | Operator fixtures | **Package B pytest + evidence** [`PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md) — **READY FOR AUDIT**; DIM6/DIM17 operator profile **OPEN** |
 | **C — reachability @ HEAD** | Re-run P1 roots + DIM11 if launcher/graph changes; DIM18/19 drift check | None for static | With B |
 | **P — PROD-Q-R1 parent** | DIM20 strict external-work / PIS ambiguity | PROD-Q-R1 program | **Not** parallel to claiming R7-Q QUALIFIED |
-| **D — final qualification decision** | Roll up B+C+P + operator sign-off on this §C record | B, P minimum | **Last** — independent readiness [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) **READY FOR AUDIT** @ `b07b7f77…` (DIM16/F02 **IN-SCOPE BLOCKER**) |
+| **D — final qualification decision** | Roll up B+C+P + operator sign-off on this §C record | B, P minimum | **Last** — Package D dossier **READY FOR AUDIT** @ `1b6f9405b939525756dc05ff2c45575ee19d8100` — F02 open-gate **historical**; DIM16 **audit-ready**, not operator CLOSED |
 
 **Recommended next mandatory task:** Operator audit of this record @ `FINAL_COMMIT`, then **Package B** evidence capture (DIM6/DIM17) or **Package P** PROD-Q-R1 progression — whichever program owner prioritizes; **do not** mark **R7-Q QUALIFIED** until Packages B, P, and D complete.
 

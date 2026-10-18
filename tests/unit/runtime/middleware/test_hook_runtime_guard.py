@@ -5,18 +5,39 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import contextmanager
+from typing import Iterator
 
 import pytest
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.events.validating_evidence_persistence_port import (
+    ValidatingEvidencePersistencePort,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookError
 from intergrax.runtime.middleware.base import RuntimeMiddleware
+from intergrax.runtime.events.payload_registry import validate_payload_envelope
+from intergrax.runtime.events.payloads.platform_families import PlatformHookViolationPayloadV1
+from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError, assert_runtime_event_schema
+from intergrax.runtime.events.spine_consolidation import (
+    build_platform_signal_event,
+    get_platform_kind_entry,
+)
 from intergrax.runtime.middleware.hook_runtime_guard import invoke_guarded_hook
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -64,6 +85,30 @@ def _ctx() -> HookContext:
     )
 
 
+@contextmanager
+def _emitting_hook_context(
+    *,
+    phase: ExecutionPhase = ExecutionPhase.INTAKE,
+) -> Iterator[HookContext]:
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    ctx = HookContext(
+        task_id=task_id,
+        run_id=run_id,
+        phase=phase,
+        runtime_state={},
+    )
+    try:
+        yield ctx
+    finally:
+        reset_active_execution_identity(token)
+
+
 @pytest.mark.asyncio
 async def test_invoke_guarded_hook_maps_exception_to_hook_error() -> None:
     async def _boom() -> HookResult:
@@ -92,7 +137,8 @@ async def test_pipeline_timeout_blocks_and_emits_event() -> None:
         hook_timeout_seconds=0.01,
         event_bus=bus,
     )
-    result = await pipeline.run_before(HookPoint.BEFORE_TASK_INTAKE, _ctx())
+    with _emitting_hook_context() as ctx:
+        result = await pipeline.run_before(HookPoint.BEFORE_TASK_INTAKE, ctx)
     assert result.action is HookAction.BLOCK
     assert result.reason is not None
     assert result.reason.startswith("hook_timeout:")
@@ -126,13 +172,239 @@ async def test_pipeline_non_allow_emits_hook_blocked_event() -> None:
         hook_timeout_seconds=1.0,
         event_bus=bus,
     )
-    result = await pipeline.run_before(HookPoint.BEFORE_TASK_INTAKE, _ctx())
+    with _emitting_hook_context() as ctx:
+        result = await pipeline.run_before(HookPoint.BEFORE_TASK_INTAKE, ctx)
     assert result.action is HookAction.BLOCK
     assert any(
         event.event_type is RuntimeEventType.DOMAIN_SIGNAL
         and event.event_kind == "platform.hook.hook_blocked"
         for event in events
     )
+
+
+def test_platform_hook_blocked_with_context_building_phase_override_fails_schema_guard() -> None:
+    """Regression: top-level phase must not override platform kind catalog."""
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    try:
+        event = build_platform_signal_event(
+            kind="platform.hook.hook_blocked",
+            task_id=task_id,
+            run_id=run_id,
+            phase=ExecutionPhase.CONTEXT_BUILDING,
+            payload={"hook_name": "PromptDefenseMiddleware"},
+        )
+    finally:
+        reset_active_execution_identity(token)
+    with pytest.raises(RuntimeEventSchemaError, match="phase mismatch"):
+        assert_runtime_event_schema(event)
+
+
+@pytest.mark.asyncio
+async def test_hook_violation_emits_catalog_phase_and_source_execution_phase() -> None:
+    bus = RuntimeEventBus()
+    events: list = []
+    bus.subscribe(lambda event: events.append(event))
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    ctx = HookContext(
+        task_id=task_id,
+        run_id=run_id,
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        runtime_state={},
+    )
+
+    async def _block() -> HookResult:
+        return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+    try:
+        result = await invoke_guarded_hook(
+            hook_name="demo_block",
+            point=HookPoint.BEFORE_CONTEXT_BUILD,
+            ctx=ctx,
+            coro_factory=_block,
+            timeout_seconds=1.0,
+            event_bus=bus,
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+    assert result.action is HookAction.BLOCK
+    assert len(events) == 1
+    event = events[0]
+    assert event.event_kind == "platform.hook.hook_blocked"
+    catalog = get_platform_kind_entry("platform.hook.hook_blocked")
+    assert catalog is not None
+    assert event.phase is catalog.phase
+    assert event.phase is ExecutionPhase.STEP_EXECUTION
+    typed = validate_payload_envelope(event.payload)
+    assert isinstance(typed, PlatformHookViolationPayloadV1)
+    assert typed.source_execution_phase is ExecutionPhase.CONTEXT_BUILDING
+    assert_runtime_event_schema(event)
+    with pytest.raises(RuntimeEventSchemaError, match="phase mismatch"):
+        assert_runtime_event_schema(
+            event.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING})
+        )
+
+
+@pytest.mark.asyncio
+async def test_hook_blocked_emitted_signal_passes_full_schema_guard_with_typed_envelope() -> None:
+    """Q1-A acceptance: invoke_guarded_hook emission passes assert_runtime_event_schema."""
+    bus = RuntimeEventBus()
+    events: list = []
+    bus.subscribe(lambda event: events.append(event))
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    ctx = HookContext(
+        task_id=task_id,
+        run_id=run_id,
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        runtime_state={},
+    )
+
+    async def _block() -> HookResult:
+        return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+    try:
+        await invoke_guarded_hook(
+            hook_name="demo_block",
+            point=HookPoint.BEFORE_CONTEXT_BUILD,
+            ctx=ctx,
+            coro_factory=_block,
+            timeout_seconds=1.0,
+            event_bus=bus,
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+    event = events[0]
+    assert_runtime_event_schema(event)
+    typed = validate_payload_envelope(event.payload)
+    assert isinstance(typed, PlatformHookViolationPayloadV1)
+    assert typed.hook_name == "demo_block"
+    assert typed.point is HookPoint.BEFORE_CONTEXT_BUILD
+
+
+@pytest.mark.asyncio
+async def test_hook_blocked_emitted_signal_rejects_unknown_payload_schema_version() -> None:
+    bus = RuntimeEventBus()
+    events: list = []
+    bus.subscribe(lambda event: events.append(event))
+    with _emitting_hook_context(phase=ExecutionPhase.CONTEXT_BUILDING) as ctx:
+
+        async def _block() -> HookResult:
+            return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+        await invoke_guarded_hook(
+            hook_name="demo_block",
+            point=HookPoint.BEFORE_CONTEXT_BUILD,
+            ctx=ctx,
+            coro_factory=_block,
+            timeout_seconds=1.0,
+            event_bus=bus,
+        )
+
+    emitted = events[0]
+    event = emitted.model_copy(
+        update={
+            "payload": {
+                **emitted.payload,
+                "payload_schema_version": 99,
+            }
+        }
+    )
+    with pytest.raises(RuntimeEventSchemaError, match="payload_schema_version mismatch"):
+        assert_runtime_event_schema(event)
+
+
+@pytest.mark.asyncio
+async def test_hook_blocked_durable_path_accepted_by_validating_persistence_port() -> None:
+    """Q1-B acceptance: BLOCK published once; store retains schema-valid event."""
+    store = InMemoryRuntimeEventStore()
+    bus = RuntimeEventBus(persistence=store, record_history=False)
+    assert isinstance(bus.persistence, ValidatingEvidencePersistencePort)
+
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    ctx = HookContext(
+        task_id=task_id,
+        run_id=run_id,
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        runtime_state={},
+    )
+
+    async def _block() -> HookResult:
+        return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+    try:
+        result = await invoke_guarded_hook(
+            hook_name="demo_block",
+            point=HookPoint.BEFORE_CONTEXT_BUILD,
+            ctx=ctx,
+            coro_factory=_block,
+            timeout_seconds=1.0,
+            event_bus=bus,
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+    assert result.action is HookAction.BLOCK
+    stored = store.list_positioned_for_run(run_id, tenant_id="")
+    assert len(stored) == 1
+    event = stored[0].event
+    assert event.event_kind == "platform.hook.hook_blocked"
+    assert event.run_id == run_id
+    assert event.task_id == task_id
+    assert event.execution_id == execution_id
+    assert_runtime_event_schema(event)
+    typed = validate_payload_envelope(event.payload)
+    assert isinstance(typed, PlatformHookViolationPayloadV1)
+    assert typed.hook_name == "demo_block"
+    assert typed.source_execution_phase is ExecutionPhase.CONTEXT_BUILDING
+
+
+@pytest.mark.asyncio
+async def test_hook_violation_publish_failure_does_not_allow_execution() -> None:
+    class _FailingPublishBus(RuntimeEventBus):
+        async def publish(self, event):  # type: ignore[override]
+            raise RuntimeError("event bus unavailable")
+
+    bus = _FailingPublishBus()
+
+    async def _block() -> HookResult:
+        return HookResult(action=HookAction.BLOCK, reason="policy_denied")
+
+    with _emitting_hook_context() as ctx:
+        with pytest.raises(RuntimeError, match="event bus unavailable"):
+            await invoke_guarded_hook(
+                hook_name="demo_block",
+                point=HookPoint.BEFORE_TASK_INTAKE,
+                ctx=ctx,
+                coro_factory=_block,
+                timeout_seconds=1.0,
+                event_bus=bus,
+            )
 
 
 @pytest.mark.asyncio
@@ -142,10 +414,24 @@ async def test_nexus_lifecycle_coordinator_fails_closed_on_hook_error() -> None:
 
     pipeline = MiddlewarePipeline(middleware=[_RaisingMiddleware()], hook_timeout_seconds=1.0)
     coordinator = NexusLifecycleHookCoordinator(pipeline)
-    task = Task(task_id="task-hook-err", tenant_id="t1", user_id="u1", message="hi")
-    with pytest.raises(NexusLifecycleHookError, match="hook_error"):
-        await coordinator.before(
-            HookPoint.BEFORE_TASK_INTAKE,
-            task,
-            phase=ExecutionPhase.INTAKE,
-        )
+    run_id = mint_run_id()
+    task = Task(
+        task_id=str(mint_task_id()),
+        tenant_id="t1",
+        user_id="u1",
+        message="hi",
+    )
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    try:
+        with pytest.raises(NexusLifecycleHookError, match="hook_error"):
+            await coordinator.before(
+                HookPoint.BEFORE_TASK_INTAKE,
+                task,
+                phase=ExecutionPhase.INTAKE,
+            )
+    finally:
+        reset_active_execution_identity(token)

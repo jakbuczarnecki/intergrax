@@ -11,6 +11,11 @@ from typing import TYPE_CHECKING
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.events.payload_registry import runtime_event_with_payload
+from intergrax.runtime.events.payloads.platform_families import (
+    PlatformHookViolationKind,
+    PlatformHookViolationPayloadV1,
+)
 from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
 
 if TYPE_CHECKING:
@@ -93,23 +98,22 @@ async def _emit_hook_violation(
         if violation_kind in {"timeout", "error"}
         else EventSeverity.WARNING
     )
-    await event_bus.publish(
-        build_platform_signal_event(
-            kind=kind,
-            task_id=ctx.task_id,
-            run_id=ctx.run_id,
-            node_id=ctx.node_id,
-            agent_id=ctx.agent_id,
-            step_id=ctx.step_id,
-            phase=ctx.phase,
-            severity=severity,
-            correlation_id=ctx.task_id,
-            payload={
-                "hook_name": hook_name,
-                "point": point.value,
-                "action": result.action.value,
-                "reason": result.reason,
-                "violation_kind": violation_kind,
-            },
-        )
+    typed_payload = PlatformHookViolationPayloadV1(
+        hook_name=hook_name,
+        point=point,
+        action=result.action,
+        reason=result.reason or "",
+        violation_kind=PlatformHookViolationKind(violation_kind),
+        source_execution_phase=ctx.phase,
     )
+    event = build_platform_signal_event(
+        kind=kind,
+        task_id=ctx.task_id,
+        run_id=ctx.run_id,
+        node_id=ctx.node_id,
+        agent_id=ctx.agent_id,
+        step_id=ctx.step_id,
+        severity=severity,
+        correlation_id=ctx.task_id,
+    )
+    await event_bus.publish(runtime_event_with_payload(event, typed_payload))

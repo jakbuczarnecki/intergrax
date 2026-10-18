@@ -69,6 +69,38 @@ async def test_prompt_defense_middleware_blocks_injection_pattern() -> None:
     assert result.action == HookAction.BLOCK
 
 
+@pytest.mark.asyncio
+async def test_prompt_defense_allows_benign_before_context_build_with_llm_payload() -> None:
+    middleware = PromptDefenseMiddleware(default_prompt_defense_profile())
+    from intergrax.contracts.middleware_hook_semantics import LlmInferenceHookPayload
+
+    ctx = HookContext(
+        task_id="task-uaep",
+        run_id="run-uaep",
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        payload=LlmInferenceHookPayload(prompt="hello team"),
+        runtime_state={"prompt": "hello team"},
+    )
+    result = await middleware.before(HookPoint.BEFORE_CONTEXT_BUILD, ctx)
+    assert result.action != HookAction.BLOCK
+
+
+@pytest.mark.asyncio
+async def test_prompt_defense_blocks_before_context_build_without_llm_payload() -> None:
+    """Missing typed payload remains fail-closed under strict prompt defense."""
+    middleware = PromptDefenseMiddleware(default_prompt_defense_profile())
+    ctx = HookContext(
+        task_id="task-uaep",
+        run_id="run-uaep",
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        runtime_state={"prompt": "benign task"},
+    )
+    result = await middleware.before(HookPoint.BEFORE_CONTEXT_BUILD, ctx)
+    assert result.action == HookAction.BLOCK
+    assert result.reason is not None
+    assert "LlmInferenceHookPayload" in result.reason
+
+
 def test_register_application_security_hooks_wires_all_enabled_defenses() -> None:
     registry = AgentRegistry()
     loop = NexusLoop(registry)

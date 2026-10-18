@@ -29,9 +29,13 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapt
 from intergrax.applications._shared.colocated_serving_runtime_composition import (
     ColocatedServingAdmissionTopologyError,
 )
+from intergrax.applications._shared.serving_runtime_handoff import ServingRuntimeHandoffError
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingLauncherError,
     StrictProductionServingSession,
+)
+from intergrax.applications._shared.colocated_serving_unit_execution_admission import (
+    StoreBackedColocatedServingUnitExecutionAdmission,
 )
 from intergrax.runtime.task.task import TaskResult
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
@@ -602,6 +606,125 @@ def test_c_dim16_f02_admission_close_failure_withholds_cleanup(
         assert unit.admission.admission_closed() is False
         assert fixture.session._closed is False
         assert not fixture.session.lifecycle._process_closed
+
+
+@pytest.mark.parametrize(
+    "ordering",
+    (
+        "admission_before_shutdown",
+        "shutdown_before_admission",
+    ),
+)
+def test_c_dim16_f02_05_concurrent_shutdown_and_physical_admission_serialization(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    ordering: str,
+) -> None:
+    """F02-05 — physical gate serializes admitted work vs admission-close at strict session boundary."""
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id=f"rev-c-dim16-f02-05-{ordering}",
+    ) as fixture:
+        unit = fixture.adapter._units[fixture.unit_ref]
+        deny_mock = AsyncMock(return_value=_completed_task_result())
+        if ordering == "admission_before_shutdown":
+            admitted = threading.Event()
+            release_in_flight = threading.Event()
+
+            async def _inner_hold(*_args, **_kwargs) -> TaskResult:
+                admitted.set()
+                assert release_in_flight.wait(timeout=5.0)
+                return _completed_task_result()
+
+            with patch(_INNER_DELEGATE, side_effect=_inner_hold):
+                with TestClient(fixture.app) as client:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                        in_flight = pool.submit(
+                            lambda: client.post(
+                                fixture.run_url,
+                                json=_run_request_json(fixture.tenant_id),
+                                headers=strict_http_auth_headers(),
+                            ),
+                        )
+                        assert admitted.wait(timeout=5.0)
+                        assert unit.admission.in_flight_count() == 1
+                        fixture.session.close()
+                        assert unit.admission.admission_closed() is True
+                        release_in_flight.set()
+                        in_flight_response = in_flight.result(timeout=10.0)
+                    assert in_flight_response.status_code == 200
+                    assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
+                    with patch(_INNER_DELEGATE, deny_mock):
+                        after = client.post(
+                            fixture.run_url,
+                            json=_run_request_json(fixture.tenant_id),
+                            headers=strict_http_auth_headers(),
+                        )
+            assert after.status_code == 502
+            deny_mock.assert_not_called()
+            return
+
+        assert ordering == "shutdown_before_admission"
+        fixture.session.close()
+        assert unit.admission.admission_closed() is True
+        with patch(_INNER_DELEGATE, deny_mock):
+            with TestClient(fixture.app) as client:
+                denied = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
+        assert denied.status_code == 502
+        deny_mock.assert_not_called()
+        assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
+
+
+def test_c_dim16_f02_09_new_strict_session_rejects_stale_handoff_execution_authorization(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """F02-09 — closed strict session handoff cannot reuse execution authority (HTTP + direct admit)."""
+    revision_id = "rev-c-dim16-f02-09-stale-handoff"
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id=revision_id,
+    ) as fixture:
+        stale_handoff = fixture.session.serving_runtime_handoff
+        assert stale_handoff is not None
+        stale_admission = stale_handoff.colocated_execution_admission
+        assert stale_admission is not None
+        assert isinstance(stale_admission, StoreBackedColocatedServingUnitExecutionAdmission)
+        unit_ref = fixture.unit_ref
+        closed_unit = fixture.adapter._units[unit_ref]
+        authorized_mock = AsyncMock(return_value=_completed_task_result())
+        with patch(_INNER_DELEGATE, authorized_mock):
+            with TestClient(fixture.app) as client:
+                before_close = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
+                assert before_close.status_code == 200
+                assert authorized_mock.call_count == 1
+                authorized_mock.reset_mock()
+                fixture.session.close()
+                assert closed_unit.admission.admission_closed() is True
+                stale_http = client.post(
+                    fixture.run_url,
+                    json=_run_request_json(fixture.tenant_id),
+                    headers=strict_http_auth_headers(),
+                )
+        assert stale_http.status_code == 502
+        authorized_mock.assert_not_called()
+
+        with pytest.raises(
+            (ServingRuntimeHandoffError, VenvBundleColocatedDeploymentError),
+            match="not admitting",
+        ):
+            stale_admission.admit_execution(unit_ref)
+        _assert_production_slot_released()
 
 
 def test_c_dim16_f06_emergency_revocation_unit_isolation(
