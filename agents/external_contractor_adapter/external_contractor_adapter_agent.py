@@ -15,6 +15,9 @@ from intergrax.agents.authoring.patterns.types import (
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
+from intergrax.contracts.sanctioned_external_work_operation import (
+    SanctionedExternalWorkOperationPort,
+)
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
@@ -73,10 +76,16 @@ class ExternalContractorAdapterAgent(ReflexAgent):
         *,
         external_work: ExternalWorkIntegration | None = None,
         authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
+        sanctioned_operation_port: SanctionedExternalWorkOperationPort | None = None,
+        require_sanctioned_external_work_mutations: bool = False,
     ) -> None:
         # Host / tests inject Protocol implementations — never constructed here.
         self._external_work = external_work
         self._authorization_boundary = authorization_boundary
+        self._sanctioned_operation_port = sanctioned_operation_port
+        self._require_sanctioned_external_work_mutations = (
+            require_sanctioned_external_work_mutations
+        )
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         from intergrax.agents.defaults import harness_production_mode
@@ -125,6 +134,10 @@ class ExternalContractorAdapterAgent(ReflexAgent):
             step_ctx,
             external_work=self._external_work,
             authorization_boundary=self._authorization_boundary,
+            sanctioned_operation_port=self._sanctioned_operation_port,
+            require_sanctioned_external_work_mutations=(
+                self._require_sanctioned_external_work_mutations
+            ),
         )
 
     def evaluate(

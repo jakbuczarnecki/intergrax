@@ -729,3 +729,89 @@ def test_r13_asgi_lifespan_fatal_shutdown_propagates_without_invalid_exception_g
     assert not owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
         fixture.session,
     )
+
+
+def test_h09_integrated_strict_http_reflex_create_traverses_sanctioned_pis(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    import asyncio
+
+    from external_contractor_adapter.external_contractor_adapter_agent import (
+        ExternalContractorAdapterAgent,
+    )
+    from governed_contractor_application.host.agent_builders import (
+        build_governed_contractor_agent_builders,
+    )
+    from governed_contractor_application.manifest import build_governed_contractor_manifest
+    from intergrax.contracts.agent_step_context import AgentStepContext
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PRINCIPAL,
+        _QUAL_WORKSPACE,
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-h09-reflex-create",
+    )
+    host_runtime = fixture.app.state.governed_contractor_host_runtime
+    assert host_runtime.require_sanctioned_external_work_mutations is True
+    assert host_runtime.sanctioned_external_work_operation_port is not None
+    session_resources = fixture.app.state.governed_external_work_host_session_resources
+    adapter = session_resources.production_runtime.adapter
+    assert adapter._invocation_dispatch is not None
+
+    harness = fixture.app.state.harness_runtime
+    manifest = build_governed_contractor_manifest()
+    binding = manifest.agents[0]
+    reflex_agent = build_governed_contractor_agent_builders(host_runtime)[
+        ExternalContractorAdapterAgent
+    ](harness.env_wiring.build_context, binding)
+    assert reflex_agent._require_sanctioned_external_work_mutations is True
+    assert reflex_agent._sanctioned_operation_port is not None
+
+    intents_before = list_intent_invocation_ids(fixture.provider_invocation_db)
+    run_id, attempt_id, execution_id = default_gr3_identity_bundle()[1:]
+    task_scope = host_runtime.active_execution_task_scope
+    assert task_scope is not None
+    task_id = task_scope.resolve_current_task_scope(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    meta = external_work_http_metadata(
+        tenant_id=fixture.tenant_id,
+        idempotency_key="idem-h09-reflex-create",
+        workspace_ref=_QUAL_WORKSPACE,
+    )
+    meta["external_work.principal_id"] = _QUAL_PRINCIPAL
+    step = AgentStepContext(
+        tenant_id=fixture.tenant_id,
+        task_id=str(task_id),
+        run_id=str(run_id),
+        message="strict reflex external work qualification",
+        metadata=meta,
+    )
+    with bound_gr3_active_execution(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=fixture.tenant_id,
+        governance_workspace_id=_QUAL_WORKSPACE,
+        governance_principal_id=_QUAL_PRINCIPAL,
+    ):
+        async def _run_reflex() -> dict[str, object]:
+            observation = await reflex_agent.perceive(step)
+            reasoning = await reflex_agent.reason(step, observation)
+            return await reflex_agent.act(step, reasoning)
+
+        output = asyncio.run(_run_reflex())
+    summary = output.get("domain_summary")
+    assert isinstance(summary, dict)
+    assert summary.get("used") is True
+    assert fixture.external_work_fake.create_calls == 1
+    intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
+    assert len(intents_after) == len(intents_before) + 1
+

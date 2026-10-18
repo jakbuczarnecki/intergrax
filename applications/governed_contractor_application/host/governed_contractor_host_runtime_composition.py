@@ -28,6 +28,9 @@ from governed_contractor_application.host.collaborative_work_boundary import (
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
+from intergrax.contracts.sanctioned_external_work_operation import (
+    SanctionedExternalWorkOperationPort,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +45,8 @@ class GovernedContractorHostRuntimeComposition:
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None
     active_execution_task_scope: ActiveExecutionTaskScopePort | None = None
     host_attestor: HostAttestor | None = None
+    sanctioned_external_work_operation_port: SanctionedExternalWorkOperationPort | None = None
+    require_sanctioned_external_work_mutations: bool = False
 
 
 def resolve_production_runtime_policy_bundle_from_settings(
@@ -117,6 +122,10 @@ def compose_governed_contractor_host_runtime(
                 task_scope if task_scope is not None else base.active_execution_task_scope
             ),
             host_attestor=host_attestor if host_attestor is not None else base.host_attestor,
+            sanctioned_external_work_operation_port=base.sanctioned_external_work_operation_port,
+            require_sanctioned_external_work_mutations=(
+                base.require_sanctioned_external_work_mutations
+            ),
         )
 
     if (
@@ -166,6 +175,10 @@ def compose_governed_contractor_host_runtime(
         collaborative_work_repositories=resolved_cw,
         active_execution_task_scope=resolved_task_scope,
         host_attestor=host_attestor if host_attestor is not None else base.host_attestor,
+        sanctioned_external_work_operation_port=base.sanctioned_external_work_operation_port,
+        require_sanctioned_external_work_mutations=(
+            base.require_sanctioned_external_work_mutations
+        ),
     )
 
 
