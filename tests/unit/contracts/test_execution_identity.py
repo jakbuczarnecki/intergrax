@@ -585,6 +585,7 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
         tenant_id="t1",
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=minimal_runtime_checkpoint(
             task_id=task.task_id,
             run_id=run_id,

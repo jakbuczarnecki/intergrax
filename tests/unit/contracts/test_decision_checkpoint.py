@@ -58,6 +58,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
     DecisionCheckpointPersistence,
+    MaterializedDecisionCheckpoint,
     load_decision_checkpoint,
     save_decision_checkpoint,
 )
@@ -225,6 +226,20 @@ class _FakeDecisionCheckpointPersistence(
         key: object,
     ) -> DecisionCheckpointState[IncidentDecisionPayload] | None:
         return self._store.get(key)
+
+    def load_materialized(
+        self,
+        *,
+        key: object,
+    ) -> MaterializedDecisionCheckpoint[IncidentDecisionPayload] | None:
+        checkpoint = self._store.get(key)
+        if checkpoint is None:
+            return None
+        return MaterializedDecisionCheckpoint(
+            key=checkpoint.finalization.key,
+            checkpoint=checkpoint,
+            snapshot_revision=1,
+        )
 
     def save(
         self,

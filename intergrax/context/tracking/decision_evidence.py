@@ -66,7 +66,7 @@ def _provider_outcome(outcome: ContextProviderCollectionOutcome) -> dict[str, An
         "fragment_count": outcome.fragment_count,
         "provider": _provider_descriptor_entry(outcome.descriptor),
         "reason_code": outcome.reason_code,
-        "status": outcome.status.value,
+        "status": outcome.status,
     }
 
 

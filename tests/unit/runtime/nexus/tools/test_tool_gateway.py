@@ -49,6 +49,7 @@ _GATEWAY_RUN_ID = "run_00000000000000000000000000000001"
 @pytest.mark.gate
 async def test_tool_gateway_capability_plan_invokes_runtime():
     state = MagicMock()
+    state.tenant_id = "tenant-1"
     state.run_id = _GATEWAY_RUN_ID
     state.task_id = _GATEWAY_TASK_ID
     state.used_rag = False
@@ -88,6 +89,7 @@ async def test_tool_gateway_capability_plan_invokes_runtime():
 @pytest.mark.gate
 async def test_tool_gateway_denies_unknown_tool_when_not_allowed():
     state = MagicMock()
+    state.tenant_id = "tenant-1"
     state.run_id = _GATEWAY_RUN_ID
     state.task_id = _GATEWAY_TASK_ID
 
@@ -109,6 +111,7 @@ async def test_tool_gateway_denies_unknown_tool_when_not_allowed():
 @pytest.mark.gate
 async def test_tool_gateway_single_rag_capability():
     state = MagicMock()
+    state.tenant_id = "tenant-1"
     state.run_id = _GATEWAY_RUN_ID
     state.task_id = _GATEWAY_TASK_ID
     state.used_rag = True
@@ -138,6 +141,7 @@ async def test_tool_gateway_single_rag_capability():
 @pytest.mark.gate
 async def test_tool_gateway_capability_plan_prefers_tool_ids_without_legacy_flags():
     state = MagicMock()
+    state.tenant_id = "tenant-1"
     state.run_id = _GATEWAY_RUN_ID
     state.task_id = _GATEWAY_TASK_ID
     state.used_rag = False
