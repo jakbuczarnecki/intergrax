@@ -2,10 +2,11 @@
 
 | Field | Value |
 |---|---|
-| Status | **READY FOR AUDIT — D03-A RATIFICATION READINESS — OPERATOR DECISIONS PENDING** |
+| Status | **READY FOR AUDIT — D03-A POLICY CONSOLIDATION — ACCEPTED POLICY IS NOT INFRASTRUCTURE PROOF** |
 | Date | 2026-10-18 |
 | Branch | `development` |
 | Inspected baseline | `0ba7d5bfd5324fe66d5cd990ff2dafba2ee4d39a` |
+| Policy consolidation baseline | `2ba07f207c9b8ff93788c447886710c60f63ab86` |
 | Parent | `PROD-Q-R1-R7-Q-REFLEX-EXTERNAL-WORK-ADMISSION-IMPL-01` — OPEN/BLOCKED |
 | Stage | `D03-A / OD-D03-A-03–08` |
 | Design source | [Trusted anchor backend and trust domain proposal](PROD_Q_R1_R7_Q_D03_A_TRUSTED_ANCHOR_BACKEND_TRUST_DOMAIN_PROPOSAL.md) |
@@ -15,11 +16,13 @@
 | FRZ promotion | **0** |
 | Test execution | `pytest = 0`; `uv run = 0` |
 
-This record consolidates the unresolved operator decisions OD-D03-A-03 through OD-D03-A-08. It does not copy the technical proposal, does not ratify any of those decisions, and does not authorize implementation, provisioning, credentials, purchases, migrations, new contracts, or runtime ports.
+This record consolidates operator decisions OD-D03-A-03 through OD-D03-A-08. It does not copy the technical proposal. Accepted policy and accepted architectural direction are not proof of cloud infrastructure, not ratification of a backend, and not authorization to implement, provision, purchase, migrate, add a contract, or open a runtime port.
 
 OD-D03-A-01 stays ratified as a mechanism class only. OD-D03-A-02 stays a conditional preferred service choice: Cloud Spanner Enterprise Plus base configuration `eur3`, plus Azure Blob Storage general-purpose v2 Standard, RA-GZRS, primary region North Europe, immutable append-blob witness. No other technology is selected. OD-D03-A-09 and OD-D03-A-10 receive no disposition.
 
-A recommendation in this document is not an operator decision.
+D03-A-LOCAL-01 stays **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `302e7fa74b745d10f9552df0a6eb9c702d5ce033`. This consolidation does not reopen it and does not change that implementation. Section 2 is the pre-LOCAL-01 inspection at `0ba7d5bfd5324fe66d5cd990ff2dafba2ee4d39a`. It is not a new inventory.
+
+A recommendation the operator has not accepted remains a recommendation. The dispositions in §11 are the operator decisions for this consolidation.
 
 ## 1. Current-HEAD safety
 
@@ -77,12 +80,14 @@ PIS remains the invocation intent/outcome owner. GCA remains the execution/GER/F
 | Evidence state | Meaning |
 |---|---|
 | `DOCUMENTED` | A canonical repository record or a vendor page inspected for this package states the fact. |
+| `ACCEPTED POLICY` | The operator accepted the policy. It is not cloud infrastructure, IAM, or durability proof. |
+| `ACCEPTED ARCHITECTURAL DIRECTION` | The operator accepted the direction for a later implementation. It does not authorize that implementation and does not prove replaceability. |
 | `OPERATOR CONFIRMATION REQUIRED` | The fact is an organizational or policy choice. It is not true until the operator records it. |
 | `EXECUTION EVIDENCE REQUIRED` | The property can be shown only by configuration inspection or a controlled test. It has not been run. |
 | `BLOCKED` | A mandatory D03-A condition is unmet. |
 | `NOT APPLICABLE — WITH EVIDENCE` | The property does not apply to this delta, and the reason is recorded. |
 
-Assumptions are never written as guarantees. No decision below is ratified.
+Assumptions are never written as guarantees. Accepted policy is not infrastructure ratification.
 
 ## 4. OD-D03-A-03 — Trust-domain independence
 
@@ -94,7 +99,7 @@ PIS/GCA backup and restore authority is a third domain. It cannot mutate the anc
 
 ### 4.2 Recommended decision
 
-Adopt the separation-of-authority policy in §4.3 as the acceptance policy. Do not treat it as ratified, and do not treat it as evidence that such administrators exist.
+The operator has accepted the §4.3 separation policy and OP-TRUST-07 as residual risk. That acceptance is not evidence that such administrators exist and is not proof of real administrative independence.
 
 Accept **OP-TRUST-07** as residual risk unless the operator requires resistance to compromise of a legitimate transition writer. Storage immutability does not stop that writer from appending a forward seal or causing denial of service. If that resistance is required:
 
@@ -155,8 +160,8 @@ No identity graph was inspected. Independence is not claimed.
 | Acceptance criteria | A dated export, with inheritance expanded, shows none of the collapsing paths in §4.4. Break-glass is distinct, hardware-protected, and two-person in each domain. Shared Key and SAS are disabled. |
 | Rejection criteria | Any shared human, group, CI, federation admin, or break-glass path; any unexpanded inherited owner; any inability to enumerate a path; any requirement to resist transition-writer compromise without a new architecture decision. |
 | Blocker classification | **IN-SCOPE BLOCKER** |
-| Operator decision required | Accept this separation policy and OP-TRUST-07, or reject it. Rejection of OP-TRUST-07 is `STOP — ARCHITECTURE DECISION REQUIRED`. |
-| Evidence state | **OPERATOR CONFIRMATION REQUIRED**. Vendor IAM primitives: **DOCUMENTED**. Configured graph: **BLOCKED**. |
+| Operator decision required | Recorded. Rejection of OP-TRUST-07 would have been `STOP — ARCHITECTURE DECISION REQUIRED`. That rejection was not made. |
+| Evidence state | Policy: **ACCEPTED POLICY**. OP-TRUST-07: accepted residual risk, conditional on later proof of real administrative independence. Vendor IAM primitives: **DOCUMENTED**. Configured graph: **BLOCKED**. Not cloud infrastructure proof. |
 
 ## 5. OD-D03-A-04 — History scope and tenant isolation
 
@@ -170,7 +175,7 @@ Missing or conflicting environment identity, and missing or conflicting tenant i
 
 ### 5.2 Recommended decision
 
-Keep the proposal's conservative environment-level `EnvironmentHistoryScopeIdentity` as the only scope eligible for a future implementation. Do not activate per-tenant anchors.
+The operator has accepted environment-scoped history as the only active scope, with mandatory tenant isolation. Tenant-specific anchors stay inactive. That acceptance is not runtime isolation proof.
 
 ### 5.3 Future acceptance requirements
 
@@ -214,8 +219,8 @@ Historical TENANT-X acceptance does not certify a future Spanner or Azure deploy
 | Acceptance criteria | Operator explicitly accepts environment-level scope and the prohibition on tenant-level histories until the future acceptance table is proven. |
 | Rejection criteria | Any request to create per-tenant anchors now, or any design that treats the shared environment head as cross-tenant authority. |
 | Blocker classification | **IN-SCOPE BLOCKER** for the unratified scope decision and the unproven future isolation. This documentation delta itself is **NOT APPLICABLE — WITH EVIDENCE** for runtime tenant isolation. |
-| Operator decision required | Accept environment-level scope as the conservative default, or reject it. Silence is not acceptance. |
-| Evidence state | Design constraint: **DOCUMENTED**. Operator acceptance: **OPERATOR CONFIRMATION REQUIRED**. Runtime isolation: **EXECUTION EVIDENCE REQUIRED**. |
+| Operator decision required | Recorded. |
+| Evidence state | Policy: **ACCEPTED POLICY** — environment-scoped history, mandatory tenant isolation, tenant-specific anchors inactive. Runtime isolation for this mechanism: **EXECUTION EVIDENCE REQUIRED**. Not cloud infrastructure proof. |
 
 ## 6. OD-D03-A-05 — IAM and workload authorization
 
@@ -225,7 +230,7 @@ Runtime readers, transition writers, provisioning, reconciliation, security revo
 
 ### 6.2 Recommended decision
 
-Use proposal §6.3 as the privilege baseline. Ratify it only after the operator accepts the minimums and forbids below, and only after negative access tests exist. Do not invent project IDs, principals, or role resource names.
+The operator has accepted §6.3 as the privilege baseline, including separated operational capabilities, short-lived workload federation, and the prohibition of ordinary runtime administrator credentials. Actual IAM remains unproven. Do not invent project IDs, principals, or role resource names.
 
 If resistance to compromise of `AnchorTransitionWriter` is required beyond OP-TRUST-07, do not add a second service inside this decision:
 
@@ -270,8 +275,8 @@ Built-in broad data-writer roles are not an acceptable substitute for these mini
 | Acceptance criteria | Operator accepts §6.3 and §6.3's prohibitions. A later test shows D03-A22 and D03-A23. Federation is short-lived and independent on both clouds. |
 | Rejection criteria | Any static key, Shared Key, SAS, broad administrator role on a runtime identity, or a design that needs a second trusted transition service without an architecture decision. |
 | Blocker classification | **IN-SCOPE BLOCKER** |
-| Operator decision required | Accept the minimum-privilege baseline, or reject it. |
-| Evidence state | Policy text: **DOCUMENTED** as a proposal. Configured IAM: **BLOCKED**. |
+| Operator decision required | Recorded. A second trusted transition service was not requested. |
+| Evidence state | Policy: **ACCEPTED POLICY** — minimum privilege, separated operational capabilities, short-lived workload federation, and prohibition of ordinary runtime administrator credentials. Actual IAM: **BLOCKED** / **EXECUTION EVIDENCE REQUIRED**. Not cloud infrastructure proof. |
 
 ## 7. OD-D03-A-06 — Retention and recovery
 
@@ -291,7 +296,7 @@ The witness exists to detect rollback for as long as an old history could still 
 
 ### 7.2 Recommended decision
 
-Do not ratify ten years. Do not treat `ELCR-ACTIVE` as already adopted.
+The operator did not adopt a production duration. Non-weakening configurable retention is preserved. Ten years is not adopted. Do not treat `ELCR-ACTIVE` as already adopted.
 
 Recommend that the operator:
 
@@ -303,7 +308,7 @@ If the operator cannot supply those ages and still wants a number, the number is
 
 ### 7.3 Required recovery rules
 
-These rules are the recommended acceptance policy. They are not ratified and not tested.
+The operator preserves these safety and recovery invariants. They are not tested, and they do not set a production duration, price, capacity, or achieved SLO.
 
 | Case | Required rule |
 |---|---|
@@ -333,8 +338,8 @@ Vendor fact re-verified 2026-10-18 from Microsoft Learn, [data redundancy](https
 | Acceptance criteria | Operator records a duration justified by declared ages, or explicitly adopts an unjustified number as policy. Operator accepts every recovery rule in §7.3, including no restore-in-place and no zero-loss claim for Azure geo-replication. |
 | Rejection criteria | Ratifying ten years as if a statute required it; treating secondary reads as current; automatic CREATE after an unknown append or a regional failover. |
 | Blocker classification | **IN-SCOPE BLOCKER** |
-| Operator decision required | Choose the retention period and accept or reject the recovery rules. Ten years is not recommended as a legal finding. |
-| Evidence state | Deletion-protection need: **DOCUMENTED** as design. Ten-year period: **OPERATOR CONFIRMATION REQUIRED**. Configured WORM and recovery drills: **EXECUTION EVIDENCE REQUIRED**. |
+| Operator decision required | Production duration remains unresolved. No duration is adopted here, including ten years. |
+| Evidence state | Non-weakening configurable retention: **preserved**. LOCAL-01 already rejects lowering the duration, lowering the ceiling, or clearing the hold. Production duration: **OPERATOR CONFIRMATION REQUIRED**. Configured WORM and recovery drills: **EXECUTION EVIDENCE REQUIRED**. Not cloud infrastructure proof. |
 
 ## 8. OD-D03-A-07 — Cost, SLO, and operating model
 
@@ -406,8 +411,8 @@ The 5-second, 500-millisecond, and 4-hour numbers are proposal targets. They are
 | Acceptance criteria | Operator records the quotes, the capacity choice, and an explicit accept or reject for each row in §8.4, without weakening fail-closed behavior. |
 | Rejection criteria | Inventing a monthly total, choosing a cheaper edition or a regional primary in place of `eur3`, or allowing stale reads to hit a latency target. Any of those is outside this decision and is `STOP — ARCHITECTURE DECISION REQUIRED` if proposed as a substitute pair. |
 | Blocker classification | **IN-SCOPE BLOCKER** |
-| Operator decision required | Supply the missing rates and volumes, then accept or reject the targets. |
-| Evidence state | Meter structure and `eur3` topology: **DOCUMENTED**. Prices, capacity, and SLO attainment: **OPERATOR CONFIRMATION REQUIRED** and **EXECUTION EVIDENCE REQUIRED**. |
+| Operator decision required | Prices, capacity, and achieved SLO remain unresolved. No production numeric parameter is adopted. |
+| Evidence state | Safety and recovery invariants: **preserved**. They are not weakened and they are not measured here. Meter structure and `eur3` topology: **DOCUMENTED**. Prices, capacity, and achieved SLO: **OPERATOR CONFIRMATION REQUIRED** and **EXECUTION EVIDENCE REQUIRED**. The 5-second, 500-millisecond, and 4-hour figures stay unadopted. Not cloud infrastructure proof. |
 
 ## 9. OD-D03-A-08 — Contracts, composition, and replaceability
 
@@ -417,7 +422,7 @@ A future implementation, if separately authorized, uses typed platform-owned ide
 
 ### 9.2 Recommended decision
 
-The proposal is compatible with the ownership model verified in §2. Recommend that a later implementation be held to the following constraints:
+The operator has accepted the following constraints as architectural direction. Acceptance does not authorize code and does not demonstrate replaceability:
 
 - platform contracts carry no Spanner or Azure types;
 - `ProductionControlPlaneGovernance` and `open_production_process_lifecycle` remain the governance and composition side of continuity;
@@ -457,8 +462,8 @@ Infrastructure dependency inventory, unchanged consumers, absence of a hidden ve
 | Acceptance criteria | Operator accepts the constraints in §9.2 as binding on any later implementation. Replaceability stays unclaimed until RPL-A..H exist. |
 | Rejection criteria | Vendor types in platform contracts, a second CREATE gate, a shadow PIS or GCA, or a claim that this document proves replaceability. |
 | Blocker classification | **IN-SCOPE BLOCKER** for ratification and implementation. Missing RPL execution evidence is also **TRACKED FREEZE DEBT** relative to global `FRZ-RPL-*`, which this package does not close. |
-| Operator decision required | Accept the composition constraints, or reject them. Acceptance still does not authorize code. |
-| Evidence state | Design compatibility of the proposal: **DOCUMENTED**. Implemented replaceability: **BLOCKED**. |
+| Operator decision required | Recorded. Acceptance does not authorize code. |
+| Evidence state | Direction: **ACCEPTED ARCHITECTURAL DIRECTION** — vendor-neutral typed contracts, one sanctioned governance/composition path, controlled configuration, structural replaceability, no duplicate PIS/GCA, no new CREATE gate, fail-closed defaults. Implemented replaceability: **BLOCKED**. RPL-A..H: **EXECUTION EVIDENCE REQUIRED**. Not cloud infrastructure proof. |
 
 ## 10. Sandbox qualification plan
 
@@ -494,16 +499,16 @@ Real Spanner and Azure behavior requires a future explicit authorization to use 
 
 ## 11. Decision readiness gate
 
-| Decision | Proposed disposition | Evidence sufficient? | Operator action |
+| Decision | Disposition | Infrastructure proof? | Still required |
 |---|---|---|---|
-| OD-D03-A-03 | Recommend the §4.3 separation policy and accept OP-TRUST-07 as residual risk. Not ratified. | No | Produce the expanded identity graph, or reject the policy. Rejecting OP-TRUST-07 stops for an architecture decision. |
-| OD-D03-A-04 | Recommend environment-level history only. Tenant-level histories stay inactive. Not ratified. | No | Accept or reject the conservative scope. |
-| OD-D03-A-05 | Recommend the §6.3 minimums, dual short-lived federation, and the listed prohibitions. Not ratified. | No | Accept or reject the privilege baseline. Do not authorize a second transition service inside this decision. |
-| OD-D03-A-06 | Do not adopt ten years as a legal duty. Recommend locked retention plus a hold until dual-controlled decommission, a duration set from declared backup ages, and the §7.3 recovery rules. Not ratified. | No | Declare backup ages and a duration, and accept or reject the recovery rules. |
-| OD-D03-A-07 | Record formulas and vendor meter facts only. Numeric SLO targets stay unmeasured. Authorization RPO 0 is recommended as a deny rule, not as physical zero loss. Not ratified. | No | Quote current prices, choose capacity, and accept or reject each target without weakening safety. |
-| OD-D03-A-08 | Recommend the §9.2 constraints for any later implementation. Replaceability is not demonstrated. Not ratified. | No | Accept or reject the constraints. Acceptance does not authorize code. |
+| OD-D03-A-03 | **ACCEPTED POLICY.** Independent administrative trust domains. OP-TRUST-07 is accepted residual risk, conditional on later proof of real administrative independence. | No | Expanded identity graph. Rejection of OP-TRUST-07 was not made. |
+| OD-D03-A-04 | **ACCEPTED POLICY.** Environment-scoped history with mandatory tenant isolation. Tenant-specific anchors stay inactive. | No | Execution evidence of isolation for this mechanism. |
+| OD-D03-A-05 | **ACCEPTED POLICY.** Minimum privilege, separated operational capabilities, short-lived workload federation, and prohibition of ordinary runtime administrator credentials. | No | Actual IAM. No second transition service is authorized. |
+| OD-D03-A-06 | Configurable retention with non-weakening protection is **preserved**. Production duration is **unresolved**. Ten years is not adopted. | No | A duration justified by declared backup ages, or an explicit labeled policy choice. Neither is recorded here. |
+| OD-D03-A-07 | Safety and recovery invariants are **preserved**. Prices, capacity, and achieved SLO are **unresolved**. No production numeric parameter is adopted. | No | Current quotes, a capacity choice, and an explicit accept or reject of each §8.4 target without weakening safety. |
+| OD-D03-A-08 | **ACCEPTED ARCHITECTURAL DIRECTION.** Vendor-neutral typed contracts, one sanctioned governance/composition path, controlled configuration, structural replaceability, no duplicate PIS/GCA, no new CREATE gate, fail-closed defaults. | No | Code, configuration binding, and RPL-A..H. This acceptance does not authorize that work. |
 
-Implementation stays unauthorized until the operator explicitly accepts the mandatory infrastructure conditions and the remaining execution evidence is either obtained or assigned to a separately authorized qualification gate. That assignment must follow canonical roadmap order. It is not created by this document.
+Accepted policy does not authorize implementation. Remaining execution evidence stays on a later, separately authorized qualification gate and must follow canonical roadmap order. This document does not open that gate. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs stay on that dependent gate.
 
 The selected pair is not reported as incapable of the ratified ELCR-IIRW class. The unproven conditions are operator evidence and future tests. They are blockers to ratification, not a silent change of backend.
 
@@ -652,7 +657,7 @@ This delta does not certify the platform or the freeze.
 | Communication | No new runtime channel. Cross-cloud calls are undesigned in code. | Not applicable to this delta | **NOT APPLICABLE — WITH EVIDENCE** for the markdown delta. Future path: **EXECUTION EVIDENCE REQUIRED** |
 | Composition | No composition wiring. | Unchanged | **NOT APPLICABLE — WITH EVIDENCE** for this delta |
 | Ownership | §2 symbols still match the single-owner model. | Document check only | **IN-SCOPE BLOCKER** until a ratified implementation is audited |
-| Contracts | No contract added. | Unchanged | **IN-SCOPE BLOCKER** for OD-D03-A-08 ratification |
+| Contracts | No contract added. | Unchanged | OD-D03-A-08 direction accepted. Implementation and replaceability remain an **IN-SCOPE BLOCKER** |
 | Abstraction | Vendor pair remains outside platform contracts in the proposal. | Design only | **IN-SCOPE BLOCKER** until code exists |
 | Typing | No typed model added. | Unchanged | **TRACKED FREEZE DEBT** (`FRZ-TYP-*` stays OPEN) |
 | Pluginability | No provider registration. | Unchanged | **TRACKED FREEZE DEBT** (`FRZ-PLG-*` stays OPEN) |
@@ -669,27 +674,115 @@ This delta does not certify the platform or the freeze.
 
 | Finding | Classification |
 |---|---|
-| OD-D03-A-03 through OD-D03-A-08 are not ratified | **IN-SCOPE BLOCKER** |
-| No inspected IAM or administrator graph | **IN-SCOPE BLOCKER** |
-| Ten-year retention is not justified by a cited duty, and backup ages are unknown | **IN-SCOPE BLOCKER** |
-| Prices, capacity, and SLO measurements are absent | **IN-SCOPE BLOCKER** |
+| OD-D03-A-03, OD-D03-A-04, and OD-D03-A-05 are accepted policy only. OD-D03-A-08 is an accepted architectural direction only. None is cloud infrastructure proof | **IN-SCOPE BLOCKER** for infrastructure ratification and parent closure. The policy choice itself is no longer waiting |
+| No inspected IAM or administrator graph. Real administrative independence is unproven | **IN-SCOPE BLOCKER** |
+| OD-D03-A-06 production duration is unresolved. Ten years is not adopted. Backup ages are unknown. Non-weakening retention stays in force | **IN-SCOPE BLOCKER** for a production duration. Not a license to weaken LOCAL-01 retention checks |
+| OD-D03-A-07 prices, capacity, and achieved SLO are absent. Safety and recovery invariants stay in force. No production numeric parameter is adopted | **IN-SCOPE BLOCKER** for budget and SLO acceptance |
 | D03-A01–A23 have not been executed; managed-service behavior needs a future authorized sandbox | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED**. The unmet acceptance condition remains an **IN-SCOPE BLOCKER** |
-| OP-TRUST-07 writer compromise is outside immutability | **IN-SCOPE BLOCKER** until the operator accepts the residual risk or requests an architecture decision |
+| OP-TRUST-07 is an accepted residual risk, conditional on later proof of real administrative independence | **MISSING EXECUTION EVIDENCE** for that proof. Not an architecture stop |
 | Global `FRZ-*` rows listed OPEN, and historical PASS rows, are not certified for this mechanism. `R7-Q`, `PROD-Q`, and `IMPL-01` stay open | **TRACKED FREEZE DEBT** |
-| RPL-A..H and `FRZ-RPL-*` are not demonstrated | **TRACKED FREEZE DEBT** |
+| RPL-A..H and `FRZ-RPL-*` are not demonstrated. Accepted structural replaceability is direction only | **TRACKED FREEZE DEBT** |
 | D03-B global PIS and D03-C cross-store continuity remain unmet | **IN-SCOPE BLOCKER** as existing independent stages. This package does not open a new child task for them |
-| RA-GZRS unplanned failover can expose a prefix | **IN-SCOPE BLOCKER** for any design that would resume CREATE from that prefix. The recommended rule is quarantine |
+| RA-GZRS unplanned failover can expose a prefix | **IN-SCOPE BLOCKER** for any design that would resume CREATE from that prefix. The preserved rule is quarantine |
+| `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` is proposed in §15 and is not authorized | **N/A — WITH EVIDENCE**. This delta does not enter it |
 
 No finding is self-certified as enterprise compliance.
 
-## 14. Recommended roadmap position
+## 14. Roadmap position
 
-Do not close D03-A. Do not change the conditional preferred-pair status. Do not start D03-B or D03-C. Do not authorize implementation.
+Do not close D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*`. Do not change OD-D03-A-01. Do not expand OD-D03-A-02 beyond the conditional preferred pair. Do not reopen D03-A-LOCAL-01. Do not authorize implementation.
 
-Recommended status of this artifact only:
+Status of this artifact only:
 
-**READY FOR AUDIT — D03-A RATIFICATION READINESS — OPERATOR DECISIONS PENDING**
+**READY FOR AUDIT — D03-A POLICY CONSOLIDATION — ACCEPTED POLICY IS NOT INFRASTRUCTURE PROOF**
 
-The next operator actions are the six decisions in §11. After an independent exact-SHA audit, the operator may accept or reject each decision. Acceptance of a decision still does not provision cloud resources or modify production code.
+§15 names the next child and does not enter it. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
+
+## 15. Proposed next child — not authorized
+
+| Field | Value |
+|---|---|
+| Proposed name | `PROD-Q-R1-R7-Q-D03-A-PLATFORM-POLICY-CONFIG-01` |
+| Status | **PROPOSED — NOT AUTHORIZED — NOT ENTERED** |
+| Parent | `PROD-Q-R1-R7-Q-D03-A-CONDITIONAL-INFRASTRUCTURE-DIRECTION` — remains OPEN / BLOCKED |
+| Predecessor | This readiness consolidation, after independent exact-SHA audit. D03-A-LOCAL-01 stays closed at `302e7fa74b745d10f9552df0a6eb9c702d5ce033` and is not modified |
+| Not a parent of | D03-B, D03-C, cloud IAM, vendor adapters, cost, disaster recovery, or production SLO |
+
+Dependency graph, existing order preserved:
+
+```text
+OD-D03-A-01 class (ratified, unchanged)
+  -> OD-D03-A-02 conditional preferred pair (unchanged, not full ratification)
+       -> D03-A-LOCAL-01 (closed; do not modify)
+       -> this policy consolidation (READY FOR AUDIT; not parent closure)
+            -> PLATFORM-POLICY-CONFIG-01 (proposed only)
+                 -> dependent qualification gate (not opened):
+                    trust-domain graph, IAM, vendor integration,
+                    OD-D03-A-06 production duration,
+                    OD-D03-A-07 prices, capacity, achieved SLO,
+                    disaster-recovery drills, sandbox rows that need cloud accounts
+D03-B and D03-C stay independent and BLOCKED
+```
+
+The child is the smallest platform slice that uses accepted OD-D03-A-03, OD-D03-A-04, OD-D03-A-05, and OD-D03-A-08 without a GCP or Azure account. It does not skip the cloud gate. It does not satisfy that gate.
+
+### 15.1 Owners, files, and contracts
+
+| Role | Binding |
+|---|---|
+| Semantic owner | `ProductionControlPlaneGovernance` |
+| Composition | `compose_history_continuity_authority` in `intergrax/applications/_shared/history_continuity_composition.py`. No second composition owner |
+| Contract | Additive typed configuration on `intergrax/contracts/governance/history_continuity.py` only. No Spanner or Azure types |
+| Preserved local behavior | `intergrax/runtime/governance/local_history_continuity.py`. Accepted LOCAL-01 semantics stay, including non-weakening retention |
+| Not callers | `GovernedProviderInvocationDispatchGate`, `open_production_process_lifecycle` |
+| Unchanged stores | `ProviderInvocationStore` and GCA. No duplicate PIS or GCA |
+
+A later authorization identifies the exact configuration fields and the contract tests. This section does not add them. If that work needs a second composition owner, a new CREATE gate, a duplicate PIS or GCA, or a change to accepted LOCAL-01 semantics: `STOP — ARCHITECTURE DECISION REQUIRED`.
+
+### 15.2 Expected solution shape
+
+Typed configuration is the only activation input to the existing composition function. Missing or invalid configuration returns the existing deny-only authority. The configuration cannot enable a tenant-specific anchor, cannot supply an ordinary runtime administrator credential, and cannot collapse the existing distinct grants into one administrator grant. Primary and witness administrative identifiers must both be present and distinct; equality or absence denies. That check is a configuration invariant, not an IAM export and not proof of administrative independence. Short-lived federation is not implemented; a static runtime credential is not accepted as a substitute. No vendor SDK, no production lifecycle call, and no CREATE call. No production retention duration, price, capacity, or SLO literal.
+
+### 15.3 Exit criteria
+
+All of the following, on the future implementation SHA, under a separate authorization:
+
+1. Missing, disabled, or non-local configuration still returns deny-only authority.
+2. A configuration that activates a tenant-specific anchor is rejected. Environment scope and the existing tenant-match rule stay in force.
+3. Ordinary runtime administrator credentials cannot be selected. Existing grants `WRITE`, `INITIALIZE`, `RECONCILE`, `INVALIDATE`, and `RECOVER` stay distinct.
+4. One configured principal cannot hold both primary-register administration and witness administration. No cloud IAM call is made, and the result is not claimed as administrative-independence proof.
+5. Retention still cannot be lowered, the ceiling still cannot be lowered, and the hold still cannot be cleared. No production duration number is introduced.
+6. No new CREATE gate, no call from the existing CREATE gate, no duplicate PIS or GCA, and no vendor type in the platform contract.
+7. Contract-level tests cover the deny cases above. They are not Spanner, Azure, IAM, disaster-recovery, cost, or SLO evidence.
+8. D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, and global `FRZ-*` stay open. RPL-A..H stay unclaimed. New `FRZ-*` PASS = 0.
+
+Applicable `FRZ-*` for that future child, statuses unchanged by this record: `FRZ-OWN-01`..`05`, `FRZ-BND-01`..`06`, `FRZ-CTR-01`..`06`, `FRZ-TYP-01`..`06`, `FRZ-PLG-01`..`07`, `FRZ-CFG-01`..`08` (historical PASS, not extended), `FRZ-TEN-01`..`12` (historical PASS, not extended), `FRZ-SEC-01`, `FRZ-SEC-04`, `FRZ-RPL-01`..`04`.
+
+### 15.4 Dependent qualification gate
+
+Not opened. It keeps cloud IAM and the real administrative-independence graph, vendor-adapter integration, OD-D03-A-06 production duration, OD-D03-A-07 prices, capacity, and achieved SLO, and disaster-recovery drills, including sandbox rows that require GCP or Azure accounts. D03-A01–A23 stay unexecuted.
+
+## 16. ECAP delta for this consolidation
+
+| Step | Result |
+|---|---|
+| A1 | Qualification markdown and the roadmap ledger sentences for this gate, the conditional-direction pointer, and the LOCAL-01 next-stage pointer. No production symbol. |
+| A2 | No import, composition wiring, or configuration key. |
+| A3 | No production caller. |
+| A4 | Owners unchanged. LOCAL-01 composition is not edited. |
+| A5 | Production-effective reachability: **no**. |
+| A6 | Families in §12. No `FRZ-*` status change. |
+| A7 | Historical PASS is not extended. LOCAL-01 acceptance is not reopened. |
+| A8 | No regression gate. `pytest = 0`. |
+
+| Finding ID | Class | FRZ | Severity | Label |
+|---|---|---|---|---|
+| D03-A-POL-01 | IN_SCOPE_BLOCKER | parent D03-A | Parent stays blocked | Accepted policy is not infrastructure proof |
+| D03-A-POL-02 | MISSING_EXECUTION_EVIDENCE | FRZ-SEC-04 | Blocks cloud ratification | IAM and administrative independence are unproven |
+| D03-A-POL-03 | IN_SCOPE_BLOCKER | OD-D03-A-06 / OD-D03-A-07 | Blocks production numbers | Duration, prices, capacity, and achieved SLO are unresolved |
+| D03-A-POL-04 | TRACKED_FREEZE_DEBT | FRZ-RPL-* | No portability claim | Structural replaceability is direction only |
+| D03-A-POL-05 | N/A_WITH_EVIDENCE | n/a | n/a | Proposed child is not entered. This delta adds no code |
+
+No finding is self-certified as enterprise compliance. Cursor status of this documentation commit is at most **READY FOR AUDIT**.
 
 Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.
