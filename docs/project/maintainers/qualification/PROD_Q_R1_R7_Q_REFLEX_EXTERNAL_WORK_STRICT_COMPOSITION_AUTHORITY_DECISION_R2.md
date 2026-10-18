@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (bounded architecture decision — documentation only) |
+| **Status** | **RATIFIED — SCOPED OPERATOR ARCHITECTURE DECISION** (2026-10-18; implementation pending) |
 | **Date** | 2026-10-18 |
 | **Branch** | `development` |
 | **START_HEAD / evidence SHA** | `a7f3a46296ae58cd4728db492429e99dbfdb8c82` |
@@ -361,3 +361,15 @@ No feature flag to re-enable overlay or in-memory strict fallback.
 ---
 
 Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.
+
+
+## 15. Operator ratification — 2026-10-18
+
+**RATIFIED — OD-R2-01…OD-R2-04**, by explicit operator approval following independent audit of decision document at GitHub SHA `6afff15e060cfd8247d64ab19b1415f91151a030`.
+
+1. **OD-R2-01 RATIFIED:** `ProductionProcessComposition` is the sanctioned process composition owner for an injected, platform-compatible, strongly typed GCA host store bundle. **No shared → GCA implementation import**, no global singleton, no automatic in-memory strict fallback. If direct field typing violates layering, implement an existing platform-owned port/type boundary only within this ownership, or **STOP — ARCHITECTURE DECISION REQUIRED**.
+2. **OD-R2-02 RATIFIED CONDITIONALLY:** One **existing** revision-bound `RuntimeAgentFactoryResolver` authority via approved `ServingRuntimeHandoff` / `ColocatedServingUnitRuntimeAccessor` extension. No new resolver, no registry overlay, no post-activation agent substitution, no unverified artifact/contract provenance. If the proposed extension alters actual materialization ownership, it requires **STOP — ARCHITECTURE DECISION REQUIRED**, not an improvised bridge.
+3. **OD-R2-03 RATIFIED:** Strict external-work requires actually **production-qualified, restart-durable** GCA execution/receipt/bundle/continuation store backends; a self-declared `is_durable=True` is only one gate, not certification. Missing qualified backend → **fail-closed** and **IN-SCOPE BLOCKER**, never optional freeze debt for integrated strict qualification. PIS's separate durable authority stays unchanged.
+4. **OD-R2-04 RATIFIED:** Typed operator-approved `provider_id` and descriptor digest pin must match `ExternalWorkIntegration.discover()`; explicit capability projection only, no qualification fixture in strict production, fail closed on absent/mismatch/unverifiable provider identity or capabilities.
+
+**Execution safeguards:** The earlier ratified F02 Option B remains in force, including provider-outcome truth on incomplete finalization and denial of ordinary CREATE redispatch. This ratification authorizes only the bounded R2 corrective implementation under these invariants; it does **not** establish a qualified durable backend, AC3 HTTP E2E proof, Package P B, DIM20, R7-Q closure or global `FRZ-*` PASS. Mandatory tests deferred under resource budget remain NOT PROVEN. Parent remains BLOCKED until independent exact-SHA audit and missing mandatory evidence.
