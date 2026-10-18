@@ -268,3 +268,7 @@ create_governed_contractor_backend_app
 ---
 
 *Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.*
+
+## F02 operator ratification alignment — 2026-10-18
+
+Option B is **RATIFIED — SCOPED** by operator, with conditions: production-qualified durability for GCA `GovernedExecutionStore` (not process-local `InMemory*`) and preservation of actual provider outcome when follow-on snapshot finalization fails after an external effect. Incomplete finalization must deny follow-on and must **not** authorize ordinary CREATE replay. See [F02 ratification](PROD_Q_R1_R7_Q_F02_DURABLE_FOLLOW_ON_SNAPSHOT_DECISION.md#11-operator-ratification--2026-10-18). F01–F05 implementation and actual AC3 proof remain **BLOCKED / NOT QUALIFIED**; no global FRZ PASS.

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** — **OPTION B PROPOSED** — **awaiting operator ratification** |
+| **Status** | **RATIFIED — SCOPED OPTION B / OPERATOR APPROVED** (2026-10-18; production implementation and durability not yet qualified) |
 | **Date** | 2026-10-18 |
 | **Branch** | `development` |
 | **START_HEAD** | `903f4be08ec9cadd4d3ded133761cd0bd79fe0d3` |
@@ -277,11 +277,24 @@ Global checklist statuses: **not updated** (operator closure only).
 
 ---
 
-## 10. Operator decision awaiting ratification
+## 10. Ratified baseline decision (historical proposal)
 
-**Ratify Option B:** extend `GovernedExecutionStore` with `GovernedExternalWorkCreateFollowOnRecordV1` persistence as the **sole authoritative** prior-create carrier for accept/cancel, written only by `GovernedExternalWorkOrchestrator` on successful CREATE finalize, read only via `resolve_create_adapter_result_for_follow_on`, with session port cache **removed** and **no** use of `get_event_json` or PIS for snapshot reconstruction.
+**Ratified Option B:** extend `GovernedExecutionStore` with `GovernedExternalWorkCreateFollowOnRecordV1` persistence as the **sole authoritative** prior-create carrier for accept/cancel, written only by `GovernedExternalWorkOrchestrator` on successful CREATE finalize, read only via `resolve_create_adapter_result_for_follow_on`, with session port cache **removed** and **no** use of `get_event_json` or PIS for snapshot reconstruction.
 
 **Reject alternatives:** Option A (insufficient @ HEAD); session dict fallback; provider `get_work` recovery; EBE-as-authority.
+
+---
+
+## 11. Operator ratification — 2026-10-18
+
+**RATIFIED — SCOPED OPTION B**, following independent exact-SHA review of the proposed F02 document @ `cf2c0d8277d0202094e72b8098e604077e45af10`. Operator approved the typed `GovernedExternalWorkCreateFollowOnRecordV1` on the **existing** `GovernedExecutionStore`, with orchestrator as exactly-one writer/resolver, no session cache, and no use of EBE or PIS as a snapshot carrier.
+
+**Two mandatory operator safety conditions:**
+
+1. **Actual production durability.** A protocol method or an in-memory/process-scoped store is **not** evidence of restart durability. Strict production follow-on mutations must be **fail-closed** unless the sanctioned GCA execution-store backend is independently qualified durable across process restart. Existing demo filesystem or in-memory backends cannot silently be promoted to production. Any missing compliant backend remains an **IN-SCOPE BLOCKER** for strict integrated qualification, not a merely deferred optional improvement. Do not invent a new persistence framework or shadow store. If the existing owned backend/contracts cannot meet this requirement without new architecture, **STOP — ARCHITECTURE DECISION REQUIRED**.
+2. **Partial-finalization truth and retry safety.** If provider CREATE has already occurred and `put_result` succeeds but `put_create_follow_on_record` fails, **never** convert the physical effect into an ordinary retryable provider failure or claim it did not occur. Preserve actual PIS/provider outcome and distinguish **external-effect outcome** from **host finalization incomplete**. Deny all follow-on requests until authoritative record completeness is restored through sanctioned recovery; do **not** ordinary re-dispatch CREATE. The semantic state/contract to represent this distinction must reuse an existing authority; if unavailable, STOP for architecture decision before implementation. Revisit the originally proposed unconditional `EXECUTION_FAILED` transition: it is **not ratified** where it misrepresents an already-executed provider effect.
+
+**Required gate before parent acceptance:** exact-SHA contract/code proof + lightweight deterministic positive/negative tests of both conditions; actual full HTTP AC3 / restart durability test remains DEFERRED where resource budget prohibits execution, and cannot be counted PASS. The existing F01–F05 corrective prerequisites still apply. `IMPL-01`, `DIM20`, `R7-Q`, `PROD-Q` and global `FRZ-*` remain NOT CLOSED / OPEN. No production change was authorized beyond the approved bounded design, and no implementation is asserted by this ratification.
 
 ---
 
