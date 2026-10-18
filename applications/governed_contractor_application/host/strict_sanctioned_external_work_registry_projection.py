@@ -22,13 +22,13 @@ from intergrax.applications._shared.wiring import (
     factory_reference_for_roster_entry,
     _index_manifest_bindings,
 )
-from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from governed_contractor_application.host.agent_builders import (
-    build_governed_contractor_agent_builders,
-)
 from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
     GovernedContractorHostRuntimeComposition,
+)
+from governed_contractor_application.host.strict_external_work_authoritative_factory_injection import (
+    build_strict_external_work_authoritative_factory_wrapper,
+    strict_external_work_host_agent_injection_from_runtime,
 )
 
 _EXTERNAL_CONTRACTOR_CONTRACT_ID = "external_contractor_adapter"
@@ -67,20 +67,11 @@ def build_strict_sanctioned_external_work_runtime_agent_factory_resolver(
             "strict sanctioned external work resolver requires "
             "require_sanctioned_external_work_mutations",
         )
-    if host_runtime.sanctioned_external_work_operation_port is None:
-        raise ValueError(
-            "strict sanctioned external work resolver requires "
-            "sanctioned_external_work_operation_port",
-        )
-    builders = build_governed_contractor_agent_builders(host_runtime)
-    from external_contractor_adapter.external_contractor_adapter_agent import (
-        ExternalContractorAdapterAgent,
-    )
-
-    host_factory: CanonicalAgentFactory = builders[ExternalContractorAdapterAgent]
+    injection = strict_external_work_host_agent_injection_from_runtime(host_runtime)
+    wrap = build_strict_external_work_authoritative_factory_wrapper(injection)
     override = HostRuntimeAgentFactoryOverride(
         factory_keys=_external_contractor_factory_keys(bundle),
-        host_factory=host_factory,
+        wrap_authoritative_factory=wrap,
     )
     return HostOverridingRuntimeAgentFactoryResolver(delegate, override=override)
 

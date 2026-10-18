@@ -13,6 +13,10 @@ from intergrax.contracts.external_work import (
 from intergrax.contracts.external_work_provider_capabilities import (
     ExternalWorkProviderCapabilities,
 )
+from intergrax.contracts.external_work_provider_capability_projection import (
+    merge_descriptor_and_integration_invariants,
+    project_descriptor_mapped_provider_capabilities,
+)
 from intergrax.contracts.validation import compute_sha256_content_digest
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
@@ -26,28 +30,10 @@ def project_external_work_provider_capabilities(
     descriptor: ExternalWorkProviderDescriptor,
 ) -> ExternalWorkProviderCapabilities:
     """Map discovered descriptor capabilities to orchestrator feature flags."""
-    caps = frozenset(descriptor.capabilities)
-    provider_id = descriptor.identity.provider_id.strip()
-    if not provider_id:
-        raise StrictExternalWorkProviderResolutionError(
-            "discovered provider identity lacks provider_id",
-        )
-    return ExternalWorkProviderCapabilities(
-        provider_id=provider_id,
-        supports_create=True,
-        supports_quote=ExternalWorkCapability.QUOTE_FIRST in caps,
-        supports_accept=ExternalWorkCapability.QUOTE_FIRST in caps,
-        supports_cancel=ExternalWorkCapability.CANCELLATION in caps,
-        supports_status_polling=ExternalWorkCapability.ASYNC_EXECUTION in caps
-        or ExternalWorkCapability.TIMELINE in caps,
-        supports_idempotency=True,
-        supports_native_provider_request_id=ExternalWorkCapability.ASYNC_EXECUTION in caps,
-        supports_tool_logs=ExternalWorkCapability.EVIDENCE_REFS in caps,
-        supports_receipt_timeline=ExternalWorkCapability.TIMELINE in caps
-        or ExternalWorkCapability.EVIDENCE_REFS in caps,
-        supports_payment_state=ExternalWorkCapability.QUOTE_FIRST in caps,
-        supports_human_wait_state=ExternalWorkCapability.HUMAN_CONTINUATION in caps,
-    )
+    try:
+        return project_descriptor_mapped_provider_capabilities(descriptor)
+    except ValueError as exc:
+        raise StrictExternalWorkProviderResolutionError(str(exc)) from exc
 
 
 def _descriptor_digest(descriptor: ExternalWorkProviderDescriptor) -> str:
@@ -94,7 +80,10 @@ def resolve_strict_external_work_provider_capabilities(
         raise StrictExternalWorkProviderResolutionError(
             "strict external work provider descriptor digest pin mismatch",
         )
-    projected = project_external_work_provider_capabilities(descriptor)
+    projected = merge_descriptor_and_integration_invariants(
+        descriptor,
+        integration_admitted=True,
+    )
     if not projected.supports_create:
         raise StrictExternalWorkProviderResolutionError(
             "strict external work requires provider create capability",

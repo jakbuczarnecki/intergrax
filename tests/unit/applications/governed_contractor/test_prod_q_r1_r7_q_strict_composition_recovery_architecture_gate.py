@@ -67,6 +67,20 @@ def test_shared_composition_declares_gca_store_bundle_port() -> None:
     assert "governed_contractor_application" not in text
 
 
+def test_host_overriding_resolver_delegate_first_no_host_factory_short_circuit() -> None:
+    path = (
+        _REPO
+        / "intergrax"
+        / "applications"
+        / "_shared"
+        / "host_overriding_runtime_agent_factory_resolver.py"
+    )
+    text = path.read_text(encoding="utf-8")
+    assert "host_factory" not in text
+    assert "wrap_authoritative_factory" in text
+    assert "self._delegate.resolve_factory" in text
+
+
 def test_strict_wiring_requires_capabilities_argument() -> None:
     tree = ast.parse(_STRICT_WIRING.read_text(encoding="utf-8"))
     for node in ast.walk(tree):

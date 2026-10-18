@@ -48,6 +48,9 @@ class GovernedExecutionCreateFollowOnConflictError(ValueError):
 
 @runtime_checkable
 class GovernedExecutionStore(Protocol):
+    @property
+    def is_durable(self) -> bool: ...
+
     def put_result(self, result: AnyGovernedExecutionResult) -> None: ...
 
     def get_result(self, execution_id: str) -> AnyGovernedExecutionResult | None: ...
@@ -78,6 +81,9 @@ class GovernedExecutionStore(Protocol):
 
 @runtime_checkable
 class ProofReceiptStore(Protocol):
+    @property
+    def is_durable(self) -> bool: ...
+
     def put_receipt(self, execution_id: str, receipt: ExecutionEvidenceProofReceipt) -> None: ...
 
     def get_receipt(self, execution_id: str) -> ExecutionEvidenceProofReceipt | None: ...
@@ -85,6 +91,9 @@ class ProofReceiptStore(Protocol):
 
 @runtime_checkable
 class PolicyBundleArtifactStore(Protocol):
+    @property
+    def is_durable(self) -> bool: ...
+
     def put_bundle(self, bundle: ImmutableRuntimePolicyBundle) -> None: ...
 
     def get_bundle(self, bundle_id: str, version: str) -> ImmutableRuntimePolicyBundle | None: ...
@@ -92,6 +101,9 @@ class PolicyBundleArtifactStore(Protocol):
 
 @runtime_checkable
 class ContinuationStateStore(Protocol):
+    @property
+    def is_durable(self) -> bool: ...
+
     def put_continuation(
         self,
         task_id: str,

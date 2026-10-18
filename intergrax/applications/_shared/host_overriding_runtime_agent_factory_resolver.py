@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
@@ -19,10 +20,13 @@ _FactoryKey = tuple[str, str | None, str | None]
 
 @dataclass(frozen=True, slots=True)
 class HostRuntimeAgentFactoryOverride:
-    """Exact factory keys that must resolve to one host-supplied canonical factory."""
+    """AC3 factory keys wrapped after authoritative delegate resolution."""
 
     factory_keys: frozenset[_FactoryKey]
-    host_factory: CanonicalAgentFactory
+    wrap_authoritative_factory: Callable[
+        [CanonicalAgentFactory],
+        CanonicalAgentFactory,
+    ]
 
 
 class HostOverridingRuntimeAgentFactoryResolver:
@@ -47,13 +51,14 @@ class HostOverridingRuntimeAgentFactoryResolver:
         factory_reference: AgentBindingFactoryReference,
     ) -> CanonicalAgentFactory:
         key = _factory_key(package_digest, factory_reference)
-        if key in self._override.factory_keys:
-            return self._override.host_factory
-        return self._delegate.resolve_factory(
+        authoritative = self._delegate.resolve_factory(
             runtime_revision=runtime_revision,
             package_digest=package_digest,
             factory_reference=factory_reference,
         )
+        if key in self._override.factory_keys:
+            return self._override.wrap_authoritative_factory(authoritative)
+        return authoritative
 
 
 __all__ = [

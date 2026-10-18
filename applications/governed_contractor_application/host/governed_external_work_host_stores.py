@@ -30,10 +30,10 @@ class GovernedExternalWorkHostStoreBundle:
     @property
     def is_durable(self) -> bool:
         return (
-            getattr(self.execution_store, "is_durable", False)
-            and getattr(self.receipt_store, "is_durable", False)
-            and getattr(self.bundle_store, "is_durable", False)
-            and getattr(self.continuation_store, "is_durable", False)
+            self.execution_store.is_durable
+            and self.receipt_store.is_durable
+            and self.bundle_store.is_durable
+            and self.continuation_store.is_durable
         )
 
 
