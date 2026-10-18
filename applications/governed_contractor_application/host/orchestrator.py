@@ -82,6 +82,9 @@ from intergrax.contracts.governed_external_work_create_follow_on import (
     GovernedExternalWorkCreateFollowOnRecordV1,
     compute_snapshot_content_digest,
 )
+from intergrax.contracts.governed_external_work_provider_invocation_identity import (
+    derive_governed_external_work_create_provider_invocation_id,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -325,6 +328,9 @@ class GovernedExternalWorkOrchestrator:
             run_id=run_id,
             metadata=metadata,
             started_at=started,
+            execution_id=exec_id,
+            tenant_id=identity.tenant_id,
+            principal_id=principal_id,
         )
         meta = dict(metadata)
         meta[META_PROVIDER_INVOCATION_ID] = invocation.invocation_id
@@ -824,6 +830,72 @@ class GovernedExternalWorkOrchestrator:
             )
         return None
 
+    def _resolve_create_provider_invocation_id(
+        self,
+        *,
+        execution_id: str,
+        derived_invocation_id: str,
+    ) -> str:
+        """Prefer persisted invocation ids (legacy random or stable) over re-derivation."""
+        existing_result = self._execution_store.get_result(execution_id)
+        if isinstance(existing_result, GovernedExecutionResultV2):
+            if existing_result.action == ACTION_CREATE_EXTERNAL_WORK:
+                return existing_result.provider_invocation.invocation_id
+        follow_on = self._execution_store.get_create_follow_on_record(execution_id)
+        if follow_on is not None:
+            return follow_on.create_provider_invocation_id
+        return derived_invocation_id
+
+    def _handle_create_duplicate_invocation_admission(
+        self,
+        *,
+        execution_id: str,
+        invocation: ProviderInvocation,
+        adapter_result: ExternalWorkAdapterResult,
+    ) -> OrchestratorStepResult:
+        existing_ger = self._execution_store.get_result(execution_id)
+        if isinstance(existing_ger, GovernedExecutionResultV2):
+            if existing_ger.action == ACTION_CREATE_EXTERNAL_WORK:
+                host_state = self._execution_store.get_state(execution_id)
+                return OrchestratorStepResult(
+                    state=host_state
+                    or GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED,
+                    execution_id=execution_id,
+                    adapter_result=adapter_result,
+                    governed_result=existing_ger,
+                    attestation=None,
+                    receipt=None,
+                    reason="create_redispatch_prohibited",
+                )
+        outcome = self._provider_invocation_store.get_outcome(invocation.invocation_id)
+        if outcome is not None:
+            projected_host_state = map_provider_invocation_outcome_status_to_host_state(
+                outcome.status,
+            )
+            if projected_host_state is not None:
+                self._execution_store.put_state(execution_id, projected_host_state)
+            return OrchestratorStepResult(
+                state=projected_host_state
+                or GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN,
+                execution_id=execution_id,
+                adapter_result=adapter_result,
+                governed_result=None,
+                attestation=None,
+                receipt=None,
+                reason="create_duplicate_admission_pis_outcome",
+            )
+        unknown = GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN
+        self._execution_store.put_state(execution_id, unknown)
+        return OrchestratorStepResult(
+            state=unknown,
+            execution_id=execution_id,
+            adapter_result=adapter_result,
+            governed_result=None,
+            attestation=None,
+            receipt=None,
+            reason="create_invocation_intent_without_persisted_outcome",
+        )
+
     def _write_create_follow_on_record(
         self,
         *,
@@ -879,6 +951,17 @@ class GovernedExternalWorkOrchestrator:
         completed = self._clock()
         decision = adapter_result.policy_decision
         if adapter_result.reason == "provider_invocation_intent_persistence_failed":
+            if (
+                after_create
+                and action == ACTION_CREATE_EXTERNAL_WORK
+                and adapter_result.error_message
+                and "dispatch_not_admitted" in adapter_result.error_message
+            ):
+                return self._handle_create_duplicate_invocation_admission(
+                    execution_id=execution_id,
+                    invocation=invocation,
+                    adapter_result=adapter_result,
+                )
             failed = GovernedExternalWorkHostState.EXECUTION_FAILED
             self._execution_store.put_state(execution_id, failed)
             return OrchestratorStepResult(
@@ -1323,6 +1406,9 @@ class GovernedExternalWorkOrchestrator:
         metadata: Mapping[str, Any],
         started_at: datetime,
         external_task_id: str | None = None,
+        execution_id: str | None = None,
+        tenant_id: str | None = None,
+        principal_id: str | None = None,
     ) -> ProviderInvocation:
         operation = external_work_provider_operation_for_decision_action(action)
         if operation is None:
@@ -1332,6 +1418,7 @@ class GovernedExternalWorkOrchestrator:
             raise ValueError("provider_id_required_for_invocation")
         corr = metadata.get(META_CORRELATION_ID)
         idem = metadata.get(META_IDEMPOTENCY_KEY)
+        idem_str = str(idem).strip() if isinstance(idem, str) and idem.strip() else None
         request_digest = stable_payload_hash(
             {
                 "action": action,
@@ -1339,19 +1426,37 @@ class GovernedExternalWorkOrchestrator:
                 "task_id": task_id,
                 "run_id": run_id,
                 "provider_id": provider_id,
-                "idempotency_key": str(idem) if idem else None,
+                "idempotency_key": idem_str,
                 "correlation_id": str(corr) if corr else None,
             }
         )
+        if action == ACTION_CREATE_EXTERNAL_WORK:
+            if execution_id is None or tenant_id is None or principal_id is None:
+                raise ValueError("canonical_create_identity_required_for_invocation")
+            if idem_str is None:
+                raise ValueError("idempotency_key_required_for_create_invocation")
+            derived_id = derive_governed_external_work_create_provider_invocation_id(
+                tenant_id=tenant_id,
+                principal_id=principal_id,
+                execution_id=execution_id,
+                provider_id=provider_id,
+                idempotency_key=idem_str,
+            )
+            invocation_id = self._resolve_create_provider_invocation_id(
+                execution_id=execution_id,
+                derived_invocation_id=derived_id,
+            )
+        else:
+            invocation_id = f"inv-{uuid4().hex}"
         return ProviderInvocation(
-            invocation_id=f"inv-{uuid4().hex}",
+            invocation_id=invocation_id,
             provider_id=provider_id,
             operation=operation,
             task_id=task_id,
             run_id=run_id,
             external_task_id=external_task_id,
             correlation_id=str(corr).strip() if isinstance(corr, str) and corr.strip() else None,
-            idempotency_key=str(idem).strip() if isinstance(idem, str) and idem.strip() else None,
+            idempotency_key=idem_str,
             request_digest=request_digest,
             started_at=started_at,
         )
