@@ -183,7 +183,11 @@ class ContinuityHead(BaseModel):
 
 
 class WitnessSeal(BaseModel):
-    """Append-only witness record. Independent from the primary head store."""
+    """Append-only witness record. Independent from the primary head store.
+
+    ``predecessor_seal_digest`` authenticates the previous seal. Revision 1
+    carries the fixed genesis predecessor. The field is part of the seal digest.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -194,12 +198,14 @@ class WitnessSeal(BaseModel):
     binding_digest: str = _NON_BLANK
     status: ContinuityHeadStatus
     identity_epoch: int = Field(ge=1)
+    predecessor_seal_digest: str = _NON_BLANK
 
     @field_validator(
         "environment_id",
         "fencing_token",
         "transition_id",
         "binding_digest",
+        "predecessor_seal_digest",
     )
     @classmethod
     def _ids_non_blank(cls, value: str) -> str:

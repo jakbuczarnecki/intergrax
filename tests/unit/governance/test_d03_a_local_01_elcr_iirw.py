@@ -54,6 +54,8 @@ from intergrax.runtime.governance.local_history_continuity import (
     LocalContinuityCrashPoint,
     LocalDeterministicHistoryContinuity,
     continuity_authorization_action,
+    continuity_binding_canonical_bytes,
+    continuity_binding_digest,
 )
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
@@ -730,6 +732,7 @@ def test_altered_witness_metadata_denies_without_unsealing() -> None:
         {"binding_digest": "f" * 64},
         {"status": ContinuityHeadStatus.QUARANTINED},
         {"identity_epoch": 4},
+        {"predecessor_seal_digest": "e" * 64},
     )
     for changes in alterations:
         authority = _authority()
@@ -843,6 +846,161 @@ def test_direct_construction_and_production_paths_stay_closed() -> None:
     )
     assert _same_paths(opener_hits, (local_module, composition_module))
     assert _same_paths(composer_hits, (local_module, composition_module))
+
+
+def _advance_to(
+    authority: LocalDeterministicHistoryContinuity,
+    head: ContinuityHead,
+    revision: int,
+) -> ContinuityHead:
+    current = head
+    while current.revision < revision:
+        result = _advance(authority, current)
+        assert result.outcome is ContinuityOutcome.COMMITTED
+        assert result.head is not None
+        current = result.head
+    return current
+
+
+def _pipe_joined_binding(binding: HistoryBinding) -> str:
+    return (
+        f"{binding.pis_history_id}|{binding.pis_committed_watermark}|"
+        f"{binding.gca_history_id}|{binding.gca_committed_watermark}"
+    )
+
+
+def test_large_history_routine_verification_stays_bounded() -> None:
+    authority = _authority()
+    head = _advance_to(authority, _initialize(authority), 64)
+    assert authority.testing_full_chain_verification_examinations() == 0
+    assert authority.testing_bounded_verification_examinations() <= 64 * 3
+    assert authority.testing_chain_trust() == (64, True)
+
+    before_bounded = authority.testing_bounded_verification_examinations()
+    before_full = authority.testing_full_chain_verification_examinations()
+    observed = authority.read_head(_grant(ContinuityPermission.WRITE), _scope())
+    assert observed.outcome is ContinuityOutcome.COMMITTED
+    assert observed.head == head
+    assert authority.testing_bounded_verification_examinations() - before_bounded == 2
+    assert authority.testing_full_chain_verification_examinations() == before_full
+
+    before_advance = authority.testing_bounded_verification_examinations()
+    advanced = _advance(authority, head)
+    assert advanced.outcome is ContinuityOutcome.COMMITTED
+    assert advanced.head is not None
+    assert advanced.head.revision == 65
+    assert authority.testing_bounded_verification_examinations() - before_advance == 3
+    assert authority.testing_full_chain_verification_examinations() == before_full
+    assert authority.testing_chain_trust() == (65, True)
+
+
+def test_historical_corruption_and_omission_use_full_chain_verification() -> None:
+    authority = _authority()
+    head = _advance_to(authority, _initialize(authority), 4)
+    assert head.revision == 4
+    authority.testing_alter_witness(1, binding_digest="ab")
+    before_full = authority.testing_full_chain_verification_examinations()
+    before_bounded = authority.testing_bounded_verification_examinations()
+    routine = authority.read_head(_grant(ContinuityPermission.WRITE), _scope())
+    assert routine.outcome is ContinuityOutcome.COMMITTED
+    assert routine.head is not None
+    assert routine.head.revision == 4
+    assert authority.testing_full_chain_verification_examinations() == before_full
+    assert authority.testing_bounded_verification_examinations() - before_bounded == 2
+
+    assert authority.verify_committed_continuity_chain() is ContinuityDenialCode.WITNESS_MISMATCH
+    assert authority.testing_full_chain_verification_examinations() > before_full
+    assert authority.testing_chain_trust() == (4, False)
+    full_after_detection = authority.testing_full_chain_verification_examinations()
+    blocked = authority.read_head(_grant(ContinuityPermission.WRITE), _scope())
+    assert blocked.denial is ContinuityDenialCode.WITNESS_MISMATCH
+    assert blocked.head is not None
+    assert blocked.head.revision == 4
+    assert blocked.head.status is ContinuityHeadStatus.ACTIVE
+    assert authority.testing_full_chain_verification_examinations() == full_after_detection
+    recovered = authority.recover(_grant(ContinuityPermission.RECOVER), _scope())
+    assert recovered.denial is ContinuityDenialCode.WITNESS_MISMATCH
+    assert recovered.head is not None
+    assert recovered.head.revision == 4
+    assert recovered.head.status is ContinuityHeadStatus.ACTIVE
+    assert authority.testing_chain_trust()[0] == 4
+
+    omitted = _authority()
+    omitted_head = _advance_to(omitted, _initialize(omitted), 4)
+    omitted.testing_omit_historical_witness(2)
+    assert omitted.read_head(_grant(ContinuityPermission.WRITE), _scope()).head == omitted_head
+    assert omitted.verify_committed_continuity_chain() is ContinuityDenialCode.WITNESS_MISMATCH
+    assert omitted.testing_chain_trust() == (4, False)
+    omitted_recovery = omitted.recover(_grant(ContinuityPermission.RECOVER), _scope())
+    assert omitted_recovery.denial is ContinuityDenialCode.WITNESS_MISMATCH
+    assert omitted_recovery.head is not None
+    assert omitted_recovery.head.revision == 4
+    assert omitted_recovery.head.status is ContinuityHeadStatus.ACTIVE
+
+
+def test_current_head_witness_mismatch_is_bounded() -> None:
+    authority = _authority()
+    head = _advance_to(authority, _initialize(authority), 3)
+    authority.testing_diverge_current_head_binding()
+    before_bounded = authority.testing_bounded_verification_examinations()
+    before_full = authority.testing_full_chain_verification_examinations()
+    observed = authority.read_head(_grant(ContinuityPermission.WRITE), _scope())
+    assert observed.denial is ContinuityDenialCode.WITNESS_MISMATCH
+    assert observed.head is not None
+    assert observed.head.revision == head.revision
+    assert observed.head.status is ContinuityHeadStatus.ACTIVE
+    assert observed.head.binding.pis_committed_watermark == head.binding.pis_committed_watermark + 1
+    assert authority.testing_full_chain_verification_examinations() == before_full
+    assert authority.testing_bounded_verification_examinations() - before_bounded == 2
+    assert authority.testing_chain_trust() == (head.revision, False)
+    assert (
+        _advance(authority, head).denial is ContinuityDenialCode.WITNESS_MISMATCH
+    )
+    recovered = authority.recover(_grant(ContinuityPermission.RECOVER), _scope())
+    assert recovered.denial is ContinuityDenialCode.WITNESS_MISMATCH
+    assert recovered.head is not None
+    assert recovered.head.status is ContinuityHeadStatus.ACTIVE
+    assert recovered.head.revision == head.revision
+
+
+def test_binding_digest_is_canonical_and_separator_unambiguous() -> None:
+    pairs = (
+        (
+            HistoryBinding(
+                pis_history_id="pis|2",
+                pis_committed_watermark=3,
+                gca_history_id="gca",
+                gca_committed_watermark=4,
+            ),
+            HistoryBinding(
+                pis_history_id="pis",
+                pis_committed_watermark=2,
+                gca_history_id="3|gca",
+                gca_committed_watermark=4,
+            ),
+        ),
+        (
+            HistoryBinding(
+                pis_history_id="a|1|b",
+                pis_committed_watermark=9,
+                gca_history_id="c",
+                gca_committed_watermark=8,
+            ),
+            HistoryBinding(
+                pis_history_id="a",
+                pis_committed_watermark=1,
+                gca_history_id="b|9|c",
+                gca_committed_watermark=8,
+            ),
+        ),
+    )
+    for left, right in pairs:
+        assert _pipe_joined_binding(left) == _pipe_joined_binding(right)
+        assert left != right
+        assert continuity_binding_canonical_bytes(left) != continuity_binding_canonical_bytes(right)
+        assert continuity_binding_digest(left) != continuity_binding_digest(right)
+        assert b"igx.history-binding.v1\n" in continuity_binding_canonical_bytes(left)
+        assert continuity_binding_digest(left) == continuity_binding_digest(left)
 
 
 def _same_paths(found: list[Path], expected: tuple[Path, ...]) -> bool:

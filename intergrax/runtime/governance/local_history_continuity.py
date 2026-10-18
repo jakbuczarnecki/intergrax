@@ -7,6 +7,11 @@ Qualification adapter only. Construct it through
 ``compose_history_continuity_authority``. Capability authorization is the
 composed control-plane mutation boundary. Crash and rollback methods are test
 seams on this same state owner; they are not a second continuity mechanism.
+
+Routine reads and transitions check the current head, its authenticated
+predecessor, and the incrementally verified prefix. They do not walk history.
+``verify_committed_continuity_chain`` and recovery walk every committed revision.
+A prefix that is no longer trusted fails closed and is not shortened.
 """
 
 from __future__ import annotations
@@ -57,6 +62,7 @@ _WITNESS_ALTER_FIELDS = frozenset(
         "binding_digest",
         "status",
         "identity_epoch",
+        "predecessor_seal_digest",
     }
 )
 _CONTINUITY_AUTHORIZATION_ACTIONS: dict[ContinuityPermission, str] = {
@@ -94,12 +100,92 @@ class _PreparedTransition:
     tenant_id: str
 
 
-def continuity_binding_digest(binding: HistoryBinding) -> str:
-    payload = (
-        f"{binding.pis_history_id}|{binding.pis_committed_watermark}|"
-        f"{binding.gca_history_id}|{binding.gca_committed_watermark}"
+class _ChainTrust(StrEnum):
+    """Whether the incrementally verified prefix may authorize routine reads."""
+
+    VERIFIED = "verified"
+    UNTRUSTED = "untrusted"
+
+
+_HISTORY_BINDING_CANONICAL_VERSION = 1
+_WITNESS_SEAL_CANONICAL_VERSION = 1
+_WITNESS_PREDECESSOR_CANONICAL_VERSION = 1
+
+
+def _canonical_integer(value: int) -> bytes:
+    if type(value) is not int or value < 0:
+        raise TypeError("canonical integer must be a non-negative int")
+    width = max(1, (value.bit_length() + 7) // 8)
+    return value.to_bytes(width, "big")
+
+
+def _canonical_text(value: str) -> bytes:
+    if type(value) is not str:
+        raise TypeError("canonical text must be a str")
+    return value.encode("utf-8")
+
+
+def _canonical_bytes(domain: str, version: int, parts: tuple[bytes, ...]) -> bytes:
+    """Length-prefixed body under an explicit domain and schema version."""
+
+    if type(version) is not int or version < 1:
+        raise ValueError("canonical version must be a positive integer")
+    header = _canonical_text(f"{domain}.v{version}\n")
+    body = bytearray(len(parts).to_bytes(4, "big"))
+    for part in parts:
+        body += len(part).to_bytes(4, "big")
+        body += part
+    return header + bytes(body)
+
+
+def continuity_binding_canonical_bytes(binding: HistoryBinding) -> bytes:
+    """Versioned encoding of one typed history binding."""
+
+    if type(binding) is not HistoryBinding:
+        raise TypeError("history binding must be HistoryBinding")
+    return _canonical_bytes(
+        "igx.history-binding",
+        _HISTORY_BINDING_CANONICAL_VERSION,
+        (
+            _canonical_text(binding.pis_history_id),
+            _canonical_integer(binding.pis_committed_watermark),
+            _canonical_text(binding.gca_history_id),
+            _canonical_integer(binding.gca_committed_watermark),
+        ),
     )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def continuity_binding_digest(binding: HistoryBinding) -> str:
+    return hashlib.sha256(continuity_binding_canonical_bytes(binding)).hexdigest()
+
+
+def _witness_seal_digest(seal: WitnessSeal) -> str:
+    if type(seal) is not WitnessSeal:
+        raise TypeError("witness seal must be WitnessSeal")
+    payload = _canonical_bytes(
+        "igx.witness-seal",
+        _WITNESS_SEAL_CANONICAL_VERSION,
+        (
+            _canonical_text(seal.environment_id),
+            _canonical_integer(seal.revision),
+            _canonical_text(seal.fencing_token),
+            _canonical_text(seal.transition_id),
+            _canonical_text(seal.binding_digest),
+            _canonical_text(seal.status.value),
+            _canonical_integer(seal.identity_epoch),
+            _canonical_text(seal.predecessor_seal_digest),
+        ),
+    )
+    return hashlib.sha256(payload).hexdigest()
+
+
+_GENESIS_PREDECESSOR_DIGEST = hashlib.sha256(
+    _canonical_bytes(
+        "igx.witness-predecessor",
+        _WITNESS_PREDECESSOR_CANONICAL_VERSION,
+        (_canonical_text("genesis"),),
+    )
+).hexdigest()
 
 
 def _result(
@@ -275,6 +361,12 @@ class LocalDeterministicHistoryContinuity:
         self._seals: dict[int, WitnessSeal] = {}
         self._pending: _PreparedTransition | None = None
         self._crash: LocalContinuityCrashPoint | None = None
+        self._witness_high_revision = 0
+        self._verified_revision = 0
+        self._verified_tip_digest = _GENESIS_PREDECESSOR_DIGEST
+        self._chain_trust = _ChainTrust.VERIFIED
+        self._bounded_examinations = 0
+        self._full_chain_examinations = 0
 
     def sealed_retention(self) -> HistoryContinuityRetentionPolicy | None:
         return self._retention
@@ -297,10 +389,60 @@ class LocalDeterministicHistoryContinuity:
         """Qualification seam: drop the highest witness seal without the primary."""
 
         with self._lock:
-            high = self._witness_high()
-            if high < 1 or self._pending is not None:
+            high = self._witness_high_revision
+            if high < 1 or self._pending is not None or high not in self._seals:
                 raise RuntimeError("witness rollback requires a sealed revision and no pending transition")
             del self._seals[high]
+            self._witness_high_revision = high - 1
+
+    def testing_omit_historical_witness(self, sealed_revision: int) -> None:
+        """Qualification seam: remove one sealed revision below the witness high."""
+
+        with self._lock:
+            high = self._witness_high_revision
+            if self._pending is not None or sealed_revision < 1 or sealed_revision >= high:
+                raise RuntimeError("historical omission must name a sealed revision below the witness high")
+            if sealed_revision not in self._seals:
+                raise RuntimeError("witness revision is not sealed")
+            del self._seals[sealed_revision]
+
+    def testing_diverge_current_head_binding(self) -> None:
+        """Qualification seam: current head binding diverges from its witness seal."""
+
+        with self._lock:
+            if self._pending is not None or self._head is None:
+                raise RuntimeError("current head divergence requires a committed head")
+            shifted = self._head.binding.model_copy(
+                update={
+                    "pis_committed_watermark": self._head.binding.pis_committed_watermark + 1,
+                }
+            )
+            self._head = self._head.model_copy(update={"binding": shifted})
+            self._heads[self._head.revision] = self._head
+
+    def testing_bounded_verification_examinations(self) -> int:
+        """Revisions read by routine current-head verification."""
+
+        with self._lock:
+            return self._bounded_examinations
+
+    def testing_full_chain_verification_examinations(self) -> int:
+        """Revisions read by explicit full-chain verification."""
+
+        with self._lock:
+            return self._full_chain_examinations
+
+    def testing_chain_trust(self) -> tuple[int, bool]:
+        """Verified prefix revision and whether that prefix is still trusted."""
+
+        with self._lock:
+            return (self._verified_revision, self._chain_trust is _ChainTrust.VERIFIED)
+
+    def verify_committed_continuity_chain(self) -> ContinuityDenialCode | None:
+        """Walk every committed revision. Used by recovery and qualification."""
+
+        with self._lock:
+            return self._verify_committed_chain()
 
     def testing_alter_witness(self, sealed_revision: int, **changes: object) -> None:
         """Qualification seam: change sealed witness metadata without a transition."""
@@ -405,6 +547,9 @@ class LocalDeterministicHistoryContinuity:
                 allow_identity_rebind=True,
             ):
                 return self._denied(ContinuityDenialCode.CONTINUITY_REVISION_STALE)
+            diverged = self._divergence_denial()
+            if diverged is not None:
+                return diverged
             fence = _next_fence(self._head.fencing_token)
             revision = self._head.revision + 1
             prepared = _PreparedTransition(
@@ -445,6 +590,9 @@ class LocalDeterministicHistoryContinuity:
             compared = self._compare(expected_revision, expected_fencing_token)
             if compared is not None:
                 return compared
+            diverged = self._divergence_denial()
+            if diverged is not None:
+                return diverged
             assert self._head is not None
             fence = _next_fence(self._head.fencing_token)
             revision = self._head.revision + 1
@@ -517,6 +665,9 @@ class LocalDeterministicHistoryContinuity:
     def _recover_pending(self) -> ContinuityResult:
         prepared = self._pending
         assert prepared is not None
+        prefix_denial = self._verify_committed_chain()
+        if prefix_denial is not None:
+            return self._denied(prefix_denial)
         seal = self._seals.get(prepared.revision)
         if seal is None:
             self._pending = None
@@ -525,19 +676,18 @@ class LocalDeterministicHistoryContinuity:
             seal,
             prepared,
             environment_id=self._activation.environment_id,
+            predecessor_seal_digest=self._verified_tip_digest,
         ):
             head = self._commit_prepared(prepared)
+            if head is None:
+                return self._denied(ContinuityDenialCode.WITNESS_MISMATCH)
             return self._recovered(head)
         return self._denied(ContinuityDenialCode.WITNESS_MISMATCH)
 
     def _recover_consistent_head(self) -> ContinuityResult:
-        if self._head is None:
-            if self._witness_high() > 0:
-                return self._denied(ContinuityDenialCode.WITNESS_MISMATCH)
-            return self._recovered(None)
-        diverged = self._divergence_denial()
-        if diverged is not None:
-            return diverged
+        denial = self._verify_committed_chain()
+        if denial is not None:
+            return self._denied(denial)
         return self._recovered(self._head)
 
     def _seal_and_commit(self, prepared: _PreparedTransition) -> ContinuityResult:
@@ -549,10 +699,16 @@ class LocalDeterministicHistoryContinuity:
         if self._consume_crash(LocalContinuityCrashPoint.AFTER_WITNESS_SEAL):
             return self._denied(ContinuityDenialCode.TRANSITION_UNRESOLVED)
         head = self._commit_prepared(prepared)
+        if head is None:
+            return self._denied(ContinuityDenialCode.WITNESS_MISMATCH)
         return self._committed(head)
 
     def _append_seal(self, prepared: _PreparedTransition) -> bool:
-        if prepared.revision != self._witness_high() + 1:
+        if self._chain_trust is not _ChainTrust.VERIFIED:
+            return False
+        if self._verified_revision != self._witness_high_revision:
+            return False
+        if prepared.revision != self._witness_high_revision + 1:
             return False
         self._seals[prepared.revision] = WitnessSeal(
             environment_id=self._activation.environment_id,
@@ -562,10 +718,12 @@ class LocalDeterministicHistoryContinuity:
             binding_digest=continuity_binding_digest(prepared.binding),
             status=prepared.status,
             identity_epoch=prepared.identity_epoch,
+            predecessor_seal_digest=self._verified_tip_digest,
         )
+        self._witness_high_revision = prepared.revision
         return True
 
-    def _commit_prepared(self, prepared: _PreparedTransition) -> ContinuityHead:
+    def _commit_prepared(self, prepared: _PreparedTransition) -> ContinuityHead | None:
         head = ContinuityHead(
             application_id=self._activation.application_id,
             environment_id=self._activation.environment_id,
@@ -577,6 +735,9 @@ class LocalDeterministicHistoryContinuity:
             identity_epoch=prepared.identity_epoch,
             proof_revision=prepared.revision,
         )
+        if not self._accept_committed_link(head):
+            self._distrust()
+            return None
         self._heads[head.revision] = head
         self._head = head
         self._pending = None
@@ -696,24 +857,133 @@ class LocalDeterministicHistoryContinuity:
             return self._denied(ContinuityDenialCode.CONTINUITY_REVISION_STALE)
         if witness_high < self._head.revision:
             return self._denied(ContinuityDenialCode.WITNESS_MISMATCH)
-        if not self._committed_witnesses_match():
+        if not self._current_head_witness_matches():
             return self._denied(ContinuityDenialCode.WITNESS_MISMATCH)
         return None
 
-    def _committed_witnesses_match(self) -> bool:
-        assert self._head is not None
-        expected = set(range(1, self._head.revision + 1))
-        if set(self._seals) != expected or set(self._heads) != expected:
+    def _current_head_witness_matches(self) -> bool:
+        """O(1) current-head check. Does not walk older revisions."""
+
+        head = self._head
+        assert head is not None
+        if self._chain_trust is not _ChainTrust.VERIFIED:
             return False
-        for revision in expected:
+        if self._verified_revision != head.revision:
+            self._distrust()
+            return False
+        self._bounded_examinations += 1
+        seal = self._seals.get(head.revision)
+        stored = self._heads.get(head.revision)
+        if seal is None or stored is None or stored != head:
+            self._distrust()
+            return False
+        if not self._predecessor_link_holds(seal):
+            self._distrust()
+            return False
+        if _witness_seal_digest(seal) != self._verified_tip_digest:
+            self._distrust()
+            return False
+        if not _seal_matches_committed_head(
+            seal,
+            head,
+            application_id=self._activation.application_id,
+            environment_id=self._activation.environment_id,
+        ):
+            self._distrust()
+            return False
+        return True
+
+    def _predecessor_link_holds(self, seal: WitnessSeal) -> bool:
+        if seal.revision == 1:
+            return seal.predecessor_seal_digest == _GENESIS_PREDECESSOR_DIGEST
+        self._bounded_examinations += 1
+        previous = self._seals.get(seal.revision - 1)
+        if previous is None:
+            return False
+        return seal.predecessor_seal_digest == _witness_seal_digest(previous)
+
+    def _accept_committed_link(self, head: ContinuityHead) -> bool:
+        if self._chain_trust is not _ChainTrust.VERIFIED:
+            return False
+        if head.revision != self._verified_revision + 1:
+            return False
+        self._bounded_examinations += 1
+        seal = self._seals.get(head.revision)
+        if seal is None or seal.predecessor_seal_digest != self._verified_tip_digest:
+            return False
+        if not _seal_matches_committed_head(
+            seal,
+            head,
+            application_id=self._activation.application_id,
+            environment_id=self._activation.environment_id,
+        ):
+            return False
+        self._verified_tip_digest = _witness_seal_digest(seal)
+        self._verified_revision = head.revision
+        return True
+
+    def _verify_committed_chain(self) -> ContinuityDenialCode | None:
+        """Recompute every committed predecessor link. Does not shorten the prefix."""
+
+        committed = 0 if self._head is None else self._head.revision
+        pending = self._pending
+        high = self._witness_high_revision
+        if pending is None:
+            if high > committed:
+                self._distrust()
+                return ContinuityDenialCode.CONTINUITY_REVISION_STALE
+            if high != committed:
+                self._distrust()
+                return ContinuityDenialCode.WITNESS_MISMATCH
+        else:
+            if pending.revision != committed + 1:
+                self._distrust()
+                return ContinuityDenialCode.WITNESS_MISMATCH
+            pending_sealed = pending.revision in self._seals
+            if pending_sealed and high != pending.revision:
+                self._distrust()
+                return ContinuityDenialCode.WITNESS_MISMATCH
+            if not pending_sealed and high != committed:
+                self._distrust()
+                return ContinuityDenialCode.WITNESS_MISMATCH
+
+        predecessor = _GENESIS_PREDECESSOR_DIGEST
+        for revision in range(1, committed + 1):
+            self._full_chain_examinations += 1
+            seal = self._seals.get(revision)
+            historical = self._heads.get(revision)
+            if seal is None or historical is None:
+                self._distrust()
+                return ContinuityDenialCode.WITNESS_MISMATCH
+            if seal.predecessor_seal_digest != predecessor:
+                self._distrust()
+                return ContinuityDenialCode.WITNESS_MISMATCH
             if not _seal_matches_committed_head(
-                self._seals[revision],
-                self._heads[revision],
+                seal,
+                historical,
                 application_id=self._activation.application_id,
                 environment_id=self._activation.environment_id,
             ):
-                return False
-        return True
+                self._distrust()
+                return ContinuityDenialCode.WITNESS_MISMATCH
+            predecessor = _witness_seal_digest(seal)
+
+        if self._head is not None and self._heads.get(self._head.revision) != self._head:
+            self._distrust()
+            return ContinuityDenialCode.WITNESS_MISMATCH
+        expected_seals = committed
+        if pending is not None and pending.revision in self._seals:
+            expected_seals += 1
+        if len(self._seals) != expected_seals or len(self._heads) != committed:
+            self._distrust()
+            return ContinuityDenialCode.WITNESS_MISMATCH
+        self._verified_revision = committed
+        self._verified_tip_digest = predecessor
+        self._chain_trust = _ChainTrust.VERIFIED
+        return None
+
+    def _distrust(self) -> None:
+        self._chain_trust = _ChainTrust.UNTRUSTED
 
     def _compare(
         self,
@@ -734,9 +1004,7 @@ class LocalDeterministicHistoryContinuity:
         return True
 
     def _witness_high(self) -> int:
-        if not self._seals:
-            return 0
-        return max(self._seals)
+        return self._witness_high_revision
 
     def _denied(self, code: ContinuityDenialCode) -> ContinuityResult:
         return _deny(code, head=self._head, witness_high=self._witness_high())
@@ -786,6 +1054,7 @@ def _seal_matches_prepared(
     prepared: _PreparedTransition,
     *,
     environment_id: str,
+    predecessor_seal_digest: str,
 ) -> bool:
     canonical_transition = _transition_id(
         environment_id,
@@ -793,6 +1062,8 @@ def _seal_matches_prepared(
         prepared.fencing_token,
     )
     if prepared.transition_id != canonical_transition:
+        return False
+    if seal.predecessor_seal_digest != predecessor_seal_digest:
         return False
     return _seal_identity_matches(
         seal,
