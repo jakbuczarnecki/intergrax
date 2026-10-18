@@ -7,78 +7,93 @@
 | Task | `PROD-Q-R1-R7-Q-D03-A-TRUSTED-ANCHOR-BACKEND-TRUST-DOMAIN` |
 | Parent | `PROD-Q-R1-R7-Q-REFLEX-EXTERNAL-WORK-ADMISSION-IMPL-01` |
 | Branch | `development` |
-| Required and inspected START_HEAD | `d7adda0d24230470e5e6a8d9ca4f51876f30b098` |
+| Required and inspected START_HEAD | `cee58e4751eb13169d55056c2293584e792fc49c` |
 | Origin at inspection | `https://github.com/jakbuczarnecki/intergrax.git` |
 | Baseline relation | local `HEAD == origin/development == START_HEAD`; clean tree before this document |
-| Decision-03 authority | Kubernetes / multi-instance target requirements ratified; backend, global PIS and continuity protocol not ratified |
+| Decision-03 / OD-D03-A-01 authority | Kubernetes / multi-instance target and ELCR-IIRW mechanism class ratified; concrete services, trust domain, global PIS and continuity protocol not ratified |
 | Production delta | **0** |
 | Test execution | `pytest = 0`; `uv run = 0` |
-| Maximum status | **READY FOR AUDIT — ARCHITECTURE DECISION PENDING OPERATOR RATIFICATION** |
+| Maximum status | **READY FOR AUDIT — OPERATOR RATIFICATION REQUIRED** |
 
-This proposal performs the D03-A mechanism selection only. It does not authorize a
-provider, database, Kubernetes resource, credential, migration, runtime
+This R1 proposal performs only the required D03-A concrete infrastructure and
+trust-domain selection for OD-D03-A-02–08. It does not authorize a provider
+subscription, database, Kubernetes resource, credential, migration, runtime
 configuration, D03-B global PIS implementation or D03-C continuity protocol.
 
 ## 1. Decision summary
 
-### 1.1 Preferred mechanism
+### 1.1 Preferred concrete service pair
 
-Select an **External Linearizable Continuity Register with an Independent
-Immutable Recovery Witness** (`ELCR-IIRW`) as the required infrastructure class.
-It is one continuity authority composed of:
+Select this single preferred ELCR-IIRW pair for operator ratification:
 
-1. a managed, consensus-backed, strongly consistent transactional register for
-   the current head, transition log, linearizable reads and compare-and-swap; and
-2. a separately administered immutable recovery witness that seals every
-   committed head revision outside the primary register's backup/restore and
-   administrator domain.
+1. **Primary register — Google Cloud Spanner Enterprise Plus, base
+   multi-region configuration `eur3`**, in a dedicated GCP project and database.
+   Only strong reads and serializable read-write transactions are admissible.
+2. **Independent witness — Azure Blob Storage, Standard general-purpose v2,
+   RA-GZRS, primary region `North Europe`**, in a dedicated subscription in a
+   separately governed Microsoft Entra tenant. The witness is a deterministic
+   chain of fixed-size append-blob blocks under a locked container-level
+   time-based WORM policy with protected append writes.
 
-The primary register and witness form one security mechanism; the witness is not
-a second semantic history owner. The register owns the authoritative typed
-continuity state. The witness only proves that an older register image is not
-current and supplies a recovery high-water mark.
+Spanner provides the externally consistent transaction and strongly current
+read required for the authoritative head. Azure Blob provides strong
+read-after-write consistency, an exact append-position precondition and WORM
+protection for already appended blocks. A witness adapter derives the highest
+sealed `ContinuityRevision` from the last valid fixed-size block; Azure does not
+natively expose an ELCR revision type. The derivation, segment rollover and
+unknown-outcome handling therefore remain properties to qualify by execution.
 
-No repository or deployment evidence identifies an already deployed service
-satisfying this class. A concrete managed service pair, accounts/projects,
-regions, retention policy, service identities, endpoints and credentials remain
-operator-controlled selections. The proposal therefore recommends the mechanism
-class, not a named or approved technology.
+The services form one governance-continuity mechanism but remain separate
+security and recovery domains. The witness never becomes a PIS, GCA or mutable
+second current-head owner. It proves only the immutable maximum seal and detects
+a primary prefix/rollback.
 
-### 1.2 Rejected mechanism classes
+### 1.2 Why this pair is preferred
 
-- The existing Agent Distribution SQLite backing has useful transactional CAS
-  precedents but is single-host/multi-process storage, can be rolled back with
-  its database image, has a different semantic owner and is not a shared
-  Kubernetes continuity authority.
-- Kubernetes Lease, ConfigMap, CRD status or another API object is linearizable
-  only relative to the current etcd history. Cluster/etcd restore can roll the
-  object and its `resourceVersion` back with the control plane.
-- A third SQLite file, including one on the same persistent volume or backup
-  policy as PIS/GCA, cannot detect rollback of the complete local history set.
+- Spanner documents external consistency, strong reads and serializable
+  read-write transactions across its multi-region configuration.
+- `eur3` keeps the database in the EU, uses read-write regions in Belgium and
+  the Netherlands and a quorum witness in Finland, and documents 99.999%
+  multi-region availability.
+- Azure Append Block accepts `x-ms-blob-condition-appendpos`; an offset mismatch
+  fails with HTTP 412. Azure Storage documents strong consistency after a
+  successful write.
+- A locked container WORM policy prevents overwrite/deletion of retained blocks,
+  permits only protected appends when configured before locking, and prevents
+  deletion of a non-empty protected account.
+- Separate GCP and Azure identity roots make a non-overlapping human
+  administration model possible. This independence is an operator-controlled
+  topology, not a guarantee created merely by choosing two vendors.
+- The pair retains platform-neutral contracts; all service API types and
+  credentials remain in provider adapters and sanctioned composition.
+
+The choice is conditional on OD-D03-A-02–08 and future sandbox/deployment
+evidence. It is not a provisioning instruction or production approval.
+
+### 1.3 Evidence classification
+
+| Class | Meaning in this proposal |
+|---|---|
+| **DOC** | Explicit vendor documentation cited in §17; supports a service primitive, not deployment correctness |
+| **OP** | Operator-controlled fact requiring ratification or inspection: accounts, administrators, region eligibility, budget, retention, network and break-glass |
+| **TEST** | Property requiring execution evidence: adapter protocol, IAM negatives, crash resolution, regional recovery, latency, rollover and Kubernetes fencing |
 
 ## 2. Canonical baseline and current roadmap position
 
-The following current controls were inspected at the exact baseline:
+The bounded canonical set inspected at the exact baseline is:
 
 - [Platform Enterprise Completion Roadmap](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md)
 - [Platform Enterprise Freeze Acceptance Checklist](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 - [Enterprise Continuous Architecture Assurance Protocol](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md)
 - [Trusted History Anchor Mechanism Decision-03](PROD_Q_R1_R7_Q_TRUSTED_HISTORY_ANCHOR_MECHANISM_DECISION_03.md)
-- [History Provenance Authority Decision-02](PROD_Q_R1_R7_Q_LEGACY_HISTORY_PROVENANCE_AUTHORITY_DECISION_02.md)
-- [Legacy CREATE Compatibility Decision-01](PROD_Q_R1_R7_Q_LEGACY_CREATE_ADMISSION_COMPATIBILITY_DECISION_01.md)
-- [Stable CREATE Invocation Identity Decision-01](PROD_Q_R1_R7_Q_STABLE_CREATE_INVOCATION_IDENTITY_DECISION_01.md)
-- [GCA SQLite Durable Recovery Decision-01](PROD_Q_R1_R7_Q_GCA_SQLITE_DURABLE_RECOVERY_DECISION_01.md)
-- [F02 Option B](PROD_Q_R1_R7_Q_F02_DURABLE_FOLLOW_ON_SNAPSHOT_DECISION.md)
-- [R2 Strict Composition Decision](PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md)
-- [PIS ADR-03](PROD_Q_R1_ADR_03_DURABLE_PROVIDER_INVOCATION_STORE.md)
-- `docs/project/technical/guides/SYSTEM_INVARIANTS.md`
-- [Vendor/Backend Neutrality Evidence Specification](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md)
+- this proposal; and
+- [OD-D03-A-01 operator ratification](PROD_Q_R1_R7_Q_D03_A_ELCR_IIRW_MECHANISM_CLASS_OPERATOR_RATIFICATION.md).
 
 The roadmap records Decision-03 as **RATIFIED TARGET CONTRACT ONLY — NO BACKEND
-OR GLOBAL PIS AUTHORIZED** and explicitly identifies Gate D03-A for the anchor
-trust domain. It also keeps `IMPL-01`, `R7-Q`, `PROD-Q` and global `FRZ-*` open.
-This proposal is therefore aligned with, and does not advance beyond, the
-canonical roadmap.
+OR GLOBAL PIS AUTHORIZED** and OD-D03-A-01 as **RATIFIED CLASS ONLY — NO
+BACKEND/IMPLEMENTATION**. It explicitly makes OD-D03-A-02–08 the next task and
+keeps D03-B, D03-C, `IMPL-01`, `R7-Q`, `PROD-Q` and global `FRZ-*` open. No
+canonical order or scope change was found.
 
 ## 3. Current authority and dependency graph
 
@@ -134,12 +149,15 @@ immutable wiring record; it has no durable monotonic backing.
 ### 3.3 Proposed dependency graph
 
 ```text
-Independent security / recovery trust domain
-  └─ Immutable Recovery Witness (append-only revision seals; no runtime writes)
+Azure witness security / recovery trust domain
+  └─ Blob Storage RA-GZRS / North Europe
+       └─ locked WORM append-blob chain per history scope
             ^
-            │ verify/seal
-Managed external linearizable continuity register
-  └─ one typed head per EnvironmentHistoryScopeIdentity
+            │ strong read / conditional fixed-position append
+GCP primary-register trust domain
+  └─ Cloud Spanner Enterprise Plus / eur3
+       ├─ one typed head per EnvironmentHistoryScopeIdentity
+       └─ durable idempotent transition records
             ^
             │ platform-defined contract only
 Production process lifecycle under ProductionControlPlaneGovernance
@@ -154,8 +172,10 @@ GovernedProviderInvocationDispatchGate (unchanged sole execution gate)
        └─ provider execute callback
 ```
 
-The anchor does not store provider invocations, provider outcomes, GERs, F02
-records or execution payloads.
+The anchor does not store provider payloads, provider outcomes, GERs or F02
+records. It stores only typed continuity identities, watermarks, transition
+digests, fences and authorization references. Spanner and Blob resource
+identifiers remain adapter configuration and do not enter the platform contract.
 
 ## 4. Root cause
 
@@ -205,27 +225,38 @@ the rollback domain of both histories.
   independent witness domain.
 - Perform disaster recovery from an old primary-register backup.
 
-### 5.3 Required independent trust assumptions
+### 5.3 Trust assumptions requiring operator confirmation
 
-- The primary register supplies linearizable reads, serializable transactions
-  and conditional writes for all replicas in the supported deployment.
-- The witness supplies a strongly consistent highest sealed revision and
-  immutable append semantics; its production namespace cannot be restored
-  in-place to a lower revision.
-- Primary-register administration, witness administration and PIS/GCA
-  backup/restore administration are non-overlapping roles with separately
-  controlled break-glass credentials.
-- Workload identity is issued by an external IAM trust root and grants runtime
-  replicas only scoped read/advance rights, never initialize, reconcile, revoke,
-  retention-change or restore rights.
-- The authority namespace and issuer trust roots cannot be selected solely by
-  rollbackable pod configuration.
+- **OP-TRUST-01:** the Spanner project belongs to the platform database domain;
+  the Azure subscription belongs to a separate security-custodian Entra tenant;
+  PIS/GCA backup operators belong to neither administration group.
+- **OP-TRUST-02:** no person, group, CI identity, federation administrator,
+  emergency account or vendor-management automation can administer/restore both
+  domains. Two subscriptions or projects under one shared super-administrator
+  do **not** satisfy this assumption.
+- **OP-TRUST-03:** break-glass credentials are different, hardware-protected,
+  monitored and require two-person approval independently in each domain.
+- **OP-TRUST-04:** the locked witness retention interval is ten years and an
+  `ELCR-ACTIVE` legal hold remains until formally dual-controlled decommissioning.
+- **OP-TRUST-05:** Kubernetes workload federation is bound to the exact cluster
+  issuer, namespace, service account and environment. Runtime credentials are
+  short-lived and have no initialize, reconcile, revoke, IAM, retention,
+  backup, restore or resource-delete permission.
+- **OP-TRUST-06:** resource identifiers and issuer roots are delivered through
+  approved typed configuration and external IAM, never accepted from
+  rollbackable pod-local state as authority.
+- **OP-TRUST-07:** an etcd/control-plane restore and stale honest replica are in
+  scope and must be fenced. Active arbitrary-code compromise of the correctly
+  federated `AnchorTransitionWriter` is not prevented by storage immutability:
+  it can at least append an invalid forward seal and cause denial. If resistance
+  to that actor is required, direct pod write authority is rejected and a
+  separately trusted transition service requires another architecture decision.
 
-If the same cloud super-administrator can silently restore or impersonate both
-the primary register and witness, the proposal does not claim protection. The
-operator must either establish independent accounts/providers and dual control
-or reject this candidate. Suspected compromise of either domain forces
-quarantine; it never permits continued CREATE.
+The services document primitives that can support these assumptions; they do
+not prove the actual organization chart or IAM graph. Suspected compromise,
+missing separation or an uninspectable root administrator forces quarantine.
+Simultaneous compromise of both independent identity roots remains residual
+risk and is not claimed to be prevented.
 
 ### 5.4 Explicitly out of scope
 
@@ -237,56 +268,78 @@ quarantine; it never permits continued CREATE.
 
 ## 6. Preferred ELCR-IIRW mechanism
 
-### 6.1 Mandatory primary-register properties
+### 6.1 Primary register mapping — Cloud Spanner `eur3`
 
-The selected managed backing must demonstrate:
-
-- linearizable current-head reads and compare-and-swap;
-- serializable atomic append of a transition and mutation of its scoped head;
-- durable monotonic `ContinuityRevision` and `FenceEpoch`;
-- one globally reachable authority namespace for all replicas of an environment;
-- explicit tenant/environment partition keys and authorization;
-- idempotent command identity for uncertain client outcomes;
-- no eventual-consistency or client-side last-write-wins path;
-- fail-closed unavailable/read-error behavior;
-- audit records for initialization, transitions, quarantine, revocation and
-  recovery;
-- restore into a new authority incarnation, never silent in-place replacement of
-  the production head with a lower revision.
-
-### 6.2 Mandatory independent-witness properties
-
-The witness must:
-
-- be outside the PIS, GCA, Kubernetes/etcd and primary-register backup domains;
-- use a separately administered production namespace and retention policy;
-- conditionally append exactly the next scoped revision and transition digest;
-- expose the strongly consistent highest sealed revision and receipt;
-- prohibit overwrite, deletion and restore-to-lower-head for the retention
-  period, including by normal platform and primary backup operators;
-- record all retention, break-glass and recovery actions in a separately
-  retained audit trail;
-- deny or quarantine when its latest state cannot be proven after disaster
-  recovery.
-
-An ordinary log sink, signature service or eventually consistent object listing
-does not satisfy these properties.
-
-### 6.3 Authority roles
-
-| Principal role | Permitted operations | Explicitly forbidden |
+| Required property | Concrete mapping | Evidence class |
 |---|---|---|
-| `AnchorProvisioner` | First initialization with approved provisioning evidence | Runtime advance, PIS/GCA restore, witness retention changes |
-| `AnchorTransitionWriter` | Scoped compare-and-advance and fence/session operations required by future D03-C | Initialize, reconcile, revoke, restore, cross-scope access |
-| `AnchorReconciler` | Dual-controlled authorized reconciliation; may create a new identity epoch and authority incarnation | Physical provider dispatch; rewriting prior revisions |
-| `AnchorSecurityRevoker` | Monotonic quarantine/revoke | Reactivation, provider dispatch, PIS/GCA mutation |
-| `AnchorRuntimeReader` | Linearizable read and proof verification for its exact environment/history scope | Any mutation |
-| `AnchorAuditReader` | Read immutable transition/audit evidence | Runtime admission or mutation |
-| `WitnessWriter` | Seal primary transition digests through the authority service only | PIS/GCA or primary restore |
-| PIS/GCA backup operator | Backup/restore those histories under approved runbook | Any anchor/witness issue, update, revoke or retention permission |
+| Linearizable current read | Spanner default strong read; bounded/exact staleness is forbidden for admission | **DOC** |
+| Transactional CAS | Serializable read-write transaction reads the scoped head, checks expected revision/digest/fence, inserts one transition and updates the head | **DOC** primitive; **TEST** schema/adapter |
+| Idempotent resolution | Unique `(scope, transition_id)` row and immutable request digest; same ID/same digest resumes, mismatch denies | **TEST**; do not rely on a short client retry window |
+| Monotonic revision/fence | Checked integer successor and non-decreasing fence in the same transaction; commit timestamp is audit metadata, not the CAS token | **TEST** |
+| Multi-region availability | Enterprise Plus `eur3`: Belgium and Netherlands read-write regions, Finland quorum witness; documented 99.999% availability | **DOC** |
+| Independent restore | Spanner backup/PITR restoration is performed only into a new database and new `AnchorAuthorityIncarnationId`; restored data remains quarantined until compared with Azure | **DOC** restore capability; **OP/TEST** policy |
+| Workload identity | Kubernetes projected OIDC token exchanged through Google Workload Identity Federation; exact-scope database role | **DOC** primitive; **OP/TEST** binding |
+| Security audit | Cloud Audit Logs Admin Activity, Data Access and System Event logs exported to a separately retained audit destination | **DOC** primitive; **OP/TEST** retention |
 
-Human approval is represented by typed authorization evidence issued through the
-existing governance boundary. It is never a mutable `allow=true` field.
+Only the primary endpoint and strong reads are authoritative. A Spanner backup,
+PITR image, export, read-only stale read or locally cached result cannot establish
+currentness. Database deletion protection is mandatory defense-in-depth but is
+not anti-rollback evidence.
+
+### 6.2 Witness mapping — Azure immutable append blob
+
+For each `EnvironmentHistoryScopeIdentity`, the witness adapter uses a
+deterministic append-blob chain. Every append block is a canonical, fixed-size
+4 KiB `WitnessSealV1` containing scope hash, global revision, transition ID,
+primary authority incarnation, transition digest, predecessor seal digest,
+segment ordinal and record ordinal. Readers verify the chain and range-read the
+last block after `Get Blob Properties`.
+
+| Required property | Concrete mapping | Evidence class |
+|---|---|---|
+| Strong current read | Azure Storage strong consistency for successful insert/update; primary endpoint only | **DOC** |
+| Conditional next append | `Append Block` with `x-ms-blob-condition-appendpos` equal to the expected fixed-size offset; mismatch returns 412 | **DOC** primitive; **TEST** encoding/races |
+| Highest sealed revision | committed block count/content length plus strong tail range read; record revision and predecessor digest must match | **TEST** protocol over **DOC** primitives |
+| Immutability | locked container-level ten-year WORM policy with `allowProtectedAppendWrites=true`, plus active legal hold with `allowProtectedAppendWritesAll=true` as required by Azure | **DOC** primitive; **OP/TEST** configuration |
+| No lower-head restore | existing retained blocks cannot be overwritten/deleted; no service restore operation is accepted as currentness | **DOC/OP** |
+| Account deletion resistance | protected non-empty locked container prevents account deletion; Azure Resource Manager `CannotDelete` lock adds defense-in-depth | **DOC** |
+| Identity | external Kubernetes OIDC federation to Entra; custom data role limited to read and `blobs/add/action`; Shared Key disabled | **DOC** primitive; **OP/TEST** binding |
+| Audit | Activity Log for control plane, Storage resource logs for data plane, policy audit log for locked retention changes; separately retained export | **DOC** primitive; **OP/TEST** retention |
+
+Append blobs permit at most 50,000 committed blocks. The adapter closes a
+segment at 49,000 with an immutable `SEGMENT_CLOSED` record naming the one
+deterministic successor. The successor genesis block binds the prior segment
+digest. A crash between close and successor creation is `RECOVERY_REQUIRED`.
+Readers follow the immutable link rather than trust object listing. Extra data
+after `SEGMENT_CLOSED`, a second successor, a gap or a malformed tail is
+quarantine, never truncation or allow. Rollover is **not** a native vendor
+transaction and requires adversarial execution proof.
+
+RA-GZRS copies to the paired Azure region asynchronously. The secondary endpoint
+is never a currentness source. An unplanned account failover can expose a prefix,
+so it always forces comparison with Spanner and quarantine; it cannot
+automatically resume CREATE. This is safe fail-closed behavior, not zero-RPO
+regional availability.
+
+### 6.3 IAM / authorization matrix
+
+| Principal / domain | Spanner | Azure witness | PIS/GCA | Explicit prohibition |
+|---|---|---|---|---|
+| `AnchorRuntimeReader` (pod WIF) | strong `SELECT` through a read-only database role | properties/range read only | none | all writes, restore, IAM, retention |
+| `AnchorTransitionWriter` (pod WIF) | narrowly scoped `SELECT/INSERT/UPDATE` on head/transition tables through database role | custom container role: read plus `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action` | no backup/restore; future D03-C may use a separate PIS port | initialize/reconcile/revoke, delete/overwrite, IAM, retention, cross-scope |
+| `AnchorProvisioner` | create genesis rows only under governed workflow | create deterministic genesis append blob | authenticate newly provisioned history identities only | ordinary runtime transition or provider dispatch |
+| `AnchorReconciler` | create new incarnation/epoch in quarantine | append recovery seal only | read approved reconciliation evidence | prior-row rewrite, delete, physical dispatch |
+| `AnchorSecurityRevoker` | CAS to `QUARANTINED/REVOKED` | append matching revocation seal | none | reactivation or history mutation |
+| GCP Spanner DBA / restore admin | instance/database/backup operations; separate `roles/spanner.restoreAdmin` | none | none | Azure/IAM witness or PIS/GCA restore |
+| Azure witness custodian | retention, legal hold, account lock, Entra/RBAC under dual control | management only; no primary/PIS/GCA role | none | Spanner or PIS/GCA administration |
+| PIS/GCA backup operator | none | none | backup/restore under its runbook | any anchor/witness operation |
+| `AnchorAuditReader` | read transition/audit evidence | read witness and audit evidence | read approved evidence exports | mutation or admission |
+
+Built-in broad data-writer roles are not approved for runtime. Exact custom GCP
+database grants, Azure DataActions/ABAC name conditions, token audiences and
+deny tests must be recorded before provisioning. Account keys, service-account
+keys, SAS tokens and credentials in pod secrets are forbidden. Human approval
+is typed governance evidence, never a mutable `allow=true` field.
 
 ## 7. Typed continuity contract proposal
 
@@ -381,6 +434,26 @@ permission and not an invocation record.
 There is no `set_current`, `force_allow`, decrement, delete-head or restore-head
 operation.
 
+### 7.5 Vendor-neutral port to provider mapping
+
+| Platform operation | Spanner adapter | Azure witness adapter | Forbidden leakage |
+|---|---|---|---|
+| `read_current_authoritative_head` | strong read of scoped head and transition | properties plus exact tail range read; verify chain/highest seal | Spanner timestamps, Azure ETags or HTTP codes in domain result |
+| `prepare_transition` | serializable transaction with expected revision/digest/fence and unique transition ID | no call | SQL/schema objects in consumer |
+| `seal_prepared_transition` | read exact immutable prepared payload | conditional 4 KiB append at expected offset | blob URL/SAS/request headers in contract |
+| `mark_witness_sealed` | serializable CAS attaching typed `WitnessReceipt` | strong read-back resolves uncertain append | treating response receipt alone as currentness |
+| `commit_transition` | serializable CAS `WITNESS_SEALED → COMMITTED` | strong highest-seal revalidation | client-side last-write-wins |
+| `resolve_transition` | strong lookup by scope + transition ID + request digest | expected-offset and tail lookup | retry with a new transition ID |
+| `recover_authority` | new database/incarnation, reconstructed in quarantine | read immutable chain from genesis/current retained root | restore-in-place or automatic activation |
+
+The platform contract owns types, deny reasons and state-machine semantics.
+Provider adapters translate vendor conflicts/timeouts into typed outcomes such
+as `EXPECTED_REVISION_CONFLICT`, `APPEND_POSITION_CONFLICT`,
+`OUTCOME_UNKNOWN`, `AUTHORITY_UNAVAILABLE` and `RECOVERY_REQUIRED`. Selection is
+through an approved typed profile at sanctioned production composition.
+Consumers and the dispatch gate never branch on `spanner`, `azure`, region,
+endpoint, SQL state, ETag or HTTP status.
+
 ## 8. Monotonicity and anti-rollback
 
 ### 8.1 Authoritative current revision
@@ -401,26 +474,47 @@ sufficient.
 
 ### 8.2 Register/witness transition protocol
 
-The anchor's own anti-rollback transition is:
+The anchor has no cross-cloud distributed transaction. One scope permits at most
+one non-terminal transition:
 
-1. Primary serializable CAS appends revision `n` as `PREPARED` and blocks CREATE
-   for the affected scope.
-2. The witness conditionally seals `(scope, n, transition_digest,
-   prior_witness_digest)` only when `n-1` is its current highest revision.
-3. Primary serializable CAS attaches the receipt and marks revision `n`
-   `COMMITTED`.
-4. Readers require exact primary/witness equality. Any pending or mismatched
-   state denies CREATE.
+1. **PREPARED:** one Spanner serializable transaction checks committed head
+   `n-1`, exact digest/fence/incarnations, and inserts immutable transition
+   `TransitionId` + request digest for `n`; the scoped head becomes
+   `PREPARED`. CREATE is denied.
+2. **SEAL:** the adapter strong-reads Azure's current tail, verifies `n-1`, then
+   appends exactly one fixed-size seal for `n` using
+   `x-ms-blob-condition-appendpos=<expected_offset>`. HTTP 412 is a conflict,
+   never a retry-as-new.
+3. **WITNESS_SEALED:** after strong read-back of the exact range and digest, a
+   Spanner CAS attaches `WitnessReceipt(blob identity, segment, byte range,
+   seal digest, service ETag/request correlation)` and changes only
+   `PREPARED → WITNESS_SEALED`.
+4. **COMMITTED:** a second Spanner CAS rechecks the receipt, predecessor,
+   authority incarnation and fence, then advances the authoritative head and
+   changes only `WITNESS_SEALED → COMMITTED`.
+5. A reader strong-reads both services and requires the same scope, revision,
+   transition digest and authority incarnation. Any pending, missing, malformed,
+   stale or unequal state denies CREATE.
 
-This is intentionally fail-closed without a distributed transaction:
+Idempotent crash resolution is explicit:
 
-- crash before step 1: no transition;
-- crash after step 1: `PREPARED` denies; the same `TransitionId` may resume;
-- witness committed but primary finalize timed out: witness is ahead, so readers
-  deny until idempotent finalize/recovery proves the transition;
-- primary claims a revision not sealed by the witness: deny and quarantine;
-- outcome unknown: read by `TransitionId`; never retry with a new transition id
-  or infer success.
+- before PREPARED commit: transition is absent; caller may submit the same
+  `TransitionId` and payload;
+- after PREPARED: resolve the durable row and resume only that ID/payload;
+- Azure append response lost: read the expected tail offset; exact seal means
+  proceed, absent means retry the same append/offset, any other content means
+  quarantine;
+- after witness append but before WITNESS_SEALED: witness is ahead; reconstruct
+  the receipt by exact read-back and CAS the existing transition;
+- after WITNESS_SEALED but before COMMITTED: idempotently finalize only when the
+  same prepared head and highest seal still match;
+- primary claims a seal not present as Azure's highest valid seal, or Azure is
+  more than the one expected pending revision ahead: quarantine;
+- no resolver creates a new transition ID, decrements either head, truncates a
+  blob or infers success from timeout.
+
+`COMMITTED` here means only that the continuity transition is durably sealed.
+It does not prove provider execution or authorize physical redispatch.
 
 ### 8.3 Restore cases
 
@@ -433,17 +527,19 @@ This is intentionally fail-closed without a distributed transaction:
   external highest witness revision; deny.
 - **Primary anchor restored to an old snapshot:** the immutable witness is ahead;
   deny and enter recovery quarantine.
-- **Witness disaster:** no CREATE until the latest witness revision is proved.
-  Restoring a lower witness head is not an allowed recovery mode.
+- **Witness rollback/prefix after Azure failover:** Spanner is ahead; deny and
+  quarantine. RA-GZRS `Last Sync Time` is diagnostic only and cannot authorize.
+- **Witness disaster:** no CREATE until the latest retained chain is proved.
+  A lower prefix or newly empty account is not an allowed recovery mode.
 - **Whole Kubernetes control-plane rollback:** neither primary nor witness state
   is stored in etcd. Restored workload identity has no initialize/reconcile/
   revoke authority; stale fences and revisions fail.
 
-An old snapshot cannot silently become authoritative because restore-in-place to
-the production authority namespace is forbidden, a restored primary has a new
-authority incarnation, and activation requires equality with the independently
-retained highest witness revision. If the selected infrastructure cannot enforce
-those facts, it does not qualify.
+An old snapshot cannot silently become authoritative because a Spanner restore
+must use a new database and authority incarnation, while the retained Azure
+chain remains ahead. Activation requires equality with the independently read
+highest witness revision and a newly sealed dual-controlled recovery revision.
+The simultaneous loss/compromise of both independent roots is residual risk.
 
 ### 8.4 Concurrency and fencing
 
@@ -458,15 +554,49 @@ those facts, it does not qualify.
 - Quarantine/revocation is effective for new CREATE when its committed revision
   is visible. A provider call already in flight is external-effect uncertainty,
   not proof that revocation canceled it.
+- Resolution of PREPARED/WITNESS_SEALED/COMMITTED never invokes the provider.
+  If a crash also leaves PIS/GCA or external-effect state ambiguous, D03-C must
+  preserve that ambiguity and deny; it must not automatically redispatch
+  `create_work`.
 
 ## 9. Kubernetes deployment contract
 
+### 9.0 Deployment, administration and failure-domain topology
+
+```text
+Kubernetes application replicas (region(s) to be operator-confirmed)
+  ├─ short-lived OIDC federation → GCP anchor project
+  │    └─ Spanner Enterprise Plus eur3 / dedicated ELCR database
+  ├─ short-lived OIDC federation → separate Entra tenant
+  │    └─ Azure Storage GPv2 RA-GZRS / North Europe / locked WORM container
+  └─ no cloud account keys, restore rights or retention rights
+
+GCP platform DBA domain ── administer/backup/restore Spanner only
+Azure security-custodian domain ── administer WORM witness only
+PIS/GCA backup domain ── restore PIS/GCA only
+Independent audit domain ── read/export audit evidence only
+```
+
+| Failure/compromise | Surviving authority | Required result |
+|---|---|---|
+| pod/replica/cluster restart or etcd rollback | external Spanner + Azure current heads | stale revision/fence denies; no local fallback |
+| active cluster admin impersonates the authorized transition-writer subject | immutable past survives, but writer can attempt forward mutation | fail closed on invalid chain; incident quarantine; outside rollback guarantee per OP-TRUST-07 |
+| PIS/GCA backup operator rollback | both ELCR domains | incarnation/watermark mismatch denies |
+| Spanner DBA restore/corruption | immutable Azure high-water mark | primary prefix mismatch; new-incarnation recovery in quarantine |
+| Azure custodian error or regional prefix | Spanner committed head | mismatch denies; no stale secondary allow |
+| GCP regional failure inside `eur3` | Spanner multi-region quorum plus Azure | service behavior per vendor; adapter still strong-read only |
+| Azure North Europe regional failure | Spanner survives; Azure secondary may lag | CREATE unavailable/quarantined until exact chain is proven |
+| simultaneous compromise/loss of GCP and Azure roots | no independent currentness source | outside guaranteed protection; incident quarantine and operator decision |
+
 ### 9.1 Replica identity and access
 
-- Each replica uses workload identity, not a shared static credential.
-- Authorization binds service, cluster/deployment identity, environment and
-  history scope.
-- Runtime replicas may read and perform only future D03-C scoped transitions.
+- Each replica uses a projected Kubernetes service-account token federated
+  independently to Google Workload Identity Federation and Microsoft Entra
+  Workload ID; no shared static credential.
+- Authorization binds OIDC issuer, service-account subject, token audience,
+  cluster/deployment identity, environment and history scope.
+- Runtime replicas may read and perform only future D03-C scoped transitions
+  through the neutral ports and narrow database/container roles.
 - Provisioning, reconciliation, revocation, retention and restore use separate
   identities unavailable to pods.
 - Every replica reaches the same external authority/witness namespace for the
@@ -489,19 +619,46 @@ those facts, it does not qualify.
   reservation immediately before physical dispatch.
 - Stale reads, follower reads without linearizability, disconnected reads and
   client-clock-only freshness are forbidden for CREATE admission.
-- Required revocation latency and maximum verdict lifetime are operator-selected
-  SLOs and must be tested; until selected they are **NOT PROVEN**.
+- Revocation latency and verdict-lifetime values proposed in §9.5 remain
+  unratified and **NOT PROVEN** until operator selection and execution tests.
 
 ### 9.4 Disaster recovery and audit
 
-- Primary recovery creates a new authority incarnation in quarantine.
-- The recovery service reconstructs from the highest witness-sealed transition
-  chain and independently retained audit evidence.
+- Spanner recovery restores a backup to a new database, assigns a new authority
+  incarnation and remains quarantined.
+- The recovery service reconstructs/verifies from the highest Azure
+  witness-sealed transition chain and independently retained audit evidence.
 - Cutover to the recovered incarnation requires dual-controlled authorization
   and a new witness-sealed revision.
 - Provisioning, reconciliation, revocation, IAM, retention and restore actions
   must be attributable to principal, policy revision, request id and exact
   artifact/configuration SHA without secrets in evidence.
+
+Azure unplanned failover is not a transparent recovery path because
+geo-replication is asynchronous. A planned failover may be tested for zero data
+loss, but neither planned nor unplanned failover can bypass exact head
+comparison, authority-incarnation checks and a new recovery seal.
+
+### 9.5 Availability, latency and cost implications
+
+- Spanner `eur3` documents 99.999% multi-region availability and incurs
+  cross-region quorum latency; only strong reads/transactions are allowed.
+- Spanner supports granular capacity from 100 PU, but managed autoscaling has a
+  1000-PU minimum. Enterprise Plus multi-region remains materially more
+  expensive than a regional service; capacity and budget require explicit
+  operator sizing rather than an invented one-node minimum.
+- Every transition adds an inter-cloud Azure append/read-back and possible
+  egress cost. Blob capacity cost is small, but transactions, RA-GZRS, immutable
+  retention, audit export and private connectivity are recurring costs.
+- The safety availability objective is **RPO 0 for authorization**: an
+  unverified prefix is never accepted. This intentionally allows CREATE
+  unavailability during witness/primary uncertainty.
+- Proposed operator targets are: positive verdict lifetime at most 5 seconds,
+  committed revocation visible to new reservations within 5 seconds, anchor
+  transition p99 at most 500 ms from approved EU cluster regions, and
+  safety-preserving CREATE recovery target of 4 hours after a regional event.
+  These are **OP/TEST** targets, not documented vendor guarantees. Failure to
+  meet latency or RTO requires an operator decision, never weaker consistency.
 
 ## 10. CREATE admission integration boundary
 
@@ -569,27 +726,21 @@ integration.
 
 No D03-C design or implementation is authorized by this proposal.
 
-## 12. Mechanism comparison
+## 12. Concrete service-pair comparison
 
-| Evaluation | Existing Agent Distribution SQLite control-plane backing | Preferred ELCR-IIRW | Kubernetes-native API object / Lease / CRD |
+At most three pairs were assessed:
+
+| Pair | Primary findings | Witness findings | DR / cost / decision |
 |---|---|---|---|
-| Atomic CAS and linearizability | Transactional CAS on one SQLite file; single-host/multi-process claim only | Required linearizable CAS and serializable transactions across replicas | API writes may be linearizable while current etcd is healthy |
-| Durable monotonic head | Durable relative to current SQLite media | Monotonic primary head plus independently sealed highest witness revision | `resourceVersion`/object generation is relative to restorable etcd history |
-| Independent from PIS/GCA backup domain | Not evidenced; path-based local production storage | Mandatory separate primary and witness recovery domains | Separate from PVCs, but inside cluster control-plane recovery domain |
-| Anti-rollback after recovery | No; old DB image can restore old pointer/revision | Yes within stated split-domain trust model; mismatch forces quarantine | No; etcd snapshot restore can restore old object and lease |
-| Replica fencing | Optimistic revision guards, not Kubernetes-wide history fencing | Monotonic `FenceEpoch`, one-use reservations and CAS | Lease holder/resource version can become stale after restore |
-| Privilege separation | No D03-A roles; existing semantics unrelated | Explicit runtime/provision/reconcile/revoke/witness/backup role split | Cluster-admin commonly controls object, RBAC and restore |
-| Crash recovery | SQLite transaction recovery; no external rollback witness | Idempotent transition id plus prepared/sealed/committed recovery | Object update recovers, but control-plane rollback remains undetected |
-| Portability/replacement | Concrete SQLite implementation behind unrelated contracts | Platform-defined contract; provider adapter at composition leaf | Kubernetes semantics leak into production authority |
-| Operational complexity | Low, but does not satisfy threat model | High: two security domains, IAM, retention and DR runbook | Medium, but safety requirement fails |
-| Required new authority | Would misuse an existing semantic authority; rejected | Yes: narrowly scoped history continuity contract and approved infrastructure | New Kubernetes semantic authority; rejected |
-| Demonstrable testability | Local CAS/restart only | Contract, fault, multi-process and Kubernetes DR tests possible | Healthy-cluster tests possible; safe etcd-restore anti-rollback cannot be shown without external witness |
-| Decision | **REJECT** | **PREFERRED — PENDING OPERATOR RATIFICATION** | **REJECT** |
+| **A — Cloud Spanner Enterprise Plus `eur3` + Azure Blob Storage GPv2 RA-GZRS immutable append blob** | External consistency, strong reads and serializable transactions support head + transition CAS; durable ID-based read-back handles unknown commit outcome | Strong reads plus append-position condition and protected WORM append support one ordered seal chain; split Entra tenant can be independently governed | Multi-region primary, fail-closed Azure regional recovery; highest fixed cost and cross-cloud latency. **PREFERRED — OD-D03-A-02–08 REQUIRED** |
+| **B — DynamoDB MRSC global table + Azure Blob witness as above** | MRSC gives cross-region strong reads and conditional writes, but AWS documents that MRSC global tables do not support transactional operations. Regional transactions are ACID only in their invocation region | Witness is viable under the same conditions as Pair A | Does not meet the selected primary design's atomic head + separate durable transition requirement in multi-region mode without weakening or redesigning the contract. **REJECT** |
+| **C — Cloud Spanner `eur3` + Amazon S3 Object Lock** | Primary qualifies as in Pair A | S3 is strongly consistent and Object Lock is WORM, but ordinary S3 has no atomic update across keys and no protected append. Conditional PUT protects one key only; append exists only in S3 Express One Zone directory buckets, where Object Lock is unavailable | WORM objects alone do not provide a conditional next-revision/highest-head primitive. **REJECT** |
 
-The Agent Distribution implementation may inform transaction/CAS style but may
-not be reused as the D03-A semantic store. Kubernetes-native state may be used
-for non-authoritative availability coordination only; it must never be the
-continuity proof.
+Pair A is preferred only within the stated split-domain model. The Azure
+append-blob chain is an application protocol requiring execution proof; the
+proposal does not relabel WORM storage itself as monotonic currentness.
+Kubernetes Lease/ConfigMap/CRD, a third SQLite file and two accounts with one
+shared administrator remain rejected without re-evaluation.
 
 ## 13. Future adversarial acceptance matrix — not execution evidence
 
@@ -611,6 +762,13 @@ continuity proof.
 | D03-A14 | Anchor unavailable or unreadable | `DENY/AUTHORITY_UNAVAILABLE`; no cached allow | Fault injection + Kubernetes network partition |
 | D03-A15 | Accept/cancel operation | No unauthorized CREATE-specific history predicate; existing separate semantics retained | Contract + integration regression |
 | D03-A16 | Alternate strict production/HTTP path | Cannot reach provider CREATE without the existing guarded dispatch gate | Static reachability + integrated HTTP + eventual Kubernetes |
+| D03-A17 | Two writers append revision `n` at one Azure offset | One append succeeds; loser receives conflict; exact tail resolves winner | Azure sandbox concurrency |
+| D03-A18 | Azure accepted append but response is lost | Exact range read recovers the same seal; no new transition ID or second seal | Proxy fault injection |
+| D03-A19 | Crash before/after `SEGMENT_CLOSED` and successor genesis | CREATE denied until one deterministic linked successor is verified | Azure sandbox rollover fault matrix |
+| D03-A20 | Azure unplanned RA-GZRS failover exposes a prefix | Spanner/witness mismatch and quarantine; no automatic CREATE | Controlled vendor sandbox DR |
+| D03-A21 | Spanner backup restored to a new database | New authority incarnation remains quarantined until highest witness seal and dual control are proven | GCP sandbox restore |
+| D03-A22 | Runtime identity attempts init/reconcile/revoke/delete/retention/restore or cross-scope access | IAM deny and auditable event in both clouds | Dual-cloud IAM adversarial test |
+| D03-A23 | Primary or witness admin attempts to administer the other domain | No effective entitlement or impersonation chain | Identity-graph inspection + break-glass exercise |
 
 All rows are future specifications. None was executed in this task.
 
@@ -627,7 +785,7 @@ All rows are future specifications. None was executed in this task.
 | A5 production reachability | `no` for this delta |
 | A6 controls | OWN, BND, CTR, TYP, PLG, RPL, SEC, REL, PRD, REG, GOV/EXE, OBS/TRC, CMP/STA/REC |
 | A7 historical certification | No status changed; historical PASS remains scoped to its accepted SHA |
-| A8 regression selection | Future D03-A01–A16 only; `pytest=0`, `uv run=0` |
+| A8 regression selection | Future D03-A01–A23 only; `pytest=0`, `uv run=0` |
 
 Change class: architecture decision proposal with no production delta. ECAP does
 not permit full-platform or freeze-ready claims from this delta.
@@ -644,9 +802,9 @@ scope only. It does not promote any `FRZ-*` criterion or prove an implementation
 | CTR | Consumers depend on one narrow platform contract | `ProviderInvocationStore`; `ProviderInvocationDispatchPort` | New continuity head/read/CAS contract only if ratified | Conceptual operation set in §7 | Code-level contract review, versioning and consumer inventory | **NOT PROVEN** |
 | TYP | No `Any`, `object`, dict/string pseudo-contract or reflection | Frozen Pydantic provider/GCA records; typed enums | Types in §7 with explicit enums and deny reasons | Conceptual schema | Implemented models, parser/version negatives and pyright/static gates | **NOT PROVEN** |
 | PLG | Backend adapter cannot self-activate or expand authority | Existing explicit production composition | Adapter selected only by approved typed configuration/composition | Composition owner precedent | Approved selection contract, negative reachability and alternate adapter proof | **NOT PROVEN** |
-| RPL | Backend replaceable without vendor types in consumers | ECAP RPL-A..H; VBN evidence spec | Neutral continuity port plus adapter leaf | Technology-neutral proposal | Concrete provider inventory; RPL-A..H, alternate backend and recovery proof | **BLOCKED** |
-| SEC | Tenant/environment isolation, least privilege and independent recovery roles | Governance principal/resolver; `FRZ-SEC-01/04` | Scope-bound IAM and non-overlapping admin roles | Threat model and role matrix | Concrete IAM, secretless workload identity, cross-scope negatives and compromise exercises | **BLOCKED** |
-| REL | Monotonic continuity, fencing, crash ambiguity and fail-closed availability | PIS atomic admission; local uncertain-write handling; `FRZ-REL-03/05` | External head/witness and transition recovery | Current local safety mechanisms and conceptual protocol | Real backend CAS/fault/DR evidence plus D03-B/C | **BLOCKED** |
+| RPL | Backend replaceable without vendor types in consumers | ECAP RPL-A..H; freeze RPL controls | Neutral ports; Spanner/Azure mappings remain adapter-local | Concrete inventory and two rejected alternatives | RPL-A..H implementation evidence, alternate conforming adapters and recovery equivalence | **BLOCKED** |
+| SEC | Tenant/environment isolation, least privilege and independent recovery roles | Governance principal/resolver; `FRZ-SEC-01/04` | Separate GCP/Entra roots, WIF and narrow role matrix | Vendor IAM capabilities and explicit OP assumptions | Actual principal graph, custom roles, no-shared-admin attestation, cross-scope/impersonation/break-glass tests | **BLOCKED** |
+| REL | Monotonic continuity, fencing, crash ambiguity and fail-closed availability | PIS atomic admission; local uncertain-write handling; `FRZ-REL-03/05` | Spanner PREPARED/WITNESS_SEALED/COMMITTED plus conditional Azure seal | Documented service primitives and crash resolver design | Real CAS/append unknown-outcome, rollover, restore, failover and D03-B/C evidence | **BLOCKED** |
 | PRD | No production bypass; all replicas use same authority | Strict opener, factory and sole dispatch gate; `FRZ-PRD-08` | CREATE-only continuity at the existing gate | Current single-process route inventory | Multi-replica/Kubernetes integrated proof and zero alternate path | **BLOCKED** |
 | REG | Corrected blocker has positive and negative regression gates | ECAP and `FRZ-REG-02/03` | D03-A01–A16 future gates | Acceptance specifications only | Executed gates tied to exact implementation SHA and CI ownership | **NOT PROVEN** |
 | Governance / Execution | Governance issues scoped evidence; execution remains the gate/provider path | `ProductionControlPlaneGovernance`; `GovernedProviderInvocationDispatchGate`; `FRZ-GOV-01/05/07/10`, `FRZ-EXE-01/02/07` | Governance-owned verdict consumed by sole gate | Existing separation and proposed producer/consumer boundary | Fresh authorization and non-bypassable integration proof | **NOT PROVEN** |
@@ -695,45 +853,126 @@ independent exact-SHA acceptance before any status consideration.
 
 | Finding | Classification | Required disposition |
 |---|---|---|
-| No existing approved history continuity backend or independent witness is present in the inspected composition | **IN-SCOPE BLOCKER** | Ratify or reject ELCR-IIRW and select concrete infrastructure |
-| Concrete primary/witness administrative independence and break-glass model is unknown | **IN-SCOPE BLOCKER** | Approve a separation-of-duties and compromise model |
+| Preferred Spanner/Azure pair is not operator-ratified, provisioned or present in production composition | **IN-SCOPE BLOCKER** | Ratify or reject OD-D03-A-02–08; later authorize provisioning separately |
+| Actual GCP project, Entra tenant/subscription, administrators and break-glass principals are unknown | **IN-SCOPE BLOCKER** | Inspect and approve a no-shared-admin identity graph before provisioning |
+| Azure fixed-block chain, segment rollover and unknown append outcome are proposed adapter semantics, not a native ELCR feature | **IN-SCOPE BLOCKER** | Sandbox concurrency, crash, malformed-tail and rollover qualification |
+| RA-GZRS unplanned failover can lose an asynchronously replicated suffix | **RESIDUAL AVAILABILITY RISK** | Preserve quarantine/no automatic failover; test exact recovery runbook |
+| Spanner Enterprise Plus `eur3` carries premium multi-region cost; managed autoscaling starts at 1000 PU although manual granular capacity can start at 100 PU | **OPERATOR COST DECISION** | Size and approve budget or reject the pair; do not weaken consistency to reduce cost |
 | Current per-process SQLite PIS is not a global Kubernetes first-writer domain | **IN-SCOPE BLOCKER** (D03-B; outside D03-A implementation scope) | Separate D03-B architecture decision and evidence |
 | Current PIS/GCA lack externally bound history incarnations and watermarks; no cross-store critical protocol exists | **IN-SCOPE BLOCKER** (D03-C; outside D03-A implementation scope) | Separate D03-C architecture decision and evidence |
 | Global `FRZ-*`, `R7-Q`, `PROD-Q` and `IMPL-01` remain open/not qualified | **TRACKED FREEZE DEBT** | Preserve roadmap gates; no promotion from this proposal |
 | Backend portability, alternate implementation and RPL-A..H evidence do not exist | **TRACKED FREEZE DEBT** | EBH-5/6-compatible VBN artifacts and qualification |
 | Managed-service CAS, witness immutability, IAM, revocation latency and DR behavior have not been exercised | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Vendor documentation plus controlled sandbox/qualification evidence |
-| D03-A01–A16, multi-process and Kubernetes tests were not executed | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Future explicitly authorized qualification on exact implementation SHA |
+| D03-A01–A23, multi-process and Kubernetes tests were not executed | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Future explicitly authorized qualification on exact implementation SHA |
 
-### 16.2 Operator ratifications required
+### 16.2 Exact operator choices OD-D03-A-02–08
 
-1. **OD-D03-A-01 — mechanism:** ratify or reject ELCR-IIRW as the D03-A
-   mechanism class.
-2. **OD-D03-A-02 — concrete infrastructure:** name the managed primary register
-   and immutable witness services, accounts/projects, regions and production
-   namespaces. No service is inferred by this proposal.
-3. **OD-D03-A-03 — trust model:** approve the non-overlapping platform,
-   security/witness, PIS/GCA backup and break-glass administrators, including the
-   accepted residual risk of simultaneous trust-root compromise.
-4. **OD-D03-A-04 — scope:** approve environment-level history scope as the
-   conservative default and define when a tenant sub-scope is independently
-   complete enough to authorize.
-5. **OD-D03-A-05 — IAM:** approve runtime, provisioner, reconciler, revoker,
-   witness and audit-reader workload identities and their exact permissions.
-6. **OD-D03-A-06 — recovery:** approve no-restore-in-place, witness retention,
-   new authority incarnation, quarantine and dual-controlled cutover rules.
-7. **OD-D03-A-07 — freshness/SLO:** set maximum verdict lifetime, revocation
-   latency, availability/degraded-mode policy and regional DR objectives.
-8. **OD-D03-A-08 — contract/composition:** approve a platform-owned typed
-   continuity contract composed by the production process lifecycle, with the
-   existing dispatch gate as sole CREATE consumer/enforcer.
-9. **OD-D03-A-09 — implementation authority:** if decisions 01–08 are ratified,
-   separately authorize the smallest contract/adapter/configuration
-   implementation. This proposal does not do so.
-10. **OD-D03-A-10 — separate gates:** keep D03-B global PIS and D03-C continuity
-    write protocol as independent mandatory decisions; neither is implied by
-    D03-A ratification.
+Each decision is independently accept/reject; silence is not approval.
 
-## 17. Explicit NO-GO conditions
+1. **OD-D03-A-02 — concrete services and regions:** ratify Cloud Spanner
+   Enterprise Plus `eur3` as primary and Azure Blob Storage GPv2 Standard
+   RA-GZRS, primary `North Europe`, locked immutable append-blob container as
+   witness. Record real project, database, tenant, subscription, account and
+   container identities in a later provisioning record; none is invented here.
+2. **OD-D03-A-03 — trust/failure domains:** ratify separate GCP and Entra
+   identity roots, no shared human/machine/super-administrator, a third PIS/GCA
+   backup domain, independent two-person break-glass and the residual risk of
+   simultaneous compromise/loss of both roots. Also accept OP-TRUST-07 or require
+   a separate trusted transition-service decision before implementation.
+3. **OD-D03-A-04 — history scope:** ratify environment-level scope as the
+   conservative default. Tenant sub-scope is forbidden until complete,
+   independently restorable PIS/GCA tenant histories and cross-tenant
+   non-interference are proven.
+4. **OD-D03-A-05 — IAM:** ratify §6.3, short-lived dual-cloud workload
+   federation, custom table/container data roles, Shared Key/static-key/SAS
+   prohibition, separate provision/reconcile/revoke/restore/retention roles and
+   immutable independent audit export.
+5. **OD-D03-A-06 — retention/recovery:** ratify ten-year locked container WORM
+   plus `ELCR-ACTIVE` legal hold, protected append settings for both policies,
+   deterministic segment chain,
+   no primary restore-in-place, new authority incarnation in quarantine,
+   no automatic Azure unplanned failover and dual-controlled sealed cutover.
+6. **OD-D03-A-07 — freshness/SLO/cost:** ratify no degraded allow, RPO 0 for
+   authorization, verdict lifetime ≤5 s, committed-revocation target ≤5 s,
+   transition p99 target ≤500 ms from approved EU clusters, safety-preserving
+   CREATE RTO target 4 h, and Enterprise Plus/cross-cloud recurring cost subject
+   to budget approval and execution measurement.
+7. **OD-D03-A-08 — contract/composition:** ratify the vendor-neutral typed ports
+   and records in §7, Spanner/Azure adapters only at sanctioned composition, the
+   production lifecycle under `ProductionControlPlaneGovernance` as composer,
+   and the existing `GovernedProviderInvocationDispatchGate` as the sole
+   CREATE-only consumer/enforcer.
+
+Even unanimous OD-D03-A-02–08 ratification does not authorize provisioning or
+code. A later explicit implementation/provisioning authority is required.
+D03-B global PIS and D03-C continuity/TOCTOU remain independent mandatory gates.
+
+## 17. Authoritative vendor evidence
+
+Documentation inspected 2026-10-18:
+
+### 17.1 Preferred primary — Google Cloud
+
+- [Spanner: TrueTime and external consistency](https://docs.cloud.google.com/spanner/docs/true-time-external-consistency)
+  — external consistency and default strong reads.
+- [Transactions overview](https://docs.cloud.google.com/spanner/docs/transactions)
+  — serializable read-write transactions and strong read semantics.
+- [Regional, dual-region, and multi-region configurations](https://docs.cloud.google.com/spanner/docs/instance-configurations)
+  — exact `eur3` topology, availability, latency and cost trade-offs.
+- [Disaster recovery overview](https://cloud.google.com/spanner/docs/backup/disaster-recovery-overview)
+  and [Backups overview](https://docs.cloud.google.com/spanner/docs/backup)
+  — PITR, backup, copy and restore capabilities.
+- [Spanner IAM](https://docs.cloud.google.com/spanner/docs/iam) and
+  [security/audit logging](https://docs.cloud.google.com/spanner/docs/security-privacy-compliance)
+  — data/admin roles and audit-log classes.
+- [Workload Identity Federation with Kubernetes](https://cloud.google.com/iam/docs/workload-identity-federation-with-kubernetes)
+  — projected Kubernetes OIDC identity without service-account keys.
+- [Spanner editions](https://docs.cloud.google.com/spanner/docs/editions-overview)
+  and [managed autoscaler](https://docs.cloud.google.com/spanner/docs/managed-autoscaler)
+  — Enterprise Plus and minimum-capacity/cost implications.
+
+### 17.2 Preferred witness — Microsoft Azure
+
+- [Manage Blob Storage concurrency](https://learn.microsoft.com/en-us/azure/storage/blobs/concurrency-manage)
+  — strong consistency.
+- [Append Block REST API](https://learn.microsoft.com/en-us/rest/api/storageservices/append-block)
+  — exact append-position condition, 412 conflict and required RBAC DataAction.
+- [Append blob structure and limits](https://learn.microsoft.com/en-us/rest/api/storageservices/understanding-block-blobs--append-blobs--and-page-blobs)
+  — append-only blocks and 50,000-block limit.
+- [Container-level WORM policies](https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-container-level-worm-policies)
+  and [immutable storage overview](https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-storage-overview)
+  — locked retention, protected appends, legal holds and deletion behavior.
+- [Azure Storage redundancy](https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy)
+  and [disaster-recovery guidance](https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance)
+  — synchronous primary-zone versus asynchronous secondary-region replication
+  and possible unplanned-failover data loss.
+- [Microsoft Entra Workload Identity Federation](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation)
+  — any Kubernetes cluster, including GKE/EKS/on-premises.
+- [Blob authorization with Entra ID](https://learn.microsoft.com/en-us/azure/storage/blobs/authorize-access-azure-active-directory)
+  and [custom Azure roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles)
+  — identity-based, least-privilege data access.
+- [Blob monitoring and audit scenarios](https://learn.microsoft.com/en-us/azure/storage/blobs/blob-storage-monitoring-scenarios)
+  — Activity Log versus data-plane Storage resource logs.
+
+### 17.3 Rejected-pair evidence
+
+- [DynamoDB global tables](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables_HowItWorks.html)
+  and [DynamoDB transactions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html)
+  — MRSC strong conditional writes but no MRSC transactions; regional-only
+  transactional atomicity.
+- [S3 consistency model](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html),
+  [conditional writes](https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html),
+  [Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)
+  and [directory-bucket append](https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-buckets-objects-append.html)
+  — strong per-key operations and WORM, but no atomic cross-key next-head;
+  append is limited to S3 Express One Zone and does not supply Object Lock.
+
+These pages document service behavior only. They do not prove purchased edition,
+regional feature compatibility, configured IAM/retention, actual administrator
+separation, adapter correctness, effective SLA, latency or recovery behavior.
+Those claims remain **OP** or **TEST**.
+
+## 18. Explicit NO-GO conditions
 
 The proposal must be rejected or the deployment must remain quarantined if any
 of the following holds:
@@ -741,7 +980,17 @@ of the following holds:
 - no independently protected witness/high-water mark exists;
 - primary and witness can both be silently rolled back by one normal
   administrator or backup workflow;
+- GCP and Azure ultimately share a person, group, CI principal, federation
+  administrator or break-glass account with authority over both histories;
 - the witness can restore its production namespace to a lower head;
+- Azure Shared Key/SAS/static secrets are enabled for runtime, the WORM policy is
+  unlocked, `allowProtectedAppendWrites` and the legal-hold protected-append
+  setting were not fixed before use, or active legal hold/retention cannot be
+  independently verified;
+- an Azure secondary endpoint, `Last Sync Time`, object listing or unplanned
+  failover prefix is treated as a current highest seal;
+- append-blob segment rollover, malformed tail or unknown append outcome lacks a
+  fail-closed resolver;
 - authority selection, issuer trust or positive verdict comes only from
   rollbackable Kubernetes/local configuration;
 - the primary lacks linearizable reads, serializable CAS or idempotent
@@ -765,21 +1014,21 @@ of the following holds:
 - implementation begins before operator ratification and explicit
   implementation authorization.
 
-## 18. Final recommendation and status
+## 19. Final recommendation and status
 
-**Recommend ELCR-IIRW for operator ratification**, subject to all decisions in
-§16.2. It is the only evaluated class that can provide linearizable
-cross-replica continuity while detecting rollback of the primary authority
-itself within an explicit split-domain trust model.
+**Recommend Cloud Spanner Enterprise Plus `eur3` plus independently governed
+Azure Blob Storage RA-GZRS immutable append witness for OD-D03-A-02–08 operator
+ratification.** The documented primitives can support ELCR-IIRW when combined
+with the exact conditional-seal protocol and truly non-overlapping identity,
+backup and break-glass domains described here.
 
-The existing Agent Distribution SQLite backing and Kubernetes-native
-control-plane objects are rejected for D03-A because neither survives its own
-authorized recovery/restore domain as a trustworthy monotonic currentness
-authority.
+This recommendation does not claim that WORM alone provides currentness, that
+RA-GZRS has synchronous regional RPO, or that separate cloud accounts are
+independent without the operator-inspected administration graph.
 
 This document contains no production implementation and no qualification
 execution. D03-B and D03-C remain mandatory blockers. Recommended task status:
 
-**READY FOR AUDIT — ARCHITECTURE DECISION PENDING OPERATOR RATIFICATION**
+**READY FOR AUDIT — OPERATOR RATIFICATION REQUIRED**
 
 Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.
