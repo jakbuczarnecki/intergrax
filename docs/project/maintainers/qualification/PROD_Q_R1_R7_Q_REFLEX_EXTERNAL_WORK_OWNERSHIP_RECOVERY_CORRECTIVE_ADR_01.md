@@ -5,7 +5,8 @@
 | **Status** | **READY FOR AUDIT** (corrective architecture decision — documentation only) |
 | **Date** | 2026-10-18 |
 | **Branch** | `development` |
-| **START_HEAD / evidence SHA** | `0bb8fcc8cc9c856127b77d104f5ac5e9baa2ada0` |
+| **START_HEAD / evidence SHA** | `903f4be08ec9cadd4d3ded133761cd0bd79fe0d3` (F02 decision @ same lineage) |
+| **F02 decision** | [`PROD_Q_R1_R7_Q_F02_DURABLE_FOLLOW_ON_SNAPSHOT_DECISION.md`](PROD_Q_R1_R7_Q_F02_DURABLE_FOLLOW_ON_SNAPSHOT_DECISION.md) |
 | **Parent** | **PROD-Q-R1-R7-Q-REFLEX-EXTERNAL-WORK-ADMISSION-IMPL-01** — independent audit **REJECTED** |
 | **Ratified design preserved** | [`PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_ADMISSION_ADR_01.md`](PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_ADMISSION_ADR_01.md) **A+B** (orchestrator-backed port + strict fail-closed) — **not reopened** |
 | **PIS authority preserved** | [`PROD_Q_R1_ADR_03_DURABLE_PROVIDER_INVOCATION_STORE.md`](PROD_Q_R1_ADR_03_DURABLE_PROVIDER_INVOCATION_STORE.md) |
@@ -65,7 +66,7 @@
    - reads `get_state` / `get_result` / stored boundary event JSON via existing `GovernedExecutionStore` APIs;
    - **fail closed** with `prior_create_snapshot_missing` when state is incomplete, stale, or `EXECUTION_OUTCOME_UNKNOWN`;
    - does **not** add a new store table or snapshot service.
-3. **STOP — ARCHITECTURE DECISION REQUIRED (narrow):** the exact **serialization seam** for rehydrating `ExternalWorkAdapterResult.snapshot` from existing `GovernedExecutionStore.put_event_json` / GER fields is **not yet a ratified contract**. Recovery IMPL must either (a) extend **existing** `put_event_json` payload using already-persisted orchestrator finalize data, or (b) operator ratifies a minimal typed snapshot carrier on `GovernedExecutionStore` **without** a parallel store. **Forbidden:** retaining the session dict as fallback on cache miss.
+3. **F02 serialization seam — decided (Option B, pending operator ratification):** [`PROD_Q_R1_R7_Q_F02_DURABLE_FOLLOW_ON_SNAPSHOT_DECISION.md`](PROD_Q_R1_R7_Q_F02_DURABLE_FOLLOW_ON_SNAPSHOT_DECISION.md) — **Option A not proven** (GER / PIS / EBE v2 lack full `ExternalWorkSnapshot`). **Ratify:** `GovernedExternalWorkCreateFollowOnRecordV1` on existing `GovernedExecutionStore` (`put_create_follow_on_record` / `get_create_follow_on_record`), written at CREATE finalize after `put_result`, read only via orchestrator resolver. **Forbidden:** session dict fallback; EBE or PIS as snapshot authority; provider `get_work` inference.
 
 **Recovery / restart:** Accept/cancel after process restart must succeed only when durable host store + PIS rows reconstruct the snapshot; otherwise **deny** (`prior_create_snapshot_missing`) — recovery is **not** ordinary HTTP retry (GR-7-A7).
 
@@ -246,7 +247,7 @@ create_governed_contractor_backend_app
 | ID | Class | Note |
 |----|-------|------|
 | F01–F03 | **IN-SCOPE BLOCKER** for IMPL-01 re-qualification | Ownership / AC3 seam |
-| F02 snapshot serialization | **STOP — ARCHITECTURE DECISION REQUIRED** (narrow §F02.3) | No second store |
+| F02 snapshot serialization | **OPTION B PROPOSED — AWAITING OPERATOR RATIFICATION** (F02 decision doc) | No second store |
 | GCA durable host store media | **TRACKED FREEZE DEBT** | Parallel to ADR-03 Case B |
 | Integrated HTTP→PIS E2E | **TRACKED FREEZE DEBT** | Package P interpretation B |
 | pytest / uv in ADR task | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Commands listed §6 only |
