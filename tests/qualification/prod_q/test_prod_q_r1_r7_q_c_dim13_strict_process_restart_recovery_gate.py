@@ -53,6 +53,9 @@ from intergrax.applications._shared.venv_bundle_runtime_agent_factory_resolver i
     VenvBundleRuntimeAgentFactoryResolver,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+    with_qualified_strict_external_work_provider_pin,
+)
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
     assert_identity_continuity,
     load_d4_launcher_module,
@@ -210,18 +213,20 @@ def _simulate_process_runtime_restart(session: StrictProductionServingSession) -
 def _build_strict_http_app(d4, session: StrictProductionServingSession) -> tuple[FastAPI, str]:
     env = session.environment
     tenant_id = env.application_environment_id
-    settings = with_strict_http_api_keys(
-        replace(
-            GovernedContractorBackendSettings.from_env(),
-            include_mcp=False,
-            include_scheduler=False,
-            include_interaction_routes=False,
-            include_task_control=False,
-            default_agent_id="search",
-            runtime_policy_bundle=_gr6_production_policy_bundle(),
+    settings = with_qualified_strict_external_work_provider_pin(
+        with_strict_http_api_keys(
+            replace(
+                GovernedContractorBackendSettings.from_env(),
+                include_mcp=False,
+                include_scheduler=False,
+                include_interaction_routes=False,
+                include_task_control=False,
+                default_agent_id="search",
+                runtime_policy_bundle=_gr6_production_policy_bundle(),
+            ),
+            execution_tenant_id=tenant_id,
+            wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
         ),
-        execution_tenant_id=tenant_id,
-        wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
     )
     host_runtime = d4._host_runtime_for_startup(settings)
     app = create_governed_contractor_strict_production_asgi_app(

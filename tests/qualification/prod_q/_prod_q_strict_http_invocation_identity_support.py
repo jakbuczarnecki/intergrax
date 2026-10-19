@@ -71,6 +71,9 @@ from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
     strict_http_auth_headers,
     with_strict_http_api_keys,
 )
+from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+    with_qualified_strict_external_work_provider_pin,
+)
 from tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission import (
     _RUN_ROUTE_SUFFIX,
     _gr6_production_policy_bundle,
@@ -332,16 +335,18 @@ def build_strict_http_invocation_qual_fixture(
     task_scope = StaticActiveTaskScope(mint_task_id())
 
     def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
-        settings = with_strict_http_api_keys(
-            replace(
-                settings,
-                include_mcp=False,
-                include_scheduler=False,
-                include_interaction_routes=False,
-                include_task_control=False,
-                runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    settings,
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+                ),
+                execution_tenant_id=execution_tenant,
             ),
-            execution_tenant_id=execution_tenant,
         )
         return compose_governed_contractor_host_runtime(
             settings,
@@ -371,18 +376,20 @@ def build_strict_http_invocation_qual_fixture(
 
     env = session.environment
     tenant_id = env.application_environment_id
-    settings = with_strict_http_api_keys(
-        replace(
-            GovernedContractorBackendSettings.from_env(),
-            include_mcp=False,
-            include_scheduler=False,
-            include_interaction_routes=False,
-            include_task_control=False,
-            default_agent_id=default_agent_id,
-            runtime_policy_bundle=_gr6_production_policy_bundle(),
+    settings = with_qualified_strict_external_work_provider_pin(
+        with_strict_http_api_keys(
+            replace(
+                GovernedContractorBackendSettings.from_env(),
+                include_mcp=False,
+                include_scheduler=False,
+                include_interaction_routes=False,
+                include_task_control=False,
+                default_agent_id=default_agent_id,
+                runtime_policy_bundle=_gr6_production_policy_bundle(),
+            ),
+            execution_tenant_id=tenant_id,
+            wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
         ),
-        execution_tenant_id=tenant_id,
-        wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
     )
     host_runtime = d4._host_runtime_for_startup(settings)
     app = create_governed_contractor_strict_production_asgi_app(

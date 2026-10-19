@@ -285,16 +285,22 @@ def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
     )
     from tests.unit.applications.test_production_registry_startup_ac3_final import _ENV
 
-    settings = with_strict_http_api_keys(
-        replace(
-            settings,
-            include_mcp=False,
-            include_scheduler=False,
-            include_interaction_routes=False,
-            include_task_control=False,
-            runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+    from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+        with_qualified_strict_external_work_provider_pin,
+    )
+
+    settings = with_qualified_strict_external_work_provider_pin(
+        with_strict_http_api_keys(
+            replace(
+                settings,
+                include_mcp=False,
+                include_scheduler=False,
+                include_interaction_routes=False,
+                include_task_control=False,
+                runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+            ),
+            execution_tenant_id=_ENV,
         ),
-        execution_tenant_id=_ENV,
     )
     return compose_governed_contractor_host_runtime(
         settings,

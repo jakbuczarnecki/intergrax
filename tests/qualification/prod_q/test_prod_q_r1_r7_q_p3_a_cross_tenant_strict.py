@@ -54,6 +54,9 @@ from testing_support.host_fixture_wiring import (
     install_diagnostic_cursor_secret,
     install_host_llm_stub,
 )
+from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+    with_qualified_strict_external_work_provider_pin,
+)
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
     load_d4_launcher_module,
     repo_root,
@@ -450,17 +453,19 @@ def test_p3t02_wrong_tenant_http_does_not_invoke_inner_execution(
         )
 
         authoritative_host_tenant = environment.application_environment_id
-        settings = with_strict_http_api_keys(
-            replace(
-                GovernedContractorBackendSettings.from_env(),
-                include_mcp=False,
-                include_scheduler=False,
-                include_interaction_routes=False,
-                include_task_control=False,
-                default_agent_id="search",
-                runtime_policy_bundle=_test_policy_bundle(),
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_test_policy_bundle(),
+                ),
+                execution_tenant_id=authoritative_host_tenant,
             ),
-            execution_tenant_id=authoritative_host_tenant,
         )
         host_runtime = d4._host_runtime_for_startup(settings)
         app = create_governed_contractor_strict_production_asgi_app(
