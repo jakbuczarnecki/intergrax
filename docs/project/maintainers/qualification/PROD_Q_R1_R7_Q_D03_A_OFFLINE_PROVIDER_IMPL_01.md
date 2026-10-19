@@ -10,7 +10,7 @@ Scoped acceptance dossier for the offline provider child. This file is the detai
 | Cloud execution | **NOT AUTHORIZED** |
 | Implementation baseline | `a7ecc5065a0343e768584e818c844d3f96b5f533` |
 | Evidence reconciliation baseline | `468caa1327dab5b1e60576a9edd71ba19c957003` |
-| Formal closure record commit | Roadmap §5 evidence column for this child (operator verifies exact SHA on GitHub) |
+| Formal closure record commit | `54f51c4dd81e0040aab0a8a469779c5ca3509964` |
 | Parent closure | Not available |
 | Evidence label | Offline code and deterministic tests. Not Spanner durability, Azure retention, IAM, disaster recovery, or production qualification. |
 | FRZ promotion | **0**. No checklist status changes. |
@@ -23,6 +23,7 @@ Operator-reviewed offline implementation and formal closure of this child are di
 |---|---|---|
 | Implementation baseline | `a7ecc5065a0343e768584e818c844d3f96b5f533` | Offline provider modules, composition admission, typed ports, SDK bridges, fail-closed openers, LOCAL-01 / PLATFORM-POLICY-CONFIG-01 non-regression boundaries |
 | Evidence reconciliation | `468caa1327dab5b1e60576a9edd71ba19c957003` | Canonical dossier, roadmap §5 index, conditional-direction pointers, readiness graph pointer, freeze checklist non-promotion note |
+| Formal closure record | `54f51c4dd81e0040aab0a8a469779c5ca3509964` | Formal operator acceptance record and current-state index alignment; does not autonomously write CLOSED |
 
 **Implementation and test evidence provenance:** deterministic unit tests listed under [Test evidence](#test-evidence); implementer-reported gates preserved as non-independent; reconciliation regression commands in this dossier are session safety gates, not the GitHub static reviews.
 
