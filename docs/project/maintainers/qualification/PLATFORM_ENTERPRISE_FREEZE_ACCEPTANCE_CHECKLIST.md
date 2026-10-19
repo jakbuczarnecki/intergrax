@@ -52,7 +52,7 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 
 ### Scoped non-promotion — D03-A offline provider
 
-`PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533` has a static review of local offline behavior and architecture boundaries only. The canonical child remains **READY FOR AUDIT — OFFLINE CODE ONLY**. Per-ID evidence is in [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). No status in the tables below changes. Historical `FRZ-CFG-*` and `FRZ-TEN-*` PASS is not live-cloud-adapter evidence. Historical `FRZ-EXE-*`, `FRZ-GOV-*`, `FRZ-STA-*`, and `FRZ-REC-*` PASS is not Spanner durability, Azure retention, or disaster-recovery evidence.
+`PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533` and evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003` received independent static reviews of local offline behavior and architecture boundaries only (pytest not rerun in those reviews). The canonical child remains **READY FOR AUDIT — FORMAL CLOSURE RECORD**; it is not autonomously **CLOSED**. Per-ID evidence is in [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). No status in the tables below changes. **new FRZ PASS = 0**. Historical `FRZ-CFG-*` and `FRZ-TEN-*` PASS is not live-cloud-adapter evidence. Historical `FRZ-EXE-*`, `FRZ-GOV-*`, `FRZ-STA-*`, and `FRZ-REC-*` PASS is not Spanner durability, Azure retention, or disaster-recovery evidence.
 
 ---
 
