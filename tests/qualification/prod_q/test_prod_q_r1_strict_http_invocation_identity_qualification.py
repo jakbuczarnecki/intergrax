@@ -775,36 +775,36 @@ def test_h09_http_strict_post_traverses_reflex_sanctioned_pis_and_provider(
             json=payload,
             headers=strict_http_auth_headers(),
         )
-    assert response.status_code == 200, response.text
-    body = response.json()
+        assert response.status_code == 200, response.text
+        body = response.json()
 
-    assert body["agent_id"] == "external_contractor_adapter"
-    task_id = str(body["task_id"])
-    run_id = str(body["run_id"])
-    assert task_id and run_id
+        assert body["agent_id"] == "external_contractor_adapter"
+        task_id = str(body["task_id"])
+        run_id = str(body["run_id"])
+        assert task_id and run_id
 
-    assert fixture.external_work_fake.create_calls == baseline_create_calls + 1
+        assert fixture.external_work_fake.create_calls == baseline_create_calls + 1
 
-    intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
-    new_invocation_ids = [
-        inv_id for inv_id in intents_after if inv_id not in intents_before
-    ]
-    assert len(new_invocation_ids) == 1
-    invocation_id = new_invocation_ids[0]
-    assert invocation_id.startswith("gca-pinv:")
-    assert invocation_id not in {task_id, run_id}
+        intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
+        new_invocation_ids = [
+            inv_id for inv_id in intents_after if inv_id not in intents_before
+        ]
+        assert len(new_invocation_ids) == 1
+        invocation_id = new_invocation_ids[0]
+        assert invocation_id.startswith("gca-pinv:")
+        assert invocation_id not in {task_id, run_id}
 
-    inv = pis.get_invocation(invocation_id)
-    assert inv is not None
-    assert inv.task_id == task_id
-    assert inv.run_id == run_id
-    assert inv.provider_id == _QUAL_PROVIDER
-    assert inv.idempotency_key == idempotency_key
-    assert inv.operation == "create_work"
+        inv = pis.get_invocation(invocation_id)
+        assert inv is not None
+        assert inv.task_id == task_id
+        assert inv.run_id == run_id
+        assert inv.provider_id == _QUAL_PROVIDER
+        assert inv.idempotency_key == idempotency_key
+        assert inv.operation == "create_work"
 
-    outcome = pis.get_outcome(invocation_id)
-    assert outcome is not None
-    assert outcome.status is ProviderInvocationStatus.SUCCEEDED
+        outcome = pis.get_outcome(invocation_id)
+        assert outcome is not None
+        assert outcome.status is ProviderInvocationStatus.SUCCEEDED
 
     response_meta = body.get("metadata") or {}
     domain_summary = response_meta.get("domain_summary") or response_meta.get(

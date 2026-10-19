@@ -276,8 +276,7 @@ def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
     from governed_contractor_application.host.collaborative_work_local_fixture import (
         build_in_memory_collaborative_work_repositories,
     )
-    from intergrax.contracts.execution_identity import mint_task_id
-    from tests.unit.runtime.governance.gr3_test_support import StaticActiveTaskScope
+    from intergrax.runtime.task.active_task_registry import ActiveTaskRegistryTaskScopeResolver
 
     fake = DeterministicExternalWorkFake()
     cw = build_in_memory_collaborative_work_repositories()
@@ -306,7 +305,7 @@ def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
     return compose_governed_contractor_host_runtime(
         settings,
         integration=fake,
-        task_scope=StaticActiveTaskScope(mint_task_id()),
+        task_scope=ActiveTaskRegistryTaskScopeResolver(),
         collaborative_work_repositories=cw,
     )
 
