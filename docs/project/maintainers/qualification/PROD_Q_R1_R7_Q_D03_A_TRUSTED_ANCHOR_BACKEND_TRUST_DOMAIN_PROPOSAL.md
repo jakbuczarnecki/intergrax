@@ -236,8 +236,10 @@ the rollback domain of both histories.
   do **not** satisfy this assumption.
 - **OP-TRUST-03:** break-glass credentials are different, hardware-protected,
   monitored and require two-person approval independently in each domain.
-- **OP-TRUST-04:** the locked witness retention interval is ten years and an
-  `ELCR-ACTIVE` legal hold remains until formally dual-controlled decommissioning.
+- **OP-TRUST-04:** an independent hold remains until formally dual-controlled
+  decommissioning. The ten-year interval previously named here is an unadopted
+  historical candidate. §6.2.1 leaves the production duration unset. It is not
+  a binding configuration. `ELCR-ACTIVE` is not adopted.
 - **OP-TRUST-05:** Kubernetes workload federation is bound to the exact cluster
   issuer, namespace, service account and environment. Runtime credentials are
   short-lived and have no initialize, reconcile, revoke, IAM, retention,
@@ -300,7 +302,7 @@ last block after `Get Blob Properties`.
 | Strong current read | Azure Storage strong consistency for successful insert/update; primary endpoint only | **DOC** |
 | Conditional next append | `Append Block` with `x-ms-blob-condition-appendpos` equal to the expected fixed-size offset; mismatch returns 412 | **DOC** primitive; **TEST** encoding/races |
 | Highest sealed revision | committed block count/content length plus strong tail range read; record revision and predecessor digest must match | **TEST** protocol over **DOC** primitives |
-| Immutability | locked container-level ten-year WORM policy with `allowProtectedAppendWrites=true`, plus active legal hold with `allowProtectedAppendWritesAll=true` as required by Azure | **DOC** primitive; **OP/TEST** configuration |
+| Immutability | Locked container-level time-based retention. Duration unset. On that policy the protected-append properties are mutually exclusive: the append-blob mapping is `allowProtectedAppendWrites=true` and `allowProtectedAppendWritesAll` is not true on the same policy. The independent hold and the combined test are in §6.2.1. Not a deployed setting and not an operator-ratified production configuration | **DOC** for the 2026-04-01 immutability-policy contract; **OP/TEST** for duration, lock, and the combined hold |
 | No lower-head restore | existing retained blocks cannot be overwritten/deleted; no service restore operation is accepted as currentness | **DOC/OP** |
 | Account deletion resistance | protected non-empty locked container prevents account deletion; Azure Resource Manager `CannotDelete` lock adds defense-in-depth | **DOC** |
 | Identity | external Kubernetes OIDC federation to Entra; custom data role limited to read and `blobs/add/action`; Shared Key disabled | **DOC** primitive; **OP/TEST** binding |
@@ -320,6 +322,165 @@ is never a currentness source. An unplanned account failover can expose a prefix
 so it always forces comparison with Spanner and quarantine; it cannot
 automatically resume CREATE. This is safe fail-closed behavior, not zero-RPO
 regional availability.
+
+### 6.2.1 Production-target configuration profile
+
+Documentation only. No account, policy, or credential is created by this
+section. The profile below is the single preferred production target. It does
+not ratify OD-D03-A-06 or OD-D03-A-07 and does not open infrastructure
+qualification.
+
+#### Azure protected-append mapping
+
+Pages read on 2026-10-19, without a cloud account:
+
+- [Create Or Update Immutability Policy, api-version 2026-04-01](https://learn.microsoft.com/en-us/rest/api/storagerp/blob-containers/create-or-update-immutability-policy?view=rest-storagerp-2026-04-01).
+  `allowProtectedAppendWrites` and `allowProtectedAppendWritesAll` are properties
+  of the time-based immutability policy and are mutually exclusive. The published
+  sample sets only `allowProtectedAppendWrites: true`. When that property is
+  enabled, new blocks can be written to an append blob and existing blocks cannot
+  be modified or deleted. The property cannot be changed through
+  ExtendImmutabilityPolicy.
+- [Container-level WORM policies](https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-container-level-worm-policies).
+  `allowProtectedAppendWrites` allows new blocks on an append blob and does not
+  change block-blob or page-blob immutability. `allowProtectedAppendWritesAll`
+  adds new-block writes for block blobs. After the time-based policy is locked,
+  neither property can be changed. For a protected append blob, effective
+  retention is the interval after the blob's last modification time.
+- [Immutable storage overview](https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-storage-overview).
+  A time-based policy and a legal hold can be set together. The minimum interval
+  is one day and the maximum is 146,000 days. A locked policy can be extended
+  and cannot be shortened. A container-level locked policy allows at most five
+  increases. Append Block is otherwise prohibited while a time-based policy
+  and/or a legal hold is in effect.
+- [Set Legal Hold, api-version 2026-04-01](https://learn.microsoft.com/en-us/rest/api/storagerp/blob-containers/set-legal-hold?view=rest-storagerp-2026-04-01).
+  The hold is a separate resource. Its only protected-append property is
+  `allowProtectedAppendWritesAll`. The operation has no
+  `allowProtectedAppendWrites` property.
+
+These pages do not state that `allowProtectedAppendWrites=true` on the
+time-based policy still permits Append Block when the hold's
+`allowProtectedAppendWritesAll` is omitted or false. They also do not state
+that setting the hold property true conflicts with
+`allowProtectedAppendWrites=true` on the immutability policy. Mutual exclusion
+is stated only for the two properties of that policy. A secondary endpoint,
+Last Sync Time, object listing, or unplanned-failover prefix remains unable to
+authorize CREATE.
+
+**Time-based policy, append-blob witness — `RECOMMENDED TECHNICAL CONFIGURATION — PENDING SANDBOX VERIFICATION`:**
+
+- `allowProtectedAppendWrites=true`
+- `allowProtectedAppendWritesAll` is not true on this same policy
+- `immutabilityPeriodSinceCreationInDays` is unset
+- a production policy stays unlocked until that combined test has passed on a sandbox container
+
+This is not a deployed setting and not an operator-ratified production
+configuration. Ten years is not adopted. `allowProtectedAppendWritesAll=false`
+on the legal-hold resource is not part of this recommendation: the hold
+contract does not establish that value.
+
+**Combined locked retention and independent hold:** the single-flag choice is
+unresolved.
+
+Exact remaining compatibility test, for a later authorized sandbox only. This
+section does not authorize that sandbox:
+
+1. Use general-purpose v2, Hot, RA-GZRS, North Europe, one append blob, shared
+   key disabled, and blob point-in-time restore and last-access tracking
+   disabled.
+2. Create an unlocked container time-based policy with
+   `allowProtectedAppendWrites=true`, with `allowProtectedAppendWritesAll` not
+   true, and with an interval of at least one day labeled sandbox.
+3. Show that Append Block succeeds and that modifying or deleting an existing
+   block fails.
+4. Add a container legal hold with `allowProtectedAppendWritesAll` omitted or
+   false. Repeat the append and the existing-block modification or delete.
+5. If the append fails, set `allowProtectedAppendWritesAll=true` on the hold
+   only, leave the time-based policy unchanged, and record whether the service
+   accepts that pair.
+6. Lock the time-based policy. Show that the protected-append property cannot
+   be changed and that the interval cannot be shortened.
+7. Show that a secondary-endpoint read and an unplanned-failover prefix do not
+   authorize CREATE.
+
+If steps 4 and 5 both fail to keep append-only writes under a locked time-based
+policy and a distinct hold, the result is `STOP — ARCHITECTURE DECISION REQUIRED`.
+Do not select another provider, edition, region, or storage mechanism from that
+result.
+
+#### Retention profile
+
+The local contract `HistoryContinuityRetentionPolicy` already requires
+`retention_seconds` to sit inside `ceiling_seconds` and `legal_hold` to be
+true. Its text says this is not a production period. That contract remains the
+non-weakening local control. It is not Azure immutability and it is not IAM.
+No new semantic contract is added.
+
+The duration rule is readiness §7.5.3:
+
+```text
+required_retention >
+max(
+    PIS_MAX_RESTORABLE_AGE,
+    GCA_MAX_RESTORABLE_AGE,
+    ANCHOR_PRIMARY_MAX_RESTORABLE_AGE
+) + INVESTIGATION_WINDOW
+```
+
+When `REQUIRED_LEGAL_OR_CONTRACTUAL_MINIMUM` is declared and applicable,
+`required_retention` must also be greater than or equal to that minimum. A
+missing input is not zero. The rule is not evaluated. Azure measures protected
+append-blob retention from the last modification time, so a future interval is
+not a creation-time wall clock.
+
+| Element | Value | Admission |
+|---|---|---|
+| Production-target retention | unset | Fail closed. A production witness policy is not duration-compliant while any required input is missing. |
+| Sandbox retention | unset | A later authorized sandbox interval is labeled sandbox. It does not assert production compliance. |
+| Operational preservation hold | required for the active environment | Local `legal_hold=true` is this flag. It is not WORM and not a legal finding. The Azure container hold is a separate unset cloud control. |
+| Legal-purpose hold | unset | Used only after a legal or contractual duty is declared. The name `legal_hold` and the unadopted label `ELCR-ACTIVE` do not create it. |
+| Dual-controlled decommissioning | required; procedure unset | Hold and retention are released only after formal retirement, by separated authorities. No approvers are named. |
+
+#### Capacity profile
+
+One architecture. Spanner Enterprise Plus, base multi-region `eur3`, strong
+current reads only. Azure general-purpose v2 Standard, Hot, RA-GZRS, North
+Europe. Conditional append and exact read-back. Independent administrative
+domains. Short-lived workload federation. No static runtime administrator
+credentials. Fail-closed recovery. No automatic CREATE on incomplete evidence.
+
+Capacity stays variable. The figures below are the accepted preparation P1
+limits. They were not re-fetched for this correction.
+
+| Quantity | Disposition |
+|---|---|
+| Smallest documented Spanner candidate | 100 processing units, then multiples of 100 below 1000. Prerequisite: a later authorized create shows that the API accepts 100 processing units for `eur3`. This is a documented floor, not a production recommendation. |
+| Managed-autoscaler minimum | 1000 processing units or one node. Outside this profile unless the operator accepts that floor. Enabling the autoscaler scales a smaller instance up to the minimum. |
+| Recommended production capacity | unset. No workload evidence. |
+| Capacity proven under production workload | unset. No measurement. |
+| Azure stored capacity | variable `retained_gib`. It grows for the whole retention period. No account-size minimum is adopted. |
+
+#### Cost and SLO profile
+
+Safety invariants remain readiness §7.3 and §8.1. Authorization RPO 0 means an
+unverified older history is never accepted. It does not mean that physical data
+loss cannot occur.
+
+The 5-second positive-verdict lifetime, the 5-second committed-revocation
+visibility, the 500-millisecond transition p99, and the 4-hour CREATE recovery
+target remain proposals in readiness §8.4. They are not vendor claims and they
+are not measured achievements. Spanner's 99.999% multi-region availability
+statement stays a vendor claim for the instance configuration. It is not a
+measured cross-cloud SLO and not a purchased SLA for this platform.
+
+Cost continues to use preparation P2 price inputs and readiness §8.3 formulas.
+No price total, budget maximum, or SLA is stated. A total stays blocked while
+these inputs are missing: Enterprise Plus `eur3` node-hour, storage, backup,
+replication, and egress rates; North Europe Hot RA-GZRS write, read, and other
+operation rates; processing units; transition volume; `retained_gib`; audit-sink
+size and retention; private-path choice; discount and tax. Immutable storage
+adds no extra capacity charge on the cited overview page. A lower price is not
+obtained by weakening consistency, availability, or administrative independence.
 
 ### 6.3 IAM / authorization matrix
 
@@ -887,11 +1048,12 @@ Each decision is independently accept/reject; silence is not approval.
    federation, custom table/container data roles, Shared Key/static-key/SAS
    prohibition, separate provision/reconcile/revoke/restore/retention roles and
    immutable independent audit export.
-5. **OD-D03-A-06 — retention/recovery:** ratify ten-year locked container WORM
-   plus `ELCR-ACTIVE` legal hold, protected append settings for both policies,
-   deterministic segment chain,
-   no primary restore-in-place, new authority incarnation in quarantine,
-   no automatic Azure unplanned failover and dual-controlled sealed cutover.
+5. **OD-D03-A-06 — retention/recovery:** ratify locked container time-based
+   retention under the §6.2.1 append-blob mapping, an independent hold, and a
+   duration computed only after the readiness §7.5 inputs exist. Ten years and
+   `ELCR-ACTIVE` are not adopted. Also ratify the deterministic segment chain,
+   no primary restore-in-place, a new authority incarnation in quarantine,
+   no automatic Azure unplanned failover, and dual-controlled sealed cutover.
 6. **OD-D03-A-07 — freshness/SLO/cost:** ratify no degraded allow, RPO 0 for
    authorization, verdict lifetime ≤5 s, committed-revocation target ≤5 s,
    transition p99 target ≤500 ms from approved EU clusters, safety-preserving
@@ -942,6 +1104,10 @@ Documentation inspected 2026-10-18:
 - [Container-level WORM policies](https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-container-level-worm-policies)
   and [immutable storage overview](https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-storage-overview)
   — locked retention, protected appends, legal holds and deletion behavior.
+  Re-read 2026-10-19 for §6.2.1, together with
+  [Create Or Update Immutability Policy, api-version 2026-04-01](https://learn.microsoft.com/en-us/rest/api/storagerp/blob-containers/create-or-update-immutability-policy?view=rest-storagerp-2026-04-01)
+  and [Set Legal Hold, api-version 2026-04-01](https://learn.microsoft.com/en-us/rest/api/storagerp/blob-containers/set-legal-hold?view=rest-storagerp-2026-04-01).
+  The rest of §17 was not re-fetched on that date.
 - [Azure Storage redundancy](https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy)
   and [disaster-recovery guidance](https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance)
   — synchronous primary-zone versus asynchronous secondary-region replication
@@ -983,10 +1149,11 @@ of the following holds:
 - GCP and Azure ultimately share a person, group, CI principal, federation
   administrator or break-glass account with authority over both histories;
 - the witness can restore its production namespace to a lower head;
-- Azure Shared Key/SAS/static secrets are enabled for runtime, the WORM policy is
-  unlocked, `allowProtectedAppendWrites` and the legal-hold protected-append
-  setting were not fixed before use, or active legal hold/retention cannot be
-  independently verified;
+- Azure Shared Key, SAS, or static secrets are enabled for runtime; the
+  time-based policy is unlocked for production use; both protected-append
+  properties are true on that policy; the §6.2.1 combined hold test has not
+  passed; or the active hold and locked retention cannot be independently
+  verified;
 - an Azure secondary endpoint, `Last Sync Time`, object listing or unplanned
   failover prefix is treated as a current highest seal;
 - append-blob segment rollover, malformed tail or unknown append outcome lacks a
