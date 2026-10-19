@@ -22,7 +22,7 @@ def build_agent_contract() -> AgentContract:
         skills=[],
         extra_tools=[],
         risk_level=AgentRiskLevel.LOW,
-        lifecycle_state=AgentLifecycleState.DEVELOPMENT,
+        lifecycle_state=AgentLifecycleState.PRODUCTION,
         owner_team="platform",
         max_steps=10,
         cognitive_pattern=_PATTERN,
