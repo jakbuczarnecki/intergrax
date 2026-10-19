@@ -266,6 +266,15 @@ def test_prod_q_p0_int_d7_bounded_subprocess_completes_normally() -> None:
     assert "prod_q_probe" in tail
 
 
+def test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful() -> None:
+    exit_code, _tail, timed_out = run_prod_q_bounded_subprocess(
+        [sys.executable, "-c", "import sys; sys.exit(42)"],
+        timeout_sec=5,
+    )
+    assert timed_out is False
+    assert exit_code == 42
+
+
 def test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

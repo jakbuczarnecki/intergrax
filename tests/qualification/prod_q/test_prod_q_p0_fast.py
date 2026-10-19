@@ -10,7 +10,11 @@ import pytest
 
 from tests.qualification.prod_q._p0_certification import (
     HISTORICAL_EVIDENCE,
+    PROD_Q_P0_CORRECTIVE_STAGE_ID,
+    PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA,
+    _git_is_ancestor,
     build_r1_sqlite_disposition,
+    current_git_head,
     historical_evidence_sha_mismatches,
     probe_default_relational_db_header,
 )
@@ -49,6 +53,12 @@ def test_prod_q_p0_fast_q04_historical_evidence_ancestry() -> None:
     assert ctrl.accepted_sha == "318a4d835534ef5c48575f4649551c957dacd8ea"
     tenant = next(item for item in HISTORICAL_EVIDENCE if item.stage_id == "TENANT-X")
     assert tenant.accepted_sha == "5ccb72fccd4e3820ebdc9c18008afe6f7d59f558"
+    p0_lock = next(
+        item for item in HISTORICAL_EVIDENCE if item.stage_id == PROD_Q_P0_CORRECTIVE_STAGE_ID
+    )
+    assert p0_lock.accepted_sha == PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA
+    head = current_git_head()
+    assert _git_is_ancestor(PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA, head)
     assert historical_evidence_sha_mismatches() == ()
 
 
