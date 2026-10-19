@@ -120,7 +120,7 @@ def test_collect_dependencies_fail_closed_without_authority() -> None:
         name="No Authority Demo",
         agents=[AgentBinding.mount(EchoAgent, contract_id="echo")],
     )
-    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="no_authority_demo.scaffold")
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="no_authority_demo.scaffold")
     with pytest.raises(StrictAgentContractAuthorityError):
         collect_application_dependencies(manifest, env, contract_authority=None)
 
