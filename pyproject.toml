@@ -168,6 +168,10 @@ integrations-neo4j = [
 integrations-e2b = [
   "e2b>=2.0,<3",
 ]
+continuity-cloud = [
+  "google-cloud-spanner>=3.50,<4",
+  "azure-storage-blob>=12.24,<13",
+]
 vector-chroma = [
   "chromadb==1.4.1",
 ]

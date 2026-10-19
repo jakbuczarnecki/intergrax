@@ -15,7 +15,7 @@
 | Test execution | `pytest = 0`; `uv run = 0` |
 | Offline implementation | **AUTHORIZED — SUBJECT TO INDEPENDENT AUDIT**. Not implemented by this record |
 | Cloud execution | **NOT AUTHORIZED** |
-| Implementation child | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` — **OPEN / NOT IMPLEMENTED** |
+| Implementation child | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` — **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified |
 
 ## Decision boundary
 
@@ -65,7 +65,7 @@ That stop applies to class B evidence. It does not withdraw class A. Class A sti
 
 - Technology direction: accepted conditionally.
 - Infrastructure: not fully ratified.
-- D03-A: not closed. Final acceptance stays blocked. Offline provider child: **OPEN / NOT IMPLEMENTED**.
+- D03-A: not closed. Final acceptance stays blocked. Offline provider child: **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified.
 - D03-B and D03-C: blocked.
 - Parent `IMPL-01`, `R7-Q`, `PROD-Q` and the global enterprise freeze: not closed.
 - No `FRZ-*` status is promoted.
@@ -99,7 +99,7 @@ After independent acceptance of this amendment, pending work inside this parent 
 
 This class permits implementation inside the existing architectural direction. It does not certify that design, does not grant execution authority, and does not override a later architecture blocker. If the accepted direction cannot be met without a new owner, a second composition path, a second CREATE gate, or a different backend, stop with `STOP — ARCHITECTURE DECISION REQUIRED`.
 
-The child that carries this scope is `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01`. Its status is **OPEN / NOT IMPLEMENTED**. Writing that code before independent acceptance of this amendment is not authorized. This amendment does not write that code.
+The child that carries this scope is `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01`. Its status after the offline implementation is **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified. Writing that code before independent acceptance of this amendment was not authorized. This amendment does not itself write that code. The implementation commit does not close this parent.
 
 ### Authorization class B — cloud execution
 
@@ -162,7 +162,7 @@ Offline unit, contract, and adversarial tests may provide code-level evidence. T
 | Field | Value |
 |---|---|
 | ID | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` |
-| Status | **OPEN / NOT IMPLEMENTED** |
+| Status | **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified |
 | Parent | This record. Parent final acceptance stays blocked |
 | Starts when | Independent audit accepts this authorization amendment |
 | In scope | The class A list, the binding constraints, and the future solution shape above |
