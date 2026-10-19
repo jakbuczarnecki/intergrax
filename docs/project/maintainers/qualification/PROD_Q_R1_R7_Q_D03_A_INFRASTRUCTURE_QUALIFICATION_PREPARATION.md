@@ -2,7 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | **READY FOR AUDIT — PREPARATION ONLY — NOT INFRASTRUCTURE RATIFICATION** |
+| Status | **INDEPENDENTLY ACCEPTED — SCOPED PREPARATION ONLY** at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f`. Not infrastructure ratification. This acceptance-recording delta is **READY FOR AUDIT**. |
+| Accepted evidence | `4bbd786ffbd82000ef58b330854a6cce78cd2d9f` |
+| Audit basis | Exact-SHA GitHub review of the documentation delta at that SHA. No independent execution of cloud tests. No independent qualification of vendor runtime behavior. No cloud resources created. No approval to incur cloud costs. |
+| Protected-append flags | `allowProtectedAppendWrites` and `allowProtectedAppendWritesAll` remain mutually exclusive and unset. Proposal §6.2 still sets both true together; that sentence stays an unresolved design-source inconsistency. Selecting exactly one flag is a mandatory configuration decision before any locked witness policy is deployed. This record does not choose a flag. |
 | Date checked | 2026-10-19 |
 | Branch | `development` |
 | START_HEAD | `343cc5627f6c1e2a71395fd0e3038e06114185bd` |
@@ -395,4 +398,4 @@ Evidence phrases: **documented vendor capability**, **operator-accepted policy**
 
 No finding is self-certified as enterprise compliance. D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, and global `FRZ-*` stay open. Dependent infrastructure qualification is not authorized.
 
-Cursor status of this documentation: **READY FOR AUDIT**.
+P1–P6 at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f` are **INDEPENDENTLY ACCEPTED — SCOPED PREPARATION ONLY**. Cursor status of this acceptance-recording delta: **READY FOR AUDIT**. It does not close the D03-A infrastructure gate.
