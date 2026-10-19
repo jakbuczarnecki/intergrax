@@ -166,10 +166,10 @@ def _strict_http_environment_profile(
 def _ac3_serving_manifest_for_package_closure() -> ApplicationManifest:
     """GCA HTTP host manifest: declarative contract_id aligned with AC3 revision registry."""
     from tests.unit.applications.test_production_registry_startup_ac3_final import (
-        _ac3_revision_bound_host_manifest,
+        _ac3_revision_bound_strict_external_work_host_manifest,
     )
 
-    return _ac3_revision_bound_host_manifest()
+    return _ac3_revision_bound_strict_external_work_host_manifest()
 
 
 def _gr6_production_policy_bundle() -> ImmutableRuntimePolicyBundle:

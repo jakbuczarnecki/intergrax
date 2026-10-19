@@ -77,7 +77,7 @@ from tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admissio
 from tests.unit.applications.test_production_registry_startup_ac3_final import (
     _APP,
     _ENV,
-    _ac3_revision_bound_host_manifest,
+    _ac3_revision_bound_strict_external_work_host_manifest,
     _activation_request,
 )
 
@@ -253,7 +253,7 @@ def _patch_gca_strict_http_wiring(monkeypatch: pytest.MonkeyPatch, d4) -> None:
     ):
         monkeypatch.setattr(
             f"{module}.build_governed_contractor_manifest",
-            _ac3_revision_bound_host_manifest,
+            _ac3_revision_bound_strict_external_work_host_manifest,
         )
         monkeypatch.setattr(
             f"{module}.build_governed_contractor_environment_profile",
