@@ -23,6 +23,7 @@ from intergrax.applications.contracts.application_package import (
 )
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.applications._shared.roster_agent_contract_authority import (
     ContractAuthority,
@@ -104,11 +105,16 @@ def collect_application_dependencies(
     """Collect direct dependencies from manifest and resolved environment."""
     dependencies: list[ApplicationDependency] = []
 
+    requires_revision_authority = (
+        contract_authority is None
+        and env.execution_mode is ExecutionMode.STRICT
+        and env.application_profile is ApplicationProfile.PRODUCT
+    )
     for binding in manifest.enabled_agents():
         contract = resolve_roster_agent_contract(
             binding,
             contract_authority=contract_authority,
-            allow_compatibility_resolver=False,
+            allow_compatibility_resolver=not requires_revision_authority,
         )
         contract_ref = contract.id
         version_constraint = f"={contract.version}"
