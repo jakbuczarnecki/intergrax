@@ -868,7 +868,7 @@ Applicable `FRZ-*` for that future child, statuses unchanged by this record: `FR
 
 ### 15.4 Dependent qualification gate
 
-**READY FOR AUDIT — D03-A DEPENDENT QUALIFICATION GATE READINESS** (assessment package only; not CLOSED; not CLOUD-QUALIFIED). Consolidated admission disposition: [preparation §P7](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md). Assessed at START_HEAD `8443d41494de9db43ae323db746139bd8fe3919a`. Cloud execution remains **NOT AUTHORIZED**. G1–G6 stay ungranted. OD-D03-A-06 and OD-D03-A-07 stay unresolved until operator inputs in §P7.B–C. D03-A01–A23 stay unexecuted for acceptance. Provisioning, sandbox spend, and class-B evidence remain on a later explicit operator authorization after audit of this package.
+**INDEPENDENTLY ACCEPTED — SCOPED READINESS ONLY** at `7d8b42e45b5dfe2dd08074f5d0da54419074a906` ([preparation §P7](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md), §P7.H). Cursor reconciliation: **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION**. Not CLOSED; not CLOUD-QUALIFIED. Class-B admission (cloud execution class): **NOT AUTHORIZED — OPERATOR DECISIONS MISSING**. Cloud execution remains **NOT AUTHORIZED**. G1–G7 stay ungranted except G7 order (preserve roadmap order — operator confirmation only). OD-D03-A-06 and OD-D03-A-07 stay unresolved until operator inputs in §P7.B–C. D03-A01–A23 stay unexecuted for acceptance. Provisioning and sandbox spend require a later **separate** explicit operator authorization after G1–G6 decisions.
 
 ## 16. ECAP delta for this consolidation
 
@@ -1009,14 +1009,20 @@ Independent review accepted that appendix as **INDEPENDENTLY ACCEPTED — SCOPED
 
 Parent amendment pointer: offline implementation authorization is recorded on the conditional-direction decision, not in this appendix and not by preparation P1–P6. Preparation G1–G6 stay ungranted. P5's statement that the preparation contains no adapter implementation describes that appendix. Cloud execution stays unauthorized. The readiness status and the parent full-ratification block are unchanged.
 
-## 19. Dependent qualification gate assessment (START_HEAD `8443d41494de9db43ae323db746139bd8fe3919a`)
+## 19. Dependent qualification gate assessment and class-B admission reconciliation
 
 | Field | Value |
 |---|---|
-| Disposition | **READY FOR AUDIT — D03-A DEPENDENT QUALIFICATION GATE READINESS** |
-| Authoritative package | [Preparation §P7](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md) |
+| Package authorship baseline | `8443d41494de9db43ae323db746139bd8fe3919a` |
+| Operator acceptance evidence | `7d8b42e45b5dfe2dd08074f5d0da54419074a906` |
+| P7 review disposition | **ACCEPTED — SCOPED READINESS ONLY** (exact-SHA GitHub review; not cloud authorization) |
+| Cursor disposition | **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION** |
+| Class-B admission (cloud execution class) | **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** |
+| Authoritative package | [Preparation §P7](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md) (§P7.H) |
 | Production code delta | **0** |
 | Parent D03-A | **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED** — unchanged |
+| Cloud execution | **NOT AUTHORIZED** |
+| new FRZ PASS | **0** |
 
 Reuses P1–P6, §4–§11, §10, and OFFLINE-PROVIDER-IMPL-01 closed-world inventory. Does not reopen P1–P6 acceptance at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f`. Does not authorize cloud execution or adopt production numbers.
 

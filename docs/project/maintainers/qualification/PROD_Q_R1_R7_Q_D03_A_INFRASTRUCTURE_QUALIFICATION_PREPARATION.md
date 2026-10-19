@@ -17,7 +17,7 @@
 | Provisioning | **not authorized** |
 | FRZ promotion | **0** |
 | Test execution | P1–P6 acceptance: `pytest = 0`. §P7 assessment regression: see readiness §19. Cloud calls = **0** |
-| Dependent gate disposition | **READY FOR AUDIT — D03-A DEPENDENT QUALIFICATION GATE READINESS** — §P7 at START_HEAD `8443d41494de9db43ae323db746139bd8fe3919a` |
+| Dependent gate disposition | **INDEPENDENTLY ACCEPTED — SCOPED READINESS ONLY** at `7d8b42e45b5dfe2dd08074f5d0da54419074a906` (§P7). Cursor reconciliation: **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION**. Not infrastructure qualification. Class-B admission: **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** (§P7.H). Cloud execution: **NOT AUTHORIZED**. |
 
 This appendix prepares a later sandbox decision. It does not create accounts, resources, credentials, or adapters. It does not set a spending maximum, a retention duration, or a monthly total. A second, explicit operator authorization is required before any future provisioning phase.
 
@@ -406,8 +406,10 @@ P1–P6 at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f` are **INDEPENDENTLY ACCEPT
 
 | Field | Value |
 |---|---|
-| Assessed at | `development` START_HEAD `8443d41494de9db43ae323db746139bd8fe3919a` |
-| Cursor disposition | **READY FOR AUDIT — D03-A DEPENDENT QUALIFICATION GATE READINESS** |
+| Assessed at | Package authorship baseline `8443d41494de9db43ae323db746139bd8fe3919a`; operator acceptance evidence `7d8b42e45b5dfe2dd08074f5d0da54419074a906` |
+| Cursor disposition | **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION** |
+| Operator acceptance (2026-10-19) | **INDEPENDENTLY ACCEPTED — SCOPED READINESS ONLY** at `7d8b42e45b5dfe2dd08074f5d0da54419074a906`. Exact-SHA GitHub review of §P7 documentation only. Not cloud authorization or infrastructure qualification. |
+| Class-B admission (authorization class B — cloud execution) | **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** (G1–G6 ungranted; OD-D03-A-06 and OD-D03-A-07 unresolved; no attributable operator grant with scope, budget, resources, and expiry). A later **separate** explicit operator authorization may be recorded only after those inputs; that record is not implied by this acceptance. |
 | Not | CLOSED. Not CLOUD-QUALIFIED. Not provisioning authority. |
 | Reused evidence | P1–P6 at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f`; readiness R1 §4–§11 and §10; [OFFLINE-PROVIDER-IMPL-01](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md) closed-world inventory at `a7ecc5065a0343e768584e818c844d3f96b5f533`; conditional direction unchanged. |
 | Production delta | **0** |
@@ -485,7 +487,7 @@ Canonical rule: readiness §7.5.3. Local non-weakening: `HistoryContinuityRetent
 
 **Consequence if unresolved:** no budget acceptance, no sandbox G1 grant, no capacity admission; fail-closed behavior unchanged.
 
-### P7.D Recovery, adversarial qualification, and G1–G6
+### P7.D Recovery, adversarial qualification, and G1–G7
 
 Canonical test catalogue: readiness §10 and P4. Supplemental mapping columns (all rows **unexecuted** for cloud acceptance):
 
@@ -497,6 +499,7 @@ Canonical test catalogue: readiness §10 and P4. Supplemental mapping columns (a
 | G4 | Retention duration and hold | Azure account | Local non-weakening only | Yes — lock/hold/append | Sandbox after OD-D03-A-06 inputs |
 | G5 | Cost/capacity/SLO disposition | Calculator + workload | No | Partial — measured latency needs cloud | Operator + sandbox |
 | G6 | Sandbox window and cleanup | Both clouds | No | Yes | Operator |
+| G7 | Dependency-order preservation | Roadmap + readiness §15 graph | LOCAL-01 / POLICY / OFFLINE closed scoped | No — order decision only | Operator confirms order; no reordering |
 | D03-A09 | Concurrent CAS | Spanner serializable | In-memory lock ≠ acceptance | Yes | Sandbox P0 |
 | D03-A08 | Fencing competing writers | Multi-process / K8s | Offline fencing unit tests | Yes for Spanner | Sandbox |
 | D03-A10, A18 | Unknown transaction/append outcome | Both + fault injection | Resolver logic partial | Yes | Sandbox P0 |
@@ -523,7 +526,19 @@ Canonical test catalogue: readiness §10 and P4. Supplemental mapping columns (a
 | FRZ global promotion | Checklist | D03-specific proof | Freeze process | Blocked | new FRZ PASS = 0 |
 | D03-B / D03-C | Roadmap blocked | Independent stages | — | Blocked | Out of scope |
 | Cloud execution | Conditional direction | G1 + operator | Operator | **Blocked — unavailable authorization** | No provisioning |
+| Class-B admission (cloud execution class) | P7 package + conditional direction | G1–G6, OD-D03-A-06/07, IAM exports, D03-A01–A23 execution | Operator | **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** | Separate explicit sandbox authorization if operator grants G1 |
 | Parent D03-A ratification | This package | All above | Operator | **IN-SCOPE BLOCKER** | Stay CONDITIONAL |
+
+### P7.H Operator acceptance reconciliation (accepted evidence `7d8b42e45b5dfe2dd08074f5d0da54419074a906`)
+
+| Field | Value |
+|---|---|
+| Review disposition | **ACCEPTED — SCOPED READINESS ONLY** (completeness and consistency of §P7; not cloud authorization; not infrastructure qualification) |
+| Production delta at accepted SHA | **0** |
+| Parent D03-A | **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED** — unchanged |
+| Global `FRZ-*` | **new FRZ PASS = 0** |
+| Canonical G1–G7 view | [P6 decision sheet](#p6--outstanding-operator-decision-sheet); per-row disposition in §P7.D |
+| Allowed next stage | Independent audit of this reconciliation delta; then operator G1–G7 decisions and, if granted, a **separate** explicit sandbox / class-B authorization record |
 
 ### P7.F ECAP delta (this P7 documentation pass)
 
@@ -549,4 +564,4 @@ Canonical test catalogue: readiness §10 and P4. Supplemental mapping columns (a
 | B5 Provider replaceability | RPL-A–H unexecuted — **TRACKED FREEZE DEBT** |
 | B6 Roadmap / gate order | Preserved; dependent gate assessment **READY FOR AUDIT**, not CLOSED |
 
-Cursor status: **READY FOR AUDIT — D03-A DEPENDENT QUALIFICATION GATE READINESS**. Parent remains **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**.
+Cursor status: **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION**. Parent remains **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**. Cloud execution remains **NOT AUTHORIZED**.
