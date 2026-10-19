@@ -4,27 +4,31 @@
 """Spanner primary transport.
 
 ``open_spanner_sdk_database`` always refuses a live session. It has no switch
-that can import or call the Google Cloud client. ``SpannerPrimaryTransport``
-executes the documented ``Transaction.execute_sql`` and
-``Transaction.insert_or_update`` argument shapes against the primary row image.
-That execution is offline code evidence. It is not a Spanner session and it
-does not qualify the vendor.
+that can import or call a vendor client. ``SpannerPrimaryTransport`` executes
+the documented transaction argument shapes against the primary row image.
+``SpannerSdkPrimaryBridge`` translates those same shapes onto an injected
+database session. Constructing the bridge does not open a session, acquire a
+credential, or contact a network. Neither path qualifies the vendor.
 """
 
 from __future__ import annotations
 
 import copy
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from typing import NoReturn
+from typing import NoReturn, Protocol
 
 from intergrax.contracts.governance.history_continuity import HistoryContinuityIdentityBinding
 from intergrax.runtime.governance.continuity_providers.credentials import (
     OfflineProviderRefusal,
     evaluate_continuity_credentials,
 )
-from intergrax.runtime.governance.continuity_providers.errors import ProviderFault
+from intergrax.runtime.governance.continuity_providers.errors import (
+    ProviderFault,
+    map_transport_exception,
+)
 from intergrax.runtime.governance.continuity_providers.primary_register import (
     HeadRecord,
     PrimaryCommitKind,
@@ -447,3 +451,295 @@ class SpannerPrimaryTransport:
                 head=_only_changed_head(txn._state),
                 transition=_only_changed_transition(txn._state),
             )
+
+
+class SpannerTransportError(Exception):
+    """A strong read failed. The absence of a row is not this error."""
+
+    def __init__(self, fault: ProviderFault) -> None:
+        super().__init__(fault.value)
+        self.fault = fault
+
+
+class SpannerReadSession(Protocol):
+    """Read methods of a transaction or a strong snapshot."""
+
+    def execute_sql(
+        self,
+        sql: str,
+        params: Mapping[str, str] | None = None,
+        param_types: Mapping[str, Mapping[str, str]] | None = None,
+    ) -> Iterable[Sequence[_SpannerScalar]]:
+        """Return rows for one scoped query. Parameter types are SDK messages."""
+        ...
+
+
+class SpannerTransactionSession(SpannerReadSession, Protocol):
+    """Transaction callback argument. Mutations stay on this object."""
+
+    def insert_or_update(
+        self,
+        table: str,
+        columns: Sequence[str],
+        values: Sequence[Sequence[_SpannerScalar]],
+    ) -> None:
+        """Buffer one mutation until the database transaction commits."""
+        ...
+
+
+class SpannerDatabaseSession(Protocol):
+    """Injected database. ``snapshot`` is strong: no staleness arguments."""
+
+    def snapshot(self) -> AbstractContextManager[SpannerReadSession]:
+        """Open one strong read. Stale and directed reads are not this method."""
+        ...
+
+    def run_in_transaction(self, func: Callable[..., None]) -> None:
+        """Run one read-write attempt. The callback receives the transaction."""
+        ...
+
+
+@dataclass(slots=True)
+class _WrittenImage:
+    head: HeadRecord | None = None
+    transition: TransitionRecord | None = None
+
+
+def _param_type_message(code: str) -> dict[str, str]:
+    if code != "STRING" and code != "INT64":
+        raise PrimaryConflict(ProviderFault.CORRUPT)
+    return {"code": code}
+
+
+def _one_row(result: Iterable[Sequence[_SpannerScalar]]) -> tuple[_SpannerScalar, ...] | None:
+    found: tuple[_SpannerScalar, ...] | None = None
+    for row in result:
+        if found is not None:
+            raise PrimaryConflict(ProviderFault.CORRUPT)
+        found = tuple(row)
+    return found
+
+
+def _invoke_execute_sql(
+    session: SpannerReadSession,
+    call: ExecuteSql,
+) -> tuple[_SpannerScalar, ...] | None:
+    params = {name: value for name, value in call.params}
+    param_types = {name: _param_type_message(code) for name, code in call.param_types}
+    return _one_row(session.execute_sql(call.sql, params=params, param_types=param_types))
+
+
+def _invoke_insert_or_update(session: SpannerTransactionSession, call: InsertOrUpdate) -> None:
+    if len(call.values) != 1:
+        raise PrimaryConflict(ProviderFault.CORRUPT)
+    session.insert_or_update(
+        call.table,
+        list(call.columns),
+        [list(row) for row in call.values],
+    )
+
+
+def _head_query(application_id: str, environment_id: str, tenant_id: str) -> ExecuteSql:
+    return _string_params(
+        (
+            ("application_id", application_id),
+            ("environment_id", environment_id),
+            ("tenant_id", tenant_id),
+        ),
+        _select_sql(CONTINUITY_HEAD_TABLE, CONTINUITY_HEAD_COLUMNS, _HEAD_PREDICATES),
+    )
+
+
+def _transition_query(
+    application_id: str,
+    environment_id: str,
+    tenant_id: str,
+    transition_id: str,
+) -> ExecuteSql:
+    return _string_params(
+        (
+            ("application_id", application_id),
+            ("environment_id", environment_id),
+            ("tenant_id", tenant_id),
+            ("transition_id", transition_id),
+        ),
+        _select_sql(
+            CONTINUITY_TRANSITION_TABLE,
+            CONTINUITY_TRANSITION_COLUMNS,
+            _TRANSITION_PREDICATES,
+        ),
+    )
+
+
+class _SdkPrimaryTransaction:
+    """Translate one register attempt. Continuity rules stay in the register."""
+
+    def __init__(self, session: SpannerTransactionSession, image: _WrittenImage) -> None:
+        self._session = session
+        self._image = image
+
+    def read_head(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+    ) -> HeadRecord | None:
+        row = _invoke_execute_sql(self._session, _head_query(application_id, environment_id, tenant_id))
+        if row is None:
+            return None
+        return decode_head(CONTINUITY_HEAD_COLUMNS, row)
+
+    def read_transition(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+        transition_id: str,
+    ) -> TransitionRecord | None:
+        row = _invoke_execute_sql(
+            self._session,
+            _transition_query(application_id, environment_id, tenant_id, transition_id),
+        )
+        if row is None:
+            return None
+        return decode_transition(CONTINUITY_TRANSITION_COLUMNS, row)
+
+    def insert_transition(self, record: TransitionRecord) -> None:
+        row = encode_transition(record)
+        if decode_transition(CONTINUITY_TRANSITION_COLUMNS, row) != record:
+            raise PrimaryConflict(ProviderFault.CORRUPT)
+        _invoke_insert_or_update(
+            self._session,
+            InsertOrUpdate(CONTINUITY_TRANSITION_TABLE, CONTINUITY_TRANSITION_COLUMNS, (row,)),
+        )
+        self._image.transition = decode_transition(CONTINUITY_TRANSITION_COLUMNS, row)
+
+    def put_head(self, record: HeadRecord) -> None:
+        row = encode_head(record)
+        if decode_head(CONTINUITY_HEAD_COLUMNS, row) != record:
+            raise PrimaryConflict(ProviderFault.CORRUPT)
+        _invoke_insert_or_update(
+            self._session,
+            InsertOrUpdate(CONTINUITY_HEAD_TABLE, CONTINUITY_HEAD_COLUMNS, (row,)),
+        )
+        self._image.head = decode_head(CONTINUITY_HEAD_COLUMNS, row)
+
+
+class SpannerSdkPrimaryBridge:
+    """Primary port over an injected database session. Not a session factory."""
+
+    def __init__(self, database: SpannerDatabaseSession) -> None:
+        self._database = database
+        self._lock = threading.RLock()
+
+    def read_head(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+    ) -> HeadRecord | None:
+        with self._lock:
+            return self._read_head(application_id, environment_id, tenant_id)
+
+    def read_transition(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+        transition_id: str,
+    ) -> TransitionRecord | None:
+        with self._lock:
+            return self._read_transition(application_id, environment_id, tenant_id, transition_id)
+
+    def run(self, work: Callable[[PrimaryTransactionPort], None]) -> PrimaryStep:
+        with self._lock:
+            image = _WrittenImage()
+
+            def attempt(transaction: SpannerTransactionSession) -> None:
+                work(_SdkPrimaryTransaction(transaction, image))
+
+            try:
+                self._database.run_in_transaction(attempt)
+            except PrimaryConflict as exc:
+                return PrimaryStep(kind=PrimaryCommitKind.CONFLICT, fault=exc.fault)
+            except Exception as exc:
+                return self._step_for_transport_failure(exc, image)
+            return PrimaryStep(
+                kind=PrimaryCommitKind.COMMITTED,
+                head=image.head,
+                transition=image.transition,
+            )
+
+    def _step_for_transport_failure(self, exc: BaseException, image: _WrittenImage) -> PrimaryStep:
+        if isinstance(exc, SpannerTransportError):
+            fault = exc.fault
+        else:
+            fault = map_transport_exception(exc)
+        if fault is ProviderFault.OUTCOME_UNKNOWN:
+            return self._confirm_committed(image)
+        if fault is ProviderFault.REVISION_CONFLICT:
+            return PrimaryStep(kind=PrimaryCommitKind.CONFLICT, fault=fault)
+        return PrimaryStep(kind=PrimaryCommitKind.UNAVAILABLE, fault=ProviderFault.UNAVAILABLE)
+
+    def _confirm_committed(self, image: _WrittenImage) -> PrimaryStep:
+        unknown = PrimaryStep(
+            kind=PrimaryCommitKind.UNKNOWN,
+            fault=ProviderFault.OUTCOME_UNKNOWN,
+        )
+        if image.head is None and image.transition is None:
+            return unknown
+        try:
+            if image.head is not None and self._read_head(
+                image.head.application_id,
+                image.head.environment_id,
+                image.head.tenant_id,
+            ) != image.head:
+                return unknown
+            if image.transition is not None and self._read_transition(
+                image.transition.application_id,
+                image.transition.environment_id,
+                image.transition.tenant_id,
+                image.transition.transition_id,
+            ) != image.transition:
+                return unknown
+        except (SpannerTransportError, PrimaryConflict):
+            return unknown
+        return PrimaryStep(
+            kind=PrimaryCommitKind.COMMITTED,
+            head=image.head,
+            transition=image.transition,
+        )
+
+    def _read_head(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+    ) -> HeadRecord | None:
+        row = self._strong_read(_head_query(application_id, environment_id, tenant_id))
+        if row is None:
+            return None
+        return decode_head(CONTINUITY_HEAD_COLUMNS, row)
+
+    def _read_transition(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+        transition_id: str,
+    ) -> TransitionRecord | None:
+        row = self._strong_read(
+            _transition_query(application_id, environment_id, tenant_id, transition_id)
+        )
+        if row is None:
+            return None
+        return decode_transition(CONTINUITY_TRANSITION_COLUMNS, row)
+
+    def _strong_read(self, call: ExecuteSql) -> tuple[_SpannerScalar, ...] | None:
+        try:
+            with self._database.snapshot() as snapshot:
+                return _invoke_execute_sql(snapshot, call)
+        except PrimaryConflict:
+            raise
+        except Exception as exc:
+            raise SpannerTransportError(map_transport_exception(exc)) from exc
