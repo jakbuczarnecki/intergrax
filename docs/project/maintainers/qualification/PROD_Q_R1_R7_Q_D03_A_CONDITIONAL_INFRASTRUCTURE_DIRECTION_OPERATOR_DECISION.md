@@ -15,7 +15,7 @@
 | Test execution | `pytest = 0`; `uv run = 0` |
 | Offline implementation | **AUTHORIZED — SUBJECT TO INDEPENDENT AUDIT**. Not implemented by this record |
 | Cloud execution | **NOT AUTHORIZED** |
-| Implementation child | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` — **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified |
+| Implementation child | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` — **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified. Implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533`. Evidence: [dossier](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md) |
 
 ## Decision boundary
 
@@ -99,7 +99,7 @@ After independent acceptance of this amendment, pending work inside this parent 
 
 This class permits implementation inside the existing architectural direction. It does not certify that design, does not grant execution authority, and does not override a later architecture blocker. If the accepted direction cannot be met without a new owner, a second composition path, a second CREATE gate, or a different backend, stop with `STOP — ARCHITECTURE DECISION REQUIRED`.
 
-The child that carries this scope is `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01`. Its status after the offline implementation is **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified. Writing that code before independent acceptance of this amendment was not authorized. This amendment does not itself write that code. The implementation commit does not close this parent.
+The child that carries this scope is `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01`. Its status after the offline implementation is **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified. Writing that code before independent acceptance of this amendment was not authorized. This amendment does not itself write that code. The implementation commit does not close this parent. The consolidated evidence dossier is [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). Implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533`. A static review of that SHA accepted local offline behavior and architecture boundaries only. This decision still does not close the parent or the child.
 
 ### Authorization class B — cloud execution
 
@@ -168,6 +168,8 @@ Offline unit, contract, and adversarial tests may provide code-level evidence. T
 | In scope | The class A list, the binding constraints, and the future solution shape above |
 | Out of scope | Class B; D03-B; D03-C; production CREATE activation; closure of IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*` |
 | Evidence label | Offline code evidence only. Not cloud qualification |
+| Implementation baseline | `a7ecc5065a0343e768584e818c844d3f96b5f533`. Lineage and the closed-world inventory are in the dossier, not in this authorization |
+| Formal closure | Not available from this record. Independent audit of the reconciliation commit is still required |
 
 No further discovery or decision round is required to identify this child. A new architecture blocker, if one appears during that work, stops that work. It does not widen this authorization.
 

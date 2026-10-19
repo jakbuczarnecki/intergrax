@@ -50,6 +50,10 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 
 **`ARCH-FREEZE` gate:** cannot close while any applicable **`FRZ-TEN-*`** criterion remains **`OPEN`** or **`BLOCKED`**. Allowed final states: **`PASS`** or **`N/A — WITH EVIDENCE`** only.
 
+### Scoped non-promotion — D03-A offline provider
+
+`PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533` has a static review of local offline behavior and architecture boundaries only. The canonical child remains **READY FOR AUDIT — OFFLINE CODE ONLY**. Per-ID evidence is in [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). No status in the tables below changes. Historical `FRZ-CFG-*` and `FRZ-TEN-*` PASS is not live-cloud-adapter evidence. Historical `FRZ-EXE-*`, `FRZ-GOV-*`, `FRZ-STA-*`, and `FRZ-REC-*` PASS is not Spanner durability, Azure retention, or disaster-recovery evidence.
+
 ---
 
 ## Freeze acceptance criteria
