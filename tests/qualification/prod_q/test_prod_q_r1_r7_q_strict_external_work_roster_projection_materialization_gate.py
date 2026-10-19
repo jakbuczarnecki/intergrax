@@ -28,6 +28,7 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     InMemoryRuntimeAgentFactoryResolver,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from tests.unit.applications.test_production_registry_startup_ac3_final import (
@@ -55,11 +56,7 @@ def _host_runtime() -> GovernedContractorHostRuntimeComposition:
     )
 
 
-def _register_factories(
-    resolver: InMemoryRuntimeAgentFactoryResolver,
-    *,
-    external_factory: object | None = None,
-) -> None:
+def _register_factories(resolver: InMemoryRuntimeAgentFactoryResolver) -> None:
     def _echo(
         ctx: ApplicationBuildContext,
         binding: AgentBinding,
@@ -70,19 +67,20 @@ def _register_factories(
         ctx: ApplicationBuildContext,
         binding: AgentBinding,
     ) -> ExternalContractorAdapterAgent:
-        if external_factory is not None:
-            return external_factory(ctx, binding)  # type: ignore[call-arg, misc]
         return ExternalContractorAdapterAgent()
+
+    _echo_factory: AgentFactory = _echo
+    _external_factory: AgentFactory = _external
 
     resolver.register(
         package_digest=_DIGEST_A,
         factory_reference=_FACTORY_REF,
-        factory=_echo,
+        factory=_echo_factory,
     )
     resolver.register(
         package_digest=_DIGEST_A,
         factory_reference=_EXTERNAL_CONTRACTOR_FACTORY_REF,
-        factory=_external,
+        factory=_external_factory,
     )
 
 

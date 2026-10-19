@@ -1425,7 +1425,7 @@ def _coerce_meta_budget_limit(raw: object) -> MoneyAmount | None:
     if isinstance(raw, str):
         normalized = raw.strip()
         if not normalized:
-            return None
+            raise ValueError("budget_limit must not be empty or whitespace-only")
         if normalized.startswith("{"):
             return MoneyAmount.model_validate_json(normalized)
         raise ValueError("budget_limit string must be canonical MoneyAmount JSON")
