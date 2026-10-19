@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -90,7 +90,7 @@ _ARTIFACT = "sha256:" + ("d" * 64)
 def _minimal_revision() -> RuntimeRevision:
     return RuntimeRevision(
         runtime_revision_id="rev-r3",
-        application_id="app-r3",
+        application_id="app_r3",
         application_environment_id="env-r3",
         application_release_id="rel-r3",
         platform_version="0.1.0",
@@ -121,7 +121,7 @@ def _artifact_external_contractor_factory(
 @dataclass
 class _RecordingDelegate:
     factory: Any
-    calls: list[dict[str, Any]]
+    calls: list[dict[str, Any]] = field(default_factory=list)
     fail: bool = False
 
     def resolve_factory(self, **kwargs: Any):
@@ -162,7 +162,7 @@ def test_g_r3_03_wrapped_materialization_invokes_delegate_and_factory_once() -> 
         package_digest=_DIGEST,
         factory_reference=AgentBindingFactoryReference(builder_key="ac3"),
     )
-    manifest = ApplicationManifest.lab(app_id="app-r3", name="R3", agents=[])
+    manifest = ApplicationManifest.lab(app_id="app_r3", name="R3", agents=[])
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = AgentBinding.mount(
         ExternalContractorAdapterAgent,
@@ -263,10 +263,10 @@ def test_n_r3_02_wrong_agent_type_rejected_at_materialization() -> None:
     )
     wrapped = resolver.resolve_factory(
         runtime_revision=_minimal_revision(),
-        package_digest="sha256:pkg",
+        package_digest=_DIGEST,
         factory_reference=AgentBindingFactoryReference(builder_key="ac3"),
     )
-    manifest = ApplicationManifest.lab(app_id="app-r3", name="R3", agents=[])
+    manifest = ApplicationManifest.lab(app_id="app_r3", name="R3", agents=[])
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = AgentBinding.mount(
         ExternalContractorAdapterAgent,
@@ -300,10 +300,10 @@ def test_g_r3_02_injection_applies_sanctioned_port_and_require_flag() -> None:
     )
     wrapped = resolver.resolve_factory(
         runtime_revision=_minimal_revision(),
-        package_digest="sha256:pkg",
+        package_digest=_DIGEST,
         factory_reference=AgentBindingFactoryReference(builder_key="ac3"),
     )
-    manifest = ApplicationManifest.lab(app_id="app-r3", name="R3", agents=[])
+    manifest = ApplicationManifest.lab(app_id="app_r3", name="R3", agents=[])
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = AgentBinding.mount(
         ExternalContractorAdapterAgent,
