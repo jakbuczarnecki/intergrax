@@ -17,7 +17,9 @@ from __future__ import annotations
 import threading
 from collections.abc import Mapping
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import NoReturn, Protocol
+from urllib.parse import unquote, urlsplit
 
 from intergrax.contracts.governance.history_continuity import HistoryContinuityIdentityBinding
 from intergrax.runtime.governance.continuity_providers.credentials import (
@@ -207,7 +209,167 @@ class AzureAppendTransport:
             raise ValueError("witness call log diverges from the blob image")
 
 
-_SECONDARY_HOST_MARK = "-secondary.blob."
+_BLOB_HOST_LABELS = ("blob", "core", "windows", "net")
+_SECONDARY_ACCOUNT_MARK = "secondary"
+
+
+class WitnessSourceDisposition(StrEnum):
+    """How a witness URL relates to an admissible primary origin."""
+
+    PRIMARY = "primary"
+    SECONDARY = "secondary"
+    AMBIGUOUS = "ambiguous"
+    MALFORMED = "malformed"
+    UNKNOWN = "unknown"
+
+
+class WitnessEndpointRejected(Exception):
+    """The URL is not an admissible primary witness origin."""
+
+    def __init__(self, disposition: WitnessSourceDisposition) -> None:
+        super().__init__(disposition.value)
+        self.disposition = disposition
+
+
+class _PrimaryEndpointSeal:
+    """Identity of endpoints created by ``bind_primary_witness_endpoint``."""
+
+
+_PRIMARY_ENDPOINT_SEAL = _PrimaryEndpointSeal()
+
+
+@dataclass(frozen=True, slots=True)
+class PrimaryWitnessEndpoint:
+    """Primary blob origin bound inside this provider. Not a freshness proof.
+
+    A caller boolean is not this designation. Construct it only through
+    ``bind_primary_witness_endpoint``.
+    """
+
+    origin: str
+    account: str
+    _seal: _PrimaryEndpointSeal
+
+
+@dataclass(frozen=True, slots=True)
+class _ParsedWitnessUrl:
+    disposition: WitnessSourceDisposition
+    account: str | None = None
+    origin: str | None = None
+    path: str = ""
+
+
+def _valid_account(label: str) -> bool:
+    if len(label) < 3 or len(label) > 24:
+        return False
+    return all(char.isascii() and (char.isdigit() or char.islower()) for char in label)
+
+
+def _valid_container(label: str) -> bool:
+    if len(label) < 3 or len(label) > 63:
+        return False
+    if label[0] == "-" or label[-1] == "-" or "--" in label:
+        return False
+    return all(char.isascii() and (char.isdigit() or char.islower() or char == "-") for char in label)
+
+
+def _rejected_url(url: str) -> WitnessSourceDisposition | None:
+    if type(url) is not str or url == "" or not url.isascii() or "\\" in url:
+        return WitnessSourceDisposition.MALFORMED
+    if any(ord(char) <= 32 for char in url):
+        return WitnessSourceDisposition.MALFORMED
+    return None
+
+
+def _parse_witness_url(url: str) -> _ParsedWitnessUrl:
+    """Classify a blob URL from its structured host, not from a substring."""
+
+    rejected = _rejected_url(url)
+    if rejected is not None:
+        return _ParsedWitnessUrl(rejected)
+    try:
+        parsed = urlsplit(url)
+    except ValueError:
+        return _ParsedWitnessUrl(WitnessSourceDisposition.MALFORMED)
+    if parsed.scheme != "https":
+        return _ParsedWitnessUrl(WitnessSourceDisposition.MALFORMED)
+    if (
+        parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+        or parsed.port not in (None, 443)
+    ):
+        return _ParsedWitnessUrl(WitnessSourceDisposition.AMBIGUOUS)
+    host = parsed.hostname
+    if host is None:
+        return _ParsedWitnessUrl(WitnessSourceDisposition.MALFORMED)
+    netloc = host if parsed.port is None else f"{host}:{parsed.port}"
+    if parsed.netloc != netloc:
+        return _ParsedWitnessUrl(WitnessSourceDisposition.AMBIGUOUS)
+    labels = host.split(".")
+    if len(labels) != 5 or tuple(labels[1:]) != _BLOB_HOST_LABELS or "" in labels:
+        return _ParsedWitnessUrl(WitnessSourceDisposition.UNKNOWN)
+    account = labels[0]
+    stem, mark, extra = account.partition("-")
+    if mark == "-":
+        if extra == _SECONDARY_ACCOUNT_MARK and _valid_account(stem):
+            return _ParsedWitnessUrl(WitnessSourceDisposition.SECONDARY, account=stem)
+        return _ParsedWitnessUrl(WitnessSourceDisposition.AMBIGUOUS)
+    if not _valid_account(account):
+        return _ParsedWitnessUrl(WitnessSourceDisposition.AMBIGUOUS)
+    return _ParsedWitnessUrl(
+        WitnessSourceDisposition.PRIMARY,
+        account=account,
+        origin=f"https://{host}",
+        path=parsed.path,
+    )
+
+
+def bind_primary_witness_endpoint(account_url: str) -> PrimaryWitnessEndpoint:
+    """Designate one unambiguous primary account origin. No network lookup."""
+
+    parsed = _parse_witness_url(account_url)
+    if (
+        parsed.disposition is not WitnessSourceDisposition.PRIMARY
+        or parsed.account is None
+        or parsed.origin is None
+        or parsed.path not in {"", "/"}
+    ):
+        disposition = parsed.disposition
+        if disposition is WitnessSourceDisposition.PRIMARY:
+            disposition = WitnessSourceDisposition.AMBIGUOUS
+        raise WitnessEndpointRejected(disposition)
+    return PrimaryWitnessEndpoint(
+        origin=parsed.origin,
+        account=parsed.account,
+        _seal=_PRIMARY_ENDPOINT_SEAL,
+    )
+
+
+def _blob_path_bound(path: str, blob_name: str) -> bool:
+    if unquote(path) != path or not path.startswith("/") or path.startswith("//") or ";" in path:
+        return False
+    segments = path.split("/")
+    if segments[0] != "":
+        return False
+    body = segments[1:]
+    if len(body) < 2 or any(part in {"", ".", ".."} for part in body):
+        return False
+    if not _valid_container(body[0]):
+        return False
+    return "/".join(body[1:]) == blob_name
+
+
+def _blob_bound_to_primary(blob_url: str, endpoint: PrimaryWitnessEndpoint, blob_name: str) -> bool:
+    parsed = _parse_witness_url(blob_url)
+    if (
+        parsed.disposition is not WitnessSourceDisposition.PRIMARY
+        or parsed.account != endpoint.account
+        or parsed.origin != endpoint.origin
+    ):
+        return False
+    return _blob_path_bound(parsed.path, blob_name)
 
 
 class WitnessStorageUnavailable(Exception):
@@ -240,7 +402,7 @@ class AppendBlobSession(Protocol):
 
     @property
     def url(self) -> str:
-        """Blob URL. A secondary host is not a positive freshness source."""
+        """Blob URL checked against the designated primary origin."""
         ...
 
     def create_append_blob(self) -> Mapping[str, str | int]:
@@ -273,6 +435,11 @@ class AppendBlobSession(Protocol):
 class AppendBlobDirectory(Protocol):
     """Injected container handle. ``get_blob_client`` does not send a request."""
 
+    @property
+    def primary_endpoint(self) -> PrimaryWitnessEndpoint:
+        """Primary origin bound at this provider edge. A boolean is not admission."""
+        ...
+
     def get_blob_client(self, blob: str) -> AppendBlobSession:
         """Return the client for one deterministic witness blob name."""
         ...
@@ -297,10 +464,6 @@ def _blob_already_exists(exc: BaseException) -> bool:
     return _exception_status(exc) == 409
 
 
-def _positive_read_allowed(blob: AppendBlobSession) -> bool:
-    return _SECONDARY_HOST_MARK not in blob.url
-
-
 class AzureSdkAppendBridge:
     """Witness port over an injected blob directory. The hash chain stays in the witness."""
 
@@ -310,8 +473,8 @@ class AzureSdkAppendBridge:
 
     def open_segment(self, segment: int) -> None:
         with self._lock:
-            blob = self._blob(segment)
-            if not _positive_read_allowed(blob):
+            blob = self._bound_blob(segment)
+            if blob is None:
                 raise WitnessStorageUnavailable(ProviderFault.UNAVAILABLE)
             try:
                 blob.get_blob_properties()
@@ -329,8 +492,8 @@ class AzureSdkAppendBridge:
 
     def length(self, segment: int) -> int:
         with self._lock:
-            blob = self._blob(segment)
-            if not _positive_read_allowed(blob):
+            blob = self._bound_blob(segment)
+            if blob is None:
                 return -1
             try:
                 return blob.get_blob_properties().size
@@ -343,8 +506,8 @@ class AzureSdkAppendBridge:
         with self._lock:
             if offset < 0 or length < 0:
                 return None
-            blob = self._blob(segment)
-            if not _positive_read_allowed(blob):
+            blob = self._bound_blob(segment)
+            if blob is None:
                 return None
             try:
                 payload = blob.download_blob(offset=offset, length=length).readall()
@@ -358,8 +521,8 @@ class AzureSdkAppendBridge:
 
     def append(self, segment: int, expected_offset: int, block: bytes) -> AppendStep:
         with self._lock:
-            blob = self._blob(segment)
-            if not _positive_read_allowed(blob):
+            blob = self._bound_blob(segment)
+            if blob is None:
                 return AppendStep(kind=AppendKind.UNAVAILABLE, fault=ProviderFault.UNAVAILABLE)
             try:
                 blob.append_block(block, length=len(block), appendpos_condition=expected_offset)
@@ -378,8 +541,32 @@ class AzureSdkAppendBridge:
                 offset=expected_offset,
             )
 
-    def _blob(self, segment: int) -> AppendBlobSession:
-        return self._directory.get_blob_client(witness_blob_name(segment))
+    def _admitted_primary(self) -> PrimaryWitnessEndpoint | None:
+        try:
+            candidate = self._directory.primary_endpoint
+        except WitnessEndpointRejected:
+            return None
+        if type(candidate) is not PrimaryWitnessEndpoint or candidate._seal is not _PRIMARY_ENDPOINT_SEAL:
+            return None
+        parsed = _parse_witness_url(candidate.origin)
+        if (
+            parsed.disposition is not WitnessSourceDisposition.PRIMARY
+            or parsed.account != candidate.account
+            or parsed.origin != candidate.origin
+            or parsed.path not in {"", "/"}
+        ):
+            return None
+        return candidate
+
+    def _bound_blob(self, segment: int) -> AppendBlobSession | None:
+        endpoint = self._admitted_primary()
+        if endpoint is None:
+            return None
+        name = witness_blob_name(segment)
+        blob = self._directory.get_blob_client(name)
+        if type(blob.url) is not str or not _blob_bound_to_primary(blob.url, endpoint, name):
+            return None
+        return blob
 
     def _resolve_uncertain_append(
         self,
@@ -389,11 +576,21 @@ class AzureSdkAppendBridge:
         block: bytes,
     ) -> AppendStep:
         unknown = AppendStep(kind=AppendKind.UNKNOWN, fault=ProviderFault.OUTCOME_UNKNOWN)
+        name = witness_blob_name(segment)
+        endpoint = self._admitted_primary()
+        if (
+            endpoint is None
+            or type(blob.url) is not str
+            or not _blob_bound_to_primary(blob.url, endpoint, name)
+        ):
+            return unknown
         try:
             payload = blob.download_blob(offset=expected_offset, length=len(block)).readall()
         except Exception:
             return unknown
         if payload == block:
+            if not _blob_bound_to_primary(blob.url, endpoint, name):
+                return unknown
             return AppendStep(
                 kind=AppendKind.COMMITTED,
                 segment=segment,

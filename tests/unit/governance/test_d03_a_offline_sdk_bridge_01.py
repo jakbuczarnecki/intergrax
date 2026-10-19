@@ -49,7 +49,11 @@ from intergrax.contracts.runtime_policy_bundle import (
 from intergrax.runtime.governance.continuity_providers import azure_sdk, spanner_sdk
 from intergrax.runtime.governance.continuity_providers.azure_sdk import (
     AzureSdkAppendBridge,
+    PrimaryWitnessEndpoint,
+    WitnessEndpointRejected,
+    WitnessSourceDisposition,
     WitnessStorageUnavailable,
+    bind_primary_witness_endpoint,
     witness_blob_name,
 )
 from intergrax.runtime.governance.continuity_providers.credentials import OfflineProviderRefusal
@@ -66,6 +70,7 @@ from intergrax.runtime.governance.continuity_providers.primary_register import (
 )
 from intergrax.runtime.governance.continuity_providers.spanner_sdk import (
     CONTINUITY_HEAD_COLUMNS,
+    CONTINUITY_TRANSITION_COLUMNS,
     SpannerSdkPrimaryBridge,
     open_spanner_sdk_database,
 )
@@ -271,6 +276,51 @@ class RecordingSpannerDatabase:
         log.committed = True
         self.events.append("commit-applied")
         if fault == "unknown_after":
+            raise DeadlineExceeded()
+
+
+class RetryingSpannerDatabase(RecordingSpannerDatabase):
+    """Invokes the callback once per abandoned attempt, then once for the outcome."""
+
+    def __init__(self, *, abandoned_attempts: int, outcome: str) -> None:
+        super().__init__()
+        self.abandoned_attempts = abandoned_attempts
+        self.outcome = outcome
+        self.invocations = 0
+
+    def run_in_transaction(self, func: object, *args: object, **kw: object) -> None:
+        if args or kw:
+            raise AssertionError("bridge passed session or retry arguments")
+        if not callable(func):
+            raise AssertionError("transaction function is required")
+        for _abandoned in range(self.abandoned_attempts):
+            self._invoke(func, commit=False)
+            self.events.append("rollback")
+        self._invoke(func, commit=True)
+
+    def _invoke(self, func: object, *, commit: bool) -> None:
+        if not callable(func):
+            raise AssertionError("transaction function is required")
+        log = _TransactionLog()
+        self.transactions.append(log)
+        self.events.append("transaction")
+        self.invocations += 1
+        txn = _RecordingTransaction(self, log)
+        func(txn)
+        if not commit:
+            return
+        if self.outcome == "unknown_before":
+            self.events.append("commit-before")
+            raise DeadlineExceeded()
+        self.heads = txn._heads
+        self.transitions = txn._transitions
+        log.committed = True
+        self.events.append("commit-applied")
+        if self.outcome == "unknown_after_partial":
+            self.transitions = {}
+            self.events.append("drop-transition")
+            raise DeadlineExceeded()
+        if self.outcome == "unknown_after":
             raise DeadlineExceeded()
 
 
@@ -593,6 +643,175 @@ def test_spanner_unknown_commit_is_success_only_after_strong_read_back() -> None
     assert bridge.read_head(_APP, _ENV, "tenant-a") == _head(revision=5)
 
 
+def _seed_head(database: RecordingSpannerDatabase, record: HeadRecord) -> None:
+    row = spanner_sdk.encode_head(record)
+    database.heads[(record.application_id, record.environment_id, record.tenant_id)] = {
+        column: row[index] for index, column in enumerate(CONTINUITY_HEAD_COLUMNS)
+    }
+
+
+def _seed_transition(database: RecordingSpannerDatabase, record: TransitionRecord) -> None:
+    row = spanner_sdk.encode_transition(record)
+    database.transitions[
+        (record.application_id, record.environment_id, record.tenant_id, record.transition_id)
+    ] = {column: row[index] for index, column in enumerate(CONTINUITY_TRANSITION_COLUMNS)}
+
+
+def _transition_ids(database: RecordingSpannerDatabase) -> set[str]:
+    return {key[3] for key in database.transitions}
+
+
+def _paired_head(record: TransitionRecord) -> HeadRecord:
+    return _head(
+        revision=record.revision,
+        fencing_token=record.fencing_token,
+        transition_id=record.transition_id,
+        request_digest=record.request_digest,
+    )
+
+
+def test_spanner_retry_discards_abandoned_attempt_evidence() -> None:
+    database = RetryingSpannerDatabase(abandoned_attempts=2, outcome="commit")
+    bridge = SpannerSdkPrimaryBridge(database)
+    abandoned = _transition(revision=9, fence="abandoned")
+    kept = _transition(revision=4, fence="kept")
+    abandoned_head = _paired_head(abandoned)
+    kept_head = _paired_head(kept)
+
+    def work(txn: object) -> None:
+        if database.invocations < 3:
+            txn.insert_transition(abandoned)  # type: ignore[attr-defined]
+            txn.put_head(abandoned_head)  # type: ignore[attr-defined]
+            return
+        txn.insert_transition(kept)  # type: ignore[attr-defined]
+        txn.put_head(kept_head)  # type: ignore[attr-defined]
+
+    step = bridge.run(work)
+    assert step.kind is PrimaryCommitKind.COMMITTED
+    assert step.head == kept_head
+    assert step.transition == kept
+    assert _transition_ids(database) == {kept.transition_id}
+    assert bridge.read_head(_APP, _ENV, "tenant-a") == kept_head
+    assert [item.committed for item in database.transactions] == [False, False, True]
+
+    mixed = RetryingSpannerDatabase(abandoned_attempts=1, outcome="commit")
+    mixed_bridge = SpannerSdkPrimaryBridge(mixed)
+
+    def partial_retry(txn: object) -> None:
+        if mixed.invocations == 1:
+            txn.insert_transition(abandoned)  # type: ignore[attr-defined]
+            txn.put_head(abandoned_head)  # type: ignore[attr-defined]
+            return
+        txn.put_head(kept_head)  # type: ignore[attr-defined]
+
+    mixed_step = mixed_bridge.run(partial_retry)
+    assert mixed_step.kind is PrimaryCommitKind.COMMITTED
+    assert mixed_step.head == kept_head
+    assert mixed_step.transition is None
+    assert abandoned.transition_id not in _transition_ids(mixed)
+
+
+def test_spanner_retry_unknown_does_not_promote_abandoned_or_partial_evidence() -> None:
+    seeded = _head(revision=5, fencing_token="seed")
+    abandoned = _transition(revision=8, fence="abandoned")
+    database = RetryingSpannerDatabase(abandoned_attempts=1, outcome="unknown_after")
+    _seed_head(database, seeded)
+    bridge = SpannerSdkPrimaryBridge(database)
+
+    def abandoned_then_empty(txn: object) -> None:
+        if database.invocations == 1:
+            txn.put_head(seeded)  # type: ignore[attr-defined]
+            return
+
+    hidden = bridge.run(abandoned_then_empty)
+    assert hidden.kind is PrimaryCommitKind.UNKNOWN
+    assert hidden.head is None
+    assert hidden.transition is None
+    assert bridge.read_head(_APP, _ENV, "tenant-a") == seeded
+    assert abandoned.transition_id not in _transition_ids(database)
+
+    kept = _transition(revision=4, fence="kept")
+    kept_head = _paired_head(kept)
+    confirmed_db = RetryingSpannerDatabase(abandoned_attempts=1, outcome="unknown_after")
+    confirmed_bridge = SpannerSdkPrimaryBridge(confirmed_db)
+
+    def surviving(txn: object) -> None:
+        if confirmed_db.invocations == 1:
+            txn.insert_transition(abandoned)  # type: ignore[attr-defined]
+            txn.put_head(_paired_head(abandoned))  # type: ignore[attr-defined]
+            return
+        txn.insert_transition(kept)  # type: ignore[attr-defined]
+        txn.put_head(kept_head)  # type: ignore[attr-defined]
+
+    confirmed = confirmed_bridge.run(surviving)
+    assert confirmed.kind is PrimaryCommitKind.COMMITTED
+    assert confirmed.head == kept_head
+    assert confirmed.transition == kept
+    assert _transition_ids(confirmed_db) == {kept.transition_id}
+
+    partial_db = RetryingSpannerDatabase(abandoned_attempts=1, outcome="unknown_after_partial")
+    partial_bridge = SpannerSdkPrimaryBridge(partial_db)
+    both = _transition(revision=3, fence="both")
+    both_head = _paired_head(both)
+
+    def multi(txn: object) -> None:
+        if partial_db.invocations == 1:
+            txn.put_head(_paired_head(abandoned))  # type: ignore[attr-defined]
+            return
+        txn.insert_transition(both)  # type: ignore[attr-defined]
+        txn.put_head(both_head)  # type: ignore[attr-defined]
+
+    partial = partial_bridge.run(multi)
+    assert partial.kind is PrimaryCommitKind.UNKNOWN
+    assert partial.head is None
+    assert partial.transition is None
+    assert both.transition_id not in _transition_ids(partial_db)
+
+
+def test_spanner_idempotent_retry_does_not_create_a_second_successor() -> None:
+    original = _transition(revision=1, fence="1")
+    extra = _transition(revision=2, fence="2")
+    database = RetryingSpannerDatabase(abandoned_attempts=1, outcome="commit")
+    _seed_transition(database, original)
+    _seed_head(database, _paired_head(original))
+    bridge = SpannerSdkPrimaryBridge(database)
+
+    def work(txn: object) -> None:
+        if database.invocations == 1:
+            txn.insert_transition(extra)  # type: ignore[attr-defined]
+            txn.put_head(_paired_head(extra))  # type: ignore[attr-defined]
+            return
+        existing = txn.read_transition(  # type: ignore[attr-defined]
+            original.application_id,
+            original.environment_id,
+            original.tenant_id,
+            original.transition_id,
+        )
+        assert existing is not None
+        assert existing.request_digest == original.request_digest
+
+    step = bridge.run(work)
+    assert step.kind is PrimaryCommitKind.COMMITTED
+    assert step.head is None
+    assert step.transition is None
+    assert _transition_ids(database) == {original.transition_id}
+    assert database.transactions[0].committed is False
+    assert database.transactions[1].mutations == []
+
+    prepared = RetryingSpannerDatabase(abandoned_attempts=1, outcome="commit")
+    prepared_bridge = SpannerSdkPrimaryBridge(prepared)
+    first = _prepare(prepared_bridge, original, expected_revision=0, expected_fencing_token=None)
+    assert first.kind is PrimaryCommitKind.COMMITTED
+    assert _transition_ids(prepared) == {original.transition_id}
+    repeat = _prepare(prepared_bridge, original, expected_revision=0, expected_fencing_token=None)
+    assert repeat.kind is PrimaryCommitKind.COMMITTED
+    assert repeat.transition is not None
+    assert repeat.transition.transition_id == original.transition_id
+    assert _transition_ids(prepared) == {original.transition_id}
+    assert prepared.transactions[-1].mutations == []
+    assert prepared.transactions[-2].mutations == []
+
+
 class _Download:
     def __init__(self, payload: bytes) -> None:
         self._payload = payload
@@ -610,7 +829,12 @@ class _Properties:
         return self._size
 
 
+_PRIMARY_ORIGIN = "https://account.blob.core.windows.net"
+
+
 class RecordingBlob:
+    is_primary = True
+
     def __init__(self, directory: RecordingBlobDirectory, name: str) -> None:
         self._directory = directory
         self.name = name
@@ -621,8 +845,7 @@ class RecordingBlob:
 
     @property
     def url(self) -> str:
-        host = "account-secondary.blob.core.windows.net" if self._directory.secondary else "account.blob.core.windows.net"
-        return f"https://{host}/witness/{self.name}"
+        return f"{self._directory.blob_url_prefix}/witness/{self.name}"
 
     def create_append_blob(self) -> dict[str, str]:
         self.creates.append({"content_settings": None, "metadata": None, "kwargs": {}})
@@ -683,8 +906,17 @@ class RecordingBlob:
 
 
 class RecordingBlobDirectory:
-    def __init__(self, *, secondary: bool = False) -> None:
-        self.secondary = secondary
+    def __init__(
+        self,
+        *,
+        blob_url_prefix: str = _PRIMARY_ORIGIN,
+        endpoint: PrimaryWitnessEndpoint | None = None,
+    ) -> None:
+        self.primary_endpoint = (
+            bind_primary_witness_endpoint(_PRIMARY_ORIGIN) if endpoint is None else endpoint
+        )
+        self.blob_url_prefix = blob_url_prefix.rstrip("/")
+        self.admit = True
         self.blobs: dict[str, bytes] = {}
         self.clients: list[RecordingBlob] = []
         self.opened: list[tuple[str, object]] = []
@@ -704,8 +936,12 @@ class RecordingBlobDirectory:
         return fault
 
 
-def _witness_bridge(*, secondary: bool = False) -> tuple[RecordingBlobDirectory, AzureSdkAppendBridge]:
-    directory = RecordingBlobDirectory(secondary=secondary)
+def _witness_bridge(
+    *,
+    blob_url_prefix: str = _PRIMARY_ORIGIN,
+    endpoint: PrimaryWitnessEndpoint | None = None,
+) -> tuple[RecordingBlobDirectory, AzureSdkAppendBridge]:
+    directory = RecordingBlobDirectory(blob_url_prefix=blob_url_prefix, endpoint=endpoint)
     bridge = AzureSdkAppendBridge(directory)
     return directory, bridge
 
@@ -846,10 +1082,15 @@ def test_azure_witness_rejects_bad_bytes_rollover_and_secondary_reads() -> None:
     del absent
     assert AzureAppendWitness(absent_bridge).verify_bounded(full_chain=False).fault is ProviderFault.PREFIX_MISSING
 
-    secondary_dir, secondary = _witness_bridge(secondary=True)
+    secondary_dir, secondary = _witness_bridge(
+        blob_url_prefix="https://account-secondary.blob.core.windows.net",
+    )
+    assert secondary_dir.admit is True
     block = _seal_bytes(1, block_digest({"kind": "unused"}))
     secondary_dir.blobs[witness_blob_name(0)] = block
     view = AzureAppendWitness(secondary).verify_bounded(full_chain=False)
+    assert secondary_dir.clients[0].is_primary is True
+    assert secondary_dir.clients[0].property_reads == 0
     assert view.fault is ProviderFault.PREFIX_MISSING
     assert view.high_revision == 0
     denied = AzureAppendWitness(secondary).append_seal(
@@ -860,6 +1101,78 @@ def test_azure_witness_rejects_bad_bytes_rollover_and_secondary_reads() -> None:
     )
     assert denied.kind.value != "committed"
     assert secondary_dir.blobs[witness_blob_name(0)] == block
+    assert all(client.property_reads == 0 and client.appends == [] for client in secondary_dir.clients)
+
+
+def test_azure_primary_binding_rejects_unqualified_endpoints() -> None:
+    source = inspect.getsource(azure_sdk)
+    assert "-secondary.blob." not in source
+    assert "is_primary" not in source
+    designated = bind_primary_witness_endpoint(_PRIMARY_ORIGIN)
+    with_port = bind_primary_witness_endpoint(f"{_PRIMARY_ORIGIN}:443")
+    assert designated.origin == _PRIMARY_ORIGIN
+    assert with_port.origin == designated.origin
+    assert with_port.account == "account"
+    directory, bridge = _witness_bridge(blob_url_prefix=f"{_PRIMARY_ORIGIN}:443")
+    bridge.open_segment(0)
+    assert bridge.append(0, 0, b"bound").kind.value == "committed"
+
+    rejected: tuple[tuple[str, WitnessSourceDisposition], ...] = (
+        ("https://account-secondary.blob.core.windows.net", WitnessSourceDisposition.SECONDARY),
+        ("https://not-secondary.blob.core.windows.net", WitnessSourceDisposition.SECONDARY),
+        ("https://secondary-account.blob.core.windows.net", WitnessSourceDisposition.AMBIGUOUS),
+        ("https://account.blob.core.windows.net.evil.example", WitnessSourceDisposition.UNKNOWN),
+        ("https://evil.example/account.blob.core.windows.net", WitnessSourceDisposition.UNKNOWN),
+        ("https://account.blob.core.windows.net/witness", WitnessSourceDisposition.AMBIGUOUS),
+        ("https://account.blob.core.windows.net/witness/blob?sig=1", WitnessSourceDisposition.AMBIGUOUS),
+        ("https://account.blob.core.windows.net/witness/blob#primary", WitnessSourceDisposition.AMBIGUOUS),
+        ("https://user:x@account.blob.core.windows.net", WitnessSourceDisposition.AMBIGUOUS),
+        ("http://account.blob.core.windows.net", WitnessSourceDisposition.MALFORMED),
+        ("https://account.blob.core.windows.net/witness/../segment", WitnessSourceDisposition.PRIMARY),
+        ("", WitnessSourceDisposition.MALFORMED),
+    )
+    for account_url, disposition in rejected:
+        with pytest.raises(WitnessEndpointRejected) as caught:
+            bind_primary_witness_endpoint(account_url)
+        if disposition is WitnessSourceDisposition.PRIMARY:
+            assert caught.value.disposition is WitnessSourceDisposition.AMBIGUOUS
+        else:
+            assert caught.value.disposition is disposition
+
+    misleading = (
+        "https://account-secondary.blob.core.windows.net",
+        "https://secondary-account.blob.core.windows.net",
+        "https://account.blob.core.windows.net.evil.example",
+        "https://evil.example/account.blob.core.windows.net",
+        "https://account.blob.core.windows.net/other",
+        "https://user:x@account.blob.core.windows.net",
+        "http://account.blob.core.windows.net",
+        "https://account.blob.core.windows.net/witness/blob?sig=1",
+    )
+    block = b"sealed-bytes"
+    for prefix in misleading:
+        unqualified, witness = _witness_bridge(blob_url_prefix=prefix)
+        assert unqualified.admit is True
+        name = witness_blob_name(0)
+        unqualified.blobs[name] = block
+        assert witness.length(0) == -1
+        assert witness.read_range(0, 0, len(block)) is None
+        assert witness.append(0, 0, block).kind.value == "unavailable"
+        try:
+            witness.open_segment(0)
+        except WitnessStorageUnavailable as exc:
+            assert exc.fault is ProviderFault.UNAVAILABLE
+        else:
+            raise AssertionError(prefix)
+        assert unqualified.blobs[name] == block
+        assert all(client.appends == [] and client.downloads == [] for client in unqualified.clients)
+
+    boolean_directory = RecordingBlobDirectory()
+    boolean_directory.primary_endpoint = True  # type: ignore[assignment]
+    boolean_bridge = AzureSdkAppendBridge(boolean_directory)
+    assert boolean_bridge.length(0) == -1
+    assert boolean_bridge.append(0, 0, block).kind.value == "unavailable"
+    assert boolean_directory.opened == []
 
 
 def test_sdk_bridges_stay_offline_and_outside_composition() -> None:

@@ -501,8 +501,13 @@ class SpannerDatabaseSession(Protocol):
 
 @dataclass(slots=True)
 class _WrittenImage:
+    """Rows written by one callback invocation. The next invocation starts empty."""
+
     head: HeadRecord | None = None
     transition: TransitionRecord | None = None
+    head_writes: int = 0
+    transition_writes: int = 0
+    complete: bool = False
 
 
 def _param_type_message(code: str) -> dict[str, str]:
@@ -613,6 +618,7 @@ class _SdkPrimaryTransaction:
             InsertOrUpdate(CONTINUITY_TRANSITION_TABLE, CONTINUITY_TRANSITION_COLUMNS, (row,)),
         )
         self._image.transition = decode_transition(CONTINUITY_TRANSITION_COLUMNS, row)
+        self._image.transition_writes += 1
 
     def put_head(self, record: HeadRecord) -> None:
         row = encode_head(record)
@@ -623,6 +629,28 @@ class _SdkPrimaryTransaction:
             InsertOrUpdate(CONTINUITY_HEAD_TABLE, CONTINUITY_HEAD_COLUMNS, (row,)),
         )
         self._image.head = decode_head(CONTINUITY_HEAD_COLUMNS, row)
+        self._image.head_writes += 1
+
+
+def _evidence_intact(image: _WrittenImage | None) -> bool:
+    if image is None or not image.complete:
+        return False
+    if image.head_writes > 0 and image.head is None:
+        return False
+    return image.transition_writes == 0 or image.transition is not None
+
+
+def _committed_step(image: _WrittenImage | None) -> PrimaryStep:
+    if image is None:
+        return PrimaryStep(
+            kind=PrimaryCommitKind.UNKNOWN,
+            fault=ProviderFault.OUTCOME_UNKNOWN,
+        )
+    return PrimaryStep(
+        kind=PrimaryCommitKind.COMMITTED,
+        head=image.head if image.head_writes else None,
+        transition=image.transition if image.transition_writes else None,
+    )
 
 
 class SpannerSdkPrimaryBridge:
@@ -653,24 +681,34 @@ class SpannerSdkPrimaryBridge:
 
     def run(self, work: Callable[[PrimaryTransactionPort], None]) -> PrimaryStep:
         with self._lock:
-            image = _WrittenImage()
+            evidence: _WrittenImage | None = None
 
             def attempt(transaction: SpannerTransactionSession) -> None:
+                nonlocal evidence
+                evidence = None
+                image = _WrittenImage()
                 work(_SdkPrimaryTransaction(transaction, image))
+                image.complete = True
+                evidence = image
 
             try:
                 self._database.run_in_transaction(attempt)
             except PrimaryConflict as exc:
                 return PrimaryStep(kind=PrimaryCommitKind.CONFLICT, fault=exc.fault)
             except Exception as exc:
-                return self._step_for_transport_failure(exc, image)
-            return PrimaryStep(
-                kind=PrimaryCommitKind.COMMITTED,
-                head=image.head,
-                transition=image.transition,
-            )
+                return self._step_for_transport_failure(exc, evidence)
+            if not _evidence_intact(evidence):
+                return PrimaryStep(
+                    kind=PrimaryCommitKind.UNKNOWN,
+                    fault=ProviderFault.OUTCOME_UNKNOWN,
+                )
+            return _committed_step(evidence)
 
-    def _step_for_transport_failure(self, exc: BaseException, image: _WrittenImage) -> PrimaryStep:
+    def _step_for_transport_failure(
+        self,
+        exc: BaseException,
+        image: _WrittenImage | None,
+    ) -> PrimaryStep:
         if isinstance(exc, SpannerTransportError):
             fault = exc.fault
         else:
@@ -681,34 +719,40 @@ class SpannerSdkPrimaryBridge:
             return PrimaryStep(kind=PrimaryCommitKind.CONFLICT, fault=fault)
         return PrimaryStep(kind=PrimaryCommitKind.UNAVAILABLE, fault=ProviderFault.UNAVAILABLE)
 
-    def _confirm_committed(self, image: _WrittenImage) -> PrimaryStep:
+    def _confirm_committed(self, image: _WrittenImage | None) -> PrimaryStep:
         unknown = PrimaryStep(
             kind=PrimaryCommitKind.UNKNOWN,
             fault=ProviderFault.OUTCOME_UNKNOWN,
         )
-        if image.head is None and image.transition is None:
+        if image is None or not _evidence_intact(image):
+            return unknown
+        if image.head_writes == 0 and image.transition_writes == 0:
             return unknown
         try:
-            if image.head is not None and self._read_head(
-                image.head.application_id,
-                image.head.environment_id,
-                image.head.tenant_id,
-            ) != image.head:
+            if image.head_writes > 0 and (
+                image.head is None
+                or self._read_head(
+                    image.head.application_id,
+                    image.head.environment_id,
+                    image.head.tenant_id,
+                )
+                != image.head
+            ):
                 return unknown
-            if image.transition is not None and self._read_transition(
-                image.transition.application_id,
-                image.transition.environment_id,
-                image.transition.tenant_id,
-                image.transition.transition_id,
-            ) != image.transition:
+            if image.transition_writes > 0 and (
+                image.transition is None
+                or self._read_transition(
+                    image.transition.application_id,
+                    image.transition.environment_id,
+                    image.transition.tenant_id,
+                    image.transition.transition_id,
+                )
+                != image.transition
+            ):
                 return unknown
         except (SpannerTransportError, PrimaryConflict):
             return unknown
-        return PrimaryStep(
-            kind=PrimaryCommitKind.COMMITTED,
-            head=image.head,
-            transition=image.transition,
-        )
+        return _committed_step(image)
 
     def _read_head(
         self,
