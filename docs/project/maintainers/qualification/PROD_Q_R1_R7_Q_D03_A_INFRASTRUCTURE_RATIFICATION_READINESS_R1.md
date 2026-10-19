@@ -16,8 +16,9 @@
 | FRZ promotion | **0** |
 | Test execution | `pytest = 0`; `uv run = 0` |
 | OD-D03-A-06 inventory | Prepared against `12092a111b6c64fce2ea4a7aa45e9728ce787649`. Rule and classifications are in §7.5. No duration is adopted. The decision stays unresolved. |
+| Qualification preparation | [Appendix](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md), vendor pages checked 2026-10-19. Decision-ready preparation only. Not provisioning authority. |
 
-This record consolidates operator decisions OD-D03-A-03 through OD-D03-A-08. It does not copy the technical proposal. Accepted policy and accepted architectural direction are not proof of cloud infrastructure, not ratification of a backend, and not authorization to implement, provision, purchase, migrate, add a contract, or open a runtime port.
+This record consolidates operator decisions OD-D03-A-03 through OD-D03-A-08. It does not copy the technical proposal. Accepted policy and accepted architectural direction are not proof of cloud infrastructure, not ratification of a backend, and not authorization to implement, provision, purchase, migrate, add a contract, or open a runtime port. The qualification preparation appendix is the decision package for a later, separately authorized sandbox. It does not change §11.
 
 OD-D03-A-01 stays ratified as a mechanism class only. OD-D03-A-02 stays a conditional preferred service choice: Cloud Spanner Enterprise Plus base configuration `eur3`, plus Azure Blob Storage general-purpose v2 Standard, RA-GZRS, primary region North Europe, immutable append-blob witness. No other technology is selected. OD-D03-A-09 and OD-D03-A-10 receive no disposition.
 
@@ -970,5 +971,9 @@ Applicability: **CITED** means §7.5 states an obligation and does not satisfy i
 | D03-A-RET-03 | ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED | Locked retention, the preservation hold, decommission, and §7.3 recovery drills have no infrastructure execution. |
 
 No infrastructure qualification and no production execution occurred. No finding is self-certified as enterprise compliance. Cursor status of this documentation change is at most **READY FOR AUDIT**.
+
+## 18. Qualification preparation appendix
+
+Checked 2026-10-19 on `development` at `343cc5627f6c1e2a71395fd0e3038e06114185bd` before the appendix was added. The working tree was clean. The appendix is [PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md). It holds the vendor feasibility record, the unset sandbox budget, the trust-domain preparation, the unexecuted D03-A01–A23 specifications, the sandbox lifecycle, and the operator decision sheet. It does not adopt a retention duration, a capacity, a price total, or a spending maximum. It does not authorize provisioning. D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, and global `FRZ-*` stay open. `RPL-A` through `RPL-H` stay unproven.
 
 Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.
