@@ -25,6 +25,12 @@ from intergrax.runtime.governance.continuity_providers.credentials import (
     LiveCredentialRefusal,
     evaluate_continuity_credentials,
 )
+from intergrax.runtime.governance.continuity_providers.primary_register import (
+    InMemoryPrimaryDatabase,
+)
+from intergrax.runtime.governance.continuity_providers.witness_log import (
+    InMemoryAppendWitness,
+)
 from intergrax.runtime.governance.local_history_continuity import (
     InactiveHistoryContinuityAuthority,
     _open_local_history_continuity,
@@ -108,13 +114,11 @@ def _compose_local(
 
 
 def _offline_bundle_is_injected(bundle: object) -> bool:
-    if type(bundle) is not OfflineProviderBundle:
+    if not isinstance(bundle, OfflineProviderBundle) or type(bundle) is not OfflineProviderBundle:
         return False
-    primary = bundle.primary
-    witness = bundle.witness
-    if getattr(primary, "offline_contract_transport", False) is not True:
+    if type(bundle.primary) is not InMemoryPrimaryDatabase:
         return False
-    if getattr(witness, "offline_contract_transport", False) is not True:
+    if type(bundle.witness) is not InMemoryAppendWitness:
         return False
     if bundle.segment_block_limit < 3 or bundle.recovery_block_bound < 1:
         return False

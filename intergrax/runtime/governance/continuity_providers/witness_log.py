@@ -17,6 +17,7 @@ import json
 import threading
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Protocol
 
 from intergrax.runtime.governance.continuity_providers.errors import ProviderFault
 
@@ -60,10 +61,51 @@ class WitnessView:
     application_id: str | None = None
 
 
-class InMemoryAppendWitness:
-    """Offline append transport. Conditional offset, exact read-back, one-shot faults."""
+def commit_append(
+    blob: bytes | None,
+    *,
+    segment: int,
+    expected_offset: int,
+    block: bytes,
+) -> tuple[bytes | None, AppendStep]:
+    """Apply one conditional append. A missing segment does not create a blob."""
 
-    offline_contract_transport = True
+    if blob is None:
+        return None, AppendStep(kind=AppendKind.CONFLICT, fault=ProviderFault.PREFIX_MISSING)
+    if expected_offset != len(blob) or len(block) != _BLOCK:
+        return blob, AppendStep(
+            kind=AppendKind.CONFLICT,
+            fault=ProviderFault.APPEND_POSITION_CONFLICT,
+        )
+    return blob + block, AppendStep(
+        kind=AppendKind.COMMITTED,
+        segment=segment,
+        offset=expected_offset,
+    )
+
+
+class WitnessAppendPort(Protocol):
+    """Typed witness transport. The admitted runtime owner is ``InMemoryAppendWitness``."""
+
+    def open_segment(self, segment: int) -> None:
+        """Create an empty segment when it is absent."""
+        ...
+
+    def length(self, segment: int) -> int:
+        """Return the segment length, or -1 when the segment is absent."""
+        ...
+
+    def read_range(self, segment: int, offset: int, length: int) -> bytes | None:
+        """Return an exact byte range, or None when the range is absent."""
+        ...
+
+    def append(self, segment: int, expected_offset: int, block: bytes) -> AppendStep:
+        """Append one block when ``expected_offset`` is the current length."""
+        ...
+
+
+class InMemoryAppendWitness:
+    """Admitted offline append transport. Conditional offset, exact read-back, one-shot faults."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -118,12 +160,20 @@ class InMemoryAppendWitness:
                 return AppendStep(kind=AppendKind.UNAVAILABLE, fault=ProviderFault.UNAVAILABLE)
             if fault == "unknown_before":
                 return AppendStep(kind=AppendKind.UNKNOWN, fault=ProviderFault.OUTCOME_UNKNOWN)
-            if fault == "conflict" or expected_offset != len(blob) or len(block) != _BLOCK:
+            if fault == "conflict":
                 return AppendStep(
                     kind=AppendKind.CONFLICT,
                     fault=ProviderFault.APPEND_POSITION_CONFLICT,
                 )
-            self._segments[segment] = blob + block
+            updated, step = commit_append(
+                blob,
+                segment=segment,
+                expected_offset=expected_offset,
+                block=block,
+            )
+            if step.kind is not AppendKind.COMMITTED or updated is None:
+                return step
+            self._segments[segment] = updated
             if fault == "unknown_after":
                 return AppendStep(
                     kind=AppendKind.UNKNOWN,
@@ -131,11 +181,7 @@ class InMemoryAppendWitness:
                     segment=segment,
                     offset=expected_offset,
                 )
-            return AppendStep(
-                kind=AppendKind.COMMITTED,
-                segment=segment,
-                offset=expected_offset,
-            )
+            return step
 
     def testing_truncate(self, segment: int, new_length: int) -> None:
         with self._lock:
@@ -197,7 +243,7 @@ class AzureAppendWitness:
 
     def __init__(
         self,
-        store: InMemoryAppendWitness,
+        store: WitnessAppendPort,
         *,
         segment_block_limit: int = _DEFAULT_SEGMENT_LIMIT,
         recovery_block_bound: int = 128,
@@ -588,7 +634,7 @@ class AzureAppendWitness:
         return AppendStep(kind=AppendKind.UNAVAILABLE, fault=ProviderFault.UNAVAILABLE)
 
 
-def _segment_digest(store: InMemoryAppendWitness, segment: int) -> str:
+def _segment_digest(store: WitnessAppendPort, segment: int) -> str:
     length = store.length(segment)
     raw = store.read_range(segment, 0, length) if length > 0 else b""
     return hashlib.sha256(raw or b"").hexdigest()

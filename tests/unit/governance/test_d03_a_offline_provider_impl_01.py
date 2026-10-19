@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
+import ast
 import inspect
 import sys
 import threading
 from datetime import datetime, timezone
+from typing import cast
 
 import pytest
 from pydantic import ValidationError
@@ -51,6 +53,8 @@ from intergrax.contracts.runtime_policy_bundle import (
     build_immutable_runtime_policy_bundle,
 )
 from intergrax.runtime.governance.continuity_providers.azure_sdk import (
+    AppendBlock,
+    AzureAppendTransport,
     open_azure_append_client,
 )
 from intergrax.runtime.governance.continuity_providers.azure_sdk import (
@@ -71,6 +75,11 @@ from intergrax.runtime.governance.continuity_providers.primary_register import (
     request_digest,
 )
 from intergrax.runtime.governance.continuity_providers.spanner_sdk import (
+    CONTINUITY_HEAD_COLUMNS,
+    CONTINUITY_TRANSITION_COLUMNS,
+    ExecuteSql,
+    InsertOrUpdate,
+    SpannerPrimaryTransport,
     open_spanner_sdk_database,
 )
 from intergrax.runtime.governance.continuity_providers.spanner_sdk import (
@@ -429,6 +438,15 @@ def test_sdk_boundary_refuses_live_clients_and_retention_duration() -> None:
 
     assert map_transport_exception(DeadlineExceeded()) is ProviderFault.OUTCOME_UNKNOWN
     assert map_transport_exception(HttpResponseError()) is ProviderFault.APPEND_POSITION_CONFLICT
+    spanner_source = inspect.getsource(sys.modules[open_spanner_sdk_database.__module__])
+    azure_source = inspect.getsource(sys.modules[open_azure_append_client.__module__])
+    assert "importlib" not in spanner_source
+    assert "importlib" not in azure_source
+    assert "google.cloud" not in spanner_source
+    assert "azure.storage" not in azure_source
+    for opener in (open_spanner_sdk_database, open_azure_append_client):
+        tree = ast.parse(inspect.getsource(opener))
+        assert not any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in ast.walk(tree))
 
 
 def test_sanctioned_composition_selects_local_or_offline_pair() -> None:
@@ -437,6 +455,8 @@ def test_sanctioned_composition_selects_local_or_offline_pair() -> None:
     assert "google.cloud" not in source
     assert "azure.storage" not in source
     assert source.count("def compose_history_continuity_authority") == 1
+    assert "getattr(" not in source
+    assert "offline_contract_transport" not in source
     local = compose_history_continuity_authority(
         _governance(),
         HistoryContinuityActivation(
@@ -820,6 +840,154 @@ def test_direct_witness_scope_mismatch_does_not_append() -> None:
     )
     assert rejected.fault is ProviderFault.SCOPE_MISMATCH
     assert store.length(0) == length
+
+
+def test_closed_world_admission_rejects_marker_and_vendor_transport() -> None:
+    marked = type("MarkedPrimary", (), {"offline_contract_transport": True})()
+    denied_marker = compose_history_continuity_authority(
+        _governance(),
+        None,
+        provider_selection=_selection(),
+        offline_bundle=_bundle(primary=cast(InMemoryPrimaryDatabase, marked)),
+    )
+    assert isinstance(denied_marker, InactiveHistoryContinuityAuthority)
+    denied_primary = compose_history_continuity_authority(
+        _governance(),
+        None,
+        provider_selection=_selection(),
+        offline_bundle=_bundle(primary=cast(InMemoryPrimaryDatabase, SpannerPrimaryTransport())),
+    )
+    assert isinstance(denied_primary, InactiveHistoryContinuityAuthority)
+    denied_witness = compose_history_continuity_authority(
+        _governance(),
+        None,
+        provider_selection=_selection(),
+        offline_bundle=_bundle(witness=cast(InMemoryAppendWitness, AzureAppendTransport())),
+    )
+    assert isinstance(denied_witness, InactiveHistoryContinuityAuthority)
+    assert denied_witness.sealed_retention() is None
+
+
+def test_vendor_transport_substitution_preserves_register_and_witness() -> None:
+    memory_primary = InMemoryPrimaryDatabase()
+    vendor_primary = SpannerPrimaryTransport()
+    memory_result = _drive_primary(memory_primary)
+    vendor_result = _drive_primary(vendor_primary)
+    assert memory_result == vendor_result
+    mutations = [call for call in vendor_primary.operations if isinstance(call, InsertOrUpdate)]
+    head_writes = [call for call in mutations if call.table == "continuity_head"]
+    transition_writes = [call for call in mutations if call.table == "continuity_transition"]
+    assert head_writes and transition_writes
+    assert head_writes[-1].columns == CONTINUITY_HEAD_COLUMNS
+    assert transition_writes[-1].columns == CONTINUITY_TRANSITION_COLUMNS
+    selects = [call for call in vendor_primary.operations if isinstance(call, ExecuteSql)]
+    assert any("FROM continuity_head" in call.sql for call in selects)
+    assert any("FROM continuity_transition" in call.sql for call in selects)
+    assert all(call.param_types and call.params for call in selects)
+    assert "google.cloud" not in sys.modules
+
+    memory_witness = InMemoryAppendWitness()
+    vendor_witness = AzureAppendTransport()
+    memory_bytes = _drive_witness(memory_witness)
+    vendor_bytes = _drive_witness(vendor_witness)
+    assert memory_bytes == vendor_bytes
+    appends = [call for call in vendor_witness.operations if isinstance(call, AppendBlock)]
+    assert [call.appendpos_condition for call in appends] == [0, _BLOCK]
+    assert all(call.length == len(call.data) == _BLOCK for call in appends)
+    assert all(call.blob_name.startswith("continuity-witness/segment-") for call in appends)
+    assert "azure.storage" not in sys.modules
+
+
+def _drive_primary(database: InMemoryPrimaryDatabase | SpannerPrimaryTransport):
+    register = SpannerPrimaryRegister()
+    transition = _sample_transition(revision=1, fence="1", watermark=1)
+    other = _sample_transition(revision=1, fence="1", watermark=9)
+    scope = {
+        "application_id": _APP,
+        "environment_id": _ENV,
+        "tenant_id": "tenant-a",
+    }
+    prepared = register.prepare(
+        database,
+        expected_revision=0,
+        expected_fencing_token=None,
+        transition=transition,
+        authority_incarnation="offline-incarnation:1",
+        **scope,
+    )
+    repeated = register.prepare(
+        database,
+        expected_revision=0,
+        expected_fencing_token=None,
+        transition=transition,
+        authority_incarnation="offline-incarnation:1",
+        **scope,
+    )
+    sealed = register.attach_receipt(
+        database,
+        transition_id=transition.transition_id,
+        request_digest_value=transition.request_digest,
+        witness_segment=0,
+        witness_offset=0,
+        seal_digest="seal-1",
+        **scope,
+    )
+    committed = register.commit_transition(
+        database,
+        transition_id=transition.transition_id,
+        request_digest_value=transition.request_digest,
+        **scope,
+    )
+    mismatched = register.prepare(
+        database,
+        expected_revision=1,
+        expected_fencing_token="1",
+        transition=other,
+        authority_incarnation="offline-incarnation:1",
+        **scope,
+    )
+    head = database.read_head(_APP, _ENV, "tenant-a")
+    stored = database.read_transition(_APP, _ENV, "tenant-a", transition.transition_id)
+    isolated = database.read_head(_APP, _ENV, "tenant-b")
+    return (
+        prepared.kind,
+        repeated.kind,
+        sealed.kind,
+        committed.kind,
+        mismatched.fault,
+        head,
+        stored,
+        isolated,
+    )
+
+
+def _drive_witness(store: InMemoryAppendWitness | AzureAppendTransport) -> bytes | None:
+    witness = AzureAppendWitness(store, segment_block_limit=8, recovery_block_bound=16)
+    common = {
+        "application_id": _APP,
+        "environment_id": _ENV,
+        "tenant_id": "tenant-a",
+        "fencing_token": "1",
+        "status": "active",
+        "identity_epoch": 1,
+    }
+    first = witness.append_seal(
+        revision=1,
+        transition_id="env-1:1:1",
+        binding_digest="digest-1",
+        **common,
+    )
+    second = witness.append_seal(
+        revision=2,
+        transition_id="env-1:2:1",
+        binding_digest="digest-2",
+        **common,
+    )
+    assert first.kind.value == "committed"
+    assert second.kind.value == "committed"
+    length = store.length(0)
+    assert length == 2 * _BLOCK
+    return store.read_range(0, 0, length)
 
 
 def _sample_transition(*, revision: int, fence: str, watermark: int) -> TransitionRecord:

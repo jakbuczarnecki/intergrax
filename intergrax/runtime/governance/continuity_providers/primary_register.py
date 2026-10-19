@@ -13,8 +13,10 @@ from __future__ import annotations
 import copy
 import hashlib
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Protocol
 
 from intergrax.runtime.governance.continuity_providers.errors import ProviderFault
 
@@ -135,6 +137,45 @@ class _TxnState:
     transitions: dict[tuple[ScopeKey, str], TransitionRecord] = field(default_factory=dict)
 
 
+def read_scoped_head(
+    state: _TxnState,
+    application_id: str,
+    environment_id: str,
+    tenant_id: str,
+) -> HeadRecord | None:
+    found = state.heads.get(_scope_key(application_id, environment_id, tenant_id))
+    return None if found is None else copy.deepcopy(found)
+
+
+def read_scoped_transition(
+    state: _TxnState,
+    application_id: str,
+    environment_id: str,
+    tenant_id: str,
+    transition_id: str,
+) -> TransitionRecord | None:
+    key = (_scope_key(application_id, environment_id, tenant_id), transition_id)
+    found = state.transitions.get(key)
+    return None if found is None else copy.deepcopy(found)
+
+
+def put_scoped_transition(state: _TxnState, record: TransitionRecord) -> None:
+    key = (
+        _scope_key(record.application_id, record.environment_id, record.tenant_id),
+        record.transition_id,
+    )
+    existing = state.transitions.get(key)
+    if existing is not None and existing.request_digest != record.request_digest:
+        raise PrimaryConflict(ProviderFault.DIGEST_MISMATCH)
+    state.transitions[key] = copy.deepcopy(record)
+
+
+def put_scoped_head(state: _TxnState, record: HeadRecord) -> None:
+    state.heads[_scope_key(record.application_id, record.environment_id, record.tenant_id)] = (
+        copy.deepcopy(record)
+    )
+
+
 class PrimaryTransaction:
     """One serializable attempt. Conflicts raise before the caller commits."""
 
@@ -147,8 +188,7 @@ class PrimaryTransaction:
         environment_id: str,
         tenant_id: str,
     ) -> HeadRecord | None:
-        found = self._state.heads.get(_scope_key(application_id, environment_id, tenant_id))
-        return None if found is None else copy.deepcopy(found)
+        return read_scoped_head(self._state, application_id, environment_id, tenant_id)
 
     def read_transition(
         self,
@@ -157,24 +197,19 @@ class PrimaryTransaction:
         tenant_id: str,
         transition_id: str,
     ) -> TransitionRecord | None:
-        key = (_scope_key(application_id, environment_id, tenant_id), transition_id)
-        found = self._state.transitions.get(key)
-        return None if found is None else copy.deepcopy(found)
+        return read_scoped_transition(
+            self._state,
+            application_id,
+            environment_id,
+            tenant_id,
+            transition_id,
+        )
 
     def insert_transition(self, record: TransitionRecord) -> None:
-        key = (
-            _scope_key(record.application_id, record.environment_id, record.tenant_id),
-            record.transition_id,
-        )
-        existing = self._state.transitions.get(key)
-        if existing is not None and existing.request_digest != record.request_digest:
-            raise PrimaryConflict(ProviderFault.DIGEST_MISMATCH)
-        self._state.transitions[key] = copy.deepcopy(record)
+        put_scoped_transition(self._state, record)
 
     def put_head(self, record: HeadRecord) -> None:
-        self._state.heads[_scope_key(record.application_id, record.environment_id, record.tenant_id)] = (
-            copy.deepcopy(record)
-        )
+        put_scoped_head(self._state, record)
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,14 +220,70 @@ class PrimaryStep:
     transition: TransitionRecord | None = None
 
 
+class PrimaryTransactionPort(Protocol):
+    """Typed transaction view owned by the primary register. Not a second authority."""
+
+    def read_head(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+    ) -> HeadRecord | None:
+        """Return a copy of one scoped head, or None when the row is absent."""
+        ...
+
+    def read_transition(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+        transition_id: str,
+    ) -> TransitionRecord | None:
+        """Return a copy of one scoped transition, or None when the row is absent."""
+        ...
+
+    def insert_transition(self, record: TransitionRecord) -> None:
+        """Insert or repeat one transition. A different digest conflicts."""
+        ...
+
+    def put_head(self, record: HeadRecord) -> None:
+        """Replace the scoped head row."""
+        ...
+
+
+class PrimaryDatabasePort(Protocol):
+    """Typed primary transport. The admitted runtime owner is ``InMemoryPrimaryDatabase``."""
+
+    def read_head(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+    ) -> HeadRecord | None:
+        """Read one committed head outside a transaction."""
+        ...
+
+    def read_transition(
+        self,
+        application_id: str,
+        environment_id: str,
+        tenant_id: str,
+        transition_id: str,
+    ) -> TransitionRecord | None:
+        """Read one committed transition outside a transaction."""
+        ...
+
+    def run(self, work: Callable[[PrimaryTransactionPort], None]) -> PrimaryStep:
+        """Apply one serializable attempt. Conflicts stay inside the returned step."""
+        ...
+
+
 class InMemoryPrimaryDatabase:
-    """Offline transaction port. ``offline_contract_transport`` marks this double.
+    """Admitted offline transaction port for composition.
 
     Faults are one-shot and explicit. An unknown outcome after apply leaves the
     write durable. An unknown outcome before apply leaves it absent.
     """
-
-    offline_contract_transport = True
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -224,8 +315,7 @@ class InMemoryPrimaryDatabase:
         tenant_id: str,
     ) -> HeadRecord | None:
         with self._lock:
-            found = self._state.heads.get(_scope_key(application_id, environment_id, tenant_id))
-            return None if found is None else copy.deepcopy(found)
+            return read_scoped_head(self._state, application_id, environment_id, tenant_id)
 
     def read_transition(
         self,
@@ -235,9 +325,13 @@ class InMemoryPrimaryDatabase:
         transition_id: str,
     ) -> TransitionRecord | None:
         with self._lock:
-            key = (_scope_key(application_id, environment_id, tenant_id), transition_id)
-            found = self._state.transitions.get(key)
-            return None if found is None else copy.deepcopy(found)
+            return read_scoped_transition(
+                self._state,
+                application_id,
+                environment_id,
+                tenant_id,
+                transition_id,
+            )
 
     def testing_rollback_head(
         self,
@@ -257,7 +351,7 @@ class InMemoryPrimaryDatabase:
                 raise RuntimeError("previous committed head is absent")
             self._state.heads[key] = copy.deepcopy(previous)
 
-    def run(self, work) -> PrimaryStep:
+    def run(self, work: Callable[[PrimaryTransactionPort], None]) -> PrimaryStep:
         with self._lock:
             self._calls += 1
             snapshot = copy.deepcopy(self._state)
@@ -322,7 +416,7 @@ class SpannerPrimaryRegister:
 
     def prepare(
         self,
-        database: InMemoryPrimaryDatabase,
+        database: PrimaryDatabasePort,
         *,
         application_id: str,
         environment_id: str,
@@ -334,7 +428,7 @@ class SpannerPrimaryRegister:
     ) -> PrimaryStep:
         observed: dict[str, HeadRecord | TransitionRecord | None] = {}
 
-        def work(txn: PrimaryTransaction) -> None:
+        def work(txn: PrimaryTransactionPort) -> None:
             head = txn.read_head(application_id, environment_id, tenant_id)
             existing = txn.read_transition(
                 application_id,
@@ -432,7 +526,7 @@ class SpannerPrimaryRegister:
 
     def attach_receipt(
         self,
-        database: InMemoryPrimaryDatabase,
+        database: PrimaryDatabasePort,
         *,
         application_id: str,
         environment_id: str,
@@ -443,7 +537,7 @@ class SpannerPrimaryRegister:
         witness_offset: int,
         seal_digest: str,
     ) -> PrimaryStep:
-        def work(txn: PrimaryTransaction) -> None:
+        def work(txn: PrimaryTransactionPort) -> None:
             head = txn.read_head(application_id, environment_id, tenant_id)
             transition = txn.read_transition(
                 application_id,
@@ -490,7 +584,7 @@ class SpannerPrimaryRegister:
 
     def commit_transition(
         self,
-        database: InMemoryPrimaryDatabase,
+        database: PrimaryDatabasePort,
         *,
         application_id: str,
         environment_id: str,
@@ -498,7 +592,7 @@ class SpannerPrimaryRegister:
         transition_id: str,
         request_digest_value: str,
     ) -> PrimaryStep:
-        def work(txn: PrimaryTransaction) -> None:
+        def work(txn: PrimaryTransactionPort) -> None:
             head = txn.read_head(application_id, environment_id, tenant_id)
             transition = txn.read_transition(
                 application_id,
@@ -550,8 +644,8 @@ class SpannerPrimaryRegister:
 
     def _reread(
         self,
-        database: InMemoryPrimaryDatabase,
-        work,
+        database: PrimaryDatabasePort,
+        work: Callable[[PrimaryTransactionPort], None],
         *,
         application_id: str,
         environment_id: str,

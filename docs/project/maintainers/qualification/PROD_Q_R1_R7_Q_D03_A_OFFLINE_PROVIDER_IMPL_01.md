@@ -10,7 +10,7 @@
 
 The offline provider pair sits behind the existing `HistoryContinuityAuthority`. `compose_history_continuity_authority` remains the only composition function. `ProductionControlPlaneGovernance` remains the semantic owner. `local_deterministic` remains the local provider. `OFFLINE_EXTERNAL_PAIR` is a typed selection. Recognizing it does not admit cloud activation.
 
-Vendor client calls live in `intergrax/runtime/governance/continuity_providers/spanner_sdk.py` and `azure_sdk.py`. Both refuse before a network call. The optional `continuity-cloud` extra names the SDK packages. This child does not install them and does not open a session.
+Vendor call shapes live in `intergrax/runtime/governance/continuity_providers/spanner_sdk.py` and `azure_sdk.py`. `open_spanner_sdk_database` and `open_azure_append_client` always refuse before a client import or a network call. There is no switch that enables cloud execution. `SpannerPrimaryTransport` and `AzureAppendTransport` execute the documented SDK argument shapes offline. That execution is not a live session and does not qualify Spanner or Azure. The optional `continuity-cloud` extra names the SDK packages. This child does not install them.
 
 No cloud IaC, IAM, or deployment template was added. The repository has no Terraform or Bicep convention for this pair. Docker compose files under `infra/docker/` are not that convention.
 
