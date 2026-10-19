@@ -35,6 +35,9 @@ from tests.qualification.prod_q._p0_types import (
 _R1_HTTP_REPRODUCTION_ENV = "INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION"
 _R1_REPRODUCTION_TIMEOUT_SEC = 60
 
+PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA = "0046075484cd85da9a220f6f537c48ad94dd8078"
+PROD_Q_P0_CORRECTIVE_STAGE_ID = "PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1"
+
 HISTORICAL_EVIDENCE: tuple[HistoricalEvidenceItem, ...] = (
     HistoricalEvidenceItem("TENANT-X", "5ccb72fccd4e3820ebdc9c18008afe6f7d59f558", True),
     HistoricalEvidenceItem("CTRL-X", "318a4d835534ef5c48575f4649551c957dacd8ea", True),
@@ -42,6 +45,11 @@ HISTORICAL_EVIDENCE: tuple[HistoricalEvidenceItem, ...] = (
     HistoricalEvidenceItem("CONFIG-X", "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb", True),
     HistoricalEvidenceItem("COMPAT-X", "84b8739b8b6e62c8e580e26ca3011f6aa46d457a", True),
     HistoricalEvidenceItem("HARNESS-W4", "f38e455ccc391dad9a6a64d7867a33cfc5c9b21d", True),
+    HistoricalEvidenceItem(
+        PROD_Q_P0_CORRECTIVE_STAGE_ID,
+        PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA,
+        True,
+    ),
 )
 
 _RECOMMENDED_CHILDREN: tuple[str, ...] = (
@@ -171,16 +179,25 @@ def run_prod_q_bounded_subprocess(
 ) -> tuple[int | None, str, bool]:
     """Run a subprocess with a hard timeout; return (exit_code, combined_output, timed_out)."""
     workdir = cwd or repo_root()
-    popen_kwargs: dict[str, object] = {
-        "cwd": workdir,
-        "env": env,
-        "stdout": subprocess.PIPE,
-        "stderr": subprocess.PIPE,
-        "text": True,
-    }
-    if sys.platform != "win32":
-        popen_kwargs["start_new_session"] = True
-    proc = subprocess.Popen(cmd, **popen_kwargs)
+    if sys.platform == "win32":
+        proc = subprocess.Popen(
+            cmd,
+            cwd=workdir,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    else:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=workdir,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        )
     owned_process_group_id = _owned_process_group_id_for(proc)
     try:
         stdout, stderr = proc.communicate(timeout=timeout_sec)

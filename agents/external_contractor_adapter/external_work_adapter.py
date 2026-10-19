@@ -277,14 +277,7 @@ class ExternalWorkAdapter:
         requested = str(
             metadata.get(META_REQUESTED_CAPABILITY) or _DEFAULT_CAPABILITY
         ).strip()
-        budget_raw = metadata.get(META_BUDGET_LIMIT)
-        budget_limit: MoneyAmount | None = None
-        if budget_raw is not None:
-            budget_limit = (
-                budget_raw
-                if isinstance(budget_raw, MoneyAmount)
-                else MoneyAmount.model_validate(budget_raw)
-            )
+        budget_limit = _coerce_meta_budget_limit(metadata.get(META_BUDGET_LIMIT))
         return ExternalWorkCreateRequest(
             provider_id=provider_id,
             task_id=task_id,
@@ -1419,6 +1412,29 @@ def _require_meta_str(metadata: Mapping[str, Any], key: str, *, field: str) -> s
     if raw is None or not str(raw).strip():
         raise ValueError(f"missing required metadata {key!r} ({field})")
     return str(raw).strip()
+
+
+def _coerce_meta_budget_limit(raw: object) -> MoneyAmount | None:
+    """Canonical MoneyAmount coercion for step metadata (typed, JSON dict, or JSON string)."""
+    if raw is None:
+        return None
+    if isinstance(raw, MoneyAmount):
+        return raw
+    if isinstance(raw, dict):
+        return MoneyAmount.model_validate(raw)
+    if isinstance(raw, str):
+        normalized = raw.strip()
+        if not normalized:
+            raise ValueError("budget_limit must not be empty or whitespace-only")
+        if normalized.startswith("{"):
+            return MoneyAmount.model_validate_json(normalized)
+        raise ValueError("budget_limit string must be canonical MoneyAmount JSON")
+    raise ValueError("budget_limit must be MoneyAmount, dict, or canonical JSON string")
+
+
+def _optional_meta_budget_limit_json(metadata: Mapping[str, Any], key: str) -> str | None:
+    coerced = _coerce_meta_budget_limit(metadata.get(key))
+    return coerced.model_dump_json() if coerced is not None else None
 
 
 def _optional_meta_str(metadata: Mapping[str, Any], key: str) -> str | None:

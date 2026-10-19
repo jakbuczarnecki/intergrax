@@ -20,7 +20,6 @@ from tests.qualification.prod_q._p0_types import (
     AuxiliaryJustificationKind,
     AuxiliaryReconciliationMetrics,
     AuxiliaryVerificationResult,
-    ConcernFindingReconciliationMetrics,
     MechanismRole,
     OwnershipReconciliationReport,
     OwnershipResolutionState,
@@ -547,8 +546,8 @@ def _verified_private_nested_helper(
             f"caller_to_callee:{class_name}.{op_method}->{class_name}.{method_name}",
             f"ast_static_call:self.{method_name}",
             f"operational_semantic:{semantic.candidate_id}",
-            f"analysis_limit:bounded_static_ast_no_dynamic_dispatch_proof",
-            f"independent_authority:none_detected_in_module_static_shape",
+            "analysis_limit:bounded_static_ast_no_dynamic_dispatch_proof",
+            "independent_authority:none_detected_in_module_static_shape",
         ),
         verification_result=AuxiliaryVerificationResult.VERIFIED,
     )

@@ -57,6 +57,9 @@ from testing_support.host_fixture_wiring import (
     install_diagnostic_cursor_secret,
     install_host_llm_stub,
 )
+from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+    with_qualified_strict_external_work_provider_pin,
+)
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
     assert_identity_continuity,
     load_d4_launcher_module,
@@ -74,7 +77,7 @@ from tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admissio
 from tests.unit.applications.test_production_registry_startup_ac3_final import (
     _APP,
     _ENV,
-    _ac3_revision_bound_host_manifest,
+    _ac3_revision_bound_strict_external_work_host_manifest,
     _activation_request,
 )
 
@@ -250,7 +253,7 @@ def _patch_gca_strict_http_wiring(monkeypatch: pytest.MonkeyPatch, d4) -> None:
     ):
         monkeypatch.setattr(
             f"{module}.build_governed_contractor_manifest",
-            _ac3_revision_bound_host_manifest,
+            _ac3_revision_bound_strict_external_work_host_manifest,
         )
         monkeypatch.setattr(
             f"{module}.build_governed_contractor_environment_profile",
@@ -347,18 +350,20 @@ def test_c_dim8_01_valid_tenant_b_activation_serving_and_http_execution(
         )
 
         authoritative_execution_tenant = session.environment.application_environment_id
-        settings = with_strict_http_api_keys(
-            replace(
-                GovernedContractorBackendSettings.from_env(),
-                include_mcp=False,
-                include_scheduler=False,
-                include_interaction_routes=False,
-                include_task_control=False,
-                default_agent_id="search",
-                runtime_policy_bundle=_test_policy_bundle(),
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_test_policy_bundle(),
+                ),
+                execution_tenant_id=authoritative_execution_tenant,
+                wrong_tenant_id=_TENANT_A,
             ),
-            execution_tenant_id=authoritative_execution_tenant,
-            wrong_tenant_id=_TENANT_A,
         )
         host_runtime = d4._host_runtime_for_startup(settings)
         app = create_governed_contractor_strict_production_asgi_app(
@@ -564,18 +569,20 @@ def test_c_dim8_04_cross_tenant_http_denied_before_inner_execution(
         )
 
         authoritative_execution_tenant = session.environment.application_environment_id
-        settings = with_strict_http_api_keys(
-            replace(
-                GovernedContractorBackendSettings.from_env(),
-                include_mcp=False,
-                include_scheduler=False,
-                include_interaction_routes=False,
-                include_task_control=False,
-                default_agent_id="search",
-                runtime_policy_bundle=_test_policy_bundle(),
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_test_policy_bundle(),
+                ),
+                execution_tenant_id=authoritative_execution_tenant,
+                wrong_tenant_id=_TENANT_A,
             ),
-            execution_tenant_id=authoritative_execution_tenant,
-            wrong_tenant_id=_TENANT_A,
         )
         host_runtime = d4._host_runtime_for_startup(settings)
         app = create_governed_contractor_strict_production_asgi_app(
@@ -703,18 +710,20 @@ def test_c_dim8_05_isolation_after_denial_preserves_legitimate_serving(
     )
 
     authoritative_execution_tenant = environment.application_environment_id
-    settings = with_strict_http_api_keys(
-        replace(
-            GovernedContractorBackendSettings.from_env(),
-            include_mcp=False,
-            include_scheduler=False,
-            include_interaction_routes=False,
-            include_task_control=False,
-            default_agent_id="search",
-            runtime_policy_bundle=_test_policy_bundle(),
+    settings = with_qualified_strict_external_work_provider_pin(
+        with_strict_http_api_keys(
+            replace(
+                GovernedContractorBackendSettings.from_env(),
+                include_mcp=False,
+                include_scheduler=False,
+                include_interaction_routes=False,
+                include_task_control=False,
+                default_agent_id="search",
+                runtime_policy_bundle=_test_policy_bundle(),
+            ),
+            execution_tenant_id=authoritative_execution_tenant,
+            wrong_tenant_id=_TENANT_A,
         ),
-        execution_tenant_id=authoritative_execution_tenant,
-        wrong_tenant_id=_TENANT_A,
     )
     host_runtime = d4._host_runtime_for_startup(settings)
     app = create_governed_contractor_strict_production_asgi_app(

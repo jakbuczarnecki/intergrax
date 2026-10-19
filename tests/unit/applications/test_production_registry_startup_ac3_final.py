@@ -79,33 +79,58 @@ _GRAPH_DIGEST = "sha256:" + ("c" * 64)
 _FACTORY_REF = AgentBindingFactoryReference(
     factory_path="example_agent.factory.build_agent",
 )
+_EXTERNAL_CONTRACTOR_FACTORY_PATH = "external_contractor_slot.factory.build_agent"
+_EXTERNAL_CONTRACTOR_FACTORY_REF = AgentBindingFactoryReference(
+    factory_path=_EXTERNAL_CONTRACTOR_FACTORY_PATH,
+)
+_EXTERNAL_CONTRACTOR_PKG_ID = "pkg-external-contractor"
 
 
 def _write_lock_manifest(
     artifact_root: Path,
     *,
     package_digest: str = _DIGEST_A,
+    include_revision_bound_external_contractor: bool = False,
 ) -> MaterializedRuntimeLock:
+    packages: tuple[MaterializedLockPackage, ...] = (
+        MaterializedLockPackage(
+            distribution_name="pkg-search",
+            version="1.0.0",
+            package_digest=package_digest,
+        ),
+    )
+    agent_closure: tuple[MaterializedAgentClosureEntry, ...] = (
+        MaterializedAgentClosureEntry(
+            distribution_package_id="pkg-search",
+            package_digest=package_digest,
+            role="direct",
+        ),
+    )
+    if include_revision_bound_external_contractor:
+        packages = (
+            *packages,
+            MaterializedLockPackage(
+                distribution_name=_EXTERNAL_CONTRACTOR_PKG_ID,
+                version="1.0.0",
+                package_digest=package_digest,
+            ),
+        )
+        agent_closure = (
+            *agent_closure,
+            MaterializedAgentClosureEntry(
+                distribution_package_id=_EXTERNAL_CONTRACTOR_PKG_ID,
+                package_digest=package_digest,
+                role="direct",
+            ),
+        )
     lock = MaterializedRuntimeLock(
         resolver_algorithm_id="intergrax.test",
         resolver_algorithm_version="1",
         inputs_digest="inputs-1",
         intergrax_version="0.1.0",
         python_version="3.12",
-        packages=(
-            MaterializedLockPackage(
-                distribution_name="pkg-search",
-                version="1.0.0",
-                package_digest=package_digest,
-            ),
-        ),
-        agent_closure=(
-            MaterializedAgentClosureEntry(
-                distribution_package_id="pkg-search",
-                package_digest=package_digest,
-                role="direct",
-            ),
-        ),
+        packages=packages,
+        agent_closure=agent_closure,
     ).with_content_identity()
     (artifact_root / RUNTIME_LOCK_MANIFEST_FILENAME).write_text(
         json.dumps(lock.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
@@ -119,6 +144,7 @@ def _build_echo_artifact(
     tmp_path: Path,
     *,
     marker: str = "artifact-a",
+    revision_bound_strict_external_work: bool = False,
 ) -> tuple[Path, str, MaterializedRuntimeLock]:
     artifact_root = tmp_path / f"artifact-{marker}"
     site_packages = artifact_root / "site-packages"
@@ -140,7 +166,28 @@ def _build_echo_artifact(
         + "\n",
         encoding="utf-8",
     )
-    lock = _write_lock_manifest(artifact_root)
+    if revision_bound_strict_external_work:
+        external_slot = site_packages / "external_contractor_slot"
+        external_slot.mkdir()
+        (external_slot / "__init__.py").write_text("", encoding="utf-8")
+        (external_slot / "factory.py").write_text(
+            textwrap.dedent(
+                """
+                from external_contractor_adapter.external_contractor_adapter_agent import (
+                    ExternalContractorAdapterAgent,
+                )
+
+                def build_agent(ctx, binding):
+                    return ExternalContractorAdapterAgent()
+                """
+            ).strip()
+            + "\n",
+            encoding="utf-8",
+        )
+    lock = _write_lock_manifest(
+        artifact_root,
+        include_revision_bound_external_contractor=revision_bound_strict_external_work,
+    )
     digest = directory_content_digest(artifact_root)
     return artifact_root, digest, lock
 
@@ -162,6 +209,31 @@ def _ac3_revision_bound_host_manifest() -> ApplicationManifest:
     )
 
 
+def _ac3_revision_bound_strict_external_work_host_manifest() -> ApplicationManifest:
+    """Revision-bound AC3 manifest: search slot + sanctioned external-contractor adapter."""
+    return ApplicationManifest.lab(
+        app_id=_APP,
+        name="AC3 Final",
+        agents=[
+            AgentBinding(
+                contract_id="search",
+                import_path="echo.echo_agent.EchoAgent",
+                factory_path=_FACTORY_REF.factory_path,
+            ),
+            AgentBinding(
+                contract_id="external_contractor_adapter",
+                import_path=(
+                    "external_contractor_adapter.external_contractor_adapter_agent."
+                    "ExternalContractorAdapterAgent"
+                ),
+                factory_path=_EXTERNAL_CONTRACTOR_FACTORY_PATH,
+                capabilities=["external_contractor.adapt"],
+                default=True,
+            ),
+        ],
+    )
+
+
 def _roster(
     *,
     roster_revision_seed: str = "roster-a",
@@ -179,6 +251,42 @@ def _roster(
                 effective_enablement=True,
                 factory_reference=_FACTORY_REF,
                 manifest_origin_ref="manifest:agents/search",
+            ),
+        ),
+    ).with_revision_id()
+    if roster_revision_seed != "roster-a":
+        return roster.model_copy(
+            update={"effective_roster_revision_id": roster_revision_seed},
+        )
+    return roster
+
+
+def _roster_with_strict_external_work(
+    *,
+    roster_revision_seed: str = "roster-a",
+) -> EffectiveRoster:
+    roster = EffectiveRoster(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        manifest_release_id=_RELEASE,
+        entries=(
+            EffectiveRosterEntry(
+                logical_agent_id="search",
+                installation_slot_id="slot-search",
+                package_digest=_DIGEST_A,
+                distribution_package_id="pkg-search",
+                effective_enablement=True,
+                factory_reference=_FACTORY_REF,
+                manifest_origin_ref="manifest:agents/search",
+            ),
+            EffectiveRosterEntry(
+                logical_agent_id="external_contractor_adapter",
+                installation_slot_id="slot-external-contractor",
+                package_digest=_DIGEST_A,
+                distribution_package_id=_EXTERNAL_CONTRACTOR_PKG_ID,
+                effective_enablement=True,
+                factory_reference=_EXTERNAL_CONTRACTOR_FACTORY_REF,
+                manifest_origin_ref="manifest:agents/external_contractor_adapter",
             ),
         ),
     ).with_revision_id()

@@ -230,6 +230,7 @@ def test_unsupported_adapter_denies() -> None:
     _assert_inactive(compose_history_continuity_authority(_governance(), bypassed))
     assert list(HistoryContinuityAdapterKind) == [
         HistoryContinuityAdapterKind.LOCAL_DETERMINISTIC,
+        HistoryContinuityAdapterKind.OFFLINE_EXTERNAL_PAIR,
     ]
 
 

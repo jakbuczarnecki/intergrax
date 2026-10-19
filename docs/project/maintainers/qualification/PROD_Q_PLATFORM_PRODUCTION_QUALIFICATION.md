@@ -1,12 +1,32 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · corrective chain through **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** @ `0046075484cd85da9a220f6f537c48ad94dd8078` = **READY FOR AUDIT** · **PROD-Q-P0** inventory wave = **READY FOR AUDIT** (independent GitHub SHA audit pending) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** mechanical evidence @ `0046075484cd85da9a220f6f537c48ad94dd8078` = **READY FOR AUDIT** (historical lock preserved) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = **READY FOR AUDIT** (does **not** close **PROD-Q-P0** or **PROD-Q**) · **PROD-Q-P0** inventory wave = **READY FOR AUDIT** (independent GitHub SHA audit pending) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
 
-**Evidence lock HEAD (P0 mechanical SSOT):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · **production delta = 0**
+**P0 mechanical evidence lock (SSOT constant, not superseded):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · `PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA` in `tests/qualification/prod_q/_p0_certification.py` · **production delta = 0**
+
+**P0 typing/subprocess/evidence-integrity corrective (implementation):** `ddc8704457192aafffdd32ca8d65e258db2679e0` — explicit Windows/POSIX bounded subprocess boundaries, fail-closed R1 HTTP reproduction semantics, static typing/lint hygiene on `_p0_*`; **preserves** mechanical lock SHA lineage in `HISTORICAL_EVIDENCE` · **production delta = 0**
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1-R1-R1-R1-R1-R1-R1-R1 baseline):** `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e`
+**START_HEAD (this evidence-ledger alignment):** `eeebca3b44ff3160a5b1e4a01b402129869e9985`
+
+**START_HEAD (P0-R1-R1-R1-R1-R1-R1-R1-R1 rejected baseline):** `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e`
+
+## PROD-Q-P0 exact-SHA evidence ledger
+
+| Lineage entry | Exact SHA | Attribution | Disposition |
+| --- | --- | --- | --- |
+| Initial closed-world inventory wave | `20ce563d383312bd53c72167cb228623dfbb8881` | **PROD-Q-P0** (historical) | **REJECTED** (preserved; not re-opened) |
+| Mechanical composition-ownership + authoritative gate lock | `0046075484cd85da9a220f6f537c48ad94dd8078` | **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** implementation evidence | **READY FOR AUDIT** — independent GitHub audit required; **not** **CLOSED** |
+| Typing/subprocess/evidence-integrity corrective | `ddc8704457192aafffdd32ca8d65e258db2679e0` | Post-lock qualification harness hardening only (`tests/qualification/prod_q/_p0_certification.py`, `_p0_*` gates) | **READY FOR AUDIT** — does **not** supersede or replace mechanical lock SHA; does **not** close parent **PROD-Q** |
+| Current-HEAD compatibility (doc reconciliation @ START_HEAD) | `eeebca3b44ff3160a5b1e4a01b402129869e9985` | Both `0046075484…` and `ddc87044…` are ancestors of HEAD (`git merge-base --is-ancestor`) | Factual lineage only — **not** operator acceptance |
+| FRZ reconciliation rows (`build_frz_reconciliation()`) | — | **FRZ-PRD / FRZ-SEC / FRZ-REL** and related IDs per freeze checklist | Evidence **contributions** only — **no** global **FRZ-*** **PASS** from P0 |
+
+**Implementation test evidence (committed @ `ddc87044…`, not replayed in this documentation task):** `test_prod_q_p0_fast_q04_historical_evidence_ancestry`; `test_prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit_gate` (`tests/qualification/prod_q/test_prod_q_p0_r1_r1_r1_r1_r1_r1_gate.py`); bounded-subprocess / R1-disposition integrity gates `test_prod_q_p0_int_d7_*` (`tests/qualification/prod_q/test_prod_q_p0_integrity.py`). **IMPL-01-R3** and other non-P0 stages remain **not** **QUALIFIED** by this ledger.
+
+**Independent code-review limitations:** Exact-SHA audit must target **GitHub `development` code**, not this Cursor report ([`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md)). Local documentation correction is **separate** from parent **PROD-Q** certification. Rejected corrective SHAs in the roadmap table remain **REJECTED**; only explicitly attributed SHAs above are **READY FOR AUDIT**.
+
+**Remaining requirement for formal PROD-Q-P0 closure:** Independent exact-SHA GitHub audit of mechanical lock @ `0046075484…` **and** corrective implementation @ `ddc87044…`, including replay of committed `tests/qualification/prod_q/` gates at the audited revision; operator acceptance before any **PROD-Q-P0** **CLOSED** disposition or **PROD-Q** parent unblock. Roadmap §5 evidence ledger @ locally modified `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` is **out of scope** for this commit.
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 

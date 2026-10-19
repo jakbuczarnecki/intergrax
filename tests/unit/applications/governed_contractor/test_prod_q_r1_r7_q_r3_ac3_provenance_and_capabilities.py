@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -53,7 +52,9 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     _factory_key,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.contracts.external_work import (
     ExternalContractorIdentity,
     ExternalWorkCapability,
@@ -90,7 +91,7 @@ _ARTIFACT = "sha256:" + ("d" * 64)
 def _minimal_revision() -> RuntimeRevision:
     return RuntimeRevision(
         runtime_revision_id="rev-r3",
-        application_id="app-r3",
+        application_id="app_r3",
         application_environment_id="env-r3",
         application_release_id="rel-r3",
         platform_version="0.1.0",
@@ -108,8 +109,12 @@ def _minimal_revision() -> RuntimeRevision:
 def _artifact_external_contractor_factory(
     *,
     instances: list[ExternalContractorAdapterAgent] | None = None,
-):
-    def _factory(_ctx: ApplicationBuildContext[Any], _binding: AgentBinding):
+) -> CanonicalAgentFactory[None]:
+    def _factory(
+        ctx: ApplicationBuildContext[None],
+        binding: AgentBinding,
+    ) -> ExternalContractorAdapterAgent:
+        del ctx, binding
         agent = ExternalContractorAdapterAgent()
         if instances is not None:
             instances.append(agent)
@@ -118,14 +123,35 @@ def _artifact_external_contractor_factory(
     return _factory
 
 
+@dataclass(frozen=True, slots=True)
+class _DelegateResolveFactoryCall:
+    runtime_revision: RuntimeRevision
+    package_digest: str
+    factory_reference: AgentBindingFactoryReference
+
+
 @dataclass
 class _RecordingDelegate:
-    factory: Any
-    calls: list[dict[str, Any]]
+    """Recording delegate matching ``RuntimeAgentFactoryResolver`` for AC3 gates."""
+
+    factory: CanonicalAgentFactory[None]
+    calls: list[_DelegateResolveFactoryCall] = field(default_factory=list)
     fail: bool = False
 
-    def resolve_factory(self, **kwargs: Any):
-        self.calls.append(dict(kwargs))
+    def resolve_factory(
+        self,
+        *,
+        runtime_revision: RuntimeRevision,
+        package_digest: str,
+        factory_reference: AgentBindingFactoryReference,
+    ) -> CanonicalAgentFactory[None]:
+        self.calls.append(
+            _DelegateResolveFactoryCall(
+                runtime_revision=runtime_revision,
+                package_digest=package_digest,
+                factory_reference=factory_reference,
+            ),
+        )
         if self.fail:
             raise RuntimeAgentFactoryResolutionError("delegate resolution failed")
         return self.factory
@@ -136,7 +162,10 @@ def test_g_r3_03_wrapped_materialization_invokes_delegate_and_factory_once() -> 
     factory = _artifact_external_contractor_factory(instances=authoritative_instances)
     factory_calls = 0
 
-    def _counting_factory(ctx, binding):
+    def _counting_factory(
+        ctx: ApplicationBuildContext[None],
+        binding: AgentBinding,
+    ) -> Tier2Agent:
         nonlocal factory_calls
         factory_calls += 1
         return factory(ctx, binding)
@@ -162,7 +191,7 @@ def test_g_r3_03_wrapped_materialization_invokes_delegate_and_factory_once() -> 
         package_digest=_DIGEST,
         factory_reference=AgentBindingFactoryReference(builder_key="ac3"),
     )
-    manifest = ApplicationManifest.lab(app_id="app-r3", name="R3", agents=[])
+    manifest = ApplicationManifest.lab(app_id="app_r3", name="R3", agents=[])
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = AgentBinding.mount(
         ExternalContractorAdapterAgent,
@@ -242,7 +271,11 @@ def test_n_r3_01_delegate_failure_fail_closed() -> None:
 
 
 def test_n_r3_02_wrong_agent_type_rejected_at_materialization() -> None:
-    def _echo_factory(_ctx, _binding):
+    def _echo_factory(
+        ctx: ApplicationBuildContext[None],
+        binding: AgentBinding,
+    ) -> EchoAgent:
+        del ctx, binding
         return EchoAgent()
 
     delegate = _RecordingDelegate(factory=_echo_factory)
@@ -263,10 +296,10 @@ def test_n_r3_02_wrong_agent_type_rejected_at_materialization() -> None:
     )
     wrapped = resolver.resolve_factory(
         runtime_revision=_minimal_revision(),
-        package_digest="sha256:pkg",
+        package_digest=_DIGEST,
         factory_reference=AgentBindingFactoryReference(builder_key="ac3"),
     )
-    manifest = ApplicationManifest.lab(app_id="app-r3", name="R3", agents=[])
+    manifest = ApplicationManifest.lab(app_id="app_r3", name="R3", agents=[])
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = AgentBinding.mount(
         ExternalContractorAdapterAgent,
@@ -300,16 +333,17 @@ def test_g_r3_02_injection_applies_sanctioned_port_and_require_flag() -> None:
     )
     wrapped = resolver.resolve_factory(
         runtime_revision=_minimal_revision(),
-        package_digest="sha256:pkg",
+        package_digest=_DIGEST,
         factory_reference=AgentBindingFactoryReference(builder_key="ac3"),
     )
-    manifest = ApplicationManifest.lab(app_id="app-r3", name="R3", agents=[])
+    manifest = ApplicationManifest.lab(app_id="app_r3", name="R3", agents=[])
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = AgentBinding.mount(
         ExternalContractorAdapterAgent,
         contract_id="external_contractor_adapter",
     )
     agent = wrapped(ctx, binding)
+    assert isinstance(agent, ExternalContractorAdapterAgent)
     assert len(authoritative_instances) == 1
     assert agent is authoritative_instances[0]
     assert agent._sanctioned_operation_port is port

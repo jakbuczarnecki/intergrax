@@ -59,6 +59,9 @@ from testing_support.host_fixture_wiring import (
     install_diagnostic_cursor_secret,
     install_host_llm_stub,
 )
+from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+    with_qualified_strict_external_work_provider_pin,
+)
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
     assert_identity_continuity,
     load_d4_launcher_module,
@@ -163,10 +166,10 @@ def _strict_http_environment_profile(
 def _ac3_serving_manifest_for_package_closure() -> ApplicationManifest:
     """GCA HTTP host manifest: declarative contract_id aligned with AC3 revision registry."""
     from tests.unit.applications.test_production_registry_startup_ac3_final import (
-        _ac3_revision_bound_host_manifest,
+        _ac3_revision_bound_strict_external_work_host_manifest,
     )
 
-    return _ac3_revision_bound_host_manifest()
+    return _ac3_revision_bound_strict_external_work_host_manifest()
 
 
 def _gr6_production_policy_bundle() -> ImmutableRuntimePolicyBundle:
@@ -258,18 +261,20 @@ def _build_strict_http_fixture(
 
     env = session.environment
     tenant_id = env.application_environment_id
-    settings = with_strict_http_api_keys(
-        replace(
-            GovernedContractorBackendSettings.from_env(),
-            include_mcp=False,
-            include_scheduler=False,
-            include_interaction_routes=False,
-            include_task_control=False,
-            default_agent_id="search",
-            runtime_policy_bundle=_gr6_production_policy_bundle(),
+    settings = with_qualified_strict_external_work_provider_pin(
+        with_strict_http_api_keys(
+            replace(
+                GovernedContractorBackendSettings.from_env(),
+                include_mcp=False,
+                include_scheduler=False,
+                include_interaction_routes=False,
+                include_task_control=False,
+                default_agent_id="search",
+                runtime_policy_bundle=_gr6_production_policy_bundle(),
+            ),
+            execution_tenant_id=tenant_id,
+            wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
         ),
-        execution_tenant_id=tenant_id,
-        wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
     )
     host_runtime = d4._host_runtime_for_startup(settings)
     app = create_governed_contractor_strict_production_asgi_app(

@@ -32,7 +32,6 @@ from tests.qualification.prod_q._p0_types import (
     OwnershipRow,
     ProductionReadinessEvidenceState,
     ProductionReadinessFamily,
-    ProductionReadinessOwner,
     ProdQFindingDisposition,
     ProdQP0Matrix,
 )

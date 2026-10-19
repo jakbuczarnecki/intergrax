@@ -682,7 +682,6 @@ def concern_finding_reconciliation_violations(
         if concern.resolution_state == SemanticConcernResolutionState.UNRESOLVED
     }
     active_findings = tuple(finding for finding in findings if not finding.lineage_only)
-    finding_by_concern = _active_findings_by_concern(findings)
     active_by_concern = {finding.concern_key: finding for finding in active_findings}
     if len(active_by_concern) != len(active_findings):
         violations.append("duplicate active finding disposition for one or more concern keys")

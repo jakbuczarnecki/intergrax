@@ -13,6 +13,7 @@ from external_contractor_adapter.external_work_adapter import (
     META_PRINCIPAL_ID,
     META_QUOTE_ACCEPTANCE,
     META_TENANT_ID,
+    _optional_meta_budget_limit_json,
     _optional_meta_str,
     _parse_acceptance,
     _require_meta_str,
@@ -55,7 +56,7 @@ def _adapter_metadata_from_step(metadata: Mapping[str, Any]) -> SanctionedExtern
         idempotency_key=_optional_meta_str(metadata, META_ADAPTER_IDEMPOTENCY_KEY),
         correlation_id=_optional_meta_str(metadata, META_ADAPTER_CORRELATION_ID),
         workspace_ref=_optional_meta_str(metadata, META_ADAPTER_WORKSPACE_REF),
-        budget_limit=_optional_meta_str(metadata, META_ADAPTER_BUDGET_LIMIT),
+        budget_limit=_optional_meta_budget_limit_json(metadata, META_ADAPTER_BUDGET_LIMIT),
         requested_capability=_optional_meta_str(metadata, META_ADAPTER_REQUESTED_CAPABILITY),
         skip_enrichment=skip,
     )

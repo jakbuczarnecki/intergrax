@@ -69,13 +69,15 @@ from tests.unit.applications.test_prod_q_r1_r7_d2_production_process_lifecycle i
 from tests.unit.applications.test_production_registry_startup_ac3_final import (
     _APP,
     _ENV,
-    _ac3_revision_bound_host_manifest,
+    _ac3_revision_bound_strict_external_work_host_manifest,
     _activate_bundle,
     _activation_request,
     _authority,
+    _build_echo_artifact,
     _manifest,
     _revision,
     _roster,
+    _roster_with_strict_external_work,
     _seed_canonical_authority,
 )
 from intergrax.applications._shared.production_registry_projection_input_bundle import (
@@ -142,52 +144,44 @@ def _qualified_canonical_bundle(
     application_id: str = _APP,
     application_environment_id: str = _ENV,
     stores=None,
+    revision_bound_strict_external_work: bool = True,
 ):
-    import textwrap
-
-    from intergrax.agent_distribution.runtime_context_staging import (
-        directory_content_digest,
-    )
     from intergrax.applications._shared.production_agent_platform_runtime import (
         build_production_agent_platform_runtime,
-    )
-    from tests.unit.applications.test_production_registry_startup_ac3_final import (
-        _write_lock_manifest,
     )
 
     runtime = build_production_agent_platform_runtime()
     stores = stores or runtime.stores
-    artifact_root = tmp_path / f"artifact-{marker}"
-    site_packages = artifact_root / "site-packages"
-    site_packages.mkdir(parents=True)
-    package_dir = site_packages / "example_agent"
-    package_dir.mkdir()
-    (package_dir / "__init__.py").write_text("", encoding="utf-8")
-    (package_dir / "factory.py").write_text(
-        textwrap.dedent(
-            """
-            from echo.echo_agent import EchoAgent
-
-            def build_agent(ctx, binding):
-                return EchoAgent()
-            """
-        ).strip()
-        + "\n",
-        encoding="utf-8",
+    from intergrax.agent_distribution.runtime_context_staging import (
+        directory_content_digest,
     )
-    (site_packages / "bundle_marker.py").write_text(
+
+    artifact_root, _digest_before_marker, lock = _build_echo_artifact(
+        tmp_path,
+        marker=marker,
+        revision_bound_strict_external_work=revision_bound_strict_external_work,
+    )
+    (artifact_root / "site-packages" / "bundle_marker.py").write_text(
         'MARKER = "qualification"\n',
         encoding="utf-8",
     )
-    lock = _write_lock_manifest(artifact_root)
     digest = directory_content_digest(artifact_root)
-    manifest = _manifest()
-    roster = _roster().model_copy(
-        update={
-            "application_id": application_id,
-            "application_environment_id": application_environment_id,
-        },
-    ).with_revision_id()
+    if revision_bound_strict_external_work:
+        manifest = _ac3_revision_bound_strict_external_work_host_manifest()
+        roster = _roster_with_strict_external_work().model_copy(
+            update={
+                "application_id": application_id,
+                "application_environment_id": application_environment_id,
+            },
+        ).with_revision_id()
+    else:
+        manifest = _manifest()
+        roster = _roster().model_copy(
+            update={
+                "application_id": application_id,
+                "application_environment_id": application_environment_id,
+            },
+        ).with_revision_id()
     revision = _revision(revision_id, roster=roster, artifact_digest=digest, lock=lock)
     locator = _seed_canonical_authority(
         stores,
@@ -228,6 +222,13 @@ def _composition_builder_for_storage(storage: StrictProductionProcessStorage):
     return owned, build_strict_durable_gca_composition_builder(owned)
 
 
+def _composition_builder(tmp_path: Path):
+    """Qualification helper: durable GCA composition builder for ``tmp_path`` storage."""
+    storage, _adapter = _storage_and_adapter(tmp_path)
+    _owned, builder = _composition_builder_for_storage(storage)
+    return builder
+
+
 def _lifecycle_gca_kwargs(storage: StrictProductionProcessStorage) -> dict[str, object]:
     owned, builder = _composition_builder_for_storage(storage)
     return {
@@ -243,11 +244,11 @@ def _patch_gca_manifest_for_ac3_serving(monkeypatch: pytest.MonkeyPatch) -> None
 
     monkeypatch.setattr(
         "governed_contractor_application.host.main.build_governed_contractor_manifest",
-        _ac3_revision_bound_host_manifest,
+        _ac3_revision_bound_strict_external_work_host_manifest,
     )
     monkeypatch.setattr(
         "governed_contractor_application.host.factory.build_governed_contractor_manifest",
-        _ac3_revision_bound_host_manifest,
+        _ac3_revision_bound_strict_external_work_host_manifest,
     )
 
     def _ac3_aligned_environment_profile(
@@ -285,16 +286,22 @@ def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
     )
     from tests.unit.applications.test_production_registry_startup_ac3_final import _ENV
 
-    settings = with_strict_http_api_keys(
-        replace(
-            settings,
-            include_mcp=False,
-            include_scheduler=False,
-            include_interaction_routes=False,
-            include_task_control=False,
-            runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+    from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+        with_qualified_strict_external_work_provider_pin,
+    )
+
+    settings = with_qualified_strict_external_work_provider_pin(
+        with_strict_http_api_keys(
+            replace(
+                settings,
+                include_mcp=False,
+                include_scheduler=False,
+                include_interaction_routes=False,
+                include_task_control=False,
+                runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+            ),
+            execution_tenant_id=_ENV,
         ),
-        execution_tenant_id=_ENV,
     )
     return compose_governed_contractor_host_runtime(
         settings,

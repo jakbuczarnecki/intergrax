@@ -18,7 +18,7 @@
 | OD-D03-A-06 inventory | Prepared against `12092a111b6c64fce2ea4a7aa45e9728ce787649`. Rule and classifications are in §7.5. No duration is adopted. The decision stays unresolved. |
 | Qualification preparation | [Appendix](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md). **INDEPENDENTLY ACCEPTED — SCOPED PREPARATION ONLY** at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f`. Audit basis: exact-SHA GitHub review of that documentation delta; no independent cloud-test execution; no vendor-runtime qualification; no cloud resources created; no approval to incur cloud costs. Not infrastructure proof. Not provisioning authority. |
 
-This record consolidates operator decisions OD-D03-A-03 through OD-D03-A-08. It does not copy the technical proposal. Accepted policy and accepted architectural direction are not proof of cloud infrastructure, not ratification of a backend, and not authorization to implement, provision, purchase, migrate, add a contract, or open a runtime port. The qualification preparation appendix is the decision package for a later, separately authorized sandbox. It does not change §11.
+This record consolidates operator decisions OD-D03-A-03 through OD-D03-A-08. It does not copy the technical proposal. Accepted policy and accepted architectural direction are not proof of cloud infrastructure and not ratification of a backend. This consolidation does not authorize provisioning, purchase, migration, a new semantic contract, a runtime port, cloud execution, or production CREATE activation. Offline implementation of the selected adapters is authorized only by the conditional-direction authorization classes, subject to independent audit of that decision, and is not granted by this readiness record. The qualification preparation appendix remains the decision package for a later, separately authorized sandbox. It does not change the §11 dispositions.
 
 OD-D03-A-01 stays ratified as a mechanism class only. OD-D03-A-02 stays a conditional preferred service choice: Cloud Spanner Enterprise Plus base configuration `eur3`, plus Azure Blob Storage general-purpose v2 Standard, RA-GZRS, primary region North Europe, immutable append-blob witness. No other technology is selected. OD-D03-A-09 and OD-D03-A-10 receive no disposition.
 
@@ -83,7 +83,7 @@ PIS remains the invocation intent/outcome owner. GCA remains the execution/GER/F
 |---|---|
 | `DOCUMENTED` | A canonical repository record or a vendor page inspected for this package states the fact. |
 | `ACCEPTED POLICY` | The operator accepted the policy. It is not cloud infrastructure, IAM, or durability proof. |
-| `ACCEPTED ARCHITECTURAL DIRECTION` | The operator accepted the direction for a later implementation. It does not authorize that implementation and does not prove replaceability. |
+| `ACCEPTED ARCHITECTURAL DIRECTION` | The operator accepted the direction for a later implementation. This label does not authorize cloud execution and does not prove replaceability. Offline implementation of that direction is a separate parent authorization class and is not granted by this label. |
 | `OPERATOR CONFIRMATION REQUIRED` | The fact is an organizational or policy choice. It is not true until the operator records it. |
 | `EXECUTION EVIDENCE REQUIRED` | The property can be shown only by configuration inspection or a controlled test. It has not been run. |
 | `BLOCKED` | A mandatory D03-A condition is unmet. |
@@ -345,7 +345,7 @@ Vendor fact re-verified 2026-10-18 from Microsoft Learn, [data redundancy](https
 
 ### 7.5 Retention decision model
 
-This subsection is the OD-D03-A-06 decision inventory. It does not resolve the decision, does not adopt a duration, and does not authorize provisioning or implementation.
+This subsection is the OD-D03-A-06 decision inventory. It does not resolve the decision, does not adopt a duration, and does not authorize provisioning, a live retention lock, or cloud execution. It does not withdraw the parent offline implementation authorization, and it does not supply a duration that implementation may invent.
 
 #### 7.5.1 Closed-world inventory
 
@@ -528,7 +528,7 @@ A future implementation, if separately authorized, uses typed platform-owned ide
 
 ### 9.2 Recommended decision
 
-The operator has accepted the following constraints as architectural direction. Acceptance does not authorize code and does not demonstrate replaceability:
+The operator has accepted the following constraints as architectural direction. This acceptance does not authorize cloud execution and does not demonstrate replaceability. Offline adapter code under the parent authorization remains bound by these constraints and is not certified here:
 
 - platform contracts carry no Spanner or Azure types;
 - `ProductionControlPlaneGovernance` and `open_production_process_lifecycle` remain the governance and composition side of continuity;
@@ -564,11 +564,11 @@ Infrastructure dependency inventory, unchanged consumers, absence of a hidden ve
 | Supporting evidence | Proposal §3, §7, and §10. Symbol check in §2. ECAP §4.3 RPL-A..H. No production code was modified. |
 | Remaining assumption | A later implementation can place both adapters under one composition owner without a second gate. That implementation does not exist. |
 | Exact missing evidence | Contract review, import graph, configuration selection test, alternate adapter, and RPL-A..H execution evidence. |
-| Responsible authority | Operator for accepting the constraint set. Implementation remains unauthorized. |
+| Responsible authority | Operator for accepting the constraint set. Cloud execution and replaceability proof remain unauthorized. Offline implementation is the separate parent authorization class and is not granted by this acceptance. |
 | Acceptance criteria | Operator accepts the constraints in §9.2 as binding on any later implementation. Replaceability stays unclaimed until RPL-A..H exist. |
 | Rejection criteria | Vendor types in platform contracts, a second CREATE gate, a shadow PIS or GCA, or a claim that this document proves replaceability. |
 | Blocker classification | **IN-SCOPE BLOCKER** for ratification and implementation. Missing RPL execution evidence is also **TRACKED FREEZE DEBT** relative to global `FRZ-RPL-*`, which this package does not close. |
-| Operator decision required | Recorded. Acceptance does not authorize code. |
+| Operator decision required | Recorded. This acceptance does not authorize cloud execution or certify code. |
 | Evidence state | Direction: **ACCEPTED ARCHITECTURAL DIRECTION** — vendor-neutral typed contracts, one sanctioned governance/composition path, controlled configuration, structural replaceability, no duplicate PIS/GCA, no new CREATE gate, fail-closed defaults. Implemented replaceability: **BLOCKED**. RPL-A..H: **EXECUTION EVIDENCE REQUIRED**. Not cloud infrastructure proof. |
 
 ## 10. Sandbox qualification plan
@@ -612,15 +612,15 @@ Real Spanner and Azure behavior requires a future explicit authorization to use 
 | OD-D03-A-05 | **ACCEPTED POLICY.** Minimum privilege, separated operational capabilities, short-lived workload federation, and prohibition of ordinary runtime administrator credentials. | No | Actual IAM. No second transition service is authorized. |
 | OD-D03-A-06 | Configurable retention with non-weakening protection is **preserved**. Production duration is **unresolved**. §7.5 classifies all five duration inputs as operator-required and adopts no number. Ten years is not adopted. §7.6 registers the corrected append-blob mapping and leaves the combined hold test unresolved. | No | The five §7.5 inputs, then a duration computed from that rule, or an explicit labeled policy choice. Neither is recorded here. The §6.2.1 hold test is also still required before a locked witness policy. |
 | OD-D03-A-07 | Safety and recovery invariants are **preserved**. Prices, capacity, and achieved SLO are **unresolved**. No production numeric parameter is adopted. | No | Current quotes, a capacity choice, and an explicit accept or reject of each §8.4 target without weakening safety. |
-| OD-D03-A-08 | **ACCEPTED ARCHITECTURAL DIRECTION.** Vendor-neutral typed contracts, one sanctioned governance/composition path, controlled configuration, structural replaceability, no duplicate PIS/GCA, no new CREATE gate, fail-closed defaults. | No | Code, configuration binding, and RPL-A..H. This acceptance does not authorize that work. |
+| OD-D03-A-08 | **ACCEPTED ARCHITECTURAL DIRECTION.** Vendor-neutral typed contracts, one sanctioned governance/composition path, controlled configuration, structural replaceability, no duplicate PIS/GCA, no new CREATE gate, fail-closed defaults. | No | Offline code and configuration binding may be written only under the parent offline authorization and stay uncertified. RPL-A..H stay unqualified. This acceptance does not authorize cloud execution. |
 
-Accepted policy does not authorize implementation. Remaining execution evidence stays on a later, separately authorized qualification gate and must follow canonical roadmap order. This document does not open that gate. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs stay on that dependent gate.
+Accepted policy does not authorize cloud execution or production qualification. Offline implementation is authorized only by the parent authorization classes, remains unimplemented until that child is written, and is not infrastructure proof. Remaining cloud execution evidence stays on a later, separately authorized qualification gate and must follow canonical roadmap order. This document does not open that gate. Preparation G1–G6 remain prerequisites to cloud execution and are not granted here. Cloud IAM, live vendor integration, costs, disaster recovery, and production SLOs stay on that dependent gate.
 
 The selected pair is not reported as incapable of the ratified ELCR-IIRW class. The unproven conditions are operator evidence and future tests. They are blockers to ratification, not a silent change of backend.
 
 ## 12. Applicable enterprise criteria
 
-Checklist status below is the status column at the inspected HEAD. Historical **PASS** is not certification of this unbuilt infrastructure. No status is promoted. Future qualification owner, for every D03-specific gap, is a later explicitly authorized D03-A implementation qualification. This readiness package is not that owner. D03-B and D03-C remain separate blocked stages.
+Checklist status below is the status column at the inspected HEAD. Historical **PASS** is not certification of this unbuilt infrastructure. No status is promoted. Future qualification owner for actual cloud evidence remains a later explicitly authorized D03-A cloud qualification. Code-level offline evidence, once the parent offline child exists, is not actual Spanner, Azure, or administrative-domain proof. This readiness package is not that owner. D03-B and D03-C remain separate blocked stages.
 
 | Family | Current status | Relevance | Existing evidence | Missing D03-specific evidence | Future owner |
 |---|---|---|---|---|---|
@@ -797,13 +797,13 @@ No finding is self-certified as enterprise compliance.
 
 ## 14. Roadmap position
 
-Do not close D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*`. Do not change OD-D03-A-01. Do not expand OD-D03-A-02 beyond the conditional preferred pair. Do not reopen D03-A-LOCAL-01. This readiness artifact does not itself authorize cloud integration or production activation.
+Do not close D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*`. Do not change OD-D03-A-01. Do not expand OD-D03-A-02 beyond the conditional preferred pair. Do not reopen D03-A-LOCAL-01. This readiness artifact does not itself authorize cloud integration or production activation, and it does not grant the parent offline implementation authorization.
 
 Status of this artifact only:
 
 **READY FOR AUDIT — D03-A POLICY CONSOLIDATION — ACCEPTED POLICY IS NOT INFRASTRUCTURE PROOF**
 
-§15 names the platform-policy child. That child is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `02e48d9fa61d116346da613271cc5e8b77e08cc6` and does not close this readiness gate. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
+§15 names the platform-policy child. That child is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `02e48d9fa61d116346da613271cc5e8b77e08cc6` and does not close this readiness gate. The offline provider child `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533` (evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003`; formal closure record `771a83c6b39f37120e1d5852233cb31ff37ff02b`). Offline-only; not cloud-qualified. Independent static exact-SHA GitHub review (pytest not rerun by the operator) accepted local offline behavior and architecture boundaries only. Detailed evidence is [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). This readiness record does not implement it and does not close the parent. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
 
 ## 15. Platform policy configuration child
 
@@ -823,11 +823,12 @@ OD-D03-A-01 class (ratified, unchanged)
        -> D03-A-LOCAL-01 (closed; do not modify)
        -> this policy consolidation (READY FOR AUDIT; not parent closure)
             -> PLATFORM-POLICY-CONFIG-01 (CLOSED — SCOPED / INDEPENDENTLY ACCEPTED at `02e48d9fa61d116346da613271cc5e8b77e08cc6`; not infrastructure proof)
-                 -> dependent qualification gate (not opened):
-                    trust-domain graph, IAM, vendor integration,
-                    OD-D03-A-06 production duration,
-                    OD-D03-A-07 prices, capacity, achieved SLO,
-                    disaster-recovery drills, sandbox rows that need cloud accounts
+                 -> OFFLINE-PROVIDER-IMPL-01 (CLOSED — SCOPED / INDEPENDENTLY ACCEPTED at `a7ecc5065a0343e768584e818c844d3f96b5f533`; offline-only; not cloud-qualified)
+                      -> dependent qualification gate (READY FOR AUDIT — admission package §P7; not CLOSED):
+                           trust-domain graph, IAM, vendor integration,
+                           OD-D03-A-06 production duration,
+                           OD-D03-A-07 prices, capacity, achieved SLO,
+                           disaster-recovery drills, sandbox rows that need cloud accounts
 D03-B and D03-C stay independent and BLOCKED
 ```
 
@@ -867,7 +868,7 @@ Applicable `FRZ-*` for that future child, statuses unchanged by this record: `FR
 
 ### 15.4 Dependent qualification gate
 
-Not opened. It keeps cloud IAM and the real administrative-independence graph, vendor-adapter integration, OD-D03-A-06 production duration, OD-D03-A-07 prices, capacity, and achieved SLO, and disaster-recovery drills, including sandbox rows that require GCP or Azure accounts. D03-A01–A23 stay unexecuted.
+**INDEPENDENTLY ACCEPTED — SCOPED READINESS ONLY** at `7d8b42e45b5dfe2dd08074f5d0da54419074a906` ([preparation §P7](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md), §P7.H). Cursor reconciliation: **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION**. Not CLOSED; not CLOUD-QUALIFIED. Class-B admission (cloud execution class): **NOT AUTHORIZED — OPERATOR DECISIONS MISSING**. Cloud execution remains **NOT AUTHORIZED**. G1–G7 stay ungranted except G7 order (preserve roadmap order — operator confirmation only). OD-D03-A-06 and OD-D03-A-07 stay unresolved until operator inputs in §P7.B–C. D03-A01–A23 stay unexecuted for acceptance. Provisioning and sandbox spend require a later **separate** explicit operator authorization after G1–G6 decisions.
 
 ## 16. ECAP delta for this consolidation
 
@@ -1005,5 +1006,32 @@ No infrastructure qualification and no production execution occurred. No finding
 Checked 2026-10-19 on `development` at `343cc5627f6c1e2a71395fd0e3038e06114185bd` before the appendix was added. The working tree was clean. The appendix is [PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md). It holds the vendor feasibility record, the unset sandbox budget, the trust-domain preparation, the unexecuted D03-A01–A23 specifications, the sandbox lifecycle, and the operator decision sheet. It does not adopt a retention duration, a capacity, a price total, or a spending maximum. It does not authorize provisioning. D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, and global `FRZ-*` stay open. `RPL-A` through `RPL-H` stay unproven.
 
 Independent review accepted that appendix as **INDEPENDENTLY ACCEPTED — SCOPED PREPARATION ONLY** at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f`. The review was an exact-SHA documentation delta. It did not execute cloud tests, qualify vendor runtime behavior, create cloud resources, or approve cloud cost. This readiness status stays **READY FOR AUDIT — D03-A POLICY CONSOLIDATION — ACCEPTED POLICY IS NOT INFRASTRUCTURE PROOF**. The conditional-direction parent stays **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**.
+
+Parent amendment pointer: offline implementation authorization is recorded on the conditional-direction decision, not in this appendix and not by preparation P1–P6. Preparation G1–G6 stay ungranted. P5's statement that the preparation contains no adapter implementation describes that appendix. Cloud execution stays unauthorized. The readiness status and the parent full-ratification block are unchanged.
+
+## 19. Dependent qualification gate assessment and class-B admission reconciliation
+
+| Field | Value |
+|---|---|
+| Package authorship baseline | `8443d41494de9db43ae323db746139bd8fe3919a` |
+| Operator acceptance evidence | `7d8b42e45b5dfe2dd08074f5d0da54419074a906` |
+| P7 review disposition | **ACCEPTED — SCOPED READINESS ONLY** (exact-SHA GitHub review; not cloud authorization) |
+| Cursor disposition | **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION** |
+| Class-B admission (cloud execution class) | **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** |
+| Authoritative package | [Preparation §P7](PROD_Q_R1_R7_Q_D03_A_INFRASTRUCTURE_QUALIFICATION_PREPARATION.md) (§P7.H) |
+| Production code delta | **0** |
+| Parent D03-A | **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED** — unchanged |
+| Cloud execution | **NOT AUTHORIZED** |
+| new FRZ PASS | **0** |
+
+Reuses P1–P6, §4–§11, §10, and OFFLINE-PROVIDER-IMPL-01 closed-world inventory. Does not reopen P1–P6 acceptance at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f`. Does not authorize cloud execution or adopt production numbers.
+
+Regression at this assessment (local offline scope only; not cloud evidence):
+
+```text
+uv run pytest -p no:xdist tests/unit/governance/test_d03_a_local_01_elcr_iirw.py tests/unit/governance/test_d03_a_platform_policy_config_01.py tests/unit/governance/test_d03_a_offline_provider_impl_01.py tests/unit/governance/test_d03_a_offline_sdk_bridge_01.py tests/unit/agents/test_vendor_import_guard_b24.py --tb=short -q
+```
+
+ECAP §2.A for this §19 delta: same result shape as §16 (documentation only; A5 **no**; A6 no FRZ promotion). §2.B B1–B6 remain blocked on class-B evidence as listed in preparation §P7.G.
 
 Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.

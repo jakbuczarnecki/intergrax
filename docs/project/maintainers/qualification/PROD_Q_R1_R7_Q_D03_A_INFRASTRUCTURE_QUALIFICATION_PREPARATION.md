@@ -16,7 +16,8 @@
 | Production delta | **0** |
 | Provisioning | **not authorized** |
 | FRZ promotion | **0** |
-| Test execution | `pytest = 0`; `uv run = 0`; cloud calls = **0** |
+| Test execution | P1–P6 acceptance: `pytest = 0`. §P7 assessment regression: see readiness §19. Cloud calls = **0** |
+| Dependent gate disposition | **INDEPENDENTLY ACCEPTED — SCOPED READINESS ONLY** at `7d8b42e45b5dfe2dd08074f5d0da54419074a906` (§P7). Cursor reconciliation: **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION**. Not infrastructure qualification. Class-B admission: **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** (§P7.H). Cloud execution: **NOT AUTHORIZED**. |
 
 This appendix prepares a later sandbox decision. It does not create accounts, resources, credentials, or adapters. It does not set a spending maximum, a retention duration, or a monthly total. A second, explicit operator authorization is required before any future provisioning phase.
 
@@ -400,3 +401,167 @@ Evidence phrases: **documented vendor capability**, **operator-accepted policy**
 No finding is self-certified as enterprise compliance. D03-A, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q, and global `FRZ-*` stay open. Dependent infrastructure qualification is not authorized.
 
 P1–P6 at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f` are **INDEPENDENTLY ACCEPTED — SCOPED PREPARATION ONLY**. Cursor status of this acceptance-recording delta: **READY FOR AUDIT**. It does not close the D03-A infrastructure gate.
+
+## P7 — Dependent cloud-qualification admission disposition
+
+| Field | Value |
+|---|---|
+| Assessed at | Package authorship baseline `8443d41494de9db43ae323db746139bd8fe3919a`; operator acceptance evidence `7d8b42e45b5dfe2dd08074f5d0da54419074a906` |
+| Cursor disposition | **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION** |
+| Operator acceptance (2026-10-19) | **INDEPENDENTLY ACCEPTED — SCOPED READINESS ONLY** at `7d8b42e45b5dfe2dd08074f5d0da54419074a906`. Exact-SHA GitHub review of §P7 documentation only. Not cloud authorization or infrastructure qualification. |
+| Class-B admission (authorization class B — cloud execution) | **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** (G1–G6 ungranted; OD-D03-A-06 and OD-D03-A-07 unresolved; no attributable operator grant with scope, budget, resources, and expiry). A later **separate** explicit operator authorization may be recorded only after those inputs; that record is not implied by this acceptance. |
+| Not | CLOSED. Not CLOUD-QUALIFIED. Not provisioning authority. |
+| Reused evidence | P1–P6 at `4bbd786ffbd82000ef58b330854a6cce78cd2d9f`; readiness R1 §4–§11 and §10; [OFFLINE-PROVIDER-IMPL-01](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md) closed-world inventory at `a7ecc5065a0343e768584e818c844d3f96b5f533`; conditional direction unchanged. |
+| Production delta | **0** |
+| Cloud execution | **NOT AUTHORIZED** |
+| new FRZ PASS | **0** |
+
+This section completes the bounded admission assessment for the dependent gate named in readiness §15.4. It does not open a sandbox, adopt durations or prices, or promote any `FRZ-*` row.
+
+### P7.0 Closed-world implementation inventory (START_HEAD)
+
+Semantic and composition authority — unchanged owners; production callers of `compose_history_continuity_authority` remain **none** (callers: D03-A unit tests only). Full symbol table: [OFFLINE-PROVIDER-IMPL-01 § Closed-world inventory](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). Static re-check at START_HEAD:
+
+| Symbol | Path | Authority / notes |
+|---|---|---|
+| `HistoryContinuityAuthority` | `intergrax/contracts/governance/history_continuity.py` | Contract. Semantic owner: `ProductionControlPlaneGovernance`. |
+| `HistoryContinuityActivationPolicy`, `HistoryContinuityProviderSelection`, `HistoryContinuityRetentionPolicy` | same | LOCAL-01 / PLATFORM-POLICY-CONFIG-01 activation; offline selection is separate and fail-closed. |
+| `ProductionControlPlaneGovernance` | `intergrax/applications/_shared/production_control_plane_governance_wiring.py` | Sole governance semantic owner for continuity. |
+| `compose_history_continuity_authority` | `intergrax/applications/_shared/history_continuity_composition.py` | Sole sanctioned composition. Injects only in-memory primary/witness in production path. |
+| `ControlPlaneMutationAuthorizationBoundary` | `intergrax/runtime/governance/control_plane_mutation_authorization.py` | Five continuity capabilities; no second boundary. |
+| `GovernedProviderInvocationDispatchGate` | `applications/governed_contractor_application/host/provider_invocation_lifecycle.py` | Sole physical CREATE gate; not on continuity graph. |
+| `SpannerPrimaryRegister`, `PrimaryDatabasePort`, `PrimaryTransactionPort` | `intergrax/runtime/governance/continuity_providers/primary_register.py` | Offline authority + tests; not admitted transports/SDK bridges. |
+| `AzureAppendWitness`, `WitnessAppendPort` | `intergrax/runtime/governance/continuity_providers/witness_log.py` | Same. |
+| `SpannerSdkPrimaryBridge`, `AzureSdkAppendBridge`, `PrimaryWitnessEndpoint` | `spanner_sdk.py`, `azure_sdk.py` | Test-only; `open_*` refuses before SDK/network. |
+| `OfflineSpannerAzureHistoryContinuity` | `intergrax/runtime/governance/offline_history_continuity.py` | Offline bundle only; `HistoryContinuityCloudQualification` must stay `UNQUALIFIED`. |
+
+Provider replaceability and administrative trust domains are **policy and offline contract evidence only** until G1–G6 and D03-A01–A23 execute under a later sandbox authorization.
+
+### P7.A Trust-domain and IAM qualification matrix
+
+Builds on readiness §4.3–§4.4 and P3. Maps the six admission domains. A different cloud provider alone is **not** administrative independence.
+
+| Domain | Intended owner | Permitted operations | Forbidden operations | Credential / identity boundary | Delete, rollback, or overwrite evidence? | Required independent negative proof | Qualification status |
+|---|---|---|---|---|---|---|---|
+| 1. Spanner primary administration | GCP platform team / database administrators under non-overlapping org roots | Instance, database, backup, restore to **new** database; IAM inside Spanner project | Azure RBAC, witness retention/hold, PIS/GCA restore, runtime transition writes | Human or break-glass in GCP only; no Shared Key on witness | Can restore primary into new incarnation; restore-in-place forbidden by §7.3 | D03-A23 cross-domain deny; §4.4 path exports; D03-A21 quarantine | Policy **ACCEPTED**; graph **BLOCKED** — G2 |
+| 2. Azure witness administration | Azure custodians under dual control, separate subscription root | Container immutability, legal hold, witness data-plane RBAC | Spanner IAM/restore, PIS/GCA restore, GCP org admin | Entra workload roles separate from GCP; Shared Key disabled | Cannot modify sealed blocks; hold/lock changes are auditable | D03-A23; retention bypass attempt (D03-A07 family); §6.2.1 hold test | Policy **ACCEPTED**; configured WORM **BLOCKED** — G4/G6 |
+| 3. Workload runtime identity | Kubernetes federated reader / transition writer per environment | Short-lived federated read and scoped transition write per binding | Init, reconcile, revoke, delete, retention, restore, IAM, other cloud admin | WIF / Entra federation; no static admin keys | Append forward seal only within granted transition scope (OP-TRUST-07 residual) | D03-A22; D03-A16 bypass | Policy **ACCEPTED**; bindings **BLOCKED** — G3 |
+| 4. Deployment / IaC authority | CI/CD through sanctioned path only | Deploy reviewed configuration | Standing data-plane write on both clouds; retention changes; mint both runtime identities | Pipeline principal per cloud, not combined | Can replace endpoints if dual control fails — §4.4 path | Config deployer cannot change both trusted endpoints without dual control | Policy **ACCEPTED**; proof **BLOCKED** — G2 |
+| 5. Operator authorization | Human operator / governance | Record decisions G1–G7; approve sandbox spend cap; supply §7.5 inputs | Cannot substitute for IAM exports or cloud test results | Out of band from runtime | N/A | Signed decision records vs execution evidence | OD-D03-A-06/07 **UNRESOLVED** |
+| 6. Backup, restore, retention override | PIS/GCA backup admins (third domain) + separated retention approvers for witness | PIS/GCA backup/restore per runbook; witness retention extension only under dual control | Any Spanner or Azure anchor role; shorten locked retention; clear operational hold without decommission | Distinct from primary and witness data admins | Restore older PIS/GCA must deny CREATE (D03-A03–A05) | D03-A03–A05, D03-A07; decommission procedure | Policy **ACCEPTED**; drills **BLOCKED** — class B |
+
+### P7.B OD-D03-A-06 — operator decision block (single round)
+
+Canonical rule: readiness §7.5.3. Local non-weakening: `HistoryContinuityRetentionPolicy` (`retention_seconds` ≤ `ceiling_seconds`, `legal_hold` true; no lowering duration, ceiling, or hold) — **DOCUMENTED**, not a production day count.
+
+**Operator must supply (no defaults):**
+
+| Input | Requires explicit operator/legal input? | Technical lower bound derivable without operator? |
+|---|---|---|
+| `PIS_MAX_RESTORABLE_AGE` | Yes — production PIS restore window | Must be ≥ 0 once declared; local SQLite is **not** a source |
+| `GCA_MAX_RESTORABLE_AGE` | Yes | Same |
+| `ANCHOR_PRIMARY_MAX_RESTORABLE_AGE` | Yes | Spanner backup ≤ 1 year and PITR ≤ 7 days are **vendor capability bounds**, not adopted policy |
+| `INVESTIGATION_WINDOW` | Yes | Must be added to `longest_restorable_age` in the inequality |
+| `REQUIRED_LEGAL_OR_CONTRACTUAL_MINIMUM` | Yes, or explicit declaration that none applies with attributable source | If declared, `required_time_based_retention` must be ≥ that minimum |
+| Proposal §6.2.1 combined hold | Yes — disposition after sandbox | Mutually exclusive time-based flags documented in P1 |
+
+**Safety relationships (invariants, not numbers):** `required_time_based_retention > max(PIS, GCA, ANCHOR_PRIMARY) + INVESTIGATION_WINDOW`; if legal minimum applies, also `≥ REQUIRED_LEGAL_OR_CONTRACTUAL_MINIMUM`. Operational preservation hold stays for active environment life. Weakening any LOCAL-01 / PLATFORM-POLICY check is forbidden.
+
+**Weakens rollback protection if:** duration below the inequality; time-based expiry without hold while environment active; treating vendor default as production policy; resuming CREATE from geo-replicated prefix or restored backup without quarantine (§7.3).
+
+**Requires real Azure validation:** locked time-based policy with `allowProtectedAppendWrites=true` only; optional legal-purpose hold; protected append under hold (§6.2.1 test); effective retention from last append; deletion blocked while locked.
+
+**Restoration windows vs continuity:** PIS/GCA restore windows must not exceed witness-readable chain needed to detect stale head; primary restore always new incarnation until witness match + dual-controlled recovery seal.
+
+**If unresolved:** OD-D03-A-06 stays open; parent D03-A stays **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**; no production duration in code or config.
+
+### P7.C OD-D03-A-07 — capacity, budget, and SLO (bounded model)
+
+**Already evidenced (documentation):** `eur3` topology, Enterprise Plus edition, RA-GZRS North Europe, meter structure, one-hour Spanner minimum, Azure Hot RA-GZRS stored-data list prices in P2 (dated 2026-10-19), safety invariants §8.1 and Authorization RPO 0 meaning, formulas §8.3.
+
+**Missing inputs (typed, unresolved):** peak writes/sec; historical growth; `processing_units`; transitions/month; `retained_gib`; cluster region; private-path choice; Spanner calculator rates; Azure RA-GZRS write/read/other rates; audit GiB; hard spending maximum (P2 sandbox budget).
+
+**Relationships (not evaluated):** readiness §8.3 formulas; §8.4 targets remain **OPERATOR CONFIRMATION REQUIRED** — achieved SLO **cannot** be claimed before measurement.
+
+**Recovery-related capacity:** DR exercises add restore compute, backup storage, witness read-back, and labor — unpriced until G5 accepts scope.
+
+**Consequence if unresolved:** no budget acceptance, no sandbox G1 grant, no capacity admission; fail-closed behavior unchanged.
+
+### P7.D Recovery, adversarial qualification, and G1–G7
+
+Canonical test catalogue: readiness §10 and P4. Supplemental mapping columns (all rows **unexecuted** for cloud acceptance):
+
+| Gate / area | Invariant examined | Environment | Offline partial proof? | Class-B cloud required? | Evidence stage |
+|---|---|---|---|---|---|
+| G1 | Provisioning permission and spend cap | Operator record | N/A | No — decision only | Operator before sandbox |
+| G2 | Administrative independence | Real IAM exports | No | Yes — graph inspection | Sandbox prep + D03-A23 |
+| G3 | Federation and deny runtime admin | Dual cloud IAM | Policy tests only (PLATFORM-POLICY) | Yes — D03-A22 | Sandbox |
+| G4 | Retention duration and hold | Azure account | Local non-weakening only | Yes — lock/hold/append | Sandbox after OD-D03-A-06 inputs |
+| G5 | Cost/capacity/SLO disposition | Calculator + workload | No | Partial — measured latency needs cloud | Operator + sandbox |
+| G6 | Sandbox window and cleanup | Both clouds | No | Yes | Operator |
+| G7 | Dependency-order preservation | Roadmap + readiness §15 graph | LOCAL-01 / POLICY / OFFLINE closed scoped | No — order decision only | Operator confirms order; no reordering |
+| D03-A09 | Concurrent CAS | Spanner serializable | In-memory lock ≠ acceptance | Yes | Sandbox P0 |
+| D03-A08 | Fencing competing writers | Multi-process / K8s | Offline fencing unit tests | Yes for Spanner | Sandbox |
+| D03-A10, A18 | Unknown transaction/append outcome | Both + fault injection | Resolver logic partial | Yes | Sandbox P0 |
+| D03-A17 | Witness append CAS | Azure | In-memory witness tests | Yes | Sandbox P0 |
+| D03-A19–A20 | Rollback, prefix, segment tail | Azure DR | Offline corrupt-chain tests | Yes | Sandbox P0 |
+| D03-A07, A21 | Backup restore stale state | GCP | No | Yes | Sandbox P0 |
+| D03-A13 | Tenant/environment boundary | Integrated | LOCAL/offline scope tests partial | Yes | Sandbox |
+| D03-A16 | Fail-closed CREATE admission | Code + integration | Static gate inspection partial | Yes integrated | IMPL + sandbox |
+| D03-A01 | Positive verdict | Full stack | No | Yes | After P0 pass |
+
+### P7.E Consolidated admission verdict
+
+| Prerequisite | Existing evidence | Missing evidence / decision | Owner | Admission result | Next action |
+|---|---|---|---|---|---|
+| OD-D03-A-01 class | Ratified | — | Operator | Ready (evidence) | None |
+| OD-D03-A-02 preferred pair | Conditional direction | Full ratification | Operator | Blocked | Complete class-B qualification |
+| OD-D03-A-03–05 policy | Readiness §11 accepted policy | IAM graph, negative tests | Operator / sandbox | Ready after operator decision on graph only for policy; proof blocked | G2–G3 + D03-A22–A23 |
+| OD-D03-A-06 retention | §7.5 rule + local non-weakening | Five inputs + §6.2.1 test | Operator | Ready after operator decision only | Single block §P7.B |
+| OD-D03-A-07 cost/SLO | P1–P2 meters, §8.3–§8.4 | Quotes, capacity, achieved SLO | Operator | Ready after operator decision only | G5 |
+| OD-D03-A-08 direction | Accepted | RPL-A–H execution | Later qualification | Architectural direction ready; implementation proof blocked | Offline closed; cloud deferred |
+| LOCAL-01 / POLICY-CONFIG / OFFLINE-IMPL | Closed scoped SHAs | Cloud qualification | Independent audit | Ready (scoped offline) | Do not reopen |
+| G1–G6 | P6 sheet | All decisions | Operator | Blocked on authorization | Grant or refuse sandbox explicitly |
+| D03-A01–A23 | §10 + P4 specs | Execution artifacts | Sandbox qualification | Blocked — class B | G1 then P0→P2 order |
+| FRZ global promotion | Checklist | D03-specific proof | Freeze process | Blocked | new FRZ PASS = 0 |
+| D03-B / D03-C | Roadmap blocked | Independent stages | — | Blocked | Out of scope |
+| Cloud execution | Conditional direction | G1 + operator | Operator | **Blocked — unavailable authorization** | No provisioning |
+| Class-B admission (cloud execution class) | P7 package + conditional direction | G1–G6, OD-D03-A-06/07, IAM exports, D03-A01–A23 execution | Operator | **NOT AUTHORIZED — OPERATOR DECISIONS MISSING** | Separate explicit sandbox authorization if operator grants G1 |
+| Parent D03-A ratification | This package | All above | Operator | **IN-SCOPE BLOCKER** | Stay CONDITIONAL |
+
+### P7.H Operator acceptance reconciliation (accepted evidence `7d8b42e45b5dfe2dd08074f5d0da54419074a906`)
+
+| Field | Value |
+|---|---|
+| Review disposition | **ACCEPTED — SCOPED READINESS ONLY** (completeness and consistency of §P7; not cloud authorization; not infrastructure qualification) |
+| Production delta at accepted SHA | **0** |
+| Parent D03-A | **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED** — unchanged |
+| Global `FRZ-*` | **new FRZ PASS = 0** |
+| Canonical G1–G7 view | [P6 decision sheet](#p6--outstanding-operator-decision-sheet); per-row disposition in §P7.D |
+| Allowed next stage | Independent audit of this reconciliation delta; then operator G1–G7 decisions and, if granted, a **separate** explicit sandbox / class-B authorization record |
+
+### P7.F ECAP delta (this P7 documentation pass)
+
+| Step | Result |
+|---|---|
+| A1 | Preparation §P7, readiness §15.4/§19, roadmap ledger sentences. No production symbol. |
+| A2 | Links only. |
+| A3 | No production caller. |
+| A4 | Owners unchanged. |
+| A5 | Production-effective reachability: **no**. |
+| A6 | No `FRZ-*` promotion. |
+| A7 | Historical PASS not extended. |
+| A8 | Regression: see readiness §19 test command; not cloud evidence. |
+
+### P7.G ECAP §2.B readiness (parent) — blocked on class B
+
+| Element | State |
+|---|---|
+| B1 Contract ownership | Blocked — cloud adapter not qualified |
+| B2 Layer direction | Offline evidence only; class B unproven |
+| B3 Single semantic/composition owner | Documented + offline tests; cloud path unproven |
+| B4 Typed boundaries | Offline PASS; live vendor boundary unproven |
+| B5 Provider replaceability | RPL-A–H unexecuted — **TRACKED FREEZE DEBT** |
+| B6 Roadmap / gate order | Preserved; dependent gate assessment **READY FOR AUDIT**, not CLOSED |
+
+Cursor status: **READY FOR AUDIT — CLASS-B ADMISSION DECISION RECONCILIATION**. Parent remains **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**. Cloud execution remains **NOT AUTHORIZED**.

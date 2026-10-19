@@ -66,9 +66,35 @@ class ContinuityDenialCode(StrEnum):
 
 
 class HistoryContinuityAdapterKind(StrEnum):
-    """Local qualification adapter only. Cloud adapters are outside this gate."""
+    """Closed provider selection. Recognizing a kind does not activate it.
+
+    ``LOCAL_DETERMINISTIC`` remains the only kind admitted by
+    ``history_continuity_activation_is_admitted``. ``OFFLINE_EXTERNAL_PAIR``
+    names the offline external primary and witness pair. Naming it does not
+    qualify either service and does not open a production CREATE path.
+    """
 
     LOCAL_DETERMINISTIC = "local_deterministic"
+    OFFLINE_EXTERNAL_PAIR = "offline_external_pair"
+
+
+class HistoryContinuityExecutionDomain(StrEnum):
+    """Where a provider selection is allowed to run.
+
+    There is no cloud-qualified member. Offline contract execution is not
+    cloud admission.
+    """
+
+    OFFLINE_CONTRACT = "offline_contract"
+
+
+class HistoryContinuityCloudQualification(StrEnum):
+    """Cloud qualification of a provider selection.
+
+    The only member is unqualified. A qualified value cannot be represented.
+    """
+
+    UNQUALIFIED = "unqualified"
 
 
 class HistoryContinuityHistoryScope(StrEnum):
@@ -267,6 +293,7 @@ def history_continuity_activation_is_admitted(activation: object) -> bool:
 
     This is a configuration predicate. It is not caller authorization, not a
     credential check, and not proof of administrative independence.
+    ``OFFLINE_EXTERNAL_PAIR`` fails this predicate. Enum recognition is not admission.
     """
 
     if type(activation) is not HistoryContinuityActivation:
@@ -417,6 +444,7 @@ class HistoryContinuityAuthority(Protocol):
 
     def sealed_retention(self) -> HistoryContinuityRetentionPolicy | None:
         """Return the immutable activation policy, or None when inactive."""
+        ...
 
     def initialize(
         self,
@@ -425,6 +453,7 @@ class HistoryContinuityAuthority(Protocol):
         binding: HistoryBinding,
     ) -> ContinuityResult:
         """Create the first sealed head. Refuses an already initialized scope."""
+        ...
 
     def advance(
         self,
@@ -436,6 +465,7 @@ class HistoryContinuityAuthority(Protocol):
         binding: HistoryBinding,
     ) -> ContinuityResult:
         """Compare-and-swap the head and seal the witness."""
+        ...
 
     def reconcile(
         self,
@@ -447,6 +477,7 @@ class HistoryContinuityAuthority(Protocol):
         binding: HistoryBinding,
     ) -> ContinuityResult:
         """Authorized reconciliation from quarantine only."""
+        ...
 
     def invalidate(
         self,
@@ -458,6 +489,7 @@ class HistoryContinuityAuthority(Protocol):
         status: ContinuityHeadStatus,
     ) -> ContinuityResult:
         """Quarantine or revoke. Does not admit further writes."""
+        ...
 
     def recover(
         self,
@@ -465,6 +497,7 @@ class HistoryContinuityAuthority(Protocol):
         scope: ContinuityScope,
     ) -> ContinuityResult:
         """Resolve a prepared transition or quarantine a diverged history."""
+        ...
 
     def read_head(
         self,
@@ -472,6 +505,7 @@ class HistoryContinuityAuthority(Protocol):
         scope: ContinuityScope,
     ) -> ContinuityResult:
         """Read the current head. Divergence denies rather than returning an allow."""
+        ...
 
     def attempt_retention_change(
         self,
@@ -483,3 +517,104 @@ class HistoryContinuityAuthority(Protocol):
         legal_hold: bool,
     ) -> ContinuityResult:
         """Reject weakening and every other retention mutation."""
+        ...
+
+
+class HistoryContinuityIdentityBinding(BaseModel):
+    """Workload-identity binding record. It stores no secret and no token.
+
+    A populated record is not federation proof and not a cloud credential.
+    Missing or rejected bindings deny. Live token acquisition is outside this
+    type.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    binding_id: str = _NON_BLANK
+    credential_mode: HistoryContinuityRuntimeCredentialMode
+    subject: str = _NON_BLANK
+    audience: str = _NON_BLANK
+
+    @field_validator("binding_id", "subject", "audience")
+    @classmethod
+    def _unambiguous(cls, value: str) -> str:
+        if value != value.strip():
+            raise ValueError("identity binding is ambiguous")
+        return _reject_blank(value)
+
+
+class HistoryContinuityProviderSelection(BaseModel):
+    """Typed offline selection of the external primary and witness pair.
+
+    This is not ``HistoryContinuityActivation``. It cannot represent cloud
+    qualification, a tenant-scoped anchor, or a production retention period.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    adapter: HistoryContinuityAdapterKind
+    execution_domain: HistoryContinuityExecutionDomain
+    cloud_qualification: HistoryContinuityCloudQualification
+    application_id: str = _NON_BLANK
+    environment_id: str = _NON_BLANK
+    retention: HistoryContinuityRetentionPolicy
+    administrators: HistoryContinuityAdministrativeIdentities
+    identity_binding: HistoryContinuityIdentityBinding | None = None
+
+    @field_validator("application_id", "environment_id")
+    @classmethod
+    def _ids_non_blank(cls, value: str) -> str:
+        return _reject_blank(value)
+
+    @model_validator(mode="after")
+    def _offline_pair_only(self) -> HistoryContinuityProviderSelection:
+        if self.adapter is not HistoryContinuityAdapterKind.OFFLINE_EXTERNAL_PAIR:
+            raise ValueError("provider selection is not the offline external pair")
+        if self.execution_domain is not HistoryContinuityExecutionDomain.OFFLINE_CONTRACT:
+            raise ValueError("provider selection is not offline contract execution")
+        if self.cloud_qualification is not HistoryContinuityCloudQualification.UNQUALIFIED:
+            raise ValueError("cloud qualification cannot be claimed")
+        return self
+
+
+def history_continuity_offline_provider_execution_permitted(selection: object) -> bool:
+    """Return whether an offline contract pair may execute against injected ports.
+
+    True is not cloud admission, not workload-federation proof, and not
+    qualification. Absence of an authorized identity binding returns False.
+    """
+
+    if type(selection) is not HistoryContinuityProviderSelection:
+        return False
+    if selection.adapter is not HistoryContinuityAdapterKind.OFFLINE_EXTERNAL_PAIR:
+        return False
+    if selection.execution_domain is not HistoryContinuityExecutionDomain.OFFLINE_CONTRACT:
+        return False
+    if selection.cloud_qualification is not HistoryContinuityCloudQualification.UNQUALIFIED:
+        return False
+    if not _present_identifier(selection.application_id):
+        return False
+    if not _present_identifier(selection.environment_id):
+        return False
+    if not _retention_shape_holds(selection.retention):
+        return False
+    administrators = selection.administrators
+    if type(administrators) is not HistoryContinuityAdministrativeIdentities:
+        return False
+    if not administrator_identities_are_independent(
+        administrators.primary_administrator_id,
+        administrators.witness_administrator_id,
+    ):
+        return False
+    binding = selection.identity_binding
+    if type(binding) is not HistoryContinuityIdentityBinding:
+        return False
+    if binding.credential_mode is not HistoryContinuityRuntimeCredentialMode.WORKLOAD_FEDERATION:
+        return False
+    if not _present_identifier(binding.binding_id):
+        return False
+    if not _present_identifier(binding.subject):
+        return False
+    if not _present_identifier(binding.audience):
+        return False
+    return True

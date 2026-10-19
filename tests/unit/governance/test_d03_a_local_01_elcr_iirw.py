@@ -492,6 +492,7 @@ def test_retention_hard_limits_and_writer_cannot_weaken() -> None:
         )
     assert list(HistoryContinuityAdapterKind) == [
         HistoryContinuityAdapterKind.LOCAL_DETERMINISTIC,
+        HistoryContinuityAdapterKind.OFFLINE_EXTERNAL_PAIR,
     ]
 
     authority = _authority()
