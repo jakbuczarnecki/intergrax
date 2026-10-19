@@ -803,7 +803,7 @@ Status of this artifact only:
 
 **READY FOR AUDIT — D03-A POLICY CONSOLIDATION — ACCEPTED POLICY IS NOT INFRASTRUCTURE PROOF**
 
-§15 names the platform-policy child. That child is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `02e48d9fa61d116346da613271cc5e8b77e08cc6` and does not close this readiness gate. The offline provider child `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` is named on the conditional-direction decision. Its implementation baseline is `a7ecc5065a0343e768584e818c844d3f96b5f533`. Its implementation status is **READY FOR AUDIT — FORMAL CLOSURE RECORD** (evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003`). Not autonomously closed. Not cloud-qualified. Independent static reviews of the implementation and reconciliation SHAs accepted local offline behavior and architecture boundaries only. Detailed evidence is [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). This readiness record does not implement it and does not close the parent or the child. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
+§15 names the platform-policy child. That child is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at `02e48d9fa61d116346da613271cc5e8b77e08cc6` and does not close this readiness gate. The offline provider child `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533` (evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003`; formal closure record `771a83c6b39f37120e1d5852233cb31ff37ff02b`). Offline-only; not cloud-qualified. Independent static exact-SHA GitHub review (pytest not rerun by the operator) accepted local offline behavior and architecture boundaries only. Detailed evidence is [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). This readiness record does not implement it and does not close the parent. Cloud IAM, vendor integration, costs, disaster recovery, and production SLOs remain on the dependent qualification gate already identified by the conditional direction: trust-domain graph, retention duration, cost and budget, recovery objectives, and sandbox qualification.
 
 ## 15. Platform policy configuration child
 
@@ -823,7 +823,7 @@ OD-D03-A-01 class (ratified, unchanged)
        -> D03-A-LOCAL-01 (closed; do not modify)
        -> this policy consolidation (READY FOR AUDIT; not parent closure)
             -> PLATFORM-POLICY-CONFIG-01 (CLOSED — SCOPED / INDEPENDENTLY ACCEPTED at `02e48d9fa61d116346da613271cc5e8b77e08cc6`; not infrastructure proof)
-                 -> OFFLINE-PROVIDER-IMPL-01 (implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533`; READY FOR AUDIT — FORMAL CLOSURE RECORD; not autonomously closed; not cloud-qualified)
+                 -> OFFLINE-PROVIDER-IMPL-01 (CLOSED — SCOPED / INDEPENDENTLY ACCEPTED at `a7ecc5065a0343e768584e818c844d3f96b5f533`; offline-only; not cloud-qualified)
                       -> dependent qualification gate (not opened):
                            trust-domain graph, IAM, vendor integration,
                            OD-D03-A-06 production duration,

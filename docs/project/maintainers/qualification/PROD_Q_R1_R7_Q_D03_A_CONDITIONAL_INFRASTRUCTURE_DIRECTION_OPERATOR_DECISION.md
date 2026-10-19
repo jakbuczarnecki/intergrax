@@ -15,7 +15,7 @@
 | Test execution | `pytest = 0`; `uv run = 0` |
 | Offline implementation | **AUTHORIZED — SUBJECT TO INDEPENDENT AUDIT**. Not implemented by this record |
 | Cloud execution | **NOT AUTHORIZED** |
-| Implementation child | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` — **READY FOR AUDIT — FORMAL CLOSURE RECORD**. Not autonomously closed. Not cloud-qualified. Implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533`; evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003`. Evidence: [dossier](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md) |
+| Implementation child | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` — **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** (offline-only; not cloud-qualified; does not close this parent). Implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533`; evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003`; formal closure record `771a83c6b39f37120e1d5852233cb31ff37ff02b`. Evidence: [dossier](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md) |
 
 ## Decision boundary
 
@@ -65,7 +65,7 @@ That stop applies to class B evidence. It does not withdraw class A. Class A sti
 
 - Technology direction: accepted conditionally.
 - Infrastructure: not fully ratified.
-- D03-A: not closed. Final acceptance stays blocked. Offline provider child: **READY FOR AUDIT — FORMAL CLOSURE RECORD**. Not autonomously closed. Not cloud-qualified.
+- D03-A: not closed. Final acceptance stays blocked. Offline provider child: **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** (offline-only; not cloud-qualified).
 - D03-B and D03-C: blocked.
 - Parent `IMPL-01`, `R7-Q`, `PROD-Q` and the global enterprise freeze: not closed.
 - No `FRZ-*` status is promoted.
@@ -101,7 +101,7 @@ This class permits implementation inside the existing architectural direction. I
 
 The child that carries this scope is `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01`. Its status after the offline implementation was **READY FOR AUDIT — OFFLINE CODE ONLY**. Not closed. Not cloud-qualified. Writing that code before independent acceptance of this amendment was not authorized. This amendment does not itself write that code. The implementation commit does not close this parent. The consolidated evidence dossier is [PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md](PROD_Q_R1_R7_Q_D03_A_OFFLINE_PROVIDER_IMPL_01.md). Implementation baseline `a7ecc5065a0343e768584e818c844d3f96b5f533`. A static review of that SHA accepted local offline behavior and architecture boundaries only. This decision still does not close the parent or the child.
 
-**Current state (formal closure record, 2026-10-19):** the child is **READY FOR AUDIT — FORMAL CLOSURE RECORD** with evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003`. It is technically eligible for **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** after operator promotion on GitHub. This parent stays **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**. Cloud execution stays **NOT AUTHORIZED**. **new FRZ PASS = 0**.
+**Current state (operator closure promotion, 2026-10-19):** the child is **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at implementation `a7ecc5065a0343e768584e818c844d3f96b5f533` (evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003`; formal closure record `771a83c6b39f37120e1d5852233cb31ff37ff02b`). Independent static exact-SHA GitHub review (pytest not rerun by the operator). Offline-only; not cloud-qualified. This parent stays **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**. Cloud execution stays **NOT AUTHORIZED**. **new FRZ PASS = 0**.
 
 ### Authorization class B — cloud execution
 
@@ -164,14 +164,14 @@ Offline unit, contract, and adversarial tests may provide code-level evidence. T
 | Field | Value |
 |---|---|
 | ID | `PROD-Q-R1-R7-Q-D03-A-OFFLINE-PROVIDER-IMPL-01` |
-| Status | **READY FOR AUDIT — FORMAL CLOSURE RECORD**. Not autonomously closed. Not cloud-qualified |
+| Status | **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** (offline-only; not cloud-qualified) |
 | Parent | This record. Parent final acceptance stays blocked |
 | Starts when | Independent audit accepts this authorization amendment |
 | In scope | The class A list, the binding constraints, and the future solution shape above |
 | Out of scope | Class B; D03-B; D03-C; production CREATE activation; closure of IMPL-01, R7-Q, PROD-Q, or any global `FRZ-*` |
 | Evidence label | Offline code evidence only. Not cloud qualification |
 | Implementation baseline | `a7ecc5065a0343e768584e818c844d3f96b5f533`. Lineage and the closed-world inventory are in the dossier, not in this authorization |
-| Formal closure | Formal closure record prepared in the dossier; autonomous **CLOSED** not entered. Independent operator audit of the GitHub formal-closure commit is still required |
+| Formal closure | Independent operator acceptance recorded 2026-10-19; formal closure record `771a83c6b39f37120e1d5852233cb31ff37ff02b`; evidence reconciliation `468caa1327dab5b1e60576a9edd71ba19c957003` |
 
 No further discovery or decision round is required to identify this child. A new architecture blocker, if one appears during that work, stops that work. It does not widen this authorization.
 

@@ -4,18 +4,19 @@ Scoped acceptance dossier for the offline provider child. This file is the detai
 
 | Field | Value |
 |---|---|
-| Status | **READY FOR AUDIT — FORMAL CLOSURE RECORD** |
-| Formal closure | Not entered. Cursor does not write **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** in the roadmap. |
+| Status | **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** |
+| Formal closure | Independent operator acceptance recorded 2026-10-19 (offline-only; not cloud-qualified; does not close parent D03-A). |
 | Parent | `PROD-Q-R1-R7-Q-D03-A-CONDITIONAL-INFRASTRUCTURE-DIRECTION` — **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED** |
 | Cloud execution | **NOT AUTHORIZED** |
 | Implementation baseline | `a7ecc5065a0343e768584e818c844d3f96b5f533` |
 | Evidence reconciliation baseline | `468caa1327dab5b1e60576a9edd71ba19c957003` |
-| Formal closure record commit | `54f51c4dd81e0040aab0a8a469779c5ca3509964` |
+| Prior formal closure record | `54f51c4dd81e0040aab0a8a469779c5ca3509964` |
+| Independently reviewed formal closure record | `771a83c6b39f37120e1d5852233cb31ff37ff02b` |
 | Parent closure | Not available |
 | Evidence label | Offline code and deterministic tests. Not Spanner durability, Azure retention, IAM, disaster recovery, or production qualification. |
 | FRZ promotion | **0**. No checklist status changes. |
 
-Operator-reviewed offline implementation and formal closure of this child are different facts. Independent static GitHub reviews (operator session; **pytest not rerun**) accepted the implementation baseline and the evidence-reconciliation baseline for local offline behavior and architecture boundaries only. The offline capability is **technically eligible** for **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** after independent audit of this formal closure record. The canonical child stays **READY FOR AUDIT — FORMAL CLOSURE RECORD** until the operator promotes closure on GitHub.
+Independent operator acceptance (2026-10-19) closes this child as **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED**. Method: static exact-SHA GitHub review (operator session; **pytest not rerun** by the operator). Scope: local offline behavior and architecture boundaries only. This transcription records the operator verdict; Cursor does not autonomously accept the child.
 
 ## Formal operator acceptance record (2026-10-19)
 
@@ -23,11 +24,12 @@ Operator-reviewed offline implementation and formal closure of this child are di
 |---|---|---|
 | Implementation baseline | `a7ecc5065a0343e768584e818c844d3f96b5f533` | Offline provider modules, composition admission, typed ports, SDK bridges, fail-closed openers, LOCAL-01 / PLATFORM-POLICY-CONFIG-01 non-regression boundaries |
 | Evidence reconciliation | `468caa1327dab5b1e60576a9edd71ba19c957003` | Canonical dossier, roadmap §5 index, conditional-direction pointers, readiness graph pointer, freeze checklist non-promotion note |
-| Formal closure record | `54f51c4dd81e0040aab0a8a469779c5ca3509964` | Formal operator acceptance record and current-state index alignment; does not autonomously write CLOSED |
+| Prior formal closure record | `54f51c4dd81e0040aab0a8a469779c5ca3509964` | Formal closure preparation and index alignment (historical; superseded for current-state closure by operator review below) |
+| Independently reviewed formal closure record | `771a83c6b39f37120e1d5852233cb31ff37ff02b` | Formal closure record reviewed before operator promotion to **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** |
 
-**Implementation and test evidence provenance:** deterministic unit tests listed under [Test evidence](#test-evidence); implementer-reported gates preserved as non-independent; reconciliation regression commands in this dossier are session safety gates, not the GitHub static reviews.
+**Implementation and test evidence provenance:** deterministic unit tests listed under [Test evidence](#test-evidence); implementer-reported gates preserved as non-independent (**57** pytest PASS, Ruff PASS, Pyright **0** errors at the implementation baseline; not independently rerun by the operator); reconciliation regression commands in this dossier are session safety gates, not the GitHub static reviews.
 
-**Conclusion (technical eligibility only):** scoped offline child satisfies the closed-world inventory and ECAP B1–B6 readiness for **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at the implementation baseline, subject to operator promotion. **Excluded:** real Spanner/Azure qualification, IAM independence, production retention duration (OD-D03-A-06), cost/capacity/SLO (OD-D03-A-07), cloud execution, production CREATE qualification, parent D03-A ratification, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q advancement, and any new global `FRZ-*` **PASS** (**new FRZ PASS = 0**).
+**Operator acceptance conclusion (scoped offline only):** **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** at the implementation baseline. **Excluded:** real Spanner/Azure qualification, IAM independence, production retention duration (OD-D03-A-06), cost/capacity/SLO (OD-D03-A-07), cloud execution, production CREATE qualification, parent D03-A ratification, D03-B, D03-C, IMPL-01, R7-Q, PROD-Q advancement, and any new global `FRZ-*` **PASS** (**new FRZ PASS = 0**).
 
 **Ownership and composition (unchanged):** `HistoryContinuityAuthority` contract; sole semantic owner `ProductionControlPlaneGovernance`; sole sanctioned composition `compose_history_continuity_authority`; mutation boundary `ControlPlaneMutationAuthorizationBoundary`; physical CREATE gate remains `GovernedProviderInvocationDispatchGate` only (not on the continuity graph).
 
@@ -257,20 +259,20 @@ D03-B, D03-C, IMPL-01, R7-Q, and PROD-Q stay at their current blocked or non-clo
 
 ECAP §2.B is a parent-closure audit. The parent remains **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**. OD-D03-A-06, OD-D03-A-07, live IAM, disaster recovery, and real vendor qualification are absent. Parent B1–B6 are not satisfied. Closing this child, if a later independent audit does that, still would not close the parent.
 
-## ECAP §2.A for this formal closure record delta
+## ECAP §2.A for this operator closure promotion delta
 
-This table covers the formal closure record documentation delta only. It is not a certification of the implementation, and it does not change the historical ECAP tables on the conditional-direction record.
+This table covers the operator closure promotion documentation delta only. It transcribes the independent operator verdict; it is not Cursor autonomous acceptance, and it does not change the historical ECAP tables on the conditional-direction record.
 
 | Step | Result |
 |---|---|
-| A1 | Documentation only: formal acceptance record in this dossier, roadmap §5 index rows, conditional-direction current-state pointers, readiness graph pointer, checklist non-promotion note. Public code symbols changed = 0. |
+| A1 | Documentation only: operator **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** transcription in this dossier, roadmap §5 index rows, conditional-direction current-state pointers, readiness graph pointer, checklist scoped non-promotion note. Public code symbols changed = 0. |
 | A2 | Cross-references only. No production import, composition wiring, or configuration key changes. |
 | A3 | No new production caller. `compose_history_continuity_authority` production callers remain none. |
 | A4 | Semantic owner `ProductionControlPlaneGovernance`. Sanctioned composition `compose_history_continuity_authority`. Unchanged. |
 | A5 | Production-effective reachability of this delta: **no**. |
 | A6 | Applicable IDs are the mapping below. Statuses unchanged. No `SYS-INV-*` text change. No new guard. |
 | A7 | LOCAL-01 at `302e7fa74b745d10f9552df0a6eb9c702d5ce033` and PLATFORM-POLICY-CONFIG-01 at `02e48d9fa61d116346da613271cc5e8b77e08cc6` stay in their accepted scopes. Historical CFG, TEN, EXE, GOV, STA, and REC PASS is not extended to a live Spanner or Azure adapter. |
-| A8 | Gates confirmed at the implementation baseline and executed in this session: the pytest command above (57 passed), scoped Ruff (pass), scoped Pyright (0 errors). `git diff --check` applies to the documentation commit. No cloud gate. |
+| A8 | Gates for this promotion delta: `git diff --check` on the documentation commit; markdown relative-link integrity on changed qualification paths; SHA ancestry checks for listed anchors; consistency scan across current-state references; no production-code delta. Session reconciliation pytest (57 passed), scoped Ruff (pass), scoped Pyright (0 errors) at unchanged implementation baseline — not operator-independent execution. No cloud gate. |
 
 ### Tenant Isolation Audit
 
@@ -303,9 +305,9 @@ This is a readiness assessment for the child. It is not a parent-closure audit a
 | B3 | Positive offline evidence exists: local and offline initialize/advance, CAS, witness seal, transport substitution, injected-session translation. |
 | B4 | Adversarial offline evidence exists: deny-by-default admission, forged composition inputs, unknown commit, abandoned retry, uncertain append, secondary and unbound witness URLs, tenant and scope mismatch, rollback and corrupt witness. |
 | B5 | Execution bundle at the implementation SHA is split. Implementer-reported results are not independent execution. The previous GitHub acceptance was a static review. This session's pytest, Ruff, and Pyright are a reconciliation regression, not that independent audit. |
-| B6 | Roadmap §5 records **READY FOR AUDIT — FORMAL CLOSURE RECORD**. It does not autonomously record **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED**. |
+| B6 | Roadmap §5 and this dossier record **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** per independent operator verdict. Cursor promotion commit is **READY FOR AUDIT — OPERATOR CLOSURE RECORDING** until GitHub audit of that delta. |
 
-Autonomous child closure is not available. The package is ready for independent operator audit of this formal closure record on GitHub.
+Scoped B1–B6 evidence assembled at the implementation baseline remains referenced above and is not rewritten by this promotion delta.
 
 ## Applicable FRZ mapping
 
@@ -441,11 +443,11 @@ Future qualification owner, for every row: not this child. Cloud rows wait on cl
 
 ## Status preserved
 
-- Child: **READY FOR AUDIT — FORMAL CLOSURE RECORD** (technically eligible for **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED**; operator promotion pending).
+- Child: **CLOSED — SCOPED / INDEPENDENTLY ACCEPTED** (offline-only; independent operator verdict recorded 2026-10-19).
 - Parent: **CONDITIONAL DIRECTION ACCEPTED — FULL RATIFICATION BLOCKED**.
 - Cloud execution: **NOT AUTHORIZED**.
 - D03-B and D03-C: blocked.
 - IMPL-01, R7-Q, and PROD-Q: not advanced.
 - Global `FRZ-*`: unchanged. **new FRZ PASS = 0**.
 
-**Recommended disposition:** **READY FOR AUDIT — FORMAL OFFLINE CLOSURE RECORD**.
+**Cursor execution disposition:** **READY FOR AUDIT — OPERATOR CLOSURE RECORDING** (documentation delta only; does not substitute for independent GitHub audit of the promotion commit).
