@@ -80,7 +80,7 @@ from tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admissio
     _patch_gca_strict_http_wiring,
     _strict_http_environment_profile,
 )
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.runtime.task.active_task_registry import ActiveTaskRegistryTaskScopeResolver
 from tests.unit.runtime.governance.gr3_test_support import (
     StaticActiveTaskScope,
     bound_gr3_active_execution,
@@ -332,7 +332,7 @@ def build_strict_http_invocation_qual_fixture(
         workspace_id=_QUAL_WORKSPACE,
         principal_id=_QUAL_PRINCIPAL,
     )
-    task_scope = StaticActiveTaskScope(mint_task_id())
+    http_task_scope = ActiveTaskRegistryTaskScopeResolver()
 
     def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
         settings = with_qualified_strict_external_work_provider_pin(
@@ -351,7 +351,7 @@ def build_strict_http_invocation_qual_fixture(
         return compose_governed_contractor_host_runtime(
             settings,
             integration=external_fake,
-            task_scope=task_scope,
+            task_scope=http_task_scope,
             collaborative_work_repositories=cw,
         )
 
