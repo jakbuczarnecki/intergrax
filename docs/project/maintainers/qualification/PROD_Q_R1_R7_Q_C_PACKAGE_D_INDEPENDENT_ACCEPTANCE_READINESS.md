@@ -10,7 +10,7 @@
 | **Branch** | `development` |
 | **VERIFIED_BASELINE** | `1b6f9405b939525756dc05ff2c45575ee19d8100` |
 | **START_HEAD (this task)** | `fc1bd1b296290dccffd74fe402f75a8f922d58b4` |
-| **AUDITED_HEAD / FINAL_COMMIT** | `3044e6620b091f78243a4952c3060f8aeaf7a49f` |
+| **AUDITED_HEAD / FINAL_COMMIT** | `eee60025d85e1403e3a245fdd02eb92be1117619` (dossier on GitHub; qual tests introduced @ `3044e6620…`) |
 | **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` (historical F02-05/F02-09 qual) |
 | **PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA** | `3044e6620b091f78243a4952c3060f8aeaf7a49f` (§13.2 mandatory gate replay) |
 | **PRODUCTION_IMPLEMENTATION_SHA** | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` (`DIM16-F02: fail-closed physical admission on strict session close`) |
