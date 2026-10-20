@@ -377,3 +377,104 @@ uv run pytest -p no:xdist \
 **FINAL_COMMIT (code):** `08f1ef069073fbb91944807777e9b744ca76ebd4` · **evidence tip:** `7a2c4d5d303e7949f89bc9ff75a093c7dee043fe`
 
 **Observed limit:** In-hook provider `cancel_work` assertions that raise inside the dispatch `execute()` closure surface as `side_effect_authorization_failed`; post-hoc PIS/outcome assertions prove intent-before-effect for **H11**.
+
+---
+
+## 16. DIM20 follow-on admission fail-closed static audit
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-R7-Q-DIM20-FOLLOW-ON-ADMISSION-FAIL-CLOSED-QUALIFICATION** |
+| **START_HEAD / AUDITED_HEAD (production)** | `4272f885ce558e5e3249d6f67f5f622bbe8833c6` |
+| **Production delta** | **0** — no defect; downstream guards sufficient |
+| **Status** | **READY FOR AUDIT** (does not close **PROD-Q-R1**, **R7-Q** dim **20**, **PROD-Q**, or global **FRZ-***) |
+
+### 16.1 Audit question (`try_resolve` → `None` → `inner.execute`)
+
+| `None` cause | Intended? | Downstream effect |
+|--------------|-----------|-------------------|
+| No `META_SANCTIONED_MUTATION_OPERATION` / empty | **Yes** — ordinary CREATE / non-follow-on HTTP | `inner.execute` mints new execution; Tier-2 `resolve_sanctioned_operation_from_metadata` defaults **CREATE** |
+| Operation **CREATE** | **Yes** | Same as non-follow-on |
+| Invalid operation enum | **Yes** — not follow-on bind | `inner.execute`; Tier-2 `ValueError` → `domain_job` `_fail_closed_domain_payload` |
+| **ACCEPT_QUOTE** / **CANCEL** but missing/invalid `META_PRIOR_EXECUTION_ID`, tenant/principal, or store record | **Yes** — admission cannot bind CREATE identity | `inner.execute` on **new** HTTP task/run; Tier-2 still reads **prior** `execution_id` from metadata → `GovernedSanctionedExternalWorkOperationPort._resolve_prior_create_result` → `resolve_create_adapter_result_for_follow_on` → **`None`** → deny `prior_create_snapshot_missing` — **no** `orchestrator.accept`/`cancel`, **no** PIS dispatch, **no** provider mutation |
+| Valid follow-on metadata + matching `get_create_follow_on_record` | **No** `None` | Admission rebinds `task_id`/`run_id`/`attempt_id`/`execution_id` + `restore_existing_execution=True` → sanctioned path on authoritative CREATE execution (**H10** / **H11**) |
+
+**Conclusion:** `None` is **not** universally an error; it is the correct out-of-scope signal for CREATE and for admission-layer non-bind. Invalid **ACCEPT_QUOTE**/**CANCEL** must not rely on admission alone — **orchestrator + sanctioned port** enforce prior-create authority before dispatch.
+
+### 16.2 Closed-world call graph (strict serving)
+
+```text
+POST /run → GCA task build → StrictProductionServingTenantAuthorityTaskExecutionPort
+  → StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort (optional bind)
+  → HostTaskExecutionPort (inner)
+  → Tier-2 domain_job (require_sanctioned_external_work_mutations=True)
+  → GovernedSanctionedExternalWorkOperationPort
+  → GovernedExternalWorkOrchestrator (+ PIS / GovernedProviderInvocationDispatchGate on admit paths only)
+  → ExternalWorkIntegration (provider)
+```
+
+**Second execution authority:** none observed — strict reflex path does not fall back to `adapt_from_step_metadata` when `require_sanctioned_external_work_mutations` is set.
+
+### 16.3 Fail-closed matrix (invalid follow-on)
+
+| Variant | HTTP | Provider | PIS dispatch | Authority escalation |
+|---------|------|----------|--------------|----------------------|
+| Accept, no prior CREATE (**H10n**) | 200 (request accepted) | **0** `accept_calls` | **No** admitted mutation | **No** |
+| Cancel, no prior CREATE (**H11n**) | 200 | **0** `cancel_calls` | **No** | **No** |
+| Accept, wrong tenant vs CREATE (**H10n** tenant) | **403** | **0** | **No** (tenant port before follow-on bind) | **No** |
+| Unsupported sanctioned op (**H10/H11n** unsupported) | 200 | **0** all fakes | **No** | **No** |
+
+### 16.4 Owners / contracts (unchanged)
+
+| Layer | Owner | Contract |
+|-------|-------|----------|
+| Follow-on HTTP identity bind | **GCA** `StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort` | `HostTaskExecutionPort` wrapper |
+| Prior-create authority | **GCA** `GovernedExternalWorkOrchestrator.resolve_create_adapter_result_for_follow_on` | `GovernedExternalWorkCreateFollowOnRecordV1` + execution store |
+| Tier-2 reflex | **external_contractor_adapter** `domain_job` | `SanctionedExternalWorkOperationPort` |
+| Dispatch / PIS | **GCA** orchestrator + **ER** lifecycle store / gate | existing PIS-STRICT / DISPATCH-Q1 evidence |
+
+### 16.5 Bounded pytest (@ DIM20 follow-on admission audit)
+
+| Node ID | Result |
+|---------|--------|
+| `::test_h10n_accept_without_prior_create_fail_closed_zero_provider_calls` | **PASS** |
+| `::test_h11n_cancel_without_prior_create_fail_closed_zero_provider_calls` | **PASS** |
+| `::test_h10n_wrong_tenant_accept_denied_before_provider` | **PASS** |
+
+```text
+uv run pytest -p no:xdist <three node IDs above> -q
+```
+
+Log: `.tmp/session/dim20-non-create-qual/pytest-h10-h11-5.log` — **3 passed**, ~20s.
+
+**Not re-run:** full **H10**/**H11** positive chain (existing §15 evidence); **B6** acceptance.
+
+### 16.6 ECAP (relevant scope)
+
+| Area | Disposition |
+|------|-------------|
+| **A1–A8** | **PASS** (scoped) — single sanctioned composition owner; hard boundaries; fail-closed deny semantics on invalid follow-on |
+| **B1–B5** | **PASS** (scoped) — §15 + this static audit + three negative nodes |
+| **B6** | **PENDING** — formal independent verdict not in scope |
+
+### 16.7 FRZ (scoped evidence contribution only — global rows remain **OPEN**)
+
+| ID | Scoped note |
+|----|-------------|
+| **FRZ-SEC-04** | Invalid follow-on denied before provider; wrong tenant **403** at serving binding |
+| **FRZ-PRD-03** | Unsupported / missing prior-create → deny, not silent success |
+| **FRZ-PRD-07** | Qualification fixture only; no lab/production boundary change |
+| **FRZ-PRD-08** | No bypass via `inner.execute` without orchestrator admit |
+| **FRZ-REL-03** / **FRZ-REL-05** | Follow-on idempotency/cancel remain orchestrator-owned; admission does not mint alternate invocation |
+| **FRZ-OWN-*** / **FRZ-BND-*** / **FRZ-CTR-*** | Unchanged ownership per §3 / ADR-01 |
+| **FRZ-REG-02** / **03** / **09** | Existing **H10n**/**H11n** nodes retained; no production change |
+
+### 16.8 Unresolved / limits
+
+| ID | Class | Note |
+|----|-------|------|
+| — | — | **No IN-SCOPE BLOCKER** from follow-on `None` → `inner` delegation |
+| **B6** | **TRACKED** | Parent formal verdict pending |
+| Admission vs deny reason | **Guarantee limit** | HTTP 200 on **H10n**/**H11n** reflects request/task acceptance; operation denial is in domain summary / orchestrator reason — not a new HTTP model |
+
+**Audit recommendation (non-binding):** Documented `None` semantics (§16.1) for independent reviewers; **no** duplicate fail-closed gate at admission layer required @ `4272f885…`.
