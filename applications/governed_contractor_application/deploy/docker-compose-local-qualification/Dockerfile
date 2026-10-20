@@ -31,9 +31,11 @@ RUN sed -i 's/\r$//' /opt/intergrax/bin/intergrax-gca-docker-local-qualification
     && sed -i 's/\r$//' /opt/intergrax/bin/target-storage-probe.sh \
     && chmod 750 /opt/intergrax/bin/intergrax-gca-docker-local-qualification-entrypoint.sh \
     && chmod 750 /opt/intergrax/bin/target-storage-probe.sh \
+    && chown intergrax-gca:intergrax-gca \
+        /opt/intergrax/bin/intergrax-gca-docker-local-qualification-entrypoint.sh \
+        /opt/intergrax/bin/target-storage-probe.sh \
     && chown -R intergrax-gca:intergrax-gca /app
 
-USER intergrax-gca
 WORKDIR /app/applications/governed_contractor_application
 
 ENV INTERGRAX_SINGLE_NODE_PRODUCTION_V1_DATA_DIR=/var/lib/intergrax/production-v1/data \

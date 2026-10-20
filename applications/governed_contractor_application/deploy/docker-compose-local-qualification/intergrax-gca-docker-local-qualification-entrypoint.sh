@@ -4,10 +4,27 @@
 # Does not substitute governance, provider pins, or authorized mutation bundles.
 set -euo pipefail
 
+_qualification_volume_init_as_root() {
+  local data_dir="${INTERGRAX_SINGLE_NODE_PRODUCTION_V1_DATA_DIR:-}"
+  local runtime_user="${INTERGRAX_SINGLE_NODE_PRODUCTION_V1_SERVICE_RUNTIME_USER:-intergrax-gca}"
+  if [[ -z "${data_dir}" ]]; then
+    return 0
+  fi
+  install -d -o "${runtime_user}" -g "${runtime_user}" -m 0750 "${data_dir}"
+  install -d -o "${runtime_user}" -g "${runtime_user}" -m 0750 "${data_dir}/trusted_artifacts"
+}
+
+if [[ "$(id -u)" -eq 0 ]]; then
+  _qualification_volume_init_as_root
+  exec runuser -u "${INTERGRAX_SINGLE_NODE_PRODUCTION_V1_SERVICE_RUNTIME_USER:-intergrax-gca}" -- "$0" "$@"
+fi
+
 qualification_mode="${INTERGRAX_GCA_DOCKER_LOCAL_QUALIFICATION_MODE:-}"
 
+QUALIFICATION_PYTHON="/app/.venv/bin/python"
+
 _run_admission_gate() {
-  python -m governed_contractor_application.host.single_node_profile_v1_admission_gate
+  "${QUALIFICATION_PYTHON}" -m governed_contractor_application.host.single_node_profile_v1_admission_gate
 }
 
 _ensure_durable_layout() {
