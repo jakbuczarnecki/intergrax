@@ -7,7 +7,7 @@
 | **Program** | **PROD-Q** |
 | **Branch** | `development` |
 | **START_HEAD** | `43f6e0e232add1cf9fd9a947716d4c5444ae13d3` |
-| **AUDITED_HEAD** | `74cb5bc708f07c2dbcd32896318ec0fe7b5916dd` |
+| **AUDITED_HEAD** | `5b535cc62a9a5f167cc6a2d6da6ace79ce9f1f7d` |
 | **Prior reconciliation pin** | `0e19284e12ca7e05a667adfb1989a4e551879ac7` (interpretation **B** = NOT PROVEN — **historical only**, §0) |
 | **H09 implementation SHA** | `1b611ac963dc2122a098478374d7c7bfe9d391b1` (integrated CREATE qual); reflex orchestrator wiring `0bb8fcc8c…` |
 | **Parent** | **PROD-Q-R1** — **NOT QUALIFIED** |
@@ -415,7 +415,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 |-------|-------|
 | **Branch** | `development` |
 | **START_HEAD** | `43f6e0e232add1cf9fd9a947716d4c5444ae13d3` |
-| **FINAL_COMMIT** | `74cb5bc708f07c2dbcd32896318ec0fe7b5916dd` |
+| **FINAL_COMMIT** | `5b535cc62a9a5f167cc6a2d6da6ace79ce9f1f7d` |
 | **origin/development** | aligned @ push |
 | **Task-owned files** | `docs/project/maintainers/qualification/PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md` |
 | **Unrelated dirty worktree** | Not staged (other workstreams) |
