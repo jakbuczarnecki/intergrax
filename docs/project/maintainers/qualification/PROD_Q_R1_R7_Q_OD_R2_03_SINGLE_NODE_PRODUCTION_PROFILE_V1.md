@@ -6,8 +6,8 @@
 | **Task** | `PROD-Q-R1-R7-Q-OD-R2-03-PROFILE-V1-LIFECYCLE-AND-ENTRYPOINT-SAFETY` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **START_HEAD** | `da0fbb965ed3241cfbf052bec30fe9f27afed13c` |
-| **FINAL_COMMIT / AUDITED_HEAD** | *(set at push — independent audit)* |
-| **EXECUTION_SHA** | *(pytest @ FINAL_COMMIT)* |
+| **FINAL_COMMIT / AUDITED_HEAD** | `092db8ca7` |
+| **EXECUTION_SHA** | `092db8ca7` — **26/26** passed |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
 Operator authorized **single-node Linux VM profile v1** (exactly-one writer, ext4 SSD, SQLite GCA/PIS WAL+FULL, systemd, least-privilege identity). This dossier is repository + lab evidence only.
