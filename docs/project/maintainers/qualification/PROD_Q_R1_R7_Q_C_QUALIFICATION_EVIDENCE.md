@@ -354,7 +354,7 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 | Field | Value |
 |-------|-------|
 | **START_HEAD** | `eff3245efba1826a0470fc376888c0bd2af6ca06` (`development` == `origin/development`) |
-| **EXECUTION_SHA** | *see FINAL_COMMIT below* |
+| **EXECUTION_SHA** | `a183e072738fe62a85eb290ac1cff9456db3be33` |
 | **Package C historical exec** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` (preserved) |
 | **pytest budget** | **1** invocation, **4** nodes, `-p no:xdist`, log `.tmp/session/PROD-Q-R1-R7-Q-C-PROFILE-V1-ENTRYPOINT-REACHABILITY-CLOSURE/pytest.log` |
 | **Scope** | P1 closed-world AST reachability seeds profile-v1 production entry (`run_package_b_strict_production_serving_command`, `open_gca_strict_production_serving_session_from_single_node_production_profile_v1`); fail-closed root locator; structural PV1 opener bridge; DIM11-01 expected roots extended — **not** full §C **83**; **not** OD-R2-03 replay; **not** parent **PROD-Q** / global **FRZ** promotion |
