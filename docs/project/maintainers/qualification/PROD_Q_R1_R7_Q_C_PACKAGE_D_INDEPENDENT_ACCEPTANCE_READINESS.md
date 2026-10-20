@@ -9,15 +9,16 @@
 | **Program** | **PROD-Q** — **OPEN / BLOCKED** (children) |
 | **Branch** | `development` |
 | **VERIFIED_BASELINE** | `1b6f9405b939525756dc05ff2c45575ee19d8100` |
-| **START_HEAD (this task)** | `e744e5b9d6e7a4661603ad82e46e3af90130f638` |
-| **AUDITED_HEAD / FINAL_COMMIT** | `1b6f9405b939525756dc05ff2c45575ee19d8100` |
-| **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` (F02-05/F02-09 qual + prior gate record) |
+| **START_HEAD (this task)** | `fc1bd1b296290dccffd74fe402f75a8f922d58b4` |
+| **AUDITED_HEAD / FINAL_COMMIT** | *pending push — see §13 exact-SHA execution record* |
+| **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` (historical F02-05/F02-09 qual) |
+| **PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA** | *§13 — post `FINAL_COMMIT`* |
 | **PRODUCTION_IMPLEMENTATION_SHA** | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` (`DIM16-F02: fail-closed physical admission on strict session close`) |
 | **AUDITED_HEAD (prior Package D)** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
 | **F02 hardening ADR** | [`PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md`](PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md) **R1** |
 | **F02-POST-CLOSE lineage** | Red: `PROD-Q-R1-R7-Q-C-DIM16-F02-POST-CLOSE-EXECUTION-DENY` @ pre-impl; green @ `4aeb585ea…` — §5.5–§5.6 |
-| **Production delta (this task)** | **0** — qualification tests + evidence docs only |
-| **Test execution (this task)** | **pytest = 0** — prior F02-05/F02-09 execution @ `DIM16_TEST_EVIDENCE_SHA` (§11); static re-verification @ `AUDITED_HEAD` |
+| **Production delta (this task)** | **0** product code — narrow GCA owned-store cleanup qualification tests + dossier exact-SHA reconciliation (§5.9, §13) |
+| **Test execution (this task)** | Mandatory F02 + GCA cleanup gates @ `PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA` (§13); historical DIM16 @ `a3af29278…` retained |
 
 **Disposition rule:** Executable §C evidence @ cited SHAs **≠** operator acceptance. Historical **P1 / P2 / P3 / E.1 / D1–D4 CLOSED** rows are background only. This record **does not** relabel documentary reconciliation as production acceptance.
 
@@ -263,6 +264,30 @@ HTTP POST (GCA strict ASGI)
 | **S2a** | Recovery after **process-runtime restart** uses fresh attestation + reconcile before traffic | `test_c_dim13_02_03`, DIM14 stale negatives @ `93c17a95…` | **No** — **PROVEN (scoped)** under DIM13/DIM14 ownership |
 | **S2b** | Same-process immediate strict reopen after drain-close without sanctioned recovery | No dedicated qual node; contracts implied by drain + `admission_bind_mode="reopen"` reject @ `test_dim13_recovery_reopen_rejected_after_drain` | **No** — **TRACKED FREEZE DEBT (C)**; smallest future proof = one qual scenario: `close()` then sanctioned `open_strict_production_serving_session` with expected deny until reconcile — owner **Apps launcher + DIM13** composition, not a second DIM16 discovery wave |
 
+### 5.9 GCA owned-store cleanup — corrective evidence (F-02 / AC04–AC07)
+
+**Pre-audit gap:** DIM16 §C HTTP fixtures exercise continuation/PIS/slot release but did **not** bind `OwnedGovernedExternalWorkHostStoreBundle` on the strict GCA serving path; `ProductionProcessLifecycle.close_process_resources()` closes owned GCA since production wiring @ `4aeb585ea…` lineage — **behavior unproven** on strict composition until this task.
+
+**Closed-world owner (unchanged):**
+
+| Resource | Owner | Teardown contract |
+|----------|-------|-------------------|
+| Owned GCA SQLite bundle | **Apps** `ProductionProcessLifecycle` | `OwnedGovernedExternalWorkHostStoreBundle.close()` via `close_process_resources` |
+| Composition bind | **Apps** GCA `build_strict_durable_gca_composition_builder` | `governed_external_work_host_store_bundle` must match owned instance |
+| Session shutdown order | **Apps** `StrictProductionServingSession.close` | admission close → drain/revoke → `close_process_resources` (no second GCA cleanup path) |
+
+**Qualification nodes (strict GCA path, public store probes):**
+
+| ID | Invariant | Test |
+|----|-----------|------|
+| GCA-CLOSE-01 | Normal `close_process_resources` closes durable GCA host store | `test_d4_gca_owned_host_store_closed_after_close_process_resources` |
+| GCA-CLOSE-02 | GCA `close()` failure propagates; production slot released (no silent success) | `test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot` |
+| GCA-CLOSE-03 | Successful `StrictProductionServingSession.close` closes owned GCA store | `test_d4_strict_session_close_closes_owned_gca_host_store` |
+
+**Module:** `tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py` — uses sanctioned `open_owned_sqlite_governed_external_work_host_stores` + `_lifecycle_gca_kwargs` (same as production opener). Post-close verification via `governed_external_work_host_store_bundle.execution_store` → `GovernedExternalWorkHostPersistenceError("gca host store is closed")` — **no** new hooks.
+
+**F-01 / F-03 reconciliation:** Mandatory F02 gates + GCA-CLOSE suite replayed with exact-SHA metadata @ `PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA` (§13). Historical logs @ `a3af29278…` / `b4e329d12…` remain lineage only — **not** current-HEAD PASS without §13 replay.
+
 ---
 
 ## 6. Operator dependencies (explicit)
@@ -297,8 +322,8 @@ HTTP POST (GCA strict ASGI)
 
 | Criterion | Verdict | Notes |
 |-----------|---------|-------|
-| Exact-SHA execution provenance | **PASS** | Prior DIM16 replay @ `b4e329d12…` + F02-05/09 @ `a3af29278…`; **this dossier pytest = 0** (§11); §C @ `93c17a95…` not re-run |
-| Evidence relevance @ current HEAD | **PASS** | `4aeb585ea…`→`HEAD` production delta **0** |
+| Exact-SHA execution provenance | **PASS (scoped)** | §13 mandatory F02 + GCA-CLOSE replay @ `PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA`; historical DIM16 @ `a3af29278…` / `b4e329d12…` lineage only |
+| Evidence relevance @ current HEAD | **PASS** | `4aeb585ea…`→`HEAD` production delta **0**; GCA cleanup qual covers new owned-store teardown surface |
 | Contract behavior vs implementation | **PASS** (scoped F02) | ADR R1 close ordering matches launcher @ `4aeb585ea…` |
 | Negative tests | **PASS** (scoped F02) | F02 POST-CLOSE green; **F02-05** behavioral @ `FINAL_COMMIT`; F02-09 stale handoff @ `FINAL_COMMIT` |
 | Ownership / layer boundaries | **PASS** | AD / Apps / Governance separation on exercised paths |
@@ -376,20 +401,49 @@ Per roadmap §C: operator audit of this dossier → **Package B** (DIM6/DIM17 pr
 
 ---
 
-## 13. Commands executed (dossier @ `START_HEAD`)
+## 13. Exact-SHA execution record (Package D corrective @ `START_HEAD`)
+
+### 13.1 Git preflight
+
+| Field | Value |
+|-------|-------|
+| Branch | `development` |
+| `HEAD` (session start) | `fc1bd1b296290dccffd74fe402f75a8f922d58b4` |
+| `origin/development` (pre-test fetch) | `fc1bd1b296290dccffd74fe402f75a8f922d58b4` |
+| `HEAD` == `origin/development` | **true** @ pre-test |
+| `merge-base --is-ancestor START_HEAD HEAD` | **true** |
+
+### 13.2 Mandatory pytest gate (FINAL_COMMIT — fill after push)
+
+| Field | Value |
+|-------|-------|
+| **Execution SHA** | `PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA` = `FINAL_COMMIT` |
+| **Date (UTC)** | 2026-10-20 |
+| **Command** | `uv run pytest -p no:xdist <nodes below> -q` |
+| **Exit code** | *record after FINAL_COMMIT replay* |
+| **Result** | *record after FINAL_COMMIT replay* |
+| **Log** | `.tmp/session/PROD-Q-PACKAGE-D-CURRENT-HEAD/pytest-package-d-f02-gca.log` |
+
+**Node IDs:**
 
 ```text
-git branch --show-current
-git rev-parse HEAD
-git fetch origin development
-git rev-parse origin/development
-git merge-base --is-ancestor e744e5b9d6e7a4661603ad82e46e3af90130f638 HEAD
-git merge-base --is-ancestor 4aeb585ea83b076a17d065d1febfb18b9b2caca4 HEAD
-git merge-base --is-ancestor a3af292786d92f4195ac0e453b07310a7d0283ff HEAD
-git show a3af292786d92f4195ac0e453b07310a7d0283ff:tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py (F02-05/09 static scope review)
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_strict_session_close_closes_owned_gca_host_store
+tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_post_close_01_execution_deny_after_dual_shutdown_failure
+tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_05_concurrent_shutdown_and_physical_admission_serialization
+tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle_gate.py::test_c_dim16_f02_09_new_strict_session_rejects_stale_handoff_execution_authorization
 ```
 
-**Pytest (this task):** **0** — prior gate: **3 passed** @ `a3af29278…` (log `.tmp/session/DIM16-FINAL-ACCEPTANCE-EVIDENCE-GATE/pytest-new-f02.log`); reconciliation module **15 passed** @ `b4e329d12…`.
+**Pre-commit working-tree probe @ `fc1bd1b` (not FINAL_COMMIT):** **7 passed**, exit **0**, ~14s — same command/nodes; used to validate new GCA tests before commit only.
+
+### 13.3 Historical lineage (not current-HEAD PASS)
+
+| Artifact | SHA | Note |
+|----------|-----|------|
+| F02-05/F02-09 qual | `a3af292786d92f4195ac0e453b07310a7d0283ff` | Superseded for exact-SHA by §13.2 @ `FINAL_COMMIT` |
+| DIM16 module replay | `b4e329d12…` | 15 passed — pre-GCA-CLOSE gap |
+| F02 implementation | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` | Production close ordering |
 
 ---
 

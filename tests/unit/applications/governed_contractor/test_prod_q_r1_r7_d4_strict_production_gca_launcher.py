@@ -387,6 +387,105 @@ def test_d4_active_state_served_after_reconciliation(tmp_path: Path) -> None:
     session.close()
 
 
+def _assert_gca_host_store_operations_fail_closed(
+    lifecycle: ProductionProcessLifecycle,
+) -> None:
+    from governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle import (
+        GovernedExternalWorkHostPersistenceError,
+    )
+
+    bundle = lifecycle.composition.governed_external_work_host_store_bundle
+    assert bundle is not None
+    with pytest.raises(GovernedExternalWorkHostPersistenceError, match="closed"):
+        bundle.execution_store.get_create_follow_on_record("closed-probe")
+
+
+def test_d4_gca_owned_host_store_closed_after_close_process_resources(
+    tmp_path: Path,
+) -> None:
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+    )
+
+    storage, adapter = _storage_and_adapter(tmp_path)
+    environment = _ac3_environment()
+    governance = _governance(
+        ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
+    )
+    gca_kwargs = _lifecycle_gca_kwargs(storage)
+    lifecycle = open_production_process_lifecycle(
+        agent_distribution_db=storage.agent_distribution_db,
+        continuation_state_file=storage.continuation_state_file,
+        deployment_adapter=adapter,
+        governance=governance,
+        trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
+        missing_file_policy="empty",
+        provider_invocation_db=storage.provider_invocation_db,
+        serving_reconciliation_targets=(
+            (environment.application_id, environment.application_environment_id),
+        ),
+        **gca_kwargs,
+    )
+    lifecycle.close_process_resources()
+    _assert_gca_host_store_operations_fail_closed(lifecycle)
+
+
+def test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot(
+    tmp_path: Path,
+) -> None:
+    from intergrax.applications._shared import production_process_lifecycle as ppl
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+    )
+
+    storage, adapter = _storage_and_adapter(tmp_path)
+    environment = _ac3_environment()
+    governance = _governance(
+        ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
+    )
+    gca_kwargs = _lifecycle_gca_kwargs(storage)
+    lifecycle = open_production_process_lifecycle(
+        agent_distribution_db=storage.agent_distribution_db,
+        continuation_state_file=storage.continuation_state_file,
+        deployment_adapter=adapter,
+        governance=governance,
+        trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
+        missing_file_policy="empty",
+        provider_invocation_db=storage.provider_invocation_db,
+        serving_reconciliation_targets=(
+            (environment.application_id, environment.application_environment_id),
+        ),
+        **gca_kwargs,
+    )
+    owned = lifecycle._owned_governed_external_work_host_store_bundle
+    assert owned is not None
+    with patch.object(owned, "close", side_effect=RuntimeError("gca_owned_close_fail")):
+        with pytest.raises(RuntimeError, match="gca_owned_close_fail"):
+            lifecycle.close_process_resources()
+    assert ppl._active_production_process_lifecycle is None
+    with open_production_process_lifecycle(
+        agent_distribution_db=storage.agent_distribution_db.parent / "ad-retry.db",
+        continuation_state_file=storage.continuation_state_file.parent / "continuation-retry.json",
+        deployment_adapter=adapter,
+        governance=governance,
+        trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
+        missing_file_policy="empty",
+        provider_invocation_db=storage.provider_invocation_db.parent / "invocation-retry.db",
+        **_lifecycle_gca_kwargs(storage),
+    ) as retry_lifecycle:
+        assert retry_lifecycle.composition.agent_platform_runtime is not None
+
+
+def test_d4_strict_session_close_closes_owned_gca_host_store(tmp_path: Path) -> None:
+    session = _open_with_activation(
+        tmp_path,
+        environment=_ac3_environment(),
+        revision_id="rev-d4-gca-owned-close",
+    )
+    session.close()
+    _assert_gca_host_store_operations_fail_closed(session.lifecycle)
+
+
 def test_d4_session_close_drains_colocated_execution_admission(tmp_path: Path) -> None:
     session = _open_with_activation(
         tmp_path,
