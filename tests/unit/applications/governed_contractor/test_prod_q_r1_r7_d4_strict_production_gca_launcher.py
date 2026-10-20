@@ -476,6 +476,52 @@ def test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot(
         assert retry_lifecycle.composition.agent_platform_runtime is not None
 
 
+def test_d4_gca_owned_host_store_closed_after_reconciliation_failure(
+    tmp_path: Path,
+) -> None:
+    from intergrax.applications._shared.production_process_serving_reconciliation import (
+        ProductionServingReconciliationError,
+    )
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+    )
+
+    storage, adapter = _storage_and_adapter(tmp_path)
+    environment = _ac3_environment()
+    governance = _governance(
+        ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
+    )
+    owned, builder = _composition_builder_for_storage(storage)
+    reconcile_fail = ProductionServingReconciliationError("gca-reconcile-fail")
+    with patch(
+        "intergrax.applications._shared.production_process_lifecycle."
+        "reconcile_production_serving_environment_on_process_open",
+        side_effect=reconcile_fail,
+    ):
+        with pytest.raises(ProductionServingReconciliationError, match="gca-reconcile-fail"):
+            open_production_process_lifecycle(
+                agent_distribution_db=storage.agent_distribution_db,
+                continuation_state_file=storage.continuation_state_file,
+                deployment_adapter=adapter,
+                governance=governance,
+                trusted_artifact_parent_roots=storage.trusted_artifact_parent_roots,
+                missing_file_policy="empty",
+                provider_invocation_db=storage.provider_invocation_db,
+                composition_builder=builder,
+                owned_governed_external_work_host_store_bundle=owned,
+                serving_reconciliation_targets=(
+                    (environment.application_id, environment.application_environment_id),
+                ),
+            )
+    from governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle import (
+        GovernedExternalWorkHostPersistenceError,
+    )
+
+    bundle = owned.host_store_bundle
+    with pytest.raises(GovernedExternalWorkHostPersistenceError, match="closed"):
+        bundle.execution_store.get_create_follow_on_record("closed-probe")
+
+
 def test_d4_strict_session_close_closes_owned_gca_host_store(tmp_path: Path) -> None:
     session = _open_with_activation(
         tmp_path,

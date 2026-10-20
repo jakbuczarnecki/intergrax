@@ -92,4 +92,67 @@ FRZ-PRD-03, FRZ-PRD-04, FRZ-PRD-05, FRZ-PRD-07, FRZ-PRD-08 — supporting eviden
 
 ### D2 acceptance recommendation
 
-**READY FOR AUDIT** — recommends independent operator closure review on GitHub SHA `a7e959d2…`; **not** CLOSED. No further D2 implementation required unless independent audit finds defect.
+**READY FOR AUDIT** — recommends independent operator closure review on GitHub SHA `a7e959d2…`; **not** CLOSED. No further D2 implementation required unless independent audit found defect.
+
+---
+
+## PROD-Q-R1-R7-D2 GCA owned host store lifecycle closure (targeted recert)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-D2` — delta `owned_governed_external_work_host_store_bundle` |
+| **Branch** | `development` |
+| **START_HEAD** | `ddd31385803175c6862767b1532c51d07208706c` |
+| **FINAL_COMMIT** | (set at push) |
+| **Parent** | `PROD-Q-R1-R7-D2` |
+| **Status** | **READY FOR AUDIT** — `TECHNICALLY ACCEPTABLE — FORMAL ACCEPTANCE PENDING` |
+| **Production delta** | `production_process_lifecycle.py` — uncommitted lifecycle cleanup includes GCA via canonical `close_process_resources` |
+
+### Ownership graph (canonical)
+
+| Phase | GCA bundle owner | Cleanup owner |
+|-------|------------------|---------------|
+| Before `ProductionProcessLifecycle(...)` | Caller / strict launcher injector | Caller (opener never took lifecycle root) |
+| After lifecycle dataclass construction, before `_commit_production_active_slot` | `ProductionProcessLifecycle._owned_governed_external_work_host_store_bundle` | `_release_uncommitted_production_lifecycle_resources` → `close_process_resources()` |
+| After active slot commit | Same field on active lifecycle | `ProductionProcessLifecycle.close_process_resources()` only |
+| Strict session startup failure after successful open | Active lifecycle on session | `open_strict_production_serving_session` → `close_process_resources()` |
+
+`release_lifecycle_owned_stores` remains continuation + invocation only (no GCA parameter); GCA never has a shadow cleanup path.
+
+### D2-GCA acceptance matrix
+
+| ID | Result | Rationale |
+|----|--------|-----------|
+| D2-GCA-01 | **PASS** | `close_process_resources` closes owned GCA exactly once; slot released via `_release_active_production_slot` |
+| D2-GCA-02 | **PASS** | Pre-lifecycle: caller-owned; post-partial-root: `_release_uncommitted_production_lifecycle_resources`; D4 session path unchanged |
+| D2-GCA-03 | **PASS** (post-fix) | Reconciliation / post-construction startup failures close partial lifecycle including GCA; primary reconciliation error preserved; `_process_closed` guard prevents double-close on outer handler |
+| D2-GCA-04 | **PASS** | GCA close failure propagates; slot still released; strict session tests preserve primary + cleanup `ExceptionGroup` |
+
+### Executed pytest (Cursor session)
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_reconciliation_failure \
+  -q
+```
+
+**3 passed** — log: `.tmp/session/PROD-Q-R1-R7-D2-GCA/pytest.log`
+
+### ECAP (scoped A1–A8, B1–B5; B6 PENDING)
+
+Exactly-one semantic/composition owner for GCA host persistence; typed `OwnedGovernedExternalWorkHostStoreBundle`; fail-closed binding checks; no harness ownership transfer; error provenance via existing `raise_startup_failure_with_cleanup` / `raise_primary_with_cleanup_errors`; layer boundaries preserved.
+
+### FRZ (scoped evidence only — global rows OPEN)
+
+| FRZ | Contribution |
+|-----|----------------|
+| FRZ-PRD-04 | Acquired GCA bundle released on failed open after lifecycle construction |
+| FRZ-PRD-05 | Canonical `close_process_resources` remains sole GCA close on committed lifecycle |
+| FRZ-REL | No leaked durable GCA SQLite on reconciliation failure |
+| FRZ-REG | Regression nodes above |
+
+### Blockers
+
+None in scope. Independent GitHub SHA audit required before formal closure.
