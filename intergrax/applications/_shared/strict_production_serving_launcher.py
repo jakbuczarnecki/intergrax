@@ -177,7 +177,8 @@ class StrictProductionServingSession:
         try:
             self._close_strict_production_serving_session_resources()
         finally:
-            self._invoke_process_scoped_close_releases()
+            if self.lifecycle._process_closed:
+                self._invoke_process_scoped_close_releases()
 
     def _close_strict_production_serving_session_resources(self) -> None:
         shutdown_errors: list[BaseException] = []

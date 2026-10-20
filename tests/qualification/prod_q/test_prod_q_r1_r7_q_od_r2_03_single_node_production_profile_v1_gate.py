@@ -16,7 +16,11 @@ import pytest
 from governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle import (
     open_sqlite_governed_external_work_host_store_bundle_at,
 )
+from intergrax.applications._shared.colocated_serving_runtime_composition import (
+    ColocatedServingAdmissionTopologyError,
+)
 from intergrax.applications._shared.production_process_lifecycle import (
+    ProductionProcessLifecycle,
     ProductionProcessLifecycleError,
     open_production_process_lifecycle,
 )
@@ -41,8 +45,13 @@ from intergrax.applications._shared.production_process_serving_reconciliation im
 )
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingEnvironment,
+    StrictProductionServingLauncherError,
     StrictProductionServingReadiness,
     StrictProductionServingSession,
+)
+from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
+    VenvBundleColocatedDeploymentError,
+    VenvBundleColocatedRuntimeDeploymentAdapter,
 )
 from intergrax.hosting.instance._native_lock import NativeFileLock, NativeFileLockError
 from governed_contractor_application.host.single_node_profile_v1_strict_startup import (
@@ -61,13 +70,13 @@ from tests.unit.applications.test_prod_q_r1_r7_d2_production_process_lifecycle i
 from tests.unit.applications.test_prod_q_r1_r7_d2_production_process_lifecycle import (
     _env as d2_env,
 )
-from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
-    VenvBundleColocatedRuntimeDeploymentAdapter,
+from tests.qualification.prod_q.test_prod_q_r1_r7_q_c_dim10_asgi_runtime_identity_continuity_gate import (
+    _dim10_http_fixture,
 )
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
-_EXPECTED_START_HEAD: Final = "da0fbb965ed3241cfbf052bec30fe9f27afed13c"
+_EXPECTED_START_HEAD: Final = "19a809af2bd7d6df425c718dea29a35aa28116a2"
 _SERVICE_FILE: Final = (
     repo_root()
     / "applications"
@@ -377,6 +386,11 @@ def test_od_r2_03_profile_rejects_missing_data_directory() -> None:
 def _minimal_strict_session_for_writer_hold_lifecycle() -> StrictProductionServingSession:
     lifecycle = MagicMock()
     lifecycle._process_closed = False
+
+    def _close_process_resources() -> None:
+        lifecycle._process_closed = True
+
+    lifecycle.close_process_resources = _close_process_resources
     lifecycle.composition.serving_runtime_handoff = None
     reconciliation = ProductionServingReconciliationResult(
         evidence=ProductionServingReconciliationEvidence(
@@ -514,3 +528,162 @@ def test_life_07_missing_operator_serve_configuration_fails_closed() -> None:
 
 def test_life_08_target_verified_and_operator_acceptance_remain_open() -> None:
     test_pv1_h10_target_production_qualification_explicitly_unproven()
+
+
+def _minimal_strict_session_with_colocated_handoff() -> StrictProductionServingSession:
+    session = _minimal_strict_session_for_writer_hold_lifecycle()
+    handoff = MagicMock()
+    stores = MagicMock()
+    session.lifecycle.composition.serving_runtime_handoff = handoff
+    session.lifecycle.composition.agent_platform_runtime.stores = stores
+    session.lifecycle.deployment_adapter = MagicMock()
+    return session
+
+
+def _assert_writer_lock_held(config: SingleNodeProductionProfileV1Configuration) -> None:
+    with pytest.raises(SingleNodeProductionProfileV1ConfigurationError, match="writer lock"):
+        acquire_cross_process_writer_admission_for_profile_v1(config)
+
+
+def _assert_writer_lock_releasable(
+    config: SingleNodeProductionProfileV1Configuration,
+) -> None:
+    second = acquire_cross_process_writer_admission_for_profile_v1(config)
+    second.release()
+
+
+def test_sfc_01_normal_close_releases_writer_lock() -> None:
+    test_life_04_session_close_releases_writer_lock_for_subsequent_startup()
+
+
+def test_sfc_02_admission_close_failure_retains_writer_lock_and_error() -> None:
+    data = _lab_durable_dir()
+    config = _config_for_data_dir(data)
+    hold = acquire_cross_process_writer_admission_for_profile_v1(config)
+    session = _minimal_strict_session_with_colocated_handoff()
+    session.bind_process_scoped_release_on_close(hold.release)
+    close_fail = VenvBundleColocatedDeploymentError("sfc-02-admission-close-fail")
+    close_calls = 0
+    original_close = ProductionProcessLifecycle.close_process_resources
+
+    def _tracked_close(self: ProductionProcessLifecycle) -> None:
+        nonlocal close_calls
+        close_calls += 1
+        original_close(self)
+
+    with patch(
+        (
+            "intergrax.applications._shared.strict_production_serving_launcher."
+            "close_colocated_serving_execution_admission_on_strict_session_close"
+        ),
+        side_effect=close_fail,
+    ), patch.object(
+        ProductionProcessLifecycle,
+        "close_process_resources",
+        _tracked_close,
+    ):
+        with pytest.raises(StrictProductionServingLauncherError) as exc_info:
+            session.close()
+    assert "sfc-02-admission-close-fail" in str(exc_info.value)
+    assert close_calls == 0
+    assert session._closed is False
+    assert session.lifecycle._process_closed is False
+    _assert_writer_lock_held(config)
+    hold.release()
+
+
+def test_sfc_03_drain_failure_releases_writer_lock_when_lifecycle_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    data = _lab_durable_dir()
+    config = _config_for_data_dir(data)
+    hold = acquire_cross_process_writer_admission_for_profile_v1(config)
+    drain_fail = ColocatedServingAdmissionTopologyError("sfc-03-drain-fail")
+    with _dim10_http_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-od-r2-03-sfc-03-drain-fail",
+    ) as fixture:
+        fixture.session.bind_process_scoped_release_on_close(hold.release)
+        with patch(
+            (
+                "intergrax.applications._shared.strict_production_serving_launcher."
+                "begin_colocated_serving_execution_drain_on_strict_session_close"
+            ),
+            side_effect=drain_fail,
+        ):
+            with pytest.raises(StrictProductionServingLauncherError) as exc_info:
+                fixture.session.close()
+        assert "sfc-03-drain-fail" in str(exc_info.value)
+        assert fixture.session.lifecycle._process_closed is True
+        _assert_writer_lock_releasable(config)
+
+
+def test_sfc_04_lifecycle_cleanup_failure_retains_writer_lock() -> None:
+    data = _lab_durable_dir()
+    config = _config_for_data_dir(data)
+    hold = acquire_cross_process_writer_admission_for_profile_v1(config)
+    session = _minimal_strict_session_for_writer_hold_lifecycle()
+    session.bind_process_scoped_release_on_close(hold.release)
+    cleanup_fail = RuntimeError("sfc-04-lifecycle-cleanup-fail")
+
+    def _close_raises() -> None:
+        raise cleanup_fail
+
+    session.lifecycle.close_process_resources = _close_raises
+    with pytest.raises(RuntimeError, match="sfc-04-lifecycle-cleanup-fail"):
+        session.close()
+    assert session.lifecycle._process_closed is False
+    _assert_writer_lock_held(config)
+    hold.release()
+
+
+def test_sfc_05_second_close_after_failed_shutdown_does_not_release_writer_lock() -> None:
+    data = _lab_durable_dir()
+    config = _config_for_data_dir(data)
+    hold = acquire_cross_process_writer_admission_for_profile_v1(config)
+    session = _minimal_strict_session_with_colocated_handoff()
+    session.bind_process_scoped_release_on_close(hold.release)
+    close_fail = VenvBundleColocatedDeploymentError("sfc-05-admission-close-fail")
+    with patch(
+        (
+            "intergrax.applications._shared.strict_production_serving_launcher."
+            "close_colocated_serving_execution_admission_on_strict_session_close"
+        ),
+        side_effect=close_fail,
+    ):
+        with pytest.raises(StrictProductionServingLauncherError):
+            session.close()
+        with pytest.raises(StrictProductionServingLauncherError):
+            session.close()
+        _assert_writer_lock_held(config)
+    hold.release()
+
+
+def test_sfc_06_cross_process_denied_after_unsafe_shutdown_failure() -> None:
+    test_sfc_02_admission_close_failure_retains_writer_lock_and_error()
+
+
+def test_sfc_07_startup_failure_releases_writer_lock() -> None:
+    test_life_01_startup_failure_after_writer_lock_releases_hold()
+
+
+def test_sfc_08_writer_release_bound_to_lifecycle_owner_only() -> None:
+    launcher = (
+        repo_root()
+        / "intergrax"
+        / "applications"
+        / "_shared"
+        / "strict_production_serving_launcher.py"
+    ).read_text(encoding="utf-8")
+    assert "if self.lifecycle._process_closed:" in launcher
+    assert "_invoke_process_scoped_close_releases()" in launcher
+    startup = (
+        repo_root()
+        / "applications"
+        / "governed_contractor_application"
+        / "host"
+        / "single_node_profile_v1_strict_startup.py"
+    ).read_text(encoding="utf-8")
+    assert "bind_process_scoped_release_on_close(writer_hold.release)" in startup
