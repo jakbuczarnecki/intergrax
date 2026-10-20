@@ -298,6 +298,25 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 
 **Parent blockers (unchanged):** DIM6, DIM17 operator profiles; DIM20 Package P operator acceptance; parent rollup; **no** global **FRZ-*** promotion.
 
+### G.1 Current-HEAD strict graph regression (`PROD-Q-R1-R7-Q-C-STRICT-GRAPH-CURRENT-HEAD-REGRESSION-GATE`)
+
+| Field | Value |
+|-------|-------|
+| **EXECUTION_SHA** | `86ab55f1f154f103f987b78836bc815f4342dd5d` (`development` == `origin/development`; expected `START_HEAD` **matches**) |
+| **pytest budget** | **1** invocation, **4** nodes, `-p no:xdist`, log `.tmp/session/PROD-Q-R1-R7-Q-C-STRICT-GRAPH-CURRENT-HEAD-REGRESSION-GATE/pytest.log` |
+| **Scope** | Targeted DIM9/10/11/16 only — **not** full §C **83** tests; **not** Package B operator profile; **not** parent **PROD-Q** / global **FRZ** promotion |
+
+| DIM | Test node | Result @ `EXECUTION_SHA` | Disposition |
+|-----|-----------|--------------------------|-------------|
+| **11** | `test_c_dim11_01_production_graph_closure_reuses_p1_and_projection_wiring` | **PASS** (18.84s batch) | **BEHAVIORALLY VERIFIED** — strict graph closure + P1/projection wiring on changed launcher slice |
+| **10** | `test_c_dim10_01_positive_resolver_continuity_through_http` | **PASS** | **BEHAVIORALLY VERIFIED** — ASGI runtime identity continuity through HTTP |
+| **9** | `test_c_dim9_03_readiness_failure_after_physical_prepare_no_handoff` | **PASS** | **BEHAVIORALLY VERIFIED** — readiness failure blocks handoff / admission |
+| **16** | `test_c_dim16_01_successful_active_session_drain` | **PASS** | **BEHAVIORALLY VERIFIED** — successful active-session drain (subset of DIM16; §E residuals unchanged) |
+
+**Remaining @ `EXECUTION_SHA` (not disproven; not replayed here):** DIM18/19 Package C fake-adapter reachability — **HISTORICAL ACCEPTED — DRIFT REVIEWED**; DIM6/17 — **NOT PROVEN**; DIM20 — Package P; full DIM16 F02 matrix — historical qual SHAs only; all other §C dims — **EXACT-SHA** @ `SOURCE_EVIDENCE_SHA` or drift-reviewed without behavioral replay.
+
+**FRZ scoped contribution @ this gate only:** **FRZ-PRD-03**, **FRZ-PRD-04**, **FRZ-PRD-05**, **FRZ-PRD-07**, **FRZ-PRD-08**, **FRZ-PRD-09**, **FRZ-REG-02** — incremental evidence on exercised paths; checklist rows remain **OPEN** globally.
+
 ---
 
 *Production code delta for this task: **0**.*
