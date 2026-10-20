@@ -5,7 +5,7 @@
 | **Status** | **READY FOR AUDIT** |
 | **Parent** | PROD-Q-R1-R7-Q — IN PROGRESS / NOT QUALIFIED |
 | **START_HEAD** | `fc176db7fa2290c47849ff3d159299f936a05b2d` |
-| **Evidence SHA** | *(set at commit — see Final report)* |
+| **Evidence SHA** | `726f900d2aac64641174a59d93b4078a29d4cdd6` |
 | **Controlling decision** | OD-R2-03 @ [`PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md`](PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md) §15 |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
