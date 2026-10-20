@@ -1026,6 +1026,213 @@ def test_h11_http_strict_post_cancel_traverses_reflex_sanctioned_pis_and_provide
     )
 
 
+def test_h11c_http_strict_cancel_provider_rejection_persists_failed_not_success(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from external_contractor_adapter.external_effect_contracts import (
+        external_work_effect_contract_for_action,
+    )
+    from external_contractor_adapter.side_effect_actions import ACTION_CANCEL_EXTERNAL_WORK
+    from intergrax.contracts.external_work import ExternalWorkErrorCode
+    from intergrax.contracts.external_work_provider_capabilities import (
+        quote_first_partner_capability_fixture,
+    )
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+    from intergrax.integrations.contracts.external_work import ExternalWorkError
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PROVIDER,
+        follow_up_strict_http_run_request_json,
+        post_strict_http_create_prerequisite,
+    )
+
+    cancel_contract = external_work_effect_contract_for_action(
+        ACTION_CANCEL_EXTERNAL_WORK,
+        quote_first_partner_capability_fixture(),
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-h11c-cancel-rejected",
+        default_agent_id="external_contractor_adapter",
+    )
+    pis = fixture.session.composition.provider_invocation_store
+    assert isinstance(pis, SQLiteProviderInvocationStore)
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-h11c-setup-create",
+        )
+        intents_before_cancel = list_intent_invocation_ids(fixture.provider_invocation_db)
+        baseline_cancel = fixture.external_work_fake.cancel_calls
+        original_cancel = fixture.external_work_fake.cancel_work
+
+        def _reject_cancel(*args: object, **kwargs: object) -> object:
+            fixture.external_work_fake.cancel_calls += 1
+            assert (
+                len(list_intent_invocation_ids(fixture.provider_invocation_db))
+                >= len(intents_before_cancel) + 1
+            )
+            raise ExternalWorkError(
+                "cancellation rejected",
+                code=ExternalWorkErrorCode.CANCELLATION_REJECTED,
+                provider_id=_QUAL_PROVIDER,
+            )
+
+        fixture.external_work_fake.cancel_work = _reject_cancel  # type: ignore[method-assign]
+
+        cancel_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.CANCEL,
+            idempotency_key="idem-h11c-cancel-rejected",
+        )
+        response = client.post(
+            fixture.run_url,
+            json=cancel_payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+        assert fixture.external_work_fake.cancel_calls == baseline_cancel + 1
+
+        intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
+        cancel_invocation_id = [
+            inv_id
+            for inv_id in intents_after
+            if inv_id not in intents_before_cancel
+        ][0]
+        inv = pis.get_invocation(cancel_invocation_id)
+        assert inv is not None
+        assert inv.operation == "cancel_work"
+
+        outcome = pis.get_outcome(cancel_invocation_id)
+        assert outcome is not None
+        assert outcome.status is ProviderInvocationStatus.FAILED
+        assert outcome.error_code == ExternalWorkErrorCode.CANCELLATION_REJECTED.value
+
+        recovery = evaluate_provider_invocation_recovery(
+            ProviderInvocationRecoveryRequest(
+                invocation=inv,
+                outcome=outcome,
+                effect_contract=cancel_contract,
+            ),
+        )
+        assert recovery.action is not ProviderInvocationRecoveryAction.IDEMPOTENT_REPEAT
+
+        fixture.external_work_fake.cancel_work = original_cancel  # type: ignore[method-assign]
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+
+def test_h11u_http_strict_cancel_provider_uncertain_persists_unknown_not_cancelled(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from external_contractor_adapter.side_effect_actions import ACTION_CANCEL_EXTERNAL_WORK
+    from external_contractor_adapter.external_effect_contracts import (
+        external_work_effect_contract_for_action,
+    )
+    from intergrax.contracts.external_work import ExternalWorkErrorCode
+    from intergrax.contracts.external_work_provider_capabilities import (
+        quote_first_partner_capability_fixture,
+    )
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+    from intergrax.integrations.contracts.external_work import ExternalWorkError
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PROVIDER,
+        follow_up_strict_http_run_request_json,
+        post_strict_http_create_prerequisite,
+    )
+
+    cancel_contract = external_work_effect_contract_for_action(
+        ACTION_CANCEL_EXTERNAL_WORK,
+        quote_first_partner_capability_fixture(),
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-h11u-cancel-uncertain",
+        default_agent_id="external_contractor_adapter",
+    )
+    pis = fixture.session.composition.provider_invocation_store
+    assert isinstance(pis, SQLiteProviderInvocationStore)
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-h11u-setup-create",
+        )
+        intents_before_cancel = list_intent_invocation_ids(fixture.provider_invocation_db)
+        baseline_cancel = fixture.external_work_fake.cancel_calls
+
+        def _uncertain_cancel(*args: object, **kwargs: object) -> object:
+            fixture.external_work_fake.cancel_calls += 1
+            assert (
+                len(list_intent_invocation_ids(fixture.provider_invocation_db))
+                >= len(intents_before_cancel) + 1
+            )
+            raise ExternalWorkError(
+                "provider outcome uncertain",
+                code=ExternalWorkErrorCode.PROVIDER_OUTCOME_UNCERTAIN,
+                provider_id=_QUAL_PROVIDER,
+            )
+
+        fixture.external_work_fake.cancel_work = _uncertain_cancel  # type: ignore[method-assign]
+
+        cancel_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.CANCEL,
+            idempotency_key="idem-h11u-cancel-uncertain",
+        )
+        response = client.post(
+            fixture.run_url,
+            json=cancel_payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+        assert fixture.external_work_fake.cancel_calls == baseline_cancel + 1
+
+        intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
+        cancel_invocation_id = [
+            inv_id
+            for inv_id in intents_after
+            if inv_id not in intents_before_cancel
+        ][0]
+        inv = pis.get_invocation(cancel_invocation_id)
+        assert inv is not None
+        outcome = pis.get_outcome(cancel_invocation_id)
+        assert outcome is not None
+        assert outcome.status is ProviderInvocationStatus.UNKNOWN
+        assert (
+            outcome.error_code == ExternalWorkErrorCode.PROVIDER_OUTCOME_UNCERTAIN.value
+        )
+
+        recovery = evaluate_provider_invocation_recovery(
+            ProviderInvocationRecoveryRequest(
+                invocation=inv,
+                outcome=outcome,
+                effect_contract=cancel_contract,
+            ),
+        )
+        assert recovery.action is not ProviderInvocationRecoveryAction.IDEMPOTENT_REPEAT
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+
 def test_h10n_accept_without_prior_create_fail_closed_zero_provider_calls(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,

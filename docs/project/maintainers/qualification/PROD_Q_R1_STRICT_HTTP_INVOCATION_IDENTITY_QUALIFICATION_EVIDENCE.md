@@ -478,3 +478,85 @@ Log: `.tmp/session/dim20-non-create-qual/pytest-h10-h11-5.log` — **3 passed**,
 | Admission vs deny reason | **Guarantee limit** | HTTP 200 on **H10n**/**H11n** reflects request/task acceptance; operation denial is in domain summary / orchestrator reason — not a new HTTP model |
 
 **Audit recommendation (non-binding):** Documented `None` semantics (§16.1) for independent reviewers; **no** duplicate fail-closed gate at admission layer required @ `4272f885…`.
+
+---
+
+## 17. DIM20 CANCEL outcome qualification (P09 scoped)
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-R7-Q-DIM20-CANCEL-OUTCOME-QUALIFICATION** |
+| **START_HEAD** | `0c39f8f0f41bf3cb3e9ad479130243b80fee24eb` |
+| **Production delta** | **0** — qualification tests + evidence only |
+| **Status** | **READY FOR AUDIT** (does not close **PROD-Q-R1**, **R7-Q** dim **20**, **PROD-Q**, or global **FRZ-***) |
+
+### 17.1 Existing contracts (no new cancellation protocol)
+
+| Concept | Canonical type / owner |
+|---------|------------------------|
+| Sanctioned HTTP **CANCEL** | `SanctionedExternalWorkMutationOperation.CANCEL` → `SanctionedExternalWorkCancelRequest` (`intergrax/contracts/sanctioned_external_work_operation.py`) |
+| Provider observation → ERL outcome | `ExternalWorkSideEffectObservation` → `project_external_work_side_effect_to_effect_outcome` (`agents/external_contractor_adapter/external_effect_outcome_projection.py`) |
+| Provider refusal | `ExternalWorkErrorCode.CANCELLATION_REJECTED` → `ExternalEffectOutcome.FAILURE` → `ProviderInvocationStatus.FAILED` |
+| Provider uncertainty | `ExternalWorkErrorCode.PROVIDER_OUTCOME_UNCERTAIN` → `ExternalEffectOutcome.UNKNOWN` → `ProviderInvocationStatus.UNKNOWN` → `GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN` (`applications/governed_contractor_application/host/lifecycle_states.py`) |
+| Intent-before-effect / no outcome retry | `GovernedProviderInvocationDispatchGate` + `persist_provider_invocation_outcome` (`applications/governed_contractor_application/host/provider_invocation_lifecycle.py`) |
+| Orchestrated cancel | `GovernedExternalWorkOrchestrator.cancel` — `CANCELLED` host state **only** after successful attestation on **ALLOW** + proof path; failed/unknown PIS outcomes do **not** claim physical cancellation (`applications/governed_contractor_application/host/orchestrator.py`) |
+
+**Not claimed:** guaranteed physical termination at provider; automatic ordinary redispatch after failed/unknown cancel; new recovery owner or alternate dispatch path.
+
+### 17.2 Qualification matrix (C01–C04)
+
+| ID | Scenario | Verdict | Evidence |
+|----|----------|---------|----------|
+| **C01** | Provider confirms cancel (happy path) | **PASS** (code/evidence review — **H11** not re-run) | §15 **`test_h11_http_strict_post_cancel_traverses_reflex_sanctioned_pis_and_provider`** @ `08f1ef069073fbb91944807777e9b744ca76ebd4` — intent before effect, `ProviderInvocationStatus.SUCCEEDED`, exactly **+1** `cancel_calls` |
+| **C02** | Provider refuses cancel (`CANCELLATION_REJECTED`) | **PASS** | **`test_h11c_http_strict_cancel_provider_rejection_persists_failed_not_success`** — PIS `FAILED` + `error_code=cancellation_rejected`; **not** `SUCCEEDED`; single provider dispatch; `evaluate_provider_invocation_recovery` ≠ `IDEMPOTENT_REPEAT` for `external_work.cancel_work.v1` |
+| **C03** | Provider outcome uncertain (`PROVIDER_OUTCOME_UNCERTAIN`) | **PASS** | **`test_h11u_http_strict_cancel_provider_uncertain_persists_unknown_not_cancelled`** — PIS `UNKNOWN`; no success/cancelled attestation path; recovery ≠ `IDEMPOTENT_REPEAT` (aligned with **H03** UNKNOWN redispatch posture) |
+| **C04** | Failure before provider effect (admission / missing prereq) | **PASS** (existing negatives + static audit) | §16 **`test_h11n_cancel_without_prior_create_fail_closed_zero_provider_calls`**; GR-7-A3 **`test_intent_persistence_failure_zero_provider_calls`** (`applications/governed_contractor_application/tests/host/test_gr7_a3_durable_provider_invocation.py` @ `0c39f8f0…` tree) — zero `cancel_work`, no false terminal cancel outcome |
+
+### 17.3 Bounded pytest (@ this task)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_h11c_http_strict_cancel_provider_rejection_persists_failed_not_success \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_h11u_http_strict_cancel_provider_uncertain_persists_unknown_not_cancelled \
+  -q
+```
+
+Log: `.tmp/session/dim20-cancel-outcome-qual/pytest-h11c-h11u-3.log` — **2 passed**, ~13s.
+
+**Not re-run:** **H11** positive chain; **H11n**/**H10n** negatives (§16); full PROD-Q module; **B6**.
+
+### 17.4 Owners / call graph (unchanged)
+
+```text
+POST /run → GCA strict execution → sanctioned follow-on admission → Tier-2 domain_job
+  → GovernedSanctionedExternalWorkOperationPort → GovernedExternalWorkOrchestrator.cancel
+  → ExternalWorkAdapter.cancel_and_map → PIS gate → ExternalWorkIntegration.cancel_work
+```
+
+### 17.5 ECAP (scoped)
+
+| Area | Disposition |
+|------|-------------|
+| **A1–A8** | **PASS** (scoped) — single orchestrator/PIS owner; contracts over ad-hoc status; fail-closed on missing prereq |
+| **B1–B5** | **PASS** (scoped) — §15 **H11** + §16 negatives + **H11c**/**H11u** |
+| **B6** | **PENDING** |
+
+### 17.6 FRZ (scoped contribution only)
+
+| ID | Scoped note |
+|----|-------------|
+| **FRZ-REL-03** | Recovery evaluation blocks ordinary `IDEMPOTENT_REPEAT` on failed/unknown cancel PIS rows (**H11c**/**H11u**) |
+| **FRZ-REL-05** | Refusal ≠ success; uncertainty → `UNKNOWN` / `EXECUTION_OUTCOME_UNKNOWN`, not `CANCELLED` |
+| **FRZ-SEC-04** | Sanctioned port + policy gate before `cancel_work` (unchanged) |
+| **FRZ-PRD-03** / **08** / **10** / **12** | Truthful PIS outcomes; no bypass; operator-visible failure/unknown; reconciliation/recovery remains ERL-owned |
+| **FRZ-REG-02** / **03** / **09** | New regression nodes **H11c**/**H11u** |
+
+### 17.7 Unresolved / limits
+
+| ID | Class | Note |
+|----|-------|------|
+| — | — | **No IN-SCOPE BLOCKER** |
+| **P09** (Package P CREATE slice) | **TRACKED FREEZE DEBT** | Cancel depth documented here for **R7-Q** / DIM20; does not retroactively close Package P row |
+| **B6** | **TRACKED** | Formal independent verdict pending |
+| HTTP 200 on operational deny | **Guarantee limit** | Same as §16.8 — task/request acceptance vs domain/orchestrator outcome |
+| Terminal diagnostic bridge | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Qual sessions may log `policy_bundle_id` reconstruction noise; does not affect PIS/outcome assertions in **H11c**/**H11u** |
