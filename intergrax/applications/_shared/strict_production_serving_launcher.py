@@ -131,6 +131,25 @@ class StrictProductionServingSession:
     reconciliation: ProductionServingReconciliationResult
     readiness: StrictProductionServingReadiness
     _closed: bool = field(default=False, repr=False)
+    _process_scoped_close_releases: tuple[Callable[[], None], ...] = field(
+        default=(),
+        repr=False,
+    )
+
+    def bind_process_scoped_release_on_close(
+        self,
+        release: Callable[[], None],
+    ) -> None:
+        """Register a release hook invoked from ``close()`` (e.g. profile v1 writer lock)."""
+        self._process_scoped_close_releases = (
+            *self._process_scoped_close_releases,
+            release,
+        )
+
+    def _invoke_process_scoped_close_releases(self) -> None:
+        for release in self._process_scoped_close_releases:
+            release()
+        self._process_scoped_close_releases = ()
 
     @property
     def composition(self) -> ProductionProcessComposition:
@@ -155,6 +174,12 @@ class StrictProductionServingSession:
                 "strict production serving session close incomplete; "
                 "process lifecycle resources already released",
             )
+        try:
+            self._close_strict_production_serving_session_resources()
+        finally:
+            self._invoke_process_scoped_close_releases()
+
+    def _close_strict_production_serving_session_resources(self) -> None:
         shutdown_errors: list[BaseException] = []
         admission_close_committed = True
         handoff = self.lifecycle.composition.serving_runtime_handoff

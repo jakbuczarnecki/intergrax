@@ -9,7 +9,7 @@ import tempfile
 import uuid
 from pathlib import Path
 from typing import Final
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -34,8 +34,15 @@ from intergrax.applications._shared.single_node_production_profile_v1 import (
     validate_configured_single_node_production_profile_v1,
     writer_lock_path_for_profile_v1,
 )
+from intergrax.applications._shared.production_process_serving_reconciliation import (
+    ProductionServingReconciliationEvidence,
+    ProductionServingReconciliationResult,
+    RECONCILIATION_OUTCOME_READY,
+)
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingEnvironment,
+    StrictProductionServingReadiness,
+    StrictProductionServingSession,
 )
 from intergrax.hosting.instance._native_lock import NativeFileLock, NativeFileLockError
 from governed_contractor_application.host.single_node_profile_v1_strict_startup import (
@@ -60,7 +67,7 @@ from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapt
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
-_EXPECTED_START_HEAD: Final = "511a4dc1c7108119f86fc2606b602e71aea8392f"
+_EXPECTED_START_HEAD: Final = "da0fbb965ed3241cfbf052bec30fe9f27afed13c"
 _SERVICE_FILE: Final = (
     repo_root()
     / "applications"
@@ -365,3 +372,145 @@ def test_od_r2_03_profile_rejects_missing_data_directory() -> None:
     )
     with pytest.raises(SingleNodeProductionProfileV1ConfigurationError, match="directory"):
         validate_configured_single_node_production_profile_v1(config)
+
+
+def _minimal_strict_session_for_writer_hold_lifecycle() -> StrictProductionServingSession:
+    lifecycle = MagicMock()
+    lifecycle._process_closed = False
+    lifecycle.composition.serving_runtime_handoff = None
+    reconciliation = ProductionServingReconciliationResult(
+        evidence=ProductionServingReconciliationEvidence(
+            application_id="gca",
+            application_environment_id="production",
+            runtime_revision_id=None,
+            serving_pointer_revision=None,
+            outcome=RECONCILIATION_OUTCOME_READY,
+        ),
+        attestation=None,
+        rehydration=None,
+    )
+    readiness = StrictProductionServingReadiness(
+        process_lifecycle_open=True,
+        production_dependencies_validated=True,
+        serving_state_reconciled=True,
+        serving_handoff_bound=False,
+        execution_admission_eligible=False,
+        ready_for_traffic=False,
+    )
+    return StrictProductionServingSession(
+        lifecycle=lifecycle,
+        environment=StrictProductionServingEnvironment(
+            application_id="gca",
+            application_environment_id="production",
+        ),
+        reconciliation=reconciliation,
+        readiness=readiness,
+    )
+
+
+def test_life_01_startup_failure_after_writer_lock_releases_hold() -> None:
+    data = _lab_durable_dir()
+    reader = EnvReader("INTERGRAX_SINGLE_NODE_PRODUCTION_V1_")
+    config = _config_for_data_dir(data)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("INTERGRAX_SINGLE_NODE_PRODUCTION_V1_DATA_DIR", str(data))
+        environment = StrictProductionServingEnvironment(
+            application_id="gca",
+            application_environment_id="production",
+        )
+        with patch(
+            "governed_contractor_application.host.single_node_profile_v1_strict_startup."
+            "open_gca_strict_production_serving_session",
+            side_effect=RuntimeError("gca-open-failed"),
+        ):
+            with pytest.raises(RuntimeError, match="gca-open-failed"):
+                open_gca_strict_production_serving_session_from_single_node_production_profile_v1(
+                    environment=environment,
+                    governance=_governance(d2_env()),
+                    deployment_adapter=object(),  # type: ignore[arg-type]
+                    env=reader,
+                )
+    released = acquire_cross_process_writer_admission_for_profile_v1(config)
+    released.release()
+
+
+def test_life_02_cross_process_writer_lock_excludes_second_holder() -> None:
+    test_pv1_h04_cross_process_writer_lock_excludes_second_holder()
+
+
+def test_life_03_writer_lock_held_for_active_strict_session_lifecycle() -> None:
+    data = _lab_durable_dir()
+    config = _config_for_data_dir(data)
+    hold = acquire_cross_process_writer_admission_for_profile_v1(config)
+    session = _minimal_strict_session_for_writer_hold_lifecycle()
+    session.bind_process_scoped_release_on_close(hold.release)
+    lock_path = writer_lock_path_for_profile_v1(config)
+    try:
+        with pytest.raises(SingleNodeProductionProfileV1ConfigurationError, match="writer lock"):
+            acquire_cross_process_writer_admission_for_profile_v1(config)
+        with pytest.raises(NativeFileLockError):
+            NativeFileLock(lock_path)
+    finally:
+        session.close()
+
+
+def test_life_04_session_close_releases_writer_lock_for_subsequent_startup() -> None:
+    data = _lab_durable_dir()
+    config = _config_for_data_dir(data)
+    hold = acquire_cross_process_writer_admission_for_profile_v1(config)
+    session = _minimal_strict_session_for_writer_hold_lifecycle()
+    session.bind_process_scoped_release_on_close(hold.release)
+    session.close()
+    second = acquire_cross_process_writer_admission_for_profile_v1(config)
+    second.release()
+
+
+def test_life_05_failed_startup_does_not_return_serving_session() -> None:
+    data = _lab_durable_dir()
+    reader = EnvReader("INTERGRAX_SINGLE_NODE_PRODUCTION_V1_")
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("INTERGRAX_SINGLE_NODE_PRODUCTION_V1_DATA_DIR", str(data))
+        environment = StrictProductionServingEnvironment(
+            application_id="gca",
+            application_environment_id="production",
+        )
+        with patch(
+            "governed_contractor_application.host.single_node_profile_v1_strict_startup."
+            "open_gca_strict_production_serving_session",
+            side_effect=RuntimeError("no-session"),
+        ):
+            with pytest.raises(RuntimeError, match="no-session"):
+                open_gca_strict_production_serving_session_from_single_node_production_profile_v1(
+                    environment=environment,
+                    governance=_governance(d2_env()),
+                    deployment_adapter=object(),  # type: ignore[arg-type]
+                    env=reader,
+                )
+    test_pv1_h09_failed_startup_does_not_expand_provider_surface()
+
+
+def test_life_06_sanctioned_d4_gca_asgi_factory_preserved() -> None:
+    serving = (
+        repo_root()
+        / "applications"
+        / "governed_contractor_application"
+        / "host"
+        / "strict_production_serving.py"
+    ).read_text(encoding="utf-8")
+    assert "create_governed_contractor_strict_production_asgi_app" in serving
+    assert "build_governed_contractor_strict_production_uvicorn_factory" in serving
+    assert "attach_strict_production_serving_lifespan" in serving
+    test_pv1_h03_no_alternate_startup_composition_authority()
+
+
+def test_life_07_missing_operator_serve_configuration_fails_closed() -> None:
+    entry = _ENTRYPOINT_FILE.read_text(encoding="utf-8")
+    assert "INTERGRAX_GCA_STRICT_SERVE_EXEC" in entry
+    assert 'serve_exec="${INTERGRAX_GCA_STRICT_SERVE_EXEC:-}"' in entry
+    assert 'if [[ -z "${serve_exec}" ]]' in entry
+    assert "exit 2" in entry
+    test_pv1_h07_systemd_and_entrypoint_agree()
+
+
+def test_life_08_target_verified_and_operator_acceptance_remain_open() -> None:
+    test_pv1_h10_target_production_qualification_explicitly_unproven()

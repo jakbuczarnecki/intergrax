@@ -49,6 +49,7 @@ class SingleNodeProductionProfileV1CrossProcessWriterHold:
     def release(self) -> None:
         if self._lock is not None:
             self._lock.close()
+            object.__setattr__(self, "_lock", None)
 
     def __enter__(self) -> SingleNodeProductionProfileV1CrossProcessWriterHold:
         return self

@@ -3,11 +3,11 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **READY FOR AUDIT** |
-| **Task** | `PROD-Q-R1-R7-Q-OD-R2-03-SINGLE-NODE-PRODUCTION-PROFILE-V1` |
+| **Task** | `PROD-Q-R1-R7-Q-OD-R2-03-PROFILE-V1-LIFECYCLE-AND-ENTRYPOINT-SAFETY` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
-| **START_HEAD** | `511a4dc1c7108119f86fc2606b602e71aea8392f` |
-| **FINAL_COMMIT / AUDITED_HEAD** | `569425246519f38c2cad1db1b0400a8ee3339ee7` |
-| **EXECUTION_SHA** | `569425246519f38c2cad1db1b0400a8ee3339ee7` — **18/18** passed |
+| **START_HEAD** | `da0fbb965ed3241cfbf052bec30fe9f27afed13c` |
+| **FINAL_COMMIT / AUDITED_HEAD** | *(set at push — independent audit)* |
+| **EXECUTION_SHA** | *(pytest @ FINAL_COMMIT)* |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
 Operator authorized **single-node Linux VM profile v1** (exactly-one writer, ext4 SSD, SQLite GCA/PIS WAL+FULL, systemd, least-privilege identity). This dossier is repository + lab evidence only.
@@ -30,6 +30,19 @@ Operator authorized **single-node Linux VM profile v1** (exactly-one writer, ext
 | Linux systemd (infra) | Operator / deployment | GCA `deploy/linux/single-node-production-profile-v1/` | unit + env + entrypoint template |
 
 No new semantic or composition owners. No second deployment framework.
+
+### 1.1 Lifecycle / lock ownership (post lifecycle correction)
+
+| Phase | Cross-process writer lock | Strict serving session |
+|-------|---------------------------|-------------------------|
+| CONFIGURED admission (gate) | Not acquired (`acquire_cross_process_writer=False`) | Not opened |
+| Profile v1 strict startup | Acquired in `load_validate_and_admit_*` | Open via `open_gca_strict_production_serving_session` |
+| GCA open failure | Released in startup seam `except` | Not returned |
+| Successful open | Bound to session via `bind_process_scoped_release_on_close(writer_hold.release)` | Returned; D4 ASGI uses existing factory |
+| ASGI shutdown / `session.close()` | Released in session `close()` finally | Existing D4 drain + lifecycle close |
+| systemd stop | Operator process exit → session close path | Unit `TimeoutStopSec` |
+
+**Invariant:** `writer lock held ⇔ active profile-v1 strict session owns the hold until `StrictProductionServingSession.close()`.
 
 ---
 
@@ -64,6 +77,21 @@ Environment prefix: `INTERGRAX_SINGLE_NODE_PRODUCTION_V1_*` (see module docstrin
 | **PV1-H10** | TARGET / B6 explicitly unproven | `test_pv1_h10_target_production_qualification_explicitly_unproven` |
 
 **F01–F06 disposition (consolidated):** startup seam (**F01**), shipped entrypoint + required env (**F02**), cross-process lock distinct from in-process slot (**F03**), owned-connection pragma evidence (**F04**), probe labeled informational + admission gate (**F05**), required `EnvironmentFile` + gate (**F06**). **F07** remains operator TARGET.
+
+### 3.1 LIFE-01…08 matrix (lifecycle & entrypoint safety)
+
+| Gate | Requirement | REPO-TESTED |
+|------|-------------|-------------|
+| **LIFE-01** | Startup failure after writer lock releases hold | `test_life_01_startup_failure_after_writer_lock_releases_hold` |
+| **LIFE-02** | Two processes cannot hold same profile lock | `test_life_02_cross_process_writer_lock_excludes_second_holder` |
+| **LIFE-03** | Lock held while strict session lifecycle active | `test_life_03_writer_lock_held_for_active_strict_session_lifecycle` |
+| **LIFE-04** | Normal shutdown releases lock | `test_life_04_session_close_releases_writer_lock_for_subsequent_startup` |
+| **LIFE-05** | Failed startup does not admit traffic / widen surface | `test_life_05_failed_startup_does_not_return_serving_session` |
+| **LIFE-06** | Sanctioned D4 GCA ASGI path preserved | `test_life_06_sanctioned_d4_gca_asgi_factory_preserved` |
+| **LIFE-07** | Missing `INTERGRAX_GCA_STRICT_SERVE_EXEC` fails closed | `test_life_07_missing_operator_serve_configuration_fails_closed` |
+| **LIFE-08** | TARGET-VERIFIED / operator acceptance OPEN | `test_life_08_target_verified_and_operator_acceptance_remain_open` |
+
+**Pre-audit F01–F03 disposition:** F01 startup failure lock cleanup — **addressed** in startup seam + idempotent `release()`; F02 successful session lock lifetime — **addressed** via session attach + `close()`; F03 operator serve command — **deployment prerequisite** (`INTERGRAX_GCA_STRICT_SERVE_EXEC` required; entrypoint does not substitute D4 wiring).
 
 ---
 
@@ -136,7 +164,7 @@ Log: `.tmp/session/od-r2-03-single-node-profile-v1/pytest.log`
 
 | Item | Result |
 |------|--------|
-| A1–A8 | No new authority; profile is configuration + infra templates only |
+| A1–A8 | No new authority; writer lock lifetime bound via `bind_process_scoped_release_on_close` on `StrictProductionServingSession.close()` |
 | B1–B5 | Layer boundaries preserved; typed settings at applications shared |
 | B6 | **Deferred** — operator acceptance OPEN |
 

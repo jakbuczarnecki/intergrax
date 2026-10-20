@@ -57,15 +57,20 @@ def open_gca_strict_production_serving_session_from_single_node_production_profi
         env=env,
         acquire_cross_process_writer=True,
     )
-    session, owned_gca = open_gca_strict_production_serving_session(
-        storage=storage,
-        environment=environment,
-        governance=governance,
-        deployment_adapter=deployment_adapter,
-        activation_intent=activation_intent,
-        missing_continuation_file_policy=missing_continuation_file_policy,
-        application_composition=application_composition,
-    )
+    try:
+        session, owned_gca = open_gca_strict_production_serving_session(
+            storage=storage,
+            environment=environment,
+            governance=governance,
+            deployment_adapter=deployment_adapter,
+            activation_intent=activation_intent,
+            missing_continuation_file_policy=missing_continuation_file_policy,
+            application_composition=application_composition,
+        )
+    except BaseException:
+        writer_hold.release()
+        raise
+    session.bind_process_scoped_release_on_close(writer_hold.release)
     return session, owned_gca, config, writer_hold
 
 
