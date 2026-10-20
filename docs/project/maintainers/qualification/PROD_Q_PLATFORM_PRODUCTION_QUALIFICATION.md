@@ -8,7 +8,7 @@
 
 **Branch:** `development`
 
-**START_HEAD (this evidence-ledger alignment):** `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00`
+**START_HEAD (this evidence-ledger alignment):** `79fc6c79328adbfd4d44e6a5edc61782f9956af4`
 
 **START_HEAD (P0-R1-R1-R1-R1-R1-R1-R1-R1 rejected baseline):** `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e`
 
@@ -19,8 +19,9 @@
 | Initial closed-world inventory wave | `20ce563d383312bd53c72167cb228623dfbb8881` | **PROD-Q-P0** (historical) | **REJECTED** (preserved; not re-opened) |
 | Mechanical composition-ownership + authoritative gate lock | `0046075484cd85da9a220f6f537c48ad94dd8078` | **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** implementation evidence | **READY FOR AUDIT** — independent GitHub audit required; **not** **CLOSED** |
 | Typing/subprocess/evidence-integrity corrective | `ddc8704457192aafffdd32ca8d65e258db2679e0` | Post-lock qualification harness hardening only (`tests/qualification/prod_q/_p0_certification.py`, `_p0_*` gates) | **READY FOR AUDIT** — does **not** supersede or replace mechanical lock SHA; does **not** close parent **PROD-Q** |
-| Current-HEAD compatibility (doc reconciliation @ START_HEAD) | `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` | Both `0046075484…` and `ddc87044…` are ancestors of HEAD (`git merge-base --is-ancestor`) | Factual lineage only — **not** operator acceptance |
-| P0 final gate execution (Cursor session evidence) | `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` | Mandatory `tests/qualification/prod_q/` replay @ exact HEAD (see § execution evidence) | **READY FOR AUDIT** — **not** **CLOSED**; suite exit **1** (R1 PI failures classified **non-P0**) |
+| Current-HEAD compatibility (doc reconciliation @ START_HEAD) | `79fc6c79328adbfd4d44e6a5edc61782f9956af4` | Mechanical lock `0046075484…`, corrective `ddc87044…`, PI corrective `1faa86ff…`, and FAIL replay `0ce711f07…` are ancestors of HEAD (`git merge-base --is-ancestor`) | Factual lineage only — **not** operator acceptance |
+| P0 final gate execution (Cursor session evidence; historical FAIL preserved) | `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` | Mandatory `tests/qualification/prod_q/` replay @ exact HEAD (see § execution evidence — FAIL run) | **READY FOR AUDIT** — **not** **CLOSED**; suite exit **1** (R1 PI failures classified **non-P0**) |
+| P0 final gate execution (Cursor session evidence; current HEAD green replay) | `79fc6c79328adbfd4d44e6a5edc61782f9956af4` | Mandatory `tests/qualification/prod_q/` replay @ exact HEAD after PI-01/PI-02 corrective (`1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b`); lineage includes `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` FAIL record | **PROD-Q-P0 — TECHNICAL GATE PASS / FORMAL CLOSURE READY** — **not** **CLOSED**; independent GitHub SHA audit + operator acceptance required |
 | FRZ reconciliation rows (`build_frz_reconciliation()`) | — | **FRZ-PRD / FRZ-SEC / FRZ-REL** and related IDs per freeze checklist | Evidence **contributions** only — **no** global **FRZ-*** **PASS** from P0 |
 
 **Implementation test evidence (committed @ `ddc87044…`, not replayed in this documentation task):** `test_prod_q_p0_fast_q04_historical_evidence_ancestry`; `test_prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit_gate` (`tests/qualification/prod_q/test_prod_q_p0_r1_r1_r1_r1_r1_r1_gate.py`); bounded-subprocess / R1-disposition integrity gates `test_prod_q_p0_int_d7_*` (`tests/qualification/prod_q/test_prod_q_p0_integrity.py`). **IMPL-01-R3** and other non-P0 stages remain **not** **QUALIFIED** by this ledger.
@@ -121,7 +122,7 @@ PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure
 PROD-Q-P3 — Production operability surface (health/readiness/operator semantics wiring)
 ```
 
-## PROD-Q-P0 final gate — execution evidence (@ `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00`)
+## PROD-Q-P0 final gate — execution evidence (historical FAIL @ `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00`)
 
 | Field | Value |
 | --- | --- |
@@ -143,6 +144,35 @@ PROD-Q-P3 — Production operability surface (health/readiness/operator semantic
 **P0 test battery:** all `test_prod_q_p0_*` and P0 integrity gates that executed on Windows **passed** (no `test_prod_q_p0_*` failures in this run).
 
 **P0 closure recommendation:** **READY FOR INDEPENDENT EXACT-SHA GITHUB AUDIT** — mechanical lock @ `0046075484…` + corrective @ `ddc87044…` + this execution record; **do not** promote **PROD-Q-P0** to **CLOSED** or unblock parent **PROD-Q** without operator acceptance. **No global `FRZ-*` PASS** from this replay.
+
+## PROD-Q-P0 final gate — execution evidence (current HEAD green replay @ `79fc6c79328adbfd4d44e6a5edc61782f9956af4`)
+
+| Field | Value |
+| --- | --- |
+| **Exact HEAD (EXECUTION_SHA)** | `79fc6c79328adbfd4d44e6a5edc61782f9956af4` |
+| **Branch** | `development` (= `origin/development`, clean tree at run start) |
+| **Command** | `uv run pytest tests/qualification/prod_q/ -p no:xdist -q` |
+| **Collected** | 438 |
+| **Result** | **436 passed**, **0 failed**, 2 skipped, 1 warning |
+| **Duration** | 279.77s |
+| **Exit code** | **0** |
+| **`INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION`** | unset (default; not required for this gate) |
+| **Session log** | `.tmp/session/prod-q-p0-final-gate-green-20261020/pytest-mandatory-gate.log` |
+| **PI-01/PI-02** | **PASS** in this same mandatory run (`test_pi01_wrong_principal_same_tenant_accept_denied_zero_provider_calls`, `test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls` — no separate replay) |
+| **Lineage** | Corrective implementation evidence `1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b` (PI-01/PI-02); prior FAIL record @ `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` preserved above |
+
+**Skipped (expected; platform-scoped; no P0 acceptance-scope expansion):**
+
+| Test | Platform | Impact |
+| --- | --- | --- |
+| `test_prod_q_p0_integrity.py:239` — owned process-group ID under `start_new_session` | POSIX-only | **NOT PROVEN on Windows** — POSIX subprocess ownership assertion; P0 Windows path covered by alternate gates |
+| `test_prod_q_p0_integrity.py:305` — owned descendant termination after parent exit | Windows | **NOT PROVEN on Windows** — job-object ownership mechanism **STOP / ARCHITECTURE DECISION REQUIRED**; documented in-test |
+
+**P0 test battery:** all `test_prod_q_p0_*` and P0 integrity gates that executed on Windows **passed** (no `test_prod_q_p0_*` failures in this run).
+
+**Current-HEAD P0 technical verdict:** **PROD-Q-P0 — TECHNICAL GATE PASS / FORMAL CLOSURE READY** — mandatory suite green @ this SHA; **do not** self-assign **CLOSED** or unblock parent **PROD-Q** without independent exact-SHA GitHub audit of mechanical lock @ `0046075484…` + corrective lineage (`ddc87044…`, `1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b`) and operator formal acceptance. **No global `FRZ-*` PASS** from this replay.
+
+**Formal limitations (unchanged):** **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED**; live provider qualification remains **PROD-Q-P1**; **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`).
 
 ## Tests (mandatory)
 
