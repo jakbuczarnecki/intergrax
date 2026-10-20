@@ -422,6 +422,7 @@ POST /run → GCA task build → StrictProductionServingTenantAuthorityTaskExecu
 | Accept, no prior CREATE (**H10n**) | 200 (request accepted) | **0** `accept_calls` | **No** admitted mutation | **No** |
 | Cancel, no prior CREATE (**H11n**) | 200 | **0** `cancel_calls` | **No** | **No** |
 | Accept, wrong tenant vs CREATE (**H10n** tenant) | **403** | **0** | **No** (tenant port before follow-on bind) | **No** |
+| Accept / cancel, same tenant, wrong principal vs CREATE (**PI-01** / **PI-02**) | 200 | **0** `accept_calls` / **0** `cancel_calls` | **No** new PIS intent | **No** (no CREATE execution rebind; `task_id` ≠ CREATE `task_id`) |
 | Unsupported sanctioned op (**H10/H11n** unsupported) | 200 | **0** all fakes | **No** | **No** |
 
 ### 16.4 Owners / contracts (unchanged)
@@ -560,3 +561,68 @@ POST /run → GCA strict execution → sanctioned follow-on admission → Tier-2
 | **B6** | **TRACKED** | Formal independent verdict pending |
 | HTTP 200 on operational deny | **Guarantee limit** | Same as §16.8 — task/request acceptance vs domain/orchestrator outcome |
 | Terminal diagnostic bridge | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Qual sessions may log `policy_bundle_id` reconstruction noise; does not affect PIS/outcome assertions in **H11c**/**H11u** |
+
+---
+
+## 18. DIM20 follow-on principal isolation (PI-01 / PI-02)
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-R7-Q-DIM20-FOLLOW-ON-PRINCIPAL-ISOLATION** |
+| **START_HEAD** | `99e75eb71e0159e86914e40c910d1189b5c46227` |
+| **Production delta** | **0** — existing `try_resolve_sanctioned_follow_on_execution_admission` principal binding sufficient |
+| **Status** | **READY FOR AUDIT** (does not close **PROD-Q-R1**, **R7-Q** dim **20**, **PROD-Q**, or global **FRZ-***) |
+
+### 18.1 Invariant
+
+Same **tenant**, valid prior strict HTTP **CREATE** (principal **A**), follow-on **ACCEPT_QUOTE** or **CANCEL** with principal **B** in metadata must **not**: rebind authoritative CREATE execution; admit PIS dispatch for accept/cancel; invoke provider accept/cancel; report domain `used`/`admitted` success for the unauthorized follow-on.
+
+**Canonical guard:** `applications/governed_contractor_application/host/strict_sanctioned_follow_on_http_execution_admission.py` — `record.principal_id` must match `META_PRINCIPAL_ID`; on mismatch admission returns `None` → downstream `prior_create_snapshot_missing` deny (§16.1).
+
+### 18.2 Evidence matrix
+
+| ID | Scenario | Verdict | Pytest node |
+|----|----------|---------|-------------|
+| **PI-01** | **ACCEPT_QUOTE**, same tenant, wrong principal | **PASS** | `test_pi01_wrong_principal_same_tenant_accept_denied_zero_provider_calls` |
+| **PI-02** | **CANCEL**, same tenant, wrong principal | **PASS** | `test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls` |
+
+### 18.3 Bounded pytest (@ this task)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_pi01_wrong_principal_same_tenant_accept_denied_zero_provider_calls \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls \
+  -q
+```
+
+Log: `.tmp/session/dim20-principal-isolation/pytest-pi01-pi02.log` — **2 passed**, ~14s @ execution **HEAD** (see **FINAL_COMMIT** below).
+
+**Observed limits:** HTTP **200** on denied follow-on matches §16.8 / §17.7 (request/task acceptance vs domain denial). Principal **B** injected only via `external_work.principal_id` metadata override; CREATE remains principal **A** (`http-inv-qual-principal`). No second API-key principal map added.
+
+**FINAL_COMMIT (code + evidence):** `54a4e6c1ab62236f04ba1e21a4867b62e0d1259e`
+
+### 18.4 ECAP (scoped)
+
+| Area | Disposition |
+|------|-------------|
+| **A1–A8** | **PASS** (scoped) — single admission owner; fail-closed principal binding; no shadow execution rebind |
+| **B1–B5** | **PASS** (scoped) — **PI-01** / **PI-02** executable negatives atop §15–§17 |
+| **B6** | **PENDING** |
+
+### 18.5 FRZ (scoped contribution only)
+
+| ID | Scoped note |
+|----|-------------|
+| **FRZ-SEC-04** | Unauthorized principal cannot drive provider accept/cancel on another principal's CREATE |
+| **FRZ-PRD-03** / **08** | No false operational success; orchestrator deny path preserved |
+| **FRZ-REL-03** | No alternate PIS intent for unauthorized follow-on |
+| **FRZ-TEN-*** (applicable)** | Tenant unchanged; isolation is principal-scoped within tenant |
+| **FRZ-OWN-*** / **FRZ-BND-*** / **FRZ-CTR-*** | Unchanged per §16.4 |
+| **FRZ-REG-02** / **03** / **09** | Regression nodes **PI-01** / **PI-02** |
+
+### 18.6 Unresolved
+
+| ID | Class | Note |
+|----|-------|------|
+| — | — | **No IN-SCOPE BLOCKER** |
+| **B6** | **TRACKED** | Formal independent verdict pending |
