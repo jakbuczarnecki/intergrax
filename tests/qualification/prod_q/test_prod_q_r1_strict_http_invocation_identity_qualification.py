@@ -95,7 +95,7 @@ from applications.governed_contractor_application.tests.host.test_gr7_a7_provide
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
-_EXPECTED_START_HEAD: Final = "e5e5d326184b23d3eb93786e60db7a4c2154499d"
+_EXPECTED_START_HEAD: Final = "8cf15daa9fffd61b579d5d9d4732e5eca87560f2"
 
 
 @pytest.fixture(autouse=True)
@@ -816,4 +816,396 @@ def test_h09_http_strict_post_traverses_reflex_sanctioned_pis_and_provider(
     assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
         fixture.session,
     )
+
+
+def test_h10_http_strict_post_accept_quote_traverses_reflex_sanctioned_pis_and_provider(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
+        assert_identity_continuity,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PROVIDER,
+        follow_up_strict_http_run_request_json,
+        post_strict_http_create_prerequisite,
+    )
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+
+    revision_id = "rev-h10-http-reflex-accept"
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id=revision_id,
+        default_agent_id="external_contractor_adapter",
+    )
+    assert_identity_continuity(fixture.session, revision_id=revision_id)
+    pis = fixture.session.composition.provider_invocation_store
+    assert isinstance(pis, SQLiteProviderInvocationStore)
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-h10-setup-create",
+        )
+        intents_before_accept = list_intent_invocation_ids(fixture.provider_invocation_db)
+        expected_intents_after_admission = len(intents_before_accept) + 1
+        baseline_accept_calls = fixture.external_work_fake.accept_calls
+
+        original_accept = fixture.external_work_fake.submit_quote_acceptance
+
+        def _accept_requires_prior_pis_intent(*args: object, **kwargs: object) -> object:
+            assert (
+                len(list_intent_invocation_ids(fixture.provider_invocation_db))
+                == expected_intents_after_admission
+            )
+            assert fixture.external_work_fake.accept_calls == baseline_accept_calls
+            return original_accept(*args, **kwargs)  # type: ignore[arg-type]
+
+        fixture.external_work_fake.submit_quote_acceptance = _accept_requires_prior_pis_intent  # type: ignore[method-assign]
+
+        accept_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE,
+            idempotency_key="idem-h10-http-reflex-accept",
+        )
+        response = client.post(
+            fixture.run_url,
+            json=accept_payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+
+        assert fixture.external_work_fake.accept_calls == baseline_accept_calls + 1
+        assert "mapped" in str(body.get("answer") or "")
+        assert fixture.external_work_fake.create_calls == prerequisite.baseline_create_calls + 1
+
+        intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
+        new_invocation_ids = [
+            inv_id for inv_id in intents_after if inv_id not in prerequisite.baseline_intent_ids
+        ]
+        assert len(new_invocation_ids) == 2
+        accept_invocation_id = [
+            inv_id for inv_id in new_invocation_ids if inv_id not in intents_before_accept
+        ][0]
+        assert accept_invocation_id.startswith("inv-")
+
+        inv = pis.get_invocation(accept_invocation_id)
+        assert inv is not None
+        assert inv.operation == "submit_quote_acceptance"
+        assert inv.provider_id == _QUAL_PROVIDER
+        assert inv.idempotency_key == "idem-h10-http-reflex-accept"
+
+        outcome = pis.get_outcome(accept_invocation_id)
+        assert outcome is not None
+        assert outcome.status is ProviderInvocationStatus.SUCCEEDED
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+
+def test_qual_strict_http_policy_bundle_allows_cancel_runtime_policy() -> None:
+    from external_contractor_adapter.side_effect_actions import ACTION_CANCEL_EXTERNAL_WORK
+    from intergrax.contracts.meaningful_side_effect import (
+        MeaningfulSideEffectKind,
+        MeaningfulSideEffectRequest,
+    )
+    from intergrax.contracts.runtime_policy import PolicyAction
+    from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
+        RuntimePolicyBundleEvaluator,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PRINCIPAL,
+        _qual_strict_http_policy_bundle,
+    )
+    from tests.unit.runtime.governance.gr3_test_support import default_gr3_identity_bundle
+
+    task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
+    bundle = _qual_strict_http_policy_bundle()
+    evaluator = RuntimePolicyBundleEvaluator(bundle)
+    evaluated = evaluator.evaluate(
+        MeaningfulSideEffectRequest(
+            action=ACTION_CANCEL_EXTERNAL_WORK,
+            kinds=(MeaningfulSideEffectKind.MUTATION,),
+            side_effect_scope_id="idem-policy-smoke",
+            task_id=str(task_id),
+            run_id=str(run_id),
+            attempt_id=str(attempt_id),
+            execution_id=str(execution_id),
+            principal_id=_QUAL_PRINCIPAL,
+            tenant_id="env-prod",
+        ),
+    )
+    assert evaluated.decision.action is PolicyAction.ALLOW
+
+
+def test_h11_http_strict_post_cancel_traverses_reflex_sanctioned_pis_and_provider(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
+        assert_identity_continuity,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PROVIDER,
+        follow_up_strict_http_run_request_json,
+        post_strict_http_create_prerequisite,
+    )
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+
+    revision_id = "rev-h11-http-reflex-cancel"
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id=revision_id,
+        default_agent_id="external_contractor_adapter",
+    )
+    assert_identity_continuity(fixture.session, revision_id=revision_id)
+    pis = fixture.session.composition.provider_invocation_store
+    assert isinstance(pis, SQLiteProviderInvocationStore)
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-h11-setup-create",
+        )
+        intents_before_cancel = list_intent_invocation_ids(fixture.provider_invocation_db)
+        expected_intents_after_admission = len(intents_before_cancel) + 1
+        baseline_cancel_calls = fixture.external_work_fake.cancel_calls
+
+        cancel_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.CANCEL,
+            idempotency_key="idem-h11-http-reflex-cancel",
+        )
+        response = client.post(
+            fixture.run_url,
+            json=cancel_payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+
+        assert fixture.external_work_fake.cancel_calls == baseline_cancel_calls + 1, {
+            "answer": body.get("answer"),
+        }
+        assert fixture.external_work_fake.create_calls == prerequisite.baseline_create_calls + 1
+
+        intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
+        new_invocation_ids = [
+            inv_id for inv_id in intents_after if inv_id not in prerequisite.baseline_intent_ids
+        ]
+        assert len(new_invocation_ids) == 2
+        cancel_invocation_id = [
+            inv_id for inv_id in new_invocation_ids if inv_id not in intents_before_cancel
+        ][0]
+        assert cancel_invocation_id.startswith("inv-")
+
+        inv = pis.get_invocation(cancel_invocation_id)
+        assert inv is not None
+        assert inv.operation == "cancel_work"
+        assert inv.provider_id == _QUAL_PROVIDER
+        assert inv.idempotency_key == "idem-h11-http-reflex-cancel"
+
+        outcome = pis.get_outcome(cancel_invocation_id)
+        assert outcome is not None
+        assert outcome.status is ProviderInvocationStatus.SUCCEEDED
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+
+def test_h10n_accept_without_prior_create_fail_closed_zero_provider_calls(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        META_PRIOR_EXECUTION_ID,
+        META_SANCTIONED_MUTATION_OPERATION,
+        SanctionedExternalWorkMutationOperation,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        external_work_http_metadata,
+        quote_acceptance_evidence_for_qual,
+    )
+    from external_contractor_adapter.external_work_adapter import (
+        META_ACCEPTANCE_IDEMPOTENCY_KEY,
+        META_QUOTE_ACCEPTANCE,
+    )
+    from intergrax.contracts.execution_identity import mint_execution_id
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-h10n-missing-prereq",
+        default_agent_id="external_contractor_adapter",
+    )
+    baseline_accept = fixture.external_work_fake.accept_calls
+    meta = external_work_http_metadata(
+        tenant_id=fixture.tenant_id,
+        idempotency_key="idem-h10n-missing",
+    )
+    meta[META_SANCTIONED_MUTATION_OPERATION] = (
+        SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE.value
+    )
+    meta[META_PRIOR_EXECUTION_ID] = str(mint_execution_id())
+    meta[META_QUOTE_ACCEPTANCE] = quote_acceptance_evidence_for_qual(
+        "quote-missing",
+        tenant_id=fixture.tenant_id,
+        scope_digest="sha256:" + ("aa" * 32),
+    )
+    meta[META_ACCEPTANCE_IDEMPOTENCY_KEY] = "idem-h10n-missing"
+    payload = run_request_json(
+        fixture.tenant_id,
+        idempotency_key="idem-h10n-http",
+        metadata=meta,
+    )
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        response = client.post(
+            fixture.run_url,
+            json=payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+    assert fixture.external_work_fake.accept_calls == baseline_accept
+
+
+def test_h11n_cancel_without_prior_create_fail_closed_zero_provider_calls(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        META_PRIOR_EXECUTION_ID,
+        META_SANCTIONED_MUTATION_OPERATION,
+        SanctionedExternalWorkMutationOperation,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        external_work_http_metadata,
+    )
+    from intergrax.contracts.execution_identity import mint_execution_id
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-h11n-missing-prereq",
+        default_agent_id="external_contractor_adapter",
+    )
+    baseline_cancel = fixture.external_work_fake.cancel_calls
+    meta = external_work_http_metadata(
+        tenant_id=fixture.tenant_id,
+        idempotency_key="idem-h11n-missing",
+    )
+    meta[META_SANCTIONED_MUTATION_OPERATION] = (
+        SanctionedExternalWorkMutationOperation.CANCEL.value
+    )
+    meta[META_PRIOR_EXECUTION_ID] = str(mint_execution_id())
+    payload = run_request_json(
+        fixture.tenant_id,
+        idempotency_key="idem-h11n-http",
+        metadata=meta,
+    )
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        response = client.post(
+            fixture.run_url,
+            json=payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+    assert fixture.external_work_fake.cancel_calls == baseline_cancel
+
+
+def test_h10_h11n_unsupported_sanctioned_operation_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        META_SANCTIONED_MUTATION_OPERATION,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        external_work_http_metadata,
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-h10-h11n-unsupported-op",
+        default_agent_id="external_contractor_adapter",
+    )
+    baseline = (
+        fixture.external_work_fake.create_calls,
+        fixture.external_work_fake.accept_calls,
+        fixture.external_work_fake.cancel_calls,
+    )
+    meta = external_work_http_metadata(
+        tenant_id=fixture.tenant_id,
+        idempotency_key="idem-unsupported-op",
+    )
+    meta[META_SANCTIONED_MUTATION_OPERATION] = "terminate_physical"
+    payload = run_request_json(
+        fixture.tenant_id,
+        metadata=meta,
+    )
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        response = client.post(
+            fixture.run_url,
+            json=payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+    assert (
+        fixture.external_work_fake.create_calls,
+        fixture.external_work_fake.accept_calls,
+        fixture.external_work_fake.cancel_calls,
+    ) == baseline
+
+
+def test_h10n_wrong_tenant_accept_denied_before_provider(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        follow_up_strict_http_run_request_json,
+        post_strict_http_create_prerequisite,
+    )
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-h10n-wrong-tenant",
+        default_agent_id="external_contractor_adapter",
+    )
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-h10n-tenant-setup",
+        )
+        baseline_accept = fixture.external_work_fake.accept_calls
+        accept_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE,
+            idempotency_key="idem-h10n-wrong-tenant-accept",
+        )
+        response = client.post(
+            fixture.run_url,
+            json=accept_payload,
+            headers=strict_http_auth_headers(_WRONG_TENANT_KEY),
+        )
+        assert response.status_code == 403, response.text
+    assert fixture.external_work_fake.accept_calls == baseline_accept
 

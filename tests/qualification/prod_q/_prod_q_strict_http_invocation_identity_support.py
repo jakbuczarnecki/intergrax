@@ -8,7 +8,7 @@ import sqlite3
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Final, Protocol, runtime_checkable
@@ -57,8 +57,19 @@ from intergrax.applications._shared.strict_production_serving_launcher import (
 from intergrax.contracts.external_work_provider_capabilities import (
     quote_first_partner_capability_fixture,
 )
+from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
+from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.provider_invocation import ProviderInvocation
+from intergrax.contracts.sanctioned_external_work_operation import (
+    META_PRIOR_EXECUTION_ID,
+    META_SANCTIONED_MUTATION_OPERATION,
+    SanctionedExternalWorkMutationOperation,
+)
+from external_contractor_adapter.external_work_adapter import (
+    META_ACCEPTANCE_IDEMPOTENCY_KEY,
+    META_QUOTE_ACCEPTANCE,
+)
 from intergrax.runtime.enterprise_reliability.sqlite_provider_invocation_store import (
     SQLiteProviderInvocationStore,
 )
@@ -93,6 +104,153 @@ _QUAL_PRINCIPAL: Final = "http-inv-qual-principal"
 _QUAL_PROVIDER: Final = "gec3_deterministic_fake"
 _QUAL_SCOPE_DIGEST: Final = "sha256:" + ("aa" * 32)
 _QUAL_T0: Final = datetime(2026, 10, 16, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def _qual_strict_http_policy_bundle() -> object:
+    from applications.governed_contractor_application.tests.host.test_gr6_wire_production_decision_governance import (
+        _test_policy_bundle,
+    )
+    from external_contractor_adapter.side_effect_actions import ACTION_CANCEL_EXTERNAL_WORK
+    from intergrax.contracts.runtime_policy_bundle import (
+        ImmutableRuntimePolicyBundle,
+        PolicyBundleRule,
+    )
+    from intergrax.contracts.runtime_policy_bundle import build_immutable_runtime_policy_bundle
+
+    base = _test_policy_bundle()
+    assert isinstance(base, ImmutableRuntimePolicyBundle)
+    return build_immutable_runtime_policy_bundle(
+        bundle_id=base.bundle_id,
+        version=base.version,
+        rules=(
+            *base.rules,
+            PolicyBundleRule(
+                rule_id="http-inv-qual.CANCEL_EXTERNAL_WORK",
+                description="allow cancel",
+                effect="allow",
+                match_action=ACTION_CANCEL_EXTERNAL_WORK,
+            ),
+        ),
+        issued_at=base.issued_at,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class StrictHttpExternalWorkCreatePrerequisite:
+    execution_id: str
+    quote_id: str
+    scope_digest: str
+    create_task_id: str
+    create_run_id: str
+    baseline_create_calls: int
+    baseline_accept_calls: int
+    baseline_cancel_calls: int
+    baseline_intent_ids: tuple[str, ...]
+
+
+def domain_summary_from_strict_http_run_body(body: dict[str, object]) -> dict[str, object]:
+    meta = body.get("metadata")
+    if not isinstance(meta, dict):
+        return {}
+    domain = meta.get("domain_summary") or meta.get("external_work")
+    return dict(domain) if isinstance(domain, dict) else {}
+
+
+def quote_acceptance_evidence_for_qual(
+    quote_id: str,
+    *,
+    tenant_id: str,
+    scope_digest: str,
+) -> dict[str, object]:
+    evidence = QuoteAcceptanceEvidence.model_validate(
+        {
+            "acceptance_id": "acc-http-inv-qual",
+            "quote_id": quote_id,
+            "quote_version": 1,
+            "scope_digest": scope_digest,
+            "actor": ActorIdentity(
+                kind=ActorKind.USER,
+                actor_id=_QUAL_PRINCIPAL,
+                tenant_id=tenant_id,
+            ),
+            "accepted_at": _QUAL_T0 + timedelta(minutes=5),
+            "hitl_decision_id": "hdec-http-inv-qual",
+            "interrupt_id": "intr-http-inv-qual",
+            "policy_decision_ref": "pol-http-inv-qual",
+        },
+    )
+    return evidence.model_dump(mode="json")
+
+
+def post_strict_http_create_prerequisite(
+    client: TestClient,
+    fixture: StrictHttpInvocationQualFixture,
+    *,
+    idempotency_key: str,
+) -> StrictHttpExternalWorkCreatePrerequisite:
+    baseline_create = fixture.external_work_fake.create_calls
+    baseline_accept = fixture.external_work_fake.accept_calls
+    baseline_cancel = fixture.external_work_fake.cancel_calls
+    intents_before = list_intent_invocation_ids(fixture.provider_invocation_db)
+    payload = run_request_json(fixture.tenant_id, idempotency_key=idempotency_key)
+    response = client.post(
+        fixture.run_url,
+        json=payload,
+        headers=strict_http_auth_headers(),
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    summary = domain_summary_from_strict_http_run_body(body)
+    execution_id = str(summary.get("execution_id") or "").strip()
+    quote_id = ""
+    quote_raw = summary.get("quote")
+    if isinstance(quote_raw, dict):
+        quote_id = str(quote_raw.get("quote_id") or "").strip()
+    scope_digest = str(summary.get("scope_digest") or _QUAL_SCOPE_DIGEST).strip()
+    if not execution_id or not quote_id:
+        execution_id, quote_id, scope_digest = _latest_create_follow_on_from_host_db(
+            fixture.governed_external_work_host_db,
+        )
+    assert fixture.external_work_fake.create_calls == baseline_create + 1
+    return StrictHttpExternalWorkCreatePrerequisite(
+        execution_id=execution_id,
+        quote_id=quote_id,
+        scope_digest=scope_digest,
+        create_task_id=str(body["task_id"]),
+        create_run_id=str(body.get("run_id") or ""),
+        baseline_create_calls=baseline_create,
+        baseline_accept_calls=baseline_accept,
+        baseline_cancel_calls=baseline_cancel,
+        baseline_intent_ids=intents_before,
+    )
+
+
+def follow_up_strict_http_run_request_json(
+    fixture: StrictHttpInvocationQualFixture,
+    prerequisite: StrictHttpExternalWorkCreatePrerequisite,
+    *,
+    operation: SanctionedExternalWorkMutationOperation,
+    idempotency_key: str,
+) -> dict[str, object]:
+    meta = external_work_http_metadata(
+        tenant_id=fixture.tenant_id,
+        idempotency_key=idempotency_key,
+    )
+    meta[META_SANCTIONED_MUTATION_OPERATION] = operation.value
+    meta[META_PRIOR_EXECUTION_ID] = prerequisite.execution_id
+    if operation is SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE:
+        meta[META_QUOTE_ACCEPTANCE] = quote_acceptance_evidence_for_qual(
+            prerequisite.quote_id,
+            tenant_id=fixture.tenant_id,
+            scope_digest=prerequisite.scope_digest,
+        )
+        meta[META_ACCEPTANCE_IDEMPOTENCY_KEY] = idempotency_key
+    return run_request_json(
+        fixture.tenant_id,
+        message=f"strict http external work {operation.value}",
+        idempotency_key=idempotency_key,
+        metadata=meta,
+    )
 
 
 @runtime_checkable
@@ -238,6 +396,35 @@ class StrictHttpInvocationQualFixture:
     tenant_id: str
     external_work_fake: DeterministicExternalWorkFake
     provider_invocation_db: Path
+    governed_external_work_host_db: Path
+
+
+def _latest_create_follow_on_from_host_db(
+    host_db: Path,
+    *,
+    known_execution_ids: frozenset[str] = frozenset(),
+) -> tuple[str, str, str]:
+    import json
+
+    conn = sqlite3.connect(host_db)
+    try:
+        rows = conn.execute(
+            "SELECT execution_id, payload FROM gca_create_follow_on ORDER BY execution_id",
+        ).fetchall()
+    finally:
+        conn.close()
+    for execution_id_raw, payload_raw in reversed(rows):
+        execution_id = str(execution_id_raw)
+        if known_execution_ids and execution_id in known_execution_ids:
+            continue
+        payload = json.loads(str(payload_raw))
+        snapshot = payload.get("snapshot") or {}
+        quote = snapshot.get("quote") or {}
+        quote_id = str(quote.get("quote_id") or "").strip()
+        scope_digest = str(quote.get("scope_digest") or snapshot.get("scope_digest") or "").strip()
+        if execution_id and quote_id and scope_digest:
+            return execution_id, quote_id, scope_digest
+    raise AssertionError("create follow-on record with quote not found in host store")
 
 
 def list_intent_invocation_ids(db_path: Path) -> tuple[str, ...]:
@@ -343,16 +530,21 @@ def build_strict_http_invocation_qual_fixture(
                     include_scheduler=False,
                     include_interaction_routes=False,
                     include_task_control=False,
-                    runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+                    runtime_policy_bundle=_qual_strict_http_policy_bundle(),  # type: ignore[arg-type]
                 ),
                 execution_tenant_id=execution_tenant,
             ),
         )
+        from intergrax.runtime.governance.decision_requirement_policy import (
+            PermissiveDecisionRequirementPolicy,
+        )
+
         return compose_governed_contractor_host_runtime(
             settings,
             integration=external_fake,
             task_scope=http_task_scope,
             collaborative_work_repositories=cw,
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
         )
 
     monkeypatch.setattr(d4, "_host_runtime_for_startup", _host_runtime_for_startup)
@@ -385,7 +577,7 @@ def build_strict_http_invocation_qual_fixture(
                 include_interaction_routes=False,
                 include_task_control=False,
                 default_agent_id=default_agent_id,
-                runtime_policy_bundle=_gr6_production_policy_bundle(),
+                runtime_policy_bundle=_qual_strict_http_policy_bundle(),
             ),
             execution_tenant_id=tenant_id,
             wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
@@ -405,6 +597,7 @@ def build_strict_http_invocation_qual_fixture(
         tenant_id=tenant_id,
         external_work_fake=external_fake,
         provider_invocation_db=storage.provider_invocation_db,
+        governed_external_work_host_db=storage.governed_external_work_host_db,
     )
 
 
@@ -517,6 +710,7 @@ def execute_sanctioned_create_with_invocation(
 
 
 __all__ = [
+    "StrictHttpExternalWorkCreatePrerequisite",
     "StrictHttpInvocationQualFixture",
     "assert_no_leaked_owned_strict_http_invocation_sessions",
     "close_registered_owned_strict_http_invocation_sessions",
@@ -526,7 +720,11 @@ __all__ = [
     "register_owned_strict_http_invocation_close_target_for_regression",
     "register_owned_strict_http_invocation_session",
     "execute_sanctioned_create_with_invocation",
+    "domain_summary_from_strict_http_run_body",
     "external_work_adapter_metadata",
+    "follow_up_strict_http_run_request_json",
+    "post_strict_http_create_prerequisite",
+    "quote_acceptance_evidence_for_qual",
     "external_work_http_metadata",
     "list_intent_invocation_ids",
     "owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan",

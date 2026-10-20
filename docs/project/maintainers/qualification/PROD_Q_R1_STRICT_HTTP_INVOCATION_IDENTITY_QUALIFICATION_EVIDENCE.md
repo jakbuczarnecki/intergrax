@@ -7,8 +7,8 @@
 | **Parent** | **PROD-Q-R1** — **NOT CLOSED** |
 | **Dependency** | **R7-Q** §C **DIM20** (parent) |
 | **Branch** | `development` |
-| **START_HEAD** | `e5e5d326184b23d3eb93786e60db7a4c2154499d` |
-| **Production code delta** | **0** (qualification tests + evidence only) |
+| **START_HEAD** | `8cf15daa9fffd61b579d5d9d4732e5eca87560f2` |
+| **Production code delta** | **Bounded** — `StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort` (follow-on HTTP identity reuse); cancel `side_effect_scope_digest` from prior CREATE quote/metadata (**no** new dispatcher/PIS) |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
 
@@ -352,3 +352,28 @@ uv run pytest -p no:xdist \
 | `::test_r13_asgi_lifespan_fatal_shutdown_propagates_without_invalid_exception_group` | **1 passed**, exit **0**, ~15s | `.tmp/session/PROD-Q-R1-STRICT-HTTP-R1-R5/pytest-r13.log` |
 
 **Not executed @ R1-R5:** full module run or **R09–R12** replay (operator authorization / task budget).
+
+---
+
+## 15. DIM20 scoped contribution — non-CREATE strict HTTP (H09–H11)
+
+| ID | Operation | Verdict | Pytest node |
+|----|-----------|---------|-------------|
+| **H09** | Strict HTTP **CREATE** (regression) | **PASS** | `test_h09_http_strict_post_traverses_reflex_sanctioned_pis_and_provider` |
+| **H10** | Strict HTTP **ACCEPT_QUOTE** | **PASS** | `test_h10_http_strict_post_accept_quote_traverses_reflex_sanctioned_pis_and_provider` |
+| **H11** | Strict HTTP **CANCEL** | **PASS** | `test_h11_http_strict_post_cancel_traverses_reflex_sanctioned_pis_and_provider` |
+| **H10n/H11n** | Missing prereq / unsupported op / wrong tenant | **PASS** | `test_h10n_*`, `test_h11n_*`, `test_h10_h11n_unsupported_sanctioned_operation_*` |
+
+**Bounded pytest (DIM20):**
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py \
+  -k "h10 or h11" -q
+```
+
+**Negatives A/D/E (sanctioned port missing, PIS admission failure, equivalent replay):** unchanged coverage via **H01–H08**, **PIS-STRICT**, **H06** — no duplicate non-CREATE HTTP tests.
+
+**FINAL_COMMIT:** *(set at publish — see git push SHA below)*
+
+**Observed limit:** In-hook provider `cancel_work` assertions that raise inside the dispatch `execute()` closure surface as `side_effect_authorization_failed`; post-hoc PIS/outcome assertions prove intent-before-effect for **H11**.
