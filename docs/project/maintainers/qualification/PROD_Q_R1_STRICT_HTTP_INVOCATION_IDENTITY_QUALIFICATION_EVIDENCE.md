@@ -599,7 +599,7 @@ Log: `.tmp/session/dim20-principal-isolation/pytest-pi01-pi02.log` — **2 passe
 
 **Observed limits:** HTTP **200** on denied follow-on matches §16.8 / §17.7 (request/task acceptance vs domain denial). Principal **B** injected only via `external_work.principal_id` metadata override; CREATE remains principal **A** (`http-inv-qual-principal`). No second API-key principal map added.
 
-**FINAL_COMMIT (code + evidence):** `54a4e6c1ab62236f04ba1e21a4867b62e0d1259e`
+**FINAL_COMMIT (code + evidence):** `d883051abcbda74fbc8a6b29ee6ba6a1bbc40b20`
 
 ### 18.4 ECAP (scoped)
 
