@@ -348,3 +348,24 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 ---
 
 *Production code delta for this task: **0**.*
+
+### G.3 Profile v1 entrypoint P1 reachability closure (`PROD-Q-R1-R7-Q-C-PROFILE-V1-ENTRYPOINT-REACHABILITY-CLOSURE`)
+
+| Field | Value |
+|-------|-------|
+| **START_HEAD** | `eff3245efba1826a0470fc376888c0bd2af6ca06` (`development` == `origin/development`) |
+| **EXECUTION_SHA** | *see FINAL_COMMIT below* |
+| **Package C historical exec** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` (preserved) |
+| **pytest budget** | **1** invocation, **4** nodes, `-p no:xdist`, log `.tmp/session/PROD-Q-R1-R7-Q-C-PROFILE-V1-ENTRYPOINT-REACHABILITY-CLOSURE/pytest.log` |
+| **Scope** | P1 closed-world AST reachability seeds profile-v1 production entry (`run_package_b_strict_production_serving_command`, `open_gca_strict_production_serving_session_from_single_node_production_profile_v1`); fail-closed root locator; structural PV1 opener bridge; DIM11-01 expected roots extended — **not** full §C **83**; **not** OD-R2-03 replay; **not** parent **PROD-Q** / global **FRZ** promotion |
+
+| Checkpoint | Test node | Result | Maps |
+|------------|-----------|--------|------|
+| **PV1-P1 chain** | `test_p1_g01_one_strict_production_root_chain` | **PASS** @ EXECUTION_SHA | Profile v1 → admission → GCA opener → `open_strict_production_serving_session`; all `STRICT_PRODUCTION_ROOTS` located |
+| **PV1-P1 adversarial** | `test_p1_negative_profile_v1_bypasses_admission_gate` | **PASS** @ EXECUTION_SHA | Admission bypass detected by structural PV1 bridge |
+| **DIM18** | `test_p1_g02_no_prohibited_execution_on_strict_reachable_graph` | **PASS** @ EXECUTION_SHA | No fake/reference prohibited execution on expanded graph |
+| **PV1 unresolved** | `test_p1_critical_authority_calls_resolve_without_unresolved_edges` | **PASS** @ EXECUTION_SHA | Mandatory authority calls on profile-v1 chain resolve in closed world |
+
+**Code defect discovered:** **None** on exercised paths.
+
+**Disposition:** **READY FOR AUDIT** for scoped profile-v1 P1 reachability @ EXECUTION_SHA; does **not** close §C integrated acceptance or **PROD-Q-R1-R7-Q**.
