@@ -837,9 +837,9 @@ uv run pytest -p no:xdist \
   -q
 ```
 
-Log: `.tmp/session/prod-q-r1-pi01-pi02-contract-realignment/pytest-pi01-pi02.log` — **2 passed**, ~13s @ execution **HEAD** `b476f1dc4…`.
+Log: `.tmp/session/prod-q-r1-pi01-pi02-contract-realignment/pytest-pi01-pi02.log` — **2 passed**, ~13s @ execution **HEAD** `1faa86ffb…`.
 
-**FINAL_COMMIT (code + evidence):** `b476f1dc43f8ab8895a3e8129d3aae3cd99c2aa8`
+**FINAL_COMMIT (code + evidence):** `1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b`
 
 **Exclusions:** Full PROD-Q; other §18–§20 nodes; **B6**; broad module collection.
 
