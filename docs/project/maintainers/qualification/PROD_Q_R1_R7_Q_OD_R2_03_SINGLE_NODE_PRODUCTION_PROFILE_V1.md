@@ -5,9 +5,9 @@
 | **Status** | **READY FOR AUDIT** |
 | **Task** | `PROD-Q-R1-R7-Q-OD-R2-03-SINGLE-NODE-PRODUCTION-PROFILE-V1` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
-| **START_HEAD** | `a7122b6e019db9123a3dccad2816389f735fa855` |
-| **FINAL_COMMIT / AUDITED_HEAD** | `8b7edb0e7d0217d24e964577a7ae40758f7258e4` |
-| **EXECUTION_SHA** | `8b7edb0e7d0217d24e964577a7ae40758f7258e4` — **8/8** passed |
+| **START_HEAD** | `511a4dc1c7108119f86fc2606b602e71aea8392f` |
+| **FINAL_COMMIT / AUDITED_HEAD** | *(pending push — admission-hardening commit)* |
+| **EXECUTION_SHA** | *(record after pytest @ FINAL_COMMIT)* |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
 Operator authorized **single-node Linux VM profile v1** (exactly-one writer, ext4 SSD, SQLite GCA/PIS WAL+FULL, systemd, least-privilege identity). This dossier is repository + lab evidence only.
@@ -24,7 +24,10 @@ Operator authorized **single-node Linux VM profile v1** (exactly-one writer, ext
 | PIS SQLite | Runtime enterprise reliability | `open_provider_invocation_store_at` | `SQLiteProviderInvocationStore` |
 | Single active lifecycle / writer (in-process) | Applications shared | `open_production_process_lifecycle` | `_active_production_process_lifecycle` slot |
 | Strict GCA ASGI | GCA host | D4 launcher | `open_gca_strict_production_serving_session` |
-| Linux systemd (infra) | Operator / deployment | GCA `deploy/linux/single-node-production-profile-v1/` | unit + env example |
+| Profile v1 → strict startup seam | GCA host | `single_node_profile_v1_strict_startup.py` | `open_gca_strict_production_serving_session_from_single_node_production_profile_v1` |
+| CONFIGURED admission gate | GCA host | `single_node_profile_v1_admission_gate.py` | fail-closed env validation (not TARGET probe) |
+| Cross-process writer (claim 3) | Applications shared + OS lock | `NativeFileLock` under `DATA_DIR` | `acquire_cross_process_writer_admission_for_profile_v1` |
+| Linux systemd (infra) | Operator / deployment | GCA `deploy/linux/single-node-production-profile-v1/` | unit + env + entrypoint template |
 
 No new semantic or composition owners. No second deployment framework.
 
@@ -37,14 +40,34 @@ No new semantic or composition owners. No second deployment framework.
 | Typed configuration | `intergrax/applications/_shared/single_node_production_profile_v1.py` |
 | systemd unit | `applications/governed_contractor_application/deploy/linux/single-node-production-profile-v1/intergrax-gca-strict-production.service` |
 | Env example | `.../intergrax-gca-strict-production.env.example` |
-| Target probe (read-only) | `.../target-storage-probe.sh` |
+| Target probe (read-only, **informational**) | `.../target-storage-probe.sh` |
+| Entrypoint template | `.../intergrax-gca-strict-production-entrypoint.sh` |
 | REPO-TESTED gates | `tests/qualification/prod_q/test_prod_q_r1_r7_q_od_r2_03_single_node_production_profile_v1_gate.py` |
 
 Environment prefix: `INTERGRAX_SINGLE_NODE_PRODUCTION_V1_*` (see module docstring).
 
 ---
 
-## 3. PROFILE-01…10 matrix
+## 3. PV1-H01…10 admission-hardening matrix
+
+| Gate | Claim | REPO-TESTED |
+|------|-------|-------------|
+| **PV1-H01** | Profile reaches sanctioned strict startup | `test_pv1_h01_profile_reaches_sanctioned_strict_startup` |
+| **PV1-H02** | Missing configuration fails closed | `test_pv1_h02_*`, `test_od_r2_03_profile_missing_data_dir_fail_closed` |
+| **PV1-H03** | No alternate composition owner | `test_pv1_h03_no_alternate_startup_composition_authority` |
+| **PV1-H04** | In-process slot vs cross-process writer lock separated | `test_pv1_h04_in_process_*`, `test_pv1_h04_cross_process_writer_lock_*` |
+| **PV1-H05** | WAL/FULL on **owned** backend connections | `test_pv1_h05_owned_connection_sqlite_wal_full_*` |
+| **PV1-H06** | Ephemeral / invalid storage rejected | `test_pv1_h06_*`, `test_od_r2_03_profile_rejects_missing_data_directory` |
+| **PV1-H07** | systemd + entrypoint contract | `test_pv1_h07_systemd_and_entrypoint_agree` |
+| **PV1-H08** | Probe informational; admission gate fail-closed | `test_pv1_h08_probe_informational_admission_gate_fail_closed` |
+| **PV1-H09** | Failed startup does not widen provider surface | `test_pv1_h09_failed_startup_does_not_expand_provider_surface` |
+| **PV1-H10** | TARGET / B6 explicitly unproven | `test_pv1_h10_target_production_qualification_explicitly_unproven` |
+
+**F01–F06 disposition (consolidated):** startup seam (**F01**), shipped entrypoint + required env (**F02**), cross-process lock distinct from in-process slot (**F03**), owned-connection pragma evidence (**F04**), probe labeled informational + admission gate (**F05**), required `EnvironmentFile` + gate (**F06**). **F07** remains operator TARGET.
+
+---
+
+## 4. PROFILE-01…10 matrix
 
 | Gate | Requirement | CONFIGURED | REPO-TESTED | TARGET-VERIFIED | OPERATOR-ACCEPTED |
 |------|-------------|------------|-------------|-----------------|-------------------|
@@ -61,7 +84,7 @@ Environment prefix: `INTERGRAX_SINGLE_NODE_PRODUCTION_V1_*` (see module docstrin
 
 ---
 
-## 4. GCA/PIS restart proof mapping
+## 5. GCA/PIS restart proof mapping
 
 | Scenario | REPO-TESTED module |
 |----------|-------------------|
@@ -73,7 +96,7 @@ Environment prefix: `INTERGRAX_SINGLE_NODE_PRODUCTION_V1_*` (see module docstrin
 
 ---
 
-## 5. Recovery qualification (target procedure)
+## 6. Recovery qualification (target procedure)
 
 Operator executes on **authorized VM** with **synthetic data** and **fake provider** only:
 
@@ -88,16 +111,16 @@ Operator executes on **authorized VM** with **synthetic data** and **fake provid
 
 ---
 
-## 6. Remaining VM / operator evidence
+## 7. Remaining VM / operator evidence
 
 - Provisioned Linux VM with ext4 data volume **not yet assumed**.
-- `intergrax-gca-strict-production-entrypoint` script (operator-owned) must open `open_gca_strict_production_serving_session` then uvicorn factory.
+- Install entrypoint template to `/opt/intergrax/bin/`; set `INTERGRAX_GCA_STRICT_SERVE_EXEC` to operator Package B serve wiring calling `open_gca_strict_production_serving_session_from_single_node_production_profile_v1` + D4 uvicorn factory.
 - Package B operator mutation policy + live credentials (**OP-01…04** still OPEN).
 - TARGET-VERIFIED ext4 mount identity and backup/restore drill.
 
 ---
 
-## 7. Execution record
+## 8. Execution record
 
 ```text
 uv run pytest -p no:xdist \
@@ -109,7 +132,7 @@ Log: `.tmp/session/od-r2-03-single-node-profile-v1/pytest.log`
 
 ---
 
-## 8. ECAP summary
+## 9. ECAP summary
 
 | Item | Result |
 |------|--------|
@@ -119,7 +142,7 @@ Log: `.tmp/session/od-r2-03-single-node-profile-v1/pytest.log`
 
 ---
 
-## 9. Applicable FRZ (no promotion)
+## 10. Applicable FRZ (no promotion)
 
 | ID | Applicable | Note |
 |----|------------|------|
@@ -131,14 +154,15 @@ Log: `.tmp/session/od-r2-03-single-node-profile-v1/pytest.log`
 
 ---
 
-## 10. Unresolved findings
+## 11. Unresolved findings
 
 | Finding | Class |
 |---------|-------|
 | No TARGET-VERIFIED VM ext4 / systemd drill | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** |
 | Package B operator production policy | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** |
 | Integrated PROD-Q / R7-Q closure | **IN-SCOPE BLOCKER** (parent) |
-| F02 full production E2E | **TRACKED FREEZE DEBT** |
+| `INTERGRAX_GCA_STRICT_SERVE_EXEC` operator serve wiring on VM | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** |
+| F02 full production E2E on TARGET VM | **TRACKED FREEZE DEBT** |
 
 **Roadmap disposition:** Continue **PROD-Q-R1-R7-Q** — profile v1 artifacts **READY FOR AUDIT**; parent remains **NOT QUALIFIED**.
 

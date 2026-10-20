@@ -20,10 +20,12 @@ from intergrax.applications._shared.settings_loader import EnvReader
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionProcessStorage,
 )
+from intergrax.hosting.instance._native_lock import NativeFileLock, NativeFileLockError
 
 SINGLE_NODE_PRODUCTION_PROFILE_V1_ID: Final = "single_node_linux_vm.production_profile.v1"
 
 _ENV_PREFIX: Final = "INTERGRAX_SINGLE_NODE_PRODUCTION_V1_"
+_WRITER_LOCK_FILE_NAME: Final = ".intergrax-single-node-production-v1.writer.lock"
 
 _DEFAULT_GCA_DB_NAME: Final = "gca_host.sqlite"
 _DEFAULT_PIS_DB_NAME: Final = "provider_invocation.sqlite"
@@ -35,6 +37,24 @@ EphemeralPathKind = Literal["tmp_dir", "memory_fs", "qualification_locator", "no
 
 class SingleNodeProductionProfileV1ConfigurationError(ValueError):
     """Fail-closed single-node production profile v1 configuration error."""
+
+
+@dataclass(frozen=True, slots=True)
+class SingleNodeProductionProfileV1CrossProcessWriterHold:
+    """Advisory cross-process writer lock for profile v1 (claim 3 — not SQLite serialization)."""
+
+    lock_path: Path | None
+    _lock: NativeFileLock | None
+
+    def release(self) -> None:
+        if self._lock is not None:
+            self._lock.close()
+
+    def __enter__(self) -> SingleNodeProductionProfileV1CrossProcessWriterHold:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.release()
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,6 +222,76 @@ def validate_configured_single_node_production_profile_v1(
                 "all durable SQLite and continuation paths must reside under DATA_DIR "
                 f"({data_resolved}); got {path}",
             )
+    data_path = config.durable_data_directory.expanduser()
+    if not data_path.is_dir():
+        raise SingleNodeProductionProfileV1ConfigurationError(
+            f"durable_data_directory must exist and be a directory: {data_path}",
+        )
+
+
+def writer_lock_path_for_profile_v1(config: SingleNodeProductionProfileV1Configuration) -> Path:
+    return config.durable_data_directory / _WRITER_LOCK_FILE_NAME
+
+
+def acquire_cross_process_writer_admission_for_profile_v1(
+    config: SingleNodeProductionProfileV1Configuration,
+) -> SingleNodeProductionProfileV1CrossProcessWriterHold:
+    """Acquire OS-level exclusive writer lock when enforcement is enabled (claim 3)."""
+    if not config.enforce_single_active_writer_process:
+        return SingleNodeProductionProfileV1CrossProcessWriterHold(lock_path=None, _lock=None)
+    lock_path = writer_lock_path_for_profile_v1(config)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        lock = NativeFileLock(lock_path)
+    except NativeFileLockError as exc:
+        raise SingleNodeProductionProfileV1ConfigurationError(
+            "another process holds the single-node production profile v1 writer lock "
+            f"({lock_path}); concurrent GCA/PIS writers are not supported",
+        ) from exc
+    return SingleNodeProductionProfileV1CrossProcessWriterHold(
+        lock_path=lock_path,
+        _lock=lock,
+    )
+
+
+def load_validate_and_admit_single_node_production_profile_v1_from_env(
+    *,
+    env: EnvReader | None = None,
+    acquire_cross_process_writer: bool = True,
+) -> tuple[
+    SingleNodeProductionProfileV1Configuration,
+    StrictProductionProcessStorage,
+    SingleNodeProductionProfileV1CrossProcessWriterHold,
+]:
+    """Load profile v1, run CONFIGURED validation, optionally acquire cross-process writer lock."""
+    config = load_single_node_production_profile_v1_from_env(env=env)
+    validate_configured_single_node_production_profile_v1(config)
+    hold = (
+        acquire_cross_process_writer_admission_for_profile_v1(config)
+        if acquire_cross_process_writer
+        else SingleNodeProductionProfileV1CrossProcessWriterHold(lock_path=None, _lock=None)
+    )
+    storage = config.resolve_strict_production_process_storage()
+    return config, storage, hold
+
+
+def assert_owned_connection_sqlite_wal_full_pragmas(
+    pragmas: SqliteEffectiveDurabilityPragmas,
+    *,
+    db_path: Path,
+) -> SqliteEffectiveDurabilityPragmas:
+    """REPO-TESTED assertion on application-owned connection pragmas (not inspection-only)."""
+    if pragmas.journal_mode != "wal":
+        raise SingleNodeProductionProfileV1ConfigurationError(
+            f"expected journal_mode=wal on owned connection, got {pragmas.journal_mode!r} "
+            f"for {db_path}",
+        )
+    if pragmas.synchronous != 2:
+        raise SingleNodeProductionProfileV1ConfigurationError(
+            f"expected synchronous=FULL (2) on owned connection, got {pragmas.synchronous} "
+            f"for {db_path}",
+        )
+    return pragmas
 
 
 def read_sqlite_effective_durability_pragmas(db_path: Path) -> SqliteEffectiveDurabilityPragmas:
@@ -295,11 +385,16 @@ __all__ = [
     "LinuxExt4MountProbeResult",
     "SingleNodeProductionProfileV1Configuration",
     "SingleNodeProductionProfileV1ConfigurationError",
+    "SingleNodeProductionProfileV1CrossProcessWriterHold",
     "SINGLE_NODE_PRODUCTION_PROFILE_V1_ID",
     "SqliteEffectiveDurabilityPragmas",
+    "acquire_cross_process_writer_admission_for_profile_v1",
+    "assert_owned_connection_sqlite_wal_full_pragmas",
     "assert_repo_tested_sqlite_wal_full_pragmas",
     "load_single_node_production_profile_v1_from_env",
+    "load_validate_and_admit_single_node_production_profile_v1_from_env",
     "probe_linux_ext4_mount_for_path",
     "read_sqlite_effective_durability_pragmas",
     "validate_configured_single_node_production_profile_v1",
+    "writer_lock_path_for_profile_v1",
 ]

@@ -151,6 +151,13 @@ class SQLiteProviderInvocationStore(ProviderInvocationStore):
             raise ProviderInvocationPersistenceError(str(exc)) from exc
         return conn
 
+    def read_owned_connection_durability_pragmas(self) -> tuple[str, int]:
+        """Non-authoritative qualification surface: pragmas on an application-owned connection."""
+        with self._managed_connection() as conn:
+            journal = str(conn.execute("PRAGMA journal_mode;").fetchone()[0]).lower()
+            synchronous = int(conn.execute("PRAGMA synchronous;").fetchone()[0])
+        return journal, synchronous
+
     @contextmanager
     def _managed_connection(self) -> Iterator[sqlite3.Connection]:
         with self._lock:

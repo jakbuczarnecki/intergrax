@@ -121,6 +121,13 @@ class _SqliteGovernedExternalWorkHostDatabase:
             raise GovernedExternalWorkHostPersistenceError(str(exc)) from exc
         return conn
 
+    def read_owned_connection_durability_pragmas(self) -> tuple[str, int]:
+        """Non-authoritative qualification surface: pragmas on an application-owned connection."""
+        with self._managed_connection() as conn:
+            journal = str(conn.execute("PRAGMA journal_mode;").fetchone()[0]).lower()
+            synchronous = int(conn.execute("PRAGMA synchronous;").fetchone()[0])
+        return journal, synchronous
+
     @contextmanager
     def _managed_connection(self) -> Iterator[sqlite3.Connection]:
         with self._lock:
@@ -640,6 +647,9 @@ class SQLiteGovernedExternalWorkHostStoreBackend(OwnedGovernedExternalWorkHostSt
 
     def close(self) -> None:
         self._db.close()
+
+    def read_owned_connection_durability_pragmas(self) -> tuple[str, int]:
+        return self._db.read_owned_connection_durability_pragmas()
 
 
 def open_sqlite_governed_external_work_host_store_bundle_at(

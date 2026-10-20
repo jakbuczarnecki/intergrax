@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Read-only TARGET-VERIFIED helper for operator Linux VM (profile v1).
-# Does not mutate storage. Run as least-privilege user after paths are configured.
+# INFORMATIONAL ONLY — not a fail-closed admission gate (profile v1 TARGET-VERIFIED helper).
+# For CONFIGURED admission use: python -m governed_contractor_application.host.single_node_profile_v1_admission_gate
+# Read-only on operator Linux VM. Does not mutate storage.
 
 set -euo pipefail
 
