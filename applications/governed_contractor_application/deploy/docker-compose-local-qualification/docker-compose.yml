@@ -1,0 +1,37 @@
+# © Artur Czarnecki. All rights reserved.
+# OD-R2-03 — Docker Compose LOCAL QUALIFICATION (not production-qualified).
+#
+# From repository root:
+#   docker compose -f applications/governed_contractor_application/deploy/docker-compose-local-qualification/docker-compose.yml \
+#     -p intergrax-gca-docker-local-qualification config -q
+#
+# See RUNBOOK.md for image build, CONFIGURED verify, and operator serve prerequisites.
+
+name: intergrax_gca_docker_local_qualification
+
+services:
+  gca-strict-local-qualification:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BASE_IMAGE: ${INTERGRAX_GCA_QUALIFICATION_BASE_IMAGE:-governed_contractor-application:latest}
+    image: intergrax-gca-docker-local-qualification:local
+    environment:
+      INTERGRAX_SINGLE_NODE_PRODUCTION_V1_DATA_DIR: /var/lib/intergrax/production-v1/data
+      INTERGRAX_SINGLE_NODE_PRODUCTION_V1_SERVICE_RUNTIME_USER: intergrax-gca
+      INTERGRAX_SINGLE_NODE_PRODUCTION_V1_ENFORCE_SINGLE_ACTIVE_WRITER: "1"
+      INTERGRAX_SINGLE_NODE_PRODUCTION_V1_TRUSTED_ARTIFACT_PARENT_ROOTS: /var/lib/intergrax/production-v1/data/trusted_artifacts
+      GOVERNED_CONTRACTOR_BACKEND_ENV: prod
+      INTERGRAX_GCA_STRICT_SERVE_EXEC: ${INTERGRAX_GCA_STRICT_SERVE_EXEC:-/app/.venv/bin/python -m governed_contractor_application.host.package_b_strict_production_serving_command}
+    env_file:
+      - path: intergrax-gca-docker-local-qualification.env
+        required: false
+    volumes:
+      - gca_strict_local_qualification_data:/var/lib/intergrax/production-v1/data
+    stop_grace_period: 120s
+    restart: "no"
+
+volumes:
+  gca_strict_local_qualification_data:
+    name: intergrax_gca_strict_local_qualification_data

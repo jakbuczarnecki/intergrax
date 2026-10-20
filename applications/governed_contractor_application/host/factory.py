@@ -45,6 +45,12 @@ from intergrax.applications._shared.strict_production_serving_http_ingress impor
 from intergrax.applications._shared.strict_production_serving_tenant_authority_task_execution import (
     StrictProductionServingTenantAuthorityTaskExecutionPort,
 )
+from governed_contractor_application.host.governed_external_work_host_stores import (
+    GovernedExternalWorkHostStoreBundle,
+)
+from governed_contractor_application.host.strict_sanctioned_follow_on_http_execution_admission import (
+    StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort,
+)
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
@@ -402,6 +408,16 @@ def create_governed_contractor_backend_app(
             host_execution,
             binding=strict_serving_tenant_binding,
         )
+        gca_host_stores = (
+            process_composition.governed_external_work_host_store_bundle
+            if process_composition is not None
+            else None
+        )
+        if isinstance(gca_host_stores, GovernedExternalWorkHostStoreBundle):
+            host_execution = StrictSanctionedExternalWorkFollowOnExecutionAdmissionPort(
+                host_execution,
+                execution_store=gca_host_stores.execution_store,
+            )
     registry = runtime.registry
     platform = bootstrap_harness_host_platform(runtime)
     if observability_export is not None and observability_export.enabled:

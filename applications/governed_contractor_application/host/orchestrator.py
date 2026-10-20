@@ -23,6 +23,7 @@ from external_contractor_adapter.external_work_adapter import (
     META_CORRELATION_ID,
     META_IDEMPOTENCY_KEY,
     META_PROVIDER_ID,
+    META_SCOPE_DIGEST,
     META_WORKSPACE_REF,
     ExternalWorkAdapter,
 )
@@ -574,12 +575,20 @@ class GovernedExternalWorkOrchestrator:
             external_task_id=create_result.snapshot.correlation.external_task_id,
         )
         meta[META_PROVIDER_INVOCATION_ID] = invocation.invocation_id
+        cancel_scope_digest: str | None = None
+        if create_result.snapshot.quote is not None:
+            cancel_scope_digest = create_result.snapshot.quote.scope_digest
+        if cancel_scope_digest is None:
+            raw_digest = meta.get(META_SCOPE_DIGEST)
+            if raw_digest is not None and str(raw_digest).strip():
+                cancel_scope_digest = str(raw_digest).strip()
         adapter_result = self._adapter.cancel_and_map(
             create_result.snapshot.correlation,
             principal_id=principal_id,
             tenant_id=tenant_id,
             workspace_id=_workspace_from_metadata(meta),
             idempotency_key=idempotency_key,
+            side_effect_scope_digest=cancel_scope_digest,
             provider_invocation=invocation,
         )
         adapter_result = adapter_result.model_copy(

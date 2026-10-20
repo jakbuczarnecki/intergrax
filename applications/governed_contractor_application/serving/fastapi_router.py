@@ -28,6 +28,8 @@ from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 
+_META_EXTERNAL_WORK_PRINCIPAL_ID = "external_work.principal_id"
+
 
 @dataclass(frozen=True)
 class GovernedContractorServingConfig:
@@ -106,6 +108,19 @@ class GovernedContractorRunService:
             caller_principal = None
 
         tenant_id, user_id = self._resolve_identity(body, http_ctx)
+        metadata = dict(body.metadata or {})
+        if binding is not None:
+            raw_principal = metadata.get(_META_EXTERNAL_WORK_PRINCIPAL_ID)
+            if raw_principal is not None:
+                declared_principal = str(raw_principal).strip()
+                if declared_principal and declared_principal != user_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            "external_work.principal_id in metadata conflicts with "
+                            "authenticated RequestContext."
+                        ),
+                    )
         task = Task(
             tenant_id=tenant_id,
             user_id=user_id,
@@ -113,7 +128,7 @@ class GovernedContractorRunService:
             agent_id=self.config.default_agent_id,
             message=body.message,
             context=TaskContext(capability=body.capability or "external_contractor.adapt"),
-            metadata=dict(body.metadata),
+            metadata=metadata,
         )
         try:
             if caller_principal is not None:

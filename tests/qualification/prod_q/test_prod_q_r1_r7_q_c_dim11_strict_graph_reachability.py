@@ -170,6 +170,14 @@ def test_c_dim11_01_production_graph_closure_reuses_p1_and_projection_wiring() -
             "intergrax/applications/_shared/production_process_lifecycle.py",
             "open_production_process_lifecycle",
         ),
+        (
+            "applications/governed_contractor_application/host/single_node_profile_v1_strict_startup.py",
+            "open_gca_strict_production_serving_session_from_single_node_production_profile_v1",
+        ),
+        (
+            "applications/governed_contractor_application/host/strict_gca_production_process_composition.py",
+            "open_gca_strict_production_serving_session",
+        ),
     }
     missing = expected_roots - report.reachable_functions
     assert not missing, f"missing reachable production roots: {missing}"

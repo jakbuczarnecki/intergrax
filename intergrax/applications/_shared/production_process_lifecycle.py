@@ -267,6 +267,29 @@ def _release_active_production_slot(lifecycle: ProductionProcessLifecycle) -> No
             _production_slot_phase = _ProductionSlotPhase.AVAILABLE
 
 
+def _release_uncommitted_production_lifecycle_resources(
+    *,
+    lifecycle: ProductionProcessLifecycle | None,
+    continuation_store: SerializedSealExecutionContinuationStateStore | None,
+    owned_invocation: SQLiteProviderInvocationStore | None,
+    continuation_closed: bool,
+    invocation_closed: bool,
+) -> list[BaseException]:
+    """Close opener-owned stores; prefer lifecycle.close when a partial root exists."""
+    if lifecycle is not None:
+        try:
+            lifecycle.close_process_resources()
+        except BaseException as exc:
+            return cleanup_errors_from_close_failure(exc)
+        return []
+    return release_lifecycle_owned_stores(
+        continuation_store=continuation_store,
+        owned_invocation=owned_invocation,
+        continuation_closed=continuation_closed,
+        invocation_closed=invocation_closed,
+    )
+
+
 def open_production_process_lifecycle(
     *,
     agent_distribution_db: Path,
@@ -332,6 +355,7 @@ def open_production_process_lifecycle(
         raise AssertionError("unreachable startup cleanup")
 
     durable_runtime = None
+    lifecycle: ProductionProcessLifecycle | None = None
     try:
         durable_runtime = build_durable_production_agent_platform_runtime(
             agent_distribution_db,
@@ -435,7 +459,8 @@ def open_production_process_lifecycle(
                 lifecycle.reconcile_serving_environment(app_id, env_id)
             except ProductionServingReconciliationError as reconcile_exc:
                 _abort_production_opening_slot()
-                cleanup_errors = release_lifecycle_owned_stores(
+                cleanup_errors = _release_uncommitted_production_lifecycle_resources(
+                    lifecycle=lifecycle,
                     continuation_store=continuation_store,
                     owned_invocation=owned_invocation,
                     continuation_closed=False,
@@ -451,7 +476,10 @@ def open_production_process_lifecycle(
         return lifecycle
     except BaseException as startup_exc:
         _abort_production_opening_slot()
-        cleanup_errors = release_lifecycle_owned_stores(
+        if lifecycle is not None and lifecycle._process_closed:
+            raise startup_exc
+        cleanup_errors = _release_uncommitted_production_lifecycle_resources(
+            lifecycle=lifecycle,
             continuation_store=continuation_store,
             owned_invocation=owned_invocation,
             continuation_closed=False,

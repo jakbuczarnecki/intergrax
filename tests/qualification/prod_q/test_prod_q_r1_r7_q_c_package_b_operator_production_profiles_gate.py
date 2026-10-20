@@ -88,19 +88,6 @@ _OPERATOR_MUTATION_POLICY_PROFILE_ENV: Final = (
 )
 
 
-@pytest.fixture(autouse=True)
-def _isolate_production_process_lifecycle_slot() -> None:
-    from intergrax.applications._shared import production_process_lifecycle as ppl
-
-    active = ppl._active_production_process_lifecycle
-    if active is not None and not active._process_closed:
-        active.close_process_resources()
-    yield
-    active_after = ppl._active_production_process_lifecycle
-    if active_after is not None and not active_after._process_closed:
-        active_after.close_process_resources()
-
-
 def test_c_pkg_b_g00_qualification_baseline_ancestor() -> None:
     import subprocess as sp
 
@@ -147,6 +134,9 @@ def test_c_pkg_b_b6_01_lab_authorized_strict_activation_after_governance(
     assert err is None, f"integration import blocked: {err}"
     environment = d4._ac3_environment()
     revision_id = "rev-c-pkg-b-b6-01-lab"
+    governance = d4._governance(
+        ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
+    )
     session = d4._open_with_activation(
         tmp_path,
         environment=environment,
@@ -155,11 +145,6 @@ def test_c_pkg_b_b6_01_lab_authorized_strict_activation_after_governance(
     try:
         assert_identity_continuity(session, revision_id=revision_id)
         assert session.readiness.ready_for_traffic is True
-        boundary = session.lifecycle.launcher._mutation_authorization_boundary  # noqa: SLF001
-        assert boundary is not None
-        governance = d4._governance(
-            ApplicationEnvironmentProfile(profile_id=environment.application_environment_id),
-        )
         request = build_admit_runtime_revision_mutation_request(
             principal=governance.principal,
             application_id=environment.application_id,
@@ -169,7 +154,7 @@ def test_c_pkg_b_b6_01_lab_authorized_strict_activation_after_governance(
             identity_digest="digest",
         )
         permitted = authorize_scoped_control_plane_mutation(
-            boundary=boundary,
+            boundary=governance.mutation_authorization_boundary,
             tenant_resolver=governance.environment_tenant_resolver,
             request=request,
         )
@@ -248,7 +233,6 @@ def test_c_pkg_b_b6_03_missing_governance_and_deny_policy_fail_closed(
             governance=None,  # type: ignore[arg-type]
             deployment_adapter=adapter,
         )
-    env = ApplicationEnvironmentProfile(profile_id=environment.application_environment_id)
     deny_governance = _GovernanceDenyEvidence().build(environment)
     with open_production_process_lifecycle(
         agent_distribution_db=storage.agent_distribution_db,

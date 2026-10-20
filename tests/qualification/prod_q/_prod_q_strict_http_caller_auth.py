@@ -11,7 +11,9 @@ from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.fastapi_core.protocol import ApiHeaders
 
 _QUAL_API_KEY: str = "qual-strict-http-key"
-_QUAL_USER: str = "qual-http-caller"
+_QUAL_USER: str = "http-inv-qual-principal"
+_QUAL_API_KEY_B: str = "qual-strict-http-key-b"
+_QUAL_USER_B: str = "http-inv-qual-principal-unauthorized-b"
 _WRONG_TENANT_KEY: str = "qual-wrong-tenant-key"
 
 
@@ -31,6 +33,11 @@ def with_strict_http_api_keys(
             user_id=_QUAL_USER,
             scopes=("*",),
         ),
+        _QUAL_API_KEY_B: ApiKeyIdentity(
+            tenant_id=execution_tenant_id,
+            user_id=_QUAL_USER_B,
+            scopes=("*",),
+        ),
     }
     if wrong_tenant_id is not None:
         keys[_WRONG_TENANT_KEY] = ApiKeyIdentity(
@@ -47,7 +54,9 @@ def with_strict_http_api_keys(
 
 __all__ = [
     "_QUAL_API_KEY",
+    "_QUAL_API_KEY_B",
     "_QUAL_USER",
+    "_QUAL_USER_B",
     "_WRONG_TENANT_KEY",
     "strict_http_auth_headers",
     "with_strict_http_api_keys",

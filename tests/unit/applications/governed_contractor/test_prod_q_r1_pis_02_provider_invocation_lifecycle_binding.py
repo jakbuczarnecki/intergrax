@@ -124,35 +124,36 @@ def _seed_active_registry_projection(
     )
 
 
-def _host_runtime_for_startup(settings: GovernedContractorBackendSettings):
-    from applications.governed_contractor_application.tests.host.test_gr6_wire_production_decision_governance import (
-        _test_policy_bundle,
-    )
-    from external_contractor_adapter.tests.fakes.deterministic_external_work import (
-        DeterministicExternalWorkFake,
-    )
+def _host_runtime_for_startup(
+    settings: GovernedContractorBackendSettings,
+) -> tuple[GovernedContractorBackendSettings, object]:
+    """Reference strict host wiring for PIS-02 lifecycle binding — no external-work port.
+
+    PIS-02 proves lifecycle-owned ``provider_invocation_store`` binding through
+    orchestration topology; attaching ``ExternalWorkIntegration`` would require the
+    full strict sanctioned-external-work composition (policy bundle, serving handoff,
+    host store bundle) and is out of scope for these unit gates.
+    """
     from governed_contractor_application.host.collaborative_work_local_fixture import (
         build_in_memory_collaborative_work_repositories,
     )
     from intergrax.contracts.execution_identity import mint_task_id
     from tests.unit.runtime.governance.gr3_test_support import StaticActiveTaskScope
 
-    fake = DeterministicExternalWorkFake()
     cw = build_in_memory_collaborative_work_repositories()
-    settings = replace(
+    resolved_settings = replace(
         settings,
         include_mcp=False,
         include_scheduler=False,
         include_interaction_routes=False,
         include_task_control=False,
-        runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
     )
-    return compose_governed_contractor_host_runtime(
-        settings,
-        integration=fake,
+    host_runtime = compose_governed_contractor_host_runtime(
+        resolved_settings,
         task_scope=StaticActiveTaskScope(mint_task_id()),
         collaborative_work_repositories=cw,
     )
+    return resolved_settings, host_runtime
 
 
 def _install_reference_host_lab_contract_authority(
@@ -252,7 +253,7 @@ def test_pis_02_b_gca_and_orchestration_share_composition_invocation_store(
 
     settings = GovernedContractorBackendSettings.from_env()
     env = build_governed_contractor_environment_profile(settings)
-    host_runtime = _host_runtime_for_startup(settings)
+    settings, host_runtime = _host_runtime_for_startup(settings)
 
     with open_reference_production_process_lifecycle(
         continuation_state_file=tmp_path / "continuation.json",
@@ -317,7 +318,7 @@ def test_pis_02_d_normal_shutdown_closes_invocation_store(
 
     settings = GovernedContractorBackendSettings.from_env()
     env = build_governed_contractor_environment_profile(settings)
-    host_runtime = _host_runtime_for_startup(settings)
+    settings, host_runtime = _host_runtime_for_startup(settings)
 
     lifecycle = open_reference_production_process_lifecycle(
         continuation_state_file=tmp_path / "continuation.json",
@@ -423,11 +424,12 @@ def test_pis_02_f_strict_rejection_conflicting_and_missing_bindings(
     )
     try:
         assert lifecycle.composition.provider_invocation_store is None
+        pis02_settings, pis02_host_runtime = _host_runtime_for_startup(settings)
         with pytest.raises(HarnessHostOrchestrationTopologyReliabilityCompositionError):
             _build_serving_app(
                 lifecycle,
-                settings=settings,
-                host_runtime=_host_runtime_for_startup(settings),
+                settings=pis02_settings,
+                host_runtime=pis02_host_runtime,
                 monkeypatch=monkeypatch,
             )
     finally:

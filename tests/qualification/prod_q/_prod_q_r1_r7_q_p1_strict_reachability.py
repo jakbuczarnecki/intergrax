@@ -14,7 +14,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 # Closed-world production boundary (operator inventory — no repo-wide scan).
 BOUNDARY_MODULE_RELPATHS: Final[tuple[str, ...]] = (
     "applications/governed_contractor_application/host/main.py",
+    "applications/governed_contractor_application/host/package_b_strict_production_serving_command.py",
+    "applications/governed_contractor_application/host/single_node_profile_v1_strict_startup.py",
+    "applications/governed_contractor_application/host/strict_gca_production_process_composition.py",
     "applications/governed_contractor_application/host/strict_production_serving.py",
+    "intergrax/applications/_shared/single_node_production_profile_v1.py",
     "intergrax/applications/_shared/strict_production_serving_launcher.py",
     "intergrax/applications/_shared/production_host_composition.py",
     "intergrax/applications/_shared/strict_production_asgi_lifespan.py",
@@ -46,6 +50,38 @@ STRICT_PRODUCTION_ROOTS: Final[tuple[tuple[str, str], ...]] = (
         "applications/governed_contractor_application/host/main.py",
         "create_governed_contractor_process_app",
     ),
+    (
+        "applications/governed_contractor_application/host/package_b_strict_production_serving_command.py",
+        "run_package_b_strict_production_serving_command",
+    ),
+    (
+        "applications/governed_contractor_application/host/single_node_profile_v1_strict_startup.py",
+        "open_gca_strict_production_serving_session_from_single_node_production_profile_v1",
+    ),
+)
+
+PROFILE_V1_STRICT_STARTUP_RELPATH: Final = (
+    "applications/governed_contractor_application/host/single_node_profile_v1_strict_startup.py"
+)
+PROFILE_V1_STRICT_STARTUP_OPENER: Final = (
+    "open_gca_strict_production_serving_session_from_single_node_production_profile_v1"
+)
+
+# Fail-closed when these authority calls appear but cannot be resolved in the closed world.
+_MANDATORY_AUTHORITY_CALL_SUFFIXES: Final[frozenset[str]] = frozenset(
+    {
+        "open_production_process_lifecycle",
+        "reject_reference_runtime_deployment_adapter",
+        "wire_production_lifecycle_services",
+        "bind_colocated_serving_runtime_after_activation",
+        "create_governed_contractor_process_app",
+        "attach_strict_production_serving_lifespan",
+        "bootstrap_production_registry_projection",
+        "load_validate_and_admit_single_node_production_profile_v1_from_env",
+        "open_gca_strict_production_serving_session",
+        "open_strict_production_serving_session",
+        "open_gca_strict_production_serving_session_from_single_node_production_profile_v1",
+    }
 )
 
 # Execution / wiring violations (import-only or isinstance guards are not calls).
@@ -524,15 +560,7 @@ def analyze_strict_production_reachability() -> ReachabilityReport:
                 callee = _resolve_callee_to_boundary_function(imp, index)
             if callee is not None and callee not in seen:
                 queue.append(callee)
-            elif qual is not None and qual.split(".")[-1] in {
-                "open_production_process_lifecycle",
-                "reject_reference_runtime_deployment_adapter",
-                "wire_production_lifecycle_services",
-                "bind_colocated_serving_runtime_after_activation",
-                "create_governed_contractor_process_app",
-                "attach_strict_production_serving_lifespan",
-                "bootstrap_production_registry_projection",
-            }:
+            elif qual is not None and qual.split(".")[-1] in _MANDATORY_AUTHORITY_CALL_SUFFIXES:
                 if callee is None:
                     report.unresolved_calls.append(
                         CallSiteRef(
@@ -544,6 +572,117 @@ def analyze_strict_production_reachability() -> ReachabilityReport:
                     )
 
     return report
+
+
+def assert_all_strict_production_roots_located(index: dict[str, _ModuleRecord] | None = None) -> None:
+    """Every declared P1 root must resolve in the closed-world index (not silently skipped)."""
+    idx = index or _build_index()
+    missing: list[tuple[str, str]] = []
+    for module_relpath, func_name in STRICT_PRODUCTION_ROOTS:
+        simple = func_name.split(".")[-1]
+        if _locate_function(idx, module_relpath, simple) is None:
+            missing.append((module_relpath, func_name))
+    if missing:
+        raise AssertionError(
+            "P1 roots unresolved in boundary index (would yield false-green reachability): "
+            + ", ".join(f"{m}:{f}" for m, f in missing),
+        )
+
+
+def _function_calls_matching_suffix(
+    fnode: ast.AST,
+    imports: dict[str, str],
+    suffix: str,
+) -> bool:
+    for node in ast.walk(fnode):
+        if not isinstance(node, ast.Call):
+            continue
+        qual = _call_target_qualifier(node, imports)
+        if qual is not None and (qual.endswith(f".{suffix}") or qual.split(".")[-1] == suffix):
+            return True
+        if isinstance(node.func, ast.Name) and node.func.id == suffix:
+            return True
+        if isinstance(node.func, ast.Attribute) and node.func.attr == suffix:
+            return True
+    return False
+
+
+def validate_profile_v1_strict_startup_structure(
+    fnode: ast.AST,
+    imports: dict[str, str],
+) -> list[str]:
+    errors: list[str] = []
+    if not _function_calls_matching_suffix(
+        fnode,
+        imports,
+        "load_validate_and_admit_single_node_production_profile_v1_from_env",
+    ):
+        errors.append(
+            "P1-PV1: profile v1 opener must call "
+            "load_validate_and_admit_single_node_production_profile_v1_from_env",
+        )
+    if not _function_calls_matching_suffix(fnode, imports, "open_gca_strict_production_serving_session"):
+        errors.append(
+            "P1-PV1: profile v1 opener must delegate to open_gca_strict_production_serving_session",
+        )
+    if not _function_calls_matching_suffix(fnode, imports, "bind_process_scoped_release_on_close"):
+        errors.append(
+            "P1-PV1: profile v1 opener must bind writer release on session close",
+        )
+    release_on_failure = False
+    for node in ast.walk(fnode):
+        if not isinstance(node, ast.Try):
+            continue
+        for handler in node.handlers:
+            if handler.type is None:
+                continue
+            if isinstance(handler.type, ast.Name) and handler.type.id == "BaseException":
+                for sub in ast.walk(ast.Module(body=handler.body, type_ignores=[])):
+                    if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute):
+                        if sub.func.attr == "release":
+                            release_on_failure = True
+    if not release_on_failure:
+        errors.append(
+            "P1-PV1: profile v1 opener must release writer hold on BaseException before re-raise",
+        )
+    return errors
+
+
+def assert_profile_v1_startup_chain_opener(index: dict[str, _ModuleRecord] | None = None) -> None:
+    idx = index or _build_index()
+    rel = PROFILE_V1_STRICT_STARTUP_RELPATH
+    record = idx[rel]
+    opener = record.functions[PROFILE_V1_STRICT_STARTUP_OPENER]
+    errors = validate_profile_v1_strict_startup_structure(opener, record.imports)
+    if errors:
+        raise AssertionError("\n".join(errors))
+    gca_rel = "applications/governed_contractor_application/host/strict_gca_production_process_composition.py"
+    gca_record = idx[gca_rel]
+    gca_opener = gca_record.functions["open_gca_strict_production_serving_session"]
+    if not _function_calls_matching_suffix(
+        gca_opener,
+        gca_record.imports,
+        "open_strict_production_serving_session",
+    ):
+        raise AssertionError(
+            "P1-PV1: open_gca_strict_production_serving_session must call "
+            "open_strict_production_serving_session",
+        )
+
+
+def analyze_profile_v1_startup_snippet(
+    source: str,
+    *,
+    function_name: str = PROFILE_V1_STRICT_STARTUP_OPENER,
+    module_label: str = "<snippet>",
+) -> list[str]:
+    tree = ast.parse(source, filename=module_label)
+    imports = _import_bindings(tree)
+    funcs, _ = _collect_functions(tree)
+    fnode = funcs.get(function_name)
+    if fnode is None:
+        return [f"missing function {function_name}"]
+    return validate_profile_v1_strict_startup_structure(fnode, imports)
 
 
 def assert_startup_chain_opener(index: dict[str, _ModuleRecord] | None = None) -> None:

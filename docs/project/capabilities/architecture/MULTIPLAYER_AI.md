@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 © Artur Czarnecki. All rights reserved.
 Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
 See LICENSE for permitted evaluation, collaboration, and contribution use.

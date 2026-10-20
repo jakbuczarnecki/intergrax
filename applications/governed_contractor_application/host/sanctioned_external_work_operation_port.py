@@ -37,9 +37,9 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
             return self._execute_accept(request)
         if request.operation is SanctionedExternalWorkMutationOperation.CANCEL:
             return self._execute_cancel(request)
-        return SanctionedExternalWorkOperationResult(
-            admitted=False,
+        return self._deny(
             reason="unsupported_sanctioned_operation",
+            operation=request.operation,
         )
 
     def _execute_create(
@@ -48,9 +48,9 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
     ) -> SanctionedExternalWorkOperationResult:
         payload = request.create
         if payload is None:
-            return SanctionedExternalWorkOperationResult(
-                admitted=False,
+            return self._deny(
                 reason="sanctioned_create_payload_missing",
+                operation=SanctionedExternalWorkMutationOperation.CREATE,
             )
         step = self._orchestrator.create(
             task_id=str(payload.task_id),
@@ -68,9 +68,9 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
     ) -> SanctionedExternalWorkOperationResult:
         payload = request.accept_quote
         if payload is None:
-            return SanctionedExternalWorkOperationResult(
-                admitted=False,
+            return self._deny(
                 reason="sanctioned_accept_payload_missing",
+                operation=SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE,
             )
         execution_id = str(payload.execution_id)
         create_result = self._resolve_prior_create_result(
@@ -79,9 +79,9 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
             principal_id=payload.principal_id,
         )
         if create_result is None:
-            return SanctionedExternalWorkOperationResult(
-                admitted=False,
+            return self._deny(
                 reason="prior_create_snapshot_missing",
+                operation=SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE,
                 execution_id=execution_id,
             )
         step = self._orchestrator.accept(
@@ -104,9 +104,9 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
     ) -> SanctionedExternalWorkOperationResult:
         payload = request.cancel
         if payload is None:
-            return SanctionedExternalWorkOperationResult(
-                admitted=False,
+            return self._deny(
                 reason="sanctioned_cancel_payload_missing",
+                operation=SanctionedExternalWorkMutationOperation.CANCEL,
             )
         execution_id = str(payload.execution_id)
         create_result = self._resolve_prior_create_result(
@@ -115,9 +115,9 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
             principal_id=payload.principal_id,
         )
         if create_result is None:
-            return SanctionedExternalWorkOperationResult(
-                admitted=False,
+            return self._deny(
                 reason="prior_create_snapshot_missing",
+                operation=SanctionedExternalWorkMutationOperation.CANCEL,
                 execution_id=execution_id,
             )
         step = self._orchestrator.cancel(
@@ -129,6 +129,27 @@ class GovernedSanctionedExternalWorkOperationPort(SanctionedExternalWorkOperatio
             metadata=payload.adapter_metadata.to_adapter_metadata(),
         )
         return self._map_step(step, operation=SanctionedExternalWorkMutationOperation.CANCEL)
+
+    def _deny(
+        self,
+        *,
+        reason: str,
+        operation: SanctionedExternalWorkMutationOperation,
+        execution_id: str | None = None,
+    ) -> SanctionedExternalWorkOperationResult:
+        return SanctionedExternalWorkOperationResult(
+            admitted=False,
+            reason=reason,
+            execution_id=execution_id,
+            domain_summary=SanctionedExternalWorkDomainSummary(
+                used=False,
+                reason=reason,
+                sanctioned_operation=operation.value,
+                host_state=None,
+                execution_id=execution_id,
+                provider_invocation_id=None,
+            ),
+        )
 
     def _resolve_prior_create_result(
         self,

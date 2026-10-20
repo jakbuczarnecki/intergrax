@@ -1,4 +1,4 @@
-﻿# Local Workspace Application - Implementation Plan
+# Local Workspace Application - Implementation Plan
 
 **Status:** Product-first MVP roadmap (2026-07-31)  
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)

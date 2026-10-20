@@ -88,6 +88,8 @@ def test_strict_wiring_requires_capabilities_argument() -> None:
             "build_strict_external_work_host_session_resources"
         ):
             arg_names = [a.arg for a in node.args.args]
+            arg_names.extend(a.arg for a in node.args.kwonlyargs)
             assert "host_stores" in arg_names
             assert "capabilities" in arg_names
             assert node.args.defaults == []
+            assert all(default is None for default in node.args.kw_defaults)

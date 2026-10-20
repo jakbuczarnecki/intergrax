@@ -2389,12 +2389,14 @@ source = { virtual = "applications/governed_contractor_application" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "intergrax-external-contractor-adapter-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "packaging", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "intergrax-ai", editable = "." },
     { name = "intergrax-external-contractor-adapter-agent", editable = "agents/external_contractor_adapter" },
+    { name = "packaging", specifier = ">=24,<26" },
 ]
 
 [[package]]

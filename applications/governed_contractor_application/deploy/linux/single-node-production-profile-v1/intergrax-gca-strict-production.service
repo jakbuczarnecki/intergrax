@@ -1,0 +1,43 @@
+# Infrastructure-level systemd unit for operator-approved single-node production profile v1.
+# Install only on an authorized Linux VM; do not enable without separate execution authorization.
+#
+# Example:
+#   sudo install -o root -g root -m 0644 intergrax-gca-strict-production.service /etc/systemd/system/
+#   sudo install -o root -g root -m 0640 intergrax-gca-strict-production.env /etc/intergrax/
+#   sudo systemctl daemon-reload
+
+[Unit]
+Description=Intergrax Governed Contractor strict production (single-node profile v1)
+After=network-online.target local-fs.target
+Wants=network-online.target
+ConditionPathIsDirectory=/var/lib/intergrax/production-v1
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=intergrax-gca
+Group=intergrax-gca
+WorkingDirectory=/opt/intergrax/governed_contractor_application
+ConditionPathExists=/etc/intergrax/intergrax-gca-strict-production.env
+EnvironmentFile=/etc/intergrax/intergrax-gca-strict-production.env
+
+# Exactly-one active writer/process for GCA/PIS SQLite (profile v1).
+# Entrypoint: CONFIGURED admission gate, then INTERGRAX_GCA_STRICT_SERVE_EXEC (operator Package B wiring)
+# calling open_gca_strict_production_serving_session_from_single_node_production_profile_v1 + D4 uvicorn factory.
+ExecStartPre=/opt/intergrax/bin/intergrax-gca-strict-production-entrypoint --preflight-only
+ExecStart=/opt/intergrax/bin/intergrax-gca-strict-production-entrypoint
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=120
+KillMode=mixed
+
+# Durable data paths (must match INTERGRAX_SINGLE_NODE_PRODUCTION_V1_* in env file).
+ReadWritePaths=/var/lib/intergrax/production-v1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
