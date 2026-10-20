@@ -171,3 +171,74 @@ uv run pytest -p no:xdist \
 | **PROD-Q-R1-R7-D2** | **Next implementation** after D1/D1b acceptance |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## PROD-Q-R1-R7-D1–D3-FINAL-BATCH — Current-HEAD qualification rollup (Cursor @ `5dfefe416f6561c76a9c670c052661bd4d72f913`)
+
+| Field | Value |
+|-------|-------|
+| **Batch verdict (Cursor max)** | **BATCH TECHNICALLY QUALIFIED — INDEPENDENT ACCEPTANCE PENDING** |
+| **START_HEAD / EXECUTION_SHA / FINAL_COMMIT** | `5dfefe416f6561c76a9c670c052661bd4d72f913` (operator START_HEAD contained in ancestry) |
+| **Parent** | **PROD-Q-R1-R7** — **NOT CLOSED** |
+| **Scope** | Closed-world **D1**, **D1b**, **D1-R6**, **D2**, **D3** only; **D4** + **Package D** prior scoped acceptance **reused** (no re-certification) |
+
+### Post-`c25e7efe…` drift (mandatory recertification slice)
+
+| Module | Production delta vs `c25e7efee93b64e44119eaf5366a5841d557acbf` |
+|--------|----------------------------------------------------------------|
+| `activation_domain_coordinator.py` | `coordinate_unit_serving_admission_reopen`; `reconcile_coordinator_verified_existing_open` on port; `_verify_unit_admission_evidence` refactor (grant path ordering unchanged) |
+| `colocated_serving_runtime_composition.py` | `admission_bind_mode` grant/reopen; `resolve_traffic_serving_activation_commit`; strict-session close/drain/revoke helpers (**DIM16 / D4-adjacent** — outside D1–D3 re-run) |
+
+**Mandatory admission invariants touched:** recovery **reopen** must not duplicate **grant** authority; coordinator remains sole eligibility + physical open/reconcile boundary; stale pointer revision check preserved; no new grant registry or GCA→adapter bypass.
+
+**Historical evidence still sufficient (no pytest replay):** exactly-one grant-path atomicity (A1), unsupported topology negatives (D1b), D2 @ `0c63b3f2814cbbe18024eaf99670e7b923bbaa03` (D2-owned modules **0** diff), D3 @ `f2dd8ecbbff8561a50ec10321ddef62d345b65a9` (D3-owned modules **0** diff).
+
+### Drift regression (@ EXECUTION_SHA)
+
+**Log:** `.tmp/session/PROD-Q-R1-R7-D1-D3-FINAL-BATCH/pytest-drift.log`
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/applications/test_prod_q_r1_r7_q_c_dim13_recovery_admission_authority.py::test_dim13_recovery_rebind_uses_reopen_not_duplicate_grant \
+  tests/unit/applications/test_prod_q_r1_r7_q_c_dim13_recovery_admission_authority.py::test_dim13_recovery_reopen_rejected_after_drain \
+  tests/unit/applications/test_prod_q_r1_r7_q_c_dim13_recovery_admission_authority.py::test_dim13_recovery_reopen_rejected_on_identity_mismatch \
+  tests/unit/applications/test_prod_q_r1_r7_q_c_dim13_recovery_admission_authority.py::test_dim13_grant_after_physical_authorization_fails_closed \
+  tests/unit/agent_distribution/test_prod_q_r1_r7_d1_r6_r5_serving_admission_linearization.py::test_publish_failure_after_sqlite_commit_compensates \
+  -q
+```
+
+**Result:** **5 passed** in 2.03s
+
+### Child verdicts (batch)
+
+| Child | Verdict | Evidence continuity |
+|-------|---------|---------------------|
+| **D1** | **READY FOR AUDIT** — technically qualified on A1 | Historical `17e928e4…` + drift slice above |
+| **D1b** | **READY FOR AUDIT** — technically qualified on A1 | Same + handoff/authorize reopen wiring |
+| **D1-R6** | **READY FOR AUDIT** — technically qualified on A1 | `c25e7efe…` implementation + reopen extension |
+| **D2** | **READY FOR AUDIT** — continuity @ `0c63b3f2…` | No D2-module drift; no replay |
+| **D3** | **READY FOR AUDIT** — continuity @ `f2dd8ecb…` | No D3-module drift; recovery reopen via DIM13 |
+
+### ECAP (batch)
+
+| ID | Disposition |
+|----|-------------|
+| **A1–A8** | **SATISFIED** on closed-world evidence + drift tests (contracts, single owners, boundaries, typing, replaceability, no reflection bypass, fail-closed, governance≠execution) |
+| **B1–B5** | **SATISFIED** — evidence continuity, scoped replay, SHA pins, limitations explicit, no unauthorized scope expansion |
+| **B6** | **NOT GRANTED** (independent operator acceptance required) |
+
+### Applicable FRZ (local contribution only — **global PASS = 0**)
+
+**FRZ-PRD-03/04/05/07/08/11/12**, **FRZ-SEC-04**, relevant **FRZ-OWN/BND/CTR/TYP/REL/REC/REG** per freeze checklist — evidence pointers unchanged from child records; batch adds DIM13/reopen continuity only.
+
+### Scope limitations (explicit)
+
+- **A1** single-process colocated topology; cross-process SQLite = **TRACKED FREEZE DEBT**
+- **DIM16** strict-session lifecycle helpers in drift file — **not** re-qualified in this batch (Package D prior acceptance)
+- **`resolve_traffic_serving_activation_commit`** — fail-closed helper in composition; **not** separately replayed (D3 durable modules unchanged)
+- Global **PROD-Q** / **PROD-Q-R1** / **PROD-Q-R1-R7-Q** gates unchanged
+
+### Recommendation
+
+Operator independent exact-SHA audit on **`5dfefe416f6561c76a9c670c052661bd4d72f913`** may accept batch technical qualification; **B6** and parent **PROD-Q-R1-R7** closure remain operator-only.
