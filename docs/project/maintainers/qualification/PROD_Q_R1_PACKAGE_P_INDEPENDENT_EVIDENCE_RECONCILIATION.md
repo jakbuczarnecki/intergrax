@@ -438,3 +438,53 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | Remaining dependencies | **DIM6**, **DIM17**, Package D operator path, §C rollup, **PROD-Q-R1** parent, **PROD-Q** |
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 14. Current-HEAD CREATE contract recertification (@ `a4a7a3c80a1ee449a931d099a11aa2b41b1bc160`)
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-CREATE-CONTRACT-RECERTIFICATION** |
+| **START_HEAD** | `a4a7a3c80a1ee449a931d099a11aa2b41b1bc160` |
+| **EXECUTION_SHA** | `a4a7a3c80a1ee449a931d099a11aa2b41b1bc160` (`HEAD` == `origin/development`) |
+| **Sanctioned-port denial helper SHA** | `fc176db7fa2290c47849ff3d159299f936a05b2d` (IMPL-01-R2 — `_deny` + `SanctionedExternalWorkDomainSummary`) |
+| **Historical H09 SHA** | `43f6e0e232add1cf9fd9a947716d4c5444ae13d3` — **preserved**; not superseded |
+| **Production delta** | **0** |
+| **Scope** | P01/P06/P08 positive CREATE (H09); sanctioned-port **deny** contract post-`fc176db7…`; **not** full DIM20 / **not** non-CREATE business qual |
+
+**Drift (H09 vs current HEAD):** H09 qual module/composition ownership unchanged since `43f6e0e…`. Delta `43f6e0e…` → `a4a7a3c…` includes `fc176db7…` on `applications/governed_contractor_application/host/sanctioned_external_work_operation_port.py` only within Package P closed world — consolidated `_deny()`; positive `_execute_create` still delegates to `GovernedExternalWorkOrchestrator.create` unchanged.
+
+**Pytest (this recertification — single invocation):**
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_h09_http_strict_post_traverses_reflex_sanctioned_pis_and_provider \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_impl_01_r2_final_durability_and_qualification.py::test_g_r2_09_accept_quote_prior_create_snapshot_missing_through_sanctioned_port \
+  -q
+```
+
+| Node | Outcome |
+|------|---------|
+| `test_h09_http_strict_post_traverses_reflex_sanctioned_pis_and_provider` | **1 passed** (~10s) |
+| `test_g_r2_09_accept_quote_prior_create_snapshot_missing_through_sanctioned_port` | **1 passed** |
+| **Aggregate** | **2 passed**, exit **0** |
+| **Log** | `.tmp/session/PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-CREATE-CONTRACT-RECERTIFICATION/pytest-recert.log` |
+
+**Invariant coverage @ EXECUTION_SHA:**
+
+| ID | Verdict | Evidence class |
+|----|---------|----------------|
+| **P-CREATE-01** | **BEHAVIORALLY VERIFIED** | H09 @ `a4a7a3c…` |
+| **P-CREATE-02** | **BEHAVIORALLY VERIFIED** | H09 inline PIS-before-`create_work` assert |
+| **P-CREATE-03** | **BEHAVIORALLY VERIFIED** | H09 single provider CREATE effect |
+| **P-CREATE-04** (CREATE missing payload) | **CODE REVIEWED** | `_deny`/`sanctioned_create_payload_missing` @ port — **no** dedicated pytest node in repo |
+| **P-CREATE-04** (deny helper / domain_summary) | **BEHAVIORALLY VERIFIED** (ACCEPT_QUOTE branch) | G-R2-09 — `admitted=False`, `prior_create_snapshot_missing`, no orchestrator `accept`, `create_calls==0` |
+| **P-CREATE-05** (ACCEPT/CANCEL other denies) | **CODE REVIEWED** | shared `_deny`; G-R2-09 covers prior-snapshot deny only |
+| **P-CREATE-06** | **HISTORICAL — DRIFT REVIEWED** | H09 + prior tenant/auth qual; no drift in identity path from `fc176db7…` |
+
+**FRZ (evidence contribution only — rows remain OPEN globally):** `FRZ-PRD-03` fail-closed deny semantics (scoped); `FRZ-PRD-08` no bypass on deny branches; `FRZ-SEC-04` deny without authority amplification; `FRZ-OWN-*` / `FRZ-BND-*` / `FRZ-CTR-*` unchanged ownership; `FRZ-REL-03`/`FRZ-REL-05` — CREATE cardinality only, not HTTP duplicate POST.
+
+**Parent blockers:** **PROD-Q-R1** / **R7-Q** **NOT QUALIFIED**; Package P **B6** pending; **DIM6**/**DIM17** **OP-01…04** blocked.
+
+**Disposition:** **READY FOR AUDIT** (scoped recertification contribution; does **not** close Package P or promote global FRZ).
