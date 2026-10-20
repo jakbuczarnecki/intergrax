@@ -8,7 +8,7 @@
 
 **Branch:** `development`
 
-**START_HEAD (this evidence-ledger alignment):** `eeebca3b44ff3160a5b1e4a01b402129869e9985`
+**START_HEAD (this evidence-ledger alignment):** `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00`
 
 **START_HEAD (P0-R1-R1-R1-R1-R1-R1-R1-R1 rejected baseline):** `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e`
 
@@ -19,7 +19,8 @@
 | Initial closed-world inventory wave | `20ce563d383312bd53c72167cb228623dfbb8881` | **PROD-Q-P0** (historical) | **REJECTED** (preserved; not re-opened) |
 | Mechanical composition-ownership + authoritative gate lock | `0046075484cd85da9a220f6f537c48ad94dd8078` | **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** implementation evidence | **READY FOR AUDIT** — independent GitHub audit required; **not** **CLOSED** |
 | Typing/subprocess/evidence-integrity corrective | `ddc8704457192aafffdd32ca8d65e258db2679e0` | Post-lock qualification harness hardening only (`tests/qualification/prod_q/_p0_certification.py`, `_p0_*` gates) | **READY FOR AUDIT** — does **not** supersede or replace mechanical lock SHA; does **not** close parent **PROD-Q** |
-| Current-HEAD compatibility (doc reconciliation @ START_HEAD) | `eeebca3b44ff3160a5b1e4a01b402129869e9985` | Both `0046075484…` and `ddc87044…` are ancestors of HEAD (`git merge-base --is-ancestor`) | Factual lineage only — **not** operator acceptance |
+| Current-HEAD compatibility (doc reconciliation @ START_HEAD) | `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` | Both `0046075484…` and `ddc87044…` are ancestors of HEAD (`git merge-base --is-ancestor`) | Factual lineage only — **not** operator acceptance |
+| P0 final gate execution (Cursor session evidence) | `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` | Mandatory `tests/qualification/prod_q/` replay @ exact HEAD (see § execution evidence) | **READY FOR AUDIT** — **not** **CLOSED**; suite exit **1** (R1 PI failures classified **non-P0**) |
 | FRZ reconciliation rows (`build_frz_reconciliation()`) | — | **FRZ-PRD / FRZ-SEC / FRZ-REL** and related IDs per freeze checklist | Evidence **contributions** only — **no** global **FRZ-*** **PASS** from P0 |
 
 **Implementation test evidence (committed @ `ddc87044…`, not replayed in this documentation task):** `test_prod_q_p0_fast_q04_historical_evidence_ancestry`; `test_prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit_gate` (`tests/qualification/prod_q/test_prod_q_p0_r1_r1_r1_r1_r1_r1_gate.py`); bounded-subprocess / R1-disposition integrity gates `test_prod_q_p0_int_d7_*` (`tests/qualification/prod_q/test_prod_q_p0_integrity.py`). **IMPL-01-R3** and other non-P0 stages remain **not** **QUALIFIED** by this ledger.
@@ -119,6 +120,29 @@ PROD-Q-P1 — External sandbox provider production qualification (E2B, Modal, Da
 PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure
 PROD-Q-P3 — Production operability surface (health/readiness/operator semantics wiring)
 ```
+
+## PROD-Q-P0 final gate — execution evidence (@ `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00`)
+
+| Field | Value |
+| --- | --- |
+| **Exact HEAD** | `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` |
+| **Branch** | `development` (= `origin/development`, clean tree) |
+| **Command** | `uv run pytest tests/qualification/prod_q/ -p no:xdist -q` |
+| **Collected** | 438 |
+| **Result** | 434 passed, **2 failed**, 2 skipped, 1 warning |
+| **Duration** | 253.55s |
+| **Exit code** | **1** |
+| **`INTERGRAX_PROD_Q_R1_HTTP_REPRODUCTION`** | unset (default; not required for this gate) |
+| **Session log** | `.tmp/session/prod-q-p0-final-gate-20261020/pytest-mandatory-gate.log` |
+| **Pyright** | `uv run pyright` on 11× `tests/qualification/prod_q/_p0_*.py` → **0 errors** (`.tmp/session/prod-q-p0-final-gate-20261020/pyright-p0.log`) |
+
+**FAIL (suite-level; classified non-P0):** `test_pi01_wrong_principal_same_tenant_accept_denied_zero_provider_calls`, `test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls` — `tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py` — HTTP **400** (`external_work.principal_id in metadata conflicts with authenticated RequestContext`) vs test expectation **200** with in-body denial → **PROD-Q-R1** strict HTTP invocation identity (**PI-01/PI-02**), **not** a **PROD-Q-P0** invariant violation.
+
+**NOT PROVEN (environment):** `test_prod_q_p0_integrity.py` POSIX-only owned process-group assertion (skipped on Windows); Windows job-object descendant-termination assertion (skipped; documented STOP in test).
+
+**P0 test battery:** all `test_prod_q_p0_*` and P0 integrity gates that executed on Windows **passed** (no `test_prod_q_p0_*` failures in this run).
+
+**P0 closure recommendation:** **READY FOR INDEPENDENT EXACT-SHA GITHUB AUDIT** — mechanical lock @ `0046075484…` + corrective @ `ddc87044…` + this execution record; **do not** promote **PROD-Q-P0** to **CLOSED** or unblock parent **PROD-Q** without operator acceptance. **No global `FRZ-*` PASS** from this replay.
 
 ## Tests (mandatory)
 
