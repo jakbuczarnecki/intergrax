@@ -369,3 +369,43 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 **Code defect discovered:** **None** on exercised paths.
 
 **Disposition:** **READY FOR AUDIT** for scoped profile-v1 P1 reachability @ EXECUTION_SHA; does **not** close §C integrated acceptance or **PROD-Q-R1-R7-Q**.
+
+### G.4 Profile v1 final adversarial & lifecycle gate (`PROD-Q-R1-R7-Q-C-PROFILE-V1-FINAL-ADVERSARIAL-AND-LIFECYCLE-GATE`)
+
+| Field | Value |
+|-------|-------|
+| **START_HEAD** | `35efda34c469bb7a88d0887aac21fdc93515e731` (`development` == `origin/development`, clean worktree @ execution) |
+| **EXECUTION_SHA** | `35efda34c469bb7a88d0887aac21fdc93515e731` |
+| **Historical continuity** | G.3 @ `a183e072738fe62a85eb290ac1cff9456db3be33`; entrypoint reachability closure preserved; Package C **38/38** @ `9aef3f0946bffe22244243eeb6c569858ebc2e88` unchanged |
+| **pytest budget** | **1** invocation, **4** nodes, `-p no:xdist`, log `.tmp/session/PROD-Q-R1-R7-Q-C-PROFILE-V1-FINAL-ADVERSARIAL-AND-LIFECYCLE-GATE/pytest.log` |
+| **Scope** | P1 adversarial DIM18/19 on profile-v1 reachable snippets; fail-closed root locator; OD-R2-03 positive profile-v1 → sanctioned GCA strict startup boundary — **not** full P1/§C/OD-R2-03 suite; **not** `test_pv1_h03` (static composition scan; superseded for lifecycle by **h01** behavioral gate); **not** parent **PROD-Q** / global **FRZ** promotion |
+
+| Checkpoint | Test node | Result @ EXECUTION_SHA | Invariants |
+|------------|-----------|------------------------|------------|
+| **PV1-P1 adversarial** | `test_p1_negative_profile_v1_alternative_strict_launcher` | **PASS** | Alternate direct `open_strict_production_serving_session` from profile-v1 opener rejected by structural PV1 bridge |
+| **PV1-P1 adversarial** | `test_p1_negative_profile_v1_reference_lifecycle_on_reachable_snippet` | **PASS** | Reference production lifecycle on reachable profile-v1 snippet flagged (DIM19 / no silent reference fallback) |
+| **PV1-P1 adversarial** | `test_p1_negative_profile_v1_unresolved_root_fails_locator_gate` | **PASS** | Ghost mandatory root fails `assert_all_strict_production_roots_located` (fail-closed locator) |
+| **OD-R2-03 lifecycle** | `test_pv1_h01_profile_reaches_sanctioned_strict_startup` | **PASS** | Admission from env → `open_gca_strict_production_serving_session` with admitted `storage` (sanctioned boundary); no expansion past mocked GCA opener |
+
+**Command:**
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p1_strict_production_reachability.py::test_p1_negative_profile_v1_alternative_strict_launcher \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p1_strict_production_reachability.py::test_p1_negative_profile_v1_reference_lifecycle_on_reachable_snippet \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_p1_strict_production_reachability.py::test_p1_negative_profile_v1_unresolved_root_fails_locator_gate \
+  tests/qualification/prod_q/test_prod_q_r1_r7_q_od_r2_03_single_node_production_profile_v1_gate.py::test_pv1_h01_profile_reaches_sanctioned_strict_startup \
+  -q
+```
+
+**Outcome:** `4 passed in 4.00s`
+
+**Proof limitations:** Writer cross-process lock (`test_pv1_h04`), alternate-authority static scan (`test_pv1_h03`), full DIM18 graph replay @ HEAD, §C **83** integrated pytest, DIM6/DIM17 operator profiles, Package P DIM20, ECAP **B6** (GitHub independent acceptance) — **not** executed @ this gate.
+
+**Parent blockers (unchanged):** **PROD-Q-R1-R7-Q** **IN PROGRESS** / **NOT QUALIFIED**; §C independent operator acceptance; global **FRZ** rows **OPEN**.
+
+**FRZ scoped contribution @ this gate only:** **FRZ-PRD-03**, **FRZ-PRD-04**, **FRZ-PRD-05**, **FRZ-PRD-07**, **FRZ-PRD-08**, **FRZ-SEC-04**, **FRZ-BND-02**, **FRZ-BND-03**, **FRZ-BND-05**, **FRZ-OWN-01**, **FRZ-OWN-03**, **FRZ-OWN-04**, applicable **FRZ-CTR-*** / **FRZ-RPL-*** on exercised profile-v1 → GCA composition slice — incremental evidence only.
+
+**Code defect discovered:** **None** on exercised paths.
+
+**Disposition:** **READY FOR AUDIT** for scoped profile-v1 adversarial + lifecycle continuity @ `EXECUTION_SHA`; does **not** close §C integrated acceptance, Package C historical label, or **PROD-Q-R1-R7-Q**.
