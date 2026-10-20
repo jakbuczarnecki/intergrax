@@ -10,9 +10,9 @@
 | **Branch** | `development` |
 | **VERIFIED_BASELINE** | `1b6f9405b939525756dc05ff2c45575ee19d8100` |
 | **START_HEAD (this task)** | `fc1bd1b296290dccffd74fe402f75a8f922d58b4` |
-| **AUDITED_HEAD / FINAL_COMMIT** | *pending push — see §13 exact-SHA execution record* |
+| **AUDITED_HEAD / FINAL_COMMIT** | `3044e6620b091f78243a4952c3060f8aeaf7a49f` |
 | **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` (historical F02-05/F02-09 qual) |
-| **PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA** | *§13 — post `FINAL_COMMIT`* |
+| **PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA** | `3044e6620b091f78243a4952c3060f8aeaf7a49f` (§13.2 mandatory gate replay) |
 | **PRODUCTION_IMPLEMENTATION_SHA** | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` (`DIM16-F02: fail-closed physical admission on strict session close`) |
 | **AUDITED_HEAD (prior Package D)** | `b07b7f77b06dfa28213d2c992a60b8a86d3eeba3` |
 | **F02 hardening ADR** | [`PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md`](PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md) **R1** |
@@ -413,16 +413,17 @@ Per roadmap §C: operator audit of this dossier → **Package B** (DIM6/DIM17 pr
 | `HEAD` == `origin/development` | **true** @ pre-test |
 | `merge-base --is-ancestor START_HEAD HEAD` | **true** |
 
-### 13.2 Mandatory pytest gate (FINAL_COMMIT — fill after push)
+### 13.2 Mandatory pytest gate @ `3044e6620b091f78243a4952c3060f8aeaf7a49f`
 
 | Field | Value |
 |-------|-------|
-| **Execution SHA** | `PACKAGE_D_CURRENT_HEAD_EVIDENCE_SHA` = `FINAL_COMMIT` |
+| **Execution SHA** | `3044e6620b091f78243a4952c3060f8aeaf7a49f` (`FINAL_COMMIT`) |
+| **`origin/development` @ pre-test fetch** | `fc1bd1b296290dccffd74fe402f75a8f922d58b4` (local `HEAD` ahead until push) |
 | **Date (UTC)** | 2026-10-20 |
 | **Command** | `uv run pytest -p no:xdist <nodes below> -q` |
-| **Exit code** | *record after FINAL_COMMIT replay* |
-| **Result** | *record after FINAL_COMMIT replay* |
-| **Log** | `.tmp/session/PROD-Q-PACKAGE-D-CURRENT-HEAD/pytest-package-d-f02-gca.log` |
+| **Exit code** | **0** |
+| **Result** | **7 passed**, ~16.5s, 1 deprecation warning (importlib metadata) |
+| **Log** | `.tmp/session/PROD-Q-PACKAGE-D-CURRENT-HEAD/pytest-package-d-f02-gca-final.log` |
 
 **Node IDs:**
 
@@ -442,7 +443,7 @@ tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim16_strict_shutdown_lifecycle
 | Artifact | SHA | Note |
 |----------|-----|------|
 | F02-05/F02-09 qual | `a3af292786d92f4195ac0e453b07310a7d0283ff` | Superseded for exact-SHA by §13.2 @ `FINAL_COMMIT` |
-| DIM16 module replay | `b4e329d12…` | 15 passed — pre-GCA-CLOSE gap |
+| DIM16 module replay | `b4e329d12…` | 15 passed — pre-GCA-CLOSE gap; superseded for F02 subset by §13.2 |
 | F02 implementation | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` | Production close ordering |
 
 ---
