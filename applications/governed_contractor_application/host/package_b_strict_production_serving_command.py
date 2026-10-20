@@ -29,6 +29,9 @@ from intergrax.applications._shared.single_node_production_profile_v1 import (
     load_single_node_production_profile_v1_from_env,
     validate_configured_single_node_production_profile_v1,
 )
+from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
+    raise_primary_with_cleanup_errors,
+)
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingLauncherError,
     StrictProductionServingSession,
@@ -56,20 +59,36 @@ def _reject_legacy_strict_serve_invocation() -> None:
 
 def _close_strict_session_when_command_still_owns_shutdown(
     session: StrictProductionServingSession,
-) -> None:
+) -> BaseException | None:
     """
     Close the session when the command path still owns shutdown (before ASGI lifespan).
 
     ASGI lifespan may have already closed the session; idempotent for that case.
     Writer lock release remains owned by ``StrictProductionServingSession.close()``.
     """
+    if session.is_closed:
+        return None
     try:
         session.close()
-    except StrictProductionServingLauncherError as exc:
-        message = str(exc)
-        if "already closed" in message or "close incomplete" in message:
-            return
-        raise
+    except BaseException as close_exc:
+        return close_exc
+    return None
+
+
+def _reraise_with_command_owned_close_failure(
+    primary_exc: BaseException,
+    close_exc: BaseException | None,
+) -> None:
+    if close_exc is None:
+        raise primary_exc
+    raise_primary_with_cleanup_errors(
+        primary_exc,
+        [close_exc],
+        message=(
+            "package B strict production serving command failed; "
+            "errors during command-owned session close"
+        ),
+    )
 
 
 def _validate_operator_backend_settings(
@@ -143,15 +162,25 @@ def run_package_b_strict_production_serving_command() -> None:
             port=settings.backend_port,
             factory=True,
         )
-    except PackageBStrictProductionServingCommandError:
-        _close_strict_session_when_command_still_owns_shutdown(session)
-        raise
-    except (KeyboardInterrupt, SystemExit):
-        _close_strict_session_when_command_still_owns_shutdown(session)
-        raise
+    except PackageBStrictProductionServingCommandError as exc:
+        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)
+        _reraise_with_command_owned_close_failure(exc, close_exc)
+    except (KeyboardInterrupt, SystemExit) as exc:
+        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)
+        _reraise_with_command_owned_close_failure(exc, close_exc)
     except BaseException as exc:
-        _close_strict_session_when_command_still_owns_shutdown(session)
-        raise PackageBStrictProductionServingCommandError(str(exc)) from exc
+        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)
+        wrapped = PackageBStrictProductionServingCommandError(str(exc))
+        if close_exc is None:
+            raise wrapped from exc
+        raise_primary_with_cleanup_errors(
+            wrapped,
+            [close_exc],
+            message=(
+                "package B strict production serving command failed; "
+                "errors during command-owned session close"
+            ),
+        )
 
 
 def main() -> None:

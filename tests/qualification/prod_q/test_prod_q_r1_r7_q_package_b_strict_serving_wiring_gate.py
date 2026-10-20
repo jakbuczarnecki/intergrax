@@ -29,7 +29,7 @@ from tests.qualification.prod_q.test_prod_q_r1_r7_q_od_r2_03_single_node_product
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
-_EXPECTED_START_HEAD: Final = "c95c322f28e17e01744e5c28e7c52c7e84c4f3f4"
+_EXPECTED_START_HEAD: Final = "e6afb33c841217e1de235a6fc691bf47f5155ab8"
 _GOVERNANCE_MODULE: Final = (
     repo_root()
     / "intergrax"
@@ -193,12 +193,85 @@ def test_pb_s08_uvicorn_failure_with_failed_close_retains_writer_lock() -> None:
                         "close",
                         _close_raises,
                     ):
-                        with pytest.raises(
-                            StrictProductionServingLauncherError,
-                            match="pb_close_drain_fail",
-                        ):
+                        with pytest.raises(ExceptionGroup) as exc_info:
                             pb_serve_cmd.run_package_b_strict_production_serving_command()
     assert release_calls == 0
+    grouped = exc_info.value
+    assert len(grouped.exceptions) == 2
+    assert any(
+        isinstance(err, pb_serve_cmd.PackageBStrictProductionServingCommandError)
+        and "uvicorn-bind-fail" in str(err)
+        for err in grouped.exceptions
+    )
+    assert any(
+        isinstance(err, StrictProductionServingLauncherError)
+        and "pb_close_drain_fail" in str(err)
+        for err in grouped.exceptions
+    )
+
+
+def test_pb_s09_command_shutdown_skips_close_when_session_already_closed() -> None:
+    session = _package_b_command_ready_session()
+    release_calls = 0
+
+    def _release_writer() -> None:
+        nonlocal release_calls
+        release_calls += 1
+
+    session.bind_process_scoped_release_on_close(_release_writer)
+    session._closed = True
+    patches = _patch_package_b_serve_preamble()
+    with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+        with patch.object(
+            pb_serve_cmd,
+            "open_gca_strict_production_serving_session_from_single_node_production_profile_v1",
+            return_value=(session, MagicMock(), MagicMock(), MagicMock()),
+        ):
+            with patch.object(
+                pb_serve_cmd,
+                "build_governed_contractor_strict_production_uvicorn_factory",
+                side_effect=RuntimeError("factory-fail"),
+            ):
+                with pytest.raises(
+                    pb_serve_cmd.PackageBStrictProductionServingCommandError,
+                    match="factory-fail",
+                ):
+                    pb_serve_cmd.run_package_b_strict_production_serving_command()
+    assert release_calls == 0
+
+
+def test_pb_s10_command_shutdown_surfaces_close_incomplete_without_writer_release() -> None:
+    session = _package_b_command_ready_session()
+    release_calls = 0
+
+    def _release_writer() -> None:
+        nonlocal release_calls
+        release_calls += 1
+
+    session.bind_process_scoped_release_on_close(_release_writer)
+    session.lifecycle._process_closed = True
+    patches = _patch_package_b_serve_preamble()
+    with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+        with patch.object(
+            pb_serve_cmd,
+            "open_gca_strict_production_serving_session_from_single_node_production_profile_v1",
+            return_value=(session, MagicMock(), MagicMock(), MagicMock()),
+        ):
+            with patch.object(
+                pb_serve_cmd,
+                "build_governed_contractor_strict_production_uvicorn_factory",
+                side_effect=RuntimeError("factory-fail"),
+            ):
+                with pytest.raises(ExceptionGroup) as exc_info:
+                    pb_serve_cmd.run_package_b_strict_production_serving_command()
+    assert release_calls == 0
+    grouped = exc_info.value
+    assert len(grouped.exceptions) == 2
+    assert any(
+        isinstance(err, StrictProductionServingLauncherError)
+        and "close incomplete" in str(err)
+        for err in grouped.exceptions
+    )
 
 
 def test_pb_s05_missing_operator_governance_configuration_fails_closed() -> None:

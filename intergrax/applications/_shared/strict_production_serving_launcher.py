@@ -164,6 +164,11 @@ class StrictProductionServingSession:
             )
         return handoff
 
+    @property
+    def is_closed(self) -> bool:
+        """Whether ``close()`` completed successfully for this session."""
+        return self._closed
+
     def close(self) -> None:
         if self._closed:
             raise StrictProductionServingLauncherError(
