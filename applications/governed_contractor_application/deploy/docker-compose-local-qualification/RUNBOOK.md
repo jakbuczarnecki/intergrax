@@ -56,7 +56,7 @@ Without authorized operator governance wiring, serving must fail closed:
 BLOCKED — PACKAGE B OPERATOR SERVE CONFIGURATION REQUIRED
 ```
 
-When Package B is supplied out-of-repo, set `INTERGRAX_GCA_STRICT_SERVE_EXEC` to a command that calls `open_gca_strict_production_serving_session_from_single_node_production_profile_v1` and the D4 uvicorn factory (same contract as `deploy/linux/single-node-production-profile-v1/intergrax-gca-strict-production-entrypoint.sh`).
+Default Compose sets `INTERGRAX_GCA_STRICT_SERVE_EXEC` to the sanctioned in-repo module `governed_contractor_application.host.package_b_strict_production_serving_command` (profile v1 opener + D4 uvicorn factory). Operator governance bundle path, tenant, API keys, and provider pins remain **out-of-repo** — startup fails closed until supplied (same contract as `deploy/linux/single-node-production-profile-v1/intergrax-gca-strict-production-entrypoint.sh`).
 
 Do **not** use `governed_contractor_application.host.main:app` as a qualification substitute.
 

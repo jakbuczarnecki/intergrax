@@ -23,7 +23,7 @@ services:
       INTERGRAX_SINGLE_NODE_PRODUCTION_V1_ENFORCE_SINGLE_ACTIVE_WRITER: "1"
       INTERGRAX_SINGLE_NODE_PRODUCTION_V1_TRUSTED_ARTIFACT_PARENT_ROOTS: /var/lib/intergrax/production-v1/data/trusted_artifacts
       GOVERNED_CONTRACTOR_BACKEND_ENV: prod
-      INTERGRAX_GCA_STRICT_SERVE_EXEC: ${INTERGRAX_GCA_STRICT_SERVE_EXEC:-}
+      INTERGRAX_GCA_STRICT_SERVE_EXEC: ${INTERGRAX_GCA_STRICT_SERVE_EXEC:-/app/.venv/bin/python -m governed_contractor_application.host.package_b_strict_production_serving_command}
     env_file:
       - path: intergrax-gca-docker-local-qualification.env
         required: false
