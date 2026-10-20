@@ -180,7 +180,7 @@ HTTP POST (GCA strict ASGI)
   → inner HostTaskExecutionPort (_INNER_DELEGATE in qual)
 ```
 
-| Transition | Owner | Contract / state read | Admission decision | Rejection when | After F02 dual failure |
+| Transition | Owner | Contract / state read | Admission decision | Rejection when | Pre-impl only: after dual drain+revoke hook failure (§5.5) |
 |------------|-------|----------------------|--------------------|----------------|-------------------------|
 | HTTP → GCA handler | **Apps** GCA | `strict_serving_tenant_binding`, `AuthContext` | Caller authorized for bound tenant | 401 if auth missing | Unchanged — request still **authorized** |
 | Tenant port | **Apps** shared | Task tenant vs binding | Pass-through to colocated port | Tenant mismatch | Unchanged |

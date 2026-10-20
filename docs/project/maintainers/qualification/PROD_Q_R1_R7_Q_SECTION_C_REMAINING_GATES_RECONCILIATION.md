@@ -10,9 +10,10 @@
 | **BASELINE** | `3df10b2a7b3e51aa115a6377bdfda4f6c32619bd` |
 | **START_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
 | **AUDITED_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
-| **DIM20 evidence consolidation** | **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** — aligns §C dim **20** with STRICT-HTTP §§15–17 + Package P reconciliation @ HEAD (**pytest = 0**) |
-| **Production delta** | **0** |
-| **Test execution (this task)** | **0** — read-only git + existing qualification records |
+| **DIM20 evidence consolidation** | **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** — aligns §C dim **20** with STRICT-HTTP §§15–17 + Package P reconciliation @ `ca8cb05…` (**pytest = 0**) |
+| **F02 reconciliation task** | `PROD-Q-R1-R7-Q-C-PACKAGE-D-CURRENT-HEAD-F02-RECONCILIATION` @ **`F02_RECONCILIATION_HEAD`** `99eb55724483ba20bc0b4e0abcc881fc6e392f22` — documentation alignment only; **pytest = 0** |
+| **Production delta (F02 reconciliation)** | **0** — no product code edits |
+| **Test execution (this task)** | **0** — read-only git + static product read + existing qualification records |
 
 **Disposition rule:** Historical **P1 / P2 / P3 / E.1 / DISPATCH-Q1 / D1–D4 CLOSED** rows are **background only** @ cited SHAs — **not** automatic **R7-Q PASS** @ `AUDITED_HEAD`.
 
@@ -73,7 +74,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 | **13** | Recovery after strict process restart | AD + Apps | D3 reconcile | `reconcile_production_serving_environment_on_process_open` | §C `93c17a95…`; D3 `f2dd8ecb…` | P3-C; §C | Applicable | None @ §C in-process reopen | dim13 qual + unit recovery authority | Independent operator §C audit | — | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** | Package D |
 | **14** | Stale READY / physical-unit loss fail-closed | AD | D3 pipeline | `reconcile_traffic_serving_physical_unit_after_process_restart` | §C `93c17a95…`; P3-C | P3; §C | Applicable | None @ §C | `test_prod_q_r1_r7_q_c_dim14_*` | Independent operator §C audit | — | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** | Package D |
 | **15** | Request-level execution admission deny | Apps + AD | Handoff bind | `StoreBackedColocatedServingUnitExecutionAdmission` | §C `93c17a95…`; P3-D | P3; §C | Applicable | None @ §C HTTP | `test_prod_q_r1_r7_q_c_dim15_*` | Independent operator §C audit | — | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** | Package D |
-| **16** | Drain / stop / rollback on strict session | AD | Adapter + launcher close | Drain ports, session close | §C `93c17a95…` (**F02** residual §C hub §E) | P3-D; §C | Applicable | Dual drain+revocation failure may leave admission open (documented) | `test_prod_q_r1_r7_q_c_dim16_*` | Independent operator §C audit | Process (scoped residual) | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** (scoped; F02 explicit) | Operator may impose stricter policy in Package D |
+| **16** | Drain / stop / rollback on strict session | AD + **Apps** | `StrictProductionServingSession.close` → `close_colocated_serving_execution_admission_on_strict_session_close` | ADR R1 @ `4aeb585ea…`; §C `93c17a95…`; Package D §5 @ [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) | P3-D; §C; F02 hardening | Applicable | **Historical pre-fix:** dual drain+revoke hook failure could leave physical admission open (§C hub §E lineage). **Post-mitigation @ `4aeb585ea…`:** admission closes **before** drain/revoke/cleanup — **not** an active code defect @ `F02_RECONCILIATION_HEAD`. **Residual:** F02-09 **S2b** in-process strict reopen — **TRACKED FREEZE DEBT (C)** (DIM13/DIM14); F02-14 `isinstance` helper debt — **EBH-5**; **formal DIM16 independent acceptance** — **pending** | `test_prod_q_r1_r7_q_c_dim16_*`; F02-POST-CLOSE-01; F02-01…F02-15 @ Package D cited SHAs (**not** re-executed @ this task) | Independent operator §C + Package D audit | Process | **READY FOR AUDIT** (scoped F02 evidence; **not** DIM16 CLOSED; **not** FRZ-PRD-05 global PASS) | Operator independent audit @ `4aeb585ea…` + Package D matrix; optional future S2b qual (DIM13/DIM14) |
 | **17** | Unsupported topology + **production** credentials/config fail-closed | AD + Apps | Topology + GCA settings | `validate_colocated_serving_admission_topology`, `GovernedContractorBackendSettings` | D1 `17e928e4…`; Package B B17-* lab @ `cecf179f…` | D1; Package B | Applicable | Live prod credential profile beyond settings contract | Operator `GOVERNED_CONTRACTOR_BACKEND_*` profile; B17-02 contract only | Operator | **ENVIRONMENT** | **OPERATOR PRODUCTION PROFILE REQUIRED** | Same operator capture list as Package B §3 |
 | **18** | Fake adapter reachability **= 0** on strict graph | Apps | DEC-03 strict graph | Sanctioned opener chain | P1 `036912be…`; Package C **38/38** @ `9aef3f09…`; §C DIM11 `93c17a95…` | P1; Package C; §C | Applicable (no prod graph drift to HEAD) | AST incompleteness (P1 boundary) | P1 + DIM11 modules | Independent operator Package C + §C audit | **TRACKED FREEZE DEBT** (static) | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** | Re-run Package C selection only if strict graph edits |
 | **19** | No silent fallback to reference openers | Apps | Single strict opener | `open_strict_production_serving_session` | Package C; §C DIM11; D4 `0dd51fe1…` | P1; D4; Package C | Applicable | None @ HEAD replay | P1-G02, DIM11-02/05, D4-03 | Independent operator audit | — | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** | Package D |
@@ -87,8 +88,27 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** | 2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 16, 18, 19, 21; **20** (Package P slice — parent-gated for R7-Q closure) |
 | **OPERATOR PRODUCTION PROFILE REQUIRED** | 6, 17 |
 | **EXECUTABLE EVIDENCE MISSING** | **None** for integrated §C dims 2–19, 21 @ cited SHAs — gaps are **acceptance** and **operator profile**, not missing pytest modules |
-| **IN-SCOPE IMPLEMENTATION BLOCKER** | **None identified** @ `AUDITED_HEAD` |
+| **IN-SCOPE IMPLEMENTATION BLOCKER** | **None identified** @ `F02_RECONCILIATION_HEAD` for ADR R1 F02 open-gate (historical pre-fix only) |
 | **ARCHITECTURE DECISION REQUIRED** | **None** |
+
+---
+
+## 3.1 DIM16 / F02 — current-HEAD qualification reconciliation (@ `F02_RECONCILIATION_HEAD`)
+
+**Canonical evidence (not replayed here):** [`PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md`](PROD_Q_R1_R7_Q_C_DIM16_F02_ADR_01_FAIL_CLOSED_SHUTDOWN_EXECUTION_ADMISSION.md) **R1** · Package D §5 · §C hub §E (lineage).
+
+| State class | Record @ static read `99eb557…` |
+|-------------|--------------------------------|
+| **HISTORICAL PRE-FIX BLOCKER** | Pre-`4aeb585ea…`, when **both** revision-dependent drain and emergency-revoke helpers failed, `close_process_resources` could run while `admission_closed()` remained **False** — F02-POST-CLOSE-01 **red** (HTTP **200**, inner delegate reached). **Not** claimed as current-HEAD active defect. |
+| **IMPLEMENTED MITIGATION** | `4aeb585ea83b076a17d065d1febfb18b9b2caca4` — `StrictProductionServingSession._close_strict_production_serving_session_resources` calls `close_colocated_serving_execution_admission_on_strict_session_close` (**Apps** `colocated_serving_runtime_composition.py`) → `RuntimeDeploymentAdapter.close_serving_unit_execution_admission` (**AD** `_UnitAdmissionGate`) **before** drain/revoke and before `close_process_resources` when admission-close commits. |
+| **EXECUTABLE EVIDENCE (lineage)** | F02-POST-CLOSE-01 green @ `4aeb585ea…`; F02-03 dual-helper failure asserts `admission_closed()` post-close; F02-05 ordering; F02-09 **S1** stale handoff @ `a3af29278…` / Package D §13 replay @ `3044e6620…` — **no pytest @ this reconciliation task**. |
+| **CURRENT-HEAD STATIC CONTINUITY** | Between `4aeb585ea…` and `F02_RECONCILIATION_HEAD`: `strict_production_serving_launcher.py` refactored (`close()` → `_close_strict_production_serving_session_resources` + process-scoped release `finally`); `colocated_serving_runtime_composition.py` handoff field propagation only. **F02 admission-first ordering preserved** in extracted close body @ `HEAD`. **Does not** substitute independent re-certification or operator CLOSED. |
+| **FORMAL INDEPENDENT ACCEPTANCE** | **Pending** — Package D **READY FOR AUDIT**; **DIM16 not CLOSED**. |
+| **TRACKED RESIDUAL** | **F02-09 S2b** — same-process strict reopen without sanctioned recovery qual → **TRACKED FREEZE DEBT (C)** owned by **DIM13/DIM14** (not promoted to DIM16 IN-SCOPE BLOCKER). **F02-14** — `isinstance(VenvBundleColocatedRuntimeDeploymentAdapter)` in drain/revoke helpers — topology-scoped **EBH-5** debt; authoritative deny remains `close_serving_unit_execution_admission`. |
+
+**Enterprise F02 slice (@ bounded static scope):** exactly-one physical admission authority (**AD** gate, **Apps** session-close owner); no shadow HTTP admission; fail-closed on partial shutdown for **new** execution after successful admission-close; in-flight vs post-close distinguished in F02-05 qual lineage; governance ≠ execution unchanged.
+
+**Package D / D2 / D3:** Package D rollup does **not** close **D2** / **D3** independent acceptance (**READY FOR AUDIT** lineage, parallel debt). **DIM6**, **DIM17**, **DIM20**, **B6**, **OP-01…04** statuses **unchanged** by this subsection.
 
 ---
 
@@ -116,7 +136,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 | Pluginability / replaceability | **PASS** (scoped) | Claim B A1 pin unchanged |
 | No bypass / duplicate mechanisms | **PASS** (scoped) | DIM11/18/19 + P1 |
 | Governance ≠ Execution | **PARTIAL** | DIM6 prod policy not exercised |
-| Fail-closed | **PASS** (scoped) | DIM9/14/15; DIM16 F02 documented |
+| Fail-closed | **PASS** (scoped) | DIM9/14/15; DIM16 F02 **mitigated @ `4aeb585ea…`** (§3.1); F02-09 S2b freeze debt explicit |
 | Tenant isolation | **PASS** (scoped) | DIM8 §C; not global TEN-X |
 | Observability non-authoritative | **N/A** | Out of §C selection |
 | Traceability / evidence continuity | **PASS** | SHA-pinned records; this reconciliation |
@@ -132,7 +152,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 |--------|----------------|--------------------------------|
 | FRZ-PRD-03 | 2, 9, 17 | §C 2/9; **not** DIM17 prod profile |
 | FRZ-PRD-04 | 10, 13 | §C |
-| FRZ-PRD-05 | 16 | §C with §E residual |
+| FRZ-PRD-05 | 16 | §C + Package D: F02 mitigated @ `4aeb585ea…`; §E pre-fix lineage; **OPEN / PARTIAL** — independent audit pending |
 | FRZ-PRD-07 | 18, 19 | P1 + Package C + §C |
 | FRZ-PRD-08 | 2, 7, 11, 15, 18, 19, 20 | §C + Package P + STRICT-HTTP §§15–17 (scoped) |
 | FRZ-PRD-09 | 3, 14 | §C |
@@ -149,7 +169,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 
 | Order | Blocker | Missing evidence vs defective code |
 |-------|---------|-------------------------------------|
-| 1 | Independent operator acceptance — §C hub @ `93c17a95…` (dims 2,3,7–16,18,19) | **Evidence exists** — acceptance pending |
+| 1 | Independent operator acceptance — §C hub @ `93c17a95…` (dims 2,3,7–16,18,19); **DIM16/F02** audit @ Package D + `4aeb585ea…` | **Evidence exists** (F02 scoped) — **formal acceptance pending**; pre-fix open-gate **not** active blocker |
 | 2 | **DIM6** operator production mutation policy | **Operator profile** — not implementation defect |
 | 3 | **DIM17** operator production credentials/config | **Operator profile** — lab/contract tests pass |
 | 4 | **DIM20** / **PROD-Q-R1** Package P independent acceptance (**B6**) | **Scoped technical evidence** @ HEAD (§§15–17) — **formal acceptance** parent gate |
@@ -160,7 +180,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 
 ## 8. Minimum ordered follow-up tasks
 
-1. **PROD-Q-R1-R7-Q-C-PACKAGE-D** — [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) **READY FOR AUDIT** @ `b07b7f77…` — operator/GitHub independent audit; **DIM16/F02** remains **IN-SCOPE BLOCKER** until child evidence.
+1. **PROD-Q-R1-R7-Q-C-PACKAGE-D** — [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) **READY FOR AUDIT** — operator/GitHub independent audit of F02 matrix @ cited SHAs + impl `4aeb585ea…`; **historical pre-fix IN-SCOPE BLOCKER (open gate) closed by mitigation** — **DIM16 independent acceptance still pending** (not Cursor CLOSED).
 2. **Operator evidence capture** — Package B §3 list (DIM6 B6-01, DIM17 prod profile, trusted artifact roots).
 3. **PROD-Q-R1-PACKAGE-P** — Independent operator acceptance @ `AUDITED_HEAD` ([`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md)).
 4. **PROD-Q-R1** parent progression — remaining ADR children per roadmap (outside this reconciliation scope).
@@ -169,6 +189,8 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 ---
 
 ## 9. Commands executed (this task)
+
+**DIM20 consolidation (prior @ `ca8cb05…`):**
 
 ```text
 git branch --show-current
@@ -181,7 +203,19 @@ git status -sb
 git diff --check
 ```
 
-**Pytest:** **0** (DIM20 evidence consolidation — no replay).
+**F02 reconciliation (@ `99eb55724483ba20bc0b4e0abcc881fc6e392f22`):**
+
+```text
+git branch --show-current
+git rev-parse HEAD
+git rev-parse origin/development
+git merge-base --is-ancestor 99eb55724483ba20bc0b4e0abcc881fc6e392f22 HEAD
+git status -sb
+git diff --stat 4aeb585ea83b076a17d065d1febfb18b9b2caca4..HEAD -- intergrax/applications/_shared/strict_production_serving_launcher.py intergrax/applications/_shared/colocated_serving_runtime_composition.py
+git diff --check
+```
+
+**Pytest:** **0** (DIM20 consolidation + F02 reconciliation — no replay).
 
 ---
 
