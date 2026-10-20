@@ -9,9 +9,10 @@
 | **START_HEAD** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` |
 | **SOURCE_EVIDENCE_SHA** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` — implementation + §C pytest selection evaluated here |
 | **FINAL_COMMIT** | `1b6f9405b939525756dc05ff2c45575ee19d8100` — Package D final dossier @ `PROD-Q-R1-R7-Q-C-PACKAGE-D-FINAL-ACCEPTANCE-DOSSIER` |
+| **AUDITED_HEAD** (`PROD-Q-R1-R7-Q-C-INTEGRATED-EVIDENCE-CURRENT-HEAD-AUDIT-READINESS`) | `91db78b9afeb8a7f56dc2ef7029b386b0b307d6a` — `HEAD` == `origin/development`; **production delta = 0** for this reconciliation |
 | **DIM16_TEST_EVIDENCE_SHA** | `a3af292786d92f4195ac0e453b07310a7d0283ff` — F02-05/F02-09 qual nodes |
-| **Package D readiness** | [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) @ `FINAL_COMMIT` — **READY FOR AUDIT** |
-| **Maximum disposition** | **READY FOR AUDIT** (independent operator acceptance pending) |
+| **Package D readiness** | [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) @ dossier SHAs — documentary **READY FOR AUDIT**; roadmap **CLOSED — SCOPED / PARTIAL B / OPERATOR ACCEPTED** (2026-10-17) — **not** parent **R7-Q QUALIFIED** |
+| **Maximum disposition** | **READY FOR AUDIT** (independent operator acceptance pending for parent rollup) |
 
 **Disposition rule:** Historical **P1 / P2 / P3 / E.1 / DISPATCH-Q1 / D1–D4** acceptance **≠** **R7-Q QUALIFIED**. This record consolidates **§C integrated gates** and reconciles them against the P0 gate plan without re-running closed waves.
 
@@ -26,7 +27,9 @@
 | Repository | `jakbuczarnecki/intergrax` |
 | Branch | `development` |
 | **SOURCE_EVIDENCE_SHA** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` |
-| `origin/development` | **equals** `SOURCE_EVIDENCE_SHA` (verified `git fetch` + `rev-parse`) |
+| **AUDITED_HEAD** (@ current-HEAD reconciliation) | `91db78b9afeb8a7f56dc2ef7029b386b0b307d6a` |
+| `origin/development` @ `AUDITED_HEAD` | **equals** `AUDITED_HEAD` (verified @ reconciliation) |
+| `git merge-base --is-ancestor SOURCE_EVIDENCE_SHA AUDITED_HEAD` | **true** — §C pytest **not** re-executed @ `AUDITED_HEAD` |
 | `git merge-base --is-ancestor START_HEAD HEAD` | **true** |
 | Tracked working tree @ record authoring | **clean** |
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** — per [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) ledger |
@@ -207,7 +210,7 @@ Post-F02 implementation: authoritative deny precedes revision-dependent drain he
 |---|---------|-------|-------|
 | 1 | Production mutation governance policy (**DIM6**) | `ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED` | Operator + Governance |
 | 2 | Production credentials/config negatives (**DIM17**) | `ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED` | Operator |
-| 3 | **DIM18/19** @ future HEAD | `TRACKED FREEZE DEBT` / re-audit only if strict graph changes | Package C |
+| 3 | **DIM18/19** + integrated §C dims **2–16** @ `AUDITED_HEAD` | `TRACKED FREEZE DEBT` / **conditional replay** — strict product graph drift `93c17a95…` → `91db78b9…` (launcher, Package B profile v1 wiring); §C **83** tests remain @ `SOURCE_EVIDENCE_SHA` only | Package C + authorized §C replay if operator mandates |
 | 4 | **DIM20** PROD-Q-R1 PIS / strict external-work | `IN-SCOPE BLOCKER` for **parent R7-Q QUALIFIED** | **PROD-Q-R1** (Package P) |
 | 5 | Independent operator acceptance of §C consolidated record | Process gate | Package D |
 | 6 | Unresolved code/architecture defect @ `SOURCE_EVIDENCE_SHA` | **None identified** in this documentation pass | — |
@@ -250,7 +253,7 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 | **B — operator production profiles** | DIM6 mutation policy; DIM17 config/credentials negatives; trusted artifact roots | Operator fixtures | **Package B pytest + evidence** [`PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md) — **READY FOR AUDIT**; DIM6/DIM17 operator profile **OPEN** |
 | **C — reachability @ HEAD** | Re-run P1 roots + DIM11 if launcher/graph changes; DIM18/19 drift check | None for static | With B |
 | **P — PROD-Q-R1 parent** | DIM20 strict external-work / PIS ambiguity | PROD-Q-R1 program | **Not** parallel to claiming R7-Q QUALIFIED |
-| **D — final qualification decision** | Roll up B+C+P + operator sign-off on this §C record | B, P minimum | **Last** — Package D dossier **READY FOR AUDIT** @ `1b6f9405b939525756dc05ff2c45575ee19d8100` — F02 open-gate **historical**; DIM16 **audit-ready**, not operator CLOSED |
+| **D — final qualification decision** | Roll up B+C+P + operator sign-off on this §C record | B, P minimum | **Last** — Package D **SCOPED / PARTIAL** operator acceptance per roadmap @ cited SHAs; F02-09 **S2b** + DIM6/DIM17/DIM20 gaps **retained**; **not** parent **QUALIFIED** |
 
 **Recommended next mandatory task:** Operator audit of this record @ `FINAL_COMMIT`, then **Package B** evidence capture (DIM6/DIM17) or **Package P** PROD-Q-R1 progression — whichever program owner prioritizes; **do not** mark **R7-Q QUALIFIED** until Packages B, P, and D complete.
 
@@ -261,8 +264,39 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 | Stage | Status |
 |-------|--------|
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
-| **§C integrated gates** | **READY FOR AUDIT** @ `SOURCE_EVIDENCE_SHA` |
-| **This document** | **READY FOR AUDIT** — pending `FINAL_COMMIT` on `development` |
+| **§C integrated gates** | **READY FOR AUDIT** — evidence **EXACT-SHA EXECUTED — VERIFIED** @ `SOURCE_EVIDENCE_SHA`; **current-HEAD behavioral continuity** for strict launcher slice = **drift reviewed**, not replayed @ `AUDITED_HEAD` |
+| **This document** | **READY FOR AUDIT** @ `AUDITED_HEAD` `91db78b9afeb8a7f56dc2ef7029b386b0b307d6a` |
+
+---
+
+## G. Current-HEAD integrated evidence audit readiness (@ `AUDITED_HEAD`)
+
+**Task:** `PROD-Q-R1-R7-Q-C-INTEGRATED-EVIDENCE-CURRENT-HEAD-AUDIT-READINESS` · **pytest this task:** **0**
+
+| Check | Result |
+|-------|--------|
+| Branch | `development` |
+| `AUDITED_HEAD` | `91db78b9afeb8a7f56dc2ef7029b386b0b307d6a` |
+| Expected `START_HEAD` | **matches** `AUDITED_HEAD` |
+| Working tree | **clean** |
+| Strict product graph drift `SOURCE_EVIDENCE_SHA` → `AUDITED_HEAD` | **Yes** — includes `strict_production_serving_launcher.py`, `package_wiring.py`, `single_node_production_profile_v1.py`, Package B strict-serve shutdown (R3), GCA external-work / SQLite durability lineage (DIM20 parent — not §C re-proof) |
+| Package C exec `9aef3f09…` ancestor of `AUDITED_HEAD` | **true** — **conditional** Package C replay if operator requires post–profile-v1 static closure |
+| Package P reconciliation substantive @ `2d769605…`; `AUDITED_HEAD` delta | **doc pin only** (`91db78b9…`) — PIS/dispatch owners unchanged per Package P §1 |
+| Code defect discovered | **None** |
+
+**Disposition rule @ `AUDITED_HEAD`:** Do **not** relabel §C **83** tests as executed @ `AUDITED_HEAD`. Historical Package D **READY FOR AUDIT** rows and roadmap **SCOPED / PARTIAL OPERATOR ACCEPTED** coexist — neither closes **R7-Q**.
+
+| Dim | Evidence disposition @ `AUDITED_HEAD` | Production reachable @ cited proof | Independent acceptance |
+|-----|--------------------------------------|-----------------------------------|------------------------|
+| **1,4,5,12** | **HISTORICAL ACCEPTED — DRIFT REVIEWED** (E.1 / D waves) | **unknown** for new launcher wiring — not §C selection | Background slices only |
+| **2,3,7–11,13–15** | **EXACT-SHA EXECUTED — VERIFIED** @ `93c17a95…`; **HISTORICAL ACCEPTED — DRIFT REVIEWED** @ `AUDITED_HEAD` | **unknown** until optional §C replay | **SCOPED / PARTIAL** — eligible for audit of historical execution |
+| **6,17** | **NOT PROVEN** (operator) | **no** (prod profile) | **IN-SCOPE BLOCKER** — Package B **NOT QUALIFIED** |
+| **16** | **EXACT-SHA EXECUTED — VERIFIED** @ F02 qual SHAs + Package D replay @ `3044e6620…`; **HISTORICAL ACCEPTED — DRIFT REVIEWED** post–Package B launcher edits | **unknown** for all shutdown orderings @ `AUDITED_HEAD` | **SCOPED / PARTIAL** per Package D + roadmap; **F02-09 S2b** = **TRACKED FREEZE DEBT** |
+| **18,19** | Package C @ `9aef3f09…` + §C DIM11 @ `93c17a95…` — **HISTORICAL ACCEPTED — DRIFT REVIEWED** | **unknown** after profile v1 / wiring | Conditional Package C replay |
+| **20** | Package P — **HISTORICAL ACCEPTED — DRIFT REVIEWED**; H09 **EXACT-SHA EXECUTED — VERIFIED** @ `43f6e0e…` (CREATE only) | CREATE reflex **yes** @ H09 SHA; HTTP duplicate POST / other ops **NOT PROVEN** | **SCOPED / PARTIAL** — parent **PROD-Q-R1** gate; **not** DIM20 full PASS |
+| **21** | This hub + child records @ cited SHAs | n/a | **READY FOR AUDIT** (record completeness) |
+
+**Parent blockers (unchanged):** DIM6, DIM17 operator profiles; DIM20 Package P operator acceptance; parent rollup; **no** global **FRZ-*** promotion.
 
 ---
 
