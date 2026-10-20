@@ -31,6 +31,7 @@ from intergrax.applications._shared.single_node_production_profile_v1 import (
 )
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingLauncherError,
+    StrictProductionServingSession,
 )
 
 _LEGACY_STRICT_SERVE_MARKERS = (
@@ -51,6 +52,24 @@ def _reject_legacy_strict_serve_invocation() -> None:
                 f"legacy strict production entry {marker!r} is forbidden; "
                 "use governed_contractor_application.host.package_b_strict_production_serving_command",
             )
+
+
+def _close_strict_session_when_command_still_owns_shutdown(
+    session: StrictProductionServingSession,
+) -> None:
+    """
+    Close the session when the command path still owns shutdown (before ASGI lifespan).
+
+    ASGI lifespan may have already closed the session; idempotent for that case.
+    Writer lock release remains owned by ``StrictProductionServingSession.close()``.
+    """
+    try:
+        session.close()
+    except StrictProductionServingLauncherError as exc:
+        message = str(exc)
+        if "already closed" in message or "close incomplete" in message:
+            return
+        raise
 
 
 def _validate_operator_backend_settings(
@@ -102,25 +121,37 @@ def run_package_b_strict_production_serving_command() -> None:
     ) as exc:
         raise PackageBStrictProductionServingCommandError(str(exc)) from exc
 
-    if not session.readiness.ready_for_traffic:
-        session.close()
-        raise PackageBStrictProductionServingCommandError(
-            "strict production serving session is not ready for traffic",
+    try:
+        if not session.readiness.ready_for_traffic:
+            raise PackageBStrictProductionServingCommandError(
+                "strict production serving session is not ready for traffic",
+            )
+
+        factory = build_governed_contractor_strict_production_uvicorn_factory(
+            session,
+            settings=settings,
         )
+        bind_host = os.environ.get(
+            "GOVERNED_CONTRACTOR_BACKEND_BIND_HOST",
+            "0.0.0.0",
+        ).strip()
+        import uvicorn
 
-    factory = build_governed_contractor_strict_production_uvicorn_factory(
-        session,
-        settings=settings,
-    )
-    bind_host = os.environ.get("GOVERNED_CONTRACTOR_BACKEND_BIND_HOST", "0.0.0.0").strip()
-    import uvicorn
-
-    uvicorn.run(
-        factory,
-        host=bind_host or "0.0.0.0",
-        port=settings.backend_port,
-        factory=True,
-    )
+        uvicorn.run(
+            factory,
+            host=bind_host or "0.0.0.0",
+            port=settings.backend_port,
+            factory=True,
+        )
+    except PackageBStrictProductionServingCommandError:
+        _close_strict_session_when_command_still_owns_shutdown(session)
+        raise
+    except (KeyboardInterrupt, SystemExit):
+        _close_strict_session_when_command_still_owns_shutdown(session)
+        raise
+    except BaseException as exc:
+        _close_strict_session_when_command_still_owns_shutdown(session)
+        raise PackageBStrictProductionServingCommandError(str(exc)) from exc
 
 
 def main() -> None:
