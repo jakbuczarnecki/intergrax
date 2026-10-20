@@ -1,0 +1,41 @@
+# Infrastructure-level systemd unit for operator-approved single-node production profile v1.
+# Install only on an authorized Linux VM; do not enable without separate execution authorization.
+#
+# Example:
+#   sudo install -o root -g root -m 0644 intergrax-gca-strict-production.service /etc/systemd/system/
+#   sudo install -o root -g root -m 0640 intergrax-gca-strict-production.env /etc/intergrax/
+#   sudo systemctl daemon-reload
+
+[Unit]
+Description=Intergrax Governed Contractor strict production (single-node profile v1)
+After=network-online.target local-fs.target
+Wants=network-online.target
+ConditionPathIsDirectory=/var/lib/intergrax/production-v1
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=intergrax-gca
+Group=intergrax-gca
+WorkingDirectory=/opt/intergrax/governed_contractor_application
+EnvironmentFile=-/etc/intergrax/intergrax-gca-strict-production.env
+
+# Exactly-one active writer/process for GCA/PIS SQLite (profile v1).
+# Operator supplies an entrypoint that calls open_gca_strict_production_serving_session
+# then uvicorn --factory build_governed_contractor_strict_production_uvicorn_factory (D4).
+ExecStart=/opt/intergrax/bin/intergrax-gca-strict-production-entrypoint
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=120
+KillMode=mixed
+
+# Durable data paths (must match INTERGRAX_SINGLE_NODE_PRODUCTION_V1_* in env file).
+ReadWritePaths=/var/lib/intergrax/production-v1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
