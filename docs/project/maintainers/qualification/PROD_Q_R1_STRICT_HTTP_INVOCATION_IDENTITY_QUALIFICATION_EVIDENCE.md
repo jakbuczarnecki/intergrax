@@ -374,6 +374,6 @@ uv run pytest -p no:xdist \
 
 **Negatives A/D/E (sanctioned port missing, PIS admission failure, equivalent replay):** unchanged coverage via **H01–H08**, **PIS-STRICT**, **H06** — no duplicate non-CREATE HTTP tests.
 
-**FINAL_COMMIT:** *(set at publish — see git push SHA below)*
+**FINAL_COMMIT:** `08f1ef069073fbb91944807777e9b744ca76ebd4`
 
 **Observed limit:** In-hook provider `cancel_work` assertions that raise inside the dispatch `execute()` closure surface as `side_effect_authorization_failed`; post-hoc PIS/outcome assertions prove intent-before-effect for **H11**.
