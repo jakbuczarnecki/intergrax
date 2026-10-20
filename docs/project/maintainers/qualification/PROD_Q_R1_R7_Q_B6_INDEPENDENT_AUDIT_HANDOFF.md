@@ -13,8 +13,9 @@
 | **FINAL_COMMIT** (this handoff record) | Commit on `development` that adds this file — `git log -1 --format=%H -- docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_B6_INDEPENDENT_AUDIT_HANDOFF.md` @ GitHub |
 | **Production delta (this task)** | **0** — qualification record only |
 | **Pytest (this task)** | **0** — reuse pinned child evidence; no heavy replay |
+| **Non-authorizing technical verdict** | [`PROD_Q_R1_R7_Q_B6_INDEPENDENT_TECHNICAL_VERDICT_RECORD.md`](PROD_Q_R1_R7_Q_B6_INDEPENDENT_TECHNICAL_VERDICT_RECORD.md) — **TECHNICAL RECOMMENDATION** only; formal **B6** **PENDING** |
 
-**Disposition rule:** **B6** = independent operator verdict per ECAP §2.B **B6** (roadmap §5 ledger). This handoff assembles matrices and pointers; **Cursor does not grant B6**.
+**Disposition rule:** **B6** = independent operator verdict per ECAP §2.B **B6** (roadmap §5 ledger). This handoff assembles matrices and pointers; **Cursor does not grant B6**. Session technical recommendations live in the verdict record above and **do not** substitute for **B6**.
 
 **Canonical sources @ `AUDITED_HEAD`:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) · [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) · [`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) · [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md).
 
@@ -235,7 +236,7 @@ Bounded to Package P closed world + §C / strict launcher / profile-v1 slices ci
 | **B3** Positive proofs | **DONE** — matrices §2.3, §3.2 |
 | **B4** Adversarial negatives | **DONE** — PIS/§C dim7–9/14–16; Package P H05/H06 |
 | **B5** Execution bundle @ exact SHA | **DONE** — pinned SHAs; logs cited |
-| **B6** Independent acceptance in roadmap §5 | **PENDING INDEPENDENT DECISION** |
+| **B6** Independent acceptance in roadmap §5 | **PENDING INDEPENDENT DECISION** — non-authorizing technical recommendations @ `cc5cd54d5a742edc17d7002a96e8c8b0327079fd` in [`PROD_Q_R1_R7_Q_B6_INDEPENDENT_TECHNICAL_VERDICT_RECORD.md`](PROD_Q_R1_R7_Q_B6_INDEPENDENT_TECHNICAL_VERDICT_RECORD.md) |
 
 ---
 
@@ -276,8 +277,8 @@ git merge-base --is-ancestor 43f6e0e232add1cf9fd9a947716d4c5444ae13d3 HEAD
 | **PROD-Q** | **OPEN / BLOCKED** |
 | **PROD-Q-R1** | **NOT CLOSED** |
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
-| **B6-P** | **READY FOR AUDIT** — verdict **PENDING** |
-| **B6-C** | **READY FOR AUDIT** — verdict **PENDING** |
+| **B6-P** | **READY FOR AUDIT** — formal verdict **PENDING**; non-authorizing **TECHNICAL RECOMMENDATION — ACCEPTED SCOPED** @ `cc5cd54…` (verdict record) |
+| **B6-C** | **READY FOR AUDIT** — formal verdict **PENDING**; non-authorizing **TECHNICAL RECOMMENDATION — ACCEPTED SCOPED, CONDITIONAL** @ `cc5cd54…` (verdict record) |
 | **new global FRZ PASS** | **0** |
 
 ---
@@ -287,7 +288,7 @@ git merge-base --is-ancestor 43f6e0e232add1cf9fd9a947716d4c5444ae13d3 HEAD
 | Field | Value |
 |-------|-------|
 | **Exact scope** | Single handoff rollup for independent **B6-P** and **B6-C** |
-| **Changed files** | `docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_B6_INDEPENDENT_AUDIT_HANDOFF.md` |
+| **Changed files** | `docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_B6_INDEPENDENT_AUDIT_HANDOFF.md` · `docs/project/maintainers/qualification/PROD_Q_R1_R7_Q_B6_INDEPENDENT_TECHNICAL_VERDICT_RECORD.md` (verdict rollup) |
 | **FINAL_COMMIT** | GitHub `development` commit containing this file (see header **FINAL_COMMIT** rule) |
 
 **READY FOR AUDIT**
