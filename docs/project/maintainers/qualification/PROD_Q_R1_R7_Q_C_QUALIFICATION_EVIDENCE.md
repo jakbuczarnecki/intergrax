@@ -317,6 +317,34 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 
 **FRZ scoped contribution @ this gate only:** **FRZ-PRD-03**, **FRZ-PRD-04**, **FRZ-PRD-05**, **FRZ-PRD-07**, **FRZ-PRD-08**, **FRZ-PRD-09**, **FRZ-REG-02** — incremental evidence on exercised paths; checklist rows remain **OPEN** globally.
 
+### G.2 Package C current-HEAD reachability regression (`PROD-Q-R1-R7-Q-C-PACKAGE-C-CURRENT-HEAD-REACHABILITY-REGRESSION`)
+
+| Field | Value |
+|-------|-------|
+| **START_HEAD** | `3e248a36abfdd406fb61923cb02c02b6ffcf0542` (`development` == `origin/development`) |
+| **EXECUTION_SHA** | `3e248a36abfdd406fb61923cb02c02b6ffcf0542` |
+| **Package C historical exec** | `9aef3f0946bffe22244243eeb6c569858ebc2e88` (ancestor of `EXECUTION_SHA`) |
+| **pytest budget** | **1** invocation, **3** nodes, `-p no:xdist`, log `.tmp/session/PROD-Q-R1-R7-Q-C-PACKAGE-C-CURRENT-HEAD-REACHABILITY-REGRESSION/pytest.log` |
+| **Scope** | DIM18/19 anti-fallback on sanctioned `open_strict_production_serving_session` graph (P1 + DIM11 Package C selection) — **not** full Package C **38**; **not** §C **83**; **not** parent **PROD-Q** / global **FRZ** promotion |
+
+**Profile v1 drift (since `9aef3f09…`):** `single_node_production_profile_v1.py`, `single_node_profile_v1_strict_startup.py`, `strict_production_serving_launcher.py`, `package_wiring.py` — profile seam delegates to `open_gca_strict_production_serving_session` → `open_strict_production_serving_session` (single composition owner); **no** second resolver in profile startup module (`pv1_h03` static contract @ OD-R2-03 module, **not replayed** here).
+
+| Checkpoint | Test node | Result @ `EXECUTION_SHA` | Maps |
+|------------|-----------|--------------------------|------|
+| **C-01 / DIM18** | `test_p1_g02_no_prohibited_execution_on_strict_reachable_graph` | **PASS** | Fake/reference prohibited calls absent on P1 strict reachable graph |
+| **C-02 / C-19 / DIM19** | `test_c_dim11_05_fail_closed_without_authoritative_projection_or_reference_fallback` | **PASS** | Missing authority + `FakeInMemoryRuntimeDeploymentAdapter` → `StrictProductionServingLauncherError`; no reference runtime fallback |
+| **C-02 / DIM19** | `test_c_dim11_02_no_reference_artifact_locator_at_strict_bind_boundary` | **PASS** | `reference://` rejected; bind uses `resolve_production_artifact_root` only |
+
+**Negative proof @ `EXECUTION_SHA`:** explicit fake-adapter rejection (DIM11-05); static zero prohibited execution (P1-G02); reference locator fail-closed (DIM11-02).
+
+**Remaining uncovered @ `EXECUTION_SHA` (not disproven):** P1 `STRICT_PRODUCTION_ROOTS` do **not** seed `open_gca_strict_production_serving_session_from_single_node_production_profile_v1` — AST reachability from profile v1 entry **not** re-executed; OD-R2-03 `test_pv1_h01` / `test_pv1_h03` **not** replayed @ this SHA (pytest budget). Transitive delegation to sanctioned launcher is **structurally** consistent; **behavioral** profile-v1→composition continuity remains **partial** vs full DIM18/19 @ historical Package C **38/38**.
+
+**Code defect discovered:** **None** on exercised paths.
+
+**FRZ scoped contribution @ this gate only:** **FRZ-PRD-03**, **FRZ-PRD-07**, **FRZ-PRD-08**, **FRZ-SEC-04**, **FRZ-BND-*** / **FRZ-OWN-*** / **FRZ-CTR-*** (composition ownership on exercised launcher slice) — incremental evidence; checklist rows remain **OPEN** globally.
+
+**Disposition:** **READY FOR AUDIT** for scoped DIM18/19 replay @ `EXECUTION_SHA`; **does not** close §C integrated acceptance, Package C historical **38/38** label @ `9aef3f09…`, or **PROD-Q-R1-R7-Q**.
+
 ---
 
 *Production code delta for this task: **0**.*
