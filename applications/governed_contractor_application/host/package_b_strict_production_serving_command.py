@@ -181,6 +181,10 @@ def run_package_b_strict_production_serving_command() -> None:
                 "errors during command-owned session close"
             ),
         )
+    else:
+        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)
+        if close_exc is not None:
+            raise PackageBStrictProductionServingCommandError(str(close_exc)) from close_exc
 
 
 def main() -> None:

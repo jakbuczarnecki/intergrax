@@ -81,6 +81,49 @@ def _package_b_command_ready_session() -> StrictProductionServingSession:
     return session
 
 
+class _AlreadyClosedStrictProductionServingSession(StrictProductionServingSession):
+    """Test double: ASGI lifespan already completed session shutdown."""
+
+    @property
+    def is_closed(self) -> bool:
+        return True
+
+    def close(self) -> None:
+        raise AssertionError(
+            "command must not invoke close when session is already closed",
+        )
+
+
+def _already_closed_package_b_command_session() -> StrictProductionServingSession:
+    base = _package_b_command_ready_session()
+    return _AlreadyClosedStrictProductionServingSession(
+        lifecycle=base.lifecycle,
+        environment=base.environment,
+        reconciliation=base.reconciliation,
+        readiness=base.readiness,
+    )
+
+
+def _run_package_b_command_with_uvicorn_return(
+    session: StrictProductionServingSession,
+) -> None:
+    mock_uvicorn = MagicMock()
+    patches = _patch_package_b_serve_preamble()
+    with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+        with patch.object(
+            pb_serve_cmd,
+            "open_gca_strict_production_serving_session_from_single_node_production_profile_v1",
+            return_value=(session, MagicMock(), MagicMock(), MagicMock()),
+        ):
+            with patch.object(
+                pb_serve_cmd,
+                "build_governed_contractor_strict_production_uvicorn_factory",
+                return_value=lambda: MagicMock(),
+            ):
+                with patch.dict(sys.modules, {"uvicorn": mock_uvicorn}):
+                    pb_serve_cmd.run_package_b_strict_production_serving_command()
+
+
 def _patch_package_b_serve_preamble() -> tuple[MagicMock, ...]:
     settings = MagicMock()
     settings.backend_port = 18080
@@ -211,7 +254,7 @@ def test_pb_s08_uvicorn_failure_with_failed_close_retains_writer_lock() -> None:
 
 
 def test_pb_s09_command_shutdown_skips_close_when_session_already_closed() -> None:
-    session = _package_b_command_ready_session()
+    session = _already_closed_package_b_command_session()
     release_calls = 0
 
     def _release_writer() -> None:
@@ -219,7 +262,6 @@ def test_pb_s09_command_shutdown_skips_close_when_session_already_closed() -> No
         release_calls += 1
 
     session.bind_process_scoped_release_on_close(_release_writer)
-    session._closed = True
     patches = _patch_package_b_serve_preamble()
     with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
         with patch.object(
@@ -249,7 +291,7 @@ def test_pb_s10_command_shutdown_surfaces_close_incomplete_without_writer_releas
         release_calls += 1
 
     session.bind_process_scoped_release_on_close(_release_writer)
-    session.lifecycle._process_closed = True
+    session.lifecycle.close_process_resources()
     patches = _patch_package_b_serve_preamble()
     with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
         with patch.object(
@@ -272,6 +314,72 @@ def test_pb_s10_command_shutdown_surfaces_close_incomplete_without_writer_releas
         and "close incomplete" in str(err)
         for err in grouped.exceptions
     )
+
+
+def test_pb_s11_uvicorn_normal_return_skips_close_when_session_already_closed() -> None:
+    session = _already_closed_package_b_command_session()
+    release_calls = 0
+
+    def _release_writer() -> None:
+        nonlocal release_calls
+        release_calls += 1
+
+    session.bind_process_scoped_release_on_close(_release_writer)
+    _run_package_b_command_with_uvicorn_return(session)
+    assert release_calls == 0
+
+
+def test_pb_s12_uvicorn_normal_return_closes_open_session_and_releases_writer() -> None:
+    session = _package_b_command_ready_session()
+    release_calls = 0
+
+    def _release_writer() -> None:
+        nonlocal release_calls
+        release_calls += 1
+
+    session.bind_process_scoped_release_on_close(_release_writer)
+    _run_package_b_command_with_uvicorn_return(session)
+    assert release_calls == 1
+    assert session.is_closed
+
+
+def test_pb_s13_uvicorn_normal_return_surfaces_close_failure() -> None:
+    session = _package_b_command_ready_session()
+    release_calls = 0
+
+    def _release_writer() -> None:
+        nonlocal release_calls
+        release_calls += 1
+
+    session.bind_process_scoped_release_on_close(_release_writer)
+
+    def _close_raises(self: object) -> None:
+        raise StrictProductionServingLauncherError("post-uvicorn-close-fail")
+
+    patches = _patch_package_b_serve_preamble()
+    with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+        with patch.object(
+            pb_serve_cmd,
+            "open_gca_strict_production_serving_session_from_single_node_production_profile_v1",
+            return_value=(session, MagicMock(), MagicMock(), MagicMock()),
+        ):
+            with patch.object(
+                pb_serve_cmd,
+                "build_governed_contractor_strict_production_uvicorn_factory",
+                return_value=lambda: MagicMock(),
+            ):
+                with patch.dict(sys.modules, {"uvicorn": MagicMock()}):
+                    with patch.object(
+                        StrictProductionServingSession,
+                        "close",
+                        _close_raises,
+                    ):
+                        with pytest.raises(
+                            pb_serve_cmd.PackageBStrictProductionServingCommandError,
+                            match="post-uvicorn-close-fail",
+                        ):
+                            pb_serve_cmd.run_package_b_strict_production_serving_command()
+    assert release_calls == 0
 
 
 def test_pb_s05_missing_operator_governance_configuration_fails_closed() -> None:
