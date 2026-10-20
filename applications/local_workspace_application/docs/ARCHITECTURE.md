@@ -1,4 +1,4 @@
-﻿# Local Knowledge Workspace (LKW) � architecture
+# Local Knowledge Workspace (LKW) � architecture
 
 **Status:** Architecture baseline v2 (2026-06-07) � implementation-plan source of truth  
 **Tier:** Tier-3 application (`local_workspace_application`)  
