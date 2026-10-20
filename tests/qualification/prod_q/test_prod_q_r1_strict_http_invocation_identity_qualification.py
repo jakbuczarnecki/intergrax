@@ -1557,3 +1557,136 @@ def test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls(
         fixture.session,
     )
 
+
+def test_auth_pi01_distinct_authenticated_principal_same_tenant_accept_denied(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from external_contractor_adapter.external_work_adapter import META_PRINCIPAL_ID
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
+        _QUAL_API_KEY_B,
+        _QUAL_USER_B,
+        strict_http_auth_headers,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        domain_summary_from_strict_http_run_body,
+        follow_up_strict_http_run_request_json,
+        list_intent_invocation_ids,
+        post_strict_http_create_prerequisite,
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-auth-pi01-distinct-caller-accept",
+        default_agent_id="external_contractor_adapter",
+    )
+    pis = fixture.session.composition.provider_invocation_store
+    assert isinstance(pis, SQLiteProviderInvocationStore)
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-auth-pi01-setup-create",
+        )
+        intents_before = list_intent_invocation_ids(fixture.provider_invocation_db)
+        baseline_accept = fixture.external_work_fake.accept_calls
+        accept_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE,
+            idempotency_key="idem-auth-pi01-distinct-caller-accept",
+        )
+        meta = accept_payload.get("metadata")
+        assert isinstance(meta, dict)
+        meta[META_PRINCIPAL_ID] = _PI_UNAUTHORIZED_PRINCIPAL
+        accept_payload["user_id"] = _QUAL_USER_B
+
+        response = client.post(
+            fixture.run_url,
+            json=accept_payload,
+            headers=strict_http_auth_headers(_QUAL_API_KEY_B),
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert str(body.get("task_id")) != prerequisite.create_task_id
+
+        summary = domain_summary_from_strict_http_run_body(body)
+        if summary:
+            assert summary.get("used") is not True
+            assert summary.get("admitted") is not True
+
+        assert fixture.external_work_fake.accept_calls == baseline_accept
+        assert list_intent_invocation_ids(fixture.provider_invocation_db) == intents_before
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+
+def test_auth_pi02_forged_metadata_principal_while_distinct_authenticated_caller_denied(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
+        _QUAL_API_KEY_B,
+        _QUAL_USER_B,
+        strict_http_auth_headers,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PRINCIPAL,
+        follow_up_strict_http_run_request_json,
+        list_intent_invocation_ids,
+        post_strict_http_create_prerequisite,
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-auth-pi02-forged-metadata-principal",
+        default_agent_id="external_contractor_adapter",
+    )
+    pis = fixture.session.composition.provider_invocation_store
+    assert isinstance(pis, SQLiteProviderInvocationStore)
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-auth-pi02-setup-create",
+        )
+        intents_before = list_intent_invocation_ids(fixture.provider_invocation_db)
+        baseline_accept = fixture.external_work_fake.accept_calls
+        accept_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.ACCEPT_QUOTE,
+            idempotency_key="idem-auth-pi02-forged-metadata-accept",
+        )
+        meta = accept_payload.get("metadata")
+        assert isinstance(meta, dict)
+        assert meta.get("external_work.principal_id") == _QUAL_PRINCIPAL
+        accept_payload["user_id"] = _QUAL_USER_B
+
+        response = client.post(
+            fixture.run_url,
+            json=accept_payload,
+            headers=strict_http_auth_headers(_QUAL_API_KEY_B),
+        )
+        assert response.status_code == 400, response.text
+        assert "external_work.principal_id" in response.text
+
+        assert fixture.external_work_fake.accept_calls == baseline_accept
+        assert list_intent_invocation_ids(fixture.provider_invocation_db) == intents_before
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+

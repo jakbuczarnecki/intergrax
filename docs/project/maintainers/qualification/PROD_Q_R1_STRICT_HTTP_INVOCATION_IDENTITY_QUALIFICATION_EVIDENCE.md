@@ -624,5 +624,89 @@ Log: `.tmp/session/dim20-principal-isolation/pytest-pi01-pi02.log` — **2 passe
 
 | ID | Class | Note |
 |----|-------|------|
-| — | — | **No IN-SCOPE BLOCKER** |
+| — | — | **No IN-SCOPE BLOCKER** (metadata-vs-CREATE slice only — see **§19** for authenticated-binding gap superseded there) |
 | **B6** | **TRACKED** | Formal independent verdict pending |
+
+---
+
+## 19. DIM20 authenticated principal binding (AUTH-PI-01 / AUTH-PI-02)
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-R7-Q-DIM20-AUTHENTICATED-PRINCIPAL-BINDING** |
+| **START_HEAD** | `5ecedabcb8f78a2a2d59904ca37866db475181c0` |
+| **Production delta** | **Bounded** — strict HTTP `POST /run` rejects `external_work.principal_id` metadata that conflicts with authenticated `RequestContext.user_id` when `strict_serving_tenant_binding` is set |
+| **Status** | **READY FOR AUDIT** (does not close **PROD-Q-R1**, **R7-Q** dim **20**, **PROD-Q**, or global **FRZ-***) |
+
+### 19.1 Trust boundary (actual @ fix)
+
+| Layer | Trusted principal source | Used for |
+|-------|-------------------------|----------|
+| HTTP API key / JWT | `AuthContext` → `RequestContext.user_id` | P3-A2 tenant gate; `context_only` body `user_id` conflict check (`fastapi_router._resolve_identity`) |
+| Per-request execution | `request_identity_from_strict_production_http_auth` → `bind_strict_serving_http_caller_principal` | Admitted root governance identity (`build_strict_production_serving_host_task_execution_governance`) — **not** `task.user_id` |
+| Tier-2 sanctioned reflex | Client `metadata["external_work.principal_id"]` | `resolve_sanctioned_operation_from_metadata` → orchestrator / PIS / provider |
+| Follow-on HTTP bind | `META_PRINCIPAL_ID` in task metadata vs `GovernedExternalWorkCreateFollowOnRecordV1.principal_id` | `try_resolve_sanctioned_follow_on_execution_admission` — **metadata consistency with CREATE record only** |
+
+**Pre-fix gap:** §18 **PI-01** / **PI-02** vary metadata principal while keeping the **same** HTTP credentials — they prove **metadata ≠ CREATE record** denial, **not** authenticated principal isolation. Independent pre-audit: caller **B** with forged metadata principal **A** could rebind CREATE execution and traverse accept (**AUTH-PI-02** repro @ `5ecedabc…`).
+
+**Post-fix guard (canonical HTTP owner):** `applications/governed_contractor_application/serving/fastapi_router.py` — when strict serving binding is active, declared `external_work.principal_id` must equal resolved authenticated `user_id` (**400** before `host_execution.execute` → no follow-on bind, no PIS, no provider).
+
+**Downstream:** Sanctioned port still enforces `resolve_create_adapter_result_for_follow_on` tenant/principal vs stored CREATE (**unchanged**). Denial occurs **before** PIS admission on forged-metadata path.
+
+### 19.2 Metadata mismatch vs authenticated isolation
+
+| Scenario | §18 PI-01/02 | §19 AUTH-PI |
+|----------|--------------|-------------|
+| Same HTTP auth, metadata principal **B** vs CREATE **A** | Covered | **AUTH-PI-01** (distinct API key **B** + honest metadata **B**) — deny via follow-on / prior-create (HTTP **200**, domain deny) |
+| Distinct HTTP auth **B**, metadata principal **A** (forged) | **Not** covered | **AUTH-PI-02** — **400** @ HTTP; **0** provider / **0** new PIS |
+
+### 19.3 Evidence matrix
+
+| ID | Scenario | Verdict | Pytest node |
+|----|----------|---------|-------------|
+| **AUTH-PI-01** | Principal **A** CREATE; principal **B** (second API key, same tenant) **ACCEPT_QUOTE** with metadata **B** | **PASS** | `test_auth_pi01_distinct_authenticated_principal_same_tenant_accept_denied` |
+| **AUTH-PI-02** | Principal **B** authenticated; metadata `external_work.principal_id` = **A** | **PASS** | `test_auth_pi02_forged_metadata_principal_while_distinct_authenticated_caller_denied` |
+
+Qual harness: second same-tenant API key in `_prod_q_strict_http_caller_auth` (mirrors wrong-tenant key pattern); API `user_id` aligned with domain `external_work.principal_id` for principal **A** / **B**.
+
+### 19.4 Bounded pytest (@ this task)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_auth_pi01_distinct_authenticated_principal_same_tenant_accept_denied \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_auth_pi02_forged_metadata_principal_while_distinct_authenticated_caller_denied \
+  -q
+```
+
+Log: `.tmp/session/dim20-auth-principal-binding/pytest-auth-pi-rerun.log` — **2 passed** @ execution **HEAD** (see **FINAL_COMMIT**).
+
+**Evidence exclusions:** Full §18 **PI-01**/**PI-02** nodes not re-run; roadmap §5 / parent formal statuses; **B6**; broad PROD-Q / §C suites.
+
+**FINAL_COMMIT / AUDITED_HEAD:** commit on `development` with subject `Bind strict HTTP external_work principal to authenticated RequestContext for DIM20 AUTH-PI.` (verify `git rev-parse HEAD` after pull)
+
+### 19.5 ECAP (scoped)
+
+| Area | Disposition |
+|------|-------------|
+| **A1–A8** | **PASS** (scoped) — single HTTP ingress owner; fail-closed metadata/auth principal binding; no shadow follow-on rebind on forged identity |
+| **B1–B5** | **PASS** (scoped) — **AUTH-PI-01** / **AUTH-PI-02** executable negatives |
+| **B6** | **PENDING** |
+
+### 19.6 FRZ (scoped contribution only)
+
+| ID | Scoped note |
+|----|-------------|
+| **FRZ-SEC-04** | Forged metadata cannot escalate to another principal's CREATE follow-on under distinct authentication |
+| **FRZ-PRD-03** / **08** | HTTP **400** truthful conflict; no false accept success on **AUTH-PI-02** |
+| **FRZ-REL-03** | No new PIS intent on denied forged-metadata path |
+| **FRZ-TEN-*** (applicable)** | Same-tenant multi-principal negative |
+| **FRZ-OWN-*** / **FRZ-BND-*** / **FRZ-CTR-*** | HTTP owner binding only; orchestrator prior-create contract unchanged |
+| **FRZ-REG-02** / **03** / **09** | **AUTH-PI-01** / **AUTH-PI-02** regression nodes |
+
+### 19.7 Findings
+
+| ID | Class | Note |
+|----|-------|------|
+| **AUTH-PI-02 pre-fix** | **IN-SCOPE BLOCKER** (remediated @ **FINAL_COMMIT**) | Metadata-only CREATE consistency insufficient for authenticated isolation |
+| **B6** | **TRACKED** | Formal independent verdict pending |
+| Terminal diagnostic bridge | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `policy_bundle_id` reconstruction noise in qual sessions — does not affect AUTH-PI assertions |
