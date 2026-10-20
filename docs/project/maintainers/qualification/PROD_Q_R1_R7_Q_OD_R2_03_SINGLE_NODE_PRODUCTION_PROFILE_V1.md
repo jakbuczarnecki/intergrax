@@ -6,8 +6,8 @@
 | **Task** | `PROD-Q-R1-R7-Q-OD-R2-03-SINGLE-NODE-PRODUCTION-PROFILE-V1` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **START_HEAD** | `511a4dc1c7108119f86fc2606b602e71aea8392f` |
-| **FINAL_COMMIT / AUDITED_HEAD** | *(pending push — admission-hardening commit)* |
-| **EXECUTION_SHA** | *(record after pytest @ FINAL_COMMIT)* |
+| **FINAL_COMMIT / AUDITED_HEAD** | `569425246519f38c2cad1db1b0400a8ee3339ee7` |
+| **EXECUTION_SHA** | `569425246519f38c2cad1db1b0400a8ee3339ee7` — **18/18** passed |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
 Operator authorized **single-node Linux VM profile v1** (exactly-one writer, ext4 SSD, SQLite GCA/PIS WAL+FULL, systemd, least-privilege identity). This dossier is repository + lab evidence only.
