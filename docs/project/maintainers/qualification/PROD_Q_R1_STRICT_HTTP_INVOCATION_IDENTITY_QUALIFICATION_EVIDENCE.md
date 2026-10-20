@@ -710,3 +710,97 @@ Log: `.tmp/session/dim20-auth-principal-binding/pytest-auth-pi-rerun.log` — **
 | **AUTH-PI-02 pre-fix** | **IN-SCOPE BLOCKER** (remediated @ **FINAL_COMMIT**) | Metadata-only CREATE consistency insufficient for authenticated isolation |
 | **B6** | **TRACKED** | Formal independent verdict pending |
 | Terminal diagnostic bridge | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `policy_bundle_id` reconstruction noise in qual sessions — does not affect AUTH-PI assertions |
+
+---
+
+## 20. DIM20 principal trust-boundary final gate (PROD-Q-R1-R7-Q-DIM20-PRINCIPAL-TRUST-BOUNDARY-FINAL-GATE)
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-R7-Q-DIM20-PRINCIPAL-TRUST-BOUNDARY-FINAL-GATE** |
+| **START_HEAD** | `91e83a73bd733d1ab44fcaa24b75ca4f200e182f` |
+| **Production delta** | **0** @ START_HEAD — §19 HTTP guard already canonical; no new policy |
+| **Parent** | **PROD-Q-R1-R7-Q — IN PROGRESS / NOT QUALIFIED** |
+| **Status** | **READY FOR AUDIT** (does not close parent, **R7-Q** dim **20**, **PROD-Q**, global **FRZ-***, or **B6**) |
+
+### 20.1 Trust graph (before → after)
+
+| Phase | HTTP ingress (`fastapi_router.run_task`) | Tier-2 map (`resolve_sanctioned_operation_from_metadata`) | Follow-on bind (`try_resolve_sanctioned_follow_on_execution_admission`) | Orchestrator (`resolve_create_adapter_result_for_follow_on`) |
+|-------|------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------------------|--------------------------------------------------------------|
+| **Before §19** | Auth → `RequestContext.user_id`; metadata principal unchecked vs auth | **Requires** `external_work.principal_id` (`_require_meta_str`) | Metadata principal vs CREATE record only | Stored CREATE principal match |
+| **After §19 / @ final gate** | **+** strict binding: non-empty declared principal must equal authenticated `user_id` (**400**, all `/run` ops) | Unchanged — missing/empty principal **fail-closed** (`ValueError` → domain deny, no provider) | Unchanged — missing principal → no admission bind | Unchanged |
+
+**Four concepts (disambiguation):**
+
+| Concept | Source | Role |
+|---------|--------|------|
+| Authenticated principal | API key / JWT → `AuthContext` / `RequestContext.user_id` | HTTP trust boundary; P3 tenant gate |
+| RequestContext user | `context_only` identity resolution | Authoritative HTTP `user_id` on `Task` |
+| Declared metadata principal | `metadata["external_work.principal_id"]` | Tier-2 sanctioned operation typing; must not conflict with auth when non-empty |
+| CREATE follow-on record principal | `GovernedExternalWorkCreateFollowOnRecordV1.principal_id` | Admission + orchestrator prior-create consistency |
+
+### 20.2 Contract / owner inventory (closed-world)
+
+| Owner | Artifact | Principal semantics |
+|-------|----------|---------------------|
+| HTTP serving | `applications/governed_contractor_application/serving/fastapi_router.py` | Single `run_task` guard for **CREATE / ACCEPT_QUOTE / CANCEL** (operation-agnostic) |
+| Metadata → typed op | `agents/external_contractor_adapter/sanctioned_operation_from_metadata.py` | `_require_meta_str` on `META_PRINCIPAL_ID` for all mutation ops |
+| Follow-on admission | `applications/governed_contractor_application/host/strict_sanctioned_follow_on_http_execution_admission.py` | Optional metadata principal must match CREATE record |
+| Execution | `applications/governed_contractor_application/host/orchestrator.py` | `resolve_create_adapter_result_for_follow_on` principal match |
+| Tier-2 reflex | `agents/external_contractor_adapter/steps/domain_job.py` | Delegates to adapter / sanctioned resolver (no parallel HTTP principal path) |
+| Contracts | `intergrax/contracts/sanctioned_external_work_operation.py` | Typed `principal_id: str` (min_length=1) on create/accept/cancel requests |
+
+**Missing / empty metadata principal (public contract):** Strict sanctioned reflex **does not** infer principal from `Task.user_id`. Absent, `None`, empty, or whitespace-only `external_work.principal_id` is rejected at `resolve_sanctioned_operation_from_metadata` before provider effect; HTTP ingress does not treat omission as conflict (no shadow authority from RequestContext into metadata).
+
+### 20.3 Qualification matrix (A–D)
+
+| Slice | Verdict | Evidence |
+|-------|---------|----------|
+| **A — Existing AUTH-PI-01 / AUTH-PI-02** | **PASS** (retained §19; not re-run) | `test_auth_pi01_*`, `test_auth_pi02_*` @ §19 **FINAL_COMMIT** `91e83a73…` |
+| **B — AUTH-PI-CANCEL forged principal** | **PASS** | Distinct caller **B**, metadata principal **A**, **CANCEL** → HTTP **400**, **0** cancel / **0** new PIS — `test_auth_pi_cancel_forged_metadata_principal_while_distinct_authenticated_caller_denied` |
+| **C — Missing / empty metadata principal** | **PASS** | Parametrized CREATE: absent / `None` / `""` / whitespace → domain deny (`used`/`admitted` not true), **0** `create_calls`, **0** new intents — `test_auth_pi_missing_or_empty_metadata_principal_create_fail_closed` |
+| **D — Cross-operation consistency** | **PASS** (static) | One guard in `fastapi_router.run_task` (lines 112–123); no per-operation principal accept paths in closed-world inventory |
+
+§18 **PI-01** / **PI-02** (same HTTP auth, metadata ≠ CREATE) **not re-run** — behavior subsumed by §19 HTTP **400** for non-empty conflicting metadata @ `91e83a73…`.
+
+### 20.4 Bounded pytest (@ this task)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_auth_pi_cancel_forged_metadata_principal_while_distinct_authenticated_caller_denied \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_auth_pi_missing_or_empty_metadata_principal_create_fail_closed \
+  -q
+```
+
+Log: `.tmp/session/dim20-principal-trust-boundary-final-gate/pytest-final-gate.log` — **5 passed** (1 **CANCEL** + 4 parametrized missing-principal variants) @ execution **HEAD** (see **FINAL_COMMIT**).
+
+**FINAL_COMMIT / AUDITED_HEAD:** verify `git rev-parse HEAD` on `origin/development` after push.
+
+**Exclusions:** Full PROD-Q; PIS-STRICT; R7-Q §C; §18 PI nodes; AUTH-PI-01/02 re-run; **B6**; broad module collection.
+
+### 20.5 ECAP (scoped)
+
+| Area | Disposition |
+|------|-------------|
+| **A1–A8** | **PASS** (scoped) — single HTTP owner; fail-closed; no shadow metadata authority; contracts over ad-hoc dicts |
+| **B1–B5** | **PASS** (scoped) — **AUTH-PI-CANCEL** + missing-principal parametrized negatives |
+| **B6** | **PENDING** |
+
+### 20.6 FRZ (scoped contribution only)
+
+| ID | Scoped note |
+|----|-------------|
+| **FRZ-SEC-04** | Forged metadata cannot drive **CANCEL** under distinct authentication |
+| **FRZ-PRD-03** / **08** | HTTP **400** on forged-metadata **CANCEL**; CREATE without principal does not admit external effect |
+| **FRZ-REL-03** | No new PIS / provider calls on denied paths |
+| **FRZ-TEN-*** (applicable)** | Same-tenant multi-principal negatives (§19 + **CANCEL**) |
+| **FRZ-OWN-*** / **FRZ-BND-*** / **FRZ-CTR-*** | Unchanged ownership; HTTP + Tier-2 resolver boundaries preserved |
+| **FRZ-REG-02** / **03** / **09** | New regression nodes in §20.4 |
+
+### 20.7 Findings
+
+| ID | Class | Note |
+|----|-------|------|
+| — | — | **No IN-SCOPE BLOCKER** @ final gate (**production delta 0**) |
+| **B6** | **TRACKED FREEZE DEBT** | Formal independent verdict pending |
+| Parent **PROD-Q-R1-R7-Q** | **Unresolved dependency** | Package P / R7-Q §C reconciliation remains operator-owned |

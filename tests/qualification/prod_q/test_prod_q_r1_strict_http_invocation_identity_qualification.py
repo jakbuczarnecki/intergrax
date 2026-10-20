@@ -1690,3 +1690,126 @@ def test_auth_pi02_forged_metadata_principal_while_distinct_authenticated_caller
         fixture.session,
     )
 
+
+def test_auth_pi_cancel_forged_metadata_principal_while_distinct_authenticated_caller_denied(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from intergrax.contracts.sanctioned_external_work_operation import (
+        SanctionedExternalWorkMutationOperation,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
+        _QUAL_API_KEY_B,
+        _QUAL_USER_B,
+        strict_http_auth_headers,
+    )
+    from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
+        _QUAL_PRINCIPAL,
+        follow_up_strict_http_run_request_json,
+        list_intent_invocation_ids,
+        post_strict_http_create_prerequisite,
+    )
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id="rev-auth-pi-cancel-forged-metadata-principal",
+        default_agent_id="external_contractor_adapter",
+    )
+    pis = fixture.session.composition.provider_invocation_store
+    assert isinstance(pis, SQLiteProviderInvocationStore)
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        prerequisite = post_strict_http_create_prerequisite(
+            client,
+            fixture,
+            idempotency_key="idem-auth-pi-cancel-setup-create",
+        )
+        intents_before = list_intent_invocation_ids(fixture.provider_invocation_db)
+        baseline_cancel = fixture.external_work_fake.cancel_calls
+        cancel_payload = follow_up_strict_http_run_request_json(
+            fixture,
+            prerequisite,
+            operation=SanctionedExternalWorkMutationOperation.CANCEL,
+            idempotency_key="idem-auth-pi-cancel-forged-metadata",
+        )
+        meta = cancel_payload.get("metadata")
+        assert isinstance(meta, dict)
+        assert meta.get("external_work.principal_id") == _QUAL_PRINCIPAL
+        cancel_payload["user_id"] = _QUAL_USER_B
+
+        response = client.post(
+            fixture.run_url,
+            json=cancel_payload,
+            headers=strict_http_auth_headers(_QUAL_API_KEY_B),
+        )
+        assert response.status_code == 400, response.text
+        assert "external_work.principal_id" in response.text
+
+        assert fixture.external_work_fake.cancel_calls == baseline_cancel
+        assert list_intent_invocation_ids(fixture.provider_invocation_db) == intents_before
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
+
+@pytest.mark.parametrize(
+    "principal_variant",
+    [
+        pytest.param("absent", id="absent"),
+        pytest.param("none", id="none"),
+        pytest.param("empty", id="empty"),
+        pytest.param("whitespace", id="whitespace"),
+    ],
+)
+def test_auth_pi_missing_or_empty_metadata_principal_create_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    principal_variant: str,
+) -> None:
+    from external_contractor_adapter.external_work_adapter import META_PRINCIPAL_ID
+
+    fixture = build_strict_http_invocation_qual_fixture(
+        monkeypatch,
+        tmp_path,
+        revision_id=f"rev-auth-pi-missing-principal-{principal_variant}",
+        default_agent_id="external_contractor_adapter",
+    )
+    intents_before = list_intent_invocation_ids(fixture.provider_invocation_db)
+    baseline_create = fixture.external_work_fake.create_calls
+    payload = run_request_json(
+        fixture.tenant_id,
+        idempotency_key=f"idem-auth-pi-missing-principal-{principal_variant}",
+    )
+    meta = payload.get("metadata")
+    assert isinstance(meta, dict)
+    if principal_variant == "absent":
+        meta.pop(META_PRINCIPAL_ID, None)
+    elif principal_variant == "none":
+        meta[META_PRINCIPAL_ID] = None
+    elif principal_variant == "empty":
+        meta[META_PRINCIPAL_ID] = ""
+    else:
+        meta[META_PRINCIPAL_ID] = "   "
+
+    with strict_http_qualification_asgi_lifespan(fixture) as client:
+        response = client.post(
+            fixture.run_url,
+            json=payload,
+            headers=strict_http_auth_headers(),
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        summary = _strict_http_support.domain_summary_from_strict_http_run_body(body)
+        if summary:
+            assert summary.get("used") is not True
+            assert summary.get("admitted") is not True
+
+        assert fixture.external_work_fake.create_calls == baseline_create
+        assert list_intent_invocation_ids(fixture.provider_invocation_db) == intents_before
+
+    assert owned_strict_http_invocation_session_closed_via_completed_asgi_lifespan(
+        fixture.session,
+    )
+
