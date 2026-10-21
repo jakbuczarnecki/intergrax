@@ -1,6 +1,6 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q-P2** = **READY FOR OPERATOR B6 SCOPED ACCEPTANCE** — final reconciliation @ evidence baseline `202764bc328465799ea694c0dd6430e3d8ba6c4e` (§PROD-Q-P2; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub; **not** **CLOSED**) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0/P2 reconciliation** · P0 closure-record **READY FOR INDEPENDENT AUDIT** on GitHub
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q-P2** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** — **OPERATOR B6** (2026-10-21; evidence baseline `202764bc328465799ea694c0dd6430e3d8ba6c4e`; reconciliation `2e95dd17ab8487848b1b311700e780f8d0c2bca4` — §PROD-Q-P2 / §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P3` **OPEN**; **PROD-Q-P2** **CLOSED**) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0/P2 reconciliation** · P0 closure-record **READY FOR INDEPENDENT AUDIT** on GitHub
 
 **P0 mechanical evidence lock (SSOT constant, not superseded):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · `PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA` in `tests/qualification/prod_q/_p0_certification.py` · **production delta = 0**
 
@@ -31,7 +31,7 @@
 
 **Independent code-review limitations:** Exact-SHA audit must target **GitHub `development` code**, not this Cursor report ([`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md)). Local documentation correction is **separate** from parent **PROD-Q** certification. Rejected corrective SHAs in the roadmap table remain **REJECTED**; only explicitly attributed SHAs above are **READY FOR AUDIT**.
 
-**Formal PROD-Q-P0 disposition:** **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — see §OPERATOR B6. Independent exact-SHA GitHub audit of closure-record commit remains mandatory before treating Cursor disposition as final certification authority. **PROD-Q** parent unblock still requires mandatory children **PROD-Q-R1**, **PROD-Q-P1**, **PROD-Q-P2**, **PROD-Q-P3**.
+**Formal PROD-Q-P0 disposition:** **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — see §OPERATOR B6. Independent exact-SHA GitHub audit of closure-record commit remains mandatory before treating Cursor disposition as final certification authority. **PROD-Q** parent unblock still requires mandatory children **PROD-Q-R1**, **PROD-Q-P1**, **PROD-Q-P3** (**PROD-Q-P2** **CLOSED** — §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2).
 
 ## OPERATOR B6 — CLOSED SCOPED PROD-Q-P0
 
@@ -70,8 +70,9 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **READY FOR OPERATOR B6 SCOPED ACCEPTANCE** — does **not** close **PROD-Q-P2** until operator B6; this documentation commit **READY FOR INDEPENDENT AUDIT** on GitHub |
+| **Disposition** | **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** — **OPERATOR B6** (2026-10-21); formal record §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2; closure-record commit **READY FOR INDEPENDENT AUDIT** on GitHub |
 | **Evidence baseline (implementation + qual)** | `202764bc328465799ea694c0dd6430e3d8ba6c4e` |
+| **Reconciliation SHA (pre-B6 ledger)** | `2e95dd17ab8487848b1b311700e780f8d0c2bca4` |
 | **Mandatory scoped surfaces** | **GCA** strict graph · **LKW** · **Research** · **Hosting** engine (strict-vs-lab reachability / bypass denial per P0 **PQ-F11** child) |
 | **production delta** | **0** (documentation reconciliation only) |
 
@@ -83,11 +84,28 @@
 | **LKW** | `175250b95` · `1deabd3fd` · `dd53aa35b` · `202764bc3` | Background worker production settings validation; strict admission lock; **P2-R2-R1** hosted runtime negative; CLI fail-closed without reference flag |
 | **Research / Hosting** | `ba652679b` · `dd53aa35b` · `202764bc3` | `tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py` — placeholder ASGI, factory/CLI negatives, hosting factory guard, LKW hosted alias |
 
-**FRZ-PRD-08 @ P0 mechanical reconciliation:** **PARTIAL_CURRENT_HEAD** reflects open platform child **PROD-Q-P2**, **not** an uncovered bypass on the mandatory slice above; global **FRZ-PRD-08** remains **OPEN** (platform census, reflex/F02/legacy CREATE, dim **20** parent — outside scoped P2 closure).
+**FRZ-PRD-08 @ scoped P2 slice:** accepted evidence on mandatory GCA/LKW/Research/Hosting surfaces above contributes to **FRZ-PRD-08** only within scoped P2 closure — **not** global **FRZ-PRD-08** **PASS** (platform census, reflex/F02/legacy CREATE, dim **20** parent remain **OPEN** outside P2).
 
-**Does not:** close **PROD-Q** parent; auto-promote **PROD-Q-R1** / **PROD-Q-P1** / **PROD-Q-P3**; promote global **FRZ-PRD-08** or other **FRZ-*** **PASS**; substitute **PROD-Q-R1-R7-Q** parent qualification or **E.1** full D0–D4 replay.
+**Does not:** close **PROD-Q** parent; auto-promote **PROD-Q-R1** / **PROD-Q-P1** / **PROD-Q-P3**; promote global **FRZ-PRD-08** or other **FRZ-*** **PASS**; substitute **PROD-Q-R1-R7-Q** parent qualification or **E.1** full D0–D4 replay; certify unproven entrypoints, unfinished integrations, legacy CREATE, or global production bypass census.
 
-**Next:** operator **B6** scoped **PROD-Q-P2** after independent exact-SHA GitHub audit of this closure-record commit.
+## OPERATOR B6 — CLOSED SCOPED PROD-Q-P2
+
+| Field | Value |
+| --- | --- |
+| **Authority** | Explicit operator authorization `PROD-Q-P2-B6-FORMAL-CLOSURE` / **OPERATOR B6 — CLOSED SCOPED PROD-Q-P2** (2026-10-21) |
+| **Evidence baseline** | `202764bc328465799ea694c0dd6430e3d8ba6c4e` |
+| **Reconciliation SHA** | `2e95dd17ab8487848b1b311700e780f8d0c2bca4` |
+| **Branch** | `development` |
+| **pytest @ closure record** | **0** (documentation-only disposition; no new replay claimed) |
+| **production delta** | **0** |
+
+**Scoped acceptance (P2 only):** strict-vs-lab separation and production reachability / bypass denial on closed-world surfaces **GCA** (strict graph + Package C evidence), **LKW** (worker production settings, strict admission, hosted runtime negative, strict CLI fail-closed), **Research** / **Hosting** (placeholder ASGI, factory/CLI negatives, hosting factory guard, LKW hosted alias) — evidence SHAs in table above; **no** re-execution of historical tests presented as current-HEAD proof.
+
+**Applicable FRZ (scoped evidence contribution only; global checklist rows unchanged):** **FRZ-PRD-03**, **FRZ-PRD-07**, **FRZ-PRD-08**; **FRZ-SEC-04** within existing GCA identity/admission evidence bounds; **FRZ-OWN/BND/CTR/TYP/REG** architectural constraints as already recorded — **new global FRZ PASS = 0**.
+
+**Does not:** close **PROD-Q** parent; auto-promote **PROD-Q-R1** / **PROD-Q-P1** / **PROD-Q-P3**; promote global **FRZ-PRD** / **FRZ-SEC** / **FRZ-REL** **PASS**; expand certification beyond the mandatory P2 inventory slice.
+
+**Independent audit:** exact-SHA review on GitHub remains mandatory; this Cursor disposition is **READY FOR AUDIT**, not final certification authority.
 
 ## PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1 purpose
 
@@ -171,7 +189,7 @@ Derived from tenant-relevant classified inventory + TENANT-X ancestry — **not*
 PROD-Q-R1 — Production Startup / Dependency Materialization Corrective (R1-SQLITE-ENV-01)
 PROD-Q-R1-R7 — Production deployment adapter & lifecycle wiring (ADR-01 **R6**; **NOT CLOSED**; **D1-R6**/**D1**/**D1b** pending independent closure; **D2**/**D3** **READY FOR AUDIT**; **D4** **CLOSED / independently accepted** @ `0dd51fe…`; **next mandatory = PROD-Q-R1-R7-Q** — **NOT ENTERED**)
 PROD-Q-P1 — External sandbox provider production qualification (E2B, Modal, Daytona)
-PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure
+PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure (**CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** @ evidence `202764bc…`; reconciliation `2e95dd17…`)
 PROD-Q-P3 — Production operability surface (health/readiness/operator semantics wiring)
 ```
 
@@ -225,7 +243,7 @@ PROD-Q-P3 — Production operability surface (health/readiness/operator semantic
 
 **Historical technical verdict (@ `79fc6c79…`):** mandatory suite green — superseded by **OPERATOR B6** formal acceptance @ `8b3db676…` (§OPERATOR B6). **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0**; parent **PROD-Q** remains **BLOCKED**. **No global `FRZ-*` PASS** from P0 closure.
 
-**Formal limitations (unchanged):** **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED**; live provider qualification remains **PROD-Q-P1**; **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`).
+**Formal limitations (unchanged):** **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED**; live provider qualification remains **PROD-Q-P1**; **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P3` **OPEN**; **PROD-Q-P2** **CLOSED**).
 
 ## Tests (mandatory)
 
