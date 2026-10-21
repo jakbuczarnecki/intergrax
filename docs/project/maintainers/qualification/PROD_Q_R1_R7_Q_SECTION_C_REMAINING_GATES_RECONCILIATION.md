@@ -8,8 +8,9 @@
 | **Program** | **PROD-Q** — **OPEN / BLOCKED** |
 | **Branch** | `development` |
 | **BASELINE** | `3df10b2a7b3e51aa115a6377bdfda4f6c32619bd` |
-| **START_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
-| **AUDITED_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
+| **START_HEAD** | `8b12b10987b8b272f9fe8470b5b4c863b16bc488` |
+| **AUDITED_HEAD** | `8b12b10987b8b272f9fe8470b5b4c863b16bc488` |
+| **Independent scoped acceptance (§C)** | `PROD-Q-R1-R7-Q-C-INDEPENDENT-SCOPED-ACCEPTANCE` @ `AUDITED_HEAD` — **pytest = 0**; static F02 admission-first continuity verified @ `HEAD`; does **not** close **R7-Q** / **Package D** / **B6** (P0) |
 | **DIM20 evidence consolidation** | **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** — aligns §C dim **20** with STRICT-HTTP §§15–17 + Package P reconciliation @ `ca8cb05…` (**pytest = 0**) |
 | **F02 reconciliation task** | `PROD-Q-R1-R7-Q-C-PACKAGE-D-CURRENT-HEAD-F02-RECONCILIATION` @ **`F02_RECONCILIATION_HEAD`** `99eb55724483ba20bc0b4e0abcc881fc6e392f22` — documentation alignment only; **pytest = 0** |
 | **Production delta (F02 reconciliation)** | **0** — no product code edits |
@@ -32,7 +33,7 @@
 | **PROD-Q-R1-R7** | **NOT CLOSED** / **BLOCKED** |
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
 | **Next mandatory stage (R7-Q)** | Independent acceptance of §C integrated evidence + operator profiles (**DIM6**, **DIM17**) + **PROD-Q-R1** Package P (**DIM20**) before parent **R7-Q QUALIFIED** |
-| Concurrent HEAD drift (strict production **product** graph) | **None** between Package C exec `9aef3f09…` and `AUDITED_HEAD` on `intergrax/applications/_shared/*`, `intergrax/agent_distribution/*`, GCA strict host — post–Package C commits on qualification path are **STRICT-HTTP-R1–R5** test-boundary correctives only (`53cf2ff8c`…`4fac9482e`) |
+| Concurrent HEAD drift (strict production **product** graph) | **Bounded delta** `93c17a95…` → `AUDITED_HEAD`: `strict_production_serving_launcher.py`, `production_process_lifecycle.py`, `colocated_serving_runtime_composition.py`, `agent_distribution/deployment.py`, `venv_bundle_colocated_runtime_deployment_adapter.py` (+ profile v1 / D2 GCA host-store close @ `0c63b3f28…`). **F02 admission-close-before-drain** ordering preserved @ static read `HEAD`. Tip `8b12b10…` = **docs-only** (D1–D3 OPERATOR B6 scoped A1 record). §C pytest **not** replayed @ `AUDITED_HEAD` |
 | **new global FRZ PASS** | **0** |
 
 **Canonical sources read @ `AUDITED_HEAD`:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) · [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) · [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md).
@@ -216,6 +217,20 @@ git diff --check
 ```
 
 **Pytest:** **0** (DIM20 consolidation + F02 reconciliation — no replay).
+
+**Independent scoped acceptance (@ `8b12b10987b8b272f9fe8470b5b4c863b16bc488`):**
+
+```text
+git branch --show-current
+git rev-parse HEAD
+git merge-base --is-ancestor 8b12b10987b8b272f9fe8470b5b4c863b16bc488 HEAD
+git merge-base --is-ancestor 93c17a959f48c5115cc52cb90ec9e16964169a0a HEAD
+git rev-parse origin/development
+git status -sb
+git diff --stat 93c17a959f48c5115cc52cb90ec9e16964169a0a..HEAD -- intergrax/applications/_shared/strict_production_serving_launcher.py intergrax/applications/_shared/production_process_lifecycle.py
+```
+
+**Pytest:** **0** (independent §C acceptance read + static continuity only).
 
 ---
 
