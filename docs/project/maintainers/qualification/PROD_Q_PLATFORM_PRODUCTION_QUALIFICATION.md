@@ -1,6 +1,6 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** mechanical evidence @ `0046075484cd85da9a220f6f537c48ad94dd8078` = **READY FOR AUDIT** (historical lock preserved) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = **READY FOR AUDIT** (does **not** close **PROD-Q-P0** or **PROD-Q**) · **PROD-Q-P0** inventory wave = **READY FOR AUDIT** (independent GitHub SHA audit pending) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0**
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0** · closure-record commit **READY FOR INDEPENDENT AUDIT** on GitHub
 
 **P0 mechanical evidence lock (SSOT constant, not superseded):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · `PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA` in `tests/qualification/prod_q/_p0_certification.py` · **production delta = 0**
 
@@ -8,7 +8,9 @@
 
 **Branch:** `development`
 
-**START_HEAD (this evidence-ledger alignment):** `79fc6c79328adbfd4d44e6a5edc61782f9956af4`
+**START_HEAD (OPERATOR B6 formal closure record):** `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`
+
+**START_HEAD (prior evidence-ledger alignment):** `79fc6c79328adbfd4d44e6a5edc61782f9956af4`
 
 **START_HEAD (P0-R1-R1-R1-R1-R1-R1-R1-R1 rejected baseline):** `e8c89016b4012caae9c28dfd4a2c3a8d2b958b3e`
 
@@ -17,18 +19,46 @@
 | Lineage entry | Exact SHA | Attribution | Disposition |
 | --- | --- | --- | --- |
 | Initial closed-world inventory wave | `20ce563d383312bd53c72167cb228623dfbb8881` | **PROD-Q-P0** (historical) | **REJECTED** (preserved; not re-opened) |
-| Mechanical composition-ownership + authoritative gate lock | `0046075484cd85da9a220f6f537c48ad94dd8078` | **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** implementation evidence | **READY FOR AUDIT** — independent GitHub audit required; **not** **CLOSED** |
+| Mechanical composition-ownership + authoritative gate lock | `0046075484cd85da9a220f6f537c48ad94dd8078` | **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** implementation evidence | **Accepted under OPERATOR B6** — lock SHA preserved; parent **PROD-Q-P0** **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** |
 | Typing/subprocess/evidence-integrity corrective | `ddc8704457192aafffdd32ca8d65e258db2679e0` | Post-lock qualification harness hardening only (`tests/qualification/prod_q/_p0_certification.py`, `_p0_*` gates) | **READY FOR AUDIT** — does **not** supersede or replace mechanical lock SHA; does **not** close parent **PROD-Q** |
 | Current-HEAD compatibility (doc reconciliation @ START_HEAD) | `79fc6c79328adbfd4d44e6a5edc61782f9956af4` | Mechanical lock `0046075484…`, corrective `ddc87044…`, PI corrective `1faa86ff…`, and FAIL replay `0ce711f07…` are ancestors of HEAD (`git merge-base --is-ancestor`) | Factual lineage only — **not** operator acceptance |
 | P0 final gate execution (Cursor session evidence; historical FAIL preserved) | `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` | Mandatory `tests/qualification/prod_q/` replay @ exact HEAD (see § execution evidence — FAIL run) | **READY FOR AUDIT** — **not** **CLOSED**; suite exit **1** (R1 PI failures classified **non-P0**) |
-| P0 final gate execution (Cursor session evidence; current HEAD green replay) | `79fc6c79328adbfd4d44e6a5edc61782f9956af4` | Mandatory `tests/qualification/prod_q/` replay @ exact HEAD after PI-01/PI-02 corrective (`1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b`); lineage includes `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` FAIL record | **PROD-Q-P0 — TECHNICAL GATE PASS / FORMAL CLOSURE READY** — **not** **CLOSED**; independent GitHub SHA audit + operator acceptance required |
+| P0 final gate execution (Cursor session evidence; current HEAD green replay) | `79fc6c79328adbfd4d44e6a5edc61782f9956af4` | Mandatory `tests/qualification/prod_q/` replay @ exact HEAD after PI-01/PI-02 corrective (`1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b`); lineage includes `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00` FAIL record | Historical technical gate pass — superseded by **OPERATOR B6** @ `8b3db676…` |
+| **OPERATOR B6 — formal scoped acceptance** | `8b3db6763e4b5ee1d6b3815c4b7f601152169afe` | **PROD-Q-P0-B6-FORMAL-CLOSURE** — mandatory `tests/qualification/prod_q/` replay @ execution SHA; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` | **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** (2026-10-21); closure-record **READY FOR INDEPENDENT AUDIT** on GitHub |
 | FRZ reconciliation rows (`build_frz_reconciliation()`) | — | **FRZ-PRD / FRZ-SEC / FRZ-REL** and related IDs per freeze checklist | Evidence **contributions** only — **no** global **FRZ-*** **PASS** from P0 |
 
 **Implementation test evidence (committed @ `ddc87044…`, not replayed in this documentation task):** `test_prod_q_p0_fast_q04_historical_evidence_ancestry`; `test_prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit_gate` (`tests/qualification/prod_q/test_prod_q_p0_r1_r1_r1_r1_r1_r1_gate.py`); bounded-subprocess / R1-disposition integrity gates `test_prod_q_p0_int_d7_*` (`tests/qualification/prod_q/test_prod_q_p0_integrity.py`). **IMPL-01-R3** and other non-P0 stages remain **not** **QUALIFIED** by this ledger.
 
 **Independent code-review limitations:** Exact-SHA audit must target **GitHub `development` code**, not this Cursor report ([`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md)). Local documentation correction is **separate** from parent **PROD-Q** certification. Rejected corrective SHAs in the roadmap table remain **REJECTED**; only explicitly attributed SHAs above are **READY FOR AUDIT**.
 
-**Remaining requirement for formal PROD-Q-P0 closure:** Independent exact-SHA GitHub audit of mechanical lock @ `0046075484…` **and** corrective implementation @ `ddc87044…`, including replay of committed `tests/qualification/prod_q/` gates at the audited revision; operator acceptance before any **PROD-Q-P0** **CLOSED** disposition or **PROD-Q** parent unblock. Roadmap §5 evidence ledger @ locally modified `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` is **out of scope** for this commit.
+**Formal PROD-Q-P0 disposition:** **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — see §OPERATOR B6. Independent exact-SHA GitHub audit of closure-record commit remains mandatory before treating Cursor disposition as final certification authority. **PROD-Q** parent unblock still requires mandatory children **PROD-Q-R1**, **PROD-Q-P1**, **PROD-Q-P2**, **PROD-Q-P3**.
+
+## OPERATOR B6 — CLOSED SCOPED PROD-Q-P0
+
+| Field | Value |
+| --- | --- |
+| **Authority** | Explicit operator authorization `PROD-Q-P0-B6-FORMAL-CLOSURE` (2026-10-21) |
+| **Mechanical lock SHA** | `0046075484cd85da9a220f6f537c48ad94dd8078` |
+| **Execution SHA** | `8b3db6763e4b5ee1d6b3815c4b7f601152169afe` |
+| **Branch** | `development` |
+| **Command** | `uv run pytest tests/qualification/prod_q/ -p no:xdist -q` |
+| **Collected** | 438 |
+| **Result** | **436 passed**, **0 failed**, 2 skipped |
+| **Duration** | 468.30s |
+| **Exit code** | **0** |
+| **Session log** | `.tmp/session/PROD-Q-P0-FINAL-B6-QUALIFICATION-REPLAY/run.log` |
+| **production delta** | **0** |
+
+**Scoped acceptance (P0 only):** closed-world production readiness inventory; production registration composition ownership; authoritative AST evidence; provider registration identity; auxiliary evidence integrity; fail-closed unresolved ownership; negative mutation gates; shared authoritative P0 violations; strict/lab classification within P0; P0 bypass denial.
+
+**Excluded — NOT PROVEN (no PASS claimed):**
+
+| Concern | Rationale |
+| --- | --- |
+| POSIX PGID ownership | Test skipped on Windows — **NOT PROVEN** on Windows execution path |
+| Windows descendant termination after parent exit | No demonstrated job-object mechanism — **NOT PROVEN**; architectural requirement preserved |
+
+**Does not:** close **PROD-Q** parent; auto-promote **PROD-Q-R1** / **PROD-Q-P1** / **PROD-Q-P2** / **PROD-Q-P3**; promote global **FRZ-PRD** / **FRZ-SEC** / **FRZ-REL** PASS; expand OS/process-management certification beyond scoped P0 inventory evidence.
 
 **Mechanical SSOT:** `tests/qualification/prod_q/`
 
@@ -170,7 +200,7 @@ PROD-Q-P3 — Production operability surface (health/readiness/operator semantic
 
 **P0 test battery:** all `test_prod_q_p0_*` and P0 integrity gates that executed on Windows **passed** (no `test_prod_q_p0_*` failures in this run).
 
-**Current-HEAD P0 technical verdict:** **PROD-Q-P0 — TECHNICAL GATE PASS / FORMAL CLOSURE READY** — mandatory suite green @ this SHA; **do not** self-assign **CLOSED** or unblock parent **PROD-Q** without independent exact-SHA GitHub audit of mechanical lock @ `0046075484…` + corrective lineage (`ddc87044…`, `1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b`) and operator formal acceptance. **No global `FRZ-*` PASS** from this replay.
+**Historical technical verdict (@ `79fc6c79…`):** mandatory suite green — superseded by **OPERATOR B6** formal acceptance @ `8b3db676…` (§OPERATOR B6). **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0**; parent **PROD-Q** remains **BLOCKED**. **No global `FRZ-*` PASS** from P0 closure.
 
 **Formal limitations (unchanged):** **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED**; live provider qualification remains **PROD-Q-P1**; **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`).
 
