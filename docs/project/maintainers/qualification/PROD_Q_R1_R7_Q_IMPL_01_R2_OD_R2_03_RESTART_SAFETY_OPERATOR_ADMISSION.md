@@ -4,8 +4,8 @@
 |-------|-------|
 | **Status** | **READY FOR AUDIT** |
 | **Parent** | PROD-Q-R1-R7-Q — IN PROGRESS / NOT QUALIFIED |
-| **START_HEAD** | `fc176db7fa2290c47849ff3d159299f936a05b2d` |
-| **Evidence SHA** | `726f900d2aac64641174a59d93b4078a29d4cdd6` |
+| **START_HEAD** | `a32bfb6649047cb57e423071293e6b6382166016` |
+| **Evidence SHA** | `2b39fb9b3d10ad7d8dcac81ac773e64652ceae8a` (rc-cross subprocess + negatives) |
 | **Controlling decision** | OD-R2-03 @ [`PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md`](PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md) §15 |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
@@ -91,15 +91,59 @@
 | B1–B5 | Boundaries + fail-closed durability negatives |
 | B6 | **Deferred** — operator-only |
 
+## IMPL-01 GCA restart durability — invariant matrix (batched qualification)
+
+| Invariant | Contract | Evidence SHA | Process boundary | Outcome | Limitation | FRZ |
+|-----------|----------|--------------|------------------|---------|------------|-----|
+| Committed GER + F02 + PIS outcome survive graceful cross-process reopen | `GovernedExecutionStore` | `15a8fd14…` | **CROSS-PROCESS** (DUR-PROC-01) | **PROVEN — CROSS-PROCESS** | Not power-loss; lab SQLite | FRZ-REL-03 partial |
+| Committed state after abrupt child termination | same + close before flag | `15a8fd14…` | **CROSS-PROCESS** (DUR-PROC-02-A) | **PROVEN — CROSS-PROCESS** | Kill ≠ storage power-loss | FRZ-REL-03 partial |
+| Incomplete finalization / PIS intent without outcome | orchestrator + dispatch gate | `15a8fd14…` | **CROSS-PROCESS** (DUR-PROC-02-B) | **PROVEN — CROSS-PROCESS** (controlled inject) | Not live mid-txn crash | FRZ-REL-05 partial |
+| Missing GER/F02 denies follow-on; no ordinary CREATE redispatch | F02 Option B | `15a8fd14…` | in-process + DUR-CONS-01 | **PROVEN — LAB ONLY** | Q2 full suite not re-run | FRZ-PRD-08 partial |
+| Corrupt F02 / GER-without-F02 fail-closed | `GovernedExecutionStore` | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | Subset @ batched `-k` | FRZ-SEC-04 partial |
+| F03 uncertain commit / marker persistence & reopen deny | SQLite host txn + marker | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | F03 fix in `sqlite_governed_external_work_host_store_bundle.py` @ HEAD | FRZ-REL-03 partial |
+| Policy bundle artifact round-trip | `PolicyBundleArtifactStore` | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | Not subprocess-isolated | FRZ-CTR partial |
+| Proof receipt durable round-trip | `ProofReceiptStore` | batched SHA + rc-cross | **PROVEN — CROSS-PROCESS** (rc-cross) | see matrix | Graceful subprocess reopen only; not power-loss | FRZ-REL-03 partial |
+| Continuation durable round-trip | `ContinuationStateStore` | batched SHA + rc-cross | **PROVEN — CROSS-PROCESS** (rc-cross) | see matrix | Same limitation | FRZ-REL-03 partial |
+| PIS vs GCA non-atomic ordering | separate SQLite files | `15a8fd14…` | cross-process + Q2 regression | **PROVEN — CROSS-PROCESS** (ambiguity) | No distributed txn | FRZ-PRD-08 partial |
+| Cross-tenant recovery deny | GER `tenant_id` + sanctioned port | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | File not tenant-partitioned | FRZ-TEN-* partial |
+| Production-qualified restart-durable GCA backend | OD-R2-03 | — | target deployment | **NOT PROVEN — INFRASTRUCTURE REQUIRED** | Lab SQLite only | **IN-SCOPE BLOCKER** |
+| Operator B6 / target replay | ECAP B6 | — | production | **NOT PROVEN — INFRASTRUCTURE REQUIRED** | Deferred | FRZ-PRD-* OPEN |
+
+**Cursor disposition:** **GCA RESTART DURABILITY — READY FOR INDEPENDENT AUDIT** (laboratory + cross-process subprocess scope). **RECEIPT/CONTINUATION CROSS-PROCESS — READY FOR INDEPENDENT AUDIT** @ matrix `Execution SHA`. **BLOCKED ON EXACT MANDATORY EVIDENCE** for production-global operator replay (**PRODUCTION OD-R2-03 — OPERATOR INFRASTRUCTURE EVIDENCE REQUIRED** unchanged).
+
+## Receipt / continuation cross-process (mandatory reopen evidence)
+
+Worker: `tests/unit/applications/governed_contractor/impl_01_r2_od_r2_03_restart_worker.py` (`rc-cross-seed` / `rc-cross-verify`). Process A: real `SQLiteGovernedExternalWorkHostStoreBackend`, CREATE + attested `ProofReceiptStore` write + `ContinuationStateStore.put_continuation`, graceful close. Process B: fresh Python, reopen same file, integrity + identity binding, `is_durable=True`, deny in-memory fallback. Negatives: `test_rc_neg_*` (missing row, corrupt payload, contract `corrupted_*` errors). **Not** power-loss evidence.
+
+| Store | Process A | Process B | Integrity | Negative | Execution SHA | Verdict |
+|-------|-----------|-----------|-----------|----------|---------------|---------|
+| `ProofReceiptStore` | `rc-cross-seed` | `rc-cross-verify` | `receipt_id` + boundary execution binding vs manifest | `test_rc_neg_missing_receipt_returns_none`, `test_rc_neg_corrupt_receipt_fail_closed`, wrong-key deny in verify | `2b39fb9b3d10ad7d8dcac81ac773e64652ceae8a` | **READY FOR INDEPENDENT AUDIT** |
+| `ContinuationStateStore` | `rc-cross-seed` | `rc-cross-verify` | `continuation_request_id` + `execution_id` vs manifest `task_id` key | `test_rc_neg_corrupt_continuation_fail_closed`, wrong `task_id` → `None` in verify | `2b39fb9b3d10ad7d8dcac81ac773e64652ceae8a` | **READY FOR INDEPENDENT AUDIT** |
+
+**PRODUCTION OD-R2-03 — OPERATOR INFRASTRUCTURE EVIDENCE REQUIRED** (PVC, target backend, B6) — not closed by this matrix.
+
 ## Focused pytest (authoritative command)
 
 ```text
 uv run pytest -p no:xdist \
   tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_impl_01_r2_od_r2_03_restart_safety_operator_admission.py \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_gca_sqlite_durable_recovery.py \
+  -k "dur_proc or test_f03 or test_corrupt_f02 or test_ambiguous_commit or test_ger_without_f02 or test_policy_bundle_round_trip or test_sqlite_ger_round_trip" \
   -q
 ```
 
-Log: `.tmp/session/impl-01-r2-od-r2-03/pytest-od-r2-03.log`
+Log: `.tmp/session/impl-01-gca-restart-durability-qual/pytest-batched.log` — **10 passed**, 18 deselected (2026-10-21).
+
+Receipt / continuation only:
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_impl_01_r2_od_r2_03_restart_safety_operator_admission.py \
+  -k "rc_cross or rc_neg" \
+  -q
+```
+
+Log: `.tmp/session/impl-01-gca-receipt-continuation-restart/pytest-rc.log` — **4 passed** (2026-10-21).
 
 ---
 

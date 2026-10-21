@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import UTC, datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 import sqlite3
 from unittest.mock import patch
@@ -28,9 +29,13 @@ from governed_contractor_application.host.stores import (
     InMemoryProviderInvocationStore,
 )
 from intergrax.contracts.execution_identity import (
-    bind_active_execution_identity,
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
     mint_attempt_id,
-    reset_active_execution_identity,
+    validate_execution_id,
+    validate_run_id,
     validate_task_id,
 )
 from intergrax.contracts.external_work_provider_capabilities import (
@@ -58,9 +63,16 @@ from external_contractor_adapter.side_effect_actions import ACTION_CREATE_EXTERN
 from intergrax.contracts.governed_execution_result import GovernedExecutionResultV2
 from intergrax.contracts.governed_external_work_create_follow_on import (
     GovernedExternalWorkCreateFollowOnRecordV1,
+    compute_snapshot_content_digest,
 )
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from tests.unit.contracts.test_governed_execution_result import _ger_v2
+from tests.unit.runtime.governance.gr3_test_support import bound_gr3_active_execution
+
+_SQLITE_DB_CLS = (
+    "governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle."
+    "_SqliteGovernedExternalWorkHostDatabase"
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -72,18 +84,37 @@ _TASK = str(EXTERNAL_WORK_TEST_TASK_ID)
 _RUN = str(EXTERNAL_WORK_TEST_RUN_ID)
 
 
+def _canonical_id(prefix: str, label: str) -> str:
+    suffix = sha256(label.encode("utf-8")).hexdigest()[:32]
+    return f"{prefix}{suffix}"
+
+
+def _test_execution_id(label: str) -> str:
+    return _canonical_id("exec_", label)
+
+
 @contextmanager
 def _active_execution(execution_id: str):
-    token = bind_active_execution_identity(
+    with bound_gr3_active_execution(
         task_id=validate_task_id(_TASK),
-        run_id=_RUN,
-        execution_id=execution_id,
-        attempt_id=mint_attempt_id(),
-    )
-    try:
+        run_id=RunId(validate_run_id(_RUN)),
+        execution_id=ExecutionId(validate_execution_id(execution_id)),
+        attempt_id=AttemptId(mint_attempt_id()),
+        governance_tenant_id="tenant-a",
+        governance_workspace_id="ws-a",
+        governance_principal_id="principal-a",
+    ):
         yield execution_id
-    finally:
-        reset_active_execution_identity(token)
+
+
+def _broken_sqlite_commit(
+    self: object,
+    conn: sqlite3.Connection,
+    *,
+    message: str = "commit failed",
+) -> None:
+    self._mark_writes_uncertain(conn)  # type: ignore[attr-defined]
+    raise GovernedExternalWorkHostPersistenceError(message)
 
 
 def _sqlite_orchestrator(tmp_path: Path, db_name: str = "gca.db"):
@@ -129,11 +160,15 @@ def _sample_bundle_record(execution_id: str) -> GovernedExternalWorkCreateFollow
         ExternalWorkStatus,
     )
 
+    task_id = TaskId(_TASK)
+    run_id = RunId(_RUN)
+    attempt_id = AttemptId(mint_attempt_id())
     now = datetime.now(UTC)
     snapshot = ExternalWorkSnapshot(
         correlation=ExternalTaskCorrelation(
-            task_id="task-1",
-            provider_id="prov",
+            task_id=str(task_id),
+            run_id=str(run_id),
+            provider_id="gec3_deterministic_fake",
             external_task_id="ew-1",
         ),
         status=ExternalWorkStatus.QUOTE_AVAILABLE,
@@ -141,18 +176,18 @@ def _sample_bundle_record(execution_id: str) -> GovernedExternalWorkCreateFollow
         updated_at=now,
     )
     return GovernedExternalWorkCreateFollowOnRecordV1(
-        execution_id=execution_id,
-        task_id="task-1",
-        run_id="run-1",
-        attempt_id="attempt-1",
+        execution_id=ExecutionId(execution_id),
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
         tenant_id="tenant-a",
         principal_id="principal-a",
         create_action="external_work.create",
         create_provider_invocation_id="inv-1",
         snapshot=snapshot,
-        provider="prov",
-        snapshot_content_digest="digest",
-        recorded_at=datetime.now(UTC),
+        provider=None,
+        snapshot_content_digest=compute_snapshot_content_digest(snapshot),
+        recorded_at=now,
     )
 
 
@@ -169,7 +204,7 @@ def test_sqlite_bundle_reports_durable_and_validates_for_production(
 
 def test_sqlite_ger_round_trip_close_reopen_new_backend(tmp_path: Path) -> None:
     db = tmp_path / "gca.db"
-    execution_id = "exec-ger-1"
+    execution_id = _test_execution_id("ger-round-trip")
     ger = _ger_v2(execution_id=execution_id, action=ACTION_CREATE_EXTERNAL_WORK)
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
     backend.bundle.execution_store.put_result(ger)
@@ -184,7 +219,7 @@ def test_sqlite_ger_round_trip_close_reopen_new_backend(tmp_path: Path) -> None:
 
 def test_sqlite_host_state_round_trip_close_reopen_new_backend(tmp_path: Path) -> None:
     db = tmp_path / "gca.db"
-    execution_id = "exec-state-1"
+    execution_id = _test_execution_id("host-state-round-trip")
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
     backend.bundle.execution_store.put_state(
         execution_id,
@@ -201,7 +236,7 @@ def test_sqlite_host_state_round_trip_close_reopen_new_backend(tmp_path: Path) -
 
 def test_f02_persist_round_trip_close_reopen(tmp_path: Path) -> None:
     db = tmp_path / "gca.db"
-    execution_id = "exec-f02-1"
+    execution_id = _test_execution_id("f02-round-trip")
     record = _sample_bundle_record(execution_id)
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
     backend.bundle.execution_store.put_create_follow_on_record(execution_id, record)
@@ -215,11 +250,11 @@ def test_f02_persist_round_trip_close_reopen(tmp_path: Path) -> None:
 
 def test_f02_conflict_raises(tmp_path: Path) -> None:
     db = tmp_path / "gca.db"
-    execution_id = "exec-conflict"
+    execution_id = _test_execution_id("f02-conflict")
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
     store = backend.bundle.execution_store
     first = _sample_bundle_record(execution_id)
-    second = first.model_copy(update={"snapshot_content_digest": "other"})
+    second = first.model_copy(update={"create_provider_invocation_id": "inv-2"})
     store.put_create_follow_on_record(execution_id, first)
     with pytest.raises(GovernedExecutionCreateFollowOnConflictError):
         store.put_create_follow_on_record(execution_id, second)
@@ -269,10 +304,9 @@ def test_sqlite_write_failure_surfaces_persistence_error(tmp_path: Path) -> None
     backend = open_sqlite_governed_external_work_host_store_bundle_at(
         tmp_path / "gca.db",
     )
-    ger = _ger_v2(execution_id="exec-write-fail")
-    with patch.object(
-        backend._db,
-        "_execute",
+    ger = _ger_v2(execution_id=_test_execution_id("write-fail"))
+    with patch(
+        f"{_SQLITE_DB_CLS}._execute",
         side_effect=GovernedExternalWorkHostPersistenceError("disk full"),
     ):
         with pytest.raises(GovernedExternalWorkHostPersistenceError, match="disk full"):
@@ -285,13 +319,9 @@ def test_ambiguous_commit_persists_uncertain_flag_and_reopen_fail_closed(
 ) -> None:
     db = tmp_path / "gca.db"
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
-    with (
-        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
-        patch.object(
-            sqlite3.Connection,
-            "rollback",
-            side_effect=sqlite3.OperationalError("rollback"),
-        ),
+    with patch(
+        f"{_SQLITE_DB_CLS}._commit",
+        lambda self, conn: _broken_sqlite_commit(self, conn, message="commit"),
     ):
         with pytest.raises(GovernedExternalWorkHostPersistenceError):
             backend.bundle.execution_store.put_state(
@@ -314,10 +344,9 @@ def test_commit_failure_with_rollback_success_marks_uncertain_and_reopen_fail_cl
 ) -> None:
     db = tmp_path / "gca.db"
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
-    with patch.object(
-        sqlite3.Connection,
-        "commit",
-        side_effect=sqlite3.OperationalError("commit failed"),
+    with patch(
+        f"{_SQLITE_DB_CLS}._commit",
+        lambda self, conn: _broken_sqlite_commit(self, conn, message="commit failed"),
     ):
         with pytest.raises(GovernedExternalWorkHostPersistenceError, match="commit failed"):
             backend.bundle.execution_store.put_state(
@@ -342,10 +371,12 @@ def test_uncertain_marker_persistence_failure_still_fail_closed_in_process(
         tmp_path / "gca.db",
     )
     with (
-        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
-        patch.object(
-            backend._db,
-            "_persist_uncertain_write_flag",
+        patch(
+            f"{_SQLITE_DB_CLS}._commit",
+            lambda self, conn: _broken_sqlite_commit(self, conn, message="commit"),
+        ),
+        patch(
+            f"{_SQLITE_DB_CLS}._persist_uncertain_write_flag",
             side_effect=sqlite3.OperationalError("meta write failed"),
         ),
     ):
@@ -366,9 +397,8 @@ def test_sqlite_read_failure_not_treated_as_missing_record(tmp_path: Path) -> No
     backend = open_sqlite_governed_external_work_host_store_bundle_at(
         tmp_path / "gca.db",
     )
-    with patch.object(
-        backend._db,
-        "_execute",
+    with patch(
+        f"{_SQLITE_DB_CLS}._execute",
         side_effect=GovernedExternalWorkHostPersistenceError("database disk image is malformed"),
     ):
         with pytest.raises(GovernedExternalWorkHostPersistenceError, match="malformed"):
@@ -380,7 +410,7 @@ def test_host_finalization_incomplete_without_ger_blocks_create_redispatch(
     tmp_path: Path,
 ) -> None:
     db = tmp_path / "gca.db"
-    execution_id = "exec-incomplete-only"
+    execution_id = _test_execution_id("incomplete-only")
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
     backend.bundle.execution_store.put_state(
         execution_id,
@@ -398,7 +428,7 @@ def test_host_finalization_incomplete_without_ger_blocks_create_redispatch(
 
 def test_ger_without_f02_sets_incomplete_on_redispatch_probe(tmp_path: Path) -> None:
     db = tmp_path / "gca.db"
-    execution_id = "exec-ger-no-f02"
+    execution_id = _test_execution_id("ger-no-f02")
     ger = _ger_v2(execution_id=execution_id, action=ACTION_CREATE_EXTERNAL_WORK)
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
     backend.bundle.execution_store.put_result(ger)
@@ -421,6 +451,7 @@ def test_strict_gca_session_open_failure_closes_owned_backend(tmp_path: Path) ->
         StrictProductionServingEnvironment,
     )
     from tests.unit.applications.test_prod_q_r1_r7_d2_production_process_lifecycle import (
+        _env,
         _governance,
     )
 
@@ -443,14 +474,14 @@ def test_strict_gca_session_open_failure_closes_owned_backend(tmp_path: Path) ->
             open_gca_strict_production_serving_session(
                 storage=storage,
                 environment=environment,
-                governance=_governance(),
+                governance=_governance(_env()),
                 deployment_adapter=object(),  # type: ignore[arg-type]
             )
     reopened = open_sqlite_governed_external_work_host_store_bundle_at(
         storage.governed_external_work_host_db,
     )
     reopened.bundle.execution_store.put_state(
-        "after-leak-check",
+        _test_execution_id("after-leak-check"),
         GovernedExternalWorkHostState.REQUESTED,
     )
     reopened.close()
@@ -459,7 +490,7 @@ def test_strict_gca_session_open_failure_closes_owned_backend(tmp_path: Path) ->
 def test_execution_outcome_unknown_denies_follow_on_resolution_without_provider(
     tmp_path: Path,
 ) -> None:
-    execution_id = "exec-unknown-follow-on"
+    execution_id = _test_execution_id("unknown-follow-on")
     orch, fake, backend = _sqlite_orchestrator(tmp_path)
     backend.bundle.execution_store.put_state(
         execution_id,
@@ -481,7 +512,7 @@ def test_execution_outcome_unknown_denies_follow_on_resolution_without_provider(
 def test_execution_outcome_unknown_without_ger_blocks_orchestrator_create(
     tmp_path: Path,
 ) -> None:
-    execution_id = "exec-unknown-no-ger"
+    execution_id = _test_execution_id("unknown-no-ger")
     orch, fake, backend = _sqlite_orchestrator(tmp_path)
     backend.bundle.execution_store.put_state(
         execution_id,
@@ -547,10 +578,12 @@ def test_f03_ambiguous_commit_marker_persist_failure_reopen_fail_closed(
     db = tmp_path / "gca.db"
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
     with (
-        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
-        patch.object(
-            backend._db,
-            "_persist_uncertain_write_flag",
+        patch(
+            f"{_SQLITE_DB_CLS}._commit",
+            lambda self, conn: _broken_sqlite_commit(self, conn, message="commit"),
+        ),
+        patch(
+            f"{_SQLITE_DB_CLS}._persist_uncertain_write_flag",
             side_effect=sqlite3.OperationalError("meta write failed"),
         ),
     ):
@@ -573,12 +606,14 @@ def test_f03_reopen_blocks_orchestrator_create_after_ambiguous_commit(
 ) -> None:
     db = tmp_path / "gca-orch.db"
     backend = open_sqlite_governed_external_work_host_store_bundle_at(db)
-    execution_id = "exec-f03-create-block"
+    execution_id = _test_execution_id("f03-create-block")
     with (
-        patch.object(sqlite3.Connection, "commit", side_effect=sqlite3.OperationalError("commit")),
-        patch.object(
-            backend._db,
-            "_persist_uncertain_write_flag",
+        patch(
+            f"{_SQLITE_DB_CLS}._commit",
+            lambda self, conn: _broken_sqlite_commit(self, conn, message="commit"),
+        ),
+        patch(
+            f"{_SQLITE_DB_CLS}._persist_uncertain_write_flag",
             side_effect=sqlite3.OperationalError("meta write failed"),
         ),
     ):
@@ -601,6 +636,8 @@ def test_policy_bundle_round_trip(tmp_path: Path) -> None:
         bundle_id="b1",
         version="1",
         rules=(),
+        issued_at=_T0,
+        canonical_digest="",
     )
     backend.bundle.bundle_store.put_bundle(bundle)
     loaded = backend.bundle.bundle_store.get_bundle("b1", "1")

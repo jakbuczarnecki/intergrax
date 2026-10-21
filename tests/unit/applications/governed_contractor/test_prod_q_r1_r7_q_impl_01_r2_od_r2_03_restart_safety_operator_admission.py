@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,9 @@ from applications.governed_contractor_application.host.external_work_enterprise_
 )
 from applications.governed_contractor_application.host.production_external_work_composition import (
     build_governed_external_work_production_runtime,
+)
+from applications.governed_contractor_application.host.sqlite_governed_external_work_host_store_bundle import (
+    open_sqlite_governed_external_work_host_store_bundle_at,
 )
 from applications.governed_contractor_application.tests.host.gr6_collaborative_work_test_support import (
     gr6_seeded_collaborative_work_repositories,
@@ -51,6 +55,7 @@ from intergrax.contracts.sanctioned_external_work_operation import (
 )
 from tests.unit.applications.governed_contractor.impl_01_r2_od_r2_03_restart_worker import (
     _MANIFEST,
+    _RC_CROSS_MANIFEST,
     _READY_FLAG,
 )
 
@@ -312,6 +317,90 @@ def test_dur_ten_01_cross_tenant_recovery_denied_through_sanctioned_boundary(
         assert str(ger_a.tenant_id) == _TENANT
     finally:
         _close_pair(gca_b, pis_b)
+
+
+def test_rc_cross_process_receipt_and_continuation_survive_graceful_restart(
+    tmp_path: Path,
+) -> None:
+    work_dir = tmp_path / "rc-cross"
+    seed_proc = _run_worker("rc-cross-seed", work_dir)
+    assert seed_proc.returncode == 0, seed_proc.stderr + seed_proc.stdout
+    assert (work_dir / _RC_CROSS_MANIFEST).is_file()
+    verify_proc = _run_worker("rc-cross-verify", work_dir)
+    assert verify_proc.returncode == 0, verify_proc.stderr + verify_proc.stdout
+    payload = json.loads(verify_proc.stdout.strip().splitlines()[-1])
+    assert payload["phase"] == "rc-cross-verify"
+    assert payload["status"] == "ok"
+    assert payload["receipt_durable"] is True
+    assert payload["continuation_durable"] is True
+
+
+def test_rc_neg_missing_receipt_returns_none(tmp_path: Path) -> None:
+    work_dir = tmp_path / "rc-missing"
+    assert _run_worker("rc-cross-seed", work_dir).returncode == 0
+    manifest = json.loads((work_dir / _RC_CROSS_MANIFEST).read_text(encoding="utf-8"))
+    conn = sqlite3.connect(manifest["gca_path"])
+    try:
+        conn.execute(
+            "DELETE FROM gca_proof_receipts WHERE execution_id = ?",
+            (manifest["execution_id"],),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        Path(manifest["gca_path"]),
+    )
+    try:
+        assert backend.bundle.receipt_store.get_receipt(manifest["execution_id"]) is None
+    finally:
+        backend.close()
+
+
+def test_rc_neg_corrupt_receipt_fail_closed(tmp_path: Path) -> None:
+    work_dir = tmp_path / "rc-corrupt-receipt"
+    assert _run_worker("rc-cross-seed", work_dir).returncode == 0
+    manifest = json.loads((work_dir / _RC_CROSS_MANIFEST).read_text(encoding="utf-8"))
+    conn = sqlite3.connect(manifest["gca_path"])
+    try:
+        conn.execute(
+            "UPDATE gca_proof_receipts SET payload = ? WHERE execution_id = ?",
+            ("not-valid-json", manifest["execution_id"]),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        Path(manifest["gca_path"]),
+    )
+    try:
+        with pytest.raises(ValueError, match="corrupted_receipt_artifact"):
+            backend.bundle.receipt_store.get_receipt(manifest["execution_id"])
+    finally:
+        backend.close()
+
+
+def test_rc_neg_corrupt_continuation_fail_closed(tmp_path: Path) -> None:
+    work_dir = tmp_path / "rc-corrupt-continuation"
+    assert _run_worker("rc-cross-seed", work_dir).returncode == 0
+    manifest = json.loads((work_dir / _RC_CROSS_MANIFEST).read_text(encoding="utf-8"))
+    conn = sqlite3.connect(manifest["gca_path"])
+    try:
+        conn.execute(
+            "UPDATE gca_continuations SET payload = ? WHERE task_id = ?",
+            ("not-valid-json", manifest["task_id"]),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    backend = open_sqlite_governed_external_work_host_store_bundle_at(
+        Path(manifest["gca_path"]),
+    )
+    try:
+        with pytest.raises(ValueError, match="corrupted_continuation_artifact"):
+            backend.bundle.continuation_store.get_continuation(manifest["task_id"])
+    finally:
+        backend.close()
 
 
 def test_dur_cons_01_q2_regression_ger_without_f02_remains_fail_closed(

@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | **RATIFIED — SCOPED DIRECTION; IDENTITY CONTRACT DESIGN AND IMPLEMENTATION NOT QUALIFIED** |
-| Operator ratification | 2026-10-18 |
-| Evidence HEAD | `89b1a74db963b017f0fff5055fff353121fa284d` |
+| Status | **RATIFIED DIRECTION — MANDATORY CONTRACT GATE CLOSED @ `c541c950f8ab2473f7a755fd2b0d29efb549ca0e`; IMPLEMENTATION LANDED @ `389cb82bef494eccc8d52eb3e5d79da6ffbb5e76`; QUALIFICATION NOT PROVEN (pytest=0)** |
+| Operator ratification | 2026-10-18 (direction); contract gate record 2026-10-21 |
+| Evidence HEAD | `c541c950f8ab2473f7a755fd2b0d29efb549ca0e` |
 | Parent | `PROD-Q-R1-R7-Q-REFLEX-EXTERNAL-WORK-ADMISSION-IMPL-01` — NOT CLOSED |
 | Prior authority | Reflex ADR-01; F02 Option B; R2 OD-R2-01…04; GCA SQLite decision 01; PIS ADR-03 |
-| Production delta | 0 — decision only |
+| Production delta | Stable CREATE `invocation_id` derivation + orchestrator admission path @ `389cb82be` (see §6); qualification execution not authorized |
 
 ## 1. Exact problem and authority split
 
@@ -54,4 +54,48 @@ Choose **one** typed mapping with an explicit uniqueness/collision contract, ten
 
 Approved **architecture direction**, not acceptance of code. Do not promote `FRZ-REL-03/05`, `FRZ-PRD-08`, `FRZ-SEC-01/04`, `FRZ-REG-02/03` or relevant OWN/BND/CTR/TYP/RPL criteria. `IMPL-01`, `R7-Q`, `PROD-Q` and all global FRZ remain OPEN/NOT QUALIFIED.
 
-First next step is bounded closed-world design verification and smallest valid implementation under this decision. Do not open another generic ADR. Test-source writing is authorized; **pytest=0 / uv run=0** until specific operator approval. No broad integration suite, background jobs or parallel testing. Independent GitHub exact-SHA audit required before closure.
+First next step after §6 contract gate: operator authorization to execute scoped qualification (`test_prod_q_r1_r7_q_impl_01_stable_create_invocation_identity.py`, dual-SQLite Q2, strict HTTP CREATE chain) — not further identity redesign absent qual failure. Do not open another generic ADR. **pytest=0 / uv run=0** until specific operator approval. Independent GitHub exact-SHA audit required before closure.
+
+## 6. Mandatory contract gate closure (2026-10-21)
+
+**Verdict:** `STABLE CREATE IDENTITY — CONTRACT READY FOR IMPLEMENTATION AUTHORIZATION` (contract closed; implementation already merged — authorization applies to **qualification execution**, not a second identity design pass).
+
+### 6.1 Canonical CREATE effect identity (single definition)
+
+| Layer | Field / rule |
+|-------|----------------|
+| Authorized logical operation | One physical CREATE per **`execution_id`** under GR-3 canonical execution identity (`task_id`, `run_id`, `attempt_id` bind via active execution context → `execution_id`). |
+| Stable provider key | `invocation_id = derive_governed_external_work_create_provider_invocation_id(tenant_id, principal_id, execution_id, provider_id, idempotency_key)` → `gca-pinv:{stable_payload_hash({kind: governed_external_work_create.v1, …})}` (`intergrax/contracts/governed_external_work_provider_invocation_identity.py`). |
+| Retry vs new operation | **Same effect:** unchanged tuple above → same `invocation_id`. **New authorized CREATE:** new `execution_id` (new GR-3 execution) and/or different `idempotency_key` and/or different `tenant_id` / `principal_id` / `provider_id` → distinct `invocation_id`. |
+| Restart stability | Derivation is pure; PIS row keyed by `invocation_id` survives restart. Orchestrator `_resolve_create_provider_invocation_id` prefers persisted GER/F02 `create_provider_invocation_id` when present (legacy random ids). |
+| PIS admission | `insert_invocation_if_absent`: no row → **INSERTED**; row + `provider_invocations_equivalent` → **EQUIVALENT_NOOP**; row + not equivalent → **conflict** (`ProviderInvocationConflictError`); infra/ambiguous commit → **UNKNOWN** (`ProviderInvocationPersistenceError`, uncertain-write marker on SQLite store). |
+| Gate | `GovernedProviderInvocationDispatchGate`: physical `execute()` only on **INSERTED**; **EQUIVALENT_NOOP** → `dispatch_not_admitted` (not provider success). |
+| EQUIVALENT_NOOP semantics | Typed duplicate intent only — **not** provider success attestation; orchestrator `_handle_create_duplicate_invocation_admission` reconciles via GER or PIS outcome or `EXECUTION_OUTCOME_UNKNOWN`. |
+| Legacy | Pre-stable random `inv-*` rows remain authoritative when GER/F02 still references them; new creates without GER use derived `gca-pinv:*`. |
+| Tenant/principal isolation | Hashed into `invocation_id`; mismatched replay with same idempotency but different tenant/principal yields different ids (no cross-tenant collapse). |
+| GER/F02 lost, PIS durable | GCA redispatch blocks when state/GER present; without GER, duplicate admission path uses PIS intent/outcome — no second provider CREATE on equivalent id. |
+
+**Ownership unchanged:** GCA orchestrator semantic owner; PIS sole durable intent/outcome; gate sole physical dispatch; no registry/dedup store.
+
+### 6.2 Scenario matrix (contract)
+
+| Scenario | Canonical identity | PIS state | Gate decision | Provider calls | Recovery | Verdict |
+|----------|-------------------|-----------|---------------|----------------|----------|---------|
+| First correct CREATE | Derived `gca-pinv:*` | INSERTED intent | INSERTED → dispatch | 1 | GER/F02 as today | Admit once |
+| Retry same effect | Same derived id | EQUIVALENT_NOOP | No dispatch | 0 (held at 1) | UNKNOWN or GER replay | Fail-closed reconcile |
+| Separate authorized CREATE | New `execution_id` / idem / scope | New INSERTED | Dispatch | +1 | Normal | Independent admit |
+| Concurrent duplicate | Same id | One INSERTED, peer EQUIVALENT_NOOP | Single dispatch | 1 | SQLite serialization | Single physical effect |
+| Failed/uncertain PIS commit | Id minted in memory | No durable intent / marker | No dispatch | 0 | Uncertain-write deny | Fail-closed |
+| Provider CREATE ok, GER/F02 lost | Stable id in PIS | Intent ± outcome | EQUIVALENT_NOOP on retry | 0 on retry | PIS outcome projection | No redispatch |
+| Restart after ambiguous GCA write | Unchanged derived id | Prior intent if committed | Per PIS + GCA uncertain flags | Per admission | OD-R2 SQLite recovery | No silent redispatch |
+| UNKNOWN provider outcome | Stable id | Intent + UNKNOWN outcome | First dispatch done | 1 | Host UNKNOWN state | No false success |
+| Legacy random invocation id | GER-stored `inv-*` | Existing row | Per row | 0 if GER blocks | `_resolve_create_provider_invocation_id` | Compatibility |
+| Tenant/principal mismatch | Different derived id | Separate rows | Independent INSERTED | Per authorized op | Partitioned hash | No collision |
+| Strict HTTP re-entry | Same as orchestrator CREATE | Same as above | Same gate path | Same | Sanctioned port → orchestrator | No bypass |
+
+### 6.3 Implementation evidence (not qualification)
+
+- `389cb82bef494eccc8d52eb3e5d79da6ffbb5e76` — derive + orchestrator + unit test sources.
+- Qualification sources present; **not executed** under operator pytest=0 policy.
+
+**Cursor status cap:** READY FOR AUDIT (independent GitHub SHA audit required for closure).

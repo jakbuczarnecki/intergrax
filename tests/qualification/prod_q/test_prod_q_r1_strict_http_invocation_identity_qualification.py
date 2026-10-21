@@ -1429,7 +1429,6 @@ def test_pi01_wrong_principal_same_tenant_accept_denied_zero_provider_calls(
         SanctionedExternalWorkMutationOperation,
     )
     from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
-        domain_summary_from_strict_http_run_body,
         follow_up_strict_http_run_request_json,
         list_intent_invocation_ids,
         post_strict_http_create_prerequisite,
@@ -1467,14 +1466,8 @@ def test_pi01_wrong_principal_same_tenant_accept_denied_zero_provider_calls(
             json=accept_payload,
             headers=strict_http_auth_headers(),
         )
-        assert response.status_code == 200, response.text
-        body = response.json()
-        assert str(body.get("task_id")) != prerequisite.create_task_id
-
-        summary = domain_summary_from_strict_http_run_body(body)
-        if summary:
-            assert summary.get("used") is not True
-            assert summary.get("admitted") is not True
+        assert response.status_code == 400, response.text
+        assert "external_work.principal_id" in response.text
 
         assert fixture.external_work_fake.accept_calls == baseline_accept
         intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)
@@ -1498,7 +1491,6 @@ def test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls(
         SanctionedExternalWorkMutationOperation,
     )
     from tests.qualification.prod_q._prod_q_strict_http_invocation_identity_support import (
-        domain_summary_from_strict_http_run_body,
         follow_up_strict_http_run_request_json,
         list_intent_invocation_ids,
         post_strict_http_create_prerequisite,
@@ -1536,14 +1528,8 @@ def test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls(
             json=cancel_payload,
             headers=strict_http_auth_headers(),
         )
-        assert response.status_code == 200, response.text
-        body = response.json()
-        assert str(body.get("task_id")) != prerequisite.create_task_id
-
-        summary = domain_summary_from_strict_http_run_body(body)
-        if summary:
-            assert summary.get("used") is not True
-            assert summary.get("admitted") is not True
+        assert response.status_code == 400, response.text
+        assert "external_work.principal_id" in response.text
 
         assert fixture.external_work_fake.cancel_calls == baseline_cancel
         intents_after = list_intent_invocation_ids(fixture.provider_invocation_db)

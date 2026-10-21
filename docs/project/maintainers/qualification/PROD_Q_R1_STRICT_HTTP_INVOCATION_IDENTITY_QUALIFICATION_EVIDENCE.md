@@ -422,7 +422,7 @@ POST /run → GCA task build → StrictProductionServingTenantAuthorityTaskExecu
 | Accept, no prior CREATE (**H10n**) | 200 (request accepted) | **0** `accept_calls` | **No** admitted mutation | **No** |
 | Cancel, no prior CREATE (**H11n**) | 200 | **0** `cancel_calls` | **No** | **No** |
 | Accept, wrong tenant vs CREATE (**H10n** tenant) | **403** | **0** | **No** (tenant port before follow-on bind) | **No** |
-| Accept / cancel, same tenant, wrong principal vs CREATE (**PI-01** / **PI-02**) | 200 | **0** `accept_calls` / **0** `cancel_calls` | **No** new PIS intent | **No** (no CREATE execution rebind; `task_id` ≠ CREATE `task_id`) |
+| Accept / cancel, same tenant, wrong principal vs CREATE (**PI-01** / **PI-02**) | **400** (strict HTTP metadata vs authenticated principal @ §19) | **0** `accept_calls` / **0** `cancel_calls` | **No** new PIS intent | **No** (deny before `host_execution.execute`; no follow-on bind) |
 | Unsupported sanctioned op (**H10/H11n** unsupported) | 200 | **0** all fakes | **No** | **No** |
 
 ### 16.4 Owners / contracts (unchanged)
@@ -597,9 +597,9 @@ uv run pytest -p no:xdist \
 
 Log: `.tmp/session/dim20-principal-isolation/pytest-pi01-pi02.log` — **2 passed**, ~14s @ execution **HEAD** (see **FINAL_COMMIT** below).
 
-**Observed limits:** HTTP **200** on denied follow-on matches §16.8 / §17.7 (request/task acceptance vs domain denial). Principal **B** injected only via `external_work.principal_id` metadata override; CREATE remains principal **A** (`http-inv-qual-principal`). No second API-key principal map added.
+**Observed limits (historical @ `d883051…`):** HTTP **200** on denied follow-on — **superseded** for **PI-01** / **PI-02** by §19 strict-serving guard + **§21** contract realignment (@ `3ef44be…` START_HEAD). Principal **B** injected via `external_work.principal_id` while authenticated caller remains principal **A** → HTTP **400** before execution; CREATE prerequisite unchanged.
 
-**FINAL_COMMIT (code + evidence):** `d883051abcbda74fbc8a6b29ee6ba6a1bbc40b20`
+**FINAL_COMMIT (code + evidence):** `d883051abcbda74fbc8a6b29ee6ba6a1bbc40b20` (historical); current **PI-01** / **PI-02** expectations → **§21**.
 
 ### 18.4 ECAP (scoped)
 
@@ -804,3 +804,65 @@ Log: `.tmp/session/dim20-principal-trust-boundary-final-gate/pytest-final-gate.l
 | — | — | **No IN-SCOPE BLOCKER** @ final gate (**production delta 0**) |
 | **B6** | **TRACKED FREEZE DEBT** | Formal independent verdict pending |
 | Parent **PROD-Q-R1-R7-Q** | **Unresolved dependency** | Package P / R7-Q §C reconciliation remains operator-owned |
+
+---
+
+## 21. PROD-Q-R1 PI-01 / PI-02 contract realignment (qualification expectations)
+
+| Field | Value |
+|-------|-------|
+| **Task** | **PROD-Q-R1-PI01-PI02-CONTRACT-REALIGNMENT** |
+| **START_HEAD** | `3ef44be0e6c539cbaa80d8eab994a6676fe1a65a` |
+| **Parent** | **PROD-Q-R1** / **R7-Q** dim **20** |
+| **Production delta** | **0** — §19 HTTP guard already canonical; test expectations only |
+| **Status** | **READY FOR AUDIT** (does not close **PROD-Q-R1**, **R7-Q** dim **20**, **PROD-Q**, or global **FRZ-***) |
+
+### 21.1 Root cause (qualification drift)
+
+Mandatory PROD-Q nodes **PI-01** / **PI-02** still asserted HTTP **200** + domain-level deny after **AUTH-PI** §19: same authenticated caller **A**, metadata principal **B** (`http-inv-qual-principal-unauthorized-b`) is rejected at `fastapi_router.run_task` with **400** (`external_work.principal_id` conflict) **before** `host_execution.execute` — no task body, no follow-on admission, no false success.
+
+### 21.2 Corrected contract (executable)
+
+| ID | Scenario | HTTP | Provider | PIS | CREATE prerequisite |
+|----|----------|------|----------|-----|---------------------|
+| **PI-01** | **ACCEPT_QUOTE**, same tenant, metadata principal ≠ authenticated | **400** | **0** `accept_calls` | **No** new intent; no `submit_quote_acceptance` | Valid prior CREATE retained |
+| **PI-02** | **CANCEL**, same tenant, metadata principal ≠ authenticated | **400** | **0** `cancel_calls` | **No** new intent; no `cancel_work` | Valid prior CREATE retained |
+
+### 21.3 Bounded pytest (@ this task)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_pi01_wrong_principal_same_tenant_accept_denied_zero_provider_calls \
+  tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_pi02_wrong_principal_same_tenant_cancel_denied_zero_provider_calls \
+  -q
+```
+
+Log: `.tmp/session/prod-q-r1-pi01-pi02-contract-realignment/pytest-pi01-pi02.log` — **2 passed**, ~13s @ execution **HEAD** `1faa86ffb…`.
+
+**FINAL_COMMIT (code + evidence):** `1faa86ffb006516fbebfcf193dc8cb4d8a6e5a2b`
+
+**Exclusions:** Full PROD-Q; other §18–§20 nodes; **B6**; broad module collection.
+
+### 21.4 ECAP (scoped)
+
+| Area | Disposition |
+|------|-------------|
+| **A1–A8** | **PASS** (scoped) — qualification aligned to canonical HTTP owner; no production policy change |
+| **B1–B5** | **PASS** (scoped) — **PI-01** / **PI-02** executable negatives restored for mandatory gate |
+| **B6** | **PENDING** |
+
+### 21.5 FRZ (scoped contribution only)
+
+| ID | Scoped note |
+|----|-------------|
+| **FRZ-SEC-04** | Metadata principal spoof vs authenticated caller cannot reach provider accept/cancel |
+| **FRZ-PRD-03** / **08** | HTTP **400** truthful conflict; no false operational success on denied follow-on |
+| **FRZ-REL-03** | **0** unauthorized provider / **0** new PIS on deny path |
+| **FRZ-REG-02** / **03** / **09** | Corrected regression nodes **PI-01** / **PI-02** |
+
+### 21.6 Findings
+
+| ID | Class | Note |
+|----|-------|------|
+| — | — | **No IN-SCOPE DEFECT** (qualification expectation drift only) |
+| **B6** | **TRACKED FREEZE DEBT** | Formal independent verdict pending |
