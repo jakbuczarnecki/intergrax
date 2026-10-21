@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** — recommends **READY FOR INDEPENDENT CLOSURE** for **D1** + **D1b** on **A1** scope only; **does not** mark CLOSED |
+| **Status** | **READY FOR AUDIT** — **OPERATOR B6 — CLOSED SCOPED A1** recorded in roadmap §5 (2026-10-21); independent GitHub audit of closure-record commit pending; **does not** autonomously mark global **FRZ** PASS |
 | **Branch** | `development` |
 | **START_HEAD** | `c25e7efee93b64e44119eaf5366a5841d557acbf` |
 | **FINAL_COMMIT** | `17e928e4f3264ac73c4efe3a1a23741aff1617dc` |
@@ -174,6 +174,24 @@ uv run pytest -p no:xdist \
 
 ---
 
+## OPERATOR B6 — formal acceptance record (ECAP §2.B6)
+
+| Field | Value |
+|-------|-------|
+| **Decision** | **OPERATOR B6 — CLOSED SCOPED A1** (2026-10-21) |
+| **Authority** | Explicit operator authorization — scoped A1 only; prior independent audits on execution/evidence SHAs; **pytest not rerun** for this ledger recording |
+| **Execution SHA** | `5dfefe416f6561c76a9c670c052661bd4d72f913` |
+| **Evidence documentation baseline** | `435e2e77d54d92ec05228af71edeeace15e6fe9e` |
+| **Children** | **PROD-Q-R1-R7-D1**, **D1b**, **D1-R6**, **D2**, **D3** → **CLOSED — OPERATOR ACCEPTED / SCOPED A1** |
+| **Scope** | A1 single-process colocated topology; cross-process SQLite = **TRACKED FREEZE DEBT**; **DIM16** outside acceptance |
+| **Preserved** | **PROD-Q-R1-R7-D1-R4** **REJECTED** (ARC-01–04) — historical lineage unchanged |
+| **Exclusions** | **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q**, **R7-Q** remain **NOT CLOSED** / **NOT QUALIFIED**; **PROD-Q-P0** **B6** **PENDING**; **D03-A** Class-B **NOT AUTHORIZED**; global **FRZ-*** **OPEN**; **new global FRZ PASS = 0** |
+| **Roadmap** | §5 ledger rows **PROD-Q-R1-R7-D1–D3 — OPERATOR B6 scoped A1 acceptance** + per-child rows |
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
 ## PROD-Q-R1-R7-D1–D3-FINAL-BATCH — Current-HEAD qualification rollup (Cursor @ `5dfefe416f6561c76a9c670c052661bd4d72f913`)
 
 | Field | Value |
@@ -214,11 +232,11 @@ uv run pytest -p no:xdist \
 
 | Child | Verdict | Evidence continuity |
 |-------|---------|---------------------|
-| **D1** | **READY FOR AUDIT** — technically qualified on A1 | Historical `17e928e4…` + drift slice above |
-| **D1b** | **READY FOR AUDIT** — technically qualified on A1 | Same + handoff/authorize reopen wiring |
-| **D1-R6** | **READY FOR AUDIT** — technically qualified on A1 | `c25e7efe…` implementation + reopen extension |
-| **D2** | **READY FOR AUDIT** — continuity @ `0c63b3f2…` | No D2-module drift; no replay |
-| **D3** | **READY FOR AUDIT** — continuity @ `f2dd8ecb…` | No D3-module drift; recovery reopen via DIM13 |
+| **D1** | **CLOSED — OPERATOR ACCEPTED / SCOPED A1** | Historical `17e928e4…` + drift slice @ execution `5dfefe41…` |
+| **D1b** | **CLOSED — OPERATOR ACCEPTED / SCOPED A1** | Same + handoff/authorize reopen wiring |
+| **D1-R6** | **CLOSED — OPERATOR ACCEPTED / SCOPED A1** | `c25e7efe…` implementation + reopen extension |
+| **D2** | **CLOSED — OPERATOR ACCEPTED / SCOPED A1** | Continuity @ `0c63b3f2…`; no D2-module drift |
+| **D3** | **CLOSED — OPERATOR ACCEPTED / SCOPED A1** | Continuity @ `f2dd8ecb…`; recovery reopen via DIM13 |
 
 ### ECAP (batch)
 
@@ -226,7 +244,7 @@ uv run pytest -p no:xdist \
 |----|-------------|
 | **A1–A8** | **SATISFIED** on closed-world evidence + drift tests (contracts, single owners, boundaries, typing, replaceability, no reflection bypass, fail-closed, governance≠execution) |
 | **B1–B5** | **SATISFIED** — evidence continuity, scoped replay, SHA pins, limitations explicit, no unauthorized scope expansion |
-| **B6** | **NOT GRANTED** (independent operator acceptance required) |
+| **B6** | **GRANTED — OPERATOR B6 CLOSED SCOPED A1** (2026-10-21) @ execution `5dfefe416f6561c76a9c670c052661bd4d72f913` / evidence baseline `435e2e77d54d92ec05228af71edeeace15e6fe9e`; §OPERATOR B6 above; independent GitHub audit of closure-record commit **pending** |
 
 ### Applicable FRZ (local contribution only — **global PASS = 0**)
 
@@ -241,4 +259,4 @@ uv run pytest -p no:xdist \
 
 ### Recommendation
 
-Operator independent exact-SHA audit on **`5dfefe416f6561c76a9c670c052661bd4d72f913`** may accept batch technical qualification; **B6** and parent **PROD-Q-R1-R7** closure remain operator-only.
+**OPERATOR B6 — CLOSED SCOPED A1** recorded (2026-10-21) for batch @ **`5dfefe416f6561c76a9c670c052661bd4d72f913`**; parent **PROD-Q-R1-R7** / **R7-Q** closure remains separate mandatory work.
