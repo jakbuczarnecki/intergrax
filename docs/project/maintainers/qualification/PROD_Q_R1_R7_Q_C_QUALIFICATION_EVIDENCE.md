@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** — consolidated §C evidence @ `SOURCE_EVIDENCE_SHA`; **does not** qualify **PROD-Q-R1-R7-Q** parent; **does not** promote any global **FRZ-*** row |
+| **Status** | **READY FOR AUDIT** — **OPERATOR B6 — CLOSED SCOPED §C** (2026-10-21) for dims **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** @ `SOURCE_EVIDENCE_SHA`; **does not** qualify **PROD-Q-R1-R7-Q** parent; **does not** promote any global **FRZ-*** row |
 | **Task** | `PROD-Q-R1-R7-Q-C-QUALIFICATION-EVIDENCE-RECORD` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Branch** | `development` |
@@ -127,26 +127,26 @@ uv run pytest -p no:xdist \
 | Dim | Requirement (summary) | SO | Canonical contract / source | Gate / test | Evidence SHA(s) | @ HEAD applicability | Evidence | Operator acceptance | Remaining action | Primary FRZ | Scoped decision |
 |-----|----------------------|-----|----------------------------|-------------|-----------------|----------------------|----------|---------------------|------------------|-------------|-----------------|
 | **1** | Physical prepare + readiness on real A1 | **AD** | `RuntimeDeploymentAdapter.prepare` / `check_readiness` | D1 module; P2 integrated | `17e928e4f3264ac73c4efe3a1a23741aff1617dc`; E.1 replay SHAs in rollup | Slice @ HEAD via E.1 — **not** in §C selection | **PARTIAL** | D1 operator acceptance (historical) | Optional narrow D1 replay if regression suspected | FRZ-PRD-04, FRZ-PRD-09 | **SCOPED PASS** (background slice; not §C re-proof) |
-| **2** | Immutable artifact identity + digest | **AD** + **Apps** | Production locator + digest | `test_prod_q_r1_r7_q_c_dim2_dim3_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | §C execution only — **no independent operator sign-off** | Operator-trusted artifact root policy (production profile) | FRZ-PRD-03, FRZ-PRD-08 | **READY FOR AUDIT** @ §C depth |
-| **3** | Serving-unit attestation on traffic path | **AD** | `ServingUnitAttestation` / `attest_serving_unit` | Same §C dim2/3 module | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C integrated) | Pending §C rollup acceptance | — | FRZ-PRD-09, FRZ-SEC-04 | **READY FOR AUDIT** |
+| **2** | Immutable artifact identity + digest | **AD** + **Apps** | Production locator + digest | `test_prod_q_r1_r7_q_c_dim2_dim3_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | Operator-trusted artifact root policy remains **DIM17** / Package B | FRZ-PRD-03, FRZ-PRD-08 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **3** | Serving-unit attestation on traffic path | **AD** | `ServingUnitAttestation` / `attest_serving_unit` | Same §C dim2/3 module | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C integrated) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | — | FRZ-PRD-09, FRZ-SEC-04 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
 | **4** | Provider-neutral activation (Claim A) | **AD** | `ActivationService` + adapter injection | D0/D1/D2 slices; P2 | `2b44cee94fc654136d68353a04dedc5973eb6a8b`, `17e928e4…`, E.1 | Background | **PARTIAL** | P2 operator closed | E.1 maintenance replay on schedule | FRZ-PLG-*, FRZ-RPL-* | **SCOPED PASS** (historical) |
 | **5** | Structural replaceability + strict A1 pin | **AD** / **Apps** | `RuntimeDeploymentAdapter`; D4 pin | P1, D2/D4, P2 | P1 exec `036912bec45ac627b6c99411c82db72f75df858f` | **Current** structural | **PARTIAL** | P1 operator closed | No second physical adapter on strict launcher (by design) | FRZ-RPL-*, FRZ-CTR-01 | **SCOPED PASS** |
 | **6** | Authorized activation w/ governance | **Governance** + **AD** | `ControlPlaneMutationAuthorizationBoundary` | D2/D4 harness negatives only | HEAD-static slices | Lab profile only | **MISSING** | D2/D4 slice acceptance | **Package B** — operator production mutation policy profile | FRZ-SEC-04, FRZ-GOV-* | **OPEN** — `ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED` |
-| **7** | DENY / stale revision / CAS | **AD** | Coordinator linearization | `test_prod_q_r1_r7_q_c_dim7_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | Pending §C acceptance | — | FRZ-PRD-08, FRZ-STA-* | **READY FOR AUDIT** |
-| **8** | Cross-tenant negatives | **Governance** + **AD** | Tenant resolver + authz | `test_prod_q_r1_r7_q_c_dim8_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C integrated) | P3 wave closed; §C supplements | — | FRZ-TEN-* | **READY FOR AUDIT** |
-| **9** | Zero serving before readiness | **AD** | `prepare_candidate` fail-closed | `test_prod_q_r1_r7_q_c_dim9_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | Pending §C acceptance | — | FRZ-PRD-03 | **READY FOR AUDIT** |
-| **10** | Resolver identity @ ASGI boundary | **Apps** | `ServingRuntimeHandoff` / resolver | `test_prod_q_r1_r7_q_c_dim10_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C HTTP) | Pending §C acceptance | — | FRZ-PRD-04, FRZ-OWN-03 | **READY FOR AUDIT** |
-| **11** | No registry seed / reference shortcuts | **Apps** | `assemble_production_registry_projection_input_bundle` | `test_prod_q_r1_r7_q_c_dim11_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C static + behavioral) | Pending §C acceptance | — | FRZ-PRD-08 | **READY FOR AUDIT** |
+| **7** | DENY / stale revision / CAS | **AD** | Coordinator linearization | `test_prod_q_r1_r7_q_c_dim7_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | — | FRZ-PRD-08, FRZ-STA-* | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **8** | Cross-tenant negatives | **Governance** + **AD** | Tenant resolver + authz | `test_prod_q_r1_r7_q_c_dim8_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C integrated) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | — | FRZ-TEN-* | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **9** | Zero serving before readiness | **AD** | `prepare_candidate` fail-closed | `test_prod_q_r1_r7_q_c_dim9_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | — | FRZ-PRD-03 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **10** | Resolver identity @ ASGI boundary | **Apps** | `ServingRuntimeHandoff` / resolver | `test_prod_q_r1_r7_q_c_dim10_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C HTTP) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | — | FRZ-PRD-04, FRZ-OWN-03 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **11** | No registry seed / reference shortcuts | **Apps** | `assemble_production_registry_projection_input_bundle` | `test_prod_q_r1_r7_q_c_dim11_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C static + behavioral) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | — | FRZ-PRD-08 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
 | **12** | Startup failure + slot cleanup | **Apps** | `open_production_process_lifecycle` | D2/D4 slices; P2 | `0dd51fe1c7fdd9f4f93d4abdf26f89bea879709e`, E.1 | Background | **PARTIAL** | D4 closed; E.1 closed | Regress via E.1 batch if needed | FRZ-PRD-04, FRZ-PRD-05 | **SCOPED PASS** |
-| **13** | Recovery after restart | **AD** + **Apps** | D3 reconcile + attest | `test_prod_q_r1_r7_q_c_dim13_*` + unit recovery authority | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C + authority unit) | Pending §C acceptance | — | FRZ-PRD-12, FRZ-REC-* | **READY FOR AUDIT** |
-| **14** | Stale READY / physical-unit loss | **AD** | Reconcile fail-closed | `test_prod_q_r1_r7_q_c_dim14_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | Pending §C acceptance | — | FRZ-PRD-12, FRZ-PRD-09 | **READY FOR AUDIT** |
-| **15** | HTTP execution admission | **Apps** + **AD** | `StoreBackedColocatedServingUnitExecutionAdmission` | `test_prod_q_r1_r7_q_c_dim15_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | P3 partial overlap; §C integrated | — | FRZ-SEC-04, FRZ-PRD-08 | **READY FOR AUDIT** |
+| **13** | Recovery after restart | **AD** + **Apps** | D3 reconcile + attest | `test_prod_q_r1_r7_q_c_dim13_*` + unit recovery authority | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C + authority unit) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | F02-09 **S2b** freeze debt explicit | FRZ-PRD-12, FRZ-REC-* | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **14** | Stale READY / physical-unit loss | **AD** | Reconcile fail-closed | `test_prod_q_r1_r7_q_c_dim14_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | F02-09 **S2b** freeze debt explicit | FRZ-PRD-12, FRZ-PRD-09 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **15** | HTTP execution admission | **Apps** + **AD** | `StoreBackedColocatedServingUnitExecutionAdmission` | `test_prod_q_r1_r7_q_c_dim15_*` | `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** | **VERIFIED** (§C) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | — | FRZ-SEC-04, FRZ-PRD-08 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
 | **16** | Drain, stop, rollback | **AD** | Adapter drain + launcher close | `test_prod_q_r1_r7_q_c_dim16_*` (+ F02-05/09 @ `a3af29278…`) | `93c17a95…`; impl `4aeb585ea…`; F02 qual `a3af29278…` | **Current** | **VERIFIED** with **documented limitations** (§E) | Independent audit pending — Package D §5.7–§5.8 | F02-14 EBH-5 debt; S2b freeze debt | FRZ-PRD-05 | **READY FOR AUDIT** (scoped; not CLOSED) |
 | **17** | Unsupported topology + missing prod config | **AD** + **Apps** | Topology guards | D1/D1b/D4 slices only | `17e928e4f3264ac73c4efe3a1a23741aff1617dc` | Lab negatives only | **MISSING** | D1 slice acceptance | **Package B** — production credentials/config negative profile | FRZ-PRD-03 | **OPEN** — `ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED` |
-| **18** | Fake adapter reachability = 0 on strict graph | **Apps** | DEC-03 strict graph | P1 module + §C DIM11 reuse | P1 `036912be…`; §C `93c17a95…` | **Current** via DIM11 @ §C SHA | **VERIFIED** @ `SOURCE_EVIDENCE_SHA` (integrated static closure) | P1 operator closed | **Package C** — confirm no drift vs P1 roots if HEAD advances | FRZ-PRD-07, FRZ-PRD-08 | **READY FOR AUDIT** @ §C+P1 lineage |
-| **19** | No silent fallback to reference paths | **Apps** | Single strict opener | DIM11 `test_c_dim11_02`, `05`; D4-03 historical | `93c17a95…`; `0dd51fe1…` | **Current** behavioral @ §C | **VERIFIED** (§C) + historical D4 | Pending §C acceptance | Package C static re-audit on major launcher edits | FRZ-PRD-07, FRZ-PRD-08 | **READY FOR AUDIT** |
+| **18** | Fake adapter reachability = 0 on strict graph | **Apps** | DEC-03 strict graph | P1 module + §C DIM11 reuse | P1 `036912be…`; §C `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** via DIM11 @ §C SHA | **VERIFIED** @ `SOURCE_EVIDENCE_SHA` (integrated static closure) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | AST-boundary **TRACKED FREEZE DEBT** retained | FRZ-PRD-07, FRZ-PRD-08 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
+| **19** | No silent fallback to reference paths | **Apps** | Single strict opener | DIM11 `test_c_dim11_02`, `05`; D4-03 historical | `93c17a959f48c5115cc52cb90ec9e16964169a0a`; `0dd51fe1…` | **Current** behavioral @ §C | **VERIFIED** (§C) + historical D4 | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | Package C replay if major launcher edits | FRZ-PRD-07, FRZ-PRD-08 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
 | **20** | PIS / duplicate external effects | **Execution** / **GCA** dispatch | `ProviderInvocationStore`, dispatch gate | PROD-Q-R1 PIS tests; P3/DISPATCH-Q1 | `f96884fdac73bcc8e12cb98ee3460c9e5148b393` | Parent scope | **PARTIAL** — store/dispatch scoped only | DISPATCH-Q1 operator accepted | **Package P** — **PROD-Q-R1** parent; strict-path E2E negatives | FRZ-PRD-08, FRZ-REL-* | **PARENT DEPENDENCY — OPEN** |
-| **21** | Evidence continuity + exact SHA | Program | Qualification docs + logs | This record + E.1 rollup | E.1 `8ee834e4…`; §C `93c17a95…` | **Current** for §C slice | **PARTIAL** until operator accepts this record | E.1 closed; §C **not** operator-closed | **Package D** — independent acceptance of §C rollup | FRZ-REG-02, FRZ-REG-03, FRZ-REG-09 | **READY FOR AUDIT** (this deliverable) |
+| **21** | Evidence continuity + exact SHA | Program | Qualification docs + logs | This record + E.1 rollup | E.1 `8ee834e4…`; §C `93c17a959f48c5115cc52cb90ec9e16964169a0a` | **Current** for §C slice | **VERIFIED** (record lineage) | **OPERATOR B6** (2026-10-21) — **CLOSED SCOPED §C** | Parent rollup still blocked on **DIM6**/**DIM17**/**DIM20** | FRZ-REG-02, FRZ-REG-03, FRZ-REG-09 | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
 
 ---
 
@@ -212,10 +212,10 @@ Post-F02 implementation: authoritative deny precedes revision-dependent drain he
 | 2 | Production credentials/config negatives (**DIM17**) | `ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED` | Operator |
 | 3 | **DIM18/19** + integrated §C dims **2–16** @ `AUDITED_HEAD` | `TRACKED FREEZE DEBT` / **conditional replay** — strict product graph drift `93c17a95…` → `91db78b9…` (launcher, Package B profile v1 wiring); §C **83** tests remain @ `SOURCE_EVIDENCE_SHA` only | Package C + authorized §C replay if operator mandates |
 | 4 | **DIM20** PROD-Q-R1 PIS / strict external-work | `IN-SCOPE BLOCKER` for **parent R7-Q QUALIFIED** | **PROD-Q-R1** (Package P) |
-| 5 | Independent operator acceptance of §C consolidated record | Process gate | Package D |
+| 5 | Independent operator acceptance of §C consolidated record (dims **2,3,7–11,13–15,18,19,21**) | **OPERATOR B6 — CLOSED SCOPED §C** (2026-10-21) @ execution `93c17a959f48c5115cc52cb90ec9e16964169a0a` — closure-record commit **READY FOR AUDIT** | Operator |
 | 6 | Unresolved code/architecture defect @ `SOURCE_EVIDENCE_SHA` | **None identified** in this documentation pass | — |
 
-**R7-Q QUALIFIED** remains **blocked** by rows 1, 2, 4, and 5 at minimum.
+**R7-Q QUALIFIED** remains **blocked** by rows 1, 2, 4 at minimum (**DIM6**, **DIM17**, **DIM20**; **DIM16** outside B6 §C).
 
 ---
 
@@ -264,8 +264,24 @@ All checklist rows remain **OPEN** globally. This table maps **§C + cited waves
 | Stage | Status |
 |-------|--------|
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
-| **§C integrated gates** | **READY FOR AUDIT** — evidence **EXACT-SHA EXECUTED — VERIFIED** @ `SOURCE_EVIDENCE_SHA`; **current-HEAD behavioral continuity** for strict launcher slice = **drift reviewed**, not replayed @ `AUDITED_HEAD` |
-| **This document** | **READY FOR AUDIT** @ `AUDITED_HEAD` `91db78b9afeb8a7f56dc2ef7029b386b0b307d6a` |
+| **§C integrated gates (B6 subset)** | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** — dims **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** @ execution `93c17a959f48c5115cc52cb90ec9e16964169a0a` |
+| **§C remaining** | **DIM6**, **DIM17**, **DIM20** open; **DIM16** — Package D prior acceptance (not B6 §C) |
+| **This document** | **READY FOR AUDIT** — closure-record commit on GitHub pending independent audit |
+
+---
+
+## OPERATOR B6 — formal acceptance record (scoped §C)
+
+| Field | Value |
+|-------|-------|
+| **Decision** | **OPERATOR B6 — CLOSED SCOPED §C** (2026-10-21) |
+| **Independent audit baseline** | `d8a8e43ef4801b61acb5f689419a8fdd78598170` |
+| **§C execution SHA** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` |
+| **Accepted dimensions** | **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** |
+| **Reconciliation ledger** | [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) §OPERATOR B6 |
+| **Roadmap** | §5 **PROD-Q-R1-R7-Q-C — OPERATOR B6 SCOPED ACCEPTANCE** |
+| **Exclusions / residuals** | Per operator scope: **DIM6**, **DIM16** (not re-accepted), **DIM17**, **DIM20**; F02-09 S2b; DIM18 AST debt; Package P **P09 partial**; **OP-01…04**; **IMPL-01**; cross-process SQLite; D03-A Class-B |
+| **Parent closure** | **Does not** close **PROD-Q-R1-R7-Q** / **R7-Q** / **PROD-Q**; **new global FRZ PASS = 0** |
 
 ---
 
