@@ -244,7 +244,7 @@ def test_bootstrap_failure_gates_worker_creation(
     _settings(monkeypatch)
     with (
         patch(
-            "local_workspace_application.host.background_worker_main.bootstrap_production_registry_projection",
+            "local_workspace_application.host.background_worker_main.activate_local_workspace_reference_production_authority",
             side_effect=HarnessHostRegistryAuthorityError("projection bootstrap failed"),
         ),
         patch(
