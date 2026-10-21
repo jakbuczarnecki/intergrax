@@ -3,19 +3,20 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **READY FOR AUDIT** (DIM20 final evidence reconciliation — **does not** close Package P, **DIM20**, **PROD-Q-R1-R7-Q**, **PROD-Q-R1**, **PROD-Q**, or promote global **FRZ-***) |
-| **Task** | **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** (continues **PROD-Q-R1-PACKAGE-P-DIM20-CURRENT-HEAD-ACCEPTANCE-READINESS** @ `69276a6a…`; prior **PROD-Q-R1-PACKAGE-P-DIM20-FINAL-EVIDENCE-AND-ACCEPTANCE-READINESS** @ `74cb5bc…`; historical **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** @ `0e19284e…`) |
+| **Task** | **PROD-Q-R1-PACKAGE-P-DIM20-MANDATORY-GAP-CLOSURE** (continues **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** @ `ca8cb05…`; **PROD-Q-R1-PACKAGE-P-DIM20-CURRENT-HEAD-ACCEPTANCE-READINESS** @ `69276a6a…`; historical **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** @ `0e19284e…`) |
 | **Program** | **PROD-Q** |
 | **Branch** | `development` |
-| **START_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
-| **AUDITED_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` (`HEAD` == `origin/development` @ task start); prior reconciliation @ `69276a6abcd726b836a1efc2a5949fbd948e8937` (CREATE-focused); `74cb5bc708f07c2dbcd32896318ec0fe7b5916dd` (DIM20 final drift) |
+| **START_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
+| **AUDITED_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` (`HEAD` == `origin/development` @ task); prior reconciliation @ `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` (H11c/H11u consolidation); `69276a6abcd726b836a1efc2a5949fbd948e8937` (CREATE-focused) |
 | **Prior reconciliation pins** | `74cb5bc708f07c2dbcd32896318ec0fe7b5916dd` (DIM20 final — §1 drift); `0e19284e12ca7e05a667adfb1989a4e551879ac7` (interpretation **B** = NOT PROVEN — §0) |
 | **H09 implementation SHA** | `1b611ac963dc2122a098478374d7c7bfe9d391b1` (integrated CREATE qual) |
 | **H10/H11 implementation SHA** | `08f1ef069073fbb91944807777e9b744ca76ebd4` (non-CREATE strict HTTP qual — **code**; bounded `-k "h10 or h11"` per STRICT-HTTP evidence §15; evidence tip `7a2c4d5d…`) |
 | **Evidence continuity (DIM20)** | H09 **execution** `43f6e0e232add1cf9fd9a947716d4c5444ae13d3`; H10/H11 **code** `08f1ef069073fbb91944807777e9b744ca76ebd4`; follow-on admission audit **document/production review** `0c39f8f0f41bf3cb3e9ad479130243b80fee24eb` (§16); cancellation outcomes **code + H11c/H11u execution tree** `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` (§17); **this reconciliation** @ **FINAL_COMMIT** — **HEAD reviewed, not re-executed** |
 | **Parent** | **PROD-Q-R1** — **NOT QUALIFIED** |
 | **Dependent** | **PROD-Q-R1-R7-Q** §C **DIM20** — **NOT QUALIFIED** |
-| **Production delta (this task)** | **0** (qualification record only) |
-| **Pytest (this task)** | **0** — reconcile @ `START_HEAD` (§9); H09 last executed @ `43f6e0e…` |
+| **AUTH-PI production SHA** | `91e83a73bd733d1ab44fcaa24b75ca4f200e182f` (`fastapi_router` metadata vs `RequestContext`); PI-01/PI-02 qual realignment `1faa86ffb…` / evidence `3ef44be0e…` (STRICT-HTTP §§19–21) |
+| **Production delta (this task)** | **0** (gap closure = drift review + risk pytest; AUTH-PI already on audited HEAD) |
+| **Pytest (this task)** | **9 passed** — `-k "auth_pi or pi01 or pi02"` @ `AUDITED_HEAD` (§9); H09 last executed @ `43f6e0e…` |
 
 ---
 
@@ -30,9 +31,10 @@ The **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** record @ `0e1928
 | Check | Result |
 |-------|--------|
 | Branch | `development` (`refs/heads/development`) |
-| **START_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
-| `HEAD` == `origin/development` @ task start | **YES** — `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
-| `merge-base --is-ancestor` `ca8cb05…` expected baseline | **YES** |
+| **START_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
+| `HEAD` == `origin/development` @ task | **YES** — `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
+| `merge-base --is-ancestor` `ca8cb05…` prior reconciliation | **YES** |
+| `merge-base --is-ancestor` `e49a04fe…` operator expected baseline | **YES** (identical to `HEAD`) |
 | `merge-base --is-ancestor` `74cb5bc…` prior DIM20 reconciliation | **YES** |
 | `merge-base --is-ancestor START_HEAD HEAD` | **YES** |
 | `merge-base --is-ancestor` `0e19284e…` prior reconciliation | **YES** |
@@ -43,6 +45,7 @@ The **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** record @ `0e1928
 | **Package P graph drift** `fc1bd1b29…` → `43f6e0e…` | **Package D** dossier + GCA owned-store lifecycle cleanup qual only — **no** change to `ProviderInvocationStore`, `GovernedProviderInvocationDispatchGate`, or `build_governed_external_work_production_runtime` ownership |
 | **Package P graph drift** `0e19284e…` → `43f6e0e…` | Reflex sanctioned external-work path + **H09** integrated CREATE qual (`1b611ac96…`); strict HTTP task-scope fix (`e70761682…`); PIS-02 harness scoping (`fc1bd1b29…`) — **qual/test-boundary** only |
 | **Package P graph drift** `74cb5bc…` → `2d769605…` | **Package B** strict-serve session shutdown (R3) + GCA profile v1 / Docker qual — **no** change to `ProviderInvocationStore` semantics, `GovernedProviderInvocationDispatchGate`, or `production_external_work_composition` ownership; `SQLiteProviderInvocationStore.read_owned_connection_durability_pragmas` — **non-authoritative qual surface** only |
+| **Package P graph drift** `ca8cb05…` → `e49a04fe…` | **AUTH-PI** strict HTTP principal binding (`91e83a73…` — `fastapi_router.py` only in closed world); **PI-01**/**PI-02** expectation realignment (§21); **R7-D2** owned GCA store close on failed production open (`0c63b3f28…` — lifecycle composition, **not** PIS/dispatch semantics); §C/P0 qual bookkeeping — **no** change to `ProviderInvocationStore` / `GovernedProviderInvocationDispatchGate` ownership |
 
 **Canonical sources read @ HEAD:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) · [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) · [`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) · [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) · [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) · [`PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md) · DISPATCH-Q1 · PIS-STRICT records (static continuity).
 
@@ -126,10 +129,10 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | **P02** | Single PIS + sanctioned dispatch ownership | `ProviderInvocationStore`, `GovernedProviderInvocationDispatchGate` | ER / GCA | GCA host gate wiring | Adapter, recovery ports | DISPATCH-Q1 matrix; **H08** session wiring | PIS-STRICT; `test_h08_*`; DISPATCH-Q1 | `f96884fd…` / `6138dd01…` | `6138dd01…` (98 — historical) | **+** DISPATCH-Q1; **−** shadow gate scan static | **YES** | Global platform graph debt (D2/D4 pins) | **HISTORICAL ACCEPTED — DRIFT REVIEWED** @ `fc1bd1b29…`→HEAD **no** owner change |
 | **P03** | Duplicate invocation suppression | Gate + store concurrency | ER | GCA gate | Orchestrator replay | `dispatch_not_admitted`; N12 | `test_h02_*`, `test_h07_*`, IG-F01 | `cb276479…` | `cb276479…` (historical) | **+** replay denied; **−** HTTP reflex duplicate POST | **YES** | Not HTTP replay cardinality (**H04**) | **CURRENT-HEAD CODE VERIFIED / EXECUTION HISTORICAL** |
 | **P04** | HTTP re-entry and identity semantics | No caller `invocation_id`; new task/run per POST | GCA HTTP + host execution | Host port | HTTP clients | `GovernedContractorRunRequestV1`; **H04** | `test_h04_*`, `test_h01_*` static | `cb276479…` | `cb276479…` (historical) | **+** distinct ids; **−** mocked delegate | **YES** | Payload equality ≠ shared invocation | **CURRENT-HEAD CODE VERIFIED / EXECUTION HISTORICAL** |
-| **P05** | Fail-closed admission, auth, tenant negatives | P3-A2 + gate admission | Governance + GCA | Strict serving | HTTP + PIS | **H05**, **H06**, PIS-07 | `test_h05_*`, `test_h06_*` | `cb276479…` / `6138dd01…` | historical | **+** tenant deny; **−** full auth matrix | **YES** | Package P slice | **CURRENT-HEAD CODE VERIFIED / EXECUTION HISTORICAL** |
+| **P05** | Fail-closed admission, auth, tenant negatives | P3-A2 + gate admission + AUTH-PI metadata binding | Governance + GCA | Strict serving | HTTP + PIS | **H05**, **H06**, **AUTH-PI-01/02**, **PI-01/PI-02** (§§19–21) | `test_h05_*`, `test_h06_*`, `test_auth_pi*`, `test_pi0*` | `91e83a73…` / `1faa86ff…` | **`e49a04fe…` — 9 passed** (§9) + historical H05/H06 | **+** forged-metadata deny **400**; distinct-principal follow-on; **−** full auth matrix | **YES** | Package P slice | **CURRENT-HEAD EXECUTED — VERIFIED** (AUTH-PI + PI slice) |
 | **P06** | Intent persisted before external effect | `admit_provider_invocation_intent` ordering | ER lifecycle | Gate after persist | Dispatch gate | **H09** hook asserts PIS before `create_work` | **H09** (inline assert) | `1b611ac96…` | **`43f6e0e…`** | **+** H09 ordering | **YES** | Proven on CREATE reflex path only | **CURRENT-HEAD EXECUTED — VERIFIED** (CREATE) |
 | **P07** | Retry/recovery identity + durable state | Recovery repeat port vs ordinary gate | ER (GR-7) | Orthogonal ports | Recovery policies | **H03**, **H03b**, GR-7-A7 | `test_h03_*`, `test_h03b_*` | `cb276479…` | historical | **+** no unsafe redispatch | **YES** | Not full restart/recovery suite @ HEAD | **CURRENT-HEAD CODE VERIFIED / EXECUTION HISTORICAL** |
-| **P08** | Truthful provider outcome | `ProviderInvocationOutcome` | ER / PIS | Store | Adapter | **H09** `SUCCEEDED`; **H03** UNKNOWN | **H09**, `test_h03_*` | `1b611ac96…` / `cb276479…` | **`43f6e0e…`** / historical | **+** outcome row | **YES** | Provider success ≠ business finalization | **PARTIAL — MANDATORY PROOF MISSING** (finalization) / **VERIFIED** (outcome row CREATE) |
+| **P08** | Truthful provider outcome | `ProviderInvocationOutcome` | ER / PIS | Store | Adapter | **H09** `SUCCEEDED`; **H03** UNKNOWN; **H11c**/**H11u** | **H09**, `test_h03_*`, **H11c**/**H11u** | `1b611ac96…` / `cb276479…` / §17 | **`43f6e0e…`** / historical / §17 | **+** outcome row (SUCCEEDED/FAILED/UNKNOWN) | **YES** | Downstream business finalization **not** Package P minimum (roadmap later stage) | **VERIFIED** (PIS outcome truthfulness @ proven depth); finalization = **TRACKED FREEZE DEBT** |
 | **P09** | Cancel, timeout, termination @ proven depth | External-work operation surface | ER + provider contract | Sanctioned port | Reflex HTTP follow-on (**H10**/**H11**) | **A — PROVEN (scoped):** single positive **ACCEPT_QUOTE** (**H10**) and **CANCEL** (**H11**) through sanctioned port → PIS → dispatch; fail-closed **H10n**/**H11n**; **H11c**/**H11u** truthful PIS **FAILED**/**UNKNOWN**. **B — NOT PROVEN:** global HTTP exactly-once (two independent POSTs); guaranteed physical provider termination; full timeout/shutdown/recovery e2e; parent **DIM20** / **PROD-Q** formal qualification | `test_h10_*`, `test_h11_*`, `test_h10n_*`, `test_h11n_*`, `test_h11c_*`, `test_h11u_*` | impl `08f1ef06…`; §16 `0c39f8f0…`; §17 `ca8cb05…` | **HEAD reviewed** — prior bounded runs per STRICT-HTTP §15–17 (**not** replayed this task) | **+** H10/H11/H11c/H11u/H10n/H11n; **−** P09 depth gaps (§B) | **YES** (partial) | **PARTIAL** — operation-specific HTTP qual exists; **not** full P09 obligation set | **PARTIAL — SCOPED VERIFIED** (A); **TRACKED FREEZE DEBT** (B) |
 | **P10** | Mandatory-scope + evidence reconciliation | This record | **PROD-Q-R1** | — | Auditors | §0–§12 | — | **FINAL_COMMIT** | this task | — | **YES** | Parent **PROD-Q-R1** / **R7-Q** open | **READY FOR AUDIT** (this document) |
 
@@ -144,6 +147,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | STRICT-HTTP **H10**/**H11** + negatives | **impl** `08f1ef06…`; §15 evidence tip `7a2c4d5d…` | **CODE + PRIOR EXECUTION** — canonical §15; **not** re-run @ consolidation |
 | Follow-on admission fail-closed | **§16** @ `0c39f8f0f41bf3cb3e9ad479130243b80fee24eb` | **STATIC AUDIT + prior 3-node pytest** (§16.5) |
 | CANCEL outcome (**H11c**/**H11u**) | **§17** @ `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` | **CODE REVIEW @ HEAD** + prior 2-node execution per §17.3 |
+| **AUTH-PI** + **PI-01**/**PI-02** | **§§19–21**; prod `91e83a73…` | **`e49a04fe…` — 9 passed** (this task §9) |
 | STRICT-HTTP-R1–R5 | `4fac9482e…` chain | Test-boundary correctives — **no** full module replay @ this task |
 | IG-F01 | P3-F static | Operator accepted within P3 wave |
 
@@ -327,7 +331,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 
 | Step | Result |
 |------|--------|
-| **A1** | Changed files: this reconciliation doc only (**production delta 0**). Public symbols: none. Evidence graph delta: reconcile **H10**/**H11**/**§16**/**§17** into Package P **P09** / interpretation **B** @ `ca8cb05…`. |
+| **A1** | Changed files: this reconciliation doc only (**production delta 0**). Public symbols: none. Evidence graph delta: drift `ca8cb05…`→`e49a04fe…` — **AUTH-PI**/**PI-01**/**PI-02** into **P05**; **P08** finalization scope clarified; risk pytest §9. |
 | **A2** | No import/composition dependency change. |
 | **A3** | Consumers: **PROD-Q-R1** auditors, **R7-Q** §C DIM20 rollup. |
 | **A4** | Owners: §2 table — unchanged vs `fc1bd1b29…`. |
@@ -380,11 +384,12 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 
 | Item | Value |
 |------|-------|
-| **Command (this task)** | *(none — budget 0)* |
+| **Command (this task)** | `uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py -k "auth_pi or pi01 or pi02" -q` |
 | **Command (prior task @ `43f6e0e…`)** | `uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_strict_http_invocation_identity_qualification.py::test_h09_http_strict_post_traverses_reflex_sanctioned_pis_and_provider -q` |
 | **Git SHA @ prior H09 run** | `43f6e0e232add1cf9fd9a947716d4c5444ae13d3` |
 | **H09 qual module / composition delta** `74cb5bc…` → `2d769605…` | **0** — drift review only |
-| **Result (this task)** | **pytest = 0** (consolidation — evidence reconciliation only) |
+| **Result (this task)** | **9 passed**, exit **0**, ~27s wall |
+| **Log (this task)** | `.tmp/session/PROD-Q-R1-PACKAGE-P-DIM20-GAP-CLOSURE/pytest-auth-pi.log` |
 | **STRICT-HTTP §15–17 @ HEAD** | **Code review @ `ca8cb05…`** — prior execution per evidence doc; **H11** positive **not** re-run @ §17 |
 | **Result (prior H09)** | **1 passed**, exit **0**, ~11.5s wall |
 | **Log (prior H09)** | `.tmp/session/PROD-Q-R1-PACKAGE-P-DIM20-FINAL/pytest-h09.log` |
@@ -402,6 +407,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | **BP-03** | Global **FRZ-*** rows remain OPEN | **TRACKED FREEZE DEBT** | **No** for scoped slice |
 | **BP-04** | Parent **PROD-Q-R1** / **R7-Q** not qualified | **PARENT GATE** | **Yes** for program closure |
 | **BP-05** | Product/architecture defect in PIS/dispatch closed world | **none found** @ HEAD | — |
+| **BP-07** | **AUTH-PI-02** forged metadata principal (pre-`91e83a73…`) | **REMEDIATED** @ `91e83a73…`; **9 passed** @ `e49a04fe…` | **No** — was mandatory in-scope; **not** open @ AUDITED_HEAD |
 | **BP-06** | Operator-reported Package P **132 passed** @ `fc1bd1b29…` without repo log | **EVIDENCE GAP** (historical) | **No** — **H09** re-executed @ `43f6e0e…` |
 
 ---
@@ -417,7 +423,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | Field | Value |
 |-------|-------|
 | **Maximum status** | **READY FOR AUDIT** |
-| **Independent acceptance recommendation** | **PARTIAL — SCOPED ELIGIBLE** (not global **PASS**): interpretation **A** + **B(CREATE/ACCEPT_QUOTE/CANCEL scoped)** per §§15–17; **P09** obligation **B** and F02 HTTP-depth/recovery e2e **not** satisfied; **B6** pending; parents **OPEN** |
+| **Independent acceptance recommendation** | **READY FOR INDEPENDENT B6** — mandatory Package P minimum satisfied @ `AUDITED_HEAD`; interpretation **A** + **B(scoped)**; **P09-B** / global HTTP exactly-once / physical termination / F02 e2e remain **TRACKED FREEZE DEBT** (not B6 blockers); operator **B6** is next gate; parents **OPEN** |
 | **Package P (PROD-Q-R1)** | Evidence ready for operator audit; **not** **CLOSED** |
 | **DIM20** | Reconciliation @ **FINAL_COMMIT**; R7-Q dim **20** remains **parent-gated** |
 | **R7-Q** | **NOT QUALIFIED** — depends **DIM6**, **DIM17**, Package P operator sign-off, §C rollup |
@@ -431,8 +437,8 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | Field | Value |
 |-------|-------|
 | **Branch** | `development` |
-| **START_HEAD** | `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` |
-| **FINAL_COMMIT (this task)** | *(recorded @ push — consolidation commit on `development`)* |
+| **START_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
+| **FINAL_COMMIT (this task)** | *(recorded @ push — gap-closure reconciliation on `development`)* |
 | **Prior FINAL_COMMIT** | `69276a6abcd726b836a1efc2a5949fbd948e8937` (CREATE-focused reconciliation) |
 | **origin/development** | aligned @ push post-commit |
 | **Task-owned files** | `PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`; `PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md` |
@@ -444,7 +450,8 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 
 | Question | Answer |
 |----------|--------|
-| Independent acceptance @ current HEAD? | **PARTIAL — SCOPED ELIGIBLE** — §3.0 P01–P10 (**P09 partial**); §4.1 **A** + **B(scoped)**; STRICT-HTTP §§15–17 lineage |
+| Independent acceptance @ current HEAD? | **READY FOR INDEPENDENT B6** — §3.0 P01–P10 (mandatory minimum); **P09-A** verified; **P09-B** tracked; AUTH-PI remediated; §4.1 **A** + **B(scoped)**; STRICT-HTTP §§15–21 |
+| **Exit disposition (this task)** | **PACKAGE P — READY FOR INDEPENDENT B6** (not **BLOCKED ON EXACT MANDATORY GAP**) |
 | **DIM20** | Evidence reconciliation **READY FOR AUDIT**; **CLOSED** only via operator |
 | Production delta this task | **0** |
 | Remaining dependencies | **DIM6**, **DIM17**, Package D operator path, §C rollup, **PROD-Q-R1** parent, **PROD-Q** |
