@@ -86,14 +86,11 @@ async def test_p2_r2_hosting_factory_rejects_non_runtime_before_work() -> None:
         await invoke_application_factory(bad_factory, build_sample_context())
 
 
-def test_p2_r2_lkw_adopts_hosting_engine_with_process_composition_gate() -> None:
-    profile_path = (
-        _REPO
-        / "applications"
-        / "local_workspace_application"
-        / "hosting"
-        / "profile.py"
+@pytest.mark.asyncio
+async def test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work() -> None:
+    """PROD-Q alias — canonical behavior owner: test_hosted_runtime (APP-HOST-8B)."""
+    from applications.local_workspace_application.tests.hosting.test_hosted_runtime import (
+        test_lkw_hosted_runtime_rejects_unactivated_composition_before_start,
     )
-    text = profile_path.read_text(encoding="utf-8")
-    assert "process_composition: ProductionProcessComposition" in text
-    assert "HostedApplicationProfile" in text
+
+    await test_lkw_hosted_runtime_rejects_unactivated_composition_before_start()
