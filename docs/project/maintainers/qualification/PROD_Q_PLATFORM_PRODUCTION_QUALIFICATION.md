@@ -1,6 +1,6 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0** · closure-record commit **READY FOR INDEPENDENT AUDIT** on GitHub
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q-P2** = **READY FOR OPERATOR B6 SCOPED ACCEPTANCE** — final reconciliation @ evidence baseline `202764bc328465799ea694c0dd6430e3d8ba6c4e` (§PROD-Q-P2; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub; **not** **CLOSED**) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P2`, `PROD-Q-P3`) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0/P2 reconciliation** · P0 closure-record **READY FOR INDEPENDENT AUDIT** on GitHub
 
 **P0 mechanical evidence lock (SSOT constant, not superseded):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · `PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA` in `tests/qualification/prod_q/_p0_certification.py` · **production delta = 0**
 
@@ -65,6 +65,29 @@
 **Canonical roadmap:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md)
 
 **Freeze checklist (unchanged OPEN rows):** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
+
+## PROD-Q-P2 — final acceptance reconciliation (platform child)
+
+| Field | Value |
+| --- | --- |
+| **Disposition** | **READY FOR OPERATOR B6 SCOPED ACCEPTANCE** — does **not** close **PROD-Q-P2** until operator B6; this documentation commit **READY FOR INDEPENDENT AUDIT** on GitHub |
+| **Evidence baseline (implementation + qual)** | `202764bc328465799ea694c0dd6430e3d8ba6c4e` |
+| **Mandatory scoped surfaces** | **GCA** strict graph · **LKW** · **Research** · **Hosting** engine (strict-vs-lab reachability / bypass denial per P0 **PQ-F11** child) |
+| **production delta** | **0** (documentation reconciliation only) |
+
+**Evidence ledger (independent audits accepted; no new replay claimed in this record):**
+
+| Slice | Evidence SHA / record | Role |
+| --- | --- | --- |
+| **GCA** | **PROD-Q-R1-R7-Q-P1** @ `8ec496603ab2f70b3da5db350c90aba87e2488d4` · **PROD-Q-R1-R7-Q-P2** @ `8e43b160447ca43de6631fe2a1b7f99948b64f2f` — [`PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md`](PROD_Q_R1_R7_Q_P2_STRICT_PRODUCTION_INTEGRATED_E2E.md) · **Package C** strict reachability | Bounded strict production graph; integrated HTTP admission; roster `ContractAuthority` (P2-C ADR-01) |
+| **LKW** | `175250b95` · `1deabd3fd` · `dd53aa35b` · `202764bc3` | Background worker production settings validation; strict admission lock; **P2-R2-R1** hosted runtime negative; CLI fail-closed without reference flag |
+| **Research / Hosting** | `ba652679b` · `dd53aa35b` · `202764bc3` | `tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py` — placeholder ASGI, factory/CLI negatives, hosting factory guard, LKW hosted alias |
+
+**FRZ-PRD-08 @ P0 mechanical reconciliation:** **PARTIAL_CURRENT_HEAD** reflects open platform child **PROD-Q-P2**, **not** an uncovered bypass on the mandatory slice above; global **FRZ-PRD-08** remains **OPEN** (platform census, reflex/F02/legacy CREATE, dim **20** parent — outside scoped P2 closure).
+
+**Does not:** close **PROD-Q** parent; auto-promote **PROD-Q-R1** / **PROD-Q-P1** / **PROD-Q-P3**; promote global **FRZ-PRD-08** or other **FRZ-*** **PASS**; substitute **PROD-Q-R1-R7-Q** parent qualification or **E.1** full D0–D4 replay.
+
+**Next:** operator **B6** scoped **PROD-Q-P2** after independent exact-SHA GitHub audit of this closure-record commit.
 
 ## PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1 purpose
 
