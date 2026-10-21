@@ -55,6 +55,17 @@ def test_p2_r2_research_cli_run_without_reference_flag_exits(
     assert exc.value.code == 1
 
 
+def test_p2_r2_lkw_cli_run_without_reference_flag_exits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.host.main import run as lkw_run
+
+    monkeypatch.delenv("LOCAL_WORKSPACE_REFERENCE_PRODUCTION", raising=False)
+    with pytest.raises(SystemExit) as exc:
+        lkw_run()
+    assert exc.value.code == 1
+
+
 def test_p2_r2_research_fresh_composition_fails_closed_for_process_app() -> None:
     from research_application.host.main import create_research_process_app
 
