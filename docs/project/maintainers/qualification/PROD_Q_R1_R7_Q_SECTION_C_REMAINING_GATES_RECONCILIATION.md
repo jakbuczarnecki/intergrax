@@ -2,8 +2,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** — **OPERATOR B6 — CLOSED SCOPED §C** recorded (2026-10-21); **does not** close **PROD-Q-R1-R7-Q**, **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q**, or promote any global **FRZ-*** row |
-| **Task** | `PROD-Q-R1-R7-Q-SECTION-C-REMAINING-GATES-RECONCILIATION` · `PROD-Q-R1-R7-Q-C-B6-FORMAL-SCOPED-CLOSURE` |
+| **Status** | **READY FOR AUDIT** — **OPERATOR B6 — CLOSED SCOPED §C** (2026-10-21); **DIM20** Package P **CLOSED SCOPED** via **OPERATOR B6 PACKAGE P** (2026-10-21); **does not** close **PROD-Q-R1-R7-Q**, **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q**, or promote any global **FRZ-*** row |
+| **Task** | `PROD-Q-R1-R7-Q-SECTION-C-REMAINING-GATES-RECONCILIATION` · `PROD-Q-R1-R7-Q-C-B6-FORMAL-SCOPED-CLOSURE` · `PROD-Q-R1-PACKAGE-P-B6-FORMAL-CLOSURE` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Program** | **PROD-Q** — **OPEN / BLOCKED** |
 | **Branch** | `development` |
@@ -13,7 +13,8 @@
 | **§C execution evidence** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` — integrated §C pytest **83** passed (**not** replayed @ closure) |
 | **OPERATOR B6 — CLOSED SCOPED §C** | Dims **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** — **CLOSED — OPERATOR ACCEPTED / SCOPED §C** (2026-10-21); hub [`PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_QUALIFICATION_EVIDENCE.md) §OPERATOR B6; **pytest = 0** @ closure record |
 | **Independent scoped acceptance (§C)** | `PROD-Q-R1-R7-Q-C-INDEPENDENT-SCOPED-ACCEPTANCE` @ prior `8b12b109…` — superseded for accepted dims by **OPERATOR B6** above |
-| **DIM20 evidence consolidation** | **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** — aligns §C dim **20** with STRICT-HTTP §§15–17 + Package P reconciliation @ `ca8cb05…` (**pytest = 0**) |
+| **DIM20 evidence consolidation** | **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** @ `ca8cb05…`; Package P reconciliation @ `e49a04fe…` → **OPERATOR B6 PACKAGE P** @ audit baseline `24d99a14…` (**pytest = 0** @ B6 record) |
+| **OPERATOR B6 — CLOSED SCOPED PACKAGE P (DIM20)** | **P01–P10** @ [`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md) §OPERATOR B6; **R7-Q** parent rollup **NOT QUALIFIED** |
 | **F02 reconciliation task** | `PROD-Q-R1-R7-Q-C-PACKAGE-D-CURRENT-HEAD-F02-RECONCILIATION` @ **`F02_RECONCILIATION_HEAD`** `99eb55724483ba20bc0b4e0abcc881fc6e392f22` — documentation alignment only; **pytest = 0** |
 | **Production delta (F02 reconciliation)** | **0** — no product code edits |
 | **Test execution (this task)** | **0** — read-only git + static product read + existing qualification records |
@@ -34,7 +35,7 @@
 | **Parent PROD-Q-R1** | **NOT CLOSED** |
 | **PROD-Q-R1-R7** | **NOT CLOSED** / **BLOCKED** |
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
-| **Next mandatory stage (R7-Q)** | Independent acceptance of §C integrated evidence + operator profiles (**DIM6**, **DIM17**) + **PROD-Q-R1** Package P (**DIM20**) before parent **R7-Q QUALIFIED** |
+| **Next mandatory stage (R7-Q)** | Independent GitHub audit of Package P B6 record + operator profiles (**DIM6**, **DIM17**) + §C parent rollup before **R7-Q QUALIFIED** |
 | Concurrent HEAD drift (strict production **product** graph) | **Bounded delta** `93c17a95…` → `AUDITED_HEAD`: `strict_production_serving_launcher.py`, `production_process_lifecycle.py`, `colocated_serving_runtime_composition.py`, `agent_distribution/deployment.py`, `venv_bundle_colocated_runtime_deployment_adapter.py` (+ profile v1 / D2 GCA host-store close @ `0c63b3f28…`). **F02 admission-close-before-drain** ordering preserved @ static read `HEAD`. Tip `8b12b10…` = **docs-only** (D1–D3 OPERATOR B6 scoped A1 record). §C pytest **not** replayed @ `AUDITED_HEAD` |
 | **new global FRZ PASS** | **0** |
 
@@ -81,15 +82,16 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 | **17** | Unsupported topology + **production** credentials/config fail-closed | AD + Apps | Topology + GCA settings | `validate_colocated_serving_admission_topology`, `GovernedContractorBackendSettings` | D1 `17e928e4…`; Package B B17-* lab @ `cecf179f…` | D1; Package B | Applicable | Live prod credential profile beyond settings contract | Operator `GOVERNED_CONTRACTOR_BACKEND_*` profile; B17-02 contract only | Operator | **ENVIRONMENT** | **OPERATOR PRODUCTION PROFILE REQUIRED** | Same operator capture list as Package B §3 |
 | **18** | Fake adapter reachability **= 0** on strict graph | Apps | DEC-03 strict graph | Sanctioned opener chain | P1 `036912be…`; Package C **38/38** @ `9aef3f09…`; §C DIM11 `93c17a959f48c5115cc52cb90ec9e16964169a0a` | P1; Package C; §C | Applicable | AST incompleteness (P1 boundary) — **TRACKED FREEZE DEBT** (static) | P1 + DIM11 modules | Operator **B6** (2026-10-21) | **TRACKED FREEZE DEBT** (static) | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** | Re-run Package C only if strict graph edits |
 | **19** | No silent fallback to reference openers | Apps | Single strict opener | `open_strict_production_serving_session` | Package C; §C DIM11; D4 `0dd51fe1…` | P1; D4; Package C | Applicable | None @ HEAD replay | P1-G02, DIM11-02/05, D4-03 | Operator **B6** (2026-10-21) | — | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** | — |
-| **20** | PIS / duplicate external effects on strict external-work path | ER + GCA | Composition + gate | `ProviderInvocationStore`, dispatch gate | DISPATCH-Q1 `f96884fd…`; PIS-STRICT `6138dd01…`; STRICT-HTTP H01–H08 `cb276479…`; **H09** exec `43f6e0e…`; **H10/H11** code `08f1ef06…` (§15); follow-on admission §16 `0c39f8f0…`; **H11c/H11u** §17 `ca8cb05…`; R1–R5 `4fac9482e…`; canonical hub [`PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md) §§15–17 | PROD-Q-R1 Package P; P3-F IG-F01 | Applicable | **Scoped technical qual present** — **parent PROD-Q-R1** independent acceptance; **DIM6**/**DIM17**; **P09-B** (exactly-once HTTP POST, physical termination, e2e timeout/recovery); **B6** pending; H01/H04 boundaries preserved | Package P matrix **P09 partial**; STRICT-HTTP §§15–17 | **PROD-Q-R1** operator independent acceptance (**B6**) | **PARENT DEPENDENCY** | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** (scoped evidence @ HEAD) — **R7-Q NOT QUALIFIED**; **DIM20 not CLOSED** | Operator audit Package P @ **FINAL_COMMIT**; formal **B6**; **DIM6**/**DIM17** profiles |
+| **20** | PIS / duplicate external effects on strict external-work path | ER + GCA | Composition + gate | `ProviderInvocationStore`, dispatch gate | DISPATCH-Q1 `f96884fd…`; PIS-STRICT `6138dd01…`; STRICT-HTTP H01–H08 `cb276479…`; **H09** exec `43f6e0e…`; **H10/H11** code `08f1ef06…` (§15); follow-on admission §16 `0c39f8f0…`; **H11c/H11u** §17 `ca8cb05…`; R1–R5 `4fac9482e…`; Package P B6 audit baseline `24d99a14…`; hub [`PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md) §§15–17 | PROD-Q-R1 Package P; P3-F IG-F01 | Applicable | **P09-B** debt retained (HTTP duplicate-POST cardinality, physical termination, e2e timeout/recovery); **DIM6**/**DIM17**; **R7-Q** parent rollup **OPEN**; H01/H04 boundaries preserved | Package P **P09 partial**; **P01–P10** operator-accepted scoped | Operator **B6 PACKAGE P** (2026-10-21) | **P09-B TRACKED FREEZE DEBT** | **CLOSED — OPERATOR ACCEPTED / SCOPED PACKAGE P** (DIM20 slice) — **R7-Q NOT QUALIFIED** | Independent GitHub audit @ **FINAL_COMMIT**; **DIM6**/**DIM17** profiles; §C rollup |
 | **21** | Evidence continuity + exact-SHA reproducibility | Program | Qual docs + logs | This reconciliation + §C hub + E.1 rollup | E.1 `8ee834e4…`; §C `93c17a959f48c5115cc52cb90ec9e16964169a0a`; this doc @ `AUDITED_HEAD` | E.1 closed; §C executed | Applicable | No monolithic CI artifact for all waves | Operator sign-off on rollup | Operator **B6** (2026-10-21) | Process | **CLOSED — OPERATOR ACCEPTED / SCOPED §C** | Parent rollup still blocked on **DIM6**/**DIM17**/**DIM20** |
 
 **Summary disposition counts (remaining §C dims only):**
 
 | Disposition | Dimensions |
 |-------------|------------|
-| **CLOSED — OPERATOR ACCEPTED / SCOPED §C** | **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** (**OPERATOR B6** 2026-10-21 @ execution `93c17a959f48c5115cc52cb90ec9e16964169a0a`) |
-| **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** / **READY FOR AUDIT** | **16** (Package D — prior scoped acceptance; **not** re-accepted in B6 §C); **20** (Package P slice — parent-gated) |
+| **CLOSED — OPERATOR ACCEPTED / SCOPED §C** | **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** (**OPERATOR B6 §C** 2026-10-21 @ execution `93c17a959f48c5115cc52cb90ec9e16964169a0a`) |
+| **CLOSED — OPERATOR ACCEPTED / SCOPED PACKAGE P** | **20** (Package P / **DIM20** slice — **OPERATOR B6 PACKAGE P** 2026-10-21 @ audit baseline `24d99a14d615442b2c82becbd94fd25556530340`) |
+| **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** / **READY FOR AUDIT** | **16** (Package D — prior scoped acceptance; **not** re-accepted in B6 §C) |
 | **OPERATOR PRODUCTION PROFILE REQUIRED** | 6, 17 |
 | **EXECUTABLE EVIDENCE MISSING** | **None** for integrated §C dims 2–19, 21 @ cited SHAs — gaps are **acceptance** and **operator profile**, not missing pytest modules |
 | **IN-SCOPE IMPLEMENTATION BLOCKER** | **None identified** @ `F02_RECONCILIATION_HEAD` for ADR R1 F02 open-gate (historical pre-fix only) |
@@ -112,7 +114,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 
 **Enterprise F02 slice (@ bounded static scope):** exactly-one physical admission authority (**AD** gate, **Apps** session-close owner); no shadow HTTP admission; fail-closed on partial shutdown for **new** execution after successful admission-close; in-flight vs post-close distinguished in F02-05 qual lineage; governance ≠ execution unchanged.
 
-**Package D / D2 / D3:** Package D rollup does **not** close **D2** / **D3** independent acceptance (**READY FOR AUDIT** lineage, parallel debt). **DIM6**, **DIM17**, **DIM20**, **B6**, **OP-01…04** statuses **unchanged** by this subsection.
+**Package D / D2 / D3:** Package D rollup does **not** close **D2** / **D3** independent acceptance (**READY FOR AUDIT** lineage, parallel debt). **DIM20** Package P **CLOSED SCOPED** via **OPERATOR B6 PACKAGE P** (2026-10-21). **DIM6**, **DIM17**, **OP-01…04** remain **OPEN**.
 
 ---
 
@@ -120,11 +122,11 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 
 | Field | Record |
 |-------|--------|
-| **R7-Q rule** | Dim **20** **cannot** close **R7-Q QUALIFIED** until **PROD-Q-R1** Package P receives **independent operator acceptance** (**B6**) — not merely technical evidence @ HEAD |
-| **Scoped technical evidence @ `ca8cb05…`** | **H09** integrated CREATE (execution `43f6e0e…`); **H10**/**H11** reflex **ACCEPT_QUOTE**/**CANCEL** (implementation `08f1ef06…`, §15); **H10n**/**H11n** fail-closed; §16 follow-on admission audit (`0c39f8f0…`); **H11c**/**H11u** cancellation outcomes (§17 @ `ca8cb05…`); DISPATCH-Q1 + PIS-STRICT + H01–H08 + R1–R5 lineage |
-| **Canonical evidence owner** | [`PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md) §§15–17; rollup [`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md) **P09** / interpretation **B** |
-| **Not claimed** | Global HTTP exactly-once (two independent POSTs); guaranteed physical provider termination; full timeout/shutdown/recovery e2e; global **FRZ-REL-*** PASS; **DIM20 CLOSED** |
-| **Disposition** | **ELIGIBLE FOR INDEPENDENT ACCEPTANCE** (scoped technical qual + reconciliation @ HEAD); **R7-Q remains NOT QUALIFIED**; **parent dependency retained** (**DIM6**, **DIM17**, Package P **B6**) |
+| **R7-Q rule** | Dim **20** Package P slice **CLOSED SCOPED** via **OPERATOR B6 PACKAGE P** (2026-10-21); **R7-Q QUALIFIED** still requires §C parent rollup + **DIM6**/**DIM17** + remaining mandatory dependencies |
+| **Scoped evidence @ audit baseline `24d99a14…`** | **P01–P10** ledger [`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md) §OPERATOR B6; pinned executions: **H09** `43f6e0e…`; **H10**/**H11** `08f1ef06…`; §16 `0c39f8f0…`; §17 `ca8cb05…`; DISPATCH-Q1 + PIS-STRICT + H01–H08 + R1–R5 lineage |
+| **Canonical evidence owner** | Package P reconciliation §OPERATOR B6; hub [`PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_STRICT_HTTP_INVOCATION_IDENTITY_QUALIFICATION_EVIDENCE.md) §§15–17 |
+| **Not claimed** | Global HTTP exactly-once (two independent POSTs); guaranteed physical provider termination; full timeout/shutdown/recovery e2e; global **FRZ-REL-*** PASS; **R7-Q** / **PROD-Q-R1** parent **CLOSED** |
+| **Disposition** | **CLOSED — OPERATOR ACCEPTED / SCOPED PACKAGE P** (DIM20 slice); **R7-Q remains NOT QUALIFIED**; **DIM6**/**DIM17**/**IMPL-01** blockers retained |
 
 ---
 
@@ -176,7 +178,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 | 1 | **DIM16/F02** — outside **OPERATOR B6 §C** (Package D prior acceptance); independent audit @ `4aeb585ea…` optional | **Evidence exists** — **not** re-closed by B6 §C |
 | 2 | **DIM6** operator production mutation policy (**OP-01**) | **Operator profile** — not implementation defect |
 | 3 | **DIM17** operator production credentials/config | **Operator profile** — lab/contract tests pass |
-| 4 | **DIM20** / **PROD-Q-R1** Package P independent acceptance (**B6**) | **Scoped technical evidence** @ HEAD (§§15–17) — **formal acceptance** parent gate |
+| 4 | **DIM20** Package P operator **B6** | **CLOSED SCOPED** (2026-10-21) — independent GitHub audit of closure record @ **FINAL_COMMIT** still **READY FOR AUDIT** |
 | 5 | **Package D** — R7-Q rollup decision | Process — after 1–4 |
 | 6 | **D2** / **D3** independent acceptance (prerequisite lineage) | Historical **READY FOR AUDIT** — parallel program debt |
 
@@ -186,7 +188,7 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 
 1. **PROD-Q-R1-R7-Q-C-PACKAGE-D** — [`PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md`](PROD_Q_R1_R7_Q_C_PACKAGE_D_INDEPENDENT_ACCEPTANCE_READINESS.md) **READY FOR AUDIT** — operator/GitHub independent audit of F02 matrix @ cited SHAs + impl `4aeb585ea…`; **historical pre-fix IN-SCOPE BLOCKER (open gate) closed by mitigation** — **DIM16 independent acceptance still pending** (not Cursor CLOSED).
 2. **Operator evidence capture** — Package B §3 list (DIM6 B6-01, DIM17 prod profile, trusted artifact roots).
-3. **PROD-Q-R1-PACKAGE-P** — Independent operator acceptance @ `AUDITED_HEAD` ([`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md)).
+3. **PROD-Q-R1-PACKAGE-P** — **OPERATOR B6 CLOSED SCOPED** @ `24d99a14…`; independent GitHub audit of B6 closure record ([`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md) §OPERATOR B6).
 4. **PROD-Q-R1** parent progression — remaining ADR children per roadmap (outside this reconciliation scope).
 5. **Conditional** — Package C pytest replay **only** if strict production graph product modules change after `9aef3f09…`.
 
@@ -201,10 +203,26 @@ Authoritative inventory: gate plan §B.1–B.6 @ P0 baseline; unchanged @ `AUDIT
 | **Independent audit baseline** | `d8a8e43ef4801b61acb5f689419a8fdd78598170` |
 | **§C execution SHA** | `93c17a959f48c5115cc52cb90ec9e16964169a0a` (**83** pytest @ integrated selection — **not** replayed for this record) |
 | **Dims accepted** | **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** — each **CLOSED — OPERATOR ACCEPTED / SCOPED §C** |
-| **Explicit exclusions** | **DIM6** (OP-01); **DIM16** (Package D — not re-accepted); **DIM17** (OP-02/03); **DIM20** (Package P / **PROD-Q-R1** B6) |
-| **Explicit residuals** | F02-09 **S2b** / DIM13–14 recovery debt; DIM18 historical AST-boundary debt; Package P **P09 partial**; **OP-01…04**; **IMPL-01** durability/recovery; cross-process SQLite; D03-A Class-B outside scope |
+| **Explicit exclusions** | **DIM6** (OP-01); **DIM16** (Package D — not re-accepted); **DIM17** (OP-02/03); **DIM20** Package P slice closed separately — see **OPERATOR B6 PACKAGE P** below |
+| **Explicit residuals** | F02-09 **S2b** / DIM13–14 recovery debt; DIM18 historical AST-boundary debt; Package P **P09-B** debt; **OP-01…04**; **IMPL-01** durability/recovery; cross-process SQLite; D03-A Class-B outside scope |
 | **Roadmap** | §5 row **PROD-Q-R1-R7-Q-C — OPERATOR B6 SCOPED ACCEPTANCE** |
 | **Does not close** | **PROD-Q-R1-R7-Q**, **PROD-Q-R1-R7**, **PROD-Q-R1**, **PROD-Q**, **PROD-Q-P0**, **R7-Q**; **new global FRZ PASS = 0** |
+
+Closure-record commit on GitHub: **READY FOR AUDIT** (independent audit required before treating this record as final closure).
+
+---
+
+## OPERATOR B6 — formal scoped Package P acceptance (DIM20 / ECAP §2.B6)
+
+| Field | Value |
+|-------|-------|
+| **Decision** | **OPERATOR B6 — CLOSED SCOPED PACKAGE P** (2026-10-21) |
+| **Authority** | Explicit operator authorization (`PROD-Q-R1-PACKAGE-P-B6-FORMAL-CLOSURE`) |
+| **Independent audit baseline** | `24d99a14d615442b2c82becbd94fd25556530340` |
+| **Dim accepted (§C)** | **20** — **CLOSED — OPERATOR ACCEPTED / SCOPED PACKAGE P** (Package P **P01–P10**; interpretation **A**; **B** scoped to **CREATE** / **ACCEPT_QUOTE** / **CANCEL**; **P09-A**; **P09-B** **TRACKED FREEZE DEBT**) |
+| **Canonical ledger** | [`PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`](PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md) §OPERATOR B6 |
+| **Roadmap** | §5 row **PROD-Q-R1-PACKAGE-P — OPERATOR B6 SCOPED ACCEPTANCE** |
+| **Does not close** | **R7-Q** parent rollup; **PROD-Q-R1** / **PROD-Q-R1-R7** / **PROD-Q-R1-R7-Q** / **PROD-Q**; **DIM6**/**DIM17**; **new global FRZ PASS = 0** |
 
 Closure-record commit on GitHub: **READY FOR AUDIT** (independent audit required before treating this record as final closure).
 

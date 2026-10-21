@@ -2,21 +2,22 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR AUDIT** (DIM20 final evidence reconciliation — **does not** close Package P, **DIM20**, **PROD-Q-R1-R7-Q**, **PROD-Q-R1**, **PROD-Q**, or promote global **FRZ-***) |
-| **Task** | **PROD-Q-R1-PACKAGE-P-DIM20-MANDATORY-GAP-CLOSURE** (continues **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** @ `ca8cb05…`; **PROD-Q-R1-PACKAGE-P-DIM20-CURRENT-HEAD-ACCEPTANCE-READINESS** @ `69276a6a…`; historical **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** @ `0e19284e…`) |
+| **Status** | **READY FOR AUDIT** — **OPERATOR B6 — CLOSED SCOPED PACKAGE P** recorded (2026-10-21); **does not** close parent **PROD-Q-R1** / **PROD-Q-R1-R7** / **PROD-Q-R1-R7-Q** / **PROD-Q** / **R7-Q** parent rollup or promote global **FRZ-*** |
+| **Task** | **PROD-Q-R1-PACKAGE-P-B6-FORMAL-CLOSURE** (continues **PROD-Q-R1-PACKAGE-P-DIM20-MANDATORY-GAP-CLOSURE** @ `e49a04fe…`; **PROD-Q-R1-DIM20-CURRENT-HEAD-EVIDENCE-CONSOLIDATION** @ `ca8cb05…`; historical **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** @ `0e19284e…`) |
 | **Program** | **PROD-Q** |
 | **Branch** | `development` |
-| **START_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
-| **AUDITED_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` (`HEAD` == `origin/development` @ task); prior reconciliation @ `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` (H11c/H11u consolidation); `69276a6abcd726b836a1efc2a5949fbd948e8937` (CREATE-focused) |
+| **START_HEAD** | `24d99a14d615442b2c82becbd94fd25556530340` |
+| **AUDITED_HEAD** | `24d99a14d615442b2c82becbd94fd25556530340` (`HEAD` == `origin/development` @ B6 closure record); prior reconciliation @ `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` (DIM20 gap closure); `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` (H11c/H11u consolidation); `69276a6abcd726b836a1efc2a5949fbd948e8937` (CREATE-focused) |
+| **OPERATOR B6 — CLOSED SCOPED PACKAGE P** | **P01–P10** accepted @ independent audit baseline `24d99a14…`; interpretation **A**; interpretation **B** scoped to **CREATE** / **ACCEPT_QUOTE** / **CANCEL**; **P09-A**; **P09-B** **TRACKED FREEZE DEBT**; **pytest = 0** @ formal closure record |
 | **Prior reconciliation pins** | `74cb5bc708f07c2dbcd32896318ec0fe7b5916dd` (DIM20 final — §1 drift); `0e19284e12ca7e05a667adfb1989a4e551879ac7` (interpretation **B** = NOT PROVEN — §0) |
 | **H09 implementation SHA** | `1b611ac963dc2122a098478374d7c7bfe9d391b1` (integrated CREATE qual) |
 | **H10/H11 implementation SHA** | `08f1ef069073fbb91944807777e9b744ca76ebd4` (non-CREATE strict HTTP qual — **code**; bounded `-k "h10 or h11"` per STRICT-HTTP evidence §15; evidence tip `7a2c4d5d…`) |
 | **Evidence continuity (DIM20)** | H09 **execution** `43f6e0e232add1cf9fd9a947716d4c5444ae13d3`; H10/H11 **code** `08f1ef069073fbb91944807777e9b744ca76ebd4`; follow-on admission audit **document/production review** `0c39f8f0f41bf3cb3e9ad479130243b80fee24eb` (§16); cancellation outcomes **code + H11c/H11u execution tree** `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` (§17); **this reconciliation** @ **FINAL_COMMIT** — **HEAD reviewed, not re-executed** |
 | **Parent** | **PROD-Q-R1** — **NOT QUALIFIED** |
-| **Dependent** | **PROD-Q-R1-R7-Q** §C **DIM20** — **NOT QUALIFIED** |
+| **Dependent** | **PROD-Q-R1-R7-Q** §C **DIM20** — **CLOSED SCOPED PACKAGE P** (operator B6); **R7-Q** parent rollup **NOT QUALIFIED** |
 | **AUTH-PI production SHA** | `91e83a73bd733d1ab44fcaa24b75ca4f200e182f` (`fastapi_router` metadata vs `RequestContext`); PI-01/PI-02 qual realignment `1faa86ffb…` / evidence `3ef44be0e…` (STRICT-HTTP §§19–21) |
-| **Production delta (this task)** | **0** (gap closure = drift review + risk pytest; AUTH-PI already on audited HEAD) |
-| **Pytest (this task)** | **9 passed** — `-k "auth_pi or pi01 or pi02"` @ `AUDITED_HEAD` (§9); H09 last executed @ `43f6e0e…` |
+| **Production delta (B6 closure task)** | **0** (documentation-only formal operator record) |
+| **Pytest (B6 closure task)** | **0** — pinned execution evidence preserved (H09 `43f6e0e…`; AUTH-PI/PI `e49a04fe…` — **9 passed** historical; §9) |
 
 ---
 
@@ -31,8 +32,10 @@ The **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** record @ `0e1928
 | Check | Result |
 |-------|--------|
 | Branch | `development` (`refs/heads/development`) |
-| **START_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
-| `HEAD` == `origin/development` @ task | **YES** — `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
+| **START_HEAD** | `24d99a14d615442b2c82becbd94fd25556530340` |
+| `HEAD` == `origin/development` @ task | **YES** — `24d99a14d615442b2c82becbd94fd25556530340` |
+| `merge-base --is-ancestor` operator audit baseline `24d99a14…` | **YES** (identical to `HEAD` @ B6 record) |
+| `merge-base --is-ancestor` `e49a04fe…` prior gap-closure reconciliation | **YES** |
 | `merge-base --is-ancestor` `ca8cb05…` prior reconciliation | **YES** |
 | `merge-base --is-ancestor` `e49a04fe…` operator expected baseline | **YES** (identical to `HEAD`) |
 | `merge-base --is-ancestor` `74cb5bc…` prior DIM20 reconciliation | **YES** |
@@ -40,8 +43,8 @@ The **PROD-Q-R1-PACKAGE-P-CURRENT-HEAD-INDEPENDENT-ACCEPTANCE** record @ `0e1928
 | `merge-base --is-ancestor` `0e19284e…` prior reconciliation | **YES** |
 | **Mandatory program stage** | **PROD-Q** — **OPEN / BLOCKED** on children (**PROD-Q-R1**, P1–P3) |
 | **Parent stage** | **PROD-Q-R1** — **NOT QUALIFIED / NOT CLOSED** |
-| **Dependent stage** | **PROD-Q-R1-R7-Q** — **IN PROGRESS / NOT QUALIFIED**; §C **DIM20** — **PARENT DEPENDENCY** until Package P operator acceptance |
-| **Next mandatory stage (program)** | Operator independent audit of this record @ **FINAL_COMMIT**; then operator profiles (**DIM6**, **DIM17**) and R7-Q parent rollup per gate plan |
+| **Dependent stage** | **PROD-Q-R1-R7-Q** — **IN PROGRESS / NOT QUALIFIED**; §C **DIM20** Package P — **CLOSED SCOPED** (operator B6); parent rollup blocked on **DIM6**/**DIM17**/**IMPL-01** |
+| **Next mandatory stage (program)** | Independent GitHub audit of this B6 closure record @ **FINAL_COMMIT**; operator profiles (**DIM6**, **DIM17**); R7-Q §C parent rollup per gate plan |
 | **Package P graph drift** `fc1bd1b29…` → `43f6e0e…` | **Package D** dossier + GCA owned-store lifecycle cleanup qual only — **no** change to `ProviderInvocationStore`, `GovernedProviderInvocationDispatchGate`, or `build_governed_external_work_production_runtime` ownership |
 | **Package P graph drift** `0e19284e…` → `43f6e0e…` | Reflex sanctioned external-work path + **H09** integrated CREATE qual (`1b611ac96…`); strict HTTP task-scope fix (`e70761682…`); PIS-02 harness scoping (`fc1bd1b29…`) — **qual/test-boundary** only |
 | **Package P graph drift** `74cb5bc…` → `2d769605…` | **Package B** strict-serve session shutdown (R3) + GCA profile v1 / Docker qual — **no** change to `ProviderInvocationStore` semantics, `GovernedProviderInvocationDispatchGate`, or `production_external_work_composition` ownership; `SQLiteProviderInvocationStore.read_owned_connection_durability_pragmas` — **non-authoritative qual surface** only |
@@ -134,7 +137,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | **P07** | Retry/recovery identity + durable state | Recovery repeat port vs ordinary gate | ER (GR-7) | Orthogonal ports | Recovery policies | **H03**, **H03b**, GR-7-A7 | `test_h03_*`, `test_h03b_*` | `cb276479…` | historical | **+** no unsafe redispatch | **YES** | Not full restart/recovery suite @ HEAD | **CURRENT-HEAD CODE VERIFIED / EXECUTION HISTORICAL** |
 | **P08** | Truthful provider outcome | `ProviderInvocationOutcome` | ER / PIS | Store | Adapter | **H09** `SUCCEEDED`; **H03** UNKNOWN; **H11c**/**H11u** | **H09**, `test_h03_*`, **H11c**/**H11u** | `1b611ac96…` / `cb276479…` / §17 | **`43f6e0e…`** / historical / §17 | **+** outcome row (SUCCEEDED/FAILED/UNKNOWN) | **YES** | Downstream business finalization **not** Package P minimum (roadmap later stage) | **VERIFIED** (PIS outcome truthfulness @ proven depth); finalization = **TRACKED FREEZE DEBT** |
 | **P09** | Cancel, timeout, termination @ proven depth | External-work operation surface | ER + provider contract | Sanctioned port | Reflex HTTP follow-on (**H10**/**H11**) | **A — PROVEN (scoped):** single positive **ACCEPT_QUOTE** (**H10**) and **CANCEL** (**H11**) through sanctioned port → PIS → dispatch; fail-closed **H10n**/**H11n**; **H11c**/**H11u** truthful PIS **FAILED**/**UNKNOWN**. **B — NOT PROVEN:** global HTTP exactly-once (two independent POSTs); guaranteed physical provider termination; full timeout/shutdown/recovery e2e; parent **DIM20** / **PROD-Q** formal qualification | `test_h10_*`, `test_h11_*`, `test_h10n_*`, `test_h11n_*`, `test_h11c_*`, `test_h11u_*` | impl `08f1ef06…`; §16 `0c39f8f0…`; §17 `ca8cb05…` | **HEAD reviewed** — prior bounded runs per STRICT-HTTP §15–17 (**not** replayed this task) | **+** H10/H11/H11c/H11u/H10n/H11n; **−** P09 depth gaps (§B) | **YES** (partial) | **PARTIAL** — operation-specific HTTP qual exists; **not** full P09 obligation set | **PARTIAL — SCOPED VERIFIED** (A); **TRACKED FREEZE DEBT** (B) |
-| **P10** | Mandatory-scope + evidence reconciliation | This record | **PROD-Q-R1** | — | Auditors | §0–§12 | — | **FINAL_COMMIT** | this task | — | **YES** | Parent **PROD-Q-R1** / **R7-Q** open | **READY FOR AUDIT** (this document) |
+| **P10** | Mandatory-scope + evidence reconciliation | This record | **PROD-Q-R1** | — | Auditors | §0–§12 + §OPERATOR B6 | — | **FINAL_COMMIT** | B6 closure record | — | **YES** | Parent **PROD-Q-R1** / **R7-Q** rollup open | **CLOSED — OPERATOR ACCEPTED / SCOPED PACKAGE P** (B6 ledger) |
 
 ### 3.0.1 Evidence slices (cross-reference)
 
@@ -315,7 +318,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | **FRZ-SEC-04** | Identity binding | PIS-09, invocation metadata | **H09** task/run/PIS link | Caller HTTP invocation_id (forbidden) | **PARTIAL** |
 | **FRZ-REG-02** | Typed contracts | Closed-world ports | Static @ HEAD | Test-local typing exceptions only | **PARTIAL** — no new production `Any` boundaries opened |
 | **FRZ-REG-03** | Ownership / composition | §2 table | Code @ HEAD | — | **PARTIAL** — owners verified |
-| **FRZ-REG-09** | Evidence traceability | This record + qual logs | **FINAL_COMMIT** | Operator B6 ledger | **PARTIAL** — pending operator |
+| **FRZ-REG-09** | Evidence traceability | This record + qual logs | **FINAL_COMMIT** | Independent GitHub audit of B6 record | **PARTIAL** — operator B6 recorded; global row **OPEN** |
 | **FRZ-GOV-*** (scoped) | Permission vs execution | `admit_provider_invocation_intent` | DISPATCH-Q1, PIS-07 | Global GOV-X rollup | **TRACKED FREEZE DEBT** |
 | **FRZ-OWN-*** (scoped) | Single owner per concern | §2 | Static | — | **PARTIAL** |
 | **FRZ-CTR-*** (scoped) | Port consumers | `ProviderInvocationStore`, sanctioned port | DISPATCH-Q1 | — | **PARTIAL** |
@@ -349,7 +352,7 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | **B3** | Positive: P01–P08 + **P09-A** + DISPATCH-Q1 + PIS-STRICT + **H09**–**H11** (§15) + **H11c**/**H11u** (§17). |
 | **B4** | Negative: **H02**, **H03**, **H05**/**H06**, **H10n**/**H11n**, IG-F01, gate replay / tenant deny. |
 | **B5** | Execution bundle: pinned SHAs (header **Evidence continuity**); consolidation @ HEAD = **review only** — no fabricated replay. |
-| **B6** | **Retained for independent operator** — roadmap §5 ledger not updated by this task. |
+| **B6** | **OPERATOR B6 — CLOSED SCOPED PACKAGE P** (2026-10-21) — §OPERATOR B6; roadmap §5 row **PROD-Q-R1-PACKAGE-P — OPERATOR B6 SCOPED ACCEPTANCE**; **pytest = 0** @ closure record. |
 
 ### 7.3 Architecture invariants (ECAP themes — bounded)
 
@@ -422,12 +425,12 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 
 | Field | Value |
 |-------|-------|
-| **Maximum status** | **READY FOR AUDIT** |
-| **Independent acceptance recommendation** | **READY FOR INDEPENDENT B6** — mandatory Package P minimum satisfied @ `AUDITED_HEAD`; interpretation **A** + **B(scoped)**; **P09-B** / global HTTP exactly-once / physical termination / F02 e2e remain **TRACKED FREEZE DEBT** (not B6 blockers); operator **B6** is next gate; parents **OPEN** |
-| **Package P (PROD-Q-R1)** | Evidence ready for operator audit; **not** **CLOSED** |
-| **DIM20** | Reconciliation @ **FINAL_COMMIT**; R7-Q dim **20** remains **parent-gated** |
-| **R7-Q** | **NOT QUALIFIED** — depends **DIM6**, **DIM17**, Package P operator sign-off, §C rollup |
-| **Next mandatory stage** | Operator independent audit @ **FINAL_COMMIT** on GitHub (**B6**); **DIM6**/**DIM17** profiles; non-CREATE external-work qual per gate plan |
+| **Maximum status** | **READY FOR AUDIT** (B6 closure record on GitHub) |
+| **Operator disposition** | **OPERATOR B6 — CLOSED SCOPED PACKAGE P** (2026-10-21) — **P01–P10** @ audit baseline `24d99a14…`; interpretation **A** + **B(scoped)**; **P09-B** remains **TRACKED FREEZE DEBT** |
+| **Package P (PROD-Q-R1)** | **CLOSED — OPERATOR ACCEPTED / SCOPED PACKAGE P** (slice); parent **PROD-Q-R1** **NOT CLOSED** |
+| **DIM20** | **CLOSED SCOPED PACKAGE P** — **R7-Q** parent rollup still **NOT QUALIFIED** |
+| **R7-Q** | **NOT QUALIFIED** — **DIM6**, **DIM17**, **IMPL-01**, §C rollup |
+| **Next mandatory stage** | Independent GitHub audit @ **FINAL_COMMIT**; **DIM6**/**DIM17** profiles; gate-plan follow-on |
 | **New implementation / ADR?** | **No** |
 
 ---
@@ -437,9 +440,9 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 | Field | Value |
 |-------|-------|
 | **Branch** | `development` |
-| **START_HEAD** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` |
-| **FINAL_COMMIT (this task)** | *(recorded @ push — gap-closure reconciliation on `development`)* |
-| **Prior FINAL_COMMIT** | `69276a6abcd726b836a1efc2a5949fbd948e8937` (CREATE-focused reconciliation) |
+| **START_HEAD** | `24d99a14d615442b2c82becbd94fd25556530340` |
+| **FINAL_COMMIT (B6 closure task)** | *(recorded @ push — formal operator B6 on `development`)* |
+| **Prior FINAL_COMMIT** | `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` (DIM20 gap-closure reconciliation) |
 | **origin/development** | aligned @ push post-commit |
 | **Task-owned files** | `PROD_Q_R1_PACKAGE_P_INDEPENDENT_EVIDENCE_RECONCILIATION.md`; `PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md` |
 | **Unrelated dirty worktree** | Not staged (other workstreams) |
@@ -450,9 +453,9 @@ POST /v1/governed_contractor/run (strict auth + tenant)
 
 | Question | Answer |
 |----------|--------|
-| Independent acceptance @ current HEAD? | **READY FOR INDEPENDENT B6** — §3.0 P01–P10 (mandatory minimum); **P09-A** verified; **P09-B** tracked; AUTH-PI remediated; §4.1 **A** + **B(scoped)**; STRICT-HTTP §§15–21 |
-| **Exit disposition (this task)** | **PACKAGE P — READY FOR INDEPENDENT B6** (not **BLOCKED ON EXACT MANDATORY GAP**) |
-| **DIM20** | Evidence reconciliation **READY FOR AUDIT**; **CLOSED** only via operator |
+| Independent acceptance @ current HEAD? | **OPERATOR B6 — CLOSED SCOPED PACKAGE P** — §3.0 **P01–P10**; **P09-A**; **P09-B** tracked; §4.1 **A** + **B(scoped)**; STRICT-HTTP §§15–21 |
+| **Exit disposition (B6 closure task)** | **PACKAGE P — CLOSED SCOPED** (operator); GitHub audit **READY FOR AUDIT** |
+| **DIM20** | **CLOSED SCOPED PACKAGE P**; full **R7-Q** dim **20** parent rollup **OPEN** |
 | Production delta this task | **0** |
 | Remaining dependencies | **DIM6**, **DIM17**, Package D operator path, §C rollup, **PROD-Q-R1** parent, **PROD-Q** |
 
@@ -504,6 +507,24 @@ uv run pytest -p no:xdist \
 
 **FRZ (evidence contribution only — rows remain OPEN globally):** `FRZ-PRD-03` fail-closed deny semantics (scoped); `FRZ-PRD-08` no bypass on deny branches; `FRZ-SEC-04` deny without authority amplification; `FRZ-OWN-*` / `FRZ-BND-*` / `FRZ-CTR-*` unchanged ownership; `FRZ-REL-03`/`FRZ-REL-05` — CREATE cardinality only, not HTTP duplicate POST.
 
-**Parent blockers:** **PROD-Q-R1** / **R7-Q** **NOT QUALIFIED**; Package P **B6** pending; **DIM6**/**DIM17** **OP-01…04** blocked.
+**Parent blockers:** **PROD-Q-R1** / **R7-Q** **NOT QUALIFIED**; Package P **B6** **CLOSED SCOPED**; **DIM6**/**DIM17** **OP-01…04** blocked.
 
-**Disposition:** **READY FOR AUDIT** (scoped recertification contribution; does **not** close Package P or promote global FRZ).
+**Disposition:** **READY FOR AUDIT** (scoped recertification contribution; does **not** supersede **OPERATOR B6** ledger or promote global FRZ).
+
+---
+
+## OPERATOR B6 — formal scoped Package P acceptance (ECAP §2.B6)
+
+| Field | Value |
+|-------|-------|
+| **Decision** | **OPERATOR B6 — CLOSED SCOPED PACKAGE P** (2026-10-21) |
+| **Authority** | Explicit operator authorization (`PROD-Q-R1-PACKAGE-P-B6-FORMAL-CLOSURE`) |
+| **Independent audit baseline** | `24d99a14d615442b2c82becbd94fd25556530340` |
+| **Pinned execution evidence** (not replayed @ B6 record) | H09 **CREATE** `43f6e0e232add1cf9fd9a947716d4c5444ae13d3` (**1 passed**); H10/H11 implementation `08f1ef069073fbb91944807777e9b744ca76ebd4` (§15); H11c/H11u consolidation `ca8cb05be9cfc0b1911a906edaf626ace7fbe142` (§17); follow-on admission audit `0c39f8f0f41bf3cb3e9ad479130243b80fee24eb` (§16); AUTH-PI/PI `e49a04fe18ec9fb0afd78f7e30bf4baf7ba63b26` (**9 passed**); DISPATCH-Q1 `f96884fdac73bcc8e12cb98ee3460c9e5148b393`; PIS-STRICT `6138dd01…` (historical **98**); STRICT-HTTP H01–H08 `cb276479…` (historical **11**) |
+| **Gates accepted** | **P01–P10** mandatory minimum — interpretation **A** accepted; interpretation **B** accepted only for proven **CREATE** (**H09**), **ACCEPT_QUOTE** (**H10**), **CANCEL** + outcomes (**H11**/**H11c**/**H11u**); **P09-A** at documented depth |
+| **Explicit exclusions / debt** | **P09-B**: HTTP duplicate-POST cardinality; global exactly-once; guaranteed physical provider termination; full timeout/shutdown/recovery e2e @ strict HTTP; F02 recovery and business finalization beyond proven scope; **IMPL-01** mandatory dependencies; **DIM6**/**DIM17** (**OP-01…04**); **PROD-Q-P0** **B6**; parent stages **PROD-Q-R1** / **PROD-Q-R1-R7** / **PROD-Q-R1-R7-Q** / **PROD-Q** / **R7-Q** |
+| **Roadmap** | §5 row **PROD-Q-R1-PACKAGE-P — OPERATOR B6 SCOPED ACCEPTANCE** |
+| **§C DIM20** | Package P slice **CLOSED SCOPED** — see [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) §4 / dim **20** |
+| **Does not close** | **PROD-Q-R1**, **PROD-Q-R1-R7**, **PROD-Q-R1-R7-Q**, **PROD-Q**, **R7-Q** parent rollup; **new global FRZ PASS = 0** |
+
+Closure-record commit on GitHub: **READY FOR AUDIT** (independent audit required before treating this record as final closure).
