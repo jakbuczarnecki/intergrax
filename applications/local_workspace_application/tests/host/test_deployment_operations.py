@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from intergrax.fastapi_core.config import ApiEnvironment
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from local_workspace_application.host.factory import create_local_workspace_backend_app
@@ -32,6 +33,18 @@ def _production_settings(**updates: object) -> LocalWorkspaceBackendSettings:
     }
     values.update(updates)
     return LocalWorkspaceBackendSettings(**values)
+
+
+def test_production_resolver_inmemory_without_validation_is_not_production_gate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolver-only path is lab-capable; production roots must call validate_for_runtime first."""
+    monkeypatch.delenv("INTERGRAX_MONGODB_URI", raising=False)
+    settings = _production_settings()
+    with pytest.raises(ValueError, match="INTERGRAX_MONGODB_URI"):
+        settings.validate_for_runtime()
+    store = resolve_managed_workspace_document_store()
+    assert isinstance(store, InMemoryDocumentStore)
 
 
 def test_production_rejects_in_memory_durable_store(
