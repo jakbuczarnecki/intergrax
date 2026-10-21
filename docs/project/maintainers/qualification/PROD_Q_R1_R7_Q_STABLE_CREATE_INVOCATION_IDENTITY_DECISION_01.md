@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | **RATIFIED DIRECTION — MANDATORY CONTRACT GATE CLOSED @ `c541c950f8ab2473f7a755fd2b0d29efb549ca0e`; IMPLEMENTATION LANDED @ `389cb82bef494eccc8d52eb3e5d79da6ffbb5e76`; QUALIFICATION NOT PROVEN (pytest=0)** |
+| Status | **RATIFIED DIRECTION — CONTRACT GATE CLOSED; IMPLEMENTATION @ `389cb82be`; SCOPED QUALIFICATION EXECUTED @ `1bf97ce8a1f59241a59d834ec009ccc270029702` — evidence [`PROD_Q_R1_R7_Q_STABLE_CREATE_IDENTITY_SCOPED_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_STABLE_CREATE_IDENTITY_SCOPED_QUALIFICATION_EVIDENCE.md) **READY FOR AUDIT**; parent IMPL-01 / R7-Q / PROD-Q / FRZ OPEN** |
 | Operator ratification | 2026-10-18 (direction); contract gate record 2026-10-21 |
 | Evidence HEAD | `c541c950f8ab2473f7a755fd2b0d29efb549ca0e` |
 | Parent | `PROD-Q-R1-R7-Q-REFLEX-EXTERNAL-WORK-ADMISSION-IMPL-01` — NOT CLOSED |
 | Prior authority | Reflex ADR-01; F02 Option B; R2 OD-R2-01…04; GCA SQLite decision 01; PIS ADR-03 |
-| Production delta | Stable CREATE `invocation_id` derivation + orchestrator admission path @ `389cb82be` (see §6); qualification execution not authorized |
+| Production delta | Stable CREATE `invocation_id` derivation + orchestrator admission path @ `389cb82be` (see §6); scoped qualification **23 passed** @ `1bf97ce8…` (see evidence doc) |
 
 ## 1. Exact problem and authority split
 
