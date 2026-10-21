@@ -1,6 +1,6 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q-P2** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** — **OPERATOR B6** (2026-10-21; evidence baseline `202764bc328465799ea694c0dd6430e3d8ba6c4e`; reconciliation `2e95dd17ab8487848b1b311700e780f8d0c2bca4` — §PROD-Q-P2 / §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P3` **OPEN**; **PROD-Q-P2** **CLOSED**) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0/P2 reconciliation** · P0 closure-record **READY FOR INDEPENDENT AUDIT** on GitHub
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q-P2** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** — **OPERATOR B6** (2026-10-21; evidence baseline `202764bc328465799ea694c0dd6430e3d8ba6c4e`; reconciliation `2e95dd17ab8487848b1b311700e780f8d0c2bca4` — §PROD-Q-P2 / §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub) · **PROD-Q-P3** = **READY FOR AUDIT** @ `23068fbaf915aadb30890f4187f9b41581ac25cc` — §PROD-Q-P3 (2026-10-21; **production delta = 0**; **not** **CLOSED**) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1` **OPEN**; **PROD-Q-P2** **CLOSED**; **PROD-Q-P3** **READY FOR AUDIT** / **OPEN**) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0/P2/P3 reconciliation** · P0/P2 closure-records **READY FOR INDEPENDENT AUDIT** on GitHub
 
 **P0 mechanical evidence lock (SSOT constant, not superseded):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · `PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA` in `tests/qualification/prod_q/_p0_certification.py` · **production delta = 0**
 
@@ -107,6 +107,83 @@
 
 **Independent audit:** exact-SHA review on GitHub remains mandatory; this Cursor disposition is **READY FOR AUDIT**, not final certification authority.
 
+## PROD-Q-P3 — production operability qualification (platform child)
+
+| Field | Value |
+| --- | --- |
+| **Task** | `PROD-Q-P3-PRODUCTION-OPERABILITY-QUALIFICATION` |
+| **Disposition** | **READY FOR AUDIT** — **not** **CLOSED** |
+| **START_HEAD / AUDITED_HEAD** | `23068fbaf915aadb30890f4187f9b41581ac25cc` (= `origin/development` at qualification) |
+| **Branch** | `development` |
+| **production delta** | **0** (evidence reconciliation + targeted regression only) |
+| **Authority read** | Roadmap + freeze checklist + ECAP + this ledger @ audited HEAD (no roadmap reorder; no global **FRZ-*** promotion) |
+
+**Scoped objective:** prove existing production operability mechanisms give operators a **consistent, typed, fail-closed** view of liveness/readiness/degradation/startup/shutdown/terminal/capacity/recovery/diagnostic provenance — **without** new observability frameworks or alternate execution truth.
+
+### Closed-world inventory (reuse P0 production roots; no second root catalog)
+
+Production roots and call chains are those already locked under **PROD-Q-P0** (`tests/qualification/prod_q/_p0_discovery.py`, mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078`). P3 reconciles **operability semantics** on the following sanctioned surfaces only:
+
+| Production root (P0-closed) | Semantic owner | Typed contract | Observable state | Operator action |
+| --- | --- | --- | --- | --- |
+| LKW daemon FastAPI host | `applications/local_workspace_application/host/lifecycle.py` — `LocalWorkspaceHostLifecycle` | `LocalWorkspaceReadinessSnapshot` / `LocalWorkspaceReadinessProvider` (`host/readiness.py`) | `state`, `ready`, `accepts_new_work`, `detail`, per-component `healthy` | Wait on `GET /v1/local_workspace/readiness`; do not send work when `accepts_new_work=false` (503 on run when stopping) |
+| LKW HTTP projection | `applications/local_workspace_application/serving/readiness_routes.py` | Same snapshot via provider injection | `GET /health` = process liveness only (`status: ok`); `GET …/liveness` = event-loop alive; readiness = provider snapshot | Do not treat `/health` as traffic admission |
+| LKW hosted mode | `applications/local_workspace_application/hosting/readiness.py` — `_HostedLocalWorkspaceReadiness` | Conjunction of `HostedApplicationLifecycleSnapshot` + `HostedApplicationHealthSnapshot` | Fail-closed `ready` / `accepts_new_work`; typed `detail` + `rejection_error_id` | Use readiness route; hosted runtime separates **runtime started** vs **platform ready** (`test_hosted_runtime.py`) |
+| Platform hosting engine | `intergrax/hosting/engine/health.py` — `HostedApplicationHealthCoordinator` | `HostedApplicationHealthSnapshot`, `StartupReadinessGateResult`, `HostedApplicationReadinessService` | `live`, `ready`, `degraded`, `blocking_component_ids`, `health_evaluation_failed`, lifecycle `accepting_new_work` sync | Inspect engine/supervisor diagnostics; bounded health poll marks evaluation failure without hiding readiness loss |
+| Hosting lifecycle + shutdown | `intergrax/hosting/engine/engine.py` + `intergrax/hosting/shutdown/**` | `HostedApplicationLifecycleState`, bounded shutdown phases, `APPLICATION_FAILED` / `APPLICATION_STOPPED` events | Terminal `FAILED`/`STOPPED`, `diagnostics_snapshot().current_failure` with `reason_code` | Follow hosting supervisor + runbook; do not infer success from liveness alone |
+| GCA strict production serving | `intergrax/applications/_shared/strict_production_serving_launcher.py` | `StrictProductionServingReadiness` (**evidence only**), `ready_for_traffic` ASGI guard (P1/P2 gates) | Session `readiness.*` booleans; fail-closed when `ready_for_traffic=false` | Operator activate/close session; D4 launcher ordering + cleanup evidence (`PROD_Q_R1_R7_D4_*`) |
+| Root execution capacity | `intergrax/runtime/execution/local_execution_capacity_admission.py` + `ExecutionCapacityAdmissionPort` | Typed admission decision / saturation errors | Explicit capacity refusal (no silent queue growth) | Retry or shed load per execution admission owner |
+| Pre-host / diagnostic provenance | HOST-DIAG-3 + DG-001 audit scope | `HostedApplicationEvent` → Problem projection (when wired) | `APPLICATION_FAILED` payload (`phase`, `reason_code`, `exception_type`) | `list_problems` when HOST-DIAG-3 wired; otherwise engine events + logs |
+
+**Governance ≠ execution:** readiness/health projections do not grant execution permission; strict traffic admission remains **GCA** `ready_for_traffic` + HTTP admission gates (**PROD-Q-P2** scope).
+
+### Operability acceptance matrix (mandatory criteria)
+
+| Concern | Semantic owner | Typed contract | Code evidence (current HEAD) | Test / gate | FRZ (contribution only) | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| Health / liveness | LKW: HTTP liveness routes; Hosting: `HostedApplicationHealthSnapshot.live` | LKW: `readiness_routes` liveness vs `/health`; Hosting: pydantic snapshot | `readiness_routes.py`; `health.py` `live` derivation | `test_engine_w2_invariants.py` poll failure; P0 `test_prod_q_p0_int_d9_method_level_health_discovered` | **FRZ-PRD-09** | **PROVEN** (hosting); **PARTIAL** (LKW `/health` is liveness-only by design — documented) |
+| Readiness | `HostedApplicationHealthCoordinator`; LKW `LocalWorkspaceHostLifecycle.is_ready()` | `ready` / `accepting_new_work` coupled fail-closed | `health.py` `refresh_once`; `lifecycle.py` `is_ready` / `accepts_new_work` | `test_accepting_new_work_never_true_when_ready_false`; `test_runtime_ready_independent_of_platform_ready`; DIM9 `test_c_dim9_03_*` | **FRZ-PRD-09** | **PROVEN** |
+| Degraded operation | Hosting component coordinator `MARK_DEGRADED` | `degraded`, `degraded_component_ids` on `HostedApplicationHealthSnapshot` | `components.py` + `health.py` | Engine invariant tests (blocking vs degraded policies) | **FRZ-PRD-06**, **FRZ-PRD-09** | **PROVEN** (hosting snapshot); **PARTIAL** (LKW HTTP readiness JSON does not surface `degraded` — **TRACKED FREEZE DEBT**) |
+| Startup failure | `HostedApplicationEngine` startup + diagnostics | `HostedApplicationFailurePhase`, `StartupReadinessGateResult` | `engine.py` `_startup_failure_cleanup`; `evaluate_startup_readiness_gate` | `test_multiple_blocking_components_classified_health_evaluation` | **FRZ-PRD-04**, **FRZ-PRD-10** | **PROVEN** (hosted engine); **PARTIAL** (DG-001B pre-host surfaces — **TRACKED FREEZE DEBT**) |
+| Shutdown | Hosting shutdown coordinator + LKW lifespan | `HostLifecycleState` / `HostedApplicationLifecycleState` transitions | `lifecycle.py` `make_lkw_daemon_lifespan`; engine bounded terminal cleanup | `test_ready_false_when_serve_task_finishes`; D4-R2 evidence (freeze checklist row) | **FRZ-PRD-05** | **PROVEN** (mechanisms); global FRZ row **OPEN** |
+| Terminal failure | Hosting diagnostics + strict launcher stderr/fail-closed paths | Diagnostics `current_failure`, `APPLICATION_FAILED` events | `engine.py` diagnostics + event publish; D4 fail-closed stderr | DIM9 integrated readiness failure; D4 qualification chain | **FRZ-PRD-10** | **PROVEN** (hosted + GCA scoped); **TRACKED FREEZE DEBT** for full-platform terminal census (P0 **PQ-F07**) |
+| Capacity / overload | `ExecutionCapacityAdmissionPort` implementation | Typed saturation / timeout errors | `local_execution_capacity_admission.py` | P0 composition gate for port; **CTRL-X** / **HARNESS-W4** cross-ref (reuse scope only) | **FRZ-PRD-11**, **FRZ-REL-09** | **PROVEN** (local admission); **PARTIAL** (integrated overload E2E — **EVIDENCE REQUIRED** at parent gate) |
+| Recovery | D3 reconciliation + runbooks + STATE-X (reuse) | Durable projection + operator procedures | `PROD_Q_R1_R7_D3_*`; `EXECUTION_ENGINE_PRODUCTION_RUNBOOKS.md` | D3 operator-closed evidence; STATE-X reuse within scope | **FRZ-PRD-12**, **FRZ-STA/REC** (supporting) | **PARTIAL** — procedures explicit; live DR proof **TRACKED FREEZE DEBT** (**PQ-F08**, **PQ-F23**) |
+| Evidence continuity | Diagnostics / TRACE-X (no execution truth from observability) | Event + Problem provenance contracts | DG-001 §hosted path; TRACE-X **CLOSED** lineage reused only within trace scope | HOST-DIAG-3 conformance tests when wired | **FRZ-TRC-*** (reuse), **FRZ-REG-*** | **PARTIAL** — engine events **PROVEN**; default LKW HOST-DIAG-3 wiring **TRACKED FREEZE DEBT** (DG-001A) |
+
+**Enterprise invariants checked @ audited HEAD:** single semantic owners per concern; no new health/readiness framework; hosting readiness does not override lifecycle authority; strict serving readiness is non-authoritative evidence; layer boundaries preserved; no production delta.
+
+### Defects and corrective work (P3 batch)
+
+| ID | Finding | Disposition | Action |
+| --- | --- | --- | --- |
+| — | No confirmed P3 semantic defect in readiness/health mapping, fail-closed gates, or ownership | — | **production delta = 0** |
+| P3-ENV-01 | `test_lkw_fastapi_lifecycle.py` fails app bootstrap: `MemoryProviderAdmissionError` (`qualification_evidence_missing`) under strict **product** profile | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | **Not** P3 code fix (provider qualification **PROD-Q-P1**); use hosted-runtime/unit tests for readiness evidence |
+| P3-DEBT-01 | DG-001A: HOST-DIAG-3 not default on all product entrypoints | **TRACKED FREEZE DEBT** | Qualify wiring in dedicated HOST-DIAG task; does not falsify engine startup failure events |
+| P3-DEBT-02 | LKW HTTP readiness omits hosting `degraded` / `degraded_component_ids` | **TRACKED FREEZE DEBT** | Optional projection enhancement — **architecture-neutral**; not blocking P3 core fail-closed readiness |
+| P3-DEBT-03 | P0 unresolved **PQ-F03–F08** support families routed to **PROD-Q-P3** in `_p0_findings_register.py` | **TRACKED FREEZE DEBT** | Parent **FRZ-PRD** rows remain **OPEN**; P3 proves mechanism wiring, not global FRZ PASS |
+
+### Targeted regression evidence (@ `23068fbaf915aadb30890f4187f9b41581ac25cc`)
+
+| Field | Value |
+| --- | --- |
+| **Command** | `uv run pytest applications/local_workspace_application/tests/hosting/test_hosted_runtime.py::test_runtime_ready_independent_of_platform_ready applications/local_workspace_application/tests/hosting/test_hosted_runtime.py::test_ready_false_when_serve_task_finishes tests/unit/hosting/engine/test_engine_w2_invariants.py::test_multiple_blocking_components_classified_health_evaluation tests/unit/hosting/engine/test_engine_w2_invariants.py::test_health_poll_failure_clears_readiness_and_recovers tests/unit/hosting/engine/test_engine_w2_invariants.py::test_accepting_new_work_never_true_when_ready_false tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim9_integrated_readiness_failure_gate.py::test_c_dim9_03_readiness_failure_after_physical_prepare_no_handoff -p no:xdist -q` |
+| **Result** | **6 passed**, **0 failed** |
+| **Duration** | ~4.2s |
+| **Session log** | `.tmp/session/PROD-Q-P3-PRODUCTION-OPERABILITY-QUALIFICATION/pytest-targeted-v2.log` |
+| **Note** | Initial batch including `test_lkw_fastapi_lifecycle.py` → **5 failed** (P3-ENV-01); excluded from acceptance evidence |
+
+### Closure recommendation
+
+| Item | Recommendation |
+| --- | --- |
+| **PROD-Q-P3** | **READY FOR AUDIT** — independent exact-SHA GitHub review of this ledger section + cited code/tests |
+| **PROD-Q parent** | Remains **BLOCKED** until **PROD-Q-R1**, **PROD-Q-P1** close and operator accepts P3 |
+| **IN-SCOPE BLOCKER** | **None** identified on audited operability surfaces |
+| **Next mandatory roadmap work** | **PROD-Q-R1** (startup/dependency corrective) and **PROD-Q-P1** (external provider qualification) remain gating; **PROD-Q-P3** does not substitute |
+
+**Does not:** close **PROD-Q** parent; promote global **FRZ-PRD-04..12** **PASS**; authorize **D03-A** cloud class; replay full **PROD-Q** / **TENANT-X** / GCA integrated E2E suites.
+
 ## PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1 purpose
 
 Close **composition ownership** and **authoritative gate integrity** gaps on **PROD-Q-P0** only (**production delta = 0**): `OWNERSHIP_RESOLVED` requires verified `registration_composition_owner` (not `COMPOSITION_UNRESOLVED`); AST-derived registration composition enrichment is explicit; mutation tests use shared **`prod_q_p0_core_violations(inventory)`**; historical bundle-anchor dispositions remain **lineage only**; live provider qualification remains **PROD-Q-P1**.
@@ -190,7 +267,7 @@ PROD-Q-R1 — Production Startup / Dependency Materialization Corrective (R1-SQL
 PROD-Q-R1-R7 — Production deployment adapter & lifecycle wiring (ADR-01 **R6**; **NOT CLOSED**; **D1-R6**/**D1**/**D1b** pending independent closure; **D2**/**D3** **READY FOR AUDIT**; **D4** **CLOSED / independently accepted** @ `0dd51fe…`; **next mandatory = PROD-Q-R1-R7-Q** — **NOT ENTERED**)
 PROD-Q-P1 — External sandbox provider production qualification (E2B, Modal, Daytona)
 PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure (**CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** @ evidence `202764bc…`; reconciliation `2e95dd17…`)
-PROD-Q-P3 — Production operability surface (health/readiness/operator semantics wiring)
+PROD-Q-P3 — Production operability surface (**READY FOR AUDIT** @ `23068fbaf915aadb30890f4187f9b41581ac25cc` — §PROD-Q-P3; **not** **CLOSED**)
 ```
 
 ## PROD-Q-P0 final gate — execution evidence (historical FAIL @ `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00`)
