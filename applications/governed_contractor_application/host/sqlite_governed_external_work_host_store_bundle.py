@@ -70,6 +70,7 @@ class _SqliteGovernedExternalWorkHostDatabase:
         "_db_path",
         "_had_existing_content",
         "_lock",
+        "_pending_fail_closed_schema_invalidate",
         "_writes_uncertain",
     )
 
@@ -78,6 +79,7 @@ class _SqliteGovernedExternalWorkHostDatabase:
         self._lock = threading.RLock()
         self._closed = False
         self._writes_uncertain = False
+        self._pending_fail_closed_schema_invalidate = False
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._had_existing_content = (
             self._db_path.exists() and self._db_path.stat().st_size > 0
@@ -92,6 +94,7 @@ class _SqliteGovernedExternalWorkHostDatabase:
         with self._lock:
             if self._closed:
                 return
+            self._flush_pending_fail_closed_schema_invalidate()
             try:
                 conn = sqlite3.connect(self._db_path)
                 try:
@@ -136,6 +139,7 @@ class _SqliteGovernedExternalWorkHostDatabase:
                 yield conn
             finally:
                 conn.close()
+                self._flush_pending_fail_closed_schema_invalidate()
 
     @staticmethod
     def _list_user_tables(conn: sqlite3.Connection) -> set[str]:
@@ -195,6 +199,12 @@ class _SqliteGovernedExternalWorkHostDatabase:
         except sqlite3.Error:
             return
 
+    def _flush_pending_fail_closed_schema_invalidate(self) -> None:
+        if not self._pending_fail_closed_schema_invalidate:
+            return
+        self._pending_fail_closed_schema_invalidate = False
+        self._invalidate_schema_metadata_for_fail_closed_reopen()
+
     def _mark_writes_uncertain(self, conn: sqlite3.Connection | None = None) -> None:
         self._writes_uncertain = True
         if conn is not None:
@@ -203,7 +213,9 @@ class _SqliteGovernedExternalWorkHostDatabase:
                 conn.commit()
                 return
             except sqlite3.Error:
-                pass
+                # Defer durable invalidation until the active connection is released.
+                self._pending_fail_closed_schema_invalidate = True
+                return
         try:
             raw = sqlite3.connect(self._db_path, timeout=30.0)
             try:
