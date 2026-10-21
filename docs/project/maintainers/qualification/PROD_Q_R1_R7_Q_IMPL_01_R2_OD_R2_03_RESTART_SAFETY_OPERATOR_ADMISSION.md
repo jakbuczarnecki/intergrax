@@ -4,8 +4,8 @@
 |-------|-------|
 | **Status** | **READY FOR AUDIT** |
 | **Parent** | PROD-Q-R1-R7-Q — IN PROGRESS / NOT QUALIFIED |
-| **START_HEAD** | `fc176db7fa2290c47849ff3d159299f936a05b2d` |
-| **Evidence SHA** | `726f900d2aac64641174a59d93b4078a29d4cdd6` |
+| **START_HEAD** | `15a8fd145711dd3b0d6c4fe94cb8c81bd1198a60` |
+| **Evidence SHA** | `15a8fd145711dd3b0d6c4fe94cb8c81bd1198a60` (batched IMPL-01 GCA restart durability @ same SHA) |
 | **Controlling decision** | OD-R2-03 @ [`PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md`](PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md) §15 |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
@@ -91,15 +91,37 @@
 | B1–B5 | Boundaries + fail-closed durability negatives |
 | B6 | **Deferred** — operator-only |
 
+## IMPL-01 GCA restart durability — invariant matrix (batched qualification)
+
+| Invariant | Contract | Evidence SHA | Process boundary | Outcome | Limitation | FRZ |
+|-----------|----------|--------------|------------------|---------|------------|-----|
+| Committed GER + F02 + PIS outcome survive graceful cross-process reopen | `GovernedExecutionStore` | `15a8fd14…` | **CROSS-PROCESS** (DUR-PROC-01) | **PROVEN — CROSS-PROCESS** | Not power-loss; lab SQLite | FRZ-REL-03 partial |
+| Committed state after abrupt child termination | same + close before flag | `15a8fd14…` | **CROSS-PROCESS** (DUR-PROC-02-A) | **PROVEN — CROSS-PROCESS** | Kill ≠ storage power-loss | FRZ-REL-03 partial |
+| Incomplete finalization / PIS intent without outcome | orchestrator + dispatch gate | `15a8fd14…` | **CROSS-PROCESS** (DUR-PROC-02-B) | **PROVEN — CROSS-PROCESS** (controlled inject) | Not live mid-txn crash | FRZ-REL-05 partial |
+| Missing GER/F02 denies follow-on; no ordinary CREATE redispatch | F02 Option B | `15a8fd14…` | in-process + DUR-CONS-01 | **PROVEN — LAB ONLY** | Q2 full suite not re-run | FRZ-PRD-08 partial |
+| Corrupt F02 / GER-without-F02 fail-closed | `GovernedExecutionStore` | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | Subset @ batched `-k` | FRZ-SEC-04 partial |
+| F03 uncertain commit / marker persistence & reopen deny | SQLite host txn + marker | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | F03 fix in `sqlite_governed_external_work_host_store_bundle.py` @ HEAD | FRZ-REL-03 partial |
+| Policy bundle artifact round-trip | `PolicyBundleArtifactStore` | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | Not subprocess-isolated | FRZ-CTR partial |
+| Proof receipt durable round-trip | `ProofReceiptStore` | — | — | **NOT PROVEN** (reopen gate) | No dedicated close/reopen pytest; CREATE path writes receipt but DUR-PROC verify does not assert | FRZ-REL-03 OPEN |
+| Continuation durable round-trip | `ContinuationStateStore` | — | — | **NOT PROVEN** (reopen gate) | No dedicated close/reopen pytest @ gca_sqlite module | FRZ-REL-03 OPEN |
+| PIS vs GCA non-atomic ordering | separate SQLite files | `15a8fd14…` | cross-process + Q2 regression | **PROVEN — CROSS-PROCESS** (ambiguity) | No distributed txn | FRZ-PRD-08 partial |
+| Cross-tenant recovery deny | GER `tenant_id` + sanctioned port | `15a8fd14…` | in-process reopen | **PROVEN — LAB ONLY** | File not tenant-partitioned | FRZ-TEN-* partial |
+| Production-qualified restart-durable GCA backend | OD-R2-03 | — | target deployment | **NOT PROVEN — INFRASTRUCTURE REQUIRED** | Lab SQLite only | **IN-SCOPE BLOCKER** |
+| Operator B6 / target replay | ECAP B6 | — | production | **NOT PROVEN — INFRASTRUCTURE REQUIRED** | Deferred | FRZ-PRD-* OPEN |
+
+**Cursor disposition:** **GCA RESTART DURABILITY — READY FOR INDEPENDENT AUDIT** (laboratory + cross-process subprocess scope). **BLOCKED ON EXACT MANDATORY EVIDENCE** for production-global and receipt/continuation reopen gates.
+
 ## Focused pytest (authoritative command)
 
 ```text
 uv run pytest -p no:xdist \
   tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_impl_01_r2_od_r2_03_restart_safety_operator_admission.py \
+  tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_gca_sqlite_durable_recovery.py \
+  -k "dur_proc or test_f03 or test_corrupt_f02 or test_ambiguous_commit or test_ger_without_f02 or test_policy_bundle_round_trip or test_sqlite_ger_round_trip" \
   -q
 ```
 
-Log: `.tmp/session/impl-01-r2-od-r2-03/pytest-od-r2-03.log`
+Log: `.tmp/session/impl-01-gca-restart-durability-qual/pytest-batched.log` — **10 passed**, 18 deselected (2026-10-21).
 
 ---
 
