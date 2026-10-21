@@ -5,7 +5,7 @@
 | **Status** | **READY FOR AUDIT** |
 | **Parent** | PROD-Q-R1-R7-Q — IN PROGRESS / NOT QUALIFIED |
 | **START_HEAD** | `a32bfb6649047cb57e423071293e6b6382166016` |
-| **Evidence SHA** | see **Receipt / continuation cross-process** matrix (`Execution SHA` column) |
+| **Evidence SHA** | `2b39fb9b3d10ad7d8dcac81ac773e64652ceae8a` (rc-cross subprocess + negatives) |
 | **Controlling decision** | OD-R2-03 @ [`PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md`](PROD_Q_R1_R7_Q_REFLEX_EXTERNAL_WORK_STRICT_COMPOSITION_AUTHORITY_DECISION_R2.md) §15 |
 | **Does not close** | OD-R2-03 · IMPL-01-R2 · R7-Q · PROD-Q · any global **FRZ-*** PASS |
 
@@ -117,8 +117,8 @@ Worker: `tests/unit/applications/governed_contractor/impl_01_r2_od_r2_03_restart
 
 | Store | Process A | Process B | Integrity | Negative | Execution SHA | Verdict |
 |-------|-----------|-----------|-----------|----------|---------------|---------|
-| `ProofReceiptStore` | `rc-cross-seed` | `rc-cross-verify` | `receipt_id` + boundary execution binding vs manifest | `test_rc_neg_missing_receipt_returns_none`, `test_rc_neg_corrupt_receipt_fail_closed`, wrong-key deny in verify | `cb7569c15a441b089abf0cfa60e2eb42f874df87` | **READY FOR INDEPENDENT AUDIT** |
-| `ContinuationStateStore` | `rc-cross-seed` | `rc-cross-verify` | `continuation_request_id` + `execution_id` vs manifest `task_id` key | `test_rc_neg_corrupt_continuation_fail_closed`, wrong `task_id` → `None` in verify | `cb7569c15a441b089abf0cfa60e2eb42f874df87` | **READY FOR INDEPENDENT AUDIT** |
+| `ProofReceiptStore` | `rc-cross-seed` | `rc-cross-verify` | `receipt_id` + boundary execution binding vs manifest | `test_rc_neg_missing_receipt_returns_none`, `test_rc_neg_corrupt_receipt_fail_closed`, wrong-key deny in verify | `2b39fb9b3d10ad7d8dcac81ac773e64652ceae8a` | **READY FOR INDEPENDENT AUDIT** |
+| `ContinuationStateStore` | `rc-cross-seed` | `rc-cross-verify` | `continuation_request_id` + `execution_id` vs manifest `task_id` key | `test_rc_neg_corrupt_continuation_fail_closed`, wrong `task_id` → `None` in verify | `2b39fb9b3d10ad7d8dcac81ac773e64652ceae8a` | **READY FOR INDEPENDENT AUDIT** |
 
 **PRODUCTION OD-R2-03 — OPERATOR INFRASTRUCTURE EVIDENCE REQUIRED** (PVC, target backend, B6) — not closed by this matrix.
 
