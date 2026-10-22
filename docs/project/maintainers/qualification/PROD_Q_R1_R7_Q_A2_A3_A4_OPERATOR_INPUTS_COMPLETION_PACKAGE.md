@@ -2,11 +2,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Disposition** | **READY FOR AUDIT — OP01 TENANT-WIDE AUTHORITY RATIFICATION** (configuration-only evidence; **not** global OP-01 QUALIFIED · **not** CLOSED) |
-| **Task** | `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` + **`PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION`** (2026-10-22) |
+| **Disposition** | **READY FOR AUDIT — OP02/OP03 EXTERNAL DEPENDENCIES DECISION PROPOSAL** (decision preparation only; **not** provisioning · **not** CLOSED) |
+| **Task** | `PROD-Q-R1-R7-Q-OP02-OP03-EXTERNAL-DEPENDENCIES-DECISION` (2026-10-22) · prior: `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` · `PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION` |
 | **Operator authorization** | **`PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION`** (2026-10-22, unchanged) — **D1** identifiers, **D2** container root + named volume, **D3** gitignored `.env` injection + strict prod/context_only/unauth=false; **did not** authorize effective ALLOW at that time. **`PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION`** (2026-10-22) — tenant `qual-intergrax-gca`; SERVICE principal `gca-qual-strict-service`; governance bundle `qual.intergrax.gca.control_plane`; **only** `agent_distribution.admit_runtime_revision` and `agent_distribution.activate_runtime_revision`; **tenant-wide** resource scope within qual tenant (`match_action` only — **no** `resource_id` rule matching); **A5 NOT AUTHORIZED**; **no** strict serving, physical mutation, or production traffic |
 | **Branch** | `development` |
-| **START_HEAD** | `10ea294cf7b70363d1e2ea256dd8a5aae98e8861` (OP-02/03 materialization audit @ same HEAD) |
+| **START_HEAD** | `893619d27eafedb6a1486f00034e68a04371126b` (OP-02/OP-03 external-dependencies decision @ same HEAD) |
+| **Investigation baseline** | §14 closed-world record @ `10ea294cf7b70363d1e2ea256dd8a5aae98e8861` (not re-scanned) |
 | **Parent @ START_HEAD** | (see `git log -1 --format=%P` @ ratification commit) |
 | **Production code delta** | **0** (documentation only) |
 | **Canonical charter** | [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) §C–§G, §O.1–O.9 |
@@ -17,8 +18,8 @@
 | OP | Status |
 |----|--------|
 | **OP-01** | **TENANT-WIDE ALLOW RATIFIED (operator 2026-10-22) / CONFIGURATION-ONLY VERIFIED @ HEAD / LIVE QUAL COMPOSE REFERENCE REMAINS CONTAINED / HOST PUBLICATION & STRICT-SERVE WIRING PENDING** |
-| **OP-02** | **`BLOCKED — APPROVED SOURCE BUILD REQUIRED`** (§14.1 @ `10ea294c…`) — topology approved; **no** `file://` candidate; attestation pending |
-| **OP-03** | **Provider: `BLOCKED — APPROVED PROVIDER REQUIRED`** · **Credentials: issuance blocked** (§14.2–14.3 @ `10ea294c…`) |
+| **OP-02** | **`BLOCKED — APPROVED SOURCE BUILD REQUIRED`** (§14.1) — **operator-ratifiable delivery model §15.2** |
+| **OP-03** | **Provider: `BLOCKED — APPROVED PROVIDER REQUIRED`** · **Credentials: issuance blocked** (§14.2–14.3) — **§15.3–15.4** |
 
 **Explicitly not claimed:** global **OP-01 QUALIFIED**, full `OP-01/02/03 CONFIGURATION VERIFIED`, DIM6/DIM17 **QUALIFIED**, R7-Q **CLOSED**, PROD-Q **PASS**, global **FRZ-*** PASS delta **0**, **A5** authorized.
 
@@ -555,6 +556,202 @@ Session evidence (redacted, not Git): `.tmp/session/PROD-Q-R1-R7-Q-A2-A4/op02-op
 | OP-03 provider | Real descriptor/discovery | **BLOCKED** — approved provider required |
 | OP-03 credentials | Issuer + secure issuance | **BLOCKED** until operator approves issuer |
 | A5 | Activation authorization | **NOT AUTHORIZED** |
+
+---
+
+## 15. OP-02/OP-03 — EXTERNAL DEPENDENCY DELIVERY DECISION PROPOSAL
+
+**Task:** `PROD-Q-R1-R7-Q-OP02-OP03-EXTERNAL-DEPENDENCIES-DECISION` · **Facts SHA:** `893619d27eafedb6a1486f00034e68a04371126b` · **Investigation record:** §14 @ `10ea294cf7b70363d1e2ea256dd8a5aae98e8861` (closed world; no repeat scans).
+
+**Disposition:** **READY FOR AUDIT — OP02/OP03 EXTERNAL DEPENDENCIES DECISION PROPOSAL** — operator ratification of **models** below; **not** authorization to build, issue secrets, run strict serve, or execute A5/A6.
+
+### 15.1 Established facts (reuse §14; no new discovery)
+
+| Area | Canonical contract / owner | Established blocker |
+|------|---------------------------|---------------------|
+| OP-02 materialization | `UnsupportedVenvBundleMaterializationAdapter` · Agent Distribution (`intergrax/agent_distribution/materialization_adapters.py`) | Coordinator does **not** produce immutable `VENV_BUNDLE`; external producer required per [`PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md`](PROD_Q_R1_R7_ADR_01_PRODUCTION_DEPLOYMENT_AUTHORITY.md) **DEC-06** |
+| OP-02 consumption | `VenvBundleColocatedRuntimeDeploymentAdapter` · `resolve_production_artifact_root` / `resolve_venv_bundle_artifact_directory` · Apps strict serve (`package_b_strict_production_serving_command.py`, `allow_qualification_locators=false`) | No approved `file://` bundle on qual host; OCI staging ≠ `VENV_BUNDLE`; LAB `write_minimal_venv_bundle` excluded |
+| OP-03 provider | `ExternalWorkIntegration` · `resolve_strict_external_work_provider_capabilities` · `GovernedContractorBackendSettings.strict_external_work_provider_*` | No non-LAB provider on host; `gec3_deterministic_fake` forbidden for qual evidence |
+| OP-03 credentials | `GovernedContractorBackendSettings.from_env` · gitignored `intergrax-gca-docker-local-qualification.env` | Prod profile without keys fails closed; **no** approved issuer/process |
+
+**Stage:** `PROD-Q-R1-R7-Q` **NOT QUALIFIED** · **DIM6** / **DIM17** **NOT QUALIFIED** · global **FRZ-*** **OPEN**.
+
+### 15.2 Recommended OP-02 solution shape (single model)
+
+**Pattern:** **External operator/CI build → immutable `VENV_BUNDLE` directory → provenance/attestation record → transfer into approved trusted parent root(s) → existing production resolver path** (`file://` locator → digest verification → registry projection → `VenvBundleColocatedRuntimeDeploymentAdapter`).
+
+| Constraint | Requirement |
+|------------|-------------|
+| Producer locus | **Outside** Agent Distribution materialization coordinator unless ADR explicitly assigns build ownership (current HEAD: **external** per DEC-06) |
+| Artifact contract | Immutable on-disk `VENV_BUNDLE` per `production_registry_projection_input_bundle.py` / ADR DEC-01 + DEC-06 — **not** OCI-only substitute |
+| Locator | Canonical `file://` under operator-approved `trusted_artifact_parent_roots` |
+| Provenance fields (manifest) | **Operator-supplied values only** at execution time: source Git SHA, `runtime_revision_id`, dependency lock identity, `directory_content_digest` (or equivalent verified digest), materialization topology `VENV_BUNDLE` |
+| Trust | Existing registry + `resolve_*` ownership — **no** second resolver or shadow trust authority |
+| Qualification strictness | `allow_qualification_locators=false` **unchanged** |
+| Admission | Materialization into trusted roots **only after** operator attestation sign-off (charter §D / §O.4) |
+
+**External build — inputs (operator/CI, pre-build):**
+
+| Input | Owner |
+|-------|--------|
+| Approved source repository + **exact Git SHA** (build ref) | Operator / release authority |
+| Target `runtime_revision_id` + roster lock authority already admitted in qual tenant | Operator (coordination with OP-01 scope) |
+| Reproducible dependency lock file(s) and build recipe (pinned tool versions) | Operator / build-system owner |
+| Build environment classification (qual vs prod artifact lane) | Operator |
+
+**External build — outputs (handoff to platform path, post-build):**
+
+| Output | Consumer on host |
+|--------|------------------|
+| Immutable bundle directory tree on disk | `resolve_venv_bundle_artifact_directory(..., allow_qualification_locators=False)` |
+| `file://` locator relative to approved parent root | Registry projection / revision binding |
+| Content digest + lock integrity record | Attestation manifest row; `verify_venv_bundle_artifact_bytes` / projection evidence |
+| Signed or operator-approved attestation record (no secrets) | Qual evidence ledger; charter §O.4 OP-02 |
+
+**Responsibility split:**
+
+| Role | Responsibilities |
+|------|------------------|
+| **Platform (unchanged)** | Resolver contracts, digest verification, strict adapter, registry projection semantics, fail-closed negatives |
+| **Operator** | Source revision selection; trusted root list; attestation; secure transfer into qual volume/path; retention/teardown |
+| **External CI/build owner** | Reproducible build execution; manifest/checksum generation; artifact packaging — **CI vendor not chosen in this proposal** |
+
+**Architecture decision points:** None identified for this shape within ADR DEC-06 / existing contracts. Any proposal to make Agent Distribution the **bundle builder**, relax `allow_qualification_locators`, or substitute OCI for `VENV_BUNDLE` authority → **`STOP — ARCHITECTURE DECISION REQUIRED`**.
+
+### 15.3 Recommended OP-03 provider solution shape (single model)
+
+**Pattern:** **Existing typed `ExternalWorkIntegration` ← genuine provider adapter injected through sanctioned host composition** (no new registry; no discovery-time execution for qual evidence capture beyond side-effect-free `discover()`).
+
+| Requirement | Canonical hook @ HEAD |
+|-------------|----------------------|
+| Contract | `intergrax/integrations/contracts/external_work.py` — `ExternalWorkIntegration` |
+| Strict pin | `resolve_strict_external_work_provider_capabilities(integration, settings=…)` → match `GOVERNED_CONTRACTOR_STRICT_EXTERNAL_WORK_PROVIDER_ID` + `GOVERNED_CONTRACTOR_STRICT_EXTERNAL_WORK_PROVIDER_DESCRIPTOR_DIGEST` from **real** `discover()` descriptor |
+| Composition injection | `GovernedContractorHostRuntimeComposition.external_work_integration` via `compose_governed_contractor_host_runtime(..., integration=…)` · runtime assembly `build_governed_external_work_production_runtime(integration, …)` · strict serve factory path (`create_governed_contractor_backend_app` / `factory.py`) |
+| Governance ≠ execution | Policy bundle (OP-01) separate from provider effect path — unchanged |
+
+**Provider sourcing decision (operator must ratify one branch):**
+
+| Branch | When | Owner | Evidence |
+|--------|------|-------|----------|
+| **A — Operator-supplied adapter** | Vendor or internal service already exposes conforming integration | Operator integration owner | Descriptor digest from live `discover()` on qual host; contract tests against `ExternalWorkIntegration` |
+| **B — New platform adapter** | No acceptable operator-owned implementation | **Platform / agents** (Tier-2) — **separate authorized child task** | New adapter module + composition wiring only through existing injection points; **not** in this task |
+
+**Do not** select a provider by interface similarity alone; pins must match **returned** descriptor identity.
+
+**Required contract tests (post-adapter, pre-strict-serve):** existing modules `tests/qualification/prod_q/test_prod_q_r1_strict_external_work_provider_qualification_config.py`, `tests/unit/applications/governed_contractor/test_prod_q_r1_r7_q_r3_ac3_provenance_and_capabilities.py`, Package B strict wiring gate — replay @ provisioning SHA after injection.
+
+**External dependencies (operator disclosure):** vendor API endpoint(s), egress allowlist (charter §C), spend/credentials for vendor — **declared in child provisioning task**, not here.
+
+**Architecture decision points:** Using `discover()` output as CONFIGURED adoption identity without contract change remains **out of scope** (TRACE-X C1). Shadow provider registry or runtime reflection-based probing → **`STOP — ARCHITECTURE DECISION REQUIRED`**.
+
+### 15.4 Recommended OP-03 credentials issuance model
+
+**Target profile (qualification, unchanged):**
+
+| Setting | Value |
+|---------|--------|
+| Tenant | `qual-intergrax-gca` |
+| `GOVERNED_CONTRACTOR_BACKEND_ENV` | `prod` |
+| `GOVERNED_CONTRACTOR_IDENTITY_SOURCE` | `context_only` |
+| `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED` | **false** / unset |
+| Injection | Existing gitignored `intergrax-gca-docker-local-qualification.env` (compose env_file) — **no secrets in Git** |
+
+| Topic | Proposed model |
+|-------|----------------|
+| **Issuer / owner** | Operator security / qualification authority (named role in ratification) — **not** platform auto-issuance |
+| **Principal binding** | API key map entries with `tenant_id` = `qual-intergrax-gca`; align SERVICE principal `gca-qual-strict-service` (OP-01) in governance context |
+| **Issuance & transfer** | Out-of-band secret store → one-time secure transfer to operator workstation → populate `GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON` in gitignored env only |
+| **Storage** | Host-local gitignored env + qual Docker secret injection path; access restricted to qual operators |
+| **Rotation** | Operator-triggered re-issue; update env hash manifest in evidence |
+| **Revocation** | Remove key from issuer + delete env entry; restart strict session if exposed |
+| **Teardown** | Revoke keys; `docker compose … down -v` on isolated qual project per RUNBOOK; wipe attested artifact copies per charter §O.4 |
+| **Evidence** | Env variable **name** list + cryptographic **hash** of values (or issuer attestation id) — **never** secret values in docs/logs |
+
+**No issuance in this task.**
+
+### 15.5 Canonical owners and interfaces (unchanged @ HEAD)
+
+| # | Surface | Owner / entry |
+|---|---------|---------------|
+| 1 | Governance | `load_package_b_operator_production_control_plane_governance_from_env` |
+| 2 | Trusted roots + bundle resolve | `VenvBundleColocatedRuntimeDeploymentAdapter` + `resolve_production_artifact_root` |
+| 3 | GCA settings | `GovernedContractorBackendSettings.from_env` |
+| 4 | External work runtime | `build_governed_external_work_production_runtime` |
+| 5 | Strict provider pin | `resolve_strict_external_work_provider_capabilities` |
+| 6 | Qual overlay | `docker-compose-local-qualification/` |
+
+### 15.6 Inputs required before provisioning (gate)
+
+| ID | Input | Ratified in |
+|----|-------|-------------|
+| I1 | OP-01 bundle + tenant-wide authority (existing §3.4) | Done (config); host publication pending |
+| I2 | OP-02: build SHA, `runtime_revision_id`, `file://` path, digest, lock record, attestation | Operator sign-off on §15.2 |
+| I3 | OP-03 provider: implementation ref + `discover()`-derived ID/digest pins | Operator sign-off on §15.3 branch A or B |
+| I4 | OP-03 credentials: issuer name + issued key handles (hashes only in evidence) | Operator sign-off on §15.4 |
+| I5 | Separate **A6** / **A5** authorization | Charter §O.6–O.7 |
+
+### 15.7 Security and provenance
+
+- Artifact integrity: directory digest + trusted parent roots only; no `test://` in strict profile.
+- Provider authenticity: strict env pins match `discover()` descriptor; no LAB fake.
+- Secret isolation: qualification `.env` gitignored; fail-closed prod settings without keys.
+- Traceability: manifest rows bind SHA, revision id, digest, attestation id — redacted session layout per §14.
+
+### 15.8 Enterprise invariant audit (proposal scope @ `893619d…`)
+
+| Invariant | OP-02 proposal | OP-03 proposal |
+|-----------|----------------|----------------|
+| Contracts over implementations | Uses `VENV_BUNDLE` + existing resolvers | Uses `ExternalWorkIntegration` Protocol |
+| Layer boundaries | Build outside AD coordinator | Adapter in agents/Tier-2 or operator supply; Apps composition only |
+| Single semantic owner | AD artifact semantics; Apps consumption | Integration contract in `intergrax/`; impl replaceable |
+| Single composition owner | Existing strict serve + profile v1 loader | `compose_governed_contractor_host_runtime` |
+| Fail-closed / no bypass | `allow_qualification_locators=false` preserved | Prod without keys / missing pins rejected |
+| Governance ≠ execution | N/A (artifact lane) | OP-01 bundle vs provider effect |
+| Proposal ≠ permission | This §15 | This §15 |
+
+**No deviation requiring immediate ADR change** if operator accepts §15.2–15.4 as stated.
+
+### 15.9 Operator approval matrix
+
+| Decision | Options | Default recommendation | Blocks until |
+|----------|---------|----------------------|--------------|
+| D-OP02-1 | Accept external CI/build + DEC-06 handoff | **Accept** | I2 delivered |
+| D-OP02-2 | Trusted root paths for qual host | Use §4 / compose approved roots | Attestation recorded |
+| D-OP03-1 | Provider branch A vs B | **Operator declares** (no platform default vendor) | I3 |
+| D-OP03-2 | Strict provider env pins | Values from approved `discover()` | I3 |
+| D-OP03-3 | Credential issuer identity | Operator security role named | I4 |
+| D-EXEC | A5 / strict serve / provisioning | **Deny** until I2–I5 + independent audit of provisioning commits | Charter |
+
+### 15.10 Next implementable child tasks (after operator ratification only)
+
+| Child task | Scope | Preconditions |
+|------------|-------|---------------|
+| `PROD-Q-R1-R7-Q-OP02-EXTERNAL-VENV-BUNDLE-PROVISIONING` | Execute §15.2 build handoff, populate trusted root, manifest + attestation evidence | D-OP02-1/2 accepted |
+| `PROD-Q-R1-R7-Q-OP03-PROVIDER-AND-CREDENTIALS-PROVISIONING` | Branch A wiring or authorize Branch B adapter task; issuer-run credential population; discovery pin capture | D-OP03-1/2/3 accepted |
+| `PROD-Q-R1-R7-Q-A6-RUNTIME-VERIFICATION` (existing charter) | Strict serve replay, Package B gates | I2–I4 + separate A6 authorization |
+
+### 15.11 FRZ / ECAP (decision proposal only)
+
+| Criterion | Relevance | Status |
+|-----------|-----------|--------|
+| **FRZ-PRD-01** | Independent qual vs LAB | **OPEN** — external inputs still required |
+| **FRZ-PRD-03** | Unsupported config fail-closed | **OPEN** — evidenced negatives; proposal preserves fail-closed |
+| **FRZ-PRD-08** | Production bypass count = 0 | **OPEN** — no new bypass in proposal |
+| **FRZ-SEC-04** | Auth / isolation | **OPEN** — credentials model defers to operator issuer |
+| Supporting | FRZ-OWN/BND/CTR/TYP/REG/REL/REC | No PASS claimed |
+| **ECAP-P1/P2/P4** | Assurance protocol | Proposal recorded; **no** execution evidence |
+
+**Tracked freeze debt:** DIM6, DIM17, full PROD-Q-R1-R7-Q qualification — unchanged.
+
+### 15.12 Unresolved findings (classified)
+
+| Finding | Class |
+|---------|--------|
+| No immutable `file://` bundle on qual host | **IN-SCOPE BLOCKER** (until OP-02 child) |
+| No approved external-work provider instance | **IN-SCOPE BLOCKER** (until OP-03 child) |
+| No credential issuer authorization | **IN-SCOPE BLOCKER** (until OP-03 child) |
+| Docker engine unavailable @ §14 audit | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** (re-check on provisioning host) |
+| DIM6 / DIM17 not qualified | **TRACKED FREEZE DEBT** |
 
 ---
 
