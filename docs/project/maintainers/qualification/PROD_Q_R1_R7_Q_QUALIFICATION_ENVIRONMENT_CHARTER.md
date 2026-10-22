@@ -1,17 +1,23 @@
 # PROD-Q-R1-R7-Q — Qualification Environment Charter
 
-**READY FOR OPERATOR ACCEPTANCE — NOT PROVISIONED — NOT QUALIFIED**
+**OPERATOR ACCEPTED — NOT PROVISIONED — NOT QUALIFIED**
 
 | Field | Value |
 |-------|-------|
-| **Status** | **READY FOR OPERATOR ACCEPTANCE** — completed charter **awaiting** separate operator acceptance of this document; **`OPERATOR APPROVED — PROD-Q QUALIFICATION STRATEGY A+B`** (**unchanged** — strategy only, **not** charter acceptance); charter acceptance **would not** authorize infrastructure provisioning, spend, live activation, or closure of **DIM6**, **DIM17**, **R7-Q**, **PROD-Q**, or any global **FRZ-*** row |
-| **Task** | `PROD-Q-R1-R7-Q-CHARTER-AUTHORIZATION-EVIDENCE-CORRECTIVE` (authorization metadata + §H.2 dependency corrective; preflight **§O** unchanged) |
+| **Status** | **OPERATOR ACCEPTED — NOT PROVISIONED — NOT QUALIFIED** — operator **accepted** this charter @ audited baseline; **`OPERATOR APPROVED — PROD-Q QUALIFICATION STRATEGY A+B`** remains a **separate**, earlier strategy authorization (**not** charter acceptance); acceptance **does not** authorize infrastructure provisioning, spend, live activation, operator production profile qualification, production execution, or closure of **DIM6**, **DIM17**, **R7-Q**, **PROD-Q**, or any global **FRZ-*** row |
+| **Operator decision** | **`OPERATOR ACCEPTED — PROD-Q-R1-R7-Q QUALIFICATION ENVIRONMENT CHARTER`** |
+| **Decision date** | **`2026-10-22`** |
+| **Authority** | Explicit operator authorization |
+| **Audited charter baseline** | `4c7c5e5e664a3eb2e0c2be0b2cc93024578a9dfb` (independently audited Charter content @ GitHub **before** acceptance record commit) |
+| **Strategy authorization** | **`OPERATOR APPROVED — PROD-Q QUALIFICATION STRATEGY A+B`** — prior, separate decision |
+| **Acceptance boundary** | Acceptance of the Charter **does not** constitute infrastructure authorization, operator production profile qualification, production execution authorization, or global enterprise freeze acceptance |
+| **Task** | `PROD-Q-R1-R7-Q-CHARTER-OPERATOR-ACCEPTANCE-RECORD` (formal operator decision metadata + status alignment; preflight **§O** unchanged) |
 | **Parent** | **PROD-Q → PROD-Q-R1 → PROD-Q-R1-R7 → PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Program** | **PROD-Q** — **OPEN** / **BLOCKED** (children) |
 | **Branch** | `development` |
-| **START_HEAD** | `6484d8c4f9950c31ec41169b0eeaeb537d81babd` |
+| **START_HEAD** | `4c7c5e5e664a3eb2e0c2be0b2cc93024578a9dfb` |
 | **Production code delta** | **0** (documentation-only) |
-| **Disposition** | Charter **proposal** (preflight-complete); defines **minimal conditions** and **preflight** for a **future** isolated **QUALIFICATION** environment; environment **does not exist** and was **not** activated; **no** operator acceptance of this charter recorded |
+| **Disposition** | Charter **accepted** (preflight-complete @ audited baseline); defines **minimal conditions** and **preflight** for a **future** isolated **QUALIFICATION** environment; environment **does not exist**, was **not** provisioned, and was **not** activated; acceptance is **document governance only** — not qualification execution |
 
 **Canonical sources (read @ charter authoring; statuses unchanged by this document):**
 
@@ -450,8 +456,8 @@ flowchart LR
 
 | Node | Relationship |
 |------|----------------|
-| **Qualification Environment Charter** | **READY FOR OPERATOR ACCEPTANCE**; **not** provisioned; defines §A–§O + §G execution plan |
-| **Operator charter acceptance** | **Separate** from strategy **A+B**; **not** recorded @ corrective **START_HEAD** |
+| **Qualification Environment Charter** | **OPERATOR ACCEPTED — NOT PROVISIONED — NOT QUALIFIED**; defines §A–§O + §G execution plan |
+| **Operator charter acceptance** | **Recorded** — decision **`OPERATOR ACCEPTED — PROD-Q-R1-R7-Q QUALIFICATION ENVIRONMENT CHARTER`** @ **`2026-10-22`** on audited baseline `4c7c5e5e664a3eb2e0c2be0b2cc93024578a9dfb`; **separate** from strategy **A+B**; **does not** grant **A1–A9** |
 | **Provisioning + OP-01…03** | Requires **A1** + **OP** deliveries (§O.6); **not** granted by strategy **A+B** alone |
 | **QUALIFICATION environment** | Isolated host/overlay per §A–§B |
 | **Qualification evidence §G.1c** | Captured **OP-04**, B6/B17 replay @ **EXECUTION_SHA**, independent audit **G.7** |
@@ -473,7 +479,7 @@ flowchart LR
 | No `Any` on cited boundaries | Governance + settings | Static @ HEAD | **PASS** | — |
 | No bypass / alternate authority | Reference policy forbidden in Package B loader | B6-03, A01 tests | **PASS** (lab) | Operator path unproven |
 | Governance ≠ Execution | DENY before prepare | B6-02 | **PASS** (lab) | B6-01 operator OPEN |
-| Proposal ≠ permission ≠ execution | Charter **ready for acceptance** ≠ accepted ≠ provision ≠ activation | Header status | **PASS** | Infrastructure **OPEN**; charter acceptance **OPEN** |
+| Proposal ≠ permission ≠ execution | Charter **accepted** (document) ≠ provision ≠ activation ≠ qualification PASS | Header status | **PASS** | Infrastructure **OPEN**; acceptance ≠ qual env existence |
 | Fail-closed | Loaders + settings | B17-*, B6-03 | **PASS** (lab) | Live profile OPEN |
 | Tenant / secret isolation | §B requirements | — | **NOT PROVEN** | No qualification env |
 | Observability ≠ execution truth | §F | — | **PASS** (design) | OP-04 captured only post-activation |
@@ -537,13 +543,27 @@ flowchart LR
 
 ## M. Roadmap status recommendation
 
+### M.1 Formal operator decision record
+
+| Field | Value |
+|-------|-------|
+| **Decision** | **`OPERATOR ACCEPTED — PROD-Q-R1-R7-Q QUALIFICATION ENVIRONMENT CHARTER`** |
+| **Decision date** | **`2026-10-22`** |
+| **Authority** | Explicit operator authorization |
+| **Independently audited Charter baseline** | `4c7c5e5e664a3eb2e0c2be0b2cc93024578a9dfb` |
+| **Strategy authorization** | **`OPERATOR APPROVED — PROD-Q QUALIFICATION STRATEGY A+B`** — prior, separate decision |
+| **Status** | **OPERATOR ACCEPTED — NOT PROVISIONED — NOT QUALIFIED** |
+| **Limitation** | Acceptance of the Charter **does not** constitute infrastructure authorization, operator production profile qualification, production execution authorization, or global enterprise freeze acceptance |
+
+### M.2 Recommended roadmap statuses
+
 | Item | Recommended status |
 |------|-------------------|
 | **PROD-Q-R1-R7-Q** | **IN PROGRESS** / **NOT QUALIFIED** |
 | **DIM6 / DIM17** | **NOT QUALIFIED** |
 | **R7-Q** | **BLOCKED** (operator profiles + rollup) |
 | **PROD-Q** | **OPEN** / **BLOCKED** |
-| **This charter** | **READY FOR OPERATOR ACCEPTANCE — NOT PROVISIONED — NOT QUALIFIED** (separate charter acceptance + infrastructure + activation per §G / §O) |
+| **This charter** | **OPERATOR ACCEPTED — NOT PROVISIONED — NOT QUALIFIED** (infrastructure + **OP-01…03** + activation per §G / §O remain **separate** approvals **A1–A9**) |
 | **Evidence classes** | **LAB** ≠ qual-env acceptance; **QUALIFICATION** ≠ **PRODUCTION**; global **FRZ** **OPEN** until checklist closure |
 | **Canonical roadmap / FRZ / ECAP** | **Unchanged** (strategy A) |
 
@@ -648,7 +668,7 @@ Execute **only** after **A1** and **OP-01…03** delivery; **single** bounded do
 | `git diff --check` | Run @ commit time |
 | Document internal consistency | §I; OP-04 §F/§G; evidence class §A/§J; graphs §H.1/§H.2a/§H.2b; preflight §O; Package B / §C reconciliation unchanged |
 
-**Cursor disposition:** **READY FOR AUDIT** (charter **ready for operator acceptance** + preflight **§O**; **not** provisioned; **no** charter acceptance claimed).
+**Cursor disposition:** **READY FOR AUDIT** (operator acceptance **recorded** in metadata + **§M.1**; preflight **§O** unchanged; **not** provisioned; **not** qualified; independent GitHub SHA audit required before treating acceptance record as closed).
 
 ---
 
