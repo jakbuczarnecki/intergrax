@@ -334,3 +334,112 @@ uv run pytest -p no:xdist \
 - **QUAL-X-P1-R1:** **READY FOR AUDIT** (not self-closed)
 - **QUAL-X-P1:** remain **OPEN** pending P1-R1 audit + prior P1 audit
 - **Next canonical task after P1-R1 audit:** **QUAL-X-P2** (unchanged)
+
+---
+
+## QUAL-X-P2 execution record — Governance / security / tenant negative gate coverage
+
+**START_HEAD:** `9b9a85a98a3817744f542341c7a4fa68b15bbca3`
+
+**Disposition:** **READY FOR AUDIT — QUAL-X-P2 GOVERNANCE SECURITY TENANT NEGATIVE COVERAGE** (P2 only; **QUAL-X** parent **OPEN**; **FRZ-REG-*** **OPEN**)
+
+**Scope:** Q04, Q08; Q05 regression-linkage only (governance evidence ↔ execution admission deny / zero intake).
+
+**Production delta (P2):** `0` — tests + qualification SSOT only.
+
+### Closed-world ingress matrix (G1–G8)
+
+| ID | Canonical owner | Public contract (representative) | Sanctioned caller | Authority boundary | Effect boundary | Evidence strength @ P2 | Residual gap |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **G1** | Runtime execution policy admission + **CTRL-X** tenant scope | `runtime_execution_policy_admission` | Root execution authority composition; application security middleware | Request identity validation; tenant-scoped defense hooks | No launch / no protected hook on invalid identity | **DIRECT** (P2 + CTRL-X + inspect linkage) | PROD-Q HTTP ingress negatives = scoped **HISTORICAL** |
+| **G2** | **GOV-X2** / GR-2 governance resolution | `PolicyDecision` | Governance composition; collaborative authority coordinator | Policy ∧ authority conjunction | DENY / REQUIRE_HUMAN → zero protected effects | **DIRECT** (existing GR-2 unit proofs linked) | GR-10 strategy qual not replayed |
+| **G3** | GR-2 / GR-3 execution admission | `root_execution_launch` | `DefaultRootExecutionLauncher` + canonical intake | `RootExecutionAuthorityAdmissionPort` | Intake `calls == 0` after DENY | **DIRECT** (P2 Q05 + GR-2/GR-3 proofs) | Full GOV-X2 GX2 matrix = **HISTORICAL** |
+| **G4** | Tools qualified invocation | `qualified_tool_invocation` | `DefaultQualifiedToolInvocationResolver` | `require_non_empty_text` + typed material | No `ExecutionBoundCatalogToolInvokeRequest` on invalid input | **DIRECT** (new resolver negatives) | Physical ToolRuntime dispatch = scoped marketplace/AW qual |
+| **G5** | Existing capability configuration realization | configuration realization port | `ExistingCapabilityConfigurationRealizationFacade` | Authorization port + strategy guards | `resolver.calls == 0` / `realize_calls == 0` on DENY | **DIRECT** (cert + TENANT-X-R2 linkage) | PROD-Q Dimension **B** live providers **OPEN** |
+| **G6** | Background execution + **TENANT-X-R4** | `background_execution.bootstrap` | `bootstrap_background_execution` | `BackgroundExecutionTenantMismatchError` | No cross-tenant async transport persistence | **DIRECT** (R4 + W4-R1 linkage) | Full async lifecycle = **TOOL-LIFE-X** deferred |
+| **G7** | Control-plane mutation approval / authorization | `control_plane_mutation` | Runtime governance CPMA ports | Approver identity + evidence binding | Mutation not applied on DENY | **DIRECT** (CPMA unit proofs linked) | Full CTRL-X catalog = **HISTORICAL** |
+| **G8** | **INSPECT-01** / **TENANT-X** | `governance_audit_read`; runtime inspection | `FederatedRuntimeInspectionReadService` | `GovernanceAuditReadTenantBoundaryError` | No foreign audit rows on cross-tenant probe | **DIRECT** (inspect + FINAL matrix linkage) | TENANT-X FINAL @ `5ccb72fc…` scope not extended |
+
+Authoritative proof node registry: `tests/qualification/qual_x/_p2_ingress_catalog.py` (`QUAL_X_P2_INGRESS_CATALOG`).
+
+### Proven false-PASS weaknesses remediated (P2)
+
+| ID | Weakness | Correction | Regression / adversarial |
+| --- | --- | --- | --- |
+| **P2-W1** | G4 qualified tool path had only positive resolver mapping tests — empty/whitespace `tenant_id` could regress without failing a qualification gate | Parametric + contract negatives on `DefaultQualifiedToolInvocationResolver` and `QualifiedToolInvocationMaterialRequest` | `test_resolve_rejects_blank_tenant_before_catalog_request[*]`; `test_qualified_material_request_rejects_blank_tenant_at_contract` |
+| **P2-W2** | Q04/Q08 lacked a current-HEAD cross-ingress negative regression catalog — stage suites strong in isolation but not collectably linked | `QUAL_X_P2_INGRESS_CATALOG` + collectability gate over all linked proof `node_id`s | `test_qual_x_p2_all_proof_pytest_node_ids_are_collectable` |
+| **P2-W3** | Q05 governance ↔ lifecycle linkage not explicitly regression-locked at sanctioned root launcher ingress | Behavioral proof: runtime policy **DENY** → launch **DENIED** → intake never dispatched | `test_qual_x_p2_q05_policy_deny_blocks_intake_without_physical_dispatch` |
+
+### Changed files
+
+- `tests/qualification/qual_x/__init__.py` (new)
+- `tests/qualification/qual_x/_p2_ingress_catalog.py` (new)
+- `tests/qualification/qual_x/test_qual_x_p2_negative_ingress_matrix.py` (new)
+- `tests/unit/tools/test_qualified_tool_invocation_resolver.py`
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record)
+
+### Focused pytest (P2 batch)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/qual_x/test_qual_x_p2_negative_ingress_matrix.py \
+  tests/unit/tools/test_qualified_tool_invocation_resolver.py
+```
+
+**Result @ P2 worktree:** `14 passed`, `0 failed` (includes collect-only integrity over full proof registry).
+
+`git diff --check`: clean.
+
+### Before / after negative coverage (summary)
+
+| Area | Before @ START_HEAD | After P2 |
+| --- | --- | --- |
+| Cross-ingress G1–G8 regression map | P0 inventory only | Collectable proof registry + integrity gate |
+| G4 tool mapping ingress | Positive-path unit tests only | Fail-closed negatives before catalog request construction |
+| Q05 policy deny ↔ intake | Covered in GR-2-R3 unit module only | Explicit QUAL-X regression linkage at launcher ingress |
+| TENANT-X / GOV-X2 / CTRL-X historical proofs | **HISTORICAL** | Linked as supporting evidence; scope unchanged |
+
+### Selected no-effect proofs (critical DENY)
+
+| Case | Ingress | Proof |
+| --- | --- | --- |
+| Runtime policy **DENY** | G3 / Q05 | `intake.calls == 0` after `RootExecutionLaunchDisposition.DENIED` |
+| Blank `tenant_id` on resolver | G4 | `ValueError` before `ExecutionBoundCatalogToolInvokeRequest` exists |
+| Configuration authorization **DENY** | G5 | Linked `test_cert_a02_authorization_deny_zero_downstream` (`resolver.calls == 0`) |
+
+### FRZ evidence contribution (scoped — no PASS promotion)
+
+| Criterion | P2 contribution |
+| --- | --- |
+| **FRZ-REG-03** | Current-HEAD negative regression catalog + new G4/Q05 behavioral proofs |
+| **FRZ-SEC-*** / **FRZ-TEN-*** / **FRZ-GOV-*** | Regression linkage to existing stage-owned negatives; semantics unchanged |
+| **FRZ-EXE-*** | Q05 launcher deny / zero intake linkage only |
+| **FRZ-BND-*** / **FRZ-CTR-*** / **FRZ-TYP-*** | Unchanged — **P1** evidence stands |
+
+### Q05 lifecycle linkage (inspection only)
+
+| Semantic | P2 disposition |
+| --- | --- |
+| Cancellation / timeout / retry / duplicate effect / unknown outcome | Existing harness + AW qual evidence **HISTORICAL**; not broadened in P2 |
+| Governance evidence on admission **DENY** | **DIRECT** via Q05 launcher test |
+| **TOOL-LIFE-X** | Not started — uncovered lifecycle semantics recorded as **TRACKED FREEZE DEBT** |
+
+### Remaining gaps (P2 classification)
+
+| Tag | Item |
+| --- | --- |
+| **TRACKED FREEZE DEBT** | Global **FRZ-REG-10** freeze suite (**QUAL-X-P5**); platform-wide adversarial rollup beyond linked registry |
+| **TRACKED FREEZE DEBT** | **TOOL-LIFE-X** whole-platform tool lifecycle qual |
+| **TRACKED FREEZE DEBT** | CTRL-X security baseline 15 failing nodes (**PRE-EXISTING TEST DEBT** matrix) |
+| **TRACKED FREEZE DEBT** | EBH2A-D-076 / EBH2A-D-140 (from P1-R1) |
+| **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `R1-SQLITE-ENV-01` (unchanged) |
+| **IN-SCOPE BLOCKER** | Independent exact-SHA audit of P2 commit on `origin/development` |
+
+### Explicit non-claims
+
+- **QUAL-X** parent not **CLOSED**
+- **FRZ-REG-*** platform **PASS** not awarded
+- **TENANT-X** / **GOV-X2** historical closures not re-opened or scope-extended
+- No full cross-platform pytest replay
+
+**Next mandatory child after independent P2 acceptance:** **QUAL-X-P3** (lifecycle / recovery / evidence regression reliability — Q06, Q11).
