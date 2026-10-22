@@ -1,6 +1,6 @@
 # PROD-Q — Platform Production Qualification
 
-**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q-P2** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** — **OPERATOR B6** (2026-10-21; evidence baseline `202764bc328465799ea694c0dd6430e3d8ba6c4e`; reconciliation `2e95dd17ab8487848b1b311700e780f8d0c2bca4` — §PROD-Q-P2 / §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub) · **PROD-Q-P3** = **READY FOR AUDIT** @ implementation `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8` (**APP-HOST-8B** degraded readiness projection) — §PROD-Q-P3 (2026-10-22; **production delta = 0**; ledger **READY FOR OPERATOR B6 SCOPED ACCEPTANCE**; **not** **CLOSED**) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1` **OPEN**; **PROD-Q-P2** **CLOSED**; **PROD-Q-P3** **READY FOR AUDIT** / **OPEN**) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0/P2/P3 reconciliation** · P0/P2 closure-records **READY FOR INDEPENDENT AUDIT** on GitHub
+**Status:** **PROD-Q-P0** @ `20ce563d383312bd53c72167cb228623dfbb8881` = **REJECTED** (preserved) · **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — **OPERATOR B6** (2026-10-21 @ execution `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`; mechanical lock `0046075484cd85da9a220f6f537c48ad94dd8078` preserved) · **PROD-Q-P0-R1-R1-R1-R1-R1-R1-R1-R1** corrective lineage preserved (historical **REJECTED** rows unchanged) · typing/subprocess/evidence-integrity corrective @ `ddc8704457192aafffdd32ca8d65e258db2679e0` = lineage evidence only · **PROD-Q-P2** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** — **OPERATOR B6** (2026-10-21; evidence baseline `202764bc328465799ea694c0dd6430e3d8ba6c4e`; reconciliation `2e95dd17ab8487848b1b311700e780f8d0c2bca4` — §PROD-Q-P2 / §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub) · **PROD-Q-P3** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P3** — **OPERATOR B6** (2026-10-22; initial qual `e17c6aec6f53654153411614b18577288254dfdf`; APP-HOST-8B `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8`; reconciliation `19a3b9a05d2c420817a82143c7a31cf2eebf7fc4` — §PROD-Q-P3 / §OPERATOR B6 — CLOSED SCOPED PROD-Q-P3; closure-record **READY FOR INDEPENDENT AUDIT** on GitHub) · **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1` **OPEN** / **BLOCKED**; `PROD-Q-P1` **OPEN**; **PROD-Q-P0** / **P2** / **P3** **CLOSED SCOPED**) · **QUAL-X** = **PLANNED** · **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED** · **no global FRZ-PRD/SEC/REL PASS promoted by P0/P2/P3 closure** · P0/P2/P3 closure-records **READY FOR INDEPENDENT AUDIT** on GitHub
 
 **P0 mechanical evidence lock (SSOT constant, not superseded):** `0046075484cd85da9a220f6f537c48ad94dd8078` · gate `prod_q_p0_r1_r1_r1_r1_r1_r1_r1_ready_for_audit()` · `PROD_Q_P0_MECHANICAL_EVIDENCE_LOCK_SHA` in `tests/qualification/prod_q/_p0_certification.py` · **production delta = 0**
 
@@ -8,7 +8,9 @@
 
 **Branch:** `development`
 
-**START_HEAD (OPERATOR B6 formal closure record):** `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`
+**START_HEAD (OPERATOR B6 formal closure record — PROD-Q-P0):** `8b3db6763e4b5ee1d6b3815c4b7f601152169afe`
+
+**START_HEAD (OPERATOR B6 formal closure record — PROD-Q-P3):** `19a3b9a05d2c420817a82143c7a31cf2eebf7fc4`
 
 **START_HEAD (prior evidence-ledger alignment):** `79fc6c79328adbfd4d44e6a5edc61782f9956af4`
 
@@ -31,7 +33,7 @@
 
 **Independent code-review limitations:** Exact-SHA audit must target **GitHub `development` code**, not this Cursor report ([`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md)). Local documentation correction is **separate** from parent **PROD-Q** certification. Rejected corrective SHAs in the roadmap table remain **REJECTED**; only explicitly attributed SHAs above are **READY FOR AUDIT**.
 
-**Formal PROD-Q-P0 disposition:** **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — see §OPERATOR B6. Independent exact-SHA GitHub audit of closure-record commit remains mandatory before treating Cursor disposition as final certification authority. **PROD-Q** parent unblock still requires mandatory children **PROD-Q-R1**, **PROD-Q-P1**, **PROD-Q-P3** (**PROD-Q-P2** **CLOSED** — §OPERATOR B6 — CLOSED SCOPED PROD-Q-P2).
+**Formal PROD-Q-P0 disposition:** **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0** — see §OPERATOR B6. Independent exact-SHA GitHub audit of closure-record commit remains mandatory before treating Cursor disposition as final certification authority. **PROD-Q** parent unblock still requires mandatory children **PROD-Q-R1**, **PROD-Q-P1** (**PROD-Q-P2** / **PROD-Q-P3** **CLOSED SCOPED** — §OPERATOR B6).
 
 ## OPERATOR B6 — CLOSED SCOPED PROD-Q-P0
 
@@ -107,13 +109,48 @@
 
 **Independent audit:** exact-SHA review on GitHub remains mandatory; this Cursor disposition is **READY FOR AUDIT**, not final certification authority.
 
+## OPERATOR B6 — CLOSED SCOPED PROD-Q-P3
+
+| Field | Value |
+| --- | --- |
+| **Authority** | Explicit operator authorization `OPERATOR B6 — CLOSED SCOPED PROD-Q-P3` (2026-10-22) |
+| **P3 initial qualification** | `e17c6aec6f53654153411614b18577288254dfdf` |
+| **APP-HOST-8B implementation** | `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8` |
+| **P3 final reconciliation** | `19a3b9a05d2c420817a82143c7a31cf2eebf7fc4` |
+| **Branch** | `development` |
+| **pytest @ closure record** | **0** (documentation-only disposition; no new replay claimed) |
+| **production delta** | **0** |
+
+**Scoped acceptance (P3 only):** hosting health/liveness/readiness; LKW hosted readiness and HTTP degraded-state projection (**APP-HOST-8B**); startup/terminal visibility on qualified paths; shutdown/resource cleanup within existing evidence scope; local execution capacity admission (`ExecutionCapacityAdmissionPort`); documented recovery responsibilities (D3/runbooks — procedures explicit, not live DR proof); diagnostics and evidence continuity on paths with real evidence (engine events; HOST-DIAG-3 when wired).
+
+**Applicable FRZ (scoped evidence contribution only; global checklist rows unchanged):** **FRZ-PRD-04**, **FRZ-PRD-05**, **FRZ-PRD-06**, **FRZ-PRD-09**, **FRZ-PRD-10**, **FRZ-PRD-11**, **FRZ-PRD-12**; supporting **FRZ-BND-***, **FRZ-CTR-***, **FRZ-TYP-***, **FRZ-REG-***, **FRZ-REL-***, **FRZ-REC-***, **FRZ-TRC-*** within operability surfaces — **new global FRZ PASS = 0**.
+
+**Excluded — NOT PROVEN (no PASS claimed):**
+
+| Concern | Rationale |
+| --- | --- |
+| Unqualified product entrypoints | P3 closed-world surfaces only (P0 roots) |
+| Live DR / disaster recovery execution | **TRACKED FREEZE DEBT** — procedures documented; proof deferred to parent **PROD-Q** |
+| Non-hosted LKW direct Uvicorn | `degraded=null` on snapshot/JSON — **unknown** degradation state, not proof of full health |
+| Default HOST-DIAG-3 on all entrypoints | **P3-DEBT-01** — **TRACKED FREEZE DEBT** |
+| Integrated overload / capacity E2E | **P3-MATRIX-02** — **EVIDENCE REQUIRED** @ parent gate |
+| Full-app `test_lkw_fastapi_lifecycle.py` strict profile | **P3-ENV-01** — **ENVIRONMENT/TEST ISSUE** → **PROD-Q-P1** |
+
+**Tracked obligations (remain OPEN; do not block scoped P3 B6):** **P3-DEBT-01**, **P3-DEBT-03**; **P3-MATRIX-01..05** per matrix disposition table in §PROD-Q-P3; **P3-DEBT-02** **RESOLVED** @ `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8`.
+
+**Does not:** close **PROD-Q** parent; auto-promote **PROD-Q-R1** / **PROD-Q-P1**; promote global **FRZ-PRD** / **FRZ-SEC** / **FRZ-REL** **PASS**; enter **QUAL-X**; certify unqualified entrypoints or live DR.
+
+**Independent audit:** exact-SHA review on GitHub remains mandatory; closure-record commit **READY FOR INDEPENDENT AUDIT** — Cursor disposition is not final certification authority.
+
 ## PROD-Q-P3 — production operability qualification (platform child)
 
 | Field | Value |
 | --- | --- |
 | **Task** | `PROD-Q-P3-PRODUCTION-OPERABILITY-QUALIFICATION` |
-| **Disposition** | **READY FOR AUDIT** — **not** **CLOSED** |
-| **START_HEAD (reconciliation)** | `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8` (= `origin/development` @ APP-HOST-8B acceptance) |
+| **Disposition** | **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P3** — **OPERATOR B6** (2026-10-22); formal record §OPERATOR B6 — CLOSED SCOPED PROD-Q-P3; closure-record commit **READY FOR INDEPENDENT AUDIT** on GitHub |
+| **P3 initial qualification** | `e17c6aec6f53654153411614b18577288254dfdf` |
+| **START_HEAD (reconciliation)** | `19a3b9a05d2c420817a82143c7a31cf2eebf7fc4` |
+| **APP-HOST-8B implementation** | `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8` |
 | **Implementation evidence (APP-HOST-8B)** | `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8` — `LocalWorkspaceReadinessSnapshot.degraded` / `degraded_component_ids`; hosted bridge + HTTP `/v1/local_workspace/readiness` projection (**`ready`** / **`accepts_new_work`** semantics **unchanged**) |
 | **Prior P3 ledger baseline (historical)** | `23068fbaf915aadb30890f4187f9b41581ac25cc` — superseded for degraded-operation debt only |
 | **Branch** | `development` |
@@ -204,11 +241,11 @@ Production roots and call chains are those already locked under **PROD-Q-P0** (`
 
 | Item | Recommendation |
 | --- | --- |
-| **PROD-Q-P3 ledger verdict** | **READY FOR OPERATOR B6 SCOPED ACCEPTANCE** — scoped operability requirements (including APP-HOST-8B degraded projection) covered @ implementation `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8`; **not** **CLOSED** until operator B6 |
-| **PROD-Q-P3 audit posture** | **READY FOR AUDIT** — independent exact-SHA GitHub review of this ledger section + cited code/tests |
-| **PROD-Q parent** | Remains **BLOCKED** until **PROD-Q-R1**, **PROD-Q-P1** close and operator accepts P3 |
-| **IN-SCOPE BLOCKER** | **None** — remaining **PARTIAL** / **TRACKED FREEZE DEBT** / **ENVIRONMENT** rows are **out of scoped P3 acceptance** (parent **PROD-Q** / **PROD-Q-P1** / global **FRZ-PRD**) |
-| **Next mandatory roadmap work** | **PROD-Q-R1** (startup/dependency corrective) and **PROD-Q-P1** (external provider qualification) remain gating parent **PROD-Q**; **PROD-Q-P3** does not substitute |
+| **PROD-Q-P3 ledger verdict** | **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P3** — **OPERATOR B6** (2026-10-22); evidence lineage `e17c6aec…` / `aacf7f0e…` / `19a3b9a0…`; §OPERATOR B6 — CLOSED SCOPED PROD-Q-P3 |
+| **PROD-Q-P3 audit posture** | Closure-record commit **READY FOR INDEPENDENT AUDIT** on GitHub — independent exact-SHA review of this ledger section + cited code/tests |
+| **PROD-Q parent** | Remains **BLOCKED** until **PROD-Q-R1**, **PROD-Q-P1** close — **PROD-Q-P3** **CLOSED SCOPED** does not substitute |
+| **IN-SCOPE BLOCKER** | **None** at B6 acceptance — remaining **PARTIAL** / **TRACKED FREEZE DEBT** / **ENVIRONMENT** rows are **out of scoped P3 acceptance** (parent **PROD-Q** / **PROD-Q-P1** / global **FRZ-PRD**) |
+| **Next mandatory roadmap work** | **PROD-Q-R1** (startup/dependency corrective) and **PROD-Q-P1** (external provider qualification) remain gating parent **PROD-Q** |
 
 **Does not:** close **PROD-Q** parent; promote global **FRZ-PRD-04..12** **PASS**; authorize **D03-A** cloud class; replay full **PROD-Q** / **TENANT-X** / GCA integrated E2E suites.
 
@@ -295,7 +332,7 @@ PROD-Q-R1 — Production Startup / Dependency Materialization Corrective (R1-SQL
 PROD-Q-R1-R7 — Production deployment adapter & lifecycle wiring (ADR-01 **R6**; **NOT CLOSED**; **D1-R6**/**D1**/**D1b** pending independent closure; **D2**/**D3** **READY FOR AUDIT**; **D4** **CLOSED / independently accepted** @ `0dd51fe…`; **next mandatory = PROD-Q-R1-R7-Q** — **NOT ENTERED**)
 PROD-Q-P1 — External sandbox provider production qualification (E2B, Modal, Daytona)
 PROD-Q-P2 — Production strict-vs-lab reachability and bypass closure (**CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P2** @ evidence `202764bc…`; reconciliation `2e95dd17…`)
-PROD-Q-P3 — Production operability surface (**READY FOR AUDIT** · ledger **READY FOR OPERATOR B6 SCOPED ACCEPTANCE** @ implementation `aacf7f0e2e077b922cbea0bc98c7d3072d017fa8` — §PROD-Q-P3; **not** **CLOSED**)
+PROD-Q-P3 — Production operability surface (**CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P3** @ B6 2026-10-22 — §PROD-Q-P3 / §OPERATOR B6 — CLOSED SCOPED PROD-Q-P3)
 ```
 
 ## PROD-Q-P0 final gate — execution evidence (historical FAIL @ `0ce711f07f54d985fc9a52c5eea2a2a2b98e8b00`)
@@ -348,7 +385,7 @@ PROD-Q-P3 — Production operability surface (**READY FOR AUDIT** · ledger **RE
 
 **Historical technical verdict (@ `79fc6c79…`):** mandatory suite green — superseded by **OPERATOR B6** formal acceptance @ `8b3db676…` (§OPERATOR B6). **PROD-Q-P0** = **CLOSED — OPERATOR ACCEPTED / SCOPED PROD-Q-P0**; parent **PROD-Q** remains **BLOCKED**. **No global `FRZ-*` PASS** from P0 closure.
 
-**Formal limitations (unchanged):** **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED**; live provider qualification remains **PROD-Q-P1**; **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1`, `PROD-Q-P3` **OPEN**; **PROD-Q-P2** **CLOSED**).
+**Formal limitations (unchanged):** **D03-A Class-B (cloud execution class)** = **NOT AUTHORIZED**; live provider qualification remains **PROD-Q-P1**; **PROD-Q** = **BLOCKED ON mandatory children** (`PROD-Q-R1`, `PROD-Q-P1` **OPEN**; **PROD-Q-P0** / **P2** / **P3** **CLOSED SCOPED**).
 
 ## Tests (mandatory)
 
