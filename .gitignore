@@ -9,6 +9,7 @@ dist/
 wheels/
 *.egg-info
 .env
+applications/governed_contractor_application/deploy/docker-compose-local-qualification/intergrax-gca-docker-local-qualification.env
 
 # Virtual environments
 .venv

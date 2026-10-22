@@ -14,7 +14,9 @@ from intergrax.contracts.capability_catalog._validation import require_non_empty
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvokeRequest,
 )
-from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
+from intergrax.contracts.tools.tool_invocation_wiring_resolution import (
+    ToolInvocationWiringResolver,
+)
 from intergrax.contracts.execution_identity import TaskId
 
 

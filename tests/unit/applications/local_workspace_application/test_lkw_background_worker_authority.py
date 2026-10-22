@@ -67,6 +67,23 @@ def _settings(monkeypatch: pytest.MonkeyPatch) -> LocalWorkspaceBackendSettings:
     return LocalWorkspaceBackendSettings.from_env()
 
 
+def _production_worker_message_bus_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PROD worker main path: bus on, durable auto store, indexed deps satisfied except Mongo."""
+    monkeypatch.setenv("LOCAL_WORKSPACE_BACKEND_ENV", "prod")
+    monkeypatch.setenv("LOCAL_WORKSPACE_DATA_HOME", "/var/lib/intergrax/lkw")
+    monkeypatch.setenv("LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND", "auto")
+    monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS", "true")
+    monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS", "true")
+    monkeypatch.setenv("INTERGRAX_QDRANT_URL", "http://qdrant:6333")
+    monkeypatch.setenv(
+        "LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY",
+        "prod-worker-strict-admission-regression-key",
+    )
+    monkeypatch.setenv("LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_TENANT_ID", "tenant-prod-gate")
+    monkeypatch.setenv("LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_USER_ID", "user-prod-gate")
+    monkeypatch.delenv("INTERGRAX_MONGODB_URI", raising=False)
+
+
 def _activated_projection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[object, MaterializedRegistryProjection]:
@@ -227,7 +244,7 @@ def test_bootstrap_failure_gates_worker_creation(
     _settings(monkeypatch)
     with (
         patch(
-            "local_workspace_application.host.background_worker_main.bootstrap_production_registry_projection",
+            "local_workspace_application.host.background_worker_main.activate_local_workspace_reference_production_authority",
             side_effect=HarnessHostRegistryAuthorityError("projection bootstrap failed"),
         ),
         patch(
@@ -237,6 +254,61 @@ def test_bootstrap_failure_gates_worker_creation(
         with pytest.raises(HarnessHostRegistryAuthorityError, match="projection bootstrap failed"):
             main()
     create_worker.assert_not_called()
+
+
+def test_background_worker_main_prod_rejects_before_production_authority_without_mongodb(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _production_worker_message_bus_env(monkeypatch)
+    with (
+        patch(
+            "local_workspace_application.host.background_worker_main.activate_local_workspace_reference_production_authority",
+        ) as activate_authority,
+        patch(
+            "local_workspace_application.host.background_worker_main.resolve_lkw_runtime_document_store",
+        ) as resolve_document_store,
+        patch(
+            "local_workspace_application.host.background_worker_main.build_local_workspace_worker_bootstrap_diagnostics",
+        ) as bootstrap_diagnostics,
+        patch(
+            "local_workspace_application.host.background_worker_main._run_guarded_worker_bootstrap",
+        ) as run_worker_bootstrap,
+        patch(
+            "local_workspace_application.host.background_worker_factory.build_local_workspace_background_worker_wiring",
+        ) as build_wiring,
+        patch(
+            "local_workspace_application.host.background_worker_constructor.create_kafka_worker",
+        ) as create_worker,
+    ):
+        with pytest.raises(ValueError, match="INTERGRAX_MONGODB_URI"):
+            main()
+    activate_authority.assert_not_called()
+    resolve_document_store.assert_not_called()
+    bootstrap_diagnostics.assert_not_called()
+    run_worker_bootstrap.assert_not_called()
+    build_wiring.assert_not_called()
+    create_worker.assert_not_called()
+
+
+def test_background_worker_main_runtime_validation_is_admission_gate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If validate_for_runtime were removed from main(), authority activation would run."""
+    _production_worker_message_bus_env(monkeypatch)
+    monkeypatch.setattr(
+        LocalWorkspaceBackendSettings,
+        "validate_for_runtime",
+        lambda _self: None,
+    )
+    contract_marker = RuntimeError("strict_admission_contract_authority_reached")
+
+    with patch(
+        "local_workspace_application.host.background_worker_main.activate_local_workspace_reference_production_authority",
+        side_effect=contract_marker,
+    ) as activate_authority:
+        with pytest.raises(RuntimeError, match="strict_admission_contract_authority_reached"):
+            main()
+    activate_authority.assert_called_once()
 
 
 def test_message_bus_disabled_returns_exit_code_one(

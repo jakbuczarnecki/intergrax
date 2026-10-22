@@ -231,6 +231,7 @@ def main() -> int:
 
     bootstrap_attempt_id = mint_bootstrap_attempt_id()
     settings = _resolve_settings(None)
+    settings.validate_for_runtime()
     environment_profile = build_local_workspace_environment_profile(settings)
     _, registry_projection = activate_local_workspace_reference_production_authority(
         settings,

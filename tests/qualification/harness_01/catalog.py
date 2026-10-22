@@ -420,6 +420,7 @@ HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES: frozenset[str] = froz
 
 HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST: frozenset[str] = frozenset(
     {
+        "intergrax/applications/_shared/declarative_tool_wiring.py",
         "intergrax/contracts/execution/crash_injection.py",
         "intergrax/runtime/attestation/boundary_emitter.py",
         "intergrax/runtime/agent_governance/ports.py",

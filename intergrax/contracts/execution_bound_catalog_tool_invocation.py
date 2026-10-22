@@ -9,8 +9,10 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
-from intergrax.tools.execution_models import ToolExecutionResult
-from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
+from intergrax.contracts.tool_execution_outcome import ToolExecutionResult
+from intergrax.contracts.tools.tool_invocation_wiring_resolution import (
+    ToolInvocationWiringResolver,
+)
 
 
 @dataclass(frozen=True, slots=True)

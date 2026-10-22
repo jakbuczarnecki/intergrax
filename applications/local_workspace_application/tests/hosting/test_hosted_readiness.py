@@ -168,17 +168,20 @@ def _set_health(
     shutdown_requested: bool = False,
     health_evaluation_failed: bool = False,
     blocking_component_ids: tuple[str, ...] = (),
+    degraded: bool = False,
+    degraded_component_ids: tuple[str, ...] = (),
     component_snapshots: tuple[HostedApplicationComponentHealth, ...] = (),
 ) -> None:
     service.snapshot_value = HostedApplicationHealthSnapshot(
         live=True,
         ready=ready,
-        degraded=False,
+        degraded=degraded,
         accepting_new_work=accepting_new_work,
         runtime_ready=runtime_ready,
         instance_ownership_valid=instance_ownership_valid,
         shutdown_requested=shutdown_requested,
         blocking_component_ids=blocking_component_ids,
+        degraded_component_ids=degraded_component_ids,
         component_snapshots=component_snapshots,
         health_evaluation_failed=health_evaluation_failed,
         last_evaluated_at=datetime.now(timezone.utc),
@@ -237,6 +240,50 @@ def test_hosted_readiness_maps_lifecycle_states(
     assert snapshot.accepts_new_work is False
     assert snapshot.detail == expected_detail
     assert snapshot.rejection_error_id == expected_error
+
+
+def test_hosted_readiness_projects_degraded_from_health() -> None:
+    lifecycle = _MutableLifecycleProvider()
+    readiness = _MutableReadinessService()
+    _set_lifecycle(
+        lifecycle,
+        state=HostedApplicationLifecycleState.READY,
+        accepting_new_work=True,
+    )
+    _set_health(
+        readiness,
+        ready=True,
+        accepting_new_work=True,
+        degraded=True,
+        degraded_component_ids=("slack", "comp_b"),
+    )
+    bridge = _HostedLocalWorkspaceReadiness(_make_context(lifecycle, readiness))
+    snapshot = bridge.readiness_snapshot()
+    assert snapshot.degraded is True
+    assert snapshot.degraded_component_ids == ("comp_b", "slack")
+
+
+def test_hosted_readiness_ready_and_degraded_can_coexist() -> None:
+    lifecycle = _MutableLifecycleProvider()
+    readiness = _MutableReadinessService()
+    _set_lifecycle(
+        lifecycle,
+        state=HostedApplicationLifecycleState.READY,
+        accepting_new_work=True,
+    )
+    _set_health(
+        readiness,
+        ready=True,
+        accepting_new_work=True,
+        degraded=True,
+        degraded_component_ids=("optional_comp",),
+    )
+    bridge = _HostedLocalWorkspaceReadiness(_make_context(lifecycle, readiness))
+    snapshot = bridge.readiness_snapshot()
+    assert snapshot.ready is True
+    assert snapshot.accepts_new_work is True
+    assert snapshot.degraded is True
+    assert snapshot.degraded_component_ids == ("optional_comp",)
 
 
 def test_hosted_readiness_ready_accepts_work() -> None:

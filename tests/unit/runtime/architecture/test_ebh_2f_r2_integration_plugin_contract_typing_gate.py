@@ -24,6 +24,26 @@ _INTEGRATION_PROFILE = _REPO_ROOT / "intergrax" / "integrations" / "contracts" /
 _CONTRACT_METADATA = _REPO_ROOT / "intergrax" / "runtime" / "integrations" / "contract_metadata.py"
 
 
+def _call_callee_name(func: ast.AST) -> str | None:
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return None
+
+
+def _collect_reflection_dispatch_calls(source: str, *, filename: str = "<probe>") -> list[str]:
+    tree = ast.parse(source, filename=filename)
+    hits: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_callee_name(node.func)
+        if name in {"getattr", "hasattr"}:
+            hits.append(f"{node.lineno}:{name}()")
+    return hits
+
+
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig")
 
@@ -42,13 +62,25 @@ def test_integration_plugin_protocol_has_no_any_semantic_boundary() -> None:
 def test_plugin_register_has_no_contract_specs_reflection() -> None:
     source = _read(_PLUGIN_REGISTER)
     assert "CONTRACT_SPECS" not in source
-    assert "getattr(" not in source
-    assert "hasattr(" not in source
-    tree = _parse(_PLUGIN_REGISTER)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            if node.func.id in {"getattr", "hasattr"}:
-                pytest.fail("plugin_register must not use reflection for plugin semantic dispatch")
+    hits = _collect_reflection_dispatch_calls(source, filename=str(_PLUGIN_REGISTER))
+    assert hits == [], f"plugin_register reflection dispatch: {hits}"
+
+
+@pytest.mark.parametrize(
+    ("snippet", "expect_hit"),
+    [
+        ("def ok() -> None:\n    return None\n", False),
+        ("def bad() -> None:\n    getattr(x, 'y')\n", True),
+        ("def bad() -> None:\n    builtins.getattr(x, 'y')\n", True),
+        ('def ok() -> None:\n    note = "getattr(x, y)"\n', False),
+    ],
+)
+def test_plugin_register_reflection_detector_adversarial(snippet: str, expect_hit: bool) -> None:
+    hits = _collect_reflection_dispatch_calls(snippet)
+    if expect_hit:
+        assert hits
+    else:
+        assert not hits
 
 
 def test_catalog_factory_has_no_any_result_boundary() -> None:

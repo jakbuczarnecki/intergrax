@@ -25,6 +25,12 @@ from intergrax.hosting.contracts.lifecycle import (
     HostedApplicationLifecycleState,
     HostedApplicationShutdownCoordinator,
 )
+from intergrax.applications._shared.harness_registry_authority import (
+    HarnessHostRegistryAuthorityError,
+)
+from intergrax.applications._shared.production_process_composition import (
+    create_reference_production_process_composition,
+)
 from intergrax.hosting.contracts.policies import LifecyclePolicy
 from intergrax.hosting.engine.health import (
     HostedApplicationHealthSnapshot,
@@ -206,6 +212,24 @@ class _FakeServer:
                 await asyncio.sleep(0.01)
         finally:
             self.serve_finished.set()
+
+
+@pytest.mark.asyncio
+async def test_lkw_hosted_runtime_rejects_unactivated_composition_before_start() -> None:
+    """Fresh ProductionProcessComposition without AP activate must fail before serve work."""
+    composition = create_reference_production_process_composition()
+    settings = LocalWorkspaceBackendSettings()
+    context = _context_for_runtime()
+    runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
+        settings=settings,
+        bind_host="127.0.0.1",
+        bind_port=18022,
+        process_composition=composition,
+    )
+    with pytest.raises(HarnessHostRegistryAuthorityError, match="no active traffic-serving"):
+        await runtime.start(context)
+    assert runtime._serve_task is None  # noqa: SLF001
 
 
 @pytest.mark.asyncio

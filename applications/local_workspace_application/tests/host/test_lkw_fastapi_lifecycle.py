@@ -5,9 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.serving.readiness_routes import (
+    mount_local_workspace_readiness_routes,
+)
 from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from local_workspace_application.host.lifecycle import HostLifecycleState
 from local_workspace_application.host.readiness import LocalWorkspaceReadinessSnapshot
@@ -16,6 +20,30 @@ from local_workspace_application.host.settings import LocalWorkspaceBackendSetti
 pytestmark = pytest.mark.unit
 
 _PREFIX = "/v1/local_workspace"
+
+
+def test_readiness_route_projects_degraded_fields_from_snapshot() -> None:
+    fake = _FakeReadiness(
+        snapshot=LocalWorkspaceReadinessSnapshot(
+            ready=True,
+            accepts_new_work=True,
+            state="ready",
+            detail="ready",
+            rejection_error_id="",
+            degraded=True,
+            degraded_component_ids=("slack",),
+        )
+    )
+    app = FastAPI()
+    mount_local_workspace_readiness_routes(app, fake)
+    with TestClient(app) as client:
+        response = client.get(f"{_PREFIX}/readiness")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["degraded"] is True
+    assert body["degraded_component_ids"] == ["slack"]
+    assert body["ready"] is True
+    assert body["accepts_new_work"] is True
 
 
 @dataclass
@@ -51,6 +79,8 @@ def test_readiness_endpoint_reports_ready_while_running() -> None:
     assert body["state"] == "ready"
     assert "detail" in body
     assert "components" in body
+    assert body["degraded"] is None
+    assert body["degraded_component_ids"] == []
     assert "rejection_error_id" not in body
 
 
@@ -105,6 +135,23 @@ def test_hosted_mode_uses_injected_readiness_without_local_lifecycle() -> None:
         assert ready.json()["state"] == "ready"
         assert ready.json()["ready"] is True
         assert ready.json()["accepts_new_work"] is True
+
+        fake.snapshot = LocalWorkspaceReadinessSnapshot(
+            ready=True,
+            accepts_new_work=True,
+            state="ready",
+            detail="ready",
+            rejection_error_id="",
+            degraded=True,
+            degraded_component_ids=("slack",),
+        )
+        degraded_ready = client.get(f"{_PREFIX}/readiness")
+        assert degraded_ready.status_code == 200
+        degraded_body = degraded_ready.json()
+        assert degraded_body["ready"] is True
+        assert degraded_body["accepts_new_work"] is True
+        assert degraded_body["degraded"] is True
+        assert degraded_body["degraded_component_ids"] == ["slack"]
 
         fake.snapshot = LocalWorkspaceReadinessSnapshot(
             ready=False,
