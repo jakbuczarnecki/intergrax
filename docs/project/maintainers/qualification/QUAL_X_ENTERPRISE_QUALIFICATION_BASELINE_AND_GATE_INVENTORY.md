@@ -931,8 +931,9 @@ uv run pytest -p no:xdist <qual_x_p5_dimension_a_pytest_module_targets()>
 | Branch | `development` |
 | **START_HEAD** (operator pin) | `c6a11ccd406ab169e383bd2e2d6a44e17f7833b4` |
 | **Prior EXECUTION_SHA** (preserved historical Dimension A) | `1c2b18cd89d365ec25aa3f7e0534ae8702d9cee1` — **533 passed, 1 failed** — remains valid only @ that SHA |
-| **CORRECTION_COMMIT** | *(set at push — correction subject below)* |
-| **EXECUTION_SHA** (risk-based targeted validation @ correction) | same as **CORRECTION_COMMIT** |
+| **CORRECTION_COMMIT** | `3c2a44b5d994714c0de66f15a2c5ecace8b96515` |
+| **EXECUTION_SHA** (risk-based targeted validation @ correction) | `3c2a44b5d994714c0de66f15a2c5ecace8b96515` |
+| **FINAL_COMMIT** (evidence record SHA) | `3c2a44b5d994714c0de66f15a2c5ecace8b96515` (correction + inventory append, single commit) |
 | Full `dimension_a_execution_command` replay | **not run** (operator override — separate checkpoint required) |
 
 ### Failure root cause
