@@ -918,3 +918,87 @@ uv run pytest -p no:xdist <qual_x_p5_dimension_a_pytest_module_targets()>
 2. TENANT-X-FINAL-R8 remediation for `production_delta` (or manifest scope decision if node is linkage-only — **architecture decision** if demoting).
 3. Re-run `dimension_a_execution_command` @ new SHA after remediation.
 4. Independent audit before any QUAL-X CLOSED or FRZ-REG PASS claim.
+
+---
+
+## QUAL-X-FINAL-R1 — Historical evidence vs current-HEAD regression reconciliation
+
+**Disposition:** **READY FOR AUDIT — QUAL-X-FINAL-R1 — CORRECTION CANDIDATE** (not **QUAL-X-FINAL — GO**; not **QUAL-X — CLOSED**)
+
+| Field | Value |
+| --- | --- |
+| Repository | `jakbuczarnecki/intergrax` |
+| Branch | `development` |
+| **START_HEAD** (operator pin) | `c6a11ccd406ab169e383bd2e2d6a44e17f7833b4` |
+| **Prior EXECUTION_SHA** (preserved historical Dimension A) | `1c2b18cd89d365ec25aa3f7e0534ae8702d9cee1` — **533 passed, 1 failed** — remains valid only @ that SHA |
+| **CORRECTION_COMMIT** | *(set at push — correction subject below)* |
+| **EXECUTION_SHA** (risk-based targeted validation @ correction) | same as **CORRECTION_COMMIT** |
+| Full `dimension_a_execution_command` replay | **not run** (operator override — separate checkpoint required) |
+
+### Failure root cause
+
+`build_final_qualification_report()` and `build_final_production_delta_evidence()` defaulted to `git diff --name-only <rejected-base>..<current-HEAD>`, so mandatory `test_tx_final_q06_report_ready_for_audit` observed `production_delta==147` on post–TENANT-X-FINAL development. That confuses **H1** (historical corrective range @ accepted FINAL SHA `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`) with **H2** (current-HEAD tenant behavior). The count is not a production-defect inventory.
+
+### Historical acceptance range (unchanged authority)
+
+| Range | Base | Head | Production delta |
+| --- | --- | --- | --- |
+| Cumulative corrective | `940e6219ecf95d3202236a51b2fa284403583e5f` | `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` | **0** |
+| R1 corrective | `036dcbd732e01a412a2cd86a81f6c1b040c9c2ec` | `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` | **0** |
+
+Accepted TENANT-X-FINAL evidence @ `5ccb72fc…` is **not** reopened or rewritten.
+
+### Dependency mapping (old → current)
+
+| Invariant class | Owner | Before | After |
+| --- | --- | --- | --- |
+| **H1** Historical production-delta integrity | `_final_production_delta.py` | base → moving HEAD | base → `TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA` by default; explicit `head_sha` for drift visibility only |
+| **H2** Current-HEAD behavioral gates | `test_tenant_x_final_fast.py` (q01–q05, q06 behavioral subset), `test_tenant_x_final_current_head.py` | blocked by false H1 on q06 | q06 asserts historical binding + behavioral readiness; current-HEAD module linked in P2 G8 |
+| **H3** Integrity / anti-false-PASS | `test_tenant_x_final_r1_integrity.py` (q19–q24), `test_qual_x_final_r1_tenant_historical_regression_reconciliation.py` | q19 assumed HEAD=acceptance implicitly | explicit head SHA assertions + negatives |
+| **H4** QUAL-X selection | P2 ingress + P5 F04 boundary text | FINAL fast only in G8 | adds `test_tenant_x_final_current_head` node; F04 boundary documents historical vs replay |
+
+### Changed files (R1 correction)
+
+- `tests/qualification/tenant_x/_final_production_delta.py`
+- `tests/qualification/tenant_x/_final_certification.py`
+- `tests/qualification/tenant_x/test_tenant_x_final_fast.py`
+- `tests/qualification/tenant_x/test_tenant_x_final_r1_integrity.py`
+- `tests/qualification/tenant_x/test_tenant_x_final_r1_r1_integrity.py`
+- `tests/qualification/qual_x/_p2_ingress_catalog.py`
+- `tests/qualification/qual_x/_p5_freeze_selection_catalog.py`
+- `tests/qualification/qual_x/test_qual_x_final_r1_tenant_historical_regression_reconciliation.py`
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record)
+
+### Targeted validation @ correction (risk-based)
+
+```text
+uv run pytest -p no:xdist <15 explicit nodes — tenant_x q06, r1 q19–q24, r1_r1 delta, current_head, qual_x R1 reconciliation, P5 collectable + dimension_a target coverage>
+# 15 passed, exit 0
+
+git diff --check
+# exit 0
+```
+
+**Not re-executed:** full Dimension A (`dimension_a_execution_command`); prior **533+1** batch @ `1c2b18cd` retained as historical evidence only.
+
+### F1–F10 adversarial protection
+
+Unchanged: `run_final_adversarial_matrix()` + q03–q05 + r1 mutation negatives; q24 proves historical delta cannot mask adversarial failure.
+
+### FRZ-REG-01..10 @ R1 correction (no promotion)
+
+| ID | Disposition |
+| --- | --- |
+| REG-01..05, 09 | **OPEN** — unchanged |
+| REG-06, 07, 08 | **PARTIAL** — unchanged |
+| REG-10 | **DEFINED** — P5 manifest; enterprise freeze not closed |
+
+### Unresolved / stage-close replay obligations
+
+- **IN-SCOPE:** Independent audit of correction commit; then operator checkpoint for full `dimension_a_execution_command` @ pinned SHA before any **QUAL-X-FINAL — GO** claim.
+- **TRACKED FREEZE DEBT:** W2-C, R1-SQLITE-ENV-01 — unchanged.
+- **QUAL-X-FINAL @ `1c2b18cd`:** **NO-GO** record preserved above.
+
+### GO/NO-GO
+
+**CORRECTION CANDIDATE** — bounded reconciliation implemented; targeted proofs green; **not** **QUAL-X-FINAL — GO** until full qualification replay @ audited SHA.

@@ -12,6 +12,7 @@ from tests.qualification.tenant_x._final_wave_evidence import current_git_head_s
 
 TENANT_X_FINAL_REJECTED_BASE_SHA: Final[str] = "940e6219ecf95d3202236a51b2fa284403583e5f"
 TENANT_X_FINAL_R1_REJECTED_BASE_SHA: Final[str] = "036dcbd732e01a412a2cd86a81f6c1b040c9c2ec"
+TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA: Final[str] = "5ccb72fccd4e3820ebdc9c18008afe6f7d59f558"
 
 _PRODUCTION_PREFIXES: Final[tuple[str, ...]] = (
     "intergrax/",
@@ -30,7 +31,13 @@ def build_final_production_delta_evidence(
     base_sha: str = TENANT_X_FINAL_REJECTED_BASE_SHA,
     head_sha: str | None = None,
 ) -> FinalProductionDeltaEvidence | None:
-    head = head_sha if head_sha is not None else current_git_head_sha()
+    """Historical corrective-range evidence (rejected base → accepted FINAL SHA).
+
+    Post-acceptance platform development is intentionally *not* part of this gate;
+    pass an explicit ``head_sha`` (e.g. ``current_git_head_sha()``) only for drift
+    visibility / negative reconciliation — not for TENANT-X-FINAL readiness.
+    """
+    head = head_sha if head_sha is not None else TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA
     if len(base_sha) != 40 or len(head) != 40:
         return None
     try:

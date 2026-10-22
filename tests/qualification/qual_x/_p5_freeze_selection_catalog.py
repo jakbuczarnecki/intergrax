@@ -166,7 +166,10 @@ QUAL_X_P5_FREEZE_SELECTION_MANIFEST: tuple[QualXFreezeSelectionEntry, ...] = (
         environment_prerequisites="Standard uv/pytest",
         expected_evidence_class=QualXFreezeEvidenceClass.HISTORICAL_STAGE_LINKAGE,
         evidence_status=QualXFreezeEvidenceStatus.HISTORICAL_ONLY,
-        acceptance_boundary="P2 proof registry collectable; stage negatives HISTORICAL until QUAL-X-FINAL replay",
+        acceptance_boundary=(
+            "P2 proof registry collectable; TENANT-X-FINAL production delta = historical corrective range "
+            "@ 5ccb72fc…; current-HEAD tenant replay = FINAL fast + test_tenant_x_final_current_head"
+        ),
         depends_on=("QUAL-X-P5-F03-CONTRACTS-TYPING",),
         delegated_node_registry=QualXFreezeNodeRegistry.P2_INGRESS_PROOFS,
         coordination_batch_module=_P2_BATCH,
