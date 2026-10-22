@@ -1,0 +1,179 @@
+# QUAL-X — Enterprise Qualification Baseline & Gate Inventory (P0)
+
+**Status:** **QUAL-X-P0** = **READY FOR AUDIT** · **QUAL-X** parent = **OPEN / IN PROGRESS** · **FRZ-REG-01..10** = **OPEN** (global) · **PROD-Q** Dimension **B** = **OPEN/BLOCKED** (unchanged)
+
+**Branch:** `development`
+
+**Inventory baseline (START_HEAD):** `497af3cdbc9d8102b95975fda362a91e25ff2b29`
+
+**Canonical authorities (read @ baseline):**
+
+| Artifact | Role |
+| --- | --- |
+| [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) | Stage sequence, Path B §2.0.3, evidence ledger §5 |
+| [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) | **FRZ-REG-*** and supporting **FRZ-*** rows |
+| [`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) | ECAP-P1/P2/P4, qualification credibility, independent acceptance |
+
+**Production delta (P0):** `0`
+
+**pytest @ P0:** not executed (static closed-world inventory per task budget)
+
+## P0 purpose and non-closure
+
+**QUAL-X-P0** establishes a current-HEAD, evidence-backed inventory of enterprise qualification/regression mechanisms, classifies evidence strength, groups genuine gaps into bounded implementation children, and bundles Path B normative predecessor reconciliation for late Dimension **A** stage rows.
+
+```text
+QUAL-X ≠ CLOSED
+FRZ-REG-* ≠ PASS (platform-wide)
+ARCH-FREEZE ≠ authorized
+PROD-Q live slice ≠ closed
+```
+
+Historical stage **CLOSED** rows and scoped operator acceptances are **contributions only** until **QUAL-X** independent closure (ECAP-P2).
+
+## Evidence strength legend
+
+| Class | Meaning |
+| --- | --- |
+| **DIRECT INVARIANT PROOF** | Test/gate assertion establishes the invariant on current scanned surface (AST/import graph, behavioral fail-closed, typed contract enforcement). |
+| **SUPPORTING STATIC EVIDENCE** | Structural scan or inventory correct for its class but not full invariant proof alone. |
+| **HISTORICAL EVIDENCE** | Independent exact-SHA acceptance; not auto-promoted to current-HEAD PASS. |
+| **INSUFFICIENT / NOT VERIFIED** | Missing, docs-only, or proxy assertion (name/string/test-meta) without current-HEAD proof. |
+
+## Qualification matrix Q01–Q12 @ `497af3c…`
+
+| ID | Responsibility | Canonical owner | Primary gates / suites (representative) | Evidence @ baseline | FRZ (primary) | Strength (current-HEAD) | Platform gap? | QUAL-X child |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Q01** | Architecture boundary gates | **EBH-3/4** + runtime architecture gates | `tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py`, `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2i_final_rescan_gate.py`; `tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py`; `scripts/maintenance/check_architecture_boundary_chaos.py`, `check_context_tier0_import_boundary.py` | EBH-3 @ `bd2f7d78…`, EBH-4 @ `33490b6a…` (**HISTORICAL**) | FRZ-BND-*, FRZ-REG-02/09 | **DIRECT** on audited EBH surfaces; **HISTORICAL** for global | Partial — no single current-HEAD closed-world manifest tying all layer gates | **QUAL-X-P1** |
+| **Q02** | Ownership / duplication gates | **EBH-3**, **DUP-X** (future), prod_q P0 | `test_ebh_3_dependency_ownership_gate.py`; `tests/qualification/prod_q/test_prod_q_p0_*`; stage-owned inventories in EBH/PROD-Q qual docs | PROD-Q-P0 B6 @ `8b3db676…` scoped (**HISTORICAL**) | FRZ-OWN-*, FRZ-REG-02/05 | **DIRECT** in scoped waves; **INSUFFICIENT** platform-wide | Yes — duplicate/shadow scan not unified pre-**DUP-X** | **QUAL-X-P1** |
+| **Q03** | Typed contract / plugin gates | **EBH-2F/R2**, integrations typing | `test_ebh_2f_r2_integration_plugin_contract_typing_gate.py`, `test_ebh_2i_final_rescan_gate.py`; config_x / compat_x qual gates | EBH-2F @ `765fabe…` (**HISTORICAL**) | FRZ-TYP-*, FRZ-CTR-*, FRZ-PLG-* | **DIRECT** on integration seams; drift possible post-HEAD | Yes — no continuous current-HEAD typing gate rollup | **QUAL-X-P1** |
+| **Q04** | Governance / security / tenant negatives | **GOV-X2**, **TENANT-X**, governance qual | `tests/qualification/governance/**`, `tests/qualification/tenant_x/**`, `test_gov_x2_qualification_batch.py`; CTRL-X qual | TENANT-X @ `5ccb72fc…` (**HISTORICAL** for TEN) | FRZ-SEC-*, FRZ-TEN-*, FRZ-GOV-* | **DIRECT** in TENANT-X/FINAL matrix; uneven elsewhere | Yes — negative coverage not uniform across all governance ingresses | **QUAL-X-P2** |
+| **Q05** | Runtime / lifecycle gates | Execution / Harness W4 | `tests/qualification/harness_01/**`, `tests/unit/runtime/architecture/test_npsc*`, W4 structural gates (HARNESS-W4 evidence) | HARNESS-W4 @ `f38e455…` (**HISTORICAL**) | FRZ-EXE-*, FRZ-REL-* | **DIRECT** in harness scope; **TOOL-LIFE-X** not started | Yes — whole-platform tool lifecycle qual deferred to **TOOL-LIFE-X** | **QUAL-X-P2** (regression linkage only) |
+| **Q06** | Persistence / recovery / evidence | **STATE-X**, trace qual | `tests/qualification/state_x/**`, `tests/qualification/trace_x/**` | STATE-X @ `bd54941d…` (**HISTORICAL**) | FRZ-REC-*, FRZ-STA-*, FRZ-TRC-* | **DIRECT** in STATE-X/TRACE-X waves | Partial — cross-suite evidence continuity not one runnable set | **QUAL-X-P3** |
+| **Q07** | Test credibility | **QUAL-X** (this stage) | ECAP qualification rules; spot-check: EBH AST gates vs string-only tests in legacy pockets | ECAP-P1/P4 | FRZ-REG-01/09 | **MIXED** — strong AST gates exist; proxy tests remain in long tail | Yes — no platform gate-credibility audit | **QUAL-X-P1** |
+| **Q08** | Adversarial / negative coverage | Stage-owned qual suites | `test_harness_01_gates.py` negatives; `tenant_x` FINAL matrix; prod_q dim gates; AW-7C PHYSQ | HARNESS-QINF-01, AW-7C-P0-3B-PHYSQ (**scoped HISTORICAL**) | FRZ-REG-03 | **DIRECT** in scoped suites; **INSUFFICIENT** globally | Yes | **QUAL-X-P2** |
+| **Q09** | Reproducibility / determinism | CI + qual batches | W4/W5/W6 double-batch records; known W2-C flake debt in checklist | FRZ-REG-06 notes | FRZ-REG-06/07 | **HISTORICAL** for named batches; **INSUFFICIENT** clean-checkout proof @ HEAD | Yes — FRZ-REG-07 largely empty | **QUAL-X-P4** |
+| **Q10** | Environment classification | Qual preflight patterns | AW-7C PHYSQ preflight; prod_q env markers; `R1-SQLITE-ENV-01` classification | `3e1c82f2…` (**HISTORICAL**) | FRZ-REG-08 | **DIRECT** in PHYSQ path; **INSUFFICIENT** unified classifier | Yes — missing Docker/provider must not PASS architecture gates silently | **QUAL-X-P4** |
+| **Q11** | Inventory / allowlist integrity | Harness QINF, EBH rescan | `test_harness_01_gates.py` stale inventory gates; EBH-2I rescan | QINF-01 @ `0155580a…` (**HISTORICAL**) | FRZ-REG-04/05 | **DIRECT** in harness closed-world; not global | Yes — FRZ-REG-04 open | **QUAL-X-P3** |
+| **Q12** | Freeze-oriented qualification entry | **QUAL-X** → **ENT-AUDIT-X** | Stage suites under `tests/qualification/` (~15 domains); `scripts/gates/`; no single bounded **FRZ-REG-10** assembly | — | FRZ-REG-10 | **INSUFFICIENT** | Yes — mandatory freeze suite undefined | **QUAL-X-P5** |
+
+**Inventory scope note:** ~367 `*gate*.py` files and ~552 files under `tests/qualification/` — grouped above by responsibility, not per-test enumeration.
+
+## Mandatory implementation packages (evidence-backed)
+
+### QUAL-X-P1 — Architecture / ownership / typing gate credibility
+
+| Field | Value |
+| --- | --- |
+| Problem | Distributed gates prove invariants on historical closed-world slices; no current-HEAD credibility matrix or regression that weak proxy assertions cannot pass. |
+| Owner | **QUAL-X** (coordination); mechanism owners **EBH-3/4**, runtime architecture |
+| Inventory | Q01–Q03, Q07 rows; EBH gate modules listed above |
+| Minimal change | Current-HEAD gate catalog + credibility classification + targeted strengthening only where INSUFFICIENT |
+| FRZ | FRZ-REG-01, 02, 09; supporting FRZ-BND/OWN/TYP |
+| Risk | High — false PASS on architecture freeze |
+| Targeted tests | Per-gap pytest (bounded); no full-suite replay in P1 planning |
+| Exit | All critical architecture gates classified **DIRECT** or remediated; proxy gates removed or downgraded |
+| Prerequisite | **QUAL-X-P0** independent audit |
+| Audit | Independent exact-SHA required |
+
+### QUAL-X-P2 — Security / governance / tenant negative coverage
+
+| Field | Value |
+| --- | --- |
+| Problem | Adversarial negatives exist in TENANT-X/Harness/PROD-Q slices but are not proven to cover all governance/execution ingresses at platform scope. |
+| Owner | **QUAL-X** + **GOV-X2** / **TENANT-X** evidence owners |
+| Inventory | Q04, Q08; `tests/qualification/governance/**`, `tenant_x/**` |
+| Minimal change | Gap-closed negative matrix mapped to real ingress owners; mutation-sensitive checks where feasible |
+| FRZ | FRZ-REG-03; FRZ-SEC-*, FRZ-TEN-* (regression linkage) |
+| Risk | High |
+| Exit | Documented negative matrix green on current HEAD; violations fail closed |
+| Prerequisite | **QUAL-X-P1** (boundary credibility) |
+| Audit | Independent exact-SHA required |
+
+### QUAL-X-P3 — Lifecycle / recovery / evidence regression reliability
+
+| Field | Value |
+| --- | --- |
+| Problem | STATE-X/TRACE-X/prod_q evidence strong in waves but allowlists/inventories (FRZ-REG-04/05) and cross-suite linkage incomplete. |
+| Owner | **QUAL-X** + **STATE-X** / **TRACE-X** |
+| Inventory | Q06, Q11; `state_x`, `trace_x`, `prod_q` qual |
+| Minimal change | Stale inventory gates extended where proven gaps; allowlist justification ledger |
+| FRZ | FRZ-REG-04, 05, 02 |
+| Risk | Medium |
+| Exit | Stale inventory = 0 for in-scope registries; allowlists minimal and evidenced |
+| Prerequisite | **QUAL-X-P1** |
+| Audit | Independent exact-SHA required |
+
+### QUAL-X-P4 — Determinism / environment classification
+
+| Field | Value |
+| --- | --- |
+| Problem | FRZ-REG-06 partial historical batches; FRZ-REG-07 open; env misclassification risk (FRZ-REG-08) including `R1-SQLITE-ENV-01`. |
+| Owner | **QUAL-X** + CI/qual harness owners |
+| Inventory | Q09, Q10; checklist FRZ-REG-06/07/08 notes |
+| Minimal change | Unified env-fail-closed markers; clean-checkout recipe; determinism debt closure (e.g. W2-C tracked item) |
+| FRZ | FRZ-REG-06, 07, 08 |
+| Risk | Medium — false PASS under polluted env |
+| Exit | Mandatory qual paths classify SKIP/FAIL vs PASS; clean-checkout doc + smoke |
+| Prerequisite | **QUAL-X-P3** (inventory integrity) |
+| Audit | Independent exact-SHA required |
+
+### QUAL-X-P5 — Freeze-oriented qualification assembly
+
+| Field | Value |
+| --- | --- |
+| Problem | **FRZ-REG-10** open — no bounded, reusable enterprise freeze qualification selection model reusing existing infrastructure. |
+| Owner | **QUAL-X** (not a new runner authority) |
+| Inventory | Q12; `tests/qualification/*`, `scripts/gates/*` |
+| Minimal change | Defined bounded suite manifest + selection rules for **ARCH-FREEZE** admission (consumes **ENT-AUDIT-X** later) |
+| FRZ | FRZ-REG-10 |
+| Risk | High for freeze false confidence |
+| Exit | One documented freeze-oriented suite; green policy explicit; no deselection weakening |
+| Prerequisite | **QUAL-X-P1..P4** substantive progress |
+| Audit | Independent exact-SHA required |
+
+**Recommended next canonical child after P0 audit:** **QUAL-X-P1**.
+
+## Path B predecessor reconciliation (bundled)
+
+### Before (normative contradiction in stage table §3 rows)
+
+```text
+SKILL-X / TOOL-LIFE-X / DIST-SCALE-X Depends:
+  … all prior mandatory stages including PROD-Q (parent closure implied)
+```
+
+### After (aligned with §2.0.3)
+
+```text
+Dimension A predecessors through each stage = CLOSED per chain
+PROD-Q parent CLOSED = NOT required for Dimension A stage entry
+PROD-Q live slice = mandatory for production use only (Dimension B)
+```
+
+**Preserved:** §2.0.3 table column «Prior normative (pre-Path-B)» for **`SKILL-X` … `EBH-7`** unchanged (historical record). **PROD-Q** remains mandatory roadmap stage for Dimension **B**.
+
+## Enterprise audit matrix (ECAP alignment)
+
+| ECAP rule | P0 disposition |
+| --- | --- |
+| ECAP-P1 | Inventory treats functional pass ≠ enterprise qual closure |
+| ECAP-P2 | All **HISTORICAL** labels preserved; no FRZ promotion |
+| ECAP-P4 | P0 does not self-accept **FRZ-REG-*** PASS |
+| Independent acceptance | P0 = **READY FOR AUDIT** only |
+
+## Findings summary
+
+| Tag | Items |
+| --- | --- |
+| **IN-SCOPE BLOCKER** | **FRZ-REG-10** undefined freeze suite; platform-wide **FRZ-REG-01/07** gaps |
+| **TRACKED FREEZE DEBT** | W2-C determinism hygiene (checklist FRZ-REG-06); Package P P09-B; prod_q live DIM6/DIM17 |
+| **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `R1-SQLITE-ENV-01` — classified pollution; requires explicit env for relational bootstrap tests |
+
+## Explicit exclusions (P0)
+
+- No new global test runner
+- No pytest replay / Docker / live provider
+- No **QUAL-X** parent **CLOSED**
+- No **PROD-Q** Dimension **B** closure
+- No **ENT-AUDIT-X** substitution
