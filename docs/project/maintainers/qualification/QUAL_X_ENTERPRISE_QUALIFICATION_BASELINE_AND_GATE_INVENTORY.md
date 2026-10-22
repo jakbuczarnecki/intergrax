@@ -1418,3 +1418,136 @@ uv run pytest -p no:xdist -W default <eight node IDs above — see selected-node
 ### Recommended next checkpoint
 
 Independent audit of GitHub evidence commit + clone session logs; operator decision on whether representative REG-07 satisfies next gate vs mandatory 535 replay @ clean checkout.
+
+---
+
+## QUAL-X-FINAL — FULL CLEAN-CHECKOUT DIMENSION A QUALIFICATION
+
+| Field | Value |
+| --- | --- |
+| **Operator authorization** | `OPERATOR APPROVED — ONE FULL DIMENSION A CLEAN-CHECKOUT QUALIFICATION` |
+| **Parent** | `QUAL-X — Enterprise Qualification & Regression Infrastructure Certification` |
+| **START_HEAD (primary `development`)** | `9a175177419a396398647e356a08c966f9c2af4e` |
+| **QUALIFICATION_SHA / CLEAN_CHECKOUT_SHA / EXECUTION_SHA** | `9a175177419a396398647e356a08c966f9c2af4e` (pytest executed @ this SHA; not attributed to later evidence-only commit) |
+| **Clone isolation** | Fresh `git clone` from `https://github.com/jakbuczarnecki/intergrax.git` → detached checkout @ QUALIFICATION_SHA; sibling directory `intergrax-qual-x-final-clean-dim-a-9a175177`; no primary `.venv`/cache/SQLite copy; no worktree; no implementation branch |
+| **Primary workspace during execution** | `development` @ START_HEAD; clean tracked tree; unchanged until post-batch evidence doc update |
+
+### Dependency and environment
+
+| Item | Evidence |
+| --- | --- |
+| **uv** | `0.13.4` (see `uv-version.txt` in session dir) |
+| **Python** | `3.12.11` |
+| **pytest** | `8.4.2` |
+| **`uv.lock` SHA256** | `0ab9b58d92cb4b7a2c706223d8dbc0147b9db73c2406a8e4867a372c4d4fa7b6` |
+| **Sync** | `uv sync --frozen` — exit 0; lockfile unchanged |
+| **`INTERGRAX_RELATIONAL_DB`** | Clone `.tmp/session/QUAL-X-FINAL-CLEAN-DIM-A-9a175177/isolated-relational.db` |
+| **Docker / live cloud / production credentials** | Not used |
+
+Session artifacts (clone only, gitignored): `.tmp/session/QUAL-X-FINAL-CLEAN-DIM-A-9a175177/` — `qualification-sha.txt`, `git-baseline.txt`, `clone-source.txt`, `environment.txt`, `uv-lock-sha256.txt`, `uv-sync.log`, `selected-modules.txt`, `mandatory-nodes.txt`, `collection-summary.txt`, `command.txt`, `dimension-a-batch.log`, `result-summary.txt`, `exit-code.txt`, `duration.txt`.
+
+### §3 preflight (closed world @ EXECUTION_SHA)
+
+| Check | Result |
+| --- | --- |
+| F01–F12 + Q01–Q12 in P5 manifest | Present (incl. DIM-B row excluded from Dimension A execution) |
+| FRZ-REG-01..10 ledger | Mapped in `QUAL_X_P5_FRZ_REG_EVIDENCE_LEDGER` |
+| Selection authority | `qual_x_p5_dimension_a_pytest_module_targets()` only — **32** unique modules |
+| Mandatory delegated collectable nodes | **57** (`qual_x_p5_mandatory_collectable_node_ids()`) |
+| Collection | One bounded `--collect-only` over canonical Dimension A modules — **535** tests collected |
+| Dimension B live module | Not in Dimension A target list |
+| Duplicate module targets | None |
+
+### Canonical execution (exactly once)
+
+Command source: `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE.dimension_a_execution_command` @ EXECUTION_SHA (see `command.txt` in session dir).
+
+```text
+uv run pytest -p no:xdist <32 deduplicated Dimension A module paths from P5 manifest>
+```
+
+| Metric | Value |
+| --- | --- |
+| **Selected modules** | 32 |
+| **Collected / executed** | 535 / 535 |
+| **PASS** | 535 |
+| **FAIL / ERROR / SKIP / XFAIL / XPASS / DESELECTED** | 0 |
+| **Exit code** | 0 |
+| **Duration** | 251.92s (pytest); ~274s wall |
+| **Warnings** | None in batch log summary; no `PytestUnhandledThreadExceptionWarning` |
+
+No automatic retry, subset replay, or second Dimension A batch was performed.
+
+### Historical evidence preservation (not relabeled)
+
+| Stream | SHA | Status |
+| --- | --- | --- |
+| **QUAL-X-FINAL-R2** full Dimension A | `4da2da227e601c5304fdad0a9714bcbe16604384` | Historical — **not** claimed as execution @ `9a175177…` |
+| **QUAL-X-FINAL-R3** W2-C correction | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` | Historical — hygiene correction preserved |
+| **Representative clean checkout (8-node)** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` | Historical — superseded for **full** Dimension A clean-checkout execution proof by this record |
+| **This record** | `9a175177419a396398647e356a08c966f9c2af4e` | **Current** full Dimension A clean-checkout execution |
+
+### W2-C and determinism (§6)
+
+| Item | Evidence @ EXECUTION_SHA |
+| --- | --- |
+| P4 W2-C disposition / R3 hygiene gate | `test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene` — **executed, PASS** (mandatory P4 delegated node) |
+| `test_retry_storm_caps_provider_calls` (W2-C module) | **TRACKED_FREEZE_DEBT** per P4 catalog — not a Dimension A module target; R3 remediation + representative run @ `75b8f264…` remain historical |
+| P4 determinism / env classification batch | Full P4 module in Dimension A — **PASS** |
+| Unhandled thread exceptions | **None observed** in batch log |
+
+### Tenant / security / adversarial gates
+
+Mandatory Dimension A modules include P2 ingress matrix, CTRL-X tenant/security composition, tenant_x finals, governance mutation authorization/approval, inspect_01 governance integrity, harness_01 gates — all **executed @ EXECUTION_SHA** (535/535 aggregate).
+
+### Dimension A / B boundary
+
+`tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim8_cross_tenant_integrated_gate.py` and other Dimension B live selections remain **excluded** from Dimension A acceptance (P5 manifest + `test_qual_x_p5_dimension_b_excluded_from_dimension_a_nodes` in batch).
+
+### FRZ-REG-01..10 reconciliation @ full clean-checkout Dimension A
+
+| ID | Canonical owner (P5 ledger) | Current clean-checkout evidence | Historical evidence | Missing / gap | Disposition | Closure condition |
+| --- | --- | --- | --- | --- | --- | --- |
+| **REG-01** | F07 gate credibility | 535/535 Dimension A @ `9a175177…` | R2 @ `4da2da22…` | Platform-wide invariant audit outside batch scope | **PARTIAL** | Independent audit of invariant coverage beyond P5 selections |
+| **REG-02** | F01–F03 architecture gates | EBH/hardening modules in batch — PASS | R2 batch | Out-of-manifest blockers if any remain in freeze checklist | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** | Auditor confirms regression gates for corrected blockers |
+| **REG-03** | F04/F05/F08 adversarial | P2 + CTRL-X + tenant negatives executed | R2 | — | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** | Auditor confirms negative credibility |
+| **REG-04** | F11 inventory allowlist | P3 module in batch — PASS | P3 historical | Allowlist minimality proof platform-wide | **OPEN / BLOCKED** | FRZ-REG-04 inventory minimality audit |
+| **REG-05** | F02/F06/F11 | P3 + state_x in batch | P3 reconciliation | Full stale-entry elimination scan | **PARTIAL** | Independent inventory reconciliation |
+| **REG-06** | F09 / P4 | P4 module + determinism nodes — PASS | R3 W2-C hygiene | W2-C storm module remains debt visibility, not unconditional global determinism PASS | **PARTIAL** | Auditor accepts P4 + debt visibility model |
+| **REG-07** | F09 + P5 clean-checkout procedure | **Full Dimension A 535/535** from fresh clone + frozen `uv.lock` @ `9a175177…` | Representative 8-node @ `75b8f264…`; R2 worktree batch @ `4da2da22…` | Formal auditor acceptance | **`FRZ-REG-07 — FULL CLEAN-CHECKOUT PROOF CANDIDATE`** (not `FORMALLY CLOSED`) | Independent auditor sign-off on clean-checkout proof |
+| **REG-08** | P4 env classification | P4 relational isolation / fail-closed nodes — PASS | R1-SQLITE disposition | Live HTTP reproduction for R1-SQLITE | **PARTIAL** | Classified env failure evidence for R1-SQLITE |
+| **REG-09** | F01/F07 selections | Architecture + harness gates in batch | R2 | Out-of-batch critical invariants | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** | Auditor confirms critical invariant executable protection |
+| **REG-10** | F12 manifest integrity | P5 assembly module — PASS; manifest SSOT unchanged | R2 535/535 @ `4da2da22…` | — | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** | Auditor confirms mandatory freeze suite complete @ SHA |
+
+### Scoped ECAP-P1..P6
+
+| Phase | Assessment |
+| --- | --- |
+| **ECAP-P1** | Contractual boundaries exercised via EBH/CTRL-X/harness selections — no platform-wide ENT-AUDIT-X claim |
+| **ECAP-P2** | Composition ownership gates in Dimension A batch |
+| **ECAP-P3** | Typed interfaces / plugin contracts via EBH-2f and related modules |
+| **ECAP-P4** | Vendor-neutral Dimension A; Dimension B live path not substituted |
+| **ECAP-P5** | Evidence traceability — SHA, lockfile, single batch log |
+| **ECAP-P6** | Fail-closed qualification semantics honored (no retry masking) |
+
+### Findings
+
+| Finding | Class |
+| --- | --- |
+| Global **QUAL-X CLOSED** / **FRZ-REG global PASS** | **IN-SCOPE BLOCKER** (remains OPEN — auditor only) |
+| FRZ-REG-04 / REG-05 platform inventory gaps | **TRACKED FREEZE DEBT** |
+| R1-SQLITE live HTTP reproduction | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** (unchanged) |
+| W2-C `test_retry_storm_caps_provider_calls` not in Dimension A module list | **TRACKED FREEZE_DEBT** (by design; P4 hygiene executed) |
+| PROD-Q Dimension B live qualification | **MANDATORY FUTURE STAGE** (Path B — not in scope) |
+
+### Optimization confirmation
+
+One fresh clone; one `uv sync --frozen`; one collection pass; **one** full `dimension_a_execution_command`; no second broad regression; no new runner/harness; no manifest or production code changes in this task.
+
+### Task exit
+
+`READY FOR AUDIT — QUAL-X-FINAL FULL CLEAN-CHECKOUT DIMENSION A — GO CANDIDATE`
+
+**Not authorized / not claimed:** `QUAL-X CLOSED`, global **FRZ-REG PASS**, **ARCH-FREEZE** authorization, **FRZ-REG-07 — FORMALLY CLOSED**.
+
+**QUAL-X** remains **OPEN** pending independent formal closure.
