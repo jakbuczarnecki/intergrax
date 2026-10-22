@@ -1294,3 +1294,127 @@ Preserves R2 scope for **FRZ-REG-03** and **FRZ-REG-10** (R2 **PASS CANDIDATE �
 ### Explicit scope confirmation
 
 **Full Dimension A qualification replay was NOT performed in QUAL-X-FINAL-R3.**
+
+---
+
+## QUAL-X-FINAL — FRZ-REG-07 CLEAN-CHECKOUT QUALIFICATION
+
+| Field | Value |
+| --- | --- |
+| **Operator authorization** | `OPERATOR APPROVED — QUAL-X-FINAL CLEAN-CHECKOUT QUALIFICATION` |
+| **START_HEAD / QUALIFICATION_SHA** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` (R3 correction baseline) |
+| **CLEAN_CHECKOUT_SHA / EXECUTION_SHA** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` (tests executed @ this SHA; not the later evidence-only commit) |
+| **Clone isolation** | One fresh `git clone` → detached checkout @ QUALIFICATION_SHA; sibling directory under operator workspace parent (`intergrax-qual-x-clean-75b8f264`); no copy of primary `.venv`, caches, or untracked primary files; no worktree; no second implementation stream |
+| **Primary workspace** | Unchanged on `development` @ START_HEAD through execution; evidence commit applied only after batch |
+
+### Dependency and environment (Level 2)
+
+| Item | Evidence |
+| --- | --- |
+| **uv** | `0.13.4` |
+| **Python (project venv)** | `3.12.11` |
+| **pytest** | `8.4.2` |
+| **`uv.lock` SHA256** | `0ab9b58d92cb4b7a2c706223d8dbc0147b9db73c2406a8e4867a372c4d4fa7b6` |
+| **Sync** | `uv sync --frozen` — success; lockfile not modified |
+| **`INTERGRAX_RELATIONAL_DB`** | Dedicated path under clone `.tmp/session/QUAL-X-CLEAN-CHECKOUT-75b8f264/isolated-relational.db` |
+| **Docker / live providers / production DB** | Not used |
+
+Session artifacts (clone only, gitignored): `.tmp/session/QUAL-X-CLEAN-CHECKOUT-75b8f264/` (`uv-sync.log`, `lockfile-identity.txt`, `versions.txt`, `selected-nodes.txt`, `command.txt`, `clean-checkout-pytest.log`, `exit-code.txt`).
+
+### §3 pre-audit (closed world)
+
+Selected nodes are in-process unit/gate tests: no nested broad `pytest` subprocess in this batch (avoided `test_qual_x_p5_mandatory_collectable_nodes_exist`); no Git HEAD assertion in selected nodes; `tmp_path` / `monkeypatch` for SQLite isolation; W2-C storm test uses in-process fake provider only.
+
+### Representative batch (Level 3) — FRZ-REG-07 mapping
+
+| Class | Pytest node ID | FRZ linkage |
+| --- | --- | --- |
+| **C1** manifest integrity | `…test_qual_x_p5_freeze_qualification_suite_assembly.py::test_qual_x_p5_manifest_selection_ids_unique` | FRZ-REG-10 |
+| **C2** env failure classification | `…test_qual_x_p4_determinism_environment_classification_reproducibility.py::test_qual_x_p4_relational_missing_env_on_polluted_default_not_pass` | FRZ-REG-03, FRZ-REG-08 |
+| **C3** SQLite path isolation | `…test_qual_x_p4_determinism_environment_classification_reproducibility.py::test_qual_x_p4_relational_env_isolates_path_from_default` | FRZ-REG-08 |
+| **C4** deterministic qualification | `…test_qual_x_p4_determinism_environment_classification_reproducibility.py::test_qual_x_p4_determinism_repeat_sqlite_header_classifier_stable` | FRZ-REG-06 |
+| **C5** W2-C concurrency hygiene | `tests/unit/llm_adapters/test_enterprise_scale_resilience_w2_c_retry_containment.py::test_retry_storm_caps_provider_calls` | FRZ-REG-06 |
+| **C6** evidence integrity | `…test_qual_x_p5_freeze_qualification_suite_assembly.py::test_qual_x_p5_synthetic_stale_mandatory_node_would_fail_collectability` | FRZ-REG-10 |
+| **C6** partial execution | `…::test_qual_x_p5_partial_execution_not_pass` | FRZ-REG-10 |
+| **C6** SHA mismatch | `…::test_qual_x_p5_mismatched_sha_not_pass` | FRZ-REG-10 |
+
+**Command (exact, once):**
+
+```text
+uv run pytest -p no:xdist -W default <eight node IDs above — see selected-nodes.txt in session dir>
+```
+
+| Metric | Value |
+| --- | --- |
+| **Selected** | 8 |
+| **Executed** | 8 |
+| **Passed** | 8 |
+| **Failed / ERROR / SKIP / XFAIL / XPASS** | 0 |
+| **Exit code** | 0 |
+| **Warnings (`-W default`)** | 0 in pytest summary / log |
+
+### FRZ-REG-07 disposition
+
+| Level | Status |
+| --- | --- |
+| **1 — Clean source** | **Demonstrated** — independent clone @ pinned SHA |
+| **2 — Clean environment** | **Demonstrated** — `uv.lock` frozen sync |
+| **3 — Test reproducibility (representative)** | **Demonstrated** — 8/8 PASS @ EXECUTION_SHA |
+
+**Classification:** `FRZ-REG-07 — CLEAN-CHECKOUT REPRESENTATIVE PROOF AVAILABLE`
+
+**Not claimed:** `FRZ-REG-07 — GLOBAL PASS` — full Dimension A (535 tests) and canonical QUAL-X-FINAL complete replay were **explicitly excluded** by operator authorization; P5 `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE` still requires full QUAL-X-FINAL execution for formal platform closure.
+
+**Formal closure:** `FRZ-REG-07 — PARTIAL / FORMAL CLOSURE BLOCKED` at platform scope until independent auditor accepts representative proof **and** remaining mandatory suite obligations are satisfied elsewhere.
+
+### R2 / R3 evidence preservation
+
+| Stream | SHA | Claim |
+| --- | --- | --- |
+| **QUAL-X-FINAL-R2** | `4da2da227e601c5304fdad0a9714bcbe16604384` | 535/535 @ R2 — **unchanged**; not re-run @ current SHA |
+| **QUAL-X-FINAL-R3** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` | W2-C hygiene — **unchanged**; no full Dimension A replay |
+| **Clean checkout (this record)** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` | Separate env/lock provenance + 8-node batch only |
+
+### FRZ-REG-01..10 matrix @ clean-checkout task (scoped)
+
+| ID | Reused accepted evidence | New clean-checkout evidence | Gap / closure effect |
+| --- | --- | --- | --- |
+| **REG-01** | P1/P5/R2 selections | — | Platform invariant audit — **OPEN** |
+| **REG-02** | R2 batch | — | Out-of-manifest blockers — **OPEN** |
+| **REG-03** | R2 negatives | C2 negative classification node | **PASS CANDIDATE** (R2) + representative support |
+| **REG-04** | P3 historical | — | Allowlist minimality — **OPEN** |
+| **REG-05** | P3 reconciliation | — | Full inventory scan — **OPEN** |
+| **REG-06** | R3 targeted W2-C | C4 + C5 @ clean clone | Determinism — **PARTIAL**; not full W2 module replay in this task |
+| **REG-07** | P4/P5 procedures (PARTIAL) | Levels 1–3 representative @ `75b8f264…` | **PARTIAL** — representative proof; **not** global / 535 replay |
+| **REG-08** | P4 catalog; R1-SQLITE classified | C2, C3 @ clean clone | Live HTTP repro — **EVIDENCE REQUIRED** (unchanged) |
+| **REG-09** | R2 architecture gates | — | Out-of-batch invariants — **OPEN** |
+| **REG-10** | R2 535/535 @ `4da2da22…` | C1, C6 nodes @ clean clone | **PASS CANDIDATE** (R2) + manifest integrity spot-check |
+
+### Scoped ECAP-P1..P6
+
+| Phase | Assessment |
+| --- | --- |
+| **ECAP-P1** | Honored — representative proof ≠ FRZ global PASS |
+| **ECAP-P2** | Honored — R2/R3 historical separation |
+| **ECAP-P3** | Honored — bounded 8-node batch only |
+| **ECAP-P4** | Honored — no FRZ self-acceptance |
+| **ECAP-P5** | Honored — no new vendor claims |
+| **ECAP-P6** | Honored — evidence-only doc update in primary repo; no runtime semantic change |
+
+### Findings
+
+| Finding | Class |
+| --- | --- |
+| Full Dimension A not reproduced from clean checkout | **TRACKED FREEZE DEBT** (operator-excluded) |
+| Platform FRZ-REG global PASS / QUAL-X CLOSED | **IN-SCOPE BLOCKER** (remains OPEN) |
+| R1-SQLITE live HTTP reproduction | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** (unchanged) |
+
+### Task exit
+
+`READY FOR AUDIT — QUAL-X-FINAL CLEAN-CHECKOUT REPRESENTATIVE QUALIFICATION`
+
+**QUAL-X** remains **OPEN** pending independent formal closure.
+
+### Recommended next checkpoint
+
+Independent audit of GitHub evidence commit + clone session logs; operator decision on whether representative REG-07 satisfies next gate vs mandatory 535 replay @ clean checkout.
