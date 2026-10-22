@@ -2,12 +2,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Disposition** | **READY FOR AUDIT — OPERATOR INPUTS PREPARATION ONLY** |
-| **Task** | `PROD-Q-R1-R7-Q-A2-A3-A4` — consolidated OP-01 / OP-02 / OP-03 preparation (authorizations **A2**, **A3**, **A4** — preparation only; **not** provisioning, activation, or qualification) |
-| **Operator authorization** | `OPERATOR APPROVED — OP-01/02/03 QUALIFICATION INPUTS PROVISIONING` (preparation scope in current session; **no** mutation of effective policy, roots attestation, or credential issuance by Cursor) |
+| **Disposition** | **READY FOR AUDIT — APPROVED STATIC CONFIGURATION ONLY** |
+| **Task** | `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` — record operator-approved **static identifiers and topology** for OP-01 / OP-02 / OP-03 (**not** provisioning, ALLOW policy, activation, or qualification) |
+| **Operator authorization** | `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` (2026-10-22) — **D1** identifiers, **D2** container root + named volume, **D3** gitignored `.env` injection + strict prod/context_only/unauth=false; **no** effective Governance ALLOW, bundle publication, artifact attestation, credential issuance, **A5**, strict serving, or production traffic |
 | **Branch** | `development` |
-| **START_HEAD** | `5e8e97a8b704e39037992873e4a91ad84a3299de` |
-| **Parent @ START_HEAD** | `93a3b4f43427d0eb9361d2357cc9f261fc545a2d` |
+| **START_HEAD** | `3b740f929badd97a586c96470dfc6c98511244bc` |
+| **Parent @ START_HEAD** | `5e8e97a8b704e39037992873e4a91ad84a3299de` |
 | **Production code delta** | **0** (documentation only) |
 | **Canonical charter** | [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) §C–§G, §O.1–O.9 |
 | **Related evidence** | [`PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md) · [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) · [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) |
@@ -16,9 +16,9 @@
 
 | OP | Status |
 |----|--------|
-| **OP-01** | **CONFIGURATION SHAPE PREPARED / POLICY APPROVAL PENDING** |
-| **OP-02** | **ROOT LAYOUT / INTEGRITY CONTRACT PREPARED / ATTESTATION PENDING** |
-| **OP-03** | **INJECTION CONTRACT PREPARED / CREDENTIAL ISSUANCE PENDING** |
+| **OP-01** | **STATIC IDENTIFIERS APPROVED / EFFECTIVE ALLOW POLICY & PUBLICATION PENDING** |
+| **OP-02** | **CONTAINER ROOT & VOLUME TOPOLOGY APPROVED / PROVISIONING & ATTESTATION PENDING** |
+| **OP-03** | **INJECTION MECHANISM & STRICT SETTINGS APPROVED / CREDENTIAL ISSUANCE PENDING** |
 
 **Explicitly not claimed:** `OP-01/02/03 CONFIGURATION VERIFIED`, DIM6/DIM17 **QUALIFIED**, R7-Q **CLOSED**, PROD-Q **PASS**, global **FRZ-*** PASS delta **0**.
 
@@ -29,7 +29,7 @@
 | Before | After (this package) |
 |--------|----------------------|
 | Repeated negative gates proving the same missing OP-01…03 | Contract-aligned **shapes**, safe **proposals**, **parameter matrix**, and **post-acceptance validation commands** in one SSOT |
-| “Undelivered” without actionable operator checklist | Closed list of **OPERATOR DECISION REQUIRED** items separated from repo-prepared wiring |
+| “Undelivered” without actionable operator checklist | **OPERATOR APPROVED — IDENTIFIER ONLY** (D1/D2/D3 static config) vs **PROVISIONING BLOCKED** security/authority items in §7 |
 | Ambiguous bundle / env formats | Exact `ImmutableRuntimePolicyBundle` JSON schema, env prefixes, and loader entrypoints cited from HEAD |
 
 **Closed-world inventory (unchanged @ HEAD):**
@@ -85,12 +85,12 @@ Any additional mutation type (task cancel/resume/autonomy) is **out of scope** u
 
 ### 3.3 Non-operative profile template (JSON shape only)
 
-Store the **operator-approved** file only **outside Git**. Below is a **shape template** — replace every `OPERATOR DECISION REQUIRED` before approval; **do not** deploy this file verbatim.
+Store the **published** bundle only **outside Git**. Below is a **shape template** — `bundle_id` is operator-approved for static configuration; replace every remaining `OPERATOR DECISION REQUIRED` before publication; **do not** deploy until ALLOW rules and provenance are approved; **do not** deploy this file verbatim without publication workflow.
 
 ```json
 {
   "schema_version": "runtime_policy_bundle.v1",
-  "bundle_id": "OPERATOR DECISION REQUIRED — e.g. qual.intergrax.gca.control_plane",
+  "bundle_id": "qual.intergrax.gca.control_plane",
   "version": "OPERATOR DECISION REQUIRED — e.g. 2026-10-22.1",
   "issued_at": "OPERATOR DECISION REQUIRED — ISO-8601 UTC",
   "canonical_digest": "",
@@ -113,15 +113,16 @@ Store the **operator-approved** file only **outside Git**. Below is a **shape te
 
 After operator edits: compute digest with `ImmutableRuntimePolicyBundle.model_validate_json(...).with_canonical_digest()` and record **SHA256(file bytes)** in provenance (charter §C).
 
-**Proposed qualification identifiers (safe defaults — confirm):**
+**Operator-approved qualification identifiers (static configuration only — not effective ALLOW):**
 
-| Parameter | Safe proposal | Status |
-|-----------|---------------|--------|
-| `bundle_id` | `qual.intergrax.gca.control_plane` | **OPERATOR DECISION REQUIRED** |
-| `GOVERNANCE_TENANT_ID` | `qual-intergrax-gca` (disjoint from prod/LAB) | **OPERATOR DECISION REQUIRED** |
-| `GOVERNANCE_SERVICE_ID` | `gca-qual-strict-service` | **OPERATOR DECISION REQUIRED** |
-| `INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID` | `qual-intergrax-gca-env-01` (align with tenant) | **OPERATOR DECISION REQUIRED** |
-| Bundle filesystem path | e.g. `/etc/intergrax/qual/op-01/mutation-policy.json` (Linux qual host) or operator-mounted secret volume in Docker | **OPERATOR DECISION REQUIRED** |
+| Parameter | Approved value | Status |
+|-----------|----------------|--------|
+| `bundle_id` | `qual.intergrax.gca.control_plane` | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| `GOVERNANCE_TENANT_ID` | `qual-intergrax-gca` (disjoint from prod/LAB) | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| `GOVERNANCE_SERVICE_ID` | `gca-qual-strict-service` | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| `INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID` | `qual-intergrax-gca-env-01` (align with tenant) | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| Bundle filesystem path | e.g. `/etc/intergrax/qual/op-01/mutation-policy.json` (Linux qual host) or operator-mounted secret volume in Docker | **OPERATOR DECISION REQUIRED** (path not in static-config approval) |
+| Policy `version`, `issued_at`, rule IDs, ALLOW rules | — | **PROVISIONING BLOCKED** (publication / mutation authority not approved) |
 
 **Provenance record (out-of-repo):** approver identity, UTC timestamp, qualification scope statement, file SHA256, `bundle_id`, `canonical_digest`, approved mutation list.
 
@@ -146,6 +147,14 @@ After operator edits: compute digest with `ImmutableRuntimePolicyBundle.model_va
 
 **Docker overlay (in-container paths — matches Compose @ HEAD):**
 
+| Item | Approved value | Static-config status |
+|------|----------------|----------------------|
+| Container trusted-artifact parent root | `/var/lib/intergrax/production-v1/data/trusted_artifacts` | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| Docker named volume | `intergrax_gca_strict_local_qualification_data` → mount at `/var/lib/intergrax/production-v1/data` | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| Filesystem provisioning under root | — | **PROVISIONING BLOCKED** (not covered by static approval) |
+| Artifact materialization / digests | — | **PROVISIONING BLOCKED** |
+| Integrity attestation / trust admission | — | **PROVISIONING BLOCKED** |
+
 ```text
 /var/lib/intergrax/production-v1/data/          ← INTERGRAX_SINGLE_NODE_PRODUCTION_V1_DATA_DIR (named volume)
   trusted_artifacts/                            ← INTERGRAX_SINGLE_NODE_PRODUCTION_V1_TRUSTED_ARTIFACT_PARENT_ROOTS
@@ -160,11 +169,13 @@ After operator edits: compute digest with `ImmutableRuntimePolicyBundle.model_va
 /var/lib/intergrax/qual/<tenant-id>/data/trusted_artifacts/
 ```
 
-**ENV example (Docker qual — already in overlay; attestation still pending):**
+**ENV example (Docker qual — inline in Compose @ HEAD; attestation still pending):**
 
 ```text
 INTERGRAX_SINGLE_NODE_PRODUCTION_V1_TRUSTED_ARTIFACT_PARENT_ROOTS=/var/lib/intergrax/production-v1/data/trusted_artifacts
 ```
+
+`allow_qualification_locators=false` remains mandatory (code); **not** relaxed by static-configuration approval.
 
 ### 4.3 Expected-artifacts manifest (operator-owned, out-of-repo)
 
@@ -205,26 +216,34 @@ INTERGRAX_SINGLE_NODE_PRODUCTION_V1_TRUSTED_ARTIFACT_PARENT_ROOTS=/var/lib/inter
 
 ### 5.2 Docker injection path (@ HEAD)
 
-| Mechanism | Detail |
-|-----------|--------|
-| Compose `env_file` | `intergrax-gca-docker-local-qualification.env` (optional, **gitignored**) |
-| Example template | `intergrax-gca-docker-local-qualification.env.example` |
-| Gitignore | `.gitignore` → `applications/.../intergrax-gca-docker-local-qualification.env` |
-| Inline Compose env | Non-secret profile v1 paths + `GOVERNED_CONTRACTOR_BACKEND_ENV=prod` only |
+| Mechanism | Detail | Static-config status |
+|-----------|--------|----------------------|
+| Compose `env_file` | `intergrax-gca-docker-local-qualification.env` (optional, **gitignored**) | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| Example template | `intergrax-gca-docker-local-qualification.env.example` | Repo-prepared shape |
+| Gitignore | `.gitignore` → `applications/.../intergrax-gca-docker-local-qualification.env` | Confirmed gitignored |
+| Inline Compose env | Profile v1 paths + `GOVERNED_CONTRACTOR_BACKEND_ENV=prod` | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| `GOVERNED_CONTRACTOR_IDENTITY_SOURCE` | `context_only` (via operator `.env` at provision time) | **OPERATOR APPROVED — IDENTIFIER ONLY** |
+| `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED` | absent or `false` | **OPERATOR APPROVED — IDENTIFIER ONLY** |
 
-**Non-secret mapping document (operator host):**
+**Separation (D3):** approved = configuration **mechanism** and strict **setting names/values** above. **Not** approved: credential issuer, generation, secure storage, injection of effective secrets, validation at runtime, revocation procedures execution.
+
+**Non-secret mapping document (operator host — do not create in Git):**
 
 ```text
 # intergrax-gca-docker-local-qualification.env (never commit)
 
-INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_ID=<matches OP-01 bundle_id>
-INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_PATH=<container path to mounted OP-01 file>
-INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_TENANT_ID=<OP-01 tenant>
-INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_SERVICE_ID=<OP-01 service principal>
+INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_ID=qual.intergrax.gca.control_plane
+INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_PATH=<container path to mounted OP-01 file — PROVISIONING BLOCKED>
+INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_TENANT_ID=qual-intergrax-gca
+INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_SERVICE_ID=gca-qual-strict-service
 
-INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID=<aligned env id>
+INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID=qual-intergrax-gca-env-01
 
-GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON=<single-key JSON; tenant_id matches governance tenant>
+GOVERNED_CONTRACTOR_BACKEND_ENV=prod
+GOVERNED_CONTRACTOR_IDENTITY_SOURCE=context_only
+# GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED unset or false
+
+GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON=<PROVISIONING BLOCKED — issuance not approved>
 
 GOVERNED_CONTRACTOR_STRICT_EXTERNAL_WORK_PROVIDER_ID=<OPERATOR DECISION REQUIRED>
 GOVERNED_CONTRACTOR_STRICT_EXTERNAL_WORK_PROVIDER_DESCRIPTOR_DIGEST=<OPERATOR DECISION REQUIRED>
@@ -247,40 +266,59 @@ Mount OP-01 JSON via additional operator volume bind — **not** in repo Compose
 
 ## 6. Unified parameter matrix
 
-| Parameter | Approved @ prep | Safe proposal | Operator decision | Validation before provision |
-|-----------|-----------------|---------------|-------------------|----------------------------|
-| `INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_ID` | — | `qual.intergrax.gca.control_plane` | **REQUIRED** | ID == JSON `bundle_id`; not forbidden lab ID |
-| `INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_PATH` | — | Secured path outside repo | **REQUIRED** | File exists; `model_validate_json` + `with_canonical_digest` |
-| `INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_TENANT_ID` | — | `qual-intergrax-gca` | **REQUIRED** | Matches API key `tenant_id` + strict env id policy |
-| `INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_SERVICE_ID` | — | `gca-qual-strict-service` | **REQUIRED** | Service principal only; no prod principal |
-| `INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID` | — | `qual-intergrax-gca-env-01` | **REQUIRED** | Non-empty; charter correlation |
-| OP-01 rule: `admit_runtime_revision` ALLOW | — | Include if activation in scope | **REQUIRED** | B6-01 operator path |
-| OP-01 rule: `activate_runtime_revision` ALLOW | — | Include if activation in scope | **REQUIRED** | B6-01 operator path |
-| OP-01 provenance SHA256 | — | — | **REQUIRED** | External approval record |
-| `INTERGRAX_SINGLE_NODE_PRODUCTION_V1_TRUSTED_ARTIFACT_PARENT_ROOTS` | Docker overlay default path | `/var/lib/intergrax/production-v1/data/trusted_artifacts` | **REQUIRED** (attest list) | Ephemeral/tmp rejected by profile loader |
-| Immutable venv bundle(s) | — | Under `bundles/<revision_id>/` | **REQUIRED** | Digest + lock verification |
-| `allow_qualification_locators` | **false** (code) | false | N/A (fixed) | Static in strict serve command |
-| `GOVERNED_CONTRACTOR_BACKEND_ENV` | **prod** in Compose | prod | N/A | Settings load |
-| `GOVERNED_CONTRACTOR_IDENTITY_SOURCE` | — | `context_only` | **REQUIRED** | Prod guard in settings |
-| `GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON` | — | One qual-scoped key | **REQUIRED** (issuance) | Non-empty map; no bootstrap |
-| `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED` | — | unset / false | **REQUIRED** (forbid true) | Prod fail-closed |
-| `GOVERNED_CONTRACTOR_STRICT_EXTERNAL_WORK_PROVIDER_*` | — | Operator provider pin | **REQUIRED** | Strict serve command gate |
-| OP-01 file mount (Docker) | — | Operator bind mount | **REQUIRED** | Path visible in container |
+| Parameter | Static config (D1–D3) | Operator decision (provisioning) | Validation before provision |
+|-----------|----------------------|----------------------------------|----------------------------|
+| `INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_ID` | **APPROVED** `qual.intergrax.gca.control_plane` | Path + published JSON | ID == JSON `bundle_id`; not forbidden lab ID |
+| `INTERGRAX_OPERATOR_PRODUCTION_MUTATION_POLICY_BUNDLE_PATH` | — | **REQUIRED** | File exists; `model_validate_json` + `with_canonical_digest` |
+| `INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_TENANT_ID` | **APPROVED** `qual-intergrax-gca` | Inject via `.env` | Matches API key `tenant_id` + strict env id policy |
+| `INTERGRAX_OPERATOR_PRODUCTION_GOVERNANCE_SERVICE_ID` | **APPROVED** `gca-qual-strict-service` | Inject via `.env` | Service principal only; no prod principal |
+| `INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID` | **APPROVED** `qual-intergrax-gca-env-01` | Inject via `.env` | Non-empty; charter correlation |
+| OP-01 rule: `admit_runtime_revision` ALLOW | — | **REQUIRED** | B6-01 operator path |
+| OP-01 rule: `activate_runtime_revision` ALLOW | — | **REQUIRED** | B6-01 operator path |
+| OP-01 `version`, `issued_at`, rule IDs, signed provenance | — | **REQUIRED** | External approval record; no invented issuance |
+| OP-01 provenance SHA256 | — | **REQUIRED** | External approval record |
+| `INTERGRAX_SINGLE_NODE_PRODUCTION_V1_TRUSTED_ARTIFACT_PARENT_ROOTS` | **APPROVED** `/var/lib/intergrax/production-v1/data/trusted_artifacts` | Host mapping + materialization | Ephemeral/tmp rejected by profile loader |
+| Docker volume `intergrax_gca_strict_local_qualification_data` | **APPROVED** (Compose topology) | Volume lifecycle on host | Mount visible in container |
+| Immutable venv bundle(s) | — | **REQUIRED** | Digest + lock verification |
+| `allow_qualification_locators` | **false** (code; fixed) | N/A | Static in strict serve command |
+| `GOVERNED_CONTRACTOR_BACKEND_ENV` | **APPROVED** `prod` (Compose + `.env`) | N/A | Settings load |
+| `GOVERNED_CONTRACTOR_IDENTITY_SOURCE` | **APPROVED** `context_only` | Inject via `.env` | Prod guard in settings |
+| `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED` | **APPROVED** forbid `true` | Inject via `.env` | Prod fail-closed |
+| Gitignored `intergrax-gca-docker-local-qualification.env` | **APPROVED** mechanism | Populate on operator host only | Never commit |
+| `GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON` | — | **REQUIRED** (issuance) | Non-empty map; no bootstrap |
+| `GOVERNED_CONTRACTOR_STRICT_EXTERNAL_WORK_PROVIDER_*` | — | **REQUIRED** | Strict serve command gate |
+| OP-01 file mount (Docker) | — | **REQUIRED** | Path visible in container |
+| Bootstrap credentials absent on qual path | — | **REQUIRED** (verification) | Negative check before serve |
+
+### 6.1 Approval / decision ledger (static configuration @ 2026-10-22)
+
+| Decision ID | Resolved (identifier / topology / mechanism only) | Still blocked |
+|-------------|---------------------------------------------------|---------------|
+| **D1** | `bundle_id`, `tenant_id`, `service_id`, `application_environment_id` as in §3.3 | Effective mutation ALLOW policy; principal scope; bundle publication; `version` / `issued_at` / rule IDs |
+| **D2** | Container root `/var/lib/intergrax/production-v1/data/trusted_artifacts`; volume `intergrax_gca_strict_local_qualification_data` | Host-side ownership mapping; filesystem provisioning; bundles; attestation; trust admission |
+| **D3** | Gitignored `.env` injection; `prod` + `context_only` + unauth forbidden | Credential issuer; generation; storage; effective secret injection; validation; revocation execution |
+| **A5** | — | Activation window (out of scope for this task) |
 
 ---
 
-## 7. Closed list — operator decisions blocking provisioning
+## 7. Provisioning gate — resolved vs outstanding
 
-1. Approve **OP-01** `bundle_id`, version, `issued_at`, rule ids, and finite ALLOW mutation list.
-2. Sign **OP-01** provenance (SHA256 + scope) and publish bundle **outside Git**.
-3. Approve **GOVERNANCE_TENANT_ID**, **GOVERNANCE_SERVICE_ID**, **APPLICATION_ENVIRONMENT_ID** triple.
-4. Attest **OP-02** absolute root list (host and/or container view).
-5. Build and attest at least one **immutable venv bundle** + manifest digests (**OP-02**).
-6. Issue **OP-03** API key(s) and provider pin digests via approved secret mechanism.
-7. Confirm **no** `GOVERNED_CONTRACTOR_BACKEND_BOOTSTRAP_*` on qual host.
-8. Authorize **A5** activation window separately (not part of A2–A4).
+**Resolved by static-configuration approval (not provisioning):**
 
-Until items 1–7 are satisfied, status remains **PROVISIONING BLOCKED**.
+1. **D1** — `bundle_id` `qual.intergrax.gca.control_plane`; `GOVERNANCE_TENANT_ID` `qual-intergrax-gca`; `GOVERNANCE_SERVICE_ID` `gca-qual-strict-service`; `INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID` `qual-intergrax-gca-env-01`.
+2. **D2** — container trusted-artifact parent root `/var/lib/intergrax/production-v1/data/trusted_artifacts`; Docker named volume `intergrax_gca_strict_local_qualification_data` (Compose @ HEAD).
+3. **D3** — qualification isolation via existing gitignored `intergrax-gca-docker-local-qualification.env`; strict settings `GOVERNED_CONTRACTOR_BACKEND_ENV=prod`, `GOVERNED_CONTRACTOR_IDENTITY_SOURCE=context_only`, `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED` absent or `false`.
+
+**Still blocking provisioning (security / authority / materialization):**
+
+1. Approve and publish **OP-01** effective bundle: finite ALLOW mutation list, rule IDs, `version`, `issued_at`, secured path, provenance SHA256 — **outside Git**.
+2. Approve **OP-01** bundle filesystem path and Docker bind mount for published JSON.
+3. **OP-02** — attest host/container root list beyond approved topology; materialize immutable venv bundle(s) + manifest digests.
+4. **OP-03** — issue API key(s); select external-work provider ID and descriptor digest; populate secrets in operator `.env`.
+5. Verify **no** `GOVERNED_CONTRACTOR_BACKEND_BOOTSTRAP_*` on qual host.
+6. Authorize **A5** activation window separately (not part of static-configuration approval).
+
+Until outstanding items 1–5 are satisfied, status remains **PROVISIONING BLOCKED** (static configuration alone does **not** authorize execution).
 
 ---
 
@@ -369,8 +407,8 @@ git diff --check
 | No shadow authorities | **PASS** | Lab bundle IDs forbidden in loader |
 | Fail-closed | **PASS** | Documented loader behavior |
 | Governance ≠ execution | **PASS** | Preparation ≠ ALLOW |
-| Proposal ≠ permission ≠ execution | **PASS** | Template marked non-operative |
-| No authority expansion | **PASS** | Cursor did not mint ALLOW |
+| Proposal ≠ permission ≠ execution | **PASS** | Static IDs ≠ ALLOW ≠ provisioned |
+| No authority expansion | **PASS** | No ALLOW / credentials / bundle publication in doc delta |
 | Evidence provenance | **PARTIAL** | OP-04 still post-activation |
 | Regression protection | **N/A** | No code delta |
 
@@ -382,14 +420,14 @@ git diff --check
 
 | Criterion | Preparation contribution | Qualification status |
 |-----------|-------------------------|----------------------|
-| **FRZ-PRD-01** | Documents operator-independent qual profile path vs lab | **OPEN** |
-| **FRZ-PRD-03** | Trusted roots + `allow_qualification_locators=false` spelled out | **OPEN** |
-| **FRZ-PRD-08** | Injection via gitignored env + charter §E | **OPEN** |
-| **FRZ-SEC-04** | No secrets in Git; fail-closed settings | **OPEN** |
+| **FRZ-PRD-01** | Static qual identifiers recorded; execution still blocked | **OPEN** |
+| **FRZ-PRD-03** | Approved container root + volume topology; attestation pending | **OPEN** |
+| **FRZ-PRD-08** | Approved gitignored `.env` mechanism; credentials not issued | **OPEN** |
+| **FRZ-SEC-04** | Approved prod/context_only/unauth=false posture; no secrets in Git | **OPEN** |
 | **FRZ-GOV / FRZ-TEN / FRZ-SEC / FRZ-BND / FRZ-OWN / FRZ-CTR / FRZ-TYP** | Aligned with Package B evidence doc | **unchanged** |
-| **ECAP-P1 / P2 / P4** | Contract traceability in §3–5 | Preparation only — **not** ECAP closure |
+| **ECAP-P1 / P2 / P4** | Contract traceability in §3–5; static-config evidence ref `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` | Configuration authorization only — **not** ECAP closure |
 
-**Global FRZ PASS delta:** **0**.
+**Global FRZ PASS delta:** **0**. **DIM6** / **DIM17** remain **NOT QUALIFIED**.
 
 ---
 
@@ -422,7 +460,7 @@ git diff --check
 
 ## 13. Next recommended action
 
-Per [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) **§O.6–O.7**: operator completes decisions in §7, provisions OP-01…03 on the qual host, then authorizes **A6** runtime verification and **A5** activation window; only then re-run Package B operator-profile gates and capture **OP-04**.
+Per [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) **§O.6–O.7**: operator completes **outstanding** decisions in §7 (effective OP-01 policy publication, OP-02 materialization/attestation, OP-03 credential/provider issuance), provisions OP-01…03 on the qual host, then authorizes **A6** runtime verification and **A5** activation window; only then re-run Package B operator-profile gates and capture **OP-04**. Static configuration (D1–D3) does **not** close §7.
 
 ---
 
