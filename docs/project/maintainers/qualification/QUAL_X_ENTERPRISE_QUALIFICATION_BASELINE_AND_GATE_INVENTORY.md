@@ -1003,3 +1003,155 @@ Unchanged: `run_final_adversarial_matrix()` + q03–q05 + r1 mutation negatives;
 ### GO/NO-GO
 
 **CORRECTION CANDIDATE** — bounded reconciliation implemented; targeted proofs green; **not** **QUAL-X-FINAL — GO** until full qualification replay @ audited SHA.
+
+---
+
+## QUAL-X-FINAL-R2 — CONTROLLED BATCHED DIMENSION A QUALIFICATION RECORD
+
+**Disposition:** **READY FOR AUDIT — QUAL-X-FINAL-R2 — GO CANDIDATE** (not **QUAL-X — CLOSED**; not global **FRZ-REG** PASS; not **ARCH-FREEZE** authorization)
+
+| Field | Value |
+| --- | --- |
+| Operator authorization | `OPERATOR APPROVED — QUAL-X-FINAL-R2 BATCHED QUALIFICATION` |
+| Repository / branch | `jakbuczarnecki/intergrax` · `development` |
+| **START_HEAD** (operator pin) | `4da2da227e601c5304fdad0a9714bcbe16604384` |
+| **EXECUTION_SHA** | `4da2da227e601c5304fdad0a9714bcbe16604384` (`HEAD == origin/development` at execution) |
+| **FINAL_COMMIT** | Evidence-only commit on `development` containing this R2 record (pytest authority = **EXECUTION_SHA** only; see operator push SHA in session report) |
+| Manifest SSOT | `tests/qualification/qual_x/_p5_freeze_selection_catalog.py` (`QUAL_X_P5_FREEZE_SELECTION_MANIFEST`) |
+| Selection function | `qual_x_p5_dimension_a_pytest_module_targets()` |
+| Deduplicated module count | **32** |
+| Mandatory collectable proof nodes | **57** (`missing_mandatory_nodes = 0` @ preflight) |
+| Dimension B excluded | `tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim8_cross_tenant_integrated_gate.py` — not in Dimension A targets |
+
+### Preflight (Phase 0 — no standalone P5 batch)
+
+Static manifest reconciliation only (no redundant `--collect-only`). F01–F12 and Q01–Q12 covered; P2/P3/P4 delegated registries linked; current TENANT-X modules (`test_tenant_x_final_fast`, `test_tenant_x_final_current_head`, ingress-linked tenant suites) included via P2 delegation + module deduplication; no duplicate module paths; no directory-level broad fallback.
+
+Session preflight artifact: `.tmp/session/QUAL-X-FINAL-R2-4da2da22/preflight-record.txt`
+
+### Environment (Phase 1)
+
+| Item | Value |
+| --- | --- |
+| Python | 3.12.11 |
+| pytest | 8.4.2 |
+| Lockfile | `uv.lock` SHA256 recorded in session `uv-lock-sha256.txt` |
+| `INTERGRAX_RELATIONAL_DB` | `.tmp/session/QUAL-X-FINAL-R2-4da2da22/isolated-relational.db` (dedicated; not production/default shared DB) |
+| External infra | None required for selected Dimension A batch (no Docker/live provider/credentials) |
+| Classification | Windows dev worktree — valid for authorized R2 batch; not a clean-checkout independent machine |
+
+### Execution (Phase 2 — exactly one batch)
+
+```text
+uv run pytest -p no:xdist <32 modules from qual_x_p5_dimension_a_pytest_module_targets()>
+```
+
+Full command: `.tmp/session/QUAL-X-FINAL-R2-4da2da22/command.txt`
+
+| Metric | Value |
+| --- | --- |
+| Exit code | **0** |
+| Collected | **535** |
+| Executed / PASS | **535** |
+| FAIL / ERROR / SKIP / XFAIL / XPASS / DESELECTED | **0** each |
+| Duration | ~311 s |
+| Evidence log | `.tmp/session/QUAL-X-FINAL-R2-4da2da22/dimension-a-batch.log` |
+
+P5 integrity module (`test_qual_x_p5_freeze_qualification_suite_assembly.py`) included in the same batch — no separate P5 wave. No automatic retries.
+
+### Result integrity (Phase 3)
+
+| Class | Disposition |
+| --- | --- |
+| Mandatory behavioral proofs @ EXECUTION_SHA | **PASS** — all collected nodes in batch executed green |
+| P5 coordination / integrity nodes | **PASS** @ EXECUTION_SHA (within batch) |
+| Historical TENANT-X production delta @ `5ccb72fc…` | **HISTORICAL** — R1 correction preserved; not substituted for current replay |
+| Current-HEAD tenant adversarial gates | **EXECUTED** — `test_tenant_x_final_fast`, `test_tenant_x_final_current_head`, P2-linked tenant/control-plane modules in batch |
+| Dimension B | **EXCLUDED** — not executed as acceptance evidence |
+
+Prior **QUAL-X-FINAL @ `1c2b18cd`** (**533+1 NO-GO**) and **R1 CORRECTION CANDIDATE** records remain historical; superseded for Dimension A *current-HEAD execution* only by this R2 batch @ `4da2da22…`.
+
+### F01–F12 @ R2 (execution evidence class)
+
+| F | R2 @ `4da2da22…` |
+| --- | --- |
+| F01 | **CURRENT_HEAD_EXECUTABLE** — EBH-3/2A/2I/4 + hardening-3 modules green |
+| F02 | **CURRENT_HEAD_EXECUTABLE** — EBH-3 (ownership) green |
+| F03 | **CURRENT_HEAD_EXECUTABLE** — EBH-2F + 2I green |
+| F04 | **CURRENT_HEAD_EXECUTABLE** — P2 batch + delegated ingress proofs (incl. tenant) green |
+| F05 | **CURRENT_HEAD_EXECUTABLE** — harness_01 + P2 linkage green |
+| F06 | **CURRENT_HEAD_EXECUTABLE** — P3 batch + Q06 delegated proofs green |
+| F07 | **CURRENT_HEAD_EXECUTABLE** — gate-credibility module set green |
+| F08 | **CURRENT_HEAD_EXECUTABLE** — P2 adversarial catalog batch green |
+| F09 | **PARTIAL** — P4 batch green; **W2-C** remains **TRACKED FREEZE DEBT** (FRZ-REG-06 not closed) |
+| F10 | **PARTIAL** — P4 env classification green; **R1-SQLITE-ENV-01** remains **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** for live HTTP/GCA reproduction (not claimed) |
+| F11 | **CURRENT_HEAD_EXECUTABLE** — P3 inventory/allowlist batch green |
+| F12 | **COORDINATION_INTEGRITY** — P5 assembly tests green; enterprise freeze not closed |
+
+### Q01–Q12 @ R2
+
+| Q | R2 disposition |
+| --- | --- |
+| Q01–Q03, Q05, Q07, Q11 | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** @ EXECUTION_SHA |
+| Q04, Q08 | **PASS CANDIDATE** — tenant/security ingress + current-HEAD replay executed (not historical-delta alone) |
+| Q06 | **PASS CANDIDATE** — P3 Q06 proofs executed in batch |
+| Q09 | **PARTIAL** — P4 executed; W2-C unresolved |
+| Q10 | **PARTIAL** — fail-closed classification executed; PROD-Q live scope not in Dimension A |
+| Q12 | **COORDINATION_INTEGRITY** — manifest/P5 integrity demonstrated; **QUAL-X** not CLOSED |
+
+### FRZ-REG-01..10 @ R2 (evidence assessment — no promotion)
+
+Canonical wording: `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` (owner **QUAL-X** for REG rows). Global checklist status remains **OPEN** until independent platform closure.
+
+| ID | Canonical requirement (abbrev.) | Owner | R2 scope | Historical evidence | Current @ `4da2da22…` | Gap | R2 recommendation | Formal closure condition |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **FRZ-REG-01** | Every frozen invariant has evidence protection | QUAL-X | Gate credibility / anti-false-PASS | P1/P5 prior waves | P5 + EBH gates executed green | Platform-wide invariant catalog not exhaustively re-audited here | **PARTIAL** | Independent audit + platform FRZ closure |
+| **FRZ-REG-02** | Corrected blockers have regression gates | QUAL-X | EBH/Harness selections in batch | Stage-scoped EBH/HARNESS records | Regression modules in Dimension A batch green | Many corrected blockers outside batch | **PARTIAL** | Per-blocker evidence @ closure stage |
+| **FRZ-REG-03** | Negative tests prove gate detection | QUAL-X | P2/P8 adversarial + tenant negatives | Ingress matrices | Executed in batch | Global adversarial rollup still OPEN | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped to selected proofs) | Independent audit of executed negatives |
+| **FRZ-REG-04** | Allowlists minimal and justified | QUAL-X | P3/Harness inventory gates | HARNESS-QINF-01 | P3 + harness_01 in batch green | Platform-wide allowlist minimality not closed | **PARTIAL** | EVOL/QUAL-X allowlist audit |
+| **FRZ-REG-05** | Stale inventories = 0 | QUAL-X | P3 + harness inventory | Prior QINF evidence | Batch green on inventory reconciliation tests | Full platform inventory not re-scanned | **PARTIAL** | Independent stale-inventory audit |
+| **FRZ-REG-06** | Deterministic qualification tests | QUAL-X | P4 + W2-C visibility | W2-C tracked debt | P4 batch green; W2-C **not** resolved | **W2-C** debt | **PARTIAL / BLOCKED** for closure | W2-C remediation + repeat proof |
+| **FRZ-REG-07** | Clean checkout reproducibility | QUAL-X | Procedure in P5 catalog | `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE` PARTIAL | R2 = implementation worktree @ pinned SHA only | No independent clean-checkout replay | **OPEN** | Clean checkout execution @ pinned SHA by independent auditor |
+| **FRZ-REG-08** | Env failures cannot become false PASS | QUAL-X | P4 classification | R1-SQLITE record | Isolated DB used; P4 green | R1 live HTTP not reproduced | **PARTIAL** | PROD-Q/qualified env for R1-SQLITE where required |
+| **FRZ-REG-09** | Critical invariants protected by tests not docs | QUAL-X | Architecture gate modules | EBH/Harness history | Executable gates in batch green | Not all platform invariants in batch | **PARTIAL** | Platform-wide REG-09 audit |
+| **FRZ-REG-10** | Mandatory freeze qualification suite defined | QUAL-X | P5 manifest + R2 execution | P5 DEFINED @ prior HEAD | Manifest + **full Dimension A batch executed** @ EXECUTION_SHA | Independent audit of manifest truthfulness | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** | Independent audit accepts manifest + R2 evidence |
+
+### ECAP conformance (scoped @ R2)
+
+| Phase | Assessment |
+| --- | --- |
+| **ECAP-P1** | Honored — green batch ≠ enterprise FRZ PASS |
+| **ECAP-P2** | Honored — R2 execution ≠ historical stage CLOSED |
+| **ECAP-P3** | Honored — R2 is bounded Dimension A, not full platform cert |
+| **ECAP-P4** | Honored — this record is not FRZ self-acceptance |
+| **ECAP-P5** | Honored — no new replaceability claims beyond executed gates |
+| **ECAP-P6** | Honored — R2 triggered by operator mandate after R1; no speculative refactors |
+
+Enterprise invariants (contracts, single owner, fail-closed, tenant isolation, Dimension B separation) preserved in selection; no shadow runner introduced.
+
+### W2-C / R1-SQLITE / clean checkout
+
+- **W2-C:** **TRACKED FREEZE DEBT** — unchanged; P4 batch PASS does not resolve FRZ-REG-06 closure.
+- **R1-SQLITE-ENV-01:** **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** — isolated `INTERGRAX_RELATIONAL_DB` used; no live HTTP/GCA reproduction claimed.
+- **Clean checkout:** **NOT PERFORMED** — FRZ-REG-07 remains **OPEN**; R2 evidence is independently usable for audit of *this* worktree @ EXECUTION_SHA only.
+
+### Findings classification
+
+| Item | Class |
+| --- | --- |
+| W2-C determinism debt | **TRACKED FREEZE DEBT** |
+| R1-SQLITE live reproduction | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** |
+| FRZ-REG platform OPEN rows | **TRACKED FREEZE DEBT** / closure-stage obligation |
+| Dimension A mandatory execution @ `4da2da22…` | **No IN-SCOPE BLOCKER** (batch green) |
+
+### GO / NO-GO
+
+**READY FOR AUDIT — QUAL-X-FINAL-R2 — GO CANDIDATE** for Dimension A batched qualification @ `4da2da227e601c5304fdad0a9714bcbe16604384`.
+
+**QUAL-X-FINAL-R2 — NO-GO** for formal **QUAL-X CLOSED**, global **FRZ-REG PASS**, and **ARCH-FREEZE** (W2-C, FRZ-REG-07 clean checkout, platform OPEN criteria, PROD-Q Dimension B).
+
+### Changed files (R2 evidence commit)
+
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record only)
+
+**No production or test code changes between EXECUTION_SHA and evidence commit.**
