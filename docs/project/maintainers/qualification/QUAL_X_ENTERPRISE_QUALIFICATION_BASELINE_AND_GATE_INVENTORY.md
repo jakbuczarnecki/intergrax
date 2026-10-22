@@ -1682,3 +1682,114 @@ Missing: exhaustive frozen-invariant → proof map. **Owner:** **QUAL-X** + late
 ### §11 Changed files (this reconciliation)
 
 - `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section only (prior records **preserved**).
+
+---
+
+## QUAL-X-FINAL — INVARIANT COVERAGE & INVENTORY CORRECTION BATCH
+
+**Task:** `QUAL-X-FINAL — INVARIANT COVERAGE & INVENTORY CORRECTION BATCH` · **Parent:** `QUAL-X`
+
+**Disposition:** **`READY FOR AUDIT — QUAL-X-FINAL INVARIANT COVERAGE & INVENTORY CORRECTION BATCH`** (not **QUAL-X CLOSED**; not global **FRZ-REG PASS**)
+
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `d9da2d91972788842c82b799932e933f0f5011e7` |
+| **Branch** | `development` |
+| **EXECUTION_SHA (reused Dimension A)** | `9a175177419a396398647e356a08c966f9c2af4e` |
+| **W2-C remediation (reused)** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` |
+| **Production delta** | `0` |
+
+### §1 Git preflight @ correction authoring
+
+| Check | Result |
+| --- | --- |
+| Repository | `jakbuczarnecki/intergrax` |
+| **START_HEAD** | `d9da2d91972788842c82b799932e933f0f5011e7` |
+| **origin/development** | synchronized @ START_HEAD |
+| Tracked tree | clean before correction commit |
+| Accepted qualification SHAs | `9a175177…`, `75b8f264…`, `4da2da22…` — ancestors of START_HEAD |
+
+### §2 Root causes addressed
+
+| ID | Root cause | Correction |
+| --- | --- | --- |
+| **IC-01** | P5 F09 / FRZ-REG-06 ledger still described W2-C as **TRACKED_FREEZE_DEBT** after R3 **COLLECTABLE_DETERMINISTIC_STATIC** | P5 manifest + ledger metadata aligned; regression gate forbids stale TRACKED string |
+| **IC-02** | HARDENING-3 contract→runtime allowlist not in P3 closed-world owners (FRZ-REG-04/05 gap inside justified boundary) | **HARDENING-3** added to P3 owners; bidirectional reconciliation gate |
+| **IC-03** | No machine-readable closed-world invariant ↔ proof map for QUAL-X-FINAL audit | `_qual_x_final_invariant_coverage_catalog.py` + P3 coverage gate |
+| **IC-04** | REG reconciliation §7–§8 Package A platform minimality | **BLOCKED — IN-SCOPE** — requires independent platform scan beyond P3/Harness closed-world (unchanged) |
+
+### §3 Closed-world inventory (bounded)
+
+**Scan boundary:** `QUAL_X_P3_IN_SCOPE_INVENTORY_OWNERS` + P4 W2-C catalog + P5 manifest / FRZ ledger + reused execution @ `9a175177…`.
+
+**Population not in boundary:** full freeze checklist FRZ-* rows outside P3/P5 selections — owner **ENT-AUDIT-X** / extended QUAL-X (**MISSING PROOF** row `CW-PLATFORM-FRZ-ROLLUP`).
+
+Canonical disposition catalog: `tests/qualification/qual_x/_qual_x_final_invariant_coverage_catalog.py`.
+
+### §4 Package A/B/C implementation
+
+| Package | FRZ | Change |
+| --- | --- | --- |
+| **A** | REG-04/05 | P3 **HARDENING-3** bidirectional allowlist; no stale EBH/harness entries removed (live reconciliation green @ HEAD) |
+| **B** | REG-01/02/09 (scoped) | Closed-world mapping + P3 owner coverage gate |
+| **C** | REG-06 | P5 metadata vs P4 W2-C disposition; storm module exclusion regression; **no** P5 manifest module injection |
+
+### §5 Targeted validation @ FINAL_COMMIT
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py \
+  tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py \
+  tests/qualification/qual_x/test_qual_x_p4_determinism_environment_classification_reproducibility.py::test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene
+```
+
+**Not executed:** full Dimension A replay; full W2-C module; Docker/live providers.
+
+### §6 FRZ-REG evidence matrix (batch)
+
+| Criterion | Owner | Gate | Execution SHA | Validity | Gap | Candidate disposition |
+| --- | --- | --- | --- | --- | --- | --- |
+| **REG-01** | QUAL-X closed-world catalog | P3 + P5 selections | `9a175177…` | Scoped map **VALID** | Platform rollup | **PARTIAL — PROVEN GAP** |
+| **REG-02** | P3 P2 linkage + batch gates | P3 tests | `9a175177…` | **VALID** in batch | Out-of-batch blockers | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-03** | P2/P5 adversarial | Dimension A batch | `9a175177…` | Reused | Global rollup | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** |
+| **REG-04** | P3 owners incl. HARDENING-3 | P3 reconciliation | FINAL_COMMIT | **VALID** closed-world | Platform minimality | **BLOCKED — IN-SCOPE** |
+| **REG-05** | P3 + HARNESS-QINF | P3 + harness_01 | `9a175177…` | **VALID** scoped | Full population | **PARTIAL — PROVEN GAP** |
+| **REG-06** | P4 + P5 F09 | P4 hygiene + P5 alignment | `75b8f264…` storm; `9a175177…` P4 node | Hygiene **VALID**; checklist note stale vs R3 | Checklist OPEN | **PARTIAL — PROVEN GAP** |
+| **REG-07** | P5 procedure | Full clone batch | `9a175177…` | Reused 535/535 | Auditor sign-off | **FULL CLEAN-CHECKOUT PROOF — ACCEPTANCE CANDIDATE** |
+| **REG-08** | P4 + PROD-Q | Dimension A + Path B | `9a175177…` | Architecture **VALID** | Live HTTP | **PARTIAL** · **ENVIRONMENT/TEST ISSUE** |
+| **REG-09** | EBH/harness in batch | Dimension A | `9a175177…` | Reused | Out-of-batch | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-10** | P5 manifest | P5 integrity + batch | `9a175177…` | Reused | — | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** |
+
+### §7 Scoped ECAP-P1..P6
+
+| Phase | Assessment |
+| --- | --- |
+| **ECAP-P1** | Green targeted tests ≠ FRZ global PASS |
+| **ECAP-P2** | Reused `9a175177…` / `75b8f264…` evidence preserved |
+| **ECAP-P3** | Closed-world map ≠ full-platform certification |
+| **ECAP-P4** | No FRZ self-acceptance |
+| **ECAP-P5** | No new replaceability claims |
+| **ECAP-P6** | Corrections limited to proven inventory/metadata defects |
+
+### §8 Remaining blockers
+
+| Blocker | Class |
+| --- | --- |
+| Global **QUAL-X CLOSED** / **FRZ-REG PASS** | **IN-SCOPE** — auditor only |
+| Platform **FRZ-REG-04** minimality | **BLOCKED — IN-SCOPE** |
+| Platform **FRZ-REG-05** full population | **PARTIAL — PROVEN GAP** |
+| Checklist **FRZ-REG-06** W2-C note vs R3 hygiene | **TRACKED** — checklist row OPEN (not edited in this batch) |
+| **PROD-Q** Dimension B live HTTP | **FUTURE-STAGE OBLIGATION** |
+| **ENT-AUDIT-X** platform invariant rollup | **FUTURE-STAGE OBLIGATION** |
+
+### §9 Changed files
+
+- `tests/qualification/qual_x/_qual_x_final_invariant_coverage_catalog.py` (new)
+- `tests/qualification/qual_x/_p3_inventory_integrity_catalog.py`
+- `tests/qualification/qual_x/_p3_inventory_integrity_support.py`
+- `tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py`
+- `tests/qualification/qual_x/_p5_freeze_selection_catalog.py`
+- `tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py`
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
+
+**Formal QUAL-X closure readiness:** independent audit of correction commit on GitHub; then adjudicate Packages A platform scope and checklist REG-06 note reconciliation with R3 evidence.

@@ -139,3 +139,27 @@ def p2_catalog_proof_integrity(repo_root: Path) -> tuple[tuple[str, ...], tuple[
     raw = p2_catalog_all_primary_proof_node_ids()
     deduped = qual_x_p2_all_proof_pytest_node_ids()
     return duplicate_node_ids(raw), missing_proof_module_paths(deduped, repo_root)
+
+
+def reconcile_hardening_3_contract_runtime_import_allowlist(
+    repo_root: Path,
+) -> tuple[list[str], list[str]]:
+    from tests.unit.runtime.architecture import (
+        test_hardening_3_layer_boundary_gate as hardening_gate,
+    )
+
+    allowlisted = hardening_gate._ALLOWLISTED_RUNTIME_IMPORTS
+    contracts_root = repo_root / "intergrax" / "contracts"
+    unallowlisted_violations: list[str] = []
+    for path in sorted(contracts_root.rglob("*.py")):
+        rel = path.relative_to(repo_root).as_posix()
+        if not hardening_gate._collect_runtime_imports(path):
+            continue
+        if rel not in allowlisted:
+            unallowlisted_violations.append(rel)
+    stale_allowlist = [
+        rel
+        for rel in sorted(allowlisted)
+        if not hardening_gate._collect_runtime_imports(repo_root / rel)
+    ]
+    return unallowlisted_violations, stale_allowlist

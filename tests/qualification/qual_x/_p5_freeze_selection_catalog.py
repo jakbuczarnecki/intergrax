@@ -250,10 +250,16 @@ QUAL_X_P5_FREEZE_SELECTION_MANIFEST: tuple[QualXFreezeSelectionEntry, ...] = (
         frz_criteria=("FRZ-REG-06", "FRZ-REG-07"),
         qualification_dimension=QualXFreezeQualificationDimension.ARCHITECTURE_DIMENSION_A,
         mandatory_status=QualXFreezeMandatoryStatus.MANDATORY_COLLECTABLE_AT_HEAD,
-        environment_prerequisites="Standard uv/pytest; W2-C node = TRACKED_FREEZE_DEBT",
+        environment_prerequisites=(
+            "Standard uv/pytest; W2-C storm module excluded from Dimension A module list; "
+            "hygiene proof @ 75b8f264… (R3) reused"
+        ),
         expected_evidence_class=QualXFreezeEvidenceClass.COORDINATION_INTEGRITY_ONLY,
         evidence_status=QualXFreezeEvidenceStatus.PARTIAL_PLATFORM_GAP,
-        acceptance_boundary="P4 batch green; W2-C unconditional PASS forbidden; FRZ-REG-07 PARTIAL",
+        acceptance_boundary=(
+            "P4 batch green; W2-C COLLECTABLE_DETERMINISTIC_STATIC @ R3 — not in 535-node list; "
+            "FRZ-REG-06 checklist OPEN"
+        ),
         depends_on=("QUAL-X-P5-F06-PERSISTENCE-RECOVERY",),
         delegated_node_registry=QualXFreezeNodeRegistry.P4_DETERMINISM_ENVIRONMENT_GATES,
         coordination_batch_module=_P4_BATCH,
@@ -374,13 +380,18 @@ QUAL_X_P5_FRZ_REG_EVIDENCE_LEDGER: tuple[QualXFrzRegEvidenceLedgerRow, ...] = (
     ),
     QualXFrzRegEvidenceLedgerRow(
         criterion_id="FRZ-REG-06",
-        disposition_at_p5="PARTIAL — W2-C TRACKED_FREEZE_DEBT visible",
+        disposition_at_p5=(
+            "PARTIAL — P4 W2-C disposition COLLECTABLE_DETERMINISTIC_STATIC; storm @ 75b8f264…; "
+            "checklist OPEN"
+        ),
         p5_visibility="F09 via P4 catalog",
         owning_selection_ids=("QUAL-X-P5-F09-DETERMINISM",),
     ),
     QualXFrzRegEvidenceLedgerRow(
         criterion_id="FRZ-REG-07",
-        disposition_at_p5="PARTIAL — clean-checkout recipe; not demonstrated @ P5",
+        disposition_at_p5=(
+            "FULL CLEAN-CHECKOUT PROOF CANDIDATE @ 9a175177… (535/535); P5 procedure remains PARTIAL"
+        ),
         p5_visibility="F09 + QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE",
         owning_selection_ids=("QUAL-X-P5-F09-DETERMINISM", "QUAL-X-P5-F12-FREEZE-MANIFEST-INTEGRITY"),
     ),
@@ -506,6 +517,8 @@ def qual_x_p5_all_p5_integrity_pytest_node_ids() -> tuple[str, ...]:
         _nid(_P5_TEST, "test_qual_x_p5_partial_execution_not_pass"),
         _nid(_P5_TEST, "test_qual_x_p5_mismatched_sha_not_pass"),
         _nid(_P5_TEST, "test_qual_x_p5_clean_checkout_procedure_declares_partial"),
+        _nid(_P5_TEST, "test_qual_x_p5_w2_c_storm_module_excluded_from_dimension_a_module_targets"),
+        _nid(_P5_TEST, "test_qual_x_p5_w2_c_p4_catalog_disposition_aligned_with_f09_metadata"),
         _nid(_P5_TEST, "test_qual_x_p5_new_architecture_surface_reconciled_by_harness_qinf"),
         _nid(_P5_TEST, "test_qual_x_p5_dimension_a_execution_targets_modules_exist"),
     )

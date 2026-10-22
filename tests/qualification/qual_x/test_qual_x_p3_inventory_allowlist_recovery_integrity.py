@@ -37,10 +37,15 @@ from tests.qualification.qual_x._p3_inventory_integrity_support import (
     missing_proof_module_paths,
     p2_catalog_proof_integrity,
     reconcile_ebh_debt_registry_metadata,
+    reconcile_hardening_3_contract_runtime_import_allowlist,
     reconcile_harness_qinf_nexus_importers,
     reconcile_harness_qinf_runtime_tool_invoker_callsites,
     reconcile_harness_qinf_runtime_tool_invoker_references,
     reconcile_state_x_family_inventory_ids,
+)
+from tests.qualification.qual_x._qual_x_final_invariant_coverage_catalog import (
+    QUAL_X_FINAL_CLOSED_WORLD_INVENTORY,
+    qual_x_final_missing_p3_inventory_owner_ids,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
@@ -99,6 +104,20 @@ def test_qual_x_p3_harness_qinf_nexus_importer_inventory_bidirectional() -> None
     assert unclassified == [], unclassified
     assert stale == [], stale
     assert incomplete == [], incomplete
+
+
+def test_qual_x_p3_hardening_3_contract_runtime_import_allowlist_bidirectional() -> None:
+    violations, stale_allowlist = reconcile_hardening_3_contract_runtime_import_allowlist(
+        _REPO_ROOT
+    )
+    assert violations == [], violations
+    assert stale_allowlist == [], stale_allowlist
+
+
+def test_qual_x_p3_closed_world_inventory_maps_all_p3_owners() -> None:
+    assert qual_x_final_missing_p3_inventory_owner_ids() == ()
+    row_ids = [row.row_id for row in QUAL_X_FINAL_CLOSED_WORLD_INVENTORY]
+    assert len(row_ids) == len(set(row_ids))
 
 
 def test_qual_x_p3_state_x_family_inventory_mandatory_coverage() -> None:

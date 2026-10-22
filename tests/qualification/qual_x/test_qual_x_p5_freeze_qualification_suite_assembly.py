@@ -44,6 +44,13 @@ from tests.qualification.qual_x._p5_freeze_selection_support import (
 from tests.qualification.qual_x._p3_inventory_integrity_support import (
     reconcile_harness_qinf_runtime_tool_invoker_callsites,
 )
+from tests.qualification.qual_x._p4_determinism_environment_catalog import (
+    QUAL_X_P4_W2_C_DETERMINISM_DEBT,
+    QualXP4DeterminismDisposition,
+)
+from tests.qualification.qual_x._qual_x_final_invariant_coverage_catalog import (
+    QUAL_X_FINAL_W2_C_REMEDIATION_SHA,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
@@ -220,6 +227,31 @@ def test_qual_x_p5_mismatched_sha_not_pass() -> None:
 def test_qual_x_p5_clean_checkout_procedure_declares_partial() -> None:
     assert "PARTIAL" in QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE.verification_status
     assert "QUAL-X-FINAL" in QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE.mandatory_qual_x_final_note
+
+
+def test_qual_x_p5_w2_c_storm_module_excluded_from_dimension_a_module_targets() -> None:
+    targets = qual_x_p5_dimension_a_pytest_module_targets()
+    assert (
+        "tests/unit/llm_adapters/test_enterprise_scale_resilience_w2_c_retry_containment.py"
+        not in targets
+    )
+
+
+def test_qual_x_p5_w2_c_p4_catalog_disposition_aligned_with_f09_metadata() -> None:
+    debt = QUAL_X_P4_W2_C_DETERMINISM_DEBT
+    assert debt.disposition is QualXP4DeterminismDisposition.COLLECTABLE_DETERMINISTIC_STATIC
+    reg06 = next(
+        row for row in QUAL_X_P5_FRZ_REG_EVIDENCE_LEDGER if row.criterion_id == "FRZ-REG-06"
+    )
+    assert "TRACKED_FREEZE_DEBT" not in reg06.disposition_at_p5
+    assert QUAL_X_FINAL_W2_C_REMEDIATION_SHA[:8] in reg06.disposition_at_p5
+    f09 = next(
+        entry
+        for entry in QUAL_X_P5_FREEZE_SELECTION_MANIFEST
+        if entry.selection_id == "QUAL-X-P5-F09-DETERMINISM"
+    )
+    assert "TRACKED_FREEZE_DEBT" not in f09.environment_prerequisites
+    assert "TRACKED_FREEZE_DEBT" not in f09.acceptance_boundary
 
 
 def test_qual_x_p5_new_architecture_surface_reconciled_by_harness_qinf() -> None:
