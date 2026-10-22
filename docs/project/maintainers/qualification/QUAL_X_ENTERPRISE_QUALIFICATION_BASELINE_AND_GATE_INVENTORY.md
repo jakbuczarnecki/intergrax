@@ -443,3 +443,101 @@ uv run pytest -p no:xdist \
 - No full cross-platform pytest replay
 
 **Next mandatory child after independent P2 acceptance:** **QUAL-X-P3** (lifecycle / recovery / evidence regression reliability — Q06, Q11).
+
+---
+
+## QUAL-X-P3 execution record — Inventory, allowlist & recovery evidence integrity
+
+**START_HEAD:** `2031a913762de85a24daaa230d9ab0be30ba8905`
+
+**Disposition:** **READY FOR AUDIT — QUAL-X-P3 INVENTORY ALLOWLIST RECOVERY EVIDENCE INTEGRITY** (P3 only; **QUAL-X** parent **OPEN**; **FRZ-REG-*** **OPEN**)
+
+**Scope:** Q06 (STATE-X / TRACE-X recovery & evidence linkage), Q11 (HARNESS-QINF + EBH-2I inventory/allowlist integrity at current HEAD). Q01/Q02 regression linkage unchanged (**QUAL-X-P2** catalog preserved).
+
+**Production delta (P3):** `0` — qualification SSOT, harness allowlist classification, tests only.
+
+### In-scope inventory owners (I1 / canonical SSOT)
+
+| Owner ID | Semantic owner | SSOT module | Primary gate | Reconciliation |
+| --- | --- | --- | --- | --- |
+| **HARNESS-QINF-01** | HARNESS-01 qualification inventory | `harness_01/nexus_import_inventory.py` | `test_harness_01_gates.py` | Bidirectional Nexus importer + RuntimeToolInvoker reference/callsite scans |
+| **EBH-2I** | Public contract dependency debt | `debt_registry.py` | `test_ebh_2i_final_rescan_gate.py` | Fail-closed rescan + registry metadata + stale debt rejection |
+| **STATE-X-INVENTORY** | STATE-X state-family SSOT | `state_x/inventory.py` | `test_state_x_p0_baseline.py` | Mandatory family coverage + path/symbol inventory (owner gates) |
+| **QUAL-X-P2-CATALOG** | Ingress proof-linkage (regression only) | `_p2_ingress_catalog.py` | `test_qual_x_p2_negative_ingress_matrix.py` | Collectability + module existence + duplicate `node_id` rejection |
+
+Authoritative P3 coordination registry: `tests/qualification/qual_x/_p3_inventory_integrity_catalog.py`.
+
+### Q06 recovery / evidence matrix (linkage — not execution replay)
+
+| Row | Invariant (summary) | Owner | Disposition @ P3 |
+| --- | --- | --- | --- |
+| **Q06-R1** | Checkpoint resume rejects malformed / stale / cross-tenant snapshot | **STATE-X-R1** | **COLLECTABLE_AT_HEAD**; behavioral proof **HISTORICAL** |
+| **Q06-R4** | Restore validates snapshot before materialization | **STATE-X-R4** | **COLLECTABLE_AT_HEAD**; **HISTORICAL** |
+| **Q06-R6** | Resume preserves logical run identity / lineage | **STATE-X-R6** | **COLLECTABLE_AT_HEAD**; **HISTORICAL** |
+| **Q06-TRC-P1** | Causal facts enforce tenant equality | **TRACE-X-P1** | **COLLECTABLE_AT_HEAD**; **HISTORICAL** |
+| **Q06-TRC-P4** | Recorder tenant binding + stale tenant cleared | **TRACE-X-P4-R1** | **COLLECTABLE_AT_HEAD**; **HISTORICAL** |
+
+Proof `node_id` registry: `QUAL_X_P3_Q06_RECOVERY_EVIDENCE_MATRIX` (same file as owners).
+
+### Proven false-PASS weaknesses remediated (P3)
+
+| ID | Weakness | Correction | Regression / adversarial |
+| --- | --- | --- | --- |
+| **P3-W1** | `intergrax/applications/_shared/declarative_tool_wiring.py` referenced `RuntimeToolInvoker` (docstring) but was absent from HARNESS-01 reference allowlist — QINF gate failed at START_HEAD | Minimal allowlist row (Tier-3 declarative wiring; no new invoke callsite) | `test_qual_x_p3_harness_qinf_runtime_tool_invoker_reference_allowlist_bidirectional`; synthetic stale/unclassified negatives |
+| **P3-W2** | Q06/Q11 lacked current-HEAD cross-owner inventory reconciliation in one QUAL-X coordination batch | P3 support module reuses HARNESS-QINF collectors + EBH registry validation + Q06/P2 linkage gates | `test_qual_x_p3_*` adversarial matrix (stale row, duplicate debt id, duplicate node id) |
+| **P3-W3** | P2 proof-linkage catalog could silently reference deleted modules or duplicate `node_id`s | P3 integrity scan over `QUAL_X_P2_INGRESS_CATALOG` primary proofs | `test_qual_x_p3_p2_catalog_proof_modules_exist_and_no_duplicate_node_ids` |
+
+### Changed files
+
+- `tests/qualification/qual_x/_p3_inventory_integrity_catalog.py` (new)
+- `tests/qualification/qual_x/_p3_inventory_integrity_support.py` (new)
+- `tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py` (new)
+- `tests/qualification/harness_01/catalog.py` (P3-W1 allowlist classification)
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record)
+
+### Focused pytest (P3 batch)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py
+```
+
+**Result @ P3 worktree:** `18 passed`, `0 failed` (includes collect-only integrity over Q06 proof registry + live HARNESS-QINF/EBH reconciliation).
+
+`git diff --check`: clean.
+
+### Before / after inventory integrity (summary)
+
+| Area | Before @ START_HEAD | After P3 |
+| --- | --- | --- |
+| Cross-owner Q06 evidence linkage | P0 matrix only | Collectable proof registry + historical/execution distinction |
+| HARNESS-QINF RuntimeToolInvoker references | **FAIL** (unclassified `declarative_tool_wiring.py`) | Bidirectional allowlist green |
+| EBH debt allowlist ledger | Implicit in registry only | P3 ledger rows validated against live `PUBLIC_CONTRACT_DEPENDENCY_DEBT` |
+| P2 ingress catalog module integrity | Collectability only | Duplicate `node_id` + missing module detection |
+
+### FRZ evidence contribution (scoped — no PASS promotion)
+
+| Criterion | P3 contribution |
+| --- | --- |
+| **FRZ-REG-04** | Justified minimal allowlist extension (P3-W1); EBH debt ledger bounded to live registry |
+| **FRZ-REG-05** | Bidirectional HARNESS-QINF reconciliation re-run at HEAD; stale P2 module references fail closed |
+| **FRZ-REG-02** | Regression adversarial negatives for inventory/allowlist mechanisms |
+| **FRZ-REC-*** / **FRZ-STA-*** / **FRZ-TRC-*** | Q06 linkage to existing STATE-X/TRACE-X proofs (semantics unchanged) |
+
+### Remaining gaps (P3 classification)
+
+| Tag | Item |
+| --- | --- |
+| **IN-SCOPE BLOCKER** | Independent exact-SHA audit of P3 commit on `origin/development` |
+| **TRACKED FREEZE DEBT** | Full Q01 closed-world manifest across all EBH-3/4 gates (unchanged) |
+| **TRACKED FREEZE DEBT** | Global **FRZ-REG-10** freeze suite (**QUAL-X-P5**) |
+| **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `R1-SQLITE-ENV-01` (unchanged) |
+
+### Explicit non-claims
+
+- **QUAL-X** parent not **CLOSED**
+- **FRZ-REG-*** platform **PASS** not awarded
+- Q06 linked proofs not re-executed in P3 batch (collectability ≠ behavioral PASS at HEAD)
+- No new scanner or certification runner authority
+
+**Next mandatory child after independent P3 acceptance:** **QUAL-X-P4** (determinism / environment classification — Q09, Q10).
