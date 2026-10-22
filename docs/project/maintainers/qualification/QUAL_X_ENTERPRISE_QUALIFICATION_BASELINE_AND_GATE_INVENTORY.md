@@ -1876,4 +1876,4 @@ uv run pytest -p no:xdist \
 - `tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py` (new)
 - `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
 
-**FINAL_COMMIT:** `09c1cc401` (full: `09c1cc401…` — see `git rev-parse HEAD` on `development` after sync)
+**FINAL_COMMIT:** `b74d6383bb738fb40c7154b97abe7353a3d9f77b`
