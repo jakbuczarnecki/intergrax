@@ -1793,3 +1793,87 @@ uv run pytest -p no:xdist \
 - `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
 
 **Formal QUAL-X closure readiness:** independent audit of correction commit on GitHub; then adjudicate Packages A platform scope and checklist REG-06 note reconciliation with R3 evidence.
+
+---
+
+## QUAL-X-FINAL — OWNERSHIP & EVIDENCE CORRECTION
+
+**Task:** `QUAL-X-FINAL — INVARIANT COVERAGE & OWNERSHIP CORRECTION` · **Parent:** `QUAL-X`
+
+**Disposition:** **`READY FOR AUDIT — QUAL-X-FINAL OWNERSHIP & EVIDENCE CORRECTION`** (not **QUAL-X CLOSED**)
+
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `cc8c51edb3ae9aa260ae5e87a71dba0527233480` |
+| **Branch** | `development` |
+| **Prior batch START** | `d9da2d91972788842c82b799932e933f0f5011e7` |
+| **Reused Dimension A execution** | `9a175177419a396398647e356a08c966f9c2af4e` |
+| **Reused W2-C storm hygiene** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` |
+| **Reused clean-checkout (REG-07)** | `9a175177419a396398647e356a08c966f9c2af4e` — no replay |
+
+### §1 Git preflight @ correction authoring
+
+| Check | Result |
+| --- | --- |
+| **START_HEAD** | `cc8c51edb3ae9aa260ae5e87a71dba0527233480` |
+| **origin/development** | synchronized @ START_HEAD |
+| Tracked tree | clean before correction commit |
+
+### §2 Root causes
+
+| ID | Root cause | Correction |
+| --- | --- | --- |
+| **OC-01** | QUAL-X-P3 imported private `_ALLOWLISTED_RUNTIME_IMPORTS` / `_collect_runtime_imports` from unit test module | SSOT moved to `testing_support/architecture/contracts_runtime_layer_boundary/`; HARDENING-3 gate + QUAL-X consume same reconciliation API |
+| **OC-02** | Closed-world catalog rows used `BATCH_START_HEAD` / Dimension A SHA as pytest execution for gates introduced in prior batch | `evidence_provenance` + `qualification_gate_introduced_sha`; post-batch gates classified **EVIDENCE REQUIRED** until targeted validation recorded |
+| **OC-03** | REG-01 could be read as satisfied by partial P3/P5 catalog | `CW-PLATFORM-FRZ-ROLLUP` disposition **REG-01 PLATFORM BLOCKED**; bidirectional completeness gates |
+
+### §3 Canonical ownership (before → after)
+
+| Rule | Before | After |
+| --- | --- | --- |
+| HARDENING-3 allowlist + AST scan | Private symbols in `test_hardening_3_layer_boundary_gate.py` | `testing_support/architecture/contracts_runtime_layer_boundary/` (`allowlist.py`, `import_scan.py`, `reconciliation.py`, `evaluation.py`) |
+| Regression gate | `tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py` | unchanged path — imports SSOT only |
+| QUAL-X-P3 reconciliation | duplicate scan via test private API | `reconcile_contracts_runtime_import_allowlist` (shared) |
+
+### §4 Targeted validation (pre-commit working tree)
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py \
+  tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py \
+  tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py \
+  tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py \
+  tests/qualification/qual_x/test_qual_x_p4_determinism_environment_classification_reproducibility.py::test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene
+```
+
+**Result:** 61 passed (no full 535 batch; no Harness suite replay).
+
+**Not executed:** full Dimension A replay; live PROD-Q HTTP.
+
+### §5 FRZ-REG disposition (this correction)
+
+| Criterion | Disposition |
+| --- | --- |
+| **REG-01** | **BLOCKED** — platform rollup explicit; scoped catalog ≠ checklist completeness |
+| **REG-02** | Scoped P2 linkage gates **EVIDENCE REQUIRED** for post-batch pytest attribution |
+| **REG-03** | Reused `9a175177…` — no global rollup claim |
+| **REG-04** | HARDENING-3 SSOT decoupled; P3 recon **EVIDENCE REQUIRED** until FINAL_COMMIT pytest attribution |
+| **REG-05** | Harness/EBH reused @ `9a175177…`; QUAL-X-P3 recon rows **EVIDENCE REQUIRED** |
+| **REG-06** | W2-C storm @ `75b8f264…`; P4 visibility gate **EVIDENCE REQUIRED**; checklist note unchanged |
+| **REG-07** | Reused clean-checkout @ `9a175177…` |
+| **REG-08** | Path B separation preserved |
+| **REG-09** | Reused batch evidence — scoped |
+| **REG-10** | P5 manifest reused @ `9a175177…` |
+
+### §6 Changed files
+
+- `testing_support/architecture/contracts_runtime_layer_boundary/` (new package)
+- `tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py`
+- `tests/qualification/qual_x/_p3_inventory_integrity_catalog.py`
+- `tests/qualification/qual_x/_p3_inventory_integrity_support.py`
+- `tests/qualification/qual_x/_qual_x_final_invariant_coverage_catalog.py`
+- `tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py`
+- `tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py` (new)
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
+
+**FINAL_COMMIT:** `09c1cc401` (full: `09c1cc401…` — see `git rev-parse HEAD` on `development` after sync)

@@ -37,6 +37,9 @@ from tests.qualification.state_x.inventory import (
     HISTORICAL_BASE_FAMILY_IDS,
     STATE_X_FAMILY_INVENTORY,
 )
+from testing_support.architecture.contracts_runtime_layer_boundary import (
+    reconcile_contracts_runtime_import_allowlist,
+)
 
 
 def pytest_node_id_module_path(node_id: str) -> str:
@@ -144,22 +147,7 @@ def p2_catalog_proof_integrity(repo_root: Path) -> tuple[tuple[str, ...], tuple[
 def reconcile_hardening_3_contract_runtime_import_allowlist(
     repo_root: Path,
 ) -> tuple[list[str], list[str]]:
-    from tests.unit.runtime.architecture import (
-        test_hardening_3_layer_boundary_gate as hardening_gate,
+    reconciliation = reconcile_contracts_runtime_import_allowlist(repo_root)
+    return list(reconciliation.unallowlisted_violations), list(
+        reconciliation.stale_allowlist_entries
     )
-
-    allowlisted = hardening_gate._ALLOWLISTED_RUNTIME_IMPORTS
-    contracts_root = repo_root / "intergrax" / "contracts"
-    unallowlisted_violations: list[str] = []
-    for path in sorted(contracts_root.rglob("*.py")):
-        rel = path.relative_to(repo_root).as_posix()
-        if not hardening_gate._collect_runtime_imports(path):
-            continue
-        if rel not in allowlisted:
-            unallowlisted_violations.append(rel)
-    stale_allowlist = [
-        rel
-        for rel in sorted(allowlisted)
-        if not hardening_gate._collect_runtime_imports(repo_root / rel)
-    ]
-    return unallowlisted_violations, stale_allowlist
