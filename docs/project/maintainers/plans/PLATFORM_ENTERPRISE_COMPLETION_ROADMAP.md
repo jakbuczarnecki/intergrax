@@ -549,7 +549,7 @@ GOV-X1
 
 **Shared boundary state (current HEAD):** `credential → provider` = **PROVEN_CURRENT_HEAD** (owner **R2**); `checkpoint → recovery` = **PROVEN_CURRENT_HEAD** (owner **R3**); `context/model continuity` = **PROVEN_CURRENT_HEAD** (owner **R4** @ `d903a8df…`).
 
-**Parent:** **TENANT-X** = **CLOSED / independently accepted** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` (**P0** + **R1** + **R2** + **R3** + **R4** + **FINAL** = **CLOSED**). **Next mandatory stage:** **PROD-Q** = **NEXT / CURRENT** (do **not** enter **QUAL-X** until **PROD-Q** closes).
+**Parent:** **TENANT-X** = **CLOSED / independently accepted** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558` (**P0** + **R1** + **R2** + **R3** + **R4** + **FINAL** = **CLOSED**). **Dimension A — next mandatory stage:** **`QUAL-X`** may be entered per **Path B** (§2.0.3) — **`TENANT-X` CLOSED** is the **`QUAL-X`** predecessor; **`PROD-Q` parent CLOSED** is **not** required for **`QUAL-X`** entry. **`PROD-Q`** remains **OPEN/BLOCKED** on the **live-integration qualification slice** (**`PROD-Q-P1`**, **`PROD-Q-R1-R7-Q`**, **DIM6**, **DIM17**); that slice remains **mandatory before production use** of corresponding integrations and does **not** substitute for **`QUAL-X`**. **Parallel track (Dimension B):** **`PROD-Q`** = **NEXT / CURRENT** for live qualification work.
 
 ### 3.0.3 `DUP-X` — Cross-Architecture Duplicate Mechanism & Bypass Certification
 
@@ -616,16 +616,18 @@ GOV-X1
 
 **Position:** after **`QUAL-X`**, before **`TOOL-LIFE-X`**. Mandatory before Tool execution lifecycle certification, cross-platform scale certification and before final enterprise architecture freeze / release certification (`EBH-7`, `EVOL-X`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 
-**Canonical late-stage dependency chain (adapted to §3 order):**
+**Canonical late-stage dependency chain (Dimension **A** stage order; adapted to §3 order):**
 
 ```text
 earlier correctness / production certifications
-→ CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
+→ CONFIG-X → COMPAT-X → TENANT-X → QUAL-X
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
 → EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
+
+**Pre-Path-B historical sequence (superseded for `QUAL-X` entry only):** `TENANT-X → PROD-Q` (parent **CLOSED**) `→ QUAL-X`. **Current normative `QUAL-X` predecessor:** §2.0.3 (`TENANT-X` **CLOSED** + Path B). **`PROD-Q`** remains a **mandatory** roadmap stage and **separately tracked** live-qualification dependency for **production use** — it may run **in parallel** with Dimension **A** progression and does **not** gate **`QUAL-X`** entry when **OPEN/BLOCKED** solely for the live slice.
 
 **Primary platform question:**
 
@@ -729,16 +731,18 @@ Observability must reconstruct effective Skill influence where enterprise tracea
 
 **Position:** after **`SKILL-X`**, before **`DIST-SCALE-X`**. Mandatory before cross-platform scale certification and before final enterprise architecture freeze / release certification (`EBH-7`, `EVOL-X`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 
-**Canonical late-stage dependency chain (adapted to §3 order):**
+**Canonical late-stage dependency chain (Dimension **A**; see §3.0.4 for full Path B note):**
 
 ```text
 earlier correctness / production certifications
-→ CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
+→ CONFIG-X → COMPAT-X → TENANT-X → QUAL-X
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
 → EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
+
+(`PROD-Q` live slice: mandatory for production use; non-blocking for Dimension **A** `QUAL-X` entry — §2.0.3.)
 
 **Primary platform question:**
 
@@ -938,15 +942,17 @@ Do not certify lifecycle correctness through mocks alone where real behavior mat
 
 **Position:** after **`TOOL-LIFE-X`**, before **`EBH-5`**. Mandatory before final enterprise architecture freeze / release certification (`EBH-7`, `EVOL-X`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 
-**Canonical late-stage dependency chain (adapted to §3 order):**
+**Canonical late-stage dependency chain (Dimension **A**; see §3.0.4 for full Path B note):**
 
 ```text
-CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
+CONFIG-X → COMPAT-X → TENANT-X → QUAL-X
 → SKILL-X
 → TOOL-LIFE-X
 → DIST-SCALE-X
 → EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE
 ```
+
+(`PROD-Q` live slice: mandatory for production use; non-blocking for Dimension **A** `QUAL-X` entry — §2.0.3.)
 
 **Primary business / platform question:**
 
@@ -2003,7 +2009,7 @@ Update this section only after independent exact-SHA audit.
 | PROD-Q-R1-R7-Q | — | **IN PROGRESS** / **NOT QUALIFIED** — **OPERATOR B6 — CLOSED SCOPED §C** (2026-10-21) for dims **2, 3, 7, 8, 9, 10, 11, 13, 14, 15, 18, 19, 21** @ execution `93c17a959f48c5115cc52cb90ec9e16964169a0a`; **DIM20** Package P **CLOSED SCOPED** (2026-10-21; **OPERATOR B6 PACKAGE P** @ audit baseline `24d99a14…`); Package D accepted scoped/partial (**DIM16** — not B6 §C); **DIM6**/**DIM17** pending — wave **1** (**P1**) **CLOSED — SCOPED STATIC REACHABILITY / OPERATOR ACCEPTED** (2026-10-15; evidence `aee2e543…`; execution `036912be…`; **23/23** default pytest); wave **2** (**P2**) **CLOSED — operator exact-SHA acceptance** @ `8e43b1604`; wave **3** (**P3**) **CLOSED — OPERATOR ACCEPTED** @ `28c9bc40…`; **E.1** **CLOSED — SCOPED D0–D4 REGRESSION / OPERATOR ACCEPTED** (2026-10-15; **21** modules / **209** tests; rollup `8ee834e4…`); **DISPATCH-Q1** **ACCEPTED — SCOPED**; Packages B/C **READY FOR AUDIT**; **Next mandatory stage:** operator production profiles (**DIM6**, **DIM17**) + §C parent rollup per gate plan; reconciliation [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](../qualification/PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md); **PROD-Q-R1** **NOT CLOSED**; **PROD-Q** **OPEN / BLOCKED**; global **FRZ-*** unchanged; gate plan [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](../qualification/PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md). |
 | PROD-Q-R1-R7 | — | **NOT CLOSED** / **BLOCKED** — Gate B CLOSED SCOPED; Package D CLOSED SCOPED/PARTIAL; **§C B6** subset **CLOSED SCOPED §C** (2026-10-21 @ `93c17a95…`); **Package P B6** **CLOSED SCOPED** (2026-10-21 @ audit baseline `24d99a14…`); **D1** / **D1b** / **D1-R6** / **D2** / **D3** **CLOSED — OPERATOR ACCEPTED / SCOPED A1** (2026-10-21; **OPERATOR B6 — CLOSED SCOPED A1** @ execution `5dfefe41…`); **D4** **CLOSED / independently accepted** @ evidence `0dd51fe…`; **R7-Q** **IN PROGRESS** / **NOT QUALIFIED** (P3 + **E.1** operator-closed; **DIM6**/**DIM17** remain; **DIM20** Package P scoped closed — parent rollup **OPEN**); **PROD-Q-R1** / **PROD-Q** **NOT CLOSED**; global **FRZ-*** **OPEN**; **Next mandatory stage:** **R7-Q** parent qualification (Package B operator profiles **DIM6**/**DIM17**, §C rollup) per [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](../qualification/PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md); **does not** close **PROD-Q**. |
 | PROD-Q | — | **OPEN / BLOCKED ON mandatory children** — **PROD-Q-P0** / **P2** / **P3** **CLOSED SCOPED** (**OPERATOR B6** 2026-10-21 / 2026-10-22); **PROD-Q-R1** **OPEN** / **BLOCKED**; **PROD-Q-P1** **OPEN**; **PROD-Q-R1-R7-Q** **NOT QUALIFIED**; **DIM6**/**DIM17** **OPEN**; follows **TENANT-X** (**CLOSED** @ `5ccb72fccd4e3820ebdc9c18008afe6f7d59f558`). **Path B:** live slice **OPEN** — does **not** block **`QUAL-X`** entry (§2.0.3). |
-| PROD-Q-PATH-B — OPERATOR CANONICAL FREEZE BOUNDARY AMENDMENT | **START_HEAD:** `c8bb869e3dd55ab3d60fd6304d47cb29dc77f58c` · **Decision date:** 2026-10-22 · **Authority:** `OPERATOR APPROVED — PATH B` | **Decision and change-trace record only** — **not** stage closure. **Affected:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §1.2, §2.0.3, stage rows **`QUAL-X`**, **`ARCH-FREEZE`**, **`SCENARIO-GATE`**, **`PROD-Q`**; [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) Path B scope table. **Dependency delta:** **`QUAL-X`** entry **`PROD-Q` CLOSED** → **`TENANT-X` CLOSED** + Path B; **`ARCH-FREEZE`** accepts **provider-neutral architecture scope** while **`PROD-Q` live slice** may remain **OPEN**; live **`FRZ-PRD-*`** remain **OPEN** until **`PROD-Q`** live gate. **Preserved OPEN:** **DIM6**, **DIM17**, **`PROD-Q-P1`**, **`PROD-Q-R1-R7-Q` NOT QUALIFIED**. **Excluded:** live provider access, credentials, A5/A6, automatic **CLOSED**/**FRZ PASS**. **Independent audit:** pending on amendment commit SHA. **Next permissible canonical task:** enter **`QUAL-X`** implementation/audit wave per §2.0.3 (architecture progression); parallel **`PROD-Q`** live slice work only with explicit operator authorization for live operations. **new global FRZ PASS = 0**. |
+| PROD-Q-PATH-B — OPERATOR CANONICAL FREEZE BOUNDARY AMENDMENT | **START_HEAD:** `c8bb869e3dd55ab3d60fd6304d47cb29dc77f58c` · **Amendment commit:** `2ee9a07a4a9399ab1388b9d58995b292cfe23332` · **Decision date:** 2026-10-22 · **Authority:** `OPERATOR APPROVED — PATH B` | **Decision and change-trace record only** — **not** stage closure. **Affected:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §1.2, §2.0.3, stage rows **`QUAL-X`**, **`ARCH-FREEZE`**, **`SCENARIO-GATE`**, **`PROD-Q`**; [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) Path B scope table. **Dependency delta:** **`QUAL-X`** entry **`PROD-Q` CLOSED** → **`TENANT-X` CLOSED** + Path B; **`ARCH-FREEZE`** accepts **provider-neutral architecture scope** while **`PROD-Q` live slice** may remain **OPEN**; live **`FRZ-PRD-*`** remain **OPEN** until **`PROD-Q`** live gate. **Preserved OPEN:** **DIM6**, **DIM17**, **`PROD-Q-P1`**, **`PROD-Q-R1-R7-Q` NOT QUALIFIED**. **Excluded:** live provider access, credentials, A5/A6, automatic **CLOSED**/**FRZ PASS**. **Independent audit:** pending on amendment commit SHA. **Next permissible canonical task:** enter **`QUAL-X`** implementation/audit wave per §2.0.3 (architecture progression); parallel **`PROD-Q`** live slice work only with explicit operator authorization for live operations. **new global FRZ PASS = 0**. **Reconciliation R1 (`PROD-Q-PATH-B-CANONICAL-DEPENDENCY-RECONCILIATION-R1`):** **START_HEAD** `2ee9a07a4a9399ab1388b9d58995b292cfe23332`; residual normative contradiction (post-amendment audit): §3.0.2 still prohibited **`QUAL-X`** until **`PROD-Q`** closes; §3.0.4/§3.0.5/§3.0.6 chains retained pre-Path-B `TENANT-X → PROD-Q → QUAL-X` without §2.0.3 alignment. **Reconciled:** §3.0.2 TENANT-X handoff; §3.0.4–§3.0.6 Dimension **A** chains + historical pre-Path-B label; cross-check vs §2.0.3, checklist Path B table, ECAP P1/P2/P4 (docs-only). **Independent audit:** pending on reconciliation commit SHA. **Not** a second architecture decision. |
 | QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (**Path B:** `TENANT-X` → `QUAL-X` → `SKILL-X`; **`PROD-Q` parent CLOSED** not required for entry — §2.0.3); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
 | SKILL-X | — | PLANNED / MANDATORY — Agent Skills lifecycle/composition/governance certification (`QUAL-X` → `SKILL-X` → `TOOL-LIFE-X`); full scope §3.0.4; **not started**; **production delta = 0** until implementation opened. |
 | TOOL-LIFE-X | — | PLANNED / MANDATORY — Tool execution lifecycle, timeout, cancellation & retry certification (`SKILL-X` → `TOOL-LIFE-X` → `DIST-SCALE-X`); full scope §3.0.5; **not started**; **production delta = 0** until implementation opened. |
