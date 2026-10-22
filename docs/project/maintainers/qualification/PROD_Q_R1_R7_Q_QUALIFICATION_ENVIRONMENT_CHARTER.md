@@ -644,7 +644,7 @@ flowchart LR
 
 ### O.7 Collective execution plan (post-infrastructure authorization)
 
-Execute **only** after **A1** and **OP-01…03** delivery; **single** bounded documentation reference: **§G** (entry **G.1** → during **G.1b** → exit **G.1c** → audit **G.7**). Preflight **O.1–O.5** must be re-read @ pinned **EXECUTION_SHA** immediately before **G.1b** step 1.
+Execute **only** after **A1** local Docker preparation (**§O.8**) and **OP-01…03** delivery; **single** bounded documentation reference: **§G** (entry **G.1** → during **G.1b** → exit **G.1c** → audit **G.7**). Preflight **O.1–O.5** must be re-read @ pinned **EXECUTION_SHA** immediately before **G.1b** step 1.
 
 | Phase | Owner | Outcome |
 |-------|-------|---------|
@@ -654,6 +654,32 @@ Execute **only** after **A1** and **OP-01…03** delivery; **single** bounded do
 | **Activate** | Operator-authorized window | **G.1b** steps 1–3 |
 | **Verify** | Operator + CI host | **G.1b** step 4 + **G.2** pytest @ SHA |
 | **Close slice** | Independent auditor | **G.1c** + **G.7** — may **recommend** DIM6/DIM17 only; **no** auto-close |
+
+### O.8 A1 — local isolated Docker qualification preparation (static)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-Q-A1-LOCAL-DOCKER-QUALIFICATION-PREPARATION` |
+| **Operator authorization** | `OPERATOR APPROVED — A1 LOCAL ISOLATED DOCKER QUALIFICATION ENVIRONMENT PREPARATION` |
+| **EXECUTION_SHA / baseline** | `5bf81cf826313ce88ba0d46982edbcf734a55319` |
+| **Classification** | **A1 — PREPARED / STATICALLY VERIFIED / NOT RUNTIME VERIFIED** (documentation milestone only) |
+| **Not claimed** | `DOCKER-LOCAL-VERIFIED`, qual-env **QUALIFIED**, `TARGET-VERIFIED`, **PRODUCTION**, DIM6/DIM17 PASS |
+
+**Static composition (@ baseline):** single Compose service `gca-strict-local-qualification`; project `-p intergrax-gca-docker-local-qualification`; named volume `intergrax_gca_strict_local_qualification_data` → `/var/lib/intergrax/production-v1/data`; `INTERGRAX_SINGLE_NODE_PRODUCTION_V1_ENFORCE_SINGLE_ACTIVE_WRITER=1`; sanctioned `INTERGRAX_GCA_STRICT_SERVE_EXEC` → `package_b_strict_production_serving_command`; no `ports`, `privileged`, or host bind mounts; `restart: "no"`. **CO** = existing GCA `deploy/docker-compose-local-qualification/` overlay only — no second stack.
+
+**Entrypoint:** `--configured-verify` / `--preflight-only` exit after `single_node_profile_v1_admission_gate` only; `serve` runs admission then `INTERGRAX_GCA_STRICT_SERVE_EXEC` — no `host.main:app` bypass.
+
+**Operator inputs:** **OP-01…03 undelivered**; `intergrax-gca-docker-local-qualification.env` gitignored @ root `.gitignore` (A1 fix); copy from `.env.example` only on operator host.
+
+**Non-executing validation:** `docker compose -f …/docker-compose.yml -p intergrax-gca-docker-local-qualification config -q` exit **0** when Docker CLI present; `git diff --check` clean @ commit.
+
+**A1 delta @ baseline:** `.gitignore` operator env path; RUNBOOK A1/A6 boundaries; this §O.8 record — **production code delta 0**.
+
+**Mandatory before A6:** OP-01 bundle + provenance; OP-02 trusted roots; OP-03 credentials; separate **A6** authorization; materialized `governed_contractor-application:latest` base image per RUNBOOK (build **not** executed in A1).
+
+**FRZ contribution (future evidence only — no global PASS):** **FRZ-PRD-01** (isolated qual adjunct, not production claim); **FRZ-PRD-03** (sanctioned strict path preserved); **FRZ-PRD-08** (fail-closed admission before serve); **FRZ-SEC-04** (secret file ignore + no committed credentials). Supporting: **FRZ-GOV-***, **FRZ-TEN-***, **FRZ-BND-***, **FRZ-CTR-***, **FRZ-REG-*** — static alignment only, **NOT RUNTIME VERIFIED**.
+
+**Cursor disposition:** **READY FOR AUDIT** — independent GitHub SHA audit required; A1 does **not** close **PROD-Q-R1-R7-Q** or any **FRZ** row.
 
 ---
 

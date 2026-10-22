@@ -2,7 +2,21 @@
 
 **Scope:** `DOCKER-LOCAL-VERIFIED` evidence only when an operator runs the steps below on Docker Desktop (Linux containers). This project does **not** replace the ratified Linux VM / systemd production profile and is **not** operator acceptance or `TARGET-VERIFIED` proof.
 
-**Qualification states:** `CONFIGURED` (repo artifacts) → `REPO-TESTED` (pytest gates) → `DOCKER-LOCAL-VERIFIED` (operator-run Docker) → `TARGET-VERIFIED` / `OPERATOR-ACCEPTED` (out of scope here).
+**Documentation-only milestones** (not runtime enums): `CONFIGURED` (repo artifacts) → `A1-PREPARED` (static audit + non-executing `compose config -q`; **this task**) → `A6-RUNTIME-VERIFIED` (future authorized `build` / `run` / `serve`) → `OPERATOR-PROFILE-QUALIFIED` (Package B + OP-01…03 on real qual host) → `PRODUCTION-ACCEPTED` (out of scope). Legacy RUNBOOK label `DOCKER-LOCAL-VERIFIED` applies only after operator-run Docker steps below — **not** after A1 alone.
+
+**Qualification states (OD-R2-03):** `CONFIGURED` → `REPO-TESTED` (pytest gates) → `DOCKER-LOCAL-VERIFIED` (operator-run Docker under **A6**) → `TARGET-VERIFIED` / `OPERATOR-ACCEPTED` (out of scope here).
+
+## A1 vs A6 boundary
+
+| Stage | Authorized in A1 | Authorized in A6 (separate) |
+|-------|------------------|-----------------------------|
+| `docker compose config -q` | Yes (non-executing) | Yes |
+| `docker compose build` | **No** | Yes (when authorized) |
+| `docker compose run` / `up` / `start` | **No** | Yes (when authorized) |
+| Strict `serve` / live activation | **No** | Yes only with OP-01…03 + activation window |
+| `docker compose down -v` | **No** (destructive; operator confirmation) | Same |
+
+Missing operator policy, trusted roots, credentials, and activation remain **missing** after A1 — no LAB credential fallback.
 
 ## Prerequisites
 
