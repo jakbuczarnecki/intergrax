@@ -10,7 +10,9 @@ import pytest
 
 from tests.qualification.governance.pytest_node_integrity import (
     PytestExecuteSummary,
+    parse_collect_only_q,
     pytest_nodes_missing_from_collection,
+    run_pytest_collect_only_q,
 )
 from tests.qualification.qual_x._p5_freeze_selection_catalog import (
     QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE,
@@ -235,3 +237,14 @@ def test_qual_x_p5_dimension_a_execution_targets_modules_exist() -> None:
         in targets
     )
     assert len(targets) >= 6
+
+
+def test_qual_x_p5_dimension_a_targets_cover_mandatory_collectable_proof_nodes() -> None:
+    """QUAL-X-FINAL: module targets must select delegated P2/P3/P4 proof nodes, not only batches."""
+    mandatory = qual_x_p5_mandatory_collectable_node_ids()
+    targets = qual_x_p5_dimension_a_pytest_module_targets()
+    proc = run_pytest_collect_only_q(targets, _REPO_ROOT)
+    collected = parse_collect_only_q(proc.stdout)
+    missing = [node_id for node_id in mandatory if node_id not in collected]
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert not missing, f"missing={len(missing)}: {sorted(missing)[:8]}"

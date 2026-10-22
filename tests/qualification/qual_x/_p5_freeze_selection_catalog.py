@@ -443,6 +443,12 @@ def qual_x_p5_entry_pytest_node_ids(
 def qual_x_p5_dimension_a_pytest_module_targets() -> tuple[str, ...]:
     seen: set[str] = set()
     ordered: list[str] = []
+
+    def _add_module(module: str) -> None:
+        if module not in seen:
+            seen.add(module)
+            ordered.append(module)
+
     for entry in QUAL_X_P5_FREEZE_SELECTION_MANIFEST:
         if (
             entry.qualification_dimension
@@ -450,12 +456,11 @@ def qual_x_p5_dimension_a_pytest_module_targets() -> tuple[str, ...]:
         ):
             continue
         for module in entry.pytest_modules:
-            if module not in seen:
-                seen.add(module)
-                ordered.append(module)
-        if entry.coordination_batch_module and entry.coordination_batch_module not in seen:
-            seen.add(entry.coordination_batch_module)
-            ordered.append(entry.coordination_batch_module)
+            _add_module(module)
+        if entry.coordination_batch_module:
+            _add_module(entry.coordination_batch_module)
+        for node_id in qual_x_p5_entry_pytest_node_ids(entry):
+            _add_module(node_id.split("::", 1)[0])
     return tuple(ordered)
 
 
