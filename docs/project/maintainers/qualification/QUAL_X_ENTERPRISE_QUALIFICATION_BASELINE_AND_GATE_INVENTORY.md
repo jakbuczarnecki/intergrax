@@ -1877,3 +1877,105 @@ uv run pytest -p no:xdist \
 - `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
 
 **FINAL_COMMIT:** `b74d6383bb738fb40c7154b97abe7353a3d9f77b`
+
+---
+
+## QUAL-X-FINAL — PLATFORM REG COVERAGE & ACCEPTANCE BATCH
+
+**Task:** `QUAL-X-FINAL — PLATFORM REG COVERAGE & ACCEPTANCE BATCH` · **Parent:** `QUAL-X`
+
+**Disposition:** **`READY FOR AUDIT — QUAL-X-FINAL PLATFORM REG ACCEPTANCE PACKAGE`** (not **QUAL-X CLOSED**; not global **FRZ-REG PASS**)
+
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `fc61fa60e3705c30177dd504991b9215e1e47afa` |
+| **EXECUTION_SHA** (this batch pytest) | `fc61fa60e3705c30177dd504991b9215e1e47afa` (pre-catalog reconcile) → post-reconcile commit records attribution |
+| **Branch** | `development` |
+| **origin/development** | synchronized @ START_HEAD |
+| **Ownership correction implementation** | `b74d6383bb738fb40c7154b97abe7353a3d9f77b` |
+| **Evidence-only follow-up** | `fc61fa60e3705c30177dd504991b9215e1e47afa` (FINAL_COMMIT SHA ledger only) |
+
+### §1 Closed-world applicability (REG-01 population)
+
+| Population | Scope | QUAL-X-FINAL disposition |
+| --- | --- | --- |
+| **A** — Frozen invariants in P3/P4/P5 closed-world + P5 Dimension A selections | `QUAL_X_FINAL_CLOSED_WORLD_INVENTORY`, `QUAL_X_P5_FREEZE_SELECTION_MANIFEST`, P3 owners | Executable proof or **VALID REUSED** @ accepted execution SHAs |
+| **B** — Stage CLOSED waves (EBH-2F, TENANT-X, HARNESS-W4, …) | Historical exact-SHA acceptances | **HISTORICAL ONLY** — ECAP-P2; not auto-promoted @ current HEAD |
+| **C** — Future mandatory stages (TOOL-LIFE-X, DUP-X, ENT-AUDIT-X rollup) | Roadmap not started / not prerequisites | **FUTURE-STAGE OBLIGATION** |
+| **D** — PROD-Q Dimension B live HTTP | `CW-PROD-Q-LIVE-HTTP` | **DIMENSION B — EVIDENCE REQUIRED** (out of scope for this batch) |
+| **E** — Full freeze checklist outside closed-world | `CW-PLATFORM-FRZ-ROLLUP` | **REG-01 PLATFORM BLOCKED** until **ENT-AUDIT-X** |
+
+Bidirectional mapping SSOT: P3 `QUAL_X_P3_IN_SCOPE_INVENTORY_OWNERS` ↔ `QUAL_X_FINAL_CLOSED_WORLD_INVENTORY` (gate `qual_x_final_missing_p3_inventory_owner_ids`); HARDENING-3 ↔ `testing_support/architecture/contracts_runtime_layer_boundary/`; HARNESS-QINF / EBH-2I via existing gate modules (no second scanner).
+
+### §2 Provenance reconciliation
+
+Post-ownership-correction rows that were **EVIDENCE REQUIRED** (gates introduced @ `d9da2d91…` / HARDENING-3 SSOT @ `b74d6383…`) were **not** satisfied by implementation SHA alone. Targeted pytest @ `fc61fa60…` (**61 passed**, log `.tmp/session/qual-x-final-platform-reg/targeted-batch.log`) attributes **CURRENT EXECUTABLE PROOF** for: RTI allowlist recon, HARDENING-3 P3 recon, STATE-X family inventory, P2 ingress linkage, P4 W2-C visibility (storm execution remains @ `75b8f264…`).
+
+Catalog constants: `QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA`, `QUAL_X_FINAL_OWNERSHIP_CORRECTION_IMPLEMENTATION_SHA`.
+
+### §3 Targeted validation (this task)
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py \
+  tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py \
+  tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py \
+  tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py \
+  tests/qualification/qual_x/test_qual_x_p4_determinism_environment_classification_reproducibility.py::test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene
+```
+
+**Result @ EXECUTION_SHA `fc61fa60…`:** 61 passed · **not** full Dimension A (535) · **not** live PROD-Q.
+
+**Historical reused (not re-run this task):** Dimension A `9a175177…` (535/535); W2-C storm `75b8f264…`; R2 batch `4da2da22…` superseded for REG-07 narrative by clean-checkout record on `9a175177…`.
+
+### §4 FRZ-REG-01..10 acceptance matrix (candidate — no promotion)
+
+| Criterion | Applicable invariants (summary) | Owner | Test/gate | Execution SHA | Validity | Remaining blocker | Acceptance candidate |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **REG-01** | Platform freeze checklist minus closed-world | ENT-AUDIT-X / QUAL-X rollup | `CW-PLATFORM-FRZ-ROLLUP` blocked | — | Scoped P3/P5 rows proven | Checklist-wide invariant catalog + independent audit | **BLOCKED — IN-SCOPE** (platform rollup) |
+| **REG-02** | Corrected blockers + P2 ingress linkage | QUAL-X-P2/P3 | P3 P2 catalog gate | `fc61fa60…` | Current HEAD pytest | EBH/INT-CONFIG historical slices not unified @ HEAD | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-03** | Negative/adversarial gates | Stage qual suites | Harness/TENANT/PROD-Q slices | `9a175177…` (Dim A subset) | Historical + scoped | Not uniform across all ingresses | **PARTIAL — SPECIFIC MISSING PROOF** (platform-wide negatives) |
+| **REG-04** | Allowlists minimal (HARDENING-3, EBH-2I, QINF RTI) | HARDENING-3 SSOT, EBH-2I, QINF | HARDENING-3 + P3 recon + EBH rescan | `fc61fa60…` / `9a175177…` | SSOT decoupled; recon @ HEAD | Global allowlist ledger across all stages | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (closed-world) |
+| **REG-05** | Inventory completeness / stale=0 | QINF, STATE-X, EBH debt | P3 integrity suite | `fc61fa60…` / `9a175177…` | Bidirectional gates green | Platform-wide inventory union pre-DUP-X | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-06** | Deterministic qualification | W2-C storm + P4 metadata | storm @ R3; P4 hygiene @ HEAD | `75b8f264…` / `fc61fa60…` | Distinct identities preserved | Checklist W2-C note vs R3 evidence reconciliation | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-07** | Clean-checkout reproducibility | QUAL-X-FINAL | P5 procedure / 535 nodes | `9a175177…` | Valid reused; code unchanged since | No replay @ post-ownership HEAD | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (reused evidence) |
+| **REG-08** | Env cannot false-PASS | Dim A env gates; PROD-Q live | PHYSQ / prod_q markers | Scoped historical | Path B preserved | Live GCA HTTP (**Dimension B**) | **PARTIAL** — Dim A **PASS CANDIDATE**; Dim B **DIMENSION B — EVIDENCE REQUIRED** |
+| **REG-09** | Critical invariants executable | P1/P5 selections + EBH gates | Dimension A + architecture gates | `9a175177…` + scoped @ `fc61fa60…` | Mixed historical/current | Long-tail proxy gates | **PARTIAL — SPECIFIC MISSING PROOF** |
+| **REG-10** | Mandatory freeze suite defined | QUAL-X-P5 | `test_qual_x_p5_freeze_qualification_suite_assembly.py` | `9a175177…` + manifest integrity @ `fc61fa60…` | Manifest SSOT | Formal suite PASS ≠ QUAL-X CLOSED | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** |
+
+### §5 ECAP-P1..P6 (scoped)
+
+| Principle | Assessment |
+| --- | --- |
+| **P1** | 61-test batch does not imply enterprise compliance |
+| **P2** | Historical stage CLOSED rows not promoted |
+| **P3** | This record is closed-world + REG linkage, not full-platform certification |
+| **P4** | No self **FRZ-REG PASS** |
+| **P5** | RPL claims unchanged |
+| **P6** | Corrections limited to proven provenance gaps + catalog attribution |
+
+### §6 REG-01 / REG-04 / REG-05 closure readiness
+
+| Criterion | Readiness |
+| --- | --- |
+| **REG-01** | **Not closure-ready** — platform rollup explicitly blocked; scoped rows adequate for audit input only |
+| **REG-04** | **Closure-ready candidate (scoped)** — HARDENING-3 SSOT + P3/QINF/EBH allowlist gates evidenced |
+| **REG-05** | **Closure-ready candidate (scoped)** — P3 bidirectional inventory gates @ HEAD |
+
+### §7 Path B
+
+Dimension **A** qualification paths and env-fail-closed markers unchanged. **PROD-Q** live HTTP remains mandatory **Dimension B** — not executed; not waived.
+
+### §8 Remaining exact blockers
+
+1. **REG-01 platform rollup** — `ENT-AUDIT-X` / checklist-wide invariant proof (`CW-PLATFORM-FRZ-ROLLUP`).
+2. **REG-03 / REG-09 platform-wide** — negative coverage and proxy-gate credibility not exhaustively proven @ HEAD.
+3. **PROD-Q Dimension B** — `test_prod_q_r1_r7_q_c_dim8_cross_tenant_integrated_gate.py` live evidence.
+4. **Independent exact-SHA audit** of implementation + catalog reconcile commit on GitHub.
+
+### §9 Changed files (this batch)
+
+- `tests/qualification/qual_x/_qual_x_final_invariant_coverage_catalog.py` — provenance reconcile @ `fc61fa60…`
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
+
+**Formal recommendation:** **QUAL-X** parent remains **OPEN / IN PROGRESS**; **QUAL-X-FINAL** acceptance package **READY FOR AUDIT** for independent adjudication of scoped REG evidence.

@@ -15,6 +15,12 @@ QUAL_X_FINAL_DIMENSION_A_EXECUTION_SHA: str = (
     "9a175177419a396398647e356a08c966f9c2af4e"
 )
 QUAL_X_FINAL_W2_C_REMEDIATION_SHA: str = "75b8f264eec3af4e608d0618a9dfaf02bf1659bc"
+QUAL_X_FINAL_OWNERSHIP_CORRECTION_IMPLEMENTATION_SHA: str = (
+    "b74d6383bb738fb40c7154b97abe7353a3d9f77b"
+)
+QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA: str = (
+    "fc61fa60e3705c30177dd504991b9215e1e47afa"
+)
 
 _ACCEPTED_HISTORICAL_EXECUTION_SHAS: frozenset[str] = frozenset(
     {
@@ -86,11 +92,11 @@ QUAL_X_FINAL_CLOSED_WORLD_INVENTORY: tuple[QualXFinalClosedWorldRow, ...] = (
         contract_or_ssot="tests/qualification/harness_01/catalog.py",
         production_enforcement="intergrax/ + agents/ production invoke surfaces",
         test_gate="test_qual_x_p3_harness_qinf_runtime_tool_invoker_*",
-        evidence_sha="",
-        evidence_provenance=QualXFinalEvidenceProvenance.EVIDENCE_REQUIRED,
+        evidence_sha=QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
         qualification_gate_introduced_sha=QUAL_X_FINAL_BATCH_START_HEAD,
         frz_criterion="FRZ-REG-04",
-        disposition=QualXFinalInvariantDisposition.EVIDENCE_REQUIRED,
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
     ),
     QualXFinalClosedWorldRow(
         row_id="CW-EBH-2I-DEBT",
@@ -135,11 +141,11 @@ QUAL_X_FINAL_CLOSED_WORLD_INVENTORY: tuple[QualXFinalClosedWorldRow, ...] = (
         ),
         production_enforcement="Same as HARDENING-3 — no duplicate allowlist",
         test_gate="test_qual_x_p3_hardening_3_contract_runtime_import_allowlist_bidirectional",
-        evidence_sha="",
-        evidence_provenance=QualXFinalEvidenceProvenance.EVIDENCE_REQUIRED,
-        qualification_gate_introduced_sha=QUAL_X_FINAL_BATCH_START_HEAD,
+        evidence_sha=QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
+        qualification_gate_introduced_sha=QUAL_X_FINAL_OWNERSHIP_CORRECTION_IMPLEMENTATION_SHA,
         frz_criterion="FRZ-REG-04",
-        disposition=QualXFinalInvariantDisposition.EVIDENCE_REQUIRED,
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
     ),
     QualXFinalClosedWorldRow(
         row_id="CW-STATE-X-FAMILY",
@@ -150,11 +156,11 @@ QUAL_X_FINAL_CLOSED_WORLD_INVENTORY: tuple[QualXFinalClosedWorldRow, ...] = (
         contract_or_ssot="tests/qualification/state_x/inventory.py",
         production_enforcement="STATE-X state-family SSOT",
         test_gate="test_qual_x_p3_state_x_family_inventory_mandatory_coverage",
-        evidence_sha="",
-        evidence_provenance=QualXFinalEvidenceProvenance.EVIDENCE_REQUIRED,
+        evidence_sha=QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
         qualification_gate_introduced_sha=QUAL_X_FINAL_BATCH_START_HEAD,
         frz_criterion="FRZ-REG-05",
-        disposition=QualXFinalInvariantDisposition.EVIDENCE_REQUIRED,
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
     ),
     QualXFinalClosedWorldRow(
         row_id="CW-P2-INGRESS-LINK",
@@ -165,11 +171,11 @@ QUAL_X_FINAL_CLOSED_WORLD_INVENTORY: tuple[QualXFinalClosedWorldRow, ...] = (
         contract_or_ssot="tests/qualification/qual_x/_p2_ingress_catalog.py",
         production_enforcement="Governance/tenant ingress proof linkage",
         test_gate="test_qual_x_p3_p2_catalog_proof_modules_exist_and_no_duplicate_node_ids",
-        evidence_sha="",
-        evidence_provenance=QualXFinalEvidenceProvenance.EVIDENCE_REQUIRED,
+        evidence_sha=QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
         qualification_gate_introduced_sha=QUAL_X_FINAL_BATCH_START_HEAD,
         frz_criterion="FRZ-REG-02",
-        disposition=QualXFinalInvariantDisposition.EVIDENCE_REQUIRED,
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
     ),
     QualXFinalClosedWorldRow(
         row_id="CW-W2-C-STORM-HYGIENE",
@@ -195,11 +201,11 @@ QUAL_X_FINAL_CLOSED_WORLD_INVENTORY: tuple[QualXFinalClosedWorldRow, ...] = (
         contract_or_ssot="tests/qualification/qual_x/_p4_determinism_environment_catalog.py",
         production_enforcement="Qualification metadata only",
         test_gate="test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene",
-        evidence_sha="",
-        evidence_provenance=QualXFinalEvidenceProvenance.EVIDENCE_REQUIRED,
+        evidence_sha=QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
         qualification_gate_introduced_sha=QUAL_X_FINAL_BATCH_START_HEAD,
         frz_criterion="FRZ-REG-06",
-        disposition=QualXFinalInvariantDisposition.EVIDENCE_REQUIRED,
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
     ),
     QualXFinalClosedWorldRow(
         row_id="CW-P5-MANIFEST",
