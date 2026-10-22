@@ -5,11 +5,11 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **PROPOSED** — strategy **A+B** operator authorization **2026-10-22** (`OPERATOR APPROVED — PROD-Q QUALIFICATION STRATEGY A+B`); **does not** create infrastructure, **does not** close **DIM6**, **DIM17**, **R7-Q**, **PROD-Q**, or any **FRZ-*** row |
-| **Task** | `PROD-Q-R1-R7-Q-QUALIFICATION-ENVIRONMENT-CHARTER` |
+| **Task** | `PROD-Q-R1-R7-Q-QUALIFICATION-ENVIRONMENT-CHARTER-R1` |
 | **Parent** | **PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Program** | **PROD-Q** — **OPEN** / **BLOCKED** (children) |
 | **Branch** | `development` |
-| **START_HEAD** | `236866bd842232c2216f2b5b38b428a9f4addccd` |
+| **START_HEAD** | `23c696ea5e3c08bcadd0283388b3abb3835393cd` |
 | **Production code delta** | **0** (documentation-only proposal) |
 | **Disposition** | Defines **minimal conditions** for a **future** isolated, operator-authorized **QUALIFICATION** environment; environment **does not exist** at charter authoring time |
 
@@ -28,7 +28,7 @@
 
 ## 0. Executive boundary statement
 
-Integrax is developed **locally**; Docker is used primarily for **tests** and **local qualification overlays** (e.g. GCA `docker-compose-local-qualification`). There is **no** operator-accepted **PRODUCTION** deployment and **no** provisioned **QUALIFICATION** environment at charter time. **OP-01…OP-04** inputs are **undelivered**. This charter is a **proposal** for how such an environment **shall** be created, isolated, configured, and evidenced **later** — under separate operator tasks with explicit infrastructure authorization.
+Integrax is developed **locally**; Docker is used primarily for **tests** and **local qualification overlays** (e.g. GCA `docker-compose-local-qualification`). There is **no** operator-accepted **PRODUCTION** deployment and **no** provisioned **QUALIFICATION** environment at charter time. **OP-01…OP-03** operator inputs are **undelivered**; **OP-04** is **audit evidence captured during** an authorized qualification activation — it is **not** a pre-execution delivery prerequisite. This charter is a **proposal** for how such an environment **shall** be created, isolated, configured, and evidenced **later** — under separate operator tasks with explicit infrastructure authorization.
 
 ---
 
@@ -138,9 +138,18 @@ Legend: **SO** = semantic owner · **CO** = composition owner · **PC** = produc
 
 | Class | Purpose | Evidence allowed | Forbidden / out of scope |
 |-------|---------|------------------|---------------------------|
-| **LAB** | Developer machines, pytest, harness/reference policy bundles, `allow_qualification_locators=True`, in-repo Docker qual overlay without operator profiles | Slice tests @ cited SHAs; static gates; **labeled LAB** in evidence ledgers | Claiming **PRODUCTION** or **QUALIFICATION** PASS; using reference policy as production authority; promoting lab pytest to **FRZ-*** PASS |
-| **QUALIFICATION** | **Future** isolated environment for operator-authorized capture of **OP-01…OP-04** and re-run of **B6-01…04**, **B17-01…05** against **real** profile inputs (still **not** customer production traffic) | Targeted pytest replay @ exact SHA; audit exports; configuration **references** (not secret values); negative evidence (deny before prepare) | Live production mutation of customer data; undeclared network exposure; secrets in Git/logs; auto-promotion to **PRODUCTION** |
-| **PRODUCTION** | Operator-accepted traffic-serving deployment per ratified profile (e.g. single-node v1 **when separately accepted**) | Independent operator acceptance, DR/ops evidence, continuous controls | **Does not exist** at charter time; **QUALIFICATION ≠ PRODUCTION** |
+| **LAB** | Developer machines, pytest, harness/reference policy bundles, `allow_qualification_locators=True`, in-repo Docker qual overlay without operator profiles | Slice tests @ cited SHAs; static gates; **labeled LAB** in evidence ledgers | Claiming **PRODUCTION** or **QUALIFICATION-environment acceptance**; using reference policy as production authority; promoting lab pytest to **FRZ-*** PASS |
+| **QUALIFICATION** | **Future** isolated environment for operator-authorized bounded activation under **OP-01…OP-03**, **capture of OP-04** from that run, and re-run of **B6-01…04**, **B17-01…05** against **real** profile inputs (still **not** customer production traffic) | **QUALIFICATION-class** evidence: targeted pytest replay @ exact SHA; redacted audit exports (**OP-04**); configuration **references** (not secret values); negative evidence (deny before prepare); may support **scoped** operational-contract proof when criterion + operator execution requirements are met | Live production mutation of customer data; undeclared network exposure; secrets in Git/logs; auto-promotion to **PRODUCTION**; global **FRZ-*** PASS by label alone |
+| **PRODUCTION** | Operator-accepted traffic-serving deployment per ratified profile (e.g. single-node v1 **when separately accepted**) | **Actual production operational** evidence per freeze checklist (DR/ops, continuous controls, live traffic acceptance where required) | **Does not exist** at charter time; **QUALIFICATION ≠ PRODUCTION** |
+
+**Evidence-class rules (charter):**
+
+| Rule | Detail |
+|------|--------|
+| **LAB ≠ acceptance** | **LAB** evidence does **not** establish qualification-environment acceptance or global **FRZ-*** PASS. |
+| **QUALIFICATION scope** | **QUALIFICATION** evidence **may** establish **specific scoped** operational contracts (e.g. Package B B6/B17 operator replay, DIM6/DIM17 slices) when the exact **FRZ** criterion, operator-approved execution plan, and captured **OP-04** chain are satisfied. |
+| **No production inheritance** | **QUALIFICATION** does **not** automatically establish real **PRODUCTION** deployment acceptance; **PROD-Q-P1** reachability, vendor live execution, and customer-traffic proof remain **separate** — **no inherited PASS**. |
+| **Naming ≠ proof** | Environment class name **QUALIFICATION** does **not** imply **FRZ-PRD-01/03/08** or **FRZ-SEC-04** global PASS; checklist rows stay **OPEN** until independently satisfied. |
 
 **Charter rule:** No document or runbook may describe the qualification environment as **already provisioned**. States progress only via explicit operator records (`PROPOSED` → `PROVISIONED` → `QUALIFIED` slice → …).
 
@@ -195,13 +204,19 @@ Requirements apply to the **future** QUALIFICATION environment proposal; **no ne
 
 ## E. OP-03 — Credential profile
 
+Typed contract (unchanged): `GovernedContractorBackendSettings.from_env` @ `applications/governed_contractor_application/host/settings.py`.
+
 | Item | Requirement |
 |------|-------------|
-| **GCA production profile** | `GOVERNED_CONTRACTOR_BACKEND_ENV=prod` + API keys via `BACKEND_API_KEYS_JSON` or bootstrap triplet — **from secret store** |
+| **GCA production profile** | `GOVERNED_CONTRACTOR_BACKEND_ENV=prod` + non-empty API key map via **approved** `GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON` (or equivalent operator secret-store injection mapping to that contract) — **never** from repo or CI |
+| **Positive-path constraints (mandatory)** | `BACKEND_ALLOW_UNAUTHENTICATED=false` (default; qualification **forbids** `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED=true`); `GOVERNED_CONTRACTOR_IDENTITY_SOURCE=context_only` (prod default); credentials **tenant/environment-scoped** to qualification `GOVERNANCE_TENANT_ID` / strict serving `APPLICATION_ENVIRONMENT_ID` |
+| **No LAB fallback** | Qualification **must not** use developer **bootstrap triplet** (`GOVERNED_CONTRACTOR_BACKEND_BOOTSTRAP_*`) or LAB-only keys; bootstrap path is for local dev only |
 | **Secret-store references** | Document **names** of env vars / vault paths only in operator runbook |
-| **Fail-closed** | Missing keys on PROD → `ValueError` @ settings load (B17-02 contract); no `BACKEND_ALLOW_UNAUTHENTICATED` in qualification |
+| **Fail-closed** | Missing/invalid keys or mixed bootstrap + JSON → `ValueError` @ settings load (B17-02); missing mandatory env on strict serving loader → Package B / strict env errors — **no** silent unauthenticated serve on qualification positive path |
 | **Separation** | Qualification credentials **disjoint** from production (when production exists) and from developer LAB bootstrap keys |
 | **Prohibition** | No real credentials in repo, charter, or CI artifacts |
+
+**Implementation note:** `from_env` permits `BACKEND_ALLOW_UNAUTHENTICATED=true` only for explicit operator break-glass (disaster debugging). Qualification **positive profile** treats that flag as **forbidden**; if canonical freeze requirements cannot be met without break-glass, classify **IN-SCOPE BLOCKER** and **STOP** — do not weaken the charter.
 
 **Future evidence:** B17-02 **operator** profile smoke (settings load success **without** logging key material); B17-03…05 replay @ qualification SHA.
 
@@ -227,21 +242,54 @@ Approved policy (OP-01 provenance)
 | **Must show** | Effective use of **operator** policy bundle (not reference), matching **OP-03** tenant in auth context, timestamped governance decision |
 | **Correlation** | Bundle ID, `GOVERNANCE_SERVICE_ID`, `application_environment_id`, activation/revision identifiers |
 
+**Lifecycle (OP-04):**
+
+| Phase | OP-04 obligation |
+|-------|------------------|
+| **Pre-execution** | Audit **capture mechanism** configured; correlation fields (policy bundle ID, principal, tenant, activation, environment) **verified** on a dry run or test export — **no** completed activation audit required |
+| **During authorized qualification** | **Capture OP-04** as **actual** evidence from bounded governance admission + activation under approved scope |
+| **Post-execution** | Redact, preserve, verify completeness/provenance; independent exact-SHA audit — **then** DIM6/DIM17 acceptance may be **recommended** (not auto-closed) |
+
 **Future evidence:** Operator observability export + redacted qualification run log under `.tmp/session/...`.
 
 ---
 
 ## G. Qualification execution plan (future task — **not executed** by this charter)
 
-### G.1 Entry conditions
+### G.1 Pre-execution entry conditions
 
 | # | Condition |
 |---|-----------|
-| E1 | Operator **infrastructure authorization** (separate from strategy A+B) to provision QUALIFICATION class host/VM |
-| E2 | OP-01…OP-04 **delivered** to secure operator store (not in repo) |
-| E3 | `HEAD` pinned; `git merge-base --is-ancestor <QUAL_BASELINE> HEAD` verified |
-| E4 | **DIM6** and **DIM17** remain **NOT QUALIFIED** until this plan completes successfully |
-| E5 | No change to canonical roadmap / FRZ / ECAP without separate operator action |
+| E1 | Operator **approves** qualification environment class + **infrastructure authorization** (separate from strategy A+B) to provision QUALIFICATION host/VM |
+| E2 | **OP-01** policy bundle exists, operator-approved, stored outside repo (path/ID for `load_package_b_operator_production_control_plane_governance_from_env`) |
+| E3 | **OP-02** trusted artifact roots operator-approved |
+| E4 | **OP-03** credentials securely provisioned (secret store → env injection per §E) |
+| E5 | **OP-04** audit capture + correlation requirements **configured and verified** (export path, redaction, field mapping per §F) |
+| E6 | Explicit operator **authorization to activate** (bounded scope: tenant, environment, time window) |
+| E7 | `HEAD` pinned; `git merge-base --is-ancestor <QUAL_BASELINE> HEAD` verified |
+| E8 | **DIM6** and **DIM17** remain **NOT QUALIFIED** until post-execution evidence review completes |
+| E9 | No change to canonical roadmap / FRZ / ECAP without separate operator action |
+
+**Not a pre-execution gate:** a completed **OP-04** from an activation that has **not yet occurred**.
+
+### G.1b During authorized qualification execution
+
+| Step | Action |
+|------|--------|
+| 1 | Load **OP-01** via `load_package_b_operator_production_control_plane_governance_from_env` only |
+| 2 | Execute **bounded** governance admission + activation under E6 scope (`ControlPlaneMutationAuthorizationBoundary` → `deploy_and_activate` / strict launcher) |
+| 3 | **Capture OP-04** (exported audit chain per §F) correlated with policy, principal, tenant, activation id, environment |
+| 4 | Run Package B gate matrix (§G.2) @ **EXECUTION_SHA** on qualification host |
+
+### G.1c Post-execution exit (before DIM6/DIM17 recommendation)
+
+| # | Condition |
+|---|-----------|
+| X1 | **OP-04** export present, redacted, correlates with run (not config-only) |
+| X2 | B6/B17 operator replay **pass** @ pinned SHA |
+| X3 | Evidence ledger update with **EXECUTION_SHA**, pytest log hash, OP-04 provenance |
+| X4 | Independent exact-SHA audit (§G.7) **PASS** |
+| X5 | **Then** operator may consider DIM6/DIM17 acceptance — charter does **not** auto-close |
 
 ### G.2 Gate matrix (Package B — operator replay)
 
@@ -283,7 +331,8 @@ uv run pytest -p no:xdist tests/qualification/prod_q/test_prod_q_r1_r7_q_package
 | OP-01 bundle | Governance policy file + provenance |
 | OP-02 roots | Filesystem trust boundary |
 | OP-03 credentials | GCA qualification API profile |
-| Evidence sign-off | OP-04 audit export + pytest log SHA |
+| Activation window | Bounded governance activation under E6 |
+| Evidence sign-off (**post-execution**) | OP-04 audit export + pytest log SHA + independent audit |
 
 ### G.5 Evidence capture
 
@@ -312,54 +361,62 @@ Third-party or operator auditor verifies GitHub commit contains cited contracts;
 
 | Prerequisite | Status @ charter |
 |--------------|------------------|
-| DIM6 **QUALIFIED** (operator B6-01) | **OPEN** |
+| Pre-execution §G.1 complete | **OPEN** (no provisioned env) |
+| Post-execution §G.1c complete (incl. **OP-04**) | **OPEN** |
+| DIM6 **QUALIFIED** (operator B6-01 + evidence class) | **OPEN** |
 | DIM17 **QUALIFIED** (operator profiles) | **OPEN** |
 | DIM16 independent acceptance | **READY FOR AUDIT** (not closed) |
 | §C parent rollup | **BLOCKED** on above + independent audit |
 | **PROD-Q-R1-R7-Q** | **NOT QUALIFIED** |
-| **PROD-Q** | **BLOCKED** |
+| **PROD-Q** | **BLOCKED** (mandatory **PROD-Q-R1** + **PROD-Q-P1** among children) |
 
 ---
 
-## H. Dependencies (order preserved — design view)
+## H. Dependencies (canonical program direction — design view)
 
-**Not implemented** — dependency graph for program planning only.
+**Not implemented** — graph for program planning only; **does not** modify the roadmap.
+
+**Arrow convention:** `A --> B` means **A is a prerequisite**; **B depends on A** (must reach acceptable state before **B** proceeds). Parent-to-child decomposition is **not** mixed with this convention.
 
 ```mermaid
-flowchart TD
-  subgraph prereq [Prerequisites]
-    ARCH_FREEZE[ARCH-FREEZE]
-    QUAL_X[QUAL-X]
-    SCENARIO_GATE[SCENARIO-GATE]
-  end
-  PROD_Q_PARENT[PROD-Q parent]
+flowchart LR
+  TENANT_X[TENANT-X]
+  PROD_Q[PROD-Q]
   PROD_Q_R1[PROD-Q-R1]
   PROD_Q_P1[PROD-Q-P1]
-  PROD_Q_R1_R7_Q[PROD-Q-R1-R7-Q]
+  PROD_Q_R1_R7_Q[PROD-Q-R1-R7-Q / R7-Q]
   CHARTER[Qualification Environment Charter]
-  QUAL_ENV[Future QUALIFICATION environment]
-  R7Q_ROLLUP[R7-Q parent rollup]
+  QUAL_ENV[Future QUALIFICATION env]
+  QUAL_X[QUAL-X]
+  LATE[SKILL-X → TOOL-LIFE-X → DIST-SCALE-X → EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → EVOL-X]
+  ENT_AUDIT[ENT-AUDIT-X]
+  ARCH_FREEZE[ARCH-FREEZE]
+  SCENARIO_READY[SCENARIO-READINESS-X]
+  SCENARIO_GATE[SCENARIO-GATE]
 
-  PROD_Q_PARENT --> PROD_Q_R1
+  TENANT_X --> PROD_Q
+  PROD_Q --> PROD_Q_R1
+  PROD_Q --> PROD_Q_P1
   PROD_Q_R1 --> PROD_Q_R1_R7_Q
-  PROD_Q_P1 --> PROD_Q_R1_R7_Q
+  PROD_Q_R1_R7_Q --> CHARTER
   CHARTER --> QUAL_ENV
-  QUAL_ENV --> R7Q_ROLLUP
-  PROD_Q_R1_R7_Q --> R7Q_ROLLUP
-  QUAL_X --> ARCH_FREEZE
-  PROD_Q_PARENT --> ARCH_FREEZE
-  SCENARIO_GATE --> ARCH_FREEZE
+  PROD_Q --> QUAL_X
+  QUAL_X --> LATE
+  LATE --> ENT_AUDIT
+  ENT_AUDIT --> ARCH_FREEZE
+  ARCH_FREEZE --> SCENARIO_READY
+  SCENARIO_READY --> SCENARIO_GATE
 ```
 
 | Node | Relationship to charter |
 |------|------------------------|
-| **PROD-Q-R1-R7-Q** | Parent stage; charter is **child proposal** (strategy B) |
-| **PROD-Q-R1** | DIM20 Package P scoped closure — **does not** replace DIM6/17 |
-| **PROD-Q-P1** | Reachability evidence — background @ cited SHAs |
-| **PROD-Q parent** | Remains **OPEN/BLOCKED** |
-| **QUAL-X** | Regression infrastructure — must classify qualification env failures correctly |
-| **ARCH-FREEZE** | Not gated by this charter |
-| **SCENARIO-GATE** | After enterprise freeze path per roadmap |
+| **PROD-Q** | Depends on **TENANT-X**; **BLOCKED** until mandatory children (**PROD-Q-R1**, **PROD-Q-P1**, …) per roadmap |
+| **PROD-Q-R1** | Mandatory **PROD-Q** child; **R7-Q** (**PROD-Q-R1-R7-Q**) lives **under R1**, not under **P1** |
+| **PROD-Q-P1** | Mandatory **PROD-Q** **sibling** (reachability) — **not** a child of **R7-Q**; **no** inherited PASS from qualification env |
+| **PROD-Q-R1-R7-Q** | Parent stage; charter provisions **DIM6/DIM17** evidence — **strategy B** |
+| **Qualification Environment Charter** | **PROPOSED**; supports future **QUALIFICATION** env only |
+| **QUAL-X** | Follows **PROD-Q**; regression infrastructure must classify qualification failures correctly |
+| **ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-READINESS-X → SCENARIO-GATE** | Canonical freeze path; **ARCH-FREEZE** precedes **SCENARIO-GATE** (gate remains **BLOCKED** until readiness + freeze per roadmap) |
 
 ---
 
@@ -379,7 +436,7 @@ flowchart TD
 | Proposal ≠ permission ≠ execution | This charter = **PROPOSED** | Header status | **PASS** | — |
 | Fail-closed | Loaders + settings | B17-*, B6-03 | **PASS** (lab) | Live profile OPEN |
 | Tenant / secret isolation | §B requirements | — | **NOT PROVEN** | No qualification env |
-| Observability ≠ execution truth | §F | — | **PASS** (design) | OP-04 missing |
+| Observability ≠ execution truth | §F | — | **PASS** (design) | OP-04 captured only post-activation |
 | Evidence continuity | EXECUTION_SHA discipline | §G.5 | **PARTIAL** | Charter only |
 | Regression protection | Package B pytest module | Historical 11/11 | **PARTIAL** | Not replay @ START_HEAD in this task |
 
@@ -387,26 +444,30 @@ flowchart TD
 
 ## J. Applicable FRZ (future evidence — **no new global PASS**)
 
+**Disposition:** Checklist global rows remain **OPEN** @ charter time. This table maps **required evidence class** per primary **FRZ** — distinguishing **software mechanism proof** (LAB/HEAD-static), **qualification-environment proof**, and **actual production operational proof** (mostly **OPEN** / **NOT PROVEN** here).
+
 ### J.1 Primary
 
-| FRZ | Requirement (summary) | Future qualification evidence |
-|-----|----------------------|--------------------------------|
-| **FRZ-PRD-01** | Production qualification independent of lab/harness | QUALIFICATION class runs with OP-01…04; lab reference policy **excluded**; independent audit @ SHA |
-| **FRZ-PRD-03** | Unsupported production configuration fails closed | B17-01…03 on qualification host; `validate_colocated_serving_admission_topology`; GCA PROD settings negatives |
-| **FRZ-PRD-08** | Production bypass count = 0 | Strict graph with operator wiring only; B6-02 DENY-before-prepare; no `allow_qualification_locators` |
-| **FRZ-SEC-04** | Production auth bypass = 0 | OP-03 profile; B17-02; HTTP admission negatives (§C dim15 lineage) on qualification ASGI |
+| FRZ | Requirement (summary) | Software / LAB (mechanism) | QUALIFICATION environment | Actual PRODUCTION ops | Charter disposition |
+|-----|----------------------|----------------------------|---------------------------|------------------------|---------------------|
+| **FRZ-PRD-01** | Production qualification independent of lab/harness | Package B loader forbids reference bundle; D2/D4 negatives @ cited SHAs | Operator **OP-01…03** + captured **OP-04**; B6/B17 replay @ SHA; no harness authority | Live deployment acceptance, continuous prod controls | **OPEN** — qual env may contribute **scoped** proof only after §G.1c |
+| **FRZ-PRD-03** | Unsupported production configuration fails closed | B17-01…03 **lab**; D1b topology tests | Same gates on qualification host with operator profile | Unsupported config in **real** prod fleet | **OPEN** — LAB ≠ global PASS |
+| **FRZ-PRD-08** | Production bypass count = 0 | B6-02 lab; static strict graph gates | Operator wiring + `allow_qualification_locators=false` on qual runs | Fleet-wide bypass census / EBH-5..DUP-X obligations | **OPEN** — stronger than isolated qual env alone |
+| **FRZ-SEC-04** | Production auth bypass = 0 | B17-02 negatives; D4 legacy block; P3 scoped slices | §E positive profile + B17-02 operator smoke + HTTP admission on qual ASGI | Production traffic auth audit | **OPEN** — P3 AUTH-08 **PARTIAL** preserved; qual ≠ prod PASS |
 
 ### J.2 Supporting (representative)
 
-| Family | Future evidence hook |
-|--------|---------------------|
-| **FRZ-GOV-*** | OP-01 bundle + B6-* governance chain |
-| **FRZ-TEN-*** | B6-04 + OP-03 tenant-scoped keys |
-| **FRZ-BND-*** | Tier boundaries unchanged; qualification docs only |
-| **FRZ-CTR-*** | Sanctioned loaders (Package B, strict launcher) |
-| **FRZ-TYP-*** | Settings/governance typed load failures captured in pytest |
-| **FRZ-REG-*** | Evidence ledger @ EXECUTION_SHA; `git diff --check` clean |
-| **FRZ-REL-*** | DIM20 strict HTTP lineage — **not** re-closed by environment charter |
+| Family | Evidence class | Hook |
+|--------|----------------|------|
+| **FRZ-GOV-*** | QUALIFICATION + mechanism | OP-01 bundle + B6-* + **OP-04** chain |
+| **FRZ-TEN-*** | QUALIFICATION (scoped) | B6-04 + OP-03 tenant-scoped keys — **does not** replace **TENANT-X** global PASS |
+| **FRZ-BND-*** | Documentation | Tier boundaries unchanged |
+| **FRZ-CTR-*** | Mechanism + QUALIFICATION | Sanctioned loaders (Package B, strict launcher) |
+| **FRZ-TYP-*** | LAB / QUALIFICATION | Settings/governance typed load failures in pytest |
+| **FRZ-REG-*** | QUALIFICATION | Evidence ledger @ EXECUTION_SHA |
+| **FRZ-REL-*** | LAB / scoped qual | DIM20 strict HTTP — **not** re-closed by charter alone |
+
+**Explicit non-rules:** **PROD-Q-P1** reachability, vendor **live** execution, and **PROD-Q-P3** operability closures **do not** inherit into this charter or into global **FRZ-PRD-01/03/08** / **FRZ-SEC-04** PASS.
 
 ---
 
@@ -421,15 +482,15 @@ flowchart TD
 | U5 | F02-09 S2b in-process strict reopen | **TRACKED FREEZE DEBT** — not qualification-environment blocker for DIM6/17 |
 | U6 | Cross-process SQLite operational trust | **TRACKED FREEZE DEBT** (D1-D1b ARC-03) |
 
-**No `STOP — ARCHITECTURE DECISION REQUIRED`** identified for charter scope — existing Package B / D2 / D4 composition suffices **if** operator supplies OP-01…04 without new owners.
+**No `STOP — ARCHITECTURE DECISION REQUIRED`** identified for charter scope — existing Package B / D2 / D4 composition suffices **if** operator supplies **OP-01…OP-03** and post-activation **OP-04** without new owners.
 
 ---
 
 ## L. Conditions for next task
 
 1. Operator **infrastructure authorization** to provision **QUALIFICATION** class environment per §A–§B.
-2. Delivery of **OP-01…OP-04** artifacts to secure operator store.
-3. Update or append qualification evidence doc with **EXECUTION_SHA**, pytest log, OP-04 export — **without** closing **DIM6/DIM17** until B6-01 and operator B17 profile pass.
+2. Delivery of **OP-01…OP-03** to secure operator store; **OP-04** capture mechanism per §F verified **before** activation.
+3. Execute §G.1b → §G.1c; update qualification evidence with **EXECUTION_SHA**, pytest log, **post-run OP-04** export — **without** closing **DIM6/DIM17** until B6-01, operator B17 profile, and independent audit pass.
 4. Independent GitHub audit of implementation commit before any **R7-Q** rollup language.
 
 ---
@@ -443,6 +504,7 @@ flowchart TD
 | **R7-Q** | **BLOCKED** (operator profiles + rollup) |
 | **PROD-Q** | **OPEN** / **BLOCKED** |
 | **This charter** | **PROPOSED — NOT QUALIFIED — NOT OPERATOR ACCEPTED** (await operator acceptance of charter + separate provision task) |
+| **Evidence classes** | **LAB** ≠ qual-env acceptance; **QUALIFICATION** ≠ **PRODUCTION**; global **FRZ** **OPEN** until checklist closure |
 | **Canonical roadmap / FRZ / ECAP** | **Unchanged** (strategy A) |
 
 ---
@@ -455,7 +517,7 @@ flowchart TD
 | `pytest` execution | **0** (docs-only task) |
 | `pyright` | **0** (no Python changes) |
 | `git diff --check` | Run @ commit time |
-| Document internal consistency | Self-review §I |
+| Document internal consistency | Self-review §I; OP-04 lifecycle §F/§G; evidence class §A/§J; graph §H |
 
 **Cursor disposition:** **READY FOR AUDIT** (charter proposal only).
 
