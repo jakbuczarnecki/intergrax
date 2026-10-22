@@ -165,7 +165,9 @@ def test_retry_storm_caps_provider_calls() -> None:
         barrier.wait()
         try:
             execute_with_resilience(_fn, provider="openai", config=cfg, retry_fn=lambda f: f())
-        except Transient:
+        except (Transient, LLMRateLimitError):
+            # Rate-limit rejection is expected for storm threads; must not leak as
+            # PytestUnhandledThreadExceptionWarning (QUAL-X W2-C determinism debt).
             pass
 
     threads = [threading.Thread(target=_worker) for _ in range(100)]

@@ -1155,3 +1155,142 @@ Enterprise invariants (contracts, single owner, fail-closed, tenant isolation, D
 - `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record only)
 
 **No production or test code changes between EXECUTION_SHA and evidence commit.**
+
+---
+
+## QUAL-X-FINAL-R3 — DETERMINISM DEBT & CLOSURE EVIDENCE RECONCILIATION
+
+**Disposition:** **READY FOR AUDIT — QUAL-X-FINAL-R3 — DETERMINISM CORRECTION / CLOSURE EVIDENCE** (not **QUAL-X — CLOSED**; not global **FRZ-REG PASS**; not **ARCH-FREEZE** authorization)
+
+| Field | Value |
+| --- | --- |
+| Operator authorization | `QUAL-X-FINAL-R3 — DETERMINISM DEBT & CLOSURE EVIDENCE RECONCILIATION` |
+| Repository / branch | `jakbuczarnecki/intergrax` · `development` |
+| **START_HEAD** (operator pin) | `532013b314e11d9fda5b9b7eb193f005199e7814` |
+| **R2 EXECUTION_SHA** (immutable) | `4da2da227e601c5304fdad0a9714bcbe16604384` — **535/535 PASS**; record above unchanged |
+| **FINAL_COMMIT** | Set by R3 correction commit on `development` (post-START_HEAD); pytest authority for W2-C remediation = **FINAL_COMMIT** only |
+| Full Dimension A replay | **NOT PERFORMED** (operator mandate) |
+
+### Preflight @ R3 start
+
+| Check | Result |
+| --- | --- |
+| Branch | `development` |
+| `HEAD` | `532013b314e11d9fda5b9b7eb193f005199e7814` |
+| `origin/development` | `532013b314e11d9fda5b9b7eb193f005199e7814` (synchronized @ preflight) |
+| Tracked tree | Clean @ START_HEAD |
+| R2 ancestry | `4da2da22…` ancestor of HEAD — **OK** |
+| START_HEAD pin | HEAD equals operator **START_HEAD** — **OK** |
+
+### W2-C root cause and owner
+
+| Item | Assessment |
+| --- | --- |
+| Symptom | `PytestUnhandledThreadExceptionWarning` — `LLMRateLimitError` in `Thread-* (_worker)` during `test_retry_storm_caps_provider_calls` (~100 warnings in historical W4 T6 replay) |
+| Mechanism | 100 concurrent workers; `calls_per_minute=12` → most threads receive **non-retriable** `LLMRateLimitError` from `execute_with_resilience` / `_acquire_local_rate_limit` (`intergrax/llm_adapters/_shared/resilience.py`). Workers caught only `Transient` (503 retry exhaustion), not rate-limit rejection. |
+| Production semantics | **Unchanged** — rate limit fail-closed and bounded physical attempts remain correct; debt was **test thread exception hygiene**, not retry architecture. |
+| Canonical owner | **W2-C qualification test** (`tests/unit/llm_adapters/test_enterprise_scale_resilience_w2_c_retry_containment.py`) — worker lifecycle / expected-outcome handling; runtime owner remains `execute_with_resilience`. |
+| Reproducible @ START_HEAD | **Yes** — confirmed before fix (PASS with ~100 `PytestUnhandledThreadExceptionWarning`) |
+| Invalidates deterministic qualification | **Yes** — pytest thread-exception warnings are explicit FRZ-REG-06 debt per checklist and W4 parent record |
+| Runtime semantic change required | **No** |
+
+### R3 correction (bounded)
+
+| File | Change |
+| --- | --- |
+| `tests/unit/llm_adapters/test_enterprise_scale_resilience_w2_c_retry_containment.py` | `_worker` catches `(Transient, LLMRateLimitError)` — expected storm outcomes |
+| `tests/qualification/qual_x/_p4_determinism_environment_catalog.py` | `QUAL_X_P4_W2_C_DETERMINISM_DEBT` → `COLLECTABLE_DETERMINISTIC_STATIC`, `p4_scope_correction=True` |
+| `tests/qualification/qual_x/test_qual_x_p4_determinism_environment_classification_reproducibility.py` | P4 disposition gate renamed/updated for R3 remediation |
+| `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` | This R3 record |
+
+**No** changes to `intergrax/llm_adapters/_shared/resilience.py`, retry budget, scheduler, or warning filters.
+
+### Targeted validation @ FINAL_COMMIT (no full Dimension A / W2 / Harness replay)
+
+Session logs: `.tmp/session/QUAL-X-FINAL-R3/`
+
+```text
+uv run pytest -W default \
+  tests/unit/llm_adapters/test_enterprise_scale_resilience_w2_c_retry_containment.py::test_retry_storm_caps_provider_calls \
+  tests/unit/llm_adapters/test_enterprise_scale_resilience_w2_c_retry_containment.py::test_provider_isolation_openai_budget_exhausted_claude_works \
+  tests/qualification/qual_x/test_qual_x_p4_determinism_environment_classification_reproducibility.py::test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene
+```
+
+| Run | Result |
+| --- | --- |
+| Targeted batch (run 1) | **3 passed**, **0 warnings** (`w2c-targeted-run1.log`) |
+| Storm-only repeat (run 2) | **1 passed**, **0 warnings** (`w2c-storm-run2.log`) |
+| Full W2-C module (7 tests) | **7 passed**, **0 warnings** (`w2c-full-module.log`) |
+
+`git diff --check`: **clean** (no conflict markers).
+
+Thread lifecycle proof: all worker threads `join(timeout=30)` complete; no `PytestUnhandledThreadExceptionWarning` with `-W default` on remediated runs.
+
+### FRZ-REG-01..10 gap reconciliation @ R3 (static + targeted execution; no promotion)
+
+Preserves R2 scope for **FRZ-REG-03** and **FRZ-REG-10** (R2 **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** @ `4da2da22…` unchanged). Checklist global rows remain **OPEN** until platform closure.
+
+| ID | Required evidence | Existing source | R3 status | Missing proof | Owner | More tests? | Smallest closure step |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **FRZ-REG-01** | Frozen invariants protected by gates/tests | P1/P5/R2 Dimension A selections; EBH gates in R2 batch | **PARTIAL** | Platform-wide invariant catalog audit | QUAL-X | No for R3 | Independent audit @ closure |
+| **FRZ-REG-02** | Corrected blockers have regression gates | EBH/Harness/INT-CONFIG stage records + R2 batch | **PARTIAL** | Blockers outside Dimension A manifest | QUAL-X | No | Per-blocker linkage at ENT-AUDIT-X |
+| **FRZ-REG-03** | Negatives prove gate detection | P2/P8 + R2 executed adversarial nodes | **PASS CANDIDATE** (R2 evidence preserved) | Global rollup | QUAL-X | No in R3 | Independent audit of R2 negatives |
+| **FRZ-REG-04** | Minimal justified allowlists | P3 + harness_01; HARNESS-QINF-01 historical | **PARTIAL** | Platform allowlist minimality | QUAL-X | No | EVOL/allowlist audit |
+| **FRZ-REG-05** | Stale inventories = 0 | P3 reconciliation tests; QINF historical | **PARTIAL** | Full-platform inventory scan | QUAL-X | No | Independent stale-inventory audit |
+| **FRZ-REG-06** | Deterministic qualification tests | W4 W2-C debt; P4 catalog; R2 F09 PARTIAL | **PARTIAL → remediation @ FINAL_COMMIT** | Independent re-audit of W2-C @ GitHub SHA; R2 batch not re-run @ FINAL_COMMIT | QUAL-X | No full replay | Accept R3 targeted W2-C proof + auditor spot-check; optional narrow repeat @ FINAL_COMMIT |
+| **FRZ-REG-07** | Clean checkout reproducibility | `QUAL_X_P4_CLEAN_CHECKOUT_PROCEDURE`, `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE` (PARTIAL) | **OPEN** | Independent clean clone + Dimension A or agreed subset @ pinned SHA | QUAL-X | Yes (operator checkpoint) | See **Clean-checkout checkpoint** below |
+| **FRZ-REG-08** | Env failures cannot false-PASS | P4 classification; R1-SQLITE-ENV-01 @ `3e1c82f2…` | **PARTIAL** | Live HTTP/GCA reproduction where PROD-Q requires | QUAL-X / PROD-Q | Not in R3 scope | Path B: architectural fail-closed satisfied by P4; live repro = separate PROD-Q checkpoint |
+| **FRZ-REG-09** | Critical invariants executable | Architecture gate modules in R2 batch | **PARTIAL** | Invariants outside batch | QUAL-X | No | Platform REG-09 audit |
+| **FRZ-REG-10** | Freeze suite defined + integrity | P5 manifest; R2 **535/535** @ `4da2da22…` | **PASS CANDIDATE** (R2 preserved) | Manifest truthfulness audit | QUAL-X | No re-batch in R3 | Independent audit accepts R2 + manifest |
+
+### R1-SQLITE-ENV-01 (FRZ-REG-08 linkage)
+
+| Item | R3 disposition |
+| --- | --- |
+| Classification | **CLASSIFIED** — polluted default DB vs isolated `INTERGRAX_RELATIONAL_DB` (STATE-X semantic impact NONE per checklist row) |
+| R2 batch | Used dedicated `.tmp/session/QUAL-X-FINAL-R2-4da2da22/isolated-relational.db` — not a live HTTP proof |
+| R3 | **No waiver** of live HTTP/GCA reproduction; **not** auto-blocker for provider-neutral architectural P4 gates; remains **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** for live scope |
+
+### Clean-checkout checkpoint (FRZ-REG-07 — operator-only execution)
+
+**Not executed in R3.** Minimum independently executable procedure (reuse R2 env pattern where applicable):
+
+1. Fresh `git clone` → `git checkout development` → `git rev-parse HEAD` (expect audited **FINAL_COMMIT** or later accepted pin).
+2. `uv sync` (pinned `uv.lock`; no Docker).
+3. Set `INTERGRAX_RELATIONAL_DB` to a dedicated path under `.tmp/session/QUAL-X-CLEAN-CHECKOUT-<short-sha>/isolated-relational.db` (same isolation pattern as R2 `command.txt`).
+4. Run `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE` execution path from `tests/qualification/qual_x/_p5_freeze_selection_catalog.py` **or** operator-approved Dimension A subset — **requires separate operator authorization** (not R3).
+5. Archive `git rev-parse HEAD`, pytest summary, lockfile SHA256 under `.tmp/session/QUAL-X-CLEAN-CHECKOUT-<short-sha>/`.
+
+**Reusable from R2:** manifest SSOT, module list (`qual_x_p5_dimension_a_pytest_module_targets()`), env isolation recipe, preflight record — **not** substitute for independent machine/checkout.
+
+### ECAP conformance @ R3
+
+| Phase | Assessment |
+| --- | --- |
+| ECAP-P1 | Honored — remediation ≠ FRZ PASS |
+| ECAP-P2 | Honored — R2 historical batch preserved |
+| ECAP-P3 | Honored — targeted tests only; no full platform cert |
+| ECAP-P4 | Honored — no FRZ self-acceptance |
+| ECAP-P5 | Honored — no new vendor/replaceability claims |
+| ECAP-P6 | Honored — bounded test-hygiene fix only |
+
+### Remaining blockers (QUAL-X-FINAL closure)
+
+| Blocker | Class |
+| --- | --- |
+| **FRZ-REG-07** clean checkout | **OPEN** — independent execution required |
+| Platform **FRZ-REG** global PASS | **OPEN** |
+| **QUAL-X CLOSED** / **ARCH-FREEZE** | **Not authorized** |
+| R2 Dimension A @ `4da2da22…` vs code @ **FINAL_COMMIT** | R2 evidence **immutable**; W2-C fix **not** claimed re-run for full 535 batch |
+| PROD-Q Dimension B | **OPEN** (unchanged) |
+| R1-SQLITE live HTTP | **EVIDENCE REQUIRED** (unchanged) |
+
+### Recommended next canonical checkpoint
+
+1. Independent audit of R3 **FINAL_COMMIT** on GitHub (W2-C targeted logs + code).
+2. Operator-authorized **FRZ-REG-07** clean-checkout run @ pinned SHA (optional Dimension A re-batch — **not** assumed).
+3. Continue **QUAL-X-FINAL** closure track — **no** premature **QUAL-X CLOSED**.
+
+### Explicit scope confirmation
+
+**Full Dimension A qualification replay was NOT performed in QUAL-X-FINAL-R3.**
