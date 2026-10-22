@@ -26,7 +26,7 @@ from intergrax.contracts.external_work import (
     ExternalWorkSnapshot,
 )
 from intergrax.contracts.validation import compute_sha256_content_digest, validate_content_digest
-from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+from intergrax.contracts.canonical_payload_hash import stable_payload_hash
 
 SCHEMA_GOVERNED_EXTERNAL_WORK_CREATE_FOLLOW_ON_V1 = (
     "governed_external_work_create_follow_on.v1"

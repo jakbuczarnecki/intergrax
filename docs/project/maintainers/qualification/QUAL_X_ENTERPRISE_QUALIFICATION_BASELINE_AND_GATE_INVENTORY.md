@@ -46,7 +46,7 @@ Historical stage **CLOSED** rows and scoped operator acceptances are **contribut
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Q01** | Architecture boundary gates | **EBH-3/4** + runtime architecture gates | `tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py`, `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2i_final_rescan_gate.py`; `tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py`; `scripts/maintenance/check_architecture_boundary_chaos.py`, `check_context_tier0_import_boundary.py` | EBH-3 @ `bd2f7d78…`, EBH-4 @ `33490b6a…` (**HISTORICAL**) | FRZ-BND-*, FRZ-REG-02/09 | **DIRECT** on audited EBH surfaces; **HISTORICAL** for global | Partial — no single current-HEAD closed-world manifest tying all layer gates | **QUAL-X-P1** |
 | **Q02** | Ownership / duplication gates | **EBH-3**, **DUP-X** (future), prod_q P0 | `test_ebh_3_dependency_ownership_gate.py`; `tests/qualification/prod_q/test_prod_q_p0_*`; stage-owned inventories in EBH/PROD-Q qual docs | PROD-Q-P0 B6 @ `8b3db676…` scoped (**HISTORICAL**) | FRZ-OWN-*, FRZ-REG-02/05 | **DIRECT** in scoped waves; **INSUFFICIENT** platform-wide | Yes — duplicate/shadow scan not unified pre-**DUP-X** | **QUAL-X-P1** |
-| **Q03** | Typed contract / plugin gates | **EBH-2F/R2**, integrations typing | `test_ebh_2f_r2_integration_plugin_contract_typing_gate.py`, `test_ebh_2i_final_rescan_gate.py`; config_x / compat_x qual gates | EBH-2F @ `765fabe…` (**HISTORICAL**) | FRZ-TYP-*, FRZ-CTR-*, FRZ-PLG-* | **DIRECT** on integration seams; drift possible post-HEAD | Yes — no continuous current-HEAD typing gate rollup | **QUAL-X-P1** |
+| **Q03** | Typed contract / plugin gates | **EBH-2F/R2**, integrations typing | `tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py`, `test_ebh_2i_final_rescan_gate.py`; config_x / compat_x qual gates | EBH-2F @ `765fabe…` (**HISTORICAL**) | FRZ-TYP-*, FRZ-CTR-*, FRZ-PLG-* | **DIRECT** on integration seams; drift possible post-HEAD | Yes — no continuous current-HEAD typing gate rollup | **QUAL-X-P1** |
 | **Q04** | Governance / security / tenant negatives | **GOV-X2**, **TENANT-X**, governance qual | `tests/qualification/governance/**`, `tests/qualification/tenant_x/**`, `test_gov_x2_qualification_batch.py`; CTRL-X qual | TENANT-X @ `5ccb72fc…` (**HISTORICAL** for TEN) | FRZ-SEC-*, FRZ-TEN-*, FRZ-GOV-* | **DIRECT** in TENANT-X/FINAL matrix; uneven elsewhere | Yes — negative coverage not uniform across all governance ingresses | **QUAL-X-P2** |
 | **Q05** | Runtime / lifecycle gates | Execution / Harness W4 | `tests/qualification/harness_01/**`, `tests/unit/runtime/architecture/test_npsc*`, W4 structural gates (HARNESS-W4 evidence) | HARNESS-W4 @ `f38e455…` (**HISTORICAL**) | FRZ-EXE-*, FRZ-REL-* | **DIRECT** in harness scope; **TOOL-LIFE-X** not started | Yes — whole-platform tool lifecycle qual deferred to **TOOL-LIFE-X** | **QUAL-X-P2** (regression linkage only) |
 | **Q06** | Persistence / recovery / evidence | **STATE-X**, trace qual | `tests/qualification/state_x/**`, `tests/qualification/trace_x/**` | STATE-X @ `bd54941d…` (**HISTORICAL**) | FRZ-REC-*, FRZ-STA-*, FRZ-TRC-* | **DIRECT** in STATE-X/TRACE-X waves | Partial — cross-suite evidence continuity not one runnable set | **QUAL-X-P3** |
@@ -177,3 +177,72 @@ PROD-Q live slice = mandatory for production use only (Dimension B)
 - No **QUAL-X** parent **CLOSED**
 - No **PROD-Q** Dimension **B** closure
 - No **ENT-AUDIT-X** substitution
+
+---
+
+## QUAL-X-P1 execution record @ `a70b68cf947b77de58bce8df0863d3114991cbd9`
+
+**Disposition:** **READY FOR AUDIT** (P1 only; **QUAL-X** parent **OPEN**; **FRZ-REG-*** **OPEN**)
+
+**Production delta (P1):** `2` — contract-layer import realignment only (`stable_payload_hash` → `intergrax.contracts.canonical_payload_hash`; semantics unchanged)
+
+### Gate inventory (Q01/Q02/Q03/Q07)
+
+| Gate module | Owner | Invariant | Mechanism | Strength (post-P1) | Negative/adversarial |
+| --- | --- | --- | --- | --- | --- |
+| `tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py` | **EBH-3** | No `intergrax.integrations._shared` in production; single breaker config; applications must not construct private breaker | AST import scan (closed-world `intergrax/`); AST private-breaker detector for `intergrax/applications/**` | **DIRECT INVARIANT PROOF** | Parametric AST probes (alias import, module attribute call, comment/doc non-match) |
+| `tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py` | Runtime architecture / **HARDENING-3** | `intergrax/contracts/**` must not import `intergrax.runtime.*` except documented allowlist | AST import scan + UTF-8 parse gate | **DIRECT INVARIANT PROOF** | Stale-allowlist detector; main gate fails on any non-allowlisted runtime import |
+| `tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py` | **EBH-2F/R2** | Integration plugin/registry typing; no reflection semantic dispatch in `plugin_register` | Source + AST annotation gates; AST reflection call scan | **DIRECT INVARIANT PROOF** | Parametric reflection detector (`getattr` / `builtins.getattr`; string-in-comment safe) |
+| `tests/unit/architecture/test_ebh_2i_final_rescan_gate.py` | **EBH-2I** + `testing_support.architecture.public_contract_boundary` | Public contract dependency boundary + CSP | Shared helper ownership preserved | **DIRECT** (helper negatives in-module); repo scan **fails closed @ HEAD** on unregistered violation | Existing CSP negative fixtures unchanged |
+
+### Proven false-PASS weaknesses remediated
+
+| ID | Weakness | Correction | Regression |
+| --- | --- | --- | --- |
+| **P1-W1** | `test_ebh_3_applications_must_not_construct_private_integration_breaker` used lexical `IntegrationCircuitBreaker(` / path substring only — bypass via import alias or `cb.IntegrationCircuitBreaker()` | `_collect_applications_private_breaker_violations` (AST) | `test_ebh_3_applications_private_breaker_detector_adversarial` |
+| **P1-W2** | `test_plugin_register_has_no_contract_specs_reflection` ignored `builtins.getattr`-style calls | `_collect_reflection_dispatch_calls` on callee attribute name | `test_plugin_register_reflection_detector_adversarial` |
+| **P1-W3** | `HARDENING-3` allowlist retained four contract paths with **no** current `intergrax.runtime` imports (stale exemptions; masked drift) | Allowlist cleared @ HEAD; `test_hardening_3_allowlist_entries_currently_import_runtime` | Stale-entry test + contracts import fix (below) |
+| **P1-W4** | Two governed external-work contract modules imported `stable_payload_hash` from runtime (layer violation); gate correctly failed but inventory implied deferred allowlist covered runtime coupling | Import moved to `intergrax.contracts.canonical_payload_hash` (same digest contract as sibling contract modules) | `test_hardening_3_contracts_do_not_import_runtime_except_allowlist` green |
+
+### P0 inventory correction
+
+- **Q03** primary gate path: `tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py` (P0 row referenced basename only).
+
+### Focused pytest (P1 batch)
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py \
+  tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py \
+  tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py \
+  tests/unit/architecture/test_ebh_2i_final_rescan_gate.py
+```
+
+**Result @ P1 worktree:** `52 passed`, `1 failed` — `test_ebh_2i_public_contract_boundary_gate_passes` (**pre-existing @ START_HEAD**, not introduced by P1): `intergrax/contracts/tools/qualified_tool_invocation.py` imports `intergrax.tools.invocation_wiring` (unregistered `foreign_domain_implementation`). Gate behavior = **credible fail-closed**; production remediation = **ARCHITECTURE DECISION REQUIRED** (contract surface vs tools domain owner).
+
+### FRZ evidence contribution (scoped)
+
+| Criterion | P1 contribution |
+| --- | --- |
+| **FRZ-REG-01** | Adversarial negatives added for proven proxy gates; stale allowlist no longer masks contract→runtime drift |
+| **FRZ-REG-02** | Layer + integration ownership gates strengthened on current scanned surfaces |
+| **FRZ-REG-09** | Semantic bypass variants for P1-W1/W2 now fail; allowlist precision tightened |
+| **FRZ-BND-*** / **FRZ-OWN-*** / **FRZ-TYP-*** / **FRZ-CTR-*** / **FRZ-PLG-*** | Supporting evidence only — **no** global PASS |
+
+### Remaining gaps (P1 classification)
+
+| Tag | Item | Owner |
+| --- | --- | --- |
+| **IN-SCOPE BLOCKER** (post-P1, outside P1 patch) | EBH-2I boundary failure: `qualified_tool_invocation` → `intergrax.tools.invocation_wiring` | **EBH-2I** / tools contract owner |
+| **TRACKED FREEZE DEBT** | Platform-wide DUP-X duplication authority; **FRZ-REG-10** freeze suite (**QUAL-X-P5**) | **DUP-X** / **QUAL-X-P5** |
+| **TRACKED FREEZE DEBT** | Full Q01 closed-world manifest across all EBH-3/4 gates | **QUAL-X-P3** allowlist ledger |
+| **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | Unchanged from P0 (`R1-SQLITE-ENV-01`) | CI/qual |
+
+### Explicit non-claims
+
+- **PROD-Q** Dimension **B** untouched
+- No new scanner/runner authority
+- **QUAL-X** parent not **CLOSED**
+- **FRZ-REG-*** platform **PASS** not awarded
+
+**Next mandatory child after independent P1 acceptance:** **QUAL-X-P2** (governance/tenant negative coverage matrix).

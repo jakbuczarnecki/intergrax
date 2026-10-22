@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+from intergrax.contracts.canonical_payload_hash import stable_payload_hash
 
 _STABLE_CREATE_KIND = "governed_external_work_create.v1"
 

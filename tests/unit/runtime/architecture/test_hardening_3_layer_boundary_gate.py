@@ -15,14 +15,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _CONTRACTS_ROOT = _REPO_ROOT / "intergrax" / "contracts"
 
 # Documented deferred migrations — see LAYER_BOUNDARY_HARDENING.md
-_ALLOWLISTED_RUNTIME_IMPORTS: frozenset[str] = frozenset(
-    {
-        "intergrax/contracts/host_profile_slices.py",
-        "intergrax/contracts/runtime_cost.py",
-        "intergrax/contracts/runtime_execution_context.py",
-        "intergrax/contracts/runtime_mapping.py",
-    }
-)
+# Empty @ current HEAD: prior deferred contract→runtime couplings were migrated out.
+_ALLOWLISTED_RUNTIME_IMPORTS: frozenset[str] = frozenset()
 
 
 def test_hardening_3_contracts_python_sources_utf8_no_bom_and_parseable() -> None:
@@ -57,6 +51,15 @@ def _collect_runtime_imports(path: Path) -> list[str]:
             if node.module.startswith("intergrax.runtime"):
                 hits.append(node.module)
     return hits
+
+
+def test_hardening_3_allowlist_entries_currently_import_runtime() -> None:
+    stale: list[str] = []
+    for rel in sorted(_ALLOWLISTED_RUNTIME_IMPORTS):
+        path = _REPO_ROOT / rel
+        if not _collect_runtime_imports(path):
+            stale.append(rel)
+    assert stale == [], "stale layer-boundary allowlist (no runtime import): " + ", ".join(stale)
 
 
 def test_hardening_3_contracts_do_not_import_runtime_except_allowlist() -> None:
