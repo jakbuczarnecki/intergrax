@@ -1,17 +1,17 @@
 # PROD-Q-R1-R7-Q — Qualification Environment Charter
 
-**OPERATOR ACCEPTED — NOT PROVISIONED — NOT QUALIFIED**
+**READY FOR OPERATOR ACCEPTANCE — NOT PROVISIONED — NOT QUALIFIED**
 
 | Field | Value |
 |-------|-------|
-| **Status** | **OPERATOR ACCEPTED** — `OPERATOR ACCEPTED — PROD-Q-R1-R7-Q QUALIFICATION ENVIRONMENT CHARTER` (**2026-10-22**); prior strategy **A+B** (`OPERATOR APPROVED — PROD-Q QUALIFICATION STRATEGY A+B`) unchanged; acceptance **does not** authorize infrastructure provisioning, spend, live activation, or closure of **DIM6**, **DIM17**, **R7-Q**, **PROD-Q**, or any global **FRZ-*** row |
-| **Task** | `PROD-Q-R1-R7-Q-QUALIFICATION-ENVIRONMENT-PREFLIGHT` (charter **R1** + preflight **R2** documentation) |
+| **Status** | **READY FOR OPERATOR ACCEPTANCE** — completed charter **awaiting** separate operator acceptance of this document; **`OPERATOR APPROVED — PROD-Q QUALIFICATION STRATEGY A+B`** (**unchanged** — strategy only, **not** charter acceptance); charter acceptance **would not** authorize infrastructure provisioning, spend, live activation, or closure of **DIM6**, **DIM17**, **R7-Q**, **PROD-Q**, or any global **FRZ-*** row |
+| **Task** | `PROD-Q-R1-R7-Q-CHARTER-AUTHORIZATION-EVIDENCE-CORRECTIVE` (authorization metadata + §H.2 dependency corrective; preflight **§O** unchanged) |
 | **Parent** | **PROD-Q → PROD-Q-R1 → PROD-Q-R1-R7 → PROD-Q-R1-R7-Q** — **IN PROGRESS** / **NOT QUALIFIED** |
 | **Program** | **PROD-Q** — **OPEN** / **BLOCKED** (children) |
 | **Branch** | `development` |
-| **START_HEAD** | `bdb6fe7c231a3fead637b77197fb1943049b7add` |
+| **START_HEAD** | `6484d8c4f9950c31ec41169b0eeaeb537d81babd` |
 | **Production code delta** | **0** (documentation-only) |
-| **Disposition** | Charter **accepted**; defines **minimal conditions** and **preflight** for a **future** isolated **QUALIFICATION** environment; environment **does not exist** and was **not** activated in this task |
+| **Disposition** | Charter **proposal** (preflight-complete); defines **minimal conditions** and **preflight** for a **future** isolated **QUALIFICATION** environment; environment **does not exist** and was **not** activated; **no** operator acceptance of this charter recorded |
 
 **Canonical sources (read @ charter authoring; statuses unchanged by this document):**
 
@@ -393,9 +393,11 @@ flowchart TB
   end
 ```
 
-### H.2 Prerequisite → dependent (canonical roadmap sequence — order unchanged)
+### H.2 Dependencies — canonical prerequisites vs proposed qualification path
 
-**Convention:** `A --> B` means **B** depends on **A** reaching an acceptable state before **B** proceeds (prerequisite chain). This graph **does not** restate parent/child edges from §H.1.
+**Convention:** `A --> B` means **B** depends on **A** reaching an acceptable state before **B** proceeds (prerequisite chain). Graphs **do not** restate parent/child edges from §H.1.
+
+#### H.2a Canonical roadmap prerequisites (program freeze path — unchanged)
 
 ```mermaid
 flowchart LR
@@ -407,8 +409,6 @@ flowchart LR
   ARCH_FREEZE[ARCH-FREEZE]
   SCENARIO_READY[SCENARIO-READINESS-X]
   SCENARIO_GATE[SCENARIO-GATE]
-  CHARTER[Qualification Environment Charter]
-  QUAL_ENV[Future QUALIFICATION env]
 
   TENANT_X --> PROD_Q
   PROD_Q --> QUAL_X
@@ -417,8 +417,6 @@ flowchart LR
   ENT_AUDIT --> ARCH_FREEZE
   ARCH_FREEZE --> SCENARIO_READY
   SCENARIO_READY --> SCENARIO_GATE
-  PROD_Q_R1_R7_Q[PROD-Q-R1-R7-Q] --> CHARTER
-  CHARTER --> QUAL_ENV
 ```
 
 | Node | Relationship to charter |
@@ -426,11 +424,39 @@ flowchart LR
 | **PROD-Q** | Prerequisite: **TENANT-X**; **BLOCKED** until mandatory children (**PROD-Q-R1**, **PROD-Q-P1**, …) per roadmap (see §H.1 tree) |
 | **PROD-Q-R1** | **PROD-Q** child (§H.1); **R7-Q** lives under **R1** |
 | **PROD-Q-P1** | **PROD-Q** child (§H.1); reachability sibling — **no** inherited PASS from qualification env |
-| **PROD-Q-R1-R7-Q** | **R1** child (§H.1); prerequisite to **accepted** charter; provisions **DIM6/DIM17** evidence — **strategy B** (not closed by acceptance) |
-| **Qualification Environment Charter** | **OPERATOR ACCEPTED**; **not** provisioned; supports future **QUALIFICATION** env only |
-| **Future QUALIFICATION env** | Prerequisite: charter + **separate** infrastructure authorization (§G.1 **E1**) |
+| **PROD-Q-R1-R7-Q** | **R1** child (§H.1); **not** a prerequisite to charter authoring; **DIM6/DIM17** remain **OPEN** until operator qualification evidence (strategy **B**) |
 | **QUAL-X** | Prerequisite after **PROD-Q**; regression infrastructure must classify qualification failures correctly |
 | **ENT-AUDIT-X → … → SCENARIO-GATE** | Canonical freeze path; **ARCH-FREEZE** precedes **SCENARIO-GATE** |
+
+#### H.2b Proposed qualification-environment sequence (charter → R7-Q evidence slices)
+
+**Purpose:** charter and future **QUALIFICATION** environment are **inputs** to closing **scoped** **DIM6/DIM17** evidence under **R7-Q** — **not** downstream of full **R7-Q** qualification.
+
+```mermaid
+flowchart LR
+  CHARTER[Qualification Environment Charter]
+  ACCEPT[Operator charter acceptance]
+  PROVISION[Provisioning + OP-01…03]
+  QUAL_ENV[QUALIFICATION environment]
+  EVIDENCE[Qualification evidence §G.1c]
+  R7Q_SLICES[R7-Q slices DIM6 / DIM17]
+
+  CHARTER --> ACCEPT
+  ACCEPT --> PROVISION
+  PROVISION --> QUAL_ENV
+  QUAL_ENV --> EVIDENCE
+  EVIDENCE --> R7Q_SLICES
+```
+
+| Node | Relationship |
+|------|----------------|
+| **Qualification Environment Charter** | **READY FOR OPERATOR ACCEPTANCE**; **not** provisioned; defines §A–§O + §G execution plan |
+| **Operator charter acceptance** | **Separate** from strategy **A+B**; **not** recorded @ corrective **START_HEAD** |
+| **Provisioning + OP-01…03** | Requires **A1** + **OP** deliveries (§O.6); **not** granted by strategy **A+B** alone |
+| **QUALIFICATION environment** | Isolated host/overlay per §A–§B |
+| **Qualification evidence §G.1c** | Captured **OP-04**, B6/B17 replay @ **EXECUTION_SHA**, independent audit **G.7** |
+| **R7-Q slices DIM6 / DIM17** | May be **recommended** for operator review **after** evidence path — charter **does not** auto-close **R7-Q** |
+
 
 ---
 
@@ -447,7 +473,7 @@ flowchart LR
 | No `Any` on cited boundaries | Governance + settings | Static @ HEAD | **PASS** | — |
 | No bypass / alternate authority | Reference policy forbidden in Package B loader | B6-03, A01 tests | **PASS** (lab) | Operator path unproven |
 | Governance ≠ Execution | DENY before prepare | B6-02 | **PASS** (lab) | B6-01 operator OPEN |
-| Proposal ≠ permission ≠ execution | Charter **accepted** ≠ provision ≠ activation | Header status | **PASS** | Infrastructure **OPEN** |
+| Proposal ≠ permission ≠ execution | Charter **ready for acceptance** ≠ accepted ≠ provision ≠ activation | Header status | **PASS** | Infrastructure **OPEN**; charter acceptance **OPEN** |
 | Fail-closed | Loaders + settings | B17-*, B6-03 | **PASS** (lab) | Live profile OPEN |
 | Tenant / secret isolation | §B requirements | — | **NOT PROVEN** | No qualification env |
 | Observability ≠ execution truth | §F | — | **PASS** (design) | OP-04 captured only post-activation |
@@ -517,7 +543,7 @@ flowchart LR
 | **DIM6 / DIM17** | **NOT QUALIFIED** |
 | **R7-Q** | **BLOCKED** (operator profiles + rollup) |
 | **PROD-Q** | **OPEN** / **BLOCKED** |
-| **This charter** | **OPERATOR ACCEPTED — NOT PROVISIONED — NOT QUALIFIED** (infrastructure + activation require separate authorization per §G / §O) |
+| **This charter** | **READY FOR OPERATOR ACCEPTANCE — NOT PROVISIONED — NOT QUALIFIED** (separate charter acceptance + infrastructure + activation per §G / §O) |
 | **Evidence classes** | **LAB** ≠ qual-env acceptance; **QUALIFICATION** ≠ **PRODUCTION**; global **FRZ** **OPEN** until checklist closure |
 | **Canonical roadmap / FRZ / ECAP** | **Unchanged** (strategy A) |
 
@@ -584,7 +610,7 @@ flowchart LR
 
 ### O.6 Actions requiring separate operator approval
 
-| # | Approval | Not granted by charter acceptance |
+| # | Approval | Not granted by strategy A+B or by charter draft alone |
 |---|----------|-----------------------------------|
 | A1 | **Infrastructure provisioning** (host, network, storage, spend) | **Yes — separate** |
 | A2 | **OP-01** bundle publication + provenance | **Yes — separate** |
@@ -620,9 +646,9 @@ Execute **only** after **A1** and **OP-01…03** delivery; **single** bounded do
 | `pyright` | **0** (no Python changes) |
 | Docker execution | **0** |
 | `git diff --check` | Run @ commit time |
-| Document internal consistency | §I; OP-04 §F/§G; evidence class §A/§J; graphs §H.1/§H.2; preflight §O; Package B / §C reconciliation unchanged |
+| Document internal consistency | §I; OP-04 §F/§G; evidence class §A/§J; graphs §H.1/§H.2a/§H.2b; preflight §O; Package B / §C reconciliation unchanged |
 
-**Cursor disposition:** **READY FOR AUDIT** (operator-accepted charter + preflight; **not** provisioned).
+**Cursor disposition:** **READY FOR AUDIT** (charter **ready for operator acceptance** + preflight **§O**; **not** provisioned; **no** charter acceptance claimed).
 
 ---
 
