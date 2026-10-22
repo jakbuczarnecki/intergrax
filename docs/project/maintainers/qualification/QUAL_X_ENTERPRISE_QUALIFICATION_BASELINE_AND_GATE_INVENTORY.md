@@ -1551,3 +1551,134 @@ One fresh clone; one `uv sync --frozen`; one collection pass; **one** full `dime
 **Not authorized / not claimed:** `QUAL-X CLOSED`, global **FRZ-REG PASS**, **ARCH-FREEZE** authorization, **FRZ-REG-07 — FORMALLY CLOSED**.
 
 **QUAL-X** remains **OPEN** pending independent formal closure.
+
+---
+
+## QUAL-X-FINAL — REG ACCEPTANCE & EVIDENCE RECONCILIATION
+
+**Task:** `QUAL-X-FINAL — REG ACCEPTANCE & EVIDENCE RECONCILIATION` · **Parent:** `QUAL-X`
+**Disposition:** **`QUAL-X-FINAL — ACCEPTANCE BLOCKED — CONSOLIDATED FINDINGS`** (not `READY FOR AUDIT — QUAL-X FINAL ACCEPTANCE PACKAGE`; not **QUAL-X CLOSED**; not **SKILL-X** entry; not global **FRZ-REG PASS**)
+
+### §1 Current-HEAD preflight (reconciliation @ doc commit)
+
+| Check | Result |
+| --- | --- |
+| Repository | `jakbuczarnecki/intergrax` |
+| Branch | `development` |
+| **START_HEAD / reconciliation doc SHA** | `cc8d6e850d4a24abfd2978f8483df10eb19b4e81` |
+| **origin/development** | `cc8d6e850d4a24abfd2978f8483df10eb19b4e81` (synchronized) |
+| Tracked tree | Clean @ reconciliation authoring |
+| **EXECUTION_SHA** (full Dimension A clean checkout) | `9a175177419a396398647e356a08c966f9c2af4e` — **ancestor of HEAD**; code delta HEAD vs EXECUTION_SHA = **docs only** (this inventory) |
+| **W2-C correction SHA** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` — ancestor of HEAD |
+| **R2 historical batch SHA** | `4da2da227e601c5304fdad0a9714bcbe16604384` — ancestor of HEAD |
+| Controlling docs @ HEAD | Roadmap Path B §2.0.3 + **QUAL-X** stage row; freeze checklist **FRZ-REG-01..10** all **OPEN**; ECAP-P1..P6 canonical text in `ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md` |
+
+**Closed-world owners:** **QUAL-X** owns **FRZ-REG-*** platform closure semantics; **EBH-5** / **RPL-G** retain vendor-coupling regression ownership per checklist **FRZ-REG-02**; **PROD-Q** / **PROD-Q-R1-R7-Q** own Dimension **B** live qualification (Path B non-blocking for Dimension **A** **QUAL-X** entry only).
+
+### §2 Evidence provenance (reuse — no Dimension A replay)
+
+| Invariant / proof class | Owner | Contract / gate | Gate surface | Execution SHA | FRZ | Applicability @ HEAD | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Full Dimension A mandatory suite | QUAL-X | `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE`, P5 manifest SSOT | 32 modules · 57 delegated nodes · 535 pytest nodes | `9a175177…` | REG-07, REG-10 (+ linked REG rows) | **VALID** — identical product/qual code @ `cc8d6e…`; evidence-only doc commit | 535/535 PASS; 0 skip/fail; no batch warnings |
+| W2-C storm hygiene | QUAL-X / P4 catalog | `QUAL_X_P4_W2_C_DETERMINISM_DEBT` | `test_retry_storm_caps_provider_calls` | `75b8f264…` | REG-06 | **VALID** for targeted storm proof; **not** claimed as node in 535 batch | R3 remediation + representative 8-node clean checkout |
+| R2 Dimension A batch | QUAL-X | Same P5 procedure @ prior HEAD | 535 nodes | `4da2da22…` | REG-10 (historical) | **HISTORICAL SUPPORT** — superseded for clean-checkout proof by `9a175177…` | Immutable supporting record |
+| P3/HARNESS inventory closed-world | QUAL-X | P3 qual + `test_harness_01_gates.py` | HARNESS-QINF-01 pattern | P3 waves + batch @ `9a175177…` | REG-04/05 | **SCOPED VALID** in manifest selections; not platform-wide inventory closure | Batch green; checklist REG-04/05 remain **OPEN** |
+| R1-SQLITE pollution / isolation | QUAL-X P4 + STATE-X record | `build_r1_sqlite_disposition`, `INTERGRAX_RELATIONAL_DB` | P4 relational gates in Dimension A | `9a175177…` + record `3e1c82f2…` | REG-08 | Architecture fail-closed **VALID** in Dimension A; live HTTP **out of scope** for REG-08 @ Dimension A | **NOT_EXECUTED** for mandatory GCA HTTP path |
+
+Session reuse: `.tmp/session/QUAL-X-FINAL-CLEAN-DIM-A-9a175177/` (full batch); `.tmp/session/QUAL-X-CLEAN-CHECKOUT-75b8f264/` (representative); reconciliation spot-check `.tmp/session/QUAL-X-FINAL-REG-RECON/p5-manifest-spotcheck.log` (@ `cc8d6e…`).
+
+### §3 Consolidated FRZ-REG acceptance matrix
+
+Canonical wording: `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` (**owner QUAL-X** for all REG rows). Global checklist status remains **OPEN** until independent platform closure — this table is **acceptance-preparation only**.
+
+| Criterion | Applicable scope | Contract / owner | Gate | Execution SHA | Evidence validity | Finding | Candidate status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **FRZ-REG-01** | Dimension A + P5 visibility; not full FRZ catalog | P5 F07 + F01; `QUAL_X_P5_FRZ_REG_EVIDENCE_LEDGER` | Gate-credibility + EBH/architecture modules in batch | `9a175177…` | **VALID** for selected surfaces; no bidirectional map for all freeze invariants | Unmapped / out-of-batch frozen invariants remain | **PARTIAL — PROVEN GAP** (platform invariant coverage) |
+| **FRZ-REG-02** | Corrected blockers linked in P5 F01–F03 + harness | EBH regression gates; checklist cites **EBH-5** / **RPL-G** for vendor coupling | Dimension A EBH/harness selections | `9a175177…` | **VALID** for in-batch blockers | Blockers corrected under other stage SHAs without regression in batch still **OPEN** at checklist | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (in-batch) · **PARTIAL** (platform) |
+| **FRZ-REG-03** | P2/P8 adversarial + tenant negatives | P5 F04/F05/F08 | Ingress matrices, CTRL-X, tenant_x, governance mutation tests | `9a175177…` | **VALID** — behavioral negatives executed, not name-only proxies in batch | Global adversarial rollup not closed in checklist | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** |
+| **FRZ-REG-04** | Allowlist minimality (platform) | P3 F11 + harness allowlist manifests | `test_qual_x_p3_*`, `test_harness_01_gates.py` | `9a175177…` (batch) + HARNESS-QINF historical | **VALID** for scoped reconciliation gates; **INSUFFICIENT** for platform minimality | Checklist notes empty; no platform allowlist minimality sign-off | **BLOCKED — IN-SCOPE** |
+| **FRZ-REG-05** | Stale inventory = 0 (platform) | P3 F02/F06/F11; HARNESS-QINF closed-world | Bidirectional inventory gates | `9a175177…` + QINF `0155580a…` (historical contribution) | **VALID** in closed-world mechanisms; **INSUFFICIENT** for full populations | Full platform scan not demonstrated | **PARTIAL — PROVEN GAP** |
+| **FRZ-REG-06** | Deterministic qualification | P4 F09; `QUAL_X_P4_W2_C_DETERMINISM_DEBT` | P4 module in batch; W2-C storm **not** in 32-module list | `9a175177…` (P4 batch); `75b8f264…` (storm) | P4 + `test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene` **VALID**; storm **not** re-attributed to 535 batch | Debt visibility honest; unconditional global determinism PASS not supportable | **PARTIAL — PROVEN GAP** (W2-C **TRACKED FREEZE DEBT**) |
+| **FRZ-REG-07** | Clean checkout reproducibility | `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE` | Fresh clone + frozen `uv.lock` + full `dimension_a_execution_command` | `9a175177…` | **VALID** — independent clone, isolated DB, 535/535, lock SHA256 recorded | Formal **GLOBAL PASS** not claimed; auditor sign-off pending | **`FULL CLEAN-CHECKOUT PROOF — ACCEPTANCE CANDIDATE`** (not `FORMALLY CLOSED`) |
+| **FRZ-REG-08** | Env failure cannot become false PASS | P4 F10; R1-SQLITE-ENV-01 record | Fail-closed classification + isolated relational path | `9a175177…` | Dimension **A** architecture qualification **VALID** | Live HTTP / GCA = **PROD-Q Dimension B**; `build_r1_sqlite_disposition` **NOT_EXECUTED** for HTTP | **PARTIAL** · **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** (R1 live HTTP) |
+| **FRZ-REG-09** | Critical invariants executable | P5 F01/F07 | Architecture + harness AST/structural gates in batch | `9a175177…` | **VALID** for selected critical surfaces | Invariants outside batch still checklist **OPEN** | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) · **PARTIAL** (platform) |
+| **FRZ-REG-10** | Mandatory freeze suite | P5 manifest F01–F12, Q01–Q12, DIM-B exclusion | `test_qual_x_p5_*` integrity + full Dimension A execution | `9a175177…` | **VALID** — manifest SSOT unchanged code @ HEAD; spot-check @ `cc8d6e…` 3/3 PASS | Green batch does not self-close **QUAL-X** (ECAP-P4) | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** |
+
+### §4 ECAP authoritative mapping & correction (mislabeling)
+
+**Canonical ECAP** (`ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md`):
+
+| Phase | Canonical meaning |
+| --- | --- |
+| **ECAP-P1** | Passing functional tests or a small suite MUST NOT imply enterprise compliance. |
+| **ECAP-P2** | Historical stage `CLOSED` MUST NOT imply current-HEAD `FRZ-*` PASS. |
+| **ECAP-P3** | A change-delta audit MUST NOT claim full-platform certification. |
+| **ECAP-P4** | Implementation agents MUST NOT self-accept `FRZ-*` PASS. |
+| **ECAP-P5** | Replaceability MUST NOT be claimed without RPL-A..H evidence where extensibility is promised. |
+| **ECAP-P6** | Corrective work MUST be opened only for proven invariant violations or missing mandatory evidence—not hypothetical perfection. |
+
+**Preserved historical error:** In **§ QUAL-X-FINAL — FULL CLEAN-CHECKOUT DIMENSION A QUALIFICATION** above, subsection **“Scoped ECAP-P1..P6”** (immediately after the FRZ-REG matrix @ `9a175177…`) **mislabels** phases — e.g. P2 as “composition ownership gates”, P3 as “typed interfaces”, P5 as “evidence traceability”. That table is **not** canonical ECAP; it conflates assurance phases with qualification themes.
+
+**Authoritative reconciliation @ this record:** Treat R2/R3/clean-checkout **“Honored — …”** ECAP tables and the mislabeled full-checkout table as **process attestations** only; for audits, use the **canonical six-row mapping** in this section. This documentation error is **not** grounds to rerun Dimension A.
+
+**This reconciliation task ECAP posture:** P1–P6 honored — no FRZ self-acceptance; bounded evidence reuse; no ENT-AUDIT-X / platform-wide cert claim.
+
+### §5 W2-C explicit disposition
+
+| Question | Determination |
+| --- | --- |
+| Was `test_retry_storm_caps_provider_calls` in the 535-node Dimension A batch @ `9a175177…`? | **No** — W2-C module is **not** in `qual_x_p5_dimension_a_pytest_module_targets()`. |
+| What ran in Dimension A for W2-C? | Mandatory delegated node `test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene` (P4 catalog) — **PASS**. |
+| Is storm execution proven? | **Yes**, @ `75b8f264…` (R3 + representative 8-node clean checkout) — reuse **VALID**; do not merge into 535-node accounting. |
+| FRZ-REG-06 closure? | **PARTIAL** — debt visibility + hygiene **sufficient** for honest qualification; **insufficient** for unconditional global PASS while checklist lists W2-C under **FRZ-REG-06 OPEN**. |
+
+### §6 R1-SQLITE / Path B disposition
+
+Per roadmap Path B: **QUAL-X** Dimension **A** may progress while **PROD-Q** live slice remains **OPEN/BLOCKED**. **R1-SQLITE-ENV-01** classifies default DB pollution vs isolated `INTERGRAX_RELATIONAL_DB` (**STATE-X** reconciled); mandatory **live HTTP / GCA** reproduction is **PROD-Q / Dimension B** evidence, not a missing Dimension **A** architecture gate. P4 keeps `build_r1_sqlite_disposition()` **BLOCKER** with `reproduction_executed=False` until PROD-Q-R1 HTTP path runs. **No STOP — ARCHITECTURE DECISION REQUIRED** — classification matches existing contracts.
+
+### §7 Allowlist & stale-inventory findings (scoped)
+
+| Mechanism | Owner | Result |
+| --- | --- | --- |
+| Harness QINF closed-world | QUAL-X / Harness | Bidirectional gates in `test_harness_01_gates.py` — **executed** in Dimension A @ `9a175177…` |
+| P3 inventory recovery | QUAL-X-P3 | F11 module green in batch |
+| Platform-wide **FRZ-REG-04** | QUAL-X | Checklist notes **empty** — minimality audit **not closed** |
+| Platform-wide **FRZ-REG-05** | QUAL-X | Closed-world PASS ≠ all owner/caller populations reconciled |
+
+### §8 Required gap report (grouped corrective packages)
+
+**Package A — Platform inventory & allowlist (FRZ-REG-04, FRZ-REG-05)**
+Missing: independent platform allowlist minimality sign-off; full population reconciliation beyond P3/Harness closed-world. **Owner:** **QUAL-X**. **Files:** `tests/qualification/qual_x/test_qual_x_p3_*`, `tests/unit/harness/test_harness_01_gates.py`, P3 allowlist manifests. **Blocks:** **QUAL-X** parent closure / global REG PASS.
+
+**Package B — W2-C determinism debt (FRZ-REG-06)**
+Missing: checklist-level closure while `QUAL_X_P4_W2_C_DETERMINISM_DEBT` remains **TRACKED_FREEZE_DEBT**. **Symbols:** `test_enterprise_scale_resilience_w2_c_retry_containment.py::test_retry_storm_caps_provider_calls`. **Owner:** **QUAL-X** / P4 catalog. Storm proof reused @ `75b8f264…`.
+
+**Package C — R1 live HTTP (FRZ-REG-08 / PROD-Q)**
+Missing: PROD-Q-R1 HTTP reproduction (`NOT_EXECUTED`). **Owner:** **PROD-Q** Dimension **B**. **TRACKED FUTURE-STAGE OBLIGATION** for Dimension **A** REG-08 **PARTIAL** only.
+
+**Package D — Platform invariant coverage (FRZ-REG-01)**
+Missing: exhaustive frozen-invariant → proof map. **Owner:** **QUAL-X** + later **ENT-AUDIT-X** per roadmap.
+
+### §9 Tests performed vs evidence reused
+
+| Action | Scope |
+| --- | --- |
+| **Reused** | Full Dimension A @ `9a175177…`; W2-C @ `75b8f264…`; R2 @ `4da2da22…`; P1–P5 catalogs/manifests (static) |
+| **Executed @ reconciliation** | P5 manifest spot-check — **3 passed** @ `cc8d6e…` (log under `.tmp/session/QUAL-X-FINAL-REG-RECON/`) |
+| **Not executed** | Dimension A replay; W2-C rerun; full platform inventory scan; Docker/live providers |
+
+### §10 Risks & recommended formal status
+
+| Item | Status |
+| --- | --- |
+| **QUAL-X** parent | **OPEN / IN PROGRESS** — **FRZ-REG-07** full clean-checkout **ACCEPTANCE CANDIDATE** @ `9a175177…` |
+| **QUAL-X-FINAL** | **ACCEPTANCE BLOCKED** until Packages A–D independently adjudicated |
+| **FRZ-REG global PASS** | **Forbidden** (ECAP-P4) |
+| **SKILL-X** | **Not authorized** |
+| **PROD-Q Dimension B** | **OPEN** — parallel obligation |
+
+**Grouping:** Packages A+B = single QUAL-X inventory/determinism audit wave; Package C = PROD-Q track; Package D = ENT-AUDIT-X / extended QUAL-X audit.
+
+### §11 Changed files (this reconciliation)
+
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section only (prior records **preserved**).
