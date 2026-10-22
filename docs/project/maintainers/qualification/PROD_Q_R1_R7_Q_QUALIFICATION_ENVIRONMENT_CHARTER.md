@@ -681,6 +681,26 @@ Execute **only** after **A1** local Docker preparation (**§O.8**) and **OP-01�
 
 **Cursor disposition:** **READY FOR AUDIT** — independent GitHub SHA audit required; A1 does **not** close **PROD-Q-R1-R7-Q** or any **FRZ** row.
 
+### O.9 A6 — local Docker configured runtime verification (bounded)
+
+| Field | Value |
+|-------|-------|
+| **Task** | `PROD-Q-R1-R7-Q-A6-LOCAL-DOCKER-CONFIGURED-RUNTIME-VERIFICATION` |
+| **Operator authorization** | `OPERATOR APPROVED — A6 LOCAL DOCKER CONFIGURED RUNTIME VERIFICATION` (2026-10-22) |
+| **EXECUTION_SHA** | `93a3b4f43427d0eb9361d2357cc9f261fc545a2d` |
+| **Classification** | **LOCAL DOCKER CONFIGURED RUNTIME VERIFIED — A6 SCOPE ONLY** |
+| **Not claimed** | `OPERATOR-PROFILE-QUALIFIED`, strict `serve`, `TARGET-VERIFIED`, **PRODUCTION**, DIM6/DIM17 PASS, global **FRZ** PASS |
+
+**Executed (@ EXECUTION_SHA):** `docker compose config -q` exit **0**; canonical `build_application_image.py` → `governed_contractor-application:latest`; qualification overlay `docker compose build`; `run --rm … --configured-verify` exit **0** (admission gate only); informational `--storage-probe` exit **0**. **Not executed:** `compose up`, strict `serve`, OP-01…03, governance activation.
+
+**Operator inputs:** `intergrax-gca-docker-local-qualification.env` **absent** on qual host for this run — no OP-01/03 credential injection.
+
+**Session evidence (redacted):** `.tmp/session/PROD-Q-R1-R7-Q-A6/` (manifest `06-evidence-manifest.txt`; log hashes only — no secrets).
+
+**FRZ contribution (A6 local evidence only — no global PASS):** **FRZ-PRD-01**, **FRZ-PRD-03**, **FRZ-PRD-08**, **FRZ-SEC-04** — **PASS RUNTIME (A6 SCOPE ONLY)** where bounded execution applied; remaining rows **NOT PROVEN** or **TRACKED FREEZE DEBT**.
+
+**Cursor disposition:** **READY FOR AUDIT** — independent GitHub SHA audit required; A6 does **not** close **PROD-Q-R1-R7-Q** or promote any **FRZ** checklist row.
+
 ---
 
 ## N. Validation record (charter + preflight task)
