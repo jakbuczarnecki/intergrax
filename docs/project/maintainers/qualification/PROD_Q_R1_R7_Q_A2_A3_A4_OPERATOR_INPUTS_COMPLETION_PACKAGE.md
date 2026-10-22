@@ -2,12 +2,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Disposition** | **READY FOR AUDIT — APPROVED STATIC CONFIGURATION ONLY** |
-| **Task** | `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` — record operator-approved **static identifiers and topology** for OP-01 / OP-02 / OP-03 (**not** provisioning, ALLOW policy, activation, or qualification) |
-| **Operator authorization** | `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` (2026-10-22) — **D1** identifiers, **D2** container root + named volume, **D3** gitignored `.env` injection + strict prod/context_only/unauth=false; **no** effective Governance ALLOW, bundle publication, artifact attestation, credential issuance, **A5**, strict serving, or production traffic |
+| **Disposition** | **READY FOR AUDIT — OP01 TENANT-WIDE AUTHORITY RATIFICATION** (configuration-only evidence; **not** global OP-01 QUALIFIED · **not** CLOSED) |
+| **Task** | `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` + **`PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION`** (2026-10-22) |
+| **Operator authorization** | **`PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION`** (2026-10-22, unchanged) — **D1** identifiers, **D2** container root + named volume, **D3** gitignored `.env` injection + strict prod/context_only/unauth=false; **did not** authorize effective ALLOW at that time. **`PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION`** (2026-10-22) — tenant `qual-intergrax-gca`; SERVICE principal `gca-qual-strict-service`; governance bundle `qual.intergrax.gca.control_plane`; **only** `agent_distribution.admit_runtime_revision` and `agent_distribution.activate_runtime_revision`; **tenant-wide** resource scope within qual tenant (`match_action` only — **no** `resource_id` rule matching); **A5 NOT AUTHORIZED**; **no** strict serving, physical mutation, or production traffic |
 | **Branch** | `development` |
-| **START_HEAD** | `3b740f929badd97a586c96470dfc6c98511244bc` |
-| **Parent @ START_HEAD** | `5e8e97a8b704e39037992873e4a91ad84a3299de` |
+| **START_HEAD** | `27713541b11e96f91abfdb3cae79bd3829631b45` |
+| **Parent @ START_HEAD** | (see `git log -1 --format=%P` @ ratification commit) |
 | **Production code delta** | **0** (documentation only) |
 | **Canonical charter** | [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) §C–§G, §O.1–O.9 |
 | **Related evidence** | [`PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md`](PROD_Q_R1_R7_Q_C_PACKAGE_B_OPERATOR_PRODUCTION_PROFILES_QUALIFICATION_EVIDENCE.md) · [`PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md`](PROD_Q_R1_R7_Q_QUALIFICATION_INVENTORY_AND_GATE_PLAN.md) · [`PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md`](PROD_Q_R1_R7_Q_SECTION_C_REMAINING_GATES_RECONCILIATION.md) |
@@ -16,11 +16,11 @@
 
 | OP | Status |
 |----|--------|
-| **OP-01** | **STATIC IDENTIFIERS APPROVED / EFFECTIVE ALLOW POLICY & PUBLICATION PENDING** |
-| **OP-02** | **CONTAINER ROOT & VOLUME TOPOLOGY APPROVED / PROVISIONING & ATTESTATION PENDING** |
-| **OP-03** | **INJECTION MECHANISM & STRICT SETTINGS APPROVED / CREDENTIAL ISSUANCE PENDING** |
+| **OP-01** | **TENANT-WIDE ALLOW RATIFIED (operator 2026-10-22) / CONFIGURATION-ONLY VERIFIED @ HEAD / LIVE QUAL COMPOSE REFERENCE REMAINS CONTAINED / HOST PUBLICATION & STRICT-SERVE WIRING PENDING** |
+| **OP-02** | **CONTAINER ROOT & VOLUME TOPOLOGY APPROVED / PROVISIONING & ATTESTATION PENDING** (**BLOCKED**) |
+| **OP-03** | **INJECTION MECHANISM & STRICT SETTINGS APPROVED / CREDENTIAL ISSUANCE PENDING** (**BLOCKED**) |
 
-**Explicitly not claimed:** `OP-01/02/03 CONFIGURATION VERIFIED`, DIM6/DIM17 **QUALIFIED**, R7-Q **CLOSED**, PROD-Q **PASS**, global **FRZ-*** PASS delta **0**.
+**Explicitly not claimed:** global **OP-01 QUALIFIED**, full `OP-01/02/03 CONFIGURATION VERIFIED`, DIM6/DIM17 **QUALIFIED**, R7-Q **CLOSED**, PROD-Q **PASS**, global **FRZ-*** PASS delta **0**, **A5** authorized.
 
 ---
 
@@ -122,9 +122,51 @@ After operator edits: compute digest with `ImmutableRuntimePolicyBundle.model_va
 | `GOVERNANCE_SERVICE_ID` | `gca-qual-strict-service` | **OPERATOR APPROVED — IDENTIFIER ONLY** |
 | `INTERGRAX_STRICT_PRODUCTION_SERVING_APPLICATION_ENVIRONMENT_ID` | `qual-intergrax-gca-env-01` (align with tenant) | **OPERATOR APPROVED — IDENTIFIER ONLY** |
 | Bundle filesystem path | e.g. `/etc/intergrax/qual/op-01/mutation-policy.json` (Linux qual host) or operator-mounted secret volume in Docker | **OPERATOR DECISION REQUIRED** (path not in static-config approval) |
-| Policy `version`, `issued_at`, rule IDs, ALLOW rules | — | **PROVISIONING BLOCKED** (publication / mutation authority not approved) |
+| Policy `version`, `issued_at`, rule IDs, ALLOW rules | `2026-10-22.1` · `2026-10-22T11:20:00Z` · `qual.gca.admit_runtime_revision` · `qual.gca.activate_runtime_revision` | **OPERATOR RATIFIED — TENANT-WIDE ALLOW** (see §3.4; artifact **outside Git**) |
+| Live Docker qual `.env` OP-01 injection | Commented / disabled post-containment | **CONTAINED** — configuration-only validation uses session path only; **not** re-enabled on active runtime reference |
 
 **Provenance record (out-of-repo):** approver identity, UTC timestamp, qualification scope statement, file SHA256, `bundle_id`, `canonical_digest`, approved mutation list.
+
+### 3.4 OP-01 tenant-wide authority ratification (2026-10-22)
+
+**Authorization event (new — not backdated):** `PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION` records operator approval of **effective** tenant-wide mutation authority for the dedicated qualification tenant only. This is **distinct from** bundle file creation (`issued_at` above), **distinct from** containment (disabled compose reference), and **distinct from** any future host publication / strict-serve materialization.
+
+| Item | Value |
+|------|-------|
+| Tenant | `qual-intergrax-gca` |
+| SERVICE principal (`GOVERNANCE_SERVICE_ID`) | `gca-qual-strict-service` |
+| `bundle_id` | `qual.intergrax.gca.control_plane` |
+| `version` | `2026-10-22.1` |
+| Permitted `match_action` values (finite — **no others**) | `agent_distribution.admit_runtime_revision`, `agent_distribution.activate_runtime_revision` |
+| Resource scope | **Tenant-wide** within qual tenant: rules match **`match_action` only**; **no** `resource_id` filtering in `runtime_policy_bundle.v1` (accepted for this isolated qual tenant) |
+| Cross-resource within tenant | Same-tenant requests with different `application_id:application_environment_id` **ALLOW** at policy layer — **intentional approved authority**, not a defect |
+| **A5** | **NOT AUTHORIZED** |
+| Session evidence path (host-local, not Git) | `.tmp/session/PROD-Q-R1-R7-Q-A2-A4/op-01/mutation-policy.json` |
+| `file_sha256` (bytes) | `7092bc14fc576cbf19d0a047ef114f342c45247d34c102c2a3ce1a652b5864bb` |
+| `canonical_digest` | `sha256:ccdda034edd301ae10b26b35d04312c2cf25778686d3c2d0536714680c661e10` |
+| Prior provenance reconciled | `op-01/provenance.json` **matches** recomputed digests @ ratification |
+| Containment analysis | `.tmp/session/PROD-Q-R1-R7-Q-A2-A4/OP01-CONTAINMENT-AND-AUTHORITY-ANALYSIS.md` |
+
+**Provenance timeline (do not conflate):**
+
+1. **Artifact creation** — bundle JSON `issued_at` `2026-10-22T11:20:00Z` (engineering/session; **not** prior effective operator ALLOW).
+2. **Static configuration** — `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` (2026-10-22): identifiers only.
+3. **Containment** — qual compose `.env` OP-01 / governance / strict-env references **disabled**; no workload mutation path via sanctioned strict serve while unset.
+4. **Ratification (this event)** — operator tenant-wide ALLOW grant for two mutation types only.
+5. **Configuration-only validation** — loader + synthetic `authorize_scoped_control_plane_mutation` @ HEAD; log `.tmp/session/PROD-Q-R1-R7-Q-A2-A4/op-01-ratification-validation.log` (**exit 0**). **No** physical mutation, admission, activation, or strict serving.
+
+**Configuration-only validation matrix (@ HEAD, sanctioned loader):**
+
+| Case | Expected | Observed |
+|------|----------|----------|
+| Approved admit + qual tenant/principal | ALLOW | ALLOW (`qual.gca.admit_runtime_revision`) |
+| Approved activate + qual tenant/principal | ALLOW | ALLOW (`qual.gca.activate_runtime_revision`) |
+| Same tenant, different app/env resource | ALLOW (tenant-wide grant) | ALLOW |
+| Unapproved mutation type | DENY | DENY (`no_matching_rule`) |
+| Wrong tenant principal | DENY | DENY (`tenant_authority_mismatch`) |
+| Missing `INTERGRAX_OPERATOR_PRODUCTION_*` policy env | fail-closed | `PackageBOperatorProductionGovernanceConfigurationError` |
+
+**Isolation:** Qualification overlay remains disjoint from production; Docker Desktop **not** required for this evidence (offline loader path). Re-enabling OP-01 in live qual compose **without** OP-02/03/A5 remains **out of scope** for this ratification step.
 
 ---
 
@@ -309,16 +351,16 @@ Mount OP-01 JSON via additional operator volume bind — **not** in repo Compose
 2. **D2** — container trusted-artifact parent root `/var/lib/intergrax/production-v1/data/trusted_artifacts`; Docker named volume `intergrax_gca_strict_local_qualification_data` (Compose @ HEAD).
 3. **D3** — qualification isolation via existing gitignored `intergrax-gca-docker-local-qualification.env`; strict settings `GOVERNED_CONTRACTOR_BACKEND_ENV=prod`, `GOVERNED_CONTRACTOR_IDENTITY_SOURCE=context_only`, `GOVERNED_CONTRACTOR_BACKEND_ALLOW_UNAUTHENTICATED` absent or `false`.
 
-**Still blocking provisioning (security / authority / materialization):**
+**Still blocking full Package B operator-profile qualification (security / materialization / runtime):**
 
-1. Approve and publish **OP-01** effective bundle: finite ALLOW mutation list, rule IDs, `version`, `issued_at`, secured path, provenance SHA256 — **outside Git**.
-2. Approve **OP-01** bundle filesystem path and Docker bind mount for published JSON.
+1. ~~Approve **OP-01** effective bundle~~ — **RATIFIED** (§3.4); **remaining:** operator-secured host path + Docker bind mount for **published** JSON on qual host (session copy is evidence only).
+2. **OP-01** live compose injection — **intentionally disabled** until OP-02/03/A6 path is safe; ratification does **not** authorize reconnect to active strict serve.
 3. **OP-02** — attest host/container root list beyond approved topology; materialize immutable venv bundle(s) + manifest digests.
 4. **OP-03** — issue API key(s); select external-work provider ID and descriptor digest; populate secrets in operator `.env`.
 5. Verify **no** `GOVERNED_CONTRACTOR_BACKEND_BOOTSTRAP_*` on qual host.
 6. Authorize **A5** activation window separately (not part of static-configuration approval).
 
-Until outstanding items 1–5 are satisfied, status remains **PROVISIONING BLOCKED** (static configuration alone does **not** authorize execution).
+Until outstanding items 2–6 are satisfied, full operator-profile provisioning remains **BLOCKED** (OP-01 ratification alone does **not** authorize execution or **A5**).
 
 ---
 
@@ -420,10 +462,10 @@ git diff --check
 
 | Criterion | Preparation contribution | Qualification status |
 |-----------|-------------------------|----------------------|
-| **FRZ-PRD-01** | Static qual identifiers recorded; execution still blocked | **OPEN** |
-| **FRZ-PRD-03** | Approved container root + volume topology; attestation pending | **OPEN** |
-| **FRZ-PRD-08** | Approved gitignored `.env` mechanism; credentials not issued | **OPEN** |
-| **FRZ-SEC-04** | Approved prod/context_only/unauth=false posture; no secrets in Git | **OPEN** |
+| **FRZ-PRD-01** | Static qual identifiers + OP-01 tenant-wide ALLOW ratified; **no** qualified strict execution | **OPEN** |
+| **FRZ-PRD-03** | OP-01 configuration-only fail-closed/ALLOW matrix evidenced; unsupported live config still blocked | **OPEN** |
+| **FRZ-PRD-08** | Approved gitignored `.env` mechanism; OP-01 compose reference contained; credentials not issued | **OPEN** |
+| **FRZ-SEC-04** | Tenant/principal-bound policy evaluation evidenced; **A5** / live bypass paths not authorized | **OPEN** |
 | **FRZ-GOV / FRZ-TEN / FRZ-SEC / FRZ-BND / FRZ-OWN / FRZ-CTR / FRZ-TYP** | Aligned with Package B evidence doc | **unchanged** |
 | **ECAP-P1 / P2 / P4** | Contract traceability in §3–5; static-config evidence ref `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` | Configuration authorization only — **not** ECAP closure |
 
@@ -460,7 +502,7 @@ git diff --check
 
 ## 13. Next recommended action
 
-Per [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) **§O.6–O.7**: operator completes **outstanding** decisions in §7 (effective OP-01 policy publication, OP-02 materialization/attestation, OP-03 credential/provider issuance), provisions OP-01…03 on the qual host, then authorizes **A6** runtime verification and **A5** activation window; only then re-run Package B operator-profile gates and capture **OP-04**. Static configuration (D1–D3) does **not** close §7.
+Per [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) **§O.6–O.7**: after independent audit of OP-01 ratification commit, operator publishes bundle to **secured host path**, completes **OP-02** materialization/attestation and **OP-03** credential/provider issuance, then authorizes **A6** runtime verification and **A5** activation window; only then re-enable qual compose OP-01 injection, re-run Package B operator-profile gates, and capture **OP-04**. OP-01 tenant-wide ratification (§3.4) does **not** close §7 or PROD-Q.
 
 ---
 
