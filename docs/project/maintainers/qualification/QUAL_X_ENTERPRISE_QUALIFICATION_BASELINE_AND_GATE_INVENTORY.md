@@ -675,3 +675,108 @@ uv run pytest -p no:xdist ... -k determinism_repeat
 - PHYSQ prerequisite **PASS** ≠ full physical qualification **PASS**
 
 **Next mandatory child after independent P4 acceptance:** **QUAL-X-P5** (freeze-oriented qualification assembly — Q12, **FRZ-REG-10**).
+
+---
+
+## QUAL-X-P5 execution record — Enterprise freeze qualification suite assembly
+
+**START_HEAD:** `8910f580d8c53a7eb6aac0c61029f9a752c26f3a`
+
+**Disposition:** **READY FOR AUDIT — QUAL-X-P5 ENTERPRISE FREEZE QUALIFICATION SUITE ASSEMBLY** (P5 only; **QUAL-X** parent **OPEN**; **FRZ-REG-*** **OPEN** globally; **FRZ-REG-10** = manifest **DEFINED** @ P5 — not global PASS)
+
+**Scope:** Q12 + rollup linkage for Q01–Q11 via single freeze-oriented selection manifest; Path B Dimension **A** vs **B** separation; **FRZ-REG-01..09** visibility ledger (gaps explicit).
+
+**Production delta (P5):** `0` — qualification SSOT, tests, inventory record only.
+
+### Canonical manifest owner
+
+| Field | Value |
+| --- | --- |
+| Semantic owner | **QUAL-X** freeze selection manifest |
+| SSOT module | `tests/qualification/qual_x/_p5_freeze_selection_catalog.py` |
+| Reconciliation support | `tests/qualification/qual_x/_p5_freeze_selection_support.py` |
+| Integrity batch | `tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py` |
+| Execution authority | Existing `pytest` + `tests/qualification/governance/pytest_node_integrity.py` (no new runner) |
+
+### Freeze families F01–F12 → selection IDs
+
+| Family | Selection ID | Q | Owning stage | Primary execution surface |
+| --- | --- | --- | --- | --- |
+| **F01** | `QUAL-X-P5-F01-ARCH-BOUNDARIES` | Q01 | QUAL-X-P1 / EBH | EBH-3/2A/2I/4 + HARDENING-3 modules |
+| **F02** | `QUAL-X-P5-F02-OWNERSHIP-DUPLICATION` | Q02 | QUAL-X-P1 / EBH-3 | `test_ebh_3_dependency_ownership_gate.py` |
+| **F03** | `QUAL-X-P5-F03-CONTRACTS-TYPING` | Q03 | QUAL-X-P1 / EBH-2F | EBH-2F + EBH-2I modules |
+| **F04** | `QUAL-X-P5-F04-GOV-SEC-TENANT` | Q04 | QUAL-X-P2 | P2 ingress proof registry + P2 batch |
+| **F05** | `QUAL-X-P5-F05-RUNTIME-LIFECYCLE` | Q05 | HARNESS-01 | `test_harness_01_gates.py` + P2 Q05 linkage |
+| **F06** | `QUAL-X-P5-F06-PERSISTENCE-RECOVERY` | Q06 | QUAL-X-P3 | Q06 proof registry + P3 batch |
+| **F07** | `QUAL-X-P5-F07-GATE-CREDIBILITY` | Q07 | QUAL-X-P1 | P1 strengthened gate modules |
+| **F08** | `QUAL-X-P5-F08-ADVERSARIAL-NEGATIVES` | Q08 | QUAL-X-P2 | P2 ingress proof registry |
+| **F09** | `QUAL-X-P5-F09-DETERMINISM` | Q09 | QUAL-X-P4 | P4 gate registry + batch |
+| **F10** | `QUAL-X-P5-F10-ENV-CLASSIFICATION` | Q10 | QUAL-X-P4 | P4 env classification gates |
+| **F11** | `QUAL-X-P5-F11-INVENTORY-ALLOWLIST` | Q11 | QUAL-X-P3 | P3 inventory batch |
+| **F12** | `QUAL-X-P5-F12-FREEZE-MANIFEST-INTEGRITY` | Q12 | QUAL-X-P5 | P5 integrity batch |
+| **DIM-B** | `QUAL-X-P5-DIM-B-PROD-Q-LIVE-EXCLUDED` | Q04/Q10 | PROD-Q-R1-R7-Q | Live integrated gate — **excluded from Dimension A PASS** |
+
+Delegated node registries reuse **P2/P3/P4** catalogs (no duplicate SSOT).
+
+### FRZ-REG evidence ledger @ P5 (visibility — no promotion)
+
+| Criterion | P5 disposition |
+| --- | --- |
+| **FRZ-REG-01..05, 09** | **OPEN** — linked selections; gaps explicit in ledger |
+| **FRZ-REG-06** | **PARTIAL** — W2-C **TRACKED FREEZE DEBT** via P4 |
+| **FRZ-REG-07** | **PARTIAL** — `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE` (not demonstrated @ P5) |
+| **FRZ-REG-08** | **PARTIAL** — P4 classification + DIM-B exclusion row |
+| **FRZ-REG-10** | **DEFINED** @ P5 manifest — independent audit pending |
+
+Authoritative ledger rows: `QUAL_X_P5_FRZ_REG_EVIDENCE_LEDGER` in catalog module.
+
+### Path B separation
+
+- Dimension **A** selections: `qual_x_p5_dimension_a_pytest_module_targets()` + mandatory collectable node IDs from P2/P3/P4 registries.
+- Dimension **B** live proof (`QUAL-X-P5-DIM-B-PROD-Q-LIVE-EXCLUDED`): `EXCLUDED_FROM_DIMENSION_A` — cannot satisfy Dimension **A** acceptance.
+
+### P4 residual obligations (preserved)
+
+| Item | P5 disposition |
+| --- | --- |
+| **FRZ-REG-07** clean checkout | **PARTIAL** — recipe in `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE`; full replay = **QUAL-X-FINAL** |
+| **W2-C** | **TRACKED FREEZE DEBT** — inherited from P4; unconditional green forbidden |
+| **R1-SQLITE-ENV-01** | **ENVIRONMENT/TEST ISSUE** — via P4 F10 linkage; not closed |
+| **EBH2A-D-076/140** | **TRACKED FREEZE DEBT** — unchanged ownership |
+| **P3 adversarial scope** | Partial mutation evidence only — owner gates distinguished in manifest |
+
+### Changed files
+
+- `tests/qualification/qual_x/_p5_freeze_selection_catalog.py` (new)
+- `tests/qualification/qual_x/_p5_freeze_selection_support.py` (new)
+- `tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py` (new)
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record)
+
+### Focused pytest (P5 batch)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py
+```
+
+**Result @ P5 worktree:** `21 passed`, `0 failed`, exit `0`.
+
+`git diff --check`: clean (post-record).
+
+### Explicit non-claims
+
+- **QUAL-X** parent not **CLOSED**
+- **FRZ-REG-*** platform **PASS** not awarded
+- **ARCH-FREEZE** not authorized
+- No **ENT-AUDIT-X** implementation
+- No full enterprise regression replay
+
+### QUAL-X-FINAL sequence (after independent P5 audit)
+
+1. Pin exact SHA on `origin/development`.
+2. Run `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE.p5_integrity_execution_command` @ SHA.
+3. Run `dimension_a_execution_command` @ SHA with documented env (`INTERGRAX_RELATIONAL_DB` when relational tests in scope).
+4. Reject skip/xfail/partial summaries on mandatory nodes (P4 outcome vocabulary).
+5. Record evidence under `.tmp/session/QUAL-X-FINAL-<SHA>/` — operator bundle for independent acceptance.
+
+**Next after P5 audit:** **QUAL-X-FINAL** bounded full qualification (risk-based scheduling; environmental readiness).
