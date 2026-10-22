@@ -6,7 +6,7 @@
 | **Task** | `PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION` + **`PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION`** (2026-10-22) |
 | **Operator authorization** | **`PROD-Q-R1-R7-Q-A2-A4-APPROVED-STATIC-CONFIGURATION`** (2026-10-22, unchanged) — **D1** identifiers, **D2** container root + named volume, **D3** gitignored `.env` injection + strict prod/context_only/unauth=false; **did not** authorize effective ALLOW at that time. **`PROD-Q-R1-R7-Q-OP01-TENANT-WIDE-AUTHORITY-RATIFICATION`** (2026-10-22) — tenant `qual-intergrax-gca`; SERVICE principal `gca-qual-strict-service`; governance bundle `qual.intergrax.gca.control_plane`; **only** `agent_distribution.admit_runtime_revision` and `agent_distribution.activate_runtime_revision`; **tenant-wide** resource scope within qual tenant (`match_action` only — **no** `resource_id` rule matching); **A5 NOT AUTHORIZED**; **no** strict serving, physical mutation, or production traffic |
 | **Branch** | `development` |
-| **START_HEAD** | `27713541b11e96f91abfdb3cae79bd3829631b45` |
+| **START_HEAD** | `10ea294cf7b70363d1e2ea256dd8a5aae98e8861` (OP-02/03 materialization audit @ same HEAD) |
 | **Parent @ START_HEAD** | (see `git log -1 --format=%P` @ ratification commit) |
 | **Production code delta** | **0** (documentation only) |
 | **Canonical charter** | [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) §C–§G, §O.1–O.9 |
@@ -17,8 +17,8 @@
 | OP | Status |
 |----|--------|
 | **OP-01** | **TENANT-WIDE ALLOW RATIFIED (operator 2026-10-22) / CONFIGURATION-ONLY VERIFIED @ HEAD / LIVE QUAL COMPOSE REFERENCE REMAINS CONTAINED / HOST PUBLICATION & STRICT-SERVE WIRING PENDING** |
-| **OP-02** | **CONTAINER ROOT & VOLUME TOPOLOGY APPROVED / PROVISIONING & ATTESTATION PENDING** (**BLOCKED**) |
-| **OP-03** | **INJECTION MECHANISM & STRICT SETTINGS APPROVED / CREDENTIAL ISSUANCE PENDING** (**BLOCKED**) |
+| **OP-02** | **`BLOCKED — APPROVED SOURCE BUILD REQUIRED`** (§14.1 @ `10ea294c…`) — topology approved; **no** `file://` candidate; attestation pending |
+| **OP-03** | **Provider: `BLOCKED — APPROVED PROVIDER REQUIRED`** · **Credentials: issuance blocked** (§14.2–14.3 @ `10ea294c…`) |
 
 **Explicitly not claimed:** global **OP-01 QUALIFIED**, full `OP-01/02/03 CONFIGURATION VERIFIED`, DIM6/DIM17 **QUALIFIED**, R7-Q **CLOSED**, PROD-Q **PASS**, global **FRZ-*** PASS delta **0**, **A5** authorized.
 
@@ -503,6 +503,58 @@ git diff --check
 ## 13. Next recommended action
 
 Per [`PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md`](PROD_Q_R1_R7_Q_QUALIFICATION_ENVIRONMENT_CHARTER.md) **§O.6–O.7**: after independent audit of OP-01 ratification commit, operator publishes bundle to **secured host path**, completes **OP-02** materialization/attestation and **OP-03** credential/provider issuance, then authorizes **A6** runtime verification and **A5** activation window; only then re-enable qual compose OP-01 injection, re-run Package B operator-profile gates, and capture **OP-04**. OP-01 tenant-wide ratification (§3.4) does **not** close §7 or PROD-Q.
+
+---
+
+## 14. OP-02 / OP-03 qualification materialization (@ `10ea294cf7b70363d1e2ea256dd8a5aae98e8861`)
+
+Session evidence (redacted, not Git): `.tmp/session/PROD-Q-R1-R7-Q-A2-A4/op02-op03/` (`op02-artifact-materialization-evidence.md`, `op03-discovery-scan.json`).
+
+### 14.1 OP-02 — artifact candidate
+
+| Item | Finding |
+|------|---------|
+| Disposition | **`BLOCKED — APPROVED SOURCE BUILD REQUIRED`** (not `CANDIDATE MATERIALIZED`) |
+| Sanctioned production VENV_BUNDLE materializer @ HEAD | `UnsupportedVenvBundleMaterializationAdapter` in `intergrax/agent_distribution/materialization_adapters.py` — coordinator path **does not** build immutable bundles |
+| External authority (unchanged) | Operator/CI immutable `file://` directory per `PROD_Q_R1_R7_ADR_01` DEC-06; digest via `directory_content_digest` / `verify_venv_bundle_artifact_bytes` |
+| OCI-only in-repo build | `scripts/build/build_application_image.py` → runtime graph context under `applications/governed_contractor_application/docker/runtime-context/` — **OCI staging**, not deployable VENV_BUNDLE `file://` artifact |
+| Strict bind expectations | `VenvBundleColocatedRuntimeDeploymentAdapter(..., allow_qualification_locators=False)` in `package_b_strict_production_serving_command.py`; `resolve_production_artifact_root` rejects `reference://` |
+| LAB excluded | `write_minimal_venv_bundle` (`testing_support/…`) — not used |
+| Approved container root / volume | `/var/lib/intergrax/production-v1/data/trusted_artifacts` · `intergrax_gca_strict_local_qualification_data` (Compose @ HEAD) — **not populated** on audit host (Docker engine unavailable) |
+| Trust / attestation | **Not designated** — no operator manifest row |
+
+**Operator missing:** approved source build ref + SHA, runtime revision ID, materialized bundle path, directory digest, lock integrity record, attestation sign-off.
+
+### 14.2 OP-03 — provider discovery
+
+| Item | Finding |
+|------|---------|
+| Disposition | **`BLOCKED — APPROVED PROVIDER REQUIRED`** (not `REAL PROVIDER CANDIDATE DISCOVERED`) |
+| Mechanism | `resolve_strict_external_work_provider_capabilities(integration, settings=…)` — `integration.discover()` then pin match on `GOVERNED_CONTRACTOR_STRICT_EXTERNAL_WORK_PROVIDER_*` |
+| Qualification environment | No bound non-LAB `ExternalWorkIntegration` on host; in-tree `discover()` besides tests: `DeterministicExternalWorkFake` (`gec3_deterministic_fake`) — **excluded** |
+| Discovery command | **Not run** (no approved provider instance) |
+
+**Operator missing:** real provider implementation reference, operator-approved `provider_id` + `descriptor_digest` from genuine side-effect-free `discover()`.
+
+### 14.3 OP-03 — credentials readiness
+
+| Item | Finding |
+|------|---------|
+| Disposition | **Issuance blocked** — no approved issuer/process |
+| Gitignored `intergrax-gca-docker-local-qualification.env` | Present on host: `GOVERNED_CONTRACTOR_BACKEND_ENV=prod`, `GOVERNED_CONTRACTOR_IDENTITY_SOURCE=context_only` only — **no** API keys JSON, **no** OP-01 paths, **no** provider pins |
+| Bootstrap on process | **Absent** (`GOVERNED_CONTRACTOR_BACKEND_BOOTSTRAP_*` = 0) |
+| Schema | `GovernedContractorBackendSettings.from_env` — JSON object map; prod without keys → **ValueError** (verified) |
+| Tenant binding target | `qual-intergrax-gca` (keys must carry matching `tenant_id` when issued) |
+
+### 14.4 Consolidated disposition table
+
+| Component | Required evidence | Disposition |
+|-----------|-------------------|-------------|
+| OP-01 | Ratified authority | Existing scoped evidence (§3.4); compose OP-01 injection **not** re-enabled |
+| OP-02 | Real candidate + digest + source | **BLOCKED** — approved source build required |
+| OP-03 provider | Real descriptor/discovery | **BLOCKED** — approved provider required |
+| OP-03 credentials | Issuer + secure issuance | **BLOCKED** until operator approves issuer |
+| A5 | Activation authorization | **NOT AUTHORIZED** |
 
 ---
 
