@@ -5,22 +5,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 from pydantic import BaseModel
 
+from intergrax.contracts.tool_execution_outcome import (
+    ToolEffectCertainty,
+    ToolExecutionError,
+    ToolExecutionResult,
+)
+from intergrax.contracts.tools.tool_invocation_wiring_resolution import (
+    ToolInvocationContext,
+)
+
 if TYPE_CHECKING:
-    from intergrax.tools.invocation_wiring import ToolInvocationContext
     from intergrax.tools.registry.wiring import ToolWiringContext
-
-
-class ToolEffectCertainty(str, Enum):
-    """Whether a tool invocation may have crossed the external-effect boundary."""
-
-    NOT_STARTED = "not_started"
-    COMPLETED = "completed"
-    UNCERTAIN = "uncertain"
 
 InModelT = TypeVar("InModelT", bound=BaseModel)
 OutModelT = TypeVar("OutModelT", bound=BaseModel)
@@ -40,20 +39,8 @@ class ToolExecutionRequest(Generic[InModelT]):
     input: InModelT
     idempotency_key: Optional[str] = None
     declarative_hitl_invocation_scope_id: Optional[str] = None
-    invocation_context: Optional["ToolInvocationContext"] = None
-    effective_wiring: Optional["ToolWiringContext"] = None
-
-
-@dataclass(frozen=True, slots=True)
-class ToolExecutionError:
-    """
-    Normalized tool execution error (runtime-level).
-
-    - error_code is already mapped by runtime enforcement (ToolContract.error_mapping)
-    - error_message is safe to log/trace (no raw exception objects)
-    """
-    error_code: str
-    error_message: str
+    invocation_context: Optional[ToolInvocationContext] = None
+    effective_wiring: Optional[ToolWiringContext] = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,10 +61,10 @@ class ToolModelObservation:
     @classmethod
     def from_execution_result(
         cls,
-        result: "ToolExecutionResult[OutModelT]",
+        result: ToolExecutionResult[OutModelT],
         *,
         evidence_reference: str | None = None,
-    ) -> "ToolModelObservation":
+    ) -> ToolModelObservation:
         if result.success:
             if result.output is None:
                 raise ValueError("successful ToolExecutionResult requires output")
@@ -90,44 +77,10 @@ class ToolModelObservation:
         return cls(content=result.error.error_message, evidence_reference=None)
 
 
-@dataclass(frozen=True)
-class ToolExecutionResult(Generic[OutModelT]):
-    """
-    Normalized tool execution outcome.
-
-    Exactly one of:
-      - output (success=True)
-      - error  (success=False)
-
-    CONTRACT:
-    If success=True → output MUST be instance of ToolContract.output_schema.
-    Runtime relies on this guarantee.
-    """
-    success: bool
-    output: Optional[OutModelT]
-    error: Optional[ToolExecutionError]
-    effect_certainty: ToolEffectCertainty = ToolEffectCertainty.UNCERTAIN
-
-    @staticmethod
-    def ok(output: OutModelT) -> "ToolExecutionResult[OutModelT]":
-        return ToolExecutionResult(
-            success=True,
-            output=output,
-            error=None,
-            effect_certainty=ToolEffectCertainty.COMPLETED,
-        )
-
-    @staticmethod
-    def fail(
-        code: str,
-        message: str,
-        *,
-        effect_certainty: ToolEffectCertainty = ToolEffectCertainty.UNCERTAIN,
-    ) -> "ToolExecutionResult[OutModelT]":
-        return ToolExecutionResult(
-            success=False,
-            output=None,
-            error=ToolExecutionError(error_code=code, error_message=message),
-            effect_certainty=effect_certainty,
-        )
-
+__all__ = [
+    "ToolEffectCertainty",
+    "ToolExecutionError",
+    "ToolExecutionRequest",
+    "ToolExecutionResult",
+    "ToolModelObservation",
+]

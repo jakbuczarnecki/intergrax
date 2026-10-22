@@ -7,9 +7,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.run_budget import RunBudget
+from intergrax.contracts.tools.tool_invocation_wiring_resolution import (
+    ToolInvocationContext,
+    ToolInvocationWiringResolver,
+)
 from intergrax.runtime.architecture.cost_budget import BudgetEnvelope
 from intergrax.runtime.architecture.cost_quota import ResourceQuota
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable
@@ -67,32 +70,6 @@ class ToolInvocationWiring:
     @classmethod
     def empty(cls) -> ToolInvocationWiring:
         return cls()
-
-
-@runtime_checkable
-class ToolInvocationWiringResolver(Protocol):
-    """Read-only dependency projection for a single tool invocation."""
-
-    def resolve(
-        self,
-        *,
-        tool_id: str,
-        invocation_context: ToolInvocationContext,
-        registration_wiring: ToolRegistrationWiringView,
-    ) -> ToolInvocationWiring: ...
-
-
-@dataclass(frozen=True, slots=True)
-class ToolInvocationContext:
-    """Narrow invocation identity for wiring resolution (no arbitrary metadata bag)."""
-
-    run_id: str
-    step_id: str
-    tool_id: str
-    agent_id: str | None = None
-    tenant_id: str | None = None
-    correlation_request_id: str | None = None
-    wiring_resolver: ToolInvocationWiringResolver | None = None
 
 
 class DelegatingToolInvocationWiringResolver:

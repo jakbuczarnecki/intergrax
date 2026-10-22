@@ -12,7 +12,9 @@ from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvokeRequest,
 )
 from intergrax.contracts.execution_identity import TaskId
-from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
+from intergrax.contracts.tools.tool_invocation_wiring_resolution import (
+    ToolInvocationWiringResolver,
+)
 
 
 class DefaultQualifiedToolInvocationResolver:

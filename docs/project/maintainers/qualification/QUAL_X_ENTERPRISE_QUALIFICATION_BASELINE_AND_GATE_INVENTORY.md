@@ -246,3 +246,91 @@ uv run pytest -p no:xdist \
 - **FRZ-REG-*** platform **PASS** not awarded
 
 **Next mandatory child after independent P1 acceptance:** **QUAL-X-P2** (governance/tenant negative coverage matrix).
+
+---
+
+## QUAL-X-P1-R1 execution record — Tool contract boundary correction
+
+**START_HEAD:** `30a3e437e1d222d13d1295e7192eab2105bdd06a`
+
+**Disposition:** **READY FOR AUDIT** (P1-R1 only; **QUAL-X-P1** / **QUAL-X** parent **OPEN**; **FRZ-REG-*** **OPEN**)
+
+### Original violation
+
+| Surface | Forbidden import |
+| --- | --- |
+| `intergrax.contracts.tools.qualified_tool_invocation` | `intergrax.tools.invocation_wiring` (`ToolInvocationWiringResolver`) — unregistered EBH-2I failure @ START_HEAD |
+| `intergrax.contracts.execution_bound_catalog_tool_invocation` | `intergrax.tools.invocation_wiring`, `intergrax.tools.execution_models` (tracked debt **EBH2A-D-141** / **EBH2A-D-142**) |
+
+### Changed public contract boundary
+
+- **`intergrax.contracts.tools.tool_invocation_wiring_resolution`:** canonical `ToolInvocationContext` + generic `ToolInvocationWiringResolver` Protocol (identity-only public seam; implementation wiring graph remains in `intergrax.tools.invocation_wiring`).
+- **`intergrax.contracts.tool_execution_outcome`:** canonical `ToolEffectCertainty`, `ToolExecutionError`, `ToolExecutionResult` (single semantic owner; `intergrax.tools.execution_models` non-authoritative re-export for runtime consumers).
+- Public catalog / qualified invocation contracts import only contract-layer types.
+
+### Owner / caller inventory (changed scope)
+
+| Type | Owner | Contract consumers | Implementation consumers |
+| --- | --- | --- | --- |
+| `ToolInvocationWiringResolver` / `ToolInvocationContext` | `intergrax.contracts.tools.tool_invocation_wiring_resolution` | `qualified_tool_invocation`, `execution_bound_catalog_tool_invocation` | `invocation_wiring`, runtime nexus invokers, `DefaultQualifiedToolInvocationResolver` |
+| `ToolExecutionResult` (+ error/certainty) | `intergrax.contracts.tool_execution_outcome` | `execution_bound_catalog_tool_invocation` | `execution_models` re-export, ToolRuntime / idempotency / suspended-operation (unchanged import paths via tools where not in P1-R1 scope) |
+
+### Changed files
+
+- `intergrax/contracts/tools/tool_invocation_wiring_resolution.py` (new)
+- `intergrax/contracts/tool_execution_outcome.py` (new)
+- `intergrax/contracts/tools/qualified_tool_invocation.py`
+- `intergrax/contracts/execution_bound_catalog_tool_invocation.py`
+- `intergrax/tools/invocation_wiring.py`
+- `intergrax/tools/execution_models.py`
+- `intergrax/tools/qualified_tool_invocation_resolver.py`
+- `testing_support/architecture/public_contract_boundary/debt_registry.py` (removed **EBH2A-D-141**, **EBH2A-D-142**)
+- `tests/unit/tools/test_qualified_tool_invocation_resolver.py`
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record)
+
+### Focused pytest (P1-R1 batch)
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/architecture/test_ebh_2i_final_rescan_gate.py \
+  tests/unit/tools/test_qualified_tool_invocation_resolver.py \
+  tests/unit/tools/test_marketplace_qualified_capability_execution_handler.py \
+  tests/unit/applications/test_uca6c_marketplace_qualified_execution_composition.py
+```
+
+**Result @ P1-R1 worktree:** `33 passed`, `0 failed`.
+
+`git diff --check`: clean (no conflict markers / whitespace errors).
+
+### Before / after semantics
+
+| Invariant | Before | After |
+| --- | --- | --- |
+| Resolver injection on catalog invoke request | Caller-supplied `ToolInvocationWiringResolver` stored on request | Unchanged; type identity moved to contracts Protocol |
+| `DelegatingToolInvocationWiringResolver` default path | Empty wiring when delegate absent | Unchanged (regression in `test_resolve_preserves_injected_wiring_resolver`) |
+| `ToolExecutionResult` construction / equality | Single dataclass in `tools.execution_models` | Same class object via contracts owner + tools re-export (`test_tool_execution_result_single_canonical_definition`) |
+| Governance / execution authority | Sanctioned gateway only | Unchanged |
+| Tool execution semantics | Tools/Runtime owned | Unchanged |
+
+### FRZ contributions (scoped, no PASS promotion)
+
+| Criterion | P1-R1 contribution |
+| --- | --- |
+| **FRZ-REG-01** | EBH-2I boundary green on corrected surfaces; debt entries 141/142 reconciled |
+| **FRZ-REG-02** | Contracts no longer depend on Tools implementation for catalog/qualified invocation seam |
+| **FRZ-REG-09** | Fail-closed gate detects reintroduction; no TYPE_CHECKING / cast masking |
+| **FRZ-BND-*** / **FRZ-OWN-*** / **FRZ-TYP-*** / **FRZ-CTR-*** | Supporting — single owner for outcome + wiring resolver public types |
+
+### Remaining blockers
+
+| Tag | Item |
+| --- | --- |
+| **TRACKED FREEZE DEBT** | `idempotency_store`, `execution.suspended_operation.reentry` → `tools.execution_models` (**EBH2A-D-076**, **EBH2A-D-140**) — outside P1-R1 patch |
+| **IN-SCOPE BLOCKER** (post-P1-R1 audit) | Independent exact-SHA audit of commit on `origin/development` |
+| **TRACKED FREEZE DEBT** | **QUAL-X-P2** onward; global **FRZ-*** PASS |
+
+### Suggested disposition
+
+- **QUAL-X-P1-R1:** **READY FOR AUDIT** (not self-closed)
+- **QUAL-X-P1:** remain **OPEN** pending P1-R1 audit + prior P1 audit
+- **Next canonical task after P1-R1 audit:** **QUAL-X-P2** (unchanged)
