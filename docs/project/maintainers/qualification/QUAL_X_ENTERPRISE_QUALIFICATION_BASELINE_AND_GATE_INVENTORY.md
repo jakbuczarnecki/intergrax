@@ -780,3 +780,141 @@ uv run pytest -p no:xdist \
 5. Record evidence under `.tmp/session/QUAL-X-FINAL-<SHA>/` — operator bundle for independent acceptance.
 
 **Next after P5 audit:** **QUAL-X-FINAL** bounded full qualification (risk-based scheduling; environmental readiness).
+
+---
+
+## QUAL-X-FINAL — Enterprise qualification record (Dimension A, Path B)
+
+**Disposition:** **QUAL-X-FINAL — NO-GO / BLOCKED** (not **READY FOR AUDIT — GO CANDIDATE**)
+
+| Field | Value |
+| --- | --- |
+| Repository | `jakbuczarnecki/intergrax` |
+| Branch | `development` |
+| **START_HEAD** (operator pin) | `595d03beb4156b12257a1de1a5fc238cd04dd67f` |
+| **EXECUTION_SHA** (Dimension A batch + P5 integrity @ push) | `1c2b18cd89d365ec25aa3f7e0534ae8702d9cee1` |
+| **FINAL_COMMIT** (selection fix) | `1c2b18cd89d365ec25aa3f7e0534ae8702d9cee1` |
+| `HEAD` == `origin/development` | yes (post-push) |
+| Tracked tree | clean after `1c2b18cd8` |
+
+### Pre-execution selection reconciliation (§3)
+
+**Defect found @ START_HEAD:** `qual_x_p5_dimension_a_pytest_module_targets()` selected coordination batches only; **33** mandatory collectable proof nodes (P2 F04/F08, P3 F06) were **not** in the collected execution set.
+
+**Minimal QUAL-X correction:** commit `1c2b18cd8` — merge pytest module paths from delegated `qual_x_p5_entry_pytest_node_ids()` into Dimension A targets; integrity test `test_qual_x_p5_dimension_a_targets_cover_mandatory_collectable_proof_nodes`.
+
+| Metric | Pre-fix @ `595d03be` | Post-fix @ `1c2b18cd` |
+| --- | --- | --- |
+| Module targets | 11 | 31 |
+| Collected nodes (module collect) | 178 | 527+ |
+| Mandatory collectable missing from selection | 33 | 0 |
+| Dimension B modules in A command | 0 | 0 |
+
+### Execution baseline
+
+- **Manifest:** `QUAL_X_P5_FREEZE_SELECTION_MANIFEST` (`_p5_freeze_selection_catalog.py`)
+- **Selection count:** 13 rows (12 Dimension A + 1 Dimension B excluded)
+- **Mandatory collectable node IDs:** 56
+- **Mandatory execute @ FINAL (module-owned):** F01, F02, F03, F05, F07
+- **pytest:** 8.4.2 (Python 3.12.11), `uv run pytest -p no:xdist`
+- **Env:** `INTERGRAX_RELATIONAL_DB` → `.tmp/session/QUAL-X-FINAL-1c2b18cd/isolated-relational.db` (Wave C @ final SHA)
+- **Evidence logs:** `.tmp/session/QUAL-X-FINAL-1c2b18cd/` (`wave-a-p5-integrity.log`, `wave-c-dimension-a.log`); pre-fix recon `.tmp/session/QUAL-X-FINAL-595d03be/`
+
+**Commands @ `1c2b18cd`:**
+
+```text
+uv run pytest -p no:xdist tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py
+# 22 passed, exit 0
+
+uv run pytest -p no:xdist <qual_x_p5_dimension_a_pytest_module_targets()>
+# 533 passed, 1 failed, exit 1
+```
+
+### F01–F12 selection → execution (summary)
+
+| Fam | Mandatory proof | Selected by reconciled command | Executed vs collect-only | Missing / notes |
+| --- | --- | --- | --- | --- |
+| F01 | EBH/HARDENING modules | yes | **executed** | — |
+| F02 | EBH-3 | yes | **executed** | DUP-X debt unchanged |
+| F03 | EBH-2F/2I | yes | **executed** | — |
+| F04 | 25 P2 ingress proof nodes | yes (post-fix) | **executed** (batch + proofs) | — |
+| F05 | harness + P2 Q05 | yes | **executed** | — |
+| F06 | 10 Q06 recovery proof nodes | yes (post-fix) | **executed** | — |
+| F07 | P1 credibility gates | yes | **executed** | — |
+| F08 | 25 P2 adversarial proofs | yes (post-fix) | **executed** | see TENANT-X failure |
+| F09 | 21 P4 determinism gates | yes | batch **executed**; W2-C **TRACKED_FREEZE_DEBT** | FRZ-REG-06 partial |
+| F10 | P4 env classification | yes | **executed** | R1-SQLITE gap preserved |
+| F11 | P3 inventory batch | yes | **executed** | FRZ-REG-04 platform OPEN |
+| F12 | P5 integrity (22 nodes) | yes | coordination **executed** | does not close QUAL-X |
+
+### Wave results @ EXECUTION_SHA
+
+| Wave | Result |
+| --- | --- |
+| A — P5 integrity | **PASS** — 22 passed, 0 failed |
+| B — collection reconciliation | **PASS** — 0 mandatory collectable missing post-fix |
+| C — Dimension A | **TEST FAILURE** — `test_tx_final_q06_report_ready_for_audit` (`production_delta==147`) |
+| D — `determinism_repeat` (2 nodes, ×2) | **PASS** — 2 passed each run |
+| E — FRZ/Q mapping | see below |
+
+### Primary blocker (IN-SCOPE)
+
+- **Classification:** **TEST FAILURE** (mandatory behavioral proof in P2-linked `tenant_x` FINAL surface)
+- **Node:** `tests/qualification/tenant_x/test_tenant_x_final_fast.py::test_tx_final_q06_report_ready_for_audit`
+- **Owner:** TENANT-X-FINAL-R8 / tenant qualification (not QUAL-X selection assembly)
+
+### FRZ-REG-01..10 @ QUAL-X-FINAL (no promotion)
+
+| ID | Status | Evidence |
+| --- | --- | --- |
+| REG-01 | **OPEN** | P1 gates green; no enterprise gate-credibility PASS |
+| REG-02 | **OPEN** | EBH modules green @ SHA; platform rollup not closed |
+| REG-03 | **OPEN** | Negatives executed; TENANT-X FINAL report gate failed |
+| REG-04 | **OPEN** | P3 batch green; platform allowlist scope unchanged |
+| REG-05 | **OPEN** | Inventory/recovery linkage executed; global OPEN |
+| REG-06 | **PARTIAL** | `determinism_repeat` stable; **W2-C** debt not closed |
+| REG-07 | **PARTIAL** | Worktree @ exact SHA; no independent clean-checkout clone demonstrated |
+| REG-08 | **PARTIAL** | P4 classification green; **R1-SQLITE-ENV-01** / PROD-Q DIM-B excluded |
+| REG-09 | **OPEN** | Architecture gates executed; no FRZ PASS |
+| REG-10 | **DEFINED** | P5 manifest + integrity green; FINAL batch not green |
+
+### Q01–Q12 @ FINAL (evidence class)
+
+| Q | FINAL class |
+| --- | --- |
+| Q01–Q03, Q05, Q07, Q11 | **CURRENT_HEAD_EXECUTABLE** — modules run @ SHA (with F04/F06/F08 proof expansion) |
+| Q04, Q08 | **TEST FAILURE** on TENANT-X FINAL readiness node |
+| Q09 | **PARTIAL** — repeat subset PASS; W2-C **TRACKED FREEZE DEBT** |
+| Q10 | **PARTIAL** — P4 PASS; R1-SQLITE **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** |
+| Q12 | **COORDINATION_INTEGRITY** — P5 integrity PASS; enterprise freeze not closed |
+
+### W2-C / R1-SQLITE
+
+- **W2-C:** **TRACKED FREEZE DEBT** — mandatory for long-term FRZ-REG-06; not resolved; `determinism_repeat` subset only.
+- **R1-SQLITE-ENV-01:** **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** — unchanged; isolated DB used for FINAL Wave C.
+
+### ECAP (scoped)
+
+| Phase | Disposition |
+| --- | --- |
+| P1 contracts / boundaries | Selection uses existing catalogs; no new runner |
+| P2/P3 selected vs executed | Reconciled post `1c2b18cd8` |
+| P4 fail-closed outcomes | Honored on P4/P5 batches |
+| P6 | **NO-GO** — mandatory proof failure visible; no skip/xfail masking |
+
+### GO/NO-GO
+
+**NO-GO** — Dimension A mandatory execution incomplete for acceptance (1 failed mandatory proof node); **FRZ-REG** platform PASS not awarded; **QUAL-X** not CLOSED; **ARCH-FREEZE** not authorized.
+
+### Changed files (qualification correction)
+
+- `tests/qualification/qual_x/_p5_freeze_selection_catalog.py`
+- `tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py`
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record)
+
+### Recommended next action
+
+1. Operator audit of `1c2b18cd8` selection fix on GitHub.
+2. TENANT-X-FINAL-R8 remediation for `production_delta` (or manifest scope decision if node is linkage-only — **architecture decision** if demoting).
+3. Re-run `dimension_a_execution_command` @ new SHA after remediation.
+4. Independent audit before any QUAL-X CLOSED or FRZ-REG PASS claim.
