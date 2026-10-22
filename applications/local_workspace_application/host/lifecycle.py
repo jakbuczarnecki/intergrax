@@ -182,6 +182,8 @@ class LocalWorkspaceHostLifecycle:
                 )
                 for component in self.component_health()
             ),
+            degraded=None,
+            degraded_component_ids=(),
         )
 
 

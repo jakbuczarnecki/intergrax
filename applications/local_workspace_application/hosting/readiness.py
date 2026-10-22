@@ -79,6 +79,8 @@ class _HostedLocalWorkspaceReadiness:
             detail=detail,
             rejection_error_id=rejection_error_id,
             components=components,
+            degraded=health.degraded,
+            degraded_component_ids=tuple(sorted(health.degraded_component_ids)),
         )
 
 

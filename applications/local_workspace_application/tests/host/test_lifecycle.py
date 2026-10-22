@@ -125,6 +125,8 @@ def test_readiness_snapshot_preserves_direct_mode_projection() -> None:
     assert ready.state == "ready"
     assert ready.detail == "ready"
     assert ready.rejection_error_id == ""
+    assert ready.degraded is None
+    assert ready.degraded_component_ids == ()
     assert len(ready.components) == 1
     assert ready.components[0].name == "runtime"
     assert ready.components[0].enabled is True

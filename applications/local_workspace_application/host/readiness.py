@@ -25,6 +25,8 @@ class LocalWorkspaceReadinessSnapshot:
     detail: str
     rejection_error_id: str
     components: tuple[LocalWorkspaceComponentReadiness, ...] = ()
+    degraded: bool | None = None
+    degraded_component_ids: tuple[str, ...] = ()
 
 
 @runtime_checkable

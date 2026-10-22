@@ -28,6 +28,8 @@ def mount_local_workspace_readiness_routes(
             "accepts_new_work": snapshot.accepts_new_work,
             "state": snapshot.state,
             "detail": snapshot.detail,
+            "degraded": snapshot.degraded,
+            "degraded_component_ids": list(snapshot.degraded_component_ids),
             "components": [
                 {
                     "name": component.name,
