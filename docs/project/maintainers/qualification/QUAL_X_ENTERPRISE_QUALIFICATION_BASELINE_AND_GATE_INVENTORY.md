@@ -541,3 +541,137 @@ uv run pytest -p no:xdist \
 - No new scanner or certification runner authority
 
 **Next mandatory child after independent P3 acceptance:** **QUAL-X-P4** (determinism / environment classification — Q09, Q10).
+
+---
+
+## QUAL-X-P4 execution record — Determinism, environment classification & reproducibility
+
+**START_HEAD:** `d75fe6354e02d9b6fd7239fa463fadf60d5f286f`
+
+**Disposition:** **READY FOR AUDIT — QUAL-X-P4 DETERMINISM ENVIRONMENT CLASSIFICATION REPRODUCIBILITY** (P4 only; **QUAL-X** parent **OPEN**; **FRZ-REG-*** **OPEN**)
+
+**Scope:** Q09 (reproducibility / determinism), Q10 (environment failure classification). Reuses existing PROD-Q R1 disposition, SQLite path resolution, AW-7C PHYSQ preflight, and governance pytest integrity helpers — no new runner authority.
+
+**Production delta (P4):** `0` — qualification coordination, interpretation helpers, tests, SSOT record only.
+
+### D1 — Qualification execution owner (closed-world)
+
+| Mechanism | Owner module / gate | Role |
+| --- | --- | --- |
+| Pytest invocation & markers | Existing `pytest` + `pytest.mark.qualification` / `gate` | P4 batch uses standard `uv run pytest -p no:xdist` |
+| Collection / deselection truth | `tests/qualification/governance/pytest_node_integrity.py` | `pytest_nodes_missing_from_collection`, `parse_pytest_execute_q_summary` |
+| Environment prerequisites (PHYSQ) | `reference_substrate/preflight.py` + `backend.build_reference_backend_or_skip_reason` | Fail-closed before physical backend |
+| R1 SQLite / relational bootstrap | `prod_q/_p0_certification.build_r1_sqlite_disposition` | Typed **BLOCKER**; HTTP reproduction opt-in |
+| Relational path isolation | `sqlite/paths.resolve_sqlite_store_paths` + `INTERGRAX_RELATIONAL_DB` | Env overrides default `build/intergrax.db` |
+| Evidence SHA / stage locks | PROD-Q P0 historical ancestry helpers (unchanged) | P4 does not substitute PROD-Q SSOT |
+
+### D2 — Determinism controls (in-scope)
+
+| Control | Disposition @ P4 |
+| --- | --- |
+| W2-C `test_retry_storm_caps_provider_calls` thread warnings | **TRACKED FREEZE DEBT** — disposition only; no P4 code change |
+| P4 static gates (R1 snapshot, header classifier) | **COLLECTABLE_DETERMINISTIC_STATIC** — repeatability nodes green @ worktree |
+| Historical W4/W5/W6 double batches | **HISTORICAL_BATCH_ONLY** — not replayed in P4 |
+
+### D3 — Environment preflight (in-scope)
+
+| Path | Missing / invalid prerequisite | Classification |
+| --- | --- | --- |
+| AW-7C PHYSQ | `evaluate_reference_substrate_preflight().ok is False` | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** (via `QualXP4Outcome`) |
+| R1-SQLITE mandatory gate | `BLOCKER` + `reproduction_executed=False` | **NOT_EXECUTED** — cannot yield mandatory **PASS** |
+| Relational bootstrap w/o env on polluted default | Non-`SQLITE_HEADER` default file | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** |
+| Mandatory pytest batch w/ skip on required nodes | `skipped > 0` in parsed summary | **INVALID_QUALIFICATION** |
+
+### D4 — Evidence & selection truthfulness
+
+| Risk | P4 mitigation |
+| --- | --- |
+| Silent skip/XFAIL on mandatory nodes | `mandatory_outcome_from_pytest_execute_summary` rejects skip/xfail/error partials |
+| Stale proof `node_id` | Collectability gate + synthetic stale-node adversarial |
+| R1 false PASS while BLOCKER | `mandatory_outcome_from_r1_sqlite_disposition` maps **BLOCKER** → non-**PASS** |
+| PHYSQ PASS without Linux preflight | Backend builder returns skip reason string when preflight blocks |
+
+Authoritative P4 coordination registry: `tests/qualification/qual_x/_p4_determinism_environment_catalog.py`.
+
+### Before / after failure-classification matrix (mandatory gates)
+
+| Scenario | Before @ START_HEAD | After P4 |
+| --- | --- | --- |
+| R1-SQLITE BLOCKER + no HTTP repro | Implicit via PROD-Q fast test only | Explicit **NOT_EXECUTED** outcome; mandatory **PASS** forbidden |
+| Polluted default DB without `INTERGRAX_RELATIONAL_DB` | Documented **R1-SQLITE-ENV-01** | Classifier returns **ENVIRONMENT/TEST ISSUE** for bootstrap tests |
+| PHYSQ preflight blocked | AW-7C pattern in integration tests | Centralized `QualXP4Outcome` mapping in P4 gates |
+| Mandatory pytest w/ 1 skip | No QUAL-X rollup | **INVALID_QUALIFICATION** |
+
+### Proven false-PASS weaknesses remediated (P4)
+
+| ID | Weakness | Correction |
+| --- | --- | --- |
+| **P4-W1** | No QUAL-X coordination layer mapping PROD-Q / PHYSQ / pytest summary to a single mandatory outcome vocabulary | `_p4_determinism_environment_support.py` consumers only |
+| **P4-W2** | Relational isolation contract not asserted in QUAL-X batch | Gates on `resolve_sqlite_store_paths` + polluted-default adversarial |
+| **P4-W3** | Missing clean-checkout recipe for P4 @ HEAD | `QUAL_X_P4_CLEAN_CHECKOUT_PROCEDURE` (partial verification stated) |
+| **P4-W4** | Mandatory collection completeness not gated for P4 itself | `qual_x_p4_all_gate_pytest_node_ids` collect-only gate |
+
+### R1-SQLITE-ENV-01 disposition @ P4
+
+**CLASSIFIED / unchanged semantic debt** — `build_r1_sqlite_disposition()` remains **BLOCKER** @ fast path; isolated bootstrap evidence OK; mandatory GCA qualification **NOT_EXECUTED** until PROD-Q-R1 HTTP reproduction path satisfied. P4 adds QUAL-X regression gates only; does **not** close PROD-Q-R1.
+
+### W2-C disposition @ P4
+
+**TRACKED FREEZE DEBT** per checklist **FRZ-REG-06**; node `test_retry_storm_caps_provider_calls` registered in `QUAL_X_P4_W2_C_DETERMINISM_DEBT`; **p4_scope_correction = false**.
+
+### Clean-checkout procedure & evidence limitations
+
+See `QUAL_X_P4_CLEAN_CHECKOUT_PROCEDURE` in catalog module. **Verification status:** PARTIAL — P4 batch demonstrated on implementation worktree only; **FRZ-REG-07** remains **OPEN** at platform scope.
+
+### Changed files
+
+- `tests/qualification/qual_x/_p4_determinism_environment_catalog.py` (new)
+- `tests/qualification/qual_x/_p4_determinism_environment_support.py` (new)
+- `tests/qualification/qual_x/test_qual_x_p4_determinism_environment_classification_reproducibility.py` (new)
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` (this record)
+
+### Focused pytest (P4 batch)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/qual_x/test_qual_x_p4_determinism_environment_classification_reproducibility.py
+```
+
+**Result @ P4 worktree:** `21 passed`, `0 failed`, exit `0` (~6.5s).
+
+**Repeatability subset:**
+
+```text
+uv run pytest -p no:xdist ... -k determinism_repeat
+```
+
+**Result:** `2 passed`, exit `0`.
+
+`git diff --check`: clean (post-record).
+
+### FRZ evidence contribution (scoped — no PASS promotion)
+
+| Criterion | P4 contribution |
+| --- | --- |
+| **FRZ-REG-06** | Deterministic static P4 gates + W2-C debt disposition documented |
+| **FRZ-REG-07** | Clean-checkout recipe @ HEAD with explicit **PARTIAL** verification |
+| **FRZ-REG-08** | Fail-closed mapping for R1 BLOCKER, PHYSQ preflight, polluted SQLite default, mandatory skip |
+| **FRZ-REG-01/05/09** | Supporting — pytest collection integrity for P4 catalog |
+
+### Remaining gaps (P4 classification)
+
+| Tag | Item |
+| --- | --- |
+| **IN-SCOPE BLOCKER** | Independent exact-SHA audit of P4 commit on `origin/development` |
+| **TRACKED FREEZE DEBT** | W2-C thread hygiene; global **FRZ-REG-10** (**QUAL-X-P5**) |
+| **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `R1-SQLITE-ENV-01` full HTTP reproduction; live provider dimensions |
+| **IN-SCOPE BLOCKER** | Platform-wide **FRZ-REG-07** clean-checkout certification not demonstrated |
+
+### Explicit non-claims
+
+- **QUAL-X** parent not **CLOSED**
+- **FRZ-REG-*** platform **PASS** not awarded
+- No Docker / live provider / full enterprise regression replay
+- PHYSQ prerequisite **PASS** ≠ full physical qualification **PASS**
+
+**Next mandatory child after independent P4 acceptance:** **QUAL-X-P5** (freeze-oriented qualification assembly — Q12, **FRZ-REG-10**).
