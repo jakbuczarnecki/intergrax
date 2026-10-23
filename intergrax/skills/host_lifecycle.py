@@ -14,15 +14,27 @@ from intergrax.contracts.lifecycle_handoff.ack import (
 from intergrax.skills.catalog import SkillPackageResolution
 from intergrax.skills.dynamic_acquisition import SkillHostBindingMaterializer, SkillHostBindingPort
 from intergrax.skills.identity import SkillPackageIdentity
-from intergrax.skills.registry.profile import SkillProfile, is_skill_enabled
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.provenance import SkillRuntimeBindingMetadata
 from intergrax.skills.registry.read import SkillRegistryRead
 from intergrax.skills.registry.runtime import SkillRegistry
 
 
+def _binding_matches_identity(
+    binding: SkillRuntimeBindingMetadata,
+    identity: SkillPackageIdentity,
+) -> bool:
+    return (
+        binding.logical_skill_id == identity.logical_skill_id
+        and binding.package_reference == identity.package_reference
+        and binding.version_label == identity.package_version
+        and binding.content_digest == identity.package_digest
+    )
+
+
 @dataclass
 class SkillHostLifecycleService(SkillHostBindingPort):
-    """Host-profile scoped Skill binding into registry projection and profile enablement."""
+    """Host-profile scoped Skill installation into registry projection (not profile enablement)."""
 
     host_profile_id: str
     registry: SkillRegistry = field(default_factory=SkillRegistry)
@@ -33,12 +45,20 @@ class SkillHostLifecycleService(SkillHostBindingPort):
         return self.registry
 
     def is_bound(self, logical_skill_id: str) -> bool:
-        if not self.registry.has(logical_skill_id):
-            return False
-        return is_skill_enabled(self.skill_profile, logical_skill_id)
+        """True when the skill is installed on this host profile registry projection."""
+        return self.registry.has(logical_skill_id)
 
     def binding_metadata(self, logical_skill_id: str) -> SkillRuntimeBindingMetadata | None:
         return self.registry.binding_metadata(logical_skill_id)
+
+    def enable_installed_skill(self, logical_skill_id: str) -> None:
+        """Explicit profile enablement for an installed skill (sanctioned configuration)."""
+        if not self.registry.has(logical_skill_id):
+            raise ValueError(f"skill not installed: {logical_skill_id}")
+        enabled = list(self.skill_profile.enabled)
+        if logical_skill_id not in enabled:
+            enabled.append(logical_skill_id)
+            self.skill_profile = self.skill_profile.model_copy(update={"enabled": enabled})
 
     def bind(
         self,
@@ -60,13 +80,19 @@ class SkillHostLifecycleService(SkillHostBindingPort):
                 reason_detail="resolved package lacks digest",
             )
         package_identity = SkillPackageIdentity.from_candidate(candidate)
+        skill_id = package_identity.logical_skill_id
 
         if operation_id in self._handoff_operation_ids:
-            existing = self.registry.binding_metadata(package_identity.logical_skill_id)
-            if existing is None or not self.is_bound(package_identity.logical_skill_id):
+            existing = self.registry.binding_metadata(skill_id)
+            if existing is None or not self.registry.has(skill_id):
                 return DomainLifecycleHandoffAck(
                     disposition=DomainLifecycleHandoffDisposition.REJECTED,
                     reason_detail="idempotent handoff without bound skill",
+                )
+            if not _binding_matches_identity(existing, package_identity):
+                return DomainLifecycleHandoffAck(
+                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                    reason_detail="idempotent handoff package identity mismatch",
                 )
             return DomainLifecycleHandoffAck(
                 disposition=DomainLifecycleHandoffDisposition.ACCEPTED,
@@ -74,22 +100,39 @@ class SkillHostLifecycleService(SkillHostBindingPort):
                 reason_detail="idempotent handoff replay",
             )
 
-        if self.is_bound(package_identity.logical_skill_id):
+        if self.registry.has(skill_id):
+            existing = self.registry.binding_metadata(skill_id)
+            if existing is not None and _binding_matches_identity(existing, package_identity):
+                return DomainLifecycleHandoffAck(
+                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                    reason_detail="skill already bound for host profile",
+                )
             return DomainLifecycleHandoffAck(
                 disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                reason_detail="skill already bound for host profile",
+                reason_detail="incompatible package identity for installed skill",
             )
 
-        skill_id, binding = materializer.materialize(resolved)
-        if skill_id != package_identity.logical_skill_id:
+        try:
+            materialized_id, binding = materializer.materialize(resolved)
+        except Exception:
+            return DomainLifecycleHandoffAck(
+                disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                reason_detail="skill materialization failed",
+            )
+
+        if materialized_id != skill_id:
+            self.registry.unregister(skill_id)
             return DomainLifecycleHandoffAck(
                 disposition=DomainLifecycleHandoffDisposition.REJECTED,
                 reason_detail="materialized skill id mismatch",
             )
-        enabled = list(self.skill_profile.enabled)
-        if skill_id not in enabled:
-            enabled.append(skill_id)
-            self.skill_profile = self.skill_profile.model_copy(update={"enabled": enabled})
+        if not _binding_matches_identity(binding, package_identity):
+            self.registry.unregister(skill_id)
+            return DomainLifecycleHandoffAck(
+                disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                reason_detail="materialized binding identity mismatch",
+            )
+
         self._handoff_operation_ids.add(operation_id)
         return DomainLifecycleHandoffAck(
             disposition=DomainLifecycleHandoffDisposition.ACCEPTED,

@@ -355,8 +355,19 @@ def test_me15_duplicate_handoff_does_not_repeat_skill_binding() -> None:
 def test_me15_skill_absent_before_lifecycle_and_bound_after_handoff() -> None:
     stack = MarketplaceSkillCompositionProofStack.build()
     assert not stack.lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
-    stack.run_marketplace_skill_e2e(handoff_id="handoff-before-after")
+    stack.orchestrator.execute_explicit_selection_handoff(
+        discovery_query=_global_discovery_query(),
+        marketplace_query_context=MarketplaceQueryContext(),
+        selected_identity_key=stack.marketplace_identity_key(),
+        consumer_target=CapabilityHandoffConsumerTarget.SKILL_DOMAIN,
+        selector_id="operator.me15.install-only",
+        discovery_correlation_id="discovery-corr-install",
+        selection_id="selection-install",
+        handoff_id="handoff-before-after",
+    )
     assert stack.lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
+    assert not is_skill_enabled(stack.lifecycle.skill_profile, ME15_SKILL_LOGICAL_ID)
+    stack.lifecycle.enable_installed_skill(ME15_SKILL_LOGICAL_ID)
     assert is_skill_enabled(stack.lifecycle.skill_profile, ME15_SKILL_LOGICAL_ID)
 
 

@@ -9,9 +9,7 @@ from intergrax.skills.registry.catalog import get_bundle
 
 
 def is_skill_enabled(profile: SkillProfile, skill_id: str) -> bool:
-    """Evaluate enablement including catalog bundle membership."""
-    if profile.register_all_catalog_bundles:
-        return True
+    """Evaluate explicit enablement including catalog bundle membership."""
     if skill_id in profile.enabled:
         return True
     if not profile.enabled and not profile.enabled_bundles:

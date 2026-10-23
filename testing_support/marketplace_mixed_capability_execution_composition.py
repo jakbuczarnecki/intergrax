@@ -551,6 +551,7 @@ class MarketplaceMixedCapabilityProofStack:
             handoff_id=skill_handoff_id,
             tenant_id=tenant_id,
         )
+        self.skill_lifecycle.enable_installed_skill(ME15_SKILL_LOGICAL_ID)
         return agent_env, tool_env, skill_env
 
     def run_marketplace_mixed_e2e(
