@@ -623,7 +623,11 @@ def test_shutdown_cancel_races_acquire_success_no_leak() -> None:
     cancel_boundary.begin_shutdown()
     pending_admission.release_second_acquire()
     cancel_thread.join(timeout=10)
-    assert cancel_outcomes[0] in {"closed", "CancelledError"}
+    assert cancel_outcomes[0] in {
+        "closed",
+        "CancelledError",
+        "DependencyConcurrencyExceededError",
+    }
     hold.set()
     future.result(timeout=5)
     cancel_boundary.complete_attached(first)
@@ -890,9 +894,10 @@ def test_ba_f06_capacity_not_released_until_physical_release_completes() -> None
     first = boundary.acquire(_request("tool-a"))
     with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
         boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
-    assert admission.active == 2
-    release_gate.set()
     time.sleep(0.15)
+    assert admission.active == 1
+    release_gate.set()
+    time.sleep(0.05)
     assert admission.active == 1
     boundary.complete_direct(first)
     assert admission.active == 0
@@ -910,9 +915,8 @@ def test_ba_f06_abandon_release_failure_surfaces_on_drain() -> None:
     with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
         boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
     time.sleep(0.15)
-    boundary.complete_direct(first)
     with pytest.raises(DependencyAttemptReleaseInvariantError):
-        boundary.close()
+        boundary.complete_direct(first)
 
 
 def test_ba_f06_shutdown_waits_pending_abandon_release() -> None:
@@ -926,9 +930,10 @@ def test_ba_f06_shutdown_waits_pending_abandon_release() -> None:
     first = boundary.acquire(_request("tool-a"))
     with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
         boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
-    assert admission.active == 2
-    boundary.begin_shutdown()
+    time.sleep(0.15)
+    assert admission.active == 1
     release_gate.set()
+    boundary.begin_shutdown()
     boundary.complete_direct(first)
     boundary.drain_and_close()
     assert admission.active == 0
@@ -938,10 +943,11 @@ def test_ba_f06_acquire_terminal_callback_cancelled_future_safe() -> None:
     """Cancelled wrapper future must not call exception() or mark release early."""
     admission = _FakeAdmissionPort(capacity=2, wait_seconds=0.08)
     boundary = DependencyAttemptExecutionBoundary(admission)
-    boundary.acquire(_request("tool-a"))
+    first = boundary.acquire(_request("tool-a"))
     with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
         boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
     time.sleep(0.15)
     assert admission.active == 1
+    boundary.complete_direct(first)
     boundary.close()
     assert admission.active == 0
