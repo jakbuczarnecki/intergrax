@@ -36,6 +36,9 @@ _HARNESS_W5 = (
 _UE_9BR1 = (
     "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py"
 )
+_EVIDENCE_PERSISTENCE_BOUNDARY = (
+    "tests/unit/runtime/events/test_evidence_persistence_boundary.py"
+)
 _EBH_2F = (
     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py"
 )
@@ -119,9 +122,16 @@ QUAL_X_P5_FREEZE_SELECTION_MANIFEST: tuple[QualXFreezeSelectionEntry, ...] = (
         owning_stage="QUAL-X-P1 / EBH-3/4",
         invariant_summary=(
             "Layer boundaries, dependency ownership, public contract seams; "
+            "Execution composition uses EvidencePersistencePort (FRZ-BND-03); "
             "typed observability transport (HARNESS-W5) does not own runtime semantics"
         ),
-        frz_criteria=("FRZ-BND-01", "FRZ-BND-06", "FRZ-REG-02", "FRZ-REG-09"),
+        frz_criteria=(
+            "FRZ-BND-01",
+            "FRZ-BND-03",
+            "FRZ-BND-06",
+            "FRZ-REG-02",
+            "FRZ-REG-09",
+        ),
         qualification_dimension=QualXFreezeQualificationDimension.ARCHITECTURE_DIMENSION_A,
         mandatory_status=QualXFreezeMandatoryStatus.MANDATORY_EXECUTE_AT_QUAL_X_FINAL,
         environment_prerequisites="Standard uv/pytest; no live providers",
@@ -137,6 +147,7 @@ QUAL_X_P5_FREEZE_SELECTION_MANIFEST: tuple[QualXFreezeSelectionEntry, ...] = (
             _HARDENING_3,
             _HARNESS_W5,
             _UE_9BR1,
+            _EVIDENCE_PERSISTENCE_BOUNDARY,
         ),
     ),
     QualXFreezeSelectionEntry(

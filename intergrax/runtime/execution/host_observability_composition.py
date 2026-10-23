@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.contracts.run_trace_store import RunTraceStore
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.nexus.observability_wiring import (
     NexusObservabilityStores,
     wire_nexus_observability,
@@ -22,7 +22,7 @@ def wire_host_observability(
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     trace_store: RunTraceStore | None = None,
-    runtime_event_store: RuntimeEventPersistence | None = None,
+    runtime_event_store: EvidencePersistencePort | None = None,
     use_in_memory_trace: bool = False,
     enable_runtime_events: bool = True,
     integration_profile: IntegrationProfile | None = None,

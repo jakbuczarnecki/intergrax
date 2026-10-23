@@ -2125,3 +2125,65 @@ Log: `.tmp/session/qual-x-final-boundary-regression/targeted-batch.log`
 3. Unchanged platform gaps: **FRZ-REG-04/05** rollup, **PROD-Q** Dimension B, **ENT-AUDIT-X**, formal **QUAL-X CLOSED**.
 
 **FINAL_COMMIT:** `a36d78cbb9736fe3021d81d7f238cc5bfc0c2b40` _(targeted batch 49 passed; evidence SHA aligned to correction commit)_
+
+---
+
+## QUAL-X-FINAL — FRZ-BND-03 Option A (contract reuse)
+
+**Operator authorization:** `OPERATOR APPROVED — FRZ-BND-03 OPTION A`
+
+**START_HEAD:** `d33d47f506316554e5cef73ec6a10b87551cf9c6`
+
+### §3 compatibility (GO — existing contract reuse)
+
+| Surface | Required semantics | `EvidencePersistencePort` | Notes |
+| --- | --- | --- | --- |
+| Lab `build_debug_minimal_nexus_loop` | optional store forward to `NexusLoop` | typing only | callers pass concrete `RuntimeEventPersistence` from `open_runtime_event_persistence`; same object forwarded |
+| Host `wire_host_observability` | optional store forward to `wire_nexus_observability` | yes | `HostObservabilityStores.runtime_event_store` already `EvidencePersistencePort \| None` |
+| Methods used on composition path | append, list_* , get_by_event_id, list_positioned_through | covered on port | Nexus/runtime store owner unchanged |
+| Tenant / idempotency / ordering | preserved | via existing store implementations | no adapter introduced in execution layer |
+| Lifecycle `close` | store owner | unchanged | execution does not own close |
+
+**Caller graph (after):** application/debug/host → execution composition (`EvidencePersistencePort` typing) → Nexus wiring (`RuntimeEventPersistence` runtime type at nexus owner) → existing store resolution.
+
+**Reused contract owner:** `intergrax/contracts/execution_evidence/persistence_port.py` (`EvidencePersistencePort`).
+
+### §4–§5 implementation
+
+| File | Change |
+| --- | --- |
+| `intergrax/runtime/execution/debug_lab_nexus_loop.py` | import + parameter type → `EvidencePersistencePort` |
+| `intergrax/runtime/execution/host_observability_composition.py` | import + parameter type → `EvidencePersistencePort` |
+| `tests/unit/runtime/events/test_evidence_persistence_boundary.py` | AST gate helper + synthetic negative (same scanner) |
+| `tests/qualification/qual_x/_p5_freeze_selection_catalog.py` | F01 maps **FRZ-BND-03**; module linkage |
+| `tests/qualification/qual_x/_qual_x_final_invariant_coverage_catalog.py` | CW-FRZ-BND-03-EXEC-PERSISTENCE disposition |
+
+**Runtime behavior:** unchanged — same store instances forwarded; no new persistence path.
+
+### §8 targeted proof (`CURRENT TARGETED PROOF`)
+
+Command (deduplicated):
+
+`uv run pytest -p no:xdist tests/unit/runtime/events/test_evidence_persistence_boundary.py tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py`
+
+**Pre-commit execution:** 55 collected (first batch), 54 passed / 1 failed (negative path assertion; remediated); follow-up 23 passed; full evidence module + P5 assembly 47 passed.
+
+Log: `.tmp/session/qual-x-final-frz-bnd-03-option-a/targeted-batch.log`
+
+**HISTORICAL REUSED EVIDENCE:** Dimension A 535/535 @ `9a175177419a396398647e356a08c966f9c2af4e` — still valid (typing-only execution seam; no persistence semantics delta).
+
+### REG / BND disposition (audit — not PASS)
+
+| Criterion | Status |
+| --- | --- |
+| FRZ-BND-03 | **FORMAL ACCEPTANCE PENDING** — targeted AST proof @ FINAL_COMMIT; global checklist row remains OPEN until independent audit |
+| FRZ-REG-01 | OPEN (platform) |
+| FRZ-REG-02 | OPEN — strengthened F01 linkage |
+| FRZ-REG-03 | OPEN |
+| FRZ-REG-07 | HISTORICAL 535 reused; targeted batch supplements BND-03 only |
+| FRZ-REG-09 | OPEN — gate credibility improved for execution persistence import |
+| FRZ-REG-10 | OPEN — P5 manifest updated; independent audit pending |
+
+**Disposition:** `READY FOR AUDIT — QUAL-X-FINAL FRZ-BND-03 OPTION A CONTRACT CORRECTION` (not QUAL-X CLOSED).
+
+**EXECUTION_SHA / FINAL_COMMIT:** `82b86780342c1374878d31835a4a18d30b1d5b89` _(post-commit gate batch: 26 passed; log `.tmp/session/qual-x-final-frz-bnd-03-option-a/post-commit-gate.log`)_

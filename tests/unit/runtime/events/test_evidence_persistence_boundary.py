@@ -138,18 +138,17 @@ _RECONSTRUCTION_PATH = (
 _UNIFIED_RUN_JOURNAL_PATH = _REPO_ROOT / "intergrax/runtime/events/unified_run_journal.py"
 
 
-def test_runtime_event_bus_uses_evidence_persistence_port_only() -> None:
-    source = _EVENT_BUS_PATH.read_text(encoding="utf-8")
-    assert "RuntimeEventPersistence" not in source
-    assert "EvidencePersistencePort" in source
-
-
-def test_execution_engine_has_no_runtime_event_persistence_dependency() -> None:
+def _execution_runtime_event_persistence_import_violations(
+    paths: list[Path],
+) -> list[str]:
     violations: list[str] = []
-    for path in _EXECUTION_ROOT.rglob("*.py"):
+    for path in paths:
         if "__pycache__" in path.parts:
             continue
-        rel = path.relative_to(_REPO_ROOT).as_posix()
+        try:
+            rel = path.relative_to(_REPO_ROOT).as_posix()
+        except ValueError:
+            rel = path.as_posix()
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
         for node in ast.walk(tree):
             if not isinstance(node, ast.ImportFrom):
@@ -159,7 +158,31 @@ def test_execution_engine_has_no_runtime_event_persistence_dependency() -> None:
             for alias in node.names:
                 if alias.name == "RuntimeEventPersistence":
                     violations.append(f"{rel}:{node.lineno}")
-    assert violations == []
+    return violations
+
+
+def test_runtime_event_bus_uses_evidence_persistence_port_only() -> None:
+    source = _EVENT_BUS_PATH.read_text(encoding="utf-8")
+    assert "RuntimeEventPersistence" not in source
+    assert "EvidencePersistencePort" in source
+
+
+def test_execution_engine_has_no_runtime_event_persistence_dependency() -> None:
+    paths = [p for p in _EXECUTION_ROOT.rglob("*.py") if "__pycache__" not in p.parts]
+    assert _execution_runtime_event_persistence_import_violations(paths) == []
+
+
+def test_execution_engine_rejects_synthetic_runtime_event_persistence_import(
+    tmp_path: Path,
+) -> None:
+    fixture = tmp_path / "synthetic_execution_leak.py"
+    fixture.write_text(
+        "from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence\n",
+        encoding="utf-8",
+    )
+    violations = _execution_runtime_event_persistence_import_violations([fixture])
+    assert len(violations) == 1
+    assert violations[0].endswith("synthetic_execution_leak.py:1")
 
 
 def test_adapter_is_evidence_persistence_port() -> None:

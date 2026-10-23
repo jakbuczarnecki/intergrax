@@ -24,6 +24,9 @@ QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA: str = (
 QUAL_X_FINAL_BOUNDARY_REGRESSION_BATCH_SHA: str = (
     "a36d78cbb9736fe3021d81d7f238cc5bfc0c2b40"
 )
+QUAL_X_FINAL_FRZ_BND_03_OPTION_A_SHA: str = (
+    "82b86780342c1374878d31835a4a18d30b1d5b89"
+)
 
 _ACCEPTED_HISTORICAL_EXECUTION_SHAS: frozenset[str] = frozenset(
     {
@@ -160,20 +163,27 @@ QUAL_X_FINAL_CLOSED_WORLD_INVENTORY: tuple[QualXFinalClosedWorldRow, ...] = (
         row_id="CW-FRZ-BND-03-EXEC-PERSISTENCE",
         inventory_owner_id=None,
         invariant_summary=(
-            "Execution composition → RuntimeEventPersistence direct imports "
-            "(debug_lab_nexus_loop, host_observability_composition) — TRACKED FREEZE DEBT; "
-            "architectural legality undecided (COMPAT-X / ROADMAP-REPLAY-X)"
+            "Execution composition must not import RuntimeEventPersistence from "
+            "runtime.events.persistence_contract; lab/host wiring uses EvidencePersistencePort"
         ),
-        stage="COMPAT-X / EBH-4 historical",
+        stage="QUAL-X-FINAL / FRZ-BND-03 Option A",
         semantic_owner="PLATFORM freeze checklist FRZ-BND-03",
-        contract_or_ssot="PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md (FRZ-BND-03 row)",
-        production_enforcement="intergrax/runtime/execution/debug_lab_nexus_loop.py; host_observability_composition.py",
-        test_gate="No current-HEAD executable gate establishes global reverse-dependency PASS",
-        evidence_sha="—",
-        evidence_provenance=QualXFinalEvidenceProvenance.NOT_APPLICABLE,
-        qualification_gate_introduced_sha=None,
+        contract_or_ssot=(
+            "intergrax/contracts/execution_evidence/persistence_port.py (EvidencePersistencePort)"
+        ),
+        production_enforcement=(
+            "intergrax/runtime/execution/debug_lab_nexus_loop.py; "
+            "intergrax/runtime/execution/host_observability_composition.py"
+        ),
+        test_gate=(
+            "tests/unit/runtime/events/test_evidence_persistence_boundary.py::"
+            "test_execution_engine_has_no_runtime_event_persistence_dependency"
+        ),
+        evidence_sha=QUAL_X_FINAL_FRZ_BND_03_OPTION_A_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
+        qualification_gate_introduced_sha=QUAL_X_FINAL_FRZ_BND_03_OPTION_A_SHA,
         frz_criterion="FRZ-BND-03",
-        disposition=QualXFinalInvariantDisposition.MISSING_PROOF,
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
     ),
     QualXFinalClosedWorldRow(
         row_id="CW-HARDENING-3-LAYER",
