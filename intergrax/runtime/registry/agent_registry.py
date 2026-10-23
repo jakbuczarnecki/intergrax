@@ -21,11 +21,17 @@ from intergrax.skills.resolver import ResolvedSkillPack, SkillResolver
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.factory import build_registry_from_profile
 from intergrax.skills.registry.bootstrap import register_default_skills
+from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
 def _bootstrap_default_skill_registry() -> SkillRegistry:
-    """Load first-party skill catalog when Tier-3 did not pass an explicit registry."""
+    """
+    Materialize the first-party skill catalog for discovery/resolution only.
+
+    Catalog registration does not imply host SkillProfile enablement; eligibility
+    is enforced via ``skill_profile`` at ``resolve_contract_tools``.
+    """
     register_default_skills()
     return build_registry_from_profile(SkillProfile(register_all_catalog_bundles=True))
 
@@ -48,7 +54,9 @@ class AgentRegistry:
         *,
         contract: Optional[AgentContract] = None,
         skill_registry: Optional[SkillRegistry] = None,
+        skill_profile: Optional[SkillProfile] = None,
         tool_registry: Optional[ToolRegistry] = None,
+        tool_profile: Optional[ToolProfile] = None,
         event_bus: Optional[RuntimeEventBus] = None,
         requires_uaep: bool = False,
     ) -> None:
@@ -67,7 +75,16 @@ class AgentRegistry:
                 meta,
                 skill_resolver=resolver,
                 tool_registry=tool_registry,
+                skill_profile=skill_profile,
+                tool_profile=tool_profile,
             )
+        elif meta.allowed_tools and tool_profile is not None:
+            from intergrax.skills.integration.contract_resolution import (
+                clamp_tool_candidates_to_profile,
+            )
+
+            clamped = clamp_tool_candidates_to_profile(meta.allowed_tools, tool_profile)
+            meta = meta.model_copy(update={"allowed_tools": clamped})
         self._agents[meta.id] = agent
         self._contracts[meta.id] = meta
         if resolved_pack is not None:

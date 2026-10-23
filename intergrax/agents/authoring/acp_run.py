@@ -101,6 +101,18 @@ def _resolve_acp_session_identity(request: AgentRunRequest) -> tuple[TaskId, Roo
     return task_id, root
 
 
+def _resolve_acp_step_allowed_tools(
+    merged: EffectiveAgentRunEnvironment,
+    request: AgentRunRequest,
+) -> list[str]:
+    from intergrax.skills.integration.contract_resolution import resolve_gateway_allowed_tools
+
+    return resolve_gateway_allowed_tools(
+        merged.allowed_tools,
+        request.metadata.get("allowed_tools"),
+    )
+
+
 def _malformed_identity_failure(
     request: AgentRunRequest,
     exc: TypeError | ValueError,
@@ -471,14 +483,7 @@ async def _run_acp_session_bound(
         AcpRunContextKey.TENANT_ID: merged.tenant_id,
         "memory_namespace": merged.memory_namespace,
         "memory_scope": merged.memory_scope.value,
-        "allowed_tools": (
-            list(merged.allowed_tools)
-            or [
-                str(tool_id)
-                for tool_id in (request.metadata.get("allowed_tools") or [])
-                if str(tool_id).strip()
-            ]
-        ),
+        "allowed_tools": _resolve_acp_step_allowed_tools(merged, request),
         AcpRunContextKey.ORGANIZATIONAL: (
             merged.organizational.model_dump(mode="json")
             if merged.organizational is not None

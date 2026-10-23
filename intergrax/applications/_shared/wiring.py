@@ -420,6 +420,8 @@ def _register_binding(
         )
     active = composition
     tool_registry = active.tool_registry if active is not None else None
+    tool_profile = active.tool_profile if active is not None else None
+    skill_profile = active.skill_profile if active is not None else None
     event_bus = active.runtime_event_bus if active is not None else None
     if roster_contract_authority is not None:
         contract = roster_contract_authority.contract_for_binding(binding)
@@ -429,7 +431,9 @@ def _register_binding(
         agent,
         contract=contract,
         skill_registry=skill_registry,
+        skill_profile=skill_profile,
         tool_registry=tool_registry,
+        tool_profile=tool_profile,
         event_bus=event_bus,
         requires_uaep=binding.requires_uaep,
     )

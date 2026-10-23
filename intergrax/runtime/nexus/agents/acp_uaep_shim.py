@@ -162,13 +162,12 @@ def attach_acp_catalog_exec_ctx(
         request=runtime_request,
         run_id=resolved_run_id,
     )
-    allowed_tools_raw = step_ctx.metadata.get("allowed_tools")
-    if isinstance(allowed_tools_raw, list) and allowed_tools_raw:
-        allowed_tools = [
-            str(tool_id) for tool_id in allowed_tools_raw if str(tool_id).strip()
-        ]
-    else:
-        allowed_tools = list(contract.allowed_tools)
+    from intergrax.skills.integration.contract_resolution import resolve_gateway_allowed_tools
+
+    allowed_tools = resolve_gateway_allowed_tools(
+        contract.allowed_tools,
+        step_ctx.metadata.get("allowed_tools"),
+    )
     if kernel_ctx.declarative_tool_invoker is not None:
         exec_ctx.tool_gateway = BoundToolGateway(
             exec_ctx,

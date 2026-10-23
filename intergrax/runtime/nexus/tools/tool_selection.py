@@ -100,6 +100,9 @@ class SkillPackSelectionStrategy:
         present = tuple(
             sorted(tool_id for tool_id in pack.tool_ids if ctx.registry.has(tool_id))
         )
+        if ctx.plan_allowed_tool_ids is not None:
+            plan_ids = frozenset(catalog_tool_ids(ctx.plan_allowed_tool_ids))
+            present = tuple(tool_id for tool_id in present if tool_id in plan_ids)
         return present
 
 
