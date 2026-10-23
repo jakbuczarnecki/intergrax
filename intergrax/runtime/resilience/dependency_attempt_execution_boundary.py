@@ -37,6 +37,14 @@ class _AcquireAbandonedBeforeDelivery(Exception):
     """Async acquire granted after sync waiter abandoned (permit released on loop)."""
 
 
+class _AcquireSchedulingPhase(StrEnum):
+    """Atomic start vs pre-start terminal ownership (BA-F11)."""
+
+    REGISTERED = "REGISTERED"
+    PHYSICAL_STARTED = "PHYSICAL_STARTED"
+    PRE_START_TERMINAL = "PRE_START_TERMINAL"
+
+
 class _AcquireHandoffState(StrEnum):
     """Permit ownership between async grant completion and sync caller acceptance."""
 
@@ -55,16 +63,27 @@ class _AcquirePermitHandoff:
 
     _state: _AcquireHandoffState = _AcquireHandoffState.WAITING
     _lock: threading.Lock = field(default_factory=threading.Lock)
-    _physical_acquire_entered: bool = False
+    _scheduling_phase: _AcquireSchedulingPhase = _AcquireSchedulingPhase.REGISTERED
 
-    def mark_physical_acquire_entered(self) -> None:
-        """Admission-loop evidence that ``_acquire_coro`` body has started (BA-F10)."""
+    def try_claim_physical_start(self) -> bool:
+        """Win physical admission vs pre-start terminal; linearized under handoff lock (BA-F11)."""
         with self._lock:
-            self._physical_acquire_entered = True
+            if self._scheduling_phase is _AcquireSchedulingPhase.PRE_START_TERMINAL:
+                return False
+            self._scheduling_phase = _AcquireSchedulingPhase.PHYSICAL_STARTED
+            return True
+
+    def try_claim_pre_start_terminal(self) -> bool:
+        """Win pre-start terminal vs physical start; exactly one registry removal caller (BA-F11)."""
+        with self._lock:
+            if self._scheduling_phase is not _AcquireSchedulingPhase.REGISTERED:
+                return False
+            self._scheduling_phase = _AcquireSchedulingPhase.PRE_START_TERMINAL
+            return True
 
     def physical_acquire_entered(self) -> bool:
         with self._lock:
-            return self._physical_acquire_entered
+            return self._scheduling_phase is _AcquireSchedulingPhase.PHYSICAL_STARTED
 
     def claim_successful_grant(self) -> bool:
         """Caller linearization immediately after a successful ``result()``."""
@@ -262,7 +281,8 @@ class DependencyAttemptExecutionBoundary:
                 shutdown_snapshot = None
 
         async def _acquire_coro() -> DependencyConcurrencyPermit:
-            handoff.mark_physical_acquire_entered()
+            if not handoff.try_claim_physical_start():
+                raise asyncio.CancelledError()
             try:
                 permit = await self._admission.acquire(request)
                 grant_action = handoff.on_physical_grant(permit)
@@ -278,7 +298,7 @@ class DependencyAttemptExecutionBoundary:
         try:
             acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
         except BaseException:
-            self._unregister_in_flight_acquire(in_flight_seq)
+            self._unregister_in_flight_acquire_if_pre_start(in_flight_seq, handoff)
             raise
 
         with self._registry_lock:
@@ -768,10 +788,9 @@ class DependencyAttemptExecutionBoundary:
         in_flight_seq: int,
         handoff: _AcquirePermitHandoff,
     ) -> None:
-        """Terminal in-flight accounting when wrapper ends before physical coroutine starts."""
-        if handoff.physical_acquire_entered():
-            return
-        self._unregister_in_flight_acquire(in_flight_seq)
+        """Terminal in-flight accounting when pre-start terminal wins the scheduling race."""
+        if handoff.try_claim_pre_start_terminal():
+            self._unregister_in_flight_acquire(in_flight_seq)
 
     def _wait_for_in_flight_acquires(self) -> None:
         """Quiesce every physical acquire coroutine (not wrapper-future terminal alone)."""
