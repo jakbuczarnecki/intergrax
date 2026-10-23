@@ -12,7 +12,7 @@
 | **BA-F09 START_HEAD** | `1dd30bffa8f2f9ed55517e7e43015962906f0439` |
 | **BA-F10 START_HEAD** | `032b983ede3b0e6dee44083a4070e25326465006` |
 | **Disposition** | **`TOOL-LIFE-X BATCH A — IMPLEMENTATION COMPLETE — FINAL QUALIFICATION PENDING`** |
-| **Implementation SHA (production)** | `d85bb9d59afe4ed7ddd9b6fc53a89037f04fb4b9` (BA-F11) |
+| **Implementation SHA (production)** | `bb7c01de29cc602885c94d8a698493d6759df01d` (BA-F11) |
 | **BA-F11 START_HEAD** | `205a0ee436ccdedf32a19cb40d09615f24f1a8c3` |
 | **BA-F08 implementation SHA** | `0d3a0d22fe07f7826acfb776c24341c303359838` |
 | **Production baseline (pre-F08)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` (BA-F07) |
@@ -35,7 +35,7 @@
 | **BA-F08 in-flight acquire shutdown accounting** | `0d3a0d22fe07f7826acfb776c24341c303359838` | **L2 NOT RUN**; static protocol closure + evidence update |
 | **BA-F09 physical acquire quiescence correction** | `032b983ede3b0e6dee44083a4070e25326465006` | **L2 NOT RUN**; static protocol closure + evidence update |
 | **BA-F10 pre-start cancellation & physical acquire lifecycle** | `205a0ee436ccdedf32a19cb40d09615f24f1a8c3` | **L2 NOT RUN**; static protocol closure + evidence update |
-| **BA-F11 atomic start vs pre-start terminal handoff** | `d85bb9d59afe4ed7ddd9b6fc53a89037f04fb4b9` | **L2 NOT RUN**; static protocol closure + evidence update |
+| **BA-F11 atomic start vs pre-start terminal handoff** | `bb7c01de29cc602885c94d8a698493d6759df01d` | **L2 NOT RUN**; static protocol closure + evidence update |
 
 ## BA-F11 — atomic start vs pre-start terminal handoff (implementation complete)
 
@@ -197,7 +197,7 @@ uv run pytest -p no:xdist \
 
 **BA-F10 publication commit:** `205a0ee436ccdedf32a19cb40d09615f24f1a8c3` (`fix(runtime): BA-F10 pre-start acquire cancellation lifecycle`)
 
-**BA-F11 publication commit:** `d85bb9d59afe4ed7ddd9b6fc53a89037f04fb4b9` (`fix(runtime): BA-F11 atomic start vs pre-start terminal handoff`)
+**BA-F11 publication commit:** `bb7c01de29cc602885c94d8a698493d6759df01d` (`fix(runtime): BA-F11 atomic start vs pre-start terminal handoff`)
 
 **Historical (BA-F02 only):** implementation `fc59dd350933483205460fa0e84c7d80c37b6bb3` — **50/50**; not attributed to BA-F05/BA-F06 SHAs.
 
