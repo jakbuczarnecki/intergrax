@@ -180,20 +180,24 @@ class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
     def _execute_once(
         self,
         state,
+        agent_id,
         contract,
         request,
         *,
         effect_boundary=None,
         physical_attempt_sequence: int = 1,
+        pre_effect_claim=None,
     ):
         if effect_boundary is not None:
             self.boundary_before_submit = effect_boundary.may_have_started
         return super()._execute_once(
             state,
+            agent_id,
             contract,
             request,
             effect_boundary=effect_boundary,
             physical_attempt_sequence=physical_attempt_sequence,
+            pre_effect_claim=pre_effect_claim,
         )
 
 
