@@ -10,8 +10,9 @@
 | **BA-F07 START_HEAD** | `e3afb404879f0ca4fc1cede779868672e01b7103` |
 | **BA-F08 START_HEAD** | `4038cc5995e26758cc5143e430fed252b8740c6d` |
 | **BA-F09 START_HEAD** | `1dd30bffa8f2f9ed55517e7e43015962906f0439` |
+| **BA-F10 START_HEAD** | `032b983ede3b0e6dee44083a4070e25326465006` |
 | **Disposition** | **`TOOL-LIFE-X BATCH A — IMPLEMENTATION COMPLETE — FINAL QUALIFICATION PENDING`** |
-| **Implementation SHA (production)** | `90ae185dc8b1a593185219f24711cc25e67f9779` (BA-F09) |
+| **Implementation SHA (production)** | `fb35884e49d0b0e7e77318226e731852b77cbd71` (BA-F10) |
 | **BA-F08 implementation SHA** | `0d3a0d22fe07f7826acfb776c24341c303359838` |
 | **Production baseline (pre-F08)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` (BA-F07) |
 | **Historical L2 execution SHA** | `af96371edb0efa949f0cebae77e9b4af47b30c2b` (**56/56** @ production `693ecafd…` + test fixes; not attributed to BA-F08) |
@@ -31,7 +32,21 @@
 | **BA-F07 cleanup accounting (shielded abandon release)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` | **L2 NOT RUN**; `STATIC REVIEW COMPLETED — L2 VALIDATION PENDING` |
 | **Batch A consolidated L2 (historical)** | `af96371edb0efa949f0cebae77e9b4af47b30c2b` | **56 collected / 56 passed** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-final.log` (production @ `693ecafd…`; **not** BA-F08) |
 | **BA-F08 in-flight acquire shutdown accounting** | `0d3a0d22fe07f7826acfb776c24341c303359838` | **L2 NOT RUN**; static protocol closure + evidence update |
-| **BA-F09 physical acquire quiescence correction** | `90ae185dc8b1a593185219f24711cc25e67f9779` | **L2 NOT RUN**; static protocol closure + evidence update |
+| **BA-F09 physical acquire quiescence correction** | `032b983ede3b0e6dee44083a4070e25326465006` | **L2 NOT RUN**; static protocol closure + evidence update |
+| **BA-F10 pre-start cancellation & physical acquire lifecycle** | `fb35884e49d0b0e7e77318226e731852b77cbd71` | **L2 NOT RUN**; static protocol closure + evidence update |
+
+## BA-F10 — pre-start cancellation & physical acquire lifecycle (implementation complete)
+
+| Topic | Detail |
+| --- | --- |
+| **Independent audit finding @ BA-F09 `032b983e…`** | Physical quiescence unregisters only in `_acquire_coro` `finally`. A wrapper `ConcurrentFuture` may reach terminal (`cancelled()` / `done()`) **before** the admission-loop coroutine body enters that `finally` (scheduled-but-not-started, or loop never dispatched the task). `_wait_for_in_flight_acquires` then blocks until timeout — **permanent in-flight record** with no physical unwind path. |
+| **Root cause** | BA-F09 correctly refused wrapper-terminal map removal while physical work could continue, but did not add a complementary terminal path for **REGISTERED / NOT STARTED** obligations when the wrapper alone reached terminal. |
+| **Correction** | **`_physical_acquire_entered` on handoff:** set synchronously as the first statement in `_acquire_coro` (before first `await`). **Dual terminal accounting (exactly one map removal):** (1) physical `finally` → `_unregister_in_flight_acquire` when the coroutine stack unwinds; (2) wrapper `_on_acquire_terminal` `finally` → `_unregister_in_flight_acquire_if_pre_start` only when `not physical_acquire_entered()`. Started coroutines are never dropped from the map on wrapper cancel alone (BA-F09 preserved). **Schedule failure:** `run_coroutine_threadsafe` failure unregisters under the registering seq (no orphan registration). Registration + first shutdown snapshot remain under `_registry_lock` before schedule (unchanged). |
+| **Scheduling states (internal)** | **REGISTERED / NOT STARTED** — in `_in_flight_acquire_handoffs`, wrapper may be pending; terminal via pre-start wrapper path or schedule-failure unregister. **RUNNING** — `physical_acquire_entered`; terminal via physical `finally` only. **PHYSICALLY TERMINATED** — map entry removed; permit ownership still governed by `_AcquirePermitHandoff` / attempt record (BA-F02–F09). |
+| **Static scenario matrix (12/12)** | (1) register→schedule→start→success: physical `finally` unregisters; wrapper pre-start noop. (2) cancel before start: wrapper `finally` unregisters; coroutine never entered or never marked. (3) concurrent shutdown during schedule: abandoned + cancel; pre-start or physical path per dispatch. (4) schedule throws: immediate unregister. (5) wrapper cancel after start: map until physical `finally`. (6) late grant: handoff unchanged. (7) abandon after grant: in-coro release + physical `finally`. (8) cancel during release: shielded pending-async (BA-F07). (9) shutdown during register/schedule: snapshot abort + dual terminal paths. (10) repeated cancel: idempotent `pop`. (11) concurrent `begin_shutdown`/`drain_and_close`: `_close_lock` + lifecycle gate. (12) loop stop: barrier requires empty handoff map (both terminal paths). |
+| **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` only. |
+| **Tests NOT RUN** | Operator session forbids execution. **Deferred L2 negatives:** cancel before coroutine body runs (map must drain without physical `finally`); cancel after `mark_physical_acquire_entered`; shutdown racing register-before-`run_coroutine_threadsafe`; simulated schedule failure; shutdown with late grant; shutdown with shielded abandon release (`test_ba_f06_*` + consolidated 56-test command). |
+| **L2 qualification** | **PENDING** — consolidated Batch A L2 at BA-F10 publication SHA (separately authorized). |
 
 ## BA-F09 — physical acquire quiescence correction (implementation complete)
 
@@ -68,9 +83,9 @@
 2. **Physical grant vs abandon** — `_AcquirePermitHandoff.on_physical_grant()` on the admission loop is the single linearization point (`deliver` / `release_in_coro` / `noop`). Sync abandon is `mark_abandoned()` on timeout paths before wrapper `cancel()` so late grants observe `ABANDONED` or `RELEASE_OBLIGATION_CLAIMED`.
 3. **Wrapper cancel ≠ physical cleanup complete** — `_on_acquire_terminal` never calls `exception()` on cancelled wrappers; re-enters `_maybe_release_abandoned_acquire_permit` only when obligation states are visible and release is not `RELEASE_PENDING` / `RELEASED`.
 4. **BA-F07 shielded in-loop release** — bridged `ConcurrentFuture` in `_pending_async_release_futures` before `await asyncio.shield(release_task)`.
-5. **BA-F08/BA-F09 in-flight map** — `_in_flight_acquire_handoffs` (physical seq) + `_abort_in_flight_acquires` + `_wait_for_in_flight_acquires` before detached/async release drain and `loop.stop()` (BA-F09: map drains on physical `finally`, not wrapper terminal).
+5. **BA-F08/BA-F09/BA-F10 in-flight map** — `_in_flight_acquire_handoffs` (physical seq) + `_abort_in_flight_acquires` + `_wait_for_in_flight_acquires` before detached/async release drain and `loop.stop()` (BA-F09: post-start drain on physical `finally`; BA-F10: pre-start drain on wrapper terminal when `not physical_acquire_entered()`).
 
-**Invariant conclusion (BA-F09):** No `loop.stop()` until physical acquire map is empty (coroutine `finally`), attempt/detached releases drained, and `_pending_async_release_futures` drained (bounded timeout). Wrapper `done()` alone is insufficient evidence of physical quiescence.
+**Invariant conclusion (BA-F10):** No `loop.stop()` until in-flight acquire map is empty (physical `finally` **or** pre-start wrapper terminal), attempt/detached releases drained, and `_pending_async_release_futures` drained (bounded timeout). Post-start: wrapper `done()` alone remains insufficient; pre-start: physical `finally` may never run — wrapper pre-start unregister is required.
 
 **Qualification note:** Prepared `test_ba_f06_*` timing/outcome expectations were corrected (no production delta) so the single L2 wave matches cancel/timeout semantics on Windows.
 
@@ -161,7 +176,9 @@ uv run pytest -p no:xdist \
 
 **BA-F08 publication commit:** `0d3a0d22fe07f7826acfb776c24341c303359838` (`fix(runtime): BA-F08 in-flight acquire shutdown accounting`)
 
-**BA-F09 publication commit:** `90ae185dc8b1a593185219f24711cc25e67f9779` (`fix(runtime): BA-F09 physical acquire quiescence correction`)
+**BA-F09 publication commit:** `032b983ede3b0e6dee44083a4070e25326465006` (`fix(runtime): BA-F09 physical acquire quiescence correction`)
+
+**BA-F10 publication commit:** `fb35884e49d0b0e7e77318226e731852b77cbd71` (`fix(runtime): BA-F10 pre-start acquire cancellation lifecycle`)
 
 **Historical (BA-F02 only):** implementation `fc59dd350933483205460fa0e84c7d80c37b6bb3` — **50/50**; not attributed to BA-F05/BA-F06 SHAs.
 
@@ -176,7 +193,7 @@ uv run pytest -p no:xdist \
 | TL5 | ALREADY PROVEN (Batch A L2) | Invoker | `ToolEffectCertainty` / uncertain timeout | `693ecafd…` + L2 publication SHA | Operator runbooks (parent) | FRZ-REL-05 |
 | TL6 | IMPLEMENTATION REQUIRED | Invoker + idempotency | pre-effect coordinator | prior SHAs | Batch B | FRZ-REL-06 |
 | TL7 | OPERATOR DECISION REQUIRED | Parent roadmap | STALLED / watchdog | — | Parent §3.0.5 | — |
-| TL8 | VALIDATION REQUIRED (BA-F09) | `DependencyAttemptExecutionBoundary` | physical acquire quiescence + shutdown A/B/C accounting | BA-F09 publication SHA | Batch A L2 rerun post-F09 | FRZ-REL-07 |
+| TL8 | VALIDATION REQUIRED (BA-F10) | `DependencyAttemptExecutionBoundary` | pre-start + post-start acquire lifecycle + shutdown A/B/C accounting | BA-F10 publication SHA | Batch A L2 rerun post-F10 | FRZ-REL-07 |
 | TL9 | ALREADY PROVEN (Batch A L2) | Invoker | no terminal resurrection (scoped) | `693ecafd…` + L2 publication SHA | Cross-provider stale results | FRZ-REL-05 |
 | TL10 | BLOCKED | SQL/database providers | row/byte/statement bounds | — | Parent / Batch C | FRZ-REL-10 |
 | TL11 | BLOCKED | MCP via invoker | ToolContract path | — | Real MCP qual | FRZ-REL-06 |
@@ -191,7 +208,7 @@ uv run pytest -p no:xdist \
 | --- | --- |
 | FRZ-REL-01 | Parent deadline bounds tool physical attempt — validation evidence advanced, not global PASS |
 | FRZ-REL-05 | Timeout / uncertain semantics — scoped tests only |
-| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02–F09 static closure; historical L2 **56/56** @ `693ecafd…` only; BA-F09 L2 pending |
+| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02–F10 static closure; historical L2 **56/56** @ `693ecafd…` only; BA-F10 L2 pending |
 | FRZ-EXE-02 | `RuntimeToolInvoker` enforcement owner preserved |
 | FRZ-GOV-02 | Governance identity required at inner boundary — tests fixed to bind identity, not weakened |
 | FRZ-BND-03 | No parallel admission owner introduced |
