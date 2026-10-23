@@ -30,6 +30,12 @@ _EBH_2A = "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py"
 _EBH_2I = "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py"
 _EBH_4 = "tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py"
 _HARDENING_3 = "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
+_HARNESS_W5 = (
+    "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py"
+)
+_UE_9BR1 = (
+    "tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py"
+)
 _EBH_2F = (
     "tests/unit/runtime/architecture/test_ebh_2f_r2_integration_plugin_contract_typing_gate.py"
 )
@@ -111,8 +117,11 @@ QUAL_X_P5_FREEZE_SELECTION_MANIFEST: tuple[QualXFreezeSelectionEntry, ...] = (
         freeze_family="F01",
         qual_x_responsibilities=("Q01",),
         owning_stage="QUAL-X-P1 / EBH-3/4",
-        invariant_summary="Layer boundaries, dependency ownership, public contract seams",
-        frz_criteria=("FRZ-BND-01", "FRZ-REG-02", "FRZ-REG-09"),
+        invariant_summary=(
+            "Layer boundaries, dependency ownership, public contract seams; "
+            "typed observability transport (HARNESS-W5) does not own runtime semantics"
+        ),
+        frz_criteria=("FRZ-BND-01", "FRZ-BND-06", "FRZ-REG-02", "FRZ-REG-09"),
         qualification_dimension=QualXFreezeQualificationDimension.ARCHITECTURE_DIMENSION_A,
         mandatory_status=QualXFreezeMandatoryStatus.MANDATORY_EXECUTE_AT_QUAL_X_FINAL,
         environment_prerequisites="Standard uv/pytest; no live providers",
@@ -120,7 +129,15 @@ QUAL_X_P5_FREEZE_SELECTION_MANIFEST: tuple[QualXFreezeSelectionEntry, ...] = (
         evidence_status=QualXFreezeEvidenceStatus.COLLECTABLE_LINKAGE,
         acceptance_boundary="AST/closed-world gates @ exact SHA; historical EBH waves not auto-PASS",
         depends_on=(),
-        pytest_modules=(_EBH_3, _EBH_2A, _EBH_2I, _EBH_4, _HARDENING_3),
+        pytest_modules=(
+            _EBH_3,
+            _EBH_2A,
+            _EBH_2I,
+            _EBH_4,
+            _HARDENING_3,
+            _HARNESS_W5,
+            _UE_9BR1,
+        ),
     ),
     QualXFreezeSelectionEntry(
         selection_id="QUAL-X-P5-F02-OWNERSHIP-DUPLICATION",

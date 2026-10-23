@@ -139,6 +139,18 @@ def test_g1_otlp_transport_port_export_parameter() -> None:
     assert param not in _FORBIDDEN_TRANSPORT_PARAM_NAMES
 
 
+def test_synthetic_runtime_event_transport_export_parameter_would_fail_g1() -> None:
+    source = """
+class SyntheticBadTransport:
+    def export(self, payload: RuntimeEvent) -> None:
+        return
+"""
+    tree = ast.parse(source)
+    param = _class_export_param(tree, "SyntheticBadTransport")
+    assert param == "RuntimeEvent"
+    assert param in _FORBIDDEN_TRANSPORT_PARAM_NAMES
+
+
 def test_g2_otlp_transport_export_parameter() -> None:
     tree = _read_ast("intergrax/runtime/observability/exporters/otlp/otlp_transport.py")
     assert _class_export_param(tree, "OtlpTransport") == "ObservabilityExportPayload"

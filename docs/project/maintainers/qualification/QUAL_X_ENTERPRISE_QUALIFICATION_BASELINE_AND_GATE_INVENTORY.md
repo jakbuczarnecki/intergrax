@@ -2069,3 +2069,59 @@ Pre-delta consolidated batch @ START_HEAD: **61 passed** (log `.tmp/session/qual
 - `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
 
 **FINAL_COMMIT:** `00a79b4885576416abdfb00c4c2df87ec98e3b41` _(integrity pytest @ START_HEAD delta: 8 passed)_
+
+---
+
+## QUAL-X-FINAL — BOUNDARY REGRESSION GATES & ADR DISPOSITION
+
+**Task:** `QUAL-X-FINAL — BOUNDARY REGRESSION GATES & ADR DISPOSITION` · **Parent:** `QUAL-X`
+
+**Disposition:** **`READY FOR AUDIT — QUAL-X-FINAL BOUNDARY REGRESSION CORRECTIONS`** + **`STOP — ARCHITECTURE DECISION REQUIRED — FRZ-BND-03`**
+
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `bf42fb4d9c26872733afe037deef3aa6ee2163b3` |
+| **Branch** | `development` |
+| **Reused Dimension A** | `9a175177419a396398647e356a08c966f9c2af4e` (not replayed) |
+| **Reused W2-C** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` |
+| **Prior targeted QUAL-X** | `fc61fa60e3705c30177dd504991b9215e1e47afa`, `bf42fb4d9c26872733afe037deef3aa6ee2163b3` |
+
+### Package A — UE-9BR1
+
+| Item | Detail |
+| --- | --- |
+| **Root cause** | Mandatory closed-world path `intergrax/agents/uaep.py` is **retired**; UAEP execution + RuntimeEvent emission owner is `intergrax/runtime/nexus/uaep/uaep_executor.py` (`UAEPExecutor`). |
+| **Correction** | Inventory remapped; path-existence + stale-path + synthetic `mint_execution_id` negatives; gate linked in **P5 F01**. |
+| **Invariants preserved** | No `runtime_event.v1` literals; `RuntimeEvent(...)` requires `execution_id`; emitters must not call `mint_execution_id`. |
+
+### Package B — FRZ-BND-06
+
+| Item | Detail |
+| --- | --- |
+| **Frozen transport population** | `OtlpTransportPort` + `OtlpTransport` + `CollectorTransport` + `OtlpEventExportSink` bridge (`ObservabilityExportPayload` only); contracts `observability_export.py` must not import runtime. |
+| **Executable proof** | `test_harness_w5_typed_observability_transport_gate.py` (g1–g6 + replaceability + synthetic `RuntimeEvent` param negative). |
+| **P5 linkage** | **F01** `frz_criteria` includes **FRZ-BND-06**; module in `pytest_modules` (no second manifest). |
+
+### Package C — FRZ-BND-03 (read-only ADR)
+
+| Item | Detail |
+| --- | --- |
+| **Imports** | `intergrax/runtime/execution/debug_lab_nexus_loop.py` and `host_observability_composition.py` → `intergrax.runtime.events.persistence_contract.RuntimeEventPersistence`. |
+| **Usage** | Optional constructor/wiring typing for `NexusLoop` / `wire_nexus_observability` — not alternate persistence implementation. |
+| **Checklist** | **TRACKED FREEZE DEBT** (COMPAT-X); **ROADMAP-REPLAY-X** mandatory revalidation. |
+| **Recommendation** | **Option A (preferred):** restore canonical boundary — execution composition depends on a **contracts-level persistence port** (or sanctioned facade), not `runtime.events.persistence_contract` concrete ABC from execution package. **Option B:** explicit architecture exception documenting that execution-owned lab/host composition may type against `RuntimeEventPersistence` as sanctioned runtime-internal wiring (not a reverse tier edge). |
+| **STOP** | Neither option implemented; **no** allowlist/gate-only greenwash. Operator ADR required before production refactor or exception. |
+
+### Targeted validation
+
+Command: `uv run pytest -p no:xdist` on UE-9BR1, HARNESS-W5, P5 assembly, final catalog integrity modules.
+
+Log: `.tmp/session/qual-x-final-boundary-regression/targeted-batch.log`
+
+### Remaining QUAL-X closure blockers
+
+1. **FRZ-BND-03** architectural decision (blocks global reverse-dependency PASS).
+2. Independent audit of correction commit on GitHub.
+3. Unchanged platform gaps: **FRZ-REG-04/05** rollup, **PROD-Q** Dimension B, **ENT-AUDIT-X**, formal **QUAL-X CLOSED**.
+
+**FINAL_COMMIT:** `bccd2cf666fde514a645aeb9e826365e3b54e001` _(targeted batch 49 passed @ correction commit tree)_

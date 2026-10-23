@@ -21,6 +21,9 @@ QUAL_X_FINAL_OWNERSHIP_CORRECTION_IMPLEMENTATION_SHA: str = (
 QUAL_X_FINAL_PLATFORM_REG_BATCH_EXECUTION_SHA: str = (
     "fc61fa60e3705c30177dd504991b9215e1e47afa"
 )
+QUAL_X_FINAL_BOUNDARY_REGRESSION_BATCH_SHA: str = (
+    "bccd2cf666fde514a645aeb9e826365e3b54e001"
+)
 
 _ACCEPTED_HISTORICAL_EXECUTION_SHAS: frozenset[str] = frozenset(
     {
@@ -112,6 +115,65 @@ QUAL_X_FINAL_CLOSED_WORLD_INVENTORY: tuple[QualXFinalClosedWorldRow, ...] = (
         qualification_gate_introduced_sha=None,
         frz_criterion="FRZ-REG-04",
         disposition=QualXFinalInvariantDisposition.VALID_REUSED_EVIDENCE,
+    ),
+    QualXFinalClosedWorldRow(
+        row_id="CW-UE-9BR1-RUNTIME-EVENT",
+        inventory_owner_id=None,
+        invariant_summary=(
+            "Canonical RuntimeEvent emitters do not mint execution_id; mandatory emitter inventory "
+            "matches current UAEP owner (runtime/nexus/uaep/uaep_executor.py)"
+        ),
+        stage="UE-9BR1",
+        semantic_owner="UE-9BR1",
+        contract_or_ssot="intergrax/runtime/events/runtime_event.py",
+        production_enforcement="Listed production RuntimeEvent emitter paths (closed-world)",
+        test_gate="tests/unit/runtime/architecture/test_ue_9br1_runtime_event_legacy_retirement_gate.py",
+        evidence_sha=QUAL_X_FINAL_BOUNDARY_REGRESSION_BATCH_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
+        qualification_gate_introduced_sha=QUAL_X_FINAL_BOUNDARY_REGRESSION_BATCH_SHA,
+        frz_criterion="FRZ-REG-02",
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
+    ),
+    QualXFinalClosedWorldRow(
+        row_id="CW-HARNESS-W5-BND-06",
+        inventory_owner_id=None,
+        invariant_summary=(
+            "Frozen OTLP/collector transport adapters accept ObservabilityExportPayload only; "
+            "no RuntimeEvent/ObservabilityExportEnvelope ownership at transport seam"
+        ),
+        stage="HARNESS-W5",
+        semantic_owner="HARNESS-W5-R1",
+        contract_or_ssot="intergrax/contracts/observability_export.py (OtlpTransportPort)",
+        production_enforcement=(
+            "intergrax/runtime/observability/exporters/otlp/otlp_transport.py; "
+            "intergrax/runtime/observability/exporters/distributed/collector_transport.py; "
+            "intergrax/runtime/observability/event_delivery/otlp_event_export_sink.py"
+        ),
+        test_gate="tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+        evidence_sha=QUAL_X_FINAL_BOUNDARY_REGRESSION_BATCH_SHA,
+        evidence_provenance=QualXFinalEvidenceProvenance.PYTEST_EXECUTION_AT_EVIDENCE_SHA,
+        qualification_gate_introduced_sha=QUAL_X_FINAL_BOUNDARY_REGRESSION_BATCH_SHA,
+        frz_criterion="FRZ-BND-06",
+        disposition=QualXFinalInvariantDisposition.CURRENT_EXECUTABLE_PROOF,
+    ),
+    QualXFinalClosedWorldRow(
+        row_id="CW-FRZ-BND-03-EXEC-PERSISTENCE",
+        inventory_owner_id=None,
+        invariant_summary=(
+            "Execution composition → RuntimeEventPersistence direct imports "
+            "(debug_lab_nexus_loop, host_observability_composition) — TRACKED FREEZE DEBT; "
+            "architectural legality undecided (COMPAT-X / ROADMAP-REPLAY-X)"
+        ),
+        stage="COMPAT-X / EBH-4 historical",
+        semantic_owner="PLATFORM freeze checklist FRZ-BND-03",
+        contract_or_ssot="PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md (FRZ-BND-03 row)",
+        production_enforcement="intergrax/runtime/execution/debug_lab_nexus_loop.py; host_observability_composition.py",
+        test_gate="No current-HEAD executable gate establishes global reverse-dependency PASS",
+        evidence_sha="—",
+        evidence_provenance=QualXFinalEvidenceProvenance.NOT_APPLICABLE,
+        qualification_gate_introduced_sha=None,
+        frz_criterion="FRZ-BND-03",
+        disposition=QualXFinalInvariantDisposition.MISSING_PROOF,
     ),
     QualXFinalClosedWorldRow(
         row_id="CW-HARDENING-3-LAYER",

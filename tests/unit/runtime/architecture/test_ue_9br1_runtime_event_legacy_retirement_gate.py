@@ -28,7 +28,7 @@ _RUNTIME_EVENT_PRODUCTION_PATHS = (
     _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "execution" / "graph_executor.py",
     _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "agent_router.py",
     _REPO_ROOT / "intergrax" / "runtime" / "observability" / "trace_scope.py",
-    _REPO_ROOT / "intergrax" / "agents" / "uaep.py",
+    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "uaep" / "uaep_executor.py",
     _REPO_ROOT / "intergrax" / "contracts" / "runtime_execution_context.py",
 )
 
@@ -127,6 +127,29 @@ def _collect_runtime_event_constructions_without_execution_id() -> list[str]:
 def test_runtime_event_execution_id_field_is_required() -> None:
     field = RuntimeEvent.model_fields["execution_id"]
     assert field.is_required()
+
+
+def test_ue_9br1_mandatory_production_paths_exist_on_disk() -> None:
+    missing = [
+        path.relative_to(_REPO_ROOT).as_posix()
+        for path in _RUNTIME_EVENT_PRODUCTION_PATHS
+        if not path.is_file()
+    ]
+    assert missing == []
+
+
+def test_ue_9br1_retired_agents_uaep_path_not_in_mandatory_inventory() -> None:
+    retired = _REPO_ROOT / "intergrax" / "agents" / "uaep.py"
+    assert not retired.is_file()
+    assert retired not in _RUNTIME_EVENT_PRODUCTION_PATHS
+
+
+def test_ue_9br1_synthetic_mint_execution_id_call_detected(tmp_path: Path) -> None:
+    evil = tmp_path / "emitter.py"
+    evil.write_text("def emit():\n    mint_execution_id()\n", encoding="utf-8")
+    violations = _collect_forbidden_calls(evil, frozenset({"mint_execution_id"}))
+    assert len(violations) == 1
+    assert "mint_execution_id" in violations[0]
 
 
 def test_production_runtime_has_no_runtime_event_v1_literals() -> None:
