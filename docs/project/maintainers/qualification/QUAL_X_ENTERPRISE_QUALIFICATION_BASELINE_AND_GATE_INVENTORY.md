@@ -2244,3 +2244,37 @@ Log: `.tmp/session/qual-x-final-bnd-03-type-evidence/targeted-batch.log`
 | FRZ-REG-10 | OPEN — P5 F01 includes **FRZ-BND-03**; manifest integrity tests green |
 
 **Disposition:** `READY FOR AUDIT — QUAL-X-FINAL BND-03 TYPE & EVIDENCE ACCEPTANCE` (not QUAL-X CLOSED; Path B / ROADMAP-REPLAY-X preserved).
+
+---
+
+## QUAL-X-FINAL — FRZ-BND-03 STATIC TYPE CONTRACT CORRECTION
+
+**START_HEAD:** `868863dbef870cb1457fe8bbcdddf3caf8cbb93f` · **branch:** `development`
+
+### Mechanism (§3 GO — existing sanctioned boundary)
+
+| Item | Detail |
+| --- | --- |
+| Owner | Nexus composition (`NexusLoop`, `wire_nexus_observability`, `resolve_runtime_event_persistence`) |
+| Contract | Tier-0 `EvidencePersistencePort` + legacy `RuntimeEventPersistence` union (same pattern as `as_evidence_persistence_port` / `orchestration_governance_evidence_composition.py`) |
+| Execution seam | Unchanged — `EvidencePersistencePort \| None` on `build_debug_minimal_nexus_loop` / `wire_host_observability`; **no** `RuntimeEventPersistence` import in `intergrax/runtime/execution/` |
+| Resolution | `resolve_runtime_event_persistence`: wrap `RuntimeEventPersistence` in `ValidatingRuntimeEventPersistence`; pass through `EvidencePersistencePort` without reverse adapter |
+
+**Signatures changed:** `NexusLoop.__init__(runtime_event_store=…)`, `NexusLoop.runtime_event_store`, `wire_nexus_observability`, `NexusObservabilityStores.runtime_event_store`, `resolve_runtime_event_persistence(implementation=…)`, `NexusRuntimeEventPublisher` + `build_journal_ref*` (`EvidencePersistencePort` — matches `read_run_journal_page`).
+
+### Pyright delta (targeted modules @ EXECUTION_SHA below)
+
+| Phase | BND-03 `reportArgumentType` | Other errors (unchanged) |
+| --- | --- | --- |
+| Before @ `868863db…` | 2 (`debug_lab_nexus_loop.py:30`, `host_observability_composition.py:34`) | 5 (return/protocol, trace reader, middleware, decision exposure) |
+| After correction | **0** | **5** (same paths; log `.tmp/session/qual-x-final-bnd-03-type-evidence/pyright-bnd03-after.log`) |
+
+Project-wide pyright: **not** qualified PASS (nonzero exit); BND-03 seam errors eliminated without suppressions.
+
+### Verification batch
+
+`uv run pytest -p no:xdist tests/unit/runtime/events/test_evidence_persistence_boundary.py tests/unit/runtime/events/test_runtime_event_persistence.py tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py` — **65 passed** @ EXECUTION_SHA (integration `test_observability_wiring` pre-existing `handle_task(run_id=…)` API mismatch; out of BND-03 scope).
+
+**Disposition:** `READY FOR AUDIT — QUAL-X-FINAL FRZ-BND-03 STATIC TYPE CONTRACT CORRECTION` (not QUAL-X CLOSED).
+
+**EXECUTION_SHA / FINAL_COMMIT:** _(set at publish — see git `origin/development` after push)_

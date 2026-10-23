@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Mapping, Sequence
 
 from intergrax.contracts.persisted_run_trace import PersistedTraceEvent
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.w3c_trace_context import (
     is_valid_traceparent,
@@ -91,7 +92,7 @@ class JournalExportSnapshot:
 def build_journal_ref(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     limit: int = 2000,
 ) -> JournalRef | None:
     """Build a lightweight journal reference for terminal runtime events."""
@@ -116,7 +117,7 @@ def build_journal_ref(
 def build_journal_ref_payload(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     limit: int = 2000,
 ) -> JournalRefDict | None:
     """``TASK_COMPLETED`` payload fragment with unified journal metadata."""
@@ -129,7 +130,7 @@ def build_journal_ref_payload(
 def build_journal_export_snapshot(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     limit: int = 2000,
 ) -> JournalExportSnapshot:
     """Serialize one bounded journal page as typed safe export envelopes."""

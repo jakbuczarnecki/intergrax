@@ -11,6 +11,7 @@ from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.structured_json_value import JsonObject, normalize_structured_json_object
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import (
@@ -33,7 +34,9 @@ class NexusRuntimeEventPublisher:
         current_task: Callable[[], Optional[Task]],
         execution_identity: ActiveExecutionIdentity,
         trace_reader: RunTraceReader | None = None,
-        runtime_event_store: RuntimeEventPersistence | None = None,
+        runtime_event_store: EvidencePersistencePort
+        | RuntimeEventPersistence
+        | None = None,
     ) -> None:
         self._event_bus = event_bus
         self._current_task = current_task
