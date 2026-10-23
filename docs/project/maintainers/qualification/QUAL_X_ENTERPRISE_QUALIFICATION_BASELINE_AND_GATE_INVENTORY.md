@@ -2186,4 +2186,4 @@ Log: `.tmp/session/qual-x-final-frz-bnd-03-option-a/targeted-batch.log`
 
 **Disposition:** `READY FOR AUDIT — QUAL-X-FINAL FRZ-BND-03 OPTION A CONTRACT CORRECTION` (not QUAL-X CLOSED).
 
-**EXECUTION_SHA / FINAL_COMMIT:** `82b86780342c1374878d31835a4a18d30b1d5b89` _(post-commit gate batch: 26 passed; log `.tmp/session/qual-x-final-frz-bnd-03-option-a/post-commit-gate.log`)_
+**EXECUTION_SHA / FINAL_COMMIT:** `2252de73b7ab0ecb84af36963f8312e39227c71d` _(gate batch 26 passed @ `82b867803…` implementation tree; SHA metadata aligned in amend — code identity unchanged)_
