@@ -19,8 +19,10 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from testing_support.runtime_events import runtime_event_test_identity
+from intergrax.runtime.events.store import open_runtime_event_store
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.events.unified_run_journal import build_unified_run_journal
+from intergrax.runtime.observability.journal_export import build_journal_ref_payload
 from intergrax.runtime.nexus.tracing.persistence_models import (
     PersistedRun,
     RunMetadata,
@@ -129,6 +131,51 @@ def _event(
         timestamp=timestamp or datetime(2026, 6, 7, 10, 0, 0, tzinfo=timezone.utc),
         correlation_id=run_id,
     )
+
+
+def test_unified_journal_sqlite_legacy_store_positions_tenant_and_journal_ref(
+    tmp_path,
+) -> None:
+    """E2E journal read on raw ``RuntimeEventPersistence`` (SQLite), not in-memory only."""
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    store = open_runtime_event_store(tmp_path / "events.db")
+    first = _event(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_type=RuntimeEventType.TASK_CREATED,
+        timestamp=datetime(2026, 6, 7, 10, 0, 0, tzinfo=timezone.utc),
+    )
+    second = _event(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_type=RuntimeEventType.STEP_STARTED,
+        timestamp=datetime(2026, 6, 7, 10, 0, 1, tzinfo=timezone.utc),
+    )
+    store.append(first, tenant_id=_TENANT)
+    store.append(second, tenant_id=_TENANT)
+
+    positioned = store.list_positioned_for_run(run_id, tenant_id=_TENANT)
+    assert len(positioned) == 2
+    assert positioned[0].position < positioned[1].position
+
+    journal = build_unified_run_journal(_persisted_run(run_id=run_id), runtime_store=store)
+    assert [event.event_id for event in journal] == [first.event_id, second.event_id]
+
+    isolated = build_unified_run_journal(
+        _persisted_run(run_id=run_id, tenant_id="tenant-other"),
+        runtime_store=store,
+    )
+    assert isolated == []
+
+    ref = build_journal_ref_payload(_persisted_run(run_id=run_id), runtime_store=store)
+    assert ref is not None
+    assert ref["run_id"] == run_id
+    assert ref["tenant_id"] == _TENANT
+    assert ref["event_count"] == 2
 
 
 def test_unified_journal_preserves_canonical_identity() -> None:

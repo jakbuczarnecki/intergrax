@@ -2278,3 +2278,40 @@ Project-wide pyright: **not** qualified PASS (nonzero exit); BND-03 seam errors 
 **Disposition:** `READY FOR AUDIT — QUAL-X-FINAL FRZ-BND-03 STATIC TYPE CONTRACT CORRECTION` (not QUAL-X CLOSED).
 
 **EXECUTION_SHA / FINAL_COMMIT:** `c2b726947bf1f4c3e0246f2f56ea5abf82b7600f` · `origin/development` synced
+
+---
+
+## QUAL-X-FINAL — BND-03 COMMITTED QUALIFICATION & EVIDENCE RECONCILIATION
+
+**START_HEAD:** `05056444c5c3a96f340a703785fc8749b7366055` · **branch:** `development`
+
+### Implementation package (test-only)
+
+| Change | Owner / purpose |
+| --- | --- |
+| `tests/integration/runtime/test_observability_wiring.py` | Governed `run_id` + active execution authority for `NexusLoop.handle_task`; trace `read_run` uses canonical run id (not `task_id`). |
+| `tests/unit/runtime/events/test_unified_run_journal.py::test_unified_journal_sqlite_legacy_store_positions_tenant_and_journal_ref` | Legacy SQLite `RuntimeEventPersistence` journal E2E: positioned reads, tenant isolation, `journal_ref` payload. |
+
+**Production:** unchanged. **FRZ-BND-03 Option A** execution seam unchanged @ START_HEAD.
+
+### Targeted acceptance batch (pre-commit tree)
+
+`uv run pytest -p no:xdist` nodes: `test_evidence_persistence_boundary.py`, `test_runtime_event_persistence.py`, `test_unified_run_journal.py::test_unified_journal_sqlite_legacy_store_positions_tenant_and_journal_ref`, `test_observability_wiring.py`, `test_nexus_loop_runtime_event_persistence.py`, `test_qual_x_p5_freeze_qualification_suite_assembly.py`, `test_qual_x_final_invariant_coverage_catalog_integrity.py` — **70 passed** (log: `.tmp/session/qual-x-final-bnd-03-committed/targeted-batch-precommit.log`).
+
+### Closure notes (BND-03 mandatory slice)
+
+| Criterion | Disposition |
+| --- | --- |
+| Forbidden import / AST gate | **ALREADY PROVEN** @ `2252de73…` (`test_execution_engine_has_no_runtime_event_persistence_dependency`) |
+| Port/legacy validation | **ALREADY PROVEN** — `test_evidence_persistence_boundary.py` |
+| Observability integration | **VALIDATED** — committed wiring test repair |
+| Legacy journal E2E (SQLite store) | **VALIDATED** — new owner-suite test (not promoted from in-memory-only proof) |
+| P5 F01 / catalog integrity | **ALREADY PROVEN** — qual_x P5 + catalog integrity modules |
+| Committed-tree reproducibility | **VALIDATION REQUIRED** — post-push EXECUTION_SHA pytest replay |
+| Independent audit | **BLOCKED** until GitHub SHA audit |
+
+**FRZ/ECAP:** **FRZ-BND-03** = FORMAL ACCEPTANCE PENDING (global checklist OPEN). **FRZ-REG-01/02/03/07/09/10** remain OPEN at platform scope; this batch supplements BND-03 only. Not **QUAL-X CLOSED**.
+
+**Disposition:** `READY FOR AUDIT — QUAL-X-FINAL BND-03 COMMITTED QUALIFICATION ACCEPTANCE` (pending independent exact-SHA audit).
+
+**FINAL_COMMIT / EXECUTION_SHA:** same as GitHub `development` tip containing this section (operator audit anchor).
