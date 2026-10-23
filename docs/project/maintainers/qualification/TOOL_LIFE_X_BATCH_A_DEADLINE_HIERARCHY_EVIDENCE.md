@@ -61,7 +61,7 @@ uv run pytest -p no:xdist \
 | **Skipped** | 0 |
 | **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/pytest-final.log` |
 
-**fc59dd350933483205460fa0e84c7d80c37b6bb3:** `fc59dd350933483205460fa0e84c7d80c37b6bb3`
+**FINAL_COMMIT:** `fc59dd350933483205460fa0e84c7d80c37b6bb3` (implementation); evidence doc @ `8d6d632a9`
 
 ## TL1–TL15 (Batch A reconciliation)
 
