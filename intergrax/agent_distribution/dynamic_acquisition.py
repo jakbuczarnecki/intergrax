@@ -24,6 +24,9 @@ from intergrax.agent_distribution.admin_models import (
     ServingStateView,
     SetAgentEnablementRequest,
 )
+from intergrax.agent_distribution.agent_contract_authority import (
+    PackageAgentContractAuthorityRecord,
+)
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
     AgentDiscoveryCandidateIdentity,
@@ -98,6 +101,7 @@ class DynamicAgentAcquisitionInstallIntent(BaseModel):
     artifact_store_ref: str = _NON_EMPTY
     trust_record: AgentInstallationTrustRecord
     agent_project_metadata_ref: str = _NON_EMPTY
+    package_contract_authority: tuple[PackageAgentContractAuthorityRecord, ...] = ()
 
     @field_validator(
         "mutation_id",
@@ -374,6 +378,7 @@ class DynamicAgentAcquisitionService:
             artifact_store_ref=request.install.artifact_store_ref,
             trust_record=request.install.trust_record,
             agent_project_metadata_ref=request.install.agent_project_metadata_ref,
+            package_contract_authority=request.install.package_contract_authority,
         )
         install_result = self._lifecycle.install_agent(
             application_id=request.application_id,

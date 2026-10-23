@@ -112,22 +112,24 @@ class SkillHostLifecycleService(SkillHostBindingPort):
                 reason_detail="incompatible package identity for installed skill",
             )
 
+        registry_snapshot = self.registry.snapshot_state()
         try:
             materialized_id, binding = materializer.materialize(resolved)
         except Exception:
+            self.registry.restore_state(registry_snapshot)
             return DomainLifecycleHandoffAck(
                 disposition=DomainLifecycleHandoffDisposition.REJECTED,
                 reason_detail="skill materialization failed",
             )
 
         if materialized_id != skill_id:
-            self.registry.unregister(skill_id)
+            self.registry.restore_state(registry_snapshot)
             return DomainLifecycleHandoffAck(
                 disposition=DomainLifecycleHandoffDisposition.REJECTED,
                 reason_detail="materialized skill id mismatch",
             )
         if not _binding_matches_identity(binding, package_identity):
-            self.registry.unregister(skill_id)
+            self.registry.restore_state(registry_snapshot)
             return DomainLifecycleHandoffAck(
                 disposition=DomainLifecycleHandoffDisposition.REJECTED,
                 reason_detail="materialized binding identity mismatch",

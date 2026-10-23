@@ -100,6 +100,7 @@ from testing_support.canonical_agent_lifecycle_composition import (
     CanonicalAgentLifecycleProofStack,
     CanonicalLifecycleProofConfig,
     default_stage15_proof_config,
+    lifecycle_install_package_contract_authority_records,
 )
 from testing_support.reference_production_acquisition_lifecycle_port import (
     ReferenceProductionAcquisitionLifecyclePort,
@@ -217,6 +218,7 @@ def build_dynamic_agent_acquisition_request(
         catalog_source=catalog_source,
     )
     digest = selected_identity.package.package_digest or config.package_digest
+    artifact_store_ref = f"store://artifacts/{config.installation_id}"
     trust_record = AgentInstallationTrustRecord(
         qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=digest,
@@ -238,9 +240,16 @@ def build_dynamic_agent_acquisition_request(
             mutation_id=f"mut-me13-install:{config.installation_id}",
             installation_id=config.installation_id,
             installation_slot_id=config.installation_slot_id,
-            artifact_store_ref=f"store://artifacts/{config.installation_id}",
+            artifact_store_ref=artifact_store_ref,
             trust_record=trust_record,
             agent_project_metadata_ref=config.metadata_ref,
+            package_contract_authority=lifecycle_install_package_contract_authority_records(
+                config,
+                package_digest=digest,
+                distribution_package_id=config.distribution_package_id,
+                artifact_store_ref=artifact_store_ref,
+                agent_project_metadata_ref=config.metadata_ref,
+            ),
         ),
         bind=BindAgentRequest(
             mutation_id=f"mut-me13-bind:{config.application_binding_id}",

@@ -9,6 +9,9 @@ from intergrax.agents.persistence.skill_host_wiring import (
     resolve_skill_host_wiring_from_metadata,
 )
 from intergrax.applications._shared.environment_wiring import wire_application_environment
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ManifestAgentContractAuthority,
+)
 from intergrax.applications._shared.skill_host_execution_wiring import (
     build_host_skill_catalog_wiring_from_environment,
 )
@@ -18,7 +21,10 @@ from intergrax.skills.host_lifecycle import SkillHostLifecycleService
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from testing_support.canonical_agent_lifecycle_composition import _stage15_proof_environment
-from testing_support.canonical_me16_mixed_agent import ME16_MIXED_CONTRACT_ID
+from testing_support.canonical_me16_mixed_agent import (
+    ME16_MIXED_CONTRACT_ID,
+    me16_mixed_reference_contract,
+)
 
 
 def test_application_skill_registry_builds_host_skill_catalog_wiring() -> None:
@@ -37,10 +43,14 @@ def test_application_skill_registry_builds_host_skill_catalog_wiring() -> None:
     )
     env = _stage15_proof_environment("env-me16-c1-skill")
     env = env.model_copy(update={"skill_profile": SkillProfile(enabled=[])})
+    contract_authority = ManifestAgentContractAuthority(
+        contracts_by_id={ME16_MIXED_CONTRACT_ID: me16_mixed_reference_contract()},
+    )
     env_wiring = wire_application_environment(
         manifest,
         env,
         application_skill_registry=lifecycle.registry,
+        agent_contract_authority=contract_authority,
     )
     assert isinstance(lifecycle.registry, SkillRegistry)
     wiring = build_host_skill_catalog_wiring_from_environment(env_wiring)
