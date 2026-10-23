@@ -2124,4 +2124,4 @@ Log: `.tmp/session/qual-x-final-boundary-regression/targeted-batch.log`
 2. Independent audit of correction commit on GitHub.
 3. Unchanged platform gaps: **FRZ-REG-04/05** rollup, **PROD-Q** Dimension B, **ENT-AUDIT-X**, formal **QUAL-X CLOSED**.
 
-**FINAL_COMMIT:** `bccd2cf666fde514a645aeb9e826365e3b54e001` _(targeted batch 49 passed @ correction commit tree)_
+**FINAL_COMMIT:** `a36d78cbb9736fe3021d81d7f238cc5bfc0c2b40` _(targeted batch 49 passed; evidence SHA aligned to correction commit)_
