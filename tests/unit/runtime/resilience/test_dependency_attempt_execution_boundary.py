@@ -72,19 +72,28 @@ class _LoopAffinityRecorder:
 
 
 class _FakePermit:
-    __slots__ = ("_admission", "_released", "_release_should_fail")
+    __slots__ = (
+        "_admission",
+        "_released",
+        "_release_should_fail",
+        "_release_gate",
+    )
 
     def __init__(
         self,
         admission: _FakeAdmissionPort,
         *,
         release_should_fail: bool = False,
+        release_gate: asyncio.Event | None = None,
     ) -> None:
         self._admission = admission
         self._released = False
         self._release_should_fail = release_should_fail
+        self._release_gate = release_gate
 
     async def release(self) -> None:
+        if self._release_gate is not None:
+            await self._release_gate.wait()
         self._admission.affinity.record_release()
         if self._release_should_fail:
             raise RuntimeError("release failed")
@@ -103,10 +112,14 @@ class _FakeAdmissionPort:
         capacity: int = 4,
         reject_value: str | None = None,
         wait_seconds: float | None = None,
+        release_gate: asyncio.Event | None = None,
+        release_should_fail: bool = False,
     ) -> None:
         self.capacity = capacity
         self.reject_value = reject_value
         self.wait_seconds = wait_seconds
+        self.release_gate = release_gate
+        self.release_should_fail = release_should_fail
         self.active = 0
         self.acquire_calls = 0
         self.affinity = _LoopAffinityRecorder()
@@ -133,7 +146,11 @@ class _FakeAdmissionPort:
             if self.active >= self.capacity:
                 raise DependencyConcurrencyExceededError("saturated")
             self.active += 1
-        return _FakePermit(self)
+        return _FakePermit(
+            self,
+            release_should_fail=self.release_should_fail,
+            release_gate=self.release_gate,
+        )
 
 
 class _GatedRegistryLock:
@@ -859,3 +876,72 @@ def test_ba_f05_zero_budget_timeout_before_grant_still_releases() -> None:
     assert admission.active == 0
     pool.shutdown(wait=True)
     boundary.close()
+
+
+def test_ba_f06_capacity_not_released_until_physical_release_completes() -> None:
+    """RELEASED handoff state follows successful physical release, not grant."""
+    release_gate = asyncio.Event()
+    admission = _FakeAdmissionPort(
+        capacity=2,
+        wait_seconds=0.06,
+        release_gate=release_gate,
+    )
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    assert admission.active == 2
+    release_gate.set()
+    time.sleep(0.15)
+    assert admission.active == 1
+    boundary.complete_direct(first)
+    assert admission.active == 0
+    boundary.close()
+
+
+def test_ba_f06_abandon_release_failure_surfaces_on_drain() -> None:
+    admission = _FakeAdmissionPort(
+        capacity=2,
+        wait_seconds=0.06,
+        release_should_fail=True,
+    )
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.15)
+    boundary.complete_direct(first)
+    with pytest.raises(DependencyAttemptReleaseInvariantError):
+        boundary.close()
+
+
+def test_ba_f06_shutdown_waits_pending_abandon_release() -> None:
+    release_gate = asyncio.Event()
+    admission = _FakeAdmissionPort(
+        capacity=2,
+        wait_seconds=0.06,
+        release_gate=release_gate,
+    )
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    assert admission.active == 2
+    boundary.begin_shutdown()
+    release_gate.set()
+    boundary.complete_direct(first)
+    boundary.drain_and_close()
+    assert admission.active == 0
+
+
+def test_ba_f06_acquire_terminal_callback_cancelled_future_safe() -> None:
+    """Cancelled wrapper future must not call exception() or mark release early."""
+    admission = _FakeAdmissionPort(capacity=2, wait_seconds=0.08)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.15)
+    assert admission.active == 1
+    boundary.close()
+    assert admission.active == 0
