@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | Pre-remediation | `03d5fc3d54d33ef6230123ab2300756441f744f8` | Independent audit **NOT ACCEPTED** (BA-F02 permit ownership race) |
 | Prior Cursor remediation | (see prior table rows BA-F01/BA-F02) | **45 passed / 4 failed** — governance fixture gap + admission thread drain |
-| **Atomic permit closure (this wave)** | **FINAL_COMMIT** (below) | **50/50** targeted Batch A regression green |
+| **Atomic permit closure (this wave)** | **fc59dd350933483205460fa0e84c7d80c37b6bb3** (below) | **50/50** targeted Batch A regression green |
 
 ## BA-F02 — atomic permit ownership (complete)
 
@@ -61,21 +61,21 @@ uv run pytest -p no:xdist \
 | **Skipped** | 0 |
 | **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/pytest-final.log` |
 
-**FINAL_COMMIT:** `ff2fb1091` (full SHA after push: `git rev-parse HEAD`)
+**fc59dd350933483205460fa0e84c7d80c37b6bb3:** `fc59dd350933483205460fa0e84c7d80c37b6bb3`
 
 ## TL1–TL15 (Batch A reconciliation)
 
 | Criterion | Owner | Contract | Evidence SHA | Gap | Action | Test | FRZ | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TL1 bounded waits | `DependencyAttemptExecutionBoundary` + invoker | `acquire_timeout_seconds`, physical `future.result(timeout=…)` | FINAL_COMMIT | — | Implemented | Batch A + boundary | FRZ-REL-01 | VALIDATION REQUIRED |
-| TL2 deadline hierarchy | `RuntimeToolInvoker` | UER / `execution_live_remaining_seconds` | FINAL_COMMIT | — | BA-F01 preserved | `test_tool_life_x_batch_a_deadline_hierarchy.py` | FRZ-REL-01, FRZ-REL-07 | VALIDATION REQUIRED |
-| TL3 cancellation | Invoker + admission | cooperative cancel / protected work | FINAL_COMMIT | — | Scoped tests unchanged | Batch A cancel test | FRZ-REL-05 | VALIDATION REQUIRED |
+| TL1 bounded waits | `DependencyAttemptExecutionBoundary` + invoker | `acquire_timeout_seconds`, physical `future.result(timeout=…)` | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | Implemented | Batch A + boundary | FRZ-REL-01 | VALIDATION REQUIRED |
+| TL2 deadline hierarchy | `RuntimeToolInvoker` | UER / `execution_live_remaining_seconds` | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | BA-F01 preserved | `test_tool_life_x_batch_a_deadline_hierarchy.py` | FRZ-REL-01, FRZ-REL-07 | VALIDATION REQUIRED |
+| TL3 cancellation | Invoker + admission | cooperative cancel / protected work | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | Scoped tests unchanged | Batch A cancel test | FRZ-REL-05 | VALIDATION REQUIRED |
 | TL4 retry bound | Invoker policy | `max_attempts` / side-effect safety | prior SHAs | — | Not expanded Batch B | existing side-effect module (out of this wave) | FRZ-REL-04 | VALIDATION REQUIRED |
-| TL5 uncertain outcome | Invoker | `ToolEffectCertainty` on timeout | FINAL_COMMIT | — | Preserved | Batch A timeout tests | FRZ-REL-05 | VALIDATION REQUIRED |
+| TL5 uncertain outcome | Invoker | `ToolEffectCertainty` on timeout | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | Preserved | Batch A timeout tests | FRZ-REL-05 | VALIDATION REQUIRED |
 | TL6 side-effect retry | Invoker + idempotency | pre-effect coordinator | prior SHAs | — | Not in Batch A delta | — | FRZ-REL-06 | IMPLEMENTATION REQUIRED |
 | TL7 | — | — | — | — | Open (parent) | — | — | OPERATOR DECISION REQUIRED |
-| TL8 ownership/recovery | `DependencyAttemptExecutionBoundary` | permit + worker detach | FINAL_COMMIT | — | BA-F02 closure | boundary matrix | FRZ-REL-07 | VALIDATION REQUIRED |
-| TL9 terminal late results | Invoker | no resurrection | FINAL_COMMIT | — | Preserved | Batch A | FRZ-REL-05 | VALIDATION REQUIRED |
+| TL8 ownership/recovery | `DependencyAttemptExecutionBoundary` | permit + worker detach | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | BA-F02 closure | boundary matrix | FRZ-REL-07 | VALIDATION REQUIRED |
+| TL9 terminal late results | Invoker | no resurrection | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | Preserved | Batch A | FRZ-REL-05 | VALIDATION REQUIRED |
 | TL10–TL13 | — | — | — | — | Open per parent | — | — | BLOCKED / parent scope |
 | TL14 no lifecycle bypass | Architecture | single invoker path | prior SHAs | — | No new bypass | U5 gates (unchanged) | FRZ-BND-03, FRZ-EXE-02 | ALREADY PROVEN |
 | TL15 parent certification | Parent `TOOL-LIFE-X` | full §3.0.5 close | — | Parent not CLOSED | — | — | — | **BLOCKED** |
