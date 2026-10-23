@@ -114,6 +114,31 @@ class _WrongIdThenRaiseMaterializer(_WrongIdMaterializer):
         raise RuntimeError("after wrong id")
 
 
+class _GatedMaterializer(SkillHostBindingMaterializer):
+    """Blocks in materialize until released — exercises lock-held critical section."""
+
+    def __init__(
+        self,
+        registry: SkillRegistry,
+        *,
+        catalog_source_id: str,
+        entered_barrier: threading.Barrier,
+        hold: threading.Event,
+    ) -> None:
+        self._inner = Me15SkillHostBindingMaterializer(registry, catalog_source_id=catalog_source_id)
+        self._entered_barrier = entered_barrier
+        self._hold = hold
+
+    def materialize(
+        self,
+        resolution: SkillPackageResolution,
+    ) -> tuple[str, SkillRuntimeBindingMetadata]:
+        self._entered_barrier.wait(timeout=10)
+        if not self._hold.wait(timeout=10):
+            raise TimeoutError("gated materializer hold timed out")
+        return self._inner.materialize(resolution)
+
+
 class _BindingIdentityMismatchMaterializer(SkillHostBindingMaterializer):
     def __init__(self, registry: SkillRegistry, *, catalog_source_id: str) -> None:
         self._inner = Me15SkillHostBindingMaterializer(registry, catalog_source_id=catalog_source_id)
@@ -382,6 +407,104 @@ def test_concurrent_failed_binds_on_same_host_leave_registry_clean() -> None:
 
     assert lifecycle.registry.skill_ids() == []
     assert not lifecycle._handoff_operation_ids
+
+
+def test_concurrent_distinct_operation_ids_serialize_to_single_install() -> None:
+    lifecycle = SkillHostLifecycleService(host_profile_id="host-rc03-concurrent-install")
+    provider = Me15SkillCatalogProvider()
+    resolution = _resolution(provider)
+    entered = threading.Barrier(2)
+    hold = threading.Event()
+    materializer = _GatedMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+        entered_barrier=entered,
+        hold=hold,
+    )
+    results: list = []
+    lock = threading.Lock()
+
+    def _bind(operation_id: str) -> None:
+        ack = lifecycle.bind(
+            operation_id=operation_id,
+            host_profile_id=lifecycle.host_profile_id,
+            resolved=resolution,
+            materializer=materializer,
+        )
+        with lock:
+            results.append(ack)
+
+    threads = [
+        threading.Thread(target=_bind, args=("op-concurrent-a",)),
+        threading.Thread(target=_bind, args=("op-concurrent-b",)),
+    ]
+    for thread in threads:
+        thread.start()
+    entered.wait(timeout=10)
+    hold.set()
+    for thread in threads:
+        thread.join(timeout=10)
+        assert not thread.is_alive()
+
+    assert lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
+    assert len(lifecycle._handoff_operation_ids) == 1
+    dispositions = {ack.disposition for ack in results}
+    assert DomainLifecycleHandoffDisposition.ACCEPTED in dispositions
+    assert DomainLifecycleHandoffDisposition.REJECTED in dispositions
+    rejected = [ack for ack in results if ack.disposition is DomainLifecycleHandoffDisposition.REJECTED]
+    assert rejected[0].reason_detail == "skill already bound for host profile"
+
+
+def test_concurrent_replay_waits_for_in_progress_bind_commit() -> None:
+    lifecycle = SkillHostLifecycleService(host_profile_id="host-rc03-concurrent-replay")
+    provider = Me15SkillCatalogProvider()
+    resolution = _resolution(provider)
+    entered = threading.Barrier(2)
+    hold = threading.Event()
+    materializer = _GatedMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+        entered_barrier=entered,
+        hold=hold,
+    )
+    replay_ack: DomainLifecycleHandoffDisposition | None = None
+
+    def _first_bind() -> None:
+        lifecycle.bind(
+            operation_id="op-same-replay",
+            host_profile_id=lifecycle.host_profile_id,
+            resolved=resolution,
+            materializer=materializer,
+        )
+
+    def _replay_bind() -> None:
+        nonlocal replay_ack
+        ack = lifecycle.bind(
+            operation_id="op-same-replay",
+            host_profile_id=lifecycle.host_profile_id,
+            resolved=resolution,
+            materializer=Me15SkillHostBindingMaterializer(
+                lifecycle.registry,
+                catalog_source_id=provider.catalog_source_id,
+            ),
+        )
+        replay_ack = ack.disposition
+
+    first = threading.Thread(target=_first_bind)
+    replay = threading.Thread(target=_replay_bind)
+    first.start()
+    replay.start()
+    entered.wait(timeout=10)
+    assert not lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
+    hold.set()
+    first.join(timeout=10)
+    replay.join(timeout=10)
+    assert not first.is_alive()
+    assert not replay.is_alive()
+
+    assert lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
+    assert replay_ack is DomainLifecycleHandoffDisposition.ACCEPTED
+    assert lifecycle._handoff_operation_ids == {"op-same-replay"}
 
 
 def test_concurrent_failed_bind_preserves_prior_successful_registration() -> None:

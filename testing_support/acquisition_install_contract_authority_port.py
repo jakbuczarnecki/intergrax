@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.agent_distribution.dynamic_acquisition import AgentPlatformLifecyclePort
 from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
     ActivationResultView,
@@ -30,7 +31,7 @@ from testing_support.canonical_agent_lifecycle_composition import (
 class ProofInstallContractAuthorityLifecyclePort:
     """Delegates AC-3 mutations; enriches install with digest-bound proof authority only."""
 
-    inner: object
+    inner: AgentPlatformLifecyclePort
     proof_config: CanonicalLifecycleProofConfig
 
     def install_agent(

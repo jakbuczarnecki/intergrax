@@ -91,37 +91,37 @@ class SkillHostLifecycleService(SkillHostBindingPort):
         package_identity = SkillPackageIdentity.from_candidate(candidate)
         skill_id = package_identity.logical_skill_id
 
-        if operation_id in self._handoff_operation_ids:
-            existing = self.registry.binding_metadata(skill_id)
-            if existing is None or not self.registry.has(skill_id):
-                return DomainLifecycleHandoffAck(
-                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                    reason_detail="idempotent handoff without bound skill",
-                )
-            if not _binding_matches_identity(existing, package_identity):
-                return DomainLifecycleHandoffAck(
-                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                    reason_detail="idempotent handoff package identity mismatch",
-                )
-            return DomainLifecycleHandoffAck(
-                disposition=DomainLifecycleHandoffDisposition.ACCEPTED,
-                domain_reference=_domain_reference(package_identity),
-                reason_detail="idempotent handoff replay",
-            )
-
-        if self.registry.has(skill_id):
-            existing = self.registry.binding_metadata(skill_id)
-            if existing is not None and _binding_matches_identity(existing, package_identity):
-                return DomainLifecycleHandoffAck(
-                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                    reason_detail="skill already bound for host profile",
-                )
-            return DomainLifecycleHandoffAck(
-                disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                reason_detail="incompatible package identity for installed skill",
-            )
-
         with self._bind_lock:
+            if operation_id in self._handoff_operation_ids:
+                existing = self.registry.binding_metadata(skill_id)
+                if existing is None or not self.registry.has(skill_id):
+                    return DomainLifecycleHandoffAck(
+                        disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                        reason_detail="idempotent handoff without bound skill",
+                    )
+                if not _binding_matches_identity(existing, package_identity):
+                    return DomainLifecycleHandoffAck(
+                        disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                        reason_detail="idempotent handoff package identity mismatch",
+                    )
+                return DomainLifecycleHandoffAck(
+                    disposition=DomainLifecycleHandoffDisposition.ACCEPTED,
+                    domain_reference=_domain_reference(package_identity),
+                    reason_detail="idempotent handoff replay",
+                )
+
+            if self.registry.has(skill_id):
+                existing = self.registry.binding_metadata(skill_id)
+                if existing is not None and _binding_matches_identity(existing, package_identity):
+                    return DomainLifecycleHandoffAck(
+                        disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                        reason_detail="skill already bound for host profile",
+                    )
+                return DomainLifecycleHandoffAck(
+                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                    reason_detail="incompatible package identity for installed skill",
+                )
+
             prior_skill_ids = frozenset(self.registry.skill_ids())
             try:
                 materialized_id, binding = materializer.materialize(resolved)
