@@ -23,7 +23,25 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
+from intergrax.contracts.execution_continuation import (
+    ContinuationReason,
+    ExecutionContinuationIdentity,
+    ExecutionContinuationLifecycleState,
+    PendingExecutionContinuation,
+)
+from intergrax.runtime.execution.active_execution_continuation_store import (
+    bind_active_execution_continuation_state_store,
+    reset_active_execution_continuation_state_store,
+)
+from intergrax.runtime.execution.continuation.persistence import (
+    InMemoryExecutionContinuationStateStore,
+)
+from intergrax.runtime.nexus.tools.tool_selection import (
+    SkillPackSelectionStrategy,
+    ToolSelectionContext,
+)
 from intergrax.skills.execution_binding import (
+    BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
     BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
     InMemorySkillExecutionPinningStore,
     SkillExecutionBinding,
@@ -40,6 +58,9 @@ from intergrax.skills.execution_binding import (
     resolve_bound_skill_pack,
     verify_skill_execution_binding_integrity,
 )
+from intergrax.skills.skill_execution_recovery import active_execution_requires_skill_recovery
+from intergrax.tools.registry import ToolRegistry
+from testing_support.builder import canonical_task_id_for_tests
 from intergrax.skills.execution_pinning_durability import (
     DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG,
     validate_skill_execution_pinning_durability_for_composition,
@@ -83,6 +104,23 @@ def _binding_metadata(skill_id: str, version: str, digest: str) -> SkillRuntimeB
         package_reference=f"pkg://{skill_id}",
         version_label=version,
         content_digest=digest,
+    )
+
+
+def _v2_binding_from_composition(
+    *,
+    composition,
+    digest: str,
+    skill_id: str = "a.pack",
+    version: str = "1.0.0",
+    **kwargs,
+) -> SkillExecutionBinding:
+    metadata = _binding_metadata(skill_id, version, digest)
+    return binding_from_composition(
+        composition=composition,
+        runtime_content_digests=((skill_id, digest),),
+        observed_runtime_binding_metadata=(metadata,),
+        **kwargs,
     )
 
 
@@ -511,12 +549,12 @@ def test_runtime_content_digest_duplicate_and_mismatch_rejected() -> None:
         binding=_binding_metadata("a.pack", "1.0.0", "sha256:pkg-a"),
     )
     composition = SkillResolver(registry).resolve_composition(["a.pack"])
-    binding = binding_from_composition(
+    binding = _v2_binding_from_composition(
         tenant_id="tenant-a",
         execution_id=mint_execution_id(),
         skill_profile=SkillProfile(enabled=["a.pack"]),
         composition=composition,
-        runtime_content_digests=(("a.pack", "sha256:pkg-a"),),
+        digest="sha256:pkg-a",
     )
     tampered = dataclasses.replace(
         binding,
@@ -543,6 +581,9 @@ def test_manifest_fingerprint_cannot_pose_as_runtime_content_digest() -> None:
     forged = dataclasses.replace(
         binding,
         runtime_content_digests=(("a.pack", manifest_content_fingerprint(manifest)),),
+        observed_runtime_binding_metadata=(
+            _binding_metadata("a.pack", "1.0.0", manifest_content_fingerprint(manifest)),
+        ),
         binding_integrity_version=BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
         content_bound_skill_ids=("a.pack",),
     )
@@ -639,12 +680,12 @@ def test_runtime_content_binding_integrity_version_on_verified_metadata() -> Non
         binding=_binding_metadata("a.pack", "1.0.0", "sha256:verified"),
     )
     composition = SkillResolver(registry).resolve_composition(["a.pack"])
-    binding = binding_from_composition(
+    binding = _v2_binding_from_composition(
         tenant_id="tenant-a",
         execution_id=mint_execution_id(),
         skill_profile=SkillProfile(enabled=["a.pack"]),
         composition=composition,
-        runtime_content_digests=(("a.pack", "sha256:verified"),),
+        digest="sha256:verified",
     )
     assert binding.binding_integrity_version == BINDING_INTEGRITY_RUNTIME_CONTENT_V2
     verify_skill_execution_binding_integrity(binding)
@@ -665,3 +706,320 @@ def test_encode_round_trip_preserves_binding() -> None:
     )
     round_trip = decode_skill_execution_binding(encode_skill_execution_binding(binding))
     assert round_trip == binding
+
+
+def test_fresh_execution_first_bind_via_selection_strategy() -> None:
+    pinning = InMemorySkillExecutionPinningStore()
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+        task_id=canonical_task_id_for_tests("skill-x-fresh-bind"),
+    )
+    try:
+        strategy = SkillPackSelectionStrategy()
+        tool_registry = ToolRegistry()
+        selected = strategy.select_tool_ids(
+            ToolSelectionContext(
+                registry=tool_registry,
+                query="q",
+                skill_profile=SkillProfile(enabled=["a.pack"]),
+                skill_registry=registry,
+                skill_pinning_store=pinning,
+                tenant_id="tenant-a",
+            ),
+        )
+        assert selected == ()
+        recovered = recover_bound_skill_pack(
+            tenant_id="tenant-a",
+            execution_id=execution_id,
+            pinning_store=pinning,
+        )
+        assert recovered.resolved_skills[0].version == "1.0.0"
+    finally:
+        reset_active_execution_identity(token)
+
+
+def test_resumed_execution_with_pin_via_explicit_recovery_flag() -> None:
+    pinning = InMemorySkillExecutionPinningStore()
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.legacy",)))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    execution_id = mint_execution_id()
+    bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        skill_registry=registry,
+        pinning_store=pinning,
+        resolved_composition=composition,
+    )
+    registry.register_or_replace(_manifest("a.pack", "9.9.9", tool_ids=("tool.new",)))
+    token = bind_active_execution_identity(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+        task_id=canonical_task_id_for_tests("skill-x-fresh-bind"),
+    )
+    try:
+        strategy = SkillPackSelectionStrategy()
+        selected = strategy.select_tool_ids(
+            ToolSelectionContext(
+                registry=ToolRegistry(),
+                query="q",
+                skill_profile=SkillProfile(enabled=["a.pack"]),
+                skill_registry=registry,
+                skill_pinning_store=pinning,
+                tenant_id="tenant-a",
+                skill_execution_recovery_required=True,
+            ),
+        )
+        assert selected == ()
+        historical = recover_bound_skill_pack(
+            tenant_id="tenant-a",
+            execution_id=execution_id,
+            pinning_store=pinning,
+        )
+        assert historical.resolved_skills[0].version == "1.0.0"
+    finally:
+        reset_active_execution_identity(token)
+
+
+def test_resumed_execution_storage_unavailable_fails_closed() -> None:
+    backing = InMemoryKVStore()
+    backing.fail_get = True
+    store = KvSkillExecutionPinningStore(backing)
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    try:
+        with pytest.raises(SkillExecutionPinningStorageError, match="read failed"):
+            resolve_bound_skill_pack(
+                tenant_id="tenant-a",
+                skill_profile=SkillProfile(enabled=["a.pack"]),
+                skill_registry=registry,
+                pinning_store=store,
+                skill_execution_recovery_required=True,
+            )
+    finally:
+        reset_active_execution_identity(token)
+
+
+def test_active_execution_requires_skill_recovery_when_continuation_resumed() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    task_id = canonical_task_id_for_tests("skill-x-resume-signal")
+    identity = ExecutionContinuationIdentity(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    store = InMemoryExecutionContinuationStateStore()
+    store.insert_if_absent(
+        PendingExecutionContinuation(
+            continuation_id="cont-1",
+            identity=identity,
+            lifecycle_state=ExecutionContinuationLifecycleState.RESUMED,
+            revision=1,
+            reason=ContinuationReason.QUOTE,
+        ),
+    )
+    cont_token = bind_active_execution_continuation_state_store(store)
+    id_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        task_id=task_id,
+    )
+    try:
+        assert active_execution_requires_skill_recovery() is True
+    finally:
+        reset_active_execution_identity(id_token)
+        reset_active_execution_continuation_state_store(cont_token)
+
+
+def test_mismatched_historical_digest_rejected() -> None:
+    registry = SkillRegistry()
+    registry.register(
+        _manifest("a.pack"),
+        binding=_binding_metadata("a.pack", "1.0.0", "sha256:trusted"),
+    )
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = _v2_binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+        digest="sha256:trusted",
+    )
+    tampered = dataclasses.replace(
+        binding,
+        runtime_content_digests=(("a.pack", "sha256:forged"),),
+    )
+    with pytest.raises(SkillResolutionError, match="digest mismatch with trusted package"):
+        verify_skill_execution_binding_integrity(tampered)
+
+
+def test_modified_artifact_same_version_rejected_when_digest_differs() -> None:
+    registry = SkillRegistry()
+    registry.register(
+        _manifest("a.pack", "1.0.0", tool_ids=("tool.a",)),
+        binding=_binding_metadata("a.pack", "1.0.0", "sha256:original"),
+    )
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        skill_registry=registry,
+        pinning_store=InMemorySkillExecutionPinningStore(),
+        resolved_composition=composition,
+    )
+    swapped_metadata = _binding_metadata("a.pack", "1.0.0", "sha256:substituted")
+    tampered = dataclasses.replace(
+        binding,
+        observed_runtime_binding_metadata=(swapped_metadata,),
+        runtime_content_digests=(("a.pack", "sha256:original"),),
+    )
+    with pytest.raises(SkillResolutionError, match="digest mismatch with trusted package"):
+        verify_skill_execution_binding_integrity(tampered)
+
+
+def test_incomplete_content_binding_coverage_rejected() -> None:
+    registry = SkillRegistry()
+    registry.register(
+        _manifest("a.pack"),
+        binding=_binding_metadata("a.pack", "1.0.0", "sha256:a"),
+    )
+    registry.register(
+        _manifest("b.pack"),
+        binding=_binding_metadata("b.pack", "1.0.0", "sha256:b"),
+    )
+    composition = SkillResolver(registry).resolve_composition(["a.pack", "b.pack"])
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack", "b.pack"]),
+        skill_registry=registry,
+        pinning_store=InMemorySkillExecutionPinningStore(),
+        resolved_composition=composition,
+    )
+    tampered = dataclasses.replace(
+        binding,
+        runtime_content_digests=(("a.pack", "sha256:a"),),
+        content_bound_skill_ids=("a.pack",),
+        observed_runtime_binding_metadata=(binding.observed_runtime_binding_metadata[0],),
+    )
+    with pytest.raises(SkillResolutionError, match="complete content-bound coverage"):
+        verify_skill_execution_binding_integrity(tampered)
+
+
+def test_v1_manifest_only_cannot_claim_v2_without_metadata() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+    )
+    assert binding.binding_integrity_version == BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1
+    forged = dataclasses.replace(
+        binding,
+        binding_integrity_version=BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
+        content_bound_skill_ids=("a.pack",),
+        runtime_content_digests=(("a.pack", "sha256:forged"),),
+    )
+    with pytest.raises(SkillResolutionError, match="trusted runtime binding metadata"):
+        verify_skill_execution_binding_integrity(forged)
+
+
+def test_cas_raises_before_write_fails_closed() -> None:
+    class FailingCAS(InMemoryKVStore):
+        def compare_and_set(self, tenant_id, key, expected, new_value, *, ttl_seconds=None):
+            del tenant_id, key, expected, new_value, ttl_seconds
+            raise RuntimeError("cas unavailable")
+
+    store = KvSkillExecutionPinningStore(FailingCAS())
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        skill_registry=registry,
+        pinning_store=InMemorySkillExecutionPinningStore(),
+        resolved_composition=composition,
+    )
+    with pytest.raises(SkillExecutionPinningStorageError, match="compare-and-set failed"):
+        store.pin(binding)
+
+
+def test_cas_committed_ack_lost_idempotent_success() -> None:
+    class AckLostCAS(InMemoryKVStore):
+        def compare_and_set(self, tenant_id, key, expected, new_value, *, ttl_seconds=None):
+            del ttl_seconds
+            if expected is None and (tenant_id, key) not in self._data:
+                self._data[(tenant_id, key)] = new_value
+                raise RuntimeError("ack lost")
+            return super().compare_and_set(tenant_id, key, expected, new_value)
+
+    backing = AckLostCAS()
+    store = KvSkillExecutionPinningStore(backing)
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    execution_id = mint_execution_id()
+    profile = SkillProfile(enabled=["a.pack"])
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        skill_profile=profile,
+        skill_registry=registry,
+        pinning_store=InMemorySkillExecutionPinningStore(),
+        resolved_composition=composition,
+    )
+    store.pin(binding)
+    store.pin(binding)
+    assert recover_bound_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        pinning_store=store,
+    ).snapshot_digest == composition.pack.snapshot_digest
+
+
+def test_conflict_read_wrong_execution_scope_rejected() -> None:
+    backing = InMemoryKVStore()
+    store = KvSkillExecutionPinningStore(backing)
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    execution_a = mint_execution_id()
+    execution_b = mint_execution_id()
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=execution_a,
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        skill_registry=registry,
+        pinning_store=InMemorySkillExecutionPinningStore(),
+        resolved_composition=composition,
+    )
+    backing.set(
+        "tenant-a",
+        f"skill_execution_pinning:{execution_b}",
+        encode_skill_execution_binding(binding),
+    )
+    with pytest.raises(SkillExecutionPinningStorageError, match="execution_id mismatch"):
+        store.get(tenant_id="tenant-a", execution_id=execution_b)

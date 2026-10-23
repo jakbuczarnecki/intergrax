@@ -25,6 +25,9 @@ from intergrax.skills.core.version_binding import (
     ResolvedSkillRole,
     SkillVersionResolutionMode,
 )
+from intergrax.skills.contracts.skill_runtime_binding_metadata import (
+    SkillRuntimeBindingMetadata,
+)
 from intergrax.skills.execution_binding import (
     BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
     SkillExecutionBinding,
@@ -102,6 +105,21 @@ def _provenance_to_dict(entry: SkillContributionProvenance) -> dict[str, str]:
     }
 
 
+def _runtime_binding_metadata_to_dict(entry: SkillRuntimeBindingMetadata) -> dict[str, str]:
+    return {
+        "schema_version": entry.schema_version,
+        "catalog_source_id": entry.catalog_source_id,
+        "logical_skill_id": entry.logical_skill_id,
+        "package_reference": entry.package_reference,
+        "version_label": entry.version_label,
+        "content_digest": entry.content_digest,
+    }
+
+
+def _runtime_binding_metadata_from_dict(raw: dict[str, Any]) -> SkillRuntimeBindingMetadata:
+    return SkillRuntimeBindingMetadata.model_validate(raw)
+
+
 def _provenance_from_dict(raw: dict[str, Any]) -> SkillContributionProvenance:
     return SkillContributionProvenance(
         skill_id=str(raw["skill_id"]),
@@ -129,6 +147,10 @@ def _binding_storage_payload(binding: SkillExecutionBinding) -> dict[str, Any]:
         "runtime_content_digests": [
             {"skill_id": skill_id, "content_digest": digest}
             for skill_id, digest in binding.runtime_content_digests
+        ],
+        "observed_runtime_binding_metadata": [
+            _runtime_binding_metadata_to_dict(item)
+            for item in binding.observed_runtime_binding_metadata
         ],
         "binding_integrity_version": binding.binding_integrity_version,
         "content_bound_skill_ids": list(binding.content_bound_skill_ids),
@@ -184,6 +206,10 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
                 BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
             ),
         )
+        metadata_raw = binding_raw.get("observed_runtime_binding_metadata", [])
+        observed_runtime_binding_metadata = tuple(
+            _runtime_binding_metadata_from_dict(item) for item in metadata_raw
+        )
         content_bound_raw = binding_raw.get("content_bound_skill_ids", [])
         content_bound_skill_ids = tuple(str(item) for item in content_bound_raw)
     except (KeyError, TypeError, ValueError) as exc:
@@ -198,6 +224,7 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
         contribution_provenance=provenance,
         observed_manifests=manifests,
         runtime_content_digests=runtime_content_digests,
+        observed_runtime_binding_metadata=observed_runtime_binding_metadata,
         binding_integrity_version=binding_integrity_version,
         content_bound_skill_ids=content_bound_skill_ids,
     )
@@ -234,15 +261,42 @@ class KvSkillExecutionPinningStore:
     def is_durable(self) -> bool:
         return True
 
+    def _idempotent_pin_after_uncertain_write(
+        self,
+        binding: SkillExecutionBinding,
+        *,
+        key: str,
+    ) -> bool:
+        try:
+            existing_raw = self._kv_store.get(tenant_id=binding.tenant_id, key=key)
+        except Exception:
+            return False
+        if existing_raw is None:
+            return False
+        existing = decode_skill_execution_binding(existing_raw)
+        if not bindings_equivalent_for_pinning(existing, binding):
+            raise SkillExecutionPinningConflictError(
+                f"execution already pinned with different skill pack: {binding.execution_id}",
+            )
+        return True
+
     def pin(self, binding: SkillExecutionBinding) -> None:
         encoded = encode_skill_execution_binding(binding)
         key = _pinning_kv_key(str(binding.execution_id))
-        if self._kv_store.compare_and_set(
-            tenant_id=binding.tenant_id,
-            key=key,
-            expected=None,
-            new_value=encoded,
-        ):
+        try:
+            created = self._kv_store.compare_and_set(
+                tenant_id=binding.tenant_id,
+                key=key,
+                expected=None,
+                new_value=encoded,
+            )
+        except Exception as exc:
+            if self._idempotent_pin_after_uncertain_write(binding, key=key):
+                return
+            raise SkillExecutionPinningStorageError(
+                "skill execution pinning compare-and-set failed",
+            ) from exc
+        if created:
             return
         try:
             existing_raw = self._kv_store.get(tenant_id=binding.tenant_id, key=key)
@@ -300,6 +354,25 @@ class DocumentStoreSkillExecutionPinningStore:
     def is_durable(self) -> bool:
         return True
 
+    def _idempotent_pin_after_uncertain_document_write(
+        self,
+        binding: SkillExecutionBinding,
+    ) -> bool:
+        partition_key = _pinning_document_partition(binding.tenant_id)
+        row_key = str(binding.execution_id)
+        try:
+            existing = self._document_store.get(partition_key, row_key)
+        except Exception:
+            return False
+        if existing is None:
+            return False
+        stored = decode_skill_execution_binding(_binding_record_to_bytes(existing))
+        if not bindings_equivalent_for_pinning(stored, binding):
+            raise SkillExecutionPinningConflictError(
+                f"execution already pinned with different skill pack: {binding.execution_id}",
+            )
+        return True
+
     def pin(self, binding: SkillExecutionBinding) -> None:
         partition_key = _pinning_document_partition(binding.tenant_id)
         row_key = str(binding.execution_id)
@@ -310,7 +383,15 @@ class DocumentStoreSkillExecutionPinningStore:
                 "binding": encode_skill_execution_binding(binding).decode("utf-8"),
             },
         )
-        if self._document_store.put_if_absent(document):
+        try:
+            created = self._document_store.put_if_absent(document)
+        except Exception as exc:
+            if self._idempotent_pin_after_uncertain_document_write(binding):
+                return
+            raise SkillExecutionPinningStorageError(
+                "skill execution pinning document create failed",
+            ) from exc
+        if created:
             return
         try:
             existing = self._document_store.get(partition_key, row_key)

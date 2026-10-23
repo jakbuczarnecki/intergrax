@@ -15,6 +15,9 @@ from intergrax.skills.contribution_provenance import (
     SkillContributionProvenance,
     build_skill_contribution_provenance,
 )
+from intergrax.skills.contracts.skill_runtime_binding_metadata import (
+    SkillRuntimeBindingMetadata,
+)
 from intergrax.skills.core.contracts import SkillManifest
 from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
 from intergrax.skills.registry.profile import SkillProfile
@@ -57,6 +60,7 @@ class SkillExecutionBinding:
     contribution_provenance: tuple[SkillContributionProvenance, ...]
     observed_manifests: tuple[SkillManifest, ...] = ()
     runtime_content_digests: tuple[tuple[str, str], ...] = ()
+    observed_runtime_binding_metadata: tuple[SkillRuntimeBindingMetadata, ...] = ()
     binding_integrity_version: str = BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1
     content_bound_skill_ids: tuple[str, ...] = ()
 
@@ -124,22 +128,48 @@ def collect_runtime_content_digests(
     skill_registry: SkillRegistry,
     pack: ResolvedSkillPack,
 ) -> tuple[tuple[str, str], ...]:
-    digests: list[tuple[str, str]] = []
+    snapshots = collect_observed_runtime_binding_metadata(skill_registry, pack)
+    if not snapshots:
+        return ()
+    if len(snapshots) != len(pack.resolved_skills):
+        return ()
+    return tuple(sorted((meta.logical_skill_id, meta.content_digest) for meta in snapshots))
+
+
+def collect_observed_runtime_binding_metadata(
+    skill_registry: SkillRegistry,
+    pack: ResolvedSkillPack,
+) -> tuple[SkillRuntimeBindingMetadata, ...]:
+    """Trusted registry package identity snapshots for durable content-bound bindings."""
+    snapshots: list[SkillRuntimeBindingMetadata] = []
     for ref in pack.resolved_skills:
         metadata = skill_registry.binding_metadata(ref.skill_id)
         if metadata is None:
-            continue
-        digests.append((ref.skill_id, metadata.content_digest))
-    return tuple(sorted(digests))
+            return ()
+        if metadata.logical_skill_id != ref.skill_id or metadata.version_label != ref.version:
+            raise SkillResolutionError(
+                f"registry binding metadata identity mismatch for {ref.qualified_id}",
+            )
+        snapshots.append(metadata)
+    return tuple(sorted(snapshots, key=lambda item: item.logical_skill_id))
 
 
 def _binding_integrity_profile_for_digests(
     runtime_content_digests: tuple[tuple[str, str], ...],
+    *,
+    resolved_skill_ids: frozenset[str],
 ) -> tuple[str, tuple[str, ...]]:
     if not runtime_content_digests:
         return (BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1, ())
-    bound_ids = tuple(sorted({skill_id for skill_id, _ in runtime_content_digests}))
-    return (BINDING_INTEGRITY_RUNTIME_CONTENT_V2, bound_ids)
+    bound_ids = frozenset(skill_id for skill_id, _ in runtime_content_digests)
+    if bound_ids != resolved_skill_ids:
+        raise SkillResolutionError(
+            "runtime-content binding requires digest coverage for every resolved skill",
+        )
+    return (
+        BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
+        tuple(sorted(bound_ids)),
+    )
 
 
 def _assert_binding_matches_storage_scope(
@@ -179,6 +209,10 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
             raise SkillResolutionError("empty resolved pack cannot retain contribution provenance")
         if binding.content_bound_skill_ids:
             raise SkillResolutionError("empty resolved pack cannot retain content-bound skill ids")
+        if binding.observed_runtime_binding_metadata:
+            raise SkillResolutionError(
+                "empty resolved pack cannot retain runtime binding metadata snapshots",
+            )
         if binding.binding_integrity_version != BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1:
             raise SkillResolutionError(
                 "empty resolved pack requires manifest-observation binding integrity",
@@ -242,10 +276,22 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
     if binding.content_bound_skill_ids != bound_from_digests:
         raise SkillResolutionError("content_bound_skill_ids mismatch runtime content digests")
 
+    metadata_by_skill_id = {
+        item.logical_skill_id: item for item in binding.observed_runtime_binding_metadata
+    }
+    if len(metadata_by_skill_id) != len(binding.observed_runtime_binding_metadata):
+        raise SkillResolutionError("duplicate runtime binding metadata skill_id in binding")
+
+    digest_by_skill_id = dict(binding.runtime_content_digests)
+
     if integrity_version == BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1:
         if binding.runtime_content_digests or binding.content_bound_skill_ids:
             raise SkillResolutionError(
                 "manifest-observation binding cannot claim runtime content digests",
+            )
+        if binding.observed_runtime_binding_metadata:
+            raise SkillResolutionError(
+                "manifest-observation binding cannot retain runtime binding metadata snapshots",
             )
         return
 
@@ -253,11 +299,35 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
         raise SkillResolutionError(
             "runtime-content binding integrity requires content-bound skill digests",
         )
+    if bound_from_digests != tuple(sorted(pack_skill_ids)):
+        raise SkillResolutionError(
+            "runtime-content binding requires complete content-bound coverage for all resolved skills",
+        )
     for skill_id in binding.content_bound_skill_ids:
         if skill_id not in pack_skill_ids:
             raise SkillResolutionError(
                 f"content-bound skill not present in resolved pack: {skill_id}",
             )
+        ref = next(ref for ref in binding.resolved_pack.resolved_skills if ref.skill_id == skill_id)
+        metadata = metadata_by_skill_id.get(skill_id)
+        if metadata is None:
+            raise SkillResolutionError(
+                f"missing trusted runtime binding metadata snapshot for skill: {skill_id}",
+            )
+        if metadata.logical_skill_id != ref.skill_id or metadata.version_label != ref.version:
+            raise SkillResolutionError(
+                f"runtime binding metadata version mismatch for {ref.qualified_id}",
+            )
+        trusted_digest = metadata.content_digest
+        recorded_digest = digest_by_skill_id.get(skill_id)
+        if recorded_digest != trusted_digest:
+            raise SkillResolutionError(
+                f"runtime content digest mismatch with trusted package identity: {skill_id}",
+            )
+    if set(metadata_by_skill_id) != pack_skill_ids:
+        raise SkillResolutionError(
+            "runtime binding metadata snapshots must cover every resolved skill",
+        )
 
 
 def _build_skill_execution_binding(
@@ -267,10 +337,22 @@ def _build_skill_execution_binding(
     skill_profile: SkillProfile,
     composition: ResolvedSkillComposition,
     runtime_content_digests: tuple[tuple[str, str], ...] = (),
+    observed_runtime_binding_metadata: tuple[SkillRuntimeBindingMetadata, ...] = (),
 ) -> SkillExecutionBinding:
+    pack_skill_ids = frozenset(ref.skill_id for ref in composition.pack.resolved_skills)
     integrity_version, content_bound_skill_ids = _binding_integrity_profile_for_digests(
         runtime_content_digests,
+        resolved_skill_ids=pack_skill_ids,
     )
+    if integrity_version == BINDING_INTEGRITY_RUNTIME_CONTENT_V2:
+        if not observed_runtime_binding_metadata:
+            raise SkillResolutionError(
+                "runtime-content binding requires trusted runtime binding metadata snapshots",
+            )
+    elif observed_runtime_binding_metadata:
+        raise SkillResolutionError(
+            "manifest-observation binding cannot retain runtime binding metadata snapshots",
+        )
     binding = SkillExecutionBinding(
         tenant_id=tenant_id.strip(),
         execution_id=execution_id,
@@ -282,6 +364,7 @@ def _build_skill_execution_binding(
         ),
         observed_manifests=composition.observed_manifests,
         runtime_content_digests=runtime_content_digests,
+        observed_runtime_binding_metadata=observed_runtime_binding_metadata,
         binding_integrity_version=integrity_version,
         content_bound_skill_ids=content_bound_skill_ids,
     )
@@ -332,6 +415,10 @@ def bind_resolved_skill_pack(
         skill_profile,
         skill_registry=skill_registry,
     )
+    metadata_snapshots = collect_observed_runtime_binding_metadata(
+        skill_registry,
+        composition.pack,
+    )
     runtime_digests = collect_runtime_content_digests(skill_registry, composition.pack)
     binding = _build_skill_execution_binding(
         tenant_id=normalized_tenant,
@@ -339,6 +426,7 @@ def bind_resolved_skill_pack(
         skill_profile=skill_profile,
         composition=composition,
         runtime_content_digests=runtime_digests,
+        observed_runtime_binding_metadata=metadata_snapshots,
     )
     pinning_store.pin(binding)
     return binding
@@ -430,12 +518,18 @@ def resolve_bound_skill_pack(
 
     if pinning_store is not None and active_execution_id is not None and tenant_id.strip():
         if skill_execution_recovery_required:
-            return recover_bound_skill_pack(
-                tenant_id=tenant_id,
-                execution_id=active_execution_id,
-                pinning_store=pinning_store,
-            )
-        existing = pinning_store.get(tenant_id=tenant_id, execution_id=active_execution_id)
+            try:
+                return recover_bound_skill_pack(
+                    tenant_id=tenant_id,
+                    execution_id=active_execution_id,
+                    pinning_store=pinning_store,
+                )
+            except SkillExecutionPinningStorageError:
+                raise
+        try:
+            existing = pinning_store.get(tenant_id=tenant_id, execution_id=active_execution_id)
+        except SkillExecutionPinningStorageError:
+            raise
         if existing is not None:
             _assert_binding_matches_storage_scope(
                 existing,
@@ -468,6 +562,7 @@ def binding_from_composition(
     skill_profile: SkillProfile,
     composition: ResolvedSkillComposition,
     runtime_content_digests: tuple[tuple[str, str], ...] = (),
+    observed_runtime_binding_metadata: tuple[SkillRuntimeBindingMetadata, ...] = (),
 ) -> SkillExecutionBinding:
     """Construct binding from one coherent resolution observation."""
     return _build_skill_execution_binding(
@@ -476,4 +571,5 @@ def binding_from_composition(
         skill_profile=skill_profile,
         composition=composition,
         runtime_content_digests=runtime_content_digests,
+        observed_runtime_binding_metadata=observed_runtime_binding_metadata,
     )

@@ -292,6 +292,8 @@ class RuntimeConfig:
 
     skill_pinning_store: Optional[SkillExecutionPinningStore] = None
 
+    skill_execution_recovery_required: Optional[bool] = None
+
     tool_registry: Optional[ToolRegistryRead] = None
 
     tool_wiring_context: Optional[ToolWiringContext] = None

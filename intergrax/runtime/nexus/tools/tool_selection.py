@@ -25,6 +25,7 @@ from intergrax.skills.execution_binding import (
     SkillExecutionPinningStore,
     resolve_bound_skill_pack,
 )
+from intergrax.skills.skill_execution_recovery import resolve_skill_execution_recovery_required
 from intergrax.skills.registry import SkillProfile, build_registry_from_profile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.core.contracts import ToolContract
@@ -45,6 +46,7 @@ class ToolSelectionContext:
     skill_profile: SkillProfile | None = None
     skill_registry: SkillRegistry | None = None
     skill_pinning_store: SkillExecutionPinningStore | None = None
+    skill_execution_recovery_required: bool | None = None
     tenant_id: str | None = None
     plan_allowed_tool_ids: Sequence[str] | None = None
     top_k: int = 20
@@ -94,6 +96,9 @@ class SkillPackSelectionStrategy:
             skill_profile=ctx.skill_profile,
             skill_registry=skill_registry,
             pinning_store=ctx.skill_pinning_store,
+            skill_execution_recovery_required=resolve_skill_execution_recovery_required(
+                ctx.skill_execution_recovery_required,
+            ),
         )
         if not pack.resolved_skills:
             return ()
