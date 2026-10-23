@@ -42,16 +42,16 @@ Canonical exit criteria: roadmap §3.0.4 (EC1–EC11). Batch E is a bounded qual
 | EC | Status | Evidence |
 | --- | --- | --- |
 | **EC1** | **ALREADY PROVEN** | `bfb63b49a` — Batch A lifecycle |
-| **EC2** | **VALIDATION REQUIRED** | Batch E integrated negatives @ implementation SHA; **no** full GOV-X2 replay |
+| **EC2** | **ALREADY PROVEN** (scoped) | Batch E integrated negatives @ `e00a0aab…`; historical **GOV-X2** ingress unchanged; **no** per-certification full GOV-X2 replay — parent matrix [`SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md`](SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) §3 |
 | **EC3** | **ALREADY PROVEN** (scoped) | `test_architecture_gates.py` + Batch B @ `2d0e9dfb7` |
 | **EC4** | **ALREADY PROVEN** | Batch B/C @ `2d0e9dfb7` / `4a466a568` |
-| **EC5** | **VALIDATION REQUIRED** | Batch C/D/E — catalog witness + pinned historical pack; **no** off-registry immutable artifact store |
+| **EC5** | **ALREADY PROVEN** (scoped) | Batch C/D/E — catalog witness + pinned historical pack; registry-less recover = structural only — parent §5 |
 | **EC6** | **ALREADY PROVEN** (scoped) | Batch B @ `97a0771fc` |
 | **EC7** | **ALREADY PROVEN** (scoped) | Batch B tool ceiling @ `2d0e9dfb7` |
-| **EC8** | **VALIDATION REQUIRED** | Batch E dedicated KV + document adversarial @ impl SHA; complements Batch C `test_cross_tenant_isolation_for_same_execution_id` |
-| **EC9** | **OPERATOR DECISION REQUIRED** | Catalog digest + host materialization (A/D); off-platform signing authority **not** implemented |
-| **EC10** | **VALIDATION REQUIRED** | Combined pytest inventory §4 — scoped unit/adversarial green @ impl SHA |
-| **EC11** | **BLOCKED** | Parent SKILL-X OPEN; EC2 GOV-X2 slice; EC9 ADR for independent artifact authority |
+| **EC8** | **ALREADY PROVEN** (scoped) | Batch E KV + document adversarial @ `e00a0aab…`; complements Batch C cross-tenant pin test |
+| **EC9** | **ALREADY PROVEN** (scoped) | Catalog digest + witness @ canonical resolve (A/D/E). **Historical (preserved):** this wave recorded **OPERATOR DECISION REQUIRED** for *optional* off-platform signing — superseded for §3.0.4 only by parent reconciliation §4 |
+| **EC10** | **ALREADY PROVEN** (scoped) | 117/117 @ `e00a0aab…` — §4 |
+| **EC11** | **VALIDATION REQUIRED** | Parent **OPEN** — independent audit pending on parent reconciliation commit; not self-closed |
 
 ---
 
@@ -73,7 +73,7 @@ uv run pytest -p no:xdist \
 | --- | --- |
 | **Result** | **117 passed**, 0 failed |
 | **Capture** | `.tmp/session/SKILL-X-BATCH-E/pytest-combined.log` |
-| **TEST_EXECUTION_SHA** | Set at commit push (implementation commit) |
+| **TEST_EXECUTION_SHA** | `e00a0aab20d98a7050dc26a0e46324f635afe798` (Batch E implementation commit — **not** parent documentation reconciliation SHA) |
 
 ---
 
@@ -85,9 +85,9 @@ uv run pytest -p no:xdist \
 | Composition fail-closed | Batch B | HEAD wave | — | Reuse |
 | Durable pin + recovery | Batch C | HEAD wave | — | Reuse |
 | Catalog witness replay | Batch D | HEAD wave | Registry-less `recover_*` structural only | Documented limitation |
-| Integrated Skill→Tool→ceiling | Batch E | HEAD wave | Live Governance admission replay | **STOP — HEAVY VALIDATION AUTHORIZATION REQUIRED** (GOV-X2) |
+| Integrated Skill→Tool→ceiling | Batch E | `e00a0aab…` | Full GOV-X2 replay @ each late parent | **Not mandatory** for §3.0.4 EC2 — historical GOV-X2 + Batch E negatives — parent §3 |
 | Cross-tenant durable pin | Batch E | HEAD wave | — | Independent audit |
-| Content-authenticated historical artifact | Batch D/E | HEAD wave | No immutable off-catalog store | **OPERATOR DECISION REQUIRED** |
+| Content-authenticated historical artifact | Batch D/E | `e00a0aab…` | Optional off-catalog immutable store | **Historical OPERATOR DECISION REQUIRED** preserved; **not** §3.0.4 EC9 blocker — parent §4 |
 | ME15/E2E marketplace | — | Not run | E2E supply chain | Separate authorization |
 
 ---
@@ -104,7 +104,7 @@ uv run pytest -p no:xdist \
 | Deleted catalog entry | Canonical resolve fails closed — Batch E |
 | v1 manifest-observation | No witness claims — Batch D preserved |
 
-**IN-SCOPE BLOCKER (EC9):** Platform-wide signed artifact authority beyond catalog digest — **ARCHITECTURE DECISION REQUIRED** before EC9 PASS.
+**Historical note (EC9):** Optional platform-wide signed artifact authority beyond catalog digest was flagged **OPERATOR DECISION REQUIRED** @ Batch E authoring — retained in §6 table. Parent reconciliation [`SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md`](SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) §4 adjudicates §3.0.4 EC9 under catalog-witness scope without mandating off-platform stores.
 
 ---
 
@@ -137,7 +137,7 @@ uv run pytest -p no:xdist \
 
 | Item | Status |
 | --- | --- |
-| GOV-X2 full replay | **STOP — HEAVY VALIDATION AUTHORIZATION REQUIRED** — EC2 parent closure |
+| GOV-X2 full replay | **Not required** for §3.0.4 EC2 @ parent certification — historical GOV-X2 CLOSED + Skill negatives |
 | ME15/ME16/ME17 E2E | Not executed — not derived as mandatory for Batch E scope |
 | Full platform regression | Not executed |
 
@@ -145,6 +145,6 @@ uv run pytest -p no:xdist \
 
 ## 10. Parent SKILL-X readiness
 
-Batch E closes the scoped integrated authority + cross-tenant durable + replay trust-boundary **test wave**. Parent **`SKILL-X`** remains **OPEN** until independent audit, GOV-X2 authorization (if mandated for EC2 PASS), and EC9 operator disposition.
+Batch E closes the scoped integrated authority + cross-tenant durable + replay trust-boundary **test wave**. Parent formal reconciliation: [`SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md`](SKILL_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md). Parent **`SKILL-X`** remains **OPEN** until **independent** exact-SHA audit on the reconciliation publication commit — not Cursor self-certification.
 
 **SKILL-X BATCH E — READY FOR INDEPENDENT AUDIT**
