@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from concurrent.futures import Future as ConcurrentFuture
+from concurrent.futures import TimeoutError as ConcurrentFuturesTimeoutError
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
@@ -15,6 +16,7 @@ from typing import TYPE_CHECKING
 from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyAdmissionPort,
     DependencyConcurrencyAdmissionRequest,
+    DependencyConcurrencyAdmissionTimeoutError,
     DependencyConcurrencyPermit,
 )
 
@@ -106,6 +108,8 @@ class DependencyAttemptExecutionBoundary:
     def acquire(
         self,
         request: DependencyConcurrencyAdmissionRequest,
+        *,
+        acquire_timeout_seconds: float | None = None,
     ) -> DependencyAttemptHandle:
         """Block until admission acquire completes or raises a typed admission error."""
         self._require_accepts_attempts()
@@ -118,7 +122,21 @@ class DependencyAttemptExecutionBoundary:
         with self._registry_lock:
             self._pending_acquire_futures.add(acquire_future)
         try:
-            permit = acquire_future.result()
+            if acquire_timeout_seconds is None:
+                permit = acquire_future.result()
+            elif acquire_timeout_seconds <= 0:
+                acquire_future.cancel()
+                raise DependencyConcurrencyAdmissionTimeoutError(
+                    "dependency admission exceeded remaining execution budget",
+                )
+            else:
+                try:
+                    permit = acquire_future.result(timeout=acquire_timeout_seconds)
+                except ConcurrentFuturesTimeoutError:
+                    acquire_future.cancel()
+                    raise DependencyConcurrencyAdmissionTimeoutError(
+                        "dependency admission exceeded remaining execution budget",
+                    ) from None
         finally:
             with self._registry_lock:
                 self._pending_acquire_futures.discard(acquire_future)

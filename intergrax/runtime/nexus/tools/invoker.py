@@ -91,8 +91,16 @@ from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
 from intergrax.contracts.execution_deadline.admission import (
     ExecutionProtectedWorkAdmissionResult,
 )
+from intergrax.runtime.execution.deadline_provider_guard import (
+    resolve_active_provider_timeout_seconds,
+)
 from intergrax.runtime.execution.deadline_scope import (
+    peek_active_execution_deadline_projection,
+    peek_active_execution_monotonic_clock,
     peek_active_execution_protected_work_admission,
+)
+from intergrax.runtime.execution.live_deadline_evaluator import (
+    execution_live_remaining_seconds,
 )
 from intergrax.runtime.cancellation.coordinator import (
     CancellationCoordinator,
@@ -1209,10 +1217,28 @@ class RuntimeToolInvoker:
             if admission_denied is not None:
                 return admission_denied
             if attempt > 1:
+                remaining_parent = self._remaining_parent_execution_seconds()
+                if remaining_parent is not None and remaining_parent <= 0:
+                    return self._tool_result_deadline_exceeded(
+                        state=state,
+                        contract=contract,
+                        request=request,
+                        agent_id=agent_id,
+                    )
                 if policy.backoff_ms > 0:
+                    backoff_s = policy.backoff_ms / 1000.0
+                    if remaining_parent is not None:
+                        backoff_s = min(backoff_s, remaining_parent)
+                    if backoff_s <= 0:
+                        return self._tool_result_deadline_exceeded(
+                            state=state,
+                            contract=contract,
+                            request=request,
+                            agent_id=agent_id,
+                        )
                     try:
                         cooperative_delay_seconds(
-                            policy.backoff_ms / 1000.0,
+                            backoff_s,
                             should_abort=lambda: (
                                 self._cooperative_cancellation_requested(state)
                             ),
@@ -1231,6 +1257,15 @@ class RuntimeToolInvoker:
                     request=request,
                 )
 
+            attempt_timeout_s = self._physical_attempt_timeout_seconds(contract)
+            if attempt_timeout_s <= 0:
+                return self._tool_result_deadline_exceeded(
+                    state=state,
+                    contract=contract,
+                    request=request,
+                    agent_id=agent_id,
+                )
+
             start_perf = time.perf_counter()
             try:
                 raw_out = self._execute_once(
@@ -1240,6 +1275,7 @@ class RuntimeToolInvoker:
                     effect_boundary=boundary,
                     physical_attempt_sequence=attempt,
                     pre_effect_claim=pre_effect_claim,
+                    attempt_timeout_s=attempt_timeout_s,
                 )
                 out = self._validate_output(contract.output_schema, raw_out)
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
@@ -1342,7 +1378,8 @@ class RuntimeToolInvoker:
 
             except FuturesTimeoutError:
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
-                msg = f"Tool execution timed out after {contract.timeout_ms}ms"
+                effective_timeout_ms = max(1, int(round(attempt_timeout_s * 1000)))
+                msg = f"Tool execution timed out after {effective_timeout_ms}ms"
                 state.trace_event(
                     component=TraceComponent.TOOLS,
                     step="tool_invocation_error",
@@ -1550,6 +1587,26 @@ class RuntimeToolInvoker:
         return policy_attempts
 
     @staticmethod
+    def _remaining_parent_execution_seconds() -> float | None:
+        projection = peek_active_execution_deadline_projection()
+        if projection is None or projection.global_deadline_monotonic is None:
+            return None
+        monotonic_clock = peek_active_execution_monotonic_clock()
+        if monotonic_clock is None:
+            raise RuntimeError(
+                "active execution monotonic clock required for bounded tool attempt",
+            )
+        return execution_live_remaining_seconds(projection, monotonic_clock)
+
+    @staticmethod
+    def _physical_attempt_timeout_seconds(contract: ToolContract) -> float:
+        configured_s = contract.timeout_ms / 1000.0
+        effective = resolve_active_provider_timeout_seconds(configured_s)
+        if effective is None:
+            return configured_s
+        return effective
+
+    @staticmethod
     def _emit_boundary_event(
         *,
         state: "RuntimeState",
@@ -1680,9 +1737,14 @@ class RuntimeToolInvoker:
         effect_boundary: _ExternalEffectBoundary | None = None,
         physical_attempt_sequence: int = 1,
         pre_effect_claim: PreEffectClaimContext | None = None,
+        attempt_timeout_s: float | None = None,
     ) -> BaseModel:
         request = self._apply_invocation_wiring(contract=contract, request=request)
-        timeout_s = contract.timeout_ms / 1000.0
+        timeout_s = (
+            attempt_timeout_s
+            if attempt_timeout_s is not None
+            else self._physical_attempt_timeout_seconds(contract)
+        )
         dep_boundary = self._dependency_attempt_boundary
         ext_op = self._build_tool_external_operation_attempt(
             contract,
@@ -1732,7 +1794,11 @@ class RuntimeToolInvoker:
             ),
             tenant_id=state.tenant_id,
         )
-        attempt_handle = dep_boundary.acquire(admission_request)
+        acquire_timeout_s = self._remaining_parent_execution_seconds()
+        attempt_handle = dep_boundary.acquire(
+            admission_request,
+            acquire_timeout_seconds=acquire_timeout_s,
+        )
         try:
             self._record_durable_effect_admission_before_submit(
                 pre_effect_claim=pre_effect_claim,
