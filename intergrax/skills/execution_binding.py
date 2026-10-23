@@ -64,6 +64,7 @@ class SkillExecutionBinding:
     binding_integrity_version: str = BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1
     content_bound_skill_ids: tuple[str, ...] = ()
     registry_content_witness_digests: tuple[tuple[str, str], ...] = ()
+    # Catalog witness at pin time — not replay authenticity without live registry cross-check.
 
 
 @runtime_checkable
@@ -125,16 +126,30 @@ def manifest_content_fingerprint(manifest: SkillManifest) -> str:
     return compute_sha256_content_digest(manifest.model_dump_json().encode("utf-8"))
 
 
-def collect_runtime_content_digests(
+def collect_registry_content_witness_digests(
     skill_registry: SkillRegistry,
     pack: ResolvedSkillPack,
 ) -> tuple[tuple[str, str], ...]:
+    """
+    Catalog-anchored content-digest snapshot frozen at execution bind (BC-F02).
+
+    Independent of the durable binding's ``runtime_content_digests`` field at
+    verification time: consumers with a live ``SkillRegistry`` cross-check this
+    witness against current catalog ``binding_metadata`` for the pinned version.
+    """
     snapshots = collect_observed_runtime_binding_metadata(skill_registry, pack)
     if not snapshots:
         return ()
     if len(snapshots) != len(pack.resolved_skills):
         return ()
     return tuple(sorted((meta.logical_skill_id, meta.content_digest) for meta in snapshots))
+
+
+def collect_runtime_content_digests(
+    skill_registry: SkillRegistry,
+    pack: ResolvedSkillPack,
+) -> tuple[tuple[str, str], ...]:
+    return collect_registry_content_witness_digests(skill_registry, pack)
 
 
 def collect_observed_runtime_binding_metadata(
@@ -407,7 +422,13 @@ def _build_skill_execution_binding(
         )
     registry_content_witness_digests = ()
     if integrity_version == BINDING_INTEGRITY_RUNTIME_CONTENT_V2:
-        registry_content_witness_digests = tuple(sorted(runtime_content_digests))
+        if skill_registry is not None:
+            registry_content_witness_digests = collect_registry_content_witness_digests(
+                skill_registry,
+                composition.pack,
+            )
+        else:
+            registry_content_witness_digests = tuple(sorted(runtime_content_digests))
     binding = SkillExecutionBinding(
         tenant_id=tenant_id.strip(),
         execution_id=execution_id,
