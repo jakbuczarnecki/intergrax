@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
+import time
 from concurrent.futures import Future as ConcurrentFuture
 from concurrent.futures import TimeoutError as ConcurrentFuturesTimeoutError
 from dataclasses import dataclass, field
@@ -32,20 +33,49 @@ class DependencyAttemptReleaseInvariantError(RuntimeError):
     """Permit release failed for a physical dependency attempt (fail-closed)."""
 
 
-@dataclass(slots=True)
-class _AcquireAcceptance:
-    """Tracks whether the sync caller retained a granted permit."""
+class _AcquireHandoffState(StrEnum):
+    """Permit ownership between async grant completion and sync caller acceptance."""
 
-    accepted: bool = False
+    WAITING = "WAITING"
+    CALLER_OWNS = "CALLER_OWNS"
+    ABANDONED = "ABANDONED"
+    RELEASED = "RELEASED"
+
+
+@dataclass(slots=True)
+class _AcquirePermitHandoff:
+    """Single linearization point for grant vs abandon cleanup (BA-F02)."""
+
+    _state: _AcquireHandoffState = _AcquireHandoffState.WAITING
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
-    def mark_accepted(self) -> None:
+    def claim_successful_grant(self) -> bool:
+        """Caller linearization immediately after a successful ``result()``."""
         with self._lock:
-            self.accepted = True
+            if self._state is not _AcquireHandoffState.WAITING:
+                return False
+            self._state = _AcquireHandoffState.CALLER_OWNS
+            return True
 
-    def is_accepted(self) -> bool:
+    def mark_abandoned(self) -> None:
         with self._lock:
-            return self.accepted
+            if self._state is _AcquireHandoffState.CALLER_OWNS:
+                return
+            if self._state is _AcquireHandoffState.RELEASED:
+                return
+            self._state = _AcquireHandoffState.ABANDONED
+
+    def is_abandoned(self) -> bool:
+        with self._lock:
+            return self._state is _AcquireHandoffState.ABANDONED
+
+    def try_claim_abandoned_release(self) -> bool:
+        """Exactly one cleanup path may release an abandoned granted permit."""
+        with self._lock:
+            if self._state is not _AcquireHandoffState.ABANDONED:
+                return False
+            self._state = _AcquireHandoffState.RELEASED
+            return True
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,6 +133,7 @@ class DependencyAttemptExecutionBoundary:
         self._pending_acquire_futures: set[ConcurrentFuture[DependencyConcurrencyPermit]] = (
             set()
         )
+        self._pending_async_release_futures: set[ConcurrentFuture[object]] = set()
         self._detached_pending_release: set[int] = set()
         self._release_failures: list[BaseException] = []
         self._drain_condition = threading.Condition(self._registry_lock)
@@ -110,6 +141,7 @@ class DependencyAttemptExecutionBoundary:
         self._loop_exited = threading.Event()
         self._close_lock = threading.Lock()
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._admission_thread: threading.Thread | None = None
         self._thread = threading.Thread(
             target=self._run_admission_loop,
             name="dependency-admission-boundary",
@@ -135,11 +167,24 @@ class DependencyAttemptExecutionBoundary:
             return await self._admission.acquire(request)
 
         acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
-        acceptance = _AcquireAcceptance()
+        handoff = _AcquirePermitHandoff()
 
         def _on_acquire_terminal(done_future: ConcurrentFuture[object]) -> None:
             del done_future
-            self._release_abandoned_acquire_permit(acquire_future, acceptance)
+            if not acquire_future.done():
+                return
+            if acquire_future.cancelled():
+                if handoff.is_abandoned():
+                    self._maybe_release_abandoned_acquire_permit(
+                        acquire_future,
+                        handoff,
+                    )
+                return
+            if acquire_future.exception() is not None:
+                return
+            if not handoff.is_abandoned():
+                return
+            self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
 
         acquire_future.add_done_callback(_on_acquire_terminal)
         with self._registry_lock:
@@ -147,26 +192,35 @@ class DependencyAttemptExecutionBoundary:
         try:
             if acquire_timeout_seconds is None:
                 permit = acquire_future.result()
-                acceptance.mark_accepted()
             elif acquire_timeout_seconds <= 0:
                 acquire_future.cancel()
-                self._release_abandoned_acquire_permit(acquire_future, acceptance)
+                handoff.mark_abandoned()
+                self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
                 raise DependencyConcurrencyAdmissionTimeoutError(
                     "dependency admission exceeded remaining execution budget",
                 )
             else:
                 try:
                     permit = acquire_future.result(timeout=acquire_timeout_seconds)
-                    acceptance.mark_accepted()
                 except ConcurrentFuturesTimeoutError:
                     acquire_future.cancel()
-                    self._release_abandoned_acquire_permit(acquire_future, acceptance)
+                    handoff.mark_abandoned()
+                    self._maybe_release_abandoned_acquire_permit(
+                        acquire_future,
+                        handoff,
+                    )
                     raise DependencyConcurrencyAdmissionTimeoutError(
                         "dependency admission exceeded remaining execution budget",
                     ) from None
         finally:
             with self._registry_lock:
                 self._pending_acquire_futures.discard(acquire_future)
+
+        if not handoff.claim_successful_grant():
+            self._execute_permit_release(permit, wait=False)
+            raise RuntimeError(
+                "invariant: acquire permit granted after abandon handoff"
+            )
 
         with self._registry_lock:
             if self._lifecycle is _BoundaryLifecycle.OPEN:
@@ -278,6 +332,7 @@ class DependencyAttemptExecutionBoundary:
                 self._lifecycle = _BoundaryLifecycle.SHUTTING_DOWN
 
             self._wait_for_detached_releases()
+            self._wait_for_pending_async_releases()
             failures = self._snapshot_release_failures()
             if failures:
                 raise DependencyAttemptReleaseInvariantError(
@@ -305,6 +360,7 @@ class DependencyAttemptExecutionBoundary:
         self.drain_and_close()
 
     def _run_admission_loop(self) -> None:
+        self._admission_thread = threading.current_thread()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self._loop = loop
@@ -398,13 +454,13 @@ class DependencyAttemptExecutionBoundary:
                 self._attempts.pop(handle._token, None)
                 self._drain_condition.notify_all()
 
-    def _release_abandoned_acquire_permit(
+    def _maybe_release_abandoned_acquire_permit(
         self,
         acquire_future: ConcurrentFuture[DependencyConcurrencyPermit],
-        acceptance: _AcquireAcceptance,
+        handoff: _AcquirePermitHandoff,
     ) -> None:
         """Release a permit when the sync waiter abandoned an async acquire."""
-        if acceptance.is_accepted():
+        if not handoff.try_claim_abandoned_release():
             return
         if not acquire_future.done():
             return
@@ -412,7 +468,34 @@ class DependencyAttemptExecutionBoundary:
             permit = acquire_future.result(timeout=0)
         except BaseException:
             return
+        self._execute_permit_release(permit, wait=False)
+
+    def _execute_permit_release(
+        self,
+        permit: DependencyConcurrencyPermit,
+        *,
+        wait: bool,
+    ) -> None:
         release_future = self._schedule_permit_release(permit)
+        on_admission_loop = (
+            self._admission_thread is not None
+            and threading.current_thread() is self._admission_thread
+        )
+        if on_admission_loop or not wait:
+            with self._registry_lock:
+                self._pending_async_release_futures.add(release_future)
+
+            def _release_done(release_cf: ConcurrentFuture[object]) -> None:
+                try:
+                    release_cf.result()
+                except BaseException as exc:
+                    self._record_lifecycle_failure(exc)
+                finally:
+                    with self._registry_lock:
+                        self._pending_async_release_futures.discard(release_cf)
+
+            release_future.add_done_callback(_release_done)
+            return
         try:
             release_future.result()
         except BaseException as exc:
@@ -428,6 +511,23 @@ class DependencyAttemptExecutionBoundary:
             await permit.release()
 
         return asyncio.run_coroutine_threadsafe(_release_coro(), loop)
+
+    def _wait_for_pending_async_releases(self) -> None:
+        deadline = time.monotonic() + self._STARTUP_TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            with self._registry_lock:
+                pending = list(self._pending_async_release_futures)
+            if not pending:
+                return
+            for release_future in pending:
+                try:
+                    release_future.result(timeout=0.05)
+                except BaseException as exc:
+                    self._record_lifecycle_failure(exc)
+            time.sleep(0.01)
+        raise RuntimeError(
+            "DependencyAttemptExecutionBoundary pending async releases did not drain"
+        )
 
     def _wait_for_detached_releases(self) -> None:
         while True:

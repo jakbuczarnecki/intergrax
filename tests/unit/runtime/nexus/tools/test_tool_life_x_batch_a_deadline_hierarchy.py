@@ -18,13 +18,7 @@ from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyPolicy,
 )
 from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
-from intergrax.contracts.execution_identity import (
-    bind_active_execution_identity,
-    mint_attempt_id,
-    mint_execution_id,
-    reset_active_execution_identity,
-    validate_run_id,
-)
+from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.runtime.cancellation.coordinator import CANCELLATION_REQUESTED_KEY
 from intergrax.runtime.execution.deadline_scope import (
     bind_active_execution_deadline_scope,
@@ -45,7 +39,11 @@ from intergrax.runtime.resilience.local_dependency_concurrency_admission import 
 from intergrax.tools.core.contracts import ToolContract, ToolRetryPolicy, ToolRiskLevel
 from intergrax.tools.execution_models import ToolEffectCertainty, ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
-from testing_support.builder import build_runtime_state_for_tests, canonical_run_id_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = pytest.mark.unit
@@ -126,6 +124,15 @@ def _deadline_scope(
     )
 
 
+def _governance_scope(run_id: str):
+    return canonical_governed_execution_scope(
+        run_id,
+        governance_tenant_id="test-tenant",
+        governance_workspace_id="test-workspace",
+        governance_principal_id="test-principal",
+    )
+
+
 def _invoke(
     invoker: RuntimeToolInvoker,
     *,
@@ -134,26 +141,21 @@ def _invoke(
     deadline_tokens: tuple[object, ...] | None = None,
 ) -> object:
     state = build_runtime_state_for_tests(run_id=run_id)
-    identity = bind_active_execution_identity(
-        run_id=validate_run_id(run_id),
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
-    try:
-        return invoker.invoke(
-            state=state,
-            agent_id="agent-1",
-            request=ToolExecutionRequest(
-                run_id=validate_run_id(run_id),
-                tool_id=tool_id,
-                step_id="s1",
-                input=_In(value=1),
-            ),
-        )
-    finally:
-        reset_active_execution_identity(identity)
-        if deadline_tokens is not None:
-            reset_active_execution_deadline_scope(*deadline_tokens)
+    with _governance_scope(run_id):
+        try:
+            return invoker.invoke(
+                state=state,
+                agent_id="agent-1",
+                request=ToolExecutionRequest(
+                    run_id=validate_run_id(run_id),
+                    tool_id=tool_id,
+                    step_id="s1",
+                    input=_In(value=1),
+                ),
+            )
+        finally:
+            if deadline_tokens is not None:
+                reset_active_execution_deadline_scope(*deadline_tokens)
 
 
 def test_parent_expired_before_tool_invocation() -> None:
@@ -266,47 +268,44 @@ def test_queue_wait_bounded_by_remaining_parent_budget() -> None:
     )
     run_id = canonical_run_id_for_tests("tlx-a-queue-wait")
     state = build_runtime_state_for_tests(run_id=run_id)
+    holder_state = build_runtime_state_for_tests(run_id=run_id)
     monotonic = _SystemMonotonicClock()
     tokens = _deadline_scope(remaining_s=0.15, monotonic=monotonic)
-    identity = bind_active_execution_identity(
-        run_id=validate_run_id(run_id),
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
     holder_started = threading.Event()
     holder_done = threading.Event()
 
     def _hold_slot() -> None:
-        holder_started.set()
-        invoker.invoke(
-            state=state,
-            agent_id="agent-1",
-            request=ToolExecutionRequest(
-                run_id=validate_run_id(run_id),
-                tool_id=tool_id,
-                step_id="hold",
-                input=_In(value=1),
-            ),
-        )
-        holder_done.set()
+        with _governance_scope(run_id):
+            holder_started.set()
+            invoker.invoke(
+                state=holder_state,
+                agent_id="agent-1",
+                request=ToolExecutionRequest(
+                    run_id=validate_run_id(run_id),
+                    tool_id=tool_id,
+                    step_id="hold",
+                    input=_In(value=1),
+                ),
+            )
+            holder_done.set()
 
     holder = threading.Thread(target=_hold_slot, daemon=True)
     holder.start()
     assert holder_started.wait(timeout=2.0)
     time.sleep(0.05)
-    result = invoker.invoke(
-        state=state,
-        agent_id="agent-1",
-        request=ToolExecutionRequest(
-            run_id=validate_run_id(run_id),
-            tool_id=tool_id,
-            step_id="waiter",
-            input=_In(value=2),
-        ),
-    )
+    with _governance_scope(run_id):
+        result = invoker.invoke(
+            state=state,
+            agent_id="agent-1",
+            request=ToolExecutionRequest(
+                run_id=validate_run_id(run_id),
+                tool_id=tool_id,
+                step_id="waiter",
+                input=_In(value=2),
+            ),
+        )
     gate.set()
     holder.join(timeout=5.0)
-    reset_active_execution_identity(identity)
     reset_active_execution_deadline_scope(*tokens)
     invoker.close()
     assert result.success is False
@@ -323,12 +322,7 @@ def test_cancelled_during_queue_wait_path() -> None:
     )
     state.request.metadata[CANCELLATION_REQUESTED_KEY] = True
     run_id = canonical_run_id_for_tests("tlx-a-cancel-queue")
-    identity = bind_active_execution_identity(
-        run_id=validate_run_id(run_id),
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
-    try:
+    with _governance_scope(run_id):
         result = invoker.invoke(
             state=state,
             agent_id="agent-1",
@@ -339,8 +333,6 @@ def test_cancelled_during_queue_wait_path() -> None:
                 input=_In(value=1),
             ),
         )
-    finally:
-        reset_active_execution_identity(identity)
     assert executor.calls == 0
     assert result.success is False
 
@@ -358,8 +350,18 @@ def test_queue_wait_then_physical_timeout_uses_remaining_not_contract() -> None:
     """BA-F01: post-admission timeout must not reset to full ToolContract timeout."""
     registry = ToolRegistry()
     tool_id = "contended.tool"
-    executor = _CountingExecutor(delay_s=0.4)
     gate = threading.Event()
+
+    class _QueueThenPhysicalExecutor(_CountingExecutor):
+        def execute(self, request: ToolExecutionRequest[BaseModel]) -> BaseModel:
+            self.calls += 1
+            if self._gate is not None and self.calls == 1:
+                self._gate.wait(timeout=10.0)
+            if str(request.step_id) == "waiter":
+                time.sleep(0.4)
+            return _Out(result=request.input.value)
+
+    executor = _QueueThenPhysicalExecutor()
     executor.set_gate(gate)
     registry.register(_contract(tool_id=tool_id, timeout_ms=60_000), _CountingExecutor())
     policies = {
@@ -382,46 +384,51 @@ def test_queue_wait_then_physical_timeout_uses_remaining_not_contract() -> None:
     )
     run_id = canonical_run_id_for_tests("tlx-a-queue-then-physical")
     state = build_runtime_state_for_tests(run_id=run_id)
-    monotonic = _SystemMonotonicClock()
+    holder_state = build_runtime_state_for_tests(run_id=run_id)
+    monotonic = _ManualMonotonicClock(100.0)
     tokens = _deadline_scope(remaining_s=0.45, monotonic=monotonic)
-    identity = bind_active_execution_identity(
-        run_id=validate_run_id(run_id),
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
+    holder_started = threading.Event()
     holder_done = threading.Event()
 
     def _hold() -> None:
-        invoker.invoke(
+        with _governance_scope(run_id):
+            holder_started.set()
+            invoker.invoke(
+                state=holder_state,
+                agent_id="agent-1",
+                request=ToolExecutionRequest(
+                    run_id=validate_run_id(run_id),
+                    tool_id=tool_id,
+                    step_id="hold",
+                    input=_In(value=1),
+                ),
+            )
+            holder_done.set()
+
+    holder = threading.Thread(target=_hold, daemon=True)
+    holder.start()
+    assert holder_started.wait(timeout=2.0)
+    monotonic.advance(0.33)
+
+    def _open_gate_for_waiter() -> None:
+        time.sleep(0.05)
+        gate.set()
+
+    threading.Thread(target=_open_gate_for_waiter, daemon=True).start()
+    started = time.monotonic()
+    with _governance_scope(run_id):
+        result = invoker.invoke(
             state=state,
             agent_id="agent-1",
             request=ToolExecutionRequest(
                 run_id=validate_run_id(run_id),
                 tool_id=tool_id,
-                step_id="hold",
-                input=_In(value=1),
+                step_id="waiter",
+                input=_In(value=2),
             ),
         )
-        holder_done.set()
-
-    holder = threading.Thread(target=_hold, daemon=True)
-    holder.start()
-    time.sleep(0.33)
-    started = time.monotonic()
-    result = invoker.invoke(
-        state=state,
-        agent_id="agent-1",
-        request=ToolExecutionRequest(
-            run_id=validate_run_id(run_id),
-            tool_id=tool_id,
-            step_id="waiter",
-            input=_In(value=2),
-        ),
-    )
     elapsed = time.monotonic() - started
-    gate.set()
     holder_done.wait(timeout=5.0)
-    reset_active_execution_identity(identity)
     reset_active_execution_deadline_scope(*tokens)
     invoker.close()
     assert executor.calls == 2
@@ -469,29 +476,26 @@ def test_deadline_exhausted_after_permit_before_physical_submit() -> None:
     )
     run_id = canonical_run_id_for_tests("tlx-a-post-acquire-deadline")
     state = build_runtime_state_for_tests(run_id=run_id)
+    holder_state = build_runtime_state_for_tests(run_id=run_id)
     clock = _ManualMonotonicClock(100.0)
     tokens = _deadline_scope(remaining_s=0.5, monotonic=clock)
-    identity = bind_active_execution_identity(
-        run_id=validate_run_id(run_id),
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
     release_holder = threading.Event()
     holder_done = threading.Event()
 
     def _hold() -> None:
-        invoker.invoke(
-            state=state,
-            agent_id="agent-1",
-            request=ToolExecutionRequest(
-                run_id=validate_run_id(run_id),
-                tool_id=tool_id,
-                step_id="hold",
-                input=_In(value=1),
-            ),
-        )
-        release_holder.wait(timeout=5.0)
-        holder_done.set()
+        with _governance_scope(run_id):
+            invoker.invoke(
+                state=holder_state,
+                agent_id="agent-1",
+                request=ToolExecutionRequest(
+                    run_id=validate_run_id(run_id),
+                    tool_id=tool_id,
+                    step_id="hold",
+                    input=_In(value=1),
+                ),
+            )
+            release_holder.wait(timeout=5.0)
+            holder_done.set()
 
     holder = threading.Thread(target=_hold, daemon=True)
     holder.start()
@@ -500,17 +504,17 @@ def test_deadline_exhausted_after_permit_before_physical_submit() -> None:
     gate.set()
     release_holder.set()
     holder_done.wait(timeout=5.0)
-    result = invoker.invoke(
-        state=state,
-        agent_id="agent-1",
-        request=ToolExecutionRequest(
-            run_id=validate_run_id(run_id),
-            tool_id=tool_id,
-            step_id="waiter",
-            input=_In(value=2),
-        ),
-    )
-    reset_active_execution_identity(identity)
+    with _governance_scope(run_id):
+        result = invoker.invoke(
+            state=state,
+            agent_id="agent-1",
+            request=ToolExecutionRequest(
+                run_id=validate_run_id(run_id),
+                tool_id=tool_id,
+                step_id="waiter",
+                input=_In(value=2),
+            ),
+        )
     reset_active_execution_deadline_scope(*tokens)
     invoker.close()
     assert executor.calls == 1

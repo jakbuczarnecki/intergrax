@@ -788,3 +788,27 @@ def test_timeout_race_no_permit_leak() -> None:
         probe.complete_attached(token)
         probe.close()
         pool2.shutdown(wait=True)
+
+
+def test_acquire_handoff_callback_before_caller_claim_no_double_release() -> None:
+    """Done callback on the admission loop must not release before caller claims."""
+    admission = _FakeAdmissionPort(capacity=4)
+    with _boundary_with_gated_registry_lock(admission) as (boundary, gated):
+        gated.arm()
+        holder: list[object] = []
+
+        def _acquire() -> None:
+            handle = boundary.acquire(_request("tool-a"))
+            holder.append(handle)
+
+        thread = threading.Thread(target=_acquire)
+        thread.start()
+        assert gated._blocked.wait(timeout=5)
+        gated.disarm()
+        gated.unblock()
+        thread.join(timeout=10)
+        assert len(holder) == 1
+        assert admission.active == 1
+        boundary.complete_direct(holder[0])  # type: ignore[arg-type]
+        assert admission.active == 0
+        boundary.close()

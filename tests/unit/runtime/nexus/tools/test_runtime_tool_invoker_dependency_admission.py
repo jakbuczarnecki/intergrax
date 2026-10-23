@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import cast
+from typing import Iterator, cast
 import pytest
 from pydantic import BaseModel
 
@@ -49,9 +50,21 @@ from intergrax.tools.execution_models import (
 from intergrax.tools.registry import ToolRegistry
 from testing_support.builder import (
     build_runtime_state_for_tests,
-    canonical_execution_identity_scope,
+    canonical_governed_execution_scope,
     canonical_run_id_for_tests,
 )
+
+
+@contextmanager
+def _invoke_identity_scope(run_id: str) -> Iterator[str]:
+    """Execution + governance identity aligned with ``build_runtime_state_for_tests``."""
+    with canonical_governed_execution_scope(
+        run_id,
+        governance_tenant_id="test-tenant",
+        governance_workspace_id="test-workspace",
+        governance_principal_id="test-principal",
+    ) as canonical_run_id:
+        yield canonical_run_id
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -255,7 +268,7 @@ def test_reject_before_submit_executor_not_called() -> None:
     holder_state = build_runtime_state_for_tests(run_id=run_id)
 
     def _hold() -> None:
-        with canonical_execution_identity_scope(run_id):
+        with _invoke_identity_scope(run_id):
             harness.invoker.invoke(
                 state=holder_state,
                 agent_id="agent",
@@ -270,7 +283,7 @@ def test_reject_before_submit_executor_not_called() -> None:
     holder = threading.Thread(target=_hold)
     holder.start()
     time.sleep(0.15)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -320,7 +333,7 @@ def test_tool_b_runs_when_tool_a_saturated() -> None:
     holder_state = build_runtime_state_for_tests(run_id=run_id)
 
     def _hold_a() -> None:
-        with canonical_execution_identity_scope(run_id):
+        with _invoke_identity_scope(run_id):
             harness.invoker.invoke(
                 state=holder_state,
                 agent_id="agent",
@@ -335,7 +348,7 @@ def test_tool_b_runs_when_tool_a_saturated() -> None:
     holder = threading.Thread(target=_hold_a)
     holder.start()
     assert started.wait(timeout=2)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result_b = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -364,7 +377,7 @@ def test_policy_missing_propagates() -> None:
     )
     run_id = canonical_run_id_for_tests("policy-missing")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         with pytest.raises(DependencyConcurrencyPolicyMissingError):
             harness.invoker.invoke(
                 state=state,
@@ -388,7 +401,7 @@ def test_feature_off_legacy_unchanged() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=executor)
     run_id = canonical_run_id_for_tests("feature-off")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = invoker.invoke(
             state=state,
             agent_id="agent",
@@ -420,7 +433,7 @@ def test_exceeded_mapping_not_started_no_executor() -> None:
     holder_state = build_runtime_state_for_tests(run_id=run_id)
 
     def _hold() -> None:
-        with canonical_execution_identity_scope(run_id):
+        with _invoke_identity_scope(run_id):
             harness.invoker.invoke(
                 state=holder_state,
                 agent_id="agent",
@@ -434,7 +447,7 @@ def test_exceeded_mapping_not_started_no_executor() -> None:
 
     threading.Thread(target=_hold).start()
     time.sleep(0.15)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -469,7 +482,7 @@ def test_admission_timeout_mapping() -> None:
     holder_state = build_runtime_state_for_tests(run_id=run_id)
 
     def _hold() -> None:
-        with canonical_execution_identity_scope(run_id):
+        with _invoke_identity_scope(run_id):
             harness.invoker.invoke(
                 state=holder_state,
                 agent_id="agent",
@@ -483,7 +496,7 @@ def test_admission_timeout_mapping() -> None:
 
     threading.Thread(target=_hold).start()
     time.sleep(0.1)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -527,7 +540,7 @@ def test_capacity_two_limits_physical_concurrency() -> None:
     def _call(step: str) -> None:
         try:
             st = build_runtime_state_for_tests(run_id=run_id)
-            with canonical_execution_identity_scope(run_id):
+            with _invoke_identity_scope(run_id):
                 harness.invoker.invoke(
                     state=st,
                     agent_id="agent",
@@ -569,7 +582,7 @@ def test_wait_does_not_queue_second_physical_attempt() -> None:
     holder_state = build_runtime_state_for_tests(run_id=run_id)
 
     def _hold() -> None:
-        with canonical_execution_identity_scope(run_id):
+        with _invoke_identity_scope(run_id):
             harness.invoker.invoke(
                 state=holder_state,
                 agent_id="agent",
@@ -616,7 +629,7 @@ def test_retry_reacquire_after_release() -> None:
     )
     run_id = canonical_run_id_for_tests("retry-reacquire")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -672,7 +685,7 @@ def test_no_permit_held_during_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     run_id = canonical_run_id_for_tests("backoff-no-permit")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -701,7 +714,7 @@ def test_timeout_holds_capacity_until_worker_finishes() -> None:
     )
     run_id = canonical_run_id_for_tests("timeout-holds")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -748,7 +761,7 @@ def test_timeout_on_a_does_not_block_tool_b() -> None:
     )
     run_id = canonical_run_id_for_tests("timeout-b-free")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -796,7 +809,7 @@ def test_idempotency_replay_skips_admission() -> None:
         input=_In(value=3),
         idempotency_key="key-1",
     )
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         first = harness.invoker.invoke(state=state, agent_id="agent", request=request)
         second = harness.invoker.invoke(state=state, agent_id="agent", request=request)
     harness.close()
@@ -825,7 +838,7 @@ def test_claimed_admission_reject_finalizes_not_started() -> None:
     state = _state_for_side_effects(run_id)
 
     def _hold() -> None:
-        with canonical_execution_identity_scope(run_id):
+        with _invoke_identity_scope(run_id):
             harness.invoker.invoke(
                 state=holder_state,
                 agent_id="agent",
@@ -840,7 +853,7 @@ def test_claimed_admission_reject_finalizes_not_started() -> None:
 
     threading.Thread(target=_hold).start()
     time.sleep(0.15)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -872,7 +885,7 @@ def test_policy_missing_post_claim_not_started() -> None:
     )
     run_id = canonical_run_id_for_tests("policy-missing-claim")
     state = _state_for_side_effects(run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         with pytest.raises(DependencyConcurrencyPolicyMissingError):
             harness.invoker.invoke(
                 state=state,
@@ -900,7 +913,7 @@ def test_governance_denial_skips_admission() -> None:
     )
     run_id = canonical_run_id_for_tests("gov-deny")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         with pytest.raises(ToolScopeViolationError):
             harness.invoker.invoke(
                 state=state,
@@ -932,7 +945,7 @@ def test_invalid_input_skips_admission() -> None:
         step_id="1",
         input=cast(_In, _WrongIn(other=1)),
     )
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -958,7 +971,7 @@ def test_submit_failure_releases_permit(monkeypatch: pytest.MonkeyPatch) -> None
         raise RuntimeError("submit failed")
 
     monkeypatch.setattr(harness.invoker._execution_pool, "submit", _broken_submit)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         result = harness.invoker.invoke(
             state=state,
             agent_id="agent",
@@ -989,7 +1002,7 @@ def test_close_after_detached_timeout_drains() -> None:
     )
     run_id = canonical_run_id_for_tests("close-detached")
     state = build_runtime_state_for_tests(run_id=run_id)
-    with canonical_execution_identity_scope(run_id):
+    with _invoke_identity_scope(run_id):
         harness.invoker.invoke(
             state=state,
             agent_id="agent",
