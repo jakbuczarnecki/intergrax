@@ -7,6 +7,9 @@
 #   workflow_dispatch (smoke) - same as PR (debug)
 #   workflow_dispatch (diagnostics_full) - one exact-SHA full tests/unit/runtime/diagnostics qualification
 #
+# pull_request workflows use the file on the repository DEFAULT branch (main).
+# After changing this file on development, merge/sync to main or PR checks keep the old definition.
+#
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
 # Full regression: `uv run pytest tests/unit -m "gate and not no_ci"` locally.
 # Local full suite: uv sync --extra dev --extra dev-unit-cert
@@ -40,7 +43,9 @@ concurrency:
     ${{ github.event.inputs.profile == 'diagnostics_full'
         && format('diagnostics-full-qualification-{0}', github.event.inputs.qualification_sha)
         || format('regression-gate-{0}-{1}-{2}', github.event_name, github.ref, github.event.inputs.profile || 'smoke') }}
-  cancel-in-progress: ${{ github.event.inputs.profile != 'diagnostics_full' }}
+  cancel-in-progress: >-
+    ${{ github.event_name == 'pull_request'
+        && github.event.inputs.profile != 'diagnostics_full' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -57,8 +62,8 @@ jobs:
         github.event.inputs.profile == 'smoke'
       )
     runs-on: ubuntu-latest
-    # checkout + uv sync + conformance + ~1900 ci_smoke tests (~50s) need headroom on cache miss
-    timeout-minutes: 6
+    # checkout + uv sync + conformance + ~1900 ci_smoke tests (~50s); cache miss needs headroom
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
