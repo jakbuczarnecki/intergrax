@@ -1979,3 +1979,93 @@ Dimension **A** qualification paths and env-fail-closed markers unchanged. **PRO
 - `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
 
 **Formal recommendation:** **QUAL-X** parent remains **OPEN / IN PROGRESS**; **QUAL-X-FINAL** acceptance package **READY FOR AUDIT** for independent adjudication of scoped REG evidence.
+
+---
+
+## QUAL-X-FINAL — FROZEN INVARIANT ACCEPTANCE & PARENT CLOSURE PREPARATION
+
+**Task:** `QUAL-X-FINAL — FROZEN INVARIANT ACCEPTANCE & PARENT CLOSURE PREPARATION` · **Parent:** `QUAL-X`
+
+**Operator boundary:** `OPERATOR APPROVED — QUAL-X ACCEPTANCE BOUNDARY` — certifies frozen invariants and applicable regression mechanisms @ current HEAD; does **not** certify unimplemented mandatory stages; **`ENT-AUDIT-X`** remains later comprehensive recertification.
+
+**Disposition:** **`READY FOR AUDIT — QUAL-X-FINAL PARENT CLOSURE CANDIDATE`** (acceptance package complete for independent audit) · **`QUAL-X-FINAL — PARENT CLOSURE BLOCKED`** for formal **`QUAL-X CLOSED`** until blockers §8 adjudicated (not self-closed).
+
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `d803a0c7986d4b835961675cb23194a7d329a898` |
+| **Branch** | `development` |
+| **Reused Dimension A** | `9a175177419a396398647e356a08c966f9c2af4e` (535/535) |
+| **Reused W2-C storm** | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` |
+| **Platform REG batch** | `fc61fa60e3705c30177dd504991b9215e1e47afa` |
+| **Ownership correction** | `b74d6383bb738fb40c7154b97abe7353a3d9f77b` |
+
+### §1 Git preflight @ task execution
+
+| Check | Result |
+| --- | --- |
+| Repository | `jakbuczarnecki/intergrax` |
+| **START_HEAD** | `d803a0c7986d4b835961675cb23194a7d329a898` |
+| **origin/development** | synchronized @ START_HEAD |
+| Tracked tree | clean @ START_HEAD |
+
+### §2 Applicable frozen-invariant population (authorities)
+
+| Population | Authority | Inclusion |
+| --- | --- | --- |
+| **A** P3/P4/P5 closed-world + P5 Dimension A mandatory selections | `QUAL_X_FINAL_CLOSED_WORLD_INVENTORY`, `QUAL_X_P3_IN_SCOPE_INVENTORY_OWNERS`, P5 manifest | **IN** — executable or **VALID REUSED** evidence |
+| **B** Stage CLOSED waves (EBH, TENANT-X, HARNESS-W4, STATE-X, …) | Roadmap evidence ledger §5 | **HISTORICAL ONLY** (ECAP-P2) |
+| **C** Future stages (SKILL-X, TOOL-LIFE-X, DIST-SCALE-X, EVOL-X, ENT-AUDIT-X runner) | Roadmap not eligible / not started | **OUT** — not prerequisites for QUAL-X |
+| **D** PROD-Q Dimension B live HTTP | Path B §2.0.3; `CW-PROD-Q-LIVE-HTTP` | **DIMENSION B — SEPARATE QUALIFICATION** |
+| **E** Full freeze checklist outside closed-world scan | `CW-PLATFORM-FRZ-ROLLUP` | **REG-01 PLATFORM BLOCKED** → **ENT-AUDIT-X** (not ENT-AUDIT-X as QUAL-X prerequisite) |
+
+Bidirectional guards: `qual_x_final_missing_p3_inventory_owner_ids`, `qual_x_final_unclassified_inventory_owner_ids`; provenance `qual_x_final_provenance_violations`; REG-01 anti-false-complete `qual_x_final_reg01_platform_rollup_is_blocked`.
+
+### §3 Targeted validation @ FINAL_COMMIT (this task delta)
+
+```text
+uv run pytest -p no:xdist \
+  tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py
+```
+
+Pre-delta consolidated batch @ START_HEAD: **61 passed** (log `.tmp/session/qual-x-final-parent-closure/targeted-batch.log`).
+
+### §4 FRZ-REG-01..10 parent acceptance matrix (candidate — no promotion)
+
+| FRZ | Applicability @ boundary | Population | Owner | Gate | Execution SHA | Evidence | Remaining gap | Disposition |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **REG-01** | Scoped frozen rows in A | Closed-world rows | QUAL-X catalog | P3/P5 + integrity | `9a175177…` / `fc61fa60…` | Scoped **VALID** | Rollup E | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) · rollup **BLOCKED — IN-SCOPE** for global checklist |
+| **REG-02** | Corrected blockers | P2/P3 linkage | QUAL-X-P2/P3 | P3 integrity | `fc61fa60…` | Current | Out-of-batch historical | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-03** | Failure-sensitive ingresses in P2/P5 Dim A | P2 catalog + batch negatives | GOV/TEN/Harness qual | P2 matrix + Dim A | `9a175177…` | Reused + scoped | Non-uniform global ingress rollup | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-04** | Allowlists in P3 boundary | HARDENING-3, EBH-2I, QINF RTI | SSOT owners | P3 + EBH rescan | `fc61fa60…` / `9a175177…` | **VALID** | Platform-wide minimality beyond scan | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (closed-world) |
+| **REG-05** | Inventories in P3 boundary | QINF, STATE-X, debt | P3 owners | P3 integrity | `fc61fa60…` / `9a175177…` | Bidirectional green | Full platform union pre-DUP-X | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-06** | Determinism qualification | W2-C + P4 metadata | QUAL-X-P4 | storm + hygiene | `75b8f264…` / `fc61fa60…` | Distinct | Checklist W2-C note vs R3 | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-07** | Clean-checkout | QUAL-X-FINAL | P5 535 nodes | `9a175177…` | Reused | No replay post-ownership HEAD | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** |
+| **REG-08** | Env fail-closed Dim A | P4 catalog | QUAL-X-P4 | env markers | `9a175177…` | Architecture **VALID** | Live GCA HTTP | **PARTIAL** · Dim B **DIMENSION B — SEPARATE LIVE QUALIFICATION** |
+| **REG-09** | Critical invariants in batch + scoped gates | EBH/Harness/P3 | Architecture qual | Dim A + scoped | `9a175177…` / `fc61fa60…` | Mixed | Long-tail proxy gates | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** (scoped) |
+| **REG-10** | Mandatory suite | QUAL-X-P5 | P5 assembly | `9a175177…` / `fc61fa60…` | Manifest SSOT | Suite PASS ≠ QUAL-X CLOSED | **PASS CANDIDATE — INDEPENDENT AUDIT REQUIRED** |
+
+### §5 ECAP-P1..P6 (scoped)
+
+| Principle | Assessment |
+| --- | --- |
+| **P1** | Targeted green ≠ enterprise / FRZ global PASS |
+| **P2** | Historical CLOSED preserved; not promoted @ HEAD |
+| **P3** | Closed-world ≠ full-platform certification |
+| **P4** | No Cursor self-acceptance of FRZ or QUAL-X CLOSED |
+| **P5** | No new replaceability claims |
+| **P6** | Delta = bidirectional unclassified-owner guard (proven catalog gap) |
+
+### §6 Exact blockers (formal QUAL-X parent CLOSED)
+
+1. **Independent exact-SHA audit** on GitHub of FINAL_COMMIT (implementation + evidence SSOT).
+2. **`CW-PLATFORM-FRZ-ROLLUP`** — checklist-wide invariant proof (**ENT-AUDIT-X** scope); not waived by QUAL-X boundary.
+3. **PROD-Q Dimension B** — `CW-PROD-Q-LIVE-HTTP` live integrated gate (Path B; not executed here).
+4. **Checklist `FRZ-REG-06` W2-C row** vs R3 hygiene evidence — documentation reconciliation (checklist not edited in this task).
+
+### §7 Changed files (this task)
+
+- `tests/qualification/qual_x/_qual_x_final_invariant_coverage_catalog.py` — `qual_x_final_unclassified_inventory_owner_ids`
+- `tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py` — bidirectional + synthetic unclassified frozen-invariant negative
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section
+
+**FINAL_COMMIT:** `8071f0b4b96bf17a0e013a5e27b1288ac88a747b` _(integrity pytest @ this SHA: 8 passed)_

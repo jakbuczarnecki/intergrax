@@ -284,6 +284,21 @@ def qual_x_final_missing_p3_inventory_owner_ids() -> tuple[str, ...]:
     return tuple(sorted(required - covered))
 
 
+def qual_x_final_unclassified_inventory_owner_ids() -> tuple[str, ...]:
+    """Closed-world rows must not claim P3 inventory owners outside the authoritative P3 scan."""
+    from tests.qualification.qual_x._p3_inventory_integrity_catalog import (
+        QUAL_X_P3_IN_SCOPE_INVENTORY_OWNERS,
+    )
+
+    allowed = {owner.owner_id for owner in QUAL_X_P3_IN_SCOPE_INVENTORY_OWNERS}
+    claimed = {
+        row.inventory_owner_id
+        for row in QUAL_X_FINAL_CLOSED_WORLD_INVENTORY
+        if row.inventory_owner_id is not None
+    }
+    return tuple(sorted(claimed - allowed))
+
+
 def qual_x_final_provenance_violations() -> tuple[str, ...]:
     violations: list[str] = []
     for row in QUAL_X_FINAL_CLOSED_WORLD_INVENTORY:
