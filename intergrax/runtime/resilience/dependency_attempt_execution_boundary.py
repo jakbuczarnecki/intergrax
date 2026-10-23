@@ -205,6 +205,10 @@ class DependencyAttemptExecutionBoundary:
         self._pending_acquire_futures: set[ConcurrentFuture[DependencyConcurrencyPermit]] = (
             set()
         )
+        self._in_flight_acquire_handoffs: dict[
+            ConcurrentFuture[DependencyConcurrencyPermit],
+            _AcquirePermitHandoff,
+        ] = {}
         self._pending_async_release_futures: set[ConcurrentFuture[object]] = set()
         self._detached_pending_release: set[int] = set()
         self._release_failures: list[BaseException] = []
@@ -248,44 +252,55 @@ class DependencyAttemptExecutionBoundary:
 
         acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
 
+        with self._registry_lock:
+            self._in_flight_acquire_handoffs[acquire_future] = handoff
+            if self._lifecycle is not _BoundaryLifecycle.OPEN:
+                shutdown_snapshot = [(acquire_future, handoff)]
+            else:
+                shutdown_snapshot = None
+            self._pending_acquire_futures.add(acquire_future)
+
         def _on_acquire_terminal(done_future: ConcurrentFuture[object]) -> None:
             del done_future
-            if not acquire_future.done():
-                return
-            if acquire_future.cancelled():
-                if (
+            try:
+                if not acquire_future.done():
+                    return
+                if acquire_future.cancelled():
+                    if (
+                        handoff.is_abandoned()
+                        or handoff.is_release_obligation_claimed()
+                        or handoff.is_release_pending()
+                    ):
+                        self._maybe_release_abandoned_acquire_permit(
+                            acquire_future,
+                            handoff,
+                        )
+                    return
+                exc = acquire_future.exception()
+                if exc is not None:
+                    if isinstance(exc, _AcquireAbandonedBeforeDelivery):
+                        return
+                    if (
+                        handoff.is_release_obligation_claimed()
+                        and not handoff.is_release_complete()
+                    ):
+                        self._maybe_release_abandoned_acquire_permit(
+                            acquire_future,
+                            handoff,
+                        )
+                    return
+                if not (
                     handoff.is_abandoned()
                     or handoff.is_release_obligation_claimed()
-                    or handoff.is_release_pending()
                 ):
-                    self._maybe_release_abandoned_acquire_permit(
-                        acquire_future,
-                        handoff,
-                    )
-                return
-            exc = acquire_future.exception()
-            if exc is not None:
-                if isinstance(exc, _AcquireAbandonedBeforeDelivery):
                     return
-                if (
-                    handoff.is_release_obligation_claimed()
-                    and not handoff.is_release_complete()
-                ):
-                    self._maybe_release_abandoned_acquire_permit(
-                        acquire_future,
-                        handoff,
-                    )
-                return
-            if not (
-                handoff.is_abandoned()
-                or handoff.is_release_obligation_claimed()
-            ):
-                return
-            self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
+                self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
+            finally:
+                self._unregister_in_flight_acquire(acquire_future)
 
         acquire_future.add_done_callback(_on_acquire_terminal)
-        with self._registry_lock:
-            self._pending_acquire_futures.add(acquire_future)
+        if shutdown_snapshot is not None:
+            self._abort_in_flight_acquires(shutdown_snapshot)
         try:
             if acquire_timeout_seconds is None:
                 permit = acquire_future.result()
@@ -416,9 +431,8 @@ class DependencyAttemptExecutionBoundary:
             if self._lifecycle is not _BoundaryLifecycle.OPEN:
                 return
             self._lifecycle = _BoundaryLifecycle.SHUTTING_DOWN
-            pending_acquires = list(self._pending_acquire_futures)
-        for pending in pending_acquires:
-            pending.cancel()
+            in_flight_snapshot = list(self._in_flight_acquire_handoffs.items())
+        self._abort_in_flight_acquires(in_flight_snapshot)
 
     def drain_and_close(self) -> None:
         """After physical workers drained, finish releases and stop admission loop."""
@@ -426,8 +440,16 @@ class DependencyAttemptExecutionBoundary:
             with self._registry_lock:
                 if self._lifecycle is _BoundaryLifecycle.CLOSED:
                     return
-                self._lifecycle = _BoundaryLifecycle.SHUTTING_DOWN
+                if self._lifecycle is _BoundaryLifecycle.OPEN:
+                    self._lifecycle = _BoundaryLifecycle.SHUTTING_DOWN
+                    in_flight_snapshot = list(self._in_flight_acquire_handoffs.items())
+                else:
+                    in_flight_snapshot = []
 
+            if in_flight_snapshot:
+                self._abort_in_flight_acquires(in_flight_snapshot)
+
+            self._wait_for_in_flight_acquires()
             self._wait_for_detached_releases()
             self._wait_for_pending_async_releases()
             failures = self._snapshot_release_failures()
@@ -680,6 +702,61 @@ class DependencyAttemptExecutionBoundary:
             await permit.release()
 
         return asyncio.run_coroutine_threadsafe(_release_coro(), loop)
+
+    def _abort_in_flight_acquires(
+        self,
+        snapshot: list[
+            tuple[
+                ConcurrentFuture[DependencyConcurrencyPermit],
+                _AcquirePermitHandoff,
+            ]
+        ],
+    ) -> None:
+        """Mark shutdown abandon and cancel wrappers; retain coroutine tracking until terminal."""
+        for acquire_future, handoff in snapshot:
+            handoff.mark_abandoned()
+            if acquire_future.done():
+                self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
+            else:
+                acquire_future.cancel()
+
+    def _unregister_in_flight_acquire(
+        self,
+        acquire_future: ConcurrentFuture[DependencyConcurrencyPermit],
+    ) -> None:
+        with self._registry_lock:
+            self._in_flight_acquire_handoffs.pop(acquire_future, None)
+            self._drain_condition.notify_all()
+
+    def _wait_for_in_flight_acquires(self) -> None:
+        """Quiesce every acquire coroutine started before admission loop stop."""
+        deadline = time.monotonic() + self._STARTUP_TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            with self._registry_lock:
+                if not self._in_flight_acquire_handoffs:
+                    return
+                in_flight = list(self._in_flight_acquire_handoffs)
+            pending = [acquire_future for acquire_future in in_flight if not acquire_future.done()]
+            for acquire_future in pending:
+                try:
+                    acquire_future.result(timeout=0.05)
+                except BaseException:
+                    pass
+            with self._registry_lock:
+                if not self._in_flight_acquire_handoffs:
+                    return
+                if all(
+                    acquire_future.done()
+                    for acquire_future in self._in_flight_acquire_handoffs
+                ):
+                    self._drain_condition.wait(timeout=0.05)
+                else:
+                    pass
+            if pending:
+                time.sleep(0.01)
+        raise RuntimeError(
+            "DependencyAttemptExecutionBoundary in-flight acquires did not drain"
+        )
 
     def _wait_for_pending_async_releases(self) -> None:
         deadline = time.monotonic() + self._STARTUP_TIMEOUT_SECONDS
