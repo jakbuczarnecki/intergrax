@@ -427,6 +427,16 @@ def _register_binding(
         contract = roster_contract_authority.contract_for_binding(binding)
     else:
         contract = contract_for_binding(agent, binding)
+    if (
+        composition is not None
+        and contract.skills
+        and skill_profile is None
+    ):
+        raise ApplicationManifestConformanceError(
+            "skill_profile required when registering skill-bearing agents with "
+            "ApplicationCompositionContext; use manifest-only registry assembly "
+            "for explicit profile-free dev/test contexts",
+        )
     registry.register(
         agent,
         contract=contract,

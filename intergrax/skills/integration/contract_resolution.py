@@ -90,8 +90,6 @@ def resolve_gateway_allowed_tools(
     ]
     if not ceiling:
         return []
-    if not metadata_ids:
-        return list(ceiling)
     upstream = StaticToolScopePolicy(allowed_tools=set(ceiling))
     resolved = resolve_allowed_tools(upstream_policy=upstream, explicit=metadata_ids)
     if resolved is None:

@@ -16,7 +16,14 @@ from intergrax.runtime.nexus.tools.tool_selection import (
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.skills.core.contracts import SkillManifest
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.errors import ApplicationManifestConformanceError
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.skills.integration.contract_resolution import (
+    eligible_agent_skill_manifests,
     resolve_contract_tools,
     resolve_gateway_allowed_tools,
 )
@@ -79,6 +86,11 @@ def _registry_with_skills() -> SkillRegistry:
     registry.register(_SKILL_A)
     registry.register(_SKILL_B)
     return registry
+
+
+def test_profile_free_context_passes_agent_skills_without_profile() -> None:
+    eligible = eligible_agent_skill_manifests((_SKILL_A, _SKILL_B), None)
+    assert eligible == (_SKILL_A, _SKILL_B)
 
 
 def test_disabled_skill_fails_closed_when_profile_provided() -> None:
@@ -162,6 +174,22 @@ def test_agent_registry_passes_skill_and_tool_profile() -> None:
     assert registry.get_contract("batch-b-agent").allowed_tools == ["tool.a"]
 
 
+def test_gateway_absent_metadata_preserves_contract_ceiling() -> None:
+    assert resolve_gateway_allowed_tools(["a.tool", "b.tool"], None) == [
+        "a.tool",
+        "b.tool",
+    ]
+
+
+def test_gateway_explicit_empty_metadata_denies_all() -> None:
+    assert resolve_gateway_allowed_tools(["a.tool", "b.tool"], []) == []
+
+
+def test_gateway_malformed_metadata_fails_closed() -> None:
+    with pytest.raises(SkillResolutionError, match="must be a list"):
+        resolve_gateway_allowed_tools(["a.tool"], "not-a-list")
+
+
 def test_gateway_metadata_cannot_widen_contract_tools() -> None:
     assert resolve_gateway_allowed_tools(["allowed.tool"], ["evil.tool"]) == []
 
@@ -189,6 +217,56 @@ def _tool_registry_with(*tool_ids: str) -> ToolRegistry:
     for tool_id in tool_ids:
         registry.register(tools_agent_make_contract(tool_id, _In, _Out), _EchoHandler())
     return registry
+
+
+def test_register_binding_requires_skill_profile_when_composition_present() -> None:
+    from intergrax.agents.echo.echo_agent import EchoAgent
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        ManifestAgentContractAuthority,
+    )
+    from intergrax.applications._shared.wiring import _register_binding
+
+    manifest = ApplicationManifest.lab(
+        app_id="batch_b_skill_gate",
+        name="Batch B Skill Gate",
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo")],
+    )
+    ctx = ApplicationBuildContext.for_manifest(manifest)
+    composition = composition_for_factory_context(ctx)
+    authority = ManifestAgentContractAuthority(
+        contracts_by_id={"echo": _contract_with_skills(_SKILL_A)},
+    )
+    registry = AgentRegistry()
+    with pytest.raises(ApplicationManifestConformanceError, match="skill_profile required"):
+        _register_binding(
+            registry,
+            manifest.agents[0],
+            ctx,
+            builders=None,
+            skill_registry=None,
+            composition=composition,
+            roster_contract_authority=authority,
+        )
+
+
+def test_environment_wiring_carries_host_skill_profile_in_composition() -> None:
+    from intergrax.applications._shared.environment_wiring import wire_application_environment
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+    )
+    from lab_application.host.settings import LabApplicationSettings
+    from lab_application.manifest import build_lab_manifest
+
+    settings = LabApplicationSettings.from_env()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="batch_b_env_skill")
+    manifest = build_lab_manifest(settings)
+    wiring = wire_application_environment(
+        manifest,
+        env,
+        settings=settings,
+        conformance_check=False,
+    )
+    assert wiring.composition.skill_profile is env.skill_profile
 
 
 def test_skill_pack_strategy_respects_plan_allowed_tool_ids() -> None:
