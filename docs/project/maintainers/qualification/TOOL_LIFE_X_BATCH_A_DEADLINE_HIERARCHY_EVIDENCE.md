@@ -10,7 +10,7 @@
 | **BA-F07 START_HEAD** | `e3afb404879f0ca4fc1cede779868672e01b7103` |
 | **BA-F08 START_HEAD** | `4038cc5995e26758cc5143e430fed252b8740c6d` |
 | **Disposition** | **`TOOL-LIFE-X BATCH A — IMPLEMENTATION COMPLETE — FINAL L2 REQUALIFICATION PENDING`** |
-| **Implementation SHA (production)** | `3360f305e2d60d02e23ea0642045c56613c934ed` (BA-F08) |
+| **Implementation SHA (production)** | `0d3a0d22fe07f7826acfb776c24341c303359838` (BA-F08) |
 | **Production baseline (pre-F08)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` (BA-F07) |
 | **Historical L2 execution SHA** | `af96371edb0efa949f0cebae77e9b4af47b30c2b` (**56/56** @ production `693ecafd…` + test fixes; not attributed to BA-F08) |
 | **Operator session START_HEAD** | `4038cc5995e26758cc5143e430fed252b8740c6d` |
@@ -28,7 +28,7 @@
 | **BA-F06 cancellation-safe finalization** | `e3afb404879f0ca4fc1cede779868672e01b7103` | **L2 NOT RUN** (operator deferral); static review + prepared L1 sources |
 | **BA-F07 cleanup accounting (shielded abandon release)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` | **L2 NOT RUN**; `STATIC REVIEW COMPLETED — L2 VALIDATION PENDING` |
 | **Batch A consolidated L2 (historical)** | `af96371edb0efa949f0cebae77e9b4af47b30c2b` | **56 collected / 56 passed** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-final.log` (production @ `693ecafd…`; **not** BA-F08) |
-| **BA-F08 in-flight acquire shutdown accounting** | `3360f305e2d60d02e23ea0642045c56613c934ed` | **L2 NOT RUN**; static protocol closure + evidence update |
+| **BA-F08 in-flight acquire shutdown accounting** | `0d3a0d22fe07f7826acfb776c24341c303359838` | **L2 NOT RUN**; static protocol closure + evidence update |
 
 ## BA-F08 — in-flight acquire shutdown accounting (implementation complete)
 
@@ -143,7 +143,7 @@ uv run pytest -p no:xdist \
 
 **BA-F07 publication commit:** `693ecafd36568b82bba7606a7e368b3b0aff7a38` (`fix(runtime): BA-F07 cleanup accounting for shielded abandon releases`)
 
-**BA-F08 publication commit:** `3360f305e2d60d02e23ea0642045c56613c934ed` (`fix(runtime): BA-F08 in-flight acquire shutdown accounting`)
+**BA-F08 publication commit:** `0d3a0d22fe07f7826acfb776c24341c303359838` (`fix(runtime): BA-F08 in-flight acquire shutdown accounting`)
 
 **Historical (BA-F02 only):** implementation `fc59dd350933483205460fa0e84c7d80c37b6bb3` — **50/50**; not attributed to BA-F05/BA-F06 SHAs.
 
