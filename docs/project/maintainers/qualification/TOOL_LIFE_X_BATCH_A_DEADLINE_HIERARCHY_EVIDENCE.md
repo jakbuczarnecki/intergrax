@@ -21,7 +21,7 @@
 | **Atomic permit closure (BA-F02 wave)** | **fc59dd350933483205460fa0e84c7d80c37b6bb3** | **50/50** targeted Batch A regression green |
 | **BA-F05 async ownership closure** | **d76d6d874ed9394d2e1959e490c5835248deea9f** | **52/52** targeted Batch A regression green |
 | **BA-F06 cancellation-safe finalization** | `e3afb404879f0ca4fc1cede779868672e01b7103` | **L2 NOT RUN** (operator deferral); static review + prepared L1 sources |
-| **BA-F07 cleanup accounting (shielded abandon release)** | publication SHA on `development` after push | **L2 NOT RUN**; `STATIC REVIEW COMPLETED — L2 VALIDATION PENDING` |
+| **BA-F07 cleanup accounting (shielded abandon release)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` | **L2 NOT RUN**; `STATIC REVIEW COMPLETED — L2 VALIDATION PENDING` |
 
 ## BA-F07 — cleanup accounting for shielded in-coroutine abandon releases (implementation complete)
 
@@ -105,7 +105,7 @@ uv run pytest -p no:xdist \
 
 **BA-F06 publication commit:** `e3afb404879f0ca4fc1cede779868672e01b7103`
 
-**BA-F07 publication commit:** `git log -1 --format=%H development` after push (subject contains `BA-F07 cleanup accounting`)
+**BA-F07 publication commit:** `693ecafd36568b82bba7606a7e368b3b0aff7a38` (`fix(runtime): BA-F07 cleanup accounting for shielded abandon releases`)
 
 **Historical (BA-F02 only):** implementation `fc59dd350933483205460fa0e84c7d80c37b6bb3` — **50/50**; not attributed to BA-F05/BA-F06 SHAs.
 
