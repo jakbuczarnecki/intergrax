@@ -68,11 +68,3 @@ class SkillRegistry:
 
     def unregister(self, skill_id: str) -> None:
         self._skills.pop(skill_id, None)
-
-    def snapshot_state(self) -> dict[str, RegisteredSkill]:
-        """Immutable view of registry entries for bind-time compensation."""
-        return dict(self._skills)
-
-    def restore_state(self, snapshot: dict[str, RegisteredSkill]) -> None:
-        """Replace registry contents with a prior snapshot (failed bind rollback)."""
-        self._skills = dict(snapshot)

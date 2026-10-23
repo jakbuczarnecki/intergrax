@@ -86,6 +86,9 @@ from testing_support.me14_tool_activation_materializer import Me14ToolHostActiva
 from testing_support.me14_tool_catalog_provider import Me14ToolCatalogProvider
 from testing_support.me15_skill_binding_materializer import Me15SkillHostBindingMaterializer
 from testing_support.me15_skill_catalog_provider import Me15SkillCatalogProvider
+from testing_support.acquisition_install_contract_authority_port import (
+    ProofInstallContractAuthorityLifecyclePort,
+)
 from testing_support.reference_production_acquisition_lifecycle_port import (
     ReferenceProductionAcquisitionLifecyclePort,
 )
@@ -331,6 +334,10 @@ class MarketplaceMixedCapabilityProofStack:
                 agent_stack.composition.agent_platform_runtime.registry_projection_authority
             ),
             principal=agent_stack.governance.principal,
+        )
+        lifecycle_port = ProofInstallContractAuthorityLifecyclePort(
+            inner=lifecycle_port,
+            proof_config=lifecycle_config,
         )
         agent_acquisition = DynamicAgentAcquisitionService(
             catalog_registry=CatalogSourceProviderRegistry(

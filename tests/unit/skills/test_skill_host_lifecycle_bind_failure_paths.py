@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import threading
+
 import pytest
 
 from intergrax.contracts.lifecycle_handoff.ack import DomainLifecycleHandoffDisposition
@@ -349,3 +351,73 @@ def test_cross_host_bind_failure_does_not_alter_peer_registry() -> None:
     assert ok.disposition is DomainLifecycleHandoffDisposition.ACCEPTED
     assert life_b.is_bound(ME15_SKILL_LOGICAL_ID)
     assert not life_a.is_bound(ME15_SKILL_LOGICAL_ID)
+
+
+def test_concurrent_failed_binds_on_same_host_leave_registry_clean() -> None:
+    lifecycle = SkillHostLifecycleService(host_profile_id="host-rc03-concurrent-fail")
+    provider = Me15SkillCatalogProvider()
+    resolution = _resolution(provider)
+    materializer = _MutateThenRaiseMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+    )
+
+    def _attempt_bind(operation_id: str) -> None:
+        lifecycle.bind(
+            operation_id=operation_id,
+            host_profile_id=lifecycle.host_profile_id,
+            resolved=resolution,
+            materializer=materializer,
+        )
+
+    threads = [
+        threading.Thread(target=_attempt_bind, args=(f"op-concurrent-fail-{index}",))
+        for index in range(4)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+        assert not thread.is_alive()
+
+    assert lifecycle.registry.skill_ids() == []
+    assert not lifecycle._handoff_operation_ids
+
+
+def test_concurrent_failed_bind_preserves_prior_successful_registration() -> None:
+    lifecycle, service, provider = _acquisition_stack(host_profile_id="host-rc03-concurrent-prior")
+    service.acquire(
+        DynamicSkillAcquisitionRequest(
+            operation_id="op-prior-concurrent",
+            host_profile_id=lifecycle.host_profile_id,
+            capability_identity_key=_identity_key(provider),
+            selected_identity=_candidate(provider=provider),
+        ),
+    )
+    before_meta = lifecycle.binding_metadata(ME15_SKILL_LOGICAL_ID)
+    resolution = _resolution(provider)
+    materializer = _MutateThenRaiseMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+    )
+
+    def _attempt_fail(operation_id: str) -> None:
+        lifecycle.bind(
+            operation_id=operation_id,
+            host_profile_id=lifecycle.host_profile_id,
+            resolved=resolution,
+            materializer=materializer,
+        )
+
+    threads = [
+        threading.Thread(target=_attempt_fail, args=(f"op-fail-{index}",))
+        for index in range(4)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+        assert not thread.is_alive()
+
+    assert lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
+    assert lifecycle.binding_metadata(ME15_SKILL_LOGICAL_ID) == before_meta

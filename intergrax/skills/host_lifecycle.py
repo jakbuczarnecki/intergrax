@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass, field
 
 from intergrax.contracts.lifecycle_handoff.ack import (
@@ -34,12 +35,20 @@ def _binding_matches_identity(
 
 @dataclass
 class SkillHostLifecycleService(SkillHostBindingPort):
-    """Host-profile scoped Skill installation into registry projection (not profile enablement)."""
+    """Host-profile scoped Skill installation into registry projection (not profile enablement).
+
+    Registry mutations during ``bind`` are serialized per service instance (single-writer).
+    """
 
     host_profile_id: str
     registry: SkillRegistry = field(default_factory=SkillRegistry)
     skill_profile: SkillProfile = field(default_factory=SkillProfile)
     _handoff_operation_ids: set[str] = field(default_factory=set)
+    _bind_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+
+    def _revert_registry_mutations_since(self, prior_skill_ids: frozenset[str]) -> None:
+        for skill_id in set(self.registry.skill_ids()) - prior_skill_ids:
+            self.registry.unregister(skill_id)
 
     def registry_read(self) -> SkillRegistryRead:
         return self.registry
@@ -112,35 +121,36 @@ class SkillHostLifecycleService(SkillHostBindingPort):
                 reason_detail="incompatible package identity for installed skill",
             )
 
-        registry_snapshot = self.registry.snapshot_state()
-        try:
-            materialized_id, binding = materializer.materialize(resolved)
-        except Exception:
-            self.registry.restore_state(registry_snapshot)
-            return DomainLifecycleHandoffAck(
-                disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                reason_detail="skill materialization failed",
-            )
+        with self._bind_lock:
+            prior_skill_ids = frozenset(self.registry.skill_ids())
+            try:
+                materialized_id, binding = materializer.materialize(resolved)
+            except Exception:
+                self._revert_registry_mutations_since(prior_skill_ids)
+                return DomainLifecycleHandoffAck(
+                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                    reason_detail="skill materialization failed",
+                )
 
-        if materialized_id != skill_id:
-            self.registry.restore_state(registry_snapshot)
-            return DomainLifecycleHandoffAck(
-                disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                reason_detail="materialized skill id mismatch",
-            )
-        if not _binding_matches_identity(binding, package_identity):
-            self.registry.restore_state(registry_snapshot)
-            return DomainLifecycleHandoffAck(
-                disposition=DomainLifecycleHandoffDisposition.REJECTED,
-                reason_detail="materialized binding identity mismatch",
-            )
+            if materialized_id != skill_id:
+                self._revert_registry_mutations_since(prior_skill_ids)
+                return DomainLifecycleHandoffAck(
+                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                    reason_detail="materialized skill id mismatch",
+                )
+            if not _binding_matches_identity(binding, package_identity):
+                self._revert_registry_mutations_since(prior_skill_ids)
+                return DomainLifecycleHandoffAck(
+                    disposition=DomainLifecycleHandoffDisposition.REJECTED,
+                    reason_detail="materialized binding identity mismatch",
+                )
 
-        self._handoff_operation_ids.add(operation_id)
-        return DomainLifecycleHandoffAck(
-            disposition=DomainLifecycleHandoffDisposition.ACCEPTED,
-            domain_reference=_domain_reference(package_identity),
-            reason_detail="skill bound for host profile",
-        )
+            self._handoff_operation_ids.add(operation_id)
+            return DomainLifecycleHandoffAck(
+                disposition=DomainLifecycleHandoffDisposition.ACCEPTED,
+                domain_reference=_domain_reference(package_identity),
+                reason_detail="skill bound for host profile",
+            )
 
 
 def _domain_reference(identity: SkillPackageIdentity) -> str:
