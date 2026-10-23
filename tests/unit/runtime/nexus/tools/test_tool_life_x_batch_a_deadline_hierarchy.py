@@ -352,3 +352,169 @@ def test_without_deadline_scope_uses_contract_timeout() -> None:
     result = _invoke(invoker, run_id=canonical_run_id_for_tests("tlx-a-no-scope"))
     assert result.success is True
     assert executor.calls == 1
+
+
+def test_queue_wait_then_physical_timeout_uses_remaining_not_contract() -> None:
+    """BA-F01: post-admission timeout must not reset to full ToolContract timeout."""
+    registry = ToolRegistry()
+    tool_id = "contended.tool"
+    executor = _CountingExecutor(delay_s=0.4)
+    gate = threading.Event()
+    executor.set_gate(gate)
+    registry.register(_contract(tool_id=tool_id, timeout_ms=60_000), _CountingExecutor())
+    policies = {
+        DependencyConcurrencyIdentity(
+            kind=DependencyConcurrencyKind.TOOL,
+            value=tool_id,
+        ): DependencyConcurrencyPolicy(
+            max_concurrent_calls=1,
+            overload_mode=DependencyConcurrencyOverloadMode.WAIT_WITH_TIMEOUT,
+            wait_timeout_seconds=30.0,
+        ),
+    }
+    boundary = DependencyAttemptExecutionBoundary(
+        LocalDependencyConcurrencyAdmission(policies),
+    )
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        dependency_attempt_boundary=boundary,
+    )
+    run_id = canonical_run_id_for_tests("tlx-a-queue-then-physical")
+    state = build_runtime_state_for_tests(run_id=run_id)
+    monotonic = _SystemMonotonicClock()
+    tokens = _deadline_scope(remaining_s=0.45, monotonic=monotonic)
+    identity = bind_active_execution_identity(
+        run_id=validate_run_id(run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    holder_done = threading.Event()
+
+    def _hold() -> None:
+        invoker.invoke(
+            state=state,
+            agent_id="agent-1",
+            request=ToolExecutionRequest(
+                run_id=validate_run_id(run_id),
+                tool_id=tool_id,
+                step_id="hold",
+                input=_In(value=1),
+            ),
+        )
+        holder_done.set()
+
+    holder = threading.Thread(target=_hold, daemon=True)
+    holder.start()
+    time.sleep(0.33)
+    started = time.monotonic()
+    result = invoker.invoke(
+        state=state,
+        agent_id="agent-1",
+        request=ToolExecutionRequest(
+            run_id=validate_run_id(run_id),
+            tool_id=tool_id,
+            step_id="waiter",
+            input=_In(value=2),
+        ),
+    )
+    elapsed = time.monotonic() - started
+    gate.set()
+    holder_done.wait(timeout=5.0)
+    reset_active_execution_identity(identity)
+    reset_active_execution_deadline_scope(*tokens)
+    invoker.close()
+    assert executor.calls == 2
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.error_code == RuntimeErrorCode.TIMEOUT
+    assert elapsed < 0.35
+
+
+class _ManualMonotonicClock:
+    def __init__(self, start: float) -> None:
+        self._t = start
+
+    def monotonic(self) -> float:
+        return self._t
+
+    def advance(self, delta: float) -> None:
+        self._t += delta
+
+
+def test_deadline_exhausted_after_permit_before_physical_submit() -> None:
+    """BA-F01: no ToolExecutor submit when parent budget is gone after admission."""
+    registry = ToolRegistry()
+    tool_id = "gated.tool"
+    registry.register(_contract(tool_id=tool_id, timeout_ms=30_000), _CountingExecutor())
+    executor = _CountingExecutor()
+    gate = threading.Event()
+    executor.set_gate(gate)
+    policies = {
+        DependencyConcurrencyIdentity(
+            kind=DependencyConcurrencyKind.TOOL,
+            value=tool_id,
+        ): DependencyConcurrencyPolicy(
+            max_concurrent_calls=1,
+            overload_mode=DependencyConcurrencyOverloadMode.WAIT_WITH_TIMEOUT,
+            wait_timeout_seconds=30.0,
+        ),
+    }
+    admission = LocalDependencyConcurrencyAdmission(policies)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        dependency_attempt_boundary=boundary,
+    )
+    run_id = canonical_run_id_for_tests("tlx-a-post-acquire-deadline")
+    state = build_runtime_state_for_tests(run_id=run_id)
+    clock = _ManualMonotonicClock(100.0)
+    tokens = _deadline_scope(remaining_s=0.5, monotonic=clock)
+    identity = bind_active_execution_identity(
+        run_id=validate_run_id(run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    release_holder = threading.Event()
+    holder_done = threading.Event()
+
+    def _hold() -> None:
+        invoker.invoke(
+            state=state,
+            agent_id="agent-1",
+            request=ToolExecutionRequest(
+                run_id=validate_run_id(run_id),
+                tool_id=tool_id,
+                step_id="hold",
+                input=_In(value=1),
+            ),
+        )
+        release_holder.wait(timeout=5.0)
+        holder_done.set()
+
+    holder = threading.Thread(target=_hold, daemon=True)
+    holder.start()
+    time.sleep(0.05)
+    clock.advance(0.55)
+    gate.set()
+    release_holder.set()
+    holder_done.wait(timeout=5.0)
+    result = invoker.invoke(
+        state=state,
+        agent_id="agent-1",
+        request=ToolExecutionRequest(
+            run_id=validate_run_id(run_id),
+            tool_id=tool_id,
+            step_id="waiter",
+            input=_In(value=2),
+        ),
+    )
+    reset_active_execution_identity(identity)
+    reset_active_execution_deadline_scope(*tokens)
+    invoker.close()
+    assert executor.calls == 1
+    assert result.success is False
+    assert result.error is not None
+    assert "deadline_exceeded" in result.error.error_message
+    assert result.effect_certainty == ToolEffectCertainty.NOT_STARTED

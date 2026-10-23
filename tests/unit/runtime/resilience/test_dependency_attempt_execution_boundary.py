@@ -729,6 +729,31 @@ def test_concurrent_close_safe() -> None:
     assert not errors
 
 
+def test_acquire_timeout_races_grant_releases_permit() -> None:
+    """BA-F02: late grant after waiter timeout must not orphan capacity."""
+    admission = _FakeAdmissionPort(capacity=1, wait_seconds=0.08)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    pool = ThreadPoolExecutor(max_workers=1)
+    hold = threading.Event()
+    future = pool.submit(hold.wait)
+    boundary.bind_worker(first, future)
+    assert hold.wait(timeout=0.2) or future.running()
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.15)
+    assert admission.active == 1
+    hold.set()
+    future.result(timeout=5)
+    boundary.complete_attached(first)
+    assert admission.active == 0
+    second = boundary.acquire(_request("tool-a"))
+    boundary.complete_direct(second)
+    pool.shutdown(wait=True)
+    boundary.close()
+    assert admission.active == 0
+
+
 def test_timeout_race_no_permit_leak() -> None:
     identity = _tool("race")
     for _ in range(5):

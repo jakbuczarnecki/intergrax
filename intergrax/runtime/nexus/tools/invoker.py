@@ -168,6 +168,10 @@ class _ExternalEffectBoundary:
         self.may_have_started = False
 
 
+class _ToolPhysicalAttemptParentDeadlineExceeded(Exception):
+    """Parent execution budget exhausted before or immediately after dependency admission."""
+
+
 class RuntimeToolInvoker:
     """
     Nexus-owned enforcement wrapper for tool invocation.
@@ -1257,25 +1261,16 @@ class RuntimeToolInvoker:
                     request=request,
                 )
 
-            attempt_timeout_s = self._physical_attempt_timeout_seconds(contract)
-            if attempt_timeout_s <= 0:
-                return self._tool_result_deadline_exceeded(
-                    state=state,
-                    contract=contract,
-                    request=request,
-                    agent_id=agent_id,
-                )
-
             start_perf = time.perf_counter()
             try:
                 raw_out = self._execute_once(
                     state,
+                    agent_id,
                     contract,
                     request,
                     effect_boundary=boundary,
                     physical_attempt_sequence=attempt,
                     pre_effect_claim=pre_effect_claim,
-                    attempt_timeout_s=attempt_timeout_s,
                 )
                 out = self._validate_output(contract.output_schema, raw_out)
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
@@ -1309,6 +1304,14 @@ class RuntimeToolInvoker:
 
             except ExternalOperationStartSuppressedError:
                 return self._tool_result_task_cancelled(
+                    state=state,
+                    contract=contract,
+                    request=request,
+                    agent_id=agent_id,
+                )
+
+            except _ToolPhysicalAttemptParentDeadlineExceeded:
+                return self._tool_result_deadline_exceeded(
                     state=state,
                     contract=contract,
                     request=request,
@@ -1378,7 +1381,8 @@ class RuntimeToolInvoker:
 
             except FuturesTimeoutError:
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
-                effective_timeout_ms = max(1, int(round(attempt_timeout_s * 1000)))
+                effective_timeout_s = self._physical_attempt_timeout_seconds(contract)
+                effective_timeout_ms = max(1, int(round(effective_timeout_s * 1000)))
                 msg = f"Tool execution timed out after {effective_timeout_ms}ms"
                 state.trace_event(
                     component=TraceComponent.TOOLS,
@@ -1607,6 +1611,19 @@ class RuntimeToolInvoker:
         return effective
 
     @staticmethod
+    def _physical_attempt_timeout_after_admission_seconds(
+        contract: ToolContract,
+    ) -> float:
+        """Remaining parent budget and contract cap after queue admission (BA-F01)."""
+        timeout_s = RuntimeToolInvoker._physical_attempt_timeout_seconds(contract)
+        remaining = RuntimeToolInvoker._remaining_parent_execution_seconds()
+        if remaining is None:
+            return timeout_s
+        if remaining <= 0:
+            return 0.0
+        return min(timeout_s, remaining)
+
+    @staticmethod
     def _emit_boundary_event(
         *,
         state: "RuntimeState",
@@ -1731,20 +1748,15 @@ class RuntimeToolInvoker:
     def _execute_once(
         self,
         state: "RuntimeState",
+        agent_id: str,
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
         *,
         effect_boundary: _ExternalEffectBoundary | None = None,
         physical_attempt_sequence: int = 1,
         pre_effect_claim: PreEffectClaimContext | None = None,
-        attempt_timeout_s: float | None = None,
     ) -> BaseModel:
         request = self._apply_invocation_wiring(contract=contract, request=request)
-        timeout_s = (
-            attempt_timeout_s
-            if attempt_timeout_s is not None
-            else self._physical_attempt_timeout_seconds(contract)
-        )
         dep_boundary = self._dependency_attempt_boundary
         ext_op = self._build_tool_external_operation_attempt(
             contract,
@@ -1754,6 +1766,9 @@ class RuntimeToolInvoker:
         ext_op.before_physical_submit()
 
         if dep_boundary is None:
+            timeout_s = self._physical_attempt_timeout_after_admission_seconds(contract)
+            if timeout_s <= 0:
+                raise _ToolPhysicalAttemptParentDeadlineExceeded()
             self._record_durable_effect_admission_before_submit(
                 pre_effect_claim=pre_effect_claim,
                 effect_boundary=effect_boundary,
@@ -1799,7 +1814,17 @@ class RuntimeToolInvoker:
             admission_request,
             acquire_timeout_seconds=acquire_timeout_s,
         )
+        timeout_s = self._physical_attempt_timeout_after_admission_seconds(contract)
+        if timeout_s <= 0:
+            dep_boundary.release_after_submit_failure(attempt_handle)
+            raise _ToolPhysicalAttemptParentDeadlineExceeded()
         try:
+            self._require_current_attempt_authorization(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+            )
             self._record_durable_effect_admission_before_submit(
                 pre_effect_claim=pre_effect_claim,
                 effect_boundary=effect_boundary,

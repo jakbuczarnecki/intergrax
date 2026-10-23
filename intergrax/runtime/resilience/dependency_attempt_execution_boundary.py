@@ -9,7 +9,7 @@ import asyncio
 import threading
 from concurrent.futures import Future as ConcurrentFuture
 from concurrent.futures import TimeoutError as ConcurrentFuturesTimeoutError
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -30,6 +30,22 @@ class DependencyAttemptExecutionBoundaryClosedError(RuntimeError):
 
 class DependencyAttemptReleaseInvariantError(RuntimeError):
     """Permit release failed for a physical dependency attempt (fail-closed)."""
+
+
+@dataclass(slots=True)
+class _AcquireAcceptance:
+    """Tracks whether the sync caller retained a granted permit."""
+
+    accepted: bool = False
+    _lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def mark_accepted(self) -> None:
+        with self._lock:
+            self.accepted = True
+
+    def is_accepted(self) -> bool:
+        with self._lock:
+            return self.accepted
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,21 +135,32 @@ class DependencyAttemptExecutionBoundary:
             return await self._admission.acquire(request)
 
         acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
+        acceptance = _AcquireAcceptance()
+
+        def _on_acquire_terminal(done_future: ConcurrentFuture[object]) -> None:
+            del done_future
+            self._release_abandoned_acquire_permit(acquire_future, acceptance)
+
+        acquire_future.add_done_callback(_on_acquire_terminal)
         with self._registry_lock:
             self._pending_acquire_futures.add(acquire_future)
         try:
             if acquire_timeout_seconds is None:
                 permit = acquire_future.result()
+                acceptance.mark_accepted()
             elif acquire_timeout_seconds <= 0:
                 acquire_future.cancel()
+                self._release_abandoned_acquire_permit(acquire_future, acceptance)
                 raise DependencyConcurrencyAdmissionTimeoutError(
                     "dependency admission exceeded remaining execution budget",
                 )
             else:
                 try:
                     permit = acquire_future.result(timeout=acquire_timeout_seconds)
+                    acceptance.mark_accepted()
                 except ConcurrentFuturesTimeoutError:
                     acquire_future.cancel()
+                    self._release_abandoned_acquire_permit(acquire_future, acceptance)
                     raise DependencyConcurrencyAdmissionTimeoutError(
                         "dependency admission exceeded remaining execution budget",
                     ) from None
@@ -370,6 +397,26 @@ class DependencyAttemptExecutionBoundary:
             with self._registry_lock:
                 self._attempts.pop(handle._token, None)
                 self._drain_condition.notify_all()
+
+    def _release_abandoned_acquire_permit(
+        self,
+        acquire_future: ConcurrentFuture[DependencyConcurrencyPermit],
+        acceptance: _AcquireAcceptance,
+    ) -> None:
+        """Release a permit when the sync waiter abandoned an async acquire."""
+        if acceptance.is_accepted():
+            return
+        if not acquire_future.done():
+            return
+        try:
+            permit = acquire_future.result(timeout=0)
+        except BaseException:
+            return
+        release_future = self._schedule_permit_release(permit)
+        try:
+            release_future.result()
+        except BaseException as exc:
+            self._record_lifecycle_failure(exc)
 
     def _schedule_permit_release(
         self,
