@@ -1,6 +1,6 @@
 # QUAL-X — Enterprise Qualification Baseline & Gate Inventory (P0)
 
-**Status:** **QUAL-X-P0** = **READY FOR AUDIT** · **QUAL-X** parent = **OPEN / IN PROGRESS** · **FRZ-REG-01..10** = **OPEN** (global) · **PROD-Q** Dimension **B** = **OPEN/BLOCKED** (unchanged)
+**Status:** **QUAL-X** parent = **POPULATION A — CONDITIONAL EVIDENCE ACCEPTED** @ `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` · **label `QUAL-X CLOSED`** = **PENDING INDEPENDENT COMPLIANCE AUDIT** (roadmap + operator decision 2026-10-23) · **FRZ-REG-01..10** = **OPEN** (global checklist; Population **E** / rollup unchanged) · **PROD-Q** Dimension **B** = **OPEN/BLOCKED** (unchanged) · **ENT-AUDIT-X** = **not certified**
 
 **Branch:** `development`
 
@@ -2315,3 +2315,111 @@ Project-wide pyright: **not** qualified PASS (nonzero exit); BND-03 seam errors 
 **Disposition:** `READY FOR AUDIT — QUAL-X-FINAL BND-03 COMMITTED QUALIFICATION ACCEPTANCE` (pending independent exact-SHA audit).
 
 **FINAL_COMMIT / EXECUTION_SHA:** same as GitHub `development` tip containing this section (operator audit anchor).
+
+---
+
+## QUAL-X — POPULATION A — CONDITIONAL EVIDENCE ACCEPTANCE & CLOSURE PACKAGE
+
+**Task:** `QUAL-X — TERMINAL CLOSURE DOCUMENTATION PACKAGE` · **Parent:** `QUAL-X`
+
+**Operator authorization (verbatim authority):** `OPERATOR APPROVED — QUAL-X CONDITIONAL EVIDENCE ACCEPTANCE` (2026-10-23)
+
+**Disposition:** **`QUAL-X — POPULATION A — CONDITIONAL EVIDENCE ACCEPTANCE PACKAGE COMPLETE`** — **not** formal **`QUAL-X CLOSED`** until independent compliance audit against this package, canonical roadmap Path B §2.0.3, and operator decision below.
+
+| Field | Value |
+| --- | --- |
+| **ACCEPTANCE_SHA / HEAD** | `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` |
+| **Branch** | `development` |
+| **origin/development** | `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` (synchronized @ package authoring) |
+| **Population in scope** | **A** only — `QUAL_X_FINAL_CLOSED_WORLD_INVENTORY`, P3/P4/P5 closed-world, P5 Dimension **A** manifest selections |
+| **Explicitly out of scope** | Population **E** (`CW-PLATFORM-FRZ-ROLLUP` / **ENT-AUDIT-X**); **PROD-Q** Dimension **B** live qualification; global **FRZ-REG PASS**; **ARCH-FREEZE**; **SKILL-X** entry |
+
+### §1 Operator-accepted evidence model (@ ACCEPTANCE_SHA)
+
+| # | Accepted proof | Execution / attestation SHA | Provenance note |
+| --- | --- | --- | --- |
+| 1 | Full Dimension A clean-checkout **535/535** | `9a175177419a396398647e356a08c966f9c2af4e` | **Canonical committed attestation** in this inventory (§ QUAL-X-FINAL full clean-checkout Dimension A); **raw clone session logs not required** for acceptance — operator acknowledges unavailable raw logs |
+| 2 | Targeted REG-07 / post-delta qualification | `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` | **49/49 PASS**, exit **0**; preflight/postflight: `.tmp/session/qual-x-final-reg-07-targeted-delta-2026-10-23/` (`preflight.txt`, `targeted-batch.log`, `postflight.txt`) |
+| 3 | **FRZ-BND-03** functional slice (Option A) | Historical green batches | **70/76** — `.tmp/session/qual-x-parent-final-bnd-03/targeted-batch.log` (70 passed); **+6** P2 ingress nodes per `.tmp/session/qual-x-final-bnd-03-committed/targeted-batch-execution-sha.log` (referenced in REG-07 delta preflight). **Limited SHA provenance** accepted **only** for this BND-03 package — **not** a general execution-provenance waiver |
+| 4 | **REG-06** W2-C storm determinism debt | `75b8f264eec3af4e608d0618a9dfaf02bf1659bc` | Treated as **corrected historical debt** with P4 disposition visibility; **global `FRZ-REG-06` checklist row remains OPEN** until separate formal disposition |
+| 5 | Environment lock continuity | `9a175177…` → `d9ea0d6…` | `uv.lock` / `pyproject.toml` **unchanged** across delta; product/qual tree delta bridged by accepted items 2–3 |
+
+**Not executed in this acceptance wave:** full **535** replay @ `d9ea0d6…`; new pytest; implementation; SHA-only evidence commits.
+
+### §2 Population boundaries (unchanged)
+
+| Population | Owner | Disposition @ acceptance |
+| --- | --- | --- |
+| **A** | **QUAL-X** parent (this package) | **CONDITIONAL EVIDENCE ACCEPTED** @ `d9ea0d6…` |
+| **B** | Historical stage CLOSED waves | **ECAP-P2** — not promoted |
+| **C** | Future mandatory stages | **FUTURE-STAGE OBLIGATION** |
+| **D** | **PROD-Q** Dimension **B** | **DIMENSION B — EVIDENCE REQUIRED** — not certified |
+| **E** | Full freeze checklist rollup | **REG-01 PLATFORM BLOCKED** — **ENT-AUDIT-X** |
+
+### §3 FRZ-REG-01..10 — Population **A** disposition (@ operator acceptance)
+
+Global checklist rows remain **OPEN** unless independently adjudicated elsewhere. This table is **QUAL-X Population A closure semantics only** — one status per criterion.
+
+| Criterion | Population **A** status | Evidence anchor | Global / rollup |
+| --- | --- | --- | --- |
+| **REG-01** | **ALREADY PROVEN** (closed-world P3/P4/P5 + catalog @ delta) | `9a175177…` batch + `d9ea0d6…` catalog integrity in 49-batch | Population **E** remains **BLOCKED** |
+| **REG-02** | **ALREADY PROVEN** (scoped) | Dimension A selections + delta gates (W5, UE-9BR1, P5) | Checklist **OPEN** |
+| **REG-03** | **ALREADY PROVEN** (scoped) | Adversarial selections in Dimension A reuse | Checklist **OPEN** |
+| **REG-04** | **ALREADY PROVEN** (closed-world) | P3/HARDENING-3 + harness paths in accepted reuse + delta integrity | Platform minimality checklist **OPEN** |
+| **REG-05** | **ALREADY PROVEN** (closed-world) | P3 + HARNESS-QINF closed-world gates in accepted reuse | Full platform inventory union **OPEN** |
+| **REG-06** | **ALREADY PROVEN** (Population **A** P4 + W2-C @ `75b8f264…` in accepted model) | P4 nodes in 535; storm excluded from 32-module list by design | **`FRZ-REG-06` checklist row remains OPEN** until separate formal disposition (operator §4) |
+| **REG-07** | **ALREADY PROVEN** (accepted composite) | 535 @ `9a175177…` + 49 @ `d9ea0d6…` + frozen lock | Not global **FRZ-REG-07 PASS** |
+| **REG-08** | **ALREADY PROVEN** (Dimension **A** architecture) | P4 fail-closed in Dimension A reuse | Dimension **B** live HTTP **not certified** |
+| **REG-09** | **ALREADY PROVEN** (scoped) | Architecture/harness gates in reuse + delta | Checklist **OPEN** |
+| **REG-10** | **ALREADY PROVEN** (scoped) | P5 manifest SSOT + assembly @ delta | Not self **QUAL-X CLOSED** |
+
+**REG-06 documentation reconciliation:** `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` **FRZ-REG-06** may still cite W2-C warning debt; accepted model follows `QUAL_X_P4_W2_C_DETERMINISM_DEBT` + R3 @ `75b8f264…` — checklist edit is **out of band** for this package unless auditor requires alignment.
+
+### §4 FRZ-BND-03 (@ accepted BND-03 package)
+
+| Slice | Population **A** status |
+| --- | --- |
+| Execution `RuntimeEventPersistence` import remediation (Option A) | **ALREADY PROVEN** @ implementation lineage `2252de73…` / static correction `c2b72694…` |
+| Port/boundary/adversarial tests in accepted 70/76 bundle | **ALREADY PROVEN** (functional green; limited log SHA) |
+| Global **FRZ-BND-03** checklist PASS | **not claimed** — checklist **OPEN**; COMPAT-X tracked debt semantics preserved where applicable |
+
+### §5 ECAP-P1..P6 (@ acceptance)
+
+| Phase | Assessment |
+| --- | --- |
+| **P1** | Accepted batches ≠ enterprise-wide compliance |
+| **P2** | Historical stage CLOSED rows not promoted |
+| **P3** | Population **A** acceptance ≠ full-platform certification |
+| **P4** | No self **FRZ-REG PASS** / no self **`QUAL-X CLOSED`** label in this commit |
+| **P5** | Evidence SHA attribution explicit in §1 |
+| **P6** | Documentation-only package; no product delta |
+
+### §6 Independent audit gate (mandatory before `QUAL-X CLOSED` label)
+
+Auditor **must** verify on GitHub @ `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce`:
+
+1. Operator decision text matches this § and roadmap Path B §2.0.3.
+2. Committed attestation for `9a175177…` 535/535 matches catalog SSOT (`_p5_freeze_selection_catalog.py`, `QUAL_X_P5_CLEAN_CHECKOUT_PROCEDURE`).
+3. Delta 49 targets cover post-`9a175177…` qual/architecture deltas material to Population **A** (W5, UE-9BR1, P5 integrity, final invariant catalog).
+4. BND-03 accepted test paths exist and match Option A production seam (no forbidden execution import).
+5. No mandatory Population **A** invariant lacks executable proof under the accepted composite model.
+
+**If any mandatory Population A invariant fails (1–5):** **STOP** — do **not** apply **`QUAL-X CLOSED`**; record exact blocker (test path, invariant id, or doc contradiction).
+
+**If audit passes:** auditor may authorize formal **`QUAL-X CLOSED`** (Population **A** parent only) in roadmap + checklist cross-links — still **not** global **FRZ PASS**.
+
+### §7 Path B & downstream
+
+| Item | Status |
+| --- | --- |
+| **PROD-Q** Dimension **B** | **OPEN** — live HTTP / env-classification evidence not waived |
+| **ENT-AUDIT-X** | **not entered** by this acceptance |
+| **SKILL-X** | **not authorized** by this package — awaits formal **`QUAL-X CLOSED`** label per roadmap |
+| **new global FRZ PASS** | **0** |
+
+### §8 Changed files (this package)
+
+- `docs/project/maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md` — this section + status header
+- `docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` — parent **QUAL-X** stage row pointer
+
+**Audit anchor commit:** operator publishes this package on `development`; independent reviewer uses **ACCEPTANCE_SHA** `d9ea0d6…` (or descendant commit containing only this doc delta — auditor reconciles exact tree).
