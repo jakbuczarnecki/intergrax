@@ -205,9 +205,11 @@ class DependencyAttemptExecutionBoundary:
         self._pending_acquire_futures: set[ConcurrentFuture[DependencyConcurrencyPermit]] = (
             set()
         )
-        self._in_flight_acquire_handoffs: dict[
+        self._next_in_flight_acquire_seq = 0
+        self._in_flight_acquire_handoffs: dict[int, _AcquirePermitHandoff] = {}
+        self._in_flight_acquire_futures: dict[
+            int,
             ConcurrentFuture[DependencyConcurrencyPermit],
-            _AcquirePermitHandoff,
         ] = {}
         self._pending_async_release_futures: set[ConcurrentFuture[object]] = set()
         self._detached_pending_release: set[int] = set()
@@ -240,67 +242,74 @@ class DependencyAttemptExecutionBoundary:
         loop = self._require_loop()
         handoff = _AcquirePermitHandoff()
 
+        with self._registry_lock:
+            in_flight_seq = self._next_in_flight_acquire_seq
+            self._next_in_flight_acquire_seq += 1
+            self._in_flight_acquire_handoffs[in_flight_seq] = handoff
+            if self._lifecycle is not _BoundaryLifecycle.OPEN:
+                shutdown_snapshot = [(in_flight_seq, handoff)]
+            else:
+                shutdown_snapshot = None
+
         async def _acquire_coro() -> DependencyConcurrencyPermit:
-            permit = await self._admission.acquire(request)
-            grant_action = handoff.on_physical_grant(permit)
-            if grant_action == "release_in_coro":
-                await self._release_permit_for_abandoned_handoff(permit, handoff)
-                raise _AcquireAbandonedBeforeDelivery()
-            if grant_action == "noop":
-                raise _AcquireAbandonedBeforeDelivery()
-            return permit
+            try:
+                permit = await self._admission.acquire(request)
+                grant_action = handoff.on_physical_grant(permit)
+                if grant_action == "release_in_coro":
+                    await self._release_permit_for_abandoned_handoff(permit, handoff)
+                    raise _AcquireAbandonedBeforeDelivery()
+                if grant_action == "noop":
+                    raise _AcquireAbandonedBeforeDelivery()
+                return permit
+            finally:
+                self._unregister_in_flight_acquire(in_flight_seq)
 
         acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
 
         with self._registry_lock:
-            self._in_flight_acquire_handoffs[acquire_future] = handoff
-            if self._lifecycle is not _BoundaryLifecycle.OPEN:
-                shutdown_snapshot = [(acquire_future, handoff)]
-            else:
-                shutdown_snapshot = None
+            self._in_flight_acquire_futures[in_flight_seq] = acquire_future
             self._pending_acquire_futures.add(acquire_future)
+            if self._lifecycle is not _BoundaryLifecycle.OPEN:
+                shutdown_snapshot = [(in_flight_seq, handoff)]
 
         def _on_acquire_terminal(done_future: ConcurrentFuture[object]) -> None:
             del done_future
-            try:
-                if not acquire_future.done():
-                    return
-                if acquire_future.cancelled():
-                    if (
-                        handoff.is_abandoned()
-                        or handoff.is_release_obligation_claimed()
-                        or handoff.is_release_pending()
-                    ):
-                        self._maybe_release_abandoned_acquire_permit(
-                            acquire_future,
-                            handoff,
-                        )
-                    return
-                exc = acquire_future.exception()
-                if exc is not None:
-                    if isinstance(exc, _AcquireAbandonedBeforeDelivery):
-                        return
-                    if (
-                        handoff.is_release_obligation_claimed()
-                        and not handoff.is_release_complete()
-                    ):
-                        self._maybe_release_abandoned_acquire_permit(
-                            acquire_future,
-                            handoff,
-                        )
-                    return
-                if not (
+            if not acquire_future.done():
+                return
+            if acquire_future.cancelled():
+                if (
                     handoff.is_abandoned()
                     or handoff.is_release_obligation_claimed()
+                    or handoff.is_release_pending()
                 ):
+                    self._maybe_release_abandoned_acquire_permit(
+                        acquire_future,
+                        handoff,
+                    )
+                return
+            exc = acquire_future.exception()
+            if exc is not None:
+                if isinstance(exc, _AcquireAbandonedBeforeDelivery):
                     return
-                self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
-            finally:
-                self._unregister_in_flight_acquire(acquire_future)
+                if (
+                    handoff.is_release_obligation_claimed()
+                    and not handoff.is_release_complete()
+                ):
+                    self._maybe_release_abandoned_acquire_permit(
+                        acquire_future,
+                        handoff,
+                    )
+                return
+            if not (
+                handoff.is_abandoned()
+                or handoff.is_release_obligation_claimed()
+            ):
+                return
+            self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
 
         acquire_future.add_done_callback(_on_acquire_terminal)
         if shutdown_snapshot is not None:
-            self._abort_in_flight_acquires(shutdown_snapshot)
+            self._abort_in_flight_acquire(in_flight_seq, handoff, acquire_future)
         try:
             if acquire_timeout_seconds is None:
                 permit = acquire_future.result()
@@ -705,55 +714,42 @@ class DependencyAttemptExecutionBoundary:
 
     def _abort_in_flight_acquires(
         self,
-        snapshot: list[
-            tuple[
-                ConcurrentFuture[DependencyConcurrencyPermit],
-                _AcquirePermitHandoff,
-            ]
-        ],
+        snapshot: list[tuple[int, _AcquirePermitHandoff]],
     ) -> None:
-        """Mark shutdown abandon and cancel wrappers; retain coroutine tracking until terminal."""
-        for acquire_future, handoff in snapshot:
-            handoff.mark_abandoned()
-            if acquire_future.done():
-                self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
-            else:
-                acquire_future.cancel()
+        """Mark shutdown abandon and cancel wrappers; physical map drains on coroutine finally."""
+        for in_flight_seq, handoff in snapshot:
+            with self._registry_lock:
+                acquire_future = self._in_flight_acquire_futures.get(in_flight_seq)
+            self._abort_in_flight_acquire(in_flight_seq, handoff, acquire_future)
 
-    def _unregister_in_flight_acquire(
+    def _abort_in_flight_acquire(
         self,
-        acquire_future: ConcurrentFuture[DependencyConcurrencyPermit],
+        in_flight_seq: int,
+        handoff: _AcquirePermitHandoff,
+        acquire_future: ConcurrentFuture[DependencyConcurrencyPermit] | None,
     ) -> None:
+        handoff.mark_abandoned()
+        if acquire_future is None:
+            return
+        if acquire_future.done():
+            self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
+        else:
+            acquire_future.cancel()
+
+    def _unregister_in_flight_acquire(self, in_flight_seq: int) -> None:
         with self._registry_lock:
-            self._in_flight_acquire_handoffs.pop(acquire_future, None)
+            self._in_flight_acquire_handoffs.pop(in_flight_seq, None)
+            self._in_flight_acquire_futures.pop(in_flight_seq, None)
             self._drain_condition.notify_all()
 
     def _wait_for_in_flight_acquires(self) -> None:
-        """Quiesce every acquire coroutine started before admission loop stop."""
+        """Quiesce every physical acquire coroutine (not wrapper-future terminal alone)."""
         deadline = time.monotonic() + self._STARTUP_TIMEOUT_SECONDS
         while time.monotonic() < deadline:
             with self._registry_lock:
                 if not self._in_flight_acquire_handoffs:
                     return
-                in_flight = list(self._in_flight_acquire_handoffs)
-            pending = [acquire_future for acquire_future in in_flight if not acquire_future.done()]
-            for acquire_future in pending:
-                try:
-                    acquire_future.result(timeout=0.05)
-                except BaseException:
-                    pass
-            with self._registry_lock:
-                if not self._in_flight_acquire_handoffs:
-                    return
-                if all(
-                    acquire_future.done()
-                    for acquire_future in self._in_flight_acquire_handoffs
-                ):
-                    self._drain_condition.wait(timeout=0.05)
-                else:
-                    pass
-            if pending:
-                time.sleep(0.01)
+                self._drain_condition.wait(timeout=0.05)
         raise RuntimeError(
             "DependencyAttemptExecutionBoundary in-flight acquires did not drain"
         )
