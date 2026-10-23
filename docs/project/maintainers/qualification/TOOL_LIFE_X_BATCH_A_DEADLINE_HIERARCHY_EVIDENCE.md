@@ -17,7 +17,7 @@
 | Pre-remediation | `03d5fc3d54d33ef6230123ab2300756441f744f8` | Independent audit **NOT ACCEPTED** (BA-F02 permit ownership race) |
 | Prior Cursor remediation | (see prior table rows BA-F01/BA-F02) | **45 passed / 4 failed** — governance fixture gap + admission thread drain |
 | **Atomic permit closure (BA-F02 wave)** | **fc59dd350933483205460fa0e84c7d80c37b6bb3** | **50/50** targeted Batch A regression green |
-| **BA-F05 async ownership closure (this wave)** | **df47d957ea321e923d4a03eb029b2d821298d966** | **52/52** targeted Batch A regression green |
+| **BA-F05 async ownership closure (this wave)** | **d76d6d874ed9394d2e1959e490c5835248deea9f** | **52/52** targeted Batch A regression green |
 
 ## BA-F05 — abandoned acquire cleanup before grant visibility (complete)
 
@@ -71,7 +71,7 @@ uv run pytest -p no:xdist \
 | **Skipped** | 0 |
 | **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/pytest-final.log` |
 
-**FINAL_COMMIT:** `df47d957ea321e923d4a03eb029b2d821298d966` (BA-F05 implementation + evidence)
+**FINAL_COMMIT:** `d76d6d874ed9394d2e1959e490c5835248deea9f` (BA-F05 implementation + evidence)
 
 **Historical (BA-F02 only):** implementation `fc59dd350933483205460fa0e84c7d80c37b6bb3` — **50/50**; not attributed to BA-F05 SHA.
 
