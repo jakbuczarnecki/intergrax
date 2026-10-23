@@ -15,8 +15,8 @@
 | **BA-F12 START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
 | **BA-F11 final qualification START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
 | **Test execution SHA (L2 wave 1)** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` + unstaged test-source delta (see § BA-F11 L2) |
-| **Documentation publication SHA (post-L2)** | `839712d8e` (BA-F12) |
-| **Implementation SHA (production)** | `839712d8e` (BA-F12) |
+| **Documentation publication SHA (post-L2)** | `f64390392` (BA-F12) |
+| **Implementation SHA (production)** | `f64390392` (BA-F12) |
 | **BA-F11 START_HEAD** | `205a0ee436ccdedf32a19cb40d09615f24f1a8c3` |
 | **BA-F08 implementation SHA** | `0d3a0d22fe07f7826acfb776c24341c303359838` |
 | **Production baseline (pre-F08)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` (BA-F07) |
@@ -57,7 +57,7 @@
 | **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py`; tests + evidence only elsewhere. |
 | **L1** | **3 passed** — `test_acquire_success_shutdown_before_registration_releases_permit`, `test_shutdown_cancel_races_acquire_success_no_leak`, `test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled`; log `l1-batch-a-ba-f12-final.log`. |
 | **L2** | **NOT RUN** (operator deferral to Batch A closure boundary). Historical waves **58/61**, **58/61**, **59/61** preserved § BA-F11 L2. |
-| **Publication SHA** | `839712d8e` (`fix(runtime): BA-F12 physical permit ownership on cancelled wrapper`) |
+| **Publication SHA** | `f64390392` (`fix(runtime): BA-F12 physical permit ownership on cancelled wrapper`) |
 
 **Scoped closure matrix (BA-F12-affected TL):**
 
