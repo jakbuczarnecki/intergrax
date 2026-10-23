@@ -12,7 +12,7 @@ from concurrent.futures import Future as ConcurrentFuture
 from concurrent.futures import TimeoutError as ConcurrentFuturesTimeoutError
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyAdmissionPort,
@@ -33,12 +33,18 @@ class DependencyAttemptReleaseInvariantError(RuntimeError):
     """Permit release failed for a physical dependency attempt (fail-closed)."""
 
 
+class _AcquireAbandonedBeforeDelivery(Exception):
+    """Async acquire granted after sync waiter abandoned (permit released on loop)."""
+
+
 class _AcquireHandoffState(StrEnum):
     """Permit ownership between async grant completion and sync caller acceptance."""
 
     WAITING = "WAITING"
+    GRANT_AVAILABLE = "GRANT_AVAILABLE"
     CALLER_OWNS = "CALLER_OWNS"
     ABANDONED = "ABANDONED"
+    RELEASE_OBLIGATION_CLAIMED = "RELEASE_OBLIGATION_CLAIMED"
     RELEASED = "RELEASED"
 
 
@@ -52,7 +58,10 @@ class _AcquirePermitHandoff:
     def claim_successful_grant(self) -> bool:
         """Caller linearization immediately after a successful ``result()``."""
         with self._lock:
-            if self._state is not _AcquireHandoffState.WAITING:
+            if self._state not in (
+                _AcquireHandoffState.WAITING,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+            ):
                 return False
             self._state = _AcquireHandoffState.CALLER_OWNS
             return True
@@ -61,7 +70,10 @@ class _AcquirePermitHandoff:
         with self._lock:
             if self._state is _AcquireHandoffState.CALLER_OWNS:
                 return
-            if self._state is _AcquireHandoffState.RELEASED:
+            if self._state in (
+                _AcquireHandoffState.RELEASED,
+                _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED,
+            ):
                 return
             self._state = _AcquireHandoffState.ABANDONED
 
@@ -69,13 +81,56 @@ class _AcquirePermitHandoff:
         with self._lock:
             return self._state is _AcquireHandoffState.ABANDONED
 
-    def try_claim_abandoned_release(self) -> bool:
-        """Exactly one cleanup path may release an abandoned granted permit."""
+    def is_release_obligation_claimed(self) -> bool:
         with self._lock:
-            if self._state is not _AcquireHandoffState.ABANDONED:
+            return self._state is _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED
+
+    def is_release_complete(self) -> bool:
+        with self._lock:
+            return self._state is _AcquireHandoffState.RELEASED
+
+    def try_claim_release_obligation(self) -> bool:
+        """Claim (or re-enter) abandoned cleanup before permit observation."""
+        with self._lock:
+            if self._state in (
+                _AcquireHandoffState.CALLER_OWNS,
+                _AcquireHandoffState.RELEASED,
+            ):
                 return False
+            if self._state is _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED:
+                return True
+            if self._state in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+            ):
+                self._state = _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED
+                return True
+            return False
+
+    def complete_release(self) -> None:
+        with self._lock:
             self._state = _AcquireHandoffState.RELEASED
-            return True
+
+    def on_physical_grant(
+        self,
+        permit: DependencyConcurrencyPermit,
+    ) -> Literal["deliver", "release_in_coro"]:
+        """Linearize physical grant vs sync abandon on the admission event loop."""
+        with self._lock:
+            if self._state is _AcquireHandoffState.WAITING:
+                self._state = _AcquireHandoffState.GRANT_AVAILABLE
+                return "deliver"
+            if self._state in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED,
+            ):
+                self._state = _AcquireHandoffState.RELEASED
+                return "release_in_coro"
+            if self._state is _AcquireHandoffState.CALLER_OWNS:
+                raise RuntimeError("invariant: physical grant after caller ownership")
+            if self._state is _AcquireHandoffState.RELEASED:
+                return "release_in_coro"
+            raise RuntimeError(f"unexpected acquire handoff state: {self._state!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,27 +217,34 @@ class DependencyAttemptExecutionBoundary:
         """Block until admission acquire completes or raises a typed admission error."""
         self._require_accepts_attempts()
         loop = self._require_loop()
+        handoff = _AcquirePermitHandoff()
 
         async def _acquire_coro() -> DependencyConcurrencyPermit:
-            return await self._admission.acquire(request)
+            permit = await self._admission.acquire(request)
+            if handoff.on_physical_grant(permit) == "release_in_coro":
+                await permit.release()
+                raise _AcquireAbandonedBeforeDelivery()
+            return permit
 
         acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
-        handoff = _AcquirePermitHandoff()
 
         def _on_acquire_terminal(done_future: ConcurrentFuture[object]) -> None:
             del done_future
             if not acquire_future.done():
                 return
-            if acquire_future.cancelled():
-                if handoff.is_abandoned():
-                    self._maybe_release_abandoned_acquire_permit(
-                        acquire_future,
-                        handoff,
-                    )
+            exc = acquire_future.exception()
+            if exc is not None:
+                if (
+                    handoff.is_release_obligation_claimed()
+                    and not handoff.is_release_complete()
+                    and not isinstance(exc, _AcquireAbandonedBeforeDelivery)
+                ):
+                    handoff.complete_release()
                 return
-            if acquire_future.exception() is not None:
-                return
-            if not handoff.is_abandoned():
+            if not (
+                handoff.is_abandoned()
+                or handoff.is_release_obligation_claimed()
+            ):
                 return
             self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
 
@@ -460,15 +522,22 @@ class DependencyAttemptExecutionBoundary:
         handoff: _AcquirePermitHandoff,
     ) -> None:
         """Release a permit when the sync waiter abandoned an async acquire."""
-        if not handoff.try_claim_abandoned_release():
+        if not handoff.try_claim_release_obligation():
             return
         if not acquire_future.done():
             return
+        if handoff.is_release_complete():
+            return
         try:
             permit = acquire_future.result(timeout=0)
+        except _AcquireAbandonedBeforeDelivery:
+            handoff.complete_release()
+            return
         except BaseException:
+            handoff.complete_release()
             return
         self._execute_permit_release(permit, wait=False)
+        handoff.complete_release()
 
     def _execute_permit_release(
         self,

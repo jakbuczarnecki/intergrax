@@ -812,3 +812,50 @@ def test_acquire_handoff_callback_before_caller_claim_no_double_release() -> Non
         boundary.complete_direct(holder[0])  # type: ignore[arg-type]
         assert admission.active == 0
         boundary.close()
+
+
+def test_ba_f05_release_obligation_before_done_does_not_orphan_late_grant() -> None:
+    """BA-F05: cleanup obligation before ``done()`` must still release a late grant."""
+    admission = _FakeAdmissionPort(capacity=1, wait_seconds=0.12)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    pool = ThreadPoolExecutor(max_workers=1)
+    hold = threading.Event()
+    worker = pool.submit(hold.wait)
+    boundary.bind_worker(first, worker)
+    assert hold.wait(timeout=0.2) or worker.running()
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.2)
+    assert admission.active == 1
+    hold.set()
+    worker.result(timeout=5)
+    boundary.complete_attached(first)
+    assert admission.active == 0
+    probe = boundary.acquire(_request("tool-a"))
+    boundary.complete_direct(probe)
+    assert admission.active == 0
+    pool.shutdown(wait=True)
+    boundary.close()
+
+
+def test_ba_f05_zero_budget_timeout_before_grant_still_releases() -> None:
+    """``acquire_timeout_seconds=0`` must not mark cleanup complete before grant."""
+    admission = _FakeAdmissionPort(capacity=1, wait_seconds=0.1)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    pool = ThreadPoolExecutor(max_workers=1)
+    hold = threading.Event()
+    worker = pool.submit(hold.wait)
+    boundary.bind_worker(first, worker)
+    assert hold.wait(timeout=0.2) or worker.running()
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0)
+    time.sleep(0.15)
+    assert admission.active == 1
+    hold.set()
+    worker.result(timeout=5)
+    boundary.complete_attached(first)
+    assert admission.active == 0
+    pool.shutdown(wait=True)
+    boundary.close()
