@@ -10,7 +10,7 @@
 | **BA-F07 START_HEAD** | `e3afb404879f0ca4fc1cede779868672e01b7103` |
 | **Disposition** | **`TOOL-LIFE-X BATCH A — READY FOR INDEPENDENT AUDIT`** |
 | **Implementation SHA (production)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` (BA-F07; unchanged this wave) |
-| **L2 execution SHA** | `d0bb79bc632b268be7ca8fe5cf236f1d9151d003` |
+| **L2 execution SHA** | `af96371edb0efa949f0cebae77e9b4af47b30c2b` |
 | **Operator session START_HEAD** | `ff6b1b6c7646dc4ed6f131e30ada3d44471c2059` |
 
 **Non-closure:** Does not close `TOOL-LIFE-X`, does not promote global `FRZ-*` PASS, does not substitute `HARNESS-W4` / `DIST-SCALE-X`.
@@ -25,7 +25,7 @@
 | **BA-F05 async ownership closure** | **d76d6d874ed9394d2e1959e490c5835248deea9f** | **52/52** targeted Batch A regression green |
 | **BA-F06 cancellation-safe finalization** | `e3afb404879f0ca4fc1cede779868672e01b7103` | **L2 NOT RUN** (operator deferral); static review + prepared L1 sources |
 | **BA-F07 cleanup accounting (shielded abandon release)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` | **L2 NOT RUN**; `STATIC REVIEW COMPLETED — L2 VALIDATION PENDING` |
-| **Batch A consolidated L2 (final)** | `d0bb79bc632b268be7ca8fe5cf236f1d9151d003` | **56 collected / 56 passed / 0 failed / 0 skipped** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-final.log` (test-only qualification fixes; production @ `693ecafd…`) |
+| **Batch A consolidated L2 (final)** | `af96371edb0efa949f0cebae77e9b4af47b30c2b` | **56 collected / 56 passed / 0 failed / 0 skipped** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-final.log` (test-only qualification fixes; production @ `693ecafd…`) |
 
 ## Static shutdown / acquire race resolution (final review @ `693ecafd…`)
 
