@@ -30,6 +30,13 @@ from intergrax.skills.snapshot_digest import compute_resolved_skill_pack_digest
 SKILL_EXECUTION_BINDING_HANDLE = "skill_execution_binding"
 SKILL_EXECUTION_PINNING_STORE_HANDLE = "skill_execution_pinning_store"
 
+BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1 = (
+    "skill_execution_binding_integrity.manifest_observation.v1"
+)
+BINDING_INTEGRITY_RUNTIME_CONTENT_V2 = (
+    "skill_execution_binding_integrity.runtime_content.v2"
+)
+
 
 class SkillExecutionPinningConflictError(SkillResolutionError):
     """Conflicting bind for the same tenant/execution."""
@@ -50,6 +57,8 @@ class SkillExecutionBinding:
     contribution_provenance: tuple[SkillContributionProvenance, ...]
     observed_manifests: tuple[SkillManifest, ...] = ()
     runtime_content_digests: tuple[tuple[str, str], ...] = ()
+    binding_integrity_version: str = BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1
+    content_bound_skill_ids: tuple[str, ...] = ()
 
 
 @runtime_checkable
@@ -124,6 +133,28 @@ def collect_runtime_content_digests(
     return tuple(sorted(digests))
 
 
+def _binding_integrity_profile_for_digests(
+    runtime_content_digests: tuple[tuple[str, str], ...],
+) -> tuple[str, tuple[str, ...]]:
+    if not runtime_content_digests:
+        return (BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1, ())
+    bound_ids = tuple(sorted({skill_id for skill_id, _ in runtime_content_digests}))
+    return (BINDING_INTEGRITY_RUNTIME_CONTENT_V2, bound_ids)
+
+
+def _assert_binding_matches_storage_scope(
+    binding: SkillExecutionBinding,
+    *,
+    tenant_id: str,
+    execution_id: ExecutionId,
+) -> None:
+    normalized_tenant = tenant_id.strip()
+    if binding.tenant_id != normalized_tenant:
+        raise SkillResolutionError("skill execution binding tenant_id mismatch")
+    if binding.execution_id != execution_id:
+        raise SkillResolutionError("skill execution binding execution_id mismatch")
+
+
 def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> None:
     """Fail closed on digest, provenance, manifest, or identity mismatch."""
     normalized_tenant = binding.tenant_id.strip()
@@ -136,9 +167,27 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
     if binding.resolved_pack.snapshot_digest != expected_digest:
         raise SkillResolutionError("resolved pack snapshot_digest mismatch")
 
+    pack_skill_ids = {ref.skill_id for ref in binding.resolved_pack.resolved_skills}
+    is_empty_pack = not pack_skill_ids
+
+    if is_empty_pack:
+        if binding.observed_manifests:
+            raise SkillResolutionError("empty resolved pack cannot retain observed manifests")
+        if binding.runtime_content_digests:
+            raise SkillResolutionError("empty resolved pack cannot retain runtime content digests")
+        if binding.contribution_provenance:
+            raise SkillResolutionError("empty resolved pack cannot retain contribution provenance")
+        if binding.content_bound_skill_ids:
+            raise SkillResolutionError("empty resolved pack cannot retain content-bound skill ids")
+        if binding.binding_integrity_version != BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1:
+            raise SkillResolutionError(
+                "empty resolved pack requires manifest-observation binding integrity",
+            )
+        return
+
     if not binding.observed_manifests:
         raise SkillResolutionError(
-            "historical skill execution binding lacks observed manifests for recovery",
+            "nonempty resolved pack requires observed manifests for recovery",
         )
 
     manifest_by_skill_id = {
@@ -165,9 +214,50 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
                 f"manifest version mismatch for {ref.qualified_id}",
             )
 
+    integrity_version = binding.binding_integrity_version
+    if integrity_version not in (
+        BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
+        BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
+    ):
+        raise SkillResolutionError("unsupported skill execution binding integrity version")
+
+    digest_skill_ids: list[str] = []
     for skill_id, digest in binding.runtime_content_digests:
         if not digest.strip():
             raise SkillResolutionError(f"empty runtime content digest for skill: {skill_id}")
+        if skill_id in digest_skill_ids:
+            raise SkillResolutionError(f"duplicate runtime content digest for skill: {skill_id}")
+        digest_skill_ids.append(skill_id)
+        if skill_id not in pack_skill_ids:
+            raise SkillResolutionError(
+                f"runtime content digest for unknown resolved skill: {skill_id}",
+            )
+        manifest = manifest_by_skill_id[skill_id]
+        if digest == manifest_content_fingerprint(manifest):
+            raise SkillResolutionError(
+                f"runtime content digest cannot equal manifest serialization fingerprint: {skill_id}",
+            )
+
+    bound_from_digests = tuple(sorted(digest_skill_ids))
+    if binding.content_bound_skill_ids != bound_from_digests:
+        raise SkillResolutionError("content_bound_skill_ids mismatch runtime content digests")
+
+    if integrity_version == BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1:
+        if binding.runtime_content_digests or binding.content_bound_skill_ids:
+            raise SkillResolutionError(
+                "manifest-observation binding cannot claim runtime content digests",
+            )
+        return
+
+    if not bound_from_digests:
+        raise SkillResolutionError(
+            "runtime-content binding integrity requires content-bound skill digests",
+        )
+    for skill_id in binding.content_bound_skill_ids:
+        if skill_id not in pack_skill_ids:
+            raise SkillResolutionError(
+                f"content-bound skill not present in resolved pack: {skill_id}",
+            )
 
 
 def _build_skill_execution_binding(
@@ -178,6 +268,9 @@ def _build_skill_execution_binding(
     composition: ResolvedSkillComposition,
     runtime_content_digests: tuple[tuple[str, str], ...] = (),
 ) -> SkillExecutionBinding:
+    integrity_version, content_bound_skill_ids = _binding_integrity_profile_for_digests(
+        runtime_content_digests,
+    )
     binding = SkillExecutionBinding(
         tenant_id=tenant_id.strip(),
         execution_id=execution_id,
@@ -189,6 +282,8 @@ def _build_skill_execution_binding(
         ),
         observed_manifests=composition.observed_manifests,
         runtime_content_digests=runtime_content_digests,
+        binding_integrity_version=integrity_version,
+        content_bound_skill_ids=content_bound_skill_ids,
     )
     verify_skill_execution_binding_integrity(binding)
     return binding
@@ -260,6 +355,11 @@ def require_bound_skill_pack(
         raise SkillResolutionError(
             f"no bound skill pack for execution {execution_id}",
         )
+    _assert_binding_matches_storage_scope(
+        binding,
+        tenant_id=tenant_id,
+        execution_id=execution_id,
+    )
     verify_skill_execution_binding_integrity(binding)
     return binding
 
@@ -308,20 +408,40 @@ def resolve_bound_skill_pack(
     pinning_store: SkillExecutionPinningStore | None,
     execution_id: ExecutionId | None = None,
     explicit_binding: SkillExecutionBinding | None = None,
+    skill_execution_recovery_required: bool = False,
 ) -> ResolvedSkillPack:
     """
     Canonical consumer entry — resolve once per execution, then reuse bound pack.
 
     When ``explicit_binding`` is provided it wins over store lookup.
+    When ``skill_execution_recovery_required`` is true, missing durable binding
+    fails closed instead of performing a fresh bind.
     """
+    active_execution_id = execution_id or peek_active_execution_id()
     if explicit_binding is not None:
+        if active_execution_id is not None:
+            _assert_binding_matches_storage_scope(
+                explicit_binding,
+                tenant_id=tenant_id,
+                execution_id=active_execution_id,
+            )
         verify_skill_execution_binding_integrity(explicit_binding)
         return explicit_binding.resolved_pack
 
-    active_execution_id = execution_id or peek_active_execution_id()
     if pinning_store is not None and active_execution_id is not None and tenant_id.strip():
+        if skill_execution_recovery_required:
+            return recover_bound_skill_pack(
+                tenant_id=tenant_id,
+                execution_id=active_execution_id,
+                pinning_store=pinning_store,
+            )
         existing = pinning_store.get(tenant_id=tenant_id, execution_id=active_execution_id)
         if existing is not None:
+            _assert_binding_matches_storage_scope(
+                existing,
+                tenant_id=tenant_id,
+                execution_id=active_execution_id,
+            )
             verify_skill_execution_binding_integrity(existing)
             return existing.resolved_pack
         binding = bind_resolved_skill_pack(
@@ -332,6 +452,11 @@ def resolve_bound_skill_pack(
             pinning_store=pinning_store,
         )
         return binding.resolved_pack
+
+    if skill_execution_recovery_required:
+        raise SkillResolutionError(
+            "skill execution recovery required but pinning store or execution identity missing",
+        )
 
     return resolve_skill_pack_from_profile(skill_profile, skill_registry=skill_registry)
 

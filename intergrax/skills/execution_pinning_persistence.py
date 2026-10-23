@@ -26,6 +26,7 @@ from intergrax.skills.core.version_binding import (
     SkillVersionResolutionMode,
 )
 from intergrax.skills.execution_binding import (
+    BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
     SkillExecutionBinding,
     SkillExecutionPinningConflictError,
     SkillExecutionPinningStorageError,
@@ -129,6 +130,8 @@ def _binding_storage_payload(binding: SkillExecutionBinding) -> dict[str, Any]:
             {"skill_id": skill_id, "content_digest": digest}
             for skill_id, digest in binding.runtime_content_digests
         ],
+        "binding_integrity_version": binding.binding_integrity_version,
+        "content_bound_skill_ids": list(binding.content_bound_skill_ids),
     }
 
 
@@ -175,6 +178,14 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
                 for item in digest_items
             ),
         )
+        binding_integrity_version = str(
+            binding_raw.get(
+                "binding_integrity_version",
+                BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
+            ),
+        )
+        content_bound_raw = binding_raw.get("content_bound_skill_ids", [])
+        content_bound_skill_ids = tuple(str(item) for item in content_bound_raw)
     except (KeyError, TypeError, ValueError) as exc:
         raise SkillExecutionPinningStorageError(
             "corrupt skill execution binding snapshot",
@@ -187,11 +198,30 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
         contribution_provenance=provenance,
         observed_manifests=manifests,
         runtime_content_digests=runtime_content_digests,
+        binding_integrity_version=binding_integrity_version,
+        content_bound_skill_ids=content_bound_skill_ids,
     )
     from intergrax.skills.execution_binding import verify_skill_execution_binding_integrity
 
     verify_skill_execution_binding_integrity(binding)
     return binding
+
+
+def _assert_decoded_binding_scope(
+    binding: SkillExecutionBinding,
+    *,
+    tenant_id: str,
+    execution_id: ExecutionId,
+) -> None:
+    normalized_tenant = tenant_id.strip()
+    if binding.tenant_id != normalized_tenant:
+        raise SkillExecutionPinningStorageError(
+            "skill execution binding tenant_id mismatch in storage record",
+        )
+    if binding.execution_id != execution_id:
+        raise SkillExecutionPinningStorageError(
+            "skill execution binding execution_id mismatch in storage record",
+        )
 
 
 class KvSkillExecutionPinningStore:
@@ -247,7 +277,13 @@ class KvSkillExecutionPinningStore:
             ) from exc
         if raw is None:
             return None
-        return decode_skill_execution_binding(raw)
+        binding = decode_skill_execution_binding(raw)
+        _assert_decoded_binding_scope(
+            binding,
+            tenant_id=tenant_id,
+            execution_id=execution_id,
+        )
+        return binding
 
 
 class DocumentStoreSkillExecutionPinningStore:
@@ -276,10 +312,15 @@ class DocumentStoreSkillExecutionPinningStore:
         )
         if self._document_store.put_if_absent(document):
             return
-        existing = self._document_store.get(partition_key, row_key)
+        try:
+            existing = self._document_store.get(partition_key, row_key)
+        except Exception as exc:
+            raise SkillExecutionPinningStorageError(
+                "skill execution pinning storage read failed after document create",
+            ) from exc
         if existing is None:
             raise SkillExecutionPinningStorageError(
-                "skill execution pinning document create failed",
+                "skill execution pinning document create failed without readable record",
             )
         stored = decode_skill_execution_binding(_binding_record_to_bytes(existing))
         if not bindings_equivalent_for_pinning(stored, binding):
@@ -304,7 +345,13 @@ class DocumentStoreSkillExecutionPinningStore:
             ) from exc
         if record is None:
             return None
-        return decode_skill_execution_binding(_binding_record_to_bytes(record))
+        binding = decode_skill_execution_binding(_binding_record_to_bytes(record))
+        _assert_decoded_binding_scope(
+            binding,
+            tenant_id=tenant_id,
+            execution_id=execution_id,
+        )
+        return binding
 
 
 def _binding_record_to_bytes(record: DocumentRecord) -> bytes:

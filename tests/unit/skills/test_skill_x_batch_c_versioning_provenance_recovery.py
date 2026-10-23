@@ -4,29 +4,41 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import threading
 from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_execution_id
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore, DocumentRecord
 from intergrax.skills.contribution_provenance import SkillContributionKind, contributors_for
 from intergrax.skills.contracts.skill_runtime_binding_metadata import SkillRuntimeBindingMetadata
 from intergrax.skills.core.contracts import SkillManifest
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
 from intergrax.skills.execution_binding import (
+    BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
     InMemorySkillExecutionPinningStore,
+    SkillExecutionBinding,
     SkillExecutionPinningConflictError,
     SkillExecutionPinningStorageError,
     bind_resolved_skill_pack,
+    binding_from_composition,
     collect_runtime_content_digests,
     manifest_content_fingerprint,
     recover_bound_skill_pack,
     recover_skill_execution_binding,
     rehydrate_resolved_composition,
     require_bound_skill_pack,
+    resolve_bound_skill_pack,
+    verify_skill_execution_binding_integrity,
 )
 from intergrax.skills.execution_pinning_durability import (
     DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG,
@@ -450,6 +462,192 @@ def test_wire_skill_execution_pinning_store_rejects_dual_backends() -> None:
     doc = InMemoryConditionalDocumentStore()
     with pytest.raises(ValueError, match="not both"):
         wire_skill_execution_pinning_store(kv_store=backing, document_store=doc)
+
+
+def test_empty_composition_bind_recover_and_replay() -> None:
+    store = InMemorySkillExecutionPinningStore()
+    registry = SkillRegistry()
+    composition = SkillResolver(registry).resolve_composition(())
+    execution_id = mint_execution_id()
+    profile = SkillProfile()
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        skill_profile=profile,
+        skill_registry=registry,
+        pinning_store=store,
+        resolved_composition=composition,
+    )
+    assert binding.resolved_pack.resolved_skills == ()
+    assert binding.observed_manifests == ()
+    assert binding.runtime_content_digests == ()
+    recovered = recover_skill_execution_binding(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        pinning_store=store,
+    )
+    assert rehydrate_resolved_composition(recovered).pack == composition.pack
+
+
+def test_nonempty_composition_rejects_missing_manifests() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+    )
+    tampered = dataclasses.replace(binding, observed_manifests=())
+    with pytest.raises(SkillResolutionError, match="requires observed manifests"):
+        verify_skill_execution_binding_integrity(tampered)
+
+
+def test_runtime_content_digest_duplicate_and_mismatch_rejected() -> None:
+    registry = SkillRegistry()
+    registry.register(
+        _manifest("a.pack"),
+        binding=_binding_metadata("a.pack", "1.0.0", "sha256:pkg-a"),
+    )
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+        runtime_content_digests=(("a.pack", "sha256:pkg-a"),),
+    )
+    tampered = dataclasses.replace(
+        binding,
+        runtime_content_digests=(
+            ("a.pack", "sha256:pkg-a"),
+            ("a.pack", "sha256:pkg-b"),
+        ),
+    )
+    with pytest.raises(SkillResolutionError, match="duplicate runtime content digest"):
+        verify_skill_execution_binding_integrity(tampered)
+
+
+def test_manifest_fingerprint_cannot_pose_as_runtime_content_digest() -> None:
+    registry = SkillRegistry()
+    manifest = _manifest("a.pack")
+    registry.register(manifest)
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+    )
+    forged = dataclasses.replace(
+        binding,
+        runtime_content_digests=(("a.pack", manifest_content_fingerprint(manifest)),),
+        binding_integrity_version=BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
+        content_bound_skill_ids=("a.pack",),
+    )
+    with pytest.raises(SkillResolutionError, match="manifest serialization fingerprint"):
+        verify_skill_execution_binding_integrity(forged)
+
+
+def test_tampered_binding_snapshot_digest_rejected() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    pinning = InMemorySkillExecutionPinningStore()
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        skill_registry=registry,
+        pinning_store=pinning,
+        resolved_composition=composition,
+    )
+    tampered_pack = binding.resolved_pack
+    object.__setattr__(tampered_pack, "snapshot_digest", "forged")
+    tampered = SkillExecutionBinding(
+        tenant_id=binding.tenant_id,
+        execution_id=binding.execution_id,
+        configured_skill_ids=binding.configured_skill_ids,
+        resolved_pack=tampered_pack,
+        contribution_provenance=binding.contribution_provenance,
+        observed_manifests=binding.observed_manifests,
+        runtime_content_digests=binding.runtime_content_digests,
+        binding_integrity_version=binding.binding_integrity_version,
+        content_bound_skill_ids=binding.content_bound_skill_ids,
+    )
+    with pytest.raises(SkillResolutionError, match="snapshot_digest mismatch"):
+        verify_skill_execution_binding_integrity(tampered)
+
+
+def test_forged_explicit_binding_tenant_mismatch_rejected() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+    )
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    try:
+        with pytest.raises(SkillResolutionError, match="tenant_id mismatch"):
+            resolve_bound_skill_pack(
+                tenant_id="tenant-b",
+                skill_profile=SkillProfile(enabled=["a.pack"]),
+                skill_registry=registry,
+                pinning_store=InMemorySkillExecutionPinningStore(),
+                explicit_binding=binding,
+            )
+    finally:
+        reset_active_execution_identity(token)
+
+
+def test_resumed_execution_missing_pin_fails_closed() -> None:
+    store = InMemorySkillExecutionPinningStore()
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack"))
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    try:
+        with pytest.raises(SkillResolutionError, match="no bound skill pack"):
+            resolve_bound_skill_pack(
+                tenant_id="tenant-a",
+                skill_profile=SkillProfile(enabled=["a.pack"]),
+                skill_registry=registry,
+                pinning_store=store,
+                skill_execution_recovery_required=True,
+            )
+    finally:
+        reset_active_execution_identity(token)
+
+
+def test_runtime_content_binding_integrity_version_on_verified_metadata() -> None:
+    registry = SkillRegistry()
+    registry.register(
+        _manifest("a.pack"),
+        binding=_binding_metadata("a.pack", "1.0.0", "sha256:verified"),
+    )
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+        runtime_content_digests=(("a.pack", "sha256:verified"),),
+    )
+    assert binding.binding_integrity_version == BINDING_INTEGRITY_RUNTIME_CONTENT_V2
+    verify_skill_execution_binding_integrity(binding)
 
 
 def test_encode_round_trip_preserves_binding() -> None:
