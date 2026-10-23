@@ -2186,4 +2186,61 @@ Log: `.tmp/session/qual-x-final-frz-bnd-03-option-a/targeted-batch.log`
 
 **Disposition:** `READY FOR AUDIT — QUAL-X-FINAL FRZ-BND-03 OPTION A CONTRACT CORRECTION` (not QUAL-X CLOSED).
 
-**EXECUTION_SHA / FINAL_COMMIT:** `2252de73b7ab0ecb84af36963f8312e39227c71d` _(gate batch 26 passed @ `82b867803…` implementation tree; SHA metadata aligned in amend — code identity unchanged)_
+**IMPLEMENTATION_SHA (FINAL_COMMIT):** `2252de73b7ab0ecb84af36963f8312e39227c71d`
+
+**HISTORICAL_BATCH_EXECUTION_SHA:** `82b86780342c1374878d31835a4a18d30b1d5b89` _(original Option A implementation commit; targeted gate batch **26 passed** on this tree)_
+
+**CODE_EQUIVALENCE:** `git diff 82b867803… 2252de73… -- intergrax/` is empty _(amend `2252de73` = metadata/docs delta only on `intergrax/`)_
+
+**EVIDENCE_PUBLICATION_SHA:** `ce5c5f41c3ef9c6cbd8c661ebfde94910be3d916` _(docs-only SHA alignment; not runtime execution evidence)_
+
+---
+
+## QUAL-X-FINAL — BND-03 TYPE COMPATIBILITY & EVIDENCE FINALIZATION
+
+**START_HEAD / HEAD:** `ce5c5f41c3ef9c6cbd8c661ebfde94910be3d916` · `development` · `origin/development` synced · clean tracked tree
+
+### §2 contract compatibility (Option A — PASS at sanctioned paths)
+
+| Question | Verdict |
+| --- | --- |
+| Authorized callers still pass existing stores? | **Yes** — e.g. `open_runtime_event_persistence()` → `RuntimeEventPersistence` into `build_debug_minimal_nexus_loop` / `wire_host_observability` (unchanged instances). |
+| `EvidencePersistencePort` → `RuntimeEventPersistence` parameter forward? | **Not statically substitutable** — port omits `close()`, `list_for_run()` and ABC nominal type; pyright `reportArgumentType` on execution→Nexus forward (`debug_lab_nexus_loop.py:30`, `host_observability_composition.py:34`). |
+| Structural port vs Nexus owner? | Nexus / `wire_nexus_observability` / `resolve_runtime_event_persistence` remain **`RuntimeEventPersistence`** owners; execution public seam is **`EvidencePersistencePort`** (aligned with `HostObservabilityStores`). |
+| Return / event / exception models | Shared operational methods match; adapter path `RuntimeEventPersistence` → `EvidencePersistencePort` via `RuntimeEventPersistenceEvidenceAdapter` + `as_evidence_persistence_port`; `RuntimeEventBus` consumes port. |
+| Public annotation vs runtime-accepted set | Execution parameters accept any port; **Nexus forward requires `RuntimeEventPersistence` implementations** at runtime — bounded, operator-accepted Option A typing seam (not a widening of port operations). |
+
+**Runtime behavior:** unchanged vs pre-Option A for current production/debug/host call graph.
+
+**Decision:** **PASS** for FRZ-BND-03 Option A import-boundary objective; static forward mismatch is **documented seam debt**, not a new architecture fork (no STOP).
+
+### §3 AST gate
+
+- Population: `intergrax/runtime/execution/**/*.py` (excluding `__pycache__`).
+- Rule: `from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence` only (`_execution_runtime_event_persistence_import_violations`).
+- Negative proof: `test_execution_engine_rejects_synthetic_runtime_event_persistence_import` uses the same helper.
+- **Limitation (canonical narrow rule):** `ImportFrom` on symbol `RuntimeEventPersistence` only; other imports from `persistence_contract` in execution (e.g. `MandatoryEvidencePersistenceError`) are out of scope; module-attribute access not scanned.
+
+### §4–§5 verification @ HEAD `ce5c5f41…`
+
+**Pyright** (project `uv run pyright`, no repo-wide config): targeted modules — **7 errors**, including **2** on BND-03 seam (`EvidencePersistencePort` → `RuntimeEventPersistence`); remainder pre-existing on `NexusLoop` / middleware unrelated to BND-03.
+
+**Pytest** (deduplicated batch, **84 passed** @ `ce5c5f41…`):
+
+`uv run pytest -p no:xdist tests/unit/runtime/events/test_evidence_persistence_boundary.py tests/qualification/qual_x/test_qual_x_p5_freeze_qualification_suite_assembly.py tests/qualification/qual_x/test_qual_x_p3_inventory_allowlist_recovery_integrity.py tests/qualification/qual_x/test_qual_x_final_invariant_coverage_catalog_integrity.py tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py`
+
+Log: `.tmp/session/qual-x-final-bnd-03-type-evidence/targeted-batch.log`
+
+### REG / ECAP disposition (unchanged global OPEN)
+
+| Criterion | Disposition |
+| --- | --- |
+| FRZ-BND-03 | **FORMAL ACCEPTANCE PENDING** — execution `RuntimeEventPersistence` import debt remediated @ `2252de73…`; global checklist **OPEN** |
+| FRZ-REG-01 | OPEN (platform) |
+| FRZ-REG-02 | OPEN — F01 / UE-9BR1 linkage |
+| FRZ-REG-03 | OPEN |
+| FRZ-REG-07 | HISTORICAL 535 @ `9a175177…` + HEAD targeted batch supplements BND-03 |
+| FRZ-REG-09 | OPEN — AST gate credibility for execution persistence import |
+| FRZ-REG-10 | OPEN — P5 F01 includes **FRZ-BND-03**; manifest integrity tests green |
+
+**Disposition:** `READY FOR AUDIT — QUAL-X-FINAL BND-03 TYPE & EVIDENCE ACCEPTANCE` (not QUAL-X CLOSED; Path B / ROADMAP-REPLAY-X preserved).
