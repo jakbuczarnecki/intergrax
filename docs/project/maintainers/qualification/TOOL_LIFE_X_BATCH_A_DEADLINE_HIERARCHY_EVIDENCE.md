@@ -11,8 +11,12 @@
 | **BA-F08 START_HEAD** | `4038cc5995e26758cc5143e430fed252b8740c6d` |
 | **BA-F09 START_HEAD** | `1dd30bffa8f2f9ed55517e7e43015962906f0439` |
 | **BA-F10 START_HEAD** | `032b983ede3b0e6dee44083a4070e25326465006` |
-| **Disposition** | **`TOOL-LIFE-X BATCH A — IMPLEMENTATION COMPLETE — FINAL QUALIFICATION PENDING`** |
-| **Implementation SHA (production)** | `bb7c01de29cc602885c94d8a698493d6759df01d` (BA-F11) |
+| **Disposition** | **`TOOL-LIFE-X BATCH A — QUALIFICATION BLOCKED`** (BA-F12 L1 green; consolidated L2 **pending**) |
+| **BA-F12 START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
+| **BA-F11 final qualification START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
+| **Test execution SHA (L2 wave 1)** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` + unstaged test-source delta (see § BA-F11 L2) |
+| **Documentation publication SHA (post-L2)** | `839712d8e` (BA-F12) |
+| **Implementation SHA (production)** | `839712d8e` (BA-F12) |
 | **BA-F11 START_HEAD** | `205a0ee436ccdedf32a19cb40d09615f24f1a8c3` |
 | **BA-F08 implementation SHA** | `0d3a0d22fe07f7826acfb776c24341c303359838` |
 | **Production baseline (pre-F08)** | `693ecafd36568b82bba7606a7e368b3b0aff7a38` (BA-F07) |
@@ -35,7 +39,126 @@
 | **BA-F08 in-flight acquire shutdown accounting** | `0d3a0d22fe07f7826acfb776c24341c303359838` | **L2 NOT RUN**; static protocol closure + evidence update |
 | **BA-F09 physical acquire quiescence correction** | `032b983ede3b0e6dee44083a4070e25326465006` | **L2 NOT RUN**; static protocol closure + evidence update |
 | **BA-F10 pre-start cancellation & physical acquire lifecycle** | `205a0ee436ccdedf32a19cb40d09615f24f1a8c3` | **L2 NOT RUN**; static protocol closure + evidence update |
-| **BA-F11 atomic start vs pre-start terminal handoff** | `bb7c01de29cc602885c94d8a698493d6759df01d` | **L2 NOT RUN**; static protocol closure + evidence update |
+| **BA-F11 atomic start vs pre-start terminal handoff** | `bb7c01de29cc602885c94d8a698493d6759df01d` | **L2 wave 1:** 58 passed / 3 failed / 61 collected — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-ba-f11-final.log` |
+| **BA-F11 consolidated L2 (operator-authorized)** | test delta on `afe4f9c6…` | **58/61** — failures grouped § BA-F11 L2; **no automatic re-run** |
+| **BA-F11 consolidated L2 (remediation wave)** | unstaged test delta @ `afe4f9c6…` | **58/61** — log `l2-batch-a-ba-f11-remediation-final.log`; see § BA-F11 L2 wave 2 |
+| **BA-F11 consolidated L2 (final remediation wave 3)** | test delta @ `afe4f9c6…` | **59/61** — log `l2-batch-a-ba-f11-final-remediation.log`; see § BA-F11 L2 wave 3 |
+| **BA-F12 L1 (operator-authorized)** | production + test delta @ `afe4f9c6…` | **3/3** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l1-batch-a-ba-f12-final.log`; see § BA-F12 |
+
+## BA-F12 — atomic physical permit ownership / cancelled wrapper recovery
+
+| Topic | Detail |
+| --- | --- |
+| **START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
+| **Root cause (static)** | Physical admission can grant before the sync wrapper exposes `result()`. `_maybe_release_abandoned_acquire_permit` returned early on `acquire_future.cancelled()` while `_AcquirePermitHandoff` did not retain the granted permit — **PHYSICAL GRANT → WRAPPER CANCELLED → ABANDON → NO RELEASE**. |
+| **Ownership protocol** | On `on_physical_grant` deliver path: `_held_permit` written under handoff lock with `GRANT_AVAILABLE`. Caller `claim_successful_grant` clears `_held_permit` (`CALLER_OWNS`). Abandon: `try_claim_release_obligation` then `take_stored_permit_for_release()` before optional non-cancelled `future.result()` fallback. `release_in_coro` unchanged (local permit, `RELEASE_PENDING`). States: (1) not granted (2) granted on handoff (3) caller owns (4) abandoned + obligation claimed (5) release pending (6) released (7) release failure → `_release_failures` / drain fail-closed. |
+| **Linearization** | Grant vs abandon: `on_physical_grant` / `mark_abandoned` / `try_claim_release_obligation` under `_AcquirePermitHandoff._lock`. Exactly one release claimant via obligation claim + single permit source (handoff store OR completed non-cancelled wrapper). |
+| **Interleaving matrix (scoped)** | **A** abandon before grant → no permit. **B** grant then abandon → handoff store + obligation release. **C/D** grant + wrapper cancel → release from `_held_permit` (not `result()`). **E** grant, caller not claimed → store until claim or abandon. **F** caller claims → store cleared. **G–H** timeout/shutdown + grant → same obligation path. **I–J** release pending / cancel → `is_release_pending` noop. **K** release failure → lifecycle failure list. **L–M** pre-start / shutdown acquire → BA-F08–F11 unchanged. **N** shielded release → BA-F07. **O–P** duplicate callback/shutdown → idempotent obligation + pending checks. |
+| **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py`; tests + evidence only elsewhere. |
+| **L1** | **3 passed** — `test_acquire_success_shutdown_before_registration_releases_permit`, `test_shutdown_cancel_races_acquire_success_no_leak`, `test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled`; log `l1-batch-a-ba-f12-final.log`. |
+| **L2** | **NOT RUN** (operator deferral to Batch A closure boundary). Historical waves **58/61**, **58/61**, **59/61** preserved § BA-F11 L2. |
+| **Publication SHA** | `839712d8e` (`fix(runtime): BA-F12 physical permit ownership on cancelled wrapper`) |
+
+**Scoped closure matrix (BA-F12-affected TL):**
+
+| Criterion | Classification | Canonical owner | Contract | Existing evidence SHA | Missing action | Validation | FRZ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TL1 | ALREADY PROVEN | `DependencyAttemptExecutionBoundary` | bounded acquire timeout | `693ecafd…` L2 | Parent L3 | L2 batch | FRZ-REL-01 |
+| TL3 | ALREADY PROVEN | Invoker + boundary | cancel / abandon scoped | `693ecafd…` | Parent real-infra | L2 batch | FRZ-REL-05 |
+| TL5 | ALREADY PROVEN | Invoker | uncertain timeout | `693ecafd…` | Parent | L2 batch | FRZ-REL-05 |
+| TL8 | IMPLEMENTATION REQUIRED → **L1 PROVEN** | `DependencyAttemptExecutionBoundary` | grant/handoff/shutdown accounting | BA-F12 publication SHA | **Consolidated L2** | L1 3/3; L2 pending | FRZ-REL-07 |
+| TL9 | VALIDATION REQUIRED | Boundary + invoker | no orphan permit | BA-F12 L1 | L2 breadth | L1 subset | FRZ-REL-05 |
+| TL14 | ALREADY PROVEN | Architecture | single invoker path | prior SHAs | — | static | FRZ-BND-03, FRZ-EXE-02 |
+| TL4,6–7,10–13,15 | unchanged | Parent / Batch B | per roadmap | prior | Batch B/parent | deferred | per matrix § TL1–TL15 |
+
+## BA-F11 L2 — consolidated qualification (wave 1)
+
+| Metric | Value |
+| --- | --- |
+| **Execution tree** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` (production unchanged @ `bb7c01de29cc602885c94d8a698493d6759df01d`) |
+| **Collected** | **61** (56 historical + 5 new negatives) |
+| **Passed** | **58** |
+| **Failed** | **3** |
+| **Skipped** | **0** |
+| **Exit code** | **1** |
+| **Duration** | **8.93s** |
+| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-ba-f11-final.log` |
+
+**Failure grouping (wave 1):**
+
+| Test | Class | Notes |
+| --- | --- | --- |
+| `test_acquire_success_shutdown_before_registration_releases_permit` | **test defect** | BA-F11 propagates `asyncio.CancelledError` on in-flight wrapper cancel during `result()`; test expected only `DependencyAttemptExecutionBoundaryClosedError`. |
+| `test_shutdown_cancel_races_acquire_success_no_leak` | **test defect** | Same terminal semantics as above (`CancelledError` vs `closed`). |
+| `test_no_orphan_thread_after_close` | **test defect / timing** | Admission thread join not observed immediately after `close()` under suite load; bounded poll remediation staged. |
+
+**New negative tests (BA-F08–F11):**
+
+| Test | Scenario |
+| --- | --- |
+| `test_ba_f11_handoff_start_vs_pre_start_terminal_exclusive` | Simultaneous start vs pre-start terminal (handoff) |
+| `test_ba_f11_handoff_concurrent_start_vs_pre_start_single_winner` | Concurrent claim linearization |
+| `test_ba_f10_wrapper_cancel_before_physical_start_clears_in_flight` | Wrapper cancelled before physical coroutine start |
+| `test_ba_f09_schedule_failure_unregisters_in_flight_handoff` | Failure during coroutine scheduling |
+| `test_ba_f08_shutdown_waits_physical_acquire_not_wrapper_terminal` | Shutdown awaits physical acquire lifecycle |
+
+**Reused (no new test):**
+
+| Mandatory scenario | Existing test |
+| --- | --- |
+| Wrapper cancelled after physical-start claim | `test_shutdown_cancel_races_acquire_success_no_leak` (phase 2) |
+| Shutdown racing registration and scheduling | `test_acquire_success_shutdown_before_registration_releases_permit`, `test_shutdown_cancel_races_acquire_success_no_leak` (phase 1) |
+| Late physical grant after abandonment | `test_ba_f05_release_obligation_before_done_does_not_orphan_late_grant` |
+| Shielded release after outer cancellation | `test_ba_f06_shutdown_waits_pending_abandon_release`, `test_ba_f06_capacity_not_released_until_physical_release_completes` |
+
+**Remediation staged (wave 1 → wave 2):** align shutdown-race expectations with BA-F11 cancel propagation; bounded thread-join poll in `test_no_orphan_thread_after_close`; broaden `_second_acquire` exception handling in `test_ba_f08_shutdown_waits_physical_acquire_not_wrapper_terminal`.
+
+**Static audit acceptance:** independent static review of BA-F01–F11 production **unchanged** this session (`git diff bb7c01de… -- intergrax/` empty).
+
+## BA-F11 L2 — remediation qualification (wave 2)
+
+| Metric | Value |
+| --- | --- |
+| **Execution tree** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` + unstaged test-source delta (same as wave 2 remediation) |
+| **Collected** | **61** |
+| **Passed** | **58** |
+| **Failed** | **3** |
+| **Exit code** | **1** |
+| **Duration** | **10.81s** |
+| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-ba-f11-remediation-final.log` |
+
+| Test | Wave 2 failure | Verified cause (source-level) |
+| --- | --- | --- |
+| `test_acquire_success_shutdown_before_registration_releases_permit` | `isinstance(..., (ClosedError, asyncio.CancelledError))` false | `acquire_future.result()` raises **`concurrent.futures.CancelledError`**, not `asyncio.CancelledError` (log: `CancelledError()` vs tuple). Accounting asserts (`permits_released`, `active`) not reached in this run order. |
+| `test_shutdown_cancel_races_acquire_success_no_leak` | `permits_released == 0` (expected 1) | Outcome label accepted `CancelledError`; **async permit release not observed** before assertion — race between wrapper cancel (`_maybe_release_abandoned_acquire_permit` returns early when `acquire_future.cancelled()`) and physical coroutine `finally` / abandon release path. Not a timing-only label issue. |
+| `test_no_orphan_thread_after_close` | `dependency-admission-boundary` still alive after 2s poll | Fixed thread **name** is shared across all boundary instances (`daemon=False`); `threading.enumerate()` can match **another suite instance** while `close()` on the test boundary already joined its own `_thread`. Poll does not pin `boundary._thread`. |
+
+**Wave 2 gate outcome:** remediation **incomplete** — one authorized re-run consumed; **no further pytest** this session per operator directive.
+
+**Minimal next decision (operator):** (1) Accept terminal type union: `DependencyAttemptExecutionBoundaryClosedError` \| `concurrent.futures.CancelledError` (and map outcomes accordingly). (2) Synchronize on `permits_released` via admission `asyncio.Event` (or `drain_and_close` on test boundary) before asserting leak-free accounting. (3) Replace global name scan with `assert not boundary._thread.is_alive()` after successful `close()`, or isolate thread names in production (would be out of test-only scope).
+
+## BA-F11 L2 — final remediation qualification (wave 3)
+
+| Metric | Value |
+| --- | --- |
+| **Execution tree** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` + test-source delta (groups A/C + partial B) |
+| **Collected** | **61** |
+| **Passed** | **59** |
+| **Failed** | **2** |
+| **Skipped** | **0** |
+| **Exit code** | **1** |
+| **Duration** | **8.91s** |
+| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-ba-f11-final-remediation.log` |
+
+| Test | Wave 3 outcome | Notes |
+| --- | --- | --- |
+| `test_no_orphan_thread_after_close` | **PASS** | `boundary._thread.is_alive()` after `close()` — group C closed. |
+| `test_acquire_success_shutdown_before_registration_releases_permit` | **FAIL** | `FuturesCancelledError` accepted; **`permits_released == 0`** after `drain_and_close()` — shutdown raced before async grant completion on wrapper. |
+| `test_shutdown_cancel_races_acquire_success_no_leak` (phase 1) | **FAIL** | Same **`permits_released`** accounting (group B). |
+
+**Post–wave 3 static package (not L2-verified):** `concurrent.futures.CancelledError` import; `drain_and_close()` before permit asserts; `_wait_for_pending_acquire_futures_done()` barrier before gated shutdown; `test_no_orphan_thread_after_close` pins `boundary._thread`. **No further pytest** this session (operator one-shot L2 consumed).
+
+**Open item:** If wave-3 barrier + drain still fail on re-auth L2, escalate **contract review** — `_maybe_release_abandoned_acquire_permit` skips `acquire_future.cancelled()` wrappers after physical grant (production @ `bb7c01de…`).
 
 ## BA-F11 — atomic start vs pre-start terminal handoff (implementation complete)
 
@@ -50,7 +173,7 @@
 | **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` only. |
 | **Tests NOT RUN** | Operator session forbids execution. **Deferred L2:** start-vs-terminal interleave (callback between check and unregister regression); cancel before body after schedule; concurrent `try_claim_*`; schedule failure; shutdown during register; late grant; shielded abandon (`test_ba_f06_*` + 56-test command). |
 | **Historical L2** | **56/56** remains @ `af96371e…` / production `693ecafd…` — not re-run or attributed to BA-F11. |
-| **L2 qualification** | **PENDING** — consolidated Batch A L2 at BA-F11 publication SHA (separately authorized). |
+| **L2 qualification** | **BLOCKED (wave 2)** — 58/61 after remediation L2; further test-source work required before any new L2. |
 
 ## BA-F10 — pre-start cancellation & physical acquire lifecycle (implementation complete)
 
@@ -179,11 +302,11 @@ uv run pytest -p no:xdist \
 
 | Metric | BA-F05 @ `d76d6d8…` | **Final L2 @ publication SHA** |
 | --- | --- | --- |
-| **Collected** | 52 | **56** |
-| **Passed** | 52 | **56** |
-| **Failed** | 0 | **0** |
+| **Collected** | 52 | **56** (historical @ `693ecafd…`) · **61** (BA-F11 wave 1 @ `afe4f9c6…`) |
+| **Passed** | 52 | **56** (historical) · **58** (BA-F11 wave 1) |
+| **Failed** | 0 | **0** (historical) · **3** (BA-F11 wave 1) |
 | **Skipped** | 0 | **0** |
-| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/pytest-final.log` | `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-final.log` |
+| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-A/pytest-final.log` | `.tmp/session/TOOL-LIFE-X-BATCH-A/l2-batch-a-final.log` (historical) · `l2-batch-a-ba-f11-final.log` (BA-F11 wave 1) |
 
 **FINAL_COMMIT (BA-F05):** `d76d6d874ed9394d2e1959e490c5835248deea9f`
 
@@ -212,7 +335,7 @@ uv run pytest -p no:xdist \
 | TL5 | ALREADY PROVEN (Batch A L2) | Invoker | `ToolEffectCertainty` / uncertain timeout | `693ecafd…` + L2 publication SHA | Operator runbooks (parent) | FRZ-REL-05 |
 | TL6 | IMPLEMENTATION REQUIRED | Invoker + idempotency | pre-effect coordinator | prior SHAs | Batch B | FRZ-REL-06 |
 | TL7 | OPERATOR DECISION REQUIRED | Parent roadmap | STALLED / watchdog | — | Parent §3.0.5 | — |
-| TL8 | VALIDATION REQUIRED (BA-F11) | `DependencyAttemptExecutionBoundary` | atomic start vs pre-start terminal + shutdown A/B/C accounting | BA-F11 publication SHA | Batch A L2 rerun post-F11 | FRZ-REL-07 |
+| TL8 | VALIDATION REQUIRED (BA-F12) | `DependencyAttemptExecutionBoundary` | permit handoff + shutdown grant/cancel accounting | BA-F12 publication SHA + L1 log | **Consolidated L2** at Batch A closure | FRZ-REL-07 |
 | TL9 | ALREADY PROVEN (Batch A L2) | Invoker | no terminal resurrection (scoped) | `693ecafd…` + L2 publication SHA | Cross-provider stale results | FRZ-REL-05 |
 | TL10 | BLOCKED | SQL/database providers | row/byte/statement bounds | — | Parent / Batch C | FRZ-REL-10 |
 | TL11 | BLOCKED | MCP via invoker | ToolContract path | — | Real MCP qual | FRZ-REL-06 |
@@ -227,7 +350,7 @@ uv run pytest -p no:xdist \
 | --- | --- |
 | FRZ-REL-01 | Parent deadline bounds tool physical attempt — validation evidence advanced, not global PASS |
 | FRZ-REL-05 | Timeout / uncertain semantics — scoped tests only |
-| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02–F11 static closure; historical L2 **56/56** @ `693ecafd…` only; BA-F11 L2 pending |
+| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02–F12; BA-F12 L1 **3/3**; historical L2 **56/56** @ `693ecafd…`; BA-F11 L2 waves **58/61**, **58/61**, **59/61** — **not** global PASS |
 | FRZ-EXE-02 | `RuntimeToolInvoker` enforcement owner preserved |
 | FRZ-GOV-02 | Governance identity required at inner boundary — tests fixed to bind identity, not weakened |
 | FRZ-BND-03 | No parallel admission owner introduced |

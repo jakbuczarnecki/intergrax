@@ -64,6 +64,7 @@ class _AcquirePermitHandoff:
     _state: _AcquireHandoffState = _AcquireHandoffState.WAITING
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _scheduling_phase: _AcquireSchedulingPhase = _AcquireSchedulingPhase.REGISTERED
+    _held_permit: DependencyConcurrencyPermit | None = None
 
     def try_claim_physical_start(self) -> bool:
         """Win physical admission vs pre-start terminal; linearized under handoff lock (BA-F11)."""
@@ -94,6 +95,7 @@ class _AcquirePermitHandoff:
             ):
                 return False
             self._state = _AcquireHandoffState.CALLER_OWNS
+            self._held_permit = None
             return True
 
     def mark_abandoned(self) -> None:
@@ -153,15 +155,22 @@ class _AcquirePermitHandoff:
                 return
             self._state = _AcquireHandoffState.RELEASE_PENDING
 
+    def take_stored_permit_for_release(self) -> DependencyConcurrencyPermit | None:
+        """Claim handoff-stored permit for abandoned cleanup (BA-F12)."""
+        with self._lock:
+            permit = self._held_permit
+            self._held_permit = None
+            return permit
+
     def on_physical_grant(
         self,
         permit: DependencyConcurrencyPermit,
     ) -> Literal["deliver", "release_in_coro", "noop"]:
         """Linearize physical grant vs sync abandon on the admission event loop."""
-        del permit
         with self._lock:
             if self._state is _AcquireHandoffState.WAITING:
                 self._state = _AcquireHandoffState.GRANT_AVAILABLE
+                self._held_permit = permit
                 return "deliver"
             if self._state in (
                 _AcquireHandoffState.ABANDONED,
@@ -635,13 +644,15 @@ class DependencyAttemptExecutionBoundary:
             return
         if not acquire_future.done():
             return
-        if acquire_future.cancelled():
-            return
-        try:
-            permit = acquire_future.result(timeout=0)
-        except _AcquireAbandonedBeforeDelivery:
-            return
-        except BaseException:
+        permit = handoff.take_stored_permit_for_release()
+        if permit is None and not acquire_future.cancelled():
+            try:
+                permit = acquire_future.result(timeout=0)
+            except _AcquireAbandonedBeforeDelivery:
+                return
+            except BaseException:
+                return
+        if permit is None:
             return
         self._schedule_handoff_permit_release(permit, handoff)
 
