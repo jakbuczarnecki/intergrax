@@ -1,6 +1,6 @@
 # QUAL-X — Enterprise Qualification Baseline & Gate Inventory (P0)
 
-**Status:** **QUAL-X** parent = **POPULATION A — CONDITIONAL EVIDENCE ACCEPTED** @ `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` · **label `QUAL-X CLOSED`** = **PENDING INDEPENDENT COMPLIANCE AUDIT** (roadmap + operator decision 2026-10-23) · **FRZ-REG-01..10** = **OPEN** (global checklist; Population **E** / rollup unchanged) · **PROD-Q** Dimension **B** = **OPEN/BLOCKED** (unchanged) · **ENT-AUDIT-X** = **not certified**
+**Status:** **QUAL-X** parent = **`QUAL-X CLOSED — POPULATION A ONLY`** (formal closure publication 2026-10-23; **READY FOR INDEPENDENT AUDIT** on GitHub @ closure commit) · **ACCEPTANCE_SHA** `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` · prior conditional **PUBLICATION_SHA** `4c5faa89aad381e293da2210ec3e83566c3a8473` · **FRZ-REG-01..10** = **OPEN** (global checklist; Population **E** / rollup unchanged) · **PROD-Q** Dimension **B** = **OPEN/BLOCKED** (unchanged) · **ENT-AUDIT-X** = **not certified**
 
 **Branch:** `development`
 
@@ -2423,3 +2423,55 @@ Auditor **must** verify on GitHub @ `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce`:
 - `docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` — parent **QUAL-X** stage row pointer
 
 **Audit anchor commit:** operator publishes this package on `development`; independent reviewer uses **ACCEPTANCE_SHA** `d9ea0d6…` (or descendant commit containing only this doc delta — auditor reconciles exact tree).
+
+---
+
+## QUAL-X — POPULATION A — FORMAL CLOSURE RECORD
+
+**Task:** `QUAL-X-FINAL — FORMAL CLOSURE PUBLICATION` · **Parent:** `QUAL-X`
+
+**Operator authorization (verbatim):** `OPERATOR APPROVED — QUAL-X FORMAL PARENT CLOSURE AND DOCUMENTATION PUBLICATION` (2026-10-23)
+
+**Disposition:** **`QUAL-X CLOSED — POPULATION A ONLY`** — documentation-only publication on `development`; **`READY FOR INDEPENDENT AUDIT`** on GitHub @ formal closure commit (not global **FRZ-REG PASS**; not **ENT-AUDIT-X**; not **ARCH-FREEZE**).
+
+| Field | Value |
+| --- | --- |
+| **ACCEPTANCE_SHA** (evidence authority) | `d9ea0d6e87b939e4cefb9971c6bbd4fbcaecc0ce` |
+| **Prior PUBLICATION_SHA** (conditional package) | `4c5faa89aad381e293da2210ec3e83566c3a8473` |
+| **Evidence composite** | § **QUAL-X — POPULATION A — CONDITIONAL EVIDENCE ACCEPTANCE & CLOSURE PACKAGE** (unchanged SHAs) |
+| **pytest @ this publication** | **0** |
+
+### Independent audit gate §6 — adjudication (@ `4c5faa89…` baseline)
+
+| # | Mandatory check | Adjudication |
+| --- | --- | --- |
+| **A1** | Path B §2.0.3 + operator decision text | **PASS** |
+| **A2** | 535/535 attestation vs P5 SSOT (`_p5_freeze_selection_catalog.py`, clean-checkout procedure) | **PASS** (committed attestation @ `9a175177…`; no re-run) |
+| **A3** | Delta **49/49** @ **ACCEPTANCE_SHA** | **PASS** (existing execution record) |
+| **A4** | BND-03 Option A — accepted test paths; no forbidden execution import | **PASS** (**70/76**; limited log provenance per conditional §1) |
+| **A5** | No mandatory Population **A** gap under composite model | **PASS** |
+
+### F01 — `QUAL_X_FINAL_CLOSED_WORLD_INVENTORY` census
+
+| Metric | Count |
+| --- | --- |
+| Total closed-world rows | **16** |
+| Population **A** | **14** |
+| Excluded (**D** `CW-PROD-Q-LIVE-HTTP`, **E** `CW-PLATFORM-FRZ-ROLLUP`) | **2** |
+
+**Disposition:** **ALREADY PROVEN** under operator-accepted composite evidence (not a platform rollup).
+
+### F02 — procedural exception (audit reconciliation)
+
+A **READ-ONLY** audit session incurred a **procedural violation** (local working-tree mutation / `git reset` against operator constraints). **Published remote evidence:** no demonstrated impact on GitHub `development` @ **ACCEPTANCE_SHA** / conditional **PUBLICATION_SHA** (qualification SHAs and prod/test tree unchanged). **Local-only session captures** may be unreliable — not a general provenance waiver. **Disposition:** documented exception; does **not** revoke Population **A** formal documentation closure per operator decision.
+
+### Preserved OPEN (unchanged)
+
+| Obligation | Status |
+| --- | --- |
+| Global **FRZ-REG-01..10** | **OPEN** |
+| **PROD-Q** Dimension **B** | **OPEN** |
+| Population **E** / **ENT-AUDIT-X** | **FUTURE** |
+| **SKILL-X** entry | **Not authorized** until independent acceptance of formal closure commit on GitHub |
+
+**Changed files (this publication):** roadmap §3/§5; this inventory; `PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md` (**FRZ-REG-06** W2-C reconciliation only).
