@@ -70,6 +70,16 @@ QUAL_X_P3_IN_SCOPE_INVENTORY_OWNERS: tuple[QualXP3InventoryOwner, ...] = (
         reconciliation_class="collectability_plus_module_existence",
         frz_criteria=("FRZ-REG-02", "FRZ-REG-05"),
     ),
+    QualXP3InventoryOwner(
+        owner_id="HARDENING-3",
+        semantic_owner="Contract layer must not import runtime (documented allowlist)",
+        ssot_module=(
+            "testing_support/architecture/contracts_runtime_layer_boundary/allowlist.py"
+        ),
+        primary_gate_module="tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
+        reconciliation_class="bidirectional_contract_runtime_import_allowlist",
+        frz_criteria=("FRZ-REG-04", "FRZ-REG-05", "FRZ-BND-02"),
+    ),
 )
 
 

@@ -236,6 +236,25 @@ def _stage15_project_metadata(
                 ),
             ),
         )
+    if config.logical_agent_id == ME16_MIXED_CONTRACT_ID:
+        from testing_support.canonical_me16_mixed_agent import (
+            ME16_MIXED_CAPABILITY,
+            ME16_MIXED_CONTRACT_VERSION,
+            ME16_MIXED_TOOL_ID,
+        )
+
+        return AgentProjectMetadata(
+            distribution_package_id=config.distribution_package_id,
+            package_version=config.package_version,
+            dependencies=(),
+            declared_contracts=(
+                AgentPackageContractDeclaration(
+                    contract_id=ME16_MIXED_CONTRACT_ID,
+                    contract_version=ME16_MIXED_CONTRACT_VERSION,
+                    capabilities=(ME16_MIXED_CAPABILITY, ME16_MIXED_TOOL_ID),
+                ),
+            ),
+        )
     return AgentProjectMetadata(
         distribution_package_id=config.distribution_package_id,
         dependencies=(),
@@ -254,7 +273,7 @@ def _stage15_lab_manifest_agent_bindings(
     ]
 
 
-def _stage15_install_package_contract_authority_records(
+def lifecycle_install_package_contract_authority_records(
     config: CanonicalLifecycleProofConfig,
     *,
     package_digest: str,
@@ -262,13 +281,18 @@ def _stage15_install_package_contract_authority_records(
     artifact_store_ref: str,
     agent_project_metadata_ref: str,
 ) -> tuple[PackageAgentContractAuthorityRecord, ...]:
-    """Digest-bound install authority from the canonical Stage 15 agent contract."""
-    if config.logical_agent_id != CANONICAL_PING_CONTRACT_ID:
+    """Digest-bound install authority for canonical lifecycle / marketplace proof agents."""
+    if config.logical_agent_id == CANONICAL_PING_CONTRACT_ID:
+        contract = CanonicalPingAgent().get_contract()
+    elif config.logical_agent_id == ME16_MIXED_CONTRACT_ID:
+        from testing_support.canonical_me16_mixed_agent import me16_mixed_reference_contract
+
+        contract = me16_mixed_reference_contract()
+    else:
         raise ValueError(
-            "Stage 15 install contract authority requires explicit records for "
+            "lifecycle install contract authority requires explicit records for "
             f"{config.logical_agent_id!r}"
         )
-    contract = CanonicalPingAgent().get_contract()
     if contract.id != config.logical_agent_id:
         contract = contract.model_copy(update={"id": config.logical_agent_id})
     return (
@@ -279,6 +303,23 @@ def _stage15_install_package_contract_authority_records(
             artifact_store_ref=artifact_store_ref,
             agent_project_metadata_ref=agent_project_metadata_ref,
         ),
+    )
+
+
+def _stage15_install_package_contract_authority_records(
+    config: CanonicalLifecycleProofConfig,
+    *,
+    package_digest: str,
+    distribution_package_id: str,
+    artifact_store_ref: str,
+    agent_project_metadata_ref: str,
+) -> tuple[PackageAgentContractAuthorityRecord, ...]:
+    return lifecycle_install_package_contract_authority_records(
+        config,
+        package_digest=package_digest,
+        distribution_package_id=distribution_package_id,
+        artifact_store_ref=artifact_store_ref,
+        agent_project_metadata_ref=agent_project_metadata_ref,
     )
 
 

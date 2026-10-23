@@ -116,6 +116,7 @@ from intergrax.runtime.nexus.orchestration.task_finisher import (
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.store import resolve_runtime_event_persistence
@@ -250,7 +251,9 @@ class NexusLoop:
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         production_mode: bool = False,
-        runtime_event_store: Optional[RuntimeEventPersistence] = None,
+        runtime_event_store: EvidencePersistencePort
+        | RuntimeEventPersistence
+        | None = None,
         runtime_events_db_path: Optional[Path] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         task_memory_db_path: Optional[Path] = None,
@@ -747,7 +750,9 @@ class NexusLoop:
         return self._event_bus
 
     @property
-    def runtime_event_store(self) -> Optional[RuntimeEventPersistence]:
+    def runtime_event_store(
+        self,
+    ) -> EvidencePersistencePort | RuntimeEventPersistence | None:
         return self._runtime_event_store
 
     @property

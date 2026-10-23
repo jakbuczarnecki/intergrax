@@ -26,6 +26,10 @@ from tests.qualification.tenant_x._final_types import (
     FrzTenReconciliationVerdict,
     REQUIRED_FRZ_TEN_IDS,
 )
+from tests.qualification.tenant_x._final_production_delta import (
+    TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA,
+    build_final_production_delta_evidence,
+)
 from tests.qualification.tenant_x._final_wave_evidence import (
     ACCEPTED_TENANT_X_WAVE_EVIDENCE,
     accepted_wave_ancestry_violations,
@@ -100,6 +104,9 @@ def test_tx_final_q06_report_ready_for_audit() -> None:
     assert report.unclassified_frz_ten == 0
     assert report.cross_tenant_allowed == 0
     assert report.cross_tenant_unknown == 0
+    historical_delta = build_final_production_delta_evidence()
+    assert historical_delta is not None
+    assert historical_delta.head_sha == TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA
     assert report.production_delta == 0
     assert report.production_delta_evidence_available
     assert report.adversarial_classes_expected == 10

@@ -105,7 +105,7 @@ class DynamicSkillAcquisitionPort(Protocol):
 
 
 class SkillHostBindingMaterializer(Protocol):
-    """Materialize resolved package into registry bindings and profile enablement."""
+    """Materialize resolved package into host registry bindings (installation only)."""
 
     def materialize(
         self,

@@ -14,6 +14,7 @@ from tests.qualification.tenant_x._final_certification import build_final_qualif
 from tests.qualification.tenant_x._final_execution import run_final_adversarial_matrix
 from tests.qualification.tenant_x._final_matrices import FINAL_ADVERSARIAL_MATRIX
 from tests.qualification.tenant_x._final_production_delta import (
+    TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA,
     TENANT_X_FINAL_R1_REJECTED_BASE_SHA,
     TENANT_X_FINAL_REJECTED_BASE_SHA,
     build_final_production_delta_evidence,
@@ -165,8 +166,10 @@ def test_tx_final_r1_r1_production_delta_cumulative_and_corrective_zero() -> Non
     cumulative = build_final_production_delta_evidence(base_sha=TENANT_X_FINAL_REJECTED_BASE_SHA)
     corrective = build_final_production_delta_evidence(base_sha=TENANT_X_FINAL_R1_REJECTED_BASE_SHA)
     assert cumulative is not None and cumulative.production_delta_count == 0
+    assert cumulative is not None and cumulative.head_sha == TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA
     assert corrective is not None and corrective.production_delta_count == 0
     assert corrective.base_sha == TENANT_X_FINAL_R1_REJECTED_BASE_SHA
+    assert corrective.head_sha == TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA
 
 
 def test_tx_final_r1_r1_synthetic_f9_rejected_without_evidence_blocks() -> None:

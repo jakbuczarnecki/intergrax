@@ -86,6 +86,9 @@ from testing_support.me14_tool_activation_materializer import Me14ToolHostActiva
 from testing_support.me14_tool_catalog_provider import Me14ToolCatalogProvider
 from testing_support.me15_skill_binding_materializer import Me15SkillHostBindingMaterializer
 from testing_support.me15_skill_catalog_provider import Me15SkillCatalogProvider
+from testing_support.acquisition_install_contract_authority_port import (
+    ProofInstallContractAuthorityLifecyclePort,
+)
 from testing_support.reference_production_acquisition_lifecycle_port import (
     ReferenceProductionAcquisitionLifecyclePort,
 )
@@ -332,6 +335,10 @@ class MarketplaceMixedCapabilityProofStack:
             ),
             principal=agent_stack.governance.principal,
         )
+        lifecycle_port = ProofInstallContractAuthorityLifecyclePort(
+            inner=lifecycle_port,
+            proof_config=lifecycle_config,
+        )
         agent_acquisition = DynamicAgentAcquisitionService(
             catalog_registry=CatalogSourceProviderRegistry(
                 {
@@ -551,6 +558,7 @@ class MarketplaceMixedCapabilityProofStack:
             handoff_id=skill_handoff_id,
             tenant_id=tenant_id,
         )
+        self.skill_lifecycle.enable_installed_skill(ME15_SKILL_LOGICAL_ID)
         return agent_env, tool_env, skill_env
 
     def run_marketplace_mixed_e2e(

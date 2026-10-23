@@ -44,7 +44,7 @@ def build_final_qualification_report() -> TenantXFinalQualificationReport:
 
     execution = run_final_adversarial_matrix()
     adversarial = reconcile_final_adversarial_execution(execution)
-    production_evidence = build_final_production_delta_evidence(head_sha=head)
+    production_evidence = build_final_production_delta_evidence()
     production_ok = production_evidence is not None and production_evidence.production_delta_count == 0
 
     readiness = WaveReadinessOnHead(

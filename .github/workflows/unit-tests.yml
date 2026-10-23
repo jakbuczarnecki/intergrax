@@ -57,7 +57,8 @@ jobs:
         github.event.inputs.profile == 'smoke'
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # checkout + uv sync + conformance + ~1900 ci_smoke tests (~50s) need headroom on cache miss
+    timeout-minutes: 6
 
     steps:
       - name: Checkout

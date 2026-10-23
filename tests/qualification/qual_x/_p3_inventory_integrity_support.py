@@ -37,6 +37,9 @@ from tests.qualification.state_x.inventory import (
     HISTORICAL_BASE_FAMILY_IDS,
     STATE_X_FAMILY_INVENTORY,
 )
+from testing_support.architecture.contracts_runtime_layer_boundary import (
+    reconcile_contracts_runtime_import_allowlist,
+)
 
 
 def pytest_node_id_module_path(node_id: str) -> str:
@@ -139,3 +142,12 @@ def p2_catalog_proof_integrity(repo_root: Path) -> tuple[tuple[str, ...], tuple[
     raw = p2_catalog_all_primary_proof_node_ids()
     deduped = qual_x_p2_all_proof_pytest_node_ids()
     return duplicate_node_ids(raw), missing_proof_module_paths(deduped, repo_root)
+
+
+def reconcile_hardening_3_contract_runtime_import_allowlist(
+    repo_root: Path,
+) -> tuple[list[str], list[str]]:
+    reconciliation = reconcile_contracts_runtime_import_allowlist(repo_root)
+    return list(reconciliation.unallowlisted_violations), list(
+        reconciliation.stale_allowlist_entries
+    )

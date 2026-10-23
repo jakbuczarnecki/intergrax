@@ -17,9 +17,11 @@ from tests.qualification.tenant_x._final_execution import (
 )
 from tests.qualification.tenant_x._final_matrices import FINAL_ADVERSARIAL_MATRIX
 from tests.qualification.tenant_x._final_production_delta import (
+    TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA,
     TENANT_X_FINAL_REJECTED_BASE_SHA,
     build_final_production_delta_evidence,
 )
+from tests.qualification.tenant_x._final_wave_evidence import current_git_head_sha
 from tests.qualification.tenant_x._final_reconciliation import (
     WaveReadinessOnHead,
     build_frz_ten_reconciliation_rows,
@@ -245,7 +247,64 @@ def test_tx_final_r1_q19_production_delta_corrective_range_zero() -> None:
     evidence = build_final_production_delta_evidence()
     assert evidence is not None
     assert evidence.base_sha == TENANT_X_FINAL_REJECTED_BASE_SHA
+    assert evidence.head_sha == TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA
     assert evidence.production_delta_count == 0
+
+
+def test_tx_final_r1_q21_post_acceptance_head_drift_does_not_block_current_head_readiness() -> None:
+    drift = build_final_production_delta_evidence(head_sha=current_git_head_sha())
+    assert drift is not None
+    assert drift.head_sha == current_git_head_sha()
+    historical = build_final_production_delta_evidence()
+    assert historical is not None and historical.production_delta_count == 0
+    report = build_final_qualification_report()
+    assert report.production_delta == 0
+    assert report.final_ready_for_audit
+
+
+def test_tx_final_r1_q22_nonzero_historical_corrective_range_blocks_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tests.qualification.tenant_x import _final_certification as cert
+    from tests.qualification.tenant_x._final_types import FinalProductionDeltaEvidence
+
+    forged = FinalProductionDeltaEvidence(
+        base_sha=TENANT_X_FINAL_REJECTED_BASE_SHA,
+        head_sha=TENANT_X_FINAL_ACCEPTED_EVIDENCE_SHA,
+        changed_production_paths=("intergrax/forged_qualification_path.py",),
+        production_delta_count=1,
+    )
+    monkeypatch.setattr(cert, "build_final_production_delta_evidence", lambda **_: forged)
+    report = build_final_qualification_report()
+    assert report.production_delta == 1
+    assert report.final_ready_for_audit is False
+
+
+def test_tx_final_r1_q23_missing_historical_evidence_blocks_final_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tests.qualification.tenant_x import _final_certification as cert
+
+    monkeypatch.setattr(cert, "build_final_production_delta_evidence", lambda **_: None)
+    report = build_final_qualification_report()
+    assert report.final_ready_for_audit is False
+
+
+def test_tx_final_r1_q24_historical_acceptance_cannot_substitute_for_adversarial_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tests.qualification.tenant_x import _final_certification as cert
+    from tests.qualification.tenant_x._final_execution import run_final_adversarial_matrix
+
+    def _broken_matrix() -> tuple[FinalAdversarialExecutionResult, ...]:
+        execution = list(run_final_adversarial_matrix())
+        execution[0] = replace(execution[0], observed_outcome=FinalAdversarialOutcome.FAILED)
+        return tuple(execution)
+
+    monkeypatch.setattr(cert, "run_final_adversarial_matrix", _broken_matrix)
+    report = build_final_qualification_report()
+    assert report.production_delta == 0
+    assert report.final_ready_for_audit is False
 
 
 def test_tx_final_r1_q20_ready_false_when_production_delta_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:

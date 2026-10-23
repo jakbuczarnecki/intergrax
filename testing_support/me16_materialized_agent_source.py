@@ -100,11 +100,18 @@ def render_me16_materialized_agent_module(*, function_name: str) -> str:
                     if not isinstance(runtime_state, RuntimeState):
                         raise RuntimeError("runtime_state missing for skill resolution")
                     config = runtime_state.context.config
+                    from intergrax.skills.skill_execution_recovery import (
+                        resolve_skill_execution_recovery_required,
+                    )
+
                     pack = resolve_bound_skill_pack(
                         tenant_id=_TENANT_ID,
                         skill_profile=SkillProfile(enabled=[_SKILL_ID]),
                         skill_registry=config.skill_registry,
                         pinning_store=config.skill_pinning_store,
+                        skill_execution_recovery_required=resolve_skill_execution_recovery_required(
+                            config.skill_execution_recovery_required,
+                        ),
                     )
                     if not pack.prompt_instruction_ids:
                         raise RuntimeError("bound skill pack lacks instruction markers")

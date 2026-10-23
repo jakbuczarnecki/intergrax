@@ -93,11 +93,11 @@ QUAL_X_P4_W2_C_DETERMINISM_DEBT: QualXP4W2CDebtRecord = QualXP4W2CDebtRecord(
     debt_id="W2-C-RETRY-STORM-THREAD-WARNING",
     pytest_node_id=_nid(_W2_C, "test_retry_storm_caps_provider_calls"),
     checklist_authority="PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST FRZ-REG-06",
-    disposition=QualXP4DeterminismDisposition.TRACKED_FREEZE_DEBT,
-    p4_scope_correction=False,
+    disposition=QualXP4DeterminismDisposition.COLLECTABLE_DETERMINISTIC_STATIC,
+    p4_scope_correction=True,
     summary=(
-        "PytestUnhandledThreadExceptionWarning after rate-limit rejection; "
-        "bounded-call assertion PASS — hygiene debt, not P4 implementation scope"
+        "QUAL-X-FINAL-R3: worker threads catch expected LLMRateLimitError after "
+        "rate-limit rejection; bounded-call assertion unchanged; no runtime retry change"
     ),
 )
 
@@ -193,7 +193,7 @@ def qual_x_p4_all_gate_pytest_node_ids() -> tuple[str, ...]:
         _nid(_P4_TEST, "test_qual_x_p4_pytest_mandatory_summary_failure_is_test_failure"),
         _nid(_P4_TEST, "test_qual_x_p4_pytest_mandatory_summary_all_passed_is_pass"),
         _nid(_P4_TEST, "test_qual_x_p4_p4_gate_nodes_are_collectable"),
-        _nid(_P4_TEST, "test_qual_x_p4_w2_c_disposition_tracked_not_p4_corrected"),
+        _nid(_P4_TEST, "test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene"),
         _nid(_P4_TEST, "test_qual_x_p4_determinism_repeat_r1_disposition_snapshot_stable"),
         _nid(_P4_TEST, "test_qual_x_p4_determinism_repeat_sqlite_header_classifier_stable"),
         _nid(_P4_TEST, "test_qual_x_p4_synthetic_stale_mandatory_node_would_fail_collectability"),

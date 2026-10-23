@@ -370,6 +370,8 @@ class MarketplaceSkillCompositionProofStack:
         assert envelope is not None
         selected_release = envelope.selected_release
         assert self.lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
+        assert not is_skill_enabled(self.lifecycle.skill_profile, ME15_SKILL_LOGICAL_ID)
+        self.lifecycle.enable_installed_skill(ME15_SKILL_LOGICAL_ID)
         binding = self.lifecycle.binding_metadata(ME15_SKILL_LOGICAL_ID)
         assert binding is not None
         composition = resolve_skill_composition_from_profile(

@@ -214,10 +214,10 @@ def test_qual_x_p4_p4_gate_nodes_are_collectable() -> None:
     assert missing == frozenset()
 
 
-def test_qual_x_p4_w2_c_disposition_tracked_not_p4_corrected() -> None:
+def test_qual_x_p4_w2_c_disposition_r3_remediated_test_hygiene() -> None:
     debt = QUAL_X_P4_W2_C_DETERMINISM_DEBT
-    assert debt.disposition is QualXP4DeterminismDisposition.TRACKED_FREEZE_DEBT
-    assert debt.p4_scope_correction is False
+    assert debt.disposition is QualXP4DeterminismDisposition.COLLECTABLE_DETERMINISTIC_STATIC
+    assert debt.p4_scope_correction is True
     assert (_REPO_ROOT / debt.pytest_node_id.split("::", 1)[0]).is_file()
 
 

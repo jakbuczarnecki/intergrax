@@ -37,8 +37,6 @@ class SkillProfile(BaseModel):
         return any(sid in enabled_set for sid in skill_ids)
 
     def is_skill_enabled(self, skill_id: str) -> bool:
-        if self.register_all_catalog_bundles:
-            return True
         if skill_id in self.enabled:
             return True
         if not self.enabled and not self.enabled_bundles:

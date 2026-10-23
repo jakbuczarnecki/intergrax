@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.store import (
@@ -30,7 +31,7 @@ class NexusObservabilityStores:
     """Trace + runtime event backends wired into ``NexusLoop`` and debug API."""
 
     trace_store: RunTraceStore
-    runtime_event_store: RuntimeEventPersistence | None
+    runtime_event_store: EvidencePersistencePort | RuntimeEventPersistence | None
     trace_db_path: Path | None
     runtime_events_db_path: Path | None
 
@@ -40,7 +41,7 @@ def wire_nexus_observability(
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     trace_store: RunTraceStore | None = None,
-    runtime_event_store: RuntimeEventPersistence | None = None,
+    runtime_event_store: EvidencePersistencePort | RuntimeEventPersistence | None = None,
     use_in_memory_trace: bool = False,
     enable_runtime_events: bool = True,
     integration_profile: IntegrationProfile | None = None,

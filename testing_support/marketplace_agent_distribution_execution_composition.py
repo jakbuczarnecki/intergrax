@@ -96,6 +96,9 @@ from intergrax.marketplace.handoff_traceability.lifecycle_bridge import (
     lifecycle_handoff_request_from_envelope,
 )
 from testing_support.agent_platform_admin_harness import admin_test_principal
+from testing_support.acquisition_install_contract_authority_port import (
+    ProofInstallContractAuthorityLifecyclePort,
+)
 from testing_support.canonical_agent_lifecycle_composition import (
     CanonicalAgentLifecycleProofStack,
     CanonicalLifecycleProofConfig,
@@ -217,6 +220,7 @@ def build_dynamic_agent_acquisition_request(
         catalog_source=catalog_source,
     )
     digest = selected_identity.package.package_digest or config.package_digest
+    artifact_store_ref = f"store://artifacts/{config.installation_id}"
     trust_record = AgentInstallationTrustRecord(
         qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=digest,
@@ -238,7 +242,7 @@ def build_dynamic_agent_acquisition_request(
             mutation_id=f"mut-me13-install:{config.installation_id}",
             installation_id=config.installation_id,
             installation_slot_id=config.installation_slot_id,
-            artifact_store_ref=f"store://artifacts/{config.installation_id}",
+            artifact_store_ref=artifact_store_ref,
             trust_record=trust_record,
             agent_project_metadata_ref=config.metadata_ref,
         ),
@@ -374,6 +378,10 @@ class MarketplaceAgentDistributionExecutionProofStack:
                 lifecycle_stack.composition.agent_platform_runtime.registry_projection_authority
             ),
             principal=lifecycle_stack.governance.principal,
+        )
+        lifecycle_port = ProofInstallContractAuthorityLifecyclePort(
+            inner=lifecycle_port,
+            proof_config=resolved_config,
         )
         acquisition = DynamicAgentAcquisitionService(
             catalog_registry=CatalogSourceProviderRegistry(

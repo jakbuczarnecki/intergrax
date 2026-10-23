@@ -10,8 +10,15 @@ from intergrax.applications._shared.application_owned_tool_conformance import (
     application_owned_tool_declarations,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.collaborative_work.persistence import (
+    open_sqlite_collaborative_work_repositories,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+    lab_orchestration_decision_requirement_policy,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.skills.host_lifecycle import SkillHostLifecycleService
 from intergrax.skills.registry.profile import SkillProfile
@@ -90,11 +97,28 @@ async def run_me16_mixed_host_execution(
         environment_id=config.environment_id,
     )
     profile_stores = lifecycle_proof_durable_profile_stores(agent_stack.runtime_root)
+    authority = agent_stack.composition.agent_platform_runtime.registry_projection_authority
+    resolved_revision = authority.require_for_revision(
+        application_id=config.application_id,
+        application_environment_id=config.environment_id,
+        runtime_revision_id=projection.evidence.runtime_revision_id,
+    )
+    contract_authority = authority.roster_contract_authority_for(
+        resolved=resolved_revision,
+        manifest=manifest,
+    )
+    collaborative_work = open_sqlite_collaborative_work_repositories(
+        str(agent_stack.runtime_root / "collaborative-work.sqlite"),
+    )
     host_runtime = build_harness_host_runtime(
         manifest,
         environment,
         tenant_id=ME16_MIXED_TENANT,
         registry_projection=projection,
+        registry_assembly_mode=RegistryAssemblyMode.REVISION_BOUND,
+        agent_contract_authority=contract_authority,
+        collaborative_work_repositories=collaborative_work,
+        orchestration_decision_requirement_policy=lab_orchestration_decision_requirement_policy(),
         trace_db_path=tmp_path / "trace.db",
         runtime_events_db_path=tmp_path / "runtime_events.db",
         document_store=InMemoryDocumentStore(),

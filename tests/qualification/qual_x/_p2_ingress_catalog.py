@@ -199,9 +199,16 @@ QUAL_X_P2_INGRESS_CATALOG: tuple[QualXP2IngressEntry, ...] = (
                 "tests/qualification/tenant_x/test_tenant_x_final_fast.py",
                 "test_tx_final_q03_adversarial_matrix_f1_f10_closed_world",
             ),
+            _nid(
+                "tests/qualification/tenant_x/test_tenant_x_final_current_head.py",
+                "test_tx_final_head_q01_final_ready_for_audit",
+            ),
         ),
         strength=QualXP2EvidenceStrength.DIRECT,
-        coverage_gap="TENANT-X FINAL scope = historical @ 5ccb72fc…; P2 adds regression linkage only.",
+        coverage_gap=(
+            "TENANT-X FINAL historical production delta @ 5ccb72fc…; "
+            "current-HEAD behavioral replay via test_tenant_x_final_current_head + FINAL fast gates."
+        ),
         frz_criteria=("FRZ-TEN-04", "FRZ-TRC-01", "FRZ-REG-03"),
     ),
 )

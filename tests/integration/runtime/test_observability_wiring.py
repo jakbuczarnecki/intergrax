@@ -5,7 +5,13 @@ from __future__ import annotations
 import pytest
 
 from echo.echo_agent import EchoAgent
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.debug.store import open_trace_reader
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
+)
+from testing_support.builder import canonical_governed_execution_scope
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
@@ -37,18 +43,30 @@ async def test_wire_nexus_observability_sqlite_trace_persists(tmp_path) -> None:
         trace_store=stores.trace_store,
         runtime_event_store=stores.runtime_event_store,
     )
-    result = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="observability wiring",
-            context=TaskContext(capability="echo.basic"),
+    with canonical_governed_execution_scope(
+        "observability-wiring",
+        governance_tenant_id="t1",
+        governance_principal_id="u1",
+    ) as run_id:
+        authority_token = bind_active_execution_authority(
+            ParentExecutionAuthority.unrestricted_root(),
         )
-    )
+        try:
+            result = await loop.handle_task(
+                Task(
+                    tenant_id="t1",
+                    user_id="u1",
+                    message="observability wiring",
+                    context=TaskContext(capability="echo.basic"),
+                ),
+                run_id=run_id,
+            )
+        finally:
+            reset_active_execution_authority(authority_token)
     assert result.state == TaskState.COMPLETED
 
-    persisted = open_trace_reader(trace_db).read_run(result.task_id, "t1")
-    assert persisted.metadata.run_id == result.task_id
+    persisted = open_trace_reader(trace_db).read_run(run_id, "t1")
+    assert persisted.metadata.run_id == run_id
     assert len(persisted.events) > 0
 
     events = stores.runtime_event_store.list_for_task(result.task_id, tenant_id="t1")

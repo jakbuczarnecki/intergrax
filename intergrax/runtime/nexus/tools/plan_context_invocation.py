@@ -358,6 +358,9 @@ async def run_tools_context(state: RuntimeState) -> None:
                 skill_profile=state.context.config.skill_profile,
                 skill_registry=state.context.config.skill_registry,
                 skill_pinning_store=state.context.config.skill_pinning_store,
+                skill_execution_recovery_required=(
+                    state.context.config.skill_execution_recovery_required
+                ),
                 tenant_id=state.context.config.tenant_id,
                 plan_allowed_tool_ids=state.tool_planner_allowed_tool_ids,
                 top_k=state.context.config.tool_selection_top_k,

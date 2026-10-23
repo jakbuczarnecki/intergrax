@@ -402,6 +402,22 @@ def build_harness_host_runtime(
         application_skill_registry=application_skill_registry,
         agent_contract_authority=resolved_agent_contract_authority,
     )
+    from intergrax.skills.skill_execution_pinning_wiring import (
+        resolve_skill_execution_pinning_wiring,
+    )
+
+    skill_pinning_wiring = resolve_skill_execution_pinning_wiring(
+        production_mode=production_mode,
+        kv_store=kv_store,
+        document_store=doc_store,
+    )
+    env_wiring = replace(
+        env_wiring,
+        composition=replace(
+            env_wiring.composition,
+            skill_pinning_store=skill_pinning_wiring.pinning_store,
+        ),
+    )
     from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
         PinningStoreExecutionEffectiveProfileProvenanceReader,
     )

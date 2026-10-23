@@ -13,6 +13,7 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ENV_RUNTIME_EVENTS_DB,
     resolve_runtime_events_db_path,
 )
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.persistence_contract import (
     NullRuntimeEventPersistence,
     RuntimeEventPersistence,
@@ -47,8 +48,8 @@ def open_runtime_event_store(db_path: Path | None = None) -> SQLiteRuntimeEventS
 def resolve_runtime_event_persistence(
     *,
     db_path: Path | None = None,
-    implementation: RuntimeEventPersistence | None = None,
-) -> RuntimeEventPersistence | None:
+    implementation: EvidencePersistencePort | RuntimeEventPersistence | None = None,
+) -> EvidencePersistencePort | RuntimeEventPersistence | None:
     """
     Resolve RuntimeEvent persistence for composition roots (NexusLoop, debug API, tests).
 
@@ -62,7 +63,9 @@ def resolve_runtime_event_persistence(
             (ValidatingRuntimeEventPersistence, NullRuntimeEventPersistence),
         ):
             return implementation
-        return ValidatingRuntimeEventPersistence(implementation)
+        if isinstance(implementation, RuntimeEventPersistence):
+            return ValidatingRuntimeEventPersistence(implementation)
+        return implementation
     if db_path is None and not os.environ.get(ENV_RUNTIME_EVENTS_DB, "").strip():
         return None
     return ValidatingRuntimeEventPersistence(open_runtime_event_store(db_path))
