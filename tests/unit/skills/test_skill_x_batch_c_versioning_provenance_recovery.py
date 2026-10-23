@@ -25,6 +25,8 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.execution_continuation import (
     ContinuationReason,
+    ExecutionContinuationError,
+    ExecutionContinuationErrorCode,
     ExecutionContinuationIdentity,
     ExecutionContinuationLifecycleState,
     PendingExecutionContinuation,
@@ -58,7 +60,10 @@ from intergrax.skills.execution_binding import (
     resolve_bound_skill_pack,
     verify_skill_execution_binding_integrity,
 )
-from intergrax.skills.skill_execution_recovery import active_execution_requires_skill_recovery
+from intergrax.skills.skill_execution_recovery import (
+    active_execution_requires_skill_recovery,
+    resolve_skill_execution_recovery_required,
+)
 from intergrax.tools.registry import ToolRegistry
 from testing_support.builder import canonical_task_id_for_tests
 from intergrax.skills.execution_pinning_durability import (
@@ -866,7 +871,10 @@ def test_mismatched_historical_digest_rejected() -> None:
         binding,
         runtime_content_digests=(("a.pack", "sha256:forged"),),
     )
-    with pytest.raises(SkillResolutionError, match="digest mismatch with trusted package"):
+    with pytest.raises(
+        SkillResolutionError,
+        match="registry content witness digests must match runtime content digests",
+    ):
         verify_skill_execution_binding_integrity(tampered)
 
 
@@ -920,7 +928,10 @@ def test_incomplete_content_binding_coverage_rejected() -> None:
         content_bound_skill_ids=("a.pack",),
         observed_runtime_binding_metadata=(binding.observed_runtime_binding_metadata[0],),
     )
-    with pytest.raises(SkillResolutionError, match="complete content-bound coverage"):
+    with pytest.raises(
+        SkillResolutionError,
+        match="registry content witness digests must match runtime content digests",
+    ):
         verify_skill_execution_binding_integrity(tampered)
 
 
@@ -941,8 +952,104 @@ def test_v1_manifest_only_cannot_claim_v2_without_metadata() -> None:
         content_bound_skill_ids=("a.pack",),
         runtime_content_digests=(("a.pack", "sha256:forged"),),
     )
-    with pytest.raises(SkillResolutionError, match="trusted runtime binding metadata"):
+    with pytest.raises(
+        SkillResolutionError,
+        match="registry content witness digests must match runtime content digests",
+    ):
         verify_skill_execution_binding_integrity(forged)
+
+
+def test_jointly_modified_digest_and_metadata_rejected_against_catalog_witness() -> None:
+    registry = SkillRegistry()
+    registry.register(
+        _manifest("a.pack"),
+        binding=_binding_metadata("a.pack", "1.0.0", "sha256:trusted"),
+    )
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        skill_registry=registry,
+        pinning_store=InMemorySkillExecutionPinningStore(),
+        resolved_composition=composition,
+    )
+    forged_digest = "sha256:forged"
+    forged_metadata = _binding_metadata("a.pack", "1.0.0", forged_digest)
+    tampered = dataclasses.replace(
+        binding,
+        runtime_content_digests=(("a.pack", forged_digest),),
+        observed_runtime_binding_metadata=(forged_metadata,),
+        registry_content_witness_digests=(("a.pack", forged_digest),),
+    )
+    with pytest.raises(SkillResolutionError, match="catalog witness"):
+        verify_skill_execution_binding_integrity(tampered, skill_registry=registry)
+
+
+def test_resolve_skill_execution_recovery_explicit_false_cannot_override_resumed() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    task_id = canonical_task_id_for_tests("skill-x-resume-explicit-false")
+    identity = ExecutionContinuationIdentity(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    store = InMemoryExecutionContinuationStateStore()
+    store.insert_if_absent(
+        PendingExecutionContinuation(
+            continuation_id="cont-explicit-false",
+            identity=identity,
+            lifecycle_state=ExecutionContinuationLifecycleState.RESUMED,
+            revision=1,
+            reason=ContinuationReason.QUOTE,
+        ),
+    )
+    cont_token = bind_active_execution_continuation_state_store(store)
+    id_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        task_id=task_id,
+    )
+    try:
+        assert resolve_skill_execution_recovery_required(False) is True
+        assert resolve_skill_execution_recovery_required(None) is True
+    finally:
+        reset_active_execution_identity(id_token)
+        reset_active_execution_continuation_state_store(cont_token)
+
+
+def test_continuation_store_query_failure_blocks_recovery_authority() -> None:
+    class FailingContinuationStore(InMemoryExecutionContinuationStateStore):
+        def resolve_identity_for_execution_progress(self, identity):
+            raise ExecutionContinuationError(
+                "simulated continuation store failure",
+                code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+            )
+
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    task_id = canonical_task_id_for_tests("skill-x-continuation-fail")
+    cont_token = bind_active_execution_continuation_state_store(FailingContinuationStore())
+    id_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        task_id=task_id,
+    )
+    try:
+        with pytest.raises(
+            SkillResolutionError,
+            match="continuation unavailable for skill recovery authority",
+        ):
+            resolve_skill_execution_recovery_required(None)
+    finally:
+        reset_active_execution_identity(id_token)
+        reset_active_execution_continuation_state_store(cont_token)
 
 
 def test_cas_raises_before_write_fails_closed() -> None:

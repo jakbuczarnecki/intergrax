@@ -154,6 +154,10 @@ def _binding_storage_payload(binding: SkillExecutionBinding) -> dict[str, Any]:
         ],
         "binding_integrity_version": binding.binding_integrity_version,
         "content_bound_skill_ids": list(binding.content_bound_skill_ids),
+        "registry_content_witness_digests": [
+            {"skill_id": skill_id, "content_digest": digest}
+            for skill_id, digest in binding.registry_content_witness_digests
+        ],
     }
 
 
@@ -212,6 +216,13 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
         )
         content_bound_raw = binding_raw.get("content_bound_skill_ids", [])
         content_bound_skill_ids = tuple(str(item) for item in content_bound_raw)
+        witness_raw = binding_raw.get("registry_content_witness_digests", [])
+        registry_content_witness_digests = tuple(
+            sorted(
+                (str(item["skill_id"]), str(item["content_digest"]))
+                for item in witness_raw
+            ),
+        )
     except (KeyError, TypeError, ValueError) as exc:
         raise SkillExecutionPinningStorageError(
             "corrupt skill execution binding snapshot",
@@ -227,11 +238,30 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
         observed_runtime_binding_metadata=observed_runtime_binding_metadata,
         binding_integrity_version=binding_integrity_version,
         content_bound_skill_ids=content_bound_skill_ids,
+        registry_content_witness_digests=registry_content_witness_digests,
     )
     from intergrax.skills.execution_binding import verify_skill_execution_binding_integrity
 
     verify_skill_execution_binding_integrity(binding)
     return binding
+
+
+def _assert_idempotent_pin_equivalence(
+    existing: SkillExecutionBinding,
+    expected: SkillExecutionBinding,
+    *,
+    tenant_id: str,
+    execution_id: ExecutionId,
+) -> None:
+    _assert_decoded_binding_scope(
+        existing,
+        tenant_id=tenant_id,
+        execution_id=execution_id,
+    )
+    if not bindings_equivalent_for_pinning(existing, expected):
+        raise SkillExecutionPinningConflictError(
+            f"execution already pinned with different skill pack: {expected.execution_id}",
+        )
 
 
 def _assert_decoded_binding_scope(
@@ -274,10 +304,12 @@ class KvSkillExecutionPinningStore:
         if existing_raw is None:
             return False
         existing = decode_skill_execution_binding(existing_raw)
-        if not bindings_equivalent_for_pinning(existing, binding):
-            raise SkillExecutionPinningConflictError(
-                f"execution already pinned with different skill pack: {binding.execution_id}",
-            )
+        _assert_idempotent_pin_equivalence(
+            existing,
+            binding,
+            tenant_id=binding.tenant_id,
+            execution_id=binding.execution_id,
+        )
         return True
 
     def pin(self, binding: SkillExecutionBinding) -> None:
@@ -309,10 +341,12 @@ class KvSkillExecutionPinningStore:
                 "skill execution pinning compare-and-set failed without readable record",
             )
         existing = decode_skill_execution_binding(existing_raw)
-        if not bindings_equivalent_for_pinning(existing, binding):
-            raise SkillExecutionPinningConflictError(
-                f"execution already pinned with different skill pack: {binding.execution_id}",
-            )
+        _assert_idempotent_pin_equivalence(
+            existing,
+            binding,
+            tenant_id=binding.tenant_id,
+            execution_id=binding.execution_id,
+        )
 
     def get(
         self,
@@ -367,10 +401,12 @@ class DocumentStoreSkillExecutionPinningStore:
         if existing is None:
             return False
         stored = decode_skill_execution_binding(_binding_record_to_bytes(existing))
-        if not bindings_equivalent_for_pinning(stored, binding):
-            raise SkillExecutionPinningConflictError(
-                f"execution already pinned with different skill pack: {binding.execution_id}",
-            )
+        _assert_idempotent_pin_equivalence(
+            stored,
+            binding,
+            tenant_id=binding.tenant_id,
+            execution_id=binding.execution_id,
+        )
         return True
 
     def pin(self, binding: SkillExecutionBinding) -> None:
@@ -404,10 +440,12 @@ class DocumentStoreSkillExecutionPinningStore:
                 "skill execution pinning document create failed without readable record",
             )
         stored = decode_skill_execution_binding(_binding_record_to_bytes(existing))
-        if not bindings_equivalent_for_pinning(stored, binding):
-            raise SkillExecutionPinningConflictError(
-                f"execution already pinned with different skill pack: {binding.execution_id}",
-            )
+        _assert_idempotent_pin_equivalence(
+            stored,
+            binding,
+            tenant_id=binding.tenant_id,
+            execution_id=binding.execution_id,
+        )
 
     def get(
         self,

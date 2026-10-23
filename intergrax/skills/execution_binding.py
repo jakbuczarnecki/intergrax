@@ -63,6 +63,7 @@ class SkillExecutionBinding:
     observed_runtime_binding_metadata: tuple[SkillRuntimeBindingMetadata, ...] = ()
     binding_integrity_version: str = BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1
     content_bound_skill_ids: tuple[str, ...] = ()
+    registry_content_witness_digests: tuple[tuple[str, str], ...] = ()
 
 
 @runtime_checkable
@@ -185,8 +186,38 @@ def _assert_binding_matches_storage_scope(
         raise SkillResolutionError("skill execution binding execution_id mismatch")
 
 
-def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> None:
-    """Fail closed on digest, provenance, manifest, or identity mismatch."""
+def _verify_registry_content_witness_against_catalog(
+    binding: SkillExecutionBinding,
+    skill_registry: SkillRegistry,
+) -> None:
+    """Cross-check pinned catalog witness against live registry when the release is still observable."""
+    witness_by_skill_id = dict(binding.registry_content_witness_digests)
+    for ref in binding.resolved_pack.resolved_skills:
+        catalog_metadata = skill_registry.binding_metadata(ref.skill_id)
+        if catalog_metadata is None:
+            raise SkillResolutionError(
+                f"catalog binding metadata unavailable for content witness: {ref.qualified_id}",
+            )
+        if catalog_metadata.version_label != ref.version:
+            continue
+        witnessed_digest = witness_by_skill_id.get(ref.skill_id)
+        if witnessed_digest is None:
+            raise SkillResolutionError(
+                f"missing registry content witness for resolved skill: {ref.qualified_id}",
+            )
+        if catalog_metadata.content_digest != witnessed_digest:
+            raise SkillResolutionError(
+                "registry content digest mismatch with pinned catalog witness for "
+                f"{ref.qualified_id}",
+            )
+
+
+def verify_skill_execution_binding_integrity(
+    binding: SkillExecutionBinding,
+    *,
+    skill_registry: SkillRegistry | None = None,
+) -> None:
+    """Fail closed on digest, provenance, manifest, identity, or witness mismatch."""
     normalized_tenant = binding.tenant_id.strip()
     if not normalized_tenant:
         raise SkillResolutionError("tenant_id must be non-empty")
@@ -209,6 +240,10 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
             raise SkillResolutionError("empty resolved pack cannot retain contribution provenance")
         if binding.content_bound_skill_ids:
             raise SkillResolutionError("empty resolved pack cannot retain content-bound skill ids")
+        if binding.registry_content_witness_digests:
+            raise SkillResolutionError(
+                "empty resolved pack cannot retain registry content witness digests",
+            )
         if binding.observed_runtime_binding_metadata:
             raise SkillResolutionError(
                 "empty resolved pack cannot retain runtime binding metadata snapshots",
@@ -289,11 +324,24 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
             raise SkillResolutionError(
                 "manifest-observation binding cannot claim runtime content digests",
             )
+        if binding.registry_content_witness_digests:
+            raise SkillResolutionError(
+                "manifest-observation binding cannot retain registry content witness digests",
+            )
         if binding.observed_runtime_binding_metadata:
             raise SkillResolutionError(
                 "manifest-observation binding cannot retain runtime binding metadata snapshots",
             )
         return
+
+    if binding.registry_content_witness_digests != binding.runtime_content_digests:
+        raise SkillResolutionError(
+            "registry content witness digests must match runtime content digests",
+        )
+    if not binding.registry_content_witness_digests:
+        raise SkillResolutionError(
+            "runtime-content binding requires registry content witness digests",
+        )
 
     if not bound_from_digests:
         raise SkillResolutionError(
@@ -329,6 +377,9 @@ def verify_skill_execution_binding_integrity(binding: SkillExecutionBinding) -> 
             "runtime binding metadata snapshots must cover every resolved skill",
         )
 
+    if skill_registry is not None:
+        _verify_registry_content_witness_against_catalog(binding, skill_registry)
+
 
 def _build_skill_execution_binding(
     *,
@@ -338,6 +389,7 @@ def _build_skill_execution_binding(
     composition: ResolvedSkillComposition,
     runtime_content_digests: tuple[tuple[str, str], ...] = (),
     observed_runtime_binding_metadata: tuple[SkillRuntimeBindingMetadata, ...] = (),
+    skill_registry: SkillRegistry | None = None,
 ) -> SkillExecutionBinding:
     pack_skill_ids = frozenset(ref.skill_id for ref in composition.pack.resolved_skills)
     integrity_version, content_bound_skill_ids = _binding_integrity_profile_for_digests(
@@ -353,6 +405,9 @@ def _build_skill_execution_binding(
         raise SkillResolutionError(
             "manifest-observation binding cannot retain runtime binding metadata snapshots",
         )
+    registry_content_witness_digests = ()
+    if integrity_version == BINDING_INTEGRITY_RUNTIME_CONTENT_V2:
+        registry_content_witness_digests = tuple(sorted(runtime_content_digests))
     binding = SkillExecutionBinding(
         tenant_id=tenant_id.strip(),
         execution_id=execution_id,
@@ -367,8 +422,9 @@ def _build_skill_execution_binding(
         observed_runtime_binding_metadata=observed_runtime_binding_metadata,
         binding_integrity_version=integrity_version,
         content_bound_skill_ids=content_bound_skill_ids,
+        registry_content_witness_digests=registry_content_witness_digests,
     )
-    verify_skill_execution_binding_integrity(binding)
+    verify_skill_execution_binding_integrity(binding, skill_registry=skill_registry)
     return binding
 
 
@@ -427,6 +483,7 @@ def bind_resolved_skill_pack(
         composition=composition,
         runtime_content_digests=runtime_digests,
         observed_runtime_binding_metadata=metadata_snapshots,
+        skill_registry=skill_registry,
     )
     pinning_store.pin(binding)
     return binding
@@ -513,7 +570,10 @@ def resolve_bound_skill_pack(
                 tenant_id=tenant_id,
                 execution_id=active_execution_id,
             )
-        verify_skill_execution_binding_integrity(explicit_binding)
+        verify_skill_execution_binding_integrity(
+            explicit_binding,
+            skill_registry=skill_registry,
+        )
         return explicit_binding.resolved_pack
 
     if pinning_store is not None and active_execution_id is not None and tenant_id.strip():
@@ -536,7 +596,10 @@ def resolve_bound_skill_pack(
                 tenant_id=tenant_id,
                 execution_id=active_execution_id,
             )
-            verify_skill_execution_binding_integrity(existing)
+            verify_skill_execution_binding_integrity(
+                existing,
+                skill_registry=skill_registry,
+            )
             return existing.resolved_pack
         binding = bind_resolved_skill_pack(
             tenant_id=tenant_id,

@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 from intergrax.contracts.execution_continuation import (
+    ExecutionContinuationError,
     ExecutionContinuationIdentity,
     ExecutionContinuationLifecycleState,
 )
+from intergrax.skills.resolver import SkillResolutionError
 from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
     peek_active_execution_identity,
@@ -50,10 +52,22 @@ def active_execution_requires_skill_recovery() -> bool:
 
 
 def resolve_skill_execution_recovery_required(explicit: bool | None) -> bool:
-    """Honor explicit host override; otherwise derive from canonical continuation lifecycle."""
-    if explicit is not None:
-        return explicit
-    return active_execution_requires_skill_recovery()
+    """
+    Derive recovery requirement from canonical continuation lifecycle first.
+
+    Explicit ``True`` may require recovery; explicit ``False`` cannot disable recovery
+    already mandated by a confirmed ``RESUMED`` canonical execution.
+    """
+    try:
+        if active_execution_requires_skill_recovery():
+            return True
+    except ExecutionContinuationError as exc:
+        raise SkillResolutionError(
+            "canonical execution continuation unavailable for skill recovery authority",
+        ) from exc
+    if explicit is True:
+        return True
+    return False
 
 
 __all__ = [
