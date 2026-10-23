@@ -579,28 +579,43 @@ class DependencyAttemptExecutionBoundary:
         handoff: _AcquirePermitHandoff,
     ) -> None:
         release_task = asyncio.create_task(permit.release())
+        release_cf = self._bridge_loop_task_to_concurrent_future(release_task)
+
+        def _release_done(release_cf_done: ConcurrentFuture[object]) -> None:
+            try:
+                release_cf_done.result()
+                handoff.complete_release()
+            except BaseException as exc:
+                self._record_lifecycle_failure(exc)
+            finally:
+                with self._registry_lock:
+                    self._pending_async_release_futures.discard(release_cf_done)
+
+        with self._registry_lock:
+            self._pending_async_release_futures.add(release_cf)
+        release_cf.add_done_callback(_release_done)
         try:
             await asyncio.shield(release_task)
-            handoff.complete_release()
         except asyncio.CancelledError:
-            release_task.add_done_callback(
-                lambda done_task: self._handoff_async_release_terminal(
-                    done_task,
-                    handoff,
-                ),
-            )
             raise
 
-    def _handoff_async_release_terminal(
+    def _bridge_loop_task_to_concurrent_future(
         self,
         release_task: asyncio.Task[object],
-        handoff: _AcquirePermitHandoff,
-    ) -> None:
-        try:
-            release_task.result()
-            handoff.complete_release()
-        except BaseException as exc:
-            self._record_lifecycle_failure(exc)
+    ) -> ConcurrentFuture[object]:
+        """Expose an admission-loop release task to sync shutdown drain accounting."""
+        release_cf: ConcurrentFuture[object] = ConcurrentFuture()
+
+        def _task_terminal(task: asyncio.Task[object]) -> None:
+            try:
+                task.result()
+            except BaseException as exc:
+                release_cf.set_exception(exc)
+            else:
+                release_cf.set_result(None)
+
+        release_task.add_done_callback(_task_terminal)
+        return release_cf
 
     def _schedule_handoff_permit_release(
         self,

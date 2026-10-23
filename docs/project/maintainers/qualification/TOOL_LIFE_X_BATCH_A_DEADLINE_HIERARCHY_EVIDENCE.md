@@ -2,12 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| **Task** | `TOOL-LIFE-X-BATCH-A-ATOMIC-PERMIT-CLOSURE` |
+| **Task** | `TOOL-LIFE-X-BATCH-A-CLEANUP-ACCOUNTING-FINALIZATION` |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
 | **Mode** | Change-delta (ECAP-P1/P2/P4/P6) |
 | **START_HEAD** | `4c0f6504da1969175582e1830014c24e857243b0` |
 | **BA-F06 resume START_HEAD** | `75201b60945e6b3dc7964b29d8a2bbd4520c07a4` |
-| **Disposition** | **`TOOL-LIFE-X BATCH A / BA-F06 — IMPLEMENTATION COMPLETE — L2 PENDING`** (GitHub SHA is acceptance authority after L2) |
+| **BA-F07 START_HEAD** | `e3afb404879f0ca4fc1cede779868672e01b7103` |
+| **Disposition** | **`TOOL-LIFE-X BATCH A — IMPLEMENTATION COMPLETE — L2 PENDING`** (GitHub SHA is acceptance authority after L2) |
 
 **Non-closure:** Does not close `TOOL-LIFE-X`, does not promote global `FRZ-*` PASS, does not substitute `HARNESS-W4` / `DIST-SCALE-X`.
 
@@ -19,9 +20,23 @@
 | Prior Cursor remediation | (see prior table rows BA-F01/BA-F02) | **45 passed / 4 failed** — governance fixture gap + admission thread drain |
 | **Atomic permit closure (BA-F02 wave)** | **fc59dd350933483205460fa0e84c7d80c37b6bb3** | **50/50** targeted Batch A regression green |
 | **BA-F05 async ownership closure** | **d76d6d874ed9394d2e1959e490c5835248deea9f** | **52/52** targeted Batch A regression green |
-| **BA-F06 cancellation-safe finalization** | commit `fix(runtime): BA-F06 cancellation-safe permit finalization` on `development` | **L2 NOT RUN** (operator deferral); static review + prepared L1 sources |
+| **BA-F06 cancellation-safe finalization** | `e3afb404879f0ca4fc1cede779868672e01b7103` | **L2 NOT RUN** (operator deferral); static review + prepared L1 sources |
+| **BA-F07 cleanup accounting (shielded abandon release)** | publication SHA on `development` after push | **L2 NOT RUN**; `STATIC REVIEW COMPLETED — L2 VALIDATION PENDING` |
 
-## BA-F06 — cancellation-safe permit finalization (implementation complete)
+## BA-F07 — cleanup accounting for shielded in-coroutine abandon releases (implementation complete)
+
+| Topic | Detail |
+| --- | --- |
+| **Independent audit finding @ `e3afb404…`** | `_release_permit_for_abandoned_handoff()` used `asyncio.shield` so a surviving release task could outlive acquire-wrapper cancellation without appearing in `_pending_async_release_futures`; `drain_and_close()` could stop the admission loop while physical release remained in flight. `begin_shutdown()` cancel of pending acquire wrappers is ownership-safe only when abandon cleanup is visible to the same drain set. |
+| **Correction** | Bridge each in-loop abandon `release_task` to a `ConcurrentFuture` via `_bridge_loop_task_to_concurrent_future`, register in `_pending_async_release_futures` under `_registry_lock` **before** `await asyncio.shield`, and complete/discard through the same done-callback pattern as `_schedule_handoff_permit_release` (`complete_release` only after physical success; failures → `_record_lifecycle_failure`). Removed orphaned `_handoff_async_release_terminal` split path — shield survival is tracked by the registered future until terminal. |
+| **Shutdown races** | Registration precedes first `await` on the abandon path (linearization vs `drain_and_close`). Wrapper `cancel()` / `begin_shutdown()` may cancel the acquire coroutine while shielded release continues; `_wait_for_pending_async_releases()` blocks until the bridged future completes. No second scheduler; `_schedule_handoff_permit_release` unchanged for sync-thread abandon observation. |
+| **Pending acquire cancel** | Cancelled wrapper with no completed grant: coroutine aborts at admission wait — no permit. Abandoned grant with `release_in_coro`: obligation tracked in pending-async set, not erased by wrapper cancel. Granted permit accepted by sync caller: registered attempt record — unchanged. |
+| **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` only (production). |
+| **Static invariant review** | Single owner `DependencyAttemptExecutionBoundary`; no double release; loop thread non-blocking; bounded drain failure via existing timeout + `RuntimeError` / `DependencyAttemptReleaseInvariantError`. |
+| **Tests NOT RUN** | Prepared: `test_ba_f06_shutdown_waits_pending_abandon_release`, `test_ba_f06_capacity_not_released_until_physical_release_completes`, `test_ba_f06_abandon_release_failure_surfaces_on_drain`, `test_ba_f06_acquire_terminal_callback_cancelled_future_safe` + full Batch A regression command below. |
+| **L2 qualification** | **PENDING** — one consolidated Batch A L2 at publication SHA (operator-authorized boundary). |
+
+## BA-F06 — cancellation-safe permit finalization (complete — superseded for shutdown accounting by BA-F07)
 
 | Topic | Detail |
 | --- | --- |
@@ -29,7 +44,7 @@
 | **Protocol** | `RELEASE_PENDING` between obligation claim and successful physical release. `RELEASED` only via `complete_release()` after `permit.release()` succeeds (in-coroutine path, shielded task terminal, or `_schedule_handoff_permit_release` done callback). `on_physical_grant` abandon path: `→ RELEASE_PENDING` + `release_in_coro`; idempotent `noop` when already `RELEASED` / `RELEASE_PENDING` (no double release). |
 | **Cancellation during release** | `_release_permit_for_abandoned_handoff`: `asyncio.shield` around release task; on `CancelledError`, `add_done_callback` on the surviving task records success (`complete_release`) or `_record_lifecycle_failure` without marking released. |
 | **Callback / cancel** | Terminal callback branches on `acquire_future.cancelled()` before `exception()`; re-enters `_maybe_release_abandoned_acquire_permit` only when obligation visible and release not pending/complete. |
-| **Shutdown** | Handoff abandon releases register in `_pending_async_release_futures`; existing `_wait_for_pending_async_releases()` before `loop.stop()` drains them. Release failures accumulate in `_release_failures` → `DependencyAttemptReleaseInvariantError` on `drain_and_close`. |
+| **Shutdown** | Sync-thread handoff releases register in `_pending_async_release_futures` (BA-F06); in-coroutine shielded abandon releases **did not** until BA-F07. Release failures accumulate in `_release_failures` → `DependencyAttemptReleaseInvariantError` on `drain_and_close`. |
 | **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` only (production). |
 | **Static invariant review** | Single boundary owner preserved; no new scheduler/registry; accepted permits still `claim_successful_grant()` after `result()`; abandon cleanup cannot claim while `RELEASE_PENDING`; loop callbacks non-blocking (`wait=False` + done callbacks). |
 | **Prepared tests (not executed this session)** | `test_ba_f06_*` in `test_dependency_attempt_execution_boundary.py` — gated release, release failure on drain, shutdown wait, cancelled-future callback safety. |
@@ -88,7 +103,9 @@ uv run pytest -p no:xdist \
 
 **FINAL_COMMIT (BA-F05):** `d76d6d874ed9394d2e1959e490c5835248deea9f`
 
-**BA-F06 publication commit:** `git log -1 --format=%H development` after push (subject contains `BA-F06 cancellation-safe permit finalization`)
+**BA-F06 publication commit:** `e3afb404879f0ca4fc1cede779868672e01b7103`
+
+**BA-F07 publication commit:** `git log -1 --format=%H development` after push (subject contains `BA-F07 cleanup accounting`)
 
 **Historical (BA-F02 only):** implementation `fc59dd350933483205460fa0e84c7d80c37b6bb3` — **50/50**; not attributed to BA-F05/BA-F06 SHAs.
 
@@ -103,7 +120,7 @@ uv run pytest -p no:xdist \
 | TL5 uncertain outcome | Invoker | `ToolEffectCertainty` on timeout | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | Preserved | Batch A timeout tests | FRZ-REL-05 | VALIDATION REQUIRED |
 | TL6 side-effect retry | Invoker + idempotency | pre-effect coordinator | prior SHAs | — | Not in Batch A delta | — | FRZ-REL-06 | IMPLEMENTATION REQUIRED |
 | TL7 | — | — | — | — | Open (parent) | — | — | OPERATOR DECISION REQUIRED |
-| TL8 ownership/recovery | `DependencyAttemptExecutionBoundary` | permit + worker detach | BA-F06 impl SHA | L2 not run | BA-F02 + BA-F05 + BA-F06 `RELEASE_PENDING` | prepared `test_ba_f06_*` + boundary suite | FRZ-REL-07 | **VALIDATION REQUIRED — L2 PENDING** |
+| TL8 ownership/recovery | `DependencyAttemptExecutionBoundary` | permit + worker detach | BA-F07 publication SHA | L2 not run | BA-F02 + BA-F05 + BA-F06 `RELEASE_PENDING` + BA-F07 shielded release accounting | prepared `test_ba_f06_*` + boundary suite | FRZ-REL-07 | **VALIDATION REQUIRED — L2 PENDING** |
 | TL9 terminal late results | Invoker | no resurrection | fc59dd350933483205460fa0e84c7d80c37b6bb3 | — | Preserved | Batch A | FRZ-REL-05 | VALIDATION REQUIRED |
 | TL10–TL13 | — | — | — | — | Open per parent | — | — | BLOCKED / parent scope |
 | TL14 no lifecycle bypass | Architecture | single invoker path | prior SHAs | — | No new bypass | U5 gates (unchanged) | FRZ-BND-03, FRZ-EXE-02 | ALREADY PROVEN |
@@ -115,7 +132,7 @@ uv run pytest -p no:xdist \
 | --- | --- |
 | FRZ-REL-01 | Parent deadline bounds tool physical attempt — validation evidence advanced, not global PASS |
 | FRZ-REL-05 | Timeout / uncertain semantics — scoped tests only |
-| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02 + BA-F05 + BA-F06 cancellation-safe release finalization (scoped review; L2 pending) |
+| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02 + BA-F05 + BA-F06 + BA-F07 shielded abandon release shutdown accounting (scoped review; L2 pending) |
 | FRZ-EXE-02 | `RuntimeToolInvoker` enforcement owner preserved |
 | FRZ-GOV-02 | Governance identity required at inner boundary — tests fixed to bind identity, not weakened |
 | FRZ-BND-03 | No parallel admission owner introduced |
