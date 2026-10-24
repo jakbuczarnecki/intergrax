@@ -8,10 +8,16 @@ from __future__ import annotations
 from typing import Any, Callable, Mapping, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.relational_store_bounded_query import (
+    RelationalStoreBoundedQueryPort,
+)
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
+from intergrax.integrations.relational_bounded_row_accumulation import (
+    accumulate_bounded_sql_rows,
+)
 
 
-class _PostgreSQLRelationalStore:
+class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
     """
     Minimal ``RelationalStore`` over an existing PostgreSQL connection.
 
@@ -48,6 +54,36 @@ class _PostgreSQLRelationalStore:
         cursor = conn.execute(sql, params)
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
+
+    def fetch_query_bounded(
+        self,
+        sql: str,
+        params: Sequence[Any] = (),
+        *,
+        max_rows: int,
+        max_result_bytes: int,
+    ) -> tuple[tuple[Mapping[str, Any], ...], bool, str]:
+        conn = self._require_connection()
+        cursor = conn.execute(sql, params)
+        try:
+
+            def _row_iter():
+                for row in cursor:
+                    yield dict(row)
+
+            accumulated, truncated, reason = accumulate_bounded_sql_rows(
+                _row_iter(),
+                max_rows=max_rows,
+                max_result_bytes=max_result_bytes,
+            )
+            return tuple(accumulated), truncated, reason
+        finally:
+            cursor.close()
+
+    def cancel_backend(self) -> None:
+        """Request PostgreSQL backend cancellation for the store connection (physical cancel)."""
+        conn = self._require_connection()
+        conn.cancel()
 
     def close(self) -> None:
         if self._connection is not None:
