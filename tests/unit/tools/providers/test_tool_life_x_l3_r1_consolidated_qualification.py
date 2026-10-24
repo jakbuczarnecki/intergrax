@@ -1,0 +1,294 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""TOOL-LIFE-X L3-R1 — MCP subprocess + HTTP lost-ack RuntimeToolInvoker qualification."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+import subprocess
+import sys
+import time
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+from testing_support.builder import (
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
+
+from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    PolicyRulesProfile,
+)
+from intergrax.contracts.idempotency_store import (
+    InvocationStatus,
+    InvocationUncertaintyError,
+)
+from intergrax.contracts.tool_execution_outcome import ToolEffectCertainty
+from intergrax.integrations.providers.http_client.allowlist.client import AllowlistHttpClient
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
+from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
+from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
+from intergrax.tools.providers.http.bundle import register_http_tools
+from intergrax.tools.providers.http.contracts import HttpRequestInput
+from intergrax.tools.providers.http.service import HTTP_REQUEST_TOOL_ID
+from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.wiring import ToolWiringContext
+from tests.unit.tools.providers.test_tool_life_x_batch_e_real_infrastructure_adversarial import (
+    _allowlist_client,
+    _local_fault_server,
+)
+
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_L3_RUN_ID = canonical_run_id_for_tests("tool-life-x-l3-r1")
+_MCP_SERVER = (
+    Path(__file__).resolve().parents[3] / "fixtures" / "tool_life_x_l3_r1_mcp_qualification_server.py"
+)
+_FASTMCP = pytest.importorskip("fastmcp")
+
+
+class AllowAllScopePolicy:
+    def is_allowed(self, *args: object, **kwargs: object) -> bool:
+        return True
+
+
+class _InvokeState:
+    def __init__(self, *, tenant_id: str = "tenant_test") -> None:
+        env = ApplicationEnvironmentProfile.lab_defaults(profile_id="l3-r1.allow")
+        env.policy_rules = PolicyRulesProfile(
+            inline_rules=[],
+            policy_enforcement_mode="enforce",
+        )
+        bundle = wire_policy_bundle(env)
+        self.run_id = _L3_RUN_ID
+        self._tenant_id = tenant_id
+        self.request = type("Req", (), {"metadata": {}})()
+        self.declarative_hitl_grant = None
+        self._context = type(
+            "Ctx",
+            (),
+            {"config": type("Cfg", (), {"policy_bundle": bundle, "production_mode": False})()},
+        )()
+
+    @property
+    def tenant_id(self) -> str:
+        return self._tenant_id
+
+    @property
+    def task_id(self) -> str | None:
+        return None
+
+    @property
+    def context(self):
+        return self._context
+
+    def trace_event(self, *args: object, **kwargs: object) -> None:
+        del args, kwargs
+
+
+@contextmanager
+def _governed_invoke_scope(*, governance_tenant_id: str = "tenant_test"):
+    with canonical_governed_execution_scope(
+        _L3_RUN_ID,
+        governance_tenant_id=governance_tenant_id,
+        governance_principal_id="principal-tool-life-x-l3-r1",
+    ):
+        with patch(
+            "intergrax.runtime.nexus.tools.invoker.require_meaningful_side_effect_authorization",
+        ):
+            yield
+
+
+@pytest.fixture(autouse=True)
+def _l3_active_governance() -> None:
+    with _governed_invoke_scope():
+        yield
+
+
+def _http_invoker(
+    client: AllowlistHttpClient,
+) -> tuple[RuntimeToolInvoker, InMemoryIdempotencyStore]:
+    store = InMemoryIdempotencyStore()
+    registry = ToolRegistry()
+    register_http_tools(registry, ToolWiringContext(http_client=client))
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+        pre_effect_coordinator=IdempotencyPreEffectCoordinator(idempotency_store=store),
+        scope_policy=AllowAllScopePolicy(),
+    )
+    return invoker, store
+
+
+@contextmanager
+def _mcp_subprocess(mode: str):
+    proc_env = os.environ.copy()
+    proc_env["TOOL_LIFE_X_MCP_MODE"] = mode
+    proc = subprocess.Popen(
+        [sys.executable, str(_MCP_SERVER)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=proc_env,
+    )
+    try:
+        if mode == "unavailable":
+            proc.wait(timeout=5.0)
+            yield None, proc.returncode
+            return
+        assert proc.stdout is not None
+        line = proc.stdout.readline().strip()
+        port = int(line)
+        base = f"http://127.0.0.1:{port}/"
+        yield base, proc
+    finally:
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+
+
+async def _mcp_call_tool(base_url: str, tool: str, arguments: dict, *, timeout_s: float) -> object:
+    from mcp.client.session import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    async def _run() -> object:
+        async with streamablehttp_client(base_url) as (read, write, _):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                return await session.call_tool(tool, arguments)
+
+    return await asyncio.wait_for(_run(), timeout=timeout_s)
+
+
+def test_l3_http_lost_ack_e2e_invoker_uncertain_single_effect() -> None:
+    effects: list[str] = []
+
+    def lost_ack_after_effect(handler: BaseHTTPRequestHandler) -> None:
+        length = int(handler.headers.get("Content-Length", "0"))
+        body = handler.rfile.read(length) if length else b""
+        effects.append(body.decode("utf-8"))
+        handler.request.shutdown(__import__("socket").SHUT_RDWR)
+
+    with _local_fault_server(lost_ack_after_effect) as (base, hosts):
+        client = _allowlist_client(hosts)
+        invoker, store = _http_invoker(client)
+        state = _InvokeState()
+        request = ToolExecutionRequest(
+            run_id=_L3_RUN_ID,
+            step_id="1",
+            tool_id=HTTP_REQUEST_TOOL_ID,
+            input=HttpRequestInput(
+                url=f"{base}/charge",
+                method="POST",
+                body=json.dumps({"amount": 1}),
+                timeout_s=5.0,
+            ),
+            idempotency_key="l3-lost-ack-key",
+        )
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert len(effects) == 1
+    assert result.success is False
+    assert result.effect_certainty == ToolEffectCertainty.UNCERTAIN
+    assert store.get_status("tenant_test", "l3-lost-ack-key") == InvocationStatus.UNCERTAIN
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+    assert len(effects) == 1
+
+
+def test_l3_http_4xx_response_differs_from_lost_ack_uncertainty() -> None:
+    """HTTP 4xx with full response is a definite tool outcome, not transport UNKNOWN."""
+
+    def reject(handler: BaseHTTPRequestHandler) -> None:
+        handler.send_response(400)
+        handler.end_headers()
+        handler.wfile.write(b"rejected")
+
+    with _local_fault_server(reject) as (base, hosts):
+        client = _allowlist_client(hosts)
+        invoker, store = _http_invoker(client)
+        state = _InvokeState()
+        request = ToolExecutionRequest(
+            run_id=_L3_RUN_ID,
+            step_id="1",
+            tool_id=HTTP_REQUEST_TOOL_ID,
+            input=HttpRequestInput(
+                url=f"{base}/charge",
+                method="POST",
+                body="{}",
+                timeout_s=5.0,
+            ),
+            idempotency_key="l3-reject-key",
+        )
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert result.success is True
+    assert result.output is not None
+    assert result.output.success is False
+    assert result.output.status_code == 400
+    assert result.effect_certainty == ToolEffectCertainty.COMPLETED
+    assert store.get_status("tenant_test", "l3-reject-key") != InvocationStatus.UNCERTAIN
+
+
+def test_mcp_subprocess_normal_echo() -> None:
+    with _mcp_subprocess("ok") as (base, proc):
+        assert base is not None
+        result = asyncio.run(_mcp_call_tool(base, "echo", {"message": "hi"}, timeout_s=5.0))
+        assert proc.poll() is None
+        assert "hi" in str(result)
+
+
+def test_mcp_subprocess_unavailable_exit_code() -> None:
+    with _mcp_subprocess("unavailable") as (base, code):
+        assert base is None
+        assert code == 2
+
+
+def test_mcp_subprocess_hang_client_times_out() -> None:
+    with _mcp_subprocess("hang") as (base, proc):
+        assert base is not None
+        with pytest.raises(asyncio.TimeoutError):
+            asyncio.run(_mcp_call_tool(base, "echo", {}, timeout_s=0.8))
+        proc.terminate()
+
+
+def test_mcp_subprocess_slow_within_deadline() -> None:
+    with _mcp_subprocess("slow") as (base, _proc):
+        assert base is not None
+        result = asyncio.run(_mcp_call_tool(base, "echo", {}, timeout_s=5.0))
+        assert "slow-ok" in str(result)
+
+
+def test_mcp_subprocess_oversized_result_bounded() -> None:
+    with _mcp_subprocess("huge") as (base, _proc):
+        assert base is not None
+        raw = asyncio.run(_mcp_call_tool(base, "echo", {}, timeout_s=5.0))
+        payload = {"tool_result": str(raw)}
+        bounded, truncated = bound_mcp_structured_result(payload, max_bytes=256)
+        assert truncated is True
+        assert bounded.get("error") == "mcp_payload_byte_limit_exceeded"
+
+
+def test_mcp_subprocess_server_exit_mid_call() -> None:
+    with _mcp_subprocess("crash_mid") as (base, proc):
+        assert base is not None
+        with pytest.raises(Exception):
+            asyncio.run(_mcp_call_tool(base, "echo", {}, timeout_s=5.0))
+        time.sleep(0.5)
+        assert proc.poll() is not None
