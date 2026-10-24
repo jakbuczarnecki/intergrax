@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| START_HEAD | `00653e63d8959f8d228aa391c91bb91bd08d3412` |
+| START_HEAD | `c8168be93279dc918a6bb6ddcfaf7babac7016c1` |
 | Scope | SQLite `DURABLE_SINGLE_HOST` revocation ledger + external-operation store; R8 adversarial matrix |
 | Multi-host shared durability | **Not proven** — no Redis/PostgreSQL (BLOCKED without operator infra) |
 | Cross-store distributed TX | **Not claimed** — revocation + external-op colocated in one SQLite file; no partition L3 |
@@ -12,7 +12,8 @@
 
 - **Execution ownership binding:** `ExternalOperationStateStore.bind_worker_execution_ownership` (RUNNING record).
 - **Revocation authority:** `WorkerExecutionOwnershipRevocationPort` — durable rows only after `assert_authoritative_worker_execution_revocation_allowed` against `ExternalOperationStateStore` (same SQLite `BEGIN IMMEDIATE` for durable path).
-- **Fencing:** `bound_worker_execution_epoch_is_revoked` blocks `compare_and_set` / `mark_physical_terminal_if_owner_matches` while RUNNING+revoked until certified loss apply.
+- **Fencing:** optimistic read via `bound_worker_execution_epoch_is_revoked`; authoritative fence in SQLite `BEGIN IMMEDIATE` CAS via `cas_update_blocked_by_bound_worker_revocation`.
+- **Revocation initiator:** `WorkerExecutionOwnershipRevocationRecorder` (composition-registered); direct port writes require sanctioned admission gate.
 - **Certification:** `WorkerExecutionCertifiedOwnerLossCertifier` → `stage_certified_owner_loss_evidence` (CAS#1 + revocation verify) → `apply_certified_owner_loss` (CAS#2).
 - **Live worker fence:** revocation proof required before staging; `WorkerInstance.revision`/lifecycle not authoritative.
 
@@ -33,9 +34,9 @@
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| L1 | R8 file only | **15 passed** |
-| L2 | R8 + R6 + R7 + W4-C (single invocation) | **70 passed** |
-| L3 (scoped) | Separate SQLite connection / store reopen on same WAL file | **PASS** in R8 tests |
+| L1 | R8 file only | **18 passed** |
+| L2 | R8 + R6 + R7 + Batch C (single invocation) | **71 passed** |
+| L3 (scoped) | WAL reopen + threaded revoke + **2-process** barrier races | **PASS** in R8 tests |
 | L3 (BLOCKED) | Docker PostgreSQL, multi-host Redis, network partition E2E | **BLOCKED** — not authorized |
 
 Log: `.tmp/session/TOOL-LIFE-X-L3-R8/l2-pytest.log`.
@@ -48,6 +49,10 @@ Log: `.tmp/session/TOOL-LIFE-X-L3-R8/l2-pytest.log`.
 | R8-F02 Revocation must fence | **RESOLVED** — revocation proof gates staging; CAS/terminal reject revoked bound epoch before apply |
 | R8-F03 SQLite transaction boundary | **RESOLVED** — revoke: single `BEGIN IMMEDIATE` read state + insert; stage CAS: in-TX revocation proof re-read |
 | R8-F04 Durability/concurrency | **PARTIAL PASS** — WAL cross-connection + threaded concurrent revoke in L3 scope; multi-host **BLOCKED** |
+| R8-F05 Pre-TX-only revocation check | **RESOLVED** — in-TX revocation row re-read on every SQLite CAS |
+| R8-F06 Terminal CAS vs revoke race | **RESOLVED** — linearization at SQLite `BEGIN IMMEDIATE` (terminal-first or revoke-first adversarial) |
+| R8-F07 Revocation caller authority | **RESOLVED** — `WorkerExecutionOwnershipRevocationRecorder` + `WorkerExecutionDirectRevocationInvocationError` gate |
+| R8-F08 Cross-process proof | **PARTIAL PASS** — local 2-process barrier races (not network partition) |
 
 FINAL_COMMIT: set at publication.
 

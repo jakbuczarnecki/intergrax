@@ -42,8 +42,10 @@ from intergrax.runtime.external_operations.external_operation_state_store import
     _utc_now,
     _validate_tenant_id,
     apply_external_operation_state_update,
+    cas_update_blocked_by_bound_worker_revocation,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
+    _require_sanctioned_revocation_write,
     assert_authoritative_worker_execution_revocation_allowed,
 )
 
@@ -275,6 +277,33 @@ class SQLiteExternalOperationStateStore(_ExternalOperationStateCertificationSema
                         expected_revision=expected_revision,
                         actual_revision=current.revision,
                     )
+                if (
+                    current.worker_instance_id is not None
+                    and current.worker_ownership_epoch is not None
+                ):
+                    revoked_row = conn.execute(
+                        """
+                        SELECT 1 FROM worker_execution_ownership_revocations
+                        WHERE tenant_id = ? AND operation_id = ?
+                          AND worker_instance_id = ? AND ownership_epoch = ?
+                        """,
+                        (
+                            tid,
+                            operation_id,
+                            current.worker_instance_id,
+                            current.worker_ownership_epoch,
+                        ),
+                    ).fetchone()
+                    if cas_update_blocked_by_bound_worker_revocation(
+                        current=current,
+                        update=update,
+                        epoch_is_revoked=revoked_row is not None,
+                    ):
+                        conn.execute("ROLLBACK")
+                        raise CertifiedOwnerLossEvidenceRejectedError(
+                            f"revoked worker execution epoch cannot mutate "
+                            f"{operation_id!r} under transaction",
+                        )
                 staged_slot = update.staged_certified_owner_loss
                 if (
                     staged_slot is not None
@@ -400,6 +429,7 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
         worker_instance_id: str,
         ownership_epoch: int,
     ) -> WorkerExecutionOwnershipRevocationV1:
+        _require_sanctioned_revocation_write()
         key = (tenant_id, operation_id, worker_instance_id, ownership_epoch)
         tid = _validate_tenant_id(tenant_id)
         with self._lock:

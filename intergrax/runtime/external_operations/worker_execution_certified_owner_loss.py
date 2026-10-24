@@ -42,6 +42,7 @@ from intergrax.runtime.external_operations.external_operation_state_store import
     ExternalOperationStateStore,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
+    WorkerExecutionOwnershipRevocationRecorder,
     require_worker_execution_revocation_proof,
 )
 
@@ -234,9 +235,25 @@ def configure_worker_execution_certified_owner_loss(
     worker_execution_ownership_revocation: WorkerExecutionOwnershipRevocationPort,
     worker_instance_repository: WorkerInstanceRepository | None = None,
     issuer: WorkerExecutionCertifiedOwnerLossEvidenceIssuer | None = None,
+    authoritative_state_store: ExternalOperationStateStore | None = None,
 ) -> None:
     """Register canonical worker-execution issuer binding for one deployment topology."""
     resolved_issuer = issuer or WorkerExecutionCertifiedOwnerLossEvidenceIssuer()
+    state_store = authoritative_state_store
+    if state_store is None:
+        colocated = getattr(
+            worker_execution_ownership_revocation,
+            "_authoritative_state_store",
+            None,
+        )
+        if colocated is not None:
+            state_store = colocated
+    recorder: WorkerExecutionOwnershipRevocationRecorder | None = None
+    if state_store is not None:
+        recorder = WorkerExecutionOwnershipRevocationRecorder(
+            authoritative_state_store=state_store,
+            revocation_port=worker_execution_ownership_revocation,
+        )
     _replace_certified_owner_loss_composition(
         CertifiedOwnerLossComposition(
             issuer_binding=CompositionCertifiedOwnerLossIssuerBinding(
@@ -247,6 +264,7 @@ def configure_worker_execution_certified_owner_loss(
             issuer=resolved_issuer,
             worker_instance_repository=worker_instance_repository,
             worker_execution_ownership_revocation=worker_execution_ownership_revocation,
+            worker_execution_revocation_recorder=recorder,
         ),
     )
 

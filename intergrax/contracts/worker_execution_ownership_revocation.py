@@ -26,6 +26,10 @@ class WorkerExecutionOwnershipRevocationUnauthorizedError(RuntimeError):
     """Revocation rejected — caller identity does not match authoritative ownership."""
 
 
+class WorkerExecutionDirectRevocationInvocationError(RuntimeError):
+    """Direct revocation port write rejected — use sanctioned composition recorder."""
+
+
 def worker_execution_revocation_proof_ref(
     *,
     tenant_id: str,

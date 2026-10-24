@@ -32,6 +32,7 @@ from intergrax.contracts.worker_execution_ownership_revocation import (
     CertifiedOwnerLossWorkerOwnershipIndeterminateError,
 )
 from intergrax.runtime.external_operations.certified_owner_loss_composition import (
+    require_certified_owner_loss_composition,
     reset_certified_owner_loss_composition_for_tests,
 )
 from intergrax.runtime.external_operations.external_operation_ownership import (
@@ -115,12 +116,19 @@ def _revoke(
     worker_id: str,
     epoch: int = _BOUND_EPOCH,
 ) -> str:
-    record = revocation.revoke_worker_execution_ownership(
+    from intergrax.runtime.external_operations.certified_owner_loss_composition import (
+        require_certified_owner_loss_composition,
+    )
+
+    composition = require_certified_owner_loss_composition()
+    recorder = composition.worker_execution_revocation_recorder
+    assert recorder is not None
+    record = recorder.record_revocation_for_bound_operation(
         tenant_id=_TENANT,
         operation_id=_OP,
-        worker_instance_id=worker_id,
-        ownership_epoch=epoch,
     )
+    assert record.worker_instance_id == worker_id
+    assert record.ownership_epoch == epoch
     return record.proof_ref
 
 
@@ -411,12 +419,13 @@ def test_l3r7_wrong_operation_revocation_denied() -> None:
         authoritative_state_store=store,
     )
     _worker, _bound, worker_id, _owner = _running_with_worker(store, repo, revocation)
+    composition = require_certified_owner_loss_composition()
+    recorder = composition.worker_execution_revocation_recorder
+    assert recorder is not None
     with pytest.raises(ExternalOperationNotFoundError):
-        revocation.revoke_worker_execution_ownership(
+        recorder.record_revocation_for_bound_operation(
             tenant_id=_TENANT,
             operation_id="other-op",
-            worker_instance_id=worker_id,
-            ownership_epoch=_BOUND_EPOCH,
         )
     certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
     with pytest.raises(CertifiedOwnerLossEvidenceRejectedError):

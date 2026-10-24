@@ -109,6 +109,40 @@ def _update_touches_worker_execution_ownership(
     )
 
 
+def _is_apply_certified_owner_loss_update(
+    update: ExternalOperationStateUpdate,
+) -> bool:
+    return (
+        update.physical_state is ExternalOperationPhysicalState.UNKNOWN
+        and update.clear_staged_certified_owner_loss
+        and update.consumed_certified_loss_evidence_ids is not None
+    )
+
+
+def _is_stage_certified_owner_loss_update(
+    update: ExternalOperationStateUpdate,
+) -> bool:
+    return update.staged_certified_owner_loss is not None
+
+
+def cas_update_blocked_by_bound_worker_revocation(
+    *,
+    current: ExternalOperationState,
+    update: ExternalOperationStateUpdate,
+    epoch_is_revoked: bool,
+) -> bool:
+    """True when a durable revocation row forbids this CAS (except certified-loss paths)."""
+    if not epoch_is_revoked:
+        return False
+    if current.worker_instance_id is None or current.worker_ownership_epoch is None:
+        return False
+    if _is_apply_certified_owner_loss_update(update):
+        return False
+    if _is_stage_certified_owner_loss_update(update):
+        return False
+    return True
+
+
 def apply_external_operation_state_update(
     current: ExternalOperationState,
     update: ExternalOperationStateUpdate,

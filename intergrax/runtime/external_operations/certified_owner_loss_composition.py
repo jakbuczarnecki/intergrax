@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from intergrax.autonomous_work.repository import WorkerInstanceRepository
+from typing import TYPE_CHECKING
+
 from intergrax.contracts.certified_owner_loss_evidence import (
     CANONICAL_WORKER_EXECUTION_OWNER_LOSS_ISSUER_ID,
     CertifiedOwnerLossEvidenceIssuerPort,
@@ -19,6 +20,9 @@ from intergrax.contracts.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationPort,
 )
 
+if TYPE_CHECKING:
+    from intergrax.autonomous_work.repository import WorkerInstanceRepository
+
 _DEFAULT_BINDING = CompositionCertifiedOwnerLossIssuerBinding()
 
 
@@ -30,6 +34,7 @@ class CertifiedOwnerLossComposition:
     worker_execution_ownership_revocation: WorkerExecutionOwnershipRevocationPort | None = (
         None
     )
+    worker_execution_revocation_recorder: object | None = None
 
 
 _COMPOSITION = CertifiedOwnerLossComposition(issuer_binding=_DEFAULT_BINDING)
