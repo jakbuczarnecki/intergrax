@@ -31,7 +31,7 @@
 | **START_HEAD** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` |
 | **Tested SHA** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` (L1/L2/L3 on working tree delta pre-commit) |
 | **Implementation SHA** | `dd23e5751` (PHYS-F06 code + tests) |
-| **Publication SHA** | `5a8e5775e` (`development` tip — independent audit SHA) |
+| **Publication SHA** | `4d8af8d60` (`development` tip — independent audit SHA) |
 
 ---
 
