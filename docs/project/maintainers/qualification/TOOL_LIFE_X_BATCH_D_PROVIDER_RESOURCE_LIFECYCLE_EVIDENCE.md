@@ -5,8 +5,8 @@
 | **Task** | `TOOL-LIFE-X-BATCH-D` (independent audit remediation D-F06–D-F14) |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
 | **START_HEAD** | `801e770a9d2b04a1ee9a95d050914084ad3ed36f` |
-| **FINAL_COMMIT** | `a07577bd51dae5657bad15f0c2a32aeb179bc7d6` |
-| **Test execution SHA** | `a07577bd51dae5657bad15f0c2a32aeb179bc7d6` |
+| **FINAL_COMMIT** | `33406e3b66014f592a6277c1c58372b9f6c7da44` (implementation package `a07577bd51dae5657bad15f0c2a32aeb179bc7d6`) |
+| **Test execution SHA** | `a07577bd51dae5657bad15f0c2a32aeb179bc7d6` (L1/L2 run on equivalent tree pre-tag) |
 | **Branch** | `development` |
 | **Origin** | `https://github.com/jakbuczarnecki/intergrax.git` |
 | **Disposition** | **`TOOL-LIFE-X BATCH D — READY FOR INDEPENDENT AUDIT`** |
