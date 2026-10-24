@@ -36,4 +36,4 @@
 | L2 | R6–R10 external_operations unit files (single pytest) | **86 passed** — `.tmp/session/TOOL-LIFE-X-L3-R10/l2-pytest.log` |
 | L3 | R8 cross-process / restart cases (in R8 suite) | PASS via L2 R8 inclusion |
 
-FINAL_COMMIT: `41243f8ab` on `development` (pending push / independent audit).
+FINAL_COMMIT: `ec2d74158` on `development` (independent audit pending).
