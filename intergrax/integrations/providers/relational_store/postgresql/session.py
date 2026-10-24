@@ -78,6 +78,24 @@ class PostgreSQLExecutionResult:
         return self._cursor.rowcount
 
 
+def postgresql_connection_accepts_adapter_owned_readonly_transaction(
+    connection: Any,
+) -> bool:
+    """
+    Return True when bounded fetch may open and close its own READ ONLY transaction.
+
+    When the connection is already inside a caller-owned transaction, bounded reads
+    must use a server-side cursor without committing or rolling back that transaction.
+    """
+    from psycopg import pq
+
+    status = connection.info.transaction_status
+    return status in (
+        pq.TransactionStatus.IDLE,
+        pq.TransactionStatus.UNKNOWN,
+    )
+
+
 def set_local_config(
     session: PostgreSQLSession,
     setting: str,

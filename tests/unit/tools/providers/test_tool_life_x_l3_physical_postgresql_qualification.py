@@ -296,6 +296,39 @@ def test_pg_sql_error_rolls_back_mutating_transaction() -> None:
     assert int(rows[0]["c"]) == 0
 
 
+def test_pg_bounded_fetch_does_not_commit_caller_owned_write_transaction() -> None:
+    with tool_life_postgresql_store() as (store, _config):
+        store.execute("CREATE TABLE tlx_tx_own (id INTEGER PRIMARY KEY)")
+        conn = store._require_connection()
+        conn.execute("BEGIN")
+        conn.execute("INSERT INTO tlx_tx_own (id) VALUES (1)")
+        rows, truncated, reason = store.fetch_query_bounded(
+            "SELECT id FROM tlx_tx_own ORDER BY id",
+            max_rows=10,
+            max_result_bytes=5_000,
+        )
+        assert rows == ({"id": 1},)
+        assert truncated is False
+        conn.execute("ROLLBACK")
+        count_rows = store.fetch_all("SELECT COUNT(*) AS c FROM tlx_tx_own")
+    assert int(count_rows[0]["c"]) == 0
+
+
+def test_pg_bounded_fetch_inside_caller_read_only_transaction() -> None:
+    with tool_life_postgresql_store() as (store, _config):
+        conn = store._require_connection()
+        conn.execute("BEGIN READ ONLY")
+        rows, truncated, reason = store.fetch_query_bounded(
+            "SELECT 1 AS v",
+            max_rows=1,
+            max_result_bytes=500,
+        )
+        conn.rollback()
+    assert rows == ({"v": 1},)
+    assert truncated is False
+    assert reason == ""
+
+
 def test_pg_bounded_fetch_uses_named_server_side_cursor() -> None:
     """Qualification guard: bounded fetch must open a named (server-side) cursor."""
     with tool_life_postgresql_store() as (store, config):

@@ -13,6 +13,9 @@ from intergrax.integrations.contracts.relational_store_bounded_query import (
     RelationalStoreBoundedQueryPort,
 )
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
+from intergrax.integrations.providers.relational_store.postgresql.session import (
+    postgresql_connection_accepts_adapter_owned_readonly_transaction,
+)
 from intergrax.integrations.relational_bounded_row_accumulation import (
     accumulate_bounded_sql_rows,
 )
@@ -67,14 +70,19 @@ class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
         """
         Fetch with row/byte ceilings using a PostgreSQL server-side cursor.
 
-        Server-side cursors run inside an explicit read-only transaction so the
-        driver does not buffer the full remote result set before bounded iteration.
+        On an idle connection, opens a dedicated READ ONLY transaction and commits it
+        after the cursor is closed. Inside a caller-owned transaction, uses a named
+        server-side cursor only — no commit or rollback of caller state.
         """
         conn = self._require_connection()
+        owns_readonly_transaction = postgresql_connection_accepts_adapter_owned_readonly_transaction(
+            conn
+        )
         cursor_name = f"igx_bq_{uuid.uuid4().hex}"
         cursor: Any | None = None
         try:
-            conn.execute("BEGIN READ ONLY")
+            if owns_readonly_transaction:
+                conn.execute("BEGIN READ ONLY")
             cursor = conn.cursor(cursor_name)
             cursor.itersize = 1
             cursor.execute(sql, params)
@@ -89,13 +97,15 @@ class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
                 max_result_bytes=max_result_bytes,
             )
             result = (tuple(accumulated), truncated, reason)
-            conn.commit()
+            if owns_readonly_transaction:
+                conn.commit()
             return result
         except Exception:
-            try:
-                conn.rollback()
-            except Exception:
-                pass
+            if owns_readonly_transaction:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
             raise
         finally:
             if cursor is not None:
