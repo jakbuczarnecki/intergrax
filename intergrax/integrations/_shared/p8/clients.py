@@ -95,9 +95,19 @@ class HttpBrowserAutomation:
         self._provider = provider
         self._closed = False
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
         self._require_open()
-        payload = self._client.fetch_page(url, wait_until=wait_until)
+        payload = self._client.fetch_page(
+            url,
+            wait_until=wait_until,
+            navigation_timeout_s=navigation_timeout_s,
+        )
         if isinstance(payload, PageContent):
             return payload
         if isinstance(payload, dict):

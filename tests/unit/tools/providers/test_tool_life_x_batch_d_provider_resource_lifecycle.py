@@ -10,9 +10,16 @@ from typing import Any, Mapping, Sequence
 import pytest
 
 from intergrax.integrations.contracts.browser_automation import PageContent
+from intergrax.integrations.contracts.browser_automation_navigation import (
+    BrowserAutomationNavigationTimeoutPort,
+)
 from intergrax.integrations.contracts.http_client import HttpResponse
+from intergrax.integrations.contracts.relational_store_bounded_query import (
+    RelationalStoreBoundedQueryPort,
+)
+from intergrax.integrations.relational_bounded_row_accumulation import accumulate_bounded_sql_rows
 from intergrax.integrations.relational_store_execution_adapter import RelationalStoreExecutionAdapter
-from intergrax.tools.mcp_result_bounds import serialize_bounded_mcp_json
+from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, serialize_bounded_mcp_json
 from intergrax.tools.providers.browser.contracts import BrowserFetchPageInput
 from intergrax.tools.providers.browser.service import browser_fetch_page
 from intergrax.tools.providers.database.contracts import DatabaseQueryInput
@@ -34,21 +41,42 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 pytestmark = pytest.mark.unit
 
 
-class _MemoryStore:
+class _BoundedMemoryStore(RelationalStoreBoundedQueryPort):
     def __init__(self, rows: list[dict[str, Any]]) -> None:
         self._rows = rows
+        self.rows_fetched = 0
 
     def execute(self, sql: str, params: Sequence[Any] = ()) -> None:
         _ = sql, params
 
     def fetch_all(self, sql: str, params: Sequence[Any] = ()) -> Sequence[Mapping[str, Any]]:
         _ = sql, params
+        self.rows_fetched = len(self._rows)
         return self._rows
+
+    def fetch_query_bounded(
+        self,
+        sql: str,
+        params: Sequence[Any] = (),
+        *,
+        max_rows: int,
+        max_result_bytes: int,
+    ) -> tuple[tuple[Mapping[str, Any], ...], bool, str]:
+        _ = sql, params
+        accumulated, truncated, reason = accumulate_bounded_sql_rows(
+            self._rows,
+            max_rows=max_rows,
+            max_result_bytes=max_result_bytes,
+        )
+        self.rows_fetched = len(accumulated) + (1 if truncated and reason == "row_limit" else 0)
+        return tuple(accumulated), truncated, reason
 
 
 class _FakeHttp:
-    def __init__(self, body: str) -> None:
+    def __init__(self, body: str, *, transport_bounded: bool = False) -> None:
         self._body = body
+        self._transport_bounded = transport_bounded
+        self.last_max_response_bytes: int | None = None
 
     def request(
         self,
@@ -58,17 +86,36 @@ class _FakeHttp:
         headers: Mapping[str, str] | None = None,
         body: str = "",
         timeout_s: float = 30.0,
+        max_response_bytes: int | None = None,
     ) -> HttpResponse:
         _ = method, url, headers, body, timeout_s
+        self.last_max_response_bytes = max_response_bytes
+        if self._transport_bounded and max_response_bytes is not None:
+            raw = self._body.encode("utf-8")[:max_response_bytes]
+            truncated = len(self._body.encode("utf-8")) > max_response_bytes
+            return HttpResponse(
+                status_code=200,
+                body=raw.decode("utf-8", errors="ignore"),
+                body_truncated_at_transport=truncated,
+                transport_byte_ceiling_enforced=True,
+            )
         return HttpResponse(status_code=200, body=self._body)
 
 
-class _FakeBrowser:
+class _FakeBrowser(BrowserAutomationNavigationTimeoutPort):
     def __init__(self, text: str) -> None:
         self._text = text
+        self.last_navigation_timeout_s: float | None = None
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
         _ = wait_until
+        self.last_navigation_timeout_s = navigation_timeout_s
         return PageContent(url=url, text=self._text, html="<p>x</p>")
 
     def close(self) -> None:
@@ -94,8 +141,8 @@ def test_sql_byte_limit_raises_on_single_huge_row() -> None:
     assert exc_info.value.code == "database_result_byte_limit"
 
 
-def test_database_query_applies_row_ceiling() -> None:
-    store = _MemoryStore([{"id": i} for i in range(10)])
+def test_database_query_bounded_port_row_ceiling() -> None:
+    store = _BoundedMemoryStore([{"id": i} for i in range(10)])
     ctx = ToolWiringContext(relational_store_execution=RelationalStoreExecutionAdapter(store))
     out = database_query(
         ctx,
@@ -104,11 +151,22 @@ def test_database_query_applies_row_ceiling() -> None:
     assert out.row_count == 3
     assert out.truncated is True
     assert out.limit_reason == "row_limit"
+    assert store.rows_fetched <= 4
 
 
-def test_http_response_body_truncated() -> None:
+def test_http_passes_max_response_bytes_to_client() -> None:
+    client = _FakeHttp("hello", transport_bounded=True)
+    ctx = ToolWiringContext(http_client=client)
+    http_request(
+        ctx,
+        HttpRequestInput(method="GET", url="https://example.com/", max_response_bytes=3),
+    )
+    assert client.last_max_response_bytes == 3
+
+
+def test_http_response_body_truncated_at_transport() -> None:
     huge = "ą" * 10_000
-    ctx = ToolWiringContext(http_client=_FakeHttp(huge))
+    ctx = ToolWiringContext(http_client=_FakeHttp(huge, transport_bounded=True))
     out = http_request(
         ctx,
         HttpRequestInput(method="GET", url="https://example.com/", max_response_bytes=100),
@@ -118,21 +176,45 @@ def test_http_response_body_truncated() -> None:
     assert len(out.body.encode("utf-8")) <= 100
 
 
-def test_browser_text_truncated() -> None:
-    ctx = ToolWiringContext(browser_automation=_FakeBrowser("z" * 1_000))
+def test_http_post_transport_error_propagates() -> None:
+    class _FailingHttp:
+        def request(self, *args: object, **kwargs: object) -> HttpResponse:
+            raise TimeoutError("read timed out")
+
+    ctx = ToolWiringContext(http_client=_FailingHttp())
+    with pytest.raises(RuntimeError, match="http_transport_error"):
+        http_request(
+            ctx,
+            HttpRequestInput(method="POST", url="https://example.com/", body="{}"),
+        )
+
+
+def test_browser_text_truncated_and_timeout_propagated() -> None:
+    browser = _FakeBrowser("z" * 1_000)
+    ctx = ToolWiringContext(browser_automation=browser)
     out = browser_fetch_page(
         ctx,
-        BrowserFetchPageInput(url="https://example.com", max_text_chars=256),
+        BrowserFetchPageInput(url="https://example.com", max_text_chars=256, navigation_timeout_s=12.0),
     )
     assert len(out.text) == 256
     assert out.truncated is True
+    assert browser.last_navigation_timeout_s == 12.0
+    assert out.navigation_timeout_enforced is True
 
 
-def test_mcp_serialization_bound() -> None:
+def test_mcp_catalog_serialization_bound() -> None:
     payload = {"data": "x" * 50_000}
     serialized, truncated = serialize_bounded_mcp_json(payload, max_bytes=256)
     assert truncated is True
     assert len(serialized.encode("utf-8")) <= 256
+
+
+def test_mcp_invocation_structured_bound_returns_error_not_invalid_json() -> None:
+    payload = {"data": "x" * 50_000}
+    bounded, truncated = bound_mcp_structured_result(payload, max_bytes=256)
+    assert truncated is True
+    assert bounded == {"error": "mcp_payload_byte_limit_exceeded"}
+    json.dumps(bounded)
 
 
 def test_mcp_serialization_within_limit() -> None:
@@ -143,7 +225,7 @@ def test_mcp_serialization_within_limit() -> None:
 
 
 def test_provider_capability_matrix_declarations() -> None:
-    assert SQL_DATABASE_CAPABILITIES.supports_row_ceiling is True
-    assert HTTP_REST_CAPABILITIES.supports_result_byte_ceiling is True
-    assert MCP_CATALOG_CAPABILITIES.cancellation.value == "cooperative_only"
-    assert BROWSER_AUTOMATION_CAPABILITIES.supports_result_byte_ceiling is True
+    assert SQL_DATABASE_CAPABILITIES.supports_physical_row_ceiling is True
+    assert HTTP_REST_CAPABILITIES.supports_physical_result_byte_ceiling is True
+    assert MCP_CATALOG_CAPABILITIES.supports_physical_result_byte_ceiling is False
+    assert BROWSER_AUTOMATION_CAPABILITIES.supports_physical_result_byte_ceiling is False

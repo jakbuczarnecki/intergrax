@@ -10,6 +10,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
+from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
@@ -60,7 +61,7 @@ async def execute_mcp_agent_task(
         intent=intent,
     )
     result = await host_execution.execute(task)
-    return {
+    payload = {
         "task_id": result.task_id,
         "run_id": result.run_id,
         "state": result.state.value,
@@ -68,6 +69,8 @@ async def execute_mcp_agent_task(
         "agent_id": result.agent_id,
         "metadata": dict(result.metadata),
     }
+    bounded, _ = bound_mcp_structured_result(payload)
+    return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
 
 
 def build_nexus_mcp_server(
@@ -100,7 +103,8 @@ def build_nexus_mcp_server(
                     "capabilities": list(contract.capabilities),
                 }
             )
-        return agents
+        bounded, _ = bound_mcp_structured_result(agents)
+        return bounded if isinstance(bounded, list) else []
 
     @mcp.tool
     async def run_agent(

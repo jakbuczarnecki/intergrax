@@ -32,3 +32,7 @@ class BrowserFetchPageOutput(BaseModel):
     status_code: int = 200
     html_length: int = 0
     truncated: bool = False
+    navigation_timeout_enforced: bool = Field(
+        default=False,
+        description="True when the integration honored navigation_timeout_s for this fetch.",
+    )

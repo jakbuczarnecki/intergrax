@@ -10,7 +10,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from intergrax.tools.exporters.mcp import to_mcp_tools
-from intergrax.tools.mcp_result_bounds import serialize_bounded_mcp_json
+from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
@@ -31,7 +31,9 @@ def mount_catalog_tools_on_mcp(
         @mcp.tool
         def list_catalog_tools() -> list[dict[str, Any]]:
             """List enabled catalog tools (tool_id, description, input schema)."""
-            return to_mcp_tools(registry)
+            payload = to_mcp_tools(registry)
+            bounded, _ = bound_mcp_structured_result(payload)
+            return bounded if isinstance(bounded, list) else []
 
         @mcp.tool
         def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
@@ -39,7 +41,7 @@ def mount_catalog_tools_on_mcp(
             registered = registry.get(tool_id)
             items = to_mcp_tools([registered.contract])
             payload = items[0] if items else {"error": f"unknown_tool:{tool_id}"}
-            _, truncated = serialize_bounded_mcp_json(payload)
+            bounded, truncated = bound_mcp_structured_result(payload)
             if truncated:
                 return {"error": "mcp_payload_byte_limit_exceeded", "tool_id": tool_id}
-            return payload
+            return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}

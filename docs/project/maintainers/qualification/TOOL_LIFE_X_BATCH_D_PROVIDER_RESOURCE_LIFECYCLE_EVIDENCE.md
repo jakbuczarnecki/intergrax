@@ -2,72 +2,79 @@
 
 | Field | Value |
 | --- | --- |
-| **Task** | `TOOL-LIFE-X-BATCH-D` |
+| **Task** | `TOOL-LIFE-X-BATCH-D` (audit remediation) |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
-| **START_HEAD** | `792064ce3127fda505e51fdf987c64ef495d451c` |
-| **FINAL_COMMIT** | `367f42cb1` |
-| **Test execution SHA** | `bfca41e77` (implementation); evidence publication `367f42cb1` |
+| **START_HEAD** | `a39b8c47aa86e9d8febe83b2b137aafc65790fc7` |
+| **FINAL_COMMIT** | `abdba75f1` |
+| **Test execution SHA** | `abdba75f1` |
 | **Branch** | `development` |
 | **Origin** | `https://github.com/jakbuczarnecki/intergrax.git` |
 | **Disposition** | **`TOOL-LIFE-X BATCH D — READY FOR INDEPENDENT AUDIT`** |
 
-**Non-closure:** Does not close `TOOL-LIFE-X`, does not promote global `FRZ-*` PASS, does not start Batch E. Parent L3 real-infrastructure certification (Docker DB cancel, live MCP process, HTTP fault injection) remains deferred.
+**Non-closure:** Does not close `TOOL-LIFE-X`, does not promote global `FRZ-*` PASS, does not start Batch E. Parent L3 real-infrastructure certification remains deferred.
 
-## Prerequisites (acceptance evidence)
+## Audit findings D-F01–D-F05 (remediation)
 
-| Batch | Disposition | Evidence |
-| --- | --- | --- |
-| **A** | READY FOR INDEPENDENT AUDIT | [`TOOL_LIFE_X_BATCH_A_DEADLINE_HIERARCHY_EVIDENCE.md`](TOOL_LIFE_X_BATCH_A_DEADLINE_HIERARCHY_EVIDENCE.md) — L2 **65/65** |
-| **B** | READY FOR INDEPENDENT AUDIT | [`TOOL_LIFE_X_BATCH_B_RETRY_IDEMPOTENCY_UNKNOWN_OUTCOME_EVIDENCE.md`](TOOL_LIFE_X_BATCH_B_RETRY_IDEMPOTENCY_UNKNOWN_OUTCOME_EVIDENCE.md) |
-| **C** | READY FOR INDEPENDENT AUDIT | [`TOOL_LIFE_X_BATCH_C_STALLED_ABANDONED_RECOVERY_EVIDENCE.md`](TOOL_LIFE_X_BATCH_C_STALLED_ABANDONED_RECOVERY_EVIDENCE.md) @ `792064ce…` ancestry |
+| ID | Root cause (before) | After (owner / contract) | Status |
+| --- | --- | --- | --- |
+| **D-F01** | `database_query` materialized all rows then truncated | `RelationalQueryRequest.max_rows/max_result_bytes` → `RelationalStoreExecutionAdapter` → `RelationalStoreBoundedQueryPort.fetch_query_bounded` (cursor) | **CLOSED** (architecture); L3 DB cancel still VALIDATION REQUIRED |
+| **D-F02** | HTTP body truncated after full `response.text` | `AllowlistHttpClient` stream read + `accumulate_response_bytes`; tool layer sanitizes only when `transport_byte_ceiling_enforced=false` | **CLOSED** (allowlisted client); L3 fault injection VALIDATION REQUIRED |
+| **D-F03** | `navigation_timeout_s` discarded | Passed to `BrowserAutomation.fetch_page`; `BrowserAutomationNavigationTimeoutPort` on Playwright/Selenium; output `navigation_timeout_enforced` | **CLOSED** (supported integrations); Firecrawl/etc. honestly not enforced |
+| **D-F04** | MCP bounds only on catalog JSON string | `bound_mcp_structured_result` on catalog list/describe + `execute_mcp_agent_task` / `list_agents`; catalog string helper retained for description serialization | **CLOSED** (logical bounds); physical MCP transport L3 |
+| **D-F05** | HTTP caught all errors as `success=False` | Mutating methods re-raise `http_transport_error:*` for invoker UNKNOWN path; GET/HEAD retain structured transport failure | **CLOSED** (architecture); L3 lost-ack VALIDATION REQUIRED |
 
-## MASTER INSTRUCTION v2 — pre-test justification (L1/L2)
+## Physical vs output enforcement matrix
 
-1. **Why these tests now:** Batch D implementation delta touches SQL/HTTP/browser/MCP adapter ceilings; L1 proves new bounds; L2 regresses A/B/C invoker semantics unchanged.
-2. **Why not full platform pytest:** Token/process budget; scoped provider + TOOL-LIFE-X nexus inventory only.
-3. **Why mocks suffice here:** Architecture-scoped Path B — physical cancel/lock proof remains L3; unit bounds ≠ production vendor PASS.
-4. **What would be false confidence:** Claiming MCP hung-server or PostgreSQL `pg_cancel_backend` qualification from in-memory doubles.
-5. **What unchanged suites were skipped:** Full Batch A **65** standalone re-run (deadline tests included in L2 **50** subset); `test_t14_t17_builder_tools` (sandbox env authority); U5 gate (unrelated env flake @ HEAD).
-6. **What blocks parent close:** TL7 heartbeat/STALLED, TL13 live-infra matrix, TL15 rollup, distributed owner-loss L3.
-
-## Closed-world provider inventory (production entry)
-
-| Family | Registration | Handler | Transport | Cancel / bound owner |
+| Limit type | SQL | HTTP | Browser | MCP catalog/invoke |
 | --- | --- | --- | --- | --- |
-| **SQL** | `database/bundle.py` | `DatabaseQueryHandler` → `database_query` | `ConfiguredRelationalStoreExecutionPort` / adapter | Row+byte ceilings @ tool service; cancel = driver/port (declared in `provider_transport_capabilities`) |
-| **HTTP** | `http/bundle.py` | `HttpRequestHandler` → `http_request` | `HttpClientBackend` (`AllowlistHttpClient`) | Invoker timeout + `timeout_s`; response bytes @ tool service |
-| **MCP** | `mcp_catalog_tools.py` + `mcp_nexus_server.py` | Host task execution → ToolRuntime (no shadow invoker) | FastMCP transport | `serialize_bounded_mcp_json` on describe payload; invoke via canonical host |
-| **Browser** | `browser/bundle.py` + `sandbox` `browser.run` | `BrowserFetchPageHandler` / `browser_run` | `BrowserAutomation` / sandbox session | Text char ceiling @ tool service; sandbox already has `timeout_s`/`max_chars` |
+| Input validation | `DatabaseQueryInput` | `HttpRequestInput` | `BrowserFetchPageInput` | host task + registry |
+| Physical transfer/fetch | cursor `fetch_query_bounded` when port present | `AllowlistHttpClient` stream cap | nav timeout on timeout port only | **BLOCKED** (transport) |
+| Memory/materialization | incremental row accumulate | bounded byte buffer | page fetch (integration) | structured bound before emit |
+| Output serialization | JSON row projection | UTF-8 body string | `max_text_chars` | `bound_mcp_structured_result` |
+| Deadline | invoker `timeout_ms` | `timeout_s` + invoker | `navigation_timeout_s` (port) | host task deadline |
+| Cancellation | QUERY_CANCEL (port) | CONNECTION_DROP | CONNECTION_DROP | COOPERATIVE_ONLY |
+| Remote physical termination | L3 | L3 | L3 | L3 |
 
-**Canonical path preserved:** `ExecutionRuntime` → `ToolRuntime` / gateway → `catalog_dispatch` → `RuntimeToolInvoker` → `ToolExecutor` → provider adapter.
+Post-materialization trimming alone is **not** labeled hard-bound; `RelationalQueryResult.physical_bounds_enforced` and HTTP `transport_byte_ceiling_enforced` record truth.
 
-## Provider qualification matrix (summary)
+## Closed-world provider inventory
 
-| Family | Owner | Op class | Deadline | Admission | Resource bounds | Cancel capability | Physical certainty | FRZ (scoped) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SQL query | Tool service + invoker | READ_ONLY | Invoker `timeout_ms` | Integration pin | `max_rows`, `max_result_bytes` | QUERY_CANCEL (port-dependent) | COMPLETED / fail closed byte | FRZ-REL-10 | **VALIDATION REQUIRED** (L3 DB) |
-| SQL execute | Tool service + invoker | NON_IDEMPOTENT_WRITE | Invoker | Pin | N/A rows | QUERY_CANCEL | UNCERTAIN on timeout (Batch B) | FRZ-REL-03 | Reuse Batch B |
-| HTTP | Tool service + invoker | NON_IDEMPOTENT_WRITE default | Invoker + `timeout_s` | Allowlist host | `max_response_bytes` | CONNECTION_DROP | UNCERTAIN on lost ack (L3) | FRZ-REL-06 | **VALIDATION REQUIRED** (L3) |
-| MCP catalog | Host execution | READ_ONLY describe | Host task deadline | Tenant on task | MCP JSON byte cap | COOPERATIVE_ONLY | N/A describe | FRZ-REL-06 | **VALIDATION REQUIRED** (live MCP) |
-| Browser fetch | Tool service | READ_ONLY | Invoker + declared nav timeout | Integration | `max_text_chars` | CONNECTION_DROP | COMPLETED/truncated | FRZ-REL-06 | **VALIDATION REQUIRED** (L3) |
+| Family | Handler | Physical owner | Output owner |
+| --- | --- | --- | --- |
+| SQL | `database_query` | `RelationalStoreExecutionAdapter` / `RelationalStoreBoundedQueryPort` | `DatabaseQueryOutput` |
+| HTTP | `http_request` | `AllowlistHttpClient` + `bounded_read` | `HttpRequestOutput` + optional `bound_http_response_body` |
+| Browser | `browser_fetch_page` | integration `fetch_page` (timeout port) | `truncate_utf8_chars` |
+| MCP | `mcp_nexus_server` / `mcp_catalog_tools` | FastMCP transport (unqualified) | `bound_mcp_structured_result` |
 
-## TL1–TL15 (Batch D reconciliation)
+## Adverse-case matrix (summary)
 
-| ID | Status | Notes |
-| --- | --- | --- |
-| TL1–TL2 | VALIDATION REQUIRED | Batch A evidence; unchanged by D delta |
-| TL3 | VALIDATION REQUIRED | Physical DB/HTTP/MCP cancel — L3 |
-| TL4–TL9 | Reuse A/B/C | No invoker ownership change |
-| **TL10** | **VALIDATION REQUIRED** | SQL row/byte contract + tests @ this batch |
-| **TL11** | **VALIDATION REQUIRED** | MCP canonical path + payload bound; live process qual L3 |
-| **TL12** | **VALIDATION REQUIRED** | HTTP response byte ceiling + timeout param |
-| TL13 | BLOCKED | Parent L3 real infrastructure |
-| TL14 | ALREADY PROVEN | No second invoker / shadow owner |
-| TL15 | BLOCKED | Parent rollup |
+| Case | Owner | Physical bound | Outcome certainty | Test |
+| --- | --- | --- | --- | --- |
+| SQL row overflow | execution adapter | stop at row N+1 | truncated metadata | `test_database_query_bounded_port_row_ceiling` |
+| SQL single huge row | accumulate | fail before unbounded list | error | `test_sql_byte_limit_raises_on_single_huge_row` |
+| HTTP +1 byte | AllowlistHttpClient | stream cap | truncated | `test_http_response_body_truncated_at_transport` |
+| HTTP POST timeout | http service | n/a | UNCERTAIN via raise | `test_http_post_transport_error_propagates` |
+| Browser text overflow | tool service | n/a | truncated output | `test_browser_text_truncated_and_timeout_propagated` |
+| MCP invoke overflow | mcp_result_bounds | logical | error dict, valid JSON | `test_mcp_invocation_structured_bound_returns_error_not_invalid_json` |
+| Infinite stream / live cancel / lost ack | L3 | **BLOCKED** | UNKNOWN | not simulated |
+
+## TL1–TL15 (Batch D)
+
+| ID | Classification |
+| --- | --- |
+| TL1–TL2 | VALIDATION REQUIRED (Batch A evidence) |
+| TL3 | BLOCKED (L3 physical cancel) |
+| TL4–TL9 | ALREADY PROVEN / reuse A/B/C |
+| **TL10** | VALIDATION REQUIRED — SQL physical bounds implemented; L3 DB |
+| **TL11** | VALIDATION REQUIRED — MCP logical bounds; L3 live MCP |
+| **TL12** | VALIDATION REQUIRED — HTTP transport bounds; L3 fault |
+| TL13 | BLOCKED |
+| TL14 | ALREADY PROVEN |
+| TL15 | BLOCKED |
 
 ## Validation
 
-### L1 (critical — provider bounds)
+### L1
 
 ```text
 uv run pytest -p no:xdist \
@@ -75,13 +82,11 @@ uv run pytest -p no:xdist \
   tests/unit/tools/providers/database/test_database_tools.py -q
 ```
 
-| Metric | Value |
-| --- | --- |
-| **Passed** | **12** |
-| **Failed** | **0** |
-| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l1-batch-d.log` |
+| Passed | Failed | Log |
+| --- | --- | --- |
+| **15** | **0** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l1-batch-d.log` |
 
-### L2 (consolidated Batch D + A/B/C regression subset)
+### L2
 
 ```text
 uv run pytest -p no:xdist \
@@ -93,42 +98,27 @@ uv run pytest -p no:xdist \
   tests/unit/runtime/nexus/tools/test_tool_life_x_batch_c_stalled_abandoned_recovery.py -q
 ```
 
-| Metric | Value |
-| --- | --- |
-| **Passed** | **50** |
-| **Failed** | **0** |
-| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l2-batch-d.log` |
+| Passed | Failed | Log |
+| --- | --- | --- |
+| **53** | **0** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l2-batch-d.log` |
 
-**Excluded (reason):** `test_t14_t17_builder_tools` sandbox authority env; U5 zero-bypass — not in Batch D delta (FRZ-BND-03 unchanged).
+Historical L2 **50/50** remains valid at prior publication SHA `367f42cb1` (pre-remediation scope).
 
 ## ECAP / FRZ (scoped)
 
 | ID | Finding |
 | --- | --- |
-| FRZ-BND-03 | No new invoker, registry, or MCP lifecycle manager |
-| FRZ-REL-10 | SQL result bounds enforced at tool adapter |
-| FRZ-REL-06 | HTTP/browser/MCP bounds — architecture scoped; live PASS **0** |
+| FRZ-BND-03 | No shadow invoker / MCP lifecycle manager |
+| FRZ-REL-10 | SQL bounds at execution port when bounded port configured |
+| FRZ-REL-06 | HTTP physical read bound on allowlisted client; MCP/browser physical **0** PASS |
 | ECAP-P4 | Global FRZ PASS **0** |
 
-## Changed files (implementation)
+## L3 dependencies (unchanged)
 
-- `intergrax/tools/providers/provider_resource_enforcement.py`
-- `intergrax/tools/providers/provider_transport_capabilities.py`
-- `intergrax/tools/mcp_result_bounds.py`
-- `intergrax/tools/providers/database/contracts.py`, `service.py`
-- `intergrax/tools/providers/http/contracts.py`, `service.py`
-- `intergrax/tools/providers/browser/contracts.py`, `service.py`
-- `intergrax/applications/_shared/mcp_catalog_tools.py`
-- `tests/unit/tools/providers/test_tool_life_x_batch_d_provider_resource_lifecycle.py`
-- `tests/unit/tools/providers/database/test_database_tools.py`
-
-## Remaining before Batch E / parent L3
-
-- Live Docker DB: query cancel, lock timeout, connection teardown evidence.
-- HTTP fault service: lost ack, 429 under tool retry budget.
-- MCP hung-server process qualification.
-- Browser remote termination vs local close semantics.
-- TL7 STALLED/heartbeat operator certification.
+- Docker DB query cancel / teardown
+- HTTP fault injection (lost ack, decompression bomb)
+- Live MCP hung-server
+- Remote browser termination vs local close
 
 ---
 

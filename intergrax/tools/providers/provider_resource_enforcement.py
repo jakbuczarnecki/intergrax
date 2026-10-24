@@ -52,34 +52,23 @@ def bound_database_query_rows(
     max_result_bytes: int,
 ) -> tuple[list[dict[str, Any]], bool, str]:
     """
-    Apply row and UTF-8 JSON byte ceilings on fetched SQL results.
+    Output-layer row/byte ceilings on already-materialized rows (tests / fallback only).
 
-    Returns ``(rows, truncated, limit_reason)`` where ``limit_reason`` is
-    ``row_limit``, ``byte_limit``, or empty when not truncated.
+    Production ``database.query`` enforces bounds at RelationalStoreExecutionPort when possible.
     """
-    if max_rows < 1 or max_result_bytes < 1:
-        raise ProviderResourceLimitExceeded("invalid_bounds")
+    from intergrax.integrations.relational_bounded_row_accumulation import (
+        RelationalResultByteLimitExceeded,
+        accumulate_bounded_sql_rows,
+    )
 
-    working = list(rows)
-    truncated = False
-    reason = ""
-
-    if len(working) > max_rows:
-        working = working[:max_rows]
-        truncated = True
-        reason = "row_limit"
-
-    while working and estimate_rows_json_bytes(working) > max_result_bytes:
-        if len(working) == 1:
-            raise ProviderResourceLimitExceeded(
-                "database_result_byte_limit",
-                detail="single_row_exceeds_max_result_bytes",
-            )
-        working = working[: max(1, len(working) // 2)]
-        truncated = True
-        reason = "byte_limit"
-
-    return working, truncated, reason
+    try:
+        return accumulate_bounded_sql_rows(
+            rows,
+            max_rows=max_rows,
+            max_result_bytes=max_result_bytes,
+        )
+    except RelationalResultByteLimitExceeded as exc:
+        raise ProviderResourceLimitExceeded(exc.code, detail=str(exc)) from exc
 
 
 def bound_http_response_body(body: str, *, max_response_bytes: int) -> tuple[str, bool]:

@@ -23,7 +23,13 @@ class PageContent(BaseModel):
 class BrowserAutomation(Protocol):
     """Headless browser facade for dynamic web research."""
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
         """Navigate to ``url`` and return normalized page content."""
 
     def close(self) -> None:

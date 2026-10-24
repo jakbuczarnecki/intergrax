@@ -9,6 +9,9 @@ from urllib.parse import urlparse
 import httpx
 
 from intergrax.integrations.contracts.http_client import HttpResponse
+from intergrax.integrations.providers.http_client.allowlist.bounded_read import (
+    accumulate_response_bytes,
+)
 
 
 class AllowlistHttpClient:
@@ -27,6 +30,7 @@ class AllowlistHttpClient:
         headers: Mapping[str, str] | None = None,
         body: str = "",
         timeout_s: float = 30.0,
+        max_response_bytes: int | None = None,
     ) -> HttpResponse:
         parsed = urlparse(url.strip())
         host = (parsed.hostname or "").lower()
@@ -35,6 +39,25 @@ class AllowlistHttpClient:
 
         timeout = timeout_s if timeout_s > 0 else self._default_timeout_s
         with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+            if max_response_bytes is not None and max_response_bytes > 0:
+                with client.stream(
+                    method.upper(),
+                    url.strip(),
+                    headers=dict(headers or {}),
+                    content=body.encode("utf-8") if body else None,
+                ) as response:
+                    raw_body, truncated = accumulate_response_bytes(
+                        response.iter_bytes(),
+                        max_response_bytes=max_response_bytes,
+                    )
+                    text = raw_body.decode("utf-8", errors="ignore" if truncated else "replace")
+                    return HttpResponse(
+                        status_code=response.status_code,
+                        body=text,
+                        headers={str(key): str(value) for key, value in response.headers.items()},
+                        body_truncated_at_transport=truncated,
+                        transport_byte_ceiling_enforced=True,
+                    )
             response = client.request(
                 method.upper(),
                 url.strip(),

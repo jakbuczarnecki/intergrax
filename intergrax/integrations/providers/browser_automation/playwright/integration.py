@@ -38,8 +38,18 @@ class PlaywrightBrowserAutomationIntegration(BrowserAutomationIntegrationContrac
     
 
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
-        return self._require_client().fetch_page(url, wait_until=wait_until)
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
+        return self._require_client().fetch_page(
+            url,
+            wait_until=wait_until,
+            navigation_timeout_s=navigation_timeout_s,
+        )
 
     def close(self) -> None:
         self._require_client().close()
