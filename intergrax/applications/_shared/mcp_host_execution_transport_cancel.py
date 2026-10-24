@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 from intergrax.applications._shared.mcp_harness_principal import _starlette_request_from_fastmcp
 from intergrax.applications._shared.task_control import governed_cancel_active_task
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.event_delivery import EventDeliveryPolicy
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
@@ -25,11 +24,10 @@ if TYPE_CHECKING:
 MCP_TRANSPORT_CANCEL_REASON = "mcp_transport_cancel"
 MCP_TRANSPORT_CANCEL_MUTATION_PREFIX = "mcp-transport-cancel"
 
-# Observation bounds aligned with platform EventDeliveryPolicy (not root Execution deadline).
-_MCP_TRANSPORT_OBSERVATION = EventDeliveryPolicy(max_capacity=1)
-_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S = _MCP_TRANSPORT_OBSERVATION.drain_shutdown_timeout_seconds
-_ACTIVE_BINDING_WAIT_S = _MCP_TRANSPORT_OBSERVATION.critical_completion_timeout_seconds
-_ACTIVE_BINDING_POLL_INTERVAL_S = _MCP_TRANSPORT_OBSERVATION.important_wait_timeout_seconds
+# MCP transport-layer observation scheduling only (not root Execution deadline authority).
+_ACTIVE_BINDING_WAIT_S = 5.0
+_ACTIVE_BINDING_POLL_INTERVAL_S = 0.05
+_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S = 30.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,11 +120,13 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
     host_coro: asyncio.Task[object],
     *,
     timeout_s: float,
+    governed_cancel_admitted: bool,
 ) -> None:
     """
-    Transport waiter scope ends here — the host asyncio.Task must not outlive this call.
+    End MCP transport waiter scope with a hard wall-clock bound.
 
-    Does not mutate Execution terminal state; relies on prior governed cooperative cancel when admitted.
+    Canonical Execution remains owned by ``HostTaskExecutionPort.execute`` inside *host_coro*.
+    When governed cancel was admitted (OWN-A), do not cancel the host task merely to end the HTTP waiter.
     """
     if host_coro.done():
         with contextlib.suppress(asyncio.CancelledError, Exception):
@@ -140,9 +140,11 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
         with contextlib.suppress(asyncio.CancelledError, Exception):
             host_coro.result()
         return
+    if governed_cancel_admitted:
+        return
     host_coro.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await host_coro
+    with contextlib.suppress(asyncio.TimeoutError, asyncio.CancelledError):
+        await asyncio.wait_for(asyncio.shield(host_coro), timeout=timeout_s)
 
 
 async def run_host_execution_with_mcp_transport_cancel(
@@ -211,6 +213,7 @@ async def run_host_execution_with_mcp_transport_cancel(
             await _await_host_task_bounded_after_transport_waiter_lost(
                 host_coro,
                 timeout_s=_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S,
+                governed_cancel_admitted=cancel_admission_accepted[0],
             )
         if host_coro.done() and host_result_after_waiter_lost is None:
             with contextlib.suppress(asyncio.CancelledError, Exception):

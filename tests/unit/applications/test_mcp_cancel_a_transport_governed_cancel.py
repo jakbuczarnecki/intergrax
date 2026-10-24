@@ -349,8 +349,55 @@ async def test_cancel_a_pre_admission_transport_cancel_no_false_cooperative_sign
 
 
 @pytest.mark.asyncio
+async def test_cancel_a_transport_cleanup_bounded_when_host_suppresses_cancellation() -> None:
+    """OWN-A: transport waiter ends within drain bound; host stays under HostTaskExecutionPort."""
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    boundary = _harness_boundary()
+    cancel_ctx = McpHostExecutionTransportCancelContext(
+        mutation_boundary=boundary,
+        caller_request_identity=_principal(),
+    )
+    host_release = asyncio.Event()
+
+    async def _suppress_cancel_host() -> TaskResult:
+        try:
+            while not host_release.is_set():
+                if CancellationCoordinator.is_requested(task.metadata):
+                    break
+                try:
+                    await asyncio.sleep(3600)
+                except asyncio.CancelledError:
+                    pass
+        finally:
+            await ActiveTaskRegistry.unregister(task.task_id, run_id)
+        return _cancelled_result(task, run_id)
+
+    host_coro = asyncio.create_task(_suppress_cancel_host())
+    waiter = asyncio.create_task(
+        run_host_execution_with_mcp_transport_cancel(
+            host_coro,
+            task=task,
+            cancel_ctx=cancel_ctx,
+        ),
+    )
+    await asyncio.sleep(0.05)
+    started = time.monotonic()
+    waiter.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(waiter, timeout=12.0)
+    assert time.monotonic() - started < 2.0
+    assert not host_coro.done()
+    assert CancellationCoordinator.is_requested(task.metadata)
+    host_release.set()
+    with contextlib.suppress(asyncio.CancelledError):
+        await asyncio.wait_for(host_coro, timeout=5.0)
+
+
+@pytest.mark.asyncio
 async def test_cancel_a_http_disconnect_observed_admits_governed_cancel() -> None:
-    """Transport disconnect signal routes to governed cancel (same monitor path as streamable HTTP)."""
+    """Unit monitor path: disconnect observation routes to governed cancel (not L3 physical proof)."""
     hang_started = asyncio.Event()
     registered: Task | None = None
     run_id = mint_run_id()
@@ -449,3 +496,83 @@ async def test_cancel_a_l3_streamable_http_run_agent_with_task_control_boundary(
                 )
     assert not result.isError
     port.execute.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel() -> None:
+    """Streamable HTTP: real client transport teardown → server disconnect → governed cancel."""
+    hang_started = threading.Event()
+    governed_cancel_seen = threading.Event()
+    run_finished = threading.Event()
+    run_id = mint_run_id()
+
+    async def _hang_execute(task: Task, **_kwargs: object) -> TaskResult:
+        await ActiveTaskRegistry.register(task, run_id)
+        hang_started.set()
+        try:
+            while not CancellationCoordinator.is_requested(task.metadata):
+                await asyncio.sleep(0.02)
+            governed_cancel_seen.set()
+        finally:
+            await ActiveTaskRegistry.unregister(task.task_id, run_id)
+            run_finished.set()
+        return _cancelled_result(task, run_id)
+
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(side_effect=_hang_execute)
+    boundary = _harness_boundary()
+    api = FastAPI()
+    api.state.harness_auth = HarnessAuthState(
+        require_api_key=True,
+        resolved_api_key=_API_KEY,
+        api_key_principal_tenant_id=_TENANT,
+    )
+    mcp = build_nexus_mcp_server(
+        name="cancel-a-l3-abandon",
+        host_execution=port,
+        registry=AgentRegistry(),
+        default_capability="demo.cap",
+        task_control_mutation_boundary=boundary,
+    )
+    app = couple_fastapi_with_mcp(
+        api,
+        mcp,
+        mount_path="/mcp",
+        task_control_mutation_boundary=boundary,
+    )
+    from mcp.client.session import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    async def _abandon_client(base_url: str) -> None:
+        async with streamablehttp_client(base_url, headers={"X-Api-Key": _API_KEY}) as (
+            read,
+            write,
+            _,
+        ):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                call = asyncio.create_task(
+                    session.call_tool(
+                        "run_agent",
+                        {"message": "m", "capability": "demo.cap"},
+                    ),
+                )
+                deadline = time.monotonic() + 8.0
+                while not hang_started.is_set() and time.monotonic() < deadline:
+                    await asyncio.sleep(0.03)
+                assert hang_started.is_set()
+                call.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await asyncio.wait_for(call, timeout=3.0)
+
+    with _uvicorn_mcp_base_url(app) as base_url:
+        await asyncio.wait_for(_abandon_client(base_url), timeout=15.0)
+
+    deadline = time.monotonic() + 10.0
+    while not governed_cancel_seen.is_set() and time.monotonic() < deadline:
+        await asyncio.sleep(0.05)
+    assert governed_cancel_seen.is_set()
+    deadline = time.monotonic() + 10.0
+    while not run_finished.is_set() and time.monotonic() < deadline:
+        await asyncio.sleep(0.05)
+    assert run_finished.is_set()

@@ -2,27 +2,61 @@
 
 | Field | Value |
 | --- | --- |
-| **Task** | `TLX-TL11-CANCEL-A-SAFETY-CLOSURE` |
+| **Task** | `TLX-TL11-CANCEL-A-TERMINATION-SAFETY` |
 | **Operator authorization** | `OPERATOR APPROVED — MCP CANCEL-A` |
-| **START_HEAD** | `e87a4f5c3c396cee1b27c70064de7c3ccc8bbc9e` |
-| **IMPLEMENTATION_HEAD** | `8ecdbd5ff81a4984f60ad2821741828b32fbe83a` |
+| **START_HEAD** | `275fd3a5cc8e098d8d3a9bedaea47df5eb4992c5` |
+| **IMPLEMENTATION_HEAD** | `0829b4ec82b33c16d40d0ba0bfbb78957d347be6` |
+| **PUBLICATION_HEAD** | `0829b4ec82b33c16d40d0ba0bfbb78957d347be6` |
 | **Gate** | **A1** (governed propagation where boundary + verified principal) |
-| **Disposition** | **`TLX-TL11-CANCEL-A-SAFETY-CLOSURE — READY FOR INDEPENDENT AUDIT`** (scoped) |
+| **Disposition** | **`TLX-TL11-CANCEL-A-TERMINATION-SAFETY — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
 **Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no physical Tool provider kill claim; TL8/TL7 blockers preserved.
 
 ---
 
-## CANCEL-F01–F06 (independent audit remediation)
+## OWN-A / OWN-B / OWN-C
+
+| Decision | **OWN-A** — canonical execution ownership transfer |
+| --- | --- |
+| **Source contract** | `HostTaskExecutionPort.execute` / root `Execution` + `ActiveTaskRegistry` binding; MCP transport waiter is not lifecycle owner |
+| **Mechanism** | After transport waiter loss, bounded drain; if governed cancel admitted, **do not** `cancel()` host asyncio task for HTTP waiter teardown; host work remains under canonical port until cooperative cancel / deadline |
+| **OWN-B** | N/A — not used (no separate bounded terminal kill of authoritative Execution) |
+| **OWN-C** | Not reached |
+
+---
+
+## CANCEL-F01–F06 R2 (termination-safety batch)
 
 | ID | Disposition | Action |
 | --- | --- | --- |
-| **F01** | **IMPLEMENTATION REQUIRED → mitigated** | Bounded `finally` cleanup on transport waiter loss; no orphan `host_coro` without `await`/cancel; monitor continues on disconnect until host terminal or governed admission |
-| **F02** | **VALIDATION REQUIRED → PASS (scoped)** | `cancel_admission_accepted` only on `governed_cancel_active_task.accepted=True`; refused/missing binding does not certify cancel |
-| **F03** | **IMPLEMENTATION REQUIRED → mitigated** | Transport waiter loss returns host terminal result when root completes during drain; otherwise `CancelledError` to caller (no MCP terminal mutation) |
-| **F04** | *(not in audit list)* | — |
-| **F05** | **VALIDATION REQUIRED → PASS (scoped)** | Poll/wait/drain bounds sourced from `EventDeliveryPolicy` defaults (`important_wait`, `critical_completion`, `drain_shutdown`) — not a competing Execution deadline |
-| **F06** | **ALREADY PROVEN** | Eight factory roots unchanged this batch; `load_mcp_coupling` + `couple_harness_host_fastapi_with_mcp(runtime, env)` parity preserved @ `e87a4f5…` |
+| **F01-R2** | **IMPLEMENTATION REQUIRED → mitigated** | Removed unbounded `await host_coro` after `cancel()` when host suppresses `CancelledError`; bounded `wait_for` for non-admitted path; OWN-A detach when governed cancel admitted |
+| **F02** | **PASS (scoped)** | `cancel_admission_accepted` only on `governed_cancel_active_task.accepted=True` |
+| **F03** | **PASS (scoped)** | Terminal result linearization during drain; `CancelledError` to MCP caller when no terminal |
+| **F04-R2** | **VALIDATION REQUIRED → PASS (scoped)** | `test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel` — real streamable HTTP client cancel + context teardown (no `_client_disconnected` patch) |
+| **F05-R2** | **IMPLEMENTATION REQUIRED → mitigated** | MCP transport observation uses module-local bounds; **not** `EventDeliveryPolicy`; root deadline remains `ExecutionDeadlineAuthority` only |
+| **F06** | **ALREADY PROVEN** | Eight factory roots unchanged |
+
+---
+
+## Closure matrix (15 criteria)
+
+| Criterion | Semantic owner | Contract | Gap | Classification | Correction | Negative test | Layer |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1. Transport cancel observation | MCP transport monitor | `mcp_host_execution_transport_cancel` | — | PASS (scoped) | `is_disconnected` + asyncio cancel | patched disconnect unit + L3 abandon | L1/L3 |
+| 2. Governed cancel admission | `governed_cancel_active_task` | `task_control.py` | — | PASS | mutation boundary | rejection / no boundary | L1 |
+| 3. Active Execution correlation | `ActiveTaskRegistry` | task_id/run_id binding | — | PASS | lookup before cancel | pre-admission | L1 |
+| 4. Root deadline | `ExecutionDeadlineAuthority` | HARNESS-02 / host | — | ALREADY PROVEN | no MCP extension | deadline hierarchy tests (L2 reuse) | L2 |
+| 5. Cleanup ownership | `HostTaskExecutionPort` | UE-11G host task | F01-R2 closed | PASS (scoped) | OWN-A detach | suppress-cancel adversarial | L1 |
+| 6. Completion/cancel linearization | host terminal + waiter | transport cancel module | — | PASS | drain + result capture | complete-during-drain | L1 |
+| 7. Idempotent cancel | governed cancel | mutation_id prefix | — | PASS | lock + admission flag | repeated transport signals | L1 |
+| 8. Refused cancel | control plane | `TaskControlResult.accepted` | — | PASS | no coordinator signal | governance rejection | L1 |
+| 9. Late results / terminal CAS | Execution terminal | Batch C host | — | ALREADY PROVEN | unchanged | host qualification | L2 |
+| 10. UNKNOWN side effects | provider cancel | W4-D | — | N/A — WITH EVIDENCE | not claimed | — | — |
+| 11. Physical disconnect | ASGI / streamable HTTP | Starlette `is_disconnected` | F04-R2 closed | PASS (scoped) | L3 abandon | client timeout ≠ disconnect (not conflated) | L3 |
+| 12. Host shutdown | app lifespan | harness MCP | — | ALREADY PROVEN | uvicorn test fixture | — | L2 |
+| 13. Multi-tenant authority | TRUST-A principal | verified identity | — | PASS | tenant on principal | cross-tenant | L1 |
+| 14. No shadow lifecycle owner | FRZ-BND-03 | no new coordinator | — | PASS | single governed path | arch tests (L2 reuse) | L2 |
+| 15. Cancellation time budgets | MCP observation constants | local module bounds | F05-R2 closed | PASS (scoped) | decoupled from EventDeliveryPolicy | bounded cleanup timing | L1 |
 
 ---
 
@@ -32,44 +66,34 @@
 MCP transport (disconnect / asyncio cancel)
         │
         ▼
-execute_mcp_agent_task + mcp_host_execution_transport_cancel
-        │  (no CancellationCoordinator.request from MCP directly)
+execute_mcp_agent_task + mcp_host_execution_transport_cancel  [transport waiter only]
+        │
         ▼
 governed_cancel_active_task  [task_control.py]
-        │  ControlPlaneMutationAuthorizationBoundary
         ▼
-CancellationCoordinator.request(binding.task)  [runtime/cancellation/coordinator.py]
+CancellationCoordinator.request(binding.task)
         ▼
-Execution / ToolRuntime cooperative cancel + deadline authority (unchanged)
+HostTaskExecutionPort.execute / Execution + ExecutionDeadlineAuthority
 ```
 
-**Transport waiter scope:** `run_host_execution_with_mcp_transport_cancel` owns the MCP asyncio waiter only; canonical Execution remains owned by `HostTaskExecutionPort.execute` / root Execution until bounded cleanup completes.
+**After HTTP transport loss (OWN-A):** MCP waiter ends within `_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S`; canonical Execution continues under `HostTaskExecutionPort` until cooperative cancel or root deadline — not orphaned, not unbounded transport `await`.
 
 ---
 
-## CA-01–CA-24 closure (summary)
+## Race / negative matrix (summary)
 
-| ID | Classification | Notes |
+| Scenario | Expected | Test / evidence |
 | --- | --- | --- |
-| CA-01 | ALREADY PROVEN | TRUST-A principal @ `bb43430…` |
-| CA-02 | ALREADY PROVEN | Single owner: `governed_cancel` → `CancellationCoordinator` |
-| CA-03 | **PASS** | MCP transport has no independent cancel authority |
-| CA-04 | **PASS** | Binding lookup by platform `task_id` |
-| CA-05 | **PASS** | Governed mutation + tenant authority |
-| CA-06 | **PASS** | Cross-tenant negative tests |
-| CA-07 | **PASS (scoped)** | Pre-admission: no binding → no cooperative signal; bounded waiter cleanup |
-| CA-08 | **PASS** | Active execution cancel via governed path |
-| CA-09–CA-11 | ALREADY PROVEN | Execution terminal CAS (Batch C / host) |
-| CA-12–CA-13 | ALREADY PROVEN | UNKNOWN / no-blind-replay unchanged |
-| CA-14–CA-15 | **PASS (scoped)** | Root `ExecutionDeadlineAuthority` unchanged; transport observation ≠ Execution deadline |
-| CA-16 | N/A — WITH EVIDENCE | Physical provider cancel not claimed |
-| CA-17–CA-18 | **PASS (scoped)** | L3-R2 subprocess reuse + bounded host drain after transport loss |
-| CA-19 | **PASS** | Tenant authority on governed cancel |
-| CA-20 | **PASS** | No new coordinator/registry |
-| CA-21 | **PASS** | TRUST-A preserved |
-| CA-22 | **PASS** | L1/L2 batch below |
-| CA-23 | **PASS** | Scoped FRZ/ECAP |
-| CA-24 | VALIDATION REQUIRED | Independent SHA audit of safety-closure commit |
+| Task finishes before cancel | terminal returned | L1 asyncio cancel + complete-during-drain |
+| Cancel wins | `CancelledError` to caller | L1 transport cancel |
+| Completion during governed admission | single linearization | governed rejection test |
+| Completion during cleanup | terminal returned | `test_cancel_a_host_completes_during_transport_cancel_drain` |
+| Governance refusal | no cooperative signal | rejection test |
+| No active binding | no false cancel | pre-admission test |
+| Host suppresses `CancelledError` | bounded waiter; host owned | `test_cancel_a_transport_cleanup_bounded_when_host_suppresses_cancellation` |
+| Cross-tenant cancel | denied | cross-tenant test |
+| Physical client abandon | governed cancel | L3 physical abandon |
+| Provider UNKNOWN | unchanged | not claimed |
 
 ---
 
@@ -77,22 +101,22 @@ Execution / ToolRuntime cooperative cancel + deadline authority (unchanged)
 
 | Layer | Command | Result |
 | --- | --- | --- |
-| L1 | `uv run pytest tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py -q` | **8 passed** |
-| L2 | cancel-a + task_control_governed_cancel + trust-a + active_task_registry + L3-R2 MCP host | **66 passed** |
-| L3 | streamable HTTP uvicorn `test_cancel_a_l3_streamable_http_run_agent_with_task_control_boundary`; disconnect monitor `test_cancel_a_http_disconnect_observed_admits_governed_cancel` | **included in L1** |
+| L1 | `uv run pytest tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py -q` | **10 passed** |
+| L2 | cancel-a + task_control + trust-a + active_task_registry + L3-R2 MCP host (paths in batch) | **68 passed** |
+| L3 | `test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel` + streamable HTTP boundary smoke | **included in L1** |
 
-Logs: `.tmp/session/TLX-TL11-CANCEL-A/` (`l1-final.log`, `l2-final.log`).
+Logs: `.tmp/session/TLX-TL11-CANCEL-A/` (`l1-termination-safety.log`, `l2-termination-safety.log`).
 
 ---
 
-## FRZ (scoped)
+## FRZ (scoped ECAP)
 
 | Tag | Status |
 | --- | --- |
-| FRZ-BND-03 | Preserved — `HostTaskExecutionPort` only |
-| FRZ-TEN | Scoped PASS — cross-tenant cancel denied |
-| FRZ-GOV | Scoped PASS — control-plane mutation on cancel |
-| FRZ-REL | Scoped PASS — transport ≠ physical Tool kill |
+| FRZ-BND-03 | Preserved — `HostTaskExecutionPort` only; no reverse edge |
+| FRZ-TEN | Scoped PASS |
+| FRZ-GOV | Scoped PASS |
+| FRZ-REL | Scoped PASS — transport ≠ Tool kill |
 | FRZ-SEC | TRUST-A reuse |
 
 ---
@@ -101,11 +125,11 @@ Logs: `.tmp/session/TLX-TL11-CANCEL-A/` (`l1-final.log`, `l2-final.log`).
 
 | Item | Status |
 | --- | --- |
-| TL11 CANCEL-A | **READY FOR INDEPENDENT AUDIT** (safety closure batch) |
+| TL11 CANCEL-A termination safety | **READY FOR INDEPENDENT AUDIT** |
 | TL11 TRUST-A | Unchanged READY |
 | TL11 MCP→Tool physical cancel | **Not claimed** |
 | TOOL-LIFE-X parent | **IN PROGRESS / BLOCKED** (TL8/TL7) |
 
-**Remaining blockers:** Independent SHA audit (CA-24); full physical HTTP client-abandon qualification optional hardening; TL8/TL7 parent gates.
+**Remaining blockers:** Independent SHA audit; TL8/TL7 parent gates; optional expanded physical disconnect matrix.
 
-**Next executable stage:** Independent audit of safety-closure SHA; then TL11 catalog E2E per roadmap §3.0.5.
+**Next executable batch:** Independent audit of publication SHA; TL11 catalog E2E per roadmap §3.0.5.
