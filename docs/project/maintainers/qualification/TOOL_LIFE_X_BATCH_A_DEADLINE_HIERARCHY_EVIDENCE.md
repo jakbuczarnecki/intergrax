@@ -13,8 +13,8 @@
 | **BA-F10 START_HEAD** | `032b983ede3b0e6dee44083a4070e25326465006` |
 | **Disposition** | **`TOOL-LIFE-X BATCH A — READY FOR INDEPENDENT AUDIT`** (BA-F12 ownership closure + consolidated L2 **63/63**) |
 | **BA-F12 final ownership START_HEAD** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` |
-| **BA-F12 final execution SHA** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` |
-| **Evidence publication SHA** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` |
+| **BA-F12 final execution SHA** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` + working-tree delta (L2 log; content ≡ `8f6b9a230…` implementation) |
+| **Evidence publication SHA** | `8f6b9a2300508a6583a54a358bf4c04c2513ba05` |
 | **BA-F12 START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
 | **BA-F11 final qualification START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
 | **Test execution SHA (L2 wave 1)** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` + unstaged test-source delta (see § BA-F11 L2) |
@@ -76,8 +76,8 @@
 | **Scenarios A–L** | **A–B** unchanged (BA-F12 store). **C** wrapper cancel → stored permit release. **D** shutdown before registration + successful wrapper → gated test + spy: zero `_execute_permit_release`. **E/F** cleanup vs caller claim — obligation vs `CALLER_OWNS`. **G** sync release while pending → skipped. **H** callback + shutdown — single `_schedule_handoff_permit_release`. **I** idempotent obligation re-entry. **J/K** release failure / shielded — BA-F06/F07 paths unchanged. **L** drain during physical acquire — BA-F08–F11 unchanged. |
 | **L1** | **4 passed** — `test_acquire_success_shutdown_before_registration_releases_permit`, `test_shutdown_cancel_races_acquire_success_no_leak`, `test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled`, `test_ba_f12_exactly_one_release_when_cleanup_claims_before_sync_grant`; log `l1-batch-a-ba-f12-final-remediation.log`. |
 | **L2** | **63 passed / 63 collected**, 10.46s, exit **0** — log `l2-batch-a-ba-f12-final.log`. |
-| **Publication SHA (final)** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` (`fix(runtime): BA-F12 exactly-once release when sync grant loses to cleanup`) |
-| **Test-source publication** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` (production + tests + evidence, single commit) |
+| **Publication SHA (final)** | `8f6b9a2300508a6583a54a358bf4c04c2513ba05` (`fix(runtime): BA-F12 exactly-once release when sync grant loses to cleanup`) |
+| **Test-source publication** | `8f6b9a2300508a6583a54a358bf4c04c2513ba05` (production + tests + evidence, single commit) |
 
 **Scoped closure matrix (BA-F12-affected TL):**
 
