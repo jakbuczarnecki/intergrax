@@ -28,7 +28,7 @@
 | SHA role | Value |
 | --- | --- |
 | **START_HEAD** | `799a6a38bbf350b63fd1fb060bd922660435a0d1` |
-| **Publication SHA** | `e8c6dfed93a681f7704a8b42421d8ba99bd4b214` |
+| **Publication SHA** | `712665150530286aeb4b3b6f43ad10957af8f040` |
 
 ---
 
