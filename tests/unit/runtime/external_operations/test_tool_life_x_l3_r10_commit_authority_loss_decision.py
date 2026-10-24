@@ -10,12 +10,27 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.autonomous_work.in_memory_repository import InMemoryWorkerInstanceRepository
+from intergrax.contracts.autonomous_work.ids import (
+    WorkerDefinitionId,
+    WorkerInstanceId,
+    mint_worker_definition_id,
+    mint_worker_instance_id,
+)
+from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
+from intergrax.contracts.autonomous_work.references import (
+    PrincipalBindingRef,
+    WorkspaceContextRef,
+)
+from intergrax.contracts.autonomous_work.revision import DefinitionRevision, initial_revision
+from intergrax.contracts.autonomous_work.worker import WorkerInstance
 from intergrax.contracts.certified_owner_loss_evidence import CertifiedOwnerLossReason
 from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.contracts.worker_execution_commit_authority_loss_decision import (
     WorkerExecutionCommitAuthorityLossDecisionDirectInvocationError,
     WorkerExecutionCommitAuthorityLossDecisionNotFoundError,
     WorkerExecutionCommitAuthorityLossDecisionRejectedError,
+    WorkerExecutionCommitAuthorityLossDecisionUnauthorizedError,
     WorkerExecutionCommitAuthorityLossDecisionV1,
 )
 from intergrax.contracts.worker_execution_ownership_revocation import (
@@ -63,11 +78,34 @@ def _reset_state() -> None:
     reset_worker_execution_ownership_revocation_trust_for_tests()
 
 
-def _running_bound_operation(tmp_path: Path, *, worker_id: str = "worker-r10"):
+def _stopped_worker_repo(worker_id: WorkerInstanceId) -> InMemoryWorkerInstanceRepository:
+    repo = InMemoryWorkerInstanceRepository()
+    now = datetime.now(timezone.utc)
+    repo.create(
+        WorkerInstance(
+            worker_instance_id=worker_id,
+            worker_definition_id=mint_worker_definition_id(),
+            definition_revision=DefinitionRevision(1),
+            lifecycle_state=WorkerLifecycleState.STOPPED,
+            principal_binding_ref=PrincipalBindingRef("binding-l3r10"),
+            workspace_context_ref=WorkspaceContextRef("workspace-l3r10"),
+            active_responsibility_refs=(),
+            active_goal_refs=(),
+            created_at=now,
+            updated_at=now,
+            revision=initial_revision(),
+        ),
+    )
+    return repo
+
+
+def _running_bound_operation(tmp_path: Path):
+    worker_id = mint_worker_instance_id()
     os.environ[_MAC_ENV] = "production-mac-key-l3r10"
     composed = compose_tool_life_durable_single_host_certified_owner_loss(
         db_path=tmp_path / "tool_life.db",
         persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        worker_instance_repository=_stopped_worker_repo(worker_id),
     )
     store = composed.bundle.external_operation_state
     owner = ProcessLocalExternalOperationOwner.mint()
@@ -84,19 +122,14 @@ def _running_bound_operation(tmp_path: Path, *, worker_id: str = "worker-r10"):
         tenant_id=_TENANT,
         operation_id=_OP,
         expected_revision=running.revision,
-        worker_instance_id=worker_id,
+        worker_instance_id=str(worker_id),
         worker_ownership_epoch=_EPOCH,
     )
-    return composed, worker_id
+    return composed, str(worker_id)
 
 
 def test_l3r10_production_composition_records_decision_and_revocation(tmp_path: Path) -> None:
     composed, worker_id = _running_bound_operation(tmp_path)
-    decision = composed.worker_revocation.decide_commit_authority_loss_for_bound_operation(
-        tenant_id=_TENANT,
-        operation_id=_OP,
-    )
-    assert decision.ownership_epoch == _EPOCH
     proof = composed.worker_revocation.record_revocation_after_commit_authority_loss(
         tenant_id=_TENANT,
         operation_id=_OP,
@@ -104,6 +137,11 @@ def test_l3r10_production_composition_records_decision_and_revocation(tmp_path: 
         ownership_epoch=_EPOCH,
     ).proof_ref
     assert proof
+    decision = composed.worker_revocation.decide_commit_authority_loss_for_bound_operation(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+    )
+    assert decision.ownership_epoch == _EPOCH
     os.environ.pop(_MAC_ENV, None)
 
 
@@ -116,7 +154,7 @@ def test_l3r10_direct_decision_store_write_rejected(tmp_path: Path) -> None:
         decision_authority_id="forged-authority",
         tenant_id=_TENANT,
         operation_id=_OP,
-        worker_instance_id="worker-r10",
+        worker_instance_id=str(mint_worker_instance_id()),
         ownership_epoch=_EPOCH,
         bound_store_revision=3,
         loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
@@ -175,13 +213,8 @@ def test_l3r10_fail_closed_policy_blocks_even_with_decision(tmp_path: Path) -> N
         tenant_id=_TENANT,
         operation_id=_OP,
         expected_revision=running.revision,
-        worker_instance_id="worker-r10",
+        worker_instance_id=str(mint_worker_instance_id()),
         worker_ownership_epoch=_EPOCH,
-    )
-    composed.commit_authority_loss_decision_authority.issue_for_bound_operation(
-        tenant_id=_TENANT,
-        operation_id=_OP,
-        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
     )
     from intergrax.runtime.external_operations.certified_owner_loss_composition import (
         require_certified_owner_loss_composition,
@@ -199,6 +232,12 @@ def test_l3r10_fail_closed_policy_blocks_even_with_decision(tmp_path: Path) -> N
 
 def test_l3r10_stale_decision_revision_rejected(tmp_path: Path) -> None:
     composed, worker_id = _running_bound_operation(tmp_path)
+    composed.worker_revocation.record_revocation_after_commit_authority_loss(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id=worker_id,
+        ownership_epoch=_EPOCH,
+    )
     decision = composed.worker_revocation.decide_commit_authority_loss_for_bound_operation(
         tenant_id=_TENANT,
         operation_id=_OP,
@@ -259,6 +298,69 @@ def test_l3r10_idempotent_decision_and_revocation(tmp_path: Path) -> None:
         ownership_epoch=_EPOCH,
     )
     assert first.proof_ref == second.proof_ref
+    os.environ.pop(_MAC_ENV, None)
+
+
+def test_l3r10_positive_decision_requires_prior_revocation(tmp_path: Path) -> None:
+    composed, _ = _running_bound_operation(tmp_path)
+    with pytest.raises(WorkerExecutionCommitAuthorityLossDecisionUnauthorizedError):
+        composed.worker_revocation.decide_commit_authority_loss_for_bound_operation(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+        )
+    os.environ.pop(_MAC_ENV, None)
+
+
+def test_l3r10_active_worker_lifecycle_blocks_production_revocation(tmp_path: Path) -> None:
+    os.environ[_MAC_ENV] = "production-mac-key-l3r10-active"
+    repo = InMemoryWorkerInstanceRepository()
+    worker_id = mint_worker_instance_id()
+    now = datetime.now(timezone.utc)
+    repo.create(
+        WorkerInstance(
+            worker_instance_id=worker_id,
+            worker_definition_id=mint_worker_definition_id(),
+            definition_revision=DefinitionRevision(1),
+            lifecycle_state=WorkerLifecycleState.WORKING,
+            principal_binding_ref=PrincipalBindingRef("binding-active"),
+            workspace_context_ref=WorkspaceContextRef("workspace-active"),
+            active_responsibility_refs=(),
+            active_goal_refs=(),
+            created_at=now,
+            updated_at=now,
+            revision=initial_revision(),
+        ),
+    )
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        worker_instance_repository=repo,
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id=str(worker_id),
+        worker_ownership_epoch=_EPOCH,
+    )
+    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
+        composed.worker_revocation.record_revocation_after_commit_authority_loss(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=str(worker_id),
+            ownership_epoch=_EPOCH,
+        )
     os.environ.pop(_MAC_ENV, None)
 
 

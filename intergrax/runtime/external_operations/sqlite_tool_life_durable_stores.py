@@ -56,7 +56,8 @@ from intergrax.runtime.external_operations.external_operation_state_store import
 )
 from intergrax.runtime.external_operations.worker_execution_commit_authority_loss import (
     _require_decision_authority_invocation,
-    require_authoritative_commit_authority_loss_decision,
+    mint_worker_execution_commit_authority_loss_decision,
+    verify_worker_execution_commit_authority_loss_decision,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
     assert_authoritative_worker_execution_revocation_allowed,
@@ -126,6 +127,35 @@ def _ensure_tool_life_schema(conn: sqlite3.Connection) -> None:
             )
         );
         """,
+    )
+
+
+def _insert_commit_authority_loss_decision_row(
+    conn: sqlite3.Connection,
+    *,
+    decision: WorkerExecutionCommitAuthorityLossDecisionV1,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO worker_execution_commit_authority_loss_decisions
+        (tenant_id, operation_id, worker_instance_id, ownership_epoch,
+         decision_id, decision_authority_id, bound_store_revision,
+         loss_reason, decided_at_utc, valid_until_utc, decision_digest)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            decision.tenant_id,
+            decision.operation_id,
+            decision.worker_instance_id,
+            decision.ownership_epoch,
+            decision.decision_id,
+            decision.decision_authority_id,
+            decision.bound_store_revision,
+            decision.loss_reason.value,
+            decision.decided_at.isoformat(),
+            decision.valid_until.isoformat(),
+            decision.decision_digest,
+        ),
     )
 
 
@@ -511,28 +541,7 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
                 if existing is not None:
                     conn.commit()
                     return _decode_commit_authority_loss_decision(existing)
-                conn.execute(
-                    """
-                    INSERT INTO worker_execution_commit_authority_loss_decisions
-                    (tenant_id, operation_id, worker_instance_id, ownership_epoch,
-                     decision_id, decision_authority_id, bound_store_revision,
-                     loss_reason, decided_at_utc, valid_until_utc, decision_digest)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        decision.tenant_id,
-                        decision.operation_id,
-                        decision.worker_instance_id,
-                        decision.ownership_epoch,
-                        decision.decision_id,
-                        decision.decision_authority_id,
-                        decision.bound_store_revision,
-                        decision.loss_reason.value,
-                        decision.decided_at.isoformat(),
-                        decision.valid_until.isoformat(),
-                        decision.decision_digest,
-                    ),
-                )
+                _insert_commit_authority_loss_decision_row(conn, decision=decision)
                 conn.commit()
                 return decision
 
@@ -633,15 +642,6 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
                         ownership_epoch=ownership_epoch,
                         bound_store_revision=current.revision,
                     )
-                    require_authoritative_commit_authority_loss_decision(
-                        self,
-                        tenant_id=tenant_id,
-                        operation_id=operation_id,
-                        worker_instance_id=worker_instance_id,
-                        ownership_epoch=ownership_epoch,
-                        bound_store_revision=current.revision,
-                        loss_reason=authorization.loss_reason,
-                    )
                 except Exception:
                     conn.execute("ROLLBACK")
                     raise
@@ -671,6 +671,33 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
                         proof,
                     ),
                 )
+                decision_row = conn.execute(
+                    """
+                    SELECT 1 FROM worker_execution_commit_authority_loss_decisions
+                    WHERE tenant_id = ? AND operation_id = ?
+                      AND worker_instance_id = ? AND ownership_epoch = ?
+                    """,
+                    key,
+                ).fetchone()
+                if decision_row is None:
+                    decision = mint_worker_execution_commit_authority_loss_decision(
+                        tenant_id=tenant_id,
+                        operation_id=operation_id,
+                        worker_instance_id=worker_instance_id,
+                        ownership_epoch=ownership_epoch,
+                        bound_store_revision=current.revision,
+                        loss_reason=authorization.loss_reason,
+                    )
+                    verify_worker_execution_commit_authority_loss_decision(
+                        decision,
+                        tenant_id=tenant_id,
+                        operation_id=operation_id,
+                        worker_instance_id=worker_instance_id,
+                        ownership_epoch=ownership_epoch,
+                        bound_store_revision=current.revision,
+                        loss_reason=authorization.loss_reason,
+                    )
+                    _insert_commit_authority_loss_decision_row(conn, decision=decision)
                 conn.commit()
                 return WorkerExecutionOwnershipRevocationV1(
                     tenant_id=tenant_id,

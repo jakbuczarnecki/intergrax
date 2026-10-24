@@ -16,10 +16,10 @@ from intergrax.runtime.external_operations.execution_recovery_external_operation
 from intergrax.runtime.external_operations.execution_recovery_worker_execution_revocation_supervision import (
     ExecutionRecoveryWorkerExecutionRevocationSupervision,
     FailClosedWorkerExecutionCommitAuthorityLossPolicy,
+    RepositoryAdmittedWorkerExecutionCommitAuthorityLossPolicy,
     WorkerExecutionCommitAuthorityLossPolicy,
 )
 from intergrax.runtime.external_operations.worker_execution_commit_authority_loss import (
-    DurableWorkerExecutionCommitAuthorityLossPolicy,
     WorkerExecutionCommitAuthorityLossDecisionAuthority,
 )
 from intergrax.runtime.external_operations.sqlite_tool_life_durable_stores import (
@@ -68,11 +68,12 @@ def compose_tool_life_durable_single_host_certified_owner_loss(
     )
     if loss_policy is not None:
         policy = loss_policy
-    else:
-        policy = DurableWorkerExecutionCommitAuthorityLossPolicy(
-            decision_port=decision_port,
-            authoritative_state_store=bundle.external_operation_state,
+    elif worker_instance_repository is not None:
+        policy = RepositoryAdmittedWorkerExecutionCommitAuthorityLossPolicy(
+            worker_instance_repository=worker_instance_repository,
         )
+    else:
+        policy = FailClosedWorkerExecutionCommitAuthorityLossPolicy()
     supervision = ExecutionRecoveryWorkerExecutionRevocationSupervision(
         loss_policy=policy,
         trust=trust,

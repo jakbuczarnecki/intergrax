@@ -8,7 +8,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from intergrax.contracts.certified_owner_loss_evidence import CertifiedOwnerLossReason
 from intergrax.contracts.worker_execution_ownership_revocation import (
@@ -18,6 +18,10 @@ from intergrax.contracts.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationUnauthorizedError,
     compute_worker_execution_ownership_revocation_authorization_digest,
 )
+if TYPE_CHECKING:
+    from intergrax.autonomous_work.repository import WorkerInstanceRepository
+
+from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation_trust import (
     WorkerExecutionOwnershipRevocationTrustMaterial,
     compute_worker_execution_ownership_revocation_authorization_mac,
@@ -25,6 +29,13 @@ from intergrax.runtime.external_operations.worker_execution_ownership_revocation
 )
 
 _AUTHORIZATION_TTL = timedelta(minutes=5)
+
+_LOSS_ADMITTING_WORKER_LIFECYCLE_STATES = frozenset(
+    {
+        WorkerLifecycleState.STOPPED,
+        WorkerLifecycleState.QUARANTINED,
+    },
+)
 
 
 @runtime_checkable
@@ -41,6 +52,41 @@ class WorkerExecutionCommitAuthorityLossPolicy(Protocol):
         loss_reason: CertifiedOwnerLossReason,
     ) -> None:
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class RepositoryAdmittedWorkerExecutionCommitAuthorityLossPolicy:
+    """Admit loss only when durable worker lifecycle proves commit authority is gone."""
+
+    worker_instance_repository: WorkerInstanceRepository
+
+    def require_commit_authority_loss_admitted(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        worker_instance_id: str,
+        ownership_epoch: int,
+        loss_reason: CertifiedOwnerLossReason,
+    ) -> None:
+        from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
+
+        del tenant_id, operation_id, ownership_epoch, loss_reason
+        try:
+            worker = self.worker_instance_repository.get(
+                worker_instance_id=WorkerInstanceId(worker_instance_id),
+            )
+        except Exception as exc:
+            raise WorkerExecutionOwnershipRevocationUnauthorizedError(
+                "worker instance repository unavailable for commit-authority-loss admission",
+            ) from exc
+        if worker is None:
+            return
+        if worker.lifecycle_state in _LOSS_ADMITTING_WORKER_LIFECYCLE_STATES:
+            return
+        raise WorkerExecutionOwnershipRevocationUnauthorizedError(
+            "worker execution commit authority loss not admitted: worker lifecycle still active",
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,5 +190,6 @@ class ExecutionRecoveryWorkerExecutionRevocationSupervision:
 __all__ = [
     "ExecutionRecoveryWorkerExecutionRevocationSupervision",
     "FailClosedWorkerExecutionCommitAuthorityLossPolicy",
+    "RepositoryAdmittedWorkerExecutionCommitAuthorityLossPolicy",
     "WorkerExecutionCommitAuthorityLossPolicy",
 ]

@@ -3,10 +3,9 @@
 
 """Sanctioned execution/recovery entry for recording worker execution epoch revocation.
 
-Positive revocation requires a durable ``WorkerExecutionCommitAuthorityLossDecisionV1`` issued
-by ``WorkerExecutionCommitAuthorityLossDecisionAuthority`` and a typed
-``DurableWorkerExecutionCommitAuthorityLossPolicy`` at composition time (L3-R10). Production
-``DURABLE_SINGLE_HOST`` composition wires both by default.
+Positive revocation requires execution/recovery supervision admission and records a durable
+``WorkerExecutionCommitAuthorityLossDecisionV1`` atomically with epoch revocation (L3-R10).
+Callers must not synthesize loss decisions outside that authoritative transition.
 """
 
 from __future__ import annotations
@@ -58,11 +57,6 @@ class ExecutionRecoveryExternalOperationWorkerRevocation:
         loss_reason: CertifiedOwnerLossReason = CertifiedOwnerLossReason.WORKER_LOST,
     ) -> WorkerExecutionOwnershipRevocationV1:
         del worker_instance_id, ownership_epoch
-        self.decide_commit_authority_loss_for_bound_operation(
-            tenant_id=tenant_id,
-            operation_id=operation_id,
-            loss_reason=loss_reason,
-        )
         return self.recorder.record_revocation_for_bound_operation(
             tenant_id=tenant_id,
             operation_id=operation_id,

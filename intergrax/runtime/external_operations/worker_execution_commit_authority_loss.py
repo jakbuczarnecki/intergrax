@@ -41,6 +41,13 @@ _decision_authority_invocation_flag: contextvars.ContextVar[bool] = contextvars.
     default=False,
 )
 
+_decision_authority_revocation_atomic_flag: contextvars.ContextVar[bool] = (
+    contextvars.ContextVar(
+        "worker_execution_commit_authority_loss_decision_revocation_atomic",
+        default=False,
+    )
+)
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -55,11 +62,67 @@ def _decision_authority_invocation():
         _decision_authority_invocation_flag.reset(token)
 
 
+@contextlib.contextmanager
+def commit_authority_loss_decision_revocation_atomic():
+    """Allow decision persistence only inside authoritative revocation linearization."""
+    token = _decision_authority_revocation_atomic_flag.set(True)
+    try:
+        yield
+    finally:
+        _decision_authority_revocation_atomic_flag.reset(token)
+
+
 def _require_decision_authority_invocation() -> None:
-    if not _decision_authority_invocation_flag.get():
+    if not (
+        _decision_authority_invocation_flag.get()
+        or _decision_authority_revocation_atomic_flag.get()
+    ):
         raise WorkerExecutionCommitAuthorityLossDecisionDirectInvocationError(
             "use WorkerExecutionCommitAuthorityLossDecisionAuthority",
         )
+
+
+def mint_worker_execution_commit_authority_loss_decision(
+    *,
+    tenant_id: str,
+    operation_id: str,
+    worker_instance_id: str,
+    ownership_epoch: int,
+    bound_store_revision: int,
+    loss_reason: CertifiedOwnerLossReason,
+) -> WorkerExecutionCommitAuthorityLossDecisionV1:
+    """Mint a decision bound to one authoritative revocation transition (same TX as revoke)."""
+    when = _utc_now()
+    decision_id = f"wexec-commit-loss:{uuid.uuid4().hex}"
+    provisional = WorkerExecutionCommitAuthorityLossDecisionV1(
+        decision_id=decision_id,
+        decision_authority_id=(
+            CANONICAL_WORKER_EXECUTION_COMMIT_AUTHORITY_LOSS_DECISION_AUTHORITY_ID
+        ),
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        worker_instance_id=worker_instance_id,
+        ownership_epoch=ownership_epoch,
+        bound_store_revision=bound_store_revision,
+        loss_reason=loss_reason,
+        decided_at=when,
+        valid_until=when + _DECISION_TTL,
+        decision_digest="pending",
+    )
+    digest = compute_worker_execution_commit_authority_loss_decision_digest(provisional)
+    return WorkerExecutionCommitAuthorityLossDecisionV1(
+        decision_id=decision_id,
+        decision_authority_id=provisional.decision_authority_id,
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        worker_instance_id=worker_instance_id,
+        ownership_epoch=ownership_epoch,
+        bound_store_revision=bound_store_revision,
+        loss_reason=loss_reason,
+        decided_at=when,
+        valid_until=provisional.valid_until,
+        decision_digest=digest,
+    )
 
 
 def verify_worker_execution_commit_authority_loss_decision(
@@ -164,6 +227,7 @@ class WorkerExecutionCommitAuthorityLossDecisionAuthority:
         operation_id: str,
         loss_reason: CertifiedOwnerLossReason,
     ) -> WorkerExecutionCommitAuthorityLossDecisionV1:
+        """Read durable decision evidence only — positive issuance is revocation-atomic."""
         loaded = self.authoritative_state_store.load(tenant_id, operation_id)
         if loaded is None:
             raise ExternalOperationNotFoundError(operation_id)
@@ -171,65 +235,26 @@ class WorkerExecutionCommitAuthorityLossDecisionAuthority:
             raise WorkerExecutionOwnershipRevocationUnauthorizedError(
                 "worker execution ownership is not bound on authoritative record",
             )
-        assert_authoritative_worker_execution_revocation_allowed(
-            loaded,
-            tenant_id=tenant_id,
-            operation_id=operation_id,
-            worker_instance_id=loaded.worker_instance_id,
-            ownership_epoch=loaded.worker_ownership_epoch,
-        )
         existing = self.decision_port.authoritative_commit_authority_loss_decision(
             tenant_id=tenant_id,
             operation_id=operation_id,
             worker_instance_id=loaded.worker_instance_id,
             ownership_epoch=loaded.worker_ownership_epoch,
         )
-        if existing is not None:
-            verify_worker_execution_commit_authority_loss_decision(
-                existing,
-                tenant_id=tenant_id,
-                operation_id=operation_id,
-                worker_instance_id=loaded.worker_instance_id,
-                ownership_epoch=loaded.worker_ownership_epoch,
-                bound_store_revision=loaded.revision,
-                loss_reason=loss_reason,
+        if existing is None:
+            raise WorkerExecutionCommitAuthorityLossDecisionUnauthorizedError(
+                "commit-authority-loss decision requires authoritative revocation transition",
             )
-            return existing
-        when = _utc_now()
-        decision_id = f"wexec-commit-loss:{uuid.uuid4().hex}"
-        provisional = WorkerExecutionCommitAuthorityLossDecisionV1(
-            decision_id=decision_id,
-            decision_authority_id=(
-                CANONICAL_WORKER_EXECUTION_COMMIT_AUTHORITY_LOSS_DECISION_AUTHORITY_ID
-            ),
+        verify_worker_execution_commit_authority_loss_decision(
+            existing,
             tenant_id=tenant_id,
             operation_id=operation_id,
             worker_instance_id=loaded.worker_instance_id,
             ownership_epoch=loaded.worker_ownership_epoch,
             bound_store_revision=loaded.revision,
             loss_reason=loss_reason,
-            decided_at=when,
-            valid_until=when + _DECISION_TTL,
-            decision_digest="pending",
         )
-        digest = compute_worker_execution_commit_authority_loss_decision_digest(provisional)
-        decision = WorkerExecutionCommitAuthorityLossDecisionV1(
-            decision_id=decision_id,
-            decision_authority_id=provisional.decision_authority_id,
-            tenant_id=tenant_id,
-            operation_id=operation_id,
-            worker_instance_id=loaded.worker_instance_id,
-            ownership_epoch=loaded.worker_ownership_epoch,
-            bound_store_revision=loaded.revision,
-            loss_reason=loss_reason,
-            decided_at=when,
-            valid_until=provisional.valid_until,
-            decision_digest=digest,
-        )
-        with _decision_authority_invocation():
-            return self.decision_port.record_commit_authority_loss_decision(
-                decision=decision,
-            )
+        return existing
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,6 +346,8 @@ __all__ = [
     "DurableWorkerExecutionCommitAuthorityLossPolicy",
     "InMemoryWorkerExecutionCommitAuthorityLossDecisionStore",
     "WorkerExecutionCommitAuthorityLossDecisionAuthority",
+    "commit_authority_loss_decision_revocation_atomic",
+    "mint_worker_execution_commit_authority_loss_decision",
     "require_authoritative_commit_authority_loss_decision",
     "verify_worker_execution_commit_authority_loss_decision",
 ]
