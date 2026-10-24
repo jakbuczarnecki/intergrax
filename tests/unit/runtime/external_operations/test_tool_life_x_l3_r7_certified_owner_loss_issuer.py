@@ -56,6 +56,9 @@ from intergrax.runtime.external_operations.worker_execution_certified_owner_loss
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
     InMemoryWorkerExecutionOwnershipRevocationStore,
 )
+from tests.unit.runtime.external_operations.tool_life_x_qualification_revocation_supervision import (
+    QualificationWorkerExecutionRevocationSupervision,
+)
 from tests.unit.autonomous_work.repository_contracts import worker_instance
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -106,6 +109,7 @@ def _running_with_worker(
     configure_worker_execution_certified_owner_loss(
         worker_execution_ownership_revocation=revocation,
         worker_instance_repository=repo,
+        worker_execution_revocation_supervision=QualificationWorkerExecutionRevocationSupervision(),
     )
     return worker, bound, str(worker.worker_instance_id), owner
 
@@ -298,6 +302,7 @@ def test_l3r7_r7_f03_missing_worker_with_revocation_still_certifies() -> None:
     configure_worker_execution_certified_owner_loss(
         worker_execution_ownership_revocation=revocation,
         worker_instance_repository=repo,
+        worker_execution_revocation_supervision=QualificationWorkerExecutionRevocationSupervision(),
     )
     certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
     staged = certifier.stage_certified_owner_loss(
@@ -369,6 +374,7 @@ def test_l3r7_r7_f04_direct_store_staging_without_revocation_rejected() -> None:
         worker_execution_ownership_revocation=revocation,
         worker_instance_repository=repo,
         issuer=issuer,
+        worker_execution_revocation_supervision=QualificationWorkerExecutionRevocationSupervision(),
     )
     evidence = issuer.mint_sanctioned_evidence(
         epoch=epoch,

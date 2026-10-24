@@ -18,10 +18,15 @@ from intergrax.contracts.certified_owner_loss_evidence import (
 from intergrax.contracts.external_operation_cancellation import ExternalOperationState
 from intergrax.contracts.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationPort,
+    WorkerExecutionOwnershipRevocationSupervisionPort,
 )
 
 if TYPE_CHECKING:
     from intergrax.autonomous_work.repository import WorkerInstanceRepository
+    from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
+        WorkerExecutionOwnershipRevocationAuthorizer,
+        WorkerExecutionOwnershipRevocationRecorder,
+    )
 
 _DEFAULT_BINDING = CompositionCertifiedOwnerLossIssuerBinding()
 
@@ -34,7 +39,15 @@ class CertifiedOwnerLossComposition:
     worker_execution_ownership_revocation: WorkerExecutionOwnershipRevocationPort | None = (
         None
     )
-    worker_execution_revocation_recorder: object | None = None
+    worker_execution_revocation_supervision: (
+        WorkerExecutionOwnershipRevocationSupervisionPort | None
+    ) = None
+    worker_execution_revocation_authorizer: (
+        WorkerExecutionOwnershipRevocationAuthorizer | None
+    ) = None
+    worker_execution_revocation_recorder: WorkerExecutionOwnershipRevocationRecorder | None = (
+        None
+    )
 
 
 _COMPOSITION = CertifiedOwnerLossComposition(issuer_binding=_DEFAULT_BINDING)

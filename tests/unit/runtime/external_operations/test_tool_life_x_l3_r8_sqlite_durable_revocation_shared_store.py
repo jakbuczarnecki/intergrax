@@ -11,7 +11,13 @@ import pytest
 from intergrax.autonomous_work.in_memory_repository import InMemoryWorkerInstanceRepository
 from intergrax.contracts.worker_execution_ownership_revocation import (
     WorkerExecutionDirectRevocationInvocationError,
+    WorkerExecutionOwnershipRevocationAuthorizationRejectedError,
+    WorkerExecutionOwnershipRevocationSupervisionNotConfiguredError,
     WorkerExecutionOwnershipRevocationUnauthorizedError,
+    mint_worker_execution_ownership_revocation_authorization,
+)
+from tests.unit.runtime.external_operations.tool_life_x_qualification_revocation_supervision import (
+    QualificationWorkerExecutionRevocationSupervision,
 )
 from intergrax.runtime.external_operations.certified_owner_loss_composition import (
     require_certified_owner_loss_composition,
@@ -46,7 +52,7 @@ from intergrax.runtime.external_operations.sqlite_tool_life_durable_stores impor
     SQLiteExternalOperationStateStore,
     SQLiteWorkerExecutionOwnershipRevocationStore,
 )
-from intergrax.runtime.external_operations.sqlite_tool_life_l3_r8_cross_process_proof import (
+from tests.unit.runtime.external_operations.sqlite_tool_life_l3_r8_cross_process_proof import (
     run_revocation_wins_before_terminal_race,
     run_terminal_wins_before_revocation_race,
 )
@@ -56,7 +62,7 @@ from intergrax.runtime.external_operations.worker_execution_certified_owner_loss
     configure_worker_execution_certified_owner_loss,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
-    _sanctioned_revocation_write,
+    build_worker_execution_ownership_revocation_recorder,
 )
 from tests.unit.autonomous_work.repository_contracts import worker_instance
 
@@ -110,6 +116,7 @@ def _running_with_worker(
         worker_execution_ownership_revocation=revocation,
         worker_instance_repository=repo,
         authoritative_state_store=store,
+        worker_execution_revocation_supervision=QualificationWorkerExecutionRevocationSupervision(),
     )
     return worker, bound, str(worker.worker_instance_id), owner
 
@@ -211,15 +218,23 @@ def test_l3r8_wrong_epoch_revocation_denied(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _worker, _bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
-    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
-        with _sanctioned_revocation_write():
-            durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
-                tenant_id=_TENANT,
-                operation_id=_OP,
-                worker_instance_id=worker_id,
-                ownership_epoch=_BOUND_EPOCH + 1,
-            )
+    _worker, bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
+    forged = mint_worker_execution_ownership_revocation_authorization(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id=worker_id,
+        ownership_epoch=_BOUND_EPOCH + 1,
+        bound_store_revision=bound.revision,
+        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
+    )
+    with pytest.raises(WorkerExecutionDirectRevocationInvocationError):
+        durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=worker_id,
+            ownership_epoch=_BOUND_EPOCH + 1,
+            authorization=forged,
+        )
     certifier = build_worker_execution_certified_owner_loss_certifier(
         store=durable_bundle.external_operation_state,
     )
@@ -236,14 +251,24 @@ def test_l3r8_cross_tenant_revocation_not_visible(
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
     _worker, _bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
-    with pytest.raises(ExternalOperationNotFoundError):
-        with _sanctioned_revocation_write():
-            durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
-                tenant_id="other-tenant",
-                operation_id=_OP,
-                worker_instance_id=worker_id,
-                ownership_epoch=_BOUND_EPOCH,
-            )
+    current = durable_bundle.external_operation_state.load(_TENANT, _OP)
+    assert current is not None
+    forged = mint_worker_execution_ownership_revocation_authorization(
+        tenant_id="other-tenant",
+        operation_id=_OP,
+        worker_instance_id=worker_id,
+        ownership_epoch=_BOUND_EPOCH,
+        bound_store_revision=current.revision,
+        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
+    )
+    with pytest.raises(WorkerExecutionDirectRevocationInvocationError):
+        durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
+            tenant_id="other-tenant",
+            operation_id=_OP,
+            worker_instance_id=worker_id,
+            ownership_epoch=_BOUND_EPOCH,
+            authorization=forged,
+        )
     proof = durable_bundle.worker_execution_ownership_revocation.authoritative_revocation_proof_ref(
         tenant_id=_TENANT,
         operation_id=_OP,
@@ -328,14 +353,22 @@ def test_l3r8_unauthorized_revocation_without_binding_rejected(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     durable_bundle.external_operation_state.create_if_absent(_TENANT, "op-unbound")
-    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
-        with _sanctioned_revocation_write():
-            durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
-                tenant_id=_TENANT,
-                operation_id="op-unbound",
-                worker_instance_id="worker-x",
-                ownership_epoch=1,
-            )
+    forged = mint_worker_execution_ownership_revocation_authorization(
+        tenant_id=_TENANT,
+        operation_id="op-unbound",
+        worker_instance_id="worker-x",
+        ownership_epoch=1,
+        bound_store_revision=1,
+        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
+    )
+    with pytest.raises(WorkerExecutionDirectRevocationInvocationError):
+        durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
+            tenant_id=_TENANT,
+            operation_id="op-unbound",
+            worker_instance_id="worker-x",
+            ownership_epoch=1,
+            authorization=forged,
+        )
 
 
 def test_l3r8_fenced_worker_terminal_after_revocation(
@@ -400,12 +433,21 @@ def test_l3r8_direct_port_revocation_without_sanction_rejected(
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
     _running_with_worker(durable_bundle, repo)
+    forged = mint_worker_execution_ownership_revocation_authorization(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id="ignored",
+        ownership_epoch=_BOUND_EPOCH,
+        bound_store_revision=1,
+        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
+    )
     with pytest.raises(WorkerExecutionDirectRevocationInvocationError):
         durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
             tenant_id=_TENANT,
             operation_id=_OP,
             worker_instance_id="ignored",
             ownership_epoch=_BOUND_EPOCH,
+            authorization=forged,
         )
 
 
@@ -413,35 +455,97 @@ def test_l3r8_cross_process_revocation_wins_before_terminal_cas(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _worker, bound, _worker_id, owner = _running_with_worker(durable_bundle, repo)
+    worker, bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
     result = run_revocation_wins_before_terminal_race(
         db_path=durable_bundle.db_path,
         tenant_id=_TENANT,
         operation_id=_OP,
         expected_revision=bound.revision,
-        owner_token=owner.token,
     )
+    assert len(result.outcomes) == 2
+    assert all(code == 0 for code in result.exit_codes)
     assert "revoked" in result.outcomes
-    assert any(outcome == "fenced" for outcome in result.outcomes)
+    assert "fenced" in result.outcomes
+    loaded = durable_bundle.external_operation_state.load(_TENANT, _OP)
+    assert loaded is not None
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+    proof = durable_bundle.worker_execution_ownership_revocation.authoritative_revocation_proof_ref(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id=worker_id,
+        ownership_epoch=_BOUND_EPOCH,
+    )
+    assert proof is not None
 
 
 def test_l3r8_cross_process_terminal_wins_before_revocation(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _worker, bound, _worker_id, owner = _running_with_worker(durable_bundle, repo)
+    worker, bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
     result = run_terminal_wins_before_revocation_race(
         db_path=durable_bundle.db_path,
         tenant_id=_TENANT,
         operation_id=_OP,
         expected_revision=bound.revision,
-        owner_token=owner.token,
     )
+    assert len(result.outcomes) == 2
+    assert all(code == 0 for code in result.exit_codes)
     assert "terminal" in result.outcomes
-    assert any(outcome == "error" for outcome in result.outcomes)
+    assert "unauthorized" in result.outcomes
     loaded = durable_bundle.external_operation_state.load(_TENANT, _OP)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.SUCCEEDED
+    proof = durable_bundle.worker_execution_ownership_revocation.authoritative_revocation_proof_ref(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id=worker_id,
+        ownership_epoch=_BOUND_EPOCH,
+    )
+    assert proof is None
+
+
+def test_l3r8_revocation_without_supervision_fail_closed(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    repo = InMemoryWorkerInstanceRepository()
+    _running_with_worker(durable_bundle, repo)
+    reset_certified_owner_loss_composition_for_tests()
+    configure_worker_execution_certified_owner_loss(
+        worker_execution_ownership_revocation=durable_bundle.worker_execution_ownership_revocation,
+        authoritative_state_store=durable_bundle.external_operation_state,
+    )
+    assert require_certified_owner_loss_composition().worker_execution_revocation_recorder is None
+    with pytest.raises(WorkerExecutionOwnershipRevocationSupervisionNotConfiguredError):
+        build_worker_execution_ownership_revocation_recorder(
+            authoritative_state_store=durable_bundle.external_operation_state,
+        )
+
+
+def test_l3r8_forged_revocation_authorization_digest_rejected(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    repo = InMemoryWorkerInstanceRepository()
+    _worker, bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
+    forged = mint_worker_execution_ownership_revocation_authorization(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id=worker_id,
+        ownership_epoch=_BOUND_EPOCH,
+        bound_store_revision=bound.revision,
+        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
+    )
+    from dataclasses import replace
+
+    tampered = replace(forged, authorization_digest="0" * 64)
+    with pytest.raises(WorkerExecutionDirectRevocationInvocationError):
+        durable_bundle.worker_execution_ownership_revocation.revoke_worker_execution_ownership(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=worker_id,
+            ownership_epoch=_BOUND_EPOCH,
+            authorization=tampered,
+        )
 
 
 def test_l3r8_in_transaction_fence_without_python_precheck(

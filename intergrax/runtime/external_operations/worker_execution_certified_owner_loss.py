@@ -41,9 +41,14 @@ from intergrax.runtime.external_operations.certified_owner_loss_composition impo
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
 )
+from intergrax.contracts.worker_execution_ownership_revocation import (
+    WorkerExecutionOwnershipRevocationSupervisionPort,
+)
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
+    WorkerExecutionOwnershipRevocationAuthorizer,
     WorkerExecutionOwnershipRevocationRecorder,
     require_worker_execution_revocation_proof,
+    resolve_colocated_authoritative_state_store,
 )
 
 
@@ -236,23 +241,30 @@ def configure_worker_execution_certified_owner_loss(
     worker_instance_repository: WorkerInstanceRepository | None = None,
     issuer: WorkerExecutionCertifiedOwnerLossEvidenceIssuer | None = None,
     authoritative_state_store: ExternalOperationStateStore | None = None,
+    worker_execution_revocation_supervision: (
+        WorkerExecutionOwnershipRevocationSupervisionPort | None
+    ) = None,
 ) -> None:
     """Register canonical worker-execution issuer binding for one deployment topology."""
     resolved_issuer = issuer or WorkerExecutionCertifiedOwnerLossEvidenceIssuer()
-    state_store = authoritative_state_store
-    if state_store is None:
-        colocated = getattr(
-            worker_execution_ownership_revocation,
-            "_authoritative_state_store",
-            None,
-        )
-        if colocated is not None:
-            state_store = colocated
+    state_store = resolve_colocated_authoritative_state_store(
+        worker_execution_ownership_revocation,
+        explicit=authoritative_state_store,
+    )
     recorder: WorkerExecutionOwnershipRevocationRecorder | None = None
-    if state_store is not None:
+    authorizer: WorkerExecutionOwnershipRevocationAuthorizer | None = None
+    if (
+        worker_execution_revocation_supervision is not None
+        and state_store is not None
+    ):
+        authorizer = WorkerExecutionOwnershipRevocationAuthorizer(
+            authoritative_state_store=state_store,
+            supervision=worker_execution_revocation_supervision,
+        )
         recorder = WorkerExecutionOwnershipRevocationRecorder(
             authoritative_state_store=state_store,
             revocation_port=worker_execution_ownership_revocation,
+            authorizer=authorizer,
         )
     _replace_certified_owner_loss_composition(
         CertifiedOwnerLossComposition(
@@ -264,6 +276,8 @@ def configure_worker_execution_certified_owner_loss(
             issuer=resolved_issuer,
             worker_instance_repository=worker_instance_repository,
             worker_execution_ownership_revocation=worker_execution_ownership_revocation,
+            worker_execution_revocation_supervision=worker_execution_revocation_supervision,
+            worker_execution_revocation_authorizer=authorizer,
             worker_execution_revocation_recorder=recorder,
         ),
     )

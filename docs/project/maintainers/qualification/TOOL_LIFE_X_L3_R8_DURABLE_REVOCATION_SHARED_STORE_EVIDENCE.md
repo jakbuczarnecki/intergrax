@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| START_HEAD | `c8168be93279dc918a6bb6ddcfaf7babac7016c1` |
+| START_HEAD | `3034a880db8dc67770f3725000ddf241dc784b8d` |
 | Scope | SQLite `DURABLE_SINGLE_HOST` revocation ledger + external-operation store; R8 adversarial matrix |
 | Multi-host shared durability | **Not proven** — no Redis/PostgreSQL (BLOCKED without operator infra) |
 | Cross-store distributed TX | **Not claimed** — revocation + external-op colocated in one SQLite file; no partition L3 |
@@ -11,37 +11,38 @@
 ## Authority graph
 
 - **Execution ownership binding:** `ExternalOperationStateStore.bind_worker_execution_ownership` (RUNNING record).
-- **Revocation authority:** `WorkerExecutionOwnershipRevocationPort` — durable rows only after `assert_authoritative_worker_execution_revocation_allowed` against `ExternalOperationStateStore` (same SQLite `BEGIN IMMEDIATE` for durable path).
+- **Revocation authority (store):** `WorkerExecutionOwnershipRevocationPort` — durable rows only after `assert_authoritative_worker_execution_revocation_allowed` + verified `WorkerExecutionOwnershipRevocationAuthorizationV1` inside `BEGIN IMMEDIATE`.
+- **Revocation initiator (governance):** `WorkerExecutionOwnershipRevocationSupervisionPort` → `WorkerExecutionOwnershipRevocationAuthorizer` → `WorkerExecutionOwnershipRevocationRecorder` (composition-registered, typed).
 - **Fencing:** optimistic read via `bound_worker_execution_epoch_is_revoked`; authoritative fence in SQLite `BEGIN IMMEDIATE` CAS via `cas_update_blocked_by_bound_worker_revocation`.
-- **Revocation initiator:** `WorkerExecutionOwnershipRevocationRecorder` (composition-registered); direct port writes require sanctioned admission gate.
 - **Certification:** `WorkerExecutionCertifiedOwnerLossCertifier` → `stage_certified_owner_loss_evidence` (CAS#1 + revocation verify) → `apply_certified_owner_loss` (CAS#2).
 - **Live worker fence:** revocation proof required before staging; `WorkerInstance.revision`/lifecycle not authoritative.
+- **Production default:** no supervision port wired → positive revocation **fail-closed** (`WorkerExecutionOwnershipRevocationSupervisionNotConfiguredError`).
 
 ## Change inventory
 
 | Path | Change |
 | --- | --- |
-| `intergrax/runtime/external_operations/external_operation_state_store.py` | Shared `apply_external_operation_state_update` + certification semantics mixin |
-| `intergrax/contracts/worker_execution_ownership_revocation.py` | `WorkerExecutionOwnershipRevocationUnauthorizedError` |
-| `intergrax/runtime/external_operations/worker_execution_ownership_revocation.py` | Authoritative binding guards; in-memory colocated store |
-| `intergrax/runtime/external_operations/certified_owner_loss_composition.py` | `bound_worker_execution_epoch_is_revoked` |
-| `intergrax/runtime/external_operations/external_operation_state_store.py` | Revoked-epoch mutation fence on CAS |
-| `intergrax/runtime/external_operations/external_operation_ownership.py` | Terminal commit fence after revocation |
-| `intergrax/runtime/external_operations/sqlite_tool_life_durable_stores.py` | Atomic revoke+proof; in-TX staging revocation re-verify |
-| `tests/unit/runtime/external_operations/test_tool_life_x_l3_r8_sqlite_durable_revocation_shared_store.py` | R8 qualification (+ adversarial cases) |
+| `intergrax/contracts/worker_execution_ownership_revocation.py` | Typed authorization + supervision port contracts |
+| `intergrax/runtime/external_operations/worker_execution_ownership_revocation.py` | Authorizer, recorder, colocated port protocol, authorization verify |
+| `intergrax/runtime/external_operations/certified_owner_loss_composition.py` | Typed supervision/authorizer/recorder composition slots |
+| `intergrax/runtime/external_operations/worker_execution_certified_owner_loss.py` | Explicit store resolution; supervision wiring |
+| `intergrax/runtime/external_operations/sqlite_tool_life_durable_stores.py` | Authorization enforced in revoke TX; colocated store property |
+| `tests/unit/runtime/external_operations/sqlite_tool_life_l3_r8_cross_process_proof.py` | Deterministic 2-process harness (qualification area) |
+| `tests/unit/runtime/external_operations/tool_life_x_qualification_revocation_supervision.py` | L3 qualification supervision double |
+| `tests/unit/runtime/external_operations/test_tool_life_x_l3_r8_sqlite_durable_revocation_shared_store.py` | R8 + F07/F08 adversarial matrix |
 
 ## L1 / L2 / L3
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| L1 | R8 file only | **18 passed** |
-| L2 | R8 + R6 + R7 + Batch C (single invocation) | **71 passed** |
-| L3 (scoped) | WAL reopen + threaded revoke + **2-process** barrier races | **PASS** in R8 tests |
+| L1 | R7 + R8 files | **33 passed** |
+| L2 | R6 + R7 + R8 + Batch C (single invocation) | **73 passed** |
+| L3 (scoped) | WAL reopen + threaded revoke + **2-process** barrier races (recorder + persisted state) | **PASS** in R8 tests |
 | L3 (BLOCKED) | Docker PostgreSQL, multi-host Redis, network partition E2E | **BLOCKED** — not authorized |
 
-Log: `.tmp/session/TOOL-LIFE-X-L3-R8/l2-pytest.log`.
+Log: `.tmp/session/TOOL-LIFE-X-L3-R8/l1-pytest.log`, `l2-pytest.log`.
 
-## R8-F01–F04 disposition (corrective batch)
+## R8-F01–F08 disposition (corrective batch)
 
 | Finding | Disposition |
 | --- | --- |
@@ -51,8 +52,8 @@ Log: `.tmp/session/TOOL-LIFE-X-L3-R8/l2-pytest.log`.
 | R8-F04 Durability/concurrency | **PARTIAL PASS** — WAL cross-connection + threaded concurrent revoke in L3 scope; multi-host **BLOCKED** |
 | R8-F05 Pre-TX-only revocation check | **RESOLVED** — in-TX revocation row re-read on every SQLite CAS |
 | R8-F06 Terminal CAS vs revoke race | **RESOLVED** — linearization at SQLite `BEGIN IMMEDIATE` (terminal-first or revoke-first adversarial) |
-| R8-F07 Revocation caller authority | **RESOLVED** — `WorkerExecutionOwnershipRevocationRecorder` + `WorkerExecutionDirectRevocationInvocationError` gate |
-| R8-F08 Cross-process proof | **PARTIAL PASS** — local 2-process barrier races (not network partition) |
+| R8-F07 Revocation caller authority | **PARTIAL PASS** — typed supervision → authorizer → recorder → authorization verified at store TX; production supervision owner **not wired** (fail-closed default) |
+| R8-F08 Cross-process proof | **PASS (scoped)** — deterministic barrier ordering, exit codes, persisted revocation rows |
 
 FINAL_COMMIT: set at publication.
 
@@ -82,14 +83,15 @@ FINAL_COMMIT: set at publication.
 | --- | --- |
 | FRZ-BND-03 | PASS — sanctioned store CAS linearization |
 | FRZ-TEN | PASS — tenant-scoped keys |
-| FRZ-REC | PASS — fail-closed without revocation / issuer |
+| FRZ-REC | PASS — fail-closed without revocation / issuer / supervision |
 | FRZ-REL-03/04/05 | PASS — CAS + fencing in L2 |
-| FRZ-SEC / FRZ-GOV | PASS — composition-only revocation |
+| FRZ-SEC / FRZ-GOV | PASS — composition-only revocation path |
 
 Global FRZ PASS / parent CLOSED **not** promoted.
 
 ## Remaining blockers
 
+- Production `WorkerExecutionOwnershipRevocationSupervisionPort` implementation (process supervisor / orchestrator — ADR §4.6).
 - Production composition wiring of `SqliteToolLifeDurableStoresBundle` (or approved multi-host backend).
 - `SHARED_MULTI_HOST` qualification (Redis/PostgreSQL) — OPERATOR DECISION REQUIRED.
 - Cross-store partition when revocation and external-op use separate physical backends.

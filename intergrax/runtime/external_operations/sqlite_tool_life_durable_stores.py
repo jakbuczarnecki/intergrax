@@ -28,9 +28,15 @@ from intergrax.contracts.external_operation_cancellation import (
 )
 from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.contracts.worker_execution_ownership_revocation import (
+    CANONICAL_WORKER_EXECUTION_REVOCATION_SUPERVISION_AUTHORITY_ID,
+    WorkerExecutionDirectRevocationInvocationError,
+    WorkerExecutionOwnershipRevocationAuthorizationV1,
     WorkerExecutionOwnershipRevocationPort,
     WorkerExecutionOwnershipRevocationV1,
     worker_execution_revocation_proof_ref,
+)
+from intergrax.runtime.external_operations.certified_owner_loss_composition import (
+    require_certified_owner_loss_composition,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateUpdate,
@@ -45,8 +51,9 @@ from intergrax.runtime.external_operations.external_operation_state_store import
     cas_update_blocked_by_bound_worker_revocation,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
-    _require_sanctioned_revocation_write,
     assert_authoritative_worker_execution_revocation_allowed,
+    verify_worker_execution_ownership_revocation_authorization,
+    _require_recorder_revocation_invocation,
 )
 
 
@@ -400,6 +407,10 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
     def persistence_topology(self) -> PersistenceTopology:
         return PersistenceTopology.DURABLE_SINGLE_HOST
 
+    @property
+    def authoritative_state_store(self) -> SQLiteExternalOperationStateStore:
+        return SQLiteExternalOperationStateStore(db_path=self._db_path)
+
     def authoritative_revocation_proof_ref(
         self,
         *,
@@ -428,8 +439,21 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
         operation_id: str,
         worker_instance_id: str,
         ownership_epoch: int,
+        authorization: WorkerExecutionOwnershipRevocationAuthorizationV1,
     ) -> WorkerExecutionOwnershipRevocationV1:
-        _require_sanctioned_revocation_write()
+        _require_recorder_revocation_invocation()
+        composition = require_certified_owner_loss_composition()
+        if composition.worker_execution_revocation_supervision is None:
+            raise WorkerExecutionDirectRevocationInvocationError(
+                "revocation supervision is not configured",
+            )
+        if (
+            authorization.supervision_authority_id
+            != CANONICAL_WORKER_EXECUTION_REVOCATION_SUPERVISION_AUTHORITY_ID
+        ):
+            raise WorkerExecutionDirectRevocationInvocationError(
+                "revocation supervision authority mismatch",
+            )
         key = (tenant_id, operation_id, worker_instance_id, ownership_epoch)
         tid = _validate_tenant_id(tenant_id)
         with self._lock:
@@ -475,6 +499,14 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
                         operation_id=operation_id,
                         worker_instance_id=worker_instance_id,
                         ownership_epoch=ownership_epoch,
+                    )
+                    verify_worker_execution_ownership_revocation_authorization(
+                        authorization,
+                        tenant_id=tenant_id,
+                        operation_id=operation_id,
+                        worker_instance_id=worker_instance_id,
+                        ownership_epoch=ownership_epoch,
+                        bound_store_revision=current.revision,
                     )
                 except Exception:
                     conn.execute("ROLLBACK")
