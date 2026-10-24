@@ -29,9 +29,9 @@
 | SHA role | Value |
 | --- | --- |
 | **START_HEAD** | `7018f019732a9d44d14b0129ad95e9eccf9d0948` |
-| **Tested SHA** | `9531164a4e77e80b92a5b5ce785e357ebd7e212a` |
-| **Implementation SHA** | `9531164a4e77e80b92a5b5ce785e357ebd7e212a` (PHYS-F07/F08 batch) |
-| **Publication SHA** | `9531164a4e77e80b92a5b5ce785e357ebd7e212a` (`development` tip — independent audit SHA) |
+| **Tested SHA** | `d9a5d282c8f45b4bdcca2cff0bb145f6440ca50f` (L1/L2/L3 on implementation tree) |
+| **Implementation SHA** | `d9a5d282c8f45b4bdcca2cff0bb145f6440ca50f` (PHYS-F07/F08 batch) |
+| **Publication SHA** | `d4147579da0f9fb7554f13657cf72fba7a08b494` (`development` tip — independent audit SHA) |
 
 ---
 
