@@ -5,8 +5,8 @@
 | **Task** | `TOOL-LIFE-X-BATCH-D` |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
 | **START_HEAD** | `792064ce3127fda505e51fdf987c64ef495d451c` |
-| **FINAL_COMMIT** | `54bb2ba88` |
-| **Test execution SHA** | `54bb2ba88` |
+| **FINAL_COMMIT** | `367f42cb1` |
+| **Test execution SHA** | `bfca41e77` (implementation); evidence publication `367f42cb1` |
 | **Branch** | `development` |
 | **Origin** | `https://github.com/jakbuczarnecki/intergrax.git` |
 | **Disposition** | **`TOOL-LIFE-X BATCH D — READY FOR INDEPENDENT AUDIT`** |
