@@ -32,7 +32,7 @@
 | **Implementation SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
 | **L1 execution SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
 | **L2 execution SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
-| **Publication SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
+| **Publication SHA** | `461f3f201c140216a7f50b4c09c70863923c5228` |
 
 ---
 
