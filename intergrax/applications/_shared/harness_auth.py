@@ -191,22 +191,28 @@ def _local_dev_auth_bypass_allowed(state: HarnessAuthState | None) -> bool:
     )
 
 
-def resolve_harness_authenticated_principal(
-    request: Request,
-    x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
-    authorization: Annotated[str | None, Header()] = None,
+def resolve_harness_authenticated_principal_for_state(
+    *,
+    harness_auth: HarnessAuthState | None,
+    x_api_key: str | None = None,
+    authorization: str | None = None,
 ) -> HarnessAuthenticatedPrincipal | None:
     """
-    Authenticate the request and return the verified canonical principal.
+    Authenticate headers against an explicit harness auth configuration.
 
-    Returns ``None`` only for explicitly configured local-dev bypass or when no
-    credential authority is configured (legacy unauthenticated surfaces).
+    Used when the Starlette ``Request.app`` is not the FastAPI host that owns
+    ``HarnessAuthState`` (for example mounted FastMCP streamable HTTP).
     """
-    state = _harness_auth_state_from_request(request)
-    if _harness_api_key_authenticates(
+    state = harness_auth
+    expected = (
+        state.resolved_api_key
+        if state is not None
+        else _legacy_default_harness_api_key()
+    )
+    if expected is not None and is_harness_api_key_valid(
         x_api_key=x_api_key,
         authorization=authorization,
-        request=request,
+        expected_api_key=expected,
     ):
         return api_key_service_harness_principal(
             tenant_id=state.api_key_principal_tenant_id if state is not None else None,
@@ -217,7 +223,7 @@ def resolve_harness_authenticated_principal(
             ),
             tenant_required=state.tenant_required if state is not None else False,
         )
-    identity_provider = _identity_provider_from_request(request)
+    identity_provider = state.identity_provider if state is not None else None
     if identity_provider is not None:
         user = verify_harness_bearer_identity(
             authorization=authorization,
@@ -230,11 +236,30 @@ def resolve_harness_authenticated_principal(
             )
     if _local_dev_auth_bypass_allowed(state):
         return None
-    if _expected_api_key_for_request(request) is None and identity_provider is None:
+    if expected is None and identity_provider is None:
         return None
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid or missing harness credentials",
+    )
+
+
+def resolve_harness_authenticated_principal(
+    request: Request,
+    x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> HarnessAuthenticatedPrincipal | None:
+    """
+    Authenticate the request and return the verified canonical principal.
+
+    Returns ``None`` only for explicitly configured local-dev bypass or when no
+    credential authority is configured (legacy unauthenticated surfaces).
+    """
+    state = _harness_auth_state_from_request(request)
+    return resolve_harness_authenticated_principal_for_state(
+        harness_auth=state,
+        x_api_key=x_api_key,
+        authorization=authorization,
     )
 
 

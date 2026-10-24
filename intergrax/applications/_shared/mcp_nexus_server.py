@@ -10,7 +10,16 @@ from typing import Any
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
+from intergrax.applications._shared.mcp_harness_principal import (
+    get_nexus_mcp_harness_auth,
+    register_nexus_mcp_harness_auth,
+    resolve_mcp_run_agent_identity,
+)
+from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
+    bind_strict_serving_http_caller_principal,
+)
 from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
@@ -50,6 +59,7 @@ async def execute_mcp_agent_task(
     user_id: str,
     session_id: str | None = None,
     intent: str | None = None,
+    caller_request_identity: RequestIdentity | None = None,
 ) -> dict[str, object]:
     """Run one MCP agent task through canonical host task execution."""
     task = task_from_mcp_agent_intake(
@@ -60,7 +70,11 @@ async def execute_mcp_agent_task(
         session_id=session_id,
         intent=intent,
     )
-    result = await host_execution.execute(task)
+    if caller_request_identity is not None:
+        with bind_strict_serving_http_caller_principal(caller_request_identity):
+            result = await host_execution.execute(task)
+    else:
+        result = await host_execution.execute(task)
     payload = {
         "task_id": result.task_id,
         "run_id": result.run_id,
@@ -89,6 +103,7 @@ def build_nexus_mcp_server(
     Tools use the same registry and canonical host task execution as the Tier-3 FastAPI host.
     """
     mcp = FastMCP(name)
+    register_nexus_mcp_harness_auth(mcp, None)
 
     @mcp.tool
     async def list_agents() -> list[dict[str, Any]]:
@@ -109,20 +124,29 @@ def build_nexus_mcp_server(
     async def run_agent(
         message: str,
         capability: str = default_capability,
-        tenant_id: str = default_tenant_id,
-        user_id: str = default_user_id,
+        tenant_id: str | None = None,
+        user_id: str | None = None,
         session_id: str | None = None,
         intent: str | None = None,
     ) -> dict[str, object]:
         """Run one agent task via canonical host task execution (same path as HTTP POST /run)."""
+        harness_auth = get_nexus_mcp_harness_auth(mcp)
+        resolved = resolve_mcp_run_agent_identity(
+            harness_auth=harness_auth,
+            asserted_tenant_id=tenant_id,
+            asserted_user_id=user_id,
+            default_tenant_id=default_tenant_id,
+            default_user_id=default_user_id,
+        )
         return await execute_mcp_agent_task(
             host_execution,
             message=message,
             capability=capability,
-            tenant_id=tenant_id,
-            user_id=user_id,
+            tenant_id=resolved.tenant_id,
+            user_id=resolved.user_id,
             session_id=session_id,
             intent=intent,
+            caller_request_identity=resolved.request_identity,
         )
 
     if tool_registry is not None:

@@ -259,8 +259,8 @@ def test_mcp_http_ingress_rejects_missing_harness_credentials() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mcp_run_agent_forged_tenant_reaches_host_without_principal_binding() -> None:
-    """Documents TRUST-C gap: MCP intake accepts client-supplied tenant_id (no harness principal bridge)."""
+async def test_mcp_run_agent_lab_mode_accepts_client_tenant_without_harness_auth() -> None:
+    """Lab/in-process MCP without harness auth wiring — client tenant is intake-only (not production)."""
     port = AsyncMock(spec=HostTaskExecutionPort)
     port.execute = AsyncMock(
         return_value=TaskResult(
@@ -277,10 +277,10 @@ async def test_mcp_run_agent_forged_tenant_reaches_host_without_principal_bindin
             "run_agent",
             {
                 "message": "x",
-                "tenant_id": "forged-tenant",
-                "user_id": "forged-user",
+                "tenant_id": "lab-tenant",
+                "user_id": "lab-user",
             },
         )
     task = port.execute.await_args.args[0]
-    assert task.tenant_id == "forged-tenant"
-    assert task.user_id == "forged-user"
+    assert task.tenant_id == "lab-tenant"
+    assert task.user_id == "lab-user"
