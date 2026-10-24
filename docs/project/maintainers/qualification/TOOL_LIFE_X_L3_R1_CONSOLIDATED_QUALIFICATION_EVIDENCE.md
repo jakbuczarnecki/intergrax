@@ -4,7 +4,7 @@
 | --- | --- |
 | **Task** | `TOOL-LIFE-X-L3-R1` |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
-| **START_HEAD** | `68f8e0d64c48bbcbb58cccac3422aee1da391654` |
+| **START_HEAD** | `fdefefe0623e6c26bc0f246ec8a87d1e983b3f07` |
 | **Branch** | `development` |
 | **Origin** | `https://github.com/jakbuczarnecki/intergrax.git` |
 | **Production delta** | **0** (qualification tests + evidence only) |
@@ -22,15 +22,34 @@
 | --- | --- |
 | Repository | `jakbuczarnecki/intergrax` |
 | Branch | `development` |
-| START_HEAD | `68f8e0d64c48bbcbb58cccac3422aee1da391654` |
+| START_HEAD | `fdefefe0623e6c26bc0f246ec8a87d1e983b3f07` |
 | Ancestry | START_HEAD ancestor of execution HEAD — **yes** @ publication |
 | Worktree @ publication | clean after commit |
 
 | SHA role | Value |
 | --- | --- |
-| **START_HEAD** | `68f8e0d64c48bbcbb58cccac3422aee1da391654` |
-| **Implementation / L1 / L2 SHA** | `03b96790c1187fa4c5028645624a16ca0c17e232` |
-| **Publication SHA** | `03b96790c1187fa4c5028645624a16ca0c17e232` |
+| **START_HEAD (audit remediation)** | `fdefefe0623e6c26bc0f246ec8a87d1e983b3f07` |
+| **Prior evidence execution SHA (superseded label)** | `03b96790c1187fa4c5028645624a16ca0c17e232` |
+| **Tree equivalence (03b96790 vs fdefefe)** | `git diff-tree`: **identical** `tests/` trees; **docs-only** delta on publication realign |
+| **Implementation / L1 / L2 SHA** | Remediation commit on `development` (L1/L2 logs @ `.tmp/session/TOOL-LIFE-X-L3-R1/` on equivalent working tree) |
+| **Publication SHA** | Same remediation commit — `git rev-parse HEAD` on `development` after push |
+
+### R1-F02 — SHA provenance (remediation)
+
+| Check | Result |
+| --- | --- |
+| Prior log claimed execution @ `03b96790` while publication HEAD was `fdefefe` | **Corrected** — trees for L3-R1 qualification code are **byte-identical** between those commits; only qualification evidence markdown differed |
+| Relabeled old logs as newer tree | **Not done** — L1/L2 re-executed on remediation commit after test correction |
+| SHA-only cosmetic commit | **Avoided** — functional governance test correction included |
+
+### R1-F01 — Governance bypass remediation
+
+| Before | `_governed_invoke_scope` patched `require_meaningful_side_effect_authorization` (autouse) |
+| After | Real gate via `wire_policy_bundle` + `PolicyRulesProfile(policy_enforcement_mode="enforce")` on `_InvokeState`; `canonical_governed_execution_scope` only |
+| Authority | `DeclarativePolicyEnforcer` **ENFORCE** (same typed path as Batch B `test_tool_life_x_batch_b_real_governance_authorization.py`) |
+| Negative HTTP | `test_l3_governance_unauthorized_http_zero_physical_effects`, `test_l3_governance_audit_only_http_zero_physical_effects` — **zero** TCP POST effects |
+| Positive HTTP | Lost-ack / 4xx tests exercise **real** gate before `AllowlistHttpClient` |
+| Tenant | `test_l3_http_idempotency_key_isolated_per_tenant` — shared key, distinct ledger + effects per `state.tenant_id` |
 
 ---
 
@@ -79,7 +98,7 @@ L3-R1 **extends** Batch E; does **not** invalidate A–E acceptance.
 | TL11 | MCP lifecycle | MCP host + transport | FastMCP subprocess | D logical + **L3-R1 partial** | **VALIDATION REQUIRED** | Full 15-scenario matrix via host ToolRuntime bridge | L3-R1 MCP (6 scenarios) | FRZ-REL-06 scoped | Host MCP E2E qual |
 | TL12 | HTTP lifecycle | `http.request` | Transport vs 4xx | D + E + **L3-R1 E2E** | **VALIDATION REQUIRED** (improved) | Lost-ack now includes invoker UNKNOWN | L3-R1 + Batch E | FRZ-REL-06 scoped | — |
 | TL13 | Real-infra failures | Cross-provider | Compose + TCP | E + **L3-R1** | **VALIDATION REQUIRED** | Docker PG + remote browser | L2 **95/95** | FRZ-REG scoped | Operator Docker |
-| TL14 | No bypass | Single invoker | U5 gates | A–D | **ALREADY PROVEN** | — | Arch gates | FRZ-BND-03 scoped | — |
+| TL14 | No bypass | Single invoker | U5 gates | A–D + **L3-R1 real gate** | **ALREADY PROVEN** (scoped) | — | L3-R1 + Arch gates | FRZ-BND-03 scoped | — |
 | TL15 | Zero blockers | Parent rollup | EC1–15 | — | **BLOCKED** | TL8, TL7 heartbeat, TL10/13 PG, TL11 host bridge | — | — | Parent architecture |
 
 ---
@@ -109,10 +128,13 @@ L3-R1 **extends** Batch E; does **not** invalidate A–E acceptance.
 
 ## 6. HTTP lost-ack end-to-end (RuntimeToolInvoker)
 
-**Path:** `RuntimeToolInvoker` → `RegistryToolExecutor` → `http.request` → `AllowlistHttpClient` → local `ThreadingHTTPServer` with effect oracle.
+**Path:** `RuntimeToolInvoker` → **real** `require_meaningful_side_effect_authorization` → `RegistryToolExecutor` → `http.request` → `AllowlistHttpClient` → local `ThreadingHTTPServer` with effect oracle.
 
 | Check | Result |
 | --- | --- |
+| Unauthorized (no bundle) — no HTTP effect | **PASS** — `test_l3_governance_unauthorized_http_zero_physical_effects` |
+| Non-enforcing (`audit_only`) — no HTTP effect | **PASS** — `test_l3_governance_audit_only_http_zero_physical_effects` |
+| Per-tenant idempotency isolation | **PASS** — `test_l3_http_idempotency_key_isolated_per_tenant` |
 | POST accepted, effect recorded, connection dropped | **PASS** — `test_l3_http_lost_ack_e2e_invoker_uncertain_single_effect` |
 | `ToolEffectCertainty.UNCERTAIN` + ledger `UNCERTAIN` | **PASS** |
 | Re-invoke blocked (`InvocationUncertaintyError`) | **PASS** |
@@ -156,7 +178,7 @@ Full 24-scenario §3.0.5 matrix: see Batch E §5 with L3-R1 deltas in §5–6 ab
 
 ## 10. Validation
 
-**L1:** `tests/unit/tools/providers/test_tool_life_x_l3_r1_consolidated_qualification.py` — **8/8** @ `.tmp/session/TOOL-LIFE-X-L3-R1/l1-l3-r1.log`
+**L1:** `tests/unit/tools/providers/test_tool_life_x_l3_r1_consolidated_qualification.py` — **11/11** @ `.tmp/session/TOOL-LIFE-X-L3-R1/l1-l3-r1.log` (post R1-F01 remediation)
 
 **L2 (consolidated, no full A–E re-run beyond included modules):**
 
@@ -174,7 +196,9 @@ uv run --extra mcp pytest -p no:xdist \
 
 | Passed | Failed | Log |
 | --- | --- | --- |
-| **95** | **0** | `.tmp/session/TOOL-LIFE-X-L3-R1/l2-consolidated.log` |
+| **98** | **0** | `.tmp/session/TOOL-LIFE-X-L3-R1/l2-consolidated.log` |
+
+**Note:** One initial L2 run reported **97/98** (Batch D redirect deadline timing flake on Windows); immediate rerun **98/98** — log reflects passing rerun @ implementation SHA.
 
 ---
 
@@ -185,8 +209,8 @@ uv run --extra mcp pytest -p no:xdist \
 | FRZ-BND-03 | **Scoped PASS** — invoker-only HTTP E2E |
 | FRZ-REL-01..11 | **Scoped partial** — TL8/10/11/13 gaps |
 | FRZ-REC | **Scoped PASS (fail-closed)** — TL8 positive path denied |
-| FRZ-GOV | **Reuse Batch B** |
-| FRZ-TEN | **No new cross-tenant surfaces** in L3-R1 tests |
+| FRZ-GOV | **Scoped PASS** — L3-R1 HTTP E2E uses real `require_meaningful_side_effect_authorization` + Batch B module in L2 |
+| FRZ-TEN | **Scoped PASS** — `test_l3_http_idempotency_key_isolated_per_tenant` + Batch B tenant tests in L2 |
 | Global FRZ PASS | **0** |
 
 ---
@@ -204,7 +228,7 @@ evidence/trace isolation: local-only fixtures
 async/recovery continuity: not exercised in L3-R1
 cross-tenant path: none introduced
 fail-closed behavior: InvocationUncertaintyError on UNCERTAIN replay
-adversarial evidence: reuse Batch B tenant tests (not re-run)
+adversarial evidence: L3-R1 per-tenant HTTP idempotency + Batch B tenant tests (L2)
 result: PASS scoped — no new leakage path
 ```
 
@@ -226,7 +250,7 @@ result: PASS scoped — no new leakage path
 
 | Question | Answer |
 | --- | --- |
-| **L3-R1 independent audit** | **READY (SCOPED)** — L2 **95/95** |
+| **L3-R1 independent audit** | **READY (SCOPED)** — L2 **98/98** @ remediation publication commit |
 | **`TOOL-LIFE-X` parent formal closure** | **NOT READY** |
 | **`DIST-SCALE-X`** | **Blocked** on parent close |
 

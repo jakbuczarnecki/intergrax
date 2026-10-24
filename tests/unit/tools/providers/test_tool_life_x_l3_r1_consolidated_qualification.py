@@ -13,7 +13,6 @@ import time
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from testing_support.builder import (
@@ -34,6 +33,10 @@ from intergrax.contracts.tool_execution_outcome import ToolEffectCertainty
 from intergrax.integrations.providers.http_client.allowlist.client import AllowlistHttpClient
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+from intergrax.runtime.policy.side_effect_authorization_errors import (
+    MeaningfulSideEffectAuthorizationRequiredError,
+    SideEffectAuthorizationFailureReason,
+)
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
     IdempotencyPreEffectCoordinator,
 )
@@ -64,14 +67,35 @@ class AllowAllScopePolicy:
         return True
 
 
+def _enforce_allow_bundle() -> object:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="l3-r1.allow")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    return wire_policy_bundle(env)
+
+
+def _audit_only_bundle() -> object:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="l3-r1.audit")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="audit_only",
+    )
+    return wire_policy_bundle(env)
+
+
+_TENANT_A = "tenant_l3_a"
+_TENANT_B = "tenant_l3_b"
+
+
 class _InvokeState:
-    def __init__(self, *, tenant_id: str = "tenant_test") -> None:
-        env = ApplicationEnvironmentProfile.lab_defaults(profile_id="l3-r1.allow")
-        env.policy_rules = PolicyRulesProfile(
-            inline_rules=[],
-            policy_enforcement_mode="enforce",
-        )
-        bundle = wire_policy_bundle(env)
+    def __init__(
+        self,
+        *,
+        tenant_id: str = "tenant_test",
+        policy_bundle: object | None = _enforce_allow_bundle(),
+    ) -> None:
         self.run_id = _L3_RUN_ID
         self._tenant_id = tenant_id
         self.request = type("Req", (), {"metadata": {}})()
@@ -79,7 +103,7 @@ class _InvokeState:
         self._context = type(
             "Ctx",
             (),
-            {"config": type("Cfg", (), {"policy_bundle": bundle, "production_mode": False})()},
+            {"config": type("Cfg", (), {"policy_bundle": policy_bundle, "production_mode": False})()},
         )()
 
     @property
@@ -105,10 +129,7 @@ def _governed_invoke_scope(*, governance_tenant_id: str = "tenant_test"):
         governance_tenant_id=governance_tenant_id,
         governance_principal_id="principal-tool-life-x-l3-r1",
     ):
-        with patch(
-            "intergrax.runtime.nexus.tools.invoker.require_meaningful_side_effect_authorization",
-        ):
-            yield
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -173,6 +194,113 @@ async def _mcp_call_tool(base_url: str, tool: str, arguments: dict, *, timeout_s
                 return await session.call_tool(tool, arguments)
 
     return await asyncio.wait_for(_run(), timeout=timeout_s)
+
+
+def test_l3_governance_unauthorized_http_zero_physical_effects() -> None:
+    effects: list[str] = []
+
+    def record_post(handler: BaseHTTPRequestHandler) -> None:
+        length = int(handler.headers.get("Content-Length", "0"))
+        body = handler.rfile.read(length) if length else b""
+        effects.append(body.decode("utf-8"))
+        handler.send_response(200)
+        handler.end_headers()
+
+    with _local_fault_server(record_post) as (base, hosts):
+        client = _allowlist_client(hosts)
+        invoker, _store = _http_invoker(client)
+        state = _InvokeState(policy_bundle=None)
+        request = ToolExecutionRequest(
+            run_id=_L3_RUN_ID,
+            step_id="1",
+            tool_id=HTTP_REQUEST_TOOL_ID,
+            input=HttpRequestInput(
+                url=f"{base}/charge",
+                method="POST",
+                body=json.dumps({"amount": 1}),
+                timeout_s=5.0,
+            ),
+            idempotency_key="l3-gov-deny-no-bundle",
+        )
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert exc.value.reason is SideEffectAuthorizationFailureReason.NOT_CONFIGURED
+    assert len(effects) == 0
+
+
+def test_l3_governance_audit_only_http_zero_physical_effects() -> None:
+    effects: list[str] = []
+
+    def record_post(handler: BaseHTTPRequestHandler) -> None:
+        length = int(handler.headers.get("Content-Length", "0"))
+        body = handler.rfile.read(length) if length else b""
+        effects.append(body.decode("utf-8"))
+        handler.send_response(200)
+        handler.end_headers()
+
+    with _local_fault_server(record_post) as (base, hosts):
+        client = _allowlist_client(hosts)
+        invoker, _store = _http_invoker(client)
+        state = _InvokeState(policy_bundle=_audit_only_bundle())
+        request = ToolExecutionRequest(
+            run_id=_L3_RUN_ID,
+            step_id="1",
+            tool_id=HTTP_REQUEST_TOOL_ID,
+            input=HttpRequestInput(
+                url=f"{base}/charge",
+                method="POST",
+                body="{}",
+                timeout_s=5.0,
+            ),
+            idempotency_key="l3-gov-deny-audit-only",
+        )
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert exc.value.reason is SideEffectAuthorizationFailureReason.NON_ENFORCING_MODE
+    assert len(effects) == 0
+
+
+def test_l3_http_idempotency_key_isolated_per_tenant() -> None:
+    effects: dict[str, int] = {"a": 0, "b": 0}
+
+    def record_tenant(handler: BaseHTTPRequestHandler) -> None:
+        length = int(handler.headers.get("Content-Length", "0"))
+        body = handler.rfile.read(length) if length else b""
+        payload = json.loads(body.decode("utf-8"))
+        effects[payload["tenant"]] += 1
+        handler.send_response(200)
+        handler.end_headers()
+        handler.wfile.write(b"ok")
+
+    with _local_fault_server(record_tenant) as (base, hosts):
+        client = _allowlist_client(hosts)
+        invoker, store = _http_invoker(client)
+        shared_key = "l3-shared-tenant-key"
+        for tenant, tag in ((_TENANT_A, "a"), (_TENANT_B, "b")):
+            with _governed_invoke_scope(governance_tenant_id=tenant):
+                state = _InvokeState(tenant_id=tenant)
+                request = ToolExecutionRequest(
+                    run_id=_L3_RUN_ID,
+                    step_id="1",
+                    tool_id=HTTP_REQUEST_TOOL_ID,
+                    input=HttpRequestInput(
+                        url=f"{base}/charge",
+                        method="POST",
+                        body=json.dumps({"tenant": tag}),
+                        timeout_s=5.0,
+                    ),
+                    idempotency_key=shared_key,
+                )
+                result = invoker.invoke(state=state, agent_id="agent", request=request)
+                assert result.success is True
+
+    assert effects["a"] == 1
+    assert effects["b"] == 1
+    assert store.get_status(_TENANT_A, shared_key) == InvocationStatus.COMPLETED
+    assert store.get_status(_TENANT_B, shared_key) == InvocationStatus.COMPLETED
+    assert store.get_status("tenant_test", shared_key) is None
 
 
 def test_l3_http_lost_ack_e2e_invoker_uncertain_single_effect() -> None:
