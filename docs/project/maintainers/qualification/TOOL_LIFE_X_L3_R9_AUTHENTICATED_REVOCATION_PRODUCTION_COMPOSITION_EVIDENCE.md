@@ -72,4 +72,4 @@ Logs: `.tmp/session/TOOL-LIFE-X-L3-R9/`
 | FRZ-REL-03/04/05 | VALIDATION REQUIRED — post-remediation L2 |
 | FRZ-SEC / FRZ-GOV | PASS — forged digest/MAC rejected; unsafe admission removed |
 
-FINAL_COMMIT: `d8b2f3b60` (publication SHA — verify on GitHub `development`)
+FINAL_COMMIT: `4e500a7b8` (publication SHA — verify on GitHub `development`)
