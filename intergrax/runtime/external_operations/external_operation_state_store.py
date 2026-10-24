@@ -15,6 +15,7 @@ from intergrax.contracts.certified_owner_loss_evidence import (
     CertifiedOwnerLossEvidenceRejectedError,
     CertifiedOwnerLossIssuerNotConfiguredError,
     StagedCertifiedOwnerLossEvidenceV1,
+    compute_certified_owner_loss_evidence_digest,
 )
 from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationIntentState,
@@ -64,6 +65,8 @@ class ExternalOperationStateUpdate:
     staged_certified_owner_loss: StagedCertifiedOwnerLossEvidenceV1 | None = None
     clear_staged_certified_owner_loss: bool = False
     consumed_certified_loss_evidence_ids: frozenset[str] | None = None
+    worker_instance_id: str | None = None
+    worker_ownership_epoch: int | None = None
 
 
 def _validate_tenant_id(tenant_id: str) -> str:
@@ -92,6 +95,27 @@ def _update_touches_certification_authority(
         or update.clear_staged_certified_owner_loss
         or update.consumed_certified_loss_evidence_ids is not None
     )
+
+
+def _update_touches_worker_execution_ownership(
+    update: ExternalOperationStateUpdate,
+) -> bool:
+    return (
+        update.worker_instance_id is not None
+        or update.worker_ownership_epoch is not None
+    )
+
+
+def _validate_evidence_digest(evidence: object) -> None:
+    from intergrax.contracts.certified_owner_loss_evidence import (
+        CertifiedOwnerLossEvidenceV1,
+    )
+
+    if type(evidence) is not CertifiedOwnerLossEvidenceV1:
+        raise CertifiedOwnerLossEvidenceRejectedError("invalid evidence type")
+    expected = compute_certified_owner_loss_evidence_digest(evidence)
+    if evidence.evidence_digest != expected:
+        raise CertifiedOwnerLossEvidenceRejectedError("evidence digest mismatch")
 
 
 @runtime_checkable
@@ -140,6 +164,17 @@ class ExternalOperationStateStore(Protocol):
         *,
         expected_revision: int,
         evidence_id: str,
+    ) -> ExternalOperationState:
+        ...
+
+    def bind_worker_execution_ownership(
+        self,
+        tenant_id: str,
+        operation_id: str,
+        *,
+        expected_revision: int,
+        worker_instance_id: str,
+        worker_ownership_epoch: int,
     ) -> ExternalOperationState:
         ...
 
@@ -218,6 +253,10 @@ class InMemoryExternalOperationStateStore:
                 "certification authority fields require stage_certified_owner_loss_evidence "
                 "or apply_certified_owner_loss",
             )
+        if _update_touches_worker_execution_ownership(update):
+            raise CertifiedOwnerLossAuthorityBypassError(
+                "worker execution ownership requires bind_worker_execution_ownership",
+            )
         return self._compare_and_set_locked(
             tenant_id,
             operation_id,
@@ -281,6 +320,12 @@ class InMemoryExternalOperationStateStore:
             consumed = current.consumed_certified_loss_evidence_ids
             if update.consumed_certified_loss_evidence_ids is not None:
                 consumed = update.consumed_certified_loss_evidence_ids
+            worker_id = current.worker_instance_id
+            if update.worker_instance_id is not None:
+                worker_id = update.worker_instance_id
+            worker_epoch = current.worker_ownership_epoch
+            if update.worker_ownership_epoch is not None:
+                worker_epoch = update.worker_ownership_epoch
             next_record = ExternalOperationState(
                 operation_id=operation_id,
                 tenant_id=current.tenant_id,
@@ -293,6 +338,8 @@ class InMemoryExternalOperationStateStore:
                 ownership_epoch_fence=fence,
                 staged_certified_owner_loss=staged,
                 consumed_certified_loss_evidence_ids=consumed,
+                worker_instance_id=worker_id,
+                worker_ownership_epoch=worker_epoch,
             )
             self._records[key] = next_record
             return next_record
@@ -338,6 +385,7 @@ class InMemoryExternalOperationStateStore:
             raise CertifiedOwnerLossEvidenceRejectedError("ownership epoch owner mismatch")
         if evidence.issuer_id not in binding.allowed_issuer_ids:
             raise CertifiedOwnerLossEvidenceRejectedError("issuer not allowlisted")
+        _validate_evidence_digest(evidence)
         occupied = current.staged_certified_owner_loss
         if occupied is not None and occupied.evidence.evidence_id != evidence.evidence_id:
             raise CertifiedOwnerLossEvidenceRejectedError("staged slot occupied")
@@ -391,6 +439,7 @@ class InMemoryExternalOperationStateStore:
             )
         if evidence.issuer_id not in binding.allowed_issuer_ids:
             raise CertifiedOwnerLossEvidenceRejectedError("issuer not allowlisted")
+        _validate_evidence_digest(evidence)
         next_fence = (current.ownership_epoch_fence or 0) + 1
         if evidence.monotonic_fence < next_fence:
             raise CertifiedOwnerLossEvidenceRejectedError("monotonic fence regression")
@@ -408,5 +457,49 @@ class InMemoryExternalOperationStateStore:
                 clear_staged_certified_owner_loss=True,
                 consumed_certified_loss_evidence_ids=consumed,
                 clear_owner_token=True,
+            ),
+        )
+
+    def bind_worker_execution_ownership(
+        self,
+        tenant_id: str,
+        operation_id: str,
+        *,
+        expected_revision: int,
+        worker_instance_id: str,
+        worker_ownership_epoch: int,
+    ) -> ExternalOperationState:
+        if type(worker_instance_id) is not str or not worker_instance_id.strip():
+            raise ValueError("worker_instance_id must be a non-empty str")
+        if type(worker_ownership_epoch) is not int or worker_ownership_epoch < 0:
+            raise ValueError("worker_ownership_epoch must be int >= 0")
+        current = self._get_scoped(tenant_id, operation_id)
+        if current is None:
+            raise ExternalOperationNotFoundError(operation_id)
+        if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
+            raise CertifiedOwnerLossEvidenceRejectedError(
+                "worker binding requires physical RUNNING",
+            )
+        if (
+            current.worker_instance_id is not None
+            and current.worker_instance_id != worker_instance_id
+        ):
+            raise CertifiedOwnerLossEvidenceRejectedError(
+                "worker_instance_id already bound to a different worker",
+            )
+        if (
+            current.worker_ownership_epoch is not None
+            and current.worker_ownership_epoch != worker_ownership_epoch
+        ):
+            raise CertifiedOwnerLossEvidenceRejectedError(
+                "worker_ownership_epoch already bound",
+            )
+        return self._compare_and_set_locked(
+            tenant_id,
+            operation_id,
+            expected_revision=expected_revision,
+            update=ExternalOperationStateUpdate(
+                worker_instance_id=worker_instance_id,
+                worker_ownership_epoch=worker_ownership_epoch,
             ),
         )

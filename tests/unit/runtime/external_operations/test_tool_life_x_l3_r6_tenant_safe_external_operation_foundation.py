@@ -17,6 +17,7 @@ from intergrax.contracts.certified_owner_loss_evidence import (
     CompositionCertifiedOwnerLossIssuerBinding,
     ExternalOperationOwnershipEpochV1,
     StagedCertifiedOwnerLossEvidenceV1,
+    compute_certified_owner_loss_evidence_digest,
 )
 from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationIntentState,
@@ -66,7 +67,7 @@ def _evidence_for_running(
     evidence_id: str = "ev-authorized",
     fence: int = 1,
 ) -> CertifiedOwnerLossEvidenceV1:
-    return CertifiedOwnerLossEvidenceV1(
+    draft = CertifiedOwnerLossEvidenceV1(
         evidence_id=evidence_id,
         epoch=ExternalOperationOwnershipEpochV1(
             operation_id=_OP,
@@ -78,7 +79,12 @@ def _evidence_for_running(
         issued_at=datetime.now(timezone.utc),
         monotonic_fence=fence,
         loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
-        evidence_digest="aabbcc",
+        evidence_digest="pending",
+    )
+    return draft.model_copy(
+        update={
+            "evidence_digest": compute_certified_owner_loss_evidence_digest(draft),
+        },
     )
 
 

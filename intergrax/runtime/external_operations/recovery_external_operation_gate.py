@@ -20,6 +20,10 @@ class ExternalOperationRecoveryBlockedError(RuntimeError):
     """Recovery cannot proceed while external operation physical state is UNKNOWN."""
 
 
+class ExternalOperationReconciliationAdmissionError(RuntimeError):
+    """UNKNOWN external operation cannot enter reconciliation admission."""
+
+
 def prepare_external_operations_for_recovery(
     store: ExternalOperationStateStore,
     *,
@@ -41,3 +45,21 @@ def prepare_external_operations_for_recovery(
             raise ExternalOperationRecoveryBlockedError(
                 f"external operation {operation_id!r} still RUNNING",
             )
+
+
+def admit_unknown_external_operation_for_reconciliation(
+    store: ExternalOperationStateStore,
+    *,
+    tenant_id: str,
+    operation_id: str,
+) -> None:
+    """Certified loss must have fenced RUNNING→UNKNOWN before reconciliation admission."""
+    record = store.load(tenant_id, operation_id)
+    if record is None:
+        raise ExternalOperationReconciliationAdmissionError(
+            f"external operation {operation_id!r} not found",
+        )
+    if record.physical_state is not ExternalOperationPhysicalState.UNKNOWN:
+        raise ExternalOperationReconciliationAdmissionError(
+            f"external operation {operation_id!r} is not UNKNOWN for reconciliation",
+        )

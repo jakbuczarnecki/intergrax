@@ -57,6 +57,8 @@ class ExternalOperationState:
     consumed_certified_loss_evidence_ids: frozenset[str] = field(
         default_factory=frozenset,
     )
+    worker_instance_id: str | None = None
+    worker_ownership_epoch: int | None = None
 
 
 class ExternalOperationCancellationError(RuntimeError):

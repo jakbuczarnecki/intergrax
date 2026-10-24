@@ -288,16 +288,23 @@ def recover_running_operation_after_certified_owner_loss(
     tenant_id: str,
     operation_id: str,
     expected_revision: int,
+    evidence_id: str | None = None,
 ) -> ExternalOperationState:
-    """Fail closed until canonical certified owner-loss authority is wired (TOOL-LIFE-X C-F04)."""
+    """Apply staged certified owner-loss evidence (RUNNING→UNKNOWN) when configured."""
     current = store.load(tenant_id, operation_id)
     if current is None:
         raise ExternalOperationNotFoundError(operation_id)
     if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
         return current
-    del expected_revision
-    raise ExternalOperationCertifiedOwnerLossRequiredError(
-        f"certified owner-loss evidence required for RUNNING→UNKNOWN on {operation_id!r}",
+    if evidence_id is None:
+        raise ExternalOperationCertifiedOwnerLossRequiredError(
+            f"certified owner-loss evidence required for RUNNING→UNKNOWN on {operation_id!r}",
+        )
+    return store.apply_certified_owner_loss(
+        tenant_id,
+        operation_id,
+        expected_revision=expected_revision,
+        evidence_id=evidence_id,
     )
 
 
