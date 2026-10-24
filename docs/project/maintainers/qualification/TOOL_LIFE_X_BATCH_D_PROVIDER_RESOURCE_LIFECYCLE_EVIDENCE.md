@@ -2,11 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| **Task** | `TOOL-LIFE-X-BATCH-D` (independent audit remediation D-F06–D-F10) |
+| **Task** | `TOOL-LIFE-X-BATCH-D` (independent audit remediation D-F06–D-F14) |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
-| **START_HEAD** | `ad0bd7c5dfbf508300b92b339c157d2fab7dc1a8` |
-| **FINAL_COMMIT** | `24a722a36765a2f503bed5b2436e20e7f820c934` |
-| **Test execution SHA** | `24a722a36765a2f503bed5b2436e20e7f820c934` |
+| **START_HEAD** | `801e770a9d2b04a1ee9a95d050914084ad3ed36f` |
+| **FINAL_COMMIT** | `ab333b37fc9be18f653ed6f27bc1a84c89cf79f4` |
+| **Test execution SHA** | `ab333b37fc9be18f653ed6f27bc1a84c89cf79f4` |
 | **Branch** | `development` |
 | **Origin** | `https://github.com/jakbuczarnecki/intergrax.git` |
 | **Disposition** | **`TOOL-LIFE-X BATCH D — READY FOR INDEPENDENT AUDIT`** |
@@ -27,50 +27,68 @@
 
 | ID | Root cause | Correction | Status |
 | --- | --- | --- | --- |
-| **D-F06** | Empty `BrowserAutomationNavigationTimeoutPort` made `isinstance` meaningless | Required `navigation_timeout_integration_enforced` on port; `navigation_timeout_enforced_for()` resolves integration `_client` delegation; Playwright/Selenium return `True`; Firecrawl/HttpBrowser/remote wrappers unqualified | **CLOSED** (architecture); L3 remote termination VALIDATION REQUIRED |
-| **D-F07** | `follow_redirects=True` without per-hop allowlist | Manual redirect loop (`follow_redirects=False`); `_assert_host_allowed` on every hop; redirect limit; strip `Authorization`/`Cookie` on host change; 303/301/302 POST→GET per RFC | **CLOSED** (allowlisted client); L3 fault injection VALIDATION REQUIRED |
-| **D-F08** | Risk of mis-labeling post-`fetch_all` trim as physical bound | `physical_bounds_enforced=True` only on `RelationalStoreBoundedQueryPort`; fallback remains `False`; SQLite cursor `close()` in `finally` | **CLOSED** (architecture) |
-| **D-F09** | MCP list overflow returned `[]` | `emit_bounded_mcp_list` raises `McpPayloadByteLimitExceeded`; dict paths retain `{"error": "mcp_payload_byte_limit_exceeded"}` | **CLOSED** (logical MCP) |
-| **D-F10** | Integration facades broke timeout capability detection | `navigation_timeout_enforced_for` walks `_client`; contract tests for facade + incapable browser | **CLOSED** (regression tests) |
+| **D-F06** | Empty `BrowserAutomationNavigationTimeoutPort` made `isinstance` meaningless | Required `navigation_timeout_integration_enforced` on port; catalog clients Playwright/Selenium `True` | **CLOSED** (architecture); L3 remote termination VALIDATION REQUIRED |
+| **D-F07** | `follow_redirects=True` without per-hop allowlist | Manual redirect loop; per-hop `_assert_host_allowed` | **CLOSED**; extended by D-F11–D-F13 |
+| **D-F08** | Risk of mis-labeling post-`fetch_all` trim as physical bound | `physical_bounds_enforced=True` only on bounded port | **CLOSED** (architecture) |
+| **D-F09** | MCP list overflow returned `[]` | `McpPayloadByteLimitExceeded` / error dict | **CLOSED** (logical MCP) |
+| **D-F10** | Integration facades broke timeout capability detection | **SUPERSEDED** by D-F14 (no `_client` walk) | **CLOSED** via D-F14 |
+
+## Independent audit findings D-F11–D-F14 (Batch D transport closure)
+
+| ID | Root cause | Correction | Status |
+| --- | --- | --- | --- |
+| **D-F11** | `response.read()` on redirect in bounded stream branch materialized untrusted bodies | Redirect hops use header-only `Location`; stream context closes without full body read; final response still bounded | **CLOSED** (architecture) |
+| **D-F12** | `dict.pop("Authorization")` / `Cookie` case-sensitive | `strip_cross_authority_credentials` drops all header names whose lowercase form is `authorization` or `cookie`; authority = scheme+host+port | **CLOSED** (architecture) |
+| **D-F13** | Per-hop `httpx.Client(timeout=…)` reset budget each redirect | `operation_deadline_monotonic` + `remaining_hop_timeout_s`; `resolve_active_provider_timeout_seconds` at budget start | **CLOSED** (architecture); L3 fault VALIDATION REQUIRED |
+| **D-F14** | `navigation_timeout_enforced_for` used `getattr(..., "_client")` | Integration facades expose `navigation_timeout_integration_enforced` delegating via public `client`; resolver is port-only | **CLOSED** (architecture) |
 
 ## Provider capability matrix (navigation timeout)
 
 | Provider / client | Typed port | `navigation_timeout_integration_enforced` | Physical enforcement | Output claim |
 | --- | --- | --- | --- | --- |
-| `PlaywrightBrowserAutomation` | yes | `True` | `page.goto(..., timeout=ms)` | `navigation_timeout_enforced` via tool service |
+| `PlaywrightBrowserAutomation` | yes | `True` | `page.goto(..., timeout=ms)` | tool service |
 | `SeleniumBrowserAutomation` | yes | `True` | `set_page_load_timeout` + `get` | same |
 | `FirecrawlBrowserAutomation` | no | n/a | ignores param | `False` |
-| `HttpBrowserAutomation` (Apify/Browserbase) | no | n/a | remote API | `False` unless delegated client is port+True |
-| `*BrowserAutomationIntegration` facade | via `_client` | delegated | delegated | delegated |
-| Playwright/Selenium integration wrappers | delegated | from catalog client | same | same |
+| `HttpBrowserAutomation` (Apify/Browserbase) | no | n/a | remote API | `False` unless catalog client is port+True |
+| `*BrowserAutomationIntegration` facade | yes (property) | `navigation_timeout_enforced_for_catalog_client(self.client)` | delegated | delegated |
 
 ## HTTP redirect authority matrix
 
 | Check | Owner | Behavior |
 | --- | --- | --- |
-| Initial host | `AllowlistHttpClient._assert_host_allowed` | fail closed `host_not_allowed` / `scheme_not_allowed` |
-| Each redirect target | same | before network dispatch |
-| Redirect loop | `max_redirects` (default 10) | `redirect_limit_exceeded` |
-| Cross-host credentials | `_advance_redirect` | drops `Authorization`, `Cookie` |
-| Response byte ceiling | `accumulate_response_bytes` | unchanged on final response |
+| Initial host | `AllowlistHttpClient._assert_host_allowed` | fail closed |
+| Each redirect target | same | before dispatch |
+| Redirect loop / max | `max_redirects` | `redirect_limit_exceeded` |
+| Cross-authority credentials | `strip_cross_authority_credentials` | case-insensitive `authorization`/`cookie`; scheme/port/host change |
+| Redirect body | stream branch | no full read on redirect hop |
+| Operation deadline | `redirect_policy.operation_deadline_monotonic` | shared across hops; `http_operation_deadline_exceeded` |
+| Final response bytes | `accumulate_response_bytes` | unchanged |
 
-## SQL physical-bound qualification matrix
+## Negative-case matrix (D-F11–D-F14 scope)
 
-| Implementation | `RelationalStoreBoundedQueryPort` | `physical_bounds_enforced` | Notes |
+| # | Scenario | Expected | Test evidence |
 | --- | --- | --- | --- |
-| SQLite `_SQLiteRelationalStore` | yes | `True` via adapter | cursor incremental fetch + `close()` |
-| In-memory test store | yes | `True` | unit proof |
-| Legacy `fetch_all` only stores | no | `False` | output bounds only via `accumulate_bounded_sql_rows` |
+| 1–5 | Direct allow/deny, relative/absolute redirect, forbidden dest | allowlist + PermissionError | prior D-F07 tests |
+| 6 | Large redirect body | not consumed | `test_allowlist_http_redirect_large_body_not_materialized_on_hop` |
+| 7–9 | No body / loop / max redirects | follow existing limits | D-F07 + allowlist tests |
+| 10 | Multi-hop deadline | second hop blocked | `test_allowlist_http_redirect_operation_deadline_shared_across_hops` |
+| 11–12 | Timeout hop 1 / later | httpx or operation deadline | deadline test + Batch A hierarchy |
+| 13–15 | POST redirect / 303 / 307 | method rules in `_advance_redirect` | architecture (D-F07) |
+| 16 | Lost ack mutating | UNKNOWN / re-raise | Batch B tests (L2) |
+| 17–20 | Credential header casings | stripped cross-authority | lowercase/mixed-case + host-change tests |
+| 21–23 | Cross-host / scheme / port | credential isolation | port/scheme test + host-change test |
+| 24–30 | Location edge / byte limits / UTF-8 / disconnect | bounded read + fail closed | D-F02 tests + allowlist |
+| 31–36 | Browser capable/incapable/wrapper/timeout | truthful output | existing Batch D browser tests |
+| 37 | No private introspection | port-only resolver | `test_navigation_timeout_resolver_does_not_introspect_private_client` |
+| 38 | Single lifecycle owner | RuntimeToolInvoker | Batch A/B/C L2 |
+| 39–40 | B/D regression | no change to retry/UNKNOWN/SQL/MCP | L2 consolidated run |
 
-## MCP outcome matrix
+## SQL / MCP (unchanged this package)
 
-| Outcome | Mechanism | Test |
+| Area | Owner | Status |
 | --- | --- | --- |
-| Empty catalog | `[]` from registry | (registry unit tests) |
-| Bounded list OK | `emit_bounded_mcp_list` | within-limit serialization tests |
-| List overflow | `McpPayloadByteLimitExceeded` | `test_mcp_list_overflow_raises_not_empty_list` |
-| Dict overflow | `bound_mcp_structured_result` error dict | `test_mcp_invocation_structured_bound_returns_error_not_invalid_json` |
-| Describe overflow | error dict in `describe_catalog_tool` | catalog tool handler |
+| SQL physical bounds | `RelationalStoreBoundedQueryPort` / SQLite adapter | D-F08 **CLOSED**; L3 DB **VALIDATION REQUIRED** |
+| MCP overflow | `emit_bounded_mcp_list` / `bound_mcp_structured_result` | D-F09 **CLOSED**; L3 MCP **VALIDATION REQUIRED** |
 
 ## Validation
 
@@ -84,7 +102,9 @@ uv run pytest -p no:xdist \
 
 | Passed | Failed | Log |
 | --- | --- | --- |
-| **22** | **0** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l1-batch-d.log` |
+| **27** | **0** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l1-batch-d.log` |
+
+Historical L1 **22/22** at `801e770a` (pre D-F11–D-F14).
 
 ### L2
 
@@ -100,9 +120,9 @@ uv run pytest -p no:xdist \
 
 | Passed | Failed | Log |
 | --- | --- | --- |
-| **60** | **0** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l2-batch-d.log` |
+| **65** | **0** | `.tmp/session/TOOL-LIFE-X-BATCH-D/l2-batch-d.log` |
 
-Historical L2 **53/53** at `ad0bd7c5` (pre D-F06–D-F10); prior publication **50/50** at `367f42cb1` remains archival.
+Historical L2 **60/60** at `801e770a` (pre D-F11–D-F14); **53/53** at `ad0bd7c5`; **50/50** at `367f42cb1` archival.
 
 ## TL1–TL15 (Batch D)
 
@@ -111,9 +131,9 @@ Historical L2 **53/53** at `ad0bd7c5` (pre D-F06–D-F10); prior publication **5
 | TL1–TL2 | VALIDATION REQUIRED (Batch A evidence) |
 | TL3 | BLOCKED (L3 physical cancel) |
 | TL4–TL9 | ALREADY PROVEN / reuse A/B/C |
-| **TL10** | VALIDATION REQUIRED — SQL physical bounds when port present; L3 DB |
-| **TL11** | VALIDATION REQUIRED — MCP logical bounds + overflow errors; L3 live MCP |
-| **TL12** | VALIDATION REQUIRED — HTTP transport + redirect allowlist; L3 fault |
+| **TL10** | VALIDATION REQUIRED — SQL physical bounds; L3 DB |
+| **TL11** | VALIDATION REQUIRED — MCP logical bounds; L3 live MCP |
+| **TL12** | VALIDATION REQUIRED — HTTP redirect/resource/deadline; L3 fault |
 | TL13 | BLOCKED |
 | TL14 | ALREADY PROVEN |
 | TL15 | BLOCKED |
@@ -122,9 +142,9 @@ Historical L2 **53/53** at `ad0bd7c5` (pre D-F06–D-F10); prior publication **5
 
 | ID | Finding |
 | --- | --- |
-| FRZ-BND-03 | No shadow invoker / MCP lifecycle manager |
+| FRZ-BND-03 | No shadow invoker; redirect authority remains `AllowlistHttpClient`; browser capability via typed port only |
 | FRZ-REL-10 | SQL bounds at execution port when bounded port configured |
-| FRZ-REL-06 | HTTP physical read + redirect allowlist on `AllowlistHttpClient`; MCP/browser physical **0** PASS |
+| FRZ-REL-06 | HTTP physical read + redirect allowlist + operation deadline on `AllowlistHttpClient` |
 | ECAP-P4 | Global FRZ PASS **0** |
 
 ## L3 dependencies (unchanged)

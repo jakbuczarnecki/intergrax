@@ -22,22 +22,26 @@ class BrowserAutomationNavigationTimeoutPort(Protocol):
         """Whether ``navigation_timeout_s`` is enforced for navigation on this integration."""
 
 
+def navigation_timeout_enforced_for_catalog_client(
+    client: BrowserAutomation | None,
+) -> bool:
+    """Positive capability from a catalog ``BrowserAutomation`` client (public delegation)."""
+    if client is None:
+        return False
+    if isinstance(client, BrowserAutomationNavigationTimeoutPort):
+        return client.navigation_timeout_integration_enforced
+    return False
+
+
 def navigation_timeout_enforced_for(browser: BrowserAutomation) -> bool:
-    """Resolve timeout enforcement across integration facades and catalog clients."""
-    seen: set[int] = set()
-    current: object = browser
-    while current is not None and id(current) not in seen:
-        seen.add(id(current))
-        if isinstance(current, BrowserAutomationNavigationTimeoutPort):
-            return current.navigation_timeout_integration_enforced
-        inner = getattr(current, "_client", None)
-        if inner is None or inner is current:
-            break
-        current = inner
+    """Resolve timeout enforcement via sanctioned ``BrowserAutomationNavigationTimeoutPort``."""
+    if isinstance(browser, BrowserAutomationNavigationTimeoutPort):
+        return browser.navigation_timeout_integration_enforced
     return False
 
 
 __all__ = [
     "BrowserAutomationNavigationTimeoutPort",
     "navigation_timeout_enforced_for",
+    "navigation_timeout_enforced_for_catalog_client",
 ]

@@ -12,6 +12,11 @@ from intergrax.integrations.contracts.http_client import HttpResponse
 from intergrax.integrations.providers.http_client.allowlist.bounded_read import (
     accumulate_response_bytes,
 )
+from intergrax.integrations.providers.http_client.allowlist.redirect_policy import (
+    operation_deadline_monotonic,
+    remaining_hop_timeout_s,
+    strip_cross_authority_credentials,
+)
 
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 _DEFAULT_MAX_REDIRECTS = 10
@@ -46,9 +51,9 @@ class AllowlistHttpClient:
         max_response_bytes: int | None = None,
     ) -> HttpResponse:
         self._assert_host_allowed(url)
-        timeout = timeout_s if timeout_s > 0 else self._default_timeout_s
+        configured_timeout = timeout_s if timeout_s > 0 else self._default_timeout_s
+        operation_deadline = operation_deadline_monotonic(configured_timeout)
         with httpx.Client(
-            timeout=timeout,
             follow_redirects=False,
             transport=self._transport,
         ) as client:
@@ -59,6 +64,7 @@ class AllowlistHttpClient:
                 headers=dict(headers or {}),
                 body=body,
                 max_response_bytes=max_response_bytes,
+                operation_deadline=operation_deadline,
             )
 
     def _assert_host_allowed(self, url: str) -> None:
@@ -79,23 +85,24 @@ class AllowlistHttpClient:
         headers: dict[str, str],
         body: str,
         max_response_bytes: int | None,
+        operation_deadline: float,
     ) -> HttpResponse:
         current_url = url
         current_method = method
         current_body = body
         redirect_count = 0
-        prior_host = (urlparse(current_url).hostname or "").lower()
 
         while True:
+            hop_timeout = remaining_hop_timeout_s(operation_deadline)
             if max_response_bytes is not None and max_response_bytes > 0:
                 with client.stream(
                     current_method,
                     current_url,
                     headers=headers,
                     content=current_body.encode("utf-8") if current_body else None,
+                    timeout=hop_timeout,
                 ) as response:
                     if response.status_code in _REDIRECT_STATUSES:
-                        response.read()
                         location = response.headers.get("Location")
                         if location is None:
                             raise PermissionError("redirect_location_missing")
@@ -108,10 +115,8 @@ class AllowlistHttpClient:
                                 method=current_method,
                                 body=current_body,
                                 headers=headers,
-                                prior_host=prior_host,
                             )
                         )
-                        prior_host = (urlparse(current_url).hostname or "").lower()
                         continue
                     raw_body, truncated = accumulate_response_bytes(
                         response.iter_bytes(),
@@ -131,6 +136,7 @@ class AllowlistHttpClient:
                 current_url,
                 headers=headers,
                 content=current_body.encode("utf-8") if current_body else None,
+                timeout=hop_timeout,
             )
             if response.status_code in _REDIRECT_STATUSES:
                 location = response.headers.get("Location")
@@ -145,10 +151,8 @@ class AllowlistHttpClient:
                         method=current_method,
                         body=current_body,
                         headers=headers,
-                        prior_host=prior_host,
                     )
                 )
-                prior_host = (urlparse(current_url).hostname or "").lower()
                 continue
 
             return HttpResponse(
@@ -167,17 +171,16 @@ class AllowlistHttpClient:
         method: str,
         body: str,
         headers: dict[str, str],
-        prior_host: str,
     ) -> tuple[int, str, str, str, dict[str, str]]:
         if redirect_count >= self._max_redirects:
             raise PermissionError("redirect_limit_exceeded")
         next_url = urljoin(from_url, location.strip())
         self._assert_host_allowed(next_url)
-        next_host = (urlparse(next_url).hostname or "").lower()
-        next_headers = dict(headers)
-        if prior_host != next_host:
-            next_headers.pop("Authorization", None)
-            next_headers.pop("Cookie", None)
+        next_headers = strip_cross_authority_credentials(
+            headers,
+            from_url=from_url,
+            to_url=next_url,
+        )
         next_method = method
         next_body = body
         if status_code == 303 or (

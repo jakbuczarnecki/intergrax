@@ -17,6 +17,7 @@ from intergrax.integrations.contracts.configured_relational_store_execution impo
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.browser_automation_navigation import (
     BrowserAutomationNavigationTimeoutPort,
+    navigation_timeout_enforced_for,
 )
 from intergrax.integrations.contracts.http_client import HttpResponse
 from intergrax.integrations.contracts.relational_store_bounded_query import (
@@ -291,6 +292,128 @@ def test_allowlist_http_redirect_to_denied_host_blocked() -> None:
     )
     with pytest.raises(PermissionError, match="host_not_allowed"):
         client.request("GET", "https://example.com/start")
+
+
+def test_allowlist_http_redirect_large_body_not_materialized_on_hop() -> None:
+    redirect_body_chunks = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/redir":
+            def _body() -> object:
+                nonlocal redirect_body_chunks
+                redirect_body_chunks += 1
+                yield b"x" * 65536
+
+            return httpx.Response(
+                302,
+                headers={"Location": "/final"},
+                content=_body(),
+                request=request,
+            )
+        return httpx.Response(200, text="ok", request=request)
+
+    client = AllowlistHttpClient(
+        allowed_hosts=frozenset({"example.com"}),
+        transport=httpx.MockTransport(handler),
+    )
+    response = client.request(
+        "GET",
+        "https://example.com/redir",
+        max_response_bytes=4096,
+    )
+    assert response.status_code == 200
+    assert response.body == "ok"
+    assert redirect_body_chunks == 0
+
+
+def test_allowlist_http_redirect_strips_lowercase_and_mixed_case_credentials() -> None:
+    seen: list[dict[str, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(
+            {
+                "authorization": request.headers.get("authorization"),
+                "Authorization": request.headers.get("Authorization"),
+                "cookie": request.headers.get("cookie"),
+                "CoOkIe": request.headers.get("CoOkIe"),
+            }
+        )
+        if request.url.host == "example.com":
+            return httpx.Response(
+                302,
+                headers={"Location": "https://allowed.example.org/ok"},
+                request=request,
+            )
+        return httpx.Response(200, text="ok", request=request)
+
+    client = AllowlistHttpClient(
+        allowed_hosts=frozenset({"example.com", "allowed.example.org"}),
+        transport=httpx.MockTransport(handler),
+    )
+    client.request(
+        "GET",
+        "https://example.com/start",
+        headers={
+            "authorization": "Bearer secret",
+            "CoOkIe": "session=1",
+        },
+    )
+    assert seen[0]["authorization"] == "Bearer secret"
+    assert seen[1]["authorization"] is None
+    assert seen[1]["Authorization"] is None
+    assert seen[1]["cookie"] is None
+    assert seen[1]["CoOkIe"] is None
+
+
+def test_allowlist_http_redirect_strips_credentials_on_same_host_different_port() -> None:
+    seen_auth: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_auth.append(request.headers.get("Authorization"))
+        if request.url.scheme == "https":
+            return httpx.Response(
+                302,
+                headers={"Location": "http://example.com:8080/ok"},
+                request=request,
+            )
+        return httpx.Response(200, text="ok", request=request)
+
+    client = AllowlistHttpClient(
+        allowed_hosts=frozenset({"example.com"}),
+        transport=httpx.MockTransport(handler),
+    )
+    client.request(
+        "GET",
+        "https://example.com/start",
+        headers={"Authorization": "Bearer secret"},
+    )
+    assert seen_auth[0] == "Bearer secret"
+    assert seen_auth[1] is None
+
+
+def test_allowlist_http_redirect_operation_deadline_shared_across_hops() -> None:
+    import time
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/start":
+            time.sleep(0.06)
+            return httpx.Response(302, headers={"Location": "/final"}, request=request)
+        return httpx.Response(200, text="ok", request=request)
+
+    client = AllowlistHttpClient(
+        allowed_hosts=frozenset({"example.com"}),
+        transport=httpx.MockTransport(handler),
+    )
+    with pytest.raises(httpx.TimeoutException, match="http_operation_deadline_exceeded"):
+        client.request("GET", "https://example.com/start", timeout_s=0.05)
+
+
+def test_navigation_timeout_resolver_does_not_introspect_private_client() -> None:
+    import inspect
+
+    source = inspect.getsource(navigation_timeout_enforced_for)
+    assert "_client" not in source
+    assert "getattr" not in source
 
 
 def test_allowlist_http_redirect_strips_authorization_on_host_change() -> None:
