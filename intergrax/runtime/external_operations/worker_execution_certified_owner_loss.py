@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 
 from intergrax.autonomous_work.repository import WorkerInstanceRepository
 from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
-from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.certified_owner_loss_evidence import (
     CANONICAL_WORKER_EXECUTION_OWNER_LOSS_ISSUER_ID,
     CertifiedOwnerLossDirectIssuerInvocationError,
@@ -29,6 +28,11 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationPhysicalState,
     ExternalOperationState,
 )
+from intergrax.contracts.worker_execution_ownership_revocation import (
+    CertifiedOwnerLossWorkerOwnershipIndeterminateError,
+    WorkerExecutionOwnershipNotRevokedError,
+    WorkerExecutionOwnershipRevocationPort,
+)
 from intergrax.runtime.external_operations.certified_owner_loss_composition import (
     CertifiedOwnerLossComposition,
     _replace_certified_owner_loss_composition,
@@ -37,15 +41,8 @@ from intergrax.runtime.external_operations.certified_owner_loss_composition impo
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
 )
-
-_WORKER_STILL_ALIVE_LIFECYCLE = frozenset(
-    {
-        WorkerLifecycleState.ACTIVE,
-        WorkerLifecycleState.IDLE,
-        WorkerLifecycleState.WORKING,
-        WorkerLifecycleState.WAITING_EXTERNAL,
-        WorkerLifecycleState.WAITING_FOR_HUMAN,
-    },
+from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
+    require_worker_execution_revocation_proof,
 )
 
 
@@ -53,48 +50,37 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def worker_execution_liveness_proof_ref(
-    *,
-    worker_instance_id: str,
-    bound_worker_ownership_epoch: int,
-    observed_worker_revision: int,
-    observed_lifecycle: WorkerLifecycleState,
-) -> str:
-    return (
-        f"wexec-loss:v1:{worker_instance_id}:{bound_worker_ownership_epoch}"
-        f"->{observed_worker_revision}:{observed_lifecycle.value}"
-    )
-
-
 def assert_worker_execution_ownership_lost(
-    worker_repository: WorkerInstanceRepository,
+    revocation_port: WorkerExecutionOwnershipRevocationPort,
     *,
+    tenant_id: str,
+    operation_id: str,
     worker_instance_id: str,
     bound_worker_ownership_epoch: int,
+    worker_repository: WorkerInstanceRepository | None = None,
 ) -> str:
-    """Return opaque liveness proof when durable worker authority no longer matches binding."""
-    worker = worker_repository.get(worker_instance_id=WorkerInstanceId(worker_instance_id))
-    if worker is None:
-        return worker_execution_liveness_proof_ref(
+    """Return revocation proof ref when durable authority revokes the bound epoch."""
+    if worker_repository is not None:
+        try:
+            worker = worker_repository.get(
+                worker_instance_id=WorkerInstanceId(worker_instance_id),
+            )
+        except Exception as exc:
+            raise CertifiedOwnerLossWorkerOwnershipIndeterminateError(
+                "worker instance repository unavailable",
+            ) from exc
+        if worker is None:
+            pass
+    try:
+        return require_worker_execution_revocation_proof(
+            revocation_port,
+            tenant_id=tenant_id,
+            operation_id=operation_id,
             worker_instance_id=worker_instance_id,
-            bound_worker_ownership_epoch=bound_worker_ownership_epoch,
-            observed_worker_revision=0,
-            observed_lifecycle=WorkerLifecycleState.STOPPED,
+            ownership_epoch=bound_worker_ownership_epoch,
         )
-    observed_revision = worker.revision.value
-    if (
-        observed_revision <= bound_worker_ownership_epoch
-        and worker.lifecycle_state in _WORKER_STILL_ALIVE_LIFECYCLE
-    ):
-        raise CertifiedOwnerLossEvidenceRejectedError(
-            "worker still holds execution ownership for bound epoch",
-        )
-    return worker_execution_liveness_proof_ref(
-        worker_instance_id=worker_instance_id,
-        bound_worker_ownership_epoch=bound_worker_ownership_epoch,
-        observed_worker_revision=observed_revision,
-        observed_lifecycle=worker.lifecycle_state,
-    )
+    except WorkerExecutionOwnershipNotRevokedError as exc:
+        raise CertifiedOwnerLossEvidenceRejectedError(str(exc)) from exc
 
 
 class WorkerExecutionCertifiedOwnerLossEvidenceIssuer:
@@ -156,8 +142,9 @@ class WorkerExecutionCertifiedOwnerLossCertifier:
     """Non-bypassable staging path from worker ownership authority to W4-C store."""
 
     store: ExternalOperationStateStore
-    worker_repository: WorkerInstanceRepository
+    revocation_port: WorkerExecutionOwnershipRevocationPort
     issuer: WorkerExecutionCertifiedOwnerLossEvidenceIssuer
+    worker_repository: WorkerInstanceRepository | None = None
 
     def stage_certified_owner_loss(
         self,
@@ -168,9 +155,9 @@ class WorkerExecutionCertifiedOwnerLossCertifier:
         liveness_proof_ref: str | None = None,
     ) -> ExternalOperationState:
         composition = require_certified_owner_loss_composition()
-        if composition.worker_instance_repository is not self.worker_repository:
+        if composition.worker_execution_ownership_revocation is not self.revocation_port:
             raise CertifiedOwnerLossIssuerNotConfiguredError(
-                "worker repository not registered in composition",
+                "revocation port not registered in composition",
             )
         current = self.store.load(tenant_id, operation_id)
         if current is None:
@@ -182,9 +169,12 @@ class WorkerExecutionCertifiedOwnerLossCertifier:
                 "worker execution ownership not bound on durable record",
             )
         proof = assert_worker_execution_ownership_lost(
-            self.worker_repository,
+            self.revocation_port,
+            tenant_id=tenant_id,
+            operation_id=operation_id,
             worker_instance_id=current.worker_instance_id,
             bound_worker_ownership_epoch=current.worker_ownership_epoch,
+            worker_repository=self.worker_repository,
         )
         if liveness_proof_ref is not None and liveness_proof_ref != proof:
             raise CertifiedOwnerLossEvidenceRejectedError("liveness proof mismatch")
@@ -241,7 +231,8 @@ class WorkerExecutionCertifiedOwnerLossCertifier:
 
 def configure_worker_execution_certified_owner_loss(
     *,
-    worker_instance_repository: WorkerInstanceRepository,
+    worker_execution_ownership_revocation: WorkerExecutionOwnershipRevocationPort,
+    worker_instance_repository: WorkerInstanceRepository | None = None,
     issuer: WorkerExecutionCertifiedOwnerLossEvidenceIssuer | None = None,
 ) -> None:
     """Register canonical worker-execution issuer binding for one deployment topology."""
@@ -255,6 +246,7 @@ def configure_worker_execution_certified_owner_loss(
             ),
             issuer=resolved_issuer,
             worker_instance_repository=worker_instance_repository,
+            worker_execution_ownership_revocation=worker_execution_ownership_revocation,
         ),
     )
 
@@ -262,6 +254,7 @@ def configure_worker_execution_certified_owner_loss(
 def build_worker_execution_certified_owner_loss_certifier(
     *,
     store: ExternalOperationStateStore,
+    worker_execution_ownership_revocation: WorkerExecutionOwnershipRevocationPort | None = None,
     worker_instance_repository: WorkerInstanceRepository | None = None,
 ) -> WorkerExecutionCertifiedOwnerLossCertifier:
     composition = require_certified_owner_loss_composition()
@@ -274,15 +267,19 @@ def build_worker_execution_certified_owner_loss_certifier(
         WorkerExecutionCertifiedOwnerLossEvidenceIssuer,
     ):
         raise CertifiedOwnerLossIssuerNotConfiguredError("sanctioned issuer not configured")
-    repo = worker_instance_repository or composition.worker_instance_repository
-    if repo is None:
+    revocation = (
+        worker_execution_ownership_revocation
+        or composition.worker_execution_ownership_revocation
+    )
+    if revocation is None:
         raise CertifiedOwnerLossIssuerNotConfiguredError(
-            "worker instance repository not configured",
+            "worker execution ownership revocation port not configured",
         )
     return WorkerExecutionCertifiedOwnerLossCertifier(
         store=store,
-        worker_repository=repo,
+        revocation_port=revocation,
         issuer=composition.issuer,
+        worker_repository=worker_instance_repository or composition.worker_instance_repository,
     )
 
 
@@ -312,5 +309,4 @@ __all__ = [
     "bind_worker_execution_ownership",
     "build_worker_execution_certified_owner_loss_certifier",
     "configure_worker_execution_certified_owner_loss",
-    "worker_execution_liveness_proof_ref",
 ]

@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.certified_owner_loss_evidence import (
+    CANONICAL_WORKER_EXECUTION_OWNER_LOSS_ISSUER_ID,
     CertifiedOwnerLossAuthorityBypassError,
     CertifiedOwnerLossEvidenceRejectedError,
     CertifiedOwnerLossIssuerNotConfiguredError,
@@ -25,6 +26,7 @@ from intergrax.contracts.external_operation_cancellation import (
 )
 from intergrax.runtime.external_operations.certified_owner_loss_composition import (
     current_certified_owner_loss_issuer_binding,
+    verify_worker_execution_owner_loss_staging,
 )
 
 
@@ -385,6 +387,11 @@ class InMemoryExternalOperationStateStore:
             raise CertifiedOwnerLossEvidenceRejectedError("ownership epoch owner mismatch")
         if evidence.issuer_id not in binding.allowed_issuer_ids:
             raise CertifiedOwnerLossEvidenceRejectedError("issuer not allowlisted")
+        if evidence.issuer_id == CANONICAL_WORKER_EXECUTION_OWNER_LOSS_ISSUER_ID:
+            verify_worker_execution_owner_loss_staging(
+                current=current,
+                liveness_proof_ref=evidence.liveness_proof_ref,
+            )
         _validate_evidence_digest(evidence)
         occupied = current.staged_certified_owner_loss
         if occupied is not None and occupied.evidence.evidence_id != evidence.evidence_id:
