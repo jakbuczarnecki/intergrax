@@ -983,6 +983,54 @@ def test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled() -> None
     assert handoff.take_stored_permit_for_release() is None
 
 
+def test_ba_f12_exactly_one_release_when_cleanup_claims_before_sync_grant() -> None:
+    """BA-F12 closure: sync waiter must not call ``_execute_permit_release`` after cleanup claim."""
+    admission = _ShutdownAfterSlotAdmission(capacity=4)
+    sync_execute_calls: list[object] = []
+    real_execute = (
+        dab_module.DependencyAttemptExecutionBoundary._execute_permit_release
+    )
+
+    def _spy_execute(
+        self: dab_module.DependencyAttemptExecutionBoundary,
+        permit: object,
+        *,
+        wait: bool,
+    ) -> None:
+        sync_execute_calls.append(permit)
+        return real_execute(self, permit, wait=wait)
+
+    with mock.patch.object(
+        dab_module.DependencyAttemptExecutionBoundary,
+        "_execute_permit_release",
+        _spy_execute,
+    ):
+        with _boundary_with_gated_registry_lock(admission) as (boundary, gated):
+            acquire_error: list[BaseException] = []
+
+            def _acquire() -> None:
+                try:
+                    boundary.acquire(_request("tool-a"))
+                except BaseException as exc:
+                    acquire_error.append(exc)
+
+            thread = threading.Thread(target=_acquire)
+            thread.start()
+            assert admission.acquire_entered.wait(timeout=5)
+            gated.arm()
+            admission.unblock_admission_acquire()
+            assert admission.permit_created.wait(timeout=5)
+            admission.allow_acquire_return()
+            assert gated._blocked.wait(timeout=5)
+            _begin_shutdown_while_registration_blocked(gated, boundary)
+            thread.join(timeout=10)
+            assert len(acquire_error) == 1
+            boundary.drain_and_close()
+    assert sync_execute_calls == []
+    assert admission.permits_released == 1
+    assert admission.active == 0
+
+
 def test_ba_f11_handoff_concurrent_start_vs_pre_start_single_winner() -> None:
     """BA-F11: competing claims linearize to exactly one scheduling winner."""
     handoff = dab_module._AcquirePermitHandoff()

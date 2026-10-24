@@ -11,7 +11,10 @@
 | **BA-F08 START_HEAD** | `4038cc5995e26758cc5143e430fed252b8740c6d` |
 | **BA-F09 START_HEAD** | `1dd30bffa8f2f9ed55517e7e43015962906f0439` |
 | **BA-F10 START_HEAD** | `032b983ede3b0e6dee44083a4070e25326465006` |
-| **Disposition** | **`TOOL-LIFE-X BATCH A — QUALIFICATION BLOCKED`** (BA-F12 L1 green; consolidated L2 **pending**) |
+| **Disposition** | **`TOOL-LIFE-X BATCH A — READY FOR INDEPENDENT AUDIT`** (BA-F12 ownership closure + consolidated L2 **63/63**) |
+| **BA-F12 final ownership START_HEAD** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` |
+| **BA-F12 final execution SHA** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` |
+| **Evidence publication SHA** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` |
 | **BA-F12 START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
 | **BA-F11 final qualification START_HEAD** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` |
 | **Test execution SHA (L2 wave 1)** | `afe4f9c69b060d911cd7475dfd7fa0513f2ec03e` + unstaged test-source delta (see § BA-F11 L2) |
@@ -44,6 +47,8 @@
 | **BA-F11 consolidated L2 (remediation wave)** | unstaged test delta @ `afe4f9c6…` | **58/61** — log `l2-batch-a-ba-f11-remediation-final.log`; see § BA-F11 L2 wave 2 |
 | **BA-F11 consolidated L2 (final remediation wave 3)** | test delta @ `afe4f9c6…` | **59/61** — log `l2-batch-a-ba-f11-final-remediation.log`; see § BA-F11 L2 wave 3 |
 | **BA-F12 L1 (operator-authorized)** | production + test delta @ `afe4f9c6…` | **3/3** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l1-batch-a-ba-f12-final.log`; see § BA-F12 |
+| **BA-F12 final ownership closure L1** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` + delta | **4/4** — log `l1-batch-a-ba-f12-final-remediation.log` |
+| **Batch A consolidated L2 (BA-F12 closure)** | same tree as final publication | **63 collected / 63 passed** — log `l2-batch-a-ba-f12-final.log` |
 
 ## BA-F12 — atomic physical permit ownership / cancelled wrapper recovery
 
@@ -56,18 +61,33 @@
 | **Interleaving matrix (scoped)** | **A** abandon before grant → no permit. **B** grant then abandon → handoff store + obligation release. **C/D** grant + wrapper cancel → release from `_held_permit` (not `result()`). **E** grant, caller not claimed → store until claim or abandon. **F** caller claims → store cleared. **G–H** timeout/shutdown + grant → same obligation path. **I–J** release pending / cancel → `is_release_pending` noop. **K** release failure → lifecycle failure list. **L–M** pre-start / shutdown acquire → BA-F08–F11 unchanged. **N** shielded release → BA-F07. **O–P** duplicate callback/shutdown → idempotent obligation + pending checks. |
 | **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py`; tests + evidence only elsewhere. |
 | **L1** | **3 passed** — `test_acquire_success_shutdown_before_registration_releases_permit`, `test_shutdown_cancel_races_acquire_success_no_leak`, `test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled`; log `l1-batch-a-ba-f12-final.log`. |
-| **L2** | **NOT RUN** (operator deferral to Batch A closure boundary). Historical waves **58/61**, **58/61**, **59/61** preserved § BA-F11 L2. |
-| **Publication SHA** | `f64390392` (`fix(runtime): BA-F12 physical permit ownership on cancelled wrapper`) |
+| **L2** | **63/63** @ final publication SHA — log `l2-batch-a-ba-f12-final.log` (56 historical + 5 BA-F11 negatives + 2 BA-F12 negatives). |
+| **Publication SHA (original)** | `f64390392` (`fix(runtime): BA-F12 physical permit ownership on cancelled wrapper`) |
+
+## BA-F12 final — exactly-once release / competing cleanup vs sync grant
+
+| Topic | Detail |
+| --- | --- |
+| **START_HEAD** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` |
+| **Prior production SHA** | `f643903924e0dfdd8cb203a7a1ce9df054577014` (retained `_held_permit`; sync path still called `_execute_permit_release` on failed `claim_successful_grant`) |
+| **Root cause (static audit)** | Scenario **D/E**: wrapper `result()` succeeds while handoff is **ABANDONED**; `_maybe_release_abandoned_acquire_permit` claims obligation + `_schedule_handoff_permit_release`; sync caller then fails `claim_successful_grant` and invoked `_execute_permit_release(permit, wait=False)` → **two physical release obligations** for one grant. |
+| **Correction** | On failed `claim_successful_grant`: skip sync release when obligation already **claimed / pending / complete**; otherwise atomically `try_claim_release_obligation` + `take_stored_permit_for_release` + `_schedule_handoff_permit_release` (shutdown accounting), never parallel `_execute_permit_release`. |
+| **Winner/loser matrix (addendum)** | **Cleanup wins:** obligation claimed before sync grant → sync raises invariant only (no second release). **Sync wins:** `ABANDONED` without prior obligation → sync claims obligation and schedules handoff release once. **Caller wins:** `claim_successful_grant` before abandon → cleanup no-ops. **Tie:** `RELEASE_PENDING` / `RELEASED` → both paths no-op release. |
+| **Scenarios A–L** | **A–B** unchanged (BA-F12 store). **C** wrapper cancel → stored permit release. **D** shutdown before registration + successful wrapper → gated test + spy: zero `_execute_permit_release`. **E/F** cleanup vs caller claim — obligation vs `CALLER_OWNS`. **G** sync release while pending → skipped. **H** callback + shutdown — single `_schedule_handoff_permit_release`. **I** idempotent obligation re-entry. **J/K** release failure / shielded — BA-F06/F07 paths unchanged. **L** drain during physical acquire — BA-F08–F11 unchanged. |
+| **L1** | **4 passed** — `test_acquire_success_shutdown_before_registration_releases_permit`, `test_shutdown_cancel_races_acquire_success_no_leak`, `test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled`, `test_ba_f12_exactly_one_release_when_cleanup_claims_before_sync_grant`; log `l1-batch-a-ba-f12-final-remediation.log`. |
+| **L2** | **63 passed / 63 collected**, 10.46s, exit **0** — log `l2-batch-a-ba-f12-final.log`. |
+| **Publication SHA (final)** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` (`fix(runtime): BA-F12 exactly-once release when sync grant loses to cleanup`) |
+| **Test-source publication** | `c1ff3cb9fe179a8115772610b91ec8d1c3b593f4` (production + tests + evidence, single commit) |
 
 **Scoped closure matrix (BA-F12-affected TL):**
 
 | Criterion | Classification | Canonical owner | Contract | Existing evidence SHA | Missing action | Validation | FRZ |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TL1 | ALREADY PROVEN | `DependencyAttemptExecutionBoundary` | bounded acquire timeout | `693ecafd…` L2 | Parent L3 | L2 batch | FRZ-REL-01 |
-| TL3 | ALREADY PROVEN | Invoker + boundary | cancel / abandon scoped | `693ecafd…` | Parent real-infra | L2 batch | FRZ-REL-05 |
+| TL3 | ALREADY PROVEN (Batch A L2) | Invoker + boundary | cancel / abandon + ownership interleaving | final publication SHA | Parent real-infra | L2 **63/63** | FRZ-REL-05 |
 | TL5 | ALREADY PROVEN | Invoker | uncertain timeout | `693ecafd…` | Parent | L2 batch | FRZ-REL-05 |
-| TL8 | IMPLEMENTATION REQUIRED → **L1 PROVEN** | `DependencyAttemptExecutionBoundary` | grant/handoff/shutdown accounting | BA-F12 publication SHA | **Consolidated L2** | L1 3/3; L2 pending | FRZ-REL-07 |
-| TL9 | VALIDATION REQUIRED | Boundary + invoker | no orphan permit | BA-F12 L1 | L2 breadth | L1 subset | FRZ-REL-05 |
+| TL8 | **ALREADY PROVEN (Batch A L2)** | `DependencyAttemptExecutionBoundary` | exactly-once physical release / handoff | final publication SHA | Parent L3 breadth | L1 4/4; L2 **63/63** | FRZ-REL-07 |
+| TL9 | **ALREADY PROVEN (Batch A L2)** | Boundary + invoker | no orphan / no double cleanup | final publication SHA | Cross-provider stale | L2 **63/63** | FRZ-REL-05 |
 | TL14 | ALREADY PROVEN | Architecture | single invoker path | prior SHAs | — | static | FRZ-BND-03, FRZ-EXE-02 |
 | TL4,6–7,10–13,15 | unchanged | Parent / Batch B | per roadmap | prior | Batch B/parent | deferred | per matrix § TL1–TL15 |
 
@@ -335,8 +355,8 @@ uv run pytest -p no:xdist \
 | TL5 | ALREADY PROVEN (Batch A L2) | Invoker | `ToolEffectCertainty` / uncertain timeout | `693ecafd…` + L2 publication SHA | Operator runbooks (parent) | FRZ-REL-05 |
 | TL6 | IMPLEMENTATION REQUIRED | Invoker + idempotency | pre-effect coordinator | prior SHAs | Batch B | FRZ-REL-06 |
 | TL7 | OPERATOR DECISION REQUIRED | Parent roadmap | STALLED / watchdog | — | Parent §3.0.5 | — |
-| TL8 | VALIDATION REQUIRED (BA-F12) | `DependencyAttemptExecutionBoundary` | permit handoff + shutdown grant/cancel accounting | BA-F12 publication SHA + L1 log | **Consolidated L2** at Batch A closure | FRZ-REL-07 |
-| TL9 | ALREADY PROVEN (Batch A L2) | Invoker | no terminal resurrection (scoped) | `693ecafd…` + L2 publication SHA | Cross-provider stale results | FRZ-REL-05 |
+| TL8 | **ALREADY PROVEN (Batch A L2)** | `DependencyAttemptExecutionBoundary` | permit handoff + exactly-once release (BA-F12 final) | final publication SHA | Parent TOOL-LIFE L3 breadth | FRZ-REL-07 |
+| TL9 | **ALREADY PROVEN (Batch A L2)** | Boundary + invoker | no orphan / no double cleanup (BA-F12 final) | final publication SHA | Cross-provider stale results | FRZ-REL-05 |
 | TL10 | BLOCKED | SQL/database providers | row/byte/statement bounds | — | Parent / Batch C | FRZ-REL-10 |
 | TL11 | BLOCKED | MCP via invoker | ToolContract path | — | Real MCP qual | FRZ-REL-06 |
 | TL12 | BLOCKED | Parent scope | — | — | Parent | — |
@@ -350,7 +370,7 @@ uv run pytest -p no:xdist \
 | --- | --- |
 | FRZ-REL-01 | Parent deadline bounds tool physical attempt — validation evidence advanced, not global PASS |
 | FRZ-REL-05 | Timeout / uncertain semantics — scoped tests only |
-| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02–F12; BA-F12 L1 **3/3**; historical L2 **56/56** @ `693ecafd…`; BA-F11 L2 waves **58/61**, **58/61**, **59/61** — **not** global PASS |
+| FRZ-REL-07 | Dependency admission permit lifecycle — BA-F02–F12 final; L1 **4/4**; consolidated L2 **63/63** @ final publication SHA; historical **56/56** and BA-F11 waves **58/61**, **58/61**, **59/61** preserved — **not** global PASS |
 | FRZ-EXE-02 | `RuntimeToolInvoker` enforcement owner preserved |
 | FRZ-GOV-02 | Governance identity required at inner boundary — tests fixed to bind identity, not weakened |
 | FRZ-BND-03 | No parallel admission owner introduced |

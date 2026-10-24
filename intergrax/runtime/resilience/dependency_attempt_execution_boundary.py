@@ -388,7 +388,15 @@ class DependencyAttemptExecutionBoundary:
                 self._pending_acquire_futures.discard(acquire_future)
 
         if not handoff.claim_successful_grant():
-            self._execute_permit_release(permit, wait=False)
+            if not (
+                handoff.is_release_obligation_claimed()
+                or handoff.is_release_pending()
+                or handoff.is_release_complete()
+            ):
+                if handoff.try_claim_release_obligation():
+                    stored = handoff.take_stored_permit_for_release()
+                    to_release = stored if stored is not None else permit
+                    self._schedule_handoff_permit_release(to_release, handoff)
             raise RuntimeError(
                 "invariant: acquire permit granted after abandon handoff"
             )
