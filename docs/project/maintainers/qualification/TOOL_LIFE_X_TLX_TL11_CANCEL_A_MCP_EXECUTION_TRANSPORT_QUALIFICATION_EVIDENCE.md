@@ -5,8 +5,8 @@
 | **Task** | `TLX-TL11-CANCEL-A-TERMINATION-SAFETY` |
 | **Operator authorization** | `OPERATOR APPROVED — MCP CANCEL-A` |
 | **START_HEAD** | `275fd3a5cc8e098d8d3a9bedaea47df5eb4992c5` |
-| **IMPLEMENTATION_HEAD** | `0829b4ec82b33c16d40d0ba0bfbb78957d347be6` |
-| **PUBLICATION_HEAD** | `0829b4ec82b33c16d40d0ba0bfbb78957d347be6` |
+| **IMPLEMENTATION_HEAD** | `88c4ec3008d3e770c1d3e0acce1488f4c37f3215` |
+| **PUBLICATION_HEAD** | `88c4ec3008d3e770c1d3e0acce1488f4c37f3215` |
 | **Gate** | **A1** (governed propagation where boundary + verified principal) |
 | **Disposition** | **`TLX-TL11-CANCEL-A-TERMINATION-SAFETY — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
