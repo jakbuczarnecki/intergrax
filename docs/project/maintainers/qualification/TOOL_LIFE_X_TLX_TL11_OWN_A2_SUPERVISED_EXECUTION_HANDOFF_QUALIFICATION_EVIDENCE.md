@@ -5,8 +5,8 @@
 | **Task** | `TLX-TL11-OWN-A2-FINAL-SAFETY` |
 | **Operator authorization** | `OPERATOR APPROVED — ADR OWN-A2` |
 | **START_HEAD** | `8d3c6a21d6a57841f41f8e631988183c83a20a02` |
-| **IMPLEMENTATION_HEAD** | *(set at publication commit)* |
-| **PUBLICATION_HEAD** | *(set at publication commit)* |
+| **IMPLEMENTATION_HEAD** | `eb4c1d8536a853ce2dc6942396cec12d05bf801d` |
+| **PUBLICATION_HEAD** | `eb4c1d8536a853ce2dc6942396cec12d05bf801d` |
 | **Disposition** | **`TLX-TL11-OWN-A2-FINAL-SAFETY — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
 **Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no TL8 positive recovery; no DIST-SCALE-X; process crash does not invent persistent recovery.
