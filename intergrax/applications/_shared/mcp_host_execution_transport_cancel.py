@@ -32,6 +32,14 @@ if TYPE_CHECKING:
 MCP_TRANSPORT_CANCEL_REASON = "mcp_transport_cancel"
 MCP_TRANSPORT_CANCEL_MUTATION_PREFIX = "mcp-transport-cancel"
 
+
+class McpHostExecutionTransportOwnershipInvariantError(RuntimeError):
+    """Live canonical Execution cannot release MCP transport waiter without terminal or ACCEPTED handoff."""
+
+
+class McpProtectedHostExecutionAdmissionError(RuntimeError):
+    """Protected MCP HTTP execution rejected before host Execution starts."""
+
 # MCP transport-layer observation scheduling only (not root Execution deadline authority).
 _ACTIVE_BINDING_WAIT_S = 5.0
 _ACTIVE_BINDING_POLL_INTERVAL_S = 0.05
@@ -172,6 +180,66 @@ async def _request_canonical_transport_detachment_handoff(
     return result.disposition
 
 
+async def _finalize_transport_waiter_ownership(
+    host_coro: asyncio.Task[object],
+    *,
+    task: Task,
+    cancel_ctx: McpHostExecutionTransportCancelContext | None,
+    remaining_s: float,
+    governed_cancel_admitted: bool,
+    supervision_port: RootExecutionTransportDetachmentSupervisionPort | None,
+    handoff_accepted: bool,
+) -> None:
+    """OWN-A2: TERMINAL or ACCEPTED supervision only — never LIVE+UNSUPERVISED+RELEASED."""
+    if handoff_accepted or host_coro.done():
+        await _retrieve_host_task_outcome(host_coro)
+        return
+
+    if supervision_port is not None and cancel_ctx is not None:
+        disposition = await _request_canonical_transport_detachment_handoff(
+            host_coro,
+            task=task,
+            cancel_ctx=cancel_ctx,
+            governed_cancel_admitted=governed_cancel_admitted,
+            supervision_port=supervision_port,
+        )
+        if disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED:
+            return
+        if not governed_cancel_admitted:
+            governed_cancel_admitted = await request_governed_cancel_for_bound_mcp_task(
+                task=task,
+                principal=cancel_ctx.caller_request_identity,
+                mutation_boundary=cancel_ctx.mutation_boundary,
+            )
+        if remaining_s > 0:
+            await _bounded_observe_host_task(host_coro, timeout_s=remaining_s)
+        await _retrieve_host_task_outcome(host_coro)
+        if host_coro.done():
+            return
+        raise McpHostExecutionTransportOwnershipInvariantError(
+            "canonical execution still live without accepted transport detachment handoff"
+        )
+
+    if governed_cancel_admitted:
+        if remaining_s > 0:
+            await _bounded_observe_host_task(host_coro, timeout_s=remaining_s)
+        await _retrieve_host_task_outcome(host_coro)
+        if host_coro.done():
+            return
+        raise McpHostExecutionTransportOwnershipInvariantError(
+            "unsupervised host execution still live after governed cancel admission"
+        )
+
+    host_coro.cancel()
+    if remaining_s > 0:
+        await _bounded_observe_host_task(host_coro, timeout_s=remaining_s)
+    await _retrieve_host_task_outcome(host_coro)
+    if not host_coro.done():
+        raise McpHostExecutionTransportOwnershipInvariantError(
+            "unsupervised host execution survived transport waiter finalization"
+        )
+
+
 async def _await_host_task_bounded_after_transport_waiter_lost(
     host_coro: asyncio.Task[object],
     *,
@@ -190,11 +258,13 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
     loop = asyncio.get_running_loop()
     deadline = loop.time() + timeout_s
     observe_chunk_s = max(_ACTIVE_BINDING_POLL_INTERVAL_S * 4, 0.05)
+    handoff_accepted = False
 
     def _remaining_s() -> float:
         return max(0.0, deadline - loop.time())
 
     async def _try_canonical_handoff() -> bool:
+        nonlocal handoff_accepted
         if supervision_port is None or cancel_ctx is None:
             return False
         binding = await ActiveTaskRegistry.get(task.task_id)
@@ -207,7 +277,10 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
             governed_cancel_admitted=governed_cancel_admitted,
             supervision_port=supervision_port,
         )
-        return disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+        if disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED:
+            handoff_accepted = True
+            return True
+        return False
 
     while _remaining_s() > 0 and not host_coro.done():
         if await _try_canonical_handoff():
@@ -218,21 +291,15 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
         ):
             break
 
-    await _retrieve_host_task_outcome(host_coro)
-    if host_coro.done():
-        return
-
-    if supervision_port is not None:
-        return
-
-    if governed_cancel_admitted:
-        await _bounded_observe_host_task(host_coro, timeout_s=_remaining_s())
-        await _retrieve_host_task_outcome(host_coro)
-        return
-
-    host_coro.cancel()
-    await _bounded_observe_host_task(host_coro, timeout_s=_remaining_s())
-    await _retrieve_host_task_outcome(host_coro)
+    await _finalize_transport_waiter_ownership(
+        host_coro,
+        task=task,
+        cancel_ctx=cancel_ctx,
+        remaining_s=_remaining_s(),
+        governed_cancel_admitted=governed_cancel_admitted,
+        supervision_port=supervision_port,
+        handoff_accepted=handoff_accepted,
+    )
 
 
 async def run_host_execution_with_mcp_transport_cancel(
@@ -333,6 +400,8 @@ async def run_host_execution_with_mcp_transport_cancel(
 __all__ = [
     "MCP_TRANSPORT_CANCEL_MUTATION_PREFIX",
     "MCP_TRANSPORT_CANCEL_REASON",
+    "McpHostExecutionTransportOwnershipInvariantError",
+    "McpProtectedHostExecutionAdmissionError",
     "McpHostExecutionTransportCancelContext",
     "request_governed_cancel_for_bound_mcp_task",
     "resolve_mcp_task_control_mutation_boundary_from_request",

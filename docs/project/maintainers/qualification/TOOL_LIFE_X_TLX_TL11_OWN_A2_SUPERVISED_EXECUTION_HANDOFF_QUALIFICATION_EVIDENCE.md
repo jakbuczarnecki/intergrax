@@ -2,12 +2,12 @@
 
 | Field | Value |
 | --- | --- |
-| **Task** | `TLX-TL11-OWN-A2-FINAL-SAFETY` |
+| **Task** | `TLX-TL11-OWN-A2-OWNERSHIP-INVARIANT` (final gate) |
 | **Operator authorization** | `OPERATOR APPROVED — ADR OWN-A2` |
-| **START_HEAD** | `8d3c6a21d6a57841f41f8e631988183c83a20a02` |
-| **IMPLEMENTATION_HEAD** | `eb4c1d8536a853ce2dc6942396cec12d05bf801d` |
-| **PUBLICATION_HEAD** | `eb4c1d8536a853ce2dc6942396cec12d05bf801d` |
-| **Disposition** | **`TLX-TL11-OWN-A2-FINAL-SAFETY — READY FOR INDEPENDENT AUDIT`** (scoped) |
+| **START_HEAD** | `bdcdeccaf50644854455b71a5ae714308ebee472` |
+| **IMPLEMENTATION_HEAD** | `df4bbb5bd36571d9cae2e58f1887cff6f74b9702` |
+| **PUBLICATION_HEAD** | `df4bbb5bd36571d9cae2e58f1887cff6f74b9702` (pre-push; verify after `origin/development` push) |
+| **Disposition** | **`TLX-TL11-OWN-A2-OWNERSHIP-INVARIANT — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
 **Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no TL8 positive recovery; no DIST-SCALE-X; process crash does not invent persistent recovery.
 
@@ -17,9 +17,9 @@
 
 | ID | Severity | Finding | Remediation | Evidence |
 | --- | --- | --- | --- | --- |
-| SA-F01 | HIGH | `REFUSED` handoff → unbounded `shield(host_coro)` | Bounded observe/retry loop; no indefinite waiter; no unsanctioned cancel on refusal | `mcp_host_execution_transport_cancel._await_host_task_bounded_after_transport_waiter_lost` |
+| SA-F01 / OWN-FINAL-01 | CRITICAL | `supervision_port` present → timeout → return while host live | Removed false release; `_finalize_transport_waiter_ownership` requires TERMINAL or ACCEPTED else `McpHostExecutionTransportOwnershipInvariantError` | `test_own_a2_refused_handoff_raises_not_silent_transport_release` |
 | SA-F02 | CRITICAL | `wait_for(gather(*pending))` could cancel Execution on shutdown timeout | `asyncio.wait(..., ALL_COMPLETED)` observation only; explicit log when pending remain | `HostRootExecutionTransportDetachmentSupervisor.shutdown_supervised_work` |
-| SA-F03 | HIGH | `governed_cancel_admitted` early return without supervision | Removed silent detach; bounded wait; lab path without supervision does not `cancel()` when govern cancel admitted | `test_cancel_a_governed_admitted_without_supervision_waits_bounded_not_detach` |
+| SA-F03 / OWN-FINAL-02 | HIGH | Protected path without supervision / governed-only release | `McpProtectedHostExecutionAdmissionError` before `create_task`; unsupervised coupling raises ownership invariant | `test_own_a2_protected_http_missing_supervision_fail_closed_before_execution`, `test_cancel_a_governed_admitted_without_supervision_raises_ownership_invariant` |
 | SA-F04 | HIGH | Duplicate `(task_id, run_id)` auto-ACCEPT without task identity check | `DUPLICATE_HANDOFF_CONFLICT` + idempotent ACCEPT only for same `host_asyncio_task` | `test_duplicate_handoff_conflicting_host_task_refused` |
 | SA-F05 | HIGH | Observer/terminal races | Re-check host done before register; observer cleanup keyed to task identity; terminal exception logged | supervisor `_observe_supervised_work` + tests |
 | SA-F06 | VALIDATION | Real MCP HTTP + shutdown | L3 streamable HTTP + abandon tests rerun in consolidated batch | `test_cancel_a_l3_*` |
@@ -35,7 +35,8 @@
 | Host composition | `HarnessHostRuntime.transport_detachment_supervision` |
 | MCP coupling | `mcp_transport_detachment_supervision_coupling.py` + `fastapi_mcp.couple_*` lifespan drain |
 | Linearization | Handoff `ACCEPTED` only after lock + observer registered; duplicate key validated against live asyncio task identity |
-| MCP waiter | Bounded handoff/retry/observe; `ACCEPTED` releases waiter; supervised completion may still be observed for terminal result |
+| MCP waiter | Bounded handoff/retry/observe; `ACCEPTED` or TERMINAL releases waiter; live+unsupervised → `McpHostExecutionTransportOwnershipInvariantError` |
+| Protected admission | `execute_mcp_agent_task` requires `transport_detachment_supervision` when governance cancel ctx is active |
 
 ---
 
@@ -78,12 +79,12 @@
 
 | Reason | Transport waiter | Execution ownership | Cancel authority |
 | --- | --- | --- | --- |
-| `shutdown_in_progress` | Bounded observe; no new ACCEPT | Existing supervised refs retained | Not bypassed |
-| `no_active_binding` | Bounded retry/observe | Host coroutine until binding/terminal | Governed path only |
-| `run_id_mismatch` | REFUSED; bounded observe | Unchanged | Not bypassed |
-| `tenant_mismatch` / `principal_tenant_mismatch` | REFUSED | Unchanged | Not bypassed |
+| `shutdown_in_progress` | Retry/observe budget; invariant if still live+unsupervised | Existing supervised refs retained | Not bypassed |
+| `no_active_binding` | Transient retry; invariant if binding never appears | Host coroutine until binding/terminal | Governed path only |
+| `run_id_mismatch` | Permanent REFUSED; invariant if live+unsupervised | Unchanged | Not bypassed |
+| `tenant_mismatch` / `principal_tenant_mismatch` | Permanent REFUSED; invariant if live+unsupervised | Unchanged | Not bypassed |
 | `host_task_already_done` | Safe terminal retrieve | Terminal | N/A |
-| `duplicate_handoff_conflict` | REFUSED; existing supervision unchanged | Prior supervised task | Not bypassed |
+| `duplicate_handoff_conflict` | Permanent REFUSED; invariant if conflicting host live+unsupervised | Prior supervised task | Not bypassed |
 
 ---
 
@@ -96,7 +97,7 @@ MCP transport waiter
   → RootExecutionTransportDetachmentSupervisionPort.request_transport_detachment_handoff
        [lock: refuse if shutdown | duplicate validate | register observer]
   → ACCEPTED: waiter may release; supervisor holds strong ref
-  → REFUSED: waiter stays within observation budget only (no shield forever, no unsanctioned cancel)
+  → REFUSED: bounded retry/observe + governed cancel attempt; live without ACCEPT → ownership invariant error (no silent release)
 Host shutdown lifespan
   → shutdown_supervised_work: stop accepting; asyncio.wait(pending) without cancelling Execution
 ```
@@ -109,8 +110,8 @@ Host shutdown lifespan
 
 | Tier | Command | Result |
 | --- | --- | --- |
-| L1/L2 consolidated | `uv run pytest tests/unit/runtime/execution/test_root_execution_transport_detachment_supervision.py tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py tests/unit/applications/test_mcp_trust_a_principal_binding.py -q` | **30 passed** |
-| Log | `.tmp/session/tlx-tl11-own-a2-final-safety/l2-consolidated.log` | exit 0 |
+| L1/L2/L3 consolidated | `uv run pytest tests/unit/runtime/execution/test_root_execution_transport_detachment_supervision.py tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py tests/unit/applications/test_mcp_trust_a_principal_binding.py -q` | **32 passed** |
+| Log | `.tmp/session/tlx-tl11-own-a2-final-gate/l2-consolidated.log` | exit 0 |
 
 L3 physical cases included: `test_cancel_a_l3_streamable_http_run_agent_with_task_control_boundary`, `test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel`.
 

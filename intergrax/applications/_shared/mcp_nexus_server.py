@@ -14,6 +14,7 @@ from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionTransportCancelContext,
+    McpProtectedHostExecutionAdmissionError,
     resolve_mcp_task_control_mutation_boundary_from_request,
     run_host_execution_with_mcp_transport_cancel,
 )
@@ -104,10 +105,14 @@ async def execute_mcp_agent_task(
     if cancel_ctx is None:
         execution_result = await _run_execute()
     else:
-        host_task = asyncio.create_task(_run_execute())
         supervision = transport_detachment_supervision
         if supervision is None:
             supervision = resolve_transport_detachment_supervision_from_request()
+        if supervision is None:
+            raise McpProtectedHostExecutionAdmissionError(
+                "protected MCP run_agent requires root_execution_transport_detachment_supervision"
+            )
+        host_task = asyncio.create_task(_run_execute())
         execution_result = await run_host_execution_with_mcp_transport_cancel(
             host_task,
             task=task,

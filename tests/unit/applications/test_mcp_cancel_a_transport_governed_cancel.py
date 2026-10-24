@@ -24,6 +24,7 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
 )
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionTransportCancelContext,
+    McpHostExecutionTransportOwnershipInvariantError,
     run_host_execution_with_mcp_transport_cancel,
 )
 from intergrax.applications._shared.mcp_nexus_server import (
@@ -149,6 +150,7 @@ async def test_cancel_a_governed_cancel_invoked_on_asyncio_transport_cancel() ->
             user_id="u1",
             caller_request_identity=_principal(),
             task_control_mutation_boundary=boundary,
+            transport_detachment_supervision=_transport_supervision(),
         ),
     )
     await asyncio.wait_for(hang_started.wait(), timeout=3.0)
@@ -191,11 +193,14 @@ async def test_cancel_a_cross_tenant_governed_cancel_not_applied() -> None:
             user_id="u",
             caller_request_identity=_principal(tenant_id=_TENANT),
             task_control_mutation_boundary=boundary,
+            transport_detachment_supervision=_transport_supervision(),
         ),
     )
     await asyncio.sleep(0.15)
     host_task.cancel()
-    with pytest.raises(asyncio.CancelledError):
+    with pytest.raises(
+        (asyncio.CancelledError, McpHostExecutionTransportOwnershipInvariantError),
+    ):
         await asyncio.wait_for(host_task, timeout=12.0)
     assert registered_task is not None
     assert not CancellationCoordinator.is_requested(registered_task.metadata)
@@ -350,7 +355,7 @@ async def test_cancel_a_pre_admission_transport_cancel_no_false_cooperative_sign
     )
     await asyncio.sleep(0.05)
     waiter.cancel()
-    with pytest.raises(asyncio.CancelledError):
+    with pytest.raises(McpHostExecutionTransportOwnershipInvariantError):
         await asyncio.wait_for(waiter, timeout=12.0)
     assert not CancellationCoordinator.is_requested(task.metadata)
     admission.set()
@@ -443,6 +448,7 @@ async def test_cancel_a_http_disconnect_observed_admits_governed_cancel() -> Non
             user_id="u1",
             caller_request_identity=_principal(),
             task_control_mutation_boundary=boundary,
+            transport_detachment_supervision=_transport_supervision(),
         ),
     )
     with patch(
@@ -596,8 +602,103 @@ async def test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel()
 
 
 @pytest.mark.asyncio
-async def test_cancel_a_governed_admitted_without_supervision_waits_bounded_not_detach() -> None:
-    """SA-F03: governed cancel admission alone must not release an unsupervised live host task."""
+async def test_own_a2_refused_handoff_raises_not_silent_transport_release() -> None:
+    """OWN-FINAL-01: supervision port present but REFUSED must not release a live unsupervised host."""
+    supervision = _transport_supervision()
+    await supervision.shutdown_supervised_work(timeout_s=0.01)
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    boundary = _harness_boundary()
+    cancel_ctx = McpHostExecutionTransportCancelContext(
+        mutation_boundary=boundary,
+        caller_request_identity=_principal(),
+    )
+    host_release = asyncio.Event()
+
+    async def _suppress_cancel_host() -> TaskResult:
+        try:
+            while not host_release.is_set():
+                if CancellationCoordinator.is_requested(task.metadata):
+                    break
+                try:
+                    await asyncio.sleep(3600)
+                except asyncio.CancelledError:
+                    pass
+        finally:
+            await ActiveTaskRegistry.unregister(task.task_id, run_id)
+        return _cancelled_result(task, run_id)
+
+    host_coro = asyncio.create_task(_suppress_cancel_host())
+    waiter = asyncio.create_task(
+        run_host_execution_with_mcp_transport_cancel(
+            host_coro,
+            task=task,
+            cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=supervision,
+        ),
+    )
+    await asyncio.sleep(0.05)
+    waiter.cancel()
+    with pytest.raises(McpHostExecutionTransportOwnershipInvariantError):
+        await asyncio.wait_for(waiter, timeout=12.0)
+    assert not host_coro.done()
+    assert supervision.supervised_count() == 0
+    host_release.set()
+    with contextlib.suppress(asyncio.CancelledError):
+        await asyncio.wait_for(host_coro, timeout=5.0)
+
+
+@pytest.mark.asyncio
+async def test_own_a2_protected_http_missing_supervision_fail_closed_before_execution() -> None:
+    """OWN-FINAL-02: coupled HTTP MCP with governance boundary but no supervision rejects before execute."""
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(return_value=_cancelled_result(Task(tenant_id=_TENANT, user_id="u", message="m"), mint_run_id()))
+    boundary = _harness_boundary()
+    api = FastAPI()
+    api.state.harness_auth = HarnessAuthState(
+        require_api_key=True,
+        resolved_api_key=_API_KEY,
+        api_key_principal_tenant_id=_TENANT,
+    )
+    mcp = build_nexus_mcp_server(
+        name="own-a2-admission",
+        host_execution=port,
+        registry=AgentRegistry(),
+        default_capability="demo.cap",
+        task_control_mutation_boundary=boundary,
+    )
+    app = couple_fastapi_with_mcp(
+        api,
+        mcp,
+        mount_path="/mcp",
+        task_control_mutation_boundary=boundary,
+    )
+    from mcp.client.session import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    with _uvicorn_mcp_base_url(app) as base_url:
+        async with streamablehttp_client(base_url, headers={"X-Api-Key": _API_KEY}) as (
+            read,
+            write,
+            _,
+        ):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                result = await asyncio.wait_for(
+                    session.call_tool(
+                        "run_agent",
+                        {"message": "m", "capability": "demo.cap"},
+                    ),
+                    timeout=12.0,
+                )
+    assert result.isError
+    port.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_cancel_a_governed_admitted_without_supervision_raises_ownership_invariant() -> None:
+    """OWN-FINAL-01: governed cancel admission without supervision cannot release a live host."""
     task = Task(tenant_id=_TENANT, user_id="u", message="m")
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
@@ -634,7 +735,7 @@ async def test_cancel_a_governed_admitted_without_supervision_waits_bounded_not_
         )
         await asyncio.sleep(0.05)
         waiter.cancel()
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(McpHostExecutionTransportOwnershipInvariantError):
             await asyncio.wait_for(waiter, timeout=12.0)
     assert not host_coro.done()
     host_release.set()
