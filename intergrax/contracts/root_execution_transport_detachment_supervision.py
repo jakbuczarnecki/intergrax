@@ -26,6 +26,7 @@ class RootExecutionTransportDetachmentHandoffRefusalReason(StrEnum):
     PRINCIPAL_TENANT_MISMATCH = "principal_tenant_mismatch"
     RUN_ID_MISMATCH = "run_id_mismatch"
     HOST_TASK_ALREADY_DONE = "host_task_already_done"
+    DUPLICATE_HANDOFF_CONFLICT = "duplicate_handoff_conflict"
 
 
 @dataclass(frozen=True, slots=True)

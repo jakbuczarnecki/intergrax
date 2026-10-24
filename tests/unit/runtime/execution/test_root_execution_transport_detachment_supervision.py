@@ -151,3 +151,124 @@ async def test_shutdown_refuses_new_handoff() -> None:
         is RootExecutionTransportDetachmentHandoffRefusalReason.SHUTDOWN_IN_PROGRESS
     )
     await ActiveTaskRegistry.unregister(task.task_id, run_id)
+
+
+@pytest.mark.asyncio
+async def test_duplicate_handoff_conflicting_host_task_refused() -> None:
+    supervisor = build_host_root_execution_transport_detachment_supervisor()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    host_a = asyncio.create_task(asyncio.sleep(3600))
+    host_b = asyncio.create_task(asyncio.sleep(3600))
+    base = RootExecutionTransportDetachmentHandoffRequest(
+        task_id=task.task_id,
+        run_id=run_id,
+        verified_tenant_id=_TENANT,
+        caller_request_identity=_principal(),
+        host_asyncio_task=host_a,
+        governed_transport_cancel_admitted=True,
+    )
+    first = await supervisor.request_transport_detachment_handoff(base)
+    second = await supervisor.request_transport_detachment_handoff(
+        RootExecutionTransportDetachmentHandoffRequest(
+            task_id=task.task_id,
+            run_id=run_id,
+            verified_tenant_id=_TENANT,
+            caller_request_identity=_principal(),
+            host_asyncio_task=host_b,
+            governed_transport_cancel_admitted=True,
+        )
+    )
+    host_a.cancel()
+    host_b.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await host_a
+    with pytest.raises(asyncio.CancelledError):
+        await host_b
+    assert first.disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+    assert second.disposition is RootExecutionTransportDetachmentHandoffDisposition.REFUSED
+    assert (
+        second.refusal_reason
+        is RootExecutionTransportDetachmentHandoffRefusalReason.DUPLICATE_HANDOFF_CONFLICT
+    )
+    assert supervisor.supervised_count() == 0
+    await ActiveTaskRegistry.unregister(task.task_id, run_id)
+
+
+@pytest.mark.asyncio
+async def test_shutdown_observation_does_not_cancel_host_execution() -> None:
+    supervisor = build_host_root_execution_transport_detachment_supervisor()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    host_release = asyncio.Event()
+    cancelled_by_supervisor = False
+
+    async def _host() -> str:
+        nonlocal cancelled_by_supervisor
+        try:
+            await host_release.wait()
+            return "ok"
+        except asyncio.CancelledError:
+            cancelled_by_supervisor = True
+            raise
+
+    host_coro = asyncio.create_task(_host())
+    await asyncio.sleep(0)
+    accepted = await supervisor.request_transport_detachment_handoff(
+        RootExecutionTransportDetachmentHandoffRequest(
+            task_id=task.task_id,
+            run_id=run_id,
+            verified_tenant_id=_TENANT,
+            caller_request_identity=_principal(),
+            host_asyncio_task=host_coro,
+            governed_transport_cancel_admitted=False,
+        )
+    )
+    assert accepted.disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+    await supervisor.shutdown_supervised_work(timeout_s=0.05)
+    assert not host_coro.done()
+    assert not cancelled_by_supervisor
+    host_release.set()
+    await asyncio.wait_for(host_coro, timeout=3.0)
+    await asyncio.sleep(0.05)
+    assert supervisor.supervised_count() == 0
+    await ActiveTaskRegistry.unregister(task.task_id, run_id)
+
+
+@pytest.mark.asyncio
+async def test_shutdown_repeat_is_idempotent() -> None:
+    supervisor = build_host_root_execution_transport_detachment_supervisor()
+    await supervisor.shutdown_supervised_work(timeout_s=0.01)
+    await supervisor.shutdown_supervised_work(timeout_s=0.01)
+
+
+@pytest.mark.asyncio
+async def test_handoff_refused_when_host_completes_during_acceptance() -> None:
+    supervisor = build_host_root_execution_transport_detachment_supervisor()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+
+    async def _quick() -> str:
+        return "done"
+
+    host_coro = asyncio.create_task(_quick())
+    await host_coro
+    result = await supervisor.request_transport_detachment_handoff(
+        RootExecutionTransportDetachmentHandoffRequest(
+            task_id=task.task_id,
+            run_id=run_id,
+            verified_tenant_id=_TENANT,
+            caller_request_identity=_principal(),
+            host_asyncio_task=host_coro,
+            governed_transport_cancel_admitted=False,
+        )
+    )
+    assert result.disposition is RootExecutionTransportDetachmentHandoffDisposition.REFUSED
+    assert (
+        result.refusal_reason
+        is RootExecutionTransportDetachmentHandoffRefusalReason.HOST_TASK_ALREADY_DONE
+    )
+    await ActiveTaskRegistry.unregister(task.task_id, run_id)

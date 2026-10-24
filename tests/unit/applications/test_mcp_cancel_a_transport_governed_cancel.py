@@ -593,3 +593,51 @@ async def test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel()
     while not run_finished.is_set() and time.monotonic() < deadline:
         await asyncio.sleep(0.05)
     assert run_finished.is_set()
+
+
+@pytest.mark.asyncio
+async def test_cancel_a_governed_admitted_without_supervision_waits_bounded_not_detach() -> None:
+    """SA-F03: governed cancel admission alone must not release an unsupervised live host task."""
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    boundary = _harness_boundary()
+    cancel_ctx = McpHostExecutionTransportCancelContext(
+        mutation_boundary=boundary,
+        caller_request_identity=_principal(),
+    )
+    host_release = asyncio.Event()
+
+    async def _host() -> TaskResult:
+        await host_release.wait()
+        return _cancelled_result(task, run_id)
+
+    host_coro = asyncio.create_task(_host())
+    with patch(
+        "intergrax.applications._shared.mcp_host_execution_transport_cancel."
+        "governed_cancel_active_task",
+        new_callable=AsyncMock,
+        return_value=TaskControlResult(
+            task_id=task.task_id,
+            action="cancel",
+            accepted=True,
+            detail="ok",
+        ),
+    ):
+        waiter = asyncio.create_task(
+            run_host_execution_with_mcp_transport_cancel(
+                host_coro,
+                task=task,
+                cancel_ctx=cancel_ctx,
+                transport_detachment_supervision=None,
+            ),
+        )
+        await asyncio.sleep(0.05)
+        waiter.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(waiter, timeout=12.0)
+    assert not host_coro.done()
+    host_release.set()
+    with contextlib.suppress(asyncio.CancelledError):
+        await asyncio.wait_for(host_coro, timeout=3.0)
+    await ActiveTaskRegistry.unregister(task.task_id, run_id)

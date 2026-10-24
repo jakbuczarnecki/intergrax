@@ -124,6 +124,30 @@ async def _maybe_request_transport_cancel(
             cancel_admission_accepted[0] = True
 
 
+async def _bounded_observe_host_task(
+    host_coro: asyncio.Task[object],
+    *,
+    timeout_s: float,
+) -> bool:
+    """Observe *host_coro* up to *timeout_s* without cancelling it. Returns True if completed."""
+    if host_coro.done():
+        return True
+    if timeout_s <= 0:
+        return host_coro.done()
+    try:
+        await asyncio.wait_for(asyncio.shield(host_coro), timeout=timeout_s)
+    except (asyncio.TimeoutError, asyncio.CancelledError):
+        pass
+    return host_coro.done()
+
+
+async def _retrieve_host_task_outcome(host_coro: asyncio.Task[object]) -> None:
+    if not host_coro.done():
+        return
+    with contextlib.suppress(asyncio.CancelledError, Exception):
+        host_coro.result()
+
+
 async def _request_canonical_transport_detachment_handoff(
     host_coro: asyncio.Task[object],
     *,
@@ -163,40 +187,52 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
     Canonical Execution remains owned by ``HostTaskExecutionPort.execute`` inside *host_coro*.
     OWN-A2: confirmed supervision handoff before releasing MCP waiter when work continues.
     """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_s
+    observe_chunk_s = max(_ACTIVE_BINDING_POLL_INTERVAL_S * 4, 0.05)
+
+    def _remaining_s() -> float:
+        return max(0.0, deadline - loop.time())
+
+    async def _try_canonical_handoff() -> bool:
+        if supervision_port is None or cancel_ctx is None:
+            return False
+        binding = await ActiveTaskRegistry.get(task.task_id)
+        if binding is None:
+            return False
+        disposition = await _request_canonical_transport_detachment_handoff(
+            host_coro,
+            task=task,
+            cancel_ctx=cancel_ctx,
+            governed_cancel_admitted=governed_cancel_admitted,
+            supervision_port=supervision_port,
+        )
+        return disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+
+    while _remaining_s() > 0 and not host_coro.done():
+        if await _try_canonical_handoff():
+            return
+        if await _bounded_observe_host_task(
+            host_coro,
+            timeout_s=min(_remaining_s(), observe_chunk_s),
+        ):
+            break
+
+    await _retrieve_host_task_outcome(host_coro)
     if host_coro.done():
-        with contextlib.suppress(asyncio.CancelledError, Exception):
-            host_coro.result()
-        return
-    try:
-        await asyncio.wait_for(asyncio.shield(host_coro), timeout=timeout_s)
-    except (asyncio.TimeoutError, asyncio.CancelledError):
-        pass
-    if host_coro.done():
-        with contextlib.suppress(asyncio.CancelledError, Exception):
-            host_coro.result()
         return
 
-    if supervision_port is not None and cancel_ctx is not None:
-        binding = await ActiveTaskRegistry.get(task.task_id)
-        if binding is not None:
-            disposition = await _request_canonical_transport_detachment_handoff(
-                host_coro,
-                task=task,
-                cancel_ctx=cancel_ctx,
-                governed_cancel_admitted=governed_cancel_admitted,
-                supervision_port=supervision_port,
-            )
-            if disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED:
-                return
-            with contextlib.suppress(asyncio.CancelledError, Exception):
-                await asyncio.shield(host_coro)
-            return
+    if supervision_port is not None:
+        return
 
     if governed_cancel_admitted:
+        await _bounded_observe_host_task(host_coro, timeout_s=_remaining_s())
+        await _retrieve_host_task_outcome(host_coro)
         return
+
     host_coro.cancel()
-    with contextlib.suppress(asyncio.TimeoutError, asyncio.CancelledError):
-        await asyncio.wait_for(asyncio.shield(host_coro), timeout=timeout_s)
+    await _bounded_observe_host_task(host_coro, timeout_s=_remaining_s())
+    await _retrieve_host_task_outcome(host_coro)
 
 
 async def run_host_execution_with_mcp_transport_cancel(
@@ -282,6 +318,14 @@ async def run_host_execution_with_mcp_transport_cancel(
     if transport_waiter_lost:
         if host_result_after_waiter_lost is not None:
             return host_result_after_waiter_lost
+        if not host_coro.done():
+            await _bounded_observe_host_task(
+                host_coro,
+                timeout_s=_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S,
+            )
+        if host_coro.done():
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                return host_coro.result()
         raise asyncio.CancelledError()
     raise AssertionError("unreachable_host_transport_cancel_waiter_state")
 
