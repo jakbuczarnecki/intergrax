@@ -37,6 +37,12 @@ def mount_catalog_tools_on_mcp(
         @mcp.tool
         def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
             """Return MCP schema for one catalog tool_id."""
+            if not registry.has(tool_id):
+                payload = {"error": f"unknown_tool:{tool_id}"}
+                bounded, truncated = bound_mcp_structured_result(payload)
+                if truncated:
+                    return {"error": "mcp_payload_byte_limit_exceeded", "tool_id": tool_id}
+                return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
             registered = registry.get(tool_id)
             items = to_mcp_tools([registered.contract])
             payload = items[0] if items else {"error": f"unknown_tool:{tool_id}"}
