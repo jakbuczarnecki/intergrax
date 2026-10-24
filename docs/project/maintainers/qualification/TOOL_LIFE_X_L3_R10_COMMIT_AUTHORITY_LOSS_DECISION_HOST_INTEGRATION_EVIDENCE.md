@@ -45,4 +45,4 @@
 | FRZ-REC | PASS — fail-closed without durable decision / explicit `FailClosedWorkerExecutionCommitAuthorityLossPolicy` |
 | FRZ-SEC | PASS — direct decision store write rejected; MAC + decision at SQLite apply |
 
-FINAL_COMMIT: _(set at publication)_
+FINAL_COMMIT: `e71f91ed1` (verify on GitHub `development`)
