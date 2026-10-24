@@ -45,7 +45,7 @@ class WorkerExecutionCommitAuthorityLossPolicy(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class FailClosedWorkerExecutionCommitAuthorityLossPolicy:
-    """Production default until execution/recovery admits a sanctioned loss observation."""
+    """Production default until canonical execution/recovery exposes enforceable loss proof."""
 
     def require_commit_authority_loss_admitted(
         self,

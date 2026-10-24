@@ -1,74 +1,26 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Sanctioned execution/recovery entry for recording worker execution epoch revocation."""
+"""Sanctioned execution/recovery entry for recording worker execution epoch revocation.
+
+Positive revocation requires a typed ``WorkerExecutionCommitAuthorityLossPolicy`` wired at
+composition time. Production ``DURABLE_SINGLE_HOST`` composition defaults to
+``FailClosedWorkerExecutionCommitAuthorityLossPolicy`` until the canonical execution/recovery
+owner exposes an enforceable, durable commit-authority-loss decision (R8/R9 architecture
+blocker — not a caller-supplied admission scope).
+"""
 
 from __future__ import annotations
 
-import contextlib
-import contextvars
 from dataclasses import dataclass
 
 from intergrax.contracts.certified_owner_loss_evidence import CertifiedOwnerLossReason
 from intergrax.contracts.worker_execution_ownership_revocation import (
-    WorkerExecutionOwnershipRevocationUnauthorizedError,
     WorkerExecutionOwnershipRevocationV1,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationRecorder,
 )
-
-_COMMIT_AUTHORITY_LOSS_ADMISSION: contextvars.ContextVar[
-    tuple[str, str, str, int, CertifiedOwnerLossReason] | None
-] = contextvars.ContextVar(
-    "worker_execution_commit_authority_loss_admission",
-    default=None,
-)
-
-
-@contextlib.contextmanager
-def admit_worker_execution_commit_authority_loss(
-    *,
-    tenant_id: str,
-    operation_id: str,
-    worker_instance_id: str,
-    ownership_epoch: int,
-    loss_reason: CertifiedOwnerLossReason,
-):
-    token = _COMMIT_AUTHORITY_LOSS_ADMISSION.set(
-        (tenant_id, operation_id, worker_instance_id, ownership_epoch, loss_reason),
-    )
-    try:
-        yield
-    finally:
-        _COMMIT_AUTHORITY_LOSS_ADMISSION.reset(token)
-
-
-@dataclass(frozen=True, slots=True)
-class ExecutionRecoveryAdmittedCommitAuthorityLossPolicy:
-    """Admits revocation only while execution/recovery holds an explicit admission scope."""
-
-    def require_commit_authority_loss_admitted(
-        self,
-        *,
-        tenant_id: str,
-        operation_id: str,
-        worker_instance_id: str,
-        ownership_epoch: int,
-        loss_reason: CertifiedOwnerLossReason,
-    ) -> None:
-        admitted = _COMMIT_AUTHORITY_LOSS_ADMISSION.get()
-        expected = (
-            tenant_id,
-            operation_id,
-            worker_instance_id,
-            ownership_epoch,
-            loss_reason,
-        )
-        if admitted != expected:
-            raise WorkerExecutionOwnershipRevocationUnauthorizedError(
-                "worker execution commit authority loss admission scope mismatch",
-            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,7 +47,5 @@ class ExecutionRecoveryExternalOperationWorkerRevocation:
 
 
 __all__ = [
-    "ExecutionRecoveryAdmittedCommitAuthorityLossPolicy",
     "ExecutionRecoveryExternalOperationWorkerRevocation",
-    "admit_worker_execution_commit_authority_loss",
 ]

@@ -11,11 +11,11 @@ from pathlib import Path
 from intergrax.autonomous_work.repository import WorkerInstanceRepository
 from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.runtime.external_operations.execution_recovery_external_operation_worker_revocation import (
-    ExecutionRecoveryAdmittedCommitAuthorityLossPolicy,
     ExecutionRecoveryExternalOperationWorkerRevocation,
 )
 from intergrax.runtime.external_operations.execution_recovery_worker_execution_revocation_supervision import (
     ExecutionRecoveryWorkerExecutionRevocationSupervision,
+    FailClosedWorkerExecutionCommitAuthorityLossPolicy,
     WorkerExecutionCommitAuthorityLossPolicy,
 )
 from intergrax.runtime.external_operations.sqlite_tool_life_durable_stores import (
@@ -56,7 +56,7 @@ def compose_tool_life_durable_single_host_certified_owner_loss(
     trust = trust_material or resolve_worker_execution_revocation_trust_from_environment()
     configure_worker_execution_ownership_revocation_trust(trust)
     bundle = SqliteToolLifeDurableStoresBundle(db_path=db_path)
-    policy = loss_policy or ExecutionRecoveryAdmittedCommitAuthorityLossPolicy()
+    policy = loss_policy or FailClosedWorkerExecutionCommitAuthorityLossPolicy()
     supervision = ExecutionRecoveryWorkerExecutionRevocationSupervision(
         loss_policy=policy,
         trust=trust,

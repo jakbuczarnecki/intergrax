@@ -25,7 +25,6 @@ from intergrax.runtime.external_operations.certified_owner_loss_composition impo
 )
 from intergrax.runtime.external_operations.execution_recovery_external_operation_worker_revocation import (
     ExecutionRecoveryExternalOperationWorkerRevocation,
-    admit_worker_execution_commit_authority_loss,
 )
 from intergrax.runtime.external_operations.execution_recovery_worker_execution_revocation_supervision import (
     ExecutionRecoveryWorkerExecutionRevocationSupervision,
@@ -154,11 +153,12 @@ def test_l3r9_fail_closed_without_admission_scope(tmp_path: Path) -> None:
     os.environ.pop(_MAC_ENV, None)
 
 
-def test_l3r9_sanctioned_admission_records_revocation(tmp_path: Path) -> None:
+def test_l3r9_qualification_loss_policy_records_revocation(tmp_path: Path) -> None:
     os.environ[_MAC_ENV] = "production-mac-key-l3r9-positive"
     composed = compose_tool_life_durable_single_host_certified_owner_loss(
         db_path=tmp_path / "tool_life.db",
         persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        loss_policy=QualificationWorkerExecutionCommitAuthorityLossPolicy(),
     )
     store = composed.bundle.external_operation_state
     worker_id = "worker-positive"
@@ -179,21 +179,91 @@ def test_l3r9_sanctioned_admission_records_revocation(tmp_path: Path) -> None:
         worker_instance_id=worker_id,
         worker_ownership_epoch=_BOUND_EPOCH,
     )
-    with admit_worker_execution_commit_authority_loss(
+    proof = composed.worker_revocation.record_revocation_after_commit_authority_loss(
         tenant_id=_TENANT,
         operation_id=_OP,
         worker_instance_id=worker_id,
         ownership_epoch=_BOUND_EPOCH,
         loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
-    ):
-        proof = composed.worker_revocation.record_revocation_after_commit_authority_loss(
+    ).proof_ref
+    assert proof
+
+
+def test_l3r9_production_composition_fail_closed_despite_mac_key(tmp_path: Path) -> None:
+    """R9-F01: MAC/trust alone must not enable positive revocation without loss policy."""
+    os.environ[_MAC_ENV] = "production-mac-key-l3r9-no-admission-bypass"
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id="worker-blocked",
+        worker_ownership_epoch=_BOUND_EPOCH,
+    )
+    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
+        composed.worker_revocation.record_revocation_after_commit_authority_loss(
             tenant_id=_TENANT,
             operation_id=_OP,
-            worker_instance_id=worker_id,
+            worker_instance_id="worker-blocked",
             ownership_epoch=_BOUND_EPOCH,
-            loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
-        ).proof_ref
-    assert proof
+        )
+    os.environ.pop(_MAC_ENV, None)
+
+
+def test_l3r9_idempotent_revocation_repeat_returns_same_proof(tmp_path: Path) -> None:
+    os.environ[_MAC_ENV] = "production-mac-key-l3r9-idempotent"
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        loss_policy=QualificationWorkerExecutionCommitAuthorityLossPolicy(),
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id="worker-idem",
+        worker_ownership_epoch=_BOUND_EPOCH,
+    )
+    first = composed.worker_revocation.record_revocation_after_commit_authority_loss(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id="worker-idem",
+        ownership_epoch=_BOUND_EPOCH,
+    )
+    second = composed.worker_revocation.record_revocation_after_commit_authority_loss(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        worker_instance_id="worker-idem",
+        ownership_epoch=_BOUND_EPOCH,
+    )
+    assert first.proof_ref == second.proof_ref
+    assert first.revocation_id == second.revocation_id
+    os.environ.pop(_MAC_ENV, None)
     os.environ.pop(_MAC_ENV, None)
 
 
