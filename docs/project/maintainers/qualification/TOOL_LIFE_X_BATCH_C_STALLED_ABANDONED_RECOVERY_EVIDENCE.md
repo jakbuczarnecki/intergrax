@@ -4,53 +4,74 @@
 | --- | --- |
 | **Task** | `TOOL-LIFE-X-BATCH-C` |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
-| **START_HEAD** | `f5a0c7d3e6f62a787ca8fa6cd2ae526e05622328` |
-| **Prerequisites** | Batch A @ publication chain; Batch B @ `f5a0c7d3` (remediation) |
-| **Disposition** | **`TOOL-LIFE-X BATCH C — READY FOR INDEPENDENT AUDIT`** (pending publication SHA) |
+| **START_HEAD** | `a5f813a2c6a2195b09d7879359d5fd6eace6bf22` |
+| **Remediation** | Independent audit C-F01 / C-F02 / C-F03 (ownership + fencing + recovery) |
+| **Disposition** | **`TOOL-LIFE-X BATCH C — READY FOR INDEPENDENT AUDIT`** (publication SHA below) |
 
 **Non-closure:** Does not close `TOOL-LIFE-X`, does not promote global `FRZ-*` PASS, does not start Batch D/E.
 
-## TL1–TL15 (Batch C reconciliation)
+## Audit root causes (C-F01–C-F03)
 
-| ID | Classification | Owner | Contract | Evidence | Missing | Tests | FRZ |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| TL1 | ALREADY PROVEN | Batch A | ToolContract timeout | Batch A SHA | — | — | — |
-| TL2 | ALREADY PROVEN | Batch A | deadline hierarchy | Batch A SHA | — | — | — |
-| TL3 | ALREADY PROVEN (scoped) | Cancel coordinator | cooperative cancel | A+B | Parent real-infra | W4-A reuse | FRZ-REL-04 scoped |
-| TL4 | ALREADY PROVEN | Batch B | retry budget | Batch B SHA | — | L2 regression | FRZ-REL-07 scoped |
-| TL5 | ALREADY PROVEN | Batch B | UNCERTAIN | Batch B SHA | — | L2 regression | FRZ-REL-03 scoped |
-| TL6 | ALREADY PROVEN | Idempotency coordinator | no blind replay | Batch B SHA | — | L2 regression | FRZ-REL-06 scoped |
-| TL7 | **VALIDATION REQUIRED (scoped)** | Invoker + recovery helpers | STALLED classification (deadline, no heartbeat) | Batch C publication | Parent heartbeat infra | `batch_c_l1_stalled_*` | FRZ-REL-01 scoped |
-| TL8 | **ALREADY PROVEN + extended** | `external_operation_ownership` | orphan reconcile → UNKNOWN | W4-C + Batch C | Distributed takeover parent L3 | L1+L2 | FRZ-REL-05, FRZ-REC scoped |
-| TL9 | **ALREADY PROVEN + extended** | Fenced terminal CAS | stale worker / late terminal | Batch C publication | Provider late-result matrix | L1 fencing tests | FRZ-REL-05 scoped |
-| TL10–TL13 | BLOCKED | Batches D–E | provider bounds | — | Parent | — | — |
-| TL14 | ALREADY PROVEN | RuntimeToolInvoker | canonical path | U5 gates | — | B L2 regression | FRZ-BND-03 scoped |
-| TL15 | BLOCKED | Parent E | §3.0.5 rollup | — | Batches D–E | — | — |
+| ID | Root cause | Remediation |
+| --- | --- | --- |
+| **C-F01** | `RuntimeToolInvoker` swept foreign `RUNNING` records via token inequality | Removed automatic `reconcile_orphaned_tool_external_operations` from invoke path; `reconcile_orphaned_running_operations` is explicit no-op |
+| **C-F02** | `ensure_terminal_recorded` and idempotent terminal return bypassed owner fencing; `finalize_operation_intent` without owner predicate | Owner-matched terminal + `finalize_operation_intent_if_owner_matches`; cancellation observe passes owner |
+| **C-F03** | Recovery sweep treated `different_owner ≠ dead_owner` | Certified owner-loss API `recover_running_operation_after_certified_owner_loss`; recovery gate no longer sweeps by token |
 
-## Implementation
+## Canonical owner inventory
 
-| Module | Change |
+| Concern | Owner |
 | --- | --- |
-| `intergrax/runtime/tools/tool_operation_recovery.py` | **NEW** — disposition, orphan reconcile wrapper, stall/abandon predicates |
-| `intergrax/runtime/external_operations/external_operation_ownership.py` | Fenced owner terminal CAS (`mark_physical_terminal_if_owner_matches`) |
-| `intergrax/runtime/external_operations/tool_external_operation_attempt.py` | Superseded-worker terminal commit suppression |
-| `intergrax/runtime/nexus/tools/invoker.py` | Orphan reconcile on invoke; ABANDONED terminals; disposition tracing |
-| `intergrax/runtime/nexus/errors/error_codes.py` | `ABANDONED`, `STALLED` codes |
-| `tests/unit/runtime/nexus/tools/test_tool_life_x_batch_c_stalled_abandoned_recovery.py` | **NEW** — L1 qualification |
+| Tool invocation | `RuntimeToolInvoker` |
+| Durable external-op record | `ExternalOperationStateStore` |
+| Physical attempt | `ToolExternalOperationAttempt` + `external_operation_ownership` |
+| Atomic revision | `compare_and_set` |
+| Certified RUNNING→UNKNOWN | `recover_running_operation_after_certified_owner_loss` (caller must certify loss) |
+| Recovery admission | `prepare_external_operations_for_recovery` (fail-closed on RUNNING/UNKNOWN) |
+| Idempotency / pre-effect | `IdempotencyPreEffectCoordinator` |
 
-## Validation
+**Trusted recovery authority:** Composition / recovery orchestration that can certify owner loss (parent L3); **not** process-local token mismatch.
 
-### L1
+## Terminal writers (tool path) — fencing status
+
+| Writer | Fencing |
+| --- | --- |
+| `ToolExternalOperationAttempt._mark_terminal` | `mark_physical_terminal_if_owner_matches` + fenced finalize |
+| `ensure_terminal_recorded` | Owner-matched UNKNOWN + fenced finalize |
+| `complete_cancellation_after_termination` | `mark_observed_cancellation_terminal(..., owner=...)` |
+| `mark_physical_terminal` (raw) | LLM/legacy paths unchanged; tool path avoids direct use |
+| `reconcile_orphaned_*` | No terminal writes (no-op) |
+
+**Linearization:** Owner predicate evaluated before CAS; CAS on `expected_revision` remains the atomic boundary; stale revision → idempotent terminal only when owner matches.
+
+## TL1–TL15 (post-remediation)
+
+| ID | Classification | Notes | FRZ |
+| --- | --- | --- | --- |
+| TL1–TL2 | ALREADY PROVEN | Batch A @ prior SHA | — |
+| TL3 | ALREADY PROVEN (scoped) | Cancellation | FRZ-REL-04 scoped |
+| TL4–TL6 | ALREADY PROVEN | Batch B | FRZ-REL-03/06/07 scoped |
+| TL7 | VALIDATION REQUIRED | Deadline STALLED only; no heartbeat | FRZ-REL-01 scoped |
+| TL8 | **VALIDATION REQUIRED (scoped)** | Certified owner-loss only; distributed liveness → parent L3 | FRZ-REL-05, FRZ-REC scoped |
+| TL9 | **ALREADY PROVEN + extended** | Fenced terminal + stale finalize | FRZ-REL-05 scoped |
+| TL10–TL13 | BLOCKED | Batches D–E | — |
+| TL14 | ALREADY PROVEN | Single invoker owner | FRZ-BND-03 scoped |
+| TL15 | BLOCKED | Parent rollup | — |
+
+## Historical evidence (superseded for safety claims)
+
+| Artifact | SHA | Note |
+| --- | --- | --- |
+| Batch C L1 9/9 | `a5f813a2…` (pre-remediation) | **Not** evidence for C-F01–C-F03 closure |
+| Batch C L2 41/41 | `a5f813a2…` | Historical only |
+
+## Validation (remediation)
+
+### L1 (critical safety — included in L2 batch file)
 
 ```text
 uv run pytest -p no:xdist tests/unit/runtime/nexus/tools/test_tool_life_x_batch_c_stalled_abandoned_recovery.py -q
 ```
-
-| Metric | Value |
-| --- | --- |
-| **Passed** | **9** |
-| **Failed** | **0** |
-| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-C/l1-batch-c.log` |
 
 ### L2 (consolidated)
 
@@ -64,35 +85,25 @@ uv run pytest -p no:xdist \
 
 | Metric | Value |
 | --- | --- |
-| **Passed** | **41** |
+| **Passed** | **43** |
 | **Failed** | **0** |
-| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-C/l2-batch-c.log` |
-
-Batch A 65-test L2 **not** re-run (admission/permit semantics unchanged). Batch B 63-test full suite partially covered via invoker regression subset above.
-
-## Reused evidence (exact SHA preserved)
-
-| Artifact | SHA | Scope |
-| --- | --- | --- |
-| Batch A L2 | `e5db3b29…` chain / BA-F12 | Deadline + boundary |
-| Batch B L2 | `60a3ad53…` / `f5a0c7d3…` | Retry/idempotency |
-| HARNESS-W4-C | `f38e455…` | External-op cancellation qual |
+| **Execution HEAD** | *(publication commit)* |
+| **Log** | `.tmp/session/TOOL-LIFE-X-BATCH-C/l2-batch-c-remediation.log` |
 
 ## Scoped FRZ / ECAP
 
 | ID | Finding |
 | --- | --- |
-| FRZ-REL-01 | STALLED classification scoped — no heartbeat implementation (roadmap design-only) |
-| FRZ-REL-03 | UNCERTAIN → ABANDONED on non-retry-safe timeout (Batch C) |
-| FRZ-REL-05 | Fenced terminal + orphan reconcile (Batch C) |
-| FRZ-BND-03 | No second lifecycle owner |
+| FRZ-BND-03 | No second lifecycle owner; invoker does not infer death |
+| FRZ-REL-03/05 | ABANDONED + fenced terminals (scoped) |
+| FRZ-REC | UNKNOWN admission fail-closed; certified transition only |
 | ECAP-P4 | Global FRZ PASS remains **0** |
 
-## Remaining parent obligations
+## Remaining parent / real-infrastructure blockers
 
-- Batch D/E provider real-infrastructure matrices (TL10–TL13).
-- Parent TOOL-LIFE-X L3 integrated certification (TL15).
-- Heartbeat-based STALLED operator certification if required beyond deadline projection.
+- Distributed worker-loss certification without heartbeat/lease (parent TOOL-LIFE-X L3).
+- Heartbeat-based STALLED operator certification (TL7).
+- Batch D/E provider matrices (TL10–TL13).
 
 ---
 

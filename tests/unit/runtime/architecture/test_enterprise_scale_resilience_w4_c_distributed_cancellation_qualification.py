@@ -43,7 +43,7 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
     assert_may_begin_physical_attempt,
     mark_physical_running,
     mark_physical_terminal,
-    reconcile_orphaned_running_operations,
+    recover_running_operation_after_certified_owner_loss,
     request_operation_cancellation,
 )
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
@@ -151,12 +151,12 @@ def test_case_3_worker_crash_marks_unknown() -> None:
         owner=dead_owner,
     )
     assert running.physical_state is ExternalOperationPhysicalState.RUNNING
-    reconciled = reconcile_orphaned_running_operations(
+    recovered = recover_running_operation_after_certified_owner_loss(
         store,
-        active_owner=active_owner,
+        operation_id=identity.operation_id,
+        expected_revision=running.revision,
     )
-    assert len(reconciled) == 1
-    assert reconciled[0].physical_state is ExternalOperationPhysicalState.UNKNOWN
+    assert recovered.physical_state is ExternalOperationPhysicalState.UNKNOWN
 
 
 def test_case_4_double_cancellation_is_idempotent() -> None:
@@ -193,7 +193,19 @@ def test_recovery_blocked_on_unknown_until_reconciled() -> None:
             active_owner=owner,
             operation_ids=(identity.operation_id,),
         )
-    prepare_external_operations_for_recovery(store, active_owner=owner)
+    running = store.load(identity.operation_id)
+    assert running is not None
+    recover_running_operation_after_certified_owner_loss(
+        store,
+        operation_id=identity.operation_id,
+        expected_revision=running.revision,
+    )
+    with pytest.raises(ExternalOperationRecoveryBlockedError):
+        prepare_external_operations_for_recovery(
+            store,
+            active_owner=owner,
+            operation_ids=(identity.operation_id,),
+        )
     loaded = store.load(identity.operation_id)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.UNKNOWN

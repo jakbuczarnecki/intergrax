@@ -13,7 +13,6 @@ from intergrax.runtime.external_operations.external_operation_state_store import
 )
 from intergrax.runtime.external_operations.external_operation_ownership import (
     ProcessLocalExternalOperationOwner,
-    reconcile_orphaned_running_operations,
 )
 
 
@@ -27,8 +26,8 @@ def prepare_external_operations_for_recovery(
     active_owner: ProcessLocalExternalOperationOwner,
     operation_ids: tuple[str, ...] = (),
 ) -> None:
-    """Reconcile orphans, then fail closed if any scoped operation remains UNKNOWN."""
-    reconcile_orphaned_running_operations(store, active_owner=active_owner)
+    """Fail closed when scoped operations are not terminal; owner-loss recovery is explicit."""
+    del active_owner
     for operation_id in operation_ids:
         record = store.load(operation_id)
         if record is None:

@@ -45,7 +45,7 @@ def reconcile_orphaned_tool_external_operations(
     *,
     active_owner: ProcessLocalExternalOperationOwner,
 ) -> tuple[ExternalOperationState, ...]:
-    """Worker-loss reconciliation before a new tool invocation (W4-C + TOOL-LIFE-X TL8)."""
+    """Deprecated sweep — token mismatch is not owner death (Batch C audit C-F01)."""
     return reconcile_orphaned_running_operations(store, active_owner=active_owner)
 
 

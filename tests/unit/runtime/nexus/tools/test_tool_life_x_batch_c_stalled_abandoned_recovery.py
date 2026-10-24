@@ -30,6 +30,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationPhysicalState,
+    ExternalOperationState,
 )
 from intergrax.contracts.external_operation_identity import mint_stable_operation_id
 from intergrax.contracts.idempotency_store import InvocationUncertaintyError
@@ -38,7 +39,7 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
     ProcessLocalExternalOperationOwner,
     mark_physical_running,
     mark_physical_terminal_if_owner_matches,
-    reconcile_orphaned_running_operations,
+    recover_running_operation_after_certified_owner_loss,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
     InMemoryExternalOperationStateStore,
@@ -229,28 +230,31 @@ def test_batch_c_l1_late_terminal_cannot_overwrite_prior_terminal() -> None:
         )
 
 
-def test_batch_c_l1_two_worker_reconcile_race_single_unknown() -> None:
+def test_batch_c_l1_certified_owner_loss_recovery_race_single_unknown() -> None:
     store = InMemoryExternalOperationStateStore()
     dead_owner = ProcessLocalExternalOperationOwner.mint()
-    active_owner = ProcessLocalExternalOperationOwner.mint()
     record = store.create_if_absent("op-3", owner_token=dead_owner.token)
-    mark_physical_running(
+    running = mark_physical_running(
         store,
         operation_id="op-3",
         expected_revision=record.revision,
         owner=dead_owner,
     )
     barrier = threading.Barrier(2)
-    results: list[tuple[ExternalOperationState, ...]] = []
+    results: list[ExternalOperationState] = []
 
     def worker() -> None:
         barrier.wait()
-        results.append(
-            reconcile_orphaned_tool_external_operations(
-                store,
-                active_owner=active_owner,
-            ),
-        )
+        try:
+            results.append(
+                recover_running_operation_after_certified_owner_loss(
+                    store,
+                    operation_id="op-3",
+                    expected_revision=running.revision,
+                ),
+            )
+        except Exception:
+            pass
 
     threads = [threading.Thread(target=worker) for _ in range(2)]
     for thread in threads:
@@ -260,7 +264,7 @@ def test_batch_c_l1_two_worker_reconcile_race_single_unknown() -> None:
     loaded = store.load("op-3")
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.UNKNOWN
-    assert sum(len(batch) for batch in results) >= 1
+    assert len(results) >= 1
 
 
 def test_batch_c_l1_stalled_classification_requires_running_and_deadline() -> None:
@@ -360,7 +364,7 @@ def test_batch_c_l1_unknown_outcome_blocks_blind_replay_after_abandon() -> None:
         )
 
 
-def test_batch_c_l1_invoker_reconciles_orphan_external_operation() -> None:
+def test_batch_c_l1_invoker_preserves_foreign_running_external_operation() -> None:
     store = InMemoryExternalOperationStateStore()
     active_owner = ProcessLocalExternalOperationOwner.mint()
     stale_owner = ProcessLocalExternalOperationOwner.mint()
@@ -401,7 +405,54 @@ def test_batch_c_l1_invoker_reconciles_orphan_external_operation() -> None:
     assert result.success is True
     loaded = store.load("orphan-op")
     assert loaded is not None
-    assert loaded.physical_state is ExternalOperationPhysicalState.UNKNOWN
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+    assert loaded.owner_token == stale_owner.token
+
+
+def test_batch_c_l1_token_mismatch_reconcile_is_no_op() -> None:
+    store = InMemoryExternalOperationStateStore()
+    stale_owner = ProcessLocalExternalOperationOwner.mint()
+    active_owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent("op-no-sweep", owner_token=stale_owner.token)
+    mark_physical_running(
+        store,
+        operation_id="op-no-sweep",
+        expected_revision=record.revision,
+        owner=stale_owner,
+    )
+    assert reconcile_orphaned_tool_external_operations(
+        store,
+        active_owner=active_owner,
+    ) == ()
+    loaded = store.load("op-no-sweep")
+    assert loaded is not None
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+
+
+def test_batch_c_l1_ensure_terminal_recorded_fenced_for_foreign_owner() -> None:
+    store = InMemoryExternalOperationStateStore()
+    owner_a = ProcessLocalExternalOperationOwner.mint()
+    owner_b = ProcessLocalExternalOperationOwner.mint()
+    identity = _tool_identity()
+    assert identity.operation_id is not None
+    record = store.create_if_absent(identity.operation_id, owner_token=owner_b.token)
+    running = mark_physical_running(
+        store,
+        operation_id=identity.operation_id,
+        expected_revision=record.revision,
+        owner=owner_b,
+    )
+    attempt = ToolExternalOperationAttempt(
+        store=store,
+        owner=owner_a,
+        identity=identity,
+    )
+    attempt._revision = running.revision  # noqa: SLF001 — stale worker
+    attempt.ensure_terminal_recorded()
+    loaded = store.load(identity.operation_id)
+    assert loaded is not None
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+    assert loaded.owner_token == owner_b.token
 
 
 def test_batch_c_l1_tool_attempt_ignores_superseded_success_commit() -> None:
@@ -417,7 +468,11 @@ def test_batch_c_l1_tool_attempt_ignores_superseded_success_commit() -> None:
         expected_revision=record.revision,
         owner=owner_a,
     )
-    reconcile_orphaned_running_operations(store, active_owner=owner_b)
+    recover_running_operation_after_certified_owner_loss(
+        store,
+        operation_id=identity.operation_id,
+        expected_revision=running.revision,
+    )
     attempt = ToolExternalOperationAttempt(
         store=store,
         owner=owner_a,

@@ -154,6 +154,13 @@ def mark_physical_terminal_if_owner_matches(
         raise ExternalOperationNotFoundError(operation_id)
     if current.physical_state in _TERMINAL_PHYSICAL:
         if current.physical_state is physical_state:
+            if (
+                current.owner_token is not None
+                and current.owner_token != owner.token
+            ):
+                raise ExternalOperationFencedCommitRejectedError(
+                    f"stale owner cannot observe terminal for {operation_id!r}",
+                )
             return current
         raise ExternalOperationFencedCommitRejectedError(
             f"late terminal rejected for {operation_id!r}: "
@@ -233,26 +240,58 @@ def finalize_operation_intent(
     )
 
 
+def finalize_operation_intent_if_owner_matches(
+    store: ExternalOperationStateStore,
+    *,
+    operation_id: str,
+    expected_revision: int,
+    owner: ProcessLocalExternalOperationOwner,
+) -> ExternalOperationState:
+    """Clear owner and terminate intent only for the durable record holder."""
+    current = store.load(operation_id)
+    if current is None:
+        raise ExternalOperationNotFoundError(operation_id)
+    if (
+        current.owner_token is not None
+        and current.owner_token != owner.token
+    ):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"stale owner cannot finalize intent for {operation_id!r}",
+        )
+    return finalize_operation_intent(
+        store,
+        operation_id=operation_id,
+        expected_revision=expected_revision,
+    )
+
+
+def recover_running_operation_after_certified_owner_loss(
+    store: ExternalOperationStateStore,
+    *,
+    operation_id: str,
+    expected_revision: int,
+) -> ExternalOperationState:
+    """RUNNING→UNKNOWN when recovery authority has certified owner loss (not token inequality)."""
+    current = store.load(operation_id)
+    if current is None:
+        raise ExternalOperationNotFoundError(operation_id)
+    if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
+        return current
+    return store.compare_and_set(
+        operation_id,
+        expected_revision=expected_revision,
+        update=ExternalOperationStateUpdate(
+            physical_state=ExternalOperationPhysicalState.UNKNOWN,
+            intent_state=ExternalOperationIntentState.TERMINATING,
+        ),
+    )
+
+
 def reconcile_orphaned_running_operations(
     store: ExternalOperationStateStore,
     *,
     active_owner: ProcessLocalExternalOperationOwner,
 ) -> tuple[ExternalOperationState, ...]:
-    """Mark RUNNING records without the active owner as UNKNOWN (worker loss)."""
-    reconciled: list[ExternalOperationState] = []
-    for record in store.list_running():
-        if record.owner_token == active_owner.token:
-            continue
-        try:
-            updated = store.compare_and_set(
-                record.operation_id,
-                expected_revision=record.revision,
-                update=ExternalOperationStateUpdate(
-                    physical_state=ExternalOperationPhysicalState.UNKNOWN,
-                    intent_state=ExternalOperationIntentState.TERMINATING,
-                ),
-            )
-        except (StaleExternalOperationStateError, ExternalOperationNotFoundError):
-            continue
-        reconciled.append(updated)
-    return tuple(reconciled)
+    """No-op: process-local owner token mismatch is not proof of owner death (TOOL-LIFE-X Batch C)."""
+    del store, active_owner
+    return ()

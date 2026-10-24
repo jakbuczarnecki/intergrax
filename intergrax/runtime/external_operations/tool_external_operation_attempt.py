@@ -29,9 +29,8 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
     ExternalOperationStartSuppressedError,
     ProcessLocalExternalOperationOwner,
     assert_may_begin_physical_attempt,
-    finalize_operation_intent,
+    finalize_operation_intent_if_owner_matches,
     mark_physical_running,
-    mark_physical_terminal,
     mark_physical_terminal_if_owner_matches,
     request_operation_cancellation,
 )
@@ -187,7 +186,7 @@ class ToolExternalOperationAttempt:
         binding = self._binding()
         if binding is None or self._revision is None or self._identity is None:
             return
-        store, identity, _owner = binding
+        store, identity, owner = binding
         if termination_result is None:
             caps = self._capabilities
             if caps is None:
@@ -206,6 +205,7 @@ class ToolExternalOperationAttempt:
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             termination_result=termination_result,
+            owner=owner,
         )
         self._revision = record.revision
         self._terminal_recorded = True
@@ -214,19 +214,36 @@ class ToolExternalOperationAttempt:
         binding = self._binding()
         if binding is None or self._terminal_recorded or self._revision is None:
             return
-        store, identity, _owner = binding
-        record = mark_physical_terminal(
-            store,
-            operation_id=identity.operation_id,
-            expected_revision=self._revision,
-            physical_state=ExternalOperationPhysicalState.UNKNOWN,
-        )
+        store, identity, owner = binding
+        try:
+            record = mark_physical_terminal_if_owner_matches(
+                store,
+                operation_id=identity.operation_id,
+                expected_revision=self._revision,
+                physical_state=ExternalOperationPhysicalState.UNKNOWN,
+                owner=owner,
+                intent_state=ExternalOperationIntentState.TERMINATING,
+            )
+        except ExternalOperationFencedCommitRejectedError:
+            loaded = store.load(identity.operation_id)
+            if loaded is not None:
+                self._revision = loaded.revision
+            self._terminal_recorded = True
+            return
         self._revision = record.revision
-        finalized = finalize_operation_intent(
-            store,
-            operation_id=identity.operation_id,
-            expected_revision=self._revision,
-        )
+        try:
+            finalized = finalize_operation_intent_if_owner_matches(
+                store,
+                operation_id=identity.operation_id,
+                expected_revision=self._revision,
+                owner=owner,
+            )
+        except ExternalOperationFencedCommitRejectedError:
+            loaded = store.load(identity.operation_id)
+            if loaded is not None:
+                self._revision = loaded.revision
+            self._terminal_recorded = True
+            return
         self._revision = finalized.revision
         self._terminal_recorded = True
 
@@ -258,11 +275,19 @@ class ToolExternalOperationAttempt:
             return
         self._revision = record.revision
         if finalize_intent:
-            finalized = finalize_operation_intent(
-                store,
-                operation_id=identity.operation_id,
-                expected_revision=self._revision,
-            )
+            try:
+                finalized = finalize_operation_intent_if_owner_matches(
+                    store,
+                    operation_id=identity.operation_id,
+                    expected_revision=self._revision,
+                    owner=owner,
+                )
+            except ExternalOperationFencedCommitRejectedError:
+                loaded = store.load(identity.operation_id)
+                if loaded is not None:
+                    self._revision = loaded.revision
+                self._terminal_recorded = True
+                return
             self._revision = finalized.revision
         self._terminal_recorded = True
 

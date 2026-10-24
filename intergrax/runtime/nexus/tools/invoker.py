@@ -121,7 +121,6 @@ from intergrax.runtime.tools.tool_operation_recovery import (
     disposition_message,
     must_abandon_after_retry_exhaustion,
     must_abandon_uncertain_outcome,
-    reconcile_orphaned_tool_external_operations,
     runtime_error_for_disposition,
 )
 from intergrax.runtime.external_operations.tool_external_operation_attempt import (
@@ -1211,14 +1210,6 @@ class RuntimeToolInvoker:
         policy = contract.retry_policy
         attempts = self._effective_max_attempts(contract, request)
         last_exc: Optional[Exception] = None
-        if (
-            self._external_operation_store is not None
-            and self._external_operation_owner is not None
-        ):
-            reconcile_orphaned_tool_external_operations(
-                self._external_operation_store,
-                active_owner=self._external_operation_owner,
-            )
 
         for attempt in range(1, attempts + 1):
             if self._cooperative_cancellation_requested(state):
