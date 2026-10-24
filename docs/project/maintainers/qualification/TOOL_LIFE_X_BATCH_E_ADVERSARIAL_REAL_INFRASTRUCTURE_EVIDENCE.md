@@ -29,10 +29,10 @@
 | SHA role | Value |
 | --- | --- |
 | **START_HEAD** | `6dbe13c475fe2e80e5ebceff70472f8668987e13` |
-| **Implementation SHA** | *(publication commit — verify `git rev-parse HEAD` after push)* |
-| **L1 execution SHA** | same as implementation |
-| **L2 execution SHA** | same as implementation |
-| **Publication SHA** | same as implementation |
+| **Implementation SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
+| **L1 execution SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
+| **L2 execution SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
+| **Publication SHA** | `a9db518daf74263a71a554d934017d58e87a1f1f` |
 
 ---
 
