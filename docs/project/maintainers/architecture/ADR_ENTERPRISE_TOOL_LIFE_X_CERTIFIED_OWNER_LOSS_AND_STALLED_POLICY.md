@@ -7,7 +7,8 @@
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **BLOCKED** / **not CLOSED** |
 | **Date** | 2026-10-24 |
 | **Branch** | `development` |
-| **START_HEAD** | `db7cb510c0231be88d38c89123f2b60c3d26564e` |
+| **START_HEAD** | `dd63629d75f28ce25e45c07c90e52a59bce814fe` |
+| **L3-R5 remediation** | Independent audit R5-F01–F04 (2026-10-24) — this revision |
 | **Operator authority** | TL7/TL8 enterprise-safe direction **pre-approved** (ten principles §3); this ADR **does not** reopen them |
 | **Canonical roadmap** | [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §3.0.5 |
 | **Prior evidence (reuse)** | P0 [`TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md`](../qualification/TOOL_LIFE_X_P0_CANONICAL_LIFECYCLE_CLOSED_WORLD_PRE_AUDIT.md) · Batch C [`TOOL_LIFE_X_BATCH_C_STALLED_ABANDONED_RECOVERY_EVIDENCE.md`](../qualification/TOOL_LIFE_X_BATCH_C_STALLED_ABANDONED_RECOVERY_EVIDENCE.md) · Batch E [`TOOL_LIFE_X_BATCH_E_ADVERSARIAL_REAL_INFRASTRUCTURE_EVIDENCE.md`](../qualification/TOOL_LIFE_X_BATCH_E_ADVERSARIAL_REAL_INFRASTRUCTURE_EVIDENCE.md) · L3-R1 [`TOOL_LIFE_X_L3_R1_CONSOLIDATED_QUALIFICATION_EVIDENCE.md`](../qualification/TOOL_LIFE_X_L3_R1_CONSOLIDATED_QUALIFICATION_EVIDENCE.md) · L3-R2 [`TOOL_LIFE_X_L3_R2_MCP_HOST_LIFECYCLE_QUALIFICATION_EVIDENCE.md`](../qualification/TOOL_LIFE_X_L3_R2_MCP_HOST_LIFECYCLE_QUALIFICATION_EVIDENCE.md) |
@@ -52,7 +53,7 @@ Batch C audit **C-F01–C-F04** @ remediation lineage proved that inferring owne
 | STATE-X recovery interfaces | Checkpoint / continuation stores | ADR checkpoint admission | Yes | **Not** external-op owner-loss |
 | Architecture gates (no bypass) | U5 zero-bypass tests | platform execution unification | Yes | TL14 |
 
-**Conclusion:** Sanctioned infrastructure **can** host certified owner-loss **as an extension of the W4-C external-operation ownership domain** without a second lifecycle authority. **No** new semantic owner is required beyond the typed **certified-owner-loss evidence plane** bound to existing `ExternalOperationStateStore` transitions.
+**Conclusion (@ L3-R5 remediation):** W4-C **`ExternalOperationStateStore` + `external_operation_ownership`** remain the **durable physical-state owner**. **No** competing Tool lifecycle SM. However, **no sanctioned implementation today can mint or verify `CertifiedOwnerLossEvidenceV1`**, and the prior ADR’s `evidence_digest` + out-of-band `verify()` → `compare_and_set()` sequence **does not** establish issuer authenticity, atomic consumption, or tenant-safe shared-store access. **Classification: B — ARCHITECTURE DECISION REQUIRED** (§20) before **L3-R6** implementation.
 
 ---
 
@@ -87,7 +88,7 @@ Composition root (process / serving unit)
 
 **Semantic owner of RUNNING/UNKNOWN/terminal physical state:** unchanged — **`ExternalOperationStateStore`** via `external_operation_ownership` helpers.
 
-**Semantic owner of “may transition RUNNING→UNKNOWN for recovery”:** **`CertifiedOwnerLossEvidenceIssuerPort`** — the **only** authority that may mint evidence; verifiers are pure functions + store CAS preconditions.
+**Semantic owner of “may transition RUNNING→UNKNOWN for recovery”:** **`ExternalOperationStateStore` linearization** — the **only** authority that may **commit** the transition. **`CertifiedOwnerLossEvidenceIssuerPort`** may **stage** loss certification into the **same durable record** (never caller-supplied bypass). **No** freestanding verifier may authorize CAS without store-enforced one-time consumption (§20.2).
 
 **Explicit non-authorities (forbidden as proof of death):**
 
@@ -123,7 +124,7 @@ class CertifiedOwnerLossEvidenceV1(BaseModel):
     monotonic_fence: int  # strictly increasing per (tenant_id, operation_id)
     loss_reason: CertifiedOwnerLossReason  # enum: WORKER_LOST | LEASE_EXPIRED_WITH_LIVENESS_PROOF | OPERATOR_DECLARED | ...
     liveness_proof_ref: str | None  # opaque handle to verifier-owned proof bundle
-    evidence_digest: str  # canonical serialization digest for cross-process verify
+    evidence_digest: str  # integrity fingerprint only — NOT issuer authenticity (§20.1)
 
 class CertifiedOwnerLossEvidenceIssuerPort(Protocol):
     def issue_owner_loss_evidence(
@@ -135,6 +136,8 @@ class CertifiedOwnerLossEvidenceIssuerPort(Protocol):
     ) -> CertifiedOwnerLossEvidenceV1: ...
 
 class CertifiedOwnerLossEvidenceVerifierPort(Protocol):
+    """Deprecated shape — MUST NOT be used as a separate pre-CAS gate (§20.2)."""
+
     def verify(
         self,
         evidence: CertifiedOwnerLossEvidenceV1,
@@ -144,34 +147,39 @@ class CertifiedOwnerLossEvidenceVerifierPort(Protocol):
     ) -> None: ...  # raises CertifiedOwnerLossEvidenceRejectedError
 ```
 
-**API extension (same symbol, new parameter — breaking at type level only in implementation batch):**
+**Store-native API (mandatory for L3-R6 — single linearization owner):**
 
-`recover_running_operation_after_certified_owner_loss(store, *, operation_id, expected_revision, evidence: CertifiedOwnerLossEvidenceV1, verifier: CertifiedOwnerLossEvidenceVerifierPort) -> ExternalOperationState`
+Extend `ExternalOperationStateStore` (same durability backend as W4-C):
 
-**Preconditions (all mandatory):**
+1. `stage_certified_owner_loss_evidence(tenant_id, operation_id, expected_revision, staged: StagedCertifiedOwnerLossEvidenceV1) -> ExternalOperationState` — **issuer-only** composition path; CAS writes staged slot on RUNNING record.
+2. `apply_certified_owner_loss(tenant_id, operation_id, expected_revision, evidence_id: str) -> ExternalOperationState` — **one** CAS: validate tenant + revision + RUNNING + staged `evidence_id` unconsumed + epoch fields match staged payload + monotonic fence; consume evidence; transition physical `UNKNOWN`, intent `TERMINATING`; clear or fence `owner_token` per W4-C.
 
-- Loaded record `physical_state == RUNNING`.
-- `evidence.epoch.operation_id == operation_id`.
-- `evidence.epoch.store_revision == expected_revision` (or CAS retry loop with fresh evidence).
-- `evidence.epoch.owner_token == record.owner_token`.
-- `evidence.epoch.tenant_id` matches tool invocation tenant binding.
-- Verifier accepts digest, issuer, fence monotonicity, and liveness proof handle.
-- **Post:** single CAS to `UNKNOWN` physical state; intent moves to `TERMINATING` (existing W4-C pattern); owner token cleared per existing finalize rules.
+`recover_running_operation_after_certified_owner_loss(...)` becomes a thin wrapper over **`apply_certified_owner_loss`** only (no separate verify).
 
-**Idempotency:** Second compatible evidence with same fence → return current record if already `UNKNOWN` with matching terminal class; conflicting terminal → `ExternalOperationFencedCommitRejectedError`.
+**Preconditions (all enforced inside store CAS — not application-only):**
+
+- `tenant_id` matches durable `ExternalOperationState.tenant_id` (new mandatory field — §20.3).
+- `physical_state == RUNNING`.
+- Staged evidence present, `evidence_id` not in `consumed_certified_loss_evidence_ids`.
+- `staged.epoch` matches live `owner_token`, `store_revision`, `operation_id`, `tenant_id`.
+- `issuer_id` ∈ `CompositionCertifiedOwnerLossIssuerBinding.allowed_issuer_ids` (composition config — not secrets/crypto).
+- **Post:** UNKNOWN physical; intent TERMINATING; evidence marked consumed.
+
+**Idempotency:** Re-`apply` with same consumed `evidence_id` → return current record if already UNKNOWN from that certification; conflicting terminal → `ExternalOperationFencedCommitRejectedError`.
 
 ### 4.3 Persistence and atomicity
 
 | Element | Rule |
 | --- | --- |
-| Durable schema | Extend **optional** columns/fields on external-op store record: `ownership_epoch_fence: int | None`, `last_certified_loss_evidence_id: str | None` — **or** side table keyed by `(tenant_id, operation_id)` owned by same store implementation |
-| Tenant identity | `tenant_id` on evidence epoch; store keys remain `operation_id` but operation_id MUST be derived from tenant-scoped tool external-op identity (existing `ExternalOperationIdentity`) |
-| Transaction boundary | `verify` → `compare_and_set` in one composition call; no intermediate observable RUNNING mutation |
-| Linearization | Store `revision` CAS is the linearization point |
-| Epoch semantics | `monotonic_fence` increases on each **accepted** owner-loss certification for that operation |
-| Concurrent recovery | Loser CAS → `StaleExternalOperationStateError`; re-load and re-issue evidence if still RUNNING |
-| Crash consistency | If CAS succeeded before crash, restart sees UNKNOWN; reconciliation proceeds — no auto-replay |
-| Compatibility | `InMemoryExternalOperationStateStore` + future shared store implementations implement same protocol |
+| Durable schema | **Mandatory** on `ExternalOperationState`: `tenant_id: str`; `ownership_epoch_fence: int | None`; `staged_certified_owner_loss: StagedCertifiedOwnerLossEvidenceV1 | None`; `consumed_certified_loss_evidence_ids: frozenset[str]` (or normalized store equivalent) |
+| Store key | **All** `load` / `create_if_absent` / `compare_and_set` / `list_running` / certification methods take **`tenant_id` + `operation_id`** — no cross-tenant load by bare `operation_id` |
+| Transaction boundary | **Forbidden:** `verifier.verify()` then `compare_and_set()` as two observable steps. **Required:** `stage_*` and `apply_*` each use **one** store CAS (or backend-native single transaction implementing equivalent checks) |
+| Linearization | **`apply_certified_owner_loss` CAS** (revision + evidence consumption + transition) |
+| Epoch semantics | `monotonic_fence` increases only on successful `apply_certified_owner_loss` |
+| Concurrent recovery | Loser CAS → `StaleExternalOperationStateError`; re-stage if still RUNNING |
+| Crash consistency | After successful `apply`, UNKNOWN survives restart; after failed CAS, RUNNING unchanged — **no** “verified but not applied” state |
+| Store partition / quorum loss | Fail-closed — no transition; no optimistic UNKNOWN |
+| Compatibility | Protocol extension + migration: backfill `tenant_id` at create from admission context; shared-store deployments **BLOCKED** until tenant-scoped protocol ships |
 
 ### 4.4 Recovery and reconciliation
 
@@ -229,21 +237,54 @@ See §4.1–4.2. **Composition owner** for issuer binding: same owner as `Extern
 
 ## 7. Atomicity / transaction / fencing model
 
-See §4.3. Fencing: `owner_token` + `monotonic_fence` + store `revision` CAS. Superseded workers cannot publish terminals (`ExternalOperationFencedCommitRejectedError` — already proven Batch C).
+**Linearization model (closed world @ HEAD):**
+
+```text
+[Issuer] stage_certified_owner_loss_evidence  →  CAS#1 (RUNNING, staged slot)
+[Recovery] apply_certified_owner_loss         →  CAS#2 (consume evidence + RUNNING→UNKNOWN)
+[Worker]   mark_physical_terminal_if_owner_matches → CAS (owner_token match)
+```
+
+Certification validity, owner epoch (`owner_token` + `store_revision`), `monotonic_fence`, and one-time `evidence_id` consumption **MUST** be checked inside **CAS#2** — not in a prior call.
+
+**Equivalence note:** A two-phase `stage` + `apply` is admissible only because **neither phase alone** authorizes UNKNOWN; only **CAS#2** does. A caller-constructed `CertifiedOwnerLossEvidenceV1` without prior **CAS#1** from an allowed issuer binding **MUST** fail.
+
+Fencing: existing `owner_token` terminal rules (Batch C) plus post-loss UNKNOWN reconciliation gates.
 
 ---
 
 ## 8. Tenant isolation model
 
-- `CertifiedOwnerLossEvidenceV1.epoch.tenant_id` MUST match invocation tenant.
-- Verifier MUST reject cross-tenant evidence even if `operation_id` collides across tenants (defense in depth with tenant-scoped operation_id generation).
-- Evidence digests MUST NOT embed secrets; `liveness_proof_ref` is opaque.
+**@ HEAD — gap (R5-F03):** `ExternalOperationState` and `ExternalOperationStateStore` use **`operation_id` only**; `ExternalOperationIdentity` / `mint_stable_operation_id` bind `execution_id` but **do not** embed `tenant_id`. Admission layers (`ExternalOperationAdmissionContext.tenant_id`) enforce tenant on **admit** paths; **durable external-op records are not tenant-keyed**.
+
+**Minimum shared-store contract (mandatory before multi-tenant shared durability):**
+
+- Persist `tenant_id` on every external-op record at `create_if_absent`.
+- Every store API requires explicit `tenant_id`; reject load/CAS when record tenant ≠ caller tenant.
+- `list_running(tenant_id)` — no global unscoped scans in production composition.
+- Certificates **cannot** be the sole tenant guard if bare `operation_id` remains globally addressable.
+
+**Defense in depth:** `epoch.tenant_id` must match durable `tenant_id` inside `apply_certified_owner_loss`.
+
+Evidence digests MUST NOT embed secrets; `liveness_proof_ref` is opaque and **does not** substitute store staging.
 
 ---
 
 ## 9. Recovery and reconciliation semantics
 
 See §4.4. Reconciliation owner: existing provider ports + tool invoker policy — **downstream** of UNKNOWN admission.
+
+### 9.1 Distinct facts (no silent equivalence)
+
+| # | Fact | Meaning | May imply |
+| --- | --- | --- | --- |
+| 1 | **Ownership authority lost** | Sanctioned certified owner-loss committed on store | **Not** provider terminated |
+| 2 | **Platform record fenced** | `owner_token` / revision CAS rejected stale worker | **Not** loss certification |
+| 3 | **Provider operation physically terminated** | Provider port / observation says stopped | **Not** business outcome |
+| 4 | **Business outcome observed** | Typed terminal or reconciliation oracle | **Not** automatic retry right |
+| 5 | **Retry authorized** | Canonical policy + idempotency class + invoker | Requires explicit gates |
+
+Ambiguous provider effect → remain **UNKNOWN**; no blind replay; no Governance bypass; no new retry owner without sanctioned policy.
 
 ---
 
@@ -291,18 +332,46 @@ Columns: **Case** | **Expected durable state** | **Permitted transitions** | **F
 | Reconciliation UNKNOWN | UNKNOWN | stay UNKNOWN / ABANDON tool | blind retry | Invoker | Reconcile result |
 | Takeover without replay permission | RUNNING or ABANDON | ABANDON tool terminal | new physical attempt | Governance + invoker | No loss evidence ≠ replay right |
 
+### 11.2 R5 extended negative-case matrix (L3-R6 design gate)
+
+Columns: **Precondition** | **Semantic owner** | **Durable state** | **Permitted** | **Forbidden** | **Linearization** | **Expected error** | **Qual evidence**
+
+| Case | Precondition | Semantic owner | Durable state | Permitted | Forbidden | Linearization | Expected error | Qual evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Forged digest | Caller builds payload | Store | RUNNING | reject apply | UNKNOWN transition | `apply_certified_owner_loss` | `CertifiedOwnerLossEvidenceRejectedError` / not staged | L3-R7 |
+| Tampered issuer identity | `issuer_id` ∉ allowlist | Store | RUNNING staged | reject apply | commit | CAS#2 | rejected | L3-R7 |
+| Cross-tenant evidence | `epoch.tenant_id` ≠ record | Store | RUNNING | reject | apply | CAS#2 | tenant mismatch | L3-R7 + TEN scoped |
+| Wrong operation | `evidence_id` for other op | Store | RUNNING | reject | CAS | CAS#2 | not found / mismatch | L3-R7 |
+| Replayed certificate | `evidence_id` consumed | Store | UNKNOWN or RUNNING | idempotent return if same UNKNOWN | second consume | CAS#2 | rejected / no-op | L3-R7 |
+| Expired certificate | `issued_at` > TTL policy | Store | RUNNING staged | re-stage | apply stale | CAS#2 | expired | L3-R7 + operator TTL |
+| Duplicate consumption | two appliers same id | Store | RUNNING→UNKNOWN once | one winner | double UNKNOWN flip | CAS#2 | stale / rejected | L3-R7 |
+| Recovery CAS vs terminal | terminal committed | Invoker + store | SUCCEEDED/FAILED | reconcile only | RUNNING→UNKNOWN | terminal CAS | fenced / rejected | Batch C |
+| Worker alive after lease expiry | idempotency lease gone | Invoker | RUNNING | observe STALLED | certify loss w/o proof | — | deny stage | Batch C + L3-R7 |
+| Worker revival during cert | old worker resumes | Store + owner | RUNNING | live owner terminal | stale owner apply | owner-matched CAS | `ExternalOperationFencedCommitRejectedError` | Batch C |
+| Cert accepted before store fails | N/A — no split accept | Store | — | — | verify-without-CAS | single CAS only | — | ADR §20.2 |
+| Two concurrent verifiers | dual apply | Store | RUNNING | one CAS win | two UNKNOWN | CAS#2 | `StaleExternalOperationStateError` | L3-R7 |
+| Store partition | quorum loss | Store | last committed | fail-closed | guess UNKNOWN | none | propagate unavailable | L3-R8 |
+| Stale epoch after restart | revision advanced | Store | RUNNING | re-stage | old staged apply | CAS#2 | stale revision | L3-R7 |
+| Partial persistence migration | missing `tenant_id` | Store | legacy row | fail create in shared mode | cross-tenant load | load | fail-closed | migration qual |
+| Provider committed, ack lost | timeout | Reconciliation | RUNNING/UNKNOWN | reconcile | auto SUCCESS retry | reconcile CAS | UNKNOWN until oracle | L3-R1 / Batch B |
+| Reconciliation UNKNOWN | oracle silent | Reconciliation | UNKNOWN | stay UNKNOWN / ABANDON policy | blind retry | invoker policy | blocked replay | Batch B |
+| Unauthorized new physical attempt | UNKNOWN w/o policy | Invoker | UNKNOWN | reconcile first | new attempt | invoker gate | blocked | Batch B |
+
 ---
 
 ## 12. Implementation impact graph
 
 ```text
-L3-R6-A  contracts/certified_owner_loss_evidence.py + errors
-    → L3-R6-B  verify + recover_running_operation_after_certified_owner_loss (evidence param)
-        → L3-R6-C  store schema optional fields + InMemory impl
-            → L3-R6-D  composition issuer binding (fail-closed if missing)
-                → L3-R7  adversarial pytest matrix §11
-                    → L3-R8  real-infra issuer liveness proofs (optional operator Docker)
+L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
+    → L3-R6-A  contracts + store protocol extension (tenant_id, stage/apply)
+        → L3-R6-B  apply_certified_owner_loss + recover_* wrapper
+            → L3-R6-C  InMemory + migration guards
+                → L3-R6-D  composition issuer allowlist binding (fail-closed)
+                    → L3-R7  §11 + §11.2 adversarial pytest
+                        → L3-R8  issuer liveness proofs (operator Docker — TL10–13 blockers preserved)
 ```
+
+**L3-R6 entry:** **prohibited** until **B — ARCHITECTURE DECISION REQUIRED** closed by operator ratification record (§20.4).
 
 **Touches (planned):** `external_operation_ownership.py`, `external_operation_state_store.py`, `contracts/external_operation_cancellation.py` (if record extended), production composition factories, qualification docs.
 
@@ -322,7 +391,8 @@ L3-R6-A  contracts/certified_owner_loss_evidence.py + errors
 
 | Batch | Deliverable | Classification |
 | --- | --- | --- |
-| **L3-R6** | Contracts + verifier + CAS transition + composition fail-closed/default deny | IMPLEMENTATION REQUIRED |
+| **L3-R5-B** | Operator ratification of §20.4 recommended option | **OPERATOR DECISION REQUIRED** |
+| **L3-R6** | Store-native stage/apply + tenant-scoped protocol + composition binding | **BLOCKED** until L3-R5-B |
 | **L3-R7** | §11 adversarial unit/integration tests | VALIDATION REQUIRED |
 | **L3-R8** | Issuer liveness proof with approved Docker/supervisor qual | VALIDATION REQUIRED (operator infra) |
 | **L3-R9** | TL8 positive path closure evidence + FRZ-REL-05 scoped update proposal | VALIDATION REQUIRED |
@@ -354,25 +424,25 @@ L3-R6-A  contracts/certified_owner_loss_evidence.py + errors
 
 ---
 
-## 17. TL1–TL15 dependency classification (@ L3-R5 ADR)
+## 17. TL1–TL15 closure matrix (@ L3-R5 remediation)
 
-| Criterion | Owner | Contract | Valid evidence SHA | Classification | Missing requirement | Tests | FRZ | Dependency |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TL1 | RuntimeToolInvoker | ToolContract timeout | Batch A `8f6b9a23…` | ALREADY PROVEN | — | Batch A L2 | FRZ-REL-01 scoped | — |
-| TL2 | ExecutionDeadlineAuthority | deadline hierarchy | Batch A/E | ALREADY PROVEN | — | consolidated | FRZ-REL-02 scoped | — |
-| TL3 | CancellationCoordinator | cancel ports | W4-A + Batch C | ALREADY PROVEN (scoped) | PG/MCP physical cancel | W4-C | FRZ-REL-04 scoped | TL9 |
-| TL4 | RuntimeToolInvoker | ToolRetryPolicy | Batch B | ALREADY PROVEN | — | Batch B | FRZ-REL-07 scoped | TL5 |
-| TL5 | Invoker + idempotency | ToolEffectCertainty | B + L3-R1 HTTP | ALREADY PROVEN (scoped) | runbooks | L3-R1 | FRZ-REL-03 scoped | TL6 |
-| TL6 | Invoker | SideEffectRetrySafety | Batch B | ALREADY PROVEN | retry re-auth matrix | Batch B | FRZ-GOV scoped | TL5 |
-| TL7 | tool_operation_recovery | STALLED observational | Batch C @ Path B | VALIDATION REQUIRED | heartbeat policy optional | `is_stalled_*` | FRZ-REL-01 scoped | ADR §4.5 |
-| TL8 | external_operation_ownership | CertifiedOwnerLossEvidenceV1 | Batch C deny @ HEAD | IMPLEMENTATION REQUIRED | L3-R6..R7 | deny + future positive | FRZ-REL-05, FRZ-REC scoped | **this ADR** |
-| TL9 | ExternalOperationStateStore | fenced terminal | Batch C | ALREADY PROVEN (scoped) | late result all providers | Batch C | FRZ-REL-05 scoped | TL8 impl |
-| TL10 | SQL tools | row/byte limits | D + E partial | VALIDATION REQUIRED | Docker PG cancel | D/E | FRZ-REL-10 scoped | **PG Docker BLOCKED** |
-| TL11 | MCP host | ToolContract path | D + L3-R2 scoped | VALIDATION REQUIRED | full 15-scenario host bridge | L3-R2 | FRZ-REL-06 scoped | **MCP physical BLOCKED** |
-| TL12 | HTTP provider | AllowlistHttpClient | D + E + L3-R1 | VALIDATION REQUIRED | lost-ack (improved) | L3-R1 | FRZ-REL-06 scoped | — |
-| TL13 | Qual cross-provider | real infra | E partial | VALIDATION REQUIRED | Docker PG + MCP | Batch E | FRZ-REG scoped | TL10, TL11 |
-| TL14 | Arch gates | single invoker | A–D + L3-R1 | ALREADY PROVEN | — | U5 gates | FRZ-BND-03 scoped | — |
-| TL15 | TOOL-LIFE-X parent | EC1–15 rollup | P0 + batches | BLOCKED | TL8 impl, TL10–13 infra | parent L3 | — | all |
+| Criterion | Semantic owner | Composition owner | Contract | Valid SHA | Classification | Missing action | Test | FRZ | Dependency |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TL1 | RuntimeToolInvoker | `runtime_tool_invoker_composition` | ToolContract timeout | Batch A | ALREADY PROVEN | — | Batch A L2 | FRZ-REL-01 scoped | — |
+| TL2 | Execution runtime | Execution composition | deadline hierarchy | Batch A/E | ALREADY PROVEN | — | consolidated | FRZ-REL-02 scoped | — |
+| TL3 | Cancellation + ownership helpers | Invoker wiring | W4-C cancel ports | Batch C + W4 | ALREADY PROVEN (scoped) | PG/MCP physical cancel | W4-C | FRZ-REL-04 scoped | TL9 |
+| TL4 | RuntimeToolInvoker | Invoker composition | ToolRetryPolicy | Batch B | ALREADY PROVEN | — | Batch B | FRZ-REL-07 scoped | TL5 |
+| TL5 | Invoker + idempotency | Production composition | ToolEffectCertainty | B + L3-R1 | ALREADY PROVEN (scoped) | runbooks | L3-R1 | FRZ-REL-03 scoped | TL6 |
+| TL6 | Invoker | Production composition | SideEffectRetrySafety | Batch B | ALREADY PROVEN | retry re-auth matrix | Batch B | FRZ-GOV scoped | TL5 |
+| TL7 | tool_operation_recovery | Invoker | STALLED DEADLINE_ONLY | Batch C @ `dd63629d…` | VALIDATION REQUIRED | heartbeat policy | `is_stalled_*` | FRZ-REL-01 scoped | ADR §4.5 |
+| TL8 | external_operation_ownership + store CAS | **Unbound** issuer | stage/apply certified loss | Batch C deny @ HEAD | **OPERATOR DECISION REQUIRED** | §20 ratification + L3-R6 | deny today; L3-R7 positive | FRZ-REL-05, FRZ-REC scoped | L3-R5-B |
+| TL9 | ExternalOperationStateStore | Invoker optional store | fenced terminal CAS | Batch C | ALREADY PROVEN (scoped) | tenant-scoped store protocol | Batch C | FRZ-REL-05 scoped | TL8 |
+| TL10 | SQL tool adapters | Tool composition | row/byte limits | D + E partial | VALIDATION REQUIRED | Docker PG | D/E | FRZ-REL-10 scoped | **BLOCKED** C10 |
+| TL11 | MCP host bridge | Host composition | ToolContract path | L3-R2 | VALIDATION REQUIRED | hung-server qual | L3-R2 | FRZ-REL-06 scoped | **BLOCKED** |
+| TL12 | HTTP tools | Invoker | AllowlistHttpClient | L3-R1 | VALIDATION REQUIRED | lost-ack | L3-R1 | FRZ-REL-06 scoped | — |
+| TL13 | Cross-provider qual | Platform qual | real infra matrix | E partial | VALIDATION REQUIRED | Docker PG+MCP | Batch E | FRZ-REG scoped | TL10–11 |
+| TL14 | Arch gates | Platform | single invoker | A–D + L3-R1 | ALREADY PROVEN | — | U5 gates | FRZ-BND-03 scoped | — |
+| TL15 | TOOL-LIFE-X parent | Roadmap §3.0.5 | EC1–15 rollup | P0 + waves | BLOCKED | TL8 + TL10–13 | parent L3 | — | all |
 
 ---
 
@@ -380,20 +450,92 @@ L3-R6-A  contracts/certified_owner_loss_evidence.py + errors
 
 | Blocker | Class | Notes |
 | --- | --- | --- |
-| TL8 positive recovery | IMPLEMENTATION REQUIRED | L3-R6+ per §14 |
-| PostgreSQL / Docker physical qual | **BLOCKED** (operator C10) | TL10/TL13 — separate from ADR |
-| MCP hung-server physical qual | **BLOCKED** | TL11 — separate from ADR |
-| TL7 heartbeat policy | OPERATOR DECISION REQUIRED | Optional; default DEADLINE_ONLY sufficient for ADR |
-| `TOOL-LIFE-X` parent CLOSED | BLOCKED | Requires TL1–14 qual rollup |
+| Certified owner-loss issuer + store protocol | **OPERATOR DECISION REQUIRED** | §20.4 — blocks L3-R6 |
+| TL8 positive recovery | **BLOCKED** | Until L3-R5-B ratification |
+| PostgreSQL / Docker physical qual | **BLOCKED** (operator C10) | TL10/TL13 preserved |
+| MCP hung-server physical qual | **BLOCKED** | TL11 preserved |
+| TL7 heartbeat policy | OPERATOR DECISION REQUIRED | Optional; DEADLINE_ONLY default |
+| `TOOL-LIFE-X` parent CLOSED | BLOCKED | TL8 + TL10–13 + TL15 |
 
 ---
 
 ## 19. Post-step enterprise discovery and roadmap completeness
 
-- **DIST-SCALE-X:** not started — **explicitly excluded** from this ADR.
-- **New semantic authority conflict:** **none** — certified loss is an evidence plane on existing W4-C store, not a competing lifecycle.
-- **Ratification:** Operator pre-approved direction; ADR status remains **READY FOR INDEPENDENT AUDIT** until independent exact-SHA review. Implementation batches do not imply RATIFIED until governance record says so.
+- **DIST-SCALE-X:** not started — excluded.
+- **Semantic authority:** RUNNING/UNKNOWN/terminal owner remains W4-C store; **new** sanctioned surfaces: tenant-scoped store protocol + composition-bound issuer allowlist + store-native certification CAS — **require ratification** (not self-closed by this doc).
+- **Ratification:** TL7/TL8 direction pre-approved; **issuer binding and store extensions are not RATIFIED** until operator record on §20.4 option.
+- **Tenant Isolation Audit (TOOL-LIFE-X L3-R5 scope):** **FAIL** for shared `ExternalOperationStateStore` until `tenant_id` durable keying ships — admission-only tenant checks insufficient for cross-tenant evidence (R5-F03). Global **TENANT-X CLOSED** does not auto-pass this gap.
+- **FRZ / ECAP:** **new global FRZ PASS = 0**; FRZ-REL-05 / FRZ-REC remain architecture inputs; FRZ-BND-03 preserved; ECAP P1/P2/P4 docs-only — no self-PASS.
 
 ---
 
-**Disposition:** `TOOL-LIFE-X L3-R5 — ADR READY FOR INDEPENDENT AUDIT`
+## 20. L3-R5 independent audit remediation (R5-F01–F04)
+
+### 20.1 R5-F01 — Certificate authenticity (`evidence_digest`)
+
+| Threat | Enforceable boundary (no new crypto/CA) |
+| --- | --- |
+| Caller-constructed evidence | **Reject** unless `evidence_id` present in **staged** slot from **CAS#1** by allowlisted issuer |
+| Tampered payload | `evidence_digest` = integrity check **of staged bytes only** inside CAS#2 |
+| Forged issuer | `issuer_id` must match `CompositionCertifiedOwnerLossIssuerBinding` |
+| Replay | `consumed_certified_loss_evidence_ids` on record |
+| Stale | `store_revision` + `owner_token` + `monotonic_fence` + optional `issued_at` TTL |
+| Wrong deployment | `issuer_id` includes `serving_unit_id` from composition binding |
+| Wrong tenant | durable `tenant_id` + epoch tenant match in CAS#2 |
+
+**Disposition:** Integrity field **alone** is insufficient — **OPERATOR DECISION REQUIRED** to ratify **B1** staging model; until then **prohibit L3-R6**.
+
+**Reuse:** W4-C revision CAS + Batch C owner fencing; **not** idempotency lease as death proof.
+
+### 20.2 R5-F02 — Atomic certification and CAS
+
+Prior ADR `verify(evidence) → compare_and_set(...)` is **rejected** — crash between calls yields false confidence; two callers are not linearizable.
+
+**Required:** `apply_certified_owner_loss` single CAS checks validity + consumption + transition. Optional `stage_*` is **not** authority to enter UNKNOWN.
+
+**Scenarios:** concurrent recovery → one CAS winner; worker revival → fenced terminals; cancellation vs recovery → W4-C intent precedence inside same store; terminal vs recovery → terminal blocks loss apply; store failover → fail-closed.
+
+**Disposition:** Architecture correction **in this ADR**; implementation **BLOCKED** until L3-R5-B.
+
+### 20.3 R5-F03 — Tenant-safe persistence
+
+| Artifact @ HEAD | Tenant binding |
+| --- | --- |
+| `ExternalOperationIdentity` | No `tenant_id` field |
+| `mint_stable_operation_id` | Hashes `execution_id` only |
+| `ExternalOperationState` | `operation_id` only |
+| `ExternalOperationStateStore` | Single-key `operation_id` |
+| Admission / audit | `tenant_id` enforced on admit — **not** on durable load |
+
+**Disposition:** **OPERATOR DECISION REQUIRED** to adopt tenant-scoped store protocol (§4.3, §8). Migration: set `tenant_id` at create from invoker/admission context; fail shared-store reads without tenant.
+
+### 20.4 R5-F04 — Actual authority and backend inventory
+
+| Mechanism | Canonical owner | Production reachable | Shared durability | Worker binding | Links to ext-op record | Epoch/fence | Loss determination | Restart/partition | Admissible proof today |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `ProcessLocalExternalOperationOwner` | owning worker process | Yes | No | process-local token | `owner_token` on record | revision CAS | **No** — mismatch ≠ death | new token on restart | fencing only |
+| `ExternalOperationStateStore` | W4-C composition | Yes (default in-memory) | Only if operator wires shared backend | via `owner_token` | `operation_id` key | `revision` | **No** — stores state only | last committed wins | CAS outcomes |
+| `IdempotencyStore` / pre-effect recovery | idempotency plane | Yes | varies | pre-effect lease | **not** RUNNING ext-op | lease epoch | **No** for RUNNING | lease expiry ≠ stop work | pre-effect only |
+| `PreEffectSuspendedWorkRecoveryAuthority` | W2 recovery | Yes | ledger | worker claim | pre-effect keys | claim CAS | **No** | per STATE-X patterns | not equivalent |
+| `reconcile_orphaned_running_operations` | none | Yes (no-op) | — | — | — | — | **No** | — | forbidden |
+| `recover_running_operation_after_certified_owner_loss` | none @ Path B | Yes (deny) | — | — | load by `operation_id` | — | **denied** | — | raises `ExternalOperationCertifiedOwnerLossRequiredError` |
+| Checkpoint / scheduler atomic claim | STATE-X / tasks | Yes | task store | worker id | **task** records | claim lease | worker loss for **tasks** | partition fail-closed | **not wired** to ext-op store |
+| `CertifiedOwnerLossEvidenceIssuerPort` | **unimplemented** | **No** | — | — | — | planned fence | — | — | **none** |
+
+**Answer:** **No sanctioned implementation can issue or verify `CertifiedOwnerLossEvidenceV1` @ HEAD.** Idempotency lease **≠** owner-loss evidence (Batch C Path B).
+
+### 20.5 Classification and implementation eligibility
+
+| Disposition | Value |
+| --- | --- |
+| **A — IMPLEMENTATION READY** | **Not met** |
+| **B — ARCHITECTURE DECISION REQUIRED** | **Selected** — ratify **Option B1 (recommended):** tenant-scoped `ExternalOperationStateStore` + composition allowlisted issuer + `stage_certified_owner_loss_evidence` / `apply_certified_owner_loss` atomic CAS |
+| **C — FAIL-CLOSED ONLY** | Remains default for providers without reconciliation — parallel to B for positive recovery |
+
+**L3-R6 eligibility:** **none** until operator ratification record references this ADR §20.4 option.
+
+**Provider reconciliation limitations:** No outcome-query → remain UNKNOWN; no auto SUCCESS; physical termination ≠ business outcome (§9.1).
+
+---
+
+**Disposition:** `TOOL-LIFE-X L3-R5 — READY FOR INDEPENDENT AUDIT` · **Classification B** · **STOP — ARCHITECTURE DECISION REQUIRED — CERTIFIED OWNER-LOSS AUTHORITY** for implementation entry
