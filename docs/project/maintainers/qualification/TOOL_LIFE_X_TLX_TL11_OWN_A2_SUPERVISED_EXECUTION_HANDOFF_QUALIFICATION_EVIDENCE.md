@@ -5,8 +5,8 @@
 | **Task** | `TLX-TL11-OWN-A2-OWNERSHIP-INVARIANT` (final gate) |
 | **Operator authorization** | `OPERATOR APPROVED — ADR OWN-A2` |
 | **START_HEAD** | `bdcdeccaf50644854455b71a5ae714308ebee472` |
-| **IMPLEMENTATION_HEAD** | `df4bbb5bd36571d9cae2e58f1887cff6f74b9702` |
-| **PUBLICATION_HEAD** | `df4bbb5bd36571d9cae2e58f1887cff6f74b9702` (pre-push; verify after `origin/development` push) |
+| **IMPLEMENTATION_HEAD** | `12ec8f8716f92d969c073bac6f84587231b442f4` |
+| **PUBLICATION_HEAD** | `12ec8f8716f92d969c073bac6f84587231b442f4` |
 | **Disposition** | **`TLX-TL11-OWN-A2-OWNERSHIP-INVARIANT — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
 **Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no TL8 positive recovery; no DIST-SCALE-X; process crash does not invent persistent recovery.
