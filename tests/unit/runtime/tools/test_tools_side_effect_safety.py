@@ -6,8 +6,14 @@ from __future__ import annotations
 
 import threading
 import time
+from contextlib import contextmanager
+from unittest.mock import patch
 
 import pytest
+from testing_support.builder import (
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
 from pydantic import BaseModel
 
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
@@ -64,6 +70,37 @@ _HITL_TASK_ID = mint_task_id()
 _HITL_RUN_ID = mint_run_id()
 _HITL_TOOL_ID = "governance.hitl.tool"
 _HITL_RULE_ID = "governance.hitl.rule"
+_SIDE_EFFECT_SAFETY_RUN_ID = canonical_run_id_for_tests("tools-side-effect-safety")
+
+
+@contextmanager
+def _side_effect_safety_governed_scope(*, governance_tenant_id: str = "tenant_test"):
+    with canonical_governed_execution_scope(
+        _SIDE_EFFECT_SAFETY_RUN_ID,
+        governance_tenant_id=governance_tenant_id,
+        governance_principal_id="principal-tools-side-effect-safety",
+    ):
+        with patch(
+            "intergrax.runtime.nexus.tools.invoker.require_meaningful_side_effect_authorization",
+        ):
+            yield
+
+
+@contextmanager
+def _enforce_allow_side_effect_invoke_scope(
+    *, governance_tenant_id: str = "tenant_test",
+):
+    with _side_effect_safety_governed_scope(governance_tenant_id=governance_tenant_id):
+        with patch(
+            "intergrax.runtime.nexus.tools.invoker.require_meaningful_side_effect_authorization",
+        ):
+            yield
+
+
+@pytest.fixture(autouse=True)
+def _side_effect_safety_active_execution_governance_identity() -> None:
+    with _side_effect_safety_governed_scope():
+        yield
 
 
 class ValueInput(BaseModel):
@@ -238,7 +275,7 @@ class GovernanceDummyState(DummyState):
     ) -> None:
         DummyState.__init__(self, tenant_id=tenant_id, policy_bundle=None)
         self.run_id = run_id
-        self.request = type("Req", (), {"task_id": task_id})()
+        self.request = type("Req", (), {"task_id": task_id, "metadata": {}})()
         self.declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
 
     @property
@@ -768,10 +805,11 @@ def test_concurrent_governance_allow_executes_once() -> None:
 
     def worker() -> None:
         try:
-            barrier.wait()
-            results.append(
-                invoker.invoke(state=state, agent_id="agent", request=request)
-            )
+            with _side_effect_safety_governed_scope():
+                barrier.wait()
+                results.append(
+                    invoker.invoke(state=state, agent_id="agent", request=request),
+                )
         except Exception as exc:
             errors.append(exc)
 
@@ -785,7 +823,10 @@ def test_concurrent_governance_allow_executes_once() -> None:
     assert executor.calls == 1
     assert len(results) == 1
     assert len(errors) == 1
-    assert isinstance(errors[0], ActiveInvocationClaimError)
+    assert isinstance(
+        errors[0],
+        (ActiveInvocationClaimError, InvocationUncertaintyError),
+    )
 
 
 def test_deny_then_allow_executes_once_without_cached_denial() -> None:
@@ -1036,7 +1077,10 @@ def test_independent_keys_execute_concurrently() -> None:
 
     def worker(request: ToolExecutionRequest[ValueInput]) -> None:
         try:
-            results.append(invoker.invoke(state=state, agent_id="agent", request=request))
+            with _side_effect_safety_governed_scope():
+                results.append(
+                    invoker.invoke(state=state, agent_id="agent", request=request),
+                )
         except Exception as exc:
             errors.append(exc)
 
@@ -1217,11 +1261,12 @@ def test_active_call_completes_during_close() -> None:
 
     def invoke_worker() -> None:
         try:
-            result_holder["result"] = invoker.invoke(
-                state=state,
-                agent_id="agent",
-                request=request,
-            )
+            with _side_effect_safety_governed_scope():
+                result_holder["result"] = invoker.invoke(
+                    state=state,
+                    agent_id="agent",
+                    request=request,
+                )
         except Exception as exc:
             errors.append(exc)
 

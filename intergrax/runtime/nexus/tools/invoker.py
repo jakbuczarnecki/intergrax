@@ -122,7 +122,7 @@ from intergrax.runtime.external_operations.tool_external_operation_attempt impor
     tool_external_operation_identity,
 )
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
-from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import (
     ToolEffectCertainty,
     ToolExecutionRequest,
@@ -1201,7 +1201,7 @@ class RuntimeToolInvoker:
         pre_effect_claim: PreEffectClaimContext | None = None,
     ) -> ToolExecutionResult[BaseModel]:
         policy = contract.retry_policy
-        attempts = self._effective_max_attempts(contract)
+        attempts = self._effective_max_attempts(contract, request)
         last_exc: Optional[Exception] = None
 
         for attempt in range(1, attempts + 1):
@@ -1581,14 +1581,15 @@ class RuntimeToolInvoker:
         return result
 
     @staticmethod
-    def _effective_max_attempts(contract: ToolContract) -> int:
-        """Side-effect tools require positive retry-safety proof before automatic retry."""
-        policy_attempts = contract.retry_policy.max_attempts
-        if not contract.side_effects:
-            return policy_attempts
-        if contract.side_effect_retry_safety == SideEffectRetrySafety.NOT_RETRY_SAFE:
-            return 1
-        return policy_attempts
+    def _effective_max_attempts(
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> int:
+        from intergrax.runtime.tools.tool_operation_retry_classification import (
+            effective_max_retry_attempts,
+        )
+
+        return effective_max_retry_attempts(contract, request)
 
     @staticmethod
     def _remaining_parent_execution_seconds() -> float | None:
