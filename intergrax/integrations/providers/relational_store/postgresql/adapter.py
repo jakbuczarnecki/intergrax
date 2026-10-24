@@ -14,7 +14,8 @@ from intergrax.integrations.contracts.relational_store_bounded_query import (
 )
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
 from intergrax.integrations.providers.relational_store.postgresql.session import (
-    postgresql_connection_accepts_adapter_owned_readonly_transaction,
+    PostgreSQLBoundedFetchTransactionScope,
+    classify_postgresql_bounded_fetch_transaction_scope,
 )
 from intergrax.integrations.relational_bounded_row_accumulation import (
     accumulate_bounded_sql_rows,
@@ -75,11 +76,14 @@ class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
         server-side cursor only — no commit or rollback of caller state.
         """
         conn = self._require_connection()
-        owns_readonly_transaction = postgresql_connection_accepts_adapter_owned_readonly_transaction(
-            conn
+        scope = classify_postgresql_bounded_fetch_transaction_scope(conn)
+        owns_readonly_transaction = (
+            scope == PostgreSQLBoundedFetchTransactionScope.ADAPTER_OWNED_READONLY
         )
         cursor_name = f"igx_bq_{uuid.uuid4().hex}"
         cursor: Any | None = None
+        fetch_error: BaseException | None = None
+        result: tuple[tuple[Mapping[str, Any], ...], bool, str] | None = None
         try:
             if owns_readonly_transaction:
                 conn.execute("BEGIN READ ONLY")
@@ -97,19 +101,35 @@ class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
                 max_result_bytes=max_result_bytes,
             )
             result = (tuple(accumulated), truncated, reason)
-            if owns_readonly_transaction:
-                conn.commit()
-            return result
-        except Exception:
+        except BaseException as exc:
+            fetch_error = exc
+        finally:
+            if cursor is not None:
+                try:
+                    cursor.close()
+                except BaseException as close_exc:
+                    if fetch_error is None:
+                        fetch_error = close_exc
+
+        if fetch_error is not None:
             if owns_readonly_transaction:
                 try:
                     conn.rollback()
                 except Exception:
                     pass
-            raise
-        finally:
-            if cursor is not None:
-                cursor.close()
+            raise fetch_error
+
+        if owns_readonly_transaction:
+            try:
+                conn.commit()
+            except BaseException:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                raise
+        assert result is not None
+        return result
 
     def cancel_backend(self) -> None:
         """Request PostgreSQL backend cancellation for the store connection (physical cancel)."""

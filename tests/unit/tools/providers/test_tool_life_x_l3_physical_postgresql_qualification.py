@@ -14,6 +14,7 @@ from intergrax.integrations.contracts.configured_relational_store_execution impo
     RelationalQueryRequest,
 )
 from intergrax.integrations.providers.relational_store.postgresql.session import (
+    PostgreSQLBoundedFetchSafetyError,
     PostgreSQLConnectionProvider,
     PostgreSQLSession,
     import_psycopg,
@@ -349,3 +350,41 @@ def test_pg_bounded_fetch_uses_named_server_side_cursor() -> None:
             max_result_bytes=500,
         )
     assert any(name.startswith("igx_bq_") for name in opened_names)
+
+
+def test_pg_bounded_fetch_rejects_inerror_transaction_state() -> None:
+    with tool_life_postgresql_store() as (store, _config):
+        conn = store._require_connection()
+        conn.execute("BEGIN")
+        with pytest.raises(Exception):
+            conn.execute("SELECT * FROM tlx_nonexistent_inerror_guard")
+        with pytest.raises(PostgreSQLBoundedFetchSafetyError, match="INERROR"):
+            store.fetch_query_bounded("SELECT 1", max_rows=1, max_result_bytes=100)
+        conn.rollback()
+
+
+def test_pg_bounded_fetch_rejects_active_query_on_same_connection() -> None:
+    psycopg, errors, _, _ = import_psycopg()
+    with tool_life_postgresql_store() as (store, _config):
+        conn = store._require_connection()
+        active_error: BaseException | None = None
+
+        def _hold_active_query() -> None:
+            nonlocal active_error
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT pg_sleep(30)")
+                    cur.fetchone()
+            except BaseException as exc:
+                active_error = exc
+
+        worker = threading.Thread(target=_hold_active_query, daemon=True)
+        worker.start()
+        time.sleep(0.4)
+        with pytest.raises(PostgreSQLBoundedFetchSafetyError) as active_exc:
+            store.fetch_query_bounded("SELECT 1", max_rows=1, max_result_bytes=100)
+        assert active_exc.value.transaction_status == "ACTIVE"
+        store.cancel_backend()
+        worker.join(timeout=15.0)
+        if active_error is not None:
+            assert isinstance(active_error, errors.QueryCanceled)

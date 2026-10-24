@@ -4,13 +4,13 @@
 | --- | --- |
 | **Task** | `TOOL-LIFE-X-L3-PHYSICAL` |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **not CLOSED** |
-| **START_HEAD** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` |
-| **IMPLEMENTATION BASELINE** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` |
+| **START_HEAD** | `7018f019732a9d44d14b0129ad95e9eccf9d0948` |
+| **IMPLEMENTATION BASELINE** | `7018f019732a9d44d14b0129ad95e9eccf9d0948` |
 | **Branch** | `development` |
 | **Origin** | `https://github.com/jakbuczarnecki/intergrax.git` |
 | **Operator authorization** | `OPERATOR APPROVED — TLX-L3-PHYSICAL` |
-| **Production delta** | Server-side bounded fetch; **transaction-ownership-safe** READ ONLY boundaries; qualification fixture probe alignment; coexistent tenant isolation tests; adversarial bounded-fetch + tx-ownership matrix |
-| **Disposition** | **`TLX-L3-PHYSICAL — READY FOR INDEPENDENT AUDIT (TRANSACTION-SAFE PHYSICAL BOUNDS)`** |
+| **Production delta** | PHYS-F07 connection-state gate (fail-closed UNKNOWN/INERROR/ACTIVE/closed); PHYS-F08 cursor-close-before-commit ordering; adversarial L1/L3 matrix; prior F06 INTRANS scope preserved |
+| **Disposition** | **`TLX-L3-PHYSICAL — READY FOR INDEPENDENT AUDIT (PG TRANSACTION/CURSOR SAFETY)`** |
 
 **Non-closure:** Does **not** close `TOOL-LIFE-X` parent, **not** global `FRZ-*` PASS, **not** positive TL8 recovery, **not** `DIST-SCALE-X`, **not** TL15 closure.
 
@@ -22,20 +22,20 @@
 | --- | --- |
 | Repository | `jakbuczarnecki/intergrax` |
 | Branch | `development` |
-| START_HEAD | `f8d32bacc29673e996a97f32bd29d512b795a3bf` |
-| Baseline ancestry | `f8d32bacc29673e996a97f32bd29d512b795a3bf` ancestor of publication HEAD — **yes** |
+| START_HEAD | `7018f019732a9d44d14b0129ad95e9eccf9d0948` |
+| Baseline ancestry | `7018f019732a9d44d14b0129ad95e9eccf9d0948` ancestor of publication HEAD — **yes** |
 | Worktree @ publication | clean after commit |
 
 | SHA role | Value |
 | --- | --- |
-| **START_HEAD** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` |
-| **Tested SHA** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` (L1/L2/L3 on working tree delta pre-commit) |
-| **Implementation SHA** | `dd23e5751` (PHYS-F06 code + tests) |
-| **Publication SHA** | `4d8af8d60` (`development` tip — independent audit SHA) |
+| **START_HEAD** | `7018f019732a9d44d14b0129ad95e9eccf9d0948` |
+| **Tested SHA** | `9531164a4e77e80b92a5b5ce785e357ebd7e212a` |
+| **Implementation SHA** | `9531164a4e77e80b92a5b5ce785e357ebd7e212a` (PHYS-F07/F08 batch) |
+| **Publication SHA** | `9531164a4e77e80b92a5b5ce785e357ebd7e212a` (`development` tip — independent audit SHA) |
 
 ---
 
-## 2. PHYS-F01–F06 remediation closure matrix
+## 2. PHYS-F01–F08 remediation closure matrix
 
 | Finding | Canonical TL | Semantic owner | Contract | Prior behavior | Valid evidence SHA | Classification | Correction | Negative tests | L1/L2/L3 | FRZ |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -44,7 +44,20 @@
 | **PHYS-F03** | TL13 | qual fixture | env `INTERGRAX_POSTGRESQL_*` | Hardcoded DSN probe vs execution config | — | **IMPLEMENTATION REQUIRED → corrected** | Probe uses `resolve_tool_life_postgresql_config()`; `pytest.fail` not `skip` | unreachable host timeout | L3 | FRZ-BND-03 |
 | **PHYS-F04** | TL12/P12 | `PostgreSQLConnectionProvider` | `search_path` tenant schema | Sequential tenants; weak isolation proof | — | **VALIDATION REQUIRED → scoped PASS + gap** | Dual-tenant coexistence; unqualified cross-tenant empty; **qualified cross-schema succeeds with shared DB role** | dual fixture | L3 | FRZ-TEN scoped gap |
 | **PHYS-F05** | TL3 | `_PostgreSQLRelationalStore.cancel_backend` | adapter only | Adapter cancel proven; no ToolRuntime wire | `71266515…` partial | **VALIDATION REQUIRED (unchanged)** | Preserve `conn.cancel()`; **no** new cancellation authority | sleep + cancel; bounded-stream cancel | L3 | FRZ-REL-06 partial |
-| **PHYS-F06** | TL10 | `_PostgreSQLRelationalStore` + `PostgreSQLConnectionProvider` | bounded port + session ownership | Unconditional `BEGIN READ ONLY` / `commit` / `rollback` on shared connection | prior publication insufficient | **IMPLEMENTATION REQUIRED → corrected** | `postgresql_connection_accepts_adapter_owned_readonly_transaction`; owned RO tx only when IDLE/UNKNOWN | caller write RO interleave; no spurious commit/rollback | L1+L3 | FRZ-BND-03, FRZ-REL-03 |
+| **PHYS-F06** | TL10 | `_PostgreSQLRelationalStore` + `PostgreSQLConnectionProvider` | bounded port + session ownership | Unconditional `BEGIN READ ONLY` / `commit` / `rollback` on shared connection | `dd23e5751` (INTRANS scope) | **corrected (scoped)** | Caller INTRANS: named cursor only; adapter commit/rollback only on owned RO | L1+L3 caller write/RO | L1+L3 | FRZ-BND-03, FRZ-REL-03 |
+| **PHYS-F07** | TL10 | `classify_postgresql_bounded_fetch_transaction_scope` | connection state gate | Boolean gate treated UNKNOWN as IDLE | audit disposition | **IMPLEMENTATION REQUIRED → corrected** | Typed scope + `PostgreSQLBoundedFetchSafetyError`; IDLE/INTRANS only; UNKNOWN fail-closed | INERROR/ACTIVE/UNKNOWN/closed | L1+L3 | FRZ-BND-03 |
+| **PHYS-F08** | TL10 | `fetch_query_bounded` | cursor vs transaction lifetime | `commit` before `finally` cursor close | audit disposition | **IMPLEMENTATION REQUIRED → corrected** | Close server cursor before adapter `commit`; primary fetch error over close error; owned rollback on failure | close/commit/rollback error paths | L1+L3 | FRZ-REL-03 |
+
+### Transaction status truth table (psycopg `pq.TransactionStatus`)
+
+| Status | Bounded fetch | Adapter BEGIN RO | Adapter commit/rollback |
+| --- | --- | --- | --- |
+| **IDLE** | Allowed (adapter-owned) | Yes | On success/failure of owned path only |
+| **INTRANS** | Allowed (caller-owned) | No | **Never** |
+| **INERROR** | **Rejected** (`PostgreSQLBoundedFetchSafetyError`) | No | No |
+| **ACTIVE** | **Rejected** | No | No |
+| **UNKNOWN** | **Rejected** (fail-closed) | No | No |
+| **closed** | **Rejected** | No | No |
 
 ---
 
@@ -102,12 +115,12 @@
 
 | Mechanism | Detail |
 | --- | --- |
-| Ownership gate | `postgresql_connection_accepts_adapter_owned_readonly_transaction` (`IDLE` / `UNKNOWN` only) |
-| Idle connection (A) | `BEGIN READ ONLY` → named cursor → `commit` on success; `rollback` on adapter-owned failure |
+| Ownership gate | `classify_postgresql_bounded_fetch_transaction_scope` → `ADAPTER_OWNED_READONLY` or `CALLER_OWNED` |
+| Idle connection (A) | `BEGIN READ ONLY` → named cursor → fetch → **`cursor.close()`** → `commit`; owned failure → `rollback` |
 | Caller transaction (B–D) | Named server-side cursor only — **no** `BEGIN`, **no** `commit`, **no** `rollback` |
 | Cursor | `igx_bq_*`, `itersize=1` |
 | Truncation | `accumulate_bounded_sql_rows` row/byte ceilings |
-| Cleanup | `cursor.close()` in `finally` before transaction termination on owned path |
+| Cleanup | Close cursor before adapter-owned `commit`; fetch error preserved over secondary close error |
 | Proof tests | L1 `test_postgresql_bounded_fetch.py` (idle + INTRANS + rollback ownership); L3 `test_pg_bounded_fetch_does_not_commit_caller_owned_write_transaction`; `test_pg_bounded_fetch_inside_caller_read_only_transaction` |
 
 **Invariant:** bounded read never commits or rolls back another component's transaction without adapter-owned READ ONLY scope.
@@ -149,7 +162,9 @@
 | 2 | Caller uncommitted write → bounded read | adapter | no commit; rollback still clears write | L3 | **PASS** |
 | 3 | Caller READ ONLY tx → bounded read | adapter | no nested BEGIN | L3 | **PASS** |
 | 4–5 | Bounded error/success must not roll back/commit unrelated writes | adapter | INTRANS: no adapter rollback/commit | L1 | **PASS** |
-| 6–7 | Cursor closed after truncation/failure | adapter | `finally` close | L1+L3 | **PASS** |
+| 6–7 | Cursor closed **before** commit on owned path | adapter | L1 order + close/commit error paths | L1 | **PASS** |
+| 7b | INERROR / ACTIVE rejected | session gate | typed safety error | L1+L3 | **PASS** |
+| 7c | UNKNOWN fail-closed | session gate | no `BEGIN READ ONLY` | L1 | **PASS** |
 | 8–9 | Cancel during / before close | adapter | `QueryCanceled` | L3 | **PASS** |
 | 10 | Timeout during fetch | session | `statement_timeout` | L3 | **PASS** |
 | 11–16 | Row/byte/empty/unicode/exact/large | bounded port | truncation semantics | L3 | **PASS** |
@@ -166,9 +181,9 @@
 
 | Layer | Command | Result | Log |
 | --- | --- | --- | --- |
-| **L1** | `uv run pytest tests/unit/integrations/providers/relational_store/test_postgresql_bounded_fetch.py tests/unit/integrations/providers/relational_store/test_postgresql_session.py -q` | **15 passed**, exit 0 | `.tmp/session/TOOL-LIFE-X-L3-PHYSICAL/l1-pytest.log` |
-| **L2** | `uv run pytest` L3-PHYSICAL + bounded fetch + session + database tools + Batch D lifecycle | **59 passed**, exit 0 | `.tmp/session/TOOL-LIFE-X-L3-PHYSICAL/l2-consolidated-pytest.log` |
-| **L3** | same command (17 L3-PHYSICAL tests incl. tx ownership) | **included in L2** | `.tmp/session/TOOL-LIFE-X-L3-PHYSICAL/l2-consolidated-pytest.log` |
+| **L1** | `uv run pytest tests/unit/integrations/providers/relational_store/test_postgresql_bounded_fetch.py -q` | **18 passed**, exit 0 | `.tmp/session/TOOL-LIFE-X-L3-PHYSICAL/l1-pytest.log` |
+| **L2** | bounded fetch + `test_postgresql_session.py` + `test_postgresql.py` + database tools + Batch D lifecycle | **71 passed**, exit 0 | `.tmp/session/TOOL-LIFE-X-L3-PHYSICAL/l2-consolidated-pytest.log` |
+| **L3** | `uv run pytest tests/unit/tools/providers/test_tool_life_x_l3_physical_postgresql_qualification.py -q` @ 5434 | **19 passed**, exit 0 | `.tmp/session/TOOL-LIFE-X-L3-PHYSICAL/l3-pytest.log` |
 
 Docker: `intergrax-postgresql` healthy on host port **5434**.
 
@@ -211,6 +226,6 @@ Docker: `intergrax-postgresql` healthy on host port **5434**.
 
 ## 14. Parent readiness
 
-**`TLX-L3-PHYSICAL — READY FOR INDEPENDENT AUDIT (TRANSACTION-SAFE PHYSICAL BOUNDS)`**
+**`TLX-L3-PHYSICAL — READY FOR INDEPENDENT AUDIT (PG TRANSACTION/CURSOR SAFETY)`**
 
 **`TOOL-LIFE-X` — IN PROGRESS / BLOCKED** — mandatory independent audit at exact GitHub SHA.
