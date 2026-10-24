@@ -30,7 +30,7 @@
 | --- | --- |
 | **START_HEAD** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` |
 | **Tested SHA** | `f8d32bacc29673e996a97f32bd29d512b795a3bf` (L1/L2/L3 on working tree delta pre-commit) |
-| **Publication SHA** | Git `development` tip after push (independent audit SHA) |
+| **Publication SHA** | `dd23e5751` (`development` tip after push — independent audit SHA) |
 
 ---
 
