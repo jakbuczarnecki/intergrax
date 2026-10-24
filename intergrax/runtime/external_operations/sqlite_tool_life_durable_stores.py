@@ -27,6 +27,10 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationState,
 )
 from intergrax.contracts.persistence_topology import PersistenceTopology
+from intergrax.contracts.worker_execution_commit_authority_loss_decision import (
+    WorkerExecutionCommitAuthorityLossDecisionPort,
+    WorkerExecutionCommitAuthorityLossDecisionV1,
+)
 from intergrax.contracts.worker_execution_ownership_revocation import (
     CANONICAL_WORKER_EXECUTION_REVOCATION_SUPERVISION_AUTHORITY_ID,
     WorkerExecutionDirectRevocationInvocationError,
@@ -49,6 +53,10 @@ from intergrax.runtime.external_operations.external_operation_state_store import
     _validate_tenant_id,
     apply_external_operation_state_update,
     cas_update_blocked_by_bound_worker_revocation,
+)
+from intergrax.runtime.external_operations.worker_execution_commit_authority_loss import (
+    _require_decision_authority_invocation,
+    require_authoritative_commit_authority_loss_decision,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
     assert_authoritative_worker_execution_revocation_allowed,
@@ -95,6 +103,49 @@ def _ensure_tool_life_schema(conn: sqlite3.Connection) -> None:
             )
         );
         """,
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS worker_execution_commit_authority_loss_decisions (
+            tenant_id TEXT NOT NULL,
+            operation_id TEXT NOT NULL,
+            worker_instance_id TEXT NOT NULL,
+            ownership_epoch INTEGER NOT NULL,
+            decision_id TEXT NOT NULL,
+            decision_authority_id TEXT NOT NULL,
+            bound_store_revision INTEGER NOT NULL,
+            loss_reason TEXT NOT NULL,
+            decided_at_utc TEXT NOT NULL,
+            valid_until_utc TEXT NOT NULL,
+            decision_digest TEXT NOT NULL,
+            PRIMARY KEY (
+                tenant_id,
+                operation_id,
+                worker_instance_id,
+                ownership_epoch
+            )
+        );
+        """,
+    )
+
+
+def _decode_commit_authority_loss_decision(
+    row: sqlite3.Row,
+) -> WorkerExecutionCommitAuthorityLossDecisionV1:
+    from intergrax.contracts.certified_owner_loss_evidence import CertifiedOwnerLossReason
+
+    return WorkerExecutionCommitAuthorityLossDecisionV1(
+        decision_id=row["decision_id"],
+        decision_authority_id=row["decision_authority_id"],
+        tenant_id=row["tenant_id"],
+        operation_id=row["operation_id"],
+        worker_instance_id=row["worker_instance_id"],
+        ownership_epoch=int(row["ownership_epoch"]),
+        bound_store_revision=int(row["bound_store_revision"]),
+        loss_reason=CertifiedOwnerLossReason(row["loss_reason"]),
+        decided_at=datetime.fromisoformat(row["decided_at_utc"]),
+        valid_until=datetime.fromisoformat(row["valid_until_utc"]),
+        decision_digest=row["decision_digest"],
     )
 
 
@@ -392,13 +443,14 @@ class SQLiteExternalOperationStateStore(_ExternalOperationStateCertificationSema
 
 class SQLiteWorkerExecutionOwnershipRevocationStore(
     WorkerExecutionOwnershipRevocationPort,
+    WorkerExecutionCommitAuthorityLossDecisionPort,
 ):
     """Durable revocation ledger colocated with external-operation SQLite file."""
 
     def __init__(self, *, db_path: Path) -> None:
         self._db_path = db_path
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         with _connect(self._db_path) as conn:
             _ensure_tool_life_schema(conn)
             conn.commit()
@@ -410,6 +462,79 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
     @property
     def authoritative_state_store(self) -> SQLiteExternalOperationStateStore:
         return SQLiteExternalOperationStateStore(db_path=self._db_path)
+
+    def authoritative_commit_authority_loss_decision(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        worker_instance_id: str,
+        ownership_epoch: int,
+    ) -> WorkerExecutionCommitAuthorityLossDecisionV1 | None:
+        key = (tenant_id, operation_id, worker_instance_id, ownership_epoch)
+        with self._lock:
+            with _connect(self._db_path) as conn:
+                row = conn.execute(
+                    """
+                    SELECT * FROM worker_execution_commit_authority_loss_decisions
+                    WHERE tenant_id = ? AND operation_id = ?
+                      AND worker_instance_id = ? AND ownership_epoch = ?
+                    """,
+                    key,
+                ).fetchone()
+                return _decode_commit_authority_loss_decision(row) if row is not None else None
+
+    def record_commit_authority_loss_decision(
+        self,
+        *,
+        decision: WorkerExecutionCommitAuthorityLossDecisionV1,
+    ) -> WorkerExecutionCommitAuthorityLossDecisionV1:
+        _require_decision_authority_invocation()
+        key = (
+            decision.tenant_id,
+            decision.operation_id,
+            decision.worker_instance_id,
+            decision.ownership_epoch,
+        )
+        with self._lock:
+            with _connect(self._db_path) as conn:
+                _ensure_tool_life_schema(conn)
+                conn.execute("BEGIN IMMEDIATE")
+                existing = conn.execute(
+                    """
+                    SELECT * FROM worker_execution_commit_authority_loss_decisions
+                    WHERE tenant_id = ? AND operation_id = ?
+                      AND worker_instance_id = ? AND ownership_epoch = ?
+                    """,
+                    key,
+                ).fetchone()
+                if existing is not None:
+                    conn.commit()
+                    return _decode_commit_authority_loss_decision(existing)
+                conn.execute(
+                    """
+                    INSERT INTO worker_execution_commit_authority_loss_decisions
+                    (tenant_id, operation_id, worker_instance_id, ownership_epoch,
+                     decision_id, decision_authority_id, bound_store_revision,
+                     loss_reason, decided_at_utc, valid_until_utc, decision_digest)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        decision.tenant_id,
+                        decision.operation_id,
+                        decision.worker_instance_id,
+                        decision.ownership_epoch,
+                        decision.decision_id,
+                        decision.decision_authority_id,
+                        decision.bound_store_revision,
+                        decision.loss_reason.value,
+                        decision.decided_at.isoformat(),
+                        decision.valid_until.isoformat(),
+                        decision.decision_digest,
+                    ),
+                )
+                conn.commit()
+                return decision
 
     def authoritative_revocation_proof_ref(
         self,
@@ -507,6 +632,15 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
                         worker_instance_id=worker_instance_id,
                         ownership_epoch=ownership_epoch,
                         bound_store_revision=current.revision,
+                    )
+                    require_authoritative_commit_authority_loss_decision(
+                        self,
+                        tenant_id=tenant_id,
+                        operation_id=operation_id,
+                        worker_instance_id=worker_instance_id,
+                        ownership_epoch=ownership_epoch,
+                        bound_store_revision=current.revision,
+                        loss_reason=authorization.loss_reason,
                     )
                 except Exception:
                     conn.execute("ROLLBACK")

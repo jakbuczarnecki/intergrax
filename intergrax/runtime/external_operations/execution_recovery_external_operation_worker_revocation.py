@@ -3,11 +3,10 @@
 
 """Sanctioned execution/recovery entry for recording worker execution epoch revocation.
 
-Positive revocation requires a typed ``WorkerExecutionCommitAuthorityLossPolicy`` wired at
-composition time. Production ``DURABLE_SINGLE_HOST`` composition defaults to
-``FailClosedWorkerExecutionCommitAuthorityLossPolicy`` until the canonical execution/recovery
-owner exposes an enforceable, durable commit-authority-loss decision (R8/R9 architecture
-blocker — not a caller-supplied admission scope).
+Positive revocation requires a durable ``WorkerExecutionCommitAuthorityLossDecisionV1`` issued
+by ``WorkerExecutionCommitAuthorityLossDecisionAuthority`` and a typed
+``DurableWorkerExecutionCommitAuthorityLossPolicy`` at composition time (L3-R10). Production
+``DURABLE_SINGLE_HOST`` composition wires both by default.
 """
 
 from __future__ import annotations
@@ -15,8 +14,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.contracts.certified_owner_loss_evidence import CertifiedOwnerLossReason
+from intergrax.contracts.worker_execution_commit_authority_loss_decision import (
+    WorkerExecutionCommitAuthorityLossDecisionV1,
+)
 from intergrax.contracts.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationV1,
+)
+from intergrax.runtime.external_operations.worker_execution_commit_authority_loss import (
+    WorkerExecutionCommitAuthorityLossDecisionAuthority,
 )
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationRecorder,
@@ -28,6 +33,20 @@ class ExecutionRecoveryExternalOperationWorkerRevocation:
     """Canonical execution/recovery owner surface for durable worker epoch revocation."""
 
     recorder: WorkerExecutionOwnershipRevocationRecorder
+    decision_authority: WorkerExecutionCommitAuthorityLossDecisionAuthority
+
+    def decide_commit_authority_loss_for_bound_operation(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        loss_reason: CertifiedOwnerLossReason = CertifiedOwnerLossReason.WORKER_LOST,
+    ) -> WorkerExecutionCommitAuthorityLossDecisionV1:
+        return self.decision_authority.issue_for_bound_operation(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+            loss_reason=loss_reason,
+        )
 
     def record_revocation_after_commit_authority_loss(
         self,
@@ -39,6 +58,11 @@ class ExecutionRecoveryExternalOperationWorkerRevocation:
         loss_reason: CertifiedOwnerLossReason = CertifiedOwnerLossReason.WORKER_LOST,
     ) -> WorkerExecutionOwnershipRevocationV1:
         del worker_instance_id, ownership_epoch
+        self.decide_commit_authority_loss_for_bound_operation(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+            loss_reason=loss_reason,
+        )
         return self.recorder.record_revocation_for_bound_operation(
             tenant_id=tenant_id,
             operation_id=operation_id,

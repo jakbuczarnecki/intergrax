@@ -18,6 +18,10 @@ from intergrax.runtime.external_operations.execution_recovery_worker_execution_r
     FailClosedWorkerExecutionCommitAuthorityLossPolicy,
     WorkerExecutionCommitAuthorityLossPolicy,
 )
+from intergrax.runtime.external_operations.worker_execution_commit_authority_loss import (
+    DurableWorkerExecutionCommitAuthorityLossPolicy,
+    WorkerExecutionCommitAuthorityLossDecisionAuthority,
+)
 from intergrax.runtime.external_operations.sqlite_tool_life_durable_stores import (
     SqliteToolLifeDurableStoresBundle,
 )
@@ -39,6 +43,7 @@ class ToolLifeDurableTopologyNotSupportedError(RuntimeError):
 class ToolLifeDurableSingleHostComposition:
     bundle: SqliteToolLifeDurableStoresBundle
     worker_revocation: ExecutionRecoveryExternalOperationWorkerRevocation
+    commit_authority_loss_decision_authority: WorkerExecutionCommitAuthorityLossDecisionAuthority
 
 
 def compose_tool_life_durable_single_host_certified_owner_loss(
@@ -56,7 +61,18 @@ def compose_tool_life_durable_single_host_certified_owner_loss(
     trust = trust_material or resolve_worker_execution_revocation_trust_from_environment()
     configure_worker_execution_ownership_revocation_trust(trust)
     bundle = SqliteToolLifeDurableStoresBundle(db_path=db_path)
-    policy = loss_policy or FailClosedWorkerExecutionCommitAuthorityLossPolicy()
+    decision_port = bundle.worker_execution_ownership_revocation
+    decision_authority = WorkerExecutionCommitAuthorityLossDecisionAuthority(
+        authoritative_state_store=bundle.external_operation_state,
+        decision_port=decision_port,
+    )
+    if loss_policy is not None:
+        policy = loss_policy
+    else:
+        policy = DurableWorkerExecutionCommitAuthorityLossPolicy(
+            decision_port=decision_port,
+            authoritative_state_store=bundle.external_operation_state,
+        )
     supervision = ExecutionRecoveryWorkerExecutionRevocationSupervision(
         loss_policy=policy,
         trust=trust,
@@ -81,7 +97,9 @@ def compose_tool_life_durable_single_host_certified_owner_loss(
         bundle=bundle,
         worker_revocation=ExecutionRecoveryExternalOperationWorkerRevocation(
             recorder=recorder,
+            decision_authority=decision_authority,
         ),
+        commit_authority_loss_decision_authority=decision_authority,
     )
 
 

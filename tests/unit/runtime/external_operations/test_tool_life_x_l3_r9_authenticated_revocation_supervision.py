@@ -121,6 +121,7 @@ def test_l3r9_fail_closed_without_admission_scope(tmp_path: Path) -> None:
     composed = compose_tool_life_durable_single_host_certified_owner_loss(
         db_path=tmp_path / "tool_life.db",
         persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        loss_policy=FailClosedWorkerExecutionCommitAuthorityLossPolicy(),
     )
     store = composed.bundle.external_operation_state
     repo = InMemoryWorkerInstanceRepository()
@@ -189,12 +190,13 @@ def test_l3r9_qualification_loss_policy_records_revocation(tmp_path: Path) -> No
     assert proof
 
 
-def test_l3r9_production_composition_fail_closed_despite_mac_key(tmp_path: Path) -> None:
-    """R9-F01: MAC/trust alone must not enable positive revocation without loss policy."""
+def test_l3r9_fail_closed_authorizer_without_durable_decision(tmp_path: Path) -> None:
+    """MAC/trust alone must not authorize revocation without durable loss admission."""
     os.environ[_MAC_ENV] = "production-mac-key-l3r9-no-admission-bypass"
     composed = compose_tool_life_durable_single_host_certified_owner_loss(
         db_path=tmp_path / "tool_life.db",
         persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        loss_policy=FailClosedWorkerExecutionCommitAuthorityLossPolicy(),
     )
     store = composed.bundle.external_operation_state
     owner = ProcessLocalExternalOperationOwner.mint()
@@ -214,12 +216,16 @@ def test_l3r9_production_composition_fail_closed_despite_mac_key(tmp_path: Path)
         worker_instance_id="worker-blocked",
         worker_ownership_epoch=_BOUND_EPOCH,
     )
+    from intergrax.runtime.external_operations.certified_owner_loss_composition import (
+        require_certified_owner_loss_composition,
+    )
+
+    authorizer = require_certified_owner_loss_composition().worker_execution_revocation_authorizer
+    assert authorizer is not None
     with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
-        composed.worker_revocation.record_revocation_after_commit_authority_loss(
+        authorizer.authorize_revocation_for_bound_operation(
             tenant_id=_TENANT,
             operation_id=_OP,
-            worker_instance_id="worker-blocked",
-            ownership_epoch=_BOUND_EPOCH,
         )
     os.environ.pop(_MAC_ENV, None)
 

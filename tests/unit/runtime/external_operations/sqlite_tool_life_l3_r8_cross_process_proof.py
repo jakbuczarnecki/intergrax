@@ -14,6 +14,9 @@ from queue import Empty
 from tests.unit.runtime.external_operations.tool_life_x_qualification_revocation_supervision import (
     QualificationWorkerExecutionRevocationSupervision,
 )
+from tests.unit.runtime.external_operations.tool_life_x_test_commit_authority_loss import (
+    issue_sqlite_commit_authority_loss_decision_for_bound_operation,
+)
 
 _BARRIER_TIMEOUT_SECONDS = 15.0
 _RESULT_TIMEOUT_SECONDS = 30.0
@@ -96,6 +99,11 @@ def _worker_revoke_after_terminal(
         recorder = require_certified_owner_loss_composition().worker_execution_revocation_recorder
         if recorder is None:
             raise RuntimeError("revocation recorder not configured in child process")
+        issue_sqlite_commit_authority_loss_decision_for_bound_operation(
+            bundle,
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+        )
         recorder.record_revocation_for_bound_operation(
             tenant_id=tenant_id,
             operation_id=operation_id,
@@ -127,6 +135,11 @@ def _worker_revoke_then_barrier(
         recorder = require_certified_owner_loss_composition().worker_execution_revocation_recorder
         if recorder is None:
             raise RuntimeError("revocation recorder not configured in child process")
+        issue_sqlite_commit_authority_loss_decision_for_bound_operation(
+            bundle,
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+        )
         recorder.record_revocation_for_bound_operation(
             tenant_id=tenant_id,
             operation_id=operation_id,

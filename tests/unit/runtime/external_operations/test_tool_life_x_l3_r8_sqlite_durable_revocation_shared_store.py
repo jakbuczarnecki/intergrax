@@ -70,6 +70,9 @@ from intergrax.runtime.external_operations.worker_execution_ownership_revocation
     build_worker_execution_ownership_revocation_recorder,
 )
 from tests.unit.autonomous_work.repository_contracts import worker_instance
+from tests.unit.runtime.external_operations.tool_life_x_test_commit_authority_loss import (
+    issue_sqlite_commit_authority_loss_decision_for_bound_operation,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -133,6 +136,11 @@ def _revoke_bound(
     *,
     operation_id: str = _OP,
 ) -> str:
+    issue_sqlite_commit_authority_loss_decision_for_bound_operation(
+        bundle,
+        tenant_id=_TENANT,
+        operation_id=operation_id,
+    )
     recorder = require_certified_owner_loss_composition().worker_execution_revocation_recorder
     assert recorder is not None
     return recorder.record_revocation_for_bound_operation(
@@ -403,6 +411,11 @@ def test_l3r8_concurrent_revocation_idempotent(
     repo = InMemoryWorkerInstanceRepository()
     _worker, _bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
     port = durable_bundle.worker_execution_ownership_revocation
+    issue_sqlite_commit_authority_loss_decision_for_bound_operation(
+        durable_bundle,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+    )
     results: list[str] = []
     errors: list[BaseException] = []
 
