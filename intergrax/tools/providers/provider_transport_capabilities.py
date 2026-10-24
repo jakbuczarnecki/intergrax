@@ -76,7 +76,7 @@ BROWSER_AUTOMATION_CAPABILITIES = ProviderTransportCapabilities(
     supports_physical_result_byte_ceiling=False,
     supports_physical_row_ceiling=False,
     notes=(
-        "navigation_timeout_s enforced only on BrowserAutomationNavigationTimeoutPort; "
+        "navigation_timeout_s enforced only when navigation_timeout_integration_enforced is True; "
         "max_text_chars is output-only (DOM/page memory not hard-bounded)."
     ),
 )

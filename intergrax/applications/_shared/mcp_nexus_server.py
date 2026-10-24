@@ -10,7 +10,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
+from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
@@ -103,8 +103,7 @@ def build_nexus_mcp_server(
                     "capabilities": list(contract.capabilities),
                 }
             )
-        bounded, _ = bound_mcp_structured_result(agents)
-        return bounded if isinstance(bounded, list) else []
+        return emit_bounded_mcp_list(agents)
 
     @mcp.tool
     async def run_agent(

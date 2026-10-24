@@ -271,6 +271,10 @@ class SeleniumBrowserAutomation(BrowserAutomationNavigationTimeoutPort):
         self._timeout_ms = timeout_ms
         self._closed = False
 
+    @property
+    def navigation_timeout_integration_enforced(self) -> bool:
+        return True
+
     def fetch_page(
         self,
         url: str,

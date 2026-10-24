@@ -60,17 +60,20 @@ class _SQLiteRelationalStore(RelationalStoreBoundedQueryPort):
     ) -> tuple[tuple[Mapping[str, Any], ...], bool, str]:
         conn = self._require_connection()
         cursor = conn.execute(sql, params)
+        try:
 
-        def _row_iter():
-            for row in cursor:
-                yield dict(row)
+            def _row_iter():
+                for row in cursor:
+                    yield dict(row)
 
-        accumulated, truncated, reason = accumulate_bounded_sql_rows(
-            _row_iter(),
-            max_rows=max_rows,
-            max_result_bytes=max_result_bytes,
-        )
-        return tuple(accumulated), truncated, reason
+            accumulated, truncated, reason = accumulate_bounded_sql_rows(
+                _row_iter(),
+                max_rows=max_rows,
+                max_result_bytes=max_result_bytes,
+            )
+            return tuple(accumulated), truncated, reason
+        finally:
+            cursor.close()
 
     def close(self) -> None:
         if self._connection is not None:

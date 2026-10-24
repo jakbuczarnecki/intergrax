@@ -7,9 +7,14 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping, Sequence
 
+import httpx
 import pytest
 
 from intergrax.integrations.contracts.browser_automation import PageContent
+from intergrax.integrations.contracts.configured_relational_store_execution import (
+    RelationalQueryRequest,
+)
+from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.browser_automation_navigation import (
     BrowserAutomationNavigationTimeoutPort,
 )
@@ -19,7 +24,16 @@ from intergrax.integrations.contracts.relational_store_bounded_query import (
 )
 from intergrax.integrations.relational_bounded_row_accumulation import accumulate_bounded_sql_rows
 from intergrax.integrations.relational_store_execution_adapter import RelationalStoreExecutionAdapter
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, serialize_bounded_mcp_json
+from intergrax.integrations.providers.http_client.allowlist.client import AllowlistHttpClient
+from intergrax.integrations.providers.browser_automation.playwright.integration import (
+    PlaywrightBrowserAutomationIntegration,
+)
+from intergrax.tools.mcp_result_bounds import (
+    McpPayloadByteLimitExceeded,
+    bound_mcp_structured_result,
+    emit_bounded_mcp_list,
+    serialize_bounded_mcp_json,
+)
 from intergrax.tools.providers.browser.contracts import BrowserFetchPageInput
 from intergrax.tools.providers.browser.service import browser_fetch_page
 from intergrax.tools.providers.database.contracts import DatabaseQueryInput
@@ -107,6 +121,10 @@ class _FakeBrowser(BrowserAutomationNavigationTimeoutPort):
         self._text = text
         self.last_navigation_timeout_s: float | None = None
 
+    @property
+    def navigation_timeout_integration_enforced(self) -> bool:
+        return True
+
     def fetch_page(
         self,
         url: str,
@@ -120,6 +138,33 @@ class _FakeBrowser(BrowserAutomationNavigationTimeoutPort):
 
     def close(self) -> None:
         return None
+
+
+class _IncapableBrowser:
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
+        _ = wait_until, navigation_timeout_s
+        return PageContent(url=url, text="x", html="<p>x</p>")
+
+    def close(self) -> None:
+        return None
+
+
+class _UnboundedMemoryStore(RelationalStore):
+    def __init__(self, rows: list[dict[str, Any]]) -> None:
+        self._rows = rows
+
+    def execute(self, sql: str, params: Sequence[Any] = ()) -> None:
+        _ = sql, params
+
+    def fetch_all(self, sql: str, params: Sequence[Any] = ()) -> Sequence[Mapping[str, Any]]:
+        _ = sql, params
+        return self._rows
 
 
 def test_sql_row_limit_truncates() -> None:
@@ -187,6 +232,97 @@ def test_http_post_transport_error_propagates() -> None:
             ctx,
             HttpRequestInput(method="POST", url="https://example.com/", body="{}"),
         )
+
+
+def test_browser_incapable_integration_reports_timeout_not_enforced() -> None:
+    ctx = ToolWiringContext(browser_automation=_IncapableBrowser())
+    out = browser_fetch_page(
+        ctx,
+        BrowserFetchPageInput(url="https://example.com", max_text_chars=256, navigation_timeout_s=5.0),
+    )
+    assert out.navigation_timeout_enforced is False
+
+
+def test_browser_integration_facade_inherits_timeout_from_client() -> None:
+    inner = _FakeBrowser("ok")
+    integration = PlaywrightBrowserAutomationIntegration.from_client(inner, enabled=True)
+    ctx = ToolWiringContext(browser_automation=integration)
+    out = browser_fetch_page(
+        ctx,
+        BrowserFetchPageInput(url="https://example.com", max_text_chars=256, navigation_timeout_s=3.0),
+    )
+    assert out.navigation_timeout_enforced is True
+    assert inner.last_navigation_timeout_s == 3.0
+
+
+def test_sql_fallback_marks_physical_bounds_not_enforced() -> None:
+    store = _UnboundedMemoryStore([{"id": i} for i in range(8)])
+    adapter = RelationalStoreExecutionAdapter(store)
+    result = adapter.query(
+        RelationalQueryRequest(sql="SELECT 1", max_rows=2, max_result_bytes=1_000_000),
+    )
+    assert result.physical_bounds_enforced is False
+    assert result.row_count == 2
+    assert result.truncated is True
+
+
+def test_allowlist_http_redirect_to_allowed_host() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/a":
+            return httpx.Response(302, headers={"Location": "/b"}, request=request)
+        return httpx.Response(200, text="done", request=request)
+
+    client = AllowlistHttpClient(
+        allowed_hosts=frozenset({"example.com"}),
+        transport=httpx.MockTransport(handler),
+    )
+    response = client.request("GET", "https://example.com/a")
+    assert response.status_code == 200
+    assert response.body == "done"
+
+
+def test_allowlist_http_redirect_to_denied_host_blocked() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(302, headers={"Location": "https://evil.test/"}, request=request)
+
+    client = AllowlistHttpClient(
+        allowed_hosts=frozenset({"example.com"}),
+        transport=httpx.MockTransport(handler),
+    )
+    with pytest.raises(PermissionError, match="host_not_allowed"):
+        client.request("GET", "https://example.com/start")
+
+
+def test_allowlist_http_redirect_strips_authorization_on_host_change() -> None:
+    seen_auth: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_auth.append(request.headers.get("Authorization"))
+        if request.url.host == "example.com":
+            return httpx.Response(
+                302,
+                headers={"Location": "https://allowed.example.org/ok"},
+                request=request,
+            )
+        return httpx.Response(200, text="ok", request=request)
+
+    client = AllowlistHttpClient(
+        allowed_hosts=frozenset({"example.com", "allowed.example.org"}),
+        transport=httpx.MockTransport(handler),
+    )
+    client.request(
+        "GET",
+        "https://example.com/start",
+        headers={"Authorization": "Bearer secret"},
+    )
+    assert seen_auth[0] == "Bearer secret"
+    assert seen_auth[1] is None
+
+
+def test_mcp_list_overflow_raises_not_empty_list() -> None:
+    payload = [{"tool_id": f"t{i}", "data": "x" * 200} for i in range(50)]
+    with pytest.raises(McpPayloadByteLimitExceeded):
+        emit_bounded_mcp_list(payload, max_bytes=256)
 
 
 def test_browser_text_truncated_and_timeout_propagated() -> None:

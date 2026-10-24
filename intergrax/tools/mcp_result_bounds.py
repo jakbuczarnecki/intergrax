@@ -15,6 +15,14 @@ from intergrax.tools.providers.provider_resource_enforcement import (
 )
 
 
+class McpPayloadByteLimitExceeded(RuntimeError):
+    """Structured MCP tool failure when a logical result exceeds the serialized byte ceiling."""
+
+    def __init__(self, code: str = "mcp_payload_byte_limit_exceeded") -> None:
+        self.code = code
+        super().__init__(code)
+
+
 def serialize_bounded_mcp_json(
     value: Any,
     *,
@@ -43,8 +51,18 @@ def bound_mcp_structured_result(
     return {"error": overflow_error_code}, True
 
 
+def emit_bounded_mcp_list(value: list[Any], *, max_bytes: int = DEFAULT_MCP_MAX_SERIALIZED_BYTES) -> list[Any]:
+    """Return a bounded list or raise — never masquerade overflow as an empty catalog."""
+    bounded, truncated = bound_mcp_structured_result(value, max_bytes=max_bytes)
+    if truncated or not isinstance(bounded, list):
+        raise McpPayloadByteLimitExceeded()
+    return bounded
+
+
 __all__ = [
     "DEFAULT_MCP_MAX_SERIALIZED_BYTES",
+    "McpPayloadByteLimitExceeded",
     "bound_mcp_structured_result",
+    "emit_bounded_mcp_list",
     "serialize_bounded_mcp_json",
 ]

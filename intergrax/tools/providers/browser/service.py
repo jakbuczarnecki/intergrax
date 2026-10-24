@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
 from intergrax.integrations.contracts.browser_automation_navigation import (
-    BrowserAutomationNavigationTimeoutPort,
+    navigation_timeout_enforced_for,
 )
 from intergrax.tools.providers.browser.contracts import BrowserFetchPageInput, BrowserFetchPageOutput
 from intergrax.tools.providers.provider_resource_enforcement import truncate_utf8_chars
@@ -23,7 +23,7 @@ def _require_browser(ctx: ToolWiringContext) -> BrowserAutomation:
 
 def browser_fetch_page(ctx: ToolWiringContext, params: BrowserFetchPageInput) -> BrowserFetchPageOutput:
     browser = _require_browser(ctx)
-    timeout_enforced = isinstance(browser, BrowserAutomationNavigationTimeoutPort)
+    timeout_enforced = navigation_timeout_enforced_for(browser)
     page = browser.fetch_page(
         params.url.strip(),
         wait_until=params.wait_until,

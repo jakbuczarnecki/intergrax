@@ -10,7 +10,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from intergrax.tools.exporters.mcp import to_mcp_tools
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
+from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
@@ -32,8 +32,7 @@ def mount_catalog_tools_on_mcp(
         def list_catalog_tools() -> list[dict[str, Any]]:
             """List enabled catalog tools (tool_id, description, input schema)."""
             payload = to_mcp_tools(registry)
-            bounded, _ = bound_mcp_structured_result(payload)
-            return bounded if isinstance(bounded, list) else []
+            return emit_bounded_mcp_list(payload)
 
         @mcp.tool
         def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
