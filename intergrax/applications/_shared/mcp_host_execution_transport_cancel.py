@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from intergrax.applications._shared.mcp_harness_principal import _starlette_request_from_fastmcp
 from intergrax.applications._shared.task_control import governed_cancel_active_task
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.event_delivery import EventDeliveryPolicy
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
@@ -23,9 +24,12 @@ if TYPE_CHECKING:
 
 MCP_TRANSPORT_CANCEL_REASON = "mcp_transport_cancel"
 MCP_TRANSPORT_CANCEL_MUTATION_PREFIX = "mcp-transport-cancel"
-_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S = 30.0
-_ACTIVE_BINDING_POLL_INTERVAL_S = 0.02
-_ACTIVE_BINDING_WAIT_S = 2.0
+
+# Observation bounds aligned with platform EventDeliveryPolicy (not root Execution deadline).
+_MCP_TRANSPORT_OBSERVATION = EventDeliveryPolicy(max_capacity=1)
+_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S = _MCP_TRANSPORT_OBSERVATION.drain_shutdown_timeout_seconds
+_ACTIVE_BINDING_WAIT_S = _MCP_TRANSPORT_OBSERVATION.critical_completion_timeout_seconds
+_ACTIVE_BINDING_POLL_INTERVAL_S = _MCP_TRANSPORT_OBSERVATION.important_wait_timeout_seconds
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +66,8 @@ async def _wait_for_active_binding(task: Task) -> bool:
         binding = await ActiveTaskRegistry.get(task.task_id)
         if binding is not None:
             return True
-        await asyncio.sleep(_ACTIVE_BINDING_POLL_INTERVAL_S)
+        if _ACTIVE_BINDING_POLL_INTERVAL_S > 0:
+            await asyncio.sleep(_ACTIVE_BINDING_POLL_INTERVAL_S)
     return False
 
 
@@ -73,7 +78,7 @@ async def request_governed_cancel_for_bound_mcp_task(
     mutation_boundary: ControlPlaneMutationAuthorizationBoundary,
     reason: str = MCP_TRANSPORT_CANCEL_REASON,
 ) -> bool:
-    """Request cooperative cancel for the active binding of *task* (idempotent)."""
+    """Request cooperative cancel for the active binding of *task* (idempotent admission attempt)."""
     binding = await ActiveTaskRegistry.get(task.task_id)
     if binding is None:
         return False
@@ -94,12 +99,15 @@ async def _maybe_request_transport_cancel(
     task: Task,
     cancel_ctx: McpHostExecutionTransportCancelContext,
     cancel_lock: asyncio.Lock,
-    cancel_requested: list[bool],
+    cancel_admission_accepted: list[bool],
 ) -> None:
     async with cancel_lock:
-        if cancel_requested[0]:
+        if cancel_admission_accepted[0]:
             return
-        if not await _wait_for_active_binding(task):
+    if not await _wait_for_active_binding(task):
+        return
+    async with cancel_lock:
+        if cancel_admission_accepted[0]:
             return
         accepted = await request_governed_cancel_for_bound_mcp_task(
             task=task,
@@ -107,7 +115,34 @@ async def _maybe_request_transport_cancel(
             mutation_boundary=cancel_ctx.mutation_boundary,
         )
         if accepted:
-            cancel_requested[0] = True
+            cancel_admission_accepted[0] = True
+
+
+async def _await_host_task_bounded_after_transport_waiter_lost(
+    host_coro: asyncio.Task[object],
+    *,
+    timeout_s: float,
+) -> None:
+    """
+    Transport waiter scope ends here — the host asyncio.Task must not outlive this call.
+
+    Does not mutate Execution terminal state; relies on prior governed cooperative cancel when admitted.
+    """
+    if host_coro.done():
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            host_coro.result()
+        return
+    try:
+        await asyncio.wait_for(asyncio.shield(host_coro), timeout=timeout_s)
+    except (asyncio.TimeoutError, asyncio.CancelledError):
+        pass
+    if host_coro.done():
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            host_coro.result()
+        return
+    host_coro.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await host_coro
 
 
 async def run_host_execution_with_mcp_transport_cancel(
@@ -121,55 +156,70 @@ async def run_host_execution_with_mcp_transport_cancel(
 
     Does not mutate terminal state directly; routes cancel through ``governed_cancel_active_task``.
     """
-    cancel_requested: list[bool] = [False]
+    cancel_admission_accepted: list[bool] = [False]
     cancel_lock = asyncio.Lock()
+    transport_cancel_observed = False
     request = _starlette_request_from_fastmcp()
 
     async def _monitor_transport() -> None:
+        nonlocal transport_cancel_observed
         try:
             while not host_coro.done():
-                if await _client_disconnected(request):
+                if not transport_cancel_observed and await _client_disconnected(request):
+                    transport_cancel_observed = True
+                if transport_cancel_observed:
                     await _maybe_request_transport_cancel(
                         task=task,
                         cancel_ctx=cancel_ctx,
                         cancel_lock=cancel_lock,
-                        cancel_requested=cancel_requested,
+                        cancel_admission_accepted=cancel_admission_accepted,
                     )
-                    return
-                await asyncio.sleep(_ACTIVE_BINDING_POLL_INTERVAL_S)
+                if _ACTIVE_BINDING_POLL_INTERVAL_S > 0:
+                    await asyncio.sleep(_ACTIVE_BINDING_POLL_INTERVAL_S)
         except asyncio.CancelledError:
             if not host_coro.done():
+                transport_cancel_observed = True
                 await _maybe_request_transport_cancel(
                     task=task,
                     cancel_ctx=cancel_ctx,
                     cancel_lock=cancel_lock,
-                    cancel_requested=cancel_requested,
+                    cancel_admission_accepted=cancel_admission_accepted,
                 )
             raise
 
     monitor = asyncio.create_task(_monitor_transport())
+    transport_waiter_lost = False
+    host_result_after_waiter_lost: object | None = None
     try:
         return await asyncio.shield(host_coro)
     except asyncio.CancelledError:
+        transport_waiter_lost = True
+        transport_cancel_observed = True
         await _maybe_request_transport_cancel(
             task=task,
             cancel_ctx=cancel_ctx,
             cancel_lock=cancel_lock,
-            cancel_requested=cancel_requested,
+            cancel_admission_accepted=cancel_admission_accepted,
         )
-        if not host_coro.done():
-            try:
-                return await asyncio.wait_for(
-                    asyncio.shield(host_coro),
-                    timeout=_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S,
-                )
-            except (asyncio.TimeoutError, asyncio.CancelledError):
-                pass
-        raise
+        if host_coro.done():
+            host_result_after_waiter_lost = host_coro.result()
     finally:
         monitor.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await monitor
+        if transport_waiter_lost or not host_coro.done():
+            await _await_host_task_bounded_after_transport_waiter_lost(
+                host_coro,
+                timeout_s=_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S,
+            )
+        if host_coro.done() and host_result_after_waiter_lost is None:
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                host_result_after_waiter_lost = host_coro.result()
+    if transport_waiter_lost:
+        if host_result_after_waiter_lost is not None:
+            return host_result_after_waiter_lost
+        raise asyncio.CancelledError()
+    raise AssertionError("unreachable_host_transport_cancel_waiter_state")
 
 
 __all__ = [

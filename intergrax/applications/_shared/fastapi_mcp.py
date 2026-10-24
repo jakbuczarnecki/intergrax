@@ -11,6 +11,8 @@ FastAPI routes at ``/``.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import FastAPI
 from fastmcp import FastMCP
 
@@ -19,6 +21,9 @@ from intergrax.applications._shared.mcp_task_control_coupling import (
     resolve_mcp_coupling_task_control_mutation_boundary,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+
+if TYPE_CHECKING:
+    from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.harness_auth import (
     apply_harness_auth_middleware,
     resolve_harness_auth_state_from_app,
@@ -79,14 +84,14 @@ def couple_harness_host_fastapi_with_mcp(
     fastapi_app: FastAPI,
     mcp: FastMCP,
     *,
-    runtime: object | None = None,
+    runtime: HarnessHostRuntime | None = None,
     env: ApplicationEnvironmentProfile | None = None,
     mount_path: str = "/mcp",
     extra_lifespans: list[LifespanFn] | None = None,
 ) -> FastAPI:
     """Mount MCP with harness task-control cancel boundary aligned to HTTP task routes."""
     boundary = resolve_mcp_coupling_task_control_mutation_boundary(
-        runtime=runtime,  # type: ignore[arg-type]
+        runtime=runtime,
         env=env,
     )
     return couple_fastapi_with_mcp(
