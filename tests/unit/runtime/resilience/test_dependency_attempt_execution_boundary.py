@@ -983,6 +983,34 @@ def test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled() -> None
     assert handoff.take_stored_permit_for_release() is None
 
 
+def test_ba_f12_release_obligation_reentry_does_not_reauthorize_scheduling() -> None:
+    """BA-F12 final: obligation reservation is not exclusive scheduling authority."""
+    handoff = dab_module._AcquirePermitHandoff()
+    handoff.mark_abandoned()
+    assert handoff.try_claim_release_obligation() is True
+    assert handoff.try_claim_release_obligation() is False
+    assert handoff.try_claim_exclusive_release_scheduling() is True
+    assert handoff.try_claim_exclusive_release_scheduling() is False
+
+
+def test_ba_f12_exclusive_release_scheduling_concurrent_single_winner() -> None:
+    """BA-F12 final G: competing schedulers linearize to one winner."""
+    handoff = dab_module._AcquirePermitHandoff()
+    handoff.mark_abandoned()
+    results: list[bool] = []
+
+    def _claim() -> None:
+        results.append(handoff.try_claim_exclusive_release_scheduling())
+
+    threads = [threading.Thread(target=_claim) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=5)
+    assert len(results) == 2
+    assert sum(1 for won in results if won) == 1
+
+
 def test_ba_f12_exactly_one_release_when_cleanup_claims_before_sync_grant() -> None:
     """BA-F12 closure: sync waiter must not call ``_execute_permit_release`` after cleanup claim."""
     admission = _ShutdownAfterSlotAdmission(capacity=4)

@@ -11,7 +11,7 @@
 | **BA-F08 START_HEAD** | `4038cc5995e26758cc5143e430fed252b8740c6d` |
 | **BA-F09 START_HEAD** | `1dd30bffa8f2f9ed55517e7e43015962906f0439` |
 | **BA-F10 START_HEAD** | `032b983ede3b0e6dee44083a4070e25326465006` |
-| **Disposition** | **`TOOL-LIFE-X BATCH A — READY FOR INDEPENDENT AUDIT`** (BA-F12 ownership closure + consolidated L2 **63/63**) |
+| **Disposition** | **`TOOL-LIFE-X BATCH A — READY FOR INDEPENDENT AUDIT`** (BA-F12 atomic release claimant + L2 **65/65** after remediation; prior **63/63** preserved) |
 | **BA-F12 final ownership START_HEAD** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` |
 | **BA-F12 final execution SHA** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` + working-tree delta (L2 log; content ≡ `8f6b9a230…` implementation) |
 | **Evidence publication SHA** | `8f6b9a2300508a6583a54a358bf4c04c2513ba05` |
@@ -49,6 +49,10 @@
 | **BA-F12 L1 (operator-authorized)** | production + test delta @ `afe4f9c6…` | **3/3** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l1-batch-a-ba-f12-final.log`; see § BA-F12 |
 | **BA-F12 final ownership closure L1** | `9e46bbcbf92d92ebf70655c778228cd85f39cc9f` + delta | **4/4** — log `l1-batch-a-ba-f12-final-remediation.log` |
 | **Batch A consolidated L2 (BA-F12 closure)** | same tree as final publication | **63 collected / 63 passed** — log `l2-batch-a-ba-f12-final.log` |
+| **BA-F12 atomic claimant START_HEAD** | `e3bed11298eba2a4e5b83eabc65db963ebf2afcb` | Independent audit TOCTOU on `try_claim_release_obligation` re-entry |
+| **BA-F12 atomic claimant L1** | implementation delta @ START_HEAD | **6/6** — log `.tmp/session/TOOL-LIFE-X-BATCH-A/l1-batch-a-ba-f12-atomic-claimant.log` |
+| **BA-F12 atomic claimant L2 (wave 1)** | same delta | **64 passed / 1 failed / 65 collected** — `test_acquire_success_shutdown_before_registration_releases_permit` timing flake under full suite; **STOP** per batch rules (no auto rerun); log `l2-batch-a-ba-f12-atomic-claimant.log` |
+| **BA-F12 atomic claimant L2 (publication)** | publication commit | **65 passed / 65 collected**, 8.89s, exit **0** — log `l2-batch-a-ba-f12-atomic-claimant-publication.log` (operator-authorized single rerun after wave-1 STOP classification) |
 
 ## BA-F12 — atomic physical permit ownership / cancelled wrapper recovery
 
@@ -78,6 +82,21 @@
 | **L2** | **63 passed / 63 collected**, 10.46s, exit **0** — log `l2-batch-a-ba-f12-final.log`. |
 | **Publication SHA (final)** | `8f6b9a2300508a6583a54a358bf4c04c2513ba05` (`fix(runtime): BA-F12 exactly-once release when sync grant loses to cleanup`) |
 | **Test-source publication** | `8f6b9a2300508a6583a54a358bf4c04c2513ba05` (production + tests + evidence, single commit) |
+
+## BA-F12 atomic claimant — exclusive release scheduling (audit remediation)
+
+| Topic | Detail |
+| --- | --- |
+| **START_HEAD** | `e3bed11298eba2a4e5b83eabc65db963ebf2afcb` |
+| **Production baseline (prior)** | `8f6b9a2300508a6583a54a358bf4c04c2513ba05` |
+| **Root cause** | `try_claim_release_obligation()` returned **`True` on re-entry** (`RELEASE_OBLIGATION_CLAIMED`). Sync failed-grant path used a non-atomic `is_release_obligation_claimed()` pre-check then `try_claim_release_obligation()` → TOCTOU: callback could claim between check and call; sync received `True`, `take_stored_permit_for_release()` returned `None`, fell back to local `permit`, scheduled a **second** physical release. |
+| **State machine** | **(1)** not granted · **(2)** grant on handoff · **(3)** caller owns · **(4)** abandoned / obligation reserved (`RELEASE_OBLIGATION_CLAIMED`, no schedule yet) · **(5)** exclusive schedule won (`_release_scheduling_claimed`, `RELEASE_PENDING` after `_schedule_handoff_permit_release`) · **(6)** `RELEASED` · **(7)** release failure → lifecycle failure list. Reservation (`try_claim_release_obligation`) ≠ scheduling authority (`try_claim_exclusive_release_scheduling`). |
+| **Linearization** | Under `_AcquirePermitHandoff._lock`: obligation reservation is first-writer-only; exclusive scheduling is a separate first-winner flag; `mark_release_pending` only after schedule path wins. Sync failed-grant and `_maybe_release_abandoned_acquire_permit` both call **`try_claim_exclusive_release_scheduling`** only after `acquire_future.done()`. |
+| **Contested matrix (addendum)** | **G:** re-entrant obligation claim no longer authorizes schedule; concurrent `try_claim_exclusive_release_scheduling` → one winner (deterministic handoff test). **H:** obligation reserved while future pending; schedule deferred until `done()`. Prior **D/E** matrix @ `8f6b9a2…` unchanged. |
+| **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py`; `tests/unit/runtime/resilience/test_dependency_attempt_execution_boundary.py`; this evidence file. |
+| **L1** | **6 passed** — shutdown races, BA-F12 store, exactly-once cleanup, obligation re-entry negative, concurrent exclusive scheduling. |
+| **L2** | See history table (wave 1 STOP; publication wave after commit). |
+| **Historical preservation** | **56/56**, **58/61**, **58/61**, **59/61**, BA-F12 L1 **4/4**, L2 **63/63** @ `8f6b9a2…` / `e3bed112…` docs — **not** invalidated; attributed to prior SHAs only. |
 
 **Scoped closure matrix (BA-F12-affected TL):**
 

@@ -65,6 +65,7 @@ class _AcquirePermitHandoff:
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _scheduling_phase: _AcquireSchedulingPhase = _AcquireSchedulingPhase.REGISTERED
     _held_permit: DependencyConcurrencyPermit | None = None
+    _release_scheduling_claimed: bool = False
 
     def try_claim_physical_start(self) -> bool:
         """Win physical admission vs pre-start terminal; linearized under handoff lock (BA-F11)."""
@@ -127,7 +128,7 @@ class _AcquirePermitHandoff:
             return self._state is _AcquireHandoffState.RELEASE_PENDING
 
     def try_claim_release_obligation(self) -> bool:
-        """Claim (or re-enter) abandoned cleanup before permit observation."""
+        """Reserve abandoned cleanup obligation before permit observation (not scheduling)."""
         with self._lock:
             if self._state in (
                 _AcquireHandoffState.CALLER_OWNS,
@@ -136,7 +137,7 @@ class _AcquirePermitHandoff:
             ):
                 return False
             if self._state is _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED:
-                return True
+                return False
             if self._state in (
                 _AcquireHandoffState.ABANDONED,
                 _AcquireHandoffState.GRANT_AVAILABLE,
@@ -144,6 +145,31 @@ class _AcquirePermitHandoff:
                 self._state = _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED
                 return True
             return False
+
+    def try_claim_exclusive_release_scheduling(self) -> bool:
+        """Win exactly-once authority to schedule physical handoff permit release."""
+        with self._lock:
+            if self._state in (
+                _AcquireHandoffState.CALLER_OWNS,
+                _AcquireHandoffState.RELEASED,
+                _AcquireHandoffState.RELEASE_PENDING,
+            ):
+                return False
+            if self._release_scheduling_claimed:
+                return False
+            if self._state not in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+                _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED,
+            ):
+                return False
+            if self._state in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+            ):
+                self._state = _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED
+            self._release_scheduling_claimed = True
+            return True
 
     def complete_release(self) -> None:
         with self._lock:
@@ -388,15 +414,10 @@ class DependencyAttemptExecutionBoundary:
                 self._pending_acquire_futures.discard(acquire_future)
 
         if not handoff.claim_successful_grant():
-            if not (
-                handoff.is_release_obligation_claimed()
-                or handoff.is_release_pending()
-                or handoff.is_release_complete()
-            ):
-                if handoff.try_claim_release_obligation():
-                    stored = handoff.take_stored_permit_for_release()
-                    to_release = stored if stored is not None else permit
-                    self._schedule_handoff_permit_release(to_release, handoff)
+            if handoff.try_claim_exclusive_release_scheduling():
+                stored = handoff.take_stored_permit_for_release()
+                to_release = stored if stored is not None else permit
+                self._schedule_handoff_permit_release(to_release, handoff)
             raise RuntimeError(
                 "invariant: acquire permit granted after abandon handoff"
             )
@@ -648,9 +669,11 @@ class DependencyAttemptExecutionBoundary:
         """Release a permit when the sync waiter abandoned an async acquire."""
         if handoff.is_release_pending() or handoff.is_release_complete():
             return
-        if not handoff.try_claim_release_obligation():
-            return
         if not acquire_future.done():
+            if not handoff.is_release_obligation_claimed():
+                handoff.try_claim_release_obligation()
+            return
+        if not handoff.try_claim_exclusive_release_scheduling():
             return
         permit = handoff.take_stored_permit_for_release()
         if permit is None and not acquire_future.cancelled():
