@@ -58,4 +58,4 @@
 | FRZ-REL-03/04/05 | PASS — L2 regressions |
 | FRZ-SEC / FRZ-GOV | PASS — forged digest/MAC rejected |
 
-FINAL_COMMIT: set at publication.
+FINAL_COMMIT: `d7ec30f96` (see GitHub `development`).
