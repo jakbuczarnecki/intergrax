@@ -9,10 +9,15 @@ recovery, or ownership.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from intergrax.contracts.certified_owner_loss_evidence import (
+        StagedCertifiedOwnerLossEvidenceV1,
+    )
 
 
 class ExternalOperationIntentState(StrEnum):
@@ -40,12 +45,18 @@ class ExternalOperationState:
     """Combined durable view for one logical operation_id."""
 
     operation_id: str
+    tenant_id: str
     intent_state: ExternalOperationIntentState
     physical_state: ExternalOperationPhysicalState
     created_at: datetime
     updated_at: datetime
     revision: int
     owner_token: str | None = None
+    ownership_epoch_fence: int | None = None
+    staged_certified_owner_loss: StagedCertifiedOwnerLossEvidenceV1 | None = None
+    consumed_certified_loss_evidence_ids: frozenset[str] = field(
+        default_factory=frozenset,
+    )
 
 
 class ExternalOperationCancellationError(RuntimeError):

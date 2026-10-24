@@ -43,10 +43,15 @@ class ToolInvocationTerminalDisposition(str, Enum):
 def reconcile_orphaned_tool_external_operations(
     store: ExternalOperationStateStore,
     *,
+    tenant_id: str,
     active_owner: ProcessLocalExternalOperationOwner,
 ) -> tuple[ExternalOperationState, ...]:
     """Deprecated sweep — token mismatch is not owner death (Batch C audit C-F01)."""
-    return reconcile_orphaned_running_operations(store, active_owner=active_owner)
+    return reconcile_orphaned_running_operations(
+        store,
+        tenant_id=tenant_id,
+        active_owner=active_owner,
+    )
 
 
 def is_stalled_running_external_operation(

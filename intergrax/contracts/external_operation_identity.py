@@ -29,11 +29,14 @@ class ExternalOperationIdentity:
     dependency_kind: DependencyConcurrencyKind
     dependency_identity: str
     operation_id: str
+    tenant_id: str
     physical_attempt_sequence: int = 1
 
     def __post_init__(self) -> None:
         validate_execution_id(self.execution_id)
         validate_attempt_id(self.attempt_id)
+        if type(self.tenant_id) is not str or not self.tenant_id.strip():
+            raise ValueError("tenant_id must be a non-empty str")
         if type(self.dependency_kind) is not DependencyConcurrencyKind:
             raise TypeError("dependency_kind must be DependencyConcurrencyKind")
         if type(self.dependency_identity) is not str or not self.dependency_identity.strip():

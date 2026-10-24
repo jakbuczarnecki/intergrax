@@ -95,6 +95,7 @@ def dispatch_provider_termination_sync(
 def mark_observed_cancellation_terminal(
     store: ExternalOperationStateStore,
     *,
+    tenant_id: str,
     operation_id: str,
     expected_revision: int,
     termination_result: TerminationResult,
@@ -108,6 +109,7 @@ def mark_observed_cancellation_terminal(
     if owner is not None:
         record = mark_physical_terminal_if_owner_matches(
             store,
+            tenant_id=tenant_id,
             operation_id=operation_id,
             expected_revision=expected_revision,
             physical_state=physical,
@@ -117,6 +119,7 @@ def mark_observed_cancellation_terminal(
     else:
         record = mark_physical_terminal(
             store,
+            tenant_id=tenant_id,
             operation_id=operation_id,
             expected_revision=expected_revision,
             physical_state=physical,
@@ -126,12 +129,14 @@ def mark_observed_cancellation_terminal(
         if owner is not None:
             return finalize_operation_intent_if_owner_matches(
                 store,
+                tenant_id=tenant_id,
                 operation_id=operation_id,
                 expected_revision=record.revision,
                 owner=owner,
             )
         return finalize_operation_intent(
             store,
+            tenant_id=tenant_id,
             operation_id=operation_id,
             expected_revision=record.revision,
         )
@@ -146,6 +151,7 @@ def request_cancel_dispatch_terminate_and_observe(
     termination_port: ExternalOperationTerminationPort | None,
     capabilities: ExternalOperationCapabilities,
 ) -> ExternalOperationState:
+    tenant_id = identity.tenant_id
     """Intent CAS → optional cancel port → termination → physical CAS."""
     from intergrax.contracts.external_operation_cancellation import (
         ExternalOperationCancellationPort,
@@ -160,6 +166,7 @@ def request_cancel_dispatch_terminate_and_observe(
         port = cancellation_port
     intent_record = request_operation_cancellation(
         store,
+        tenant_id=tenant_id,
         operation_id=identity.operation_id,
         cancellation_port=port,
     )
@@ -170,6 +177,7 @@ def request_cancel_dispatch_terminate_and_observe(
     )
     return mark_observed_cancellation_terminal(
         store,
+        tenant_id=tenant_id,
         operation_id=identity.operation_id,
         expected_revision=intent_record.revision,
         termination_result=termination,

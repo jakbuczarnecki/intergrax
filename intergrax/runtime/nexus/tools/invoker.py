@@ -1736,6 +1736,7 @@ class RuntimeToolInvoker:
 
     def _build_tool_external_operation_attempt(
         self,
+        state: "RuntimeState",
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
         *,
@@ -1749,6 +1750,7 @@ class RuntimeToolInvoker:
                 identity=None,
             )
         identity = tool_external_operation_identity(
+            tenant_id=state.tenant_id,
             tool_id=contract.tool_id,
             step_id=str(request.step_id),
             physical_attempt_sequence=physical_attempt_sequence,
@@ -1841,6 +1843,7 @@ class RuntimeToolInvoker:
         request = self._apply_invocation_wiring(contract=contract, request=request)
         dep_boundary = self._dependency_attempt_boundary
         ext_op = self._build_tool_external_operation_attempt(
+            state,
             contract,
             request,
             physical_attempt_sequence=physical_attempt_sequence,

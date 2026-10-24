@@ -69,6 +69,7 @@ from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
+_TENANT = "tenant_test"
 _BATCH_C_RUN_ID = canonical_run_id_for_tests("tool-life-x-batch-c")
 _AGENT_ID = "batch-c-agent"
 
@@ -175,6 +176,7 @@ def _tool_identity(tool_id: str = "demo.tool") -> object:
             logical_scope="step1",
         )
         return tool_external_operation_identity(
+            tenant_id=_TENANT,
             tool_id=tool_id,
             step_id="step1",
             physical_attempt_sequence=1,
@@ -187,9 +189,10 @@ def test_batch_c_l1_stale_worker_fenced_terminal_rejected() -> None:
     store = InMemoryExternalOperationStateStore()
     owner_a = ProcessLocalExternalOperationOwner.mint()
     owner_b = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("op-1", owner_token=owner_a.token)
+    record = store.create_if_absent(_TENANT, "op-1", owner_token=owner_a.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id="op-1",
         expected_revision=record.revision,
         owner=owner_a,
@@ -197,6 +200,7 @@ def test_batch_c_l1_stale_worker_fenced_terminal_rejected() -> None:
     with pytest.raises(ExternalOperationFencedCommitRejectedError):
         mark_physical_terminal_if_owner_matches(
             store,
+            tenant_id=_TENANT,
             operation_id="op-1",
             expected_revision=running.revision,
             physical_state=ExternalOperationPhysicalState.SUCCEEDED,
@@ -207,15 +211,17 @@ def test_batch_c_l1_stale_worker_fenced_terminal_rejected() -> None:
 def test_batch_c_l1_late_terminal_cannot_overwrite_prior_terminal() -> None:
     store = InMemoryExternalOperationStateStore()
     owner = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("op-2", owner_token=owner.token)
+    record = store.create_if_absent(_TENANT, "op-2", owner_token=owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id="op-2",
         expected_revision=record.revision,
         owner=owner,
     )
     first = mark_physical_terminal_if_owner_matches(
         store,
+        tenant_id=_TENANT,
         operation_id="op-2",
         expected_revision=running.revision,
         physical_state=ExternalOperationPhysicalState.UNKNOWN,
@@ -224,6 +230,7 @@ def test_batch_c_l1_late_terminal_cannot_overwrite_prior_terminal() -> None:
     with pytest.raises(ExternalOperationFencedCommitRejectedError):
         mark_physical_terminal_if_owner_matches(
             store,
+            tenant_id=_TENANT,
             operation_id="op-2",
             expected_revision=first.revision,
             physical_state=ExternalOperationPhysicalState.SUCCEEDED,
@@ -234,9 +241,10 @@ def test_batch_c_l1_late_terminal_cannot_overwrite_prior_terminal() -> None:
 def test_batch_c_l1_owner_loss_recovery_denied_foreign_worker_unchanged() -> None:
     store = InMemoryExternalOperationStateStore()
     foreign_owner = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("op-3", owner_token=foreign_owner.token)
+    record = store.create_if_absent(_TENANT, "op-3", owner_token=foreign_owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id="op-3",
         expected_revision=record.revision,
         owner=foreign_owner,
@@ -244,10 +252,11 @@ def test_batch_c_l1_owner_loss_recovery_denied_foreign_worker_unchanged() -> Non
     with pytest.raises(ExternalOperationCertifiedOwnerLossRequiredError):
         recover_running_operation_after_certified_owner_loss(
             store,
+            tenant_id=_TENANT,
             operation_id="op-3",
             expected_revision=running.revision,
         )
-    loaded = store.load("op-3")
+    loaded = store.load(_TENANT, "op-3")
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
     assert loaded.owner_token == foreign_owner.token
@@ -257,9 +266,10 @@ def test_batch_c_l1_owner_loss_recovery_denied_foreign_worker_unchanged() -> Non
 def test_batch_c_l1_owner_loss_recovery_denied_concurrent_no_mutation() -> None:
     store = InMemoryExternalOperationStateStore()
     dead_owner = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("op-3b", owner_token=dead_owner.token)
+    record = store.create_if_absent(_TENANT, "op-3b", owner_token=dead_owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id="op-3b",
         expected_revision=record.revision,
         owner=dead_owner,
@@ -272,6 +282,7 @@ def test_batch_c_l1_owner_loss_recovery_denied_concurrent_no_mutation() -> None:
         try:
             recover_running_operation_after_certified_owner_loss(
                 store,
+                tenant_id=_TENANT,
                 operation_id="op-3b",
                 expected_revision=running.revision,
             )
@@ -288,7 +299,7 @@ def test_batch_c_l1_owner_loss_recovery_denied_concurrent_no_mutation() -> None:
         isinstance(exc, ExternalOperationCertifiedOwnerLossRequiredError)
         for exc in errors
     )
-    loaded = store.load("op-3b")
+    loaded = store.load(_TENANT, "op-3b")
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
     assert loaded.revision == running.revision
@@ -297,9 +308,10 @@ def test_batch_c_l1_owner_loss_recovery_denied_concurrent_no_mutation() -> None:
 def test_batch_c_l1_stalled_classification_requires_running_and_deadline() -> None:
     store = InMemoryExternalOperationStateStore()
     owner = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("op-4", owner_token=owner.token)
+    record = store.create_if_absent(_TENANT, "op-4", owner_token=owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id="op-4",
         expected_revision=record.revision,
         owner=owner,
@@ -395,9 +407,10 @@ def test_batch_c_l1_invoker_preserves_foreign_running_external_operation() -> No
     store = InMemoryExternalOperationStateStore()
     active_owner = ProcessLocalExternalOperationOwner.mint()
     stale_owner = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("orphan-op", owner_token=stale_owner.token)
+    record = store.create_if_absent(_TENANT, "orphan-op", owner_token=stale_owner.token)
     mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id="orphan-op",
         expected_revision=record.revision,
         owner=stale_owner,
@@ -430,7 +443,7 @@ def test_batch_c_l1_invoker_preserves_foreign_running_external_operation() -> No
         request=_request(tool_id="read.reconcile"),
     )
     assert result.success is True
-    loaded = store.load("orphan-op")
+    loaded = store.load(_TENANT, "orphan-op")
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
     assert loaded.owner_token == stale_owner.token
@@ -440,18 +453,20 @@ def test_batch_c_l1_token_mismatch_reconcile_is_no_op() -> None:
     store = InMemoryExternalOperationStateStore()
     stale_owner = ProcessLocalExternalOperationOwner.mint()
     active_owner = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("op-no-sweep", owner_token=stale_owner.token)
+    record = store.create_if_absent(_TENANT, "op-no-sweep", owner_token=stale_owner.token)
     mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id="op-no-sweep",
         expected_revision=record.revision,
         owner=stale_owner,
     )
     assert reconcile_orphaned_tool_external_operations(
         store,
+        tenant_id=_TENANT,
         active_owner=active_owner,
     ) == ()
-    loaded = store.load("op-no-sweep")
+    loaded = store.load(_TENANT, "op-no-sweep")
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
 
@@ -462,9 +477,10 @@ def test_batch_c_l1_ensure_terminal_recorded_fenced_for_foreign_owner() -> None:
     owner_b = ProcessLocalExternalOperationOwner.mint()
     identity = _tool_identity()
     assert identity.operation_id is not None
-    record = store.create_if_absent(identity.operation_id, owner_token=owner_b.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner_b.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner_b,
@@ -476,7 +492,7 @@ def test_batch_c_l1_ensure_terminal_recorded_fenced_for_foreign_owner() -> None:
     )
     attempt._revision = running.revision  # noqa: SLF001 — stale worker
     attempt.ensure_terminal_recorded()
-    loaded = store.load(identity.operation_id)
+    loaded = store.load(_TENANT, identity.operation_id)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
     assert loaded.owner_token == owner_b.token
@@ -488,15 +504,17 @@ def test_batch_c_l1_tool_attempt_ignores_superseded_success_commit() -> None:
     owner_b = ProcessLocalExternalOperationOwner.mint()
     identity = _tool_identity()
     assert identity.operation_id is not None
-    record = store.create_if_absent(identity.operation_id, owner_token=owner_a.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner_a.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner_a,
     )
     mark_physical_terminal_if_owner_matches(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=running.revision,
         physical_state=ExternalOperationPhysicalState.UNKNOWN,
@@ -509,7 +527,7 @@ def test_batch_c_l1_tool_attempt_ignores_superseded_success_commit() -> None:
     )
     attempt._revision = running.revision  # noqa: SLF001 — test stale worker
     attempt.mark_succeeded()
-    loaded = store.load(identity.operation_id)
+    loaded = store.load(_TENANT, identity.operation_id)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.UNKNOWN
 

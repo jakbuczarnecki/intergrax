@@ -51,6 +51,7 @@ from intergrax.runtime.external_operations.operation_termination import (
 
 def llm_external_operation_identity(
     *,
+    tenant_id: str,
     provider_slug: str,
     model: str,
     call_scope: str,
@@ -70,6 +71,7 @@ def llm_external_operation_identity(
         dependency_kind=DependencyConcurrencyKind.LLM_PROVIDER,
         dependency_identity=provider_slug,
         operation_id=operation_id,
+        tenant_id=tenant_id,
         physical_attempt_sequence=physical_attempt_sequence,
     )
 
@@ -174,6 +176,7 @@ class LlmExternalOperationAttempt:
         store, identity, owner = binding
         record = mark_physical_running(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             owner=owner,
@@ -187,6 +190,7 @@ class LlmExternalOperationAttempt:
         store, identity, _owner = binding
         updated = request_operation_cancellation(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             cancellation_port=self._cancellation_port,
         )
@@ -205,6 +209,7 @@ class LlmExternalOperationAttempt:
         store, identity, _owner = binding
         record = mark_physical_terminal(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             physical_state=physical,
@@ -214,6 +219,7 @@ class LlmExternalOperationAttempt:
         if finalize_intent:
             finalized = finalize_operation_intent(
                 store,
+                tenant_id=identity.tenant_id,
                 operation_id=identity.operation_id,
                 expected_revision=self._revision,
             )
@@ -272,6 +278,7 @@ class LlmExternalOperationAttempt:
             )
         record = mark_observed_cancellation_terminal(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             termination_result=termination_result,

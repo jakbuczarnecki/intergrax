@@ -45,6 +45,7 @@ from intergrax.runtime.external_operations.operation_termination import (
 
 def tool_external_operation_identity(
     *,
+    tenant_id: str,
     tool_id: str,
     step_id: str,
     physical_attempt_sequence: int,
@@ -63,6 +64,7 @@ def tool_external_operation_identity(
         dependency_kind=DependencyConcurrencyKind.TOOL,
         dependency_identity=tool_id,
         operation_id=operation_id,
+        tenant_id=tenant_id,
         physical_attempt_sequence=physical_attempt_sequence,
     )
 
@@ -136,6 +138,7 @@ class ToolExternalOperationAttempt:
         store, identity, owner = binding
         record = mark_physical_running(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             owner=owner,
@@ -174,6 +177,7 @@ class ToolExternalOperationAttempt:
         store, identity, _owner = binding
         updated = request_operation_cancellation(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             cancellation_port=self._cancellation_port,
         )
@@ -202,6 +206,7 @@ class ToolExternalOperationAttempt:
             )
         record = mark_observed_cancellation_terminal(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             termination_result=termination_result,
@@ -218,6 +223,7 @@ class ToolExternalOperationAttempt:
         try:
             record = mark_physical_terminal_if_owner_matches(
                 store,
+                tenant_id=identity.tenant_id,
                 operation_id=identity.operation_id,
                 expected_revision=self._revision,
                 physical_state=ExternalOperationPhysicalState.UNKNOWN,
@@ -225,7 +231,7 @@ class ToolExternalOperationAttempt:
                 intent_state=ExternalOperationIntentState.TERMINATING,
             )
         except ExternalOperationFencedCommitRejectedError:
-            loaded = store.load(identity.operation_id)
+            loaded = store.load(identity.tenant_id, identity.operation_id)
             if loaded is not None:
                 self._revision = loaded.revision
             self._terminal_recorded = True
@@ -234,12 +240,13 @@ class ToolExternalOperationAttempt:
         try:
             finalized = finalize_operation_intent_if_owner_matches(
                 store,
+                tenant_id=identity.tenant_id,
                 operation_id=identity.operation_id,
                 expected_revision=self._revision,
                 owner=owner,
             )
         except ExternalOperationFencedCommitRejectedError:
-            loaded = store.load(identity.operation_id)
+            loaded = store.load(identity.tenant_id, identity.operation_id)
             if loaded is not None:
                 self._revision = loaded.revision
             self._terminal_recorded = True
@@ -261,6 +268,7 @@ class ToolExternalOperationAttempt:
         try:
             record = mark_physical_terminal_if_owner_matches(
                 store,
+                tenant_id=identity.tenant_id,
                 operation_id=identity.operation_id,
                 expected_revision=self._revision,
                 physical_state=physical,
@@ -268,7 +276,7 @@ class ToolExternalOperationAttempt:
                 intent_state=intent_state,
             )
         except ExternalOperationFencedCommitRejectedError:
-            loaded = store.load(identity.operation_id)
+            loaded = store.load(identity.tenant_id, identity.operation_id)
             if loaded is not None:
                 self._revision = loaded.revision
             self._terminal_recorded = True
@@ -278,12 +286,13 @@ class ToolExternalOperationAttempt:
             try:
                 finalized = finalize_operation_intent_if_owner_matches(
                     store,
+                    tenant_id=identity.tenant_id,
                     operation_id=identity.operation_id,
                     expected_revision=self._revision,
                     owner=owner,
                 )
             except ExternalOperationFencedCommitRejectedError:
-                loaded = store.load(identity.operation_id)
+                loaded = store.load(identity.tenant_id, identity.operation_id)
                 if loaded is not None:
                     self._revision = loaded.revision
                 self._terminal_recorded = True
