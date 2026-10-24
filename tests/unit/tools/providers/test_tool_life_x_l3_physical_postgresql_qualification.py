@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 
@@ -18,8 +19,14 @@ from intergrax.integrations.providers.relational_store.postgresql.session import
     import_psycopg,
     set_local_config,
 )
+from intergrax.integrations.relational_bounded_row_accumulation import (
+    RelationalResultByteLimitExceeded,
+)
 from intergrax.integrations.relational_store_execution_adapter import (
     RelationalStoreExecutionAdapter,
+)
+from intergrax.integrations.providers.relational_store.postgresql.adapter import (
+    _PostgreSQLRelationalStore,
 )
 from intergrax.tools.providers.database.contracts import DatabaseQueryInput
 from intergrax.tools.providers.database.service import database_query
@@ -27,6 +34,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 from tests.fixtures.tool_life_x_postgresql_qualification import (
     require_tool_life_postgresql,
     resolve_tool_life_postgresql_config,
+    tool_life_postgresql_dual_tenant_stores,
     tool_life_postgresql_store,
 )
 
@@ -35,6 +43,10 @@ pytestmark = [
     pytest.mark.gate,
     pytest.mark.network,
 ]
+
+# Shared qualification role can read any schema when SQL is fully qualified.
+# Isolation under test is search_path / tenant-scoped session configuration, not DB ACL.
+_QUALIFIED_CROSS_SCHEMA_READS_EXPECTED_WITH_SHARED_ROLE = True
 
 
 @pytest.fixture(autouse=True)
@@ -133,6 +145,100 @@ def test_pg_bounded_query_physical_enforcement() -> None:
     assert result.truncated is True
 
 
+def test_pg_bounded_query_stops_remote_work_early() -> None:
+    """Server-side cursor + itersize=1 must not evaluate the full slow series."""
+    with tool_life_postgresql_store() as (store, _config):
+        started = time.monotonic()
+        rows, truncated, reason = store.fetch_query_bounded(
+            "SELECT i FROM generate_series(1, 40) AS s(i) "
+            "WHERE pg_sleep(0.08) IS NOT NULL",
+            max_rows=3,
+            max_result_bytes=1_000_000,
+        )
+        elapsed = time.monotonic() - started
+    assert truncated is True
+    assert reason == "row_limit"
+    assert len(rows) == 3
+    assert elapsed < 2.5
+
+
+def test_pg_bounded_query_byte_limit_before_row_limit() -> None:
+    with tool_life_postgresql_store() as (store, _config):
+        rows, truncated, reason = store.fetch_query_bounded(
+            "SELECT repeat('ż', 40) AS payload FROM generate_series(1, 20) g(i)",
+            max_rows=20,
+            max_result_bytes=500,
+        )
+    assert truncated is True
+    assert reason == "byte_limit"
+    assert len(rows) >= 1
+    assert (
+        len(json.dumps([dict(r) for r in rows], ensure_ascii=False).encode("utf-8"))
+        <= 500
+    )
+
+
+def test_pg_bounded_query_single_row_byte_limit_raises() -> None:
+    with tool_life_postgresql_store() as (store, _config):
+        with pytest.raises(RelationalResultByteLimitExceeded):
+            store.fetch_query_bounded(
+                "SELECT repeat('x', 8000) AS payload",
+                max_rows=10,
+                max_result_bytes=100,
+            )
+
+
+def test_pg_bounded_query_empty_result() -> None:
+    with tool_life_postgresql_store() as (store, _config):
+        store.execute("CREATE TABLE tlx_empty (id INTEGER PRIMARY KEY)")
+        rows, truncated, reason = store.fetch_query_bounded(
+            "SELECT id FROM tlx_empty",
+            max_rows=5,
+            max_result_bytes=500,
+        )
+    assert rows == ()
+    assert truncated is False
+    assert reason == ""
+
+
+def test_pg_bounded_query_exact_row_boundary() -> None:
+    with tool_life_postgresql_store() as (store, _config):
+        rows, truncated, reason = store.fetch_query_bounded(
+            "SELECT i AS id FROM generate_series(1, 4) g(i)",
+            max_rows=4,
+            max_result_bytes=50_000,
+        )
+    assert len(rows) == 4
+    assert truncated is False
+    assert reason == ""
+
+
+def test_pg_bounded_query_cancel_during_streamed_fetch() -> None:
+    psycopg, errors, _, _ = import_psycopg()
+    with tool_life_postgresql_store() as (store, _config):
+        cancel_error: BaseException | None = None
+
+        def _run_bounded() -> None:
+            nonlocal cancel_error
+            try:
+                store.fetch_query_bounded(
+                    "SELECT i FROM generate_series(1, 500) AS s(i) "
+                    "WHERE pg_sleep(0.05) IS NOT NULL",
+                    max_rows=500,
+                    max_result_bytes=10_000_000,
+                )
+            except BaseException as exc:
+                cancel_error = exc
+
+        worker = threading.Thread(target=_run_bounded, daemon=True)
+        worker.start()
+        time.sleep(0.35)
+        store.cancel_backend()
+        worker.join(timeout=15.0)
+        assert cancel_error is not None
+        assert isinstance(cancel_error, errors.QueryCanceled)
+
+
 def test_pg_connection_acquisition_timeout_unreachable_host() -> None:
     psycopg, _, _, _ = import_psycopg()
     bad = resolve_tool_life_postgresql_config().model_copy(
@@ -145,20 +251,36 @@ def test_pg_connection_acquisition_timeout_unreachable_host() -> None:
     assert elapsed < 5.0
 
 
-def test_pg_tenant_schema_isolation_between_stores() -> None:
-    with tool_life_postgresql_store(schema_prefix="tlx_tenant_a") as (store_a, _):
-        store_a.execute("CREATE TABLE tlx_iso (id INTEGER PRIMARY KEY)")
-        store_a.execute("INSERT INTO tlx_iso (id) VALUES (1)")
-    with tool_life_postgresql_store(schema_prefix="tlx_tenant_b") as (store_b, config_b):
-        provider = PostgreSQLConnectionProvider(
-            config_b,
-            tenant_schema=config_b.tenant_schema or "public",
-        )
-        conn = provider.open_configured_connection()
-        session = PostgreSQLSession(conn)
-        with pytest.raises(Exception):
-            session.execute("SELECT * FROM tlx_iso")
-        conn.close()
+def test_pg_tenant_schema_isolation_coexistent_tenants() -> None:
+    with tool_life_postgresql_dual_tenant_stores() as (
+        (store_a, config_a),
+        (store_b, config_b),
+    ):
+        schema_a = config_a.tenant_schema or "public"
+        schema_b = config_b.tenant_schema or "public"
+        store_a.execute("CREATE TABLE tlx_iso (id INTEGER PRIMARY KEY, tag TEXT NOT NULL)")
+        store_b.execute("CREATE TABLE tlx_iso (id INTEGER PRIMARY KEY, tag TEXT NOT NULL)")
+        store_a.execute("INSERT INTO tlx_iso (id, tag) VALUES (1, 'tenant-a')")
+        store_b.execute("INSERT INTO tlx_iso (id, tag) VALUES (2, 'tenant-b')")
+
+        rows_a = store_a.fetch_all("SELECT id, tag FROM tlx_iso ORDER BY id")
+        rows_b = store_b.fetch_all("SELECT id, tag FROM tlx_iso ORDER BY id")
+        assert rows_a == [{"id": 1, "tag": "tenant-a"}]
+        assert rows_b == [{"id": 2, "tag": "tenant-b"}]
+        assert store_a.fetch_all("SELECT id FROM tlx_iso WHERE id = 2") == []
+        assert store_b.fetch_all("SELECT id FROM tlx_iso WHERE id = 1") == []
+
+        cross = store_a.fetch_all(f'SELECT id, tag FROM "{schema_b}".tlx_iso ORDER BY id')
+        if _QUALIFIED_CROSS_SCHEMA_READS_EXPECTED_WITH_SHARED_ROLE:
+            assert cross == [{"id": 2, "tag": "tenant-b"}]
+        else:
+            assert cross == []
+
+        reverse = store_b.fetch_all(f'SELECT id, tag FROM "{schema_a}".tlx_iso ORDER BY id')
+        if _QUALIFIED_CROSS_SCHEMA_READS_EXPECTED_WITH_SHARED_ROLE:
+            assert reverse == [{"id": 1, "tag": "tenant-a"}]
+        else:
+            assert reverse == []
 
 
 def test_pg_sql_error_rolls_back_mutating_transaction() -> None:
@@ -172,3 +294,25 @@ def test_pg_sql_error_rolls_back_mutating_transaction() -> None:
         conn.rollback()
         rows = store.fetch_all("SELECT COUNT(*) AS c FROM tlx_mut")
     assert int(rows[0]["c"]) == 0
+
+
+def test_pg_bounded_fetch_uses_named_server_side_cursor() -> None:
+    """Qualification guard: bounded fetch must open a named (server-side) cursor."""
+    with tool_life_postgresql_store() as (store, config):
+        conn = store._require_connection()
+        opened_names: list[str] = []
+        original_cursor = conn.cursor
+
+        def _tracking_cursor(name: str | None = None, *args: object, **kwargs: object):
+            if name is not None:
+                opened_names.append(name)
+            return original_cursor(name, *args, **kwargs)
+
+        conn.cursor = _tracking_cursor  # type: ignore[method-assign]
+        bounded_store = _PostgreSQLRelationalStore(config, conn)
+        bounded_store.fetch_query_bounded(
+            "SELECT 1 AS v",
+            max_rows=1,
+            max_result_bytes=500,
+        )
+    assert any(name.startswith("igx_bq_") for name in opened_names)

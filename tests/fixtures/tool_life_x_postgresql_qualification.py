@@ -23,7 +23,6 @@ from intergrax.integrations.providers.relational_store.postgresql.session import
     import_psycopg,
 )
 
-_QUAL_DEFAULT_DSN = "postgresql://intergrax:intergrax@localhost:5434/intergrax"
 _CONNECT_PROBE_TIMEOUT_S = 3.0
 
 
@@ -44,16 +43,26 @@ def resolve_tool_life_postgresql_config(
     )
 
 
+def _qualification_endpoint_label(config: PostgreSQLIntegrationConfig) -> str:
+    return f"{config.host}:{config.port}/{config.database}"
+
+
 def require_tool_life_postgresql() -> None:
+    """Fail closed when mandatory L3-PHYSICAL PostgreSQL is unreachable (not pytest.skip)."""
+    config = resolve_tool_life_postgresql_config()
     psycopg, _, _, _ = import_psycopg()
+    target = _qualification_endpoint_label(config)
     try:
         with psycopg.connect(
-            _QUAL_DEFAULT_DSN,
+            config.connection_string(),
             connect_timeout=int(_CONNECT_PROBE_TIMEOUT_S),
         ) as conn:
             conn.execute("SELECT 1")
     except Exception as exc:
-        pytest.skip(f"TOOL-LIFE-X L3-PHYSICAL PostgreSQL unavailable: {exc}")
+        pytest.fail(
+            "TOOL-LIFE-X L3-PHYSICAL PostgreSQL required but unavailable "
+            f"at {target}: {type(exc).__name__}"
+        )
 
 
 @contextmanager
@@ -86,3 +95,50 @@ def tool_life_postgresql_store(
             cleanup.commit()
         finally:
             cleanup.close()
+
+
+@contextmanager
+def tool_life_postgresql_dual_tenant_stores(
+    *,
+    schema_prefix_a: str = "tlx_tenant_a",
+    schema_prefix_b: str = "tlx_tenant_b",
+) -> Generator[
+    tuple[tuple[Any, PostgreSQLIntegrationConfig], tuple[Any, PostgreSQLIntegrationConfig]],
+    None,
+    None,
+]:
+    """Two tenant schemas on the same instance, both live for the duration of the block."""
+    require_tool_life_postgresql()
+    schema_a = f"{schema_prefix_a}_{uuid.uuid4().hex[:10]}"
+    schema_b = f"{schema_prefix_b}_{uuid.uuid4().hex[:10]}"
+    config_a = resolve_tool_life_postgresql_config(tenant_schema=schema_a)
+    config_b = resolve_tool_life_postgresql_config(tenant_schema=schema_b)
+    provider_a = PostgreSQLConnectionProvider(config_a, tenant_schema=schema_a)
+    provider_b = PostgreSQLConnectionProvider(config_b, tenant_schema=schema_b)
+    conn_a = provider_a.open_configured_connection()
+    conn_b = provider_b.open_configured_connection()
+    provider_a.ensure_schema_exists(PostgreSQLSession(conn_a), schema_a)
+    provider_b.ensure_schema_exists(PostgreSQLSession(conn_b), schema_b)
+    conn_a.commit()
+    conn_b.commit()
+    store_a = open_postgresql_relational_store(
+        config_a,
+        connection_factory=lambda: conn_a,
+    ).client
+    store_b = open_postgresql_relational_store(
+        config_b,
+        connection_factory=lambda: conn_b,
+    ).client
+    assert store_a is not None and store_b is not None
+    try:
+        yield (store_a, config_a), (store_b, config_b)
+    finally:
+        store_a.close()
+        store_b.close()
+        for provider, schema in ((provider_a, schema_a), (provider_b, schema_b)):
+            cleanup = provider.open_configured_connection()
+            try:
+                cleanup.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+                cleanup.commit()
+            finally:
+                cleanup.close()

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any, Callable, Mapping, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -63,9 +64,20 @@ class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
         max_rows: int,
         max_result_bytes: int,
     ) -> tuple[tuple[Mapping[str, Any], ...], bool, str]:
+        """
+        Fetch with row/byte ceilings using a PostgreSQL server-side cursor.
+
+        Server-side cursors run inside an explicit read-only transaction so the
+        driver does not buffer the full remote result set before bounded iteration.
+        """
         conn = self._require_connection()
-        cursor = conn.execute(sql, params)
+        cursor_name = f"igx_bq_{uuid.uuid4().hex}"
+        cursor: Any | None = None
         try:
+            conn.execute("BEGIN READ ONLY")
+            cursor = conn.cursor(cursor_name)
+            cursor.itersize = 1
+            cursor.execute(sql, params)
 
             def _row_iter():
                 for row in cursor:
@@ -76,9 +88,18 @@ class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
                 max_rows=max_rows,
                 max_result_bytes=max_result_bytes,
             )
-            return tuple(accumulated), truncated, reason
+            result = (tuple(accumulated), truncated, reason)
+            conn.commit()
+            return result
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            raise
         finally:
-            cursor.close()
+            if cursor is not None:
+                cursor.close()
 
     def cancel_backend(self) -> None:
         """Request PostgreSQL backend cancellation for the store connection (physical cancel)."""
