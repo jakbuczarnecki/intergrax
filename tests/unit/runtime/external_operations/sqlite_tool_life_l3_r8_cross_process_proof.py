@@ -40,7 +40,11 @@ def _configure_qualification_composition(bundle: object) -> None:
         WorkerExecutionOwnershipRevocationRecorder,
     )
 
-    supervision = QualificationWorkerExecutionRevocationSupervision()
+    from tests.unit.runtime.external_operations.tool_life_x_qualification_revocation_supervision import (
+        qualification_worker_execution_revocation_supervision,
+    )
+
+    supervision = qualification_worker_execution_revocation_supervision()
     authorizer = WorkerExecutionOwnershipRevocationAuthorizer(
         authoritative_state_store=bundle.external_operation_state,
         supervision=supervision,

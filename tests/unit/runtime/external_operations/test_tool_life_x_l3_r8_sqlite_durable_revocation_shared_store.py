@@ -14,10 +14,15 @@ from intergrax.contracts.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationAuthorizationRejectedError,
     WorkerExecutionOwnershipRevocationSupervisionNotConfiguredError,
     WorkerExecutionOwnershipRevocationUnauthorizedError,
-    mint_worker_execution_ownership_revocation_authorization,
 )
 from tests.unit.runtime.external_operations.tool_life_x_qualification_revocation_supervision import (
     QualificationWorkerExecutionRevocationSupervision,
+)
+from tests.unit.runtime.external_operations.tool_life_x_revocation_test_forgery import (
+    forged_worker_execution_ownership_revocation_authorization,
+)
+from intergrax.runtime.external_operations.worker_execution_ownership_revocation_trust import (
+    reset_worker_execution_ownership_revocation_trust_for_tests,
 )
 from intergrax.runtime.external_operations.certified_owner_loss_composition import (
     require_certified_owner_loss_composition,
@@ -76,8 +81,10 @@ _BOUND_EPOCH = 11
 @pytest.fixture(autouse=True)
 def _reset_composition() -> None:
     reset_certified_owner_loss_composition_for_tests()
+    reset_worker_execution_ownership_revocation_trust_for_tests()
     yield
     reset_certified_owner_loss_composition_for_tests()
+    reset_worker_execution_ownership_revocation_trust_for_tests()
 
 
 @pytest.fixture
@@ -219,7 +226,7 @@ def test_l3r8_wrong_epoch_revocation_denied(
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
     _worker, bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
-    forged = mint_worker_execution_ownership_revocation_authorization(
+    forged = forged_worker_execution_ownership_revocation_authorization(
         tenant_id=_TENANT,
         operation_id=_OP,
         worker_instance_id=worker_id,
@@ -253,7 +260,7 @@ def test_l3r8_cross_tenant_revocation_not_visible(
     _worker, _bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
     current = durable_bundle.external_operation_state.load(_TENANT, _OP)
     assert current is not None
-    forged = mint_worker_execution_ownership_revocation_authorization(
+    forged = forged_worker_execution_ownership_revocation_authorization(
         tenant_id="other-tenant",
         operation_id=_OP,
         worker_instance_id=worker_id,
@@ -353,7 +360,7 @@ def test_l3r8_unauthorized_revocation_without_binding_rejected(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     durable_bundle.external_operation_state.create_if_absent(_TENANT, "op-unbound")
-    forged = mint_worker_execution_ownership_revocation_authorization(
+    forged = forged_worker_execution_ownership_revocation_authorization(
         tenant_id=_TENANT,
         operation_id="op-unbound",
         worker_instance_id="worker-x",
@@ -433,7 +440,7 @@ def test_l3r8_direct_port_revocation_without_sanction_rejected(
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
     _running_with_worker(durable_bundle, repo)
-    forged = mint_worker_execution_ownership_revocation_authorization(
+    forged = forged_worker_execution_ownership_revocation_authorization(
         tenant_id=_TENANT,
         operation_id=_OP,
         worker_instance_id="ignored",
@@ -527,7 +534,7 @@ def test_l3r8_forged_revocation_authorization_digest_rejected(
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
     _worker, bound, worker_id, _owner = _running_with_worker(durable_bundle, repo)
-    forged = mint_worker_execution_ownership_revocation_authorization(
+    forged = forged_worker_execution_ownership_revocation_authorization(
         tenant_id=_TENANT,
         operation_id=_OP,
         worker_instance_id=worker_id,

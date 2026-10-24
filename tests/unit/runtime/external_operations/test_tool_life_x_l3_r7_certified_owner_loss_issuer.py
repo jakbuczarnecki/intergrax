@@ -59,6 +59,9 @@ from intergrax.runtime.external_operations.worker_execution_ownership_revocation
 from tests.unit.runtime.external_operations.tool_life_x_qualification_revocation_supervision import (
     QualificationWorkerExecutionRevocationSupervision,
 )
+from intergrax.runtime.external_operations.worker_execution_ownership_revocation_trust import (
+    reset_worker_execution_ownership_revocation_trust_for_tests,
+)
 from tests.unit.autonomous_work.repository_contracts import worker_instance
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -71,8 +74,10 @@ _BOUND_EPOCH = 7
 @pytest.fixture(autouse=True)
 def _reset_composition() -> None:
     reset_certified_owner_loss_composition_for_tests()
+    reset_worker_execution_ownership_revocation_trust_for_tests()
     yield
     reset_certified_owner_loss_composition_for_tests()
+    reset_worker_execution_ownership_revocation_trust_for_tests()
 
 
 def _running_with_worker(

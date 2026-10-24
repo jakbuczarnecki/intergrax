@@ -19,6 +19,7 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationPhysicalState,
 )
 from intergrax.contracts.worker_execution_ownership_revocation import (
+    CANONICAL_WORKER_EXECUTION_REVOCATION_SUPERVISION_AUTHORITY_ID,
     WorkerExecutionDirectRevocationInvocationError,
     WorkerExecutionOwnershipNotRevokedError,
     WorkerExecutionOwnershipRevocationAuthorizationRejectedError,
@@ -29,8 +30,11 @@ from intergrax.contracts.worker_execution_ownership_revocation import (
     WorkerExecutionOwnershipRevocationUnauthorizedError,
     WorkerExecutionOwnershipRevocationV1,
     compute_worker_execution_ownership_revocation_authorization_digest,
-    mint_worker_execution_ownership_revocation_authorization,
     worker_execution_revocation_proof_ref,
+)
+from intergrax.runtime.external_operations.worker_execution_ownership_revocation_trust import (
+    require_worker_execution_ownership_revocation_trust,
+    verify_worker_execution_ownership_revocation_authorization_mac,
 )
 from intergrax.runtime.external_operations.certified_owner_loss_composition import (
     require_certified_owner_loss_composition,
@@ -117,6 +121,26 @@ def verify_worker_execution_ownership_revocation_authorization(
         raise WorkerExecutionOwnershipRevocationAuthorizationRejectedError(
             "stale revocation authorization for store revision",
         )
+    if authorization.supervision_authority_id != (
+        CANONICAL_WORKER_EXECUTION_REVOCATION_SUPERVISION_AUTHORITY_ID
+    ):
+        raise WorkerExecutionOwnershipRevocationAuthorizationRejectedError(
+            "revocation supervision authority mismatch",
+        )
+    now = _utc_now()
+    if authorization.valid_until < now:
+        raise WorkerExecutionOwnershipRevocationAuthorizationRejectedError(
+            "revocation authorization expired",
+        )
+    if authorization.authorized_at > now:
+        raise WorkerExecutionOwnershipRevocationAuthorizationRejectedError(
+            "revocation authorization not yet valid",
+        )
+    trust = require_worker_execution_ownership_revocation_trust()
+    verify_worker_execution_ownership_revocation_authorization_mac(
+        authorization,
+        trust=trust,
+    )
 
 
 def assert_authoritative_worker_execution_revocation_allowed(
