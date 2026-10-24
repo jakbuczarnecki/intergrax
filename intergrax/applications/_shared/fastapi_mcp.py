@@ -19,9 +19,6 @@ from intergrax.applications._shared.harness_auth import (
     apply_harness_auth_middleware,
     resolve_harness_auth_state_from_app,
 )
-from intergrax.applications._shared.mcp_harness_principal import register_nexus_mcp_harness_auth
-
-
 def _normalize_mount_path(mount_path: str) -> str:
     path = (mount_path or "/mcp").strip()
     if not path.startswith("/"):
@@ -45,6 +42,7 @@ def couple_fastapi_with_mcp(
     """
     mcp_mount = _normalize_mount_path(mount_path)
     mcp_app = mcp.http_app(path="/")
+    inner_auth = resolve_harness_auth_state_from_app(fastapi_app)
 
     lifespans: list[LifespanFn] = list(extra_lifespans or [])
     lifespans.append(mcp_app.lifespan)
@@ -56,12 +54,12 @@ def couple_fastapi_with_mcp(
         version=fastapi_app.version,
         lifespan=combined,
     )
+    if inner_auth is not None:
+        mcp_app.state.harness_auth = inner_auth
     wrapper.mount(mcp_mount, mcp_app)
     wrapper.mount("/", fastapi_app)
-    inner_auth = resolve_harness_auth_state_from_app(fastapi_app)
     require_auth = inner_auth.require_api_key if inner_auth is not None else False
     if inner_auth is not None:
         wrapper.state.harness_auth = inner_auth
-    register_nexus_mcp_harness_auth(mcp, inner_auth)
     apply_harness_auth_middleware(wrapper, require_auth=require_auth)
     return wrapper

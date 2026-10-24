@@ -13,6 +13,7 @@ from fastmcp.server.context import request_ctx
 
 from intergrax.applications._shared.harness_auth import (
     HarnessAuthState,
+    resolve_harness_auth_state_from_app,
     resolve_harness_authenticated_principal_for_state,
 )
 from intergrax.applications._shared.harness_principal import (
@@ -23,26 +24,14 @@ from intergrax.applications._shared.harness_principal import (
 from intergrax.contracts.agent_run import RequestIdentity
 
 if TYPE_CHECKING:
-    from fastmcp import FastMCP
     from starlette.requests import Request
 
-_MCP_HARNESS_AUTH: dict[int, HarnessAuthState | None] = {}
 
-
-def register_nexus_mcp_harness_auth(
-    mcp: FastMCP,
-    harness_auth: HarnessAuthState | None,
-) -> None:
-    """Associate harness auth configuration with a Nexus MCP server instance."""
-    _MCP_HARNESS_AUTH[id(mcp)] = harness_auth
-
-
-def get_nexus_mcp_harness_auth(mcp: FastMCP) -> HarnessAuthState | None:
-    return _MCP_HARNESS_AUTH.get(id(mcp))
-
-
-def clear_nexus_mcp_harness_auth(mcp: FastMCP) -> None:
-    _MCP_HARNESS_AUTH.pop(id(mcp), None)
+def resolve_harness_auth_for_mcp_request(request: Request | None) -> HarnessAuthState | None:
+    """Resolve typed harness auth from the Starlette app serving the MCP HTTP request."""
+    if request is None:
+        return None
+    return resolve_harness_auth_state_from_app(request.app)
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,8 +103,11 @@ def resolve_mcp_run_agent_identity(
     Client-supplied tenant/user are assertions only; conflicts fail before Execution.
     """
     request = _starlette_request_from_fastmcp()
+    effective_harness_auth = harness_auth
+    if effective_harness_auth is None:
+        effective_harness_auth = resolve_harness_auth_for_mcp_request(request)
     try:
-        principal = _resolve_verified_principal(request, harness_auth)
+        principal = _resolve_verified_principal(request, effective_harness_auth)
     except HTTPException as exc:
         raise _tool_error_from_http(exc) from exc
 
@@ -137,8 +129,8 @@ def resolve_mcp_run_agent_identity(
             request_identity=identity,
         )
 
-    if _harness_auth_requires_principal(harness_auth) and not _local_dev_harness_bypass(
-        harness_auth,
+    if _harness_auth_requires_principal(effective_harness_auth) and not _local_dev_harness_bypass(
+        effective_harness_auth,
     ):
         if request is None:
             raise ToolError(
@@ -178,8 +170,6 @@ def _tool_error_from_http(exc: HTTPException) -> ToolError:
 
 __all__ = [
     "McpRunAgentIdentityResolution",
-    "clear_nexus_mcp_harness_auth",
-    "get_nexus_mcp_harness_auth",
-    "register_nexus_mcp_harness_auth",
+    "resolve_harness_auth_for_mcp_request",
     "resolve_mcp_run_agent_identity",
 ]

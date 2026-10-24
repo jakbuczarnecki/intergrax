@@ -10,11 +10,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
-from intergrax.applications._shared.mcp_harness_principal import (
-    get_nexus_mcp_harness_auth,
-    register_nexus_mcp_harness_auth,
-    resolve_mcp_run_agent_identity,
-)
+from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
     bind_strict_serving_http_caller_principal,
 )
@@ -103,7 +99,6 @@ def build_nexus_mcp_server(
     Tools use the same registry and canonical host task execution as the Tier-3 FastAPI host.
     """
     mcp = FastMCP(name)
-    register_nexus_mcp_harness_auth(mcp, None)
 
     @mcp.tool
     async def list_agents() -> list[dict[str, Any]]:
@@ -130,9 +125,8 @@ def build_nexus_mcp_server(
         intent: str | None = None,
     ) -> dict[str, object]:
         """Run one agent task via canonical host task execution (same path as HTTP POST /run)."""
-        harness_auth = get_nexus_mcp_harness_auth(mcp)
         resolved = resolve_mcp_run_agent_identity(
-            harness_auth=harness_auth,
+            harness_auth=None,
             asserted_tenant_id=tenant_id,
             asserted_user_id=user_id,
             default_tenant_id=default_tenant_id,

@@ -4,11 +4,16 @@
 
 from __future__ import annotations
 
+import asyncio
+import socket
+import threading
+import time
 from contextlib import contextmanager
 from typing import Iterator
 from unittest.mock import AsyncMock
 
 import pytest
+import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastmcp import Client
@@ -29,6 +34,75 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@contextmanager
+def _uvicorn_mcp_base_url(app: FastAPI) -> Iterator[str]:
+    """Serve *app* on loopback for streamable MCP HTTP qualification (L3-scoped)."""
+    bind = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    bind.bind(("127.0.0.1", 0))
+    port = bind.getsockname()[1]
+    bind.close()
+    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 10.0
+    while not server.started and time.monotonic() < deadline:
+        time.sleep(0.02)
+    if not server.started:
+        server.should_exit = True
+        raise RuntimeError("uvicorn_mcp_qualification_startup_timeout")
+    try:
+        yield f"http://127.0.0.1:{port}/mcp/"
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5.0)
+
+
+async def _streamable_mcp_call_tool(
+    base_url: str,
+    tool: str,
+    arguments: dict[str, object],
+    *,
+    headers: dict[str, str] | None = None,
+    timeout_s: float = 15.0,
+) -> object:
+    from mcp.client.session import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    async def _run() -> object:
+        async with streamablehttp_client(base_url, headers=headers) as (read, write, _):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                return await session.call_tool(tool, arguments)
+
+    return await asyncio.wait_for(_run(), timeout=timeout_s)
+
+
+def _protected_coupled_mcp(
+    *,
+    api_key: str,
+    tenant_id: str,
+    port: AsyncMock | None = None,
+    name: str = "trust-a-protected",
+) -> tuple[FastAPI, AsyncMock]:
+    api = FastAPI()
+    api.state.harness_auth = HarnessAuthState(
+        require_api_key=True,
+        resolved_api_key=api_key,
+        api_key_principal_tenant_id=tenant_id,
+    )
+    execution = port or AsyncMock(spec=HostTaskExecutionPort)
+    execution.execute = AsyncMock(return_value=_completed())
+    mcp = build_nexus_mcp_server(
+        name=name,
+        host_execution=execution,
+        registry=AgentRegistry(),
+        default_capability="demo.cap",
+    )
+    combined = couple_fastapi_with_mcp(api, mcp, mount_path="/mcp")
+    return combined, execution
 
 
 def _completed() -> TaskResult:
@@ -218,3 +292,78 @@ def test_mcp_http_ingress_still_rejects_missing_credentials() -> None:
     with TestClient(combined) as client:
         response = client.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_mcp_streamable_http_run_agent_binds_verified_tenant() -> None:
+    combined, execution = _protected_coupled_mcp(api_key="qual-secret", tenant_id="bound-tenant")
+    with _uvicorn_mcp_base_url(combined) as base_url:
+        result = await _streamable_mcp_call_tool(
+            base_url,
+            "run_agent",
+            {"message": "ingress"},
+            headers={"X-Api-Key": "qual-secret"},
+        )
+    task = execution.execute.await_args.args[0]
+    assert task.tenant_id == "bound-tenant"
+    assert result.content  # MCP CallToolResult
+
+
+@pytest.mark.asyncio
+async def test_mcp_streamable_http_rejects_forged_tenant_before_execution() -> None:
+    combined, execution = _protected_coupled_mcp(api_key="qual-secret", tenant_id="bound-tenant")
+    with _uvicorn_mcp_base_url(combined) as base_url:
+        result = await _streamable_mcp_call_tool(
+            base_url,
+            "run_agent",
+            {"message": "x", "tenant_id": "forged-tenant"},
+            headers={"X-Api-Key": "qual-secret"},
+        )
+    assert result.isError is True
+    assert "identity_conflict" in (result.content[0].text if result.content else "")
+    execution.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_mcp_streamable_http_rejects_invalid_api_key() -> None:
+    combined, execution = _protected_coupled_mcp(api_key="qual-secret", tenant_id="bound-tenant")
+    with _uvicorn_mcp_base_url(combined) as base_url:
+        with pytest.raises(Exception):
+            await _streamable_mcp_call_tool(
+                base_url,
+                "run_agent",
+                {"message": "x"},
+                headers={"X-Api-Key": "wrong"},
+            )
+    execution.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_mcp_streamable_http_isolates_concurrent_principal_tenants() -> None:
+    combined_a, port_a = _protected_coupled_mcp(
+        api_key="key-a",
+        tenant_id="tenant-a",
+        name="host-a",
+    )
+    combined_b, port_b = _protected_coupled_mcp(
+        api_key="key-b",
+        tenant_id="tenant-b",
+        name="host-b",
+    )
+    with _uvicorn_mcp_base_url(combined_a) as base_a, _uvicorn_mcp_base_url(combined_b) as base_b:
+        await asyncio.gather(
+            _streamable_mcp_call_tool(
+                base_a,
+                "run_agent",
+                {"message": "a"},
+                headers={"X-Api-Key": "key-a"},
+            ),
+            _streamable_mcp_call_tool(
+                base_b,
+                "run_agent",
+                {"message": "b"},
+                headers={"X-Api-Key": "key-b"},
+            ),
+        )
+    assert port_a.execute.await_args.args[0].tenant_id == "tenant-a"
+    assert port_b.execute.await_args.args[0].tenant_id == "tenant-b"
