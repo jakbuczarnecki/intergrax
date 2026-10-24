@@ -20,6 +20,13 @@ from intergrax.applications._shared.fastapi_lifespan import LifespanFn, combine_
 from intergrax.applications._shared.mcp_task_control_coupling import (
     resolve_mcp_coupling_task_control_mutation_boundary,
 )
+from intergrax.applications._shared.mcp_transport_detachment_supervision_coupling import (
+    build_transport_detachment_supervision_shutdown_lifespan,
+    resolve_mcp_coupling_transport_detachment_supervision,
+)
+from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportDetachmentSupervisionPort,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 
 if TYPE_CHECKING:
@@ -45,6 +52,7 @@ def couple_fastapi_with_mcp(
     mount_path: str = "/mcp",
     extra_lifespans: list[LifespanFn] | None = None,
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    transport_detachment_supervision: RootExecutionTransportDetachmentSupervisionPort | None = None,
 ) -> FastAPI:
     """
     Mount *mcp* on a wrapper FastAPI app that also serves *fastapi_app* at ``/``.
@@ -71,6 +79,10 @@ def couple_fastapi_with_mcp(
         mcp_app.state.harness_auth = inner_auth
     if task_control_mutation_boundary is not None:
         mcp_app.state.task_control_mutation_boundary = task_control_mutation_boundary
+    if transport_detachment_supervision is not None:
+        mcp_app.state.root_execution_transport_detachment_supervision = (
+            transport_detachment_supervision
+        )
     wrapper.mount(mcp_mount, mcp_app)
     wrapper.mount("/", fastapi_app)
     require_auth = inner_auth.require_api_key if inner_auth is not None else False
@@ -94,10 +106,15 @@ def couple_harness_host_fastapi_with_mcp(
         runtime=runtime,
         env=env,
     )
+    supervision = resolve_mcp_coupling_transport_detachment_supervision(runtime=runtime)
+    lifespans = list(extra_lifespans or [])
+    if supervision is not None:
+        lifespans.append(build_transport_detachment_supervision_shutdown_lifespan(supervision))
     return couple_fastapi_with_mcp(
         fastapi_app,
         mcp,
         mount_path=mount_path,
-        extra_lifespans=extra_lifespans,
+        extra_lifespans=lifespans or None,
         task_control_mutation_boundary=boundary,
+        transport_detachment_supervision=supervision,
     )

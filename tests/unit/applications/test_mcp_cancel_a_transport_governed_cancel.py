@@ -38,6 +38,9 @@ from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
+    build_host_root_execution_transport_detachment_supervisor,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskState
@@ -65,6 +68,10 @@ def _principal(*, tenant_id: str = _TENANT) -> RequestIdentity:
 def _harness_boundary():
     env = ApplicationEnvironmentProfile(application_profile=ApplicationProfile.PRODUCT)
     return build_harness_control_plane_mutation_boundary(env)
+
+
+def _transport_supervision():
+    return build_host_root_execution_transport_detachment_supervisor()
 
 
 @pytest.fixture(autouse=True)
@@ -247,6 +254,7 @@ async def test_cancel_a_governed_rejection_does_not_certify_admission() -> None:
             host_coro,
             task=task,
             cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=_transport_supervision(),
         ),
     )
     await asyncio.sleep(0.05)
@@ -299,6 +307,7 @@ async def test_cancel_a_host_completes_during_transport_cancel_drain() -> None:
             host_coro,
             task=task,
             cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=_transport_supervision(),
         ),
     )
     await asyncio.sleep(0.01)
@@ -336,6 +345,7 @@ async def test_cancel_a_pre_admission_transport_cancel_no_false_cooperative_sign
             host_coro,
             task=task,
             cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=_transport_supervision(),
         ),
     )
     await asyncio.sleep(0.05)
@@ -350,7 +360,8 @@ async def test_cancel_a_pre_admission_transport_cancel_no_false_cooperative_sign
 
 @pytest.mark.asyncio
 async def test_cancel_a_transport_cleanup_bounded_when_host_suppresses_cancellation() -> None:
-    """OWN-A: transport waiter ends within drain bound; host stays under HostTaskExecutionPort."""
+    """OWN-A2: transport waiter ends after accepted handoff; host stays supervised."""
+    supervision = _transport_supervision()
     task = Task(tenant_id=_TENANT, user_id="u", message="m")
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
@@ -380,6 +391,7 @@ async def test_cancel_a_transport_cleanup_bounded_when_host_suppresses_cancellat
             host_coro,
             task=task,
             cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=supervision,
         ),
     )
     await asyncio.sleep(0.05)
@@ -389,6 +401,7 @@ async def test_cancel_a_transport_cleanup_bounded_when_host_suppresses_cancellat
         await asyncio.wait_for(waiter, timeout=12.0)
     assert time.monotonic() - started < 2.0
     assert not host_coro.done()
+    assert supervision.supervised_count() == 1
     assert CancellationCoordinator.is_requested(task.metadata)
     host_release.set()
     with contextlib.suppress(asyncio.CancelledError):
@@ -470,11 +483,13 @@ async def test_cancel_a_l3_streamable_http_run_agent_with_task_control_boundary(
         default_capability="demo.cap",
         task_control_mutation_boundary=boundary,
     )
+    supervision = _transport_supervision()
     app = couple_fastapi_with_mcp(
         api,
         mcp,
         mount_path="/mcp",
         task_control_mutation_boundary=boundary,
+        transport_detachment_supervision=supervision,
     )
     from mcp.client.session import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
@@ -534,11 +549,13 @@ async def test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel()
         default_capability="demo.cap",
         task_control_mutation_boundary=boundary,
     )
+    supervision = _transport_supervision()
     app = couple_fastapi_with_mcp(
         api,
         mcp,
         mount_path="/mcp",
         task_control_mutation_boundary=boundary,
+        transport_detachment_supervision=supervision,
     )
     from mcp.client.session import ClientSession
     from mcp.client.streamable_http import streamablehttp_client

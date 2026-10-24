@@ -21,7 +21,13 @@ from intergrax.applications._shared.strict_production_serving_http_execution_pri
     bind_strict_serving_http_caller_principal,
 )
 from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
+from intergrax.applications._shared.mcp_transport_detachment_supervision_coupling import (
+    resolve_transport_detachment_supervision_from_request,
+)
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportDetachmentSupervisionPort,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -66,6 +72,9 @@ async def execute_mcp_agent_task(
     intent: str | None = None,
     caller_request_identity: RequestIdentity | None = None,
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    transport_detachment_supervision: (
+        RootExecutionTransportDetachmentSupervisionPort | None
+    ) = None,
 ) -> dict[str, object]:
     """Run one MCP agent task through canonical host task execution."""
     task = task_from_mcp_agent_intake(
@@ -96,10 +105,14 @@ async def execute_mcp_agent_task(
         execution_result = await _run_execute()
     else:
         host_task = asyncio.create_task(_run_execute())
+        supervision = transport_detachment_supervision
+        if supervision is None:
+            supervision = resolve_transport_detachment_supervision_from_request()
         execution_result = await run_host_execution_with_mcp_transport_cancel(
             host_task,
             task=task,
             cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=supervision,
         )
     result = execution_result if isinstance(execution_result, TaskResult) else TaskResult.model_validate(execution_result)
     payload = {

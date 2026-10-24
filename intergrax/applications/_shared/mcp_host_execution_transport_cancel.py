@@ -10,8 +10,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from intergrax.applications._shared.mcp_harness_principal import _starlette_request_from_fastmcp
+from intergrax.applications._shared.mcp_transport_detachment_supervision_coupling import (
+    resolve_transport_detachment_supervision_from_request,
+)
 from intergrax.applications._shared.task_control import governed_cancel_active_task
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportDetachmentHandoffDisposition,
+    RootExecutionTransportDetachmentHandoffRequest,
+    RootExecutionTransportDetachmentSupervisionPort,
+)
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
@@ -116,17 +124,44 @@ async def _maybe_request_transport_cancel(
             cancel_admission_accepted[0] = True
 
 
+async def _request_canonical_transport_detachment_handoff(
+    host_coro: asyncio.Task[object],
+    *,
+    task: Task,
+    cancel_ctx: McpHostExecutionTransportCancelContext,
+    governed_cancel_admitted: bool,
+    supervision_port: RootExecutionTransportDetachmentSupervisionPort,
+) -> RootExecutionTransportDetachmentHandoffDisposition:
+    binding = await ActiveTaskRegistry.get(task.task_id)
+    if binding is None:
+        return RootExecutionTransportDetachmentHandoffDisposition.REFUSED
+    result = await supervision_port.request_transport_detachment_handoff(
+        RootExecutionTransportDetachmentHandoffRequest(
+            task_id=task.task_id,
+            run_id=binding.run_id,
+            verified_tenant_id=task.tenant_id,
+            caller_request_identity=cancel_ctx.caller_request_identity,
+            host_asyncio_task=host_coro,
+            governed_transport_cancel_admitted=governed_cancel_admitted,
+        )
+    )
+    return result.disposition
+
+
 async def _await_host_task_bounded_after_transport_waiter_lost(
     host_coro: asyncio.Task[object],
     *,
+    task: Task,
+    cancel_ctx: McpHostExecutionTransportCancelContext | None,
     timeout_s: float,
     governed_cancel_admitted: bool,
+    supervision_port: RootExecutionTransportDetachmentSupervisionPort | None,
 ) -> None:
     """
     End MCP transport waiter scope with a hard wall-clock bound.
 
     Canonical Execution remains owned by ``HostTaskExecutionPort.execute`` inside *host_coro*.
-    When governed cancel was admitted (OWN-A), do not cancel the host task merely to end the HTTP waiter.
+    OWN-A2: confirmed supervision handoff before releasing MCP waiter when work continues.
     """
     if host_coro.done():
         with contextlib.suppress(asyncio.CancelledError, Exception):
@@ -140,6 +175,23 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
         with contextlib.suppress(asyncio.CancelledError, Exception):
             host_coro.result()
         return
+
+    if supervision_port is not None and cancel_ctx is not None:
+        binding = await ActiveTaskRegistry.get(task.task_id)
+        if binding is not None:
+            disposition = await _request_canonical_transport_detachment_handoff(
+                host_coro,
+                task=task,
+                cancel_ctx=cancel_ctx,
+                governed_cancel_admitted=governed_cancel_admitted,
+                supervision_port=supervision_port,
+            )
+            if disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED:
+                return
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await asyncio.shield(host_coro)
+            return
+
     if governed_cancel_admitted:
         return
     host_coro.cancel()
@@ -152,6 +204,9 @@ async def run_host_execution_with_mcp_transport_cancel(
     *,
     task: Task,
     cancel_ctx: McpHostExecutionTransportCancelContext,
+    transport_detachment_supervision: (
+        RootExecutionTransportDetachmentSupervisionPort | None
+    ) = None,
 ) -> object:
     """
     Await canonical host execution while observing MCP transport cancellation.
@@ -162,6 +217,9 @@ async def run_host_execution_with_mcp_transport_cancel(
     cancel_lock = asyncio.Lock()
     transport_cancel_observed = False
     request = _starlette_request_from_fastmcp()
+    supervision_port = transport_detachment_supervision
+    if supervision_port is None:
+        supervision_port = resolve_transport_detachment_supervision_from_request(request)
 
     async def _monitor_transport() -> None:
         nonlocal transport_cancel_observed
@@ -212,8 +270,11 @@ async def run_host_execution_with_mcp_transport_cancel(
         if transport_waiter_lost or not host_coro.done():
             await _await_host_task_bounded_after_transport_waiter_lost(
                 host_coro,
+                task=task,
+                cancel_ctx=cancel_ctx,
                 timeout_s=_HOST_DRAIN_AFTER_TRANSPORT_CANCEL_S,
                 governed_cancel_admitted=cancel_admission_accepted[0],
+                supervision_port=supervision_port,
             )
         if host_coro.done() and host_result_after_waiter_lost is None:
             with contextlib.suppress(asyncio.CancelledError, Exception):

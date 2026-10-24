@@ -141,6 +141,10 @@ from intergrax.applications._shared.harness_registry_authority import (
     resolve_harness_host_registry,
     resolve_registry_assembly_mode,
 )
+from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
+    HostRootExecutionTransportDetachmentSupervisor,
+    build_host_root_execution_transport_detachment_supervisor,
+)
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
@@ -252,6 +256,7 @@ class HarnessHostRuntime:
     evaluation: ApplicationEvaluationWiring
     diagnostic_wiring: DiagnosticWiring
     execution: HostTaskExecution
+    transport_detachment_supervision: HostRootExecutionTransportDetachmentSupervisor
     _internal_composition: HarnessHostInternalComposition
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
@@ -749,6 +754,7 @@ def build_harness_host_runtime(
             meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
             submission_port_builder=strict_orchestration_topology_submission_port_builder,
         )
+    transport_detachment_supervision = build_host_root_execution_transport_detachment_supervisor()
     host_runtime = HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=effective_environment,
@@ -764,6 +770,7 @@ def build_harness_host_runtime(
         evaluation=evaluation_wiring,
         diagnostic_wiring=diagnostic_wiring,
         execution=execution,
+        transport_detachment_supervision=transport_detachment_supervision,
         orchestration_topology=orchestration_topology_wiring,
         _internal_composition=build_harness_host_internal_composition_from_materialization(
             orchestration,
