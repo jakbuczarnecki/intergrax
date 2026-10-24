@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| START_HEAD | `4c4c14472d780db7358de6c109c0a56528758efa` |
+| START_HEAD | `00653e63d8959f8d228aa391c91bb91bd08d3412` |
 | Scope | SQLite `DURABLE_SINGLE_HOST` revocation ledger + external-operation store; R8 adversarial matrix |
 | Multi-host shared durability | **Not proven** — no Redis/PostgreSQL (BLOCKED without operator infra) |
 | Cross-store distributed TX | **Not claimed** — revocation + external-op colocated in one SQLite file; no partition L3 |
@@ -11,7 +11,8 @@
 ## Authority graph
 
 - **Execution ownership binding:** `ExternalOperationStateStore.bind_worker_execution_ownership` (RUNNING record).
-- **Revocation authority:** `WorkerExecutionOwnershipRevocationPort` — durable rows in SQLite revocation table.
+- **Revocation authority:** `WorkerExecutionOwnershipRevocationPort` — durable rows only after `assert_authoritative_worker_execution_revocation_allowed` against `ExternalOperationStateStore` (same SQLite `BEGIN IMMEDIATE` for durable path).
+- **Fencing:** `bound_worker_execution_epoch_is_revoked` blocks `compare_and_set` / `mark_physical_terminal_if_owner_matches` while RUNNING+revoked until certified loss apply.
 - **Certification:** `WorkerExecutionCertifiedOwnerLossCertifier` → `stage_certified_owner_loss_evidence` (CAS#1 + revocation verify) → `apply_certified_owner_loss` (CAS#2).
 - **Live worker fence:** revocation proof required before staging; `WorkerInstance.revision`/lifecycle not authoritative.
 
@@ -20,19 +21,33 @@
 | Path | Change |
 | --- | --- |
 | `intergrax/runtime/external_operations/external_operation_state_store.py` | Shared `apply_external_operation_state_update` + certification semantics mixin |
-| `intergrax/runtime/external_operations/sqlite_tool_life_durable_stores.py` | SQLite stores + `SqliteToolLifeDurableStoresBundle` |
-| `tests/unit/runtime/external_operations/test_tool_life_x_l3_r8_sqlite_durable_revocation_shared_store.py` | R8 qualification |
+| `intergrax/contracts/worker_execution_ownership_revocation.py` | `WorkerExecutionOwnershipRevocationUnauthorizedError` |
+| `intergrax/runtime/external_operations/worker_execution_ownership_revocation.py` | Authoritative binding guards; in-memory colocated store |
+| `intergrax/runtime/external_operations/certified_owner_loss_composition.py` | `bound_worker_execution_epoch_is_revoked` |
+| `intergrax/runtime/external_operations/external_operation_state_store.py` | Revoked-epoch mutation fence on CAS |
+| `intergrax/runtime/external_operations/external_operation_ownership.py` | Terminal commit fence after revocation |
+| `intergrax/runtime/external_operations/sqlite_tool_life_durable_stores.py` | Atomic revoke+proof; in-TX staging revocation re-verify |
+| `tests/unit/runtime/external_operations/test_tool_life_x_l3_r8_sqlite_durable_revocation_shared_store.py` | R8 qualification (+ adversarial cases) |
 
 ## L1 / L2 / L3
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| L1 | R8 file only | **12 passed** |
-| L2 | R8 + R6 + R7 + W4-C + Batch C (single invocation) | **79 passed** |
+| L1 | R8 file only | **15 passed** |
+| L2 | R8 + R6 + R7 + W4-C (single invocation) | **70 passed** |
 | L3 (scoped) | Separate SQLite connection / store reopen on same WAL file | **PASS** in R8 tests |
 | L3 (BLOCKED) | Docker PostgreSQL, multi-host Redis, network partition E2E | **BLOCKED** — not authorized |
 
 Log: `.tmp/session/TOOL-LIFE-X-L3-R8/l2-pytest.log`.
+
+## R8-F01–F04 disposition (corrective batch)
+
+| Finding | Disposition |
+| --- | --- |
+| R8-F01 Unauthorized revocation writer | **RESOLVED** — revoke requires authoritative RUNNING worker binding (tenant/op/worker/epoch); idempotent row reuse |
+| R8-F02 Revocation must fence | **RESOLVED** — revocation proof gates staging; CAS/terminal reject revoked bound epoch before apply |
+| R8-F03 SQLite transaction boundary | **RESOLVED** — revoke: single `BEGIN IMMEDIATE` read state + insert; stage CAS: in-TX revocation proof re-read |
+| R8-F04 Durability/concurrency | **PARTIAL PASS** — WAL cross-connection + threaded concurrent revoke in L3 scope; multi-host **BLOCKED** |
 
 FINAL_COMMIT: set at publication.
 

@@ -15,7 +15,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from intergrax.contracts.certified_owner_loss_evidence import StagedCertifiedOwnerLossEvidenceV1
+from intergrax.contracts.certified_owner_loss_evidence import (
+    CANONICAL_WORKER_EXECUTION_OWNER_LOSS_ISSUER_ID,
+    CertifiedOwnerLossEvidenceRejectedError,
+    StagedCertifiedOwnerLossEvidenceV1,
+)
 from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationIntentState,
     ExternalOperationNotFoundError,
@@ -38,6 +42,9 @@ from intergrax.runtime.external_operations.external_operation_state_store import
     _utc_now,
     _validate_tenant_id,
     apply_external_operation_state_update,
+)
+from intergrax.runtime.external_operations.worker_execution_ownership_revocation import (
+    assert_authoritative_worker_execution_revocation_allowed,
 )
 
 
@@ -268,6 +275,37 @@ class SQLiteExternalOperationStateStore(_ExternalOperationStateCertificationSema
                         expected_revision=expected_revision,
                         actual_revision=current.revision,
                     )
+                staged_slot = update.staged_certified_owner_loss
+                if (
+                    staged_slot is not None
+                    and staged_slot.staged_by_issuer_id
+                    == CANONICAL_WORKER_EXECUTION_OWNER_LOSS_ISSUER_ID
+                    and current.worker_instance_id is not None
+                    and current.worker_ownership_epoch is not None
+                ):
+                    proof_row = conn.execute(
+                        """
+                        SELECT proof_ref FROM worker_execution_ownership_revocations
+                        WHERE tenant_id = ? AND operation_id = ?
+                          AND worker_instance_id = ? AND ownership_epoch = ?
+                        """,
+                        (
+                            tid,
+                            operation_id,
+                            current.worker_instance_id,
+                            current.worker_ownership_epoch,
+                        ),
+                    ).fetchone()
+                    expected_proof = (
+                        proof_row["proof_ref"] if proof_row is not None else None
+                    )
+                    cited = staged_slot.evidence.liveness_proof_ref
+                    if expected_proof is None or cited != expected_proof:
+                        conn.execute("ROLLBACK")
+                        raise CertifiedOwnerLossEvidenceRejectedError(
+                            "liveness proof does not match authoritative revocation "
+                            "record under transaction",
+                        )
                 next_record = apply_external_operation_state_update(
                     current,
                     update,
@@ -363,9 +401,11 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
         ownership_epoch: int,
     ) -> WorkerExecutionOwnershipRevocationV1:
         key = (tenant_id, operation_id, worker_instance_id, ownership_epoch)
+        tid = _validate_tenant_id(tenant_id)
         with self._lock:
             with _connect(self._db_path) as conn:
                 _ensure_tool_life_schema(conn)
+                conn.execute("BEGIN IMMEDIATE")
                 existing = conn.execute(
                     """
                     SELECT revocation_id, revoked_at_utc, proof_ref
@@ -376,6 +416,7 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
                     key,
                 ).fetchone()
                 if existing is not None:
+                    conn.commit()
                     return WorkerExecutionOwnershipRevocationV1(
                         tenant_id=tenant_id,
                         operation_id=operation_id,
@@ -385,6 +426,29 @@ class SQLiteWorkerExecutionOwnershipRevocationStore(
                         revoked_at=datetime.fromisoformat(existing["revoked_at_utc"]),
                         proof_ref=existing["proof_ref"],
                     )
+                state_row = conn.execute(
+                    """
+                    SELECT state_json FROM external_operation_states
+                    WHERE tenant_id = ? AND operation_id = ?
+                    """,
+                    (tid, operation_id),
+                ).fetchone()
+                if state_row is None:
+                    conn.execute("ROLLBACK")
+                    raise ExternalOperationNotFoundError(operation_id)
+                current = _decode_external_operation_state(state_row["state_json"])
+                _require_tenant_bound(current)
+                try:
+                    assert_authoritative_worker_execution_revocation_allowed(
+                        current,
+                        tenant_id=tenant_id,
+                        operation_id=operation_id,
+                        worker_instance_id=worker_instance_id,
+                        ownership_epoch=ownership_epoch,
+                    )
+                except Exception:
+                    conn.execute("ROLLBACK")
+                    raise
                 revocation_id = uuid.uuid4().hex
                 proof = worker_execution_revocation_proof_ref(
                     tenant_id=tenant_id,

@@ -44,6 +44,26 @@ def require_certified_owner_loss_composition() -> CertifiedOwnerLossComposition:
     return _COMPOSITION
 
 
+def bound_worker_execution_epoch_is_revoked(
+    *,
+    current: ExternalOperationState,
+) -> bool:
+    """True when authoritative revocation exists for the bound worker execution epoch."""
+    if current.worker_instance_id is None or current.worker_ownership_epoch is None:
+        return False
+    composition = require_certified_owner_loss_composition()
+    port = composition.worker_execution_ownership_revocation
+    if port is None:
+        return False
+    proof = port.authoritative_revocation_proof_ref(
+        tenant_id=current.tenant_id,
+        operation_id=current.operation_id,
+        worker_instance_id=current.worker_instance_id,
+        ownership_epoch=current.worker_ownership_epoch,
+    )
+    return proof is not None
+
+
 def verify_worker_execution_owner_loss_staging(
     *,
     current: ExternalOperationState,

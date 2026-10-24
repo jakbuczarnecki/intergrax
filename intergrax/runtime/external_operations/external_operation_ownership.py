@@ -16,6 +16,9 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationState,
 )
 from intergrax.contracts.external_operation_identity import ExternalOperationIdentity
+from intergrax.runtime.external_operations.certified_owner_loss_composition import (
+    bound_worker_execution_epoch_is_revoked,
+)
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
     ExternalOperationStateUpdate,
@@ -183,6 +186,10 @@ def mark_physical_terminal_if_owner_matches(
     ):
         raise ExternalOperationFencedCommitRejectedError(
             f"stale owner cannot commit terminal for {operation_id!r}",
+        )
+    if bound_worker_execution_epoch_is_revoked(current=current):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"revoked worker execution epoch cannot commit terminal for {operation_id!r}",
         )
     return mark_physical_terminal(
         store,

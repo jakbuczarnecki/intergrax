@@ -25,6 +25,7 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationState,
 )
 from intergrax.runtime.external_operations.certified_owner_loss_composition import (
+    bound_worker_execution_epoch_is_revoked,
     current_certified_owner_loss_issuer_binding,
     verify_worker_execution_owner_loss_staging,
 )
@@ -293,6 +294,13 @@ class _ExternalOperationStateCertificationSemantics:
             raise CertifiedOwnerLossAuthorityBypassError(
                 "worker execution ownership requires bind_worker_execution_ownership",
             )
+        current = self._get_scoped(tenant_id, operation_id)
+        if current is not None and bound_worker_execution_epoch_is_revoked(
+            current=current,
+        ):
+            raise CertifiedOwnerLossEvidenceRejectedError(
+                f"revoked worker execution epoch cannot mutate {operation_id!r}",
+            )
         return self._compare_and_set_locked(
             tenant_id,
             operation_id,
@@ -444,6 +452,10 @@ class _ExternalOperationStateCertificationSemantics:
         ):
             raise CertifiedOwnerLossEvidenceRejectedError(
                 "worker_ownership_epoch already bound",
+            )
+        if bound_worker_execution_epoch_is_revoked(current=current):
+            raise CertifiedOwnerLossEvidenceRejectedError(
+                "cannot bind worker execution ownership for a revoked epoch",
             )
         return self._compare_and_set_locked(
             tenant_id,

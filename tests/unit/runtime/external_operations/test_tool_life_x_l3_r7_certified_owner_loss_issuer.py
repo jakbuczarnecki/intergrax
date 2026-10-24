@@ -25,6 +25,7 @@ from intergrax.contracts.certified_owner_loss_evidence import (
 )
 from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationIntentState,
+    ExternalOperationNotFoundError,
     ExternalOperationPhysicalState,
 )
 from intergrax.contracts.worker_execution_ownership_revocation import (
@@ -142,7 +143,9 @@ def test_l3r7_direct_issuer_port_invocation_rejected() -> None:
 def test_l3r7_positive_stage_and_apply_after_authoritative_revocation() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     worker, bound, worker_id, _owner = _running_with_worker(store, repo, revocation)
     _revoke(revocation, worker_id=worker_id)
     certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
@@ -177,7 +180,9 @@ def test_l3r7_positive_stage_and_apply_after_authoritative_revocation() -> None:
 def test_l3r7_r7_f01_revision_increment_without_revocation_denied() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     worker, _bound, _worker_id, _owner = _running_with_worker(
         store,
         repo,
@@ -207,7 +212,9 @@ def test_l3r7_r7_f01_revision_increment_without_revocation_denied() -> None:
 def test_l3r7_r7_f02_recovering_lifecycle_without_revocation_denied() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     worker, _bound, _worker_id, _owner = _running_with_worker(store, repo, revocation)
     repo.replace(
         replace(
@@ -229,7 +236,9 @@ def test_l3r7_r7_f02_recovering_lifecycle_without_revocation_denied() -> None:
 def test_l3r7_r7_f02_stopped_without_revocation_denied() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     worker, _bound, _worker_id, _owner = _running_with_worker(store, repo, revocation)
     repo.replace(
         replace(
@@ -256,7 +265,9 @@ class _MissingWorkerRepository(InMemoryWorkerInstanceRepository):
 def test_l3r7_r7_f03_missing_worker_without_revocation_denied() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = _MissingWorkerRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     _running_with_worker(store, repo, revocation)
     certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
     with pytest.raises(CertifiedOwnerLossEvidenceRejectedError):
@@ -270,7 +281,9 @@ def test_l3r7_r7_f03_missing_worker_without_revocation_denied() -> None:
 def test_l3r7_r7_f03_missing_worker_with_revocation_still_certifies() -> None:
     store = InMemoryExternalOperationStateStore()
     base_repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     _worker, _bound, worker_id, _owner = _running_with_worker(store, base_repo, revocation)
     proof = _revoke(revocation, worker_id=worker_id)
     repo = _MissingWorkerRepository()
@@ -291,7 +304,9 @@ def test_l3r7_r7_f03_missing_worker_with_revocation_still_certifies() -> None:
 def test_l3r7_worker_alive_denies_certification_without_revocation() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     _worker, bound, _worker_id, _owner = _running_with_worker(store, repo, revocation)
     certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
     with pytest.raises(CertifiedOwnerLossEvidenceRejectedError):
@@ -308,7 +323,9 @@ def test_l3r7_worker_alive_denies_certification_without_revocation() -> None:
 def test_l3r7_end_to_end_stage_and_apply_helper() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     _worker, _bound, worker_id, _owner = _running_with_worker(store, repo, revocation)
     _revoke(revocation, worker_id=worker_id)
     certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
@@ -329,7 +346,9 @@ def test_l3r7_misconfigured_composition_fail_closed() -> None:
 def test_l3r7_r7_f04_direct_store_staging_without_revocation_rejected() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
     _worker, bound, worker_id, owner = _running_with_worker(store, repo, revocation)
     issuer = WorkerExecutionCertifiedOwnerLossEvidenceIssuer()
     epoch = ExternalOperationOwnershipEpochV1(
@@ -364,7 +383,10 @@ def test_l3r7_r7_f04_direct_store_staging_without_revocation_rejected() -> None:
 
 
 def test_l3r7_repository_unavailable_fail_closed() -> None:
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
+    store = InMemoryExternalOperationStateStore()
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
+    )
 
     class _BrokenRepo(InMemoryWorkerInstanceRepository):
         def get(self, *, worker_instance_id: WorkerInstanceId) -> object:
@@ -385,14 +407,17 @@ def test_l3r7_repository_unavailable_fail_closed() -> None:
 def test_l3r7_wrong_operation_revocation_denied() -> None:
     store = InMemoryExternalOperationStateStore()
     repo = InMemoryWorkerInstanceRepository()
-    revocation = InMemoryWorkerExecutionOwnershipRevocationStore()
-    _worker, _bound, worker_id, _owner = _running_with_worker(store, repo, revocation)
-    revocation.revoke_worker_execution_ownership(
-        tenant_id=_TENANT,
-        operation_id="other-op",
-        worker_instance_id=worker_id,
-        ownership_epoch=_BOUND_EPOCH,
+    revocation = InMemoryWorkerExecutionOwnershipRevocationStore(
+        authoritative_state_store=store,
     )
+    _worker, _bound, worker_id, _owner = _running_with_worker(store, repo, revocation)
+    with pytest.raises(ExternalOperationNotFoundError):
+        revocation.revoke_worker_execution_ownership(
+            tenant_id=_TENANT,
+            operation_id="other-op",
+            worker_instance_id=worker_id,
+            ownership_epoch=_BOUND_EPOCH,
+        )
     certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
     with pytest.raises(CertifiedOwnerLossEvidenceRejectedError):
         certifier.stage_certified_owner_loss(

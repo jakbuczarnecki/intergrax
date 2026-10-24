@@ -22,6 +22,10 @@ class WorkerExecutionOwnershipNotRevokedError(RuntimeError):
     """Bound execution ownership epoch has no authoritative revocation on record."""
 
 
+class WorkerExecutionOwnershipRevocationUnauthorizedError(RuntimeError):
+    """Revocation rejected — caller identity does not match authoritative ownership."""
+
+
 def worker_execution_revocation_proof_ref(
     *,
     tenant_id: str,
