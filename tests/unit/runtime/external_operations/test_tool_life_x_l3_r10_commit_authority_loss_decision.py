@@ -57,6 +57,9 @@ from intergrax.runtime.external_operations.worker_execution_certified_owner_loss
 from intergrax.runtime.external_operations.worker_execution_ownership_revocation_trust import (
     reset_worker_execution_ownership_revocation_trust_for_tests,
 )
+from tests.unit.runtime.external_operations.tool_life_x_qualification_revocation_supervision import (
+    QualificationWorkerExecutionCommitAuthorityLossPolicy,
+)
 from tests.unit.runtime.external_operations.tool_life_x_revocation_test_forgery import (
     forged_worker_execution_ownership_revocation_authorization,
 )
@@ -105,7 +108,7 @@ def _running_bound_operation(tmp_path: Path):
     composed = compose_tool_life_durable_single_host_certified_owner_loss(
         db_path=tmp_path / "tool_life.db",
         persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
-        worker_instance_repository=_stopped_worker_repo(worker_id),
+        loss_policy=QualificationWorkerExecutionCommitAuthorityLossPolicy(),
     )
     store = composed.bundle.external_operation_state
     owner = ProcessLocalExternalOperationOwner.mint()
@@ -128,7 +131,7 @@ def _running_bound_operation(tmp_path: Path):
     return composed, str(worker_id)
 
 
-def test_l3r10_production_composition_records_decision_and_revocation(tmp_path: Path) -> None:
+def test_l3r10_atomic_decision_and_revocation_under_qualification_policy(tmp_path: Path) -> None:
     composed, worker_id = _running_bound_operation(tmp_path)
     proof = composed.worker_revocation.record_revocation_after_commit_authority_loss(
         tenant_id=_TENANT,
@@ -311,6 +314,171 @@ def test_l3r10_positive_decision_requires_prior_revocation(tmp_path: Path) -> No
     os.environ.pop(_MAC_ENV, None)
 
 
+def test_l3r10_worker_repository_injection_does_not_enable_positive_revocation(
+    tmp_path: Path,
+) -> None:
+    """Injecting WorkerInstanceRepository must not admit revocation without canonical authority."""
+    os.environ[_MAC_ENV] = "production-mac-key-l3r10-repo-inject"
+    worker_id = mint_worker_instance_id()
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        worker_instance_repository=_stopped_worker_repo(worker_id),
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id=str(worker_id),
+        worker_ownership_epoch=_EPOCH,
+    )
+    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
+        composed.worker_revocation.record_revocation_after_commit_authority_loss(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=str(worker_id),
+            ownership_epoch=_EPOCH,
+        )
+    os.environ.pop(_MAC_ENV, None)
+
+
+def test_l3r10_stopped_lifecycle_not_authoritative_for_revocation(tmp_path: Path) -> None:
+    os.environ[_MAC_ENV] = "production-mac-key-l3r10-stopped"
+    worker_id = mint_worker_instance_id()
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        worker_instance_repository=_stopped_worker_repo(worker_id),
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id=str(worker_id),
+        worker_ownership_epoch=_EPOCH,
+    )
+    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
+        composed.worker_revocation.record_revocation_after_commit_authority_loss(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=str(worker_id),
+            ownership_epoch=_EPOCH,
+        )
+    os.environ.pop(_MAC_ENV, None)
+
+
+def test_l3r10_quarantined_lifecycle_not_authoritative_for_revocation(tmp_path: Path) -> None:
+    os.environ[_MAC_ENV] = "production-mac-key-l3r10-quarantine"
+    repo = InMemoryWorkerInstanceRepository()
+    worker_id = mint_worker_instance_id()
+    now = datetime.now(timezone.utc)
+    repo.create(
+        WorkerInstance(
+            worker_instance_id=worker_id,
+            worker_definition_id=mint_worker_definition_id(),
+            definition_revision=DefinitionRevision(1),
+            lifecycle_state=WorkerLifecycleState.QUARANTINED,
+            principal_binding_ref=PrincipalBindingRef("binding-q"),
+            workspace_context_ref=WorkspaceContextRef("workspace-q"),
+            active_responsibility_refs=(),
+            active_goal_refs=(),
+            created_at=now,
+            updated_at=now,
+            revision=initial_revision(),
+        ),
+    )
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        worker_instance_repository=repo,
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id=str(worker_id),
+        worker_ownership_epoch=_EPOCH,
+    )
+    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
+        composed.worker_revocation.record_revocation_after_commit_authority_loss(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=str(worker_id),
+            ownership_epoch=_EPOCH,
+        )
+    os.environ.pop(_MAC_ENV, None)
+
+
+def test_l3r10_missing_worker_record_not_authoritative_for_revocation(tmp_path: Path) -> None:
+    os.environ[_MAC_ENV] = "production-mac-key-l3r10-missing-worker"
+    repo = InMemoryWorkerInstanceRepository()
+    worker_id = mint_worker_instance_id()
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        worker_instance_repository=repo,
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id=str(worker_id),
+        worker_ownership_epoch=_EPOCH,
+    )
+    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
+        composed.worker_revocation.record_revocation_after_commit_authority_loss(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=str(worker_id),
+            ownership_epoch=_EPOCH,
+        )
+    os.environ.pop(_MAC_ENV, None)
+
+
 def test_l3r10_active_worker_lifecycle_blocks_production_revocation(tmp_path: Path) -> None:
     os.environ[_MAC_ENV] = "production-mac-key-l3r10-active"
     repo = InMemoryWorkerInstanceRepository()
@@ -335,6 +503,43 @@ def test_l3r10_active_worker_lifecycle_blocks_production_revocation(tmp_path: Pa
         db_path=tmp_path / "tool_life.db",
         persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
         worker_instance_repository=repo,
+    )
+    store = composed.bundle.external_operation_state
+    owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    running = mark_physical_running(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=record.revision,
+        owner=owner,
+    )
+    bind_worker_execution_ownership(
+        store,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=running.revision,
+        worker_instance_id=str(worker_id),
+        worker_ownership_epoch=_EPOCH,
+    )
+    with pytest.raises(WorkerExecutionOwnershipRevocationUnauthorizedError):
+        composed.worker_revocation.record_revocation_after_commit_authority_loss(
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            worker_instance_id=str(worker_id),
+            ownership_epoch=_EPOCH,
+        )
+    os.environ.pop(_MAC_ENV, None)
+
+
+def test_l3r10_production_default_blocks_revocation_without_qualification_policy(
+    tmp_path: Path,
+) -> None:
+    os.environ[_MAC_ENV] = "production-mac-key-l3r10-default-fail-closed"
+    worker_id = mint_worker_instance_id()
+    composed = compose_tool_life_durable_single_host_certified_owner_loss(
+        db_path=tmp_path / "tool_life.db",
+        persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
     )
     store = composed.bundle.external_operation_state
     owner = ProcessLocalExternalOperationOwner.mint()

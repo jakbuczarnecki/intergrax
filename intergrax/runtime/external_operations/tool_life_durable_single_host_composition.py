@@ -16,7 +16,6 @@ from intergrax.runtime.external_operations.execution_recovery_external_operation
 from intergrax.runtime.external_operations.execution_recovery_worker_execution_revocation_supervision import (
     ExecutionRecoveryWorkerExecutionRevocationSupervision,
     FailClosedWorkerExecutionCommitAuthorityLossPolicy,
-    RepositoryAdmittedWorkerExecutionCommitAuthorityLossPolicy,
     WorkerExecutionCommitAuthorityLossPolicy,
 )
 from intergrax.runtime.external_operations.worker_execution_commit_authority_loss import (
@@ -66,14 +65,11 @@ def compose_tool_life_durable_single_host_certified_owner_loss(
         authoritative_state_store=bundle.external_operation_state,
         decision_port=decision_port,
     )
-    if loss_policy is not None:
-        policy = loss_policy
-    elif worker_instance_repository is not None:
-        policy = RepositoryAdmittedWorkerExecutionCommitAuthorityLossPolicy(
-            worker_instance_repository=worker_instance_repository,
-        )
-    else:
-        policy = FailClosedWorkerExecutionCommitAuthorityLossPolicy()
+    policy = (
+        loss_policy
+        if loss_policy is not None
+        else FailClosedWorkerExecutionCommitAuthorityLossPolicy()
+    )
     supervision = ExecutionRecoveryWorkerExecutionRevocationSupervision(
         loss_policy=policy,
         trust=trust,
