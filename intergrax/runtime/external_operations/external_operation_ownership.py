@@ -35,6 +35,10 @@ class ExternalOperationFencedCommitRejectedError(RuntimeError):
     """Superseded worker cannot publish or mutate durable external-operation state."""
 
 
+class ExternalOperationCertifiedOwnerLossRequiredError(RuntimeError):
+    """RUNNING→UNKNOWN recovery requires canonical certified owner-loss evidence (parent L3)."""
+
+
 @dataclass(frozen=True, slots=True)
 class ProcessLocalExternalOperationOwner:
     """Opaque owner token for one runtime process."""
@@ -271,19 +275,15 @@ def recover_running_operation_after_certified_owner_loss(
     operation_id: str,
     expected_revision: int,
 ) -> ExternalOperationState:
-    """RUNNING→UNKNOWN when recovery authority has certified owner loss (not token inequality)."""
+    """Fail closed until canonical certified owner-loss authority is wired (TOOL-LIFE-X C-F04)."""
     current = store.load(operation_id)
     if current is None:
         raise ExternalOperationNotFoundError(operation_id)
     if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
         return current
-    return store.compare_and_set(
-        operation_id,
-        expected_revision=expected_revision,
-        update=ExternalOperationStateUpdate(
-            physical_state=ExternalOperationPhysicalState.UNKNOWN,
-            intent_state=ExternalOperationIntentState.TERMINATING,
-        ),
+    del expected_revision
+    raise ExternalOperationCertifiedOwnerLossRequiredError(
+        f"certified owner-loss evidence required for RUNNING→UNKNOWN on {operation_id!r}",
     )
 
 

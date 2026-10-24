@@ -35,6 +35,7 @@ from intergrax.contracts.external_operation_cancellation import (
 from intergrax.contracts.external_operation_identity import mint_stable_operation_id
 from intergrax.contracts.idempotency_store import InvocationUncertaintyError
 from intergrax.runtime.external_operations.external_operation_ownership import (
+    ExternalOperationCertifiedOwnerLossRequiredError,
     ExternalOperationFencedCommitRejectedError,
     ProcessLocalExternalOperationOwner,
     mark_physical_running,
@@ -230,41 +231,67 @@ def test_batch_c_l1_late_terminal_cannot_overwrite_prior_terminal() -> None:
         )
 
 
-def test_batch_c_l1_certified_owner_loss_recovery_race_single_unknown() -> None:
+def test_batch_c_l1_owner_loss_recovery_denied_foreign_worker_unchanged() -> None:
     store = InMemoryExternalOperationStateStore()
-    dead_owner = ProcessLocalExternalOperationOwner.mint()
-    record = store.create_if_absent("op-3", owner_token=dead_owner.token)
+    foreign_owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent("op-3", owner_token=foreign_owner.token)
     running = mark_physical_running(
         store,
         operation_id="op-3",
         expected_revision=record.revision,
+        owner=foreign_owner,
+    )
+    with pytest.raises(ExternalOperationCertifiedOwnerLossRequiredError):
+        recover_running_operation_after_certified_owner_loss(
+            store,
+            operation_id="op-3",
+            expected_revision=running.revision,
+        )
+    loaded = store.load("op-3")
+    assert loaded is not None
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+    assert loaded.owner_token == foreign_owner.token
+    assert loaded.revision == running.revision
+
+
+def test_batch_c_l1_owner_loss_recovery_denied_concurrent_no_mutation() -> None:
+    store = InMemoryExternalOperationStateStore()
+    dead_owner = ProcessLocalExternalOperationOwner.mint()
+    record = store.create_if_absent("op-3b", owner_token=dead_owner.token)
+    running = mark_physical_running(
+        store,
+        operation_id="op-3b",
+        expected_revision=record.revision,
         owner=dead_owner,
     )
     barrier = threading.Barrier(2)
-    results: list[ExternalOperationState] = []
+    errors: list[BaseException] = []
 
     def worker() -> None:
         barrier.wait()
         try:
-            results.append(
-                recover_running_operation_after_certified_owner_loss(
-                    store,
-                    operation_id="op-3",
-                    expected_revision=running.revision,
-                ),
+            recover_running_operation_after_certified_owner_loss(
+                store,
+                operation_id="op-3b",
+                expected_revision=running.revision,
             )
-        except Exception:
-            pass
+        except BaseException as exc:
+            errors.append(exc)
 
     threads = [threading.Thread(target=worker) for _ in range(2)]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join()
-    loaded = store.load("op-3")
+    assert len(errors) == 2
+    assert all(
+        isinstance(exc, ExternalOperationCertifiedOwnerLossRequiredError)
+        for exc in errors
+    )
+    loaded = store.load("op-3b")
     assert loaded is not None
-    assert loaded.physical_state is ExternalOperationPhysicalState.UNKNOWN
-    assert len(results) >= 1
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+    assert loaded.revision == running.revision
 
 
 def test_batch_c_l1_stalled_classification_requires_running_and_deadline() -> None:
@@ -468,10 +495,12 @@ def test_batch_c_l1_tool_attempt_ignores_superseded_success_commit() -> None:
         expected_revision=record.revision,
         owner=owner_a,
     )
-    recover_running_operation_after_certified_owner_loss(
+    mark_physical_terminal_if_owner_matches(
         store,
         operation_id=identity.operation_id,
         expected_revision=running.revision,
+        physical_state=ExternalOperationPhysicalState.UNKNOWN,
+        owner=owner_a,
     )
     attempt = ToolExternalOperationAttempt(
         store=store,

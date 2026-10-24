@@ -43,6 +43,8 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
     assert_may_begin_physical_attempt,
     mark_physical_running,
     mark_physical_terminal,
+    ExternalOperationCertifiedOwnerLossRequiredError,
+    mark_physical_terminal_if_owner_matches,
     recover_running_operation_after_certified_owner_loss,
     request_operation_cancellation,
 )
@@ -138,10 +140,9 @@ def test_case_2_cancel_during_execution_preserves_terminal_state() -> None:
         )
 
 
-def test_case_3_worker_crash_marks_unknown() -> None:
+def test_case_3_owner_loss_recovery_denied_without_certified_authority() -> None:
     store = InMemoryExternalOperationStateStore()
     dead_owner = ProcessLocalExternalOperationOwner.mint()
-    active_owner = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
     record = store.create_if_absent(identity.operation_id, owner_token=dead_owner.token)
     running = mark_physical_running(
@@ -151,12 +152,16 @@ def test_case_3_worker_crash_marks_unknown() -> None:
         owner=dead_owner,
     )
     assert running.physical_state is ExternalOperationPhysicalState.RUNNING
-    recovered = recover_running_operation_after_certified_owner_loss(
-        store,
-        operation_id=identity.operation_id,
-        expected_revision=running.revision,
-    )
-    assert recovered.physical_state is ExternalOperationPhysicalState.UNKNOWN
+    with pytest.raises(ExternalOperationCertifiedOwnerLossRequiredError):
+        recover_running_operation_after_certified_owner_loss(
+            store,
+            operation_id=identity.operation_id,
+            expected_revision=running.revision,
+        )
+    loaded = store.load(identity.operation_id)
+    assert loaded is not None
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+    assert loaded.revision == running.revision
 
 
 def test_case_4_double_cancellation_is_idempotent() -> None:
@@ -195,10 +200,13 @@ def test_recovery_blocked_on_unknown_until_reconciled() -> None:
         )
     running = store.load(identity.operation_id)
     assert running is not None
-    recover_running_operation_after_certified_owner_loss(
+    stale_owner = ProcessLocalExternalOperationOwner(token="stale")
+    mark_physical_terminal_if_owner_matches(
         store,
         operation_id=identity.operation_id,
         expected_revision=running.revision,
+        physical_state=ExternalOperationPhysicalState.UNKNOWN,
+        owner=stale_owner,
     )
     with pytest.raises(ExternalOperationRecoveryBlockedError):
         prepare_external_operations_for_recovery(
