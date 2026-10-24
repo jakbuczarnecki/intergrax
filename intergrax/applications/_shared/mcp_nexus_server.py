@@ -5,20 +5,29 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
+from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
+    McpHostExecutionTransportCancelContext,
+    resolve_mcp_task_control_mutation_boundary_from_request,
+    run_host_execution_with_mcp_transport_cancel,
+)
 from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
     bind_strict_serving_http_caller_principal,
 )
 from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
-from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
@@ -56,6 +65,7 @@ async def execute_mcp_agent_task(
     session_id: str | None = None,
     intent: str | None = None,
     caller_request_identity: RequestIdentity | None = None,
+    task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> dict[str, object]:
     """Run one MCP agent task through canonical host task execution."""
     task = task_from_mcp_agent_intake(
@@ -66,11 +76,32 @@ async def execute_mcp_agent_task(
         session_id=session_id,
         intent=intent,
     )
-    if caller_request_identity is not None:
-        with bind_strict_serving_http_caller_principal(caller_request_identity):
-            result = await host_execution.execute(task)
+    boundary = task_control_mutation_boundary
+    if boundary is None:
+        boundary = resolve_mcp_task_control_mutation_boundary_from_request()
+    cancel_ctx: McpHostExecutionTransportCancelContext | None = None
+    if boundary is not None and caller_request_identity is not None:
+        cancel_ctx = McpHostExecutionTransportCancelContext(
+            mutation_boundary=boundary,
+            caller_request_identity=caller_request_identity,
+        )
+
+    async def _run_execute() -> object:
+        if caller_request_identity is not None:
+            with bind_strict_serving_http_caller_principal(caller_request_identity):
+                return await host_execution.execute(task)
+        return await host_execution.execute(task)
+
+    if cancel_ctx is None:
+        execution_result = await _run_execute()
     else:
-        result = await host_execution.execute(task)
+        host_task = asyncio.create_task(_run_execute())
+        execution_result = await run_host_execution_with_mcp_transport_cancel(
+            host_task,
+            task=task,
+            cancel_ctx=cancel_ctx,
+        )
+    result = execution_result if isinstance(execution_result, TaskResult) else TaskResult.model_validate(execution_result)
     payload = {
         "task_id": result.task_id,
         "run_id": result.run_id,
@@ -92,6 +123,7 @@ def build_nexus_mcp_server(
     default_tenant_id: str = "mcp",
     default_user_id: str = "mcp-user",
     tool_registry: ToolRegistry | None = None,
+    task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> FastMCP:
     """
     Register ``list_agents`` and ``run_agent`` on a FastMCP instance.
@@ -141,6 +173,7 @@ def build_nexus_mcp_server(
             session_id=session_id,
             intent=intent,
             caller_request_identity=resolved.request_identity,
+            task_control_mutation_boundary=task_control_mutation_boundary,
         )
 
     if tool_registry is not None:

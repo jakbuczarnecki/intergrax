@@ -212,9 +212,9 @@ def create_lab_application(
     if settings.include_mcp:
         from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
 
-        couple_fastapi_with_mcp = load_mcp_coupling()
+        load_mcp_coupling()
+        from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
         from lab_application.mcp.server import build_lab_mcp_server
-
         tool_wiring = wire_lab_tools(
             integration_profile=integrations.profile,
             harness=settings.harness,
@@ -226,9 +226,11 @@ def create_lab_application(
             tool_registry=tool_wiring.registry,
         )
         extra_lifespans = build_factory_lifespans(runtime, schedulers=factory_schedulers)
-        app = couple_fastapi_with_mcp(
+        app = couple_harness_host_fastapi_with_mcp(
             app,
             mcp,
+            runtime=runtime,
+            env=lab_env,
             mount_path=settings.mcp_mount_path,
             extra_lifespans=extra_lifespans,
         )
