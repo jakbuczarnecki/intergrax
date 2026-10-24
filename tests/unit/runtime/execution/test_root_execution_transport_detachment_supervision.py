@@ -12,6 +12,7 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportAdmissionRequest,
     RootExecutionTransportDetachmentHandoffDisposition,
     RootExecutionTransportDetachmentHandoffRefusalReason,
     RootExecutionTransportDetachmentHandoffRequest,
@@ -35,6 +36,38 @@ def _principal(*, tenant_id: str = _TENANT) -> RequestIdentity:
         principal_type=PrincipalType.USER,
         auth_subject="u1",
     )
+
+
+@pytest.mark.asyncio
+async def test_admission_supervision_without_active_binding_retains_host() -> None:
+    supervisor = build_host_root_execution_transport_detachment_supervisor()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    host_done = asyncio.Event()
+
+    async def _host() -> str:
+        await host_done.wait()
+        return "ok"
+
+    host_coro = asyncio.create_task(_host())
+    await asyncio.sleep(0)
+    admitted = await supervisor.admit_root_execution_supervision(
+        RootExecutionTransportAdmissionRequest(
+            task_id=task.task_id,
+            verified_tenant_id=_TENANT,
+            caller_request_identity=_principal(),
+            host_asyncio_task=host_coro,
+        )
+    )
+    assert admitted.disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+    assert supervisor.holds_root_execution_supervision(
+        task_id=task.task_id,
+        host_asyncio_task=host_coro,
+    )
+    assert supervisor.supervised_count() == 1
+    host_done.set()
+    await asyncio.wait_for(host_coro, timeout=3.0)
+    await asyncio.sleep(0.05)
+    assert supervisor.supervised_count() == 0
 
 
 @pytest.mark.asyncio

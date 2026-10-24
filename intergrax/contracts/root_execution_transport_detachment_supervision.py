@@ -30,6 +30,36 @@ class RootExecutionTransportDetachmentHandoffRefusalReason(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class RootExecutionTransportAdmissionRequest:
+    """Register accountable supervision when MCP root Execution is admitted (before transport detach)."""
+
+    task_id: TaskId
+    verified_tenant_id: str
+    caller_request_identity: RequestIdentity
+    host_asyncio_task: asyncio.Task[object]
+
+    def __post_init__(self) -> None:
+        validate_task_id(self.task_id)
+        if not self.verified_tenant_id:
+            raise ValueError("verified_tenant_id required")
+
+
+@dataclass(frozen=True, slots=True)
+class RootExecutionTransportAdmissionResult:
+    disposition: RootExecutionTransportDetachmentHandoffDisposition
+    refusal_reason: RootExecutionTransportDetachmentHandoffRefusalReason | None = None
+
+    def __post_init__(self) -> None:
+        if type(self.disposition) is not RootExecutionTransportDetachmentHandoffDisposition:
+            raise TypeError("disposition must be RootExecutionTransportDetachmentHandoffDisposition")
+        if self.disposition is RootExecutionTransportDetachmentHandoffDisposition.REFUSED:
+            if self.refusal_reason is None:
+                raise ValueError("REFUSED requires refusal_reason")
+        elif self.refusal_reason is not None:
+            raise ValueError("ACCEPTED must not carry refusal_reason")
+
+
+@dataclass(frozen=True, slots=True)
 class RootExecutionTransportDetachmentHandoffRequest:
     """Hand off already-running host asyncio work to canonical Execution supervision."""
 
@@ -66,6 +96,18 @@ class RootExecutionTransportDetachmentHandoffResult:
 class RootExecutionTransportDetachmentSupervisionPort(Protocol):
     """Accept responsibility for live host Execution work after MCP transport detachment."""
 
+    async def admit_root_execution_supervision(
+        self,
+        request: RootExecutionTransportAdmissionRequest,
+    ) -> RootExecutionTransportAdmissionResult: ...
+
+    def holds_root_execution_supervision(
+        self,
+        *,
+        task_id: TaskId,
+        host_asyncio_task: asyncio.Task[object],
+    ) -> bool: ...
+
     async def request_transport_detachment_handoff(
         self,
         request: RootExecutionTransportDetachmentHandoffRequest,
@@ -75,6 +117,8 @@ class RootExecutionTransportDetachmentSupervisionPort(Protocol):
 
 
 __all__ = [
+    "RootExecutionTransportAdmissionRequest",
+    "RootExecutionTransportAdmissionResult",
     "RootExecutionTransportDetachmentHandoffDisposition",
     "RootExecutionTransportDetachmentHandoffRefusalReason",
     "RootExecutionTransportDetachmentHandoffRequest",

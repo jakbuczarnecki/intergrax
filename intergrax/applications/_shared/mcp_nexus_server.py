@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import Any
 
 from fastmcp import FastMCP
@@ -27,6 +28,8 @@ from intergrax.applications._shared.mcp_transport_detachment_supervision_couplin
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportAdmissionRequest,
+    RootExecutionTransportDetachmentHandoffDisposition,
     RootExecutionTransportDetachmentSupervisionPort,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
@@ -112,7 +115,34 @@ async def execute_mcp_agent_task(
             raise McpProtectedHostExecutionAdmissionError(
                 "protected MCP run_agent requires root_execution_transport_detachment_supervision"
             )
+        if caller_request_identity is None:
+            raise McpProtectedHostExecutionAdmissionError(
+                "protected MCP run_agent requires caller_request_identity for execution supervision"
+            )
         host_task = asyncio.create_task(_run_execute())
+        admission = await supervision.admit_root_execution_supervision(
+            RootExecutionTransportAdmissionRequest(
+                task_id=task.task_id,
+                verified_tenant_id=caller_request_identity.tenant_id,
+                caller_request_identity=caller_request_identity,
+                host_asyncio_task=host_task,
+            )
+        )
+        if (
+            admission.disposition
+            is not RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+        ):
+            host_task.cancel()
+            try:
+                await asyncio.wait_for(asyncio.shield(host_task), timeout=1.0)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                pass
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                if host_task.done():
+                    host_task.result()
+            raise McpProtectedHostExecutionAdmissionError(
+                "root execution supervision admission refused before MCP transport execution"
+            )
         execution_result = await run_host_execution_with_mcp_transport_cancel(
             host_task,
             task=task,

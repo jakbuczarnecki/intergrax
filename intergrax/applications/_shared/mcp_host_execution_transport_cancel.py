@@ -16,6 +16,7 @@ from intergrax.applications._shared.mcp_transport_detachment_supervision_couplin
 from intergrax.applications._shared.task_control import governed_cancel_active_task
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportAdmissionRequest,
     RootExecutionTransportDetachmentHandoffDisposition,
     RootExecutionTransportDetachmentHandoffRequest,
     RootExecutionTransportDetachmentSupervisionPort,
@@ -180,6 +181,20 @@ async def _request_canonical_transport_detachment_handoff(
     return result.disposition
 
 
+def _supervisor_holds_live_execution(
+    supervision_port: RootExecutionTransportDetachmentSupervisionPort | None,
+    *,
+    task: Task,
+    host_coro: asyncio.Task[object],
+) -> bool:
+    if supervision_port is None or host_coro.done():
+        return False
+    return supervision_port.holds_root_execution_supervision(
+        task_id=task.task_id,
+        host_asyncio_task=host_coro,
+    )
+
+
 async def _finalize_transport_waiter_ownership(
     host_coro: asyncio.Task[object],
     *,
@@ -190,9 +205,11 @@ async def _finalize_transport_waiter_ownership(
     supervision_port: RootExecutionTransportDetachmentSupervisionPort | None,
     handoff_accepted: bool,
 ) -> None:
-    """OWN-A2: TERMINAL or ACCEPTED supervision only — never LIVE+UNSUPERVISED+RELEASED."""
+    """OWN-A2: TERMINAL, ACCEPTED handoff, or admission supervision — never LIVE+UNOWNED+RELEASED."""
     if handoff_accepted or host_coro.done():
         await _retrieve_host_task_outcome(host_coro)
+        return
+    if _supervisor_holds_live_execution(supervision_port, task=task, host_coro=host_coro):
         return
 
     if supervision_port is not None and cancel_ctx is not None:
@@ -283,6 +300,8 @@ async def _await_host_task_bounded_after_transport_waiter_lost(
         return False
 
     while _remaining_s() > 0 and not host_coro.done():
+        if _supervisor_holds_live_execution(supervision_port, task=task, host_coro=host_coro):
+            return
         if await _try_canonical_handoff():
             return
         if await _bounded_observe_host_task(
@@ -323,6 +342,31 @@ async def run_host_execution_with_mcp_transport_cancel(
     supervision_port = transport_detachment_supervision
     if supervision_port is None:
         supervision_port = resolve_transport_detachment_supervision_from_request(request)
+
+    if supervision_port is not None and not supervision_port.holds_root_execution_supervision(
+        task_id=task.task_id,
+        host_asyncio_task=host_coro,
+    ):
+        admission = await supervision_port.admit_root_execution_supervision(
+            RootExecutionTransportAdmissionRequest(
+                task_id=task.task_id,
+                verified_tenant_id=cancel_ctx.caller_request_identity.tenant_id,
+                caller_request_identity=cancel_ctx.caller_request_identity,
+                host_asyncio_task=host_coro,
+            )
+        )
+        if (
+            admission.disposition
+            is not RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+        ):
+            host_coro.cancel()
+            await _bounded_observe_host_task(host_coro, timeout_s=1.0)
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                if host_coro.done():
+                    host_coro.result()
+            raise McpProtectedHostExecutionAdmissionError(
+                "root execution supervision admission refused for MCP transport execution"
+            )
 
     async def _monitor_transport() -> None:
         nonlocal transport_cancel_observed

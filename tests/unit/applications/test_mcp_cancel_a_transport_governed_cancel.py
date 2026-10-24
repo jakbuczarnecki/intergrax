@@ -25,6 +25,7 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionTransportCancelContext,
     McpHostExecutionTransportOwnershipInvariantError,
+    McpProtectedHostExecutionAdmissionError,
     run_host_execution_with_mcp_transport_cancel,
 )
 from intergrax.applications._shared.mcp_nexus_server import (
@@ -198,9 +199,7 @@ async def test_cancel_a_cross_tenant_governed_cancel_not_applied() -> None:
     )
     await asyncio.sleep(0.15)
     host_task.cancel()
-    with pytest.raises(
-        (asyncio.CancelledError, McpHostExecutionTransportOwnershipInvariantError),
-    ):
+    with pytest.raises(asyncio.CancelledError):
         await asyncio.wait_for(host_task, timeout=12.0)
     assert registered_task is not None
     assert not CancellationCoordinator.is_requested(registered_task.metadata)
@@ -344,20 +343,22 @@ async def test_cancel_a_pre_admission_transport_cancel_no_false_cooperative_sign
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
+    supervision = _transport_supervision()
     host_coro = asyncio.create_task(_slow_host())
     waiter = asyncio.create_task(
         run_host_execution_with_mcp_transport_cancel(
             host_coro,
             task=task,
             cancel_ctx=cancel_ctx,
-            transport_detachment_supervision=_transport_supervision(),
+            transport_detachment_supervision=supervision,
         ),
     )
     await asyncio.sleep(0.05)
     waiter.cancel()
-    with pytest.raises(McpHostExecutionTransportOwnershipInvariantError):
+    with contextlib.suppress(asyncio.CancelledError):
         await asyncio.wait_for(waiter, timeout=12.0)
     assert not CancellationCoordinator.is_requested(task.metadata)
+    assert supervision.supervised_count() == 1
     admission.set()
     with contextlib.suppress(asyncio.CancelledError):
         await asyncio.wait_for(host_coro, timeout=5.0)
@@ -603,7 +604,7 @@ async def test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel()
 
 @pytest.mark.asyncio
 async def test_own_a2_refused_handoff_raises_not_silent_transport_release() -> None:
-    """OWN-FINAL-01: supervision port present but REFUSED must not release a live unsupervised host."""
+    """OWN-FINAL-01: shutdown refuses admission — no live execution without accountable owner."""
     supervision = _transport_supervision()
     await supervision.shutdown_supervised_work(timeout_s=0.01)
     task = Task(tenant_id=_TENANT, user_id="u", message="m")
@@ -614,22 +615,7 @@ async def test_own_a2_refused_handoff_raises_not_silent_transport_release() -> N
         mutation_boundary=boundary,
         caller_request_identity=_principal(),
     )
-    host_release = asyncio.Event()
-
-    async def _suppress_cancel_host() -> TaskResult:
-        try:
-            while not host_release.is_set():
-                if CancellationCoordinator.is_requested(task.metadata):
-                    break
-                try:
-                    await asyncio.sleep(3600)
-                except asyncio.CancelledError:
-                    pass
-        finally:
-            await ActiveTaskRegistry.unregister(task.task_id, run_id)
-        return _cancelled_result(task, run_id)
-
-    host_coro = asyncio.create_task(_suppress_cancel_host())
+    host_coro = asyncio.create_task(asyncio.sleep(3600))
     waiter = asyncio.create_task(
         run_host_execution_with_mcp_transport_cancel(
             host_coro,
@@ -638,15 +624,11 @@ async def test_own_a2_refused_handoff_raises_not_silent_transport_release() -> N
             transport_detachment_supervision=supervision,
         ),
     )
-    await asyncio.sleep(0.05)
-    waiter.cancel()
-    with pytest.raises(McpHostExecutionTransportOwnershipInvariantError):
+    with pytest.raises(McpProtectedHostExecutionAdmissionError):
         await asyncio.wait_for(waiter, timeout=12.0)
-    assert not host_coro.done()
+    assert host_coro.done()
     assert supervision.supervised_count() == 0
-    host_release.set()
-    with contextlib.suppress(asyncio.CancelledError):
-        await asyncio.wait_for(host_coro, timeout=5.0)
+    await ActiveTaskRegistry.unregister(task.task_id, run_id)
 
 
 @pytest.mark.asyncio
