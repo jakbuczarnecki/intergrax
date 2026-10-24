@@ -396,7 +396,8 @@ def test_allowlist_http_redirect_operation_deadline_shared_across_hops() -> None
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/start":
-            time.sleep(0.06)
+            # Deterministic margin on Windows timer granularity (L3-R2 Batch D flake fix).
+            time.sleep(0.15)
             return httpx.Response(302, headers={"Location": "/final"}, request=request)
         return httpx.Response(200, text="ok", request=request)
 

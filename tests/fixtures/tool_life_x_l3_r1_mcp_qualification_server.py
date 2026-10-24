@@ -29,12 +29,23 @@ def echo(message: str = "") -> str:
     if _MODE == "crash_mid":
         time.sleep(0.3)
         os._exit(3)
+    if _MODE == "late":
+        time.sleep(6.0)
+        return "late-ok"
+    if _MODE == "crash_immediate":
+        os._exit(4)
+    if _MODE == "disconnect_mid":
+        time.sleep(0.15)
+        os._exit(5)
     return f"echo:{message}"
 
 
 def main() -> None:
     if _MODE == "unavailable":
         sys.exit(2)
+    if _MODE == "never_ready":
+        time.sleep(60_000)
+        return
     app = mcp.http_app(path="/")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 0))

@@ -6,14 +6,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-import subprocess
-import sys
 import time
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler
-from pathlib import Path
-
 import pytest
 from testing_support.builder import (
     canonical_governed_execution_scope,
@@ -48,6 +43,10 @@ from intergrax.tools.providers.http.contracts import HttpRequestInput
 from intergrax.tools.providers.http.service import HTTP_REQUEST_TOOL_ID
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from tests.fixtures.tool_life_x_mcp_subprocess_qualification import (
+    mcp_call_tool as _mcp_call_tool,
+    mcp_qualification_subprocess as _mcp_subprocess,
+)
 from tests.unit.tools.providers.test_tool_life_x_batch_e_real_infrastructure_adversarial import (
     _allowlist_client,
     _local_fault_server,
@@ -56,10 +55,7 @@ from tests.unit.tools.providers.test_tool_life_x_batch_e_real_infrastructure_adv
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _L3_RUN_ID = canonical_run_id_for_tests("tool-life-x-l3-r1")
-_MCP_SERVER = (
-    Path(__file__).resolve().parents[3] / "fixtures" / "tool_life_x_l3_r1_mcp_qualification_server.py"
-)
-_FASTMCP = pytest.importorskip("fastmcp")
+pytest.importorskip("fastmcp")
 
 
 class AllowAllScopePolicy:
@@ -151,49 +147,6 @@ def _http_invoker(
         scope_policy=AllowAllScopePolicy(),
     )
     return invoker, store
-
-
-@contextmanager
-def _mcp_subprocess(mode: str):
-    proc_env = os.environ.copy()
-    proc_env["TOOL_LIFE_X_MCP_MODE"] = mode
-    proc = subprocess.Popen(
-        [sys.executable, str(_MCP_SERVER)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=proc_env,
-    )
-    try:
-        if mode == "unavailable":
-            proc.wait(timeout=5.0)
-            yield None, proc.returncode
-            return
-        assert proc.stdout is not None
-        line = proc.stdout.readline().strip()
-        port = int(line)
-        base = f"http://127.0.0.1:{port}/"
-        yield base, proc
-    finally:
-        if proc.poll() is None:
-            proc.terminate()
-            try:
-                proc.wait(timeout=3.0)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-
-
-async def _mcp_call_tool(base_url: str, tool: str, arguments: dict, *, timeout_s: float) -> object:
-    from mcp.client.session import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
-
-    async def _run() -> object:
-        async with streamablehttp_client(base_url) as (read, write, _):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                return await session.call_tool(tool, arguments)
-
-    return await asyncio.wait_for(_run(), timeout=timeout_s)
 
 
 def test_l3_governance_unauthorized_http_zero_physical_effects() -> None:
