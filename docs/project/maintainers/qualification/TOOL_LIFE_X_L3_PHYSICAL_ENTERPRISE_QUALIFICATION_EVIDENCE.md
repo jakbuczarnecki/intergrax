@@ -31,7 +31,7 @@
 | **START_HEAD** | `7018f019732a9d44d14b0129ad95e9eccf9d0948` |
 | **Tested SHA** | `d9a5d282c8f45b4bdcca2cff0bb145f6440ca50f` (L1/L2/L3 on implementation tree) |
 | **Implementation SHA** | `d9a5d282c8f45b4bdcca2cff0bb145f6440ca50f` (PHYS-F07/F08 batch) |
-| **Publication SHA** | `d4147579da0f9fb7554f13657cf72fba7a08b494` (`development` tip — independent audit SHA) |
+| **Publication SHA** | `473e1b67980a79c8e6b10b3c5cefe3d6dad4d747` (`development` tip — independent audit SHA) |
 
 ---
 
