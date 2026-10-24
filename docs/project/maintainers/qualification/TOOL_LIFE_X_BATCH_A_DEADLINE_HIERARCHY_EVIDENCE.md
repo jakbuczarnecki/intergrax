@@ -95,7 +95,9 @@
 | **Contested matrix (addendum)** | **G:** re-entrant obligation claim no longer authorizes schedule; concurrent `try_claim_exclusive_release_scheduling` → one winner (deterministic handoff test). **H:** obligation reserved while future pending; schedule deferred until `done()`. Prior **D/E** matrix @ `8f6b9a2…` unchanged. |
 | **Modules** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py`; `tests/unit/runtime/resilience/test_dependency_attempt_execution_boundary.py`; this evidence file. |
 | **L1** | **6 passed** — shutdown races, BA-F12 store, exactly-once cleanup, obligation re-entry negative, concurrent exclusive scheduling. |
-| **L2** | See history table (wave 1 STOP; publication wave after commit). |
+| **L2** | **65/65** @ publication SHA — log `l2-batch-a-ba-f12-atomic-claimant-publication.log` (wave 1 **64/65** flake classified; one operator-authorized rerun). |
+| **Publication SHA** | `a29e6e7df` (`fix(runtime): BA-F12 exclusive release scheduling claimant`) |
+| **Evidence publication SHA** | same commit (source execution ≡ implementation) |
 | **Historical preservation** | **56/56**, **58/61**, **58/61**, **59/61**, BA-F12 L1 **4/4**, L2 **63/63** @ `8f6b9a2…` / `e3bed112…` docs — **not** invalidated; attributed to prior SHAs only. |
 
 **Scoped closure matrix (BA-F12-affected TL):**
