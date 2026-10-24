@@ -212,6 +212,46 @@ def test_batch_b_idempotent_write_requires_key_for_multi_attempt() -> None:
     assert effective_max_retry_attempts(contract, with_key) == 4
 
 
+def test_batch_b_classify_explicit_retry_safe_with_key_not_external_dedup() -> None:
+    contract = ToolContract(
+        tool_id="retry_safe",
+        name="retry safe",
+        description="",
+        input_schema=ValueInput,
+        output_schema=ValueOutput,
+        error_mapping={},
+        side_effects=True,
+        retry_policy=ToolRetryPolicy(max_attempts=5, backoff_ms=0),
+        side_effect_retry_safety=SideEffectRetrySafety.EXPLICITLY_RETRY_SAFE,
+    )
+    with_key = _request(tool_id="retry_safe", key="idem-key")
+    assert (
+        classify_tool_operation_retry_class(contract, with_key)
+        is ToolOperationRetryClass.EXPLICITLY_RETRY_SAFE_WRITE
+    )
+    assert effective_max_retry_attempts(contract, with_key) == 5
+
+
+def test_batch_b_non_retry_safe_with_key_still_single_attempt() -> None:
+    contract = ToolContract(
+        tool_id="unsafe",
+        name="unsafe",
+        description="",
+        input_schema=ValueInput,
+        output_schema=ValueOutput,
+        error_mapping={},
+        side_effects=True,
+        retry_policy=ToolRetryPolicy(max_attempts=5, backoff_ms=0),
+        side_effect_retry_safety=SideEffectRetrySafety.NOT_RETRY_SAFE,
+    )
+    with_key = _request(tool_id="unsafe", key="k-only")
+    assert (
+        classify_tool_operation_retry_class(contract, with_key)
+        is ToolOperationRetryClass.NON_IDEMPOTENT_WRITE
+    )
+    assert effective_max_retry_attempts(contract, with_key) == 1
+
+
 def test_batch_b_l1_non_idempotent_write_never_duplicates_on_transient() -> None:
     calls = {"n": 0}
 

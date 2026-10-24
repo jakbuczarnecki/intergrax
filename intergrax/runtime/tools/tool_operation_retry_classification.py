@@ -14,8 +14,8 @@ class ToolOperationRetryClass(str, Enum):
     """
     Sanctioned operation safety classification for retry/idempotency (TOOL-LIFE-X §3.0.5).
 
-    Derived only from typed ``ToolContract`` fields and idempotency key presence —
-    never from HTTP method, tool name, or provider heuristics.
+    Derived only from typed ``ToolContract`` fields — never from HTTP method,
+    tool name, idempotency key presence, or provider heuristics.
     """
 
     READ_ONLY = "read_only"
@@ -36,8 +36,6 @@ def classify_tool_operation_retry_class(
         return ToolOperationRetryClass.NON_IDEMPOTENT_WRITE
     if safety is SideEffectRetrySafety.IDEMPOTENT:
         return ToolOperationRetryClass.IDEMPOTENT_WRITE
-    if request.idempotency_key is not None:
-        return ToolOperationRetryClass.EXTERNALLY_DEDUPLICATED
     return ToolOperationRetryClass.EXPLICITLY_RETRY_SAFE_WRITE
 
 
@@ -52,10 +50,7 @@ def effective_max_retry_attempts(
         return policy_attempts
     if operation_class is ToolOperationRetryClass.NON_IDEMPOTENT_WRITE:
         return 1
-    if operation_class in (
-        ToolOperationRetryClass.IDEMPOTENT_WRITE,
-        ToolOperationRetryClass.EXTERNALLY_DEDUPLICATED,
-    ):
+    if operation_class is ToolOperationRetryClass.IDEMPOTENT_WRITE:
         if request.idempotency_key is None:
             return 1
         return policy_attempts
