@@ -10,6 +10,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from intergrax.tools.exporters.mcp import to_mcp_tools
+from intergrax.tools.mcp_result_bounds import serialize_bounded_mcp_json
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
@@ -37,4 +38,8 @@ def mount_catalog_tools_on_mcp(
             """Return MCP schema for one catalog tool_id."""
             registered = registry.get(tool_id)
             items = to_mcp_tools([registered.contract])
-            return items[0] if items else {"error": f"unknown_tool:{tool_id}"}
+            payload = items[0] if items else {"error": f"unknown_tool:{tool_id}"}
+            _, truncated = serialize_bounded_mcp_json(payload)
+            if truncated:
+                return {"error": "mcp_payload_byte_limit_exceeded", "tool_id": tool_id}
+            return payload

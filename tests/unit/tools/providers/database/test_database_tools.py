@@ -52,6 +52,7 @@ def test_database_query_returns_rows() -> None:
     out = database_query(ctx, DatabaseQueryInput(sql="SELECT * FROM items"))
     assert out.row_count == 1
     assert out.rows[0]["name"] == "alpha"
+    assert out.truncated is False
 
 
 def test_database_execute_inserts_row() -> None:

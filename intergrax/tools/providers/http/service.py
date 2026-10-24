@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from intergrax.integrations.contracts.http_client import HttpClientBackend
 from intergrax.tools.providers.http.contracts import HttpRequestInput, HttpRequestOutput
+from intergrax.tools.providers.provider_resource_enforcement import (
+    ProviderResourceLimitExceeded,
+    bound_http_response_body,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 HTTP_REQUEST_TOOL_ID = "http.request"
@@ -33,9 +37,17 @@ def http_request(ctx: ToolWiringContext, params: HttpRequestInput) -> HttpReques
         )
     except Exception as exc:  # noqa: BLE001 — tool boundary
         return HttpRequestOutput(success=False, error=str(exc))
+    try:
+        body, truncated = bound_http_response_body(
+            response.body,
+            max_response_bytes=params.max_response_bytes,
+        )
+    except ProviderResourceLimitExceeded as exc:
+        return HttpRequestOutput(success=False, error=exc.code)
     return HttpRequestOutput(
         success=200 <= response.status_code < 400,
         status_code=response.status_code,
-        body=response.body,
+        body=body,
         headers=dict(response.headers),
+        truncated=truncated,
     )
