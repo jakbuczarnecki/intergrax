@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.certified_owner_loss_evidence import (
+    CertifiedOwnerLossAuthorityBypassError,
     CertifiedOwnerLossEvidenceRejectedError,
     CertifiedOwnerLossIssuerNotConfiguredError,
     StagedCertifiedOwnerLossEvidenceV1,
@@ -80,6 +81,17 @@ def _require_tenant_bound(record: ExternalOperationState) -> None:
         raise ExternalOperationLegacyTenantBindingError(
             f"external operation {record.operation_id!r} lacks tenant binding",
         )
+
+
+def _update_touches_certification_authority(
+    update: ExternalOperationStateUpdate,
+) -> bool:
+    return (
+        update.ownership_epoch_fence is not None
+        or update.staged_certified_owner_loss is not None
+        or update.clear_staged_certified_owner_loss
+        or update.consumed_certified_loss_evidence_ids is not None
+    )
 
 
 @runtime_checkable
@@ -201,6 +213,26 @@ class InMemoryExternalOperationStateStore:
         expected_revision: int,
         update: ExternalOperationStateUpdate,
     ) -> ExternalOperationState:
+        if _update_touches_certification_authority(update):
+            raise CertifiedOwnerLossAuthorityBypassError(
+                "certification authority fields require stage_certified_owner_loss_evidence "
+                "or apply_certified_owner_loss",
+            )
+        return self._compare_and_set_locked(
+            tenant_id,
+            operation_id,
+            expected_revision=expected_revision,
+            update=update,
+        )
+
+    def _compare_and_set_locked(
+        self,
+        tenant_id: str,
+        operation_id: str,
+        *,
+        expected_revision: int,
+        update: ExternalOperationStateUpdate,
+    ) -> ExternalOperationState:
         if type(expected_revision) is not int or expected_revision < 1:
             raise ValueError("expected_revision must be int >= 1")
         tid = _validate_tenant_id(tenant_id)
@@ -300,9 +332,16 @@ class InMemoryExternalOperationStateStore:
             raise CertifiedOwnerLossEvidenceRejectedError("epoch tenant mismatch")
         if evidence.epoch.operation_id != current.operation_id:
             raise CertifiedOwnerLossEvidenceRejectedError("epoch operation mismatch")
+        if evidence.epoch.store_revision != expected_revision:
+            raise CertifiedOwnerLossEvidenceRejectedError("ownership epoch revision mismatch")
+        if evidence.epoch.owner_token != (current.owner_token or ""):
+            raise CertifiedOwnerLossEvidenceRejectedError("ownership epoch owner mismatch")
         if evidence.issuer_id not in binding.allowed_issuer_ids:
             raise CertifiedOwnerLossEvidenceRejectedError("issuer not allowlisted")
-        return self.compare_and_set(
+        occupied = current.staged_certified_owner_loss
+        if occupied is not None and occupied.evidence.evidence_id != evidence.evidence_id:
+            raise CertifiedOwnerLossEvidenceRejectedError("staged slot occupied")
+        return self._compare_and_set_locked(
             tenant_id,
             operation_id,
             expected_revision=expected_revision,
@@ -346,8 +385,10 @@ class InMemoryExternalOperationStateStore:
             raise CertifiedOwnerLossEvidenceRejectedError("cross-tenant evidence")
         if evidence.epoch.owner_token != (current.owner_token or ""):
             raise CertifiedOwnerLossEvidenceRejectedError("owner-token mismatch")
-        if evidence.epoch.store_revision != expected_revision:
-            raise CertifiedOwnerLossEvidenceRejectedError("store revision mismatch")
+        if evidence.epoch.store_revision + 1 != expected_revision:
+            raise CertifiedOwnerLossEvidenceRejectedError(
+                "apply revision must follow staged ownership epoch revision",
+            )
         if evidence.issuer_id not in binding.allowed_issuer_ids:
             raise CertifiedOwnerLossEvidenceRejectedError("issuer not allowlisted")
         next_fence = (current.ownership_epoch_fence or 0) + 1
@@ -356,7 +397,7 @@ class InMemoryExternalOperationStateStore:
         consumed = frozenset(
             set(current.consumed_certified_loss_evidence_ids) | {evidence_id},
         )
-        return self.compare_and_set(
+        return self._compare_and_set_locked(
             tenant_id,
             operation_id,
             expected_revision=expected_revision,

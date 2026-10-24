@@ -70,6 +70,10 @@ class CertifiedOwnerLossIssuerNotConfiguredError(RuntimeError):
     """No sanctioned issuer binding — staging and apply remain unavailable."""
 
 
+class CertifiedOwnerLossAuthorityBypassError(RuntimeError):
+    """Ordinary lifecycle CAS attempted to mutate certification authority fields."""
+
+
 @runtime_checkable
 class CertifiedOwnerLossEvidenceIssuerPort(Protocol):
     def issue_owner_loss_evidence(
