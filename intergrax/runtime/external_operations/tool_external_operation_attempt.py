@@ -25,12 +25,14 @@ from intergrax.contracts.external_operation_identity import (
     mint_stable_operation_id,
 )
 from intergrax.runtime.external_operations.external_operation_ownership import (
+    ExternalOperationFencedCommitRejectedError,
     ExternalOperationStartSuppressedError,
     ProcessLocalExternalOperationOwner,
     assert_may_begin_physical_attempt,
     finalize_operation_intent,
     mark_physical_running,
     mark_physical_terminal,
+    mark_physical_terminal_if_owner_matches,
     request_operation_cancellation,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
@@ -238,14 +240,22 @@ class ToolExternalOperationAttempt:
         binding = self._binding()
         if binding is None or self._revision is None:
             return
-        store, identity, _owner = binding
-        record = mark_physical_terminal(
-            store,
-            operation_id=identity.operation_id,
-            expected_revision=self._revision,
-            physical_state=physical,
-            intent_state=intent_state,
-        )
+        store, identity, owner = binding
+        try:
+            record = mark_physical_terminal_if_owner_matches(
+                store,
+                operation_id=identity.operation_id,
+                expected_revision=self._revision,
+                physical_state=physical,
+                owner=owner,
+                intent_state=intent_state,
+            )
+        except ExternalOperationFencedCommitRejectedError:
+            loaded = store.load(identity.operation_id)
+            if loaded is not None:
+                self._revision = loaded.revision
+            self._terminal_recorded = True
+            return
         self._revision = record.revision
         if finalize_intent:
             finalized = finalize_operation_intent(

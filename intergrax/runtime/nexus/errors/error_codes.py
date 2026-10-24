@@ -17,3 +17,5 @@ class RuntimeErrorCode(str, Enum):
     QUALITY_ERROR = "quality_error"
     PERMISSION_ERROR = "permission_error"
     RUNTIME_ERROR = "runtime_error"
+    ABANDONED = "abandoned"
+    STALLED = "stalled"

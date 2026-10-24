@@ -31,6 +31,10 @@ class ExternalOperationRetryBlockedError(RuntimeError):
     """Physical retry blocked until cancellation ownership is decided."""
 
 
+class ExternalOperationFencedCommitRejectedError(RuntimeError):
+    """Superseded worker cannot publish or mutate durable external-operation state."""
+
+
 @dataclass(frozen=True, slots=True)
 class ProcessLocalExternalOperationOwner:
     """Opaque owner token for one runtime process."""
@@ -120,6 +124,55 @@ def mark_physical_running(
             physical_state=ExternalOperationPhysicalState.RUNNING,
             owner_token=owner.token,
         ),
+    )
+
+
+_TERMINAL_PHYSICAL = frozenset(
+    {
+        ExternalOperationPhysicalState.SUCCEEDED,
+        ExternalOperationPhysicalState.FAILED,
+        ExternalOperationPhysicalState.CANCELLED,
+        ExternalOperationPhysicalState.UNKNOWN,
+    },
+)
+
+
+def mark_physical_terminal_if_owner_matches(
+    store: ExternalOperationStateStore,
+    *,
+    operation_id: str,
+    expected_revision: int,
+    physical_state: ExternalOperationPhysicalState,
+    owner: ProcessLocalExternalOperationOwner,
+    intent_state: ExternalOperationIntentState | None = None,
+) -> ExternalOperationState:
+    """CAS terminal commit only when ``owner`` still holds the RUNNING record."""
+    if physical_state not in _TERMINAL_PHYSICAL:
+        raise ValueError("physical_state must be terminal")
+    current = store.load(operation_id)
+    if current is None:
+        raise ExternalOperationNotFoundError(operation_id)
+    if current.physical_state in _TERMINAL_PHYSICAL:
+        if current.physical_state is physical_state:
+            return current
+        raise ExternalOperationFencedCommitRejectedError(
+            f"late terminal rejected for {operation_id!r}: "
+            f"existing {current.physical_state.value}",
+        )
+    if (
+        current.physical_state is ExternalOperationPhysicalState.RUNNING
+        and current.owner_token is not None
+        and current.owner_token != owner.token
+    ):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"stale owner cannot commit terminal for {operation_id!r}",
+        )
+    return mark_physical_terminal(
+        store,
+        operation_id=operation_id,
+        expected_revision=expected_revision,
+        physical_state=physical_state,
+        intent_state=intent_state,
     )
 
 

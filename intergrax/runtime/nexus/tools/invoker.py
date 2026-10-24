@@ -116,6 +116,14 @@ from intergrax.runtime.external_operations.external_operation_state_store import
 from intergrax.runtime.external_operations.external_operation_ownership import (
     ProcessLocalExternalOperationOwner,
 )
+from intergrax.runtime.tools.tool_operation_recovery import (
+    ToolInvocationTerminalDisposition,
+    disposition_message,
+    must_abandon_after_retry_exhaustion,
+    must_abandon_uncertain_outcome,
+    reconcile_orphaned_tool_external_operations,
+    runtime_error_for_disposition,
+)
 from intergrax.runtime.external_operations.tool_external_operation_attempt import (
     ExternalOperationStartSuppressedError,
     ToolExternalOperationAttempt,
@@ -1203,6 +1211,14 @@ class RuntimeToolInvoker:
         policy = contract.retry_policy
         attempts = self._effective_max_attempts(contract, request)
         last_exc: Optional[Exception] = None
+        if (
+            self._external_operation_store is not None
+            and self._external_operation_owner is not None
+        ):
+            reconcile_orphaned_tool_external_operations(
+                self._external_operation_store,
+                active_owner=self._external_operation_owner,
+            )
 
         for attempt in range(1, attempts + 1):
             if self._cooperative_cancellation_requested(state):
@@ -1399,6 +1415,21 @@ class RuntimeToolInvoker:
                 timeout_certainty = ToolEffectCertainty.UNCERTAIN
                 if boundary is not None and not boundary.may_have_started:
                     timeout_certainty = ToolEffectCertainty.NOT_STARTED
+                if must_abandon_uncertain_outcome(
+                    effect_certainty=timeout_certainty,
+                    contract=contract,
+                    request=request,
+                ):
+                    return self._tool_result_terminal_disposition(
+                        state=state,
+                        contract=contract,
+                        request=request,
+                        agent_id=agent_id,
+                        disposition=ToolInvocationTerminalDisposition.ABANDONED,
+                        effect_certainty=timeout_certainty,
+                        trace_step="tool_invocation_abandoned",
+                        trace_message="Tool invocation abandoned after uncertain timeout.",
+                    )
                 result = ToolExecutionResult.fail(
                     RuntimeErrorCode.TIMEOUT,
                     msg,
@@ -1433,6 +1464,25 @@ class RuntimeToolInvoker:
                 code = self._map_error(contract, exc)
                 msg = f"{type(exc).__name__}: {exc}"
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
+                effect_started = boundary is not None and boundary.may_have_started
+                if must_abandon_after_retry_exhaustion(
+                    effect_may_have_started=effect_started,
+                    contract=contract,
+                    request=request,
+                ):
+                    return self._tool_result_terminal_disposition(
+                        state=state,
+                        contract=contract,
+                        request=request,
+                        agent_id=agent_id,
+                        disposition=ToolInvocationTerminalDisposition.ABANDONED,
+                        effect_certainty=ToolEffectCertainty.UNCERTAIN,
+                        trace_step="tool_invocation_abandoned",
+                        trace_message=(
+                            "Tool invocation abandoned after retry exhaustion "
+                            "with possible external effect."
+                        ),
+                    )
 
                 state.trace_event(
                     component=TraceComponent.TOOLS,
@@ -1536,6 +1586,46 @@ class RuntimeToolInvoker:
             RuntimeErrorCode.RUNTIME_ERROR,
             "deadline_exceeded",
             effect_certainty=ToolEffectCertainty.NOT_STARTED,
+        )
+        self._emit_boundary_event(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+            result=result,
+        )
+        return result
+
+    def _tool_result_terminal_disposition(
+        self,
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        agent_id: str,
+        disposition: ToolInvocationTerminalDisposition,
+        effect_certainty: ToolEffectCertainty,
+        trace_step: str,
+        trace_message: str,
+    ) -> ToolExecutionResult[BaseModel]:
+        error_code = runtime_error_for_disposition(disposition)
+        message = disposition_message(disposition)
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step=trace_step,
+            message=trace_message,
+            level=TraceLevel.ERROR,
+            payload=ToolInvocationErrorDiagV1(
+                tool_id=contract.tool_id,
+                step_id=str(request.step_id),
+                error_code=error_code,
+                error_message=message,
+            ),
+        )
+        result = ToolExecutionResult.fail(
+            error_code,
+            message,
+            effect_certainty=effect_certainty,
         )
         self._emit_boundary_event(
             state=state,
