@@ -19,7 +19,7 @@
 | --- | --- |
 | Repository | `jakbuczarnecki/intergrax` |
 | START_HEAD | `7d901f0ee632ab7aa486e598c22f64994751b8b2` |
-| Implementation / publication SHA | recorded @ commit (see git log) |
+| Implementation / publication SHA | `fde5f41eb` |
 | Working tree @ publication | clean after commit |
 
 ---
