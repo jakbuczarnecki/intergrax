@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Baseline SHA (operator START_HEAD) | `08787ba4118601ceab4fa613e426d377598ed59b` |
-| Frozen implementation SHA | *(set at publication commit — see §12)* |
+| Frozen implementation SHA | `0a5f19c66b48cb80f0be28191aa887ee358f072e` |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
 | ADR | `ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md` |
@@ -122,5 +122,5 @@ None required for safe Class C default on generic HTTP. Independent EXT-L4 accep
 | Field | Value |
 |---|---|
 | START_HEAD | `08787ba4118601ceab4fa613e426d377598ed59b` |
-| IMPLEMENTATION_SHA | same as PUBLICATION_HEAD at commit |
-| PUBLICATION_HEAD | `git rev-parse HEAD` after push to `origin/development` |
+| IMPLEMENTATION_SHA | `0a5f19c66b48cb80f0be28191aa887ee358f072e` |
+| PUBLICATION_HEAD | `0a5f19c66b48cb80f0be28191aa887ee358f072e` |
