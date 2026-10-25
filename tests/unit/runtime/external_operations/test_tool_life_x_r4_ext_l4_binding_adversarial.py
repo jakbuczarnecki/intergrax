@@ -93,6 +93,23 @@ def _unknown_after_loss(bundle: SqliteToolLifeDurableStoresBundle) -> object:
     )
 
 
+def test_class_b_contract_bind_rejected_for_class_c_tool_execution_context(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    store = durable_bundle.external_operation_state
+    record = store.create_if_absent(_TENANT, "op-bind-spoof")
+    with pytest.raises(ExternalOperationRedriveEffectBindingMismatchError):
+        bind_authoritative_redrive_effect_to_operation(
+            store,
+            tenant_id=_TENANT,
+            operation_id="op-bind-spoof",
+            expected_revision=record.revision,
+            trusted_effect_contract_id=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+            provider_id="http_rest",
+            tool_id="http_blind_post",
+        )
+
+
 def test_substitute_class_b_contract_for_class_c_bound_operation_rejected(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:

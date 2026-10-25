@@ -13,6 +13,9 @@ from intergrax.contracts.enterprise_reliability.effect_contract import (
     ExternalEffectContract,
     ExternalEffectSafetyCapabilities,
 )
+from intergrax.contracts.external_operation_redrive_effect_binding import (
+    ExternalOperationRedriveEffectBindingMismatchError,
+)
 
 TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT: Final = ExternalEffectContract(
     contract_id="tool_life.platform_durable_physical_lifecycle.v1",
@@ -70,6 +73,37 @@ _TRUSTED_BY_CONTRACT_ID: Final = {
     contract.contract_id: contract for contract in _TRUSTED_REDRIVE_EFFECT_CONTRACTS
 }
 
+# Sanctioned provider/tool → trusted contract (qual registry; not caller-invented).
+_QUAL_SANCTIONED_EXECUTION_BINDING: Final = {
+    ("http_rest", "http_request"): TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+    ("http_rest", "http_blind_post"): TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,
+    (
+        "platform",
+        "external_operation_physical_lifecycle",
+    ): TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+}
+
+
+def assert_trusted_redrive_binding_matches_execution_context(
+    contract: ExternalEffectContract,
+    *,
+    provider_id: str | None,
+    tool_id: str | None,
+) -> None:
+    """Reject binding a Class B contract to a Class C provider/tool execution context."""
+    if provider_id is None or tool_id is None:
+        return
+    key = (provider_id.strip(), tool_id.strip())
+    expected_contract_id = _QUAL_SANCTIONED_EXECUTION_BINDING.get(key)
+    if expected_contract_id is None:
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            f"no sanctioned redrive effect binding for provider/tool {key!r}",
+        )
+    if contract.contract_id != expected_contract_id:
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            "trusted effect contract does not match sanctioned provider/tool context",
+        )
+
 
 def resolve_trusted_redrive_effect_contract(contract_id: str) -> ExternalEffectContract:
     """Authoritative registry lookup — callers cannot invent new contract_ids."""
@@ -91,5 +125,6 @@ __all__ = [
     "TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT",
     "TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT",
     "TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT",
+    "assert_trusted_redrive_binding_matches_execution_context",
     "resolve_trusted_redrive_effect_contract",
 ]

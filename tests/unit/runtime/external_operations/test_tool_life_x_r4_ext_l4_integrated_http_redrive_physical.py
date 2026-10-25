@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import socket
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -57,7 +58,8 @@ from tests.unit.runtime.external_operations.test_tool_life_x_l3_r8_sqlite_durabl
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _HTTP_PROVIDER = "http_rest"
-_HTTP_TOOL = "http_request"
+_HTTP_TOOL_IDEMPOTENT = "http_request"
+_HTTP_TOOL_BLIND = "http_blind_post"
 _IDEMPOTENCY_KEY = "integrated-http-redrive-qual-1"
 
 _EFFECTS: dict[str, dict[str, Any]] = {}
@@ -103,6 +105,45 @@ def _post_effect(base_url: str, *, idempotency_key: str) -> httpx.Response:
         )
 
 
+def _post_effect_transport_loss_after_commit(base_url: str, *, idempotency_key: str) -> None:
+    """Real transport loss: provider commits, then resets connection before HTTP response."""
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{base_url}/effects",
+                headers={"Idempotency-Key": idempotency_key},
+                content=b'{"action":"charge"}',
+            )
+    except httpx.HTTPError:
+        return
+    raise AssertionError("expected transport failure after provider-side commit")
+
+
+class _LostAckAfterCommitHandler(BaseHTTPRequestHandler):
+    def log_message(self, format: str, *args: object) -> None:
+        return
+
+    def do_POST(self) -> None:
+        key = self.headers.get("Idempotency-Key", "").strip()
+        if not key:
+            self.send_response(400)
+            self.end_headers()
+            return
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        body = self.rfile.read(length) if length else b""
+        with _EFFECT_LOCK:
+            existing = _EFFECTS.get(key)
+            if existing is None:
+                _EFFECTS[key] = {
+                    "status": "applied",
+                    "body": body.decode("utf-8", errors="replace"),
+                    "count": 1,
+                }
+            else:
+                existing["count"] = int(existing.get("count", 1))
+        self.request.shutdown(socket.SHUT_RDWR)
+
+
 @pytest.fixture
 def idempotent_http_server() -> str:
     _EFFECTS.clear()
@@ -115,24 +156,46 @@ def idempotent_http_server() -> str:
     server.shutdown()
 
 
-def test_integrated_http_class_b_redrive_single_physical_effect(
+@pytest.fixture
+def lost_ack_http_server() -> str:
+    _EFFECTS.clear()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _LostAckAfterCommitHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    base = f"http://{host}:{port}"
+    yield base
+    server.shutdown()
+
+
+def test_integrated_http_class_b_lost_ack_redrive_single_physical_effect(
     tmp_path: Path,
+    lost_ack_http_server: str,
     idempotent_http_server: str,
 ) -> None:
+    """Steps 1–14: bind → RUNNING → lost-ack HTTP → no SUCCESS → UNKNOWN → redrive → one effect."""
     bundle = SqliteToolLifeDurableStoresBundle(db_path=tmp_path / "integrated-http-redrive.db")
     repo = InMemoryWorkerInstanceRepository()
     initial_worker = worker_instance()
     repo.create(initial_worker)
-    _running_with_worker(
+    _worker, _bound, _worker_id, initial_owner = _running_with_worker(
         bundle,
         repo,
         bind_redrive_contract_id=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
         bind_provider_id=_HTTP_PROVIDER,
-        bind_tool_id=_HTTP_TOOL,
+        bind_tool_id=_HTTP_TOOL_IDEMPOTENT,
         bind_physical_idempotency_key=_IDEMPOTENCY_KEY,
     )
-    first_ack = _post_effect(idempotent_http_server, idempotency_key=_IDEMPOTENCY_KEY)
-    assert first_ack.status_code == 200
+    _post_effect_transport_loss_after_commit(
+        lost_ack_http_server,
+        idempotency_key=_IDEMPOTENCY_KEY,
+    )
+    with _EFFECT_LOCK:
+        assert _EFFECTS[_IDEMPOTENCY_KEY]["count"] == 1
+    after_loss = bundle.external_operation_state.load(_TENANT, _OP)
+    assert after_loss is not None
+    assert after_loss.physical_state is ExternalOperationPhysicalState.RUNNING
+    assert after_loss.physical_state is not ExternalOperationPhysicalState.SUCCEEDED
     proof = _revoke_bound(bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
         store=bundle.external_operation_state,
@@ -167,7 +230,7 @@ def test_integrated_http_class_b_redrive_single_physical_effect(
         worker_instance_id=str(recovery_worker.worker_instance_id),
         worker_ownership_epoch=_BOUND_EPOCH + 1,
         provider_id=_HTTP_PROVIDER,
-        tool_id=_HTTP_TOOL,
+        tool_id=_HTTP_TOOL_IDEMPOTENT,
         physical_idempotency_key=_IDEMPOTENCY_KEY,
     )
     assert transferred.physical_state is ExternalOperationPhysicalState.NOT_STARTED
@@ -194,6 +257,15 @@ def test_integrated_http_class_b_redrive_single_physical_effect(
     )
     assert terminal.physical_state is ExternalOperationPhysicalState.SUCCEEDED
     assert terminal.intent_state is ExternalOperationIntentState.ACTIVE
+    with pytest.raises(ExternalOperationFencedCommitRejectedError):
+        mark_physical_terminal_if_owner_matches(
+            bundle.external_operation_state,
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            expected_revision=terminal.revision,
+            physical_state=ExternalOperationPhysicalState.SUCCEEDED,
+            owner=initial_owner,
+        )
     stale_owner = ProcessLocalExternalOperationOwner.mint()
     with pytest.raises(ExternalOperationFencedCommitRejectedError):
         mark_physical_terminal_if_owner_matches(
@@ -216,7 +288,7 @@ def test_integrated_http_class_c_bound_operation_rejects_class_b_redrive(
         repo,
         bind_redrive_contract_id=TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,
         bind_provider_id=_HTTP_PROVIDER,
-        bind_tool_id=_HTTP_TOOL,
+        bind_tool_id=_HTTP_TOOL_BLIND,
     )
     proof = _revoke_bound(bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
@@ -252,7 +324,7 @@ def test_integrated_http_class_c_bound_operation_rejects_class_b_redrive(
             worker_instance_id=str(recovery_worker.worker_instance_id),
             worker_ownership_epoch=_BOUND_EPOCH + 1,
             provider_id=_HTTP_PROVIDER,
-            tool_id=_HTTP_TOOL,
+            tool_id=_HTTP_TOOL_IDEMPOTENT,
             physical_idempotency_key=_IDEMPOTENCY_KEY,
         )
 
@@ -267,7 +339,7 @@ def test_integrated_http_class_b_substitution_after_class_c_bind_rejected(
         repo,
         bind_redrive_contract_id=TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,
         bind_provider_id=_HTTP_PROVIDER,
-        bind_tool_id=_HTTP_TOOL,
+        bind_tool_id=_HTTP_TOOL_BLIND,
     )
     proof = _revoke_bound(bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
@@ -298,6 +370,6 @@ def test_integrated_http_class_b_substitution_after_class_c_bind_rejected(
             worker_instance_id=str(recovery_worker.worker_instance_id),
             worker_ownership_epoch=_BOUND_EPOCH + 1,
             provider_id=_HTTP_PROVIDER,
-            tool_id=_HTTP_TOOL,
+            tool_id=_HTTP_TOOL_IDEMPOTENT,
             physical_idempotency_key=_IDEMPOTENCY_KEY,
         )

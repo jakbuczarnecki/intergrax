@@ -25,6 +25,7 @@ from intergrax.contracts.external_operation_redrive_authority import (
     resolve_authoritative_redrive_effect_class,
 )
 from intergrax.contracts.external_operation_redrive_trusted_effect_contracts import (
+    assert_trusted_redrive_binding_matches_execution_context,
     resolve_trusted_redrive_effect_contract,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
@@ -100,6 +101,11 @@ def bind_authoritative_redrive_effect_to_operation(
 ) -> ExternalOperationState:
     """Record immutable authoritative effect identity before physical execution."""
     trusted = resolve_trusted_redrive_effect_contract(trusted_effect_contract_id)
+    assert_trusted_redrive_binding_matches_execution_context(
+        trusted,
+        provider_id=provider_id,
+        tool_id=tool_id,
+    )
     identity = bound_identity_from_trusted_contract(
         trusted,
         provider_id=provider_id,
