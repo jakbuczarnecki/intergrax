@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | **START_HEAD** | `c9fad321a7dc26195237da05a9e6a5c09b159f2c` |
-| **IMPLEMENTATION_SHA** | `5843bfcda2a06b0ba0a37d1b43b0d4f640c9af7f` |
-| **PUBLICATION_HEAD** | `5843bfcda2a06b0ba0a37d1b43b0d4f640c9af7f` |
+| **IMPLEMENTATION_SHA** | `50f0b667906045691d2e064306937ea748458605` |
+| **PUBLICATION_HEAD** | `50f0b667906045691d2e064306937ea748458605` |
 | **Disposition** | `TOOL-LIFE-X R4 — EVIDENCE GAP CHECKPOINT PUBLISHED — PARENT OPEN` |
 
 ## F3 — physical HTTP + canonical composition
