@@ -20,7 +20,7 @@
 | Repository | `jakbuczarnecki/intergrax` |
 | START_HEAD | `7d901f0ee632ab7aa486e598c22f64994751b8b2` |
 | Implementation SHA | `fde5f41eb` (tests + evidence body) |
-| Publication HEAD | `44c20abc9c5c39db7af9bceb663968101bb3e8b0` |
+| Publication HEAD | `eac9ac1fa` (see `git rev-parse origin/development`) |
 | Working tree @ publication | clean after commit |
 
 ---
