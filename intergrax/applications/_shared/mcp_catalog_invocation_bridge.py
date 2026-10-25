@@ -26,8 +26,14 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
+from intergrax.contracts.root_execution_child_work_ingress import (
+    RootExecutionChildWorkIngressPort,
+)
 from intergrax.runtime.execution.catalog_tool_child_work_port import (
     CatalogToolChildExecutionPort,
+)
+from intergrax.runtime.execution.root_execution_child_work_ingress import (
+    RootCatalogChildWorkTicket,
 )
 from intergrax.runtime.governance.active_execution_authority import (
     peek_active_execution_authority,
@@ -65,6 +71,8 @@ class McpCatalogInvocationComposition:
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None
     catalog_tool_child_execution: CatalogToolChildExecutionPort | None = None
+    root_child_work_ingress: RootExecutionChildWorkIngressPort | None = None
+    enable_cross_loop_catalog_child: bool = False
     default_tenant_id: str = "mcp"
     default_user_id: str = "mcp-user"
 
@@ -331,12 +339,17 @@ async def execute_mcp_catalog_tool_invocation(
     resolved_agent = _resolve_invoke_agent_id(binding.task)
     _assert_invoker_agent_scope(composition, resolved_agent)
 
+    cross_loop_ingress = composition.root_child_work_ingress
     if not _in_process_parent_matches_binding(binding, identity.request_identity):
-        return _bound_error_payload(
-            "execution_admission_denied",
-            "catalog tool invoke requires in-process parent execution child admission; "
-            "external HTTP catalog invoke is not enabled",
-        )
+        if not (
+            composition.enable_cross_loop_catalog_child
+            and cross_loop_ingress is not None
+        ):
+            return _bound_error_payload(
+                "execution_admission_denied",
+                "catalog tool invoke requires in-process parent execution child admission; "
+                "external HTTP catalog invoke is not enabled",
+            )
 
     invoke_request = ExecutionBoundCatalogToolInvokeRequest(
         tool_id=tool_id,
@@ -374,6 +387,23 @@ async def execute_mcp_catalog_tool_invocation(
         resolved_agent_id=resolved_agent,
         side_effects=side_effects,
     )
+    if not _in_process_parent_matches_binding(binding, identity.request_identity):
+        assert cross_loop_ingress is not None
+        ticket = RootCatalogChildWorkTicket(
+            task_id=binding.task_id,
+            run_id=binding.run_id,
+            caller=identity.request_identity,
+            work=work,
+            admission_hooks=(mse_hook,),
+        )
+        terminal = await cross_loop_ingress.submit_catalog_child_work(
+            ticket,
+            wait_timeout_s=120.0,
+        )
+        if not terminal.success:
+            return terminal.payload
+        return terminal.payload
+
     try:
         tool_result = await child_port.execute(
             work=work,
