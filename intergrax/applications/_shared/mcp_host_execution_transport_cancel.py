@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -40,6 +41,86 @@ class McpHostExecutionTransportOwnershipInvariantError(RuntimeError):
 
 class McpProtectedHostExecutionAdmissionError(RuntimeError):
     """Protected MCP HTTP execution rejected before host Execution starts."""
+
+_REFUSED_ADMISSION_HOST_TERMINATE_S = 1.0
+
+
+@dataclass(frozen=True, slots=True)
+class McpProtectedHostExecutionLaunch:
+    """Host asyncio work gated until canonical root supervision admission accepts."""
+
+    host_task: asyncio.Task[object]
+    execution_start_gate: asyncio.Event
+
+
+def create_mcp_protected_host_execution_launch(
+    execute: Callable[[], Awaitable[object]],
+) -> McpProtectedHostExecutionLaunch:
+    """Schedule host work that cannot run business Execution until the start gate opens."""
+    execution_start_gate = asyncio.Event()
+
+    async def _gated_execute() -> object:
+        await execution_start_gate.wait()
+        return await execute()
+
+    host_task = asyncio.create_task(_gated_execute())
+    return McpProtectedHostExecutionLaunch(
+        host_task=host_task,
+        execution_start_gate=execution_start_gate,
+    )
+
+
+async def _terminate_gated_host_task_after_refused_admission(
+    host_task: asyncio.Task[object],
+    *,
+    timeout_s: float = _REFUSED_ADMISSION_HOST_TERMINATE_S,
+) -> None:
+    host_task.cancel()
+    completed = await _bounded_observe_host_task(host_task, timeout_s=timeout_s)
+    await _retrieve_host_task_outcome(host_task)
+    if not completed:
+        raise McpProtectedHostExecutionAdmissionError(
+            "protected MCP root execution host task did not terminate after refused "
+            "supervision admission"
+        )
+
+
+async def admit_protected_mcp_root_execution_supervision(
+    *,
+    supervision_port: RootExecutionTransportDetachmentSupervisionPort,
+    task: Task,
+    caller_request_identity: RequestIdentity,
+    launch: McpProtectedHostExecutionLaunch,
+) -> None:
+    """
+    Linearize supervision acceptance before protected business Execution may start.
+
+    On refusal, cancels the gated host task and verifies bounded termination (fail closed).
+    """
+    if task.tenant_id != caller_request_identity.tenant_id:
+        await _terminate_gated_host_task_after_refused_admission(launch.host_task)
+        raise McpProtectedHostExecutionAdmissionError(
+            "protected MCP root execution task tenant does not match verified principal tenant"
+        )
+    admission = await supervision_port.admit_root_execution_supervision(
+        RootExecutionTransportAdmissionRequest(
+            task_id=task.task_id,
+            verified_tenant_id=caller_request_identity.tenant_id,
+            caller_request_identity=caller_request_identity,
+            host_asyncio_task=launch.host_task,
+        )
+    )
+    if (
+        admission.disposition
+        is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+    ):
+        launch.execution_start_gate.set()
+        return
+    await _terminate_gated_host_task_after_refused_admission(launch.host_task)
+    raise McpProtectedHostExecutionAdmissionError(
+        "root execution supervision admission refused before MCP protected execution"
+    )
+
 
 # MCP transport-layer observation scheduling only (not root Execution deadline authority).
 _ACTIVE_BINDING_WAIT_S = 5.0
@@ -329,6 +410,7 @@ async def run_host_execution_with_mcp_transport_cancel(
     transport_detachment_supervision: (
         RootExecutionTransportDetachmentSupervisionPort | None
     ) = None,
+    execution_start_gate: asyncio.Event | None = None,
 ) -> object:
     """
     Await canonical host execution while observing MCP transport cancellation.
@@ -347,26 +429,20 @@ async def run_host_execution_with_mcp_transport_cancel(
         task_id=task.task_id,
         host_asyncio_task=host_coro,
     ):
-        admission = await supervision_port.admit_root_execution_supervision(
-            RootExecutionTransportAdmissionRequest(
-                task_id=task.task_id,
-                verified_tenant_id=cancel_ctx.caller_request_identity.tenant_id,
-                caller_request_identity=cancel_ctx.caller_request_identity,
-                host_asyncio_task=host_coro,
-            )
-        )
-        if (
-            admission.disposition
-            is not RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
-        ):
-            host_coro.cancel()
-            await _bounded_observe_host_task(host_coro, timeout_s=1.0)
-            with contextlib.suppress(asyncio.CancelledError, Exception):
-                if host_coro.done():
-                    host_coro.result()
+        if execution_start_gate is None:
             raise McpProtectedHostExecutionAdmissionError(
-                "root execution supervision admission refused for MCP transport execution"
+                "protected MCP transport execution requires execution_start_gate for "
+                "atomic supervision admission"
             )
+        await admit_protected_mcp_root_execution_supervision(
+            supervision_port=supervision_port,
+            task=task,
+            caller_request_identity=cancel_ctx.caller_request_identity,
+            launch=McpProtectedHostExecutionLaunch(
+                host_task=host_coro,
+                execution_start_gate=execution_start_gate,
+            ),
+        )
 
     async def _monitor_transport() -> None:
         nonlocal transport_cancel_observed
@@ -446,7 +522,10 @@ __all__ = [
     "MCP_TRANSPORT_CANCEL_REASON",
     "McpHostExecutionTransportOwnershipInvariantError",
     "McpProtectedHostExecutionAdmissionError",
+    "McpProtectedHostExecutionLaunch",
     "McpHostExecutionTransportCancelContext",
+    "admit_protected_mcp_root_execution_supervision",
+    "create_mcp_protected_host_execution_launch",
     "request_governed_cancel_for_bound_mcp_task",
     "resolve_mcp_task_control_mutation_boundary_from_request",
     "run_host_execution_with_mcp_transport_cancel",
