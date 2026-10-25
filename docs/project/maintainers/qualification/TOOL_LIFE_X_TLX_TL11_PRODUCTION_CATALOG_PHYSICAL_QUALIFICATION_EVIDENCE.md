@@ -30,7 +30,7 @@
 | --- | --- |
 | **START_HEAD** | `f73c6e4660c9b4ff948ffd578c832bdba54197c2` |
 | **Implementation / test SHA** | `c6bda9b2e4f0b86efb42ecf63cf1a59832247f9f` |
-| **Publication SHA** | `c6bda9b2e4f0b86efb42ecf63cf1a59832247f9f` |
+| **Publication SHA** | `fdb8c21b3f4bf5bfbbfe17d46c578a0fdd5599a8` (docs SHA pin only; no code delta) |
 
 **Reused evidence (unchanged SHA, still valid):** MCP-FINAL discovery @ `adef74d2…`; L3-R2 MCP host lifecycle @ `8b33d9a…`; TRUST-A / CANCEL-A / OWN-A2 qualification records on `development` line; `describe_catalog_tool` `registry.has` fix in MCP-FINAL batch.
 
