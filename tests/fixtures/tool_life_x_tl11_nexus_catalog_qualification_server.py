@@ -11,7 +11,6 @@ import time
 
 if os.environ.get("TOOL_LIFE_X_TL11_MODE") == "unavailable":
     raise SystemExit(2)
-from typing import Any
 
 import uvicorn
 from fastapi import FastAPI
@@ -27,9 +26,7 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-from intergrax.tools.exporters.mcp import to_mcp_tools
-from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result, emit_bounded_mcp_list
-from intergrax.tools.registry.runtime import ToolRegistry
+from intergrax.tools.registry.runtime import RegisteredTool, ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
 
 _MODE = os.environ.get("TOOL_LIFE_X_TL11_MODE", "ok")
@@ -85,41 +82,34 @@ class _StubHostExecution:
         )
 
 
-def _mount_qual_catalog_tools(mcp: object, registry: ToolRegistry) -> None:
-    """Same contracts as production mount; fault injection via ``TOOL_LIFE_X_TL11_MODE``."""
-
-    @mcp.tool  # type: ignore[attr-defined]
-    def list_catalog_tools() -> list[dict[str, Any]]:
+def _inject_catalog_dependency_fault(phase: str) -> None:
+    """Fault injection at ToolRegistry read boundary (production mount unchanged)."""
+    if phase == "list":
         if _MODE == "hang_list":
             time.sleep(10_000)
-        if _MODE == "slow_list":
+        elif _MODE == "slow_list":
             time.sleep(2.5)
-        if _MODE == "crash_list":
+        elif _MODE == "crash_list":
             time.sleep(0.2)
             os._exit(7)
-        payload = to_mcp_tools(registry)
-        return emit_bounded_mcp_list(payload)
-
-    @mcp.tool  # type: ignore[attr-defined]
-    def describe_catalog_tool(tool_id: str) -> dict[str, Any]:
+    elif phase == "describe":
         if _MODE == "hang_describe":
             time.sleep(10_000)
-        if _MODE == "crash_describe":
+        elif _MODE == "crash_describe":
             time.sleep(0.15)
             os._exit(8)
-        if not registry.has(tool_id):
-            payload = {"error": f"unknown_tool:{tool_id}"}
-            bounded, truncated = bound_mcp_structured_result(payload)
-            if truncated:
-                return {"error": "mcp_payload_byte_limit_exceeded", "tool_id": tool_id}
-            return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
-        registered = registry.get(tool_id)
-        items = to_mcp_tools([registered.contract])
-        payload = items[0] if items else {"error": f"unknown_tool:{tool_id}"}
-        bounded, truncated = bound_mcp_structured_result(payload)
-        if truncated:
-            return {"error": "mcp_payload_byte_limit_exceeded", "tool_id": tool_id}
-        return bounded if isinstance(bounded, dict) else {"error": "mcp_payload_byte_limit_exceeded"}
+
+
+class _Tl11FaultInjectingToolRegistry(ToolRegistry):
+    """Delegates to ToolRegistry; delays/crashes on canonical exporter read paths only."""
+
+    def list(self) -> list[RegisteredTool]:
+        _inject_catalog_dependency_fault("list")
+        return super().list()
+
+    def get(self, tool_id: str) -> RegisteredTool:
+        _inject_catalog_dependency_fault("describe")
+        return super().get(tool_id)
 
 
 def main() -> None:
@@ -129,7 +119,7 @@ def main() -> None:
         time.sleep(60_000)
         return
 
-    registry = ToolRegistry()
+    registry = _Tl11FaultInjectingToolRegistry()
     registry.register(_contract("tl11.qual.one"), _catalog_handler())
 
     mcp = build_nexus_mcp_server(
@@ -137,9 +127,8 @@ def main() -> None:
         host_execution=_StubHostExecution(),
         registry=AgentRegistry(),
         default_capability="tl11.qual.cap",
-        tool_registry=None,
+        tool_registry=registry,
     )
-    _mount_qual_catalog_tools(mcp, registry)
 
     if _REQUIRE_AUTH:
         api = FastAPI()

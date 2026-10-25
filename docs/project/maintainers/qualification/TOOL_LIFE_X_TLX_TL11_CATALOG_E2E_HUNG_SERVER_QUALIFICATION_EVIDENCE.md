@@ -10,6 +10,8 @@
 | **EXPECTED_START_HEAD** | `05cd23ba2bfd2a82158eae70e827356fd4497cd6` |
 | **Disposition** | **`TLX-TL11-CATALOG-E2E-HUNG-SERVER — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
+**Follow-on:** Physical **production mount** wiring gap (duplicate `_mount_qual_catalog_tools`) closed in [`TOOL_LIFE_X_TLX_TL11_PRODUCTION_CATALOG_PHYSICAL_QUALIFICATION_EVIDENCE.md`](TOOL_LIFE_X_TLX_TL11_PRODUCTION_CATALOG_PHYSICAL_QUALIFICATION_EVIDENCE.md) @ START_HEAD `f73c6e46…`.
+
 **Non-closure:** No `TOOL-LIFE-X` parent CLOSED; no global `FRZ-*` PASS; TL8/TL7 blockers unchanged; no `DIST-SCALE-X`.
 
 **Predecessors reused (exact SHA on START_HEAD):** OWN-A2 / admission-finalization cleanup @ `05cd23ba…`; CANCEL-A @ prior records; TRUST-A @ prior records; MCP-FINAL discovery @ `adef74d2…` (in-process); L3-R2 subprocess matrix @ `8b33d9a…`.
@@ -101,7 +103,7 @@
 | --- | --- |
 | Transport | MCP streamable HTTP (`mcp.client.streamable_http`) |
 | Server | `tests/fixtures/tool_life_x_tl11_nexus_catalog_qualification_server.py` (subprocess `uvicorn`) |
-| Host graph | `build_nexus_mcp_server` + qual catalog mount (same contracts as `mcp_catalog_tools`) |
+| Host graph | **Historical:** `build_nexus_mcp_server` + `_mount_qual_catalog_tools` duplicate — **superseded** by production `mount_catalog_tools_on_mcp` in TLX-TL11-PRODUCTION-CATALOG-PHYSICAL-QUALIFICATION |
 | OS | Windows (approved C10/C15 substrate) |
 | Docker | **not used** (operator freeze) |
 

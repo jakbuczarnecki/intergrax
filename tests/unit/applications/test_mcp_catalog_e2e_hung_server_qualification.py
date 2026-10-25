@@ -158,12 +158,43 @@ def test_tl11_e2e_mcp_server_unavailable_exit_code() -> None:
         assert code == 2
 
 
+def test_tl11_e2e_unknown_tool_id_bounded_error() -> None:
+    with tl11_catalog_qualification_subprocess("ok") as (base, proc):
+        assert base is not None
+        result = asyncio.run(
+            mcp_call_catalog_tool(
+                base,
+                "describe_catalog_tool",
+                {"tool_id": "tl11.missing.tool"},
+                timeout_s=8.0,
+            )
+        )
+        assert proc.poll() is None
+    assert "unknown_tool:tl11.missing.tool" in str(result)
+
+
 def test_tl11_e2e_http_ingress_rejects_missing_api_key() -> None:
     with tl11_catalog_qualification_subprocess("ok", require_auth=True) as (base, proc):
         assert base is not None
         with pytest.raises(Exception):
             asyncio.run(
                 mcp_call_catalog_tool(base, "list_catalog_tools", {}, timeout_s=5.0)
+            )
+        assert proc.poll() is None
+
+
+def test_tl11_e2e_http_ingress_rejects_invalid_api_key() -> None:
+    with tl11_catalog_qualification_subprocess("ok", require_auth=True) as (base, proc):
+        assert base is not None
+        with pytest.raises(Exception):
+            asyncio.run(
+                mcp_call_catalog_tool(
+                    base,
+                    "list_catalog_tools",
+                    {},
+                    timeout_s=5.0,
+                    api_key="not-the-qual-secret",
+                )
             )
         assert proc.poll() is None
 
