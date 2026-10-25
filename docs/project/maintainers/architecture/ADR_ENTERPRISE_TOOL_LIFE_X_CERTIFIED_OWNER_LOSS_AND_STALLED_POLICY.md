@@ -53,7 +53,9 @@ Batch C audit **C-F01–C-F04** @ remediation lineage proved that inferring owne
 | STATE-X recovery interfaces | Checkpoint / continuation stores | ADR checkpoint admission | Yes | **Not** external-op owner-loss |
 | Architecture gates (no bypass) | U5 zero-bypass tests | platform execution unification | Yes | TL14 |
 
-**Conclusion (@ L3-R5 remediation):** W4-C **`ExternalOperationStateStore` + `external_operation_ownership`** remain the **durable physical-state owner**. **No** competing Tool lifecycle SM. However, **no sanctioned implementation today can mint or verify `CertifiedOwnerLossEvidenceV1`**, and the prior ADR’s `evidence_digest` + out-of-band `verify()` → `compare_and_set()` sequence **does not** establish issuer authenticity, atomic consumption, or tenant-safe shared-store access. **Classification: B — ARCHITECTURE DECISION REQUIRED** (§20) before **L3-R6** implementation.
+**Conclusion (@ L3-R5 remediation — historical audit baseline 2026-10-24):** W4-C **`ExternalOperationStateStore` + `external_operation_ownership`** remain the **durable physical-state owner**. **No** competing Tool lifecycle SM. At that baseline, **no sanctioned implementation could mint or verify `CertifiedOwnerLossEvidenceV1`**, and the prior ADR’s `evidence_digest` + out-of-band `verify()` → `compare_and_set()` sequence **did not** establish issuer authenticity, atomic consumption, or tenant-safe shared-store access. **Classification: B — ARCHITECTURE DECISION REQUIRED** (§20) before **L3-R6** implementation.
+
+**Current disposition (@ HEAD after L3-R5-B B1 ratification §21):** **B1 architecture RATIFIED** (not Gate A / not TL8 positive closure). **L3-R6–R10 implementation evidence exists** on `development` (`WorkerExecutionCertifiedOwnerLossEvidenceIssuer`, tenant-scoped store protocol, composition allowlist binding) — **factory/test composition wiring is not production-positive recovery activation**. Independent validation, Gate A prequalification, and operator-gated physical qual remain **separate** from architecture ratification. **Positive RUNNING→UNKNOWN recovery remains NOT AUTHORIZED** for production.
 
 ---
 
@@ -179,7 +181,7 @@ Extend `ExternalOperationStateStore` (same durability backend as W4-C):
 | Concurrent recovery | Loser CAS → `StaleExternalOperationStateError`; re-stage if still RUNNING |
 | Crash consistency | After successful `apply`, UNKNOWN survives restart; after failed CAS, RUNNING unchanged — **no** “verified but not applied” state |
 | Store partition / quorum loss | Fail-closed — no transition; no optimistic UNKNOWN |
-| Compatibility | Protocol extension + migration: backfill `tenant_id` at create from admission context; shared-store deployments **BLOCKED** until tenant-scoped protocol ships |
+| Compatibility | Protocol extension + migration: backfill `tenant_id` at create from admission context. **Historical (pre-R6):** shared-store deployments **BLOCKED** until tenant-scoped protocol ships. **Current (@ HEAD):** tenant-scoped protocol **implemented** (R6 evidence) — **not** automatic global tenant certification; shared **PostgreSQL** / multi-tenant durable qual remains **operator-blocked** (C10 / TL10–TL13) |
 
 ### 4.4 Recovery and reconciliation
 
@@ -255,7 +257,9 @@ Fencing: existing `owner_token` terminal rules (Batch C) plus post-loss UNKNOWN 
 
 ## 8. Tenant isolation model
 
-**@ HEAD — gap (R5-F03):** `ExternalOperationState` and `ExternalOperationStateStore` use **`operation_id` only**; `ExternalOperationIdentity` / `mint_stable_operation_id` bind `execution_id` but **do not** embed `tenant_id`. Admission layers (`ExternalOperationAdmissionContext.tenant_id`) enforce tenant on **admit** paths; **durable external-op records are not tenant-keyed**.
+**Historical audit baseline (R5-F03 @ L3-R5 remediation):** `ExternalOperationState` and `ExternalOperationStateStore` used **`operation_id` only**; `ExternalOperationIdentity` / `mint_stable_operation_id` bound `execution_id` but **did not** embed `tenant_id`. Admission layers (`ExternalOperationAdmissionContext.tenant_id`) enforced tenant on **admit** paths; **durable external-op records were not tenant-keyed** — **FAIL** for shared `ExternalOperationStateStore` (traceable in §20.3).
+
+**Current disposition (@ HEAD — R6 implementation evidence, not global TENANT-X re-certification):** Store protocol and in-memory implementation require **`tenant_id` + `operation_id`** on load/CAS/stage/apply; records carry durable `tenant_id`. Cross-tenant CAS rejection is covered by L3-R6/R7 unit evidence. **Does not** equate to enterprise-wide shared-store tenant qualification or **Gate A** closure. Global **TENANT-X CLOSED** does **not** auto-pass external-op shared durability.
 
 **Minimum shared-store contract (mandatory before multi-tenant shared durability):**
 
@@ -424,7 +428,9 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
 
 ---
 
-## 17. TL1–TL15 closure matrix (@ L3-R5 remediation)
+## 17. TL1–TL15 closure matrix (@ L3-R5 remediation — historical rollup)
+
+> **Current-status addendum (@ HEAD):** §17 rows below preserve the **L3-R5 remediation snapshot**. For TL7/TL8/TL9/TL11 @ HEAD see **§17.1** (TL11 MCP waves + B1 ratification). Do not read §17 TL8/TL11 rows as current HEAD without §17.1.
 
 | Criterion | Semantic owner | Composition owner | Contract | Valid SHA | Classification | Missing action | Test | FRZ | Dependency |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -444,6 +450,15 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
 | TL14 | Arch gates | Platform | single invoker | A–D + L3-R1 | ALREADY PROVEN | — | U5 gates | FRZ-BND-03 scoped | — |
 | TL15 | TOOL-LIFE-X parent | Roadmap §3.0.5 | EC1–15 rollup | P0 + waves | BLOCKED | TL8 + TL10–13 | parent L3 | — | all |
 
+### 17.1 Current disposition (@ HEAD — owner-loss + MCP TL11 cross-reference)
+
+| Criterion | Historical §17 snapshot | Current disposition (@ HEAD) |
+| --- | --- | --- |
+| **TL7** | VALIDATION REQUIRED | **DEADLINE_ONLY** — observational `is_stalled_*`; **no** heartbeat owner-death evidence; **no** pending heartbeat implementation in default path (ADR §4.5) |
+| **TL8** | OPERATOR DECISION / deny @ HEAD | **B1 RATIFIED** §21; stage/apply + issuer **implemented** in code; **positive production recovery BLOCKED**; Path B deny until operator authorization; **Gate A NOT PROVEN** |
+| **TL9** | tenant protocol missing | Tenant-scoped store **implemented** (R6) — **VALIDATION REQUIRED** for shared durable backends |
+| **TL11** | L3-R2 only / BLOCKED hung qual | TL11 subpackages (discovery, CANCEL-A, OWN-A2, admission, catalog E2E, production mount, MCP16-CANCEL-C) — **READY FOR INDEPENDENT AUDIT (scoped)** per qualification ledger; **parent TOOL-LIFE-X not CLOSED**; see [`TOOL_LIFE_X_TLX_TL11_FINAL_GAP_RECONCILIATION_QUALIFICATION_EVIDENCE.md`](../qualification/TOOL_LIFE_X_TLX_TL11_FINAL_GAP_RECONCILIATION_QUALIFICATION_EVIDENCE.md) |
+
 ---
 
 ## 18. Remaining parent blockers
@@ -462,14 +477,16 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
 ## 19. Post-step enterprise discovery and roadmap completeness
 
 - **DIST-SCALE-X:** not started — excluded.
-- **Semantic authority:** RUNNING/UNKNOWN/terminal owner remains W4-C store; **new** sanctioned surfaces: tenant-scoped store protocol + composition-bound issuer allowlist + store-native certification CAS — **require ratification** (not self-closed by this doc).
-- **Ratification:** **B1 ratified** §21 (2026-10-25); **does not** close Gate A, TL8, or TOOL-LIFE-X parent.
-- **Tenant Isolation Audit (TOOL-LIFE-X L3-R5 scope):** **FAIL** for shared `ExternalOperationStateStore` until `tenant_id` durable keying ships — admission-only tenant checks insufficient for cross-tenant evidence (R5-F03). Global **TENANT-X CLOSED** does not auto-pass this gap.
+- **Semantic authority:** RUNNING/UNKNOWN/terminal owner remains W4-C store; sanctioned surfaces: tenant-scoped store protocol + composition-bound issuer allowlist + store-native certification CAS — **B1 architecture ratified** §21; **implementation acceptance and Gate A are not closed by this ADR**.
+- **Ratification:** **B1 ratified** §21 (2026-10-25); **does not** close Gate A, TL8 positive recovery, or TOOL-LIFE-X parent.
+- **Tenant Isolation Audit (TOOL-LIFE-X L3-R5 scope):** **Historical FAIL (R5-F03)** preserved in §8 / §20.3. **Current:** R6 tenant-scoped protocol is **implementation evidence** — **not** automatic global tenant certification or shared-store qual PASS. Global **TENANT-X CLOSED** does not auto-pass external-op shared durability.
 - **FRZ / ECAP:** **new global FRZ PASS = 0**; FRZ-REL-05 / FRZ-REC remain architecture inputs; FRZ-BND-03 preserved; ECAP P1/P2/P4 docs-only — no self-PASS.
 
 ---
 
 ## 20. L3-R5 independent audit remediation (R5-F01–F04)
+
+> **Historical baseline:** Findings in §20.1–§20.4 are the **2026-10-24 L3-R5 independent audit record**. Dispositions that read “prohibit L3-R6” or “BLOCKED until L3-R5-B” describe **pre-ratification** eligibility only. **Current architecture direction:** §21 (B1 ratified). **Current implementation:** R6–R10 @ HEAD — acceptance, Gate A, and production-positive recovery remain **separately gated**.
 
 ### 20.1 R5-F01 — Certificate authenticity (`evidence_digest`)
 
@@ -483,7 +500,9 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
 | Wrong deployment | `issuer_id` includes `serving_unit_id` from composition binding |
 | Wrong tenant | durable `tenant_id` + epoch tenant match in CAS#2 |
 
-**Disposition:** Integrity field **alone** is insufficient — **OPERATOR DECISION REQUIRED** to ratify **B1** staging model; until then **prohibit L3-R6**.
+**Disposition (historical):** Integrity field **alone** is insufficient — **OPERATOR DECISION REQUIRED** to ratify **B1** staging model; until then **prohibit L3-R6**.
+
+**Current disposition:** **B1 ratified** §21 (2026-10-25). L3-R6+ implementation may proceed/be validated under separate acceptance gates; **does not** authorize production-positive recovery or Gate A self-closure.
 
 **Reuse:** W4-C revision CAS + Batch C owner fencing; **not** idempotency lease as death proof.
 
@@ -495,7 +514,9 @@ Prior ADR `verify(evidence) → compare_and_set(...)` is **rejected** — crash 
 
 **Scenarios:** concurrent recovery → one CAS winner; worker revival → fenced terminals; cancellation vs recovery → W4-C intent precedence inside same store; terminal vs recovery → terminal blocks loss apply; store failover → fail-closed.
 
-**Disposition:** Architecture correction **in this ADR**; implementation **BLOCKED** until L3-R5-B.
+**Disposition (historical):** Architecture correction **in this ADR**; implementation **BLOCKED** until L3-R5-B.
+
+**Current disposition:** L3-R5-B **ratified** §21; store-native `stage_*` / `apply_*` implemented @ HEAD — **VALIDATION REQUIRED** / independent audit; **Gate A NOT PROVEN**.
 
 ### 20.3 R5-F03 — Tenant-safe persistence
 
@@ -507,7 +528,9 @@ Prior ADR `verify(evidence) → compare_and_set(...)` is **rejected** — crash 
 | `ExternalOperationStateStore` | Single-key `operation_id` |
 | Admission / audit | `tenant_id` enforced on admit — **not** on durable load |
 
-**Disposition:** **OPERATOR DECISION REQUIRED** to adopt tenant-scoped store protocol (§4.3, §8). Migration: set `tenant_id` at create from invoker/admission context; fail shared-store reads without tenant.
+**Disposition (historical):** **OPERATOR DECISION REQUIRED** to adopt tenant-scoped store protocol (§4.3, §8). Migration: set `tenant_id` at create from invoker/admission context; fail shared-store reads without tenant.
+
+**Current disposition:** Protocol **adopted in architecture (B1)** and **implemented (R6)** @ HEAD — **not** retrospective proof that R5-F03 **FAIL** never occurred; shared multi-tenant durable qual remains **BLOCKED** (operator C10 / TL10–TL13).
 
 ### 20.4 R5-F04 — Actual authority and backend inventory
 
@@ -520,9 +543,11 @@ Prior ADR `verify(evidence) → compare_and_set(...)` is **rejected** — crash 
 | `reconcile_orphaned_running_operations` | none | Yes (no-op) | — | — | — | — | **No** | — | forbidden |
 | `recover_running_operation_after_certified_owner_loss` | none @ Path B | Yes (deny) | — | — | load by `operation_id` | — | **denied** | — | raises `ExternalOperationCertifiedOwnerLossRequiredError` |
 | Checkpoint / scheduler atomic claim | STATE-X / tasks | Yes | task store | worker id | **task** records | claim lease | worker loss for **tasks** | partition fail-closed | **not wired** to ext-op store |
-| `CertifiedOwnerLossEvidenceIssuerPort` | **unimplemented** | **No** | — | — | — | planned fence | — | — | **none** |
+| `CertifiedOwnerLossEvidenceIssuerPort` | **unimplemented @ R5 audit** | **No** (historical) | — | — | — | planned fence | — | — | **none** |
 
-**Answer:** **No sanctioned implementation can issue or verify `CertifiedOwnerLossEvidenceV1` @ HEAD.** Idempotency lease **≠** owner-loss evidence (Batch C Path B).
+**Answer (historical @ R5 audit):** **No sanctioned implementation could issue or verify `CertifiedOwnerLossEvidenceV1`.** Idempotency lease **≠** owner-loss evidence (Batch C Path B).
+
+**Current disposition (@ HEAD):** `WorkerExecutionCertifiedOwnerLossEvidenceIssuer` + composition allowlist binding exist — **factory / qualification composition only** unless operator explicitly authorizes production-positive recovery. **Gate A** (enforceable loss of commit/effect authority) **NOT PROVEN**. Missing binding → continue **fail-closed** (`ExternalOperationCertifiedOwnerLossRequiredError`).
 
 ### 20.5 Classification and implementation eligibility
 
