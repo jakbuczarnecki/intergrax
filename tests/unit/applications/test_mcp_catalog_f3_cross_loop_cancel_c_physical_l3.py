@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""F3 physical L3 — real MCP HTTP client, cross-loop ingress, parent cancel."""
+"""F3 L2/integration — in-process FastMCP client, cross-loop ingress, parent cancel."""
 
 from __future__ import annotations
 

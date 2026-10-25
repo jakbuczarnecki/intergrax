@@ -76,3 +76,5 @@ def test_wiring_materializes_when_enabled(tmp_path: Path, monkeypatch: pytest.Mo
     )
     assert resolution.wiring is not None
     assert resolution.wiring.composition.commit_authority_loss_decision_authority is not None
+    assert resolution.wiring.composition.bundle.external_operation_state is not None
+    assert resolution.wiring.composition.worker_revocation is not None

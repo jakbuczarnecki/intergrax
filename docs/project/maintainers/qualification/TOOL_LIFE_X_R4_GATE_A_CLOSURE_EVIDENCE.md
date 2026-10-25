@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **START_HEAD** | `34777f9c7e1a66c672d3322b83ff2bbf65c4df81` |
+| **START_HEAD** | `a63646bb8f0dc2fd6849547d33820bd58dc394ab` |
 | **Disposition** | `TOOL-LIFE-X R4 — PARTIAL / EXACT BLOCKERS` |
 
 ## G-A07 (OD-R4-G-A07-WIRE)
@@ -31,15 +31,15 @@ New L2: `test_gate_a_mark_physical_running_revocation.py`
 | Item | Status |
 | --- | --- |
 | Ingress shutdown/cancel race L2 | **PASS** — `test_cross_loop_cancel_before_drain_returns_shutdown_or_denied` |
-| Full MCP HTTP + supervised root + parent cancel L3 | **PASS qual** — `test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py`; production catalog HTTP remains Option C |
+| Full MCP HTTP + supervised root + parent cancel L3 | **PASS qual** — `test_mcp_catalog_f3_streamable_http_physical_l3.py` (physical); L2: `test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py`; production catalog HTTP remains Option C |
 
 ## F6 scenario 24
 
-**NOT RUN** — positive recovery requires full Gate A matrix @ dedicated R4 L3 rows; G-A07 wiring qualified but recovery not activated.
+**PASS qual** — `test_tool_life_x_r4_f6_scenario_24_recovery.py` (isolated durable SQLite; no prod recovery activation).
 
 ## Consolidated L2/L3 log
 
-`.tmp/session/TOOL-LIFE-X-R4/pytest-r4-final-consolidated.log` — **205 passed** (208 collected; 3 R6 order-pollution failures — R6 file alone 28/28). F7: [`TOOL_LIFE_X_R4_F7_PARENT_RECONCILIATION.md`](TOOL_LIFE_X_R4_F7_PARENT_RECONCILIATION.md).
+`.tmp/session/TOOL-LIFE-X-R4/pytest-r4-remediation-consolidated.log` — **213 passed**. Composition leak fixed: `tests/unit/runtime/external_operations/conftest.py`. F7: [`TOOL_LIFE_X_R4_F7_PARENT_RECONCILIATION.md`](TOOL_LIFE_X_R4_F7_PARENT_RECONCILIATION.md).
 
 ## G-A01–G-A09 snapshot
 
