@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -20,8 +21,13 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
 )
 from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
     McpCatalogInvocationComposition,
-    _METADATA_SIDE_EFFECT_PERMIT,
     _METADATA_STEP_ID,
+)
+from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
+    McpProtectedHostExecutionAdmissionError,
+)
+from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
+    build_host_root_execution_transport_detachment_supervisor,
 )
 from intergrax.applications._shared.mcp_harness_principal import McpRunAgentIdentityResolution
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
@@ -48,6 +54,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _TENANT = "tenant-gate-b"
 _OTHER_TENANT = "tenant-other"
 _USER = "operator-gate-b"
+_OTHER_USER = "intruder-gate-b"
 _STEP = "gate-b.catalog.step"
 
 
@@ -66,9 +73,12 @@ class _RecordingCatalogInvoker:
     delay_s: float = 0.0
     fail_code: str | None = None
     uncertain: bool = False
+    started: threading.Event = field(default_factory=threading.Event)
+    completed: threading.Event = field(default_factory=threading.Event)
 
     def invoke(self, request: ExecutionBoundCatalogToolInvokeRequest) -> ToolExecutionResult[_Out]:
         self.results.append(request)
+        self.started.set()
         if self.delay_s > 0:
             time.sleep(self.delay_s)
         if CancellationCoordinator.is_requested({}):
@@ -76,13 +86,16 @@ class _RecordingCatalogInvoker:
         if self.fail_code:
             return ToolExecutionResult.fail(self.fail_code, "injected failure")
         if self.uncertain:
+            self.completed.set()
             return ToolExecutionResult(
                 success=False,
                 output=None,
                 error=None,
                 effect_certainty=ToolEffectCertainty.UNCERTAIN,
             )
-        return ToolExecutionResult.ok(_Out(value="invoked"))
+        result = ToolExecutionResult.ok(_Out(value="invoked"))
+        self.completed.set()
+        return result
 
 
 class _Enablement:
@@ -118,20 +131,24 @@ def _handler() -> ToolHandler[_In, _Out]:
     return _run
 
 
-def _principal(*, tenant: str = _TENANT) -> RequestIdentity:
+def _principal(*, tenant: str = _TENANT, user_id: str = _USER) -> RequestIdentity:
     return RequestIdentity(
         tenant_id=tenant,
-        user_id=_USER,
+        user_id=user_id,
         principal_type=PrincipalType.USER,
-        auth_subject=_USER,
+        auth_subject=user_id,
     )
 
 
-def _identity_resolution(*, tenant: str = _TENANT) -> McpRunAgentIdentityResolution:
-    principal = _principal(tenant=tenant)
+def _identity_resolution(
+    *,
+    tenant: str = _TENANT,
+    user_id: str = _USER,
+) -> McpRunAgentIdentityResolution:
+    principal = _principal(tenant=tenant, user_id=user_id)
     return McpRunAgentIdentityResolution(
         tenant_id=tenant,
-        user_id=_USER,
+        user_id=user_id,
         principal=None,
         request_identity=principal,
     )
@@ -140,22 +157,21 @@ def _identity_resolution(*, tenant: str = _TENANT) -> McpRunAgentIdentityResolut
 async def _register_binding(
     *,
     tenant: str = _TENANT,
+    user_id: str = _USER,
     step_id: str = _STEP,
-    side_effect_permit: bool = False,
+    agent_id: str = "agent-gate-b",
 ) -> tuple[Task, str]:
     task_id = mint_task_id()
     run_id = mint_run_id()
     metadata: dict[str, Any] = {_METADATA_STEP_ID: step_id}
-    if side_effect_permit:
-        metadata[_METADATA_SIDE_EFFECT_PERMIT] = True
     task = Task(
         task_id=task_id,
         tenant_id=tenant,
-        user_id=_USER,
+        user_id=user_id,
         message="gate-b",
         context=TaskContext(capability="gate-b.cap"),
         metadata=metadata,
-        agent_id="agent-gate-b",
+        agent_id=agent_id,
     )
     await ActiveTaskRegistry.register(task, run_id)
     return task, str(run_id)
@@ -356,7 +372,7 @@ async def test_gate_b_unauthorized_side_effect_tool() -> None:
     registry.register(_contract("gate.b.fx", side_effects=True), _handler())
     invoker = _RecordingCatalogInvoker()
     mcp = _build_mcp(registry, invoker)
-    task, run_id = await _register_binding(side_effect_permit=False)
+    task, run_id = await _register_binding()
     with patch(
         "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
         return_value=_identity_resolution(),
@@ -430,6 +446,123 @@ async def test_gate_b_unknown_effect_certainty() -> None:
 
 
 @pytest.mark.asyncio
+async def test_gate_b_unauthorized_caller_same_tenant_different_user() -> None:
+    registry = ToolRegistry()
+    registry.register(_contract("gate.b.ok"), _handler())
+    invoker = _RecordingCatalogInvoker()
+    mcp = _build_mcp(registry, invoker)
+    task, run_id = await _register_binding(user_id=_USER)
+    with patch(
+        "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
+        return_value=_identity_resolution(user_id=_OTHER_USER),
+    ):
+        async with Client(mcp) as client:
+            with pytest.raises(ToolError, match="unauthorized_execution_caller"):
+                await client.call_tool(
+                    "invoke_catalog_tool",
+                    {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
+                )
+    assert invoker.results == []
+
+
+@pytest.mark.asyncio
+async def test_gate_b_rejects_asserted_step_without_execution_binding() -> None:
+    registry = ToolRegistry()
+    registry.register(_contract("gate.b.ok"), _handler())
+    invoker = _RecordingCatalogInvoker()
+    mcp = _build_mcp(registry, invoker)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    task = Task(
+        task_id=task_id,
+        tenant_id=_TENANT,
+        user_id=_USER,
+        message="gate-b",
+        context=TaskContext(capability="gate-b.cap"),
+        metadata={},
+        agent_id="agent-gate-b",
+    )
+    await ActiveTaskRegistry.register(task, run_id)
+    with patch(
+        "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
+        return_value=_identity_resolution(),
+    ):
+        async with Client(mcp) as client:
+            with pytest.raises(ToolError, match="missing_execution_binding"):
+                await client.call_tool(
+                    "invoke_catalog_tool",
+                    {
+                        "tool_id": "gate.b.ok",
+                        "task_id": str(task.task_id),
+                        "run_id": str(run_id),
+                        "step_id": "caller-only-step",
+                    },
+                )
+    assert invoker.results == []
+
+
+@pytest.mark.asyncio
+async def test_gate_b_stale_step_binding() -> None:
+    registry = ToolRegistry()
+    registry.register(_contract("gate.b.ok"), _handler())
+    invoker = _RecordingCatalogInvoker()
+    mcp = _build_mcp(registry, invoker)
+    task, run_id = await _register_binding(step_id=_STEP)
+    with patch(
+        "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
+        return_value=_identity_resolution(),
+    ):
+        async with Client(mcp) as client:
+            with pytest.raises(ToolError, match="stale_step_binding"):
+                await client.call_tool(
+                    "invoke_catalog_tool",
+                    {
+                        "tool_id": "gate.b.ok",
+                        "task_id": str(task.task_id),
+                        "run_id": run_id,
+                        "step_id": "other-step",
+                    },
+                )
+    assert invoker.results == []
+
+
+@pytest.mark.asyncio
+async def test_gate_b_admission_refusal_never_starts_invoker() -> None:
+    registry = ToolRegistry()
+    registry.register(_contract("gate.b.ok"), _handler())
+    invoker = _RecordingCatalogInvoker(delay_s=0.2)
+    mcp = _build_mcp(registry, invoker)
+    task, run_id = await _register_binding()
+    supervision = build_host_root_execution_transport_detachment_supervisor()
+
+    async def _refuse_admission(*_args: object, **_kwargs: object) -> None:
+        raise McpProtectedHostExecutionAdmissionError("supervision refused catalog invoke")
+
+    with (
+        patch(
+            "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
+            return_value=_identity_resolution(),
+        ),
+        patch(
+            "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_transport_detachment_supervision_from_request",
+            return_value=supervision,
+        ),
+        patch(
+            "intergrax.applications._shared.mcp_catalog_invocation_bridge._admit_catalog_invoke_host_work",
+            side_effect=_refuse_admission,
+        ),
+    ):
+        async with Client(mcp) as client:
+            with pytest.raises(ToolError, match="execution_admission_denied"):
+                await client.call_tool(
+                    "invoke_catalog_tool",
+                    {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
+                )
+    assert invoker.results == []
+    assert not invoker.started.is_set()
+
+
+@pytest.mark.asyncio
 async def test_cancel_c_parent_cancel_during_in_flight_invoke() -> None:
     registry = ToolRegistry()
     registry.register(_contract("gate.b.slow"), _handler())
@@ -452,7 +585,31 @@ async def test_cancel_c_parent_cancel_during_in_flight_invoke() -> None:
                 {"tool_id": "gate.b.slow", "task_id": str(task.task_id), "run_id": run_id},
             )
             await cancel_task
+    assert invoker.started.is_set()
+    assert result.data["error"] == "execution_cancelled"
     assert len(invoker.results) == 1
+
+
+@pytest.mark.asyncio
+async def test_cancel_c_late_success_cannot_override_cancelled_terminal() -> None:
+    registry = ToolRegistry()
+    registry.register(_contract("gate.b.ok"), _handler())
+    invoker = _RecordingCatalogInvoker()
+    mcp = _build_mcp(registry, invoker)
+    task, run_id = await _register_binding()
+    CancellationCoordinator.request(task, reason="terminal_parent_cancel")
+    with patch(
+        "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
+        return_value=_identity_resolution(),
+    ):
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "invoke_catalog_tool",
+                {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
+            )
+    assert result.data["error"] == "execution_cancelled"
+    assert result.data.get("success") is not True
+    assert invoker.results == []
 
 
 @pytest.mark.asyncio

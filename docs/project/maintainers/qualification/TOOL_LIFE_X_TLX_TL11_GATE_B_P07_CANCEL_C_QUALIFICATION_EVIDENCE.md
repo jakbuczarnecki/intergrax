@@ -5,12 +5,12 @@
 | **Task** | `TLX-TL11-GATE-B-P07-CANCEL-C` |
 | **Parent** | `TOOL-LIFE-X` §3.0.5 — **not CLOSED** |
 | **Operator authorization** | `OPERATOR APPROVED — TLX-TL11 GATE B — SCOPED CATALOG INVOCATION & CANCEL-C QUALIFICATION` |
-| **START_HEAD** | `480d89cf7d644daf3718330e59167378466094ca` |
-| **IMPLEMENTATION_HEAD** | `586a53b1275762f413a4c7abfaf558d40d86e721` |
-| **PUBLICATION_HEAD** | `1c6ac3e31eaa23636728fd2c6bc9c27663927ad6` (evidence SHA pin; implementation `586a53b12…`) |
-| **Disposition** | **`TLX-TL11-GATE-B-P07-CANCEL-C — READY FOR INDEPENDENT AUDIT`** (scoped) |
+| **START_HEAD (R1 corrective)** | `2eb5f4c6ee13a42d12997220d0a54209c7d1dfa2` |
+| **Original implementation SHA** | `586a53b1275762f413a4c7abfaf558d40d86e721` |
+| **Independent audit** | **NOT ACCEPTED** — findings **R1-F01 … R1-F07** (corrective batch) |
+| **Disposition** | **`TLX-TL11-GATE-B-P07-CANCEL-C-R1 — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
-**Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no Gate A; no TL8 positive recovery; no production deployment; no new cancellation/deadline authority; subprocess L3 for **catalog invoke + physical HTTP cancel** remains **explicitly unproven** (fixture unchanged — see §7).
+**Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no Gate A; no TL8 positive recovery; no production deployment; subprocess L3 for **catalog invoke + physical HTTP cancel** remains **NOT PROVEN** (fixture unchanged — see §7).
 
 ---
 
@@ -20,109 +20,57 @@
 | --- | --- |
 | Repository | `jakbuczarnecki/intergrax` @ `origin` |
 | Branch | `development` |
-| START_HEAD | `480d89cf7d644daf3718330e59167378466094ca` |
-| Ancestry | START_HEAD ancestor of publication HEAD — **yes** (pre-commit) |
+| R1 corrective START_HEAD | `2eb5f4c6ee13a42d12997220d0a54209c7d1dfa2` |
+| Baseline implementation (pre-audit) | `586a53b1275762f413a4c7abfaf558d40d86e721` |
+| FINAL_COMMIT | *(record after push — see §8)* |
 
 ---
 
-## 2. Call graph
+## 2. Independent audit findings (R1) — disposition
 
-### Before (discovery-only Gate B)
+| ID | Root cause | Canonical owner | Fix (R1) | Test | Status |
+| --- | --- | --- | --- | --- | --- |
+| **R1-F01** | Tenant + `task_id` only | `RequestIdentity` + `Task.user_id` | `_assert_caller_authorized_for_execution` | `test_gate_b_unauthorized_caller_same_tenant_different_user` | **CLOSED (L2)** |
+| **R1-F02** | `to_thread` before admission | `create_mcp_protected_host_execution_launch` + supervision gate | Gated host work; supervision admit before gate open | `test_gate_b_admission_refusal_never_starts_invoker` | **CLOSED (L2)** |
+| **R1-F03** | Waiter cancel ≠ invoker stop | `run_host_execution_with_mcp_transport_cancel` + gated launch | `execution_start_gate`; post-invoke cancel check; ownership reuse | cancel-C adversarial batch | **CLOSED (L2)** |
+| **R1-F04** | Asserted `step_id` fallback | Execution-bound metadata | Reject unbound step; stale assert | `test_gate_b_rejects_asserted_step_without_execution_binding`, `test_gate_b_stale_step_binding` | **CLOSED (L2)** |
+| **R1-F05** | Default `caller_agent_id` fallback | `Task.agent_id` / metadata | Removed invoker default fallback | binding agent tests (existing success path) | **CLOSED (L2)** |
+| **R1-F06** | Metadata boolean authority | `MeaningfulSideEffectAuthorizationPort` (host) | Removed metadata permit; fail closed without MSE port | `test_gate_b_unauthorized_side_effect_tool` | **CLOSED (L2)** |
+| **R1-F07** | Weak cancel assertions | Cooperative cancel + terminal semantics | Adversarial terminal / invoke-count / admission tests | extended Gate B + CANCEL-C tests | **CLOSED (L2)** |
+
+---
+
+## 3. Call graph (after R1 corrective)
 
 ```text
-MCP client → list_catalog_tools / describe_catalog_tool → ToolRegistry exporter (no RuntimeToolInvoker)
-```
-
-### After (authorized P07 + CANCEL-C transport coupling)
-
-```text
-Authenticated MCP client (harness principal when wired)
-  → invoke_catalog_tool (FastMCP)
-  → resolve_mcp_run_agent_identity (TRUST-A reuse)
-  → resolve_mcp_catalog_execution_binding (ActiveTaskRegistry — authoritative run/tenant)
-  → execution-bound step/agent from task.metadata / binding (fail-closed)
-  → asyncio host work + optional run_host_execution_with_mcp_transport_cancel
-       → governed_cancel_active_task on transport disconnect (CANCEL-A reuse)
-  → ExecutionBoundCatalogToolInvoker.invoke (host-injected; read-only contract)
-       → RuntimeToolInvoker (canonical — unchanged)
+Authenticated MCP client (verified RequestIdentity)
+  → invoke_catalog_tool
+  → resolve_mcp_run_agent_identity
+  → resolve_mcp_catalog_execution_binding (ActiveTaskRegistry)
+  → _assert_caller_authorized_for_execution (owner user_id)
+  → tool registry + optional MSE port (side effects — no metadata boolean)
+  → create_mcp_protected_host_execution_launch (no to_thread until gate)
+  → [supervision admit when wired] → execution_start_gate
+  → run_host_execution_with_mcp_transport_cancel (when boundary wired)
+  → bind_governed_execution_task → ExecutionBoundCatalogToolInvoker.invoke
   → bounded MCP structured result
 ```
 
-**Preserved:** `list_catalog_tools`, `describe_catalog_tool` unchanged when `catalog_tool_invoker` omitted.
+**Authority graph:** `RequestIdentity` (caller) → execution owner `Task.user_id`; `ActiveTaskRegistry` (run/tenant); execution-bound `step_id`/`agent_id` on `Task`; host `MeaningfulSideEffectAuthorizationPort` for side-effect tools; `CancellationCoordinator` on governed `Task.metadata`; transport cancel via `governed_cancel_active_task` (unchanged).
 
 ---
 
-## 3. Closed-world caller inventory
+## 4. Changed files (R1 corrective)
 
-| Surface | When present |
+| File | Change |
 | --- | --- |
-| `list_agents` | always (`build_nexus_mcp_server`) |
-| `run_agent` | always |
-| `list_catalog_tools` | `tool_registry` set |
-| `describe_catalog_tool` | `tool_registry` set |
-| `invoke_catalog_tool` | `tool_registry` **and** `catalog_tool_invoker` set |
-
-No per-tool-id MCP invoke aliases; no direct `ToolRegistry` handler execution from MCP.
+| `intergrax/applications/_shared/mcp_catalog_invocation_bridge.py` | Caller owner check; gated launch; supervision admit; identity/side-effect fail-closed |
+| `tests/unit/applications/test_mcp_catalog_gate_b_cancel_c_qualification.py` | R1-F01/F04/F07 adversarial cases |
+| `docs/project/maintainers/qualification/TOOL_LIFE_X_TLX_TL11_GATE_B_P07_CANCEL_C_QUALIFICATION_EVIDENCE.md` | R1 reconciliation (this record) |
 
 ---
 
-## 4. Changed files and symbols
-
-| File | Symbols |
-| --- | --- |
-| `intergrax/applications/_shared/mcp_catalog_invocation_bridge.py` | **new** — `McpCatalogInvocationComposition`, `execute_mcp_catalog_tool_invocation`, `resolve_mcp_catalog_execution_binding` |
-| `intergrax/applications/_shared/mcp_catalog_tools.py` | `mount_catalog_tools_on_mcp(..., catalog_invocation=)`; `invoke_catalog_tool` MCP tool |
-| `intergrax/applications/_shared/mcp_nexus_server.py` | `build_nexus_mcp_server(..., catalog_tool_invoker=, tool_enablement=)` |
-| `tests/unit/applications/test_mcp_catalog_gate_b_cancel_c_qualification.py` | **new** — Gate B + CANCEL-C adversarial L2 |
-| `tests/unit/applications/test_mcp_catalog_discovery_qualification.py` | invoke absent without invoker; rename discovery guard test |
-| `docs/project/maintainers/qualification/TOOL_LIFE_X_TLX_TL11_GATE_B_P07_CANCEL_C_QUALIFICATION_EVIDENCE.md` | this record |
-
-**Read-only (unchanged):** `ExecutionBoundCatalogToolInvoker`, `RuntimeToolInvoker`, `CancellationCoordinator`, `HostTaskExecutionPort`.
-
----
-
-## 5. Ownership and contracts
-
-| Concern | Semantic owner | Composition owner | Contract |
-| --- | --- | --- | --- |
-| Catalog invoke admission | `execute_mcp_catalog_tool_invocation` | Tier-3 `build_nexus_mcp_server` | `ExecutionBoundCatalogToolInvokeRequest` |
-| Tool runtime | `RuntimeToolInvoker` | host-injected `NexusExecutionBoundCatalogToolInvoker` | `ToolExecutionResult` |
-| Active execution identity | `ActiveTaskRegistry` | host execution register/unregister | `ActiveTaskBinding` |
-| Caller identity | `resolve_mcp_run_agent_identity` | harness HTTP / lab defaults | `RequestIdentity` |
-| Transport cancel | `run_host_execution_with_mcp_transport_cancel` | MCP HTTP | `McpHostExecutionTransportCancelContext` |
-| Governed cancel | `governed_cancel_active_task` | task control boundary | `TaskControlResult` |
-
----
-
-## 6. Invariant matrix (selected)
-
-| Invariant | Owner | Test | Layer | FRZ (scoped) | Result |
-| --- | --- | --- | --- | --- | --- |
-| Authorized invoke succeeds | bridge + invoker | `test_gate_b_successful_authorized_invoke` | L2 | FRZ-BND-03 | PASS |
-| Missing caller identity | identity resolver | `test_gate_b_missing_caller_identity` | L2 | FRZ-SEC | PASS |
-| Wrong tenant | binding + principal | `test_gate_b_wrong_tenant` | L2 | FRZ-TEN | PASS |
-| Unknown/disabled tool | registry + enablement | `test_gate_b_unknown_tool`, `test_gate_b_disabled_tool` | L2 | — | PASS |
-| Missing/stale binding | ActiveTaskRegistry | `test_gate_b_missing_execution_binding`, `test_gate_b_stale_run_binding` | L2 | FRZ-BND-03 | PASS |
-| Side-effect gate | task.metadata | `test_gate_b_unauthorized_side_effect_tool` | L2 | FRZ-GOV | PASS |
-| Parent cancel before invoke | CancellationCoordinator | `test_gate_b_parent_cancel_before_invoke` | L2 | FRZ-REL-04 | PASS |
-| In-flight invoke + parent cancel signal | coordinator + invoker | `test_cancel_c_parent_cancel_during_in_flight_invoke` | L2 | FRZ-REL-04 | PASS (cooperative; not L3 HTTP) |
-| No shadow invoker | composition | `test_gate_b_no_second_runtime_tool_invoker_in_bridge` | L1 | FRZ-BND-03 | PASS |
-| Discovery unchanged | mount | discovery qual batch | L2 | FRZ-BND-03 | PASS |
-| Hung MCP discovery subprocess | TL11 fixture | e2e hung batch | L3 | FRZ-REL-06 | PASS (discovery only) |
-
----
-
-## 7. Physical / subprocess proof gaps
-
-| Scenario | Status | Reason |
-| --- | --- | --- |
-| Catalog **invoke** over streamable HTTP subprocess | **NOT PROVEN (L3)** | `tool_life_x_tl11_nexus_catalog_qualification_server.py` unchanged (operator fixture lock); no `catalog_tool_invoker` in subprocess |
-| Parent cancel → in-flight **invoke** on physical HTTP | **NOT PROVEN (L3)** | Same fixture gap; CANCEL-C proven at **L2** in-process with transport cancel module reuse |
-| Root deadline exceed during catalog invoke (full host stack) | **L2 reuse** | Deadline authority remains on host Execution (MCP16 MC-04/05); no new MCP deadline parameter |
-
----
-
-## 8. Validation
+## 5. Validation (R1)
 
 ```text
 uv run pytest -p no:xdist -q \
@@ -131,46 +79,43 @@ uv run pytest -p no:xdist -q \
   tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py
 ```
 
-| Result @ implementation | **45 passed**, 0 failed (~134s) |
-| Log | `.tmp/session/tlx-tl11-gate-b-p07-cancel-c/consolidated-pytest.log` (operator may capture on audit) |
+| Result @ R1 corrective | **50 passed**, 0 failed (~134s) |
+| Log | `.tmp/session/TLX-TL11-GATE-B-P07-CANCEL-C-R1/l2-consolidated-rerun.log` |
+| `git diff --check` | **clean** |
+
+Historical **45 passed** @ `586a53b12…` is **not** evidence for R1-corrected behavior.
 
 ---
 
-## 9. ECAP scoped check
+## 6. Physical / subprocess proof gaps (unchanged)
 
-| ECAP slice | Outcome |
+| Scenario | Status |
 | --- | --- |
-| P1 Ownership | Single ToolRuntime path via injected invoker — **preserved** |
-| P2 Composition | Tier-3 wires invoker; no Tier-3 `RuntimeToolInvoker` construction — **preserved** |
-| P3 Typing | `ExecutionBoundCatalogToolInvokeRequest` + Pydantic tool input — **preserved** |
-| P4 Authority | No synthetic tenant/run without `ActiveTaskRegistry` — **preserved** |
-| P5 Cancel | Transport → governed cancel reuse; no MCP-only business cancel — **preserved** |
-| P6 Evidence | This record + GitHub SHA — **VALIDATION REQUIRED** (independent) |
+| Catalog invoke over streamable HTTP subprocess | **NOT PROVEN (L3)** |
+| Parent cancel → in-flight invoke on physical HTTP | **NOT PROVEN (L3)** |
+| Non-cooperative sync invoker physical stop | **L2 cooperative only** — no simulated physical kill |
 
 ---
 
-## 10. FRZ (no global PASS)
+## 7. ECAP / FRZ (scoped — no global PASS)
 
-| ID | Applicability | Status |
-| --- | --- | --- |
-| FRZ-BND-03 | No shadow MCP dispatcher | Scoped **preserved** — VALIDATION REQUIRED |
-| FRZ-SEC-* | MCP principal on invoke | Scoped — VALIDATION REQUIRED |
-| FRZ-TEN-* | Tenant binding | Scoped — VALIDATION REQUIRED |
-| FRZ-REL-04/05 | Cancel / external op | L2 invoke path — **partial**; L3 invoke subprocess **OPEN** |
-| FRZ-GOV-* | Governed cancel | Reuse CANCEL-A — VALIDATION REQUIRED |
-| FRZ-REG-* | Global freeze | **OPEN** |
+| ECAP | R1 outcome |
+| --- | --- |
+| P1 Ownership | Gated launch + transport ownership reuse — **preserved** |
+| P4 Authority | Owner `user_id` + bound step/agent — **strengthened** |
+| P5 Cancel | Pre/post cooperative cancel checks — **strengthened** |
+| P6 Evidence | GitHub SHA after push — **VALIDATION REQUIRED** |
 
----
-
-## 11. Remaining TL11 closure conditions
-
-1. Independent exact-SHA audit of this publication.
-2. L3 subprocess extension or new qual package for **catalog invoke** + HTTP cancel (fixture change requires operator authorization).
-3. Gate A / TL8 — **explicitly out of scope**.
-4. `TOOL-LIFE-X` parent — **not CLOSED**.
+| FRZ | Status |
+| --- | --- |
+| FRZ-BND-03, FRZ-SEC, FRZ-TEN, FRZ-GOV, FRZ-REL-04 | Scoped — **VALIDATION REQUIRED** |
+| Global FRZ | **OPEN** |
 
 ---
 
-## 12. Gate A / TL8 exclusions
+## 8. Remaining gaps
 
-No Gate A activation; no TL8 positive recovery; no production credentials; no new cloud resources.
+1. Independent audit @ **GitHub publication SHA** (not Cursor report).
+2. L3 catalog invoke + HTTP cancel (fixture lock).
+3. Full MSE `authorize()` call path when host wires `meaningful_side_effect_authorization` on `McpCatalogInvocationComposition` (composition field added; Nexus host wiring optional follow-up).
+4. TL11 / TOOL-LIFE-X / Gate A / TL8 — **not closed**.
