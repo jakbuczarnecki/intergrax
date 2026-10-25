@@ -110,10 +110,16 @@ class HttpIdempotentPostQualHandler(
 def register_http_idempotent_post_qual_tool(registry: object, ctx: ToolWiringContext) -> None:
     """Register the sanctioned Class B qualification catalog tool (not generic http.request)."""
     from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+    from intergrax.tools.providers.http.class_b_qualification_provenance import (
+        build_sanctioned_http_idempotent_post_qual_activation,
+    )
     from intergrax.tools.registry.runtime import ToolRegistry
 
     if not isinstance(registry, ToolRegistry):
         raise TypeError("registry must be ToolRegistry")
+    activation = build_sanctioned_http_idempotent_post_qual_activation(
+        logical_tool_id=HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
+    )
     registry.register(
         ToolContract(
             tool_id=HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
@@ -132,4 +138,5 @@ def register_http_idempotent_post_qual_tool(registry: object, ctx: ToolWiringCon
             tags=("http", "integration", "network", "tool-life-qual"),
         ),
         HttpIdempotentPostQualHandler(ctx),
+        activation=activation,
     )

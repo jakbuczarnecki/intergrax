@@ -17,8 +17,6 @@ from intergrax.contracts.external_operation_redrive_effect_binding import (
     ExternalOperationRedriveEffectBindingMismatchError,
 )
 
-_TOOL_LIFE_QUAL_CLASS_B_PROVENANCE_TAG = "tool-life-qual"
-
 _CATALOG_TOOLS_REQUIRING_QUAL_PROVENANCE: Final = frozenset(
     {
         "http.idempotent_post.qual",
@@ -182,17 +180,36 @@ def trusted_redrive_contract_requires_complete_physical_identity(contract_id: st
 def assert_sanctioned_class_b_catalog_tool_provenance(
     *,
     catalog_tool_id: str,
-    catalog_tool_tags: tuple[str, ...] | None,
+    registered_tool: object | None = None,
 ) -> None:
-    """Reject catalog-ID impersonation without qualification registration provenance."""
+    """Reject catalog-ID impersonation without trusted handler/activation provenance."""
+    from intergrax.tools.providers.http.class_b_qualification_provenance import (
+        registered_tool_matches_sanctioned_http_idempotent_post_qual,
+    )
+    from intergrax.tools.providers.http.idempotent_post_qual import (
+        HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
+    )
+    from intergrax.tools.registry.runtime import RegisteredTool
+
     normalized = catalog_tool_id.strip()
     if normalized not in _CATALOG_TOOLS_REQUIRING_QUAL_PROVENANCE:
         return
-    tags = catalog_tool_tags or ()
-    if _TOOL_LIFE_QUAL_CLASS_B_PROVENANCE_TAG not in tags:
-        raise ExternalOperationRedriveEffectBindingMismatchError(
-            "catalog tool lacks sanctioned Class B qualification provenance",
-        )
+    if normalized == HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID:
+        if not isinstance(registered_tool, RegisteredTool):
+            raise ExternalOperationRedriveEffectBindingMismatchError(
+                "catalog tool lacks sanctioned Class B qualification registration",
+            )
+        if not registered_tool_matches_sanctioned_http_idempotent_post_qual(
+            registered_tool,
+        ):
+            raise ExternalOperationRedriveEffectBindingMismatchError(
+                "catalog tool handler or activation does not match sanctioned "
+                "Class B qualification registration",
+            )
+        return
+    raise ExternalOperationRedriveEffectBindingMismatchError(
+        f"no sanctioned Class B provenance policy for catalog tool {normalized!r}",
+    )
 
 
 def require_complete_physical_effect_identity_values(

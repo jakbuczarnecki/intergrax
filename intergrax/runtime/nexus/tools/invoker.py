@@ -1744,6 +1744,7 @@ class RuntimeToolInvoker:
         request: ToolExecutionRequest[BaseModel],
         *,
         physical_attempt_sequence: int,
+        durable_operation_id: str | None = None,
     ) -> ToolExternalOperationAttempt:
         store = self._external_operation_store
         if store is None:
@@ -1758,6 +1759,20 @@ class RuntimeToolInvoker:
             step_id=str(request.step_id),
             physical_attempt_sequence=physical_attempt_sequence,
         )
+        if durable_operation_id is not None:
+            from intergrax.contracts.external_operation_identity import (
+                ExternalOperationIdentity,
+            )
+
+            identity = ExternalOperationIdentity(
+                execution_id=identity.execution_id,
+                attempt_id=identity.attempt_id,
+                dependency_kind=identity.dependency_kind,
+                dependency_identity=identity.dependency_identity,
+                operation_id=durable_operation_id,
+                tenant_id=identity.tenant_id,
+                physical_attempt_sequence=physical_attempt_sequence,
+            )
         from intergrax.runtime.nexus.tools.tool_operation_termination import (
             TOOL_EXTERNAL_OPERATION_CAPABILITIES,
         )
@@ -1860,6 +1875,7 @@ class RuntimeToolInvoker:
         effect_boundary: _ExternalEffectBoundary | None = None,
         physical_attempt_sequence: int = 1,
         pre_effect_claim: PreEffectClaimContext | None = None,
+        durable_operation_id: str | None = None,
     ) -> BaseModel:
         request = self._apply_invocation_wiring(contract=contract, request=request)
         dep_boundary = self._dependency_attempt_boundary
@@ -1868,10 +1884,13 @@ class RuntimeToolInvoker:
             contract,
             request,
             physical_attempt_sequence=physical_attempt_sequence,
+            durable_operation_id=durable_operation_id,
         )
+        registered_tool = self._registry.get(contract.tool_id)
         ext_op.before_physical_submit(
             catalog_tool_id=contract.tool_id,
             catalog_tool=contract,
+            registered_tool=registered_tool,
             physical_idempotency_key=request.idempotency_key,
             tool_input=request.input,
         )
@@ -2014,6 +2033,55 @@ class RuntimeToolInvoker:
                 and ext_op.operation_id is not None
             ):
                 self._tool_termination_port.unbind_future(ext_op.operation_id)
+
+    def invoke_sanctioned_physical_redrive(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        request: ToolExecutionRequest[BaseModel],
+        physical_attempt_sequence: int,
+        durable_operation_id: str,
+    ) -> ToolExecutionResult[BaseModel]:
+        """Re-dispatch one bound Class B effect after sanctioned redrive authority transfer."""
+        from intergrax.contracts.external_operation_cancellation import (
+            ExternalOperationPhysicalState,
+        )
+
+        if physical_attempt_sequence < 2:
+            raise ValueError("physical_attempt_sequence must be >= 2 for sanctioned redrive")
+        store = self._external_operation_store
+        if store is None:
+            raise RuntimeError("external_operation_store required for sanctioned redrive")
+        operation_id = durable_operation_id.strip()
+        if not operation_id:
+            raise ValueError("durable_operation_id is required for sanctioned redrive")
+        record = store.load(state.tenant_id, operation_id)
+        if record is None:
+            raise RuntimeError("durable external operation not found for redrive")
+        if not record.consumed_redrive_admission_ids:
+            raise RuntimeError("redrive authority not transferred")
+        if record.physical_state is not ExternalOperationPhysicalState.NOT_STARTED:
+            raise RuntimeError(
+                f"redrive requires physical NOT_STARTED, got {record.physical_state.value}",
+            )
+        contract = self._registry.get(request.tool_id).contract
+        self._require_current_attempt_authorization(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+        raw_out = self._execute_once(
+            state,
+            agent_id,
+            contract,
+            request,
+            physical_attempt_sequence=physical_attempt_sequence,
+            durable_operation_id=operation_id,
+        )
+        out = self._validate_output(contract.output_schema, raw_out)
+        return ToolExecutionResult.ok(out)
 
     @staticmethod
     def _map_error(contract: ToolContract, exc: Exception) -> RuntimeErrorCode:
