@@ -22,7 +22,7 @@
 | Branch | `development` |
 | R1 corrective START_HEAD | `2eb5f4c6ee13a42d12997220d0a54209c7d1dfa2` |
 | Baseline implementation (pre-audit) | `586a53b1275762f413a4c7abfaf558d40d86e721` |
-| FINAL_COMMIT | *(record after push — see §8)* |
+| FINAL_COMMIT / publication SHA | `5502359d352cd49ef384eacc9c3afe262003d9c5` |
 
 ---
 
