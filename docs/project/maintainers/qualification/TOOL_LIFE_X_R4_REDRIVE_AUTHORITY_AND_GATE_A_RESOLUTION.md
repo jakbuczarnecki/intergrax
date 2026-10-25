@@ -3,7 +3,8 @@
 | Field | Value |
 | --- | --- |
 | **START_HEAD** | `d21e1811b5333726dccbd55c989c09b29fcba79c` |
-| **IMPLEMENTATION_SHA** | *set at publication commit* |
+| **IMPLEMENTATION_SHA** | `d2ad5bd37d04f7632a075178590a615d320a5a06` |
+| **PUBLICATION_HEAD** | `d2ad5bd37d04f7632a075178590a615d320a5a06` |
 | **Disposition** | `TOOL-LIFE-X R4 — PARTIAL / EXACT BLOCKERS` |
 
 ## OD-R4-REDRIVE-DIRECTION — implementation
