@@ -17,6 +17,12 @@ from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
+from intergrax.contracts.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationPort,
+)
+from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
+    build_host_root_execution_transport_detachment_supervisor,
+)
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionTransportCancelContext,
@@ -164,6 +170,11 @@ def build_nexus_mcp_server(
     catalog_tool_invoker: ExecutionBoundCatalogToolInvoker | None = None,
     tool_enablement: ToolEnablementProfile | None = None,
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+    transport_detachment_supervision: (
+        RootExecutionTransportDetachmentSupervisionPort | None
+    ) = None,
+    auto_wire_catalog_transport_supervision: bool = True,
 ) -> FastMCP:
     """
     Register ``list_agents`` and ``run_agent`` on a FastMCP instance.
@@ -219,11 +230,22 @@ def build_nexus_mcp_server(
     if tool_registry is not None:
         catalog_invocation: McpCatalogInvocationComposition | None = None
         if catalog_tool_invoker is not None:
+            resolved_supervision: RootExecutionTransportDetachmentSupervisionPort | None = (
+                transport_detachment_supervision
+            )
+            if (
+                task_control_mutation_boundary is not None
+                and auto_wire_catalog_transport_supervision
+                and resolved_supervision is None
+            ):
+                resolved_supervision = build_host_root_execution_transport_detachment_supervisor()
             catalog_invocation = McpCatalogInvocationComposition(
                 catalog_invoker=catalog_tool_invoker,
                 registry=tool_registry,
                 tool_enablement=tool_enablement,
                 task_control_mutation_boundary=task_control_mutation_boundary,
+                meaningful_side_effect_authorization=meaningful_side_effect_authorization,
+                transport_detachment_supervision=resolved_supervision,
                 default_tenant_id=default_tenant_id,
                 default_user_id=default_user_id,
             )

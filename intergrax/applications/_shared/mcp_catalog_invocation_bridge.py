@@ -18,21 +18,36 @@ from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionTransportCancelContext,
     McpProtectedHostExecutionAdmissionError,
-    McpProtectedHostExecutionLaunch,
+    admit_protected_mcp_root_execution_supervision,
     create_mcp_protected_host_execution_launch,
     resolve_mcp_task_control_mutation_boundary_from_request,
     run_host_execution_with_mcp_transport_cancel,
 )
-from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
+from intergrax.contracts.collaborative_work import (
+    CollaborativeWorkEnforcementRequest,
+    MembershipResolutionMode,
+)
+from intergrax.contracts.execution_identity import (
+    peek_active_execution_id,
+    peek_active_execution_identity,
+)
+from intergrax.contracts.meaningful_side_effect import (
+    MeaningfulSideEffectKind,
+    MeaningfulSideEffectRequest,
+)
 from intergrax.contracts.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationConsistencyError,
     MeaningfulSideEffectAuthorizationPort,
+    assert_consistent_meaningful_side_effect_authorization_result,
+)
+from intergrax.contracts.orchestration_tool_invocation_mse_operation import (
+    CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID,
 )
 from intergrax.contracts.root_execution_transport_detachment_supervision import (
-    RootExecutionTransportAdmissionRequest,
-    RootExecutionTransportDetachmentHandoffDisposition,
-    RootExecutionTransportDetachmentHandoffRefusalReason,
     RootExecutionTransportDetachmentSupervisionPort,
 )
+from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.applications._shared.mcp_transport_detachment_supervision_coupling import (
     resolve_transport_detachment_supervision_from_request,
 )
@@ -42,15 +57,22 @@ from intergrax.contracts.execution_bound_catalog_tool_invocation import (
 )
 from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    peek_active_execution_governance_identity,
+)
 from intergrax.runtime.governance.active_governed_execution_task import (
     bind_governed_execution_task,
     reset_governed_execution_task,
+)
+from intergrax.runtime.governance.governance_identity_projection import (
+    validate_governance_identity_projection,
 )
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.runtime.task.active_task_registry import ActiveTaskBinding, ActiveTaskRegistry
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task_state import task_state_requires_authoritative_exposure
 from intergrax.tools.mcp_result_bounds import bound_mcp_structured_result
 from intergrax.tools.registry.runtime import ToolRegistry
 
@@ -65,6 +87,9 @@ class McpCatalogInvocationComposition:
     tool_enablement: ToolEnablementProfile | None = None
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None
+    transport_detachment_supervision: (
+        RootExecutionTransportDetachmentSupervisionPort | None
+    ) = None
     default_tenant_id: str = "mcp"
     default_user_id: str = "mcp-user"
 
@@ -187,17 +212,132 @@ def _assert_catalog_tool_admitted(
     return registry.get(tool_id).contract
 
 
-def _assert_side_effect_invoke_admitted(
+def _assert_execution_invoke_admitted(task: Task) -> None:
+    if task_state_requires_authoritative_exposure(task.state):
+        raise _tool_error(
+            "execution_terminal",
+            "catalog invoke refused for terminal active execution binding",
+        )
+
+
+def _assert_invoker_agent_scope(
     composition: McpCatalogInvocationComposition,
+    resolved_agent_id: str,
+) -> None:
+    invoker = composition.catalog_invoker
+    configured = getattr(invoker, "caller_agent_id", None)
+    if configured is None:
+        return
+    configured_agent = str(configured).strip()
+    if configured_agent and configured_agent != resolved_agent_id.strip():
+        raise _tool_error(
+            "unauthorized_execution_caller",
+            "catalog invoker agent_id does not match execution-bound agent",
+        )
+
+
+def _build_catalog_side_effect_enforcement_request(
+    *,
+    binding: ActiveTaskBinding,
+    tool_id: str,
+    step_id: str,
+    caller: RequestIdentity,
+) -> CollaborativeWorkEnforcementRequest | None:
+    governance_identity = peek_active_execution_governance_identity()
+    active_identity = peek_active_execution_identity()
+    active_execution_id = peek_active_execution_id()
+    if (
+        governance_identity is None
+        or active_identity is None
+        or active_execution_id is None
+    ):
+        return None
+    validate_governance_identity_projection(
+        governance_identity,
+        tenant_id=binding.task.tenant_id,
+    )
+    active_run_id, active_attempt_id = active_identity
+    if str(active_run_id) != str(binding.run_id):
+        return None
+    if governance_identity.tenant_id != binding.task.tenant_id:
+        return None
+    owner_principal = canonical_principal_id_from_request_identity(caller)
+    if governance_identity.principal_id != owner_principal:
+        return None
+    task_id = validate_task_id(binding.task.task_id)
+    side_effect = MeaningfulSideEffectRequest(
+        action=f"{CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID}:{tool_id}",
+        kinds=(MeaningfulSideEffectKind.MUTATION,),
+        side_effect_scope_id=f"{tool_id}:{step_id}",
+        task_id=task_id,
+        run_id=active_run_id,
+        attempt_id=active_attempt_id,
+        execution_id=active_execution_id,
+        principal_id=governance_identity.principal_id,
+        tenant_id=governance_identity.tenant_id,
+        resource=tool_id,
+    )
+    return CollaborativeWorkEnforcementRequest(
+        tenant_id=governance_identity.tenant_id,
+        workspace_id=governance_identity.workspace_id,
+        operation_id=CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID,
+        acting_principal_id=governance_identity.principal_id,
+        resource_scope=tool_id,
+        membership_resolution_mode=MembershipResolutionMode.CANONICAL_PRINCIPAL,
+        meaningful_side_effect_request=side_effect,
+    )
+
+
+def _authorize_meaningful_side_effect_catalog_invoke(
+    composition: McpCatalogInvocationComposition,
+    *,
     contract: object,
+    binding: ActiveTaskBinding,
+    tool_id: str,
+    step_id: str,
+    caller: RequestIdentity,
+    resolved_agent_id: str,
 ) -> None:
     if not getattr(contract, "side_effects", False):
         return
-    if composition.meaningful_side_effect_authorization is None:
+    port = composition.meaningful_side_effect_authorization
+    if port is None:
         raise _tool_error(
             "unauthorized_side_effect_tool",
             "side-effect catalog tool requires host meaningful side-effect authorization",
         )
+    token = bind_governed_execution_task(binding.task)
+    try:
+        enforcement_request = _build_catalog_side_effect_enforcement_request(
+            binding=binding,
+            tool_id=tool_id,
+            step_id=step_id,
+            caller=caller,
+        )
+        if enforcement_request is None:
+            raise _tool_error(
+                "unauthorized_side_effect_tool",
+                "side-effect catalog invoke lacks active execution governance identity binding",
+            )
+        try:
+            authorization = port.authorize(
+                enforcement_request,
+                source_agent_id=resolved_agent_id,
+                source_step_id=step_id,
+            )
+            assert_consistent_meaningful_side_effect_authorization_result(authorization)
+        except MeaningfulSideEffectAuthorizationConsistencyError as exc:
+            raise _tool_error(
+                "side_effect_authorization_denied",
+                f"meaningful side-effect authorization inconsistent: {exc}",
+            ) from exc
+        if not authorization.permitted or authorization.decision.action is not PolicyAction.ALLOW:
+            raise _tool_error(
+                "side_effect_authorization_denied",
+                "meaningful side-effect authorization denied for catalog tool invoke",
+            )
+    finally:
+        reset_governed_execution_task(token)
 
 
 def _parse_tool_input(contract: object, input_payload: dict[str, Any] | None) -> BaseModel:
@@ -261,39 +401,6 @@ def _sync_invoke_catalog(
     return serialized
 
 
-async def _admit_catalog_invoke_host_work(
-    *,
-    supervision_port: RootExecutionTransportDetachmentSupervisionPort,
-    binding: ActiveTaskBinding,
-    caller: RequestIdentity,
-    verified_tenant_id: str,
-    launch: McpProtectedHostExecutionLaunch,
-) -> None:
-    """Open the catalog invoke start gate only after sanctioned supervision admission."""
-    admission = await supervision_port.admit_root_execution_supervision(
-        RootExecutionTransportAdmissionRequest(
-            task_id=binding.task.task_id,
-            verified_tenant_id=verified_tenant_id,
-            caller_request_identity=caller,
-            host_asyncio_task=launch.host_task,
-        )
-    )
-    if admission.disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED:
-        launch.execution_start_gate.set()
-        return
-    if (
-        admission.disposition is RootExecutionTransportDetachmentHandoffDisposition.REFUSED
-        and admission.refusal_reason
-        is RootExecutionTransportDetachmentHandoffRefusalReason.DUPLICATE_HANDOFF_CONFLICT
-    ):
-        launch.execution_start_gate.set()
-        return
-    launch.host_task.cancel()
-    raise McpProtectedHostExecutionAdmissionError(
-        "catalog invoke supervision admission refused before host execution",
-    )
-
-
 async def execute_mcp_catalog_tool_invocation(
     composition: McpCatalogInvocationComposition,
     *,
@@ -330,11 +437,26 @@ async def execute_mcp_catalog_tool_invocation(
         resolved_tenant_id=identity.tenant_id,
     )
     _assert_caller_authorized_for_execution(identity.request_identity, binding.task)
+    _assert_execution_invoke_admitted(binding.task)
+    if CancellationCoordinator.is_requested(dict(binding.task.metadata)):
+        return _bound_error_payload(
+            "execution_cancelled",
+            "active execution already has cooperative cancellation requested",
+        )
     contract = _assert_catalog_tool_admitted(composition, tool_id)
-    _assert_side_effect_invoke_admitted(composition, contract)
     parsed_input = _parse_tool_input(contract, input_payload)
     resolved_step = _resolve_invoke_step_id(binding.task, step_id)
     resolved_agent = _resolve_invoke_agent_id(binding.task)
+    _assert_invoker_agent_scope(composition, resolved_agent)
+    _authorize_meaningful_side_effect_catalog_invoke(
+        composition,
+        contract=contract,
+        binding=binding,
+        tool_id=tool_id,
+        step_id=resolved_step,
+        caller=identity.request_identity,
+        resolved_agent_id=resolved_agent,
+    )
 
     invoke_request = ExecutionBoundCatalogToolInvokeRequest(
         tool_id=tool_id,
@@ -349,12 +471,25 @@ async def execute_mcp_catalog_tool_invocation(
     boundary = composition.task_control_mutation_boundary
     if boundary is None:
         boundary = resolve_mcp_task_control_mutation_boundary_from_request()
-    cancel_ctx: McpHostExecutionTransportCancelContext | None = None
-    if boundary is not None:
-        cancel_ctx = McpHostExecutionTransportCancelContext(
-            mutation_boundary=boundary,
-            caller_request_identity=identity.request_identity,
+    if boundary is None:
+        raise _tool_error(
+            "missing_protected_admission",
+            "catalog tool invoke requires task control mutation boundary",
         )
+
+    supervision = composition.transport_detachment_supervision
+    if supervision is None:
+        supervision = resolve_transport_detachment_supervision_from_request()
+    if supervision is None:
+        raise _tool_error(
+            "missing_protected_admission",
+            "catalog tool invoke requires root execution transport detachment supervision",
+        )
+
+    cancel_ctx = McpHostExecutionTransportCancelContext(
+        mutation_boundary=boundary,
+        caller_request_identity=identity.request_identity,
+    )
 
     async def _invoke_async() -> dict[str, object]:
         return await asyncio.to_thread(
@@ -365,36 +500,16 @@ async def execute_mcp_catalog_tool_invocation(
         )
 
     launch = create_mcp_protected_host_execution_launch(_invoke_async)
-    supervision = resolve_transport_detachment_supervision_from_request()
-
-    if cancel_ctx is not None and supervision is not None:
-        try:
-            await _admit_catalog_invoke_host_work(
-                supervision_port=supervision,
-                binding=binding,
-                caller=identity.request_identity,
-                verified_tenant_id=identity.tenant_id,
-                launch=launch,
-            )
-        except McpProtectedHostExecutionAdmissionError as exc:
-            launch.host_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await launch.host_task
-            raise _tool_error("execution_admission_denied", str(exc)) from exc
-    else:
-        launch.execution_start_gate.set()
-
-    if cancel_ctx is None:
-        try:
-            return await launch.host_task
-        except asyncio.CancelledError:
-            launch.host_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await launch.host_task
-            return _bound_error_payload(
-                "transport_cancelled",
-                "mcp catalog invoke waiter cancelled",
-            )
+    try:
+        await admit_protected_mcp_root_execution_supervision(
+            supervision_port=supervision,
+            task=binding.task,
+            caller_request_identity=identity.request_identity,
+            launch=launch,
+            transport_waiter_will_continue=True,
+        )
+    except McpProtectedHostExecutionAdmissionError as exc:
+        raise _tool_error("execution_admission_denied", str(exc)) from exc
 
     try:
         outcome = await run_host_execution_with_mcp_transport_cancel(
