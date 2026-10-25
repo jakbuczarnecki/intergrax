@@ -128,6 +128,11 @@ def mark_physical_running(
     expected_revision: int,
     owner: ProcessLocalExternalOperationOwner,
 ) -> ExternalOperationState:
+    current = store.load(tenant_id, operation_id)
+    if current is not None and bound_worker_execution_epoch_is_revoked(current=current):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"revoked worker execution epoch cannot start physical effect for {operation_id!r}",
+        )
     return store.compare_and_set(
         tenant_id,
         operation_id,

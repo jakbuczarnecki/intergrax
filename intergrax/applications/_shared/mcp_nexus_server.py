@@ -172,6 +172,8 @@ def build_nexus_mcp_server(
         RootExecutionTransportDetachmentSupervisionPort | None
     ) = None,
     auto_wire_catalog_transport_supervision: bool = True,
+    catalog_root_child_work_ingress: object | None = None,
+    enable_cross_loop_catalog_child: bool = False,
 ) -> FastMCP:
     """
     Register ``list_agents`` and ``run_agent`` on a FastMCP instance.
@@ -240,6 +242,8 @@ def build_nexus_mcp_server(
                 task_control_mutation_boundary=task_control_mutation_boundary,
                 meaningful_side_effect_authorization=meaningful_side_effect_authorization,
                 catalog_tool_child_execution=catalog_child_execution,
+                root_child_work_ingress=catalog_root_child_work_ingress,
+                enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
                 default_tenant_id=default_tenant_id,
                 default_user_id=default_user_id,
             )

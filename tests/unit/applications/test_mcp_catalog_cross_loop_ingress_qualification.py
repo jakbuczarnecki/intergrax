@@ -392,3 +392,39 @@ async def test_ingress_queue_full_refuses_submit() -> None:
     await asyncio.sleep(0.01)
     terminal = await ingress.submit_catalog_child_work(ticket, wait_timeout_s=0.5)
     assert terminal.refusal is RootChildWorkIngressRefusal.QUEUE_FULL
+
+
+@pytest.mark.asyncio
+async def test_cross_loop_cancel_before_drain_returns_shutdown_or_denied() -> None:
+    child_port = build_production_catalog_tool_child_execution_port()
+    ingress = RootExecutionChildWorkIngress(catalog_child_execution=child_port, max_queue=4)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    task = Task(
+        task_id=task_id,
+        tenant_id=_TENANT,
+        user_id=_USER,
+        message="cancel",
+        context=TaskContext(capability="c"),
+        metadata={_METADATA_STEP_ID: _STEP},
+        agent_id="agent-cross",
+    )
+    invoker = _RecordingCatalogInvoker()
+    ingress.bind_supervised_task(task_id)
+    ticket = RootCatalogChildWorkTicket(
+        task_id=task_id,
+        run_id=run_id,
+        caller=_principal(),
+        work=_minimal_work(task, invoker),
+    )
+    pending = asyncio.create_task(
+        ingress.submit_catalog_child_work(ticket, wait_timeout_s=5.0),
+    )
+    await asyncio.sleep(0.02)
+    ingress.refuse_new_submissions()
+    terminal = await pending
+    assert terminal.success is False
+    assert terminal.refusal in {
+        RootChildWorkIngressRefusal.SHUTDOWN,
+        RootChildWorkIngressRefusal.SUBMIT_TIMEOUT,
+    }
