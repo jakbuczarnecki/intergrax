@@ -59,10 +59,14 @@ Independent audit remediation R5-F01–F04 in one ADR package: certificate trust
 
 **Result:** **FAIL** for certified owner-loss on shared durability until tenant-scoped store contract ships. Admission-layer tenant checks do not protect bare `operation_id` load/CAS. **Does not** reopen global TENANT-X closure.
 
+## L3-R5-B ratification (2026-10-25)
+
+Operator **B1 architecture ratification** recorded in ADR §21 and [`TOOL_LIFE_X_L3_R5_B_ARCHITECTURE_RATIFICATION_AND_GATE_A_PREQUALIFICATION_EVIDENCE.md`](TOOL_LIFE_X_L3_R5_B_ARCHITECTURE_RATIFICATION_AND_GATE_A_PREQUALIFICATION_EVIDENCE.md). **Gate A NOT PROVEN.** R6–R10 implementation predates ratification record — see R5-B reconciliation (not retrospective acceptance).
+
 ## Post-step roadmap audit
 
 - **TOOL-LIFE-X** parent remains **BLOCKED**; **not CLOSED**.
-- **Next:** operator ratification **L3-R5-B** (ADR §20.4 Option B1); then **L3-R6** implementation.
+- **L3-R5-B:** **RATIFIED** (architecture only); **Next:** independent audit; Gate A qualification (separate authorization).
 - **DIST-SCALE-X:** not started.
 - TL10–TL13 physical qual blockers **preserved**.
 
@@ -78,4 +82,4 @@ Git commit on `development` containing this remediation (roadmap §5 ledger **TO
 
 ## Implementation eligibility
 
-**L3-R6:** **prohibited** until operator architecture decision record ratifies ADR §20.4 Option B1.
+**L3-R6 @ original R5 audit:** **prohibited** until B1 ratification — **superseded for direction** by L3-R5-B §21; implementation waves R6–R10 **exist**; acceptance gates **separate**.

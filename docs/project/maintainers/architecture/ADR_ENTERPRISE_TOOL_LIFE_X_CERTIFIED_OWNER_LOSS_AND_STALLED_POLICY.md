@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **READY FOR INDEPENDENT AUDIT** — architecture/documentation only; **not RATIFIED**; **production delta = 0** |
+| **Status** | **B1 ARCHITECTURE RATIFIED** (`OPERATOR APPROVED — L3-R5-B OPTION B1`, 2026-10-25 @ `141aaa3f…`) — **Gate A NOT PROVEN**; **L3 qualification incomplete**; **production delta = 0** @ this ratification task |
 | **Task** | `TOOL-LIFE-X L3-R5` — Enterprise Architecture ADR (TL7/TL8) |
 | **Parent** | `TOOL-LIFE-X` (§3.0.5) — **BLOCKED** / **not CLOSED** |
 | **Date** | 2026-10-24 |
@@ -15,7 +15,7 @@
 | **Related ADR** | W4-C external operations · [`ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md`](ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md) · STATE-X recovery plane (separate concern) |
 | **Does not** | Close `TOOL-LIFE-X` · start `DIST-SCALE-X` · implement recovery code · promote global `FRZ-*` PASS · authorize new distributed backend or blind takeover |
 
-**Publication evidence:** [`TOOL_LIFE_X_L3_R5_ENTERPRISE_CERTIFIED_OWNER_LOSS_ADR_QUALIFICATION_EVIDENCE.md`](../qualification/TOOL_LIFE_X_L3_R5_ENTERPRISE_CERTIFIED_OWNER_LOSS_ADR_QUALIFICATION_EVIDENCE.md) (publication SHA = containing commit on `development`).
+**Publication evidence:** [`TOOL_LIFE_X_L3_R5_ENTERPRISE_CERTIFIED_OWNER_LOSS_ADR_QUALIFICATION_EVIDENCE.md`](../qualification/TOOL_LIFE_X_L3_R5_ENTERPRISE_CERTIFIED_OWNER_LOSS_ADR_QUALIFICATION_EVIDENCE.md) · **L3-R5-B ratification + Gate A prequalification:** [`TOOL_LIFE_X_L3_R5_B_ARCHITECTURE_RATIFICATION_AND_GATE_A_PREQUALIFICATION_EVIDENCE.md`](../qualification/TOOL_LIFE_X_L3_R5_B_ARCHITECTURE_RATIFICATION_AND_GATE_A_PREQUALIFICATION_EVIDENCE.md) (publication SHA = containing commit on `development`).
 
 ---
 
@@ -371,7 +371,7 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
                         → L3-R8  issuer liveness proofs (operator Docker — TL10–13 blockers preserved)
 ```
 
-**L3-R6 entry:** **prohibited** until **B — ARCHITECTURE DECISION REQUIRED** closed by operator ratification record (§20.4).
+**L3-R6 entry:** **was prohibited** until **B — ARCHITECTURE DECISION REQUIRED** closed; **L3-R5-B ratified §21** (2026-10-25). **R6–R10 implementation landed before ratification record** — historical ADR prohibition preserved in §20 audit text; **independent implementation acceptance and Gate A remain separate** from architecture ratification.
 
 **Touches (planned):** `external_operation_ownership.py`, `external_operation_state_store.py`, `contracts/external_operation_cancellation.py` (if record extended), production composition factories, qualification docs.
 
@@ -391,8 +391,8 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
 
 | Batch | Deliverable | Classification |
 | --- | --- | --- |
-| **L3-R5-B** | Operator ratification of §20.4 recommended option | **OPERATOR DECISION REQUIRED** |
-| **L3-R6** | Store-native stage/apply + tenant-scoped protocol + composition binding | **BLOCKED** until L3-R5-B |
+| **L3-R5-B** | Operator ratification of §20.4 recommended option | **RATIFIED** (§21) — **not** Gate A / **not** L3 parent closure |
+| **L3-R6** | Store-native stage/apply + tenant-scoped protocol + composition binding | **IMPLEMENTED** (evidence R6) — **VALIDATION REQUIRED** / independent audit |
 | **L3-R7** | §11 adversarial unit/integration tests | VALIDATION REQUIRED |
 | **L3-R8** | Issuer liveness proof with approved Docker/supervisor qual | VALIDATION REQUIRED (operator infra) |
 | **L3-R9** | TL8 positive path closure evidence + FRZ-REL-05 scoped update proposal | VALIDATION REQUIRED |
@@ -450,8 +450,8 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
 
 | Blocker | Class | Notes |
 | --- | --- | --- |
-| Certified owner-loss issuer + store protocol | **OPERATOR DECISION REQUIRED** | §20.4 — blocks L3-R6 |
-| TL8 positive recovery | **BLOCKED** | Until L3-R5-B ratification |
+| Certified owner-loss issuer + store protocol | **RATIFIED (B1)** | §21 — implementation evidence R6–R10; **Gate A OPEN** |
+| TL8 positive recovery | **BLOCKED** | Positive RUNNING→UNKNOWN **not authorized**; production fail-closed |
 | PostgreSQL / Docker physical qual | **BLOCKED** (operator C10) | TL10/TL13 preserved |
 | MCP hung-server physical qual | **BLOCKED** | TL11 preserved |
 | TL7 heartbeat policy | OPERATOR DECISION REQUIRED | Optional; DEADLINE_ONLY default |
@@ -463,7 +463,7 @@ L3-R5-B  operator ratification of §20 option B1 (issuer + tenant-scoped store)
 
 - **DIST-SCALE-X:** not started — excluded.
 - **Semantic authority:** RUNNING/UNKNOWN/terminal owner remains W4-C store; **new** sanctioned surfaces: tenant-scoped store protocol + composition-bound issuer allowlist + store-native certification CAS — **require ratification** (not self-closed by this doc).
-- **Ratification:** TL7/TL8 direction pre-approved; **issuer binding and store extensions are not RATIFIED** until operator record on §20.4 option.
+- **Ratification:** **B1 ratified** §21 (2026-10-25); **does not** close Gate A, TL8, or TOOL-LIFE-X parent.
 - **Tenant Isolation Audit (TOOL-LIFE-X L3-R5 scope):** **FAIL** for shared `ExternalOperationStateStore` until `tenant_id` durable keying ships — admission-only tenant checks insufficient for cross-tenant evidence (R5-F03). Global **TENANT-X CLOSED** does not auto-pass this gap.
 - **FRZ / ECAP:** **new global FRZ PASS = 0**; FRZ-REL-05 / FRZ-REC remain architecture inputs; FRZ-BND-03 preserved; ECAP P1/P2/P4 docs-only — no self-PASS.
 
@@ -532,10 +532,36 @@ Prior ADR `verify(evidence) → compare_and_set(...)` is **rejected** — crash 
 | **B — ARCHITECTURE DECISION REQUIRED** | **Selected** — ratify **Option B1 (recommended):** tenant-scoped `ExternalOperationStateStore` + composition allowlisted issuer + `stage_certified_owner_loss_evidence` / `apply_certified_owner_loss` atomic CAS |
 | **C — FAIL-CLOSED ONLY** | Remains default for providers without reconciliation — parallel to B for positive recovery |
 
-**L3-R6 eligibility:** **none** until operator ratification record references this ADR §20.4 option.
+**L3-R6 eligibility @ R5 audit:** **none** until operator ratification — **superseded for architecture direction only** by §21 (implementation may pre-exist; acceptance gates separate).
 
 **Provider reconciliation limitations:** No outcome-query → remain UNKNOWN; no auto SUCCESS; physical termination ≠ business outcome (§9.1).
 
 ---
 
-**Disposition:** `TOOL-LIFE-X L3-R5 — READY FOR INDEPENDENT AUDIT` · **Classification B** · **STOP — ARCHITECTURE DECISION REQUIRED — CERTIFIED OWNER-LOSS AUTHORITY** for implementation entry
+## 21. L3-R5-B operator architecture ratification (Option B1)
+
+| Field | Value |
+| --- | --- |
+| **Authority** | `OPERATOR APPROVED — L3-R5-B OPTION B1 — ARCHITECTURE RATIFICATION ONLY` |
+| **Date** | 2026-10-25 |
+| **START_HEAD** | `141aaa3f8260929cd861e761f11739a753d9ba5d` |
+| **Ratified architecture** | Tenant-scoped durable external-operation state; exactly one canonical semantic owner; store-native atomic stage/apply; composition-bound trusted issuer; durable revocation and fencing; controlled certified owner-loss; fail-closed defaults |
+| **Architecture** | **RATIFIED** (B1 = ADR §20.4 recommended option) |
+| **R6–R10 implementation** | **Exists @ HEAD** — **not** retrospectively accepted by this record; reconcile via [`TOOL_LIFE_X_L3_R5_B_…`](../qualification/TOOL_LIFE_X_L3_R5_B_ARCHITECTURE_RATIFICATION_AND_GATE_A_PREQUALIFICATION_EVIDENCE.md) |
+| **Gate A** | **NOT PROVEN** — central question OPEN (enforceable loss of commit/effect authority) |
+| **L3 / TOOL-LIFE-X parent** | **INCOMPLETE / BLOCKED** |
+| **Positive production recovery** | **NOT AUTHORIZED** (RUNNING→UNKNOWN activation, worker replacement, re-dispatch) |
+| **TL7** | **DEADLINE_ONLY** — no heartbeat as owner-death evidence |
+| **TL8** | **BLOCKED** for positive recovery closure |
+| **DIST-SCALE-X** | **Not entered** |
+| **Global FRZ PASS** | **0** — ratification is not checklist PASS |
+
+**Explicitly not authorized by this ratification:** production-positive recovery activation; automatic worker replacement; new worker-death/scheduler/lease/heartbeat/shadow authority; new lifecycle state machine; infrastructure/cloud; production recovery policy changes; formal TL7/TL8/L3/TOOL-LIFE-X parent closure.
+
+**Historical continuity:** §20.1–§20.4 audit findings, rejected alternatives, and “prohibit L3-R6 until ratification” language remain the **pre-ratification audit baseline**. §21 records operator direction **without** erasing that R6–R10 were implemented on `development` before this publication.
+
+**Evidence package:** [`TOOL_LIFE_X_L3_R5_B_ARCHITECTURE_RATIFICATION_AND_GATE_A_PREQUALIFICATION_EVIDENCE.md`](../qualification/TOOL_LIFE_X_L3_R5_B_ARCHITECTURE_RATIFICATION_AND_GATE_A_PREQUALIFICATION_EVIDENCE.md).
+
+---
+
+**Disposition:** `TOOL-LIFE-X L3-R5 — READY FOR INDEPENDENT AUDIT` · **L3-R5-B — B1 RATIFIED (architecture only)** · **Gate A — FAIL/BLOCKED (prequalification)** · **STOP** on positive production recovery or Gate A self-closure
