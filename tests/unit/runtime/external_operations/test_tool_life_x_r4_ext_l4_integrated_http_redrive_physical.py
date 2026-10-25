@@ -58,7 +58,7 @@ from tests.unit.runtime.external_operations.test_tool_life_x_l3_r8_sqlite_durabl
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _HTTP_PROVIDER = "http_rest"
-_HTTP_TOOL_IDEMPOTENT = "http_request"
+_HTTP_TOOL_IDEMPOTENT = "http_idempotent_post"
 _HTTP_TOOL_BLIND = "http_blind_post"
 _IDEMPOTENCY_KEY = "integrated-http-redrive-qual-1"
 

@@ -26,6 +26,8 @@ from intergrax.runtime.external_operations.external_operation_state_store import
 from intergrax.runtime.external_operations.tool_external_operation_redrive_binding import (
     bind_sanctioned_redrive_effect_before_tool_physical_execution,
 )
+from intergrax.tools.core.contracts import SideEffectRetrySafety
+from intergrax.tools.providers.http.idempotent_post_qual import HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID
 from intergrax.tools.providers.http.service import HTTP_REQUEST_TOOL_ID
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -56,15 +58,37 @@ def test_custom_catalog_tool_does_not_inherit_platform_lifecycle_on_bind() -> No
     assert loaded.bound_redrive_effect_contract_id is None
 
 
-def test_known_http_catalog_tool_retains_authoritative_class_b_identity() -> None:
-    contract_id, provider_id, tool_id = (
+def test_generic_http_request_has_no_automatic_class_b_redrive_binding() -> None:
+    assert not catalog_tool_has_sanctioned_redrive_effect_binding(HTTP_REQUEST_TOOL_ID)
+    with pytest.raises(ExternalOperationRedriveEffectBindingMismatchError):
         resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool(
             HTTP_REQUEST_TOOL_ID,
+        )
+    store = InMemoryExternalOperationStateStore()
+    record = store.create_if_absent("tenant-a", "op-http-generic")
+    revision = bind_sanctioned_redrive_effect_before_tool_physical_execution(
+        store,
+        tenant_id="tenant-a",
+        operation_id="op-http-generic",
+        expected_revision=record.revision,
+        catalog_tool_id=HTTP_REQUEST_TOOL_ID,
+        physical_idempotency_key="idem-generic",
+    )
+    assert revision == record.revision
+    loaded = store.load("tenant-a", "op-http-generic")
+    assert loaded is not None
+    assert loaded.bound_redrive_effect_contract_id is None
+
+
+def test_sanctioned_idempotent_post_qual_catalog_tool_retains_class_b_identity() -> None:
+    contract_id, provider_id, tool_id = (
+        resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool(
+            HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
         )
     )
     assert contract_id == TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id
     assert provider_id == "http_rest"
-    assert tool_id == "http_request"
+    assert tool_id == "http_idempotent_post"
     assert (
         resolve_authoritative_redrive_effect_class(TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT)
         is ExternalOperationRedriveEffectClass.CLASS_B_IDEMPOTENT_OR_RECONCILED
@@ -96,3 +120,18 @@ def test_platform_lifecycle_binding_only_for_explicit_catalog_tool_id() -> None:
         resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool(
             "arbitrary.unknown.tool",
         )
+
+
+def test_generic_http_tool_contract_remains_not_retry_safe_despite_class_b_qual_contract() -> None:
+    from intergrax.tools.providers.http.bundle import register_http_tools
+    from intergrax.tools.registry import ToolRegistry
+    from intergrax.tools.registry.wiring import ToolWiringContext
+
+    registry = ToolRegistry()
+    register_http_tools(registry, ToolWiringContext())
+    generic = registry.get(HTTP_REQUEST_TOOL_ID).contract
+    assert generic.side_effect_retry_safety is SideEffectRetrySafety.NOT_RETRY_SAFE
+    assert (
+        resolve_authoritative_redrive_effect_class(TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT)
+        is ExternalOperationRedriveEffectClass.CLASS_B_IDEMPOTENT_OR_RECONCILED
+    )

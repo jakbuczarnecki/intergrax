@@ -77,6 +77,7 @@ class ExternalOperationStateUpdate:
     bound_redrive_provider_id: str | None = None
     bound_redrive_tool_id: str | None = None
     bound_physical_idempotency_key: str | None = None
+    bound_physical_effect_fingerprint: str | None = None
     bound_redrive_effect_binding_revision: int | None = None
 
 
@@ -227,6 +228,9 @@ def apply_external_operation_state_update(
     bound_idempotency = current.bound_physical_idempotency_key
     if update.bound_physical_idempotency_key is not None:
         bound_idempotency = update.bound_physical_idempotency_key
+    bound_fingerprint = current.bound_physical_effect_fingerprint
+    if update.bound_physical_effect_fingerprint is not None:
+        bound_fingerprint = update.bound_physical_effect_fingerprint
     bound_binding_revision = current.bound_redrive_effect_binding_revision
     if update.bound_redrive_effect_binding_revision is not None:
         bound_binding_revision = update.bound_redrive_effect_binding_revision
@@ -251,6 +255,7 @@ def apply_external_operation_state_update(
         bound_redrive_provider_id=bound_provider,
         bound_redrive_tool_id=bound_tool,
         bound_physical_idempotency_key=bound_idempotency,
+        bound_physical_effect_fingerprint=bound_fingerprint,
         bound_redrive_effect_binding_revision=bound_binding_revision,
     )
 

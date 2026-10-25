@@ -87,7 +87,7 @@ _TRUSTED_BY_CONTRACT_ID: Final = {
 
 # Sanctioned provider/tool → trusted contract (qual registry; not caller-invented).
 _QUAL_SANCTIONED_EXECUTION_BINDING: Final = {
-    ("http_rest", "http_request"): TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+    ("http_rest", "http_idempotent_post"): TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
     ("http_rest", "http_blind_post"): TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,
     ("http_rest", "http_read_only"): TOOL_LIFE_HTTP_READ_ONLY_QUAL_EFFECT.contract_id,
     (
@@ -103,15 +103,10 @@ _QUAL_SANCTIONED_EXECUTION_BINDING: Final = {
 # Authoritative catalog tool_id → (contract_id, provider_id, provider_execution_tool_id).
 # No permissive default: unknown catalog tools must not inherit platform lifecycle Class B.
 _CATALOG_TOOL_SANCTIONED_REDRIVE_BINDING: Final = {
-    "http.request": (
+    "http.idempotent_post.qual": (
         TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
         "http_rest",
-        "http_request",
-    ),
-    "http_request": (
-        TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
-        "http_rest",
-        "http_request",
+        "http_idempotent_post",
     ),
     "http_blind_post": (
         TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,

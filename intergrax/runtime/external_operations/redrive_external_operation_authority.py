@@ -63,6 +63,7 @@ def _bound_identity_from_state(
         provider_id=state.bound_redrive_provider_id,
         tool_id=state.bound_redrive_tool_id,
         physical_idempotency_key=state.bound_physical_idempotency_key,
+        physical_effect_fingerprint=state.bound_physical_effect_fingerprint,
         binding_revision=state.bound_redrive_effect_binding_revision or 1,
     )
 
@@ -76,6 +77,7 @@ def _registry_contract_matching_binding(
         provider_id=bound.provider_id,
         tool_id=bound.tool_id,
         physical_idempotency_key=bound.physical_idempotency_key,
+        physical_effect_fingerprint=bound.physical_effect_fingerprint,
     )
     if registry_identity.contract_digest != bound.contract_digest:
         raise ExternalOperationRedriveEffectBindingMismatchError(
@@ -98,6 +100,7 @@ def bind_authoritative_redrive_effect_to_operation(
     provider_id: str | None = None,
     tool_id: str | None = None,
     physical_idempotency_key: str | None = None,
+    physical_effect_fingerprint: str | None = None,
 ) -> ExternalOperationState:
     """Record immutable authoritative effect identity before physical execution."""
     trusted = resolve_trusted_redrive_effect_contract(trusted_effect_contract_id)
@@ -111,6 +114,7 @@ def bind_authoritative_redrive_effect_to_operation(
         provider_id=provider_id,
         tool_id=tool_id,
         physical_idempotency_key=physical_idempotency_key,
+        physical_effect_fingerprint=physical_effect_fingerprint,
     )
     current = store.load(tenant_id, operation_id)
     if current is None:
@@ -132,6 +136,7 @@ def bind_authoritative_redrive_effect_to_operation(
             or existing.provider_id != identity.provider_id
             or existing.tool_id != identity.tool_id
             or existing.physical_idempotency_key != identity.physical_idempotency_key
+            or existing.physical_effect_fingerprint != identity.physical_effect_fingerprint
         ):
             raise ExternalOperationRedriveEffectBindingImmutableError(
                 "redrive effect binding is immutable once recorded",
@@ -152,6 +157,7 @@ def bind_authoritative_redrive_effect_to_operation(
             bound_redrive_provider_id=identity.provider_id,
             bound_redrive_tool_id=identity.tool_id,
             bound_physical_idempotency_key=identity.physical_idempotency_key,
+            bound_physical_effect_fingerprint=identity.physical_effect_fingerprint,
             bound_redrive_effect_binding_revision=identity.binding_revision,
         ),
     )
@@ -170,6 +176,7 @@ def transfer_redrive_authority_after_reconciliation(
     provider_id: str | None = None,
     tool_id: str | None = None,
     physical_idempotency_key: str | None = None,
+    physical_effect_fingerprint: str | None = None,
 ) -> ExternalOperationState:
     """Atomic durable authority transfer for eligible Class B effects (qual + controlled)."""
     current = store.load(tenant_id, operation_id)
@@ -188,6 +195,7 @@ def transfer_redrive_authority_after_reconciliation(
         provider_id=provider_id,
         tool_id=tool_id,
         physical_idempotency_key=physical_idempotency_key,
+        physical_effect_fingerprint=physical_effect_fingerprint,
     )
     registry_contract = _registry_contract_matching_binding(bound)
     if (

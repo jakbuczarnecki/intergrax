@@ -27,6 +27,7 @@ def bind_sanctioned_redrive_effect_before_tool_physical_execution(
     expected_revision: int,
     catalog_tool_id: str,
     physical_idempotency_key: str | None = None,
+    physical_effect_fingerprint: str | None = None,
 ) -> int:
     """Record immutable trusted effect identity; returns updated store revision."""
     try:
@@ -47,6 +48,7 @@ def bind_sanctioned_redrive_effect_before_tool_physical_execution(
         provider_id=provider_id,
         tool_id=binding_tool_id,
         physical_idempotency_key=physical_idempotency_key,
+        physical_effect_fingerprint=physical_effect_fingerprint,
     )
     return updated.revision
 

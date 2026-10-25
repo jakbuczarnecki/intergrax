@@ -98,7 +98,7 @@ def _unknown_after_loss(bundle: SqliteToolLifeDurableStoresBundle) -> object:
     ("provider_id", "tool_id"),
     [
         (None, None),
-        (None, "http_request"),
+        (None, "http_idempotent_post"),
         ("http_rest", None),
     ],
 )
@@ -150,10 +150,10 @@ def test_bind_accepts_valid_class_b_http_execution_context(
         expected_revision=record.revision,
         trusted_effect_contract_id=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
         provider_id="http_rest",
-        tool_id="http_request",
+        tool_id="http_idempotent_post",
     )
     assert bound.bound_redrive_provider_id == "http_rest"
-    assert bound.bound_redrive_tool_id == "http_request"
+    assert bound.bound_redrive_tool_id == "http_idempotent_post"
     assert (
         bound.bound_redrive_effect_contract_id
         == TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id

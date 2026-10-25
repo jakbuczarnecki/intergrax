@@ -116,6 +116,9 @@ from intergrax.runtime.external_operations.external_operation_state_store import
 from intergrax.runtime.external_operations.external_operation_ownership import (
     ProcessLocalExternalOperationOwner,
 )
+from intergrax.runtime.tools.http_side_effect_physical_outcome import (
+    http_side_effect_outcome_uncertain_after_submit,
+)
 from intergrax.runtime.tools.tool_operation_recovery import (
     ToolInvocationTerminalDisposition,
     disposition_message,
@@ -1829,6 +1832,23 @@ class RuntimeToolInvoker:
         if effect_boundary is not None:
             effect_boundary.may_have_started = True
 
+    @staticmethod
+    def _record_uncertain_physical_terminal(
+        ext_op: ToolExternalOperationAttempt,
+        *,
+        exc: BaseException,
+        effect_boundary: _ExternalEffectBoundary | None,
+    ) -> bool:
+        may_have_started = (
+            effect_boundary is not None and effect_boundary.may_have_started
+        )
+        if not may_have_started:
+            return False
+        if http_side_effect_outcome_uncertain_after_submit(exc):
+            ext_op.mark_unknown()
+            return True
+        return False
+
     def _execute_once(
         self,
         state: "RuntimeState",
@@ -1851,6 +1871,7 @@ class RuntimeToolInvoker:
         ext_op.before_physical_submit(
             catalog_tool_id=contract.tool_id,
             physical_idempotency_key=request.idempotency_key,
+            tool_input=request.input,
         )
 
         if dep_boundary is None:
@@ -1869,15 +1890,22 @@ class RuntimeToolInvoker:
                 and ext_op.operation_id is not None
             ):
                 self._tool_termination_port.bind_future(ext_op.operation_id, future)
+            result: BaseModel | None = None
             try:
-                return future.result(timeout=timeout_s)
+                result = future.result(timeout=timeout_s)
             except FuturesTimeoutError:
                 ext_op.mark_unknown()
                 raise
-            except BaseException:
+            except BaseException as exc:
                 if self._cooperative_cancellation_requested(state):
                     ext_op.request_cancel()
                     ext_op.complete_cancellation_after_termination()
+                elif self._record_uncertain_physical_terminal(
+                    ext_op,
+                    exc=exc,
+                    effect_boundary=effect_boundary,
+                ):
+                    pass
                 else:
                     ext_op.mark_failed()
                 raise
@@ -1889,6 +1917,7 @@ class RuntimeToolInvoker:
                     and ext_op.operation_id is not None
                 ):
                     self._tool_termination_port.unbind_future(ext_op.operation_id)
+            return result
 
         admission_request = DependencyConcurrencyAdmissionRequest(
             dependency=DependencyConcurrencyIdentity(
@@ -1943,14 +1972,32 @@ class RuntimeToolInvoker:
                 raise
             dep_boundary.complete_attached(attempt_handle)
             if future.done():
+                try:
+                    completed = future.result()
+                except BaseException as exc:
+                    if self._record_uncertain_physical_terminal(
+                        ext_op,
+                        exc=exc,
+                        effect_boundary=effect_boundary,
+                    ):
+                        pass
+                    else:
+                        ext_op.mark_failed()
+                    raise
                 ext_op.mark_succeeded()
-                return future.result()
+                return completed
             ext_op.mark_unknown()
             raise
-        except BaseException:
+        except BaseException as exc:
             if self._cooperative_cancellation_requested(state):
                 ext_op.request_cancel()
                 ext_op.complete_cancellation_after_termination()
+            elif self._record_uncertain_physical_terminal(
+                ext_op,
+                exc=exc,
+                effect_boundary=effect_boundary,
+            ):
+                pass
             else:
                 ext_op.mark_failed()
             dep_boundary.complete_attached(attempt_handle)

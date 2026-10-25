@@ -44,6 +44,8 @@ from intergrax.runtime.external_operations.operation_termination import (
 from intergrax.runtime.external_operations.tool_external_operation_redrive_binding import (
     bind_sanctioned_redrive_effect_before_tool_physical_execution,
 )
+from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
+from pydantic import BaseModel
 
 
 def tool_external_operation_identity(
@@ -131,6 +133,7 @@ class ToolExternalOperationAttempt:
         *,
         catalog_tool_id: str | None = None,
         physical_idempotency_key: str | None = None,
+        tool_input: BaseModel | None = None,
     ) -> None:
         binding = self._binding()
         if binding is None:
@@ -142,6 +145,12 @@ class ToolExternalOperationAttempt:
             return
         if identity.operation_id is None:
             return
+        effect_fingerprint: str | None = None
+        if tool_input is not None and catalog_tool_id is not None:
+            effect_fingerprint = compute_invocation_operation_identity(
+                catalog_tool_id,
+                tool_input,
+            ).operation_fingerprint
         self._revision = bind_sanctioned_redrive_effect_before_tool_physical_execution(
             store,
             tenant_id=identity.tenant_id,
@@ -149,6 +158,7 @@ class ToolExternalOperationAttempt:
             expected_revision=self._revision,
             catalog_tool_id=catalog_tool_id,
             physical_idempotency_key=physical_idempotency_key,
+            physical_effect_fingerprint=effect_fingerprint,
         )
 
     def mark_running(self) -> None:

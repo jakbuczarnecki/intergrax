@@ -208,6 +208,7 @@ def _encode_external_operation_state(state: ExternalOperationState) -> str:
         "bound_redrive_provider_id": state.bound_redrive_provider_id,
         "bound_redrive_tool_id": state.bound_redrive_tool_id,
         "bound_physical_idempotency_key": state.bound_physical_idempotency_key,
+        "bound_physical_effect_fingerprint": state.bound_physical_effect_fingerprint,
         "bound_redrive_effect_binding_revision": state.bound_redrive_effect_binding_revision,
     }
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
@@ -246,6 +247,7 @@ def _decode_external_operation_state(raw: str) -> ExternalOperationState:
         bound_redrive_provider_id=payload.get("bound_redrive_provider_id"),
         bound_redrive_tool_id=payload.get("bound_redrive_tool_id"),
         bound_physical_idempotency_key=payload.get("bound_physical_idempotency_key"),
+        bound_physical_effect_fingerprint=payload.get("bound_physical_effect_fingerprint"),
         bound_redrive_effect_binding_revision=payload.get(
             "bound_redrive_effect_binding_revision",
         ),

@@ -42,6 +42,7 @@ class BoundExternalOperationRedriveEffectIdentity:
     provider_id: str | None = None
     tool_id: str | None = None
     physical_idempotency_key: str | None = None
+    physical_effect_fingerprint: str | None = None
     binding_revision: int = 1
 
 
@@ -60,6 +61,7 @@ def bound_identity_from_trusted_contract(
     provider_id: str | None = None,
     tool_id: str | None = None,
     physical_idempotency_key: str | None = None,
+    physical_effect_fingerprint: str | None = None,
 ) -> BoundExternalOperationRedriveEffectIdentity:
     digest = compute_trusted_effect_contract_binding_digest(contract)
     return BoundExternalOperationRedriveEffectIdentity(
@@ -69,6 +71,7 @@ def bound_identity_from_trusted_contract(
         provider_id=provider_id,
         tool_id=tool_id,
         physical_idempotency_key=physical_idempotency_key,
+        physical_effect_fingerprint=physical_effect_fingerprint,
     )
 
 
@@ -79,6 +82,7 @@ def assert_supplied_contract_matches_bound_identity(
     provider_id: str | None = None,
     tool_id: str | None = None,
     physical_idempotency_key: str | None = None,
+    physical_effect_fingerprint: str | None = None,
 ) -> None:
     supplied_digest = compute_trusted_effect_contract_binding_digest(supplied_contract)
     if supplied_contract.contract_id != bound.contract_id:
@@ -105,6 +109,11 @@ def assert_supplied_contract_matches_bound_identity(
         if physical_idempotency_key != bound.physical_idempotency_key:
             raise ExternalOperationRedriveEffectBindingMismatchError(
                 "physical_idempotency_key does not match durable operation binding",
+            )
+    if bound.physical_effect_fingerprint is not None:
+        if physical_effect_fingerprint != bound.physical_effect_fingerprint:
+            raise ExternalOperationRedriveEffectBindingMismatchError(
+                "physical_effect_fingerprint does not match durable operation binding",
             )
 
 

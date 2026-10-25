@@ -68,6 +68,7 @@ class ExternalOperationState:
     bound_redrive_provider_id: str | None = None
     bound_redrive_tool_id: str | None = None
     bound_physical_idempotency_key: str | None = None
+    bound_physical_effect_fingerprint: str | None = None
     bound_redrive_effect_binding_revision: int | None = None
 
 
