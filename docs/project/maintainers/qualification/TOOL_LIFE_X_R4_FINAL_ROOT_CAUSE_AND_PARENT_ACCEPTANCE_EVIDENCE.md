@@ -6,7 +6,7 @@
 |---|---|
 | Operator START_HEAD (this batch) | `5e9817b14dbdae1a310a5a3d8d4057ef2a59d03c` |
 | Implementation SHA | `4431c272d7fb47134d20b0b6ad7949ba413ecc78` |
-| PUBLICATION_HEAD | `8143321691a90b99283ae4d0a5c05447e4dcece4` |
+| PUBLICATION_HEAD | `6d56fc7309050cee084de7460f04a1a8d4387f02` |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
 | ADR | `ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md` |
