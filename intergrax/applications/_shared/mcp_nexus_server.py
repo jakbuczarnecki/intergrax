@@ -230,22 +230,13 @@ def build_nexus_mcp_server(
     if tool_registry is not None:
         catalog_invocation: McpCatalogInvocationComposition | None = None
         if catalog_tool_invoker is not None:
-            resolved_supervision: RootExecutionTransportDetachmentSupervisionPort | None = (
-                transport_detachment_supervision
-            )
-            if (
-                task_control_mutation_boundary is not None
-                and auto_wire_catalog_transport_supervision
-                and resolved_supervision is None
-            ):
-                resolved_supervision = build_host_root_execution_transport_detachment_supervisor()
+            _ = auto_wire_catalog_transport_supervision, transport_detachment_supervision
             catalog_invocation = McpCatalogInvocationComposition(
                 catalog_invoker=catalog_tool_invoker,
                 registry=tool_registry,
                 tool_enablement=tool_enablement,
                 task_control_mutation_boundary=task_control_mutation_boundary,
                 meaningful_side_effect_authorization=meaningful_side_effect_authorization,
-                transport_detachment_supervision=resolved_supervision,
                 default_tenant_id=default_tenant_id,
                 default_user_id=default_user_id,
             )

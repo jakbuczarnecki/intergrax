@@ -246,6 +246,7 @@ def _fast_mcp_transport_drain(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.asyncio
 async def test_gate_b_successful_authorized_invoke() -> None:
+    """External MCP HTTP catalog invoke is disabled until cross-loop ingress (F3)."""
     registry = ToolRegistry()
     registry.register(_contract("gate.b.ok"), _handler())
     invoker = _RecordingCatalogInvoker()
@@ -266,10 +267,8 @@ async def test_gate_b_successful_authorized_invoke() -> None:
                     "input": {"query": "hi"},
                 },
             )
-    assert result.data["success"] is True
-    assert result.data["output"]["value"] == "invoked"
-    assert len(invoker.results) == 1
-    assert invoker.results[0].run_id == run_id
+    assert result.data["error"] == "execution_admission_denied"
+    assert invoker.results == []
 
 
 @pytest.mark.asyncio
@@ -413,11 +412,12 @@ async def test_gate_b_unauthorized_side_effect_tool() -> None:
         return_value=_identity_resolution(),
     ):
         async with Client(mcp) as client:
-            with pytest.raises(ToolError, match="unauthorized_side_effect_tool"):
-                await client.call_tool(
-                    "invoke_catalog_tool",
-                    {"tool_id": "gate.b.fx", "task_id": str(task.task_id), "run_id": run_id},
-                )
+            result = await client.call_tool(
+                "invoke_catalog_tool",
+                {"tool_id": "gate.b.fx", "task_id": str(task.task_id), "run_id": run_id},
+            )
+    assert result.data["error"] == "execution_admission_denied"
+    assert invoker.results == []
 
 
 @pytest.mark.asyncio
@@ -457,8 +457,8 @@ async def test_gate_b_tool_failure_before_effect() -> None:
                 "invoke_catalog_tool",
                 {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
             )
-    assert result.data["success"] is False
-    assert result.data["error_code"] == "permission_error"
+    assert result.data["error"] == "execution_admission_denied"
+    assert invoker.results == []
 
 
 @pytest.mark.asyncio
@@ -477,7 +477,8 @@ async def test_gate_b_unknown_effect_certainty() -> None:
                 "invoke_catalog_tool",
                 {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
             )
-    assert result.data["effect_certainty"] == "uncertain"
+    assert result.data["error"] == "execution_admission_denied"
+    assert invoker.results == []
 
 
 @pytest.mark.asyncio
@@ -569,26 +570,16 @@ async def test_gate_b_admission_refusal_never_starts_invoker() -> None:
     mcp = _build_mcp(registry, invoker)
     task, run_id = await _register_binding()
 
-    async def _refuse_admission(*_args: object, **_kwargs: object) -> None:
-        raise McpProtectedHostExecutionAdmissionError("supervision refused catalog invoke")
-
-    with (
-        patch(
-            "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
-            return_value=_identity_resolution(),
-        ),
-        patch(
-            "intergrax.applications._shared.mcp_catalog_invocation_bridge."
-            "admit_protected_mcp_root_execution_supervision",
-            side_effect=_refuse_admission,
-        ),
+    with patch(
+        "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
+        return_value=_identity_resolution(),
     ):
         async with Client(mcp) as client:
-            with pytest.raises(ToolError, match="execution_admission_denied"):
-                await client.call_tool(
-                    "invoke_catalog_tool",
-                    {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
-                )
+            result = await client.call_tool(
+                "invoke_catalog_tool",
+                {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
+            )
+    assert result.data["error"] == "execution_admission_denied"
     assert invoker.results == []
     assert not invoker.started.is_set()
 
@@ -625,11 +616,11 @@ async def test_gate_b_duplicate_handoff_conflict_does_not_start_invoker() -> Non
         return_value=_identity_resolution(),
     ):
         async with Client(mcp) as client:
-            with pytest.raises(ToolError, match="execution_admission_denied"):
-                await client.call_tool(
-                    "invoke_catalog_tool",
-                    {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
-                )
+            result = await client.call_tool(
+                "invoke_catalog_tool",
+                {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
+            )
+    assert result.data["error"] == "execution_admission_denied"
     assert invoker.results == []
     assert not invoker.started.is_set()
     existing_launch.host_task.cancel()
@@ -649,11 +640,11 @@ async def test_gate_b_missing_mutation_boundary_denies_invoke() -> None:
         return_value=_identity_resolution(),
     ):
         async with Client(mcp) as client:
-            with pytest.raises(ToolError, match="missing_protected_admission"):
-                await client.call_tool(
-                    "invoke_catalog_tool",
-                    {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
-                )
+            result = await client.call_tool(
+                "invoke_catalog_tool",
+                {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
+            )
+    assert result.data["error"] == "execution_admission_denied"
     assert invoker.results == []
 
 
@@ -669,11 +660,11 @@ async def test_gate_b_missing_supervision_denies_invoke() -> None:
         return_value=_identity_resolution(),
     ):
         async with Client(mcp) as client:
-            with pytest.raises(ToolError, match="missing_protected_admission"):
-                await client.call_tool(
-                    "invoke_catalog_tool",
-                    {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
-                )
+            result = await client.call_tool(
+                "invoke_catalog_tool",
+                {"tool_id": "gate.b.ok", "task_id": str(task.task_id), "run_id": run_id},
+            )
+    assert result.data["error"] == "execution_admission_denied"
     assert invoker.results == []
 
 
@@ -713,36 +704,16 @@ async def test_gate_b_side_effect_port_deny_blocks_invoke() -> None:
         meaningful_side_effect_authorization=_DenyPort(),
     )
     task, run_id = await _register_binding()
-    execution_id = mint_execution_id()
-    attempt_id = mint_attempt_id()
-    identity_token = bind_active_execution_identity(
-        run_id=run_id,
-        attempt_id=attempt_id,
-        execution_id=execution_id,
-        task_id=task.task_id,
-    )
-    governance_token = bind_active_execution_governance_identity(
-        ActiveExecutionGovernanceIdentity(
-            tenant_id=_TENANT,
-            workspace_id="ws-gate-b",
-            principal_id=_USER,
-        ),
-    )
-    task.metadata["workspace_id"] = "ws-gate-b"
-    try:
-        with patch(
-            "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
-            return_value=_identity_resolution(),
-        ):
-            async with Client(mcp) as client:
-                with pytest.raises(ToolError, match="side_effect_authorization_denied"):
-                    await client.call_tool(
-                        "invoke_catalog_tool",
-                        {"tool_id": "gate.b.fx", "task_id": str(task.task_id), "run_id": run_id},
-                    )
-    finally:
-        reset_active_execution_governance_identity(governance_token)
-        reset_active_execution_identity(identity_token)
+    with patch(
+        "intergrax.applications._shared.mcp_catalog_invocation_bridge.resolve_mcp_run_agent_identity",
+        return_value=_identity_resolution(),
+    ):
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "invoke_catalog_tool",
+                {"tool_id": "gate.b.fx", "task_id": str(task.task_id), "run_id": run_id},
+            )
+    assert result.data["error"] == "execution_admission_denied"
     assert invoker.results == []
 
 
@@ -821,9 +792,9 @@ async def test_cancel_c_parent_cancel_during_in_flight_invoke() -> None:
                 {"tool_id": "gate.b.slow", "task_id": str(task.task_id), "run_id": run_id},
             )
             await cancel_task
-    assert invoker.started.is_set()
-    assert result.data["error"] == "execution_cancelled"
-    assert len(invoker.results) == 1
+    assert not invoker.started.is_set()
+    assert result.data["error"] == "execution_admission_denied"
+    assert invoker.results == []
 
 
 @pytest.mark.asyncio
