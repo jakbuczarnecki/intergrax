@@ -48,7 +48,7 @@ def registered_tool_matches_sanctioned_http_idempotent_post_qual(
         HttpIdempotentPostQualHandler,
     )
 
-    if not isinstance(registered.handler, HttpIdempotentPostQualHandler):
+    if type(registered.handler) is not HttpIdempotentPostQualHandler:
         return False
     activation = registered.activation
     if activation is None:

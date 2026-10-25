@@ -28,6 +28,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationOperationIdentity,
     InvocationStatus,
     PreEffectSuspendedWorkRecoveryAuthority,
+    assert_operation_identity_compatible,
     assert_tool_idempotency_ledger_schema_version,
     validate_pre_effect_recovery_authority,
 )
@@ -566,6 +567,43 @@ class RedisIdempotencyStore(IdempotencyStore):
                 "recovery_authority correlation is required for pre-effect recovery."
             )
         return script_result == 1
+
+    def reconcile_suspended_pre_effect_for_sanctioned_physical_redrive(
+        self,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        *,
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> bool:
+        validate_pre_effect_recovery_authority(recovery_authority)
+        ledger_key = self._ledger_key(tenant_id, key)
+        data = self._redis.hgetall(ledger_key)
+        if not data:
+            return False
+        self._require_ledger_schema_hash(data)
+        stored_tool = self._decode(data.get(b"operation_tool_id", b""))
+        stored_fp = self._decode(data.get(b"operation_fingerprint", b""))
+        stored_identity = (
+            InvocationOperationIdentity(
+                tool_id=stored_tool,
+                operation_fingerprint=stored_fp,
+            )
+            if stored_tool and stored_fp
+            else None
+        )
+        assert_operation_identity_compatible(stored_identity, operation_identity)
+        status = self._decode(data.get(b"status", b""))
+        may_have_started = bool(int(self._decode(data.get(b"external_effect_may_have_started", b"0")) or "0"))
+        if status == InvocationStatus.UNCERTAIN.value:
+            self._redis.delete(ledger_key)
+            return True
+        if status != InvocationStatus.STARTED.value:
+            return False
+        if not may_have_started:
+            return False
+        self._redis.delete(ledger_key)
+        return True
 
     def record_started(
         self,

@@ -6,14 +6,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.agent_runtime_governance import (
-    PolicyEvaluationResult,
-    ToolAuthorizationDecisionState,
-)
+from intergrax.contracts.agent_runtime_governance import PolicyEvaluationResult
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 
 
-@dataclass(frozen=True)
+@dataclass
 class ToolGovernanceDeniedError(RuntimeError):
     """Raised when agent runtime governance denies a tool invocation."""
 
@@ -32,7 +29,7 @@ class ToolGovernanceDeniedError(RuntimeError):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class ToolGovernanceApprovalRequiredError(RuntimeError):
     """Typed boundary signal: governance requires human approval before tool execution.
 
@@ -57,7 +54,7 @@ class ToolGovernanceApprovalRequiredError(RuntimeError):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class CapabilityNotGrantedError(RuntimeError):
     """Raised when agent lacks capability grant for requested action."""
 

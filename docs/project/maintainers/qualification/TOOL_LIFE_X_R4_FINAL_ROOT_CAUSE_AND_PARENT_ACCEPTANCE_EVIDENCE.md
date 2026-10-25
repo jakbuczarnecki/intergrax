@@ -1,71 +1,84 @@
 # TOOL-LIFE-X R4 — final root-cause remediation and parent qualification evidence
 
-**Status:** IMPLEMENTED · TESTED (scoped L2) · PHYSICALLY QUALIFIED (HTTP Class B qual path) · **not** independently accepted (F8 EXT-L4)
+**Disposition:** `READY FOR INDEPENDENT F8 EXT-L4 AUDIT` (implementation) · **not** parent CLOSED · **not** FRZ promotion · **not** production activation
 
 | Field | Value |
 |---|---|
-| Operator START_HEAD (this batch) | `5e9817b14dbdae1a310a5a3d8d4057ef2a59d03c` |
-| Implementation SHA | `4431c272d7fb47134d20b0b6ad7949ba413ecc78` |
-| PUBLICATION_HEAD | `6d56fc7309050cee084de7460f04a1a8d4387f02` |
+| Operator START_HEAD (this batch) | `870e9ae466ec7d6e999c2a4c03b6e05ad52e7cd7` |
+| IMPLEMENTATION_SHA | *(set at commit — see §12)* |
+| PUBLICATION_HEAD | *(set after push — see §12)* |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
-| ADR | `ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md` |
+| ADR | [`ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md`](../architecture/ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md) |
 
 ## 1. Plan traceability (F0–F8)
 
 | Phase | Disposition |
 |---|---|
 | F0–F4 | Prior accepted bundles reused; this wave closes systemic RCA defects A–E |
-| F5/F6/F7 | Implementation + consolidated L2 qualification complete on this SHA |
-| F8 EXT-L4 | **READY FOR INDEPENDENT ACCEPTANCE** — operator/auditor closure not performed by Cursor |
+| F5/F6/F7 | Implementation + consolidated L2 on publication SHA |
+| F8 EXT-L4 | **READY FOR INDEPENDENT AUDIT** — Cursor does not close parent or FRZ |
 
-## 2. Root-cause summary
+## 2. Root-cause summary (BLOCKER E)
 
-Prior wave fixed generic `http.request` Class C mapping and several invoker terminals, but independent EXT-L4 rejected: qualification Class B remained in the default HTTP bundle; HTTP idempotency key/fingerprint were not enforced end-to-end; UNKNOWN relied on pre-effect `may_have_started` only; production-entry proof did not exercise sanctioned qual registration + catalog invoke + durable Class B binding under composition.
+**Symptom:** `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` hung or surfaced `FrozenInstanceError("cannot assign to field '__traceback__'")` under `production_mode=True`.
+
+**Causes (two defects):**
+
+1. **Frozen governance exceptions:** `@dataclass(frozen=True)` on `ToolGovernanceDeniedError`, `CapabilityNotGrantedError`, and related `RuntimeError` subclasses. Python exception propagation through `contextlib` `finally` (including `canonical_governed_execution_scope`) attempts to attach `__traceback__` to the active exception → `FrozenInstanceError`, masking the real denial (`CapabilityNotGrantedError` for missing `http` capability grant).
+2. **Incomplete strict-host composition in qual:** Production path requires explicit `agent_runtime_governance` (capability `http` for `echo`), `canonical_inner_execution_guard`, `DependencyAttemptExecutionBoundary` (`production_mode=True`), and `state.context.config.production_mode=True`. Missing grant triggered (1).
+
+**Remediation:** Remove `frozen=True` from tool-layer governance/MSE exception dataclasses; map `CapabilityNotGrantedError` to traced `ToolGovernanceDeniedError` in `RuntimeToolInvoker._require_agent_runtime_governance`; wire strict production invoker in E2E via `_build_strict_production_invoker_bundle` (reference admission config + materialized boundary + SQLite idempotency ledger).
+
+**Architecture preservation:** No admission bypass, no `production_mode=False` substitute, no alternate executor; canonical owners unchanged.
+
+## 2a. Root-cause summary (BLOCKER D)
+
+**Gap:** Qual HTTP handlers used transient dict counters without durable idempotency semantics, restart proof, or conflict rejection.
+
+**Remediation:** `tool_life_x_r4_class_b_http_provider_oracle.py` — `ClassBHttpProviderOracle` with optional SQLite durability, replay without duplicate effect, payload conflict → 409, empty key → 400, retention envelope fail-closed; handlers via `class_b_http_handler_for_oracle` (lost-ack gated on commit/release events).
 
 ## 2b. F8 findings (systemic closure)
 
 | ID | Disposition |
 |---|---|
-| F8-01 | **Fixed** — `http.idempotent_post.qual` removed from `HTTP_TOOL_IDS` / `register_http_tools`; isolated `register_tool_life_http_class_b_qualification_tools` |
-| F8-02 | **Fixed** — mandatory physical key + fingerprint; authoritative idempotency on wire |
-| F8-A | **Fixed** — Class B from `HttpIdempotentPostQualHandler` + `ToolRuntimeActivationMetadata` (`class_b_qualification_provenance.py`); invoker passes `RegisteredTool` into bind; tags alone cannot mint Class B |
-| F8-03 | **Fixed** — `physical_execution_admitted()` gates UNKNOWN with `http_transport_error` (not only pre-effect boundary) |
-| F8-04 / F8-C | **Qualified** — `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` (strict env profile, qual registration, invoker UNKNOWN, certified loss, `invoke_sanctioned_physical_redrive`, one provider effect); supporting: production-entry lost-ack + integrated HTTP redrive |
+| F8-01 | **Fixed** — qual tool isolated from default HTTP bundle |
+| F8-02 | **Fixed** — mandatory physical key + fingerprint |
+| F8-A | **Fixed** — `type(handler) is HttpIdempotentPostQualHandler` (not `isinstance`) blocks subclass/tag forgery |
+| F8-03 | **Fixed** — UNKNOWN on transport loss after physical admission |
+| F8-04 / F8-C | **Qualified** — strict-host E2E with `production_mode=True`, dependency admission, full redrive chain |
+| F8-redrive-A/B | **Fixed** — `assert_sanctioned_physical_redrive_dispatch_admitted` + invoker parity |
 
-## 3. Defects A–E
+## 3. Defects A–E (implementation)
 
-| ID | Finding | Disposition |
-|---|---|---|
-| A | `http.request` → automatic Class B | **Fixed** — generic HTTP has no sanctioned redrive binding (Class C default) |
-| B | Class B requires enforceable provider contract | **Fixed** — `http.idempotent_post.qual` + `http_rest`/`http_idempotent_post` + physical qual server |
-| C | Contradictory retry surfaces | **Reconciled** — explicit `NOT_RETRY_SAFE` on generic HTTP; Class B only on qual contract/tool |
-| D | Durable effect identity | **Extended** — `bound_physical_effect_fingerprint` from `compute_invocation_operation_identity` |
-| E1 | No-dep boundary success terminal | **Fixed** — `mark_succeeded()` in `else` before return |
-| E2 | HTTP lost-ack durable FAILED | **Fixed** — `http_transport_error` + physical admission / pre-effect → `mark_unknown()` |
-| E3 | Timeout race on completed future | **Fixed** — validate `future.result()` before `mark_succeeded()` |
-| E4 | Single terminal writer | **Preserved** — existing store helpers only |
+| ID | Disposition |
+|---|---|
+| A | Redrive dispatch admission — `sanctioned_physical_redrive_dispatch_admission.py` |
+| B | `invoke_sanctioned_physical_redrive` — `_prepare_invocation`, protected-work, `before_external_effect_sanctioned_physical_redrive`, `_execute_once`, `after_external_effect` |
+| C | Exact-type qual handler provenance — `class_b_qualification_provenance.py` |
+| D | Provider oracle + SQLite durability tests |
+| E | Production admission E2E green (see §2) |
 
-## 4. Authoritative effect classification (final)
+## 4. Changed owners (this batch)
 
-| Surface | Class | Notes |
-|---|---|---|
-| Generic `http.request` | **C** | Executes under governance; no automated redrive binding |
-| `http.idempotent_post.qual` | **B** | Qual composition only (sanctioned handler + activation digest); not in default HTTP bundle |
-| `http_blind_post` / `http.read_only` qual | **C** | Explicit contracts |
-| `invoke_catalog_tool` (MCP) | **C** | Default qual contract |
-| Platform durable physical lifecycle | **B** | Explicit catalog tool only |
-| DB SQL adapter (platform) | **A/B per prior F5** | Unchanged; not equated with HTTP Class B |
+| Path | Role |
+|---|---|
+| `intergrax/runtime/external_operations/sanctioned_physical_redrive_dispatch_admission.py` | A — dispatch admission |
+| `intergrax/runtime/nexus/tools/invoker.py` | B + E — redrive + governance mapping |
+| `intergrax/runtime/tools/idempotency_pre_effect_coordinator.py` | B — sanctioned redrive reconcile |
+| `intergrax/contracts/idempotency_store.py` + store impls | B — `reconcile_suspended_pre_effect_for_sanctioned_physical_redrive` |
+| `intergrax/tools/providers/http/class_b_qualification_provenance.py` | C — exact handler type |
+| `intergrax/runtime/agent_governance/errors.py` | E — exception traceback fix |
+| `tests/.../test_tool_life_x_r4_f8_remediation.py` | E2E + oracle tests |
+| `tests/.../test_tool_life_x_r4_f8_redrive_dispatch_adversarial.py` | A/B negatives |
+| `tests/.../tool_life_x_r4_class_b_http_provider_oracle.py` | D — oracle |
 
-## 5. Production execution graph (qual positive path)
-
-`RuntimeToolInvoker` → durable external-operation record → `before_physical_submit` (sanctioned bind + fingerprint) → `AllowlistHttpClient` via `http.idempotent_post.qual` → local idempotent POST server → lost-ack → UNKNOWN → certified owner loss → reconciliation → CAS redrive authority → identical idempotency key → single effect.
-
-## 6. Physical qualification commands (L2 consolidated)
+## 5. Physical qualification (L2)
 
 ```powershell
 uv run pytest `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_f8_remediation.py `
+  tests/unit/runtime/external_operations/test_tool_life_x_r4_f8_redrive_dispatch_adversarial.py `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_systemic_rca_authoritative_classification.py `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_b1_authoritative_effect_class.py `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_b2_http_class_b_physical_qual.py `
@@ -75,56 +88,78 @@ uv run pytest `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_f6_scenario_24_recovery.py `
   tests/unit/applications/test_tool_life_x_r4_production_entry_e2e_qualification.py `
   tests/unit/runtime/nexus/tools/test_tool_life_x_r4_terminal_lifecycle_invoker.py `
-  -q
+  -q -p no:xdist
 ```
 
-**Result:** 51 passed (session log: `.tmp/session/TOOL-LIFE-X-R4/pytest-f8-consolidated-l2.log`).
+**Result:** 59 passed — log `.tmp/session/TOOL-LIFE-X-R4/pytest-l2-consolidated.log`
 
-**Canonical strict-host Class B recovery E2E:** `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` in `test_tool_life_x_r4_f8_remediation.py`.
+**Strict production E2E:** `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` — `production_mode=True`, dependency boundary, governance `http` capability, lost-ack, redrive, `oracle.effect_count == 1`.
 
-**EQG (static):** `uv run ruff check` on changed F8 owners (exit 0 @ implementation SHA).
+**EQG:** `uv run ruff check` on changed owners — pass. Full `pytest tests/unit -m "gate and not no_ci"` — **not PASS** (16 pre-existing collection errors, e.g. `tests/unit/tools/providers/rag/test_rag_scope.py`); scoped L2 used as change-impact gate.
 
-**L3 reuse:** SQLite cross-process CAS/revocation — prior `test_tool_life_x_l3_r8_sqlite_durable_revocation_shared_store` helpers reused in integrated redrive proof. PostgreSQL Docker L3 not re-run on this change-impact scope (no remote SQL fencing change).
+**L3 reuse:** SQLite durable revocation helpers in integrated HTTP redrive + strict E2E; no new PostgreSQL/Docker L3 on this delta.
 
-## 7. EC1–EC15 (canonical §3.0.5 matrix)
+## 6. Closure matrix (excerpt)
 
-| EC | Status on this SHA | Evidence |
-|---|---|---|
-| EC1–EC4 | TESTED (prior + invoker) | Batch B/A suites + invoker deadline tests |
-| EC5 | TESTED | UNKNOWN / uncertain ledger + ext-op UNKNOWN |
-| EC6 | TESTED | Retry safety + Class B/C separation |
-| EC7–EC9 | TESTED | Scenario 24 + R8/R9 patterns |
-| EC10 | IMPLEMENTED | Prior DB limits qual |
-| EC11 | TESTED | MCP Class C fail-closed R4 test |
-| EC12 | **PHYSICALLY QUALIFIED** (scoped) | Integrated HTTP lost-ack redrive |
-| EC13 | TESTED (scoped) | R4 physical + reused L3 helpers |
-| EC14 | TESTED | No bypass in changed owners |
-| EC15 | **No new lifecycle blockers** in R4 scope | Residuals: independent F8 only |
+| Criterion | Owner | Test / gate | Status |
+|---|---|---|---|
+| F8-redrive-A | `sanctioned_physical_redrive_dispatch_admission` | `test_tool_life_x_r4_f8_redrive_dispatch_adversarial.py` | VALIDATION REQUIRED @ audit SHA |
+| F8-04 production admission | `declarative_tool_wiring` + invoker | strict-host E2E | VALIDATION REQUIRED @ audit SHA |
+| BLOCKER D oracle | qual oracle module | oracle + B2 HTTP qual | VALIDATION REQUIRED @ audit SHA |
+| FRZ-* global | platform | EQG full unit gate | BLOCKED (collection errors unrelated) |
+| Parent CLOSED | operator F8 | independent audit | OPERATOR DECISION REQUIRED |
 
-## 8. G-A01–G-A09 (summary)
+## 7. EC1–EC15 (individual rows — evidence pointer)
 
-| Gate | Result |
+| EC | Requirement (summary) | Status | Test / evidence |
+|---|---|---|---|
+| EC1 | Durable external-operation identity | ALREADY PROVEN + extended | strict E2E, invoker bind |
+| EC2 | Physical attempt / RUNNING semantics | ALREADY PROVEN | strict E2E, scenario 24 |
+| EC3 | Certified owner loss | ALREADY PROVEN | strict E2E, L3 R8 helpers |
+| EC4 | Reconciliation + redrive CAS | ALREADY PROVEN | strict E2E, adversarial dispatch |
+| EC5 | UNKNOWN / uncertain outcomes | TESTED | F8 remediation, transport loss |
+| EC6 | Class B vs C separation | TESTED | B1/B2/MCP tests |
+| EC7 | Stalled / abandonment policy | REUSE prior ADR qual | scenario 24 subset |
+| EC8 | Worker epoch / revocation | TESTED | strict E2E + sqlite revocation |
+| EC9 | Single terminal writer | TESTED | terminal lifecycle invoker |
+| EC10 | Resource / DB limits | REUSE F5 | unchanged owners |
+| EC11 | MCP Class C default | TESTED | `test_tool_life_x_r4_b2_mcp_class_c_fail_closed` |
+| EC12 | HTTP Class B physical qual | PHYSICALLY QUALIFIED (local) | integrated + strict E2E |
+| EC13 | Cross-process durability | REUSE L3 R8 | sqlite shared store helpers |
+| EC14 | No authority bypass | TESTED | adversarial binding/dispatch |
+| EC15 | Lifecycle completeness | TESTED | terminal lifecycle + E2E |
+
+## 8. Scenarios 1–24
+
+Scenarios covered by consolidated L2 (not re-listed exhaustively here): positive lost-ack/redrive (**24**), competing redrive (**24** variants in `test_tool_life_x_r4_f6_scenario_24_recovery.py`), binding adversarial (**EXT-L4**). Full scenario-by-scenario re-proof @ audit SHA — **VALIDATION REQUIRED**.
+
+## 9. G-A01–G-A09
+
+| ID | Status |
 |---|---|
-| G-A02 effect class | Authoritative trusted contracts only; generic HTTP Class C |
-| G-A07 default-off recovery | Unchanged; qual wiring isolated |
-| Others | Reuse prior F3/R6–R10 evidence unless path touched — binding/classification touched; HTTP/MCP Class C tests green |
+| G-A01 | REUSE prior platform evidence |
+| G-A02 | TESTED — authoritative Class B qual tool only |
+| G-A03–G-A06 | REUSE unless touched |
+| G-A07 | TESTED — qual wiring isolated |
+| G-A08–G-A09 | REUSE prior |
 
-## 9. FRZ / ECAP
+## 10. Residuals / blockers
 
-No global `FRZ-*` promotion. Scoped qualification only. Production activation not performed.
-
-## 10. Operator decisions
-
-None required for safe Class C default on generic HTTP. Independent EXT-L4 acceptance remains operator-owned.
+| ID | Blocker |
+|---|---|
+| EQG-global | Full unit gate collection failures (16 errors) — out of R4 diff scope |
+| F8 sign-off | Independent EXT-L4 auditor acceptance |
+| FRZ promotion | Operator-only |
+| Live vendor L3 | Not claimed; local HTTP qual only |
 
 ## 11. Conclusion
 
-**Zero implementation blockers** remain for F8 handoff within authorized scope. **Parent CLOSED not asserted.**
+Implementation and scoped L2 support **READY FOR INDEPENDENT F8 EXT-L4 AUDIT**. **Parent CLOSED not asserted.**
 
 ## 12. Publication
 
 | Field | Value |
 |---|---|
-| START_HEAD | `08787ba4118601ceab4fa613e426d377598ed59b` |
-| IMPLEMENTATION_SHA | `0a5f19c66b48cb80f0be28191aa887ee358f072e` |
-| PUBLICATION_HEAD | `0a5f19c66b48cb80f0be28191aa887ee358f072e` |
+| START_HEAD | `870e9ae466ec7d6e999c2a4c03b6e05ad52e7cd7` |
+| IMPLEMENTATION_SHA | *(filled by commit step)* |
+| PUBLICATION_HEAD | *(filled after push)* |

@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import json
-import socket
 import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -37,8 +36,6 @@ from intergrax.contracts.external_operation_redrive_trusted_effect_contracts imp
     TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT,
 )
 from intergrax.contracts.persistence_topology import PersistenceTopology
-from intergrax.contracts.tool_execution_outcome import ToolEffectCertainty
-from intergrax.integrations.providers.http_client.allowlist.client import AllowlistHttpClient
 from intergrax.runtime.external_operations.redrive_external_operation_authority import (
     bind_authoritative_redrive_effect_to_operation,
 )
@@ -59,7 +56,7 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
     ProcessLocalExternalOperationOwner,
 )
 from intergrax.tools.contracts.tool_profile import ToolProfile
-from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.http.bundle import HTTP_TOOL_IDS, register_http_tools
 from intergrax.tools.providers.http.contracts import HttpRequestInput
@@ -77,6 +74,37 @@ from tests.unit.runtime.nexus.tools.test_gr10_r9_orchestration_mse import (
 from tests.unit.tools.providers.test_tool_life_x_batch_e_real_infrastructure_adversarial import (
     _allowlist_client,
 )
+from tests.unit.runtime.external_operations.tool_life_x_r4_class_b_http_provider_oracle import (
+    ClassBHttpProviderOracle,
+    ClassBHttpProviderOracleConflictError,
+    class_b_http_handler_for_oracle,
+)
+from testing_support.dependency_concurrency_admission_config import (
+    tool_dependency_concurrency_admission_configuration,
+)
+from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+    materialize_tool_dependency_attempt_boundary,
+)
+from intergrax.contracts.agent_runtime_governance import CapabilityGrant
+from intergrax.runtime.agent_governance.audit import (
+    GovernanceAuditRecorder,
+    InMemoryGovernanceAuditSink,
+)
+from intergrax.runtime.agent_governance.authorization_boundary import (
+    AgentRuntimeGovernanceBoundary,
+)
+from intergrax.runtime.agent_governance.capability_resolver import (
+    InMemoryCapabilityGrantResolver,
+)
+from intergrax.runtime.agent_governance.pipeline import AgentRuntimeGovernancePipeline
+from intergrax.runtime.agent_governance.policy_engine import (
+    AgentRuntimePolicyEngine,
+    AllowAllPolicyProvider,
+)
+from tests.unit.runtime.governance.test_gr3_r1_explicit_inner_guard_composition import (
+    _AllowingTestGuard,
+)
+from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -92,39 +120,59 @@ _RUN_SEED = "tool-life-r4-f8-e2e"
 _RUN_ID = canonical_run_id_for_tests(_RUN_SEED)
 _TENANT = "test-tenant"
 _IDEM_KEY = "f8-prod-entry-idem-1"
-_EFFECTS: dict[str, int] = {}
-_EFFECT_LOCK = threading.Lock()
+_PROVIDER_ORACLE = ClassBHttpProviderOracle()
 
 
-class _LostAckHandler(BaseHTTPRequestHandler):
-    def log_message(self, format: str, *args: object) -> None:
-        return
+def _http_capability_governance(
+    *,
+    tenant_id: str,
+    agent_id: str,
+) -> AgentRuntimeGovernanceBoundary:
+    grant = CapabilityGrant(
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        allowed_capabilities=frozenset({"http"}),
+    )
+    pipeline = AgentRuntimeGovernancePipeline(
+        capability_resolver=InMemoryCapabilityGrantResolver((grant,)),
+        policy_engine=AgentRuntimePolicyEngine((AllowAllPolicyProvider(),)),
+        audit_recorder=GovernanceAuditRecorder(InMemoryGovernanceAuditSink()),
+    )
+    return AgentRuntimeGovernanceBoundary(pipeline)
 
-    def do_POST(self) -> None:
-        key = self.headers.get("Idempotency-Key", "").strip()
-        length = int(self.headers.get("Content-Length", "0") or "0")
-        body = self.rfile.read(length) if length else b""
-        with _EFFECT_LOCK:
-            _EFFECTS[key] = _EFFECTS.get(key, 0) + 1
-            _EFFECTS[f"{key}:body"] = body
-        self.request.shutdown(socket.SHUT_RDWR)
 
-
-class _OkIdempotentHandler(BaseHTTPRequestHandler):
-    def log_message(self, format: str, *args: object) -> None:
-        return
-
-    def do_POST(self) -> None:
-        key = self.headers.get("Idempotency-Key", "").strip()
-        length = int(self.headers.get("Content-Length", "0") or "0")
-        body = self.rfile.read(length) if length else b""
-        with _EFFECT_LOCK:
-            if key not in _EFFECTS:
-                _EFFECTS[key] = 1
-            _EFFECTS[f"{key}:body"] = body
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"ok")
+def _build_strict_production_invoker_bundle(
+    tool_wiring: ApplicationToolWiring,
+    *,
+    idempotency_store: InMemoryIdempotencyStore | SQLiteIdempotencyStore,
+    tool_life_execution_recovery: object,
+    tenant_id: str,
+    agent_id: str,
+) -> tuple[object, object]:
+    admission = tool_dependency_concurrency_admission_configuration(
+        HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
+        max_concurrent_calls=8,
+    )
+    dependency_boundary = materialize_tool_dependency_attempt_boundary(
+        admission,
+        production_mode=True,
+    )
+    assert dependency_boundary is not None
+    invoker_bundle = build_declarative_invoker_from_tool_wiring(
+        tool_wiring,
+        idempotency_store=idempotency_store,
+        agent_runtime_governance=_http_capability_governance(
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+        ),
+        canonical_inner_execution_guard=_AllowingTestGuard(),
+        meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
+        dependency_attempt_boundary=dependency_boundary,
+        tool_life_execution_recovery=tool_life_execution_recovery,
+        production_mode=True,
+    )
+    assert invoker_bundle is not None
+    return invoker_bundle, dependency_boundary
 
 
 def test_production_http_bundle_excludes_qualification_class_b_tool() -> None:
@@ -244,8 +292,12 @@ def test_canonical_composition_production_entry_class_b_lost_ack_e2e(
     tmp_path: Path,
 ) -> None:
     """Canonical composition: qual registration, catalog invoke, UNKNOWN durable state, one effect."""
-    _EFFECTS.clear()
-    lost_server = ThreadingHTTPServer(("127.0.0.1", 0), _LostAckHandler)
+    oracle = ClassBHttpProviderOracle()
+    lost_handler = class_b_http_handler_for_oracle(
+        oracle,
+        mode="lost_ack_after_commit",
+    )
+    lost_server = ThreadingHTTPServer(("127.0.0.1", 0), lost_handler)
     lost_thread = threading.Thread(target=lost_server.serve_forever, daemon=True)
     lost_thread.start()
     lost_host, _lost_port = lost_server.server_address
@@ -326,8 +378,7 @@ def test_canonical_composition_production_entry_class_b_lost_ack_e2e(
     assert after_first.physical_state is ExternalOperationPhysicalState.UNKNOWN
     assert after_first.bound_physical_idempotency_key == _IDEM_KEY
     assert after_first.bound_physical_effect_fingerprint == fingerprint
-    with _EFFECT_LOCK:
-        assert _EFFECTS[_IDEM_KEY] == 1
+    assert oracle.effect_count(_IDEM_KEY) == 1
     lost_server.shutdown()
     invoker.close()
 
@@ -337,30 +388,6 @@ _RELEASE_LOST_ACK = threading.Event()
 _EFFECT_COMMITTED = threading.Event()
 _IDENTITY_READY = threading.Event()
 _CAPTURED_OP_ID: dict[str, object] = {}
-
-
-class _GatedLostAckHandler(BaseHTTPRequestHandler):
-    _redrive_ok = False
-
-    def log_message(self, format: str, *args: object) -> None:
-        return
-
-    def do_POST(self) -> None:
-        key = self.headers.get("Idempotency-Key", "").strip()
-        length = int(self.headers.get("Content-Length", "0") or "0")
-        body = self.rfile.read(length) if length else b""
-        with _EFFECT_LOCK:
-            if key not in _EFFECTS:
-                _EFFECTS[key] = 1
-            _EFFECTS[f"{key}:body"] = body
-        if type(self)._redrive_ok:
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"ok")
-            return
-        _EFFECT_COMMITTED.set()
-        _RELEASE_LOST_ACK.wait(timeout=15.0)
-        self.request.shutdown(socket.SHUT_RDWR)
 
 
 def _strict_durable_env() -> ApplicationEnvironmentProfile:
@@ -383,7 +410,6 @@ def _strict_durable_env() -> ApplicationEnvironmentProfile:
 
 def test_forged_qual_tags_with_substitute_handler_rejects_class_b_bind() -> None:
     registry = ToolRegistry()
-    ctx = ToolWiringContext()
     registry.register(
         ToolContract(
             tool_id=HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
@@ -419,7 +445,7 @@ def test_forged_qual_tags_with_substitute_handler_rejects_class_b_bind() -> None
 def test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e(
     tmp_path: Path,
 ) -> None:
-    """Strict profile + qual registration + invoker UNKNOWN + certified loss + redrive invoke."""
+    """Strict profile + production admission + UNKNOWN + certified loss + redrive invoke."""
     from intergrax.autonomous_work.in_memory_repository import InMemoryWorkerInstanceRepository
     from intergrax.contracts.certified_owner_loss_evidence import CertifiedOwnerLossReason
     from intergrax.contracts.external_operation_cancellation import (
@@ -447,19 +473,27 @@ def test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e(
         QualificationWorkerExecutionRevocationSupervision,
     )
 
-    _EFFECTS.clear()
+    oracle = ClassBHttpProviderOracle(
+        db_path=tmp_path / "f8-strict-provider-oracle.db",
+    )
+    oracle.clear()
     _RELEASE_LOST_ACK.clear()
     _EFFECT_COMMITTED.clear()
     _IDENTITY_READY.clear()
     _CAPTURED_OP_ID.clear()
-    lost_server = ThreadingHTTPServer(("127.0.0.1", 0), _GatedLostAckHandler)
+    lost_handler = class_b_http_handler_for_oracle(
+        oracle,
+        mode="lost_ack_after_commit",
+    )
+    lost_handler._lost_ack_committed = _EFFECT_COMMITTED
+    lost_handler._lost_ack_release = _RELEASE_LOST_ACK
+    lost_server = ThreadingHTTPServer(("127.0.0.1", 0), lost_handler)
     lost_thread = threading.Thread(target=lost_server.serve_forever, daemon=True)
     lost_thread.start()
     lost_host, lost_port = lost_server.server_address
     lost_base = f"http://{lost_host}:{lost_port}"
     allow_hosts = {lost_host}
     client = _allowlist_client(allow_hosts)
-
     wiring = wire_tool_life_durable_single_host_execution_recovery(
         required_persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
         db_path=tmp_path / "f8-strict-redrive-e2e.db",
@@ -486,16 +520,17 @@ def test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e(
         wiring_context=ToolWiringContext(http_client=client),
         registry=registry,
     )
-    invoker_bundle = build_declarative_invoker_from_tool_wiring(
+    idem_store = SQLiteIdempotencyStore(str(tmp_path / "f8-strict-idempotency.db"))
+    invoker_bundle, dependency_boundary = _build_strict_production_invoker_bundle(
         tool_wiring,
-        idempotency_store=InMemoryIdempotencyStore(),
-        meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
+        idempotency_store=idem_store,
         tool_life_execution_recovery=wiring,
-        production_mode=False,
+        tenant_id=_TENANT,
+        agent_id="echo",
     )
-    assert invoker_bundle is not None
     invoker = invoker_bundle.tool_invoker
     state = build_runtime_state_for_tests(run_id=_RUN_SEED)
+    state.context.config.production_mode = True
     state.context.config.policy_bundle = wire_policy_bundle(
         env.model_copy(
             update={
@@ -562,109 +597,150 @@ def test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e(
 
     t = threading.Thread(target=_invoke_first, daemon=True)
     t.start()
-    assert _IDENTITY_READY.wait(timeout=10.0), invoke_outcome
-    op_id = str(_CAPTURED_OP_ID["op_id"])
-    assert _EFFECT_COMMITTED.wait(timeout=10.0), invoke_outcome
-    running = store.load(_TENANT, op_id)
-    assert running is not None
-    assert running.physical_state is ExternalOperationPhysicalState.RUNNING
-    bind_worker_execution_ownership(
-        store,
-        tenant_id=_TENANT,
-        operation_id=op_id,
-        expected_revision=running.revision,
-        worker_instance_id=str(worker.worker_instance_id),
-        worker_ownership_epoch=_BOUND_EPOCH,
-    )
-    issue_sqlite_commit_authority_loss_decision_for_bound_operation(
-        bundle,
-        tenant_id=_TENANT,
-        operation_id=op_id,
-    )
-    recorder = require_certified_owner_loss_composition().worker_execution_revocation_recorder
-    assert recorder is not None
-    proof = recorder.record_revocation_for_bound_operation(
-        tenant_id=_TENANT,
-        operation_id=op_id,
-    ).proof_ref
-    certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
-    staged = certifier.stage_certified_owner_loss(
-        tenant_id=_TENANT,
-        operation_id=op_id,
-        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
-        liveness_proof_ref=proof,
-    )
-    unknown = store.apply_certified_owner_loss(
-        _TENANT,
-        op_id,
-        expected_revision=staged.revision,
-        evidence_id=staged.staged_certified_owner_loss.evidence.evidence_id,
-    )
-    assert unknown.physical_state is ExternalOperationPhysicalState.UNKNOWN
-    _RELEASE_LOST_ACK.set()
-    t.join(timeout=20.0)
-    assert not t.is_alive()
-    after_loss = store.load(_TENANT, op_id)
-    assert after_loss is not None
-    assert after_loss.physical_state is ExternalOperationPhysicalState.UNKNOWN
-    assert unknown.consumed_certified_loss_evidence_ids
-    admit_unknown_external_operation_for_reconciliation(
-        store,
-        tenant_id=_TENANT,
-        operation_id=op_id,
-    )
-    recovery_worker = worker_instance()
-    repo.create(recovery_worker)
-    transferred = transfer_redrive_authority_after_reconciliation(
-        store,
-        tenant_id=_TENANT,
-        operation_id=op_id,
-        expected_revision=unknown.revision,
-        trusted_effect_contract=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT,
-        worker_instance_id=str(recovery_worker.worker_instance_id),
-        worker_ownership_epoch=_BOUND_EPOCH + 1,
-        provider_id="http_rest",
-        tool_id="http_idempotent_post",
-        physical_idempotency_key=_IDEM_KEY,
-        physical_effect_fingerprint=fingerprint,
-    )
-    assert transferred.physical_state is ExternalOperationPhysicalState.NOT_STARTED
-    _GatedLostAckHandler._redrive_ok = True
-    redrive_request = ToolExecutionRequest(
-        run_id=_RUN_ID,
-        tool_id=HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
-        input=http_input_lost,
-        step_id="step-f8-strict-redrive",
-        idempotency_key=_IDEM_KEY,
-    )
-    from tests.unit.runtime.governance.gr3_test_support import bound_gr3_active_execution
-
-    with bound_gr3_active_execution(
-        run_id=_CAPTURED_OP_ID["run_id"],
-        attempt_id=_CAPTURED_OP_ID["attempt_id"],
-        execution_id=_CAPTURED_OP_ID["execution_id"],
-        governance_tenant_id=_TENANT,
-        governance_principal_id="tool-life-r4-f8-strict-redrive",
-    ):
-        redrive = invoker.invoke_sanctioned_physical_redrive(
-            state=state,
-            agent_id="echo",
-            request=redrive_request,
-            physical_attempt_sequence=2,
-            durable_operation_id=op_id,
+    try:
+        assert _IDENTITY_READY.wait(timeout=10.0), invoke_outcome
+        op_id = str(_CAPTURED_OP_ID["op_id"])
+        assert _EFFECT_COMMITTED.wait(timeout=10.0), invoke_outcome
+        running = store.load(_TENANT, op_id)
+        assert running is not None
+        assert running.physical_state is ExternalOperationPhysicalState.RUNNING
+        bind_worker_execution_ownership(
+            store,
+            tenant_id=_TENANT,
+            operation_id=op_id,
+            expected_revision=running.revision,
+            worker_instance_id=str(worker.worker_instance_id),
+            worker_ownership_epoch=_BOUND_EPOCH,
         )
-    assert redrive.success is True
-    with _EFFECT_LOCK:
-        assert _EFFECTS[_IDEM_KEY] == 1
-    terminal = store.load(_TENANT, op_id)
-    assert terminal is not None
-    assert terminal.physical_state is ExternalOperationPhysicalState.SUCCEEDED
-    assert terminal.intent_state in (
-        ExternalOperationIntentState.ACTIVE,
-        ExternalOperationIntentState.TERMINATED,
-    )
-    lost_server.shutdown()
-    invoker.close()
+        issue_sqlite_commit_authority_loss_decision_for_bound_operation(
+            bundle,
+            tenant_id=_TENANT,
+            operation_id=op_id,
+        )
+        recorder = require_certified_owner_loss_composition().worker_execution_revocation_recorder
+        assert recorder is not None
+        proof = recorder.record_revocation_for_bound_operation(
+            tenant_id=_TENANT,
+            operation_id=op_id,
+        ).proof_ref
+        certifier = build_worker_execution_certified_owner_loss_certifier(store=store)
+        staged = certifier.stage_certified_owner_loss(
+            tenant_id=_TENANT,
+            operation_id=op_id,
+            loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
+            liveness_proof_ref=proof,
+        )
+        unknown = store.apply_certified_owner_loss(
+            _TENANT,
+            op_id,
+            expected_revision=staged.revision,
+            evidence_id=staged.staged_certified_owner_loss.evidence.evidence_id,
+        )
+        assert unknown.physical_state is ExternalOperationPhysicalState.UNKNOWN
+        _RELEASE_LOST_ACK.set()
+        t.join(timeout=20.0)
+        assert not t.is_alive()
+        after_loss = store.load(_TENANT, op_id)
+        assert after_loss is not None
+        assert after_loss.physical_state is ExternalOperationPhysicalState.UNKNOWN
+        assert unknown.consumed_certified_loss_evidence_ids
+        admit_unknown_external_operation_for_reconciliation(
+            store,
+            tenant_id=_TENANT,
+            operation_id=op_id,
+        )
+        recovery_worker = worker_instance()
+        repo.create(recovery_worker)
+        transferred = transfer_redrive_authority_after_reconciliation(
+            store,
+            tenant_id=_TENANT,
+            operation_id=op_id,
+            expected_revision=unknown.revision,
+            trusted_effect_contract=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT,
+            worker_instance_id=str(recovery_worker.worker_instance_id),
+            worker_ownership_epoch=_BOUND_EPOCH + 1,
+            provider_id="http_rest",
+            tool_id="http_idempotent_post",
+            physical_idempotency_key=_IDEM_KEY,
+            physical_effect_fingerprint=fingerprint,
+        )
+        assert transferred.physical_state is ExternalOperationPhysicalState.NOT_STARTED
+        lost_handler._redrive_ok = True
+        redrive_request = ToolExecutionRequest(
+            run_id=_RUN_ID,
+            tool_id=HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
+            input=http_input_lost,
+            step_id="step-f8-strict-redrive",
+            idempotency_key=_IDEM_KEY,
+        )
+        from tests.unit.runtime.governance.gr3_test_support import bound_gr3_active_execution
+
+        with bound_gr3_active_execution(
+            run_id=_CAPTURED_OP_ID["run_id"],
+            attempt_id=_CAPTURED_OP_ID["attempt_id"],
+            execution_id=_CAPTURED_OP_ID["execution_id"],
+            governance_tenant_id=_TENANT,
+            governance_principal_id="tool-life-r4-f8-strict-redrive",
+        ):
+            redrive = invoker.invoke_sanctioned_physical_redrive(
+                state=state,
+                agent_id="echo",
+                request=redrive_request,
+                physical_attempt_sequence=2,
+                durable_operation_id=op_id,
+            )
+        assert redrive.success is True
+        assert oracle.effect_count(_IDEM_KEY) == 1
+        terminal = store.load(_TENANT, op_id)
+        assert terminal is not None
+        assert terminal.physical_state is ExternalOperationPhysicalState.SUCCEEDED
+        assert terminal.intent_state in (
+            ExternalOperationIntentState.ACTIVE,
+            ExternalOperationIntentState.TERMINATED,
+        )
+    finally:
+        _RELEASE_LOST_ACK.set()
+        if t.is_alive():
+            t.join(timeout=5.0)
+        lost_server.shutdown()
+        invoker.close()
+        if dependency_boundary is not None:
+            dependency_boundary.close()
+
+
+def test_class_b_http_provider_oracle_concurrent_single_effect(tmp_path: Path) -> None:
+    oracle = ClassBHttpProviderOracle(db_path=tmp_path / "oracle-concurrent.db")
+    body = b'{"action":"charge"}'
+    errors: list[BaseException] = []
+
+    def _worker() -> None:
+        try:
+            oracle.apply_post(idempotency_key="concurrent-k", body=body)
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+
+    threads = [threading.Thread(target=_worker) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10.0)
+    assert not errors
+    assert oracle.effect_count("concurrent-k") == 1
+
+
+def test_class_b_http_provider_oracle_dedup_and_conflict(tmp_path: Path) -> None:
+    oracle = ClassBHttpProviderOracle(db_path=tmp_path / "oracle.db")
+    body_a = b'{"action":"charge"}'
+    body_b = b'{"action":"other"}'
+    first = oracle.apply_post(idempotency_key="k1", body=body_a)
+    replay = oracle.apply_post(idempotency_key="k1", body=body_a)
+    assert first.effect_count == 1 and replay.replay and replay.effect_count == 1
+    with pytest.raises(ClassBHttpProviderOracleConflictError):
+        oracle.apply_post(idempotency_key="k1", body=body_b)
+    assert oracle.apply_post(idempotency_key="", body=body_a).http_status == 400
+    restarted = ClassBHttpProviderOracle(db_path=tmp_path / "oracle.db")
+    restarted.reload_from_durable_store()
+    assert restarted.effect_count("k1") == 1
 
 
 def test_generic_http_class_c_still_executable_and_redrive_denied(tmp_path: Path) -> None:

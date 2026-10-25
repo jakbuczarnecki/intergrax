@@ -1026,6 +1026,7 @@ class RuntimeToolInvoker:
             build_tool_authorization_request,
         )
         from intergrax.runtime.agent_governance.errors import (
+            CapabilityNotGrantedError,
             ToolGovernanceApprovalRequiredError,
             ToolGovernanceDeniedError,
         )
@@ -1067,6 +1068,28 @@ class RuntimeToolInvoker:
                 auth_request,
                 policy_context=policy_context,
             )
+        except CapabilityNotGrantedError as exc:
+            capability = contract.category.strip() or contract.tool_id
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="agent_runtime_governance_capability_not_granted",
+                message="Agent runtime governance denied tool invocation (capability).",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=exc.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=str(exc),
+                ),
+            )
+            raise ToolGovernanceDeniedError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+                capability=capability,
+                reason="capability_not_granted",
+                policy_results=(),
+            ) from None
         except ToolGovernanceDeniedError as exc:
             state.trace_event(
                 component=TraceComponent.TOOLS,
@@ -2044,8 +2067,12 @@ class RuntimeToolInvoker:
         durable_operation_id: str,
     ) -> ToolExecutionResult[BaseModel]:
         """Re-dispatch one bound Class B effect after sanctioned redrive authority transfer."""
-        from intergrax.contracts.external_operation_cancellation import (
-            ExternalOperationPhysicalState,
+        from intergrax.contracts.idempotency_store import (
+            ClaimOutcome,
+            PreEffectSuspendedWorkRecoveryAuthority,
+        )
+        from intergrax.runtime.external_operations.sanctioned_physical_redrive_dispatch_admission import (
+            assert_sanctioned_physical_redrive_dispatch_admitted,
         )
 
         if physical_attempt_sequence < 2:
@@ -2056,22 +2083,128 @@ class RuntimeToolInvoker:
         operation_id = durable_operation_id.strip()
         if not operation_id:
             raise ValueError("durable_operation_id is required for sanctioned redrive")
-        record = store.load(state.tenant_id, operation_id)
-        if record is None:
-            raise RuntimeError("durable external operation not found for redrive")
-        if not record.consumed_redrive_admission_ids:
-            raise RuntimeError("redrive authority not transferred")
-        if record.physical_state is not ExternalOperationPhysicalState.NOT_STARTED:
-            raise RuntimeError(
-                f"redrive requires physical NOT_STARTED, got {record.physical_state.value}",
-            )
-        contract = self._registry.get(request.tool_id).contract
-        self._require_current_attempt_authorization(
+
+        preparation = self._prepare_invocation(
+            state=state,
+            agent_id=agent_id,
+            request=request,
+        )
+        if isinstance(preparation, ToolExecutionResult):
+            return preparation
+
+        contract = preparation
+        registered = self._registry.get(request.tool_id)
+        redrive_record = assert_sanctioned_physical_redrive_dispatch_admitted(
+            store,
+            tenant_id=state.tenant_id,
+            durable_operation_id=operation_id,
+            catalog_tool_id=request.tool_id,
+            registered_tool=registered,
+            physical_idempotency_key=request.idempotency_key,
+            tool_input=request.input,
+            physical_attempt_sequence=physical_attempt_sequence,
+        )
+
+        admission_denied = self._protected_work_admission_tool_denial(
             state=state,
             agent_id=agent_id,
             contract=contract,
             request=request,
         )
+        if admission_denied is not None:
+            return admission_denied
+
+        claim_context: PreEffectClaimContext | None = None
+        if self._requires_idempotency_coordination(contract, request):
+            coordinator = self._pre_effect_coordinator
+            if coordinator is None:
+                raise RuntimeError(
+                    "Side-effect tool with idempotency key requires a pre-effect coordinator.",
+                )
+            worker_id = redrive_record.worker_instance_id
+            fence = redrive_record.ownership_epoch_fence
+            if not worker_id or fence is None or fence < 1:
+                raise RuntimeError(
+                    "sanctioned physical redrive requires bound worker execution fence",
+                )
+            coordination = coordinator.before_external_effect_sanctioned_physical_redrive(
+                state=state,
+                contract=contract,
+                request=request,
+                recovery_authority=PreEffectSuspendedWorkRecoveryAuthority(
+                    owner_id=worker_id,
+                    fence=fence,
+                ),
+            )
+            if coordination.outcome == ClaimOutcome.REPLAY_COMPLETED:
+                replay = coordination.replay_result
+                if replay is None:
+                    raise RuntimeError(
+                        "Ledger inconsistency: REPLAY_COMPLETED without stored result.",
+                    )
+                return replay
+            claim_context = coordination.claim_context
+            if claim_context is None:
+                raise RuntimeError(
+                    "Ledger inconsistency: ACQUIRED without claim context.",
+                )
+
+        if claim_context is not None:
+            coordinator = self._pre_effect_coordinator
+            if coordinator is None:
+                raise RuntimeError(
+                    "Pre-effect claim context present without coordinator.",
+                )
+            boundary = _ExternalEffectBoundary()
+            try:
+                self._effect_crash_injection.raise_if_scheduled(
+                    ToolRuntimeEffectCrashCheckpoint.AFTER_TOOL_RUNTIME_ADMISSION_BEFORE_BACKEND,
+                )
+                raw_out = self._execute_once(
+                    state,
+                    agent_id,
+                    contract,
+                    request,
+                    physical_attempt_sequence=physical_attempt_sequence,
+                    durable_operation_id=operation_id,
+                    pre_effect_claim=claim_context,
+                    effect_boundary=boundary,
+                )
+            except SimulatedHostProcessLostError:
+                if boundary.may_have_started:
+                    coordinator.on_post_claim_exception(
+                        claim_context=claim_context,
+                        contract=contract,
+                        effect_may_have_started=True,
+                    )
+                raise
+            except Exception:
+                coordinator.on_post_claim_exception(
+                    claim_context=claim_context,
+                    contract=contract,
+                    effect_may_have_started=boundary.may_have_started,
+                )
+                raise
+            try:
+                self._effect_crash_injection.raise_if_scheduled(
+                    ToolRuntimeEffectCrashCheckpoint.AFTER_BACKEND_BEFORE_EFFECT_COMMIT,
+                )
+            except SimulatedHostProcessLostError:
+                coordinator.on_post_claim_exception(
+                    claim_context=claim_context,
+                    contract=contract,
+                    effect_may_have_started=True,
+                )
+                raise
+            out = self._validate_output(contract.output_schema, raw_out)
+            result = ToolExecutionResult.ok(out)
+            coordinator.after_external_effect(
+                claim_context=claim_context,
+                contract=contract,
+                result=result,
+            )
+            return result
+
         raw_out = self._execute_once(
             state,
             agent_id,
