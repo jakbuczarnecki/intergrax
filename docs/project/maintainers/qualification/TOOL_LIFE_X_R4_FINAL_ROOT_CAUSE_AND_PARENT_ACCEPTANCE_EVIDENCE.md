@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Baseline SHA (operator START_HEAD) | `d782800e622a9b8c27351bd3818a2e8abf5c5f0e` |
-| Frozen implementation SHA | *(set at commit — see git log after push)* |
+| Frozen implementation SHA | `2c69e6aaf` (full: `git rev-parse HEAD` on `development`) |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
 | ADR | `ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md` |
