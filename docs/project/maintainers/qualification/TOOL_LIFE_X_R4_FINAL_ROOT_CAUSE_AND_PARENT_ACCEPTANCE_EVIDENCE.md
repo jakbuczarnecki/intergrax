@@ -4,8 +4,9 @@
 
 | Field | Value |
 |---|---|
-| Baseline SHA (operator START_HEAD) | `08787ba4118601ceab4fa613e426d377598ed59b` |
-| Frozen implementation SHA | `0a5f19c66b48cb80f0be28191aa887ee358f072e` |
+| Operator START_HEAD (this batch) | `5e9817b14dbdae1a310a5a3d8d4057ef2a59d03c` |
+| Implementation SHA | `4431c272d7fb47134d20b0b6ad7949ba413ecc78` |
+| PUBLICATION_HEAD | *(pending evidence commit)* |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
 | ADR | `ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md` |
@@ -27,9 +28,10 @@ Prior wave fixed generic `http.request` Class C mapping and several invoker term
 | ID | Disposition |
 |---|---|
 | F8-01 | **Fixed** — `http.idempotent_post.qual` removed from `HTTP_TOOL_IDS` / `register_http_tools`; isolated `register_tool_life_http_class_b_qualification_tools` |
-| F8-02 | **Fixed** — mandatory physical key + fingerprint for `tool_life.http_idempotent_post.qual.v1`; authoritative `request.idempotency_key` on wire; `tool-life-qual` provenance tag |
+| F8-02 | **Fixed** — mandatory physical key + fingerprint; authoritative idempotency on wire |
+| F8-A | **Fixed** — Class B from `HttpIdempotentPostQualHandler` + `ToolRuntimeActivationMetadata` (`class_b_qualification_provenance.py`); invoker passes `RegisteredTool` into bind; tags alone cannot mint Class B |
 | F8-03 | **Fixed** — `physical_execution_admitted()` gates UNKNOWN with `http_transport_error` (not only pre-effect boundary) |
-| F8-04 | **Qualified** — `test_canonical_composition_production_entry_class_b_lost_ack_e2e` + integrated HTTP redrive (certified-loss redrive path) |
+| F8-04 / F8-C | **Qualified** — `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` (strict env profile, qual registration, invoker UNKNOWN, certified loss, `invoke_sanctioned_physical_redrive`, one provider effect); supporting: production-entry lost-ack + integrated HTTP redrive |
 
 ## 3. Defects A–E
 
@@ -49,7 +51,7 @@ Prior wave fixed generic `http.request` Class C mapping and several invoker term
 | Surface | Class | Notes |
 |---|---|---|
 | Generic `http.request` | **C** | Executes under governance; no automated redrive binding |
-| `http.idempotent_post.qual` | **B** | Qual composition only (`tool-life-qual` tag); not in default HTTP bundle |
+| `http.idempotent_post.qual` | **B** | Qual composition only (sanctioned handler + activation digest); not in default HTTP bundle |
 | `http_blind_post` / `http.read_only` qual | **C** | Explicit contracts |
 | `invoke_catalog_tool` (MCP) | **C** | Default qual contract |
 | Platform durable physical lifecycle | **B** | Explicit catalog tool only |
@@ -76,9 +78,11 @@ uv run pytest `
   -q
 ```
 
-**Result:** 48 passed (session log: `.tmp/session/TOOL-LIFE-X-R4/pytest-f8-consolidated-l2.log`).
+**Result:** 51 passed (session log: `.tmp/session/TOOL-LIFE-X-R4/pytest-f8-consolidated-l2.log`).
 
-**Canonical production-entry E2E:** `test_canonical_composition_production_entry_class_b_lost_ack_e2e` in `test_tool_life_x_r4_f8_remediation.py`.
+**Canonical strict-host Class B recovery E2E:** `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` in `test_tool_life_x_r4_f8_remediation.py`.
+
+**EQG (static):** `uv run ruff check` on changed F8 owners (exit 0 @ implementation SHA).
 
 **L3 reuse:** SQLite cross-process CAS/revocation — prior `test_tool_life_x_l3_r8_sqlite_durable_revocation_shared_store` helpers reused in integrated redrive proof. PostgreSQL Docker L3 not re-run on this change-impact scope (no remote SQL fencing change).
 
