@@ -242,6 +242,28 @@ async def test_discovery_invoke_catalog_tool_absent_without_host_invoker() -> No
 
 
 @pytest.mark.asyncio
+async def test_tier3_mcp_host_builders_option_c_no_invoke_catalog_tool() -> None:
+    """TOOL-LIFE-X B2 — Tier-3 MCP mounts must not expose invoke without Gate B wiring."""
+    from applications.lab_application.mcp.server import build_lab_mcp_server
+    from applications.poc_template_application.mcp.server import build_poc_template_mcp_server
+
+    host = AsyncMock(spec=HostTaskExecutionPort)
+    agent_registry = AgentRegistry()
+    tool_registry = ToolRegistry()
+    tool_registry.register(_contract("tier3.option_c"), _noop_handler())
+    for build_server in (build_lab_mcp_server, build_poc_template_mcp_server):
+        mcp = build_server(
+            host_execution=host,
+            registry=agent_registry,
+            route_prefix="/mcp",
+            tool_registry=tool_registry,
+        )
+        names = await _tool_names(mcp)
+        assert "invoke_catalog_tool" not in names
+        assert {"list_catalog_tools", "describe_catalog_tool"}.issubset(names)
+
+
+@pytest.mark.asyncio
 async def test_discovery_does_not_mutate_registry() -> None:
     registry = ToolRegistry()
     registry.register(_contract("qual.stable"), _noop_handler())
