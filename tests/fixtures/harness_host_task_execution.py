@@ -24,6 +24,9 @@ from intergrax.runtime.execution.environment_host_task_execution import (
 from intergrax.runtime.execution.environment_orchestration_materialization import (
     EnvironmentOrchestrationMaterialization,
 )
+from intergrax.contracts.root_execution_child_work_ingress import (
+    RootExecutionChildWorkIngressPort,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
@@ -43,6 +46,7 @@ def build_harness_host_task_execution(
     revision_admission: EffectiveProfileRevisionAdmissionPort | None = None,
     skill_host_wiring: HostSkillCatalogWiring | None = None,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
+    root_child_work_ingress: RootExecutionChildWorkIngressPort | None = None,
 ) -> HostTaskExecution:
     governance = build_harness_host_task_execution_governance(
         governance_evidence_recorder=governance_evidence_recorder,
@@ -55,6 +59,7 @@ def build_harness_host_task_execution(
         root_authority_admission=governance.root_authority_admission,
         admit_root_governance_identity=governance.admit_root_governance_identity,
         skill_host_wiring=skill_host_wiring,
+        root_child_work_ingress=root_child_work_ingress,
     )
 
 

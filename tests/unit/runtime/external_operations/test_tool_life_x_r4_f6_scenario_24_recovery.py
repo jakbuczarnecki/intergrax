@@ -23,6 +23,9 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
     mark_physical_running,
     recover_running_operation_after_certified_owner_loss,
 )
+from intergrax.runtime.external_operations.recovery_external_operation_gate import (
+    admit_unknown_external_operation_for_reconciliation,
+)
 from intergrax.runtime.external_operations.sqlite_tool_life_durable_stores import (
     SqliteToolLifeDurableStoresBundle,
 )
@@ -44,7 +47,7 @@ def durable_bundle(tmp_path: Path) -> SqliteToolLifeDurableStoresBundle:
     return SqliteToolLifeDurableStoresBundle(db_path=tmp_path / "scenario24.db")
 
 
-def test_scenario_24_positive_recovery_after_revocation_and_certified_loss(
+def test_scenario_24_certified_loss_transitions_running_to_unknown(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
@@ -90,6 +93,49 @@ def test_scenario_24_stale_epoch_cannot_resume_physical_effect(
             operation_id=_OP,
             expected_revision=bound.revision,
             owner=stale,
+        )
+
+
+def test_scenario_24_positive_redrive_blocked_until_redrive_authority_contract(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    """BLOCKED positive re-drive: revoked worker epoch remains bound after RUNNING→UNKNOWN."""
+    repo = InMemoryWorkerInstanceRepository()
+    _running_with_worker(durable_bundle, repo)
+    proof = _revoke_bound(durable_bundle)
+    certifier = build_worker_execution_certified_owner_loss_certifier(
+        store=durable_bundle.external_operation_state,
+    )
+    staged = certifier.stage_certified_owner_loss(
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        loss_reason=CertifiedOwnerLossReason.WORKER_LOST,
+        liveness_proof_ref=proof,
+    )
+    evidence_id = staged.staged_certified_owner_loss.evidence.evidence_id
+    unknown = recover_running_operation_after_certified_owner_loss(
+        durable_bundle.external_operation_state,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+        expected_revision=staged.revision,
+        evidence_id=evidence_id,
+    )
+    assert unknown.physical_state is ExternalOperationPhysicalState.UNKNOWN
+    assert unknown.worker_instance_id is not None
+    assert unknown.worker_ownership_epoch is not None
+    admit_unknown_external_operation_for_reconciliation(
+        durable_bundle.external_operation_state,
+        tenant_id=_TENANT,
+        operation_id=_OP,
+    )
+    fresh_owner = ProcessLocalExternalOperationOwner.mint()
+    with pytest.raises(ExternalOperationFencedCommitRejectedError, match="revoked"):
+        mark_physical_running(
+            durable_bundle.external_operation_state,
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            expected_revision=unknown.revision,
+            owner=fresh_owner,
         )
 
 

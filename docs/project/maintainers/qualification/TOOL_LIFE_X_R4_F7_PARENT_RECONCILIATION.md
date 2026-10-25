@@ -2,9 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| **EXPECTED_START_HEAD** | `a63646bb8f0dc2fd6849547d33820bd58dc394ab` |
-| **IMPLEMENTATION_SHA** | `e7f965a5ef105da5929235aa1bc0b3cc20bb9494` |
-| **Disposition** | `TOOL-LIFE-X R4 — PARTIAL / EXACT BLOCKERS` |
+| **EXPECTED_START_HEAD** | `c9fad321a7dc26195237da05a9e6a5c09b159f2c` |
+| **IMPLEMENTATION_SHA** | `5843bfcda2a06b0ba0a37d1b43b0d4f640c9af7f` — [`TOOL_LIFE_X_R4_EVIDENCE_GAP_CLOSURE.md`](TOOL_LIFE_X_R4_EVIDENCE_GAP_CLOSURE.md) |
+| **Disposition** | `TOOL-LIFE-X R4 — PARTIAL / EXACT ARCHITECTURE BLOCKERS` |
 
 ## Consolidated verification
 
@@ -12,8 +12,8 @@
 | --- | --- | --- |
 | R4 remediation selection (20 modules) | **213 passed**, 0 failed | `.tmp/session/TOOL-LIFE-X-R4/pytest-r4-remediation-consolidated.log` |
 | R6 pollution repro (gate_a → r6 negatives) | **5 passed** | session |
-| F3 streamable HTTP physical L3 | **2 passed** | same remediation log |
-| F6 scenario 24 qual | **3 passed** | `test_tool_life_x_r4_f6_scenario_24_recovery.py` |
+| F3 streamable HTTP physical L3 | **3 passed** (incl. transport disconnect) | evidence-gap log |
+| F6 scenario 24 qual | **4 passed** (positive re-drive **BLOCKED** proof) | `test_tool_life_x_r4_f6_scenario_24_recovery.py` |
 
 ## Test contamination fix (205/208 → green)
 
@@ -26,7 +26,7 @@
 | Layer | Module | Contract |
 | --- | --- | --- |
 | L2 / integration | `test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py` | In-process FastMCP `Client`, simulated host drain |
-| **L3 physical HTTP** | `test_mcp_catalog_f3_streamable_http_physical_l3.py` | uvicorn loopback + `streamablehttp_client`; `build_harness_host_task_execution` + `ExecutionBoundary` + OWN-A2 (`admit_protected_mcp_root_execution_supervision` via coupled boundary); cross-loop ingress on canonical `HostTaskExecution` |
+| **L3 physical HTTP** | `test_mcp_catalog_f3_streamable_http_physical_l3.py` | uvicorn loopback + `streamablehttp_client`; sanctioned `root_child_work_ingress=` on `build_host_task_execution` (no `__setattr__`); OWN-A2 `task_id`; disconnect L3 |
 
 ## Gate A per sink (R4 evidence map)
 
@@ -52,11 +52,12 @@ Authorization fencing ≠ remote atomic commit fencing (operator honesty retaine
 
 | Test | Status |
 | --- | --- |
-| Positive UNKNOWN recovery after revoke + certified loss | `test_scenario_24_positive_recovery_after_revocation_and_certified_loss` |
+| RUNNING → UNKNOWN after certified loss | `test_scenario_24_certified_loss_transitions_running_to_unknown` |
+| Positive re-drive after reconciliation | **BLOCKED** — `test_scenario_24_positive_redrive_blocked_until_redrive_authority_contract` |
 | Stale epoch physical deny | `test_scenario_24_stale_epoch_cannot_resume_physical_effect` |
 | Forged recovery rejected | `test_scenario_24_forged_recovery_without_staged_evidence_rejected` |
 
-Qual-only; no production recovery default-on.
+Qual-only; no production recovery default-on. UNKNOWN transition ≠ positive recovery.
 
 ## G-A01–G-A09 (snapshot)
 
@@ -68,14 +69,14 @@ Qual-only; no production recovery default-on.
 | G-A04–G-A06 | PASS scoped — Batch A/B/D + R8 |
 | G-A07 | WIRED default-off; **OD-R4-G-A07-PROD-ACTIVATE** for live activation |
 | G-A08 | PASS scoped — remediation consolidated 213/213 |
-| G-A09 | PASS scoped — scenario 24 qual module @ remediation SHA |
+| G-A09 | PARTIAL — scenario 24 negatives + UNKNOWN; positive re-drive BLOCKED |
 
 ## Scenarios 1–24
 
 | Scenario | Status |
 | --- | --- |
 | 1–23 | PASS scoped — historical L3 reuse in remediation batch |
-| 24 | **PASS qual** — `test_tool_life_x_r4_f6_scenario_24_recovery.py` |
+| 24 | **PARTIAL** — UNKNOWN qual; positive re-drive **ARCHITECTURE DECISION REQUIRED** |
 
 ## EC1–EC15 (summary)
 
@@ -87,7 +88,9 @@ Qual-only; no production recovery default-on.
 
 ## Remaining mandatory blockers
 
-1. **OD-R4-G-A07-PROD-ACTIVATE** — operator authorization for effective production wiring/recovery (distinct from qual proof).
-2. **Production MCP HTTP catalog** — remains Option C (disabled).
-3. **PostgreSQL physical L3** — optional Docker qual not rerun in remediation batch.
-4. **Formal TOOL-LIFE-X CLOSED / EXT-L4** — independent parent audit only; Cursor must not self-certify.
+1. **TL8 scenario 24 positive re-drive** — sanctioned redrive authority after reconciliation (worker epoch still bound + revoked blocks `mark_physical_running`).
+2. **G-A02 HTTP** — atomic provider-side fence for non-idempotent remote effects (**ARCHITECTURE DECISION REQUIRED**).
+3. **OD-R4-G-A07-PROD-ACTIVATE** — operator authorization for effective production wiring/recovery (distinct from qual proof).
+4. **Production MCP HTTP catalog** — remains Option C (disabled).
+5. **PostgreSQL physical L3** — optional Docker qual not rerun in evidence-gap batch.
+6. **Formal TOOL-LIFE-X CLOSED / EXT-L4** — independent parent audit only; Cursor must not self-certify.

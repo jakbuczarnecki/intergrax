@@ -18,6 +18,9 @@ from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import 
 )
 from intergrax.runtime.execution.budget.persistence import RunBudgetPersistence
 from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
+from intergrax.contracts.root_execution_child_work_ingress import (
+    RootExecutionChildWorkIngressPort,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_task_terminal import (
     build_nexus_host_task_terminal_publisher,
@@ -43,6 +46,7 @@ def build_host_task_execution(
     run_budget_persistence: RunBudgetPersistence | None = None,
     deadline_authority_resolver: ExecutionDeadlineAuthorityResolver | None = None,
     continuation_state_store: ExecutionContinuationStateStore | None = None,
+    root_child_work_ingress: RootExecutionChildWorkIngressPort | None = None,
 ) -> HostTaskExecution:
     """Internal composition builder: extract canonical execution dependencies from Nexus."""
     resolved_continuation_store = continuation_state_store
@@ -72,6 +76,7 @@ def build_host_task_execution(
         _admit_root_governance_identity=admit_root_governance_identity,
         _run_budget_persistence=run_budget_persistence,
         _deadline_authority_resolver=deadline_authority_resolver,
+        _root_child_work_ingress=root_child_work_ingress,
     )
 
 

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import socket
 import threading
 import time
@@ -157,16 +158,16 @@ def _build_http_mcp_app(
 ) -> FastAPI:
     registry = AgentRegistry()
     nexus = NexusLoop(registry)
-    host = build_harness_host_task_execution(
-        nexus,
-        orchestration_triggers=frozenset(),
-    )
     child_port = build_production_catalog_tool_child_execution_port()
     ingress = RootExecutionChildWorkIngress(
         catalog_child_execution=child_port,
         serialize_tool_result=_serialize_tool_result,
     )
-    object.__setattr__(host, "_root_child_work_ingress", ingress)
+    host = build_harness_host_task_execution(
+        nexus,
+        orchestration_triggers=frozenset(),
+        root_child_work_ingress=ingress,
+    )
     tool_registry = ToolRegistry()
     tool_registry.register(_contract("f3.http.ok"), _handler())
     env = ApplicationEnvironmentProfile(application_profile=ApplicationProfile.PRODUCT)
@@ -310,6 +311,8 @@ async def test_f3_streamable_http_catalog_child_under_canonical_root() -> None:
     assert invoker.results, catalog_payload
     assert catalog_payload.get("success") is True
     assert not run_result.isError
+    run_payload = _tool_payload(run_result)
+    assert str(run_payload.get("task_id")) == str(binding.task_id)
 
 
 @pytest.mark.asyncio
@@ -391,3 +394,92 @@ async def test_f3_streamable_http_parent_cancel_during_catalog_child() -> None:
         "execution_cancelled",
         "execution_admission_denied",
     }
+
+
+@pytest.mark.asyncio
+async def test_f3_streamable_http_transport_disconnect_during_catalog_child() -> None:
+    """HTTP client abandons in-flight catalog invoke; root supervision still drains."""
+    invoker = _RecordingCatalogInvoker(delay_s=0.6)
+    app = _build_http_mcp_app(invoker)
+    root_hang = threading.Event()
+    invoker_started = threading.Event()
+
+    async def _slow_root(_request: object) -> TaskResult:
+        task_ids = await ActiveTaskRegistry.list_ids()
+        binding = await ActiveTaskRegistry.get(task_ids[0])
+        assert binding is not None
+        task = binding.task
+        run_id = binding.run_id
+        root_hang.set()
+        deadline = time.monotonic() + 12.0
+        while time.monotonic() < deadline:
+            if CancellationCoordinator.is_requested(dict(task.metadata)):
+                break
+            await asyncio.sleep(0.03)
+        return TaskResult(
+            task_id=task.task_id,
+            run_id=str(run_id),
+            state=TaskState.COMPLETED,
+            answer="root-after-disconnect",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        )
+
+    original_invoke = invoker.invoke
+
+    def _invoke_track(request: ExecutionBoundCatalogToolInvokeRequest) -> ToolExecutionResult[_Out]:
+        invoker_started.set()
+        return original_invoke(request)
+
+    invoker.invoke = _invoke_track  # type: ignore[method-assign]
+
+    from mcp.client.session import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    async def _abandon_catalog_client(base_url: str) -> None:
+        async with streamablehttp_client(
+            base_url,
+            headers={"X-Api-Key": _API_KEY},
+        ) as (read, write, _):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                run_call = asyncio.create_task(
+                    session.call_tool(
+                        "run_agent",
+                        {"message": "f3-disc", "capability": _CAP},
+                    ),
+                )
+                if not await asyncio.to_thread(root_hang.wait, 8.0):
+                    raise TimeoutError("root did not start")
+                binding = await ActiveTaskRegistry.get((await ActiveTaskRegistry.list_ids())[0])
+                assert binding is not None
+                catalog_call = asyncio.create_task(
+                    session.call_tool(
+                        "invoke_catalog_tool",
+                        {
+                            "tool_id": "f3.http.ok",
+                            "task_id": str(binding.task_id),
+                            "run_id": str(binding.run_id),
+                            "step_id": _STEP,
+                        },
+                    ),
+                )
+                deadline = time.monotonic() + 8.0
+                while not invoker_started.is_set() and time.monotonic() < deadline:
+                    await asyncio.sleep(0.03)
+                assert invoker_started.is_set()
+                catalog_call.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await asyncio.wait_for(catalog_call, timeout=3.0)
+                await asyncio.wait_for(run_call, timeout=20.0)
+
+    with patch.object(
+        TaskBoundAgenticDelegate,
+        "execute",
+        new_callable=AsyncMock,
+        side_effect=_slow_root,
+    ):
+        with _uvicorn_mcp_base_url(app) as base_url:
+            await asyncio.wait_for(_abandon_catalog_client(base_url), timeout=30.0)
+
+    assert invoker.results
+    assert await ActiveTaskRegistry.list_ids() == []
