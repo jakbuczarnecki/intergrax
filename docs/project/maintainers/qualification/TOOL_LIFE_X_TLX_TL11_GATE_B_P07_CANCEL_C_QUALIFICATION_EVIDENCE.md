@@ -133,3 +133,19 @@ uv run pytest -p no:xdist -q \
 2. L3 catalog invoke + HTTP cancel (fixture lock).
 3. Side-effect invoke without active execution governance identity binding remains **denied** (by design until host binds identity during live execution).
 4. TL11 / TOOL-LIFE-X / Gate A / TL8 — **not closed**.
+
+---
+
+## 9. Child ownership contract design reconciliation (`TLX-TL11-CHILD-OWNERSHIP-CONTRACT-DESIGN`)
+
+| Field | Value |
+| --- | --- |
+| **Design START_HEAD** | `acff4087123ad9bd1bce1e2a612f633afe222c5f` |
+| **Canonical design record** | [`ADR_TLX_TL11_MCP_CATALOG_CHILD_EXECUTION_OWNERSHIP.md`](../architecture/ADR_TLX_TL11_MCP_CATALOG_CHILD_EXECUTION_OWNERSHIP.md) |
+| **Disposition** | **`TLX-TL11-CHILD-OWNERSHIP-CONTRACT-DESIGN — READY FOR INDEPENDENT AUDIT`** (design only) |
+
+**Reconciliation with R2-F04 / OWN-A2:** Catalog invoke currently admits via **root** transport supervision (`admit_protected_mcp_root_execution_supervision`). That path is **not** child ownership; `DUPLICATE_HANDOFF_CONFLICT` on a second `host_asyncio_task` for the same `task_id` must **not** be read as catalog work permission. Recommended target: **Option B** — typed `CatalogToolChildExecutionPort` delegating to existing `ChildExecutionRunner` (U4 reference), with OWN-A2 limited to **root** `run_agent` only.
+
+**P07/CANCEL-C status unchanged:** Cooperative cancel L2 remains as qualified; child ownership implementation, L3 physical invoke/cancel under active root, and independent audit @ publication SHA are **out of scope** for this design batch.
+
+**Non-closure:** Not `CHILD OWNERSHIP RATIFIED`; not `P07/CANCEL-C CLOSED`; not `TOOL-LIFE-X CLOSED`.
