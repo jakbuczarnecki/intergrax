@@ -149,3 +149,21 @@ uv run pytest -p no:xdist -q \
 **P07/CANCEL-C status unchanged:** Cooperative cancel L2 remains as qualified; child ownership implementation, L3 physical invoke/cancel under active root, and independent audit @ publication SHA are **out of scope** for this design batch.
 
 **Non-closure:** Not `CHILD OWNERSHIP RATIFIED`; not `P07/CANCEL-C CLOSED`; not `TOOL-LIFE-X CLOSED`.
+
+---
+
+## 10. Child ownership B1 ratification & feasibility reconciliation (`TLX-TL11-CHILD-OWNERSHIP-B1-RATIFICATION-FEASIBILITY`)
+
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `953855f8357ab6f90686e26c26996fbaf79e5b21` |
+| **Operator authorization** | `OPERATOR APPROVED — TLX-TL11 CHILD OWNERSHIP OPTION B — CONDITIONAL ARCHITECTURE RATIFICATION ONLY` |
+| **Canonical record** | [`ADR_TLX_TL11_MCP_CATALOG_CHILD_EXECUTION_OWNERSHIP.md`](../architecture/ADR_TLX_TL11_MCP_CATALOG_CHILD_EXECUTION_OWNERSHIP.md) §12–§21 |
+| **Disposition** | **`TLX-TL11-CHILD-OWNERSHIP-B1-RATIFICATION-FEASIBILITY — READY FOR INDEPENDENT AUDIT`** |
+| **Feasibility verdict** | **B2** — in-process `ChildExecutionRunner` path **proven** (U4); **B1 cross-loop** **not proven**; independent MCP HTTP catalog invoke remains **Option C fail-closed** until `CatalogToolChildExecutionPort` + qualified scheduler exist |
+| **pytest @ this batch** | **0** (documentation only) |
+| **Production delta** | **0** |
+
+**P07/CANCEL-C / R2-F04 unchanged:** Current catalog graph still uses OWN-A2 root admission + `to_thread`; not child ownership. Conditional Option B ratification does **not** close P07, TL11, or TOOL-LIFE-X.
+
+**Non-closure:** Not `CHILD OWNERSHIP IMPLEMENTED`; not `P07/CANCEL-C CLOSED`; not `TL11 CLOSED`; not `TOOL-LIFE-X CLOSED`.

@@ -3,18 +3,19 @@
 | Field | Value |
 | --- | --- |
 | **Document ID** | `ADR-TLX-TL11-CHILD-OWNERSHIP` |
-| **Task** | `TLX-TL11-CHILD-OWNERSHIP-CONTRACT-DESIGN` |
-| **Operator authorization** | `OPERATOR APPROVED — TLX-TL11 CHILD OWNERSHIP CONTRACT DESIGN ONLY` |
+| **Task** | `TLX-TL11-CHILD-OWNERSHIP-CONTRACT-DESIGN` · `TLX-TL11-CHILD-OWNERSHIP-B1-RATIFICATION-FEASIBILITY` |
+| **Operator authorization** | Design: `OPERATOR APPROVED — TLX-TL11 CHILD OWNERSHIP CONTRACT DESIGN ONLY` · Ratification/feasibility: `OPERATOR APPROVED — TLX-TL11 CHILD OWNERSHIP OPTION B — CONDITIONAL ARCHITECTURE RATIFICATION ONLY` |
 | **Repository** | `jakbuczarnecki/intergrax` |
 | **Branch** | `development` |
-| **START_HEAD** | `acff4087123ad9bd1bce1e2a612f633afe222c5f` |
-| **Status** | **DESIGN — READY FOR INDEPENDENT AUDIT** (not ratified; not implementation authorization) |
+| **START_HEAD (design)** | `acff4087123ad9bd1bce1e2a612f633afe222c5f` |
+| **START_HEAD (B1 ratification/feasibility)** | `953855f8357ab6f90686e26c26996fbaf79e5b21` |
+| **Status** | **OPTION B — CONDITIONALLY RATIFIED (ARCHITECTURE DIRECTION ONLY)** + **B1 FEASIBILITY QUALIFIED @ START_HEAD** |
 
-**Formal result:** `TLX-TL11-CHILD-OWNERSHIP-CONTRACT-DESIGN — READY FOR INDEPENDENT AUDIT`
+**Formal result:** `TLX-TL11-CHILD-OWNERSHIP-B1-RATIFICATION-FEASIBILITY — READY FOR INDEPENDENT AUDIT`
 
-**Explicit non-closure:** Not `CHILD OWNERSHIP RATIFIED`; not `P07/CANCEL-C CLOSED`; not `TOOL-LIFE-X CLOSED`; no global `FRZ-*` PASS; no production delta.
+**Explicit non-closure:** Not `CHILD OWNERSHIP IMPLEMENTED`; not `P07/CANCEL-C CLOSED`; not `TL11 CLOSED`; not `TOOL-LIFE-X CLOSED`; no Gate A; no TL8 positive; no global `FRZ-*` PASS; no production delta; **no implementation authorization**.
 
-**Architecture design is not architecture ratification.**
+**Conditional ratification is not implementation authorization.**
 
 ---
 
@@ -315,14 +316,186 @@ Design completion does **not** promote any `FRZ-*` row. Applicable checklist fam
 
 ## 11. Operator decisions remaining
 
-1. **Cross-loop scheduling strategy** — queue to root `host_asyncio_task` vs require in-process-only catalog invoke until async job API exists.
-2. **Child invocation durability** — in-memory dedupe only vs durable child registry (TL11 default: in-memory).
-3. **Interim Option C** — deny catalog invoke until Option B lands vs partial invoke under fail-closed races.
-4. **Physical thread policy** — retain `to_thread` under child runner vs operator-mandated async job pattern for long tools.
+1. **Cross-loop scheduling strategy** — **OPERATOR DECISION REQUIRED** before implementation: no Execution-owned cross-loop child admission mechanism is proven @ `953855f8357…` (§14–§15). Default interim: **Option C fail-closed** for independent MCP HTTP catalog invoke; in-process child path only where parent Execution context is genuine (§15 B2).
+2. **Child invocation durability** — operator-approved default: in-memory dedupe per live parent lifecycle only; restart **fail-closed** (no exactly-once external-effect replay).
+3. **Interim Option C** — **ratified** until `CatalogToolChildExecutionPort` is implemented and L2/L3 qualified.
+4. **Physical thread policy** — retain bounded `to_thread` only under child semantic owner + protected launch; transport disconnect ≠ physical termination (P07 R2-F04).
 
 ---
 
-## 12. References
+## 12. Batch A — Conditional Option B ratification record (@ `953855f8357ab6f90686e26c26996fbaf79e5b21`)
+
+| Decision element | Disposition |
+| --- | --- |
+| **Ratified child semantic owner** | **`ChildExecutionRunner`** — sole canonical owner of child Execution identity, boundary admission, deadline narrowing, and ledger release (`intergrax/runtime/execution/child.py`). |
+| **Ratified typed adapter direction** | **`CatalogToolChildExecutionPort`** (contract **not yet present**) — MCP/catalog **admission + loop routing only**; strict adapter to existing Execution authority; **not** a second lifecycle owner. |
+| **Approved fallback policy** | In-process-only child work when active parent Execution context is genuine; otherwise **fail-closed**. No orphan threads, new scheduler, or new supervisor. In-memory dedupe scoped to live parent lifecycle; restart fail-closed. |
+| **Unproven cross-loop mechanism** | No sanctioned callable @ HEAD posts catalog child admission onto the **already-supervised root** `host_asyncio_task` loop with atomic parent-context admission (§14). |
+| **Unproven physical lifetime ownership** | MCP `asyncio.to_thread` + transport waiter (P07) proves cooperative L2 suppression only — not child-runner-owned physical supervision for catalog path. |
+| **Unimplemented adapter contract** | `CatalogToolChildExecutionPort` / `CatalogToolChildAdmissionRequest` — design types in §4 only; **zero production modules**. |
+| **Unqualified L2/L3 MCP integration** | External MCP HTTP catalog invoke remains **Option C fail-closed** until implementation batch + adversarial L2 + real subprocess L3. |
+
+Prior §2–§10 design findings and Option A/B/C comparisons are **preserved** and are **not** relabeled as implementation PASS.
+
+---
+
+## 13. Batch B — Closed-world feasibility audit (@ `953855f8357…`)
+
+Evidence baseline: **`953855f8357ab6f90686e26c26996fbaf79e5b21`**. Capability classes are **distinct** — context access ≠ context propagation ≠ task scheduling ≠ child admission ≠ Execution ownership transfer.
+
+### 13.1 Candidate mechanisms
+
+| # | Owner → Contract → Composition → Caller | Execution context | Transfer | Auth check | Linearization | Evidence SHA | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| C1 | `ChildExecutionRunner` → implicit boundary hooks → `ChildExecutionWorkPort` / U4 wiring → in-process specialist/Nexus delegate | **Active parent** via `require_active_execution_*` on **same asyncio task** | ContextVar chain on parent task | `DefaultStrictAuthorityPolicy` + governance peek | Runner `execute` body before `ExecutionBoundary` | `953855f8357…` `child.py` L153–156 | **In-process child admission PROVEN** — not cross-loop |
+| C2 | `ExecutionRuntime` → `ActiveExecutionWorkPortBinding` → `bind_active_execution_work_port` during root `boundary.execute` | Active root only inside bound execute | ContextVar set/reset in `runtime.py` L552–555 | `require_active()` port identity match | Bind token lifetime = root execute | `953855f8357…` | **Context propagation only** — not MCP cross-loop admission |
+| C3 | `HostRootExecutionTransportDetachmentSupervisor` → `RootExecutionTransportDetachmentSupervisionPort` → MCP bridge `admit_protected_mcp_root_execution_supervision` | **New** `host_asyncio_task` for catalog invoke | Spawns/competes with existing root task | Verified `RequestIdentity` + task binding | Supervisor mutex + admission enum (`ACCEPTED` only opens gate) | OWN-A2 @ lineage; bridge L504–510 | **Root admission only** — **not** child under live root; duplicate → `DUPLICATE_HANDOFF_CONFLICT` |
+| C4 | `ActiveTaskRegistry` → `ActiveTaskBinding` → `resolve_mcp_catalog_execution_binding` | Registry metadata on MCP thread | None (lookup) | Tenant/run alignment | `asyncio.Lock` on registry mutations | `active_task_registry.py` L27–28 | **Hint only** — not admission |
+| C5 | `ExecutionBoundCatalogToolInvoker` → `NexusExecutionBoundCatalogToolInvoker` → `_sync_invoke_catalog` / `to_thread` | Optional active identity for MSE (`peek_*`); often **absent** on MCP thread | Thread pool | MSE + scope asserts pre-launch | Pre-launch checks; post-invoke cancel check | P07 R2 | **Tool dispatch** — wrong ownership layer for MCP catalog today |
+| C6 | Ad hoc `asyncio.run_coroutine_threadsafe` (vendor/export/resilience) | Unrelated domains | Foreign loops | N/A | Per-module | `953855f8357…` (not on catalog path) | **Not Execution-owned catalog child seam** |
+
+### 13.2 Verified current MCP catalog call graph (@ HEAD)
+
+```text
+execute_mcp_catalog_tool_invocation (MCP HTTP handler thread / MCP server loop)
+  → resolve_mcp_catalog_execution_binding (registry hint)
+  → admit_protected_mcp_root_execution_supervision (OWN-A2 root — NOT child)
+  → run_host_execution_with_mcp_transport_cancel
+  → asyncio.to_thread(_sync_invoke_catalog) → ExecutionBoundCatalogToolInvoker.invoke
+```
+
+**No** call site reaches `ChildExecutionRunner` or `ChildExecutionWorkPort` from this graph.
+
+---
+
+## 14. Batch C — Feasibility disposition
+
+| Outcome | Verdict @ `953855f8357…` |
+| --- | --- |
+| **B1 — Existing Execution-owned cross-loop mechanism** | **NOT PROVEN** — no callable entry with trusted parent-owned submission, root-context atomic child admission, and callback ownership without new scheduler/supervisor. |
+| **B2 — In-process-only feasible** | **PROVEN** — U4 production path: `build_production_delegated_subtask_child_execution_port` → `DelegatedSubtaskChildExecutionWorkPort.execute` → `ChildExecutionRunner.execute` under active parent (`production_delegated_subtask_child_execution_wiring.py`, `execution_work_port.py` L128–188). |
+| **B3 — Neither path** | **Rejected** — B2 satisfies in-process canonical child ownership. |
+
+**Final disposition: B2 (in-process-only)** with **external independent MCP HTTP catalog invoke remaining Option C fail-closed** until `CatalogToolChildExecutionPort` and a **new, explicitly authorized** cross-loop submission contract are implemented and qualified.
+
+**Smallest missing canonical artifact for MCP child invoke:** typed **`CatalogToolChildExecutionPort.admit_and_execute`** plus a **proven root-loop scheduler** (not present @ HEAD; not inferable from `ActiveExecutionWorkPortBinding` or registry lookup).
+
+---
+
+## 15. Batch D — Child admission and concurrency invariants (required contract)
+
+| Invariant | Authoritative linearization (required) | Existing @ HEAD |
+| --- | --- | --- |
+| Parent verified identity | `require_active_execution_identity()` on admission coroutine | **Proven** in `ChildExecutionRunner` (in-process) |
+| Parent live / non-terminal | `task_state_requires_authoritative_exposure` + binding re-read on admit | **Proven** on MCP precheck (`_assert_execution_invoke_admitted`); child port must re-assert on root loop |
+| Root ownership continuity | Single supervised root `host_asyncio_task` per task (OWN-A2) | **Proven** for root; catalog must not add second root task |
+| Child identity minting | `mint_child_execution_id()` inside runner | **Proven** in-process |
+| Child admission under parent | `ExecutionBoundary` + lineage hook before delegate | **Proven** in-process; **not** from MCP HTTP |
+| Duplicate submissions | Per-parent dedupe map (implementation) | **Not implemented** for catalog |
+| Parent cancel vs admit | `CancellationCoordinator` + mutation boundary ordering | **Proven** cooperative checks on MCP path; child port must refuse if cancel set |
+| Root terminal vs child complete | Terminal CAS / `task_state_requires_authoritative_exposure` | **Partial** — host terminal exposure proven; child terminal race tests **validation required** |
+| Cross-loop submission | Root-loop mutex + posted coroutine | **Required by design** — **missing @ HEAD** |
+| Shutdown during admit | Supervisor refuses new root; child port refuses new admits | **Partial** — root drain (OWN-A2); catalog child port N/A |
+| Worker after transport disconnect | Protected launch + UNKNOWN / suppress late success | **L2 cooperative** (P07) — not child-owner physical proof |
+| Restart / repeated request | No durable dedupe → **fail-closed** | **Policy ratified** — no code claims replay safety |
+
+**Atomicity:** runner + boundary hooks provide in-process atomicity today; cross-loop admit requires **new** root-loop linearization (design §5.1) — **not claimed as existing**.
+
+---
+
+## 16. Batch E — Cancellation, deadlines, physical lifetime (audit)
+
+| # | Question | @ HEAD (catalog path) | Under Option B target |
+| --- | --- | --- | --- |
+| 1 | Parent cancel reaches child? | Cooperative metadata via `CancellationCoordinator`; pre/post checks in bridge | Child must observe same coordinator on root loop inside runner |
+| 2 | Child inherits parent deadline? | N/A (no catalog child) | **Proven** in-runner via `narrow_child_deadline_at_utc` (U4) |
+| 3 | Owner after MCP waiter cancel? | `to_thread` worker may continue (R2-F04) | Child semantic owner must define suppression; physical stop **not proven** |
+| 4 | Worker after coroutine end? | **Yes** possible | Classify **VALIDATION REQUIRED** / L3 |
+| 5 | Who observes real completion? | Invoker + post-invoke cancel check | Child terminal + MCP bridge mapping |
+| 6 | Safe transport response? | After waiter outcome; late success suppressed | Must not return success after losing child supervision |
+| 7 | Cancel with external effects possible? | UNKNOWN preserved | `ToolExecutionResult.effect_certainty` |
+| 8 | UNKNOWN preserved? | **Yes** (P07 policy) | Revalidate on child port |
+| 9 | Late result promotion prevented? | `_sync_invoke_catalog` post-cancel | Terminal precedence + child boundary |
+| 10 | Shutdown? | OWN-A2 drain | Child port refuse new admits |
+
+**Classification:** Physical lifetime supervision for catalog sync tools remains **BLOCKED for PASS** without L3 + explicit child-owner alignment; **Option C preserved** for external invoke.
+
+---
+
+## 17. Batch F — Security, governance, tenant isolation
+
+MSE for catalog invoke today requires **genuine** active execution governance identity on the admitting thread (`_build_catalog_side_effect_enforcement_request` — returns `None` → deny if `peek_active_execution_*` missing). **Metadata-only admission is insufficient.**
+
+Under Option B, final pre-effect check must run under **child** `execution_id` minted by `ChildExecutionRunner`, with stale authorization detected via governance identity mismatch vs binding (fail-closed). Verified MCP principal → caller authorization (`_assert_caller_authorized_for_execution`) must chain into child admission token on root loop.
+
+---
+
+## 18. Batch G — Implementation closure matrix (@ `953855f8357…`)
+
+| Criterion | Semantic owner | Existing contract | Evidence SHA | Missing change | Test | FRZ | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Exactly-one child owner | `ChildExecutionRunner` | U4 work port | `953855f8357…` | Catalog child port | U4 + new | FRZ-OWN-01..05 | **ALREADY PROVEN** (in-process) |
+| Parent-child separation | Runner vs OWN-A2 root | ADR §2 | OWN-A2, P07 | Remove root admit on catalog invoke | §7 | FRZ-BND-03 | **IMPLEMENTATION REQUIRED** |
+| Trusted caller | MCP TRUST + binding | RequestIdentity | P07 R2-F05 | Child admit token | §7 | FRZ-SEC, FRZ-TEN | **VALIDATION REQUIRED** |
+| Root authority continuity | OWN-A2 supervisor | Root port | `953855f8357…` | No second root task | OWN-A2 tests | FRZ-OWN-04 | **ALREADY PROVEN** (root) |
+| Cross-loop feasibility | — | — | §14 | Scheduler + port | — | FRZ-EXE | **BLOCKED** (B1 not proven) |
+| In-process fallback | `ChildExecutionWorkPort` | execution_work_port | U4 | Wire catalog delegate | U4 tests | FRZ-EXE | **ALREADY PROVEN** |
+| Child admission linearization | Child port (new) | — | — | Root-loop mutex | new | FRZ-REL | **IMPLEMENTATION REQUIRED** |
+| Deadline inheritance | Runner | projection | U4 | Catalog wiring | U4 | FRZ-EXE | **ALREADY PROVEN** (pattern) |
+| Governed cancellation | Coordinator | task metadata | CANCEL-C | Child observe | §7 | FRZ-GOV | **VALIDATION REQUIRED** |
+| Effect authorization | MSE port | meaningful_side_effect | P07 | Child execution_id bind | §7 | FRZ-GOV | **VALIDATION REQUIRED** |
+| In-memory dedupe scope | Child port | — | — | Per-parent map | §7 | FRZ-REL | **IMPLEMENTATION REQUIRED** |
+| Restart fail-closed | Policy | — | SA-21 | Document + refuse | negative | FRZ-REC | **OPERATOR DECISION REQUIRED** (ratified default) |
+| Thread lifetime | Protected launch | MCP launch | P07 | Align with child owner | L3 | FRZ-REL-04 | **BLOCKED** until L3 |
+| No orphan work | OWN-A2 + runner finally | — | U4/P07 | Catalog path | L3 | FRZ-REL | **VALIDATION REQUIRED** |
+| Late result / UNKNOWN | Bridge + tool result | W4/P07 | P07 | Child mapping | §7 | FRZ-REL | **VALIDATION REQUIRED** |
+| Real subprocess MCP invoke | QA | — | NOT PROVEN | L3 fixture | fixture | FRZ-SEC | **IMPLEMENTATION REQUIRED** |
+| L3 cancel / disconnect | QA | CANCEL-A | NOT PROVEN | HTTP L3 | fixture | FRZ-SEC | **IMPLEMENTATION REQUIRED** |
+| ECAP | Process | ECAP-1 | protocol | Independent audit | — | — | **VALIDATION REQUIRED** |
+| Independent exact-SHA audit | Operator | — | `953855f8357…` | Publication | — | FRZ-REG | **VALIDATION REQUIRED** |
+
+---
+
+## 19. Batch H — Future implementation package (not authorized)
+
+| File | Class | Why | Expected change | Preceding contract | FRZ | New operator auth? |
+| --- | --- | --- | --- | --- | --- | --- |
+| `intergrax/runtime/execution/child.py` | **Existing canonical owner** | Semantic child | None without impl approval | — | FRZ-OWN | No |
+| `intergrax/contracts/catalog_tool_child_execution.py` | **New typed adapter contract** | Admission API | Add types + port protocol | B1 ratification accepted | FRZ-CTR | **Yes** (implementation batch) |
+| `intergrax/runtime/execution/catalog_tool_child_execution_port.py` | **Authorized composition** | Loop routing + runner | Implement `admit_and_execute` | Contract + scheduler decision | FRZ-BND-03 | **Yes** |
+| `intergrax/applications/_shared/production_catalog_tool_child_execution_wiring.py` | **Composition** | Host wiring | Mirror U4 pattern | Port | FRZ-OWN-03 | **Yes** |
+| `mcp_catalog_invocation_bridge.py` | **MCP adapter** | Remove OWN-A2 on invoke | Call child port; fail-closed if unavailable | Port + L2 | FRZ-BND-03 | **Yes** |
+| `mcp_nexus_server.py` | **Composition** | Inject port | Wire MSE + child port | — | — | **Yes** |
+| `test_catalog_tool_child_execution.py` | **New adversarial tests** | Matrix §7 | Full L2 races | Port | FRZ-REG | No (within impl auth) |
+| `test_mcp_catalog_child_ownership_qualification.py` | **New tests** | MCP integration | HTTP + root live | L3 fixture | FRZ-SEC | No |
+| `tool_life_x_tl11_catalog_subprocess_qualification.py` | **Existing subprocess fixture** | L3 proof | Extend invoke/cancel | L3 plan | FRZ-SEC | No |
+| P07 / ADR evidence docs | **Evidence** | Publication | Post-impl only | L2/L3 PASS | — | No |
+
+**Prohibited:** editing contracts or production modules before independent acceptance of this feasibility package **and** separate operator implementation authorization.
+
+---
+
+## 20. Validation selection (L1/L2/L3)
+
+| Layer | This task | Subsequent implementation |
+| --- | --- | --- |
+| **L1** | Documentation integrity + `git diff --check` @ publication SHA | Same + arch static gates |
+| **L2** | N/A (no behavior delta) | Full §7 adversarial matrix + gate B extensions |
+| **L3** | N/A | Mandatory real MCP subprocess HTTP catalog invoke + cancel under active root |
+
+Historical P07 L2 counts are **not** relabeled as current child-ownership feasibility proof.
+
+---
+
+## 21. ECAP / FRZ (@ checklist HEAD — statuses unchanged)
+
+Applicable IDs: **FRZ-BND-03**, **FRZ-OWN-01..05**, **FRZ-CTR-01..06**, **FRZ-TYP-***, **FRZ-EXE-***, **FRZ-GOV-***, **FRZ-REL-***, **FRZ-REC-***, **FRZ-SEC-***, **FRZ-TEN-***, **FRZ-STA-***, **FRZ-REG-*** — all remain **OPEN** at platform scope; this package contributes scoped evidence only.
+
+**Tenant isolation:** single-owner assessment — no MCP shadow Execution owner ratified; child semantic owner remains `ChildExecutionRunner` only.
+
+---
+
+## 22. References
 
 - `docs/project/maintainers/qualification/TOOL_LIFE_X_TLX_TL11_GATE_B_P07_CANCEL_C_QUALIFICATION_EVIDENCE.md` (reconciled §Child ownership)
 - `docs/project/maintainers/qualification/PLATFORM_EXECUTION_UNIFICATION_U4_CHILD_EXECUTION_CLOSURE.md`
