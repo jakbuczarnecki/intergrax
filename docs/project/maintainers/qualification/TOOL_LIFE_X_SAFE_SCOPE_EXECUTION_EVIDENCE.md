@@ -7,7 +7,7 @@
 | **Plan** | R2 `tool-life-x_whole_stage_c118ceb9.plan.md` |
 | **START_HEAD** | `7d901f0ee632ab7aa486e598c22f64994751b8b2` |
 | **Branch** | `development` |
-| **Disposition** | **`TOOL-LIFE-X SAFE SCOPE — READY FOR INDEPENDENT AUDIT`** (partial parent — see §Outcome) |
+| **Disposition** | **`TOOL-LIFE-X SAFE SCOPE — READY FOR FINAL INDEPENDENT ACCEPTANCE`** (partial parent — see §Outcome) |
 
 **Non-closure:** Does **not** close `TOOL-LIFE-X` parent; **not** EXT-L4 ACCEPTED; **not** B3/B5/B8; **not** Gate A/TL8; **not** `DIST-SCALE-X`.
 
@@ -18,9 +18,9 @@
 | Check | Result |
 | --- | --- |
 | Repository | `jakbuczarnecki/intergrax` |
-| START_HEAD | `7d901f0ee632ab7aa486e598c22f64994751b8b2` |
-| Implementation SHA | `fde5f41eb` (tests + evidence body) |
-| Publication HEAD | `eac9ac1fa` (see `git rev-parse origin/development`) |
+| Execution START_HEAD | `7d901f0ee632ab7aa486e598c22f64994751b8b2` |
+| **Implementation SHA (immutable)** | `fde5f41eb72bae4b68dab13a6f545fe284f03faf` |
+| **Final publication HEAD** | Recorded by independent GitHub audit; not embedded in this self-referential document. |
 | Working tree @ publication | clean after commit |
 
 ---
@@ -56,6 +56,8 @@ Mandatory parent blockers remain: OD-CROSSLOOP, OD-CHILD-IMPL, OD-PG-DOCKER, OD-
 | `tests/unit/runtime/architecture/test_platform_execution_unification_u5_final_zero_bypass.py` | U5 wiring allowlist: remove false-positive `runtime_context.py` (re-export only) |
 | `docs/project/maintainers/qualification/TOOL_LIFE_X_SAFE_SCOPE_EXECUTION_EVIDENCE.md` | This record |
 
+Implementation delta is anchored at **`fde5f41eb72bae4b68dab13a6f545fe284f03faf`**; subsequent documentation-only commits do not alter that behavioral artifact.
+
 ---
 
 ## 5. Consolidated L2
@@ -65,10 +67,17 @@ Mandatory parent blockers remain: OD-CROSSLOOP, OD-CHILD-IMPL, OD-PG-DOCKER, OD-
 | **Result** | **220 passed**, 7 warnings (deprecation), 0 failed |
 | **Duration** | ~64s |
 | **Log** | `.tmp/session/TOOL-LIFE-X-SAFE-SCOPE-EXEC/l2-consolidated.log` |
-| **START_HEAD** | `7d901f0ee632ab7aa486e598c22f64994751b8b2` |
-| **Note** | Asyncio pending-task stderr from MCP cancel transport test (pre-existing); exit 0 |
+| **Execution START_HEAD** | `7d901f0ee632ab7aa486e598c22f64994751b8b2` |
 
 Selection: Tool-LIFE-X batches A–E, U5, MCP Gate B L2, discovery Option C, MCP-R2 L3 scenarios (in-process), R6–R10 external-operation L3 unit qualifications.
+
+### 5.1 Evidence limitations (qualification intake)
+
+- Consolidated L2 reported **220 passed** per the Cursor execution log; the historical test outcome is not altered by this documentation correction.
+- The log is **local** under `.tmp/session/TOOL-LIFE-X-SAFE-SCOPE-EXEC/` and is not a GitHub-hosted qualification artifact unless separately published.
+- The run recorded **seven deprecation warnings** (pytest warnings summary).
+- MCP cancellation-related testing emitted **asyncio pending-task stderr** (`Task was destroyed but it is pending!`); treat as an **observation for future physical lifetime qualification** — not evidence of a confirmed leak, and not proof of clean teardown under production load.
+- This package does **not** certify **external MCP HTTP CANCEL-C L3** (B8 unauthorized).
 
 ---
 
@@ -86,4 +95,4 @@ Selection: Tool-LIFE-X batches A–E, U5, MCP Gate B L2, discovery Option C, MCP
 
 ---
 
-**Cursor is not independent auditor.** Evidence **READY FOR INDEPENDENT AUDIT** on GitHub publication SHA only.
+**Cursor is not independent auditor.** Independent acceptance requires verification on the **actual** `origin/development` SHA at audit time (see operator / EXT-L4 report — not self-embedded here).
