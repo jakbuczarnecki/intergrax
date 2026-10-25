@@ -9,7 +9,14 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from intergrax.agents.tool_enablement import ToolEnablementProfile
+from intergrax.applications._shared.mcp_catalog_invocation_bridge import (
+    McpCatalogInvocationComposition,
+)
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
+from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+    ExecutionBoundCatalogToolInvoker,
+)
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionTransportCancelContext,
@@ -154,6 +161,8 @@ def build_nexus_mcp_server(
     default_tenant_id: str = "mcp",
     default_user_id: str = "mcp-user",
     tool_registry: ToolRegistry | None = None,
+    catalog_tool_invoker: ExecutionBoundCatalogToolInvoker | None = None,
+    tool_enablement: ToolEnablementProfile | None = None,
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> FastMCP:
     """
@@ -208,6 +217,20 @@ def build_nexus_mcp_server(
         )
 
     if tool_registry is not None:
-        mount_catalog_tools_on_mcp(mcp, tool_registry)
+        catalog_invocation: McpCatalogInvocationComposition | None = None
+        if catalog_tool_invoker is not None:
+            catalog_invocation = McpCatalogInvocationComposition(
+                catalog_invoker=catalog_tool_invoker,
+                registry=tool_registry,
+                tool_enablement=tool_enablement,
+                task_control_mutation_boundary=task_control_mutation_boundary,
+                default_tenant_id=default_tenant_id,
+                default_user_id=default_user_id,
+            )
+        mount_catalog_tools_on_mcp(
+            mcp,
+            tool_registry,
+            catalog_invocation=catalog_invocation,
+        )
 
     return mcp

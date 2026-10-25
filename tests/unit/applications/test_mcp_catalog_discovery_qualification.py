@@ -220,7 +220,7 @@ async def test_discovery_mount_enabled_exposes_catalog_tools() -> None:
 
 
 @pytest.mark.asyncio
-async def test_discovery_no_direct_catalog_invoke_tool() -> None:
+async def test_discovery_no_per_tool_catalog_invoke_surface() -> None:
     registry = ToolRegistry()
     registry.register(_contract("qual.invoke"), _noop_handler())
     mcp = _build_mcp(registry)
@@ -231,6 +231,14 @@ async def test_discovery_no_direct_catalog_invoke_tool() -> None:
         if name not in {"list_agents", "run_agent", "list_catalog_tools", "describe_catalog_tool"}
     }
     assert forbidden == set()
+
+
+@pytest.mark.asyncio
+async def test_discovery_invoke_catalog_tool_absent_without_host_invoker() -> None:
+    registry = ToolRegistry()
+    mcp = _build_mcp(registry)
+    names = await _tool_names(mcp)
+    assert "invoke_catalog_tool" not in names
 
 
 @pytest.mark.asyncio
