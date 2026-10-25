@@ -129,6 +129,8 @@ def test_generic_http_tool_contract_remains_not_retry_safe_despite_class_b_qual_
 
     registry = ToolRegistry()
     register_http_tools(registry, ToolWiringContext())
+    with pytest.raises(KeyError):
+        registry.get(HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID)
     generic = registry.get(HTTP_REQUEST_TOOL_ID).contract
     assert generic.side_effect_retry_safety is SideEffectRetrySafety.NOT_RETRY_SAFE
     assert (

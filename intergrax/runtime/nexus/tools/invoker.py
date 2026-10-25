@@ -1840,7 +1840,8 @@ class RuntimeToolInvoker:
         effect_boundary: _ExternalEffectBoundary | None,
     ) -> bool:
         may_have_started = (
-            effect_boundary is not None and effect_boundary.may_have_started
+            (effect_boundary is not None and effect_boundary.may_have_started)
+            or ext_op.physical_execution_admitted()
         )
         if not may_have_started:
             return False
@@ -1870,6 +1871,7 @@ class RuntimeToolInvoker:
         )
         ext_op.before_physical_submit(
             catalog_tool_id=contract.tool_id,
+            catalog_tool=contract,
             physical_idempotency_key=request.idempotency_key,
             tool_input=request.input,
         )

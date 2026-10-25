@@ -107,6 +107,7 @@ def _running_with_worker(
     bind_provider_id: str | None = None,
     bind_tool_id: str | None = None,
     bind_physical_idempotency_key: str | None = None,
+    bind_physical_effect_fingerprint: str | None = None,
 ) -> tuple[object, object, str, ProcessLocalExternalOperationOwner]:
     store = bundle.external_operation_state
     revocation = bundle.worker_execution_ownership_revocation
@@ -124,6 +125,7 @@ def _running_with_worker(
             provider_id=bind_provider_id,
             tool_id=bind_tool_id,
             physical_idempotency_key=bind_physical_idempotency_key,
+            physical_effect_fingerprint=bind_physical_effect_fingerprint,
         )
     running = mark_physical_running(
         store,

@@ -17,6 +17,14 @@ from intergrax.contracts.external_operation_redrive_effect_binding import (
     ExternalOperationRedriveEffectBindingMismatchError,
 )
 
+_TOOL_LIFE_QUAL_CLASS_B_PROVENANCE_TAG = "tool-life-qual"
+
+_CATALOG_TOOLS_REQUIRING_QUAL_PROVENANCE: Final = frozenset(
+    {
+        "http.idempotent_post.qual",
+    },
+)
+
 TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT: Final = ExternalEffectContract(
     contract_id="tool_life.platform_durable_physical_lifecycle.v1",
     operation_key="platform.external_operation.physical_lifecycle",
@@ -38,6 +46,12 @@ TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT: Final = ExternalEffectContract(
         reconciliation=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
         compensation=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
     ),
+)
+
+_CONTRACT_IDS_REQUIRING_COMPLETE_PHYSICAL_IDENTITY: Final = frozenset(
+    {
+        TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+    },
 )
 
 TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT: Final = ExternalEffectContract(
@@ -160,6 +174,42 @@ def assert_trusted_redrive_binding_matches_execution_context(
         )
 
 
+def trusted_redrive_contract_requires_complete_physical_identity(contract_id: str) -> bool:
+    """HTTP idempotency-backed Class B requires bound physical key and effect fingerprint."""
+    return contract_id.strip() in _CONTRACT_IDS_REQUIRING_COMPLETE_PHYSICAL_IDENTITY
+
+
+def assert_sanctioned_class_b_catalog_tool_provenance(
+    *,
+    catalog_tool_id: str,
+    catalog_tool_tags: tuple[str, ...] | None,
+) -> None:
+    """Reject catalog-ID impersonation without qualification registration provenance."""
+    normalized = catalog_tool_id.strip()
+    if normalized not in _CATALOG_TOOLS_REQUIRING_QUAL_PROVENANCE:
+        return
+    tags = catalog_tool_tags or ()
+    if _TOOL_LIFE_QUAL_CLASS_B_PROVENANCE_TAG not in tags:
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            "catalog tool lacks sanctioned Class B qualification provenance",
+        )
+
+
+def require_complete_physical_effect_identity_values(
+    *,
+    physical_idempotency_key: str | None,
+    physical_effect_fingerprint: str | None,
+) -> None:
+    if not (physical_idempotency_key and physical_idempotency_key.strip()):
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            "Class B physical idempotency key is required",
+        )
+    if not (physical_effect_fingerprint and physical_effect_fingerprint.strip()):
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            "Class B physical effect fingerprint is required",
+        )
+
+
 def catalog_tool_has_sanctioned_redrive_effect_binding(catalog_tool_id: str) -> bool:
     """True when catalog tool_id has an explicit trusted effect mapping (not a default)."""
     normalized_tool = catalog_tool_id.strip()
@@ -208,8 +258,11 @@ __all__ = [
     "TOOL_LIFE_HTTP_READ_ONLY_QUAL_EFFECT",
     "TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT",
     "TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT",
+    "assert_sanctioned_class_b_catalog_tool_provenance",
     "assert_trusted_redrive_binding_matches_execution_context",
     "catalog_tool_has_sanctioned_redrive_effect_binding",
+    "require_complete_physical_effect_identity_values",
     "resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool",
     "resolve_trusted_redrive_effect_contract",
+    "trusted_redrive_contract_requires_complete_physical_identity",
 ]

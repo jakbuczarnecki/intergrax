@@ -151,6 +151,8 @@ def test_bind_accepts_valid_class_b_http_execution_context(
         trusted_effect_contract_id=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
         provider_id="http_rest",
         tool_id="http_idempotent_post",
+        physical_idempotency_key="idem-http-class-b",
+        physical_effect_fingerprint="fp-http-class-b",
     )
     assert bound.bound_redrive_provider_id == "http_rest"
     assert bound.bound_redrive_tool_id == "http_idempotent_post"

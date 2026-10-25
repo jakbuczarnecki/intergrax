@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from intergrax.integrations.contracts.http_client import HttpClientBackend
 from intergrax.tools.providers.http.contracts import HttpRequestInput, HttpRequestOutput
-from intergrax.tools.core.handler import ServiceToolHandler
+from intergrax.tools.core.handler import WiringContextToolHandler
+from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.invocation_wiring_adapter import effective_wiring_for_request
 from intergrax.tools.providers.provider_resource_enforcement import (
     ProviderResourceLimitExceeded,
     bound_http_response_body,
@@ -17,6 +19,26 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID = "http.idempotent_post.qual"
 
 _IDEMPOTENCY_HEADER = "Idempotency-Key"
+_IDEMPOTENCY_HEADER_LOWER = _IDEMPOTENCY_HEADER.lower()
+
+
+def _normalize_idempotency_headers(
+    headers: dict[str, str],
+    *,
+    authoritative_key: str,
+) -> dict[str, str]:
+    key = authoritative_key.strip()
+    if not key:
+        raise ValueError("idempotent_post_qual_requires_authoritative_idempotency_key")
+    normalized: dict[str, str] = {}
+    for header_name, header_value in headers.items():
+        if header_name.lower() == _IDEMPOTENCY_HEADER_LOWER:
+            if header_value.strip() and header_value.strip() != key:
+                raise ValueError("idempotent_post_qual_idempotency_key_header_conflict")
+            continue
+        normalized[header_name] = header_value
+    normalized[_IDEMPOTENCY_HEADER] = key
+    return normalized
 
 
 def _require_http_client(ctx: ToolWiringContext) -> HttpClientBackend:
@@ -29,14 +51,18 @@ def _require_http_client(ctx: ToolWiringContext) -> HttpClientBackend:
 def http_idempotent_post_qual(
     ctx: ToolWiringContext,
     params: HttpRequestInput,
+    *,
+    authoritative_idempotency_key: str | None = None,
 ) -> HttpRequestOutput:
     method = params.method.strip().upper()
     if method != "POST":
         raise ValueError("idempotent_post_qual_requires_post")
-    headers = dict(params.headers)
-    idem = headers.get(_IDEMPOTENCY_HEADER, "").strip()
-    if not idem:
-        raise ValueError("idempotent_post_qual_requires_idempotency_key_header")
+    if authoritative_idempotency_key is None:
+        raise ValueError("idempotent_post_qual_requires_authoritative_idempotency_key")
+    headers = _normalize_idempotency_headers(
+        dict(params.headers),
+        authoritative_key=authoritative_idempotency_key,
+    )
     client = _require_http_client(ctx)
     try:
         response = client.request(
@@ -70,9 +96,15 @@ def http_idempotent_post_qual(
 
 
 class HttpIdempotentPostQualHandler(
-    ServiceToolHandler[HttpRequestInput, HttpRequestOutput],
+    WiringContextToolHandler[HttpRequestInput, HttpRequestOutput],
 ):
-    _service = http_idempotent_post_qual
+    def execute(self, request: ToolExecutionRequest[HttpRequestInput]) -> HttpRequestOutput:
+        ctx = effective_wiring_for_request(request, self._ctx)
+        return http_idempotent_post_qual(
+            ctx,
+            request.input,
+            authoritative_idempotency_key=request.idempotency_key,
+        )
 
 
 def register_http_idempotent_post_qual_tool(registry: object, ctx: ToolWiringContext) -> None:

@@ -61,6 +61,7 @@ _HTTP_PROVIDER = "http_rest"
 _HTTP_TOOL_IDEMPOTENT = "http_idempotent_post"
 _HTTP_TOOL_BLIND = "http_blind_post"
 _IDEMPOTENCY_KEY = "integrated-http-redrive-qual-1"
+_EFFECT_FINGERPRINT = "integrated-http-redrive-fp-1"
 
 _EFFECTS: dict[str, dict[str, Any]] = {}
 _EFFECT_LOCK = threading.Lock()
@@ -185,6 +186,7 @@ def test_integrated_http_class_b_lost_ack_redrive_single_physical_effect(
         bind_provider_id=_HTTP_PROVIDER,
         bind_tool_id=_HTTP_TOOL_IDEMPOTENT,
         bind_physical_idempotency_key=_IDEMPOTENCY_KEY,
+        bind_physical_effect_fingerprint=_EFFECT_FINGERPRINT,
     )
     _post_effect_transport_loss_after_commit(
         lost_ack_http_server,
@@ -232,6 +234,7 @@ def test_integrated_http_class_b_lost_ack_redrive_single_physical_effect(
         provider_id=_HTTP_PROVIDER,
         tool_id=_HTTP_TOOL_IDEMPOTENT,
         physical_idempotency_key=_IDEMPOTENCY_KEY,
+        physical_effect_fingerprint=_EFFECT_FINGERPRINT,
     )
     assert transferred.physical_state is ExternalOperationPhysicalState.NOT_STARTED
     fresh_owner = ProcessLocalExternalOperationOwner.mint()

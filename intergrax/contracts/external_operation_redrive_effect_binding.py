@@ -17,6 +17,12 @@ from intergrax.contracts.external_operation_redrive_authority import (
     ExternalOperationRedriveAuthorityError,
 )
 
+_HTTP_IDEMPOTENT_POST_QUAL_CONTRACT_ID = "tool_life.http_idempotent_post.qual.v1"
+
+
+def _bound_contract_requires_complete_physical_identity(contract_id: str) -> bool:
+    return contract_id.strip() == _HTTP_IDEMPOTENT_POST_QUAL_CONTRACT_ID
+
 
 class ExternalOperationRedriveEffectBindingError(ExternalOperationRedriveAuthorityError):
     """Durable effect binding is missing or inconsistent."""
@@ -105,16 +111,33 @@ def assert_supplied_contract_matches_bound_identity(
         raise ExternalOperationRedriveEffectBindingMismatchError(
             "tool_id does not match durable operation binding",
         )
-    if bound.physical_idempotency_key is not None:
+    requires_identity = _bound_contract_requires_complete_physical_identity(
+        bound.contract_id,
+    )
+    if requires_identity:
+        if not bound.physical_idempotency_key or not bound.physical_effect_fingerprint:
+            raise ExternalOperationRedriveEffectBindingMismatchError(
+                "durable Class B binding lacks complete physical effect identity",
+            )
         if physical_idempotency_key != bound.physical_idempotency_key:
             raise ExternalOperationRedriveEffectBindingMismatchError(
                 "physical_idempotency_key does not match durable operation binding",
             )
-    if bound.physical_effect_fingerprint is not None:
         if physical_effect_fingerprint != bound.physical_effect_fingerprint:
             raise ExternalOperationRedriveEffectBindingMismatchError(
                 "physical_effect_fingerprint does not match durable operation binding",
             )
+    else:
+        if bound.physical_idempotency_key is not None:
+            if physical_idempotency_key != bound.physical_idempotency_key:
+                raise ExternalOperationRedriveEffectBindingMismatchError(
+                    "physical_idempotency_key does not match durable operation binding",
+                )
+        if bound.physical_effect_fingerprint is not None:
+            if physical_effect_fingerprint != bound.physical_effect_fingerprint:
+                raise ExternalOperationRedriveEffectBindingMismatchError(
+                    "physical_effect_fingerprint does not match durable operation binding",
+                )
 
 
 __all__ = [

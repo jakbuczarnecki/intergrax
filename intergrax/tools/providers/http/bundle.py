@@ -10,19 +10,12 @@ from intergrax.tools.core.contracts import (
 )
 from intergrax.tools.providers.http.contracts import HttpRequestInput, HttpRequestOutput
 from intergrax.tools.providers.http.handlers import HttpRequestHandler
-from intergrax.tools.providers.http.idempotent_post_qual import (
-    HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
-    register_http_idempotent_post_qual_tool,
-)
 from intergrax.tools.providers.http.service import HTTP_REQUEST_TOOL_ID
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 HTTP_BUNDLE_ID = "http"
-HTTP_TOOL_IDS: tuple[str, ...] = (
-    HTTP_REQUEST_TOOL_ID,
-    HTTP_IDEMPOTENT_POST_QUAL_TOOL_ID,
-)
+HTTP_TOOL_IDS: tuple[str, ...] = (HTTP_REQUEST_TOOL_ID,)
 
 
 def register_http_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
@@ -43,4 +36,3 @@ def register_http_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
         ),
         HttpRequestHandler(ctx),
     )
-    register_http_idempotent_post_qual_tool(registry, ctx)

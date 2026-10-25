@@ -4,8 +4,8 @@
 
 | Field | Value |
 |---|---|
-| Baseline SHA (operator START_HEAD) | `d782800e622a9b8c27351bd3818a2e8abf5c5f0e` |
-| Frozen implementation SHA | `2c69e6aaf` (full: `git rev-parse HEAD` on `development`) |
+| Baseline SHA (operator START_HEAD) | `08787ba4118601ceab4fa613e426d377598ed59b` |
+| Frozen implementation SHA | *(set at publication commit — see §12)* |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
 | ADR | `ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md` |
@@ -20,7 +20,16 @@
 
 ## 2. Root-cause summary
 
-Generic catalog `http.request` was bound to `tool_life.http_idempotent_post.qual.v1` (Class B) despite arbitrary methods/hosts and `SideEffectRetrySafety.NOT_RETRY_SAFE` on the ToolContract. Durable redrive identity lacked invocation fingerprint; invoker no-dependency success path skipped `mark_succeeded()`; HTTP transport loss after submit could record physical FAILED instead of UNKNOWN.
+Prior wave fixed generic `http.request` Class C mapping and several invoker terminals, but independent EXT-L4 rejected: qualification Class B remained in the default HTTP bundle; HTTP idempotency key/fingerprint were not enforced end-to-end; UNKNOWN relied on pre-effect `may_have_started` only; production-entry proof did not exercise sanctioned qual registration + catalog invoke + durable Class B binding under composition.
+
+## 2b. F8 findings (systemic closure)
+
+| ID | Disposition |
+|---|---|
+| F8-01 | **Fixed** — `http.idempotent_post.qual` removed from `HTTP_TOOL_IDS` / `register_http_tools`; isolated `register_tool_life_http_class_b_qualification_tools` |
+| F8-02 | **Fixed** — mandatory physical key + fingerprint for `tool_life.http_idempotent_post.qual.v1`; authoritative `request.idempotency_key` on wire; `tool-life-qual` provenance tag |
+| F8-03 | **Fixed** — `physical_execution_admitted()` gates UNKNOWN with `http_transport_error` (not only pre-effect boundary) |
+| F8-04 | **Qualified** — `test_canonical_composition_production_entry_class_b_lost_ack_e2e` + integrated HTTP redrive (certified-loss redrive path) |
 
 ## 3. Defects A–E
 
@@ -31,7 +40,7 @@ Generic catalog `http.request` was bound to `tool_life.http_idempotent_post.qual
 | C | Contradictory retry surfaces | **Reconciled** — explicit `NOT_RETRY_SAFE` on generic HTTP; Class B only on qual contract/tool |
 | D | Durable effect identity | **Extended** — `bound_physical_effect_fingerprint` from `compute_invocation_operation_identity` |
 | E1 | No-dep boundary success terminal | **Fixed** — `mark_succeeded()` in `else` before return |
-| E2 | HTTP lost-ack durable FAILED | **Fixed** — `http_transport_error` + `may_have_started` → `mark_unknown()` |
+| E2 | HTTP lost-ack durable FAILED | **Fixed** — `http_transport_error` + physical admission / pre-effect → `mark_unknown()` |
 | E3 | Timeout race on completed future | **Fixed** — validate `future.result()` before `mark_succeeded()` |
 | E4 | Single terminal writer | **Preserved** — existing store helpers only |
 
@@ -40,7 +49,7 @@ Generic catalog `http.request` was bound to `tool_life.http_idempotent_post.qual
 | Surface | Class | Notes |
 |---|---|---|
 | Generic `http.request` | **C** | Executes under governance; no automated redrive binding |
-| `http.idempotent_post.qual` | **B** | Sanctioned qual catalog tool + provider idempotency key enforcement |
+| `http.idempotent_post.qual` | **B** | Qual composition only (`tool-life-qual` tag); not in default HTTP bundle |
 | `http_blind_post` / `http.read_only` qual | **C** | Explicit contracts |
 | `invoke_catalog_tool` (MCP) | **C** | Default qual contract |
 | Platform durable physical lifecycle | **B** | Explicit catalog tool only |
@@ -54,6 +63,7 @@ Generic catalog `http.request` was bound to `tool_life.http_idempotent_post.qual
 
 ```powershell
 uv run pytest `
+  tests/unit/runtime/external_operations/test_tool_life_x_r4_f8_remediation.py `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_systemic_rca_authoritative_classification.py `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_b1_authoritative_effect_class.py `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_b2_http_class_b_physical_qual.py `
@@ -66,7 +76,9 @@ uv run pytest `
   -q
 ```
 
-**Result:** 42 passed (session log: `.tmp/session/TOOL-LIFE-X-R4/pytest-consolidated-l2.log`).
+**Result:** 48 passed (session log: `.tmp/session/TOOL-LIFE-X-R4/pytest-f8-consolidated-l2.log`).
+
+**Canonical production-entry E2E:** `test_canonical_composition_production_entry_class_b_lost_ack_e2e` in `test_tool_life_x_r4_f8_remediation.py`.
 
 **L3 reuse:** SQLite cross-process CAS/revocation — prior `test_tool_life_x_l3_r8_sqlite_durable_revocation_shared_store` helpers reused in integrated redrive proof. PostgreSQL Docker L3 not re-run on this change-impact scope (no remote SQL fencing change).
 
@@ -104,3 +116,11 @@ None required for safe Class C default on generic HTTP. Independent EXT-L4 accep
 ## 11. Conclusion
 
 **Zero implementation blockers** remain for F8 handoff within authorized scope. **Parent CLOSED not asserted.**
+
+## 12. Publication
+
+| Field | Value |
+|---|---|
+| START_HEAD | `08787ba4118601ceab4fa613e426d377598ed59b` |
+| IMPLEMENTATION_SHA | same as PUBLICATION_HEAD at commit |
+| PUBLICATION_HEAD | `git rev-parse HEAD` after push to `origin/development` |

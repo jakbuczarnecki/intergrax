@@ -26,7 +26,9 @@ from intergrax.contracts.external_operation_redrive_authority import (
 )
 from intergrax.contracts.external_operation_redrive_trusted_effect_contracts import (
     assert_trusted_redrive_binding_matches_execution_context,
+    require_complete_physical_effect_identity_values,
     resolve_trusted_redrive_effect_contract,
+    trusted_redrive_contract_requires_complete_physical_identity,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
@@ -109,6 +111,11 @@ def bind_authoritative_redrive_effect_to_operation(
         provider_id=provider_id,
         tool_id=tool_id,
     )
+    if trusted_redrive_contract_requires_complete_physical_identity(trusted.contract_id):
+        require_complete_physical_effect_identity_values(
+            physical_idempotency_key=physical_idempotency_key,
+            physical_effect_fingerprint=physical_effect_fingerprint,
+        )
     identity = bound_identity_from_trusted_contract(
         trusted,
         provider_id=provider_id,
