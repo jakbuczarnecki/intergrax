@@ -62,6 +62,13 @@ class ExternalOperationState:
     consumed_redrive_admission_ids: frozenset[str] = field(
         default_factory=frozenset,
     )
+    bound_redrive_effect_contract_id: str | None = None
+    bound_redrive_effect_operation_key: str | None = None
+    bound_redrive_effect_contract_digest: str | None = None
+    bound_redrive_provider_id: str | None = None
+    bound_redrive_tool_id: str | None = None
+    bound_physical_idempotency_key: str | None = None
+    bound_redrive_effect_binding_revision: int | None = None
 
 
 class ExternalOperationCancellationError(RuntimeError):

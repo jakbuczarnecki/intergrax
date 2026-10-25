@@ -6,6 +6,9 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.external_operation_redrive_effect_binding import (
+    ExternalOperationRedriveEffectBindingError,
+)
 from intergrax.contracts.external_operation_redrive_authority import (
     ExternalOperationRedriveEffectClass,
     ExternalOperationRedriveEffectClassRejectedError,
@@ -33,7 +36,7 @@ def test_mcp_tools_call_default_trusted_contract_is_class_c() -> None:
 
 def test_mcp_class_c_cannot_obtain_redrive_authority_transfer() -> None:
     store = InMemoryExternalOperationStateStore()
-    with pytest.raises(ExternalOperationRedriveEffectClassRejectedError):
+    with pytest.raises(ExternalOperationRedriveEffectBindingError):
         transfer_redrive_authority_after_reconciliation(
             store,
             tenant_id="tenant-a",

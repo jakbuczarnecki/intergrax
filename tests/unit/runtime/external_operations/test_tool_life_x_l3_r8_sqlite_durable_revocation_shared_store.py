@@ -61,6 +61,9 @@ from tests.unit.runtime.external_operations.sqlite_tool_life_l3_r8_cross_process
     run_revocation_wins_before_terminal_race,
     run_terminal_wins_before_revocation_race,
 )
+from intergrax.runtime.external_operations.redrive_external_operation_authority import (
+    bind_authoritative_redrive_effect_to_operation,
+)
 from intergrax.runtime.external_operations.worker_execution_certified_owner_loss import (
     bind_worker_execution_ownership,
     build_worker_execution_certified_owner_loss_certifier,
@@ -100,6 +103,10 @@ def _running_with_worker(
     repo: InMemoryWorkerInstanceRepository,
     *,
     ownership_epoch: int = _BOUND_EPOCH,
+    bind_redrive_contract_id: str | None = None,
+    bind_provider_id: str | None = None,
+    bind_tool_id: str | None = None,
+    bind_physical_idempotency_key: str | None = None,
 ) -> tuple[object, object, str, ProcessLocalExternalOperationOwner]:
     store = bundle.external_operation_state
     revocation = bundle.worker_execution_ownership_revocation
@@ -107,6 +114,17 @@ def _running_with_worker(
     repo.create(worker)
     owner = ProcessLocalExternalOperationOwner.mint()
     record = store.create_if_absent(_TENANT, _OP, owner_token=owner.token)
+    if bind_redrive_contract_id is not None:
+        record = bind_authoritative_redrive_effect_to_operation(
+            store,
+            tenant_id=_TENANT,
+            operation_id=_OP,
+            expected_revision=record.revision,
+            trusted_effect_contract_id=bind_redrive_contract_id,
+            provider_id=bind_provider_id,
+            tool_id=bind_tool_id,
+            physical_idempotency_key=bind_physical_idempotency_key,
+        )
     running = mark_physical_running(
         store,
         tenant_id=_TENANT,

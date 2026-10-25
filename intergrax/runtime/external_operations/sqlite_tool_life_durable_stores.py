@@ -202,6 +202,13 @@ def _encode_external_operation_state(state: ExternalOperationState) -> str:
         "consumed_redrive_admission_ids": sorted(
             state.consumed_redrive_admission_ids,
         ),
+        "bound_redrive_effect_contract_id": state.bound_redrive_effect_contract_id,
+        "bound_redrive_effect_operation_key": state.bound_redrive_effect_operation_key,
+        "bound_redrive_effect_contract_digest": state.bound_redrive_effect_contract_digest,
+        "bound_redrive_provider_id": state.bound_redrive_provider_id,
+        "bound_redrive_tool_id": state.bound_redrive_tool_id,
+        "bound_physical_idempotency_key": state.bound_physical_idempotency_key,
+        "bound_redrive_effect_binding_revision": state.bound_redrive_effect_binding_revision,
     }
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
@@ -230,6 +237,17 @@ def _decode_external_operation_state(raw: str) -> ExternalOperationState:
         worker_ownership_epoch=payload.get("worker_ownership_epoch"),
         consumed_redrive_admission_ids=frozenset(
             payload.get("consumed_redrive_admission_ids") or [],
+        ),
+        bound_redrive_effect_contract_id=payload.get("bound_redrive_effect_contract_id"),
+        bound_redrive_effect_operation_key=payload.get("bound_redrive_effect_operation_key"),
+        bound_redrive_effect_contract_digest=payload.get(
+            "bound_redrive_effect_contract_digest",
+        ),
+        bound_redrive_provider_id=payload.get("bound_redrive_provider_id"),
+        bound_redrive_tool_id=payload.get("bound_redrive_tool_id"),
+        bound_physical_idempotency_key=payload.get("bound_physical_idempotency_key"),
+        bound_redrive_effect_binding_revision=payload.get(
+            "bound_redrive_effect_binding_revision",
         ),
     )
 

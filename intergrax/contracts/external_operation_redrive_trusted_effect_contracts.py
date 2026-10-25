@@ -59,9 +59,37 @@ TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT: Final = ExternalEffectContract(
     ),
 )
 
+_TRUSTED_REDRIVE_EFFECT_CONTRACTS: Final = (
+    TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
+    TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT,
+    TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT,
+    TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT,
+)
+
+_TRUSTED_BY_CONTRACT_ID: Final = {
+    contract.contract_id: contract for contract in _TRUSTED_REDRIVE_EFFECT_CONTRACTS
+}
+
+
+def resolve_trusted_redrive_effect_contract(contract_id: str) -> ExternalEffectContract:
+    """Authoritative registry lookup — callers cannot invent new contract_ids."""
+    from intergrax.contracts.external_operation_redrive_authority import (
+        ExternalOperationRedriveEffectClassRejectedError,
+    )
+
+    normalized = contract_id.strip()
+    trusted = _TRUSTED_BY_CONTRACT_ID.get(normalized)
+    if trusted is None:
+        raise ExternalOperationRedriveEffectClassRejectedError(
+            f"untrusted redrive effect contract_id {contract_id!r}",
+        )
+    return trusted
+
+
 __all__ = [
     "TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT",
     "TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT",
     "TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT",
     "TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT",
+    "resolve_trusted_redrive_effect_contract",
 ]

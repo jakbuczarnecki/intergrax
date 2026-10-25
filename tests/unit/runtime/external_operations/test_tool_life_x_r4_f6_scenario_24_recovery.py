@@ -55,6 +55,20 @@ from tests.unit.runtime.external_operations.test_tool_life_x_l3_r8_sqlite_durabl
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
+_PLATFORM_PROVIDER = "platform"
+_PLATFORM_TOOL = "external_operation_physical_lifecycle"
+
+_PLATFORM_BIND_KWARGS = {
+    "bind_redrive_contract_id": TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+    "bind_provider_id": _PLATFORM_PROVIDER,
+    "bind_tool_id": _PLATFORM_TOOL,
+}
+_CLASS_C_BIND_KWARGS = {
+    "bind_redrive_contract_id": TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,
+    "bind_provider_id": "http_rest",
+    "bind_tool_id": "http_blind_post",
+}
+
 
 @pytest.fixture
 def durable_bundle(tmp_path: Path) -> SqliteToolLifeDurableStoresBundle:
@@ -65,7 +79,7 @@ def test_scenario_24_certified_loss_transitions_running_to_unknown(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _running_with_worker(durable_bundle, repo)
+    _running_with_worker(durable_bundle, repo, **_PLATFORM_BIND_KWARGS)
     proof = _revoke_bound(durable_bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
         store=durable_bundle.external_operation_state,
@@ -115,7 +129,7 @@ def test_scenario_24_mark_physical_blocked_without_redrive_authority_transfer(
 ) -> None:
     """Revoked epoch blocks physical restart until sanctioned authority transfer."""
     repo = InMemoryWorkerInstanceRepository()
-    _running_with_worker(durable_bundle, repo)
+    _running_with_worker(durable_bundle, repo, **_PLATFORM_BIND_KWARGS)
     proof = _revoke_bound(durable_bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
         store=durable_bundle.external_operation_state,
@@ -157,7 +171,7 @@ def test_scenario_24_positive_redrive_after_authority_transfer(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _running_with_worker(durable_bundle, repo)
+    _running_with_worker(durable_bundle, repo, **_PLATFORM_BIND_KWARGS)
     proof = _revoke_bound(durable_bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
         store=durable_bundle.external_operation_state,
@@ -187,6 +201,8 @@ def test_scenario_24_positive_redrive_after_authority_transfer(
         trusted_effect_contract=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
         worker_instance_id=str(recovery_worker.worker_instance_id),
         worker_ownership_epoch=_BOUND_EPOCH + 1,
+        provider_id=_PLATFORM_PROVIDER,
+        tool_id=_PLATFORM_TOOL,
     )
     assert transferred.physical_state is ExternalOperationPhysicalState.NOT_STARTED
     assert transferred.intent_state is ExternalOperationIntentState.ACTIVE
@@ -225,7 +241,7 @@ def test_scenario_24_class_c_effect_cannot_obtain_redrive_authority(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _running_with_worker(durable_bundle, repo)
+    _running_with_worker(durable_bundle, repo, **_CLASS_C_BIND_KWARGS)
     proof = _revoke_bound(durable_bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
         store=durable_bundle.external_operation_state,
@@ -255,6 +271,8 @@ def test_scenario_24_class_c_effect_cannot_obtain_redrive_authority(
             trusted_effect_contract=TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT,
             worker_instance_id=str(recovery_worker.worker_instance_id),
             worker_ownership_epoch=_BOUND_EPOCH + 1,
+            provider_id="http_rest",
+            tool_id="http_blind_post",
         )
 
 
@@ -262,7 +280,7 @@ def test_scenario_24_competing_redrive_transfer_rejected(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _running_with_worker(durable_bundle, repo)
+    _running_with_worker(durable_bundle, repo, **_PLATFORM_BIND_KWARGS)
     proof = _revoke_bound(durable_bundle)
     certifier = build_worker_execution_certified_owner_loss_certifier(
         store=durable_bundle.external_operation_state,
@@ -293,6 +311,8 @@ def test_scenario_24_competing_redrive_transfer_rejected(
         trusted_effect_contract=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
         worker_instance_id=str(worker_a.worker_instance_id),
         worker_ownership_epoch=_BOUND_EPOCH + 1,
+        provider_id=_PLATFORM_PROVIDER,
+        tool_id=_PLATFORM_TOOL,
     )
     loaded = durable_bundle.external_operation_state.load(_TENANT, _OP)
     assert loaded is not None
@@ -311,7 +331,7 @@ def test_scenario_24_forged_recovery_without_staged_evidence_rejected(
     durable_bundle: SqliteToolLifeDurableStoresBundle,
 ) -> None:
     repo = InMemoryWorkerInstanceRepository()
-    _running_with_worker(durable_bundle, repo)
+    _running_with_worker(durable_bundle, repo, **_PLATFORM_BIND_KWARGS)
     loaded = durable_bundle.external_operation_state.load(_TENANT, _OP)
     assert loaded is not None
     with pytest.raises(CertifiedOwnerLossEvidenceRejectedError):

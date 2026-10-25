@@ -71,6 +71,13 @@ class ExternalOperationStateUpdate:
     worker_instance_id: str | None = None
     worker_ownership_epoch: int | None = None
     consumed_redrive_admission_ids: frozenset[str] | None = None
+    bound_redrive_effect_contract_id: str | None = None
+    bound_redrive_effect_operation_key: str | None = None
+    bound_redrive_effect_contract_digest: str | None = None
+    bound_redrive_provider_id: str | None = None
+    bound_redrive_tool_id: str | None = None
+    bound_physical_idempotency_key: str | None = None
+    bound_redrive_effect_binding_revision: int | None = None
 
 
 def _validate_tenant_id(tenant_id: str) -> str:
@@ -202,6 +209,27 @@ def apply_external_operation_state_update(
     redrive_admissions = current.consumed_redrive_admission_ids
     if update.consumed_redrive_admission_ids is not None:
         redrive_admissions = update.consumed_redrive_admission_ids
+    bound_contract_id = current.bound_redrive_effect_contract_id
+    if update.bound_redrive_effect_contract_id is not None:
+        bound_contract_id = update.bound_redrive_effect_contract_id
+    bound_operation_key = current.bound_redrive_effect_operation_key
+    if update.bound_redrive_effect_operation_key is not None:
+        bound_operation_key = update.bound_redrive_effect_operation_key
+    bound_digest = current.bound_redrive_effect_contract_digest
+    if update.bound_redrive_effect_contract_digest is not None:
+        bound_digest = update.bound_redrive_effect_contract_digest
+    bound_provider = current.bound_redrive_provider_id
+    if update.bound_redrive_provider_id is not None:
+        bound_provider = update.bound_redrive_provider_id
+    bound_tool = current.bound_redrive_tool_id
+    if update.bound_redrive_tool_id is not None:
+        bound_tool = update.bound_redrive_tool_id
+    bound_idempotency = current.bound_physical_idempotency_key
+    if update.bound_physical_idempotency_key is not None:
+        bound_idempotency = update.bound_physical_idempotency_key
+    bound_binding_revision = current.bound_redrive_effect_binding_revision
+    if update.bound_redrive_effect_binding_revision is not None:
+        bound_binding_revision = update.bound_redrive_effect_binding_revision
     return ExternalOperationState(
         operation_id=current.operation_id,
         tenant_id=current.tenant_id,
@@ -217,6 +245,13 @@ def apply_external_operation_state_update(
         worker_instance_id=worker_id,
         worker_ownership_epoch=worker_epoch,
         consumed_redrive_admission_ids=redrive_admissions,
+        bound_redrive_effect_contract_id=bound_contract_id,
+        bound_redrive_effect_operation_key=bound_operation_key,
+        bound_redrive_effect_contract_digest=bound_digest,
+        bound_redrive_provider_id=bound_provider,
+        bound_redrive_tool_id=bound_tool,
+        bound_physical_idempotency_key=bound_idempotency,
+        bound_redrive_effect_binding_revision=bound_binding_revision,
     )
 
 

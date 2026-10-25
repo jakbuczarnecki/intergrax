@@ -12,6 +12,9 @@ from typing import Any
 import httpx
 import pytest
 
+from intergrax.contracts.external_operation_redrive_effect_binding import (
+    ExternalOperationRedriveEffectBindingError,
+)
 from intergrax.contracts.external_operation_redrive_authority import (
     ExternalOperationRedriveEffectClass,
     ExternalOperationRedriveEffectClassRejectedError,
@@ -110,7 +113,7 @@ def test_http_blind_post_contract_is_class_c_fail_closed() -> None:
 
 def test_redrive_transfer_rejects_class_c_http_contract() -> None:
     store = InMemoryExternalOperationStateStore()
-    with pytest.raises(ExternalOperationRedriveEffectClassRejectedError):
+    with pytest.raises(ExternalOperationRedriveEffectBindingError):
         transfer_redrive_authority_after_reconciliation(
             store,
             tenant_id="tenant-a",
