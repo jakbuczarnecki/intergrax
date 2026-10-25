@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Operator START_HEAD (this batch) | `870e9ae466ec7d6e999c2a4c03b6e05ad52e7cd7` |
-| IMPLEMENTATION_SHA | *(set at commit — see §12)* |
+| IMPLEMENTATION_SHA | `10804d0e024e446274b60421a84797ec55e52f88` |
 | PUBLICATION_HEAD | *(set after push — see §12)* |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
@@ -161,5 +161,5 @@ Implementation and scoped L2 support **READY FOR INDEPENDENT F8 EXT-L4 AUDIT**. 
 | Field | Value |
 |---|---|
 | START_HEAD | `870e9ae466ec7d6e999c2a4c03b6e05ad52e7cd7` |
-| IMPLEMENTATION_SHA | *(filled by commit step)* |
-| PUBLICATION_HEAD | *(filled after push)* |
+| IMPLEMENTATION_SHA | `10804d0e024e446274b60421a84797ec55e52f88` |
+| PUBLICATION_HEAD | `10804d0e024e446274b60421a84797ec55e52f88` (post-push) |
