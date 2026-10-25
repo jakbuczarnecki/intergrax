@@ -8,7 +8,7 @@
 | **Operator authorization** | Roadmap §3.0.5 + prior `OPERATOR APPROVED — MCP CANCEL-A` / `ADR OWN-A2` (no new deadline or cancel authority) |
 | **START_HEAD** | `20e2225b1bae367ee8c3a365fd167c629ba924c6` |
 | **IMPLEMENTATION_HEAD** | `20e2225b1bae367ee8c3a365fd167c629ba924c6` (**0** production delta) |
-| **PUBLICATION_HEAD** | *(this commit)* |
+| **PUBLICATION_HEAD** | `d8a5eb739b2a737a251e8d4ed33e358a2a180e4a` |
 | **Disposition** | **`TLX-TL11-MCP16-CANCEL-C — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
 **Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no TL8 positive recovery; no DIST-SCALE-X; **parent Execution cancel → catalog Tool on MCP** remains **BLOCKED** (out of scope — not a new coordinator).
