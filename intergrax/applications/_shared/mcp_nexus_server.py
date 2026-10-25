@@ -123,6 +123,7 @@ async def execute_mcp_agent_task(
             task=task,
             caller_request_identity=caller_request_identity,
             launch=launch,
+            transport_waiter_will_continue=False,
         )
         execution_result = await run_host_execution_with_mcp_transport_cancel(
             launch.host_task,

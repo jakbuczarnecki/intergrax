@@ -305,3 +305,35 @@ async def test_handoff_refused_when_host_completes_during_acceptance() -> None:
         is RootExecutionTransportDetachmentHandoffRefusalReason.HOST_TASK_ALREADY_DONE
     )
     await ActiveTaskRegistry.unregister(task.task_id, run_id)
+
+
+@pytest.mark.asyncio
+async def test_relinquish_admission_drops_supervision_without_cancelling_host() -> None:
+    supervisor = build_host_root_execution_transport_detachment_supervisor()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    host_done = asyncio.Event()
+
+    async def _host() -> str:
+        await host_done.wait()
+        return "ok"
+
+    host_coro = asyncio.create_task(_host())
+    await asyncio.sleep(0)
+    admitted = await supervisor.admit_root_execution_supervision(
+        RootExecutionTransportAdmissionRequest(
+            task_id=task.task_id,
+            verified_tenant_id=_TENANT,
+            caller_request_identity=_principal(),
+            host_asyncio_task=host_coro,
+        )
+    )
+    assert admitted.disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+    relinquished = await supervisor.relinquish_root_execution_supervision_admission(
+        task_id=task.task_id,
+        host_asyncio_task=host_coro,
+    )
+    assert relinquished is True
+    assert supervisor.supervised_count() == 0
+    assert not host_coro.done()
+    host_done.set()
+    await asyncio.wait_for(host_coro, timeout=3.0)

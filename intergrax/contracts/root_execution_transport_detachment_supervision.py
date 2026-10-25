@@ -115,6 +115,18 @@ class RootExecutionTransportDetachmentSupervisionPort(Protocol):
 
     async def shutdown_supervised_work(self, *, timeout_s: float) -> None: ...
 
+    async def relinquish_root_execution_supervision_admission(
+        self,
+        *,
+        task_id: TaskId,
+        host_asyncio_task: asyncio.Task[object],
+    ) -> bool:
+        """
+        Drop pre-start supervision for *host_asyncio_task* when the admission caller aborts
+        before the execution start gate opens and no transport waiter will continue.
+        """
+        ...
+
 
 __all__ = [
     "RootExecutionTransportAdmissionRequest",

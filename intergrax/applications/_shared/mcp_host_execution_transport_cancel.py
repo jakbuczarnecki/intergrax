@@ -70,6 +70,38 @@ def create_mcp_protected_host_execution_launch(
     )
 
 
+async def _finalize_protected_mcp_root_execution_admission_caller_abort(
+    *,
+    supervision_port: RootExecutionTransportDetachmentSupervisionPort,
+    task: Task,
+    launch: McpProtectedHostExecutionLaunch,
+    gate_opened: bool,
+    transport_waiter_will_continue: bool,
+) -> None:
+    """
+    Linearize admission caller abort without leaving a gated task unowned or indefinitely closed.
+
+    When supervision was accepted and the transport waiter will continue, open the start gate
+    so accountable supervised Execution can proceed. Otherwise relinquish supervision and
+    terminate the gated host task (bounded, fail closed).
+    """
+    if gate_opened:
+        return
+    holds = supervision_port.holds_root_execution_supervision(
+        task_id=task.task_id,
+        host_asyncio_task=launch.host_task,
+    )
+    if holds:
+        if transport_waiter_will_continue:
+            launch.execution_start_gate.set()
+            return
+        await supervision_port.relinquish_root_execution_supervision_admission(
+            task_id=task.task_id,
+            host_asyncio_task=launch.host_task,
+        )
+    await _terminate_gated_host_task_after_refused_admission(launch.host_task)
+
+
 async def _terminate_gated_host_task_after_refused_admission(
     host_task: asyncio.Task[object],
     *,
@@ -91,35 +123,59 @@ async def admit_protected_mcp_root_execution_supervision(
     task: Task,
     caller_request_identity: RequestIdentity,
     launch: McpProtectedHostExecutionLaunch,
+    transport_waiter_will_continue: bool = True,
 ) -> None:
     """
     Linearize supervision acceptance before protected business Execution may start.
 
     On refusal, cancels the gated host task and verifies bounded termination (fail closed).
     """
-    if task.tenant_id != caller_request_identity.tenant_id:
+    gate_opened = False
+    try:
+        if task.tenant_id != caller_request_identity.tenant_id:
+            await _terminate_gated_host_task_after_refused_admission(launch.host_task)
+            raise McpProtectedHostExecutionAdmissionError(
+                "protected MCP root execution task tenant does not match verified principal tenant"
+            )
+        admission = await supervision_port.admit_root_execution_supervision(
+            RootExecutionTransportAdmissionRequest(
+                task_id=task.task_id,
+                verified_tenant_id=caller_request_identity.tenant_id,
+                caller_request_identity=caller_request_identity,
+                host_asyncio_task=launch.host_task,
+            )
+        )
+        if (
+            admission.disposition
+            is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+        ):
+            launch.execution_start_gate.set()
+            gate_opened = True
+            return
         await _terminate_gated_host_task_after_refused_admission(launch.host_task)
         raise McpProtectedHostExecutionAdmissionError(
-            "protected MCP root execution task tenant does not match verified principal tenant"
+            "root execution supervision admission refused before MCP protected execution"
         )
-    admission = await supervision_port.admit_root_execution_supervision(
-        RootExecutionTransportAdmissionRequest(
-            task_id=task.task_id,
-            verified_tenant_id=caller_request_identity.tenant_id,
-            caller_request_identity=caller_request_identity,
-            host_asyncio_task=launch.host_task,
+    except asyncio.CancelledError:
+        await _finalize_protected_mcp_root_execution_admission_caller_abort(
+            supervision_port=supervision_port,
+            task=task,
+            launch=launch,
+            gate_opened=gate_opened,
+            transport_waiter_will_continue=transport_waiter_will_continue,
         )
-    )
-    if (
-        admission.disposition
-        is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
-    ):
-        launch.execution_start_gate.set()
-        return
-    await _terminate_gated_host_task_after_refused_admission(launch.host_task)
-    raise McpProtectedHostExecutionAdmissionError(
-        "root execution supervision admission refused before MCP protected execution"
-    )
+        raise
+    except McpProtectedHostExecutionAdmissionError:
+        raise
+    except Exception:
+        await _finalize_protected_mcp_root_execution_admission_caller_abort(
+            supervision_port=supervision_port,
+            task=task,
+            launch=launch,
+            gate_opened=gate_opened,
+            transport_waiter_will_continue=False,
+        )
+        raise
 
 
 # MCP transport-layer observation scheduling only (not root Execution deadline authority).
@@ -442,6 +498,7 @@ async def run_host_execution_with_mcp_transport_cancel(
                 host_task=host_coro,
                 execution_start_gate=execution_start_gate,
             ),
+            transport_waiter_will_continue=True,
         )
 
     async def _monitor_transport() -> None:

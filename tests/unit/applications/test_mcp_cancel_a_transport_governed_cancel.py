@@ -39,6 +39,9 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportDetachmentHandoffDisposition,
+)
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
@@ -787,3 +790,143 @@ async def test_adm01_refused_admission_never_starts_business_execution() -> None
             transport_detachment_supervision=supervision,
         )
     port.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_af06_cancellation_while_admission_pending_no_business_no_supervision_leak() -> (
+    None
+):
+    """AF-06: cancel during pending admission terminates gated work without supervision leak."""
+    supervision = _transport_supervision()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    boundary = _harness_boundary()
+    cancel_ctx = McpHostExecutionTransportCancelContext(
+        mutation_boundary=boundary,
+        caller_request_identity=_principal(),
+    )
+    business_started = asyncio.Event()
+    admit_release = asyncio.Event()
+    original_admit = supervision.admit_root_execution_supervision
+
+    async def _slow_admit(request: object) -> object:
+        await admit_release.wait()
+        return await original_admit(request)
+
+    async def _host() -> str:
+        business_started.set()
+        return "ok"
+
+    supervision.admit_root_execution_supervision = _slow_admit  # type: ignore[method-assign]
+    launch = create_mcp_protected_host_execution_launch(_host)
+    waiter = asyncio.create_task(
+        run_host_execution_with_mcp_transport_cancel(
+            launch.host_task,
+            task=task,
+            cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=supervision,
+            execution_start_gate=launch.execution_start_gate,
+        ),
+    )
+    await asyncio.sleep(0.05)
+    waiter.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(waiter, timeout=12.0)
+    assert not business_started.is_set()
+    assert launch.host_task.done()
+    assert supervision.supervised_count() == 0
+
+
+@pytest.mark.asyncio
+async def test_af04_admission_exception_after_supervisor_accept_relinquishes_gated_host() -> (
+    None
+):
+    """AF-04: fault after internal ACCEPT must not leave closed gated task or orphan supervision."""
+    supervision = _transport_supervision()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    boundary = _harness_boundary()
+    cancel_ctx = McpHostExecutionTransportCancelContext(
+        mutation_boundary=boundary,
+        caller_request_identity=_principal(),
+    )
+    business_started = asyncio.Event()
+    original_admit = supervision.admit_root_execution_supervision
+
+    async def _admit_then_fault(request: object) -> object:
+        result = await original_admit(request)
+        if (
+            result.disposition
+            is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+        ):
+            raise RuntimeError("admission caller fault after supervisor accept")
+        return result
+
+    async def _host() -> str:
+        business_started.set()
+        return "ok"
+
+    supervision.admit_root_execution_supervision = _admit_then_fault  # type: ignore[method-assign]
+    launch = create_mcp_protected_host_execution_launch(_host)
+    with pytest.raises(RuntimeError, match="admission caller fault"):
+        await run_host_execution_with_mcp_transport_cancel(
+            launch.host_task,
+            task=task,
+            cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=supervision,
+            execution_start_gate=launch.execution_start_gate,
+        )
+    assert not business_started.is_set()
+    assert launch.host_task.done()
+    assert supervision.supervised_count() == 0
+
+
+@pytest.mark.asyncio
+async def test_af07_cancel_after_supervisor_accept_opens_gate_for_supervised_host() -> None:
+    """AF-07: transport waiter cancel after supervisor ACCEPT opens gate; host completes."""
+    supervision = _transport_supervision()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    boundary = _harness_boundary()
+    cancel_ctx = McpHostExecutionTransportCancelContext(
+        mutation_boundary=boundary,
+        caller_request_identity=_principal(),
+    )
+    business_started = asyncio.Event()
+    supervisor_accepted = asyncio.Event()
+    block_admit_return = asyncio.Event()
+    original_admit = supervision.admit_root_execution_supervision
+
+    async def _admit_block_return(request: object) -> object:
+        result = await original_admit(request)
+        if (
+            result.disposition
+            is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+        ):
+            supervisor_accepted.set()
+            await block_admit_return.wait()
+        return result
+
+    async def _host() -> str:
+        business_started.set()
+        return "done"
+
+    supervision.admit_root_execution_supervision = _admit_block_return  # type: ignore[method-assign]
+    launch = create_mcp_protected_host_execution_launch(_host)
+    waiter = asyncio.create_task(
+        run_host_execution_with_mcp_transport_cancel(
+            launch.host_task,
+            task=task,
+            cancel_ctx=cancel_ctx,
+            transport_detachment_supervision=supervision,
+            execution_start_gate=launch.execution_start_gate,
+        ),
+    )
+    await asyncio.wait_for(supervisor_accepted.wait(), timeout=12.0)
+    assert not business_started.is_set()
+    waiter.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(waiter, timeout=12.0)
+    await asyncio.wait_for(launch.host_task, timeout=12.0)
+    assert business_started.is_set()
+    deadline = time.monotonic() + 2.0
+    while supervision.supervised_count() > 0 and time.monotonic() < deadline:
+        await asyncio.sleep(0.02)
+    assert supervision.supervised_count() == 0

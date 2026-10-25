@@ -139,15 +139,41 @@ class HostRootExecutionTransportDetachmentSupervisor:
                     disposition=RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED,
                 )
             self._supervised[request.task_id] = request.host_asyncio_task
-            observer = asyncio.create_task(
-                self._observe_supervised_work(request.task_id, request.host_asyncio_task),
-                name=f"root-exec-transport-supervision:{request.task_id}",
-            )
-            self._observers[request.task_id] = observer
+            try:
+                observer = asyncio.create_task(
+                    self._observe_supervised_work(
+                        request.task_id, request.host_asyncio_task
+                    ),
+                    name=f"root-exec-transport-supervision:{request.task_id}",
+                )
+                self._observers[request.task_id] = observer
+            except Exception:
+                self._supervised.pop(request.task_id, None)
+                raise
 
         return RootExecutionTransportAdmissionResult(
             disposition=RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED,
         )
+
+    async def relinquish_root_execution_supervision_admission(
+        self,
+        *,
+        task_id: TaskId,
+        host_asyncio_task: asyncio.Task[object],
+    ) -> bool:
+        observer: asyncio.Task[None] | None = None
+        async with self._lock:
+            existing = self._supervised.get(task_id)
+            if existing is not host_asyncio_task:
+                return False
+            self._supervised.pop(task_id, None)
+            self._bound_run_id.pop(task_id, None)
+            observer = self._observers.pop(task_id, None)
+        if observer is not None:
+            observer.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await observer
+        return True
 
     async def _register_supervised_handoff(
         self,
