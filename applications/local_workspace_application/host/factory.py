@@ -176,6 +176,7 @@ def create_local_workspace_backend_app(
             agent_registry=runtime.registry,
             tenant_id=host_tenant_id,
             idempotency_store=runtime.reliability.idempotency_store,
+            tool_life_execution_recovery=runtime.tool_life_execution_recovery,
         ),
     )
     lkw_host_execution = runtime.execution

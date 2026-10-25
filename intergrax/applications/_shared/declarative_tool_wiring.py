@@ -26,6 +26,12 @@ from intergrax.runtime.execution.application_declarative_tool_composition import
 from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
     resolve_dependency_concurrency_admission_configuration,
 )
+from intergrax.applications._shared.tool_life_declarative_tool_invoker_wiring import (
+    resolve_external_operation_state_store_for_tool_invoker,
+)
+from intergrax.applications._shared.tool_life_execution_recovery_wiring import (
+    ApplicationToolLifeExecutionRecoveryWiring,
+)
 from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
     materialize_tool_dependency_attempt_boundary,
 )
@@ -56,6 +62,7 @@ def build_declarative_invoker_from_tool_wiring(
     canonical_inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
     dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
+    tool_life_execution_recovery: ApplicationToolLifeExecutionRecoveryWiring | None = None,
     production_mode: bool = False,
 ) -> CatalogDeclarativeToolInvoker | None:
     """Materialize catalog invoker when host tool profile enables catalog tools."""
@@ -70,6 +77,9 @@ def build_declarative_invoker_from_tool_wiring(
         if idempotency_store is not None
         else None
     )
+    external_operation_store = resolve_external_operation_state_store_for_tool_invoker(
+        tool_life_execution_recovery,
+    )
     invoker = build_production_runtime_tool_invoker(
         registry=tool_wiring.registry,
         pre_effect_coordinator=coordinator,
@@ -79,6 +89,7 @@ def build_declarative_invoker_from_tool_wiring(
         inner_execution_guard=canonical_inner_execution_guard,
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
         dependency_attempt_boundary=dependency_attempt_boundary,
+        external_operation_store=external_operation_store,
         production_mode=production_mode,
     )
     return CatalogDeclarativeToolInvoker(
@@ -97,6 +108,7 @@ def build_declarative_invoker_for_application_host(
     idempotency_store: IdempotencyStore | None = None,
     canonical_inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+    tool_life_execution_recovery: ApplicationToolLifeExecutionRecoveryWiring | None = None,
 ) -> CatalogDeclarativeToolInvoker | None:
     """Compose declarative invoker with strict-mode agent governance (U5 / EP-14)."""
     if not declarative_catalog_tools_enabled(tool_wiring.profile):
@@ -125,6 +137,7 @@ def build_declarative_invoker_for_application_host(
         canonical_inner_execution_guard=canonical_inner_execution_guard,
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
         dependency_attempt_boundary=dependency_boundary,
+        tool_life_execution_recovery=tool_life_execution_recovery,
         production_mode=production_mode,
     )
 

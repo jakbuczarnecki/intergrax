@@ -584,6 +584,15 @@ def build_harness_host_runtime(
     resolved_meaningful_side_effect_authorization = (
         meaningful_side_effect_wiring.authorization_port
     )
+    from intergrax.applications._shared.tool_life_host_bootstrap_wiring import (
+        resolve_tool_life_host_bootstrap_wiring,
+    )
+
+    tool_life_bootstrap = resolve_tool_life_host_bootstrap_wiring(
+        effective_environment,
+        idempotency_db_path=idempotency_db_path,
+        tool_life_durable_db_path=tool_life_durable_db_path,
+    )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
         effective_environment,
@@ -592,6 +601,7 @@ def build_harness_host_runtime(
         tenant_id=resolved_tenant_id,
         idempotency_store=reliability_wiring.idempotency_store,
         meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
+        tool_life_execution_recovery=tool_life_bootstrap.wiring,
     )
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
         agent_checkpoint_store=agent_checkpoint_store,
@@ -764,15 +774,6 @@ def build_harness_host_runtime(
             submission_port_builder=strict_orchestration_topology_submission_port_builder,
         )
     transport_detachment_supervision = build_host_root_execution_transport_detachment_supervisor()
-    from intergrax.applications._shared.tool_life_host_bootstrap_wiring import (
-        resolve_tool_life_host_bootstrap_wiring,
-    )
-
-    tool_life_bootstrap = resolve_tool_life_host_bootstrap_wiring(
-        effective_environment,
-        idempotency_db_path=idempotency_db_path,
-        tool_life_durable_db_path=tool_life_durable_db_path,
-    )
     host_runtime = HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=effective_environment,

@@ -1848,7 +1848,10 @@ class RuntimeToolInvoker:
             request,
             physical_attempt_sequence=physical_attempt_sequence,
         )
-        ext_op.before_physical_submit()
+        ext_op.before_physical_submit(
+            catalog_tool_id=contract.tool_id,
+            physical_idempotency_key=request.idempotency_key,
+        )
 
         if dep_boundary is None:
             timeout_s = self._physical_attempt_timeout_after_admission_seconds(contract)

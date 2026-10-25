@@ -113,6 +113,30 @@ def assert_trusted_redrive_binding_matches_execution_context(
         )
 
 
+def resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool(
+    catalog_tool_id: str,
+) -> tuple[str, str, str]:
+    """
+    Resolve authoritative (contract_id, provider_id, binding_tool_id) for durable binding.
+
+    Uses sanctioned qual registry entries when ``catalog_tool_id`` matches a bound tool;
+    otherwise falls back to platform durable physical lifecycle identity.
+    """
+    normalized_tool = catalog_tool_id.strip()
+    if not normalized_tool:
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            "catalog tool_id is required for sanctioned redrive effect binding",
+        )
+    for (provider_id, binding_tool_id), contract_id in _QUAL_SANCTIONED_EXECUTION_BINDING.items():
+        if binding_tool_id == normalized_tool:
+            return contract_id, provider_id, binding_tool_id
+    return (
+        TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+        "platform",
+        "external_operation_physical_lifecycle",
+    )
+
+
 def resolve_trusted_redrive_effect_contract(contract_id: str) -> ExternalEffectContract:
     """Authoritative registry lookup — callers cannot invent new contract_ids."""
     from intergrax.contracts.external_operation_redrive_authority import (
@@ -134,5 +158,6 @@ __all__ = [
     "TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT",
     "TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT",
     "assert_trusted_redrive_binding_matches_execution_context",
+    "resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool",
     "resolve_trusted_redrive_effect_contract",
 ]

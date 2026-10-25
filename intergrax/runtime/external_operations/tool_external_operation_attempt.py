@@ -41,6 +41,9 @@ from intergrax.runtime.external_operations.operation_termination import (
     dispatch_provider_termination_sync,
     mark_observed_cancellation_terminal,
 )
+from intergrax.runtime.external_operations.tool_external_operation_redrive_binding import (
+    bind_sanctioned_redrive_effect_before_tool_physical_execution,
+)
 
 
 def tool_external_operation_identity(
@@ -123,13 +126,30 @@ class ToolExternalOperationAttempt:
             return None
         return self._store, self._identity, self._owner
 
-    def before_physical_submit(self) -> None:
+    def before_physical_submit(
+        self,
+        *,
+        catalog_tool_id: str | None = None,
+        physical_idempotency_key: str | None = None,
+    ) -> None:
         binding = self._binding()
         if binding is None:
             return
         store, identity, _owner = binding
         record = assert_may_begin_physical_attempt(store, identity)
         self._revision = record.revision
+        if catalog_tool_id is None or self._revision is None:
+            return
+        if identity.operation_id is None:
+            return
+        self._revision = bind_sanctioned_redrive_effect_before_tool_physical_execution(
+            store,
+            tenant_id=identity.tenant_id,
+            operation_id=identity.operation_id,
+            expected_revision=self._revision,
+            catalog_tool_id=catalog_tool_id,
+            physical_idempotency_key=physical_idempotency_key,
+        )
 
     def mark_running(self) -> None:
         binding = self._binding()
