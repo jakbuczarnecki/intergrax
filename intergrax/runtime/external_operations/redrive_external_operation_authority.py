@@ -5,9 +5,12 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.enterprise_reliability.effect_contract import ExternalEffectContract
 from intergrax.contracts.external_operation_redrive_authority import (
     ExternalOperationRedriveEffectClass,
     ExternalOperationRedriveEffectClassRejectedError,
+    assert_redrive_effect_class_claim_matches_authoritative,
+    resolve_authoritative_redrive_effect_class,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
@@ -34,14 +37,22 @@ def transfer_redrive_authority_after_reconciliation(
     tenant_id: str,
     operation_id: str,
     expected_revision: int,
-    effect_class: ExternalOperationRedriveEffectClass,
+    trusted_effect_contract: ExternalEffectContract,
     worker_instance_id: str,
     worker_ownership_epoch: int,
+    caller_claimed_effect_class: ExternalOperationRedriveEffectClass | None = None,
 ) -> ExternalOperationState:
     """Atomic durable authority transfer for eligible Class B effects (qual + controlled)."""
-    if effect_class is not ExternalOperationRedriveEffectClass.CLASS_B_IDEMPOTENT_OR_RECONCILED:
+    authoritative = resolve_authoritative_redrive_effect_class(trusted_effect_contract)
+    if caller_claimed_effect_class is not None:
+        assert_redrive_effect_class_claim_matches_authoritative(
+            caller_claimed_effect_class=caller_claimed_effect_class,
+            authoritative_effect_class=authoritative,
+        )
+    if authoritative is not ExternalOperationRedriveEffectClass.CLASS_B_IDEMPOTENT_OR_RECONCILED:
         raise ExternalOperationRedriveEffectClassRejectedError(
-            f"effect class {effect_class.value} is not eligible for automated redrive",
+            f"trusted contract {trusted_effect_contract.contract_id!r} is not eligible "
+            f"for automated redrive ({authoritative.value})",
         )
     admit_unknown_external_operation_for_reconciliation(
         store,

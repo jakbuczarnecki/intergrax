@@ -19,8 +19,11 @@ from intergrax.contracts.external_operation_cancellation import (
 )
 from intergrax.contracts.external_operation_redrive_authority import (
     ExternalOperationRedriveCompetingAuthorityError,
-    ExternalOperationRedriveEffectClass,
     ExternalOperationRedriveEffectClassRejectedError,
+)
+from intergrax.contracts.external_operation_redrive_trusted_effect_contracts import (
+    TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT,
+    TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
 )
 from intergrax.runtime.external_operations.external_operation_ownership import (
     ExternalOperationFencedCommitRejectedError,
@@ -181,7 +184,7 @@ def test_scenario_24_positive_redrive_after_authority_transfer(
         tenant_id=_TENANT,
         operation_id=_OP,
         expected_revision=unknown.revision,
-        effect_class=ExternalOperationRedriveEffectClass.CLASS_B_IDEMPOTENT_OR_RECONCILED,
+        trusted_effect_contract=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
         worker_instance_id=str(recovery_worker.worker_instance_id),
         worker_ownership_epoch=_BOUND_EPOCH + 1,
     )
@@ -249,7 +252,7 @@ def test_scenario_24_class_c_effect_cannot_obtain_redrive_authority(
             tenant_id=_TENANT,
             operation_id=_OP,
             expected_revision=unknown.revision,
-            effect_class=ExternalOperationRedriveEffectClass.CLASS_C_FAIL_CLOSED,
+            trusted_effect_contract=TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT,
             worker_instance_id=str(recovery_worker.worker_instance_id),
             worker_ownership_epoch=_BOUND_EPOCH + 1,
         )
@@ -287,7 +290,7 @@ def test_scenario_24_competing_redrive_transfer_rejected(
         tenant_id=_TENANT,
         operation_id=_OP,
         expected_revision=unknown.revision,
-        effect_class=ExternalOperationRedriveEffectClass.CLASS_B_IDEMPOTENT_OR_RECONCILED,
+        trusted_effect_contract=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
         worker_instance_id=str(worker_a.worker_instance_id),
         worker_ownership_epoch=_BOUND_EPOCH + 1,
     )
