@@ -52,4 +52,5 @@
 
 `TOOL-LIFE-X R3.1 AUTHORIZED WAVE — PARTIAL / BLOCKED` (F3 cross-loop, full Gate A physical L3, F6, parent CLOSED remain open).
 
-Publication SHA: recorded after `git push origin development`.
+| **Publication SHA** | `b8bd51556bfce53494fc22318e356549f341e32c` |
+| **Implementation ancestry** | contains `df2fcad2df23b996c1e8ca59089be355226e90f1` |
