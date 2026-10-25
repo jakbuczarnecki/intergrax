@@ -13,22 +13,19 @@ from intergrax.applications._shared.mcp_catalog_side_effect_enforcement import (
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.meaningful_side_effect_authorization import (
-    MeaningfulSideEffectAuthorizationPort,
-)
-from intergrax.runtime.execution.catalog_tool_child_work_port import CatalogToolChildInvokeWork
-from intergrax.contracts.execution_request import ExecutionRequest
-from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationConsistencyError,
+    MeaningfulSideEffectAuthorizationPort,
     assert_consistent_meaningful_side_effect_authorization_result,
 )
 from intergrax.contracts.runtime_policy import PolicyAction
-from intergrax.contracts.tool_execution_outcome import ToolExecutionResult
+from intergrax.runtime.execution.catalog_tool_child_work_port import (
+    CatalogToolChildExecutionRequest,
+)
 from intergrax.runtime.governance.active_governed_execution_task import (
     bind_governed_execution_task,
     reset_governed_execution_task,
 )
 from intergrax.runtime.task.active_task_registry import ActiveTaskBinding
-from pydantic import BaseModel
 
 
 def _tool_error(code: str, detail: str) -> ToolError:
@@ -47,13 +44,7 @@ class CatalogToolChildMeaningfulSideEffectAdmissionHook:
     resolved_agent_id: str
     side_effects: bool
 
-    async def admit(
-        self,
-        request: ExecutionRequest[
-            CatalogToolChildInvokeWork,
-            ToolExecutionResult[BaseModel],
-        ],
-    ) -> None:
+    async def admit(self, request: CatalogToolChildExecutionRequest) -> None:
         _ = request
         if not self.side_effects:
             return

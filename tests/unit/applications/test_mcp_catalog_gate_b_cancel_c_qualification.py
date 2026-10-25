@@ -1,6 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TLX-TL11 Gate B P07 + CANCEL-C — MCP catalog invoke and governed cancellation qualification."""
+"""TLX-TL11 Gate B P07 + CANCEL-C — MCP catalog invoke and governed cancellation qualification.
+
+Option C (R3.1): external MCP HTTP ``invoke_catalog_tool`` remains fail-closed
+(``execution_admission_denied``) until cross-loop ingress is ratified. Positive
+in-process child paths are qualified in ``test_mcp_catalog_child_execution_qualification.py``.
+"""
 
 from __future__ import annotations
 

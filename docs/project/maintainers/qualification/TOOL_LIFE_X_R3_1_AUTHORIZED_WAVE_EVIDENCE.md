@@ -3,54 +3,46 @@
 | Field | Value |
 | --- | --- |
 | **Wave** | `TOOL-LIFE-X R3.1 AUTHORIZED WAVE` |
-| **START_HEAD** | `df2fcad2df23b996c1e8ca59089be355226e90f1` |
+| **Historical implementation SHA (F1)** | `b8bd51556bfce53494fc22318e356549f341e32c` |
+| **Corrective batch START_HEAD** | `afb10fcf4ff74767435e0a242cf33490467db352` |
 | **Branch** | `development` |
-| **Operator scope** | OD-CHILD-ARCH/IMPL, OD-PG-DOCKER, OD-GATEA-SCOPE/IMPL (bounded), F0, F4-01, F3 read-only |
-| **Excluded** | OD-CROSSLOOP, OD-TL8-IMPL, production MCP catalog HTTP, formal CLOSED |
+| **Parent TOOL-LIFE-X** | **OPEN** (not CLOSED; no EXT-L4) |
 
-## F0 baseline
+## Scope completed (prior wave @ `b8bd51556…`)
 
-- Repository @ `df2fcad2df23b996c1e8ca59089be355226e90f1`, branch `development`, clean tree before wave edits.
-- SAFE SCOPE prior evidence: [`TOOL_LIFE_X_SAFE_SCOPE_EXECUTION_EVIDENCE.md`](TOOL_LIFE_X_SAFE_SCOPE_EXECUTION_EVIDENCE.md) — not duplicated.
-- Child semantic owner: `ChildExecutionRunner` @ `intergrax/runtime/execution/child.py` (sole `child_execution_id` mint).
+- F1 child in-process catalog admission (OD-CHILD-ARCH/IMPL).
+- F2 PostgreSQL L3 (prior session).
+- F3 read-only: **Option C continues**.
+- F4-01 audit record: [`TOOL_LIFE_X_R3_1_F4_01_TOOL_CLASS_DEADLINE_AUDIT.md`](TOOL_LIFE_X_R3_1_F4_01_TOOL_CLASS_DEADLINE_AUDIT.md).
+- F5 bounded: L2 ext-op reuse only; **physical per-sink Gate A OPEN**.
 
-## F1 — in-process catalog child (OD-CHILD-IMPL)
+## Corrective batch (FIX-01..06)
 
-- **Work port:** `intergrax/runtime/execution/catalog_tool_child_work_port.py`
-- **MSE hook:** `intergrax/applications/_shared/catalog_tool_child_mse_admission_hook.py` (child-bound `execution_id`)
-- **Bridge:** `mcp_catalog_invocation_bridge.py` — no second root OWN-A2 path; HTTP MCP returns `execution_admission_denied`
-- **L2:** `tests/unit/applications/test_mcp_catalog_child_execution_qualification.py` (3), gate B regressions updated (27 passed consolidated catalog suite)
+| Fix | Intent |
+| --- | --- |
+| FIX-01 | Typed `CatalogToolChildAdmissionHook` / `ExecutionAdmissionHook` — no `tuple[object]` / `# type: ignore` |
+| FIX-02 | Host composition-root child port (process lifetime); no per-call default work port |
+| FIX-03 | Strict `_in_process_parent_matches_binding` (task_id, authority, governance/principal) |
+| FIX-04 | Gate B Option C HTTP denied + dedicated in-process child qualifications |
+| FIX-05 | F4-01 factual matrix (EC7 not PASS) |
+| FIX-06 | Evidence metadata (this file) |
 
-## F2 — PostgreSQL L3
+## Qualification reports (prior wave — local logs not on GitHub)
 
-- **L3:** `tests/unit/tools/providers/test_tool_life_x_l3_physical_postgresql_qualification.py` — **124 passed** with `tests/unit/runtime/external_operations` in same consolidated run @ implementation candidate (see publication SHA).
+The previous wave reported **27** catalog unit tests and **124** tests (`external_operations` + PostgreSQL L3) passing in agent session logs under `.tmp/session/TOOL-LIFE-X-R3.1/`. Those logs are **not** independently visible on GitHub; the corrective batch re-runs targeted L2 only.
 
-## F3 — cross-loop feasibility (read-only)
+## Open / blocked (unchanged)
 
-**Disposition:** `F3 G1 — NOT PROVEN / OPTION C CONTINUES`
-
-- Supervised root `asyncio.Task` exists (`HostRootExecutionTransportDetachmentSupervisor`) but MCP catalog no longer admits a second root task.
-- `ContextVar` execution context does not transfer across MCP HTTP handler tasks; legal ingress requires a future `RootExecutionChildWorkIngressPort` (or equivalent) **inside** the supervised root coroutine — **OD-CROSSLOOP-ARCH not granted**.
-
-## F4-01 — Tool deadline closed-world audit
-
-- Production tool invoke path: `RuntimeToolInvoker` + `ToolRuntime` deadline hierarchy (BATCH-A evidence lineage).
-- MCP catalog child path inherits parent deadline projection via `ChildExecutionRunner` (`narrow_child_deadline_at_utc`).
-- **EC7:** not marked PASS — recommend **OD-EC7** when operator accepts DEADLINE_ONLY rollup.
-
-## F5 — Gate A (bounded)
-
-- Authorization fencing: existing `ExternalOperationExecutionGate` + store-native certified owner-loss (R6–R10 @ HEAD).
-- **Physical effect-sink L3 per DB/HTTP/MCP:** **VALIDATION REQUIRED** — no new public owner ratified this wave; pre-send ≠ atomic remote fence unchanged.
-- Consolidated L2: `tests/unit/runtime/external_operations` included in wave run — green.
-
-## F6
-
-- **BLOCKED** — OD-TL8-IMPL not granted; scenario 24 not claimed.
+| Item | Status |
+| --- | --- |
+| F3 cross-loop ingress | **NOT PROVEN** / Option C |
+| F5 physical per-sink (DB/HTTP/MCP) | **OPEN** |
+| F6 TL8 positive recovery | **BLOCKED** (OD-TL8-IMPL) |
+| Production MCP HTTP catalog invoke | **Disabled** |
+| TOOL-LIFE-X parent CLOSED | **Forbidden** |
 
 ## Disposition
 
-`TOOL-LIFE-X R3.1 AUTHORIZED WAVE — PARTIAL / BLOCKED` (F3 cross-loop, full Gate A physical L3, F6, parent CLOSED remain open).
+`TOOL-LIFE-X R3.1 AUTHORIZED WAVE — PARTIAL / BLOCKED` until corrective qualification is independently accepted.
 
-| **Publication SHA** | `b8bd51556bfce53494fc22318e356549f341e32c` |
-| **Implementation ancestry** | contains `df2fcad2df23b996c1e8ca59089be355226e90f1` |
+Corrective L2: **31 passed** — log `.tmp/session/TOOL-LIFE-X-R3.1/pytest-f1-corrective-l2.log` (local; not on GitHub).

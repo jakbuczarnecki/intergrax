@@ -1,27 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Catalog tool child execution port contract (TOOL-LIFE-X R3.1 / OD-CHILD-ARCH)."""
+"""Catalog tool child execution — typed port lives in runtime (tier-1).
 
-from __future__ import annotations
+See :class:`intergrax.runtime.execution.catalog_tool_child_work_port.CatalogToolChildExecutionPort`
+and :data:`intergrax.runtime.execution.catalog_tool_child_work_port.CatalogToolChildAdmissionHook`.
+Host composition: :func:`intergrax.applications._shared.production_catalog_tool_child_execution_wiring.build_production_catalog_tool_child_execution_port`.
+"""
 
-from typing import Protocol, TypeVar, runtime_checkable
-
-from intergrax.contracts.tool_execution_outcome import ToolExecutionResult
-from pydantic import BaseModel
-
-WorkT = TypeVar("WorkT", contravariant=True)
-
-
-@runtime_checkable
-class CatalogToolChildExecutionPort(Protocol[WorkT]):
-    """Host-facing port for canonical in-process catalog child admission."""
-
-    async def execute_catalog_child_invoke(
-        self,
-        work: WorkT,
-        *,
-        admission_hooks: tuple[object, ...] = (),
-    ) -> ToolExecutionResult[BaseModel]: ...
-
-
-__all__ = ["CatalogToolChildExecutionPort"]
+__all__: list[str] = []

@@ -6,8 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.catalog_tool_child_execution import CatalogToolChildExecutionPort
-from intergrax.runtime.execution.catalog_tool_child_work_port import CatalogToolChildInvokeWork
 from intergrax.contracts.child_execution_context_inheritance import (
     ChildExecutionContextInheritancePort,
 )
@@ -17,7 +15,10 @@ from intergrax.runtime.execution.budget import (
     create_execution_budget_ledger,
 )
 from intergrax.runtime.execution.catalog_tool_child_work_port import (
+    CatalogToolChildAdmissionHook,
+    CatalogToolChildExecutionPort,
     CatalogToolChildExecutionWorkPort,
+    CatalogToolChildInvokeWork,
     catalog_tool_child_execution_work_port,
 )
 from intergrax.contracts.run_budget import RunBudget
@@ -26,19 +27,23 @@ from pydantic import BaseModel
 
 @dataclass(frozen=True, slots=True)
 class ProductionCatalogToolChildExecutionPort:
-    """Process-lifetime binding for catalog child work — owns work port, not ChildExecutionRunner."""
+    """Process-lifetime child execution binding for catalog invoke (single work port owner)."""
 
     _work_port: CatalogToolChildExecutionWorkPort
 
-    async def execute_catalog_child_invoke(
+    @property
+    def work_port(self) -> CatalogToolChildExecutionWorkPort:
+        return self._work_port
+
+    async def execute(
         self,
-        work: CatalogToolChildInvokeWork,
         *,
-        admission_hooks: tuple[object, ...] = (),
+        work: CatalogToolChildInvokeWork,
+        admission_hooks: tuple[CatalogToolChildAdmissionHook, ...] = (),
     ) -> ToolExecutionResult[BaseModel]:
         return await self._work_port.execute(
             work=work,
-            admission_hooks=admission_hooks,  # type: ignore[arg-type]
+            admission_hooks=admission_hooks,
         )
 
 

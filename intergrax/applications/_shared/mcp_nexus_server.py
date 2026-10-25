@@ -20,9 +20,6 @@ from intergrax.contracts.execution_bound_catalog_tool_invocation import (
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
-from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
-    build_host_root_execution_transport_detachment_supervisor,
-)
 from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run_agent_identity
 from intergrax.applications._shared.mcp_host_execution_transport_cancel import (
     McpHostExecutionTransportCancelContext,
@@ -231,12 +228,18 @@ def build_nexus_mcp_server(
         catalog_invocation: McpCatalogInvocationComposition | None = None
         if catalog_tool_invoker is not None:
             _ = auto_wire_catalog_transport_supervision, transport_detachment_supervision
+            from intergrax.applications._shared.production_catalog_tool_child_execution_wiring import (
+                build_production_catalog_tool_child_execution_port,
+            )
+
+            catalog_child_execution = build_production_catalog_tool_child_execution_port()
             catalog_invocation = McpCatalogInvocationComposition(
                 catalog_invoker=catalog_tool_invoker,
                 registry=tool_registry,
                 tool_enablement=tool_enablement,
                 task_control_mutation_boundary=task_control_mutation_boundary,
                 meaningful_side_effect_authorization=meaningful_side_effect_authorization,
+                catalog_tool_child_execution=catalog_child_execution,
                 default_tenant_id=default_tenant_id,
                 default_user_id=default_user_id,
             )

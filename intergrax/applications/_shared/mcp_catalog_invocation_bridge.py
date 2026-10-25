@@ -16,7 +16,7 @@ from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run
 from intergrax.applications._shared.catalog_tool_child_mse_admission_hook import (
     CatalogToolChildMeaningfulSideEffectAdmissionHook,
 )
-from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
 from intergrax.runtime.execution.catalog_tool_child_work_port import CatalogToolChildInvokeWork
 from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
@@ -27,8 +27,16 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
 from intergrax.runtime.execution.catalog_tool_child_work_port import (
-    CatalogToolChildExecutionWorkPort,
-    catalog_tool_child_execution_work_port,
+    CatalogToolChildExecutionPort,
+)
+from intergrax.runtime.governance.active_execution_authority import (
+    peek_active_execution_authority,
+)
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    peek_active_execution_governance_identity,
+)
+from intergrax.runtime.governance.governance_identity_projection import (
+    validate_governance_identity_projection,
 )
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvokeRequest,
@@ -56,7 +64,7 @@ class McpCatalogInvocationComposition:
     tool_enablement: ToolEnablementProfile | None = None
     task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None
-    catalog_tool_child_work_port: CatalogToolChildExecutionWorkPort | None = None
+    catalog_tool_child_execution: CatalogToolChildExecutionPort | None = None
     default_tenant_id: str = "mcp"
     default_user_id: str = "mcp-user"
 
@@ -203,16 +211,39 @@ def _assert_invoker_agent_scope(
         )
 
 
-def _in_process_parent_matches_binding(binding: ActiveTaskBinding) -> bool:
-    """Parent execution context must be active on this task and align with the registry binding."""
+def _in_process_parent_matches_binding(
+    binding: ActiveTaskBinding,
+    caller: RequestIdentity,
+) -> bool:
+    """Active Execution context on this task must match the registry binding (fail-closed)."""
     active_identity = peek_active_execution_identity()
-    if active_identity is None or peek_active_execution_id() is None:
+    parent_execution_id = peek_active_execution_id()
+    if active_identity is None or parent_execution_id is None:
         return False
-    active_run_id, _ = active_identity
+    active_run_id, _active_attempt_id = active_identity
     if str(active_run_id) != str(binding.run_id):
         return False
     active_task_id = peek_active_execution_task_id()
-    if active_task_id is not None and str(active_task_id) != str(binding.task_id):
+    if active_task_id is None:
+        return False
+    if str(active_task_id) != str(binding.task_id):
+        return False
+    if peek_active_execution_authority() is None:
+        return False
+    governance_identity = peek_active_execution_governance_identity()
+    if governance_identity is None:
+        return False
+    if governance_identity.tenant_id != binding.task.tenant_id:
+        return False
+    try:
+        validate_governance_identity_projection(
+            governance_identity,
+            tenant_id=binding.task.tenant_id,
+        )
+    except (TypeError, ValueError):
+        return False
+    owner_principal = canonical_principal_id_from_request_identity(caller)
+    if governance_identity.principal_id != owner_principal:
         return False
     return True
 
@@ -300,7 +331,7 @@ async def execute_mcp_catalog_tool_invocation(
     resolved_agent = _resolve_invoke_agent_id(binding.task)
     _assert_invoker_agent_scope(composition, resolved_agent)
 
-    if not _in_process_parent_matches_binding(binding):
+    if not _in_process_parent_matches_binding(binding, identity.request_identity):
         return _bound_error_payload(
             "execution_admission_denied",
             "catalog tool invoke requires in-process parent execution child admission; "
@@ -328,9 +359,12 @@ async def execute_mcp_catalog_tool_invocation(
         caller=identity.request_identity,
         resolved_agent_id=resolved_agent,
     )
-    child_port = composition.catalog_tool_child_work_port
+    child_port = composition.catalog_tool_child_execution
     if child_port is None:
-        child_port = catalog_tool_child_execution_work_port()
+        return _bound_error_payload(
+            "execution_admission_denied",
+            "catalog child execution port not configured at host composition root",
+        )
     mse_hook = CatalogToolChildMeaningfulSideEffectAdmissionHook(
         meaningful_side_effect_authorization=composition.meaningful_side_effect_authorization,
         binding=binding,

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from pydantic import BaseModel
 
@@ -43,6 +44,24 @@ class CatalogToolChildInvokeWork:
     side_effects: bool
     caller: RequestIdentity
     resolved_agent_id: str
+
+
+CatalogToolChildExecutionRequest = ExecutionRequest[
+    CatalogToolChildInvokeWork,
+    ToolExecutionResult[BaseModel],
+]
+CatalogToolChildAdmissionHook = ExecutionAdmissionHook[CatalogToolChildExecutionRequest]
+
+
+class CatalogToolChildExecutionPort(Protocol):
+    """Host-facing port for canonical in-process catalog child admission."""
+
+    async def execute(
+        self,
+        *,
+        work: CatalogToolChildInvokeWork,
+        admission_hooks: tuple[CatalogToolChildAdmissionHook, ...] = (),
+    ) -> ToolExecutionResult[BaseModel]: ...
 
 
 class _CatalogToolChildDelegate:
@@ -86,12 +105,7 @@ class CatalogToolChildExecutionWorkPort:
         self,
         *,
         work: CatalogToolChildInvokeWork,
-        admission_hooks: tuple[
-            ExecutionAdmissionHook[
-                ExecutionRequest[CatalogToolChildInvokeWork, ToolExecutionResult[BaseModel]]
-            ],
-            ...,
-        ] = (),
+        admission_hooks: tuple[CatalogToolChildAdmissionHook, ...] = (),
     ) -> ToolExecutionResult[BaseModel]:
         request = ExecutionRequest(input=work)
         return await self._child_runner.execute(
@@ -114,6 +128,9 @@ def catalog_tool_child_execution_work_port(
 
 
 __all__ = [
+    "CatalogToolChildAdmissionHook",
+    "CatalogToolChildExecutionPort",
+    "CatalogToolChildExecutionRequest",
     "CatalogToolChildInvokeWork",
     "CatalogToolChildExecutionWorkPort",
     "catalog_tool_child_execution_work_port",
