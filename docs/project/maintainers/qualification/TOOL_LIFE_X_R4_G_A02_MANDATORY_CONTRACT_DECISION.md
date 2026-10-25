@@ -35,15 +35,25 @@
 | In-flight UNKNOWN | Yes | Cancel / disconnect qual (F3) | Late provider result → bridge cancel parity |
 | Idempotency / reconciliation | Class-specific | Catalog child + side_effect flags | — |
 
+## Effect classes (OD-R4-G-A02-SAFETY-DIRECTION)
+
+| Class | Recovery eligibility |
+| --- | --- |
+| **A** | Provider-side atomic fence or equivalent |
+| **B** | Idempotency and/or authoritative reconciliation |
+| **C** | Fail-closed; operator/external reconcile |
+
 ## Scenario 24 (TL8 positive re-drive)
 
-| Prerequisite | Status |
+| Step | Status |
 | --- | --- |
-| RUNNING → UNKNOWN after certified loss + revocation | **PROVEN** — `test_scenario_24_certified_loss_transitions_running_to_unknown` |
-| Reconciliation admission on UNKNOWN | **PROVEN** — gate validates physical UNKNOWN only |
-| Fresh physical RUNNING after admission | **BLOCKED** — revoked `worker_ownership_epoch` remains on durable record; `mark_physical_running` rejects (`ExternalOperationFencedCommitRejectedError`) |
-| **ARCHITECTURE DECISION REQUIRED** | Sanctioned **redrive authority** contract: clear or supersede bound worker epoch after reconciliation admission (or equivalent single CAS) before eligible idempotent re-drive |
+| RUNNING → UNKNOWN + revocation | **PASS qual** |
+| Class B authority transfer CAS | **PASS** — `transfer_redrive_worker_execution_authority` |
+| Positive re-drive → SUCCEEDED | **PASS** — `test_scenario_24_positive_redrive_after_authority_transfer` |
+| Class C / competing / stale | **PASS** — negative tests in scenario 24 module |
+
+Scoped to **Class B store-scoped** external operations; HTTP/MCP arbitrary effects remain **CLASS C** unless individually qualified.
 
 ## Summary
 
-G-A02 **cannot** be marked universally PASS for atomic provider-side fencing across all effect classes. Platform evidence supports store-level and authorization-level guarantees; HTTP/MCP remote atomicity remains **class-specific** and **documented**. TL8 **positive** re-drive remains **BLOCKED** until redrive-authority contract above is ratified and qualified.
+G-A02 **cannot** be marked universally PASS for atomic provider-side fencing across all effect classes. Store-level Class B redrive is **proven @ implementation SHA**; HTTP/MCP remote atomicity remains **class-specific** and **documented**.

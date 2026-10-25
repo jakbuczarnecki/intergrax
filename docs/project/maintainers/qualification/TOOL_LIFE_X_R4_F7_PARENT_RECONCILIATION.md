@@ -53,7 +53,8 @@ Authorization fencing ≠ remote atomic commit fencing (operator honesty retaine
 | Test | Status |
 | --- | --- |
 | RUNNING → UNKNOWN after certified loss | `test_scenario_24_certified_loss_transitions_running_to_unknown` |
-| Positive re-drive after reconciliation | **BLOCKED** — `test_scenario_24_positive_redrive_blocked_until_redrive_authority_contract` |
+| Positive re-drive (Class B) | **PASS qual** — `test_scenario_24_positive_redrive_after_authority_transfer` |
+| Redrive without transfer blocked | `test_scenario_24_mark_physical_blocked_without_redrive_authority_transfer` |
 | Stale epoch physical deny | `test_scenario_24_stale_epoch_cannot_resume_physical_effect` |
 | Forged recovery rejected | `test_scenario_24_forged_recovery_without_staged_evidence_rejected` |
 
@@ -69,14 +70,14 @@ Qual-only; no production recovery default-on. UNKNOWN transition ≠ positive re
 | G-A04–G-A06 | PASS scoped — Batch A/B/D + R8 |
 | G-A07 | WIRED default-off; **OD-R4-G-A07-PROD-ACTIVATE** for live activation |
 | G-A08 | PASS scoped — remediation consolidated 213/213 |
-| G-A09 | PARTIAL — scenario 24 negatives + UNKNOWN; positive re-drive BLOCKED |
+| G-A09 | PASS scoped — scenario 24 Class B positive + adversarial qual |
 
 ## Scenarios 1–24
 
 | Scenario | Status |
 | --- | --- |
 | 1–23 | PASS scoped — historical L3 reuse in remediation batch |
-| 24 | **PARTIAL** — UNKNOWN qual; positive re-drive **ARCHITECTURE DECISION REQUIRED** |
+| 24 | **PASS qual (Class B)** — full positive + negative suite @ redrive SHA |
 
 ## EC1–EC15 (summary)
 
@@ -88,9 +89,8 @@ Qual-only; no production recovery default-on. UNKNOWN transition ≠ positive re
 
 ## Remaining mandatory blockers
 
-1. **TL8 scenario 24 positive re-drive** — sanctioned redrive authority after reconciliation (worker epoch still bound + revoked blocks `mark_physical_running`).
-2. **G-A02 HTTP** — atomic provider-side fence for non-idempotent remote effects (**ARCHITECTURE DECISION REQUIRED**).
-3. **OD-R4-G-A07-PROD-ACTIVATE** — operator authorization for effective production wiring/recovery (distinct from qual proof).
+1. **G-A02 HTTP/MCP Class B** — per-effect physical qual beyond Batch D / F3 subsets; Class C remains fail-closed.
+2. **OD-R4-G-A07-PROD-ACTIVATE** — operator authorization for effective production wiring/recovery (distinct from qual proof).
 4. **Production MCP HTTP catalog** — remains Option C (disabled).
 5. **PostgreSQL physical L3** — optional Docker qual not rerun in evidence-gap batch.
 6. **Formal TOOL-LIFE-X CLOSED / EXT-L4** — independent parent audit only; Cursor must not self-certify.

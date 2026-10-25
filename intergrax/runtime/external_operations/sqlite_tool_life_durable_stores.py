@@ -199,6 +199,9 @@ def _encode_external_operation_state(state: ExternalOperationState) -> str:
         ),
         "worker_instance_id": state.worker_instance_id,
         "worker_ownership_epoch": state.worker_ownership_epoch,
+        "consumed_redrive_admission_ids": sorted(
+            state.consumed_redrive_admission_ids,
+        ),
     }
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
@@ -225,6 +228,9 @@ def _decode_external_operation_state(raw: str) -> ExternalOperationState:
         ),
         worker_instance_id=payload.get("worker_instance_id"),
         worker_ownership_epoch=payload.get("worker_ownership_epoch"),
+        consumed_redrive_admission_ids=frozenset(
+            payload.get("consumed_redrive_admission_ids") or [],
+        ),
     )
 
 

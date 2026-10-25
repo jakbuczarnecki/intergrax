@@ -70,6 +70,7 @@ class ExternalOperationStateUpdate:
     consumed_certified_loss_evidence_ids: frozenset[str] | None = None
     worker_instance_id: str | None = None
     worker_ownership_epoch: int | None = None
+    consumed_redrive_admission_ids: frozenset[str] | None = None
 
 
 def _validate_tenant_id(tenant_id: str) -> str:
@@ -103,9 +104,23 @@ def _update_touches_certification_authority(
 def _update_touches_worker_execution_ownership(
     update: ExternalOperationStateUpdate,
 ) -> bool:
+    if _is_transfer_redrive_worker_execution_authority_update(update):
+        return False
     return (
         update.worker_instance_id is not None
         or update.worker_ownership_epoch is not None
+    )
+
+
+def _is_transfer_redrive_worker_execution_authority_update(
+    update: ExternalOperationStateUpdate,
+) -> bool:
+    return (
+        update.worker_instance_id is not None
+        and update.worker_ownership_epoch is not None
+        and update.physical_state is ExternalOperationPhysicalState.NOT_STARTED
+        and update.intent_state is ExternalOperationIntentState.ACTIVE
+        and update.consumed_redrive_admission_ids is not None
     )
 
 
@@ -139,6 +154,8 @@ def cas_update_blocked_by_bound_worker_revocation(
     if _is_apply_certified_owner_loss_update(update):
         return False
     if _is_stage_certified_owner_loss_update(update):
+        return False
+    if _is_transfer_redrive_worker_execution_authority_update(update):
         return False
     return True
 
@@ -182,6 +199,9 @@ def apply_external_operation_state_update(
     worker_epoch = current.worker_ownership_epoch
     if update.worker_ownership_epoch is not None:
         worker_epoch = update.worker_ownership_epoch
+    redrive_admissions = current.consumed_redrive_admission_ids
+    if update.consumed_redrive_admission_ids is not None:
+        redrive_admissions = update.consumed_redrive_admission_ids
     return ExternalOperationState(
         operation_id=current.operation_id,
         tenant_id=current.tenant_id,
@@ -196,6 +216,7 @@ def apply_external_operation_state_update(
         consumed_certified_loss_evidence_ids=consumed,
         worker_instance_id=worker_id,
         worker_ownership_epoch=worker_epoch,
+        consumed_redrive_admission_ids=redrive_admissions,
     )
 
 
@@ -268,6 +289,18 @@ class ExternalOperationStateStore(Protocol):
         expected_revision: int,
         worker_instance_id: str,
         worker_ownership_epoch: int,
+    ) -> ExternalOperationState:
+        ...
+
+    def transfer_redrive_worker_execution_authority(
+        self,
+        tenant_id: str,
+        operation_id: str,
+        *,
+        expected_revision: int,
+        worker_instance_id: str,
+        worker_ownership_epoch: int,
+        redrive_admission_id: str,
     ) -> ExternalOperationState:
         ...
 
@@ -498,6 +531,70 @@ class _ExternalOperationStateCertificationSemantics:
             update=ExternalOperationStateUpdate(
                 worker_instance_id=worker_instance_id,
                 worker_ownership_epoch=worker_ownership_epoch,
+            ),
+        )
+
+    def transfer_redrive_worker_execution_authority(
+        self,
+        tenant_id: str,
+        operation_id: str,
+        *,
+        expected_revision: int,
+        worker_instance_id: str,
+        worker_ownership_epoch: int,
+        redrive_admission_id: str,
+    ) -> ExternalOperationState:
+        from intergrax.contracts.external_operation_redrive_authority import (
+            ExternalOperationRedriveAdmissionRejectedError,
+            ExternalOperationRedriveCompetingAuthorityError,
+        )
+
+        if type(worker_instance_id) is not str or not worker_instance_id.strip():
+            raise ValueError("worker_instance_id must be a non-empty str")
+        if type(worker_ownership_epoch) is not int or worker_ownership_epoch < 0:
+            raise ValueError("worker_ownership_epoch must be int >= 0")
+        if type(redrive_admission_id) is not str or not redrive_admission_id.strip():
+            raise ValueError("redrive_admission_id must be a non-empty str")
+        current = self._get_scoped(tenant_id, operation_id)
+        if current is None:
+            raise ExternalOperationNotFoundError(operation_id)
+        if current.consumed_redrive_admission_ids:
+            raise ExternalOperationRedriveCompetingAuthorityError(
+                f"redrive authority already transferred for {operation_id!r}",
+            )
+        if current.physical_state is not ExternalOperationPhysicalState.UNKNOWN:
+            raise ExternalOperationRedriveAdmissionRejectedError(
+                "redrive authority transfer requires physical UNKNOWN",
+            )
+        if not current.consumed_certified_loss_evidence_ids:
+            raise ExternalOperationRedriveAdmissionRejectedError(
+                "redrive requires consumed certified owner-loss evidence",
+            )
+        if current.worker_instance_id is None or current.worker_ownership_epoch is None:
+            raise ExternalOperationRedriveAdmissionRejectedError(
+                "redrive requires prior worker execution binding",
+            )
+        if not bound_worker_execution_epoch_is_revoked(current=current):
+            raise ExternalOperationRedriveAdmissionRejectedError(
+                "redrive requires authoritative revocation of bound worker epoch",
+            )
+        if worker_ownership_epoch <= current.worker_ownership_epoch:
+            raise ExternalOperationRedriveAdmissionRejectedError(
+                "redrive worker_ownership_epoch must exceed revoked epoch",
+            )
+        next_fence = (current.ownership_epoch_fence or 0) + 1
+        consumed_redrive = frozenset({redrive_admission_id})
+        return self._compare_and_set_locked(
+            tenant_id,
+            operation_id,
+            expected_revision=expected_revision,
+            update=ExternalOperationStateUpdate(
+                intent_state=ExternalOperationIntentState.ACTIVE,
+                physical_state=ExternalOperationPhysicalState.NOT_STARTED,
+                worker_instance_id=worker_instance_id,
+                worker_ownership_epoch=worker_ownership_epoch,
+                ownership_epoch_fence=next_fence,
+                consumed_redrive_admission_ids=consumed_redrive,
             ),
         )
 

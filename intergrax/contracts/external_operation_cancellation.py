@@ -59,6 +59,9 @@ class ExternalOperationState:
     )
     worker_instance_id: str | None = None
     worker_ownership_epoch: int | None = None
+    consumed_redrive_admission_ids: frozenset[str] = field(
+        default_factory=frozenset,
+    )
 
 
 class ExternalOperationCancellationError(RuntimeError):
