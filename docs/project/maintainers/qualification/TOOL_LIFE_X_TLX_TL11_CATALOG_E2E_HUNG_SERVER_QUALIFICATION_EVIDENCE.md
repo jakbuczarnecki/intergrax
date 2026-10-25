@@ -29,7 +29,7 @@
 | --- | --- |
 | **START_HEAD** | `05cd23ba2bfd2a82158eae70e827356fd4497cd6` |
 | **Implementation / test SHA** | `23640a6e7df40120421ebf94aa00775a4f7e15b4` |
-| **Publication SHA** | `23640a6e7df40120421ebf94aa00775a4f7e15b4` |
+| **Publication SHA** | `bdcdf05fc8332ab5a1bd8388d8feaa9a054bbeea` |
 
 ---
 
