@@ -584,6 +584,15 @@ class InMemoryExternalOperationStateStore(_ExternalOperationStateCertificationSe
                     expected_revision=expected_revision,
                     actual_revision=current.revision,
                 )
+            epoch_revoked = bound_worker_execution_epoch_is_revoked(current=current)
+            if cas_update_blocked_by_bound_worker_revocation(
+                current=current,
+                update=update,
+                epoch_is_revoked=epoch_revoked,
+            ):
+                raise CertifiedOwnerLossEvidenceRejectedError(
+                    f"revoked worker execution epoch cannot mutate {operation_id!r} under lock",
+                )
             next_record = apply_external_operation_state_update(
                 current,
                 update,

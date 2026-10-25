@@ -402,6 +402,11 @@ async def execute_mcp_catalog_tool_invocation(
         )
         if not terminal.success:
             return terminal.payload
+        if CancellationCoordinator.is_requested(dict(work.governed_task.metadata)):
+            return _bound_error_payload(
+                "execution_cancelled",
+                "active execution cooperative cancellation observed after catalog invoke",
+            )
         return terminal.payload
 
     try:

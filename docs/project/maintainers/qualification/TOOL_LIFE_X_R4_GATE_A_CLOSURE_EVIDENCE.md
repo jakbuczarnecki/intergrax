@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **START_HEAD** | `a9b81f6d0c7a82cf02806729323fcf2de37ba23b` |
+| **START_HEAD** | `34777f9c7e1a66c672d3322b83ff2bbf65c4df81` |
 | **Disposition** | `TOOL-LIFE-X R4 — PARTIAL / EXACT BLOCKERS` |
 
 ## G-A07 (OD-R4-G-A07-WIRE)
@@ -20,7 +20,7 @@
 
 | Sink | Delta | L3 |
 | --- | --- | --- |
-| DB / durable ext-op | `mark_physical_running` refuses revoked epoch | R8 + PG qual reused |
+| DB / durable ext-op | `mark_physical_running` refuses revoked epoch; in-memory CAS revoke under lock | R8 + `test_gate_a_inmemory_cas_revoke_race.py` |
 | HTTP | Authorization fence (existing Batch D) | **75+** batch D L3 |
 | MCP | Existing R2 subprocess qual | Reused |
 
@@ -31,7 +31,7 @@ New L2: `test_gate_a_mark_physical_running_revocation.py`
 | Item | Status |
 | --- | --- |
 | Ingress shutdown/cancel race L2 | **PASS** — `test_cross_loop_cancel_before_drain_returns_shutdown_or_denied` |
-| Full MCP HTTP + supervised root + transport cancel L3 | **OPEN** — production catalog HTTP remains Option C |
+| Full MCP HTTP + supervised root + parent cancel L3 | **PASS qual** — `test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py`; production catalog HTTP remains Option C |
 
 ## F6 scenario 24
 
@@ -39,7 +39,7 @@ New L2: `test_gate_a_mark_physical_running_revocation.py`
 
 ## Consolidated L2/L3 log
 
-`.tmp/session/TOOL-LIFE-X-R4/pytest-gate-a-wave.log` — **128 passed** (last full wave run).
+`.tmp/session/TOOL-LIFE-X-R4/pytest-r4-final-consolidated.log` — **205 passed** (208 collected; 3 R6 order-pollution failures — R6 file alone 28/28). F7: [`TOOL_LIFE_X_R4_F7_PARENT_RECONCILIATION.md`](TOOL_LIFE_X_R4_F7_PARENT_RECONCILIATION.md).
 
 ## G-A01–G-A09 snapshot
 

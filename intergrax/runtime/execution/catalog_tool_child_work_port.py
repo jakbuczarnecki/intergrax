@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -74,7 +75,10 @@ class _CatalogToolChildDelegate:
         work = request.input
         token = bind_governed_execution_task(work.governed_task)
         try:
-            return work.catalog_invoker.invoke(work.invoke_request)
+            return await asyncio.to_thread(
+                work.catalog_invoker.invoke,
+                work.invoke_request,
+            )
         finally:
             reset_governed_execution_task(token)
 

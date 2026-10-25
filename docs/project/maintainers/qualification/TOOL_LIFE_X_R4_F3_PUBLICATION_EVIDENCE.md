@@ -5,7 +5,7 @@
 | **START_HEAD** | `be09f5a89027f701bbcd8ace0e7185ec73f34b0e` |
 | **PUBLICATION_SHA** | `88d72cd7205e308b3601bd65aa5049d4f873861c` |
 | **Scope** | Cross-loop catalog child ingress (qualification configuration); **Option C** remains production default |
-| **Physical L3 (CANCEL-C HTTP)** | **OPEN** — not claimed in this publication |
+| **Physical L3 (CANCEL-C HTTP)** | **PASS qual** @ R4 final batch — `test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py` (see F7 reconciliation) |
 | **B8 / parent CLOSED** | **Not claimed** |
 
 ## Prepublication Enterprise Quality Gate
