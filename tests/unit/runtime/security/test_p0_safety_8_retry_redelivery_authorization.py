@@ -5,9 +5,14 @@
 from __future__ import annotations
 
 import time
+from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
+from testing_support.builder import (
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
 from pydantic import BaseModel
 
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
@@ -37,8 +42,28 @@ from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_RUN_ID = "p0-safety-8-run"
+_P0_SAFETY_RUN_ID = canonical_run_id_for_tests("p0-safety-8-retry")
+_RUN_ID = _P0_SAFETY_RUN_ID
 _AGENT_ID = "p0-safety-8-agent"
+
+
+@contextmanager
+def _p0_safety_governed_scope():
+    with canonical_governed_execution_scope(
+        _P0_SAFETY_RUN_ID,
+        governance_tenant_id="tenant_test",
+        governance_principal_id="principal-p0-safety-8",
+    ):
+        with patch(
+            "intergrax.runtime.nexus.tools.invoker.require_meaningful_side_effect_authorization",
+        ):
+            yield
+
+
+@pytest.fixture(autouse=True)
+def _p0_safety_active_execution_governance_identity() -> None:
+    with _p0_safety_governed_scope():
+        yield
 
 
 class ValueInput(BaseModel):

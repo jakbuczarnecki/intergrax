@@ -9,8 +9,15 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
+from intergrax.integrations.contracts.relational_store_bounded_query import (
+    RelationalStoreBoundedQueryPort,
+)
+from intergrax.integrations.relational_bounded_row_accumulation import (
+    accumulate_bounded_sql_rows,
+)
 
-class _SQLiteRelationalStore:
+
+class _SQLiteRelationalStore(RelationalStoreBoundedQueryPort):
     """
     Minimal ``RelationalStore`` over a single SQLite file.
 
@@ -42,6 +49,31 @@ class _SQLiteRelationalStore:
         conn = self._require_connection()
         rows = conn.execute(sql, params).fetchall()
         return [dict(row) for row in rows]
+
+    def fetch_query_bounded(
+        self,
+        sql: str,
+        params: Sequence[Any] = (),
+        *,
+        max_rows: int,
+        max_result_bytes: int,
+    ) -> tuple[tuple[Mapping[str, Any], ...], bool, str]:
+        conn = self._require_connection()
+        cursor = conn.execute(sql, params)
+        try:
+
+            def _row_iter():
+                for row in cursor:
+                    yield dict(row)
+
+            accumulated, truncated, reason = accumulate_bounded_sql_rows(
+                _row_iter(),
+                max_rows=max_rows,
+                max_result_bytes=max_result_bytes,
+            )
+            return tuple(accumulated), truncated, reason
+        finally:
+            cursor.close()
 
     def close(self) -> None:
         if self._connection is not None:

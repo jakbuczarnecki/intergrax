@@ -25,12 +25,13 @@ from intergrax.contracts.external_operation_identity import (
     mint_stable_operation_id,
 )
 from intergrax.runtime.external_operations.external_operation_ownership import (
+    ExternalOperationFencedCommitRejectedError,
     ExternalOperationStartSuppressedError,
     ProcessLocalExternalOperationOwner,
     assert_may_begin_physical_attempt,
-    finalize_operation_intent,
+    finalize_operation_intent_if_owner_matches,
     mark_physical_running,
-    mark_physical_terminal,
+    mark_physical_terminal_if_owner_matches,
     request_operation_cancellation,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
@@ -40,10 +41,17 @@ from intergrax.runtime.external_operations.operation_termination import (
     dispatch_provider_termination_sync,
     mark_observed_cancellation_terminal,
 )
+from intergrax.runtime.external_operations.tool_external_operation_redrive_binding import (
+    bind_sanctioned_redrive_effect_before_tool_physical_execution,
+)
+from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
+from intergrax.tools.core.contracts import ToolContract
+from pydantic import BaseModel
 
 
 def tool_external_operation_identity(
     *,
+    tenant_id: str,
     tool_id: str,
     step_id: str,
     physical_attempt_sequence: int,
@@ -62,6 +70,7 @@ def tool_external_operation_identity(
         dependency_kind=DependencyConcurrencyKind.TOOL,
         dependency_identity=tool_id,
         operation_id=operation_id,
+        tenant_id=tenant_id,
         physical_attempt_sequence=physical_attempt_sequence,
     )
 
@@ -78,6 +87,7 @@ class ToolExternalOperationAttempt:
         "_capabilities",
         "_revision",
         "_terminal_recorded",
+        "_physical_execution_admitted",
     )
 
     def __init__(
@@ -98,6 +108,7 @@ class ToolExternalOperationAttempt:
         self._capabilities = capabilities
         self._revision: int | None = None
         self._terminal_recorded = False
+        self._physical_execution_admitted = False
 
     @property
     def enabled(self) -> bool:
@@ -120,13 +131,44 @@ class ToolExternalOperationAttempt:
             return None
         return self._store, self._identity, self._owner
 
-    def before_physical_submit(self) -> None:
+    def physical_execution_admitted(self) -> bool:
+        return self._physical_execution_admitted
+
+    def before_physical_submit(
+        self,
+        *,
+        catalog_tool_id: str | None = None,
+        catalog_tool: ToolContract | None = None,
+        physical_idempotency_key: str | None = None,
+        tool_input: BaseModel | None = None,
+    ) -> None:
         binding = self._binding()
         if binding is None:
             return
         store, identity, _owner = binding
         record = assert_may_begin_physical_attempt(store, identity)
         self._revision = record.revision
+        if catalog_tool_id is None or self._revision is None:
+            return
+        if identity.operation_id is None:
+            return
+        effect_fingerprint: str | None = None
+        if tool_input is not None and catalog_tool_id is not None:
+            effect_fingerprint = compute_invocation_operation_identity(
+                catalog_tool_id,
+                tool_input,
+            ).operation_fingerprint
+        tool_tags = catalog_tool.tags if catalog_tool is not None else None
+        self._revision = bind_sanctioned_redrive_effect_before_tool_physical_execution(
+            store,
+            tenant_id=identity.tenant_id,
+            operation_id=identity.operation_id,
+            expected_revision=self._revision,
+            catalog_tool_id=catalog_tool_id,
+            catalog_tool_tags=tool_tags,
+            physical_idempotency_key=physical_idempotency_key,
+            physical_effect_fingerprint=effect_fingerprint,
+        )
 
     def mark_running(self) -> None:
         binding = self._binding()
@@ -135,11 +177,13 @@ class ToolExternalOperationAttempt:
         store, identity, owner = binding
         record = mark_physical_running(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             owner=owner,
         )
         self._revision = record.revision
+        self._physical_execution_admitted = True
 
     def mark_succeeded(self) -> None:
         self._mark_terminal(
@@ -173,6 +217,7 @@ class ToolExternalOperationAttempt:
         store, identity, _owner = binding
         updated = request_operation_cancellation(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             cancellation_port=self._cancellation_port,
         )
@@ -185,7 +230,7 @@ class ToolExternalOperationAttempt:
         binding = self._binding()
         if binding is None or self._revision is None or self._identity is None:
             return
-        store, identity, _owner = binding
+        store, identity, owner = binding
         if termination_result is None:
             caps = self._capabilities
             if caps is None:
@@ -201,9 +246,11 @@ class ToolExternalOperationAttempt:
             )
         record = mark_observed_cancellation_terminal(
             store,
+            tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             termination_result=termination_result,
+            owner=owner,
         )
         self._revision = record.revision
         self._terminal_recorded = True
@@ -212,19 +259,38 @@ class ToolExternalOperationAttempt:
         binding = self._binding()
         if binding is None or self._terminal_recorded or self._revision is None:
             return
-        store, identity, _owner = binding
-        record = mark_physical_terminal(
-            store,
-            operation_id=identity.operation_id,
-            expected_revision=self._revision,
-            physical_state=ExternalOperationPhysicalState.UNKNOWN,
-        )
+        store, identity, owner = binding
+        try:
+            record = mark_physical_terminal_if_owner_matches(
+                store,
+                tenant_id=identity.tenant_id,
+                operation_id=identity.operation_id,
+                expected_revision=self._revision,
+                physical_state=ExternalOperationPhysicalState.UNKNOWN,
+                owner=owner,
+                intent_state=ExternalOperationIntentState.TERMINATING,
+            )
+        except ExternalOperationFencedCommitRejectedError:
+            loaded = store.load(identity.tenant_id, identity.operation_id)
+            if loaded is not None:
+                self._revision = loaded.revision
+            self._terminal_recorded = True
+            return
         self._revision = record.revision
-        finalized = finalize_operation_intent(
-            store,
-            operation_id=identity.operation_id,
-            expected_revision=self._revision,
-        )
+        try:
+            finalized = finalize_operation_intent_if_owner_matches(
+                store,
+                tenant_id=identity.tenant_id,
+                operation_id=identity.operation_id,
+                expected_revision=self._revision,
+                owner=owner,
+            )
+        except ExternalOperationFencedCommitRejectedError:
+            loaded = store.load(identity.tenant_id, identity.operation_id)
+            if loaded is not None:
+                self._revision = loaded.revision
+            self._terminal_recorded = True
+            return
         self._revision = finalized.revision
         self._terminal_recorded = True
 
@@ -238,21 +304,39 @@ class ToolExternalOperationAttempt:
         binding = self._binding()
         if binding is None or self._revision is None:
             return
-        store, identity, _owner = binding
-        record = mark_physical_terminal(
-            store,
-            operation_id=identity.operation_id,
-            expected_revision=self._revision,
-            physical_state=physical,
-            intent_state=intent_state,
-        )
-        self._revision = record.revision
-        if finalize_intent:
-            finalized = finalize_operation_intent(
+        store, identity, owner = binding
+        try:
+            record = mark_physical_terminal_if_owner_matches(
                 store,
+                tenant_id=identity.tenant_id,
                 operation_id=identity.operation_id,
                 expected_revision=self._revision,
+                physical_state=physical,
+                owner=owner,
+                intent_state=intent_state,
             )
+        except ExternalOperationFencedCommitRejectedError:
+            loaded = store.load(identity.tenant_id, identity.operation_id)
+            if loaded is not None:
+                self._revision = loaded.revision
+            self._terminal_recorded = True
+            return
+        self._revision = record.revision
+        if finalize_intent:
+            try:
+                finalized = finalize_operation_intent_if_owner_matches(
+                    store,
+                    tenant_id=identity.tenant_id,
+                    operation_id=identity.operation_id,
+                    expected_revision=self._revision,
+                    owner=owner,
+                )
+            except ExternalOperationFencedCommitRejectedError:
+                loaded = store.load(identity.tenant_id, identity.operation_id)
+                if loaded is not None:
+                    self._revision = loaded.revision
+                self._terminal_recorded = True
+                return
             self._revision = finalized.revision
         self._terminal_recorded = True
 

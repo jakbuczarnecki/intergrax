@@ -10,8 +10,10 @@ from typing import Sequence
 from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.browser_automation import BrowserAutomation
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
+from intergrax.integrations.contracts.browser_automation_navigation import (
+    navigation_timeout_enforced_for_catalog_client,
+)
 from intergrax.runtime.integrations.categories.automation import BrowserAutomationIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -38,8 +40,18 @@ class BrowserbaseBrowserAutomationIntegration(BrowserAutomationIntegrationContra
     
 
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
-        return self._require_client().fetch_page(url, wait_until=wait_until)
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
+        return self._require_client().fetch_page(
+            url,
+            wait_until=wait_until,
+            navigation_timeout_s=navigation_timeout_s,
+        )
 
     def close(self) -> None:
         self._require_client().close()
@@ -71,5 +83,9 @@ class BrowserbaseBrowserAutomationIntegration(BrowserAutomationIntegrationContra
     @property
     def client(self) -> BrowserbaseBrowserAutomationClient | None:
         return self._client
+
+    @property
+    def navigation_timeout_integration_enforced(self) -> bool:
+        return navigation_timeout_enforced_for_catalog_client(self.client)
 
 BrowserAutomation.register(BrowserbaseBrowserAutomationIntegration)

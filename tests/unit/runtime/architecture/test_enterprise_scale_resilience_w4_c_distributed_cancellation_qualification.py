@@ -43,7 +43,9 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
     assert_may_begin_physical_attempt,
     mark_physical_running,
     mark_physical_terminal,
-    reconcile_orphaned_running_operations,
+    ExternalOperationCertifiedOwnerLossRequiredError,
+    mark_physical_terminal_if_owner_matches,
+    recover_running_operation_after_certified_owner_loss,
     request_operation_cancellation,
 )
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
@@ -60,6 +62,8 @@ from intergrax.runtime.external_operations.recovery_external_operation_gate impo
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_TENANT = "tenant_w4c_test"
 
 
 def _identity(
@@ -88,6 +92,7 @@ def _identity(
             dependency_kind=DependencyConcurrencyKind.TOOL,
             dependency_identity="demo.tool",
             operation_id=op_id,
+            tenant_id=_TENANT,
             physical_attempt_sequence=physical_attempt_sequence,
         )
     finally:
@@ -99,7 +104,7 @@ def _identity(
 def test_case_1_cancel_before_start_suppresses_external_call() -> None:
     store = InMemoryExternalOperationStateStore()
     identity = _identity()
-    request_operation_cancellation(store, operation_id=identity.operation_id)
+    request_operation_cancellation(store, tenant_id=_TENANT, operation_id=identity.operation_id)
     with pytest.raises(ExternalOperationStartSuppressedError):
         assert_may_begin_physical_attempt(store, identity)
 
@@ -108,62 +113,71 @@ def test_case_2_cancel_during_execution_preserves_terminal_state() -> None:
     store = InMemoryExternalOperationStateStore()
     owner_a = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token=owner_a.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner_a.token)
     mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner_a,
     )
     cancelled_intent = request_operation_cancellation(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
     )
     terminal = mark_physical_terminal(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=cancelled_intent.revision,
         physical_state=ExternalOperationPhysicalState.SUCCEEDED,
     )
-    loaded = store.load(identity.operation_id)
+    loaded = store.load(_TENANT, identity.operation_id)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.SUCCEEDED
     assert terminal.revision == loaded.revision
     with pytest.raises(StaleExternalOperationStateError):
         mark_physical_terminal(
             store,
+            tenant_id=_TENANT,
             operation_id=identity.operation_id,
             expected_revision=cancelled_intent.revision,
             physical_state=ExternalOperationPhysicalState.FAILED,
         )
 
 
-def test_case_3_worker_crash_marks_unknown() -> None:
+def test_case_3_owner_loss_recovery_denied_without_certified_authority() -> None:
     store = InMemoryExternalOperationStateStore()
     dead_owner = ProcessLocalExternalOperationOwner.mint()
-    active_owner = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token=dead_owner.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=dead_owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=dead_owner,
     )
     assert running.physical_state is ExternalOperationPhysicalState.RUNNING
-    reconciled = reconcile_orphaned_running_operations(
-        store,
-        active_owner=active_owner,
-    )
-    assert len(reconciled) == 1
-    assert reconciled[0].physical_state is ExternalOperationPhysicalState.UNKNOWN
+    with pytest.raises(ExternalOperationCertifiedOwnerLossRequiredError):
+        recover_running_operation_after_certified_owner_loss(
+            store,
+            tenant_id=_TENANT,
+            operation_id=identity.operation_id,
+            expected_revision=running.revision,
+        )
+    loaded = store.load(_TENANT, identity.operation_id)
+    assert loaded is not None
+    assert loaded.physical_state is ExternalOperationPhysicalState.RUNNING
+    assert loaded.revision == running.revision
 
 
 def test_case_4_double_cancellation_is_idempotent() -> None:
     store = InMemoryExternalOperationStateStore()
     identity = _identity()
-    first = request_operation_cancellation(store, operation_id=identity.operation_id)
-    second = request_operation_cancellation(store, operation_id=identity.operation_id)
+    first = request_operation_cancellation(store, tenant_id=_TENANT, operation_id=identity.operation_id)
+    second = request_operation_cancellation(store, tenant_id=_TENANT, operation_id=identity.operation_id)
     assert first.revision == second.revision
     assert second.intent_state is ExternalOperationIntentState.CANCELLATION_REQUESTED
 
@@ -171,7 +185,7 @@ def test_case_4_double_cancellation_is_idempotent() -> None:
 def test_case_5_retry_after_cancellation_blocked() -> None:
     store = InMemoryExternalOperationStateStore()
     identity = _identity(physical_attempt_sequence=2)
-    request_operation_cancellation(store, operation_id=identity.operation_id)
+    request_operation_cancellation(store, tenant_id=_TENANT, operation_id=identity.operation_id)
     with pytest.raises(ExternalOperationStartSuppressedError):
         assert_may_begin_physical_attempt(store, identity)
 
@@ -180,9 +194,10 @@ def test_recovery_blocked_on_unknown_until_reconciled() -> None:
     store = InMemoryExternalOperationStateStore()
     owner = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token="stale")
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token="stale")
     mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=ProcessLocalExternalOperationOwner(token="stale"),
@@ -190,11 +205,29 @@ def test_recovery_blocked_on_unknown_until_reconciled() -> None:
     with pytest.raises(ExternalOperationRecoveryBlockedError):
         prepare_external_operations_for_recovery(
             store,
+            tenant_id=_TENANT,
             active_owner=owner,
             operation_ids=(identity.operation_id,),
         )
-    prepare_external_operations_for_recovery(store, active_owner=owner)
-    loaded = store.load(identity.operation_id)
+    running = store.load(_TENANT, identity.operation_id)
+    assert running is not None
+    stale_owner = ProcessLocalExternalOperationOwner(token="stale")
+    mark_physical_terminal_if_owner_matches(
+        store,
+        tenant_id=_TENANT,
+        operation_id=identity.operation_id,
+        expected_revision=running.revision,
+        physical_state=ExternalOperationPhysicalState.UNKNOWN,
+        owner=stale_owner,
+    )
+    with pytest.raises(ExternalOperationRecoveryBlockedError):
+        prepare_external_operations_for_recovery(
+            store,
+            tenant_id=_TENANT,
+            active_owner=owner,
+            operation_ids=(identity.operation_id,),
+        )
+    loaded = store.load(_TENANT, identity.operation_id)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.UNKNOWN
 
@@ -213,6 +246,7 @@ def test_cancellation_port_invoked_once() -> None:
     identity = _identity()
     request_operation_cancellation(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         cancellation_port=port,
     )
@@ -250,6 +284,7 @@ def test_identity_retry_same_operation_id_different_physical_sequence() -> None:
         dependency_kind=DependencyConcurrencyKind.TOOL,
         dependency_identity="payment",
         operation_id=op,
+        tenant_id=_TENANT,
         physical_attempt_sequence=1,
     )
     id2 = ExternalOperationIdentity(
@@ -258,6 +293,7 @@ def test_identity_retry_same_operation_id_different_physical_sequence() -> None:
         dependency_kind=DependencyConcurrencyKind.TOOL,
         dependency_identity="payment",
         operation_id=op,
+        tenant_id=_TENANT,
         physical_attempt_sequence=2,
     )
     assert id1.operation_id == id2.operation_id
@@ -270,10 +306,10 @@ def test_triple_cancel_idempotent_single_logical_transition() -> None:
     identity = _identity()
     revisions: list[int] = []
     for _ in range(3):
-        record = request_operation_cancellation(store, operation_id=identity.operation_id)
+        record = request_operation_cancellation(store, tenant_id=_TENANT, operation_id=identity.operation_id)
         revisions.append(record.revision)
     assert revisions[0] == revisions[1] == revisions[2]
-    loaded = store.load(identity.operation_id)
+    loaded = store.load(_TENANT, identity.operation_id)
     assert loaded is not None
     assert loaded.intent_state is ExternalOperationIntentState.CANCELLATION_REQUESTED
 
@@ -285,6 +321,7 @@ def test_triple_cancel_does_not_invoke_cancellation_port_repeatedly() -> None:
     for _ in range(3):
         request_operation_cancellation(
             store,
+            tenant_id=_TENANT,
             operation_id=identity.operation_id,
             cancellation_port=port,
         )
@@ -299,15 +336,17 @@ def test_retry_allowed_after_physical_failed() -> None:
         operation_id=first.operation_id,
         physical_attempt_sequence=2,
     )
-    record = store.create_if_absent(identity.operation_id, owner_token=owner.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner,
     )
     failed = mark_physical_terminal(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=running.revision,
         physical_state=ExternalOperationPhysicalState.FAILED,
@@ -320,9 +359,10 @@ def test_cas_terminal_race_twenty_writers_one_winner() -> None:
     store = InMemoryExternalOperationStateStore()
     owner = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token=owner.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner,
@@ -337,6 +377,7 @@ def test_cas_terminal_race_twenty_writers_one_winner() -> None:
         barrier.wait()
         try:
             store.compare_and_set(
+                _TENANT,
                 identity.operation_id,
                 expected_revision=running.revision,
                 update=ExternalOperationStateUpdate(physical_state=physical),
@@ -365,7 +406,7 @@ def test_cas_terminal_race_twenty_writers_one_winner() -> None:
         thread.join()
     assert cas_success_count == 1
     assert stale_count == 19
-    final = store.load(identity.operation_id)
+    final = store.load(_TENANT, identity.operation_id)
     assert final is not None
     assert final.physical_state in (
         ExternalOperationPhysicalState.SUCCEEDED,
@@ -403,22 +444,25 @@ async def test_cancel_during_worker_execution_blocks_second_acquire_until_termin
     store = InMemoryExternalOperationStateStore()
     owner_a = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token=owner_a.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner_a.token)
     permit_a = await admission.acquire(_tool_request())
     mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner_a,
     )
     after_cancel = request_operation_cancellation(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
     )
     with pytest.raises(DependencyConcurrencyExceededError):
         await admission.acquire(_tool_request())
     mark_physical_terminal(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=after_cancel.revision,
         physical_state=ExternalOperationPhysicalState.CANCELLED,

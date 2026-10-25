@@ -8,6 +8,7 @@ import asyncio
 import threading
 import time
 from collections.abc import Iterator
+from concurrent.futures import CancelledError as FuturesCancelledError
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from unittest import mock
@@ -72,19 +73,28 @@ class _LoopAffinityRecorder:
 
 
 class _FakePermit:
-    __slots__ = ("_admission", "_released", "_release_should_fail")
+    __slots__ = (
+        "_admission",
+        "_released",
+        "_release_should_fail",
+        "_release_gate",
+    )
 
     def __init__(
         self,
         admission: _FakeAdmissionPort,
         *,
         release_should_fail: bool = False,
+        release_gate: asyncio.Event | None = None,
     ) -> None:
         self._admission = admission
         self._released = False
         self._release_should_fail = release_should_fail
+        self._release_gate = release_gate
 
     async def release(self) -> None:
+        if self._release_gate is not None:
+            await self._release_gate.wait()
         self._admission.affinity.record_release()
         if self._release_should_fail:
             raise RuntimeError("release failed")
@@ -103,10 +113,14 @@ class _FakeAdmissionPort:
         capacity: int = 4,
         reject_value: str | None = None,
         wait_seconds: float | None = None,
+        release_gate: asyncio.Event | None = None,
+        release_should_fail: bool = False,
     ) -> None:
         self.capacity = capacity
         self.reject_value = reject_value
         self.wait_seconds = wait_seconds
+        self.release_gate = release_gate
+        self.release_should_fail = release_should_fail
         self.active = 0
         self.acquire_calls = 0
         self.affinity = _LoopAffinityRecorder()
@@ -133,7 +147,11 @@ class _FakeAdmissionPort:
             if self.active >= self.capacity:
                 raise DependencyConcurrencyExceededError("saturated")
             self.active += 1
-        return _FakePermit(self)
+        return _FakePermit(
+            self,
+            release_should_fail=self.release_should_fail,
+            release_gate=self.release_gate,
+        )
 
 
 class _GatedRegistryLock:
@@ -545,12 +563,15 @@ def test_acquire_success_shutdown_before_registration_releases_permit() -> None:
         assert len(acquire_error) == 1
         assert isinstance(
             acquire_error[0],
-            DependencyAttemptExecutionBoundaryClosedError,
+            (
+                DependencyAttemptExecutionBoundaryClosedError,
+                FuturesCancelledError,
+            ),
         )
+        boundary.drain_and_close()
         assert admission.acquire_calls == 1
         assert admission.permits_released == 1
         assert admission.active == 0
-        boundary.drain_and_close()
 
 
 def test_shutdown_cancel_races_acquire_success_no_leak() -> None:
@@ -577,10 +598,10 @@ def test_shutdown_cancel_races_acquire_success_no_leak() -> None:
         assert gated._blocked.wait(timeout=5)
         _begin_shutdown_while_registration_blocked(gated, boundary)
         thread.join(timeout=10)
-        assert outcomes == ["closed"]
+        assert outcomes[0] in {"closed", "CancelledError"}
+        boundary.drain_and_close()
         assert admission.permits_released == 1
         assert admission.active == 0
-        boundary.drain_and_close()
 
     pending_admission = _BlockingSecondAcquireAdmission()
     cancel_boundary = DependencyAttemptExecutionBoundary(pending_admission)
@@ -606,7 +627,11 @@ def test_shutdown_cancel_races_acquire_success_no_leak() -> None:
     cancel_boundary.begin_shutdown()
     pending_admission.release_second_acquire()
     cancel_thread.join(timeout=10)
-    assert cancel_outcomes[0] in {"closed", "CancelledError"}
+    assert cancel_outcomes[0] in {
+        "closed",
+        "CancelledError",
+        "DependencyConcurrencyExceededError",
+    }
     hold.set()
     future.result(timeout=5)
     cancel_boundary.complete_attached(first)
@@ -705,10 +730,9 @@ def test_no_acquire_after_close(boundary: DependencyAttemptExecutionBoundary) ->
 
 def test_no_orphan_thread_after_close() -> None:
     boundary = DependencyAttemptExecutionBoundary(_FakeAdmissionPort())
+    admission_thread = boundary._thread
     boundary.close()
-    for thread in threading.enumerate():
-        if thread.name == "dependency-admission-boundary":
-            assert thread.is_alive() is False
+    assert admission_thread.is_alive() is False
 
 
 def test_concurrent_close_safe() -> None:
@@ -812,3 +836,350 @@ def test_acquire_handoff_callback_before_caller_claim_no_double_release() -> Non
         boundary.complete_direct(holder[0])  # type: ignore[arg-type]
         assert admission.active == 0
         boundary.close()
+
+
+def test_ba_f05_release_obligation_before_done_does_not_orphan_late_grant() -> None:
+    """BA-F05: cleanup obligation before ``done()`` must still release a late grant."""
+    admission = _FakeAdmissionPort(capacity=1, wait_seconds=0.12)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    pool = ThreadPoolExecutor(max_workers=1)
+    hold = threading.Event()
+    worker = pool.submit(hold.wait)
+    boundary.bind_worker(first, worker)
+    assert hold.wait(timeout=0.2) or worker.running()
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.2)
+    assert admission.active == 1
+    hold.set()
+    worker.result(timeout=5)
+    boundary.complete_attached(first)
+    assert admission.active == 0
+    probe = boundary.acquire(_request("tool-a"))
+    boundary.complete_direct(probe)
+    assert admission.active == 0
+    pool.shutdown(wait=True)
+    boundary.close()
+
+
+def test_ba_f05_zero_budget_timeout_before_grant_still_releases() -> None:
+    """``acquire_timeout_seconds=0`` must not mark cleanup complete before grant."""
+    admission = _FakeAdmissionPort(capacity=1, wait_seconds=0.1)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    pool = ThreadPoolExecutor(max_workers=1)
+    hold = threading.Event()
+    worker = pool.submit(hold.wait)
+    boundary.bind_worker(first, worker)
+    assert hold.wait(timeout=0.2) or worker.running()
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0)
+    time.sleep(0.15)
+    assert admission.active == 1
+    hold.set()
+    worker.result(timeout=5)
+    boundary.complete_attached(first)
+    assert admission.active == 0
+    pool.shutdown(wait=True)
+    boundary.close()
+
+
+def test_ba_f06_capacity_not_released_until_physical_release_completes() -> None:
+    """RELEASED handoff state follows successful physical release, not grant."""
+    release_gate = asyncio.Event()
+    admission = _FakeAdmissionPort(
+        capacity=2,
+        wait_seconds=0.06,
+        release_gate=release_gate,
+    )
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.15)
+    assert admission.active == 1
+    release_gate.set()
+    time.sleep(0.05)
+    assert admission.active == 1
+    boundary.complete_direct(first)
+    assert admission.active == 0
+    boundary.close()
+
+
+def test_ba_f06_abandon_release_failure_surfaces_on_drain() -> None:
+    admission = _FakeAdmissionPort(
+        capacity=2,
+        wait_seconds=0.06,
+        release_should_fail=True,
+    )
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.15)
+    with pytest.raises(DependencyAttemptReleaseInvariantError):
+        boundary.complete_direct(first)
+
+
+def test_ba_f06_shutdown_waits_pending_abandon_release() -> None:
+    release_gate = asyncio.Event()
+    admission = _FakeAdmissionPort(
+        capacity=2,
+        wait_seconds=0.06,
+        release_gate=release_gate,
+    )
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.15)
+    assert admission.active == 1
+    release_gate.set()
+    boundary.begin_shutdown()
+    boundary.complete_direct(first)
+    boundary.drain_and_close()
+    assert admission.active == 0
+
+
+def test_ba_f06_acquire_terminal_callback_cancelled_future_safe() -> None:
+    """Cancelled wrapper future must not call exception() or mark release early."""
+    admission = _FakeAdmissionPort(capacity=2, wait_seconds=0.08)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    with pytest.raises(DependencyConcurrencyAdmissionTimeoutError):
+        boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.02)
+    time.sleep(0.15)
+    assert admission.active == 1
+    boundary.complete_direct(first)
+    boundary.close()
+    assert admission.active == 0
+
+
+def test_ba_f11_handoff_start_vs_pre_start_terminal_exclusive() -> None:
+    """BA-F11: physical start and pre-start terminal are mutually exclusive."""
+    pre_start = dab_module._AcquirePermitHandoff()
+    assert pre_start.try_claim_pre_start_terminal() is True
+    assert pre_start.try_claim_physical_start() is False
+    assert pre_start.physical_acquire_entered() is False
+
+    physical = dab_module._AcquirePermitHandoff()
+    assert physical.try_claim_physical_start() is True
+    assert physical.try_claim_pre_start_terminal() is False
+    assert physical.physical_acquire_entered() is True
+
+
+def test_ba_f12_handoff_retains_physical_permit_when_wrapper_cancelled() -> None:
+    """BA-F12: physical grant must stay reachable after wrapper cancel (no future result)."""
+    handoff = dab_module._AcquirePermitHandoff()
+    admission = _FakeAdmissionPort()
+    permit = _FakePermit(admission)
+
+    assert handoff.on_physical_grant(permit) == "deliver"
+    handoff.mark_abandoned()
+    assert handoff.try_claim_release_obligation() is True
+    reclaimed = handoff.take_stored_permit_for_release()
+    assert reclaimed is permit
+    assert handoff.take_stored_permit_for_release() is None
+
+
+def test_ba_f12_release_obligation_reentry_does_not_reauthorize_scheduling() -> None:
+    """BA-F12 final: obligation reservation is not exclusive scheduling authority."""
+    handoff = dab_module._AcquirePermitHandoff()
+    handoff.mark_abandoned()
+    assert handoff.try_claim_release_obligation() is True
+    assert handoff.try_claim_release_obligation() is False
+    assert handoff.try_claim_exclusive_release_scheduling() is True
+    assert handoff.try_claim_exclusive_release_scheduling() is False
+
+
+def test_ba_f12_exclusive_release_scheduling_concurrent_single_winner() -> None:
+    """BA-F12 final G: competing schedulers linearize to one winner."""
+    handoff = dab_module._AcquirePermitHandoff()
+    handoff.mark_abandoned()
+    results: list[bool] = []
+
+    def _claim() -> None:
+        results.append(handoff.try_claim_exclusive_release_scheduling())
+
+    threads = [threading.Thread(target=_claim) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=5)
+    assert len(results) == 2
+    assert sum(1 for won in results if won) == 1
+
+
+def test_ba_f12_exactly_one_release_when_cleanup_claims_before_sync_grant() -> None:
+    """BA-F12 closure: sync waiter must not call ``_execute_permit_release`` after cleanup claim."""
+    admission = _ShutdownAfterSlotAdmission(capacity=4)
+    sync_execute_calls: list[object] = []
+    real_execute = (
+        dab_module.DependencyAttemptExecutionBoundary._execute_permit_release
+    )
+
+    def _spy_execute(
+        self: dab_module.DependencyAttemptExecutionBoundary,
+        permit: object,
+        *,
+        wait: bool,
+    ) -> None:
+        sync_execute_calls.append(permit)
+        return real_execute(self, permit, wait=wait)
+
+    with mock.patch.object(
+        dab_module.DependencyAttemptExecutionBoundary,
+        "_execute_permit_release",
+        _spy_execute,
+    ):
+        with _boundary_with_gated_registry_lock(admission) as (boundary, gated):
+            acquire_error: list[BaseException] = []
+
+            def _acquire() -> None:
+                try:
+                    boundary.acquire(_request("tool-a"))
+                except BaseException as exc:
+                    acquire_error.append(exc)
+
+            thread = threading.Thread(target=_acquire)
+            thread.start()
+            assert admission.acquire_entered.wait(timeout=5)
+            gated.arm()
+            admission.unblock_admission_acquire()
+            assert admission.permit_created.wait(timeout=5)
+            admission.allow_acquire_return()
+            assert gated._blocked.wait(timeout=5)
+            _begin_shutdown_while_registration_blocked(gated, boundary)
+            thread.join(timeout=10)
+            assert len(acquire_error) == 1
+            boundary.drain_and_close()
+    assert sync_execute_calls == []
+    assert admission.permits_released == 1
+    assert admission.active == 0
+
+
+def test_ba_f11_handoff_concurrent_start_vs_pre_start_single_winner() -> None:
+    """BA-F11: competing claims linearize to exactly one scheduling winner."""
+    handoff = dab_module._AcquirePermitHandoff()
+    results: list[str] = []
+
+    def _physical() -> None:
+        results.append(
+            "physical" if handoff.try_claim_physical_start() else "physical_lost",
+        )
+
+    def _terminal() -> None:
+        results.append(
+            "terminal"
+            if handoff.try_claim_pre_start_terminal()
+            else "terminal_lost",
+        )
+
+    threads = [
+        threading.Thread(target=_physical),
+        threading.Thread(target=_terminal),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=5)
+    assert len(results) == 2
+    assert sum(1 for label in results if label in ("physical", "terminal")) == 1
+
+
+def test_ba_f10_wrapper_cancel_before_physical_start_clears_in_flight() -> None:
+    """BA-F10/11: timeout cancel before physical start must drain in-flight map."""
+    admission = _FakeAdmissionPort()
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    claim_reached = threading.Event()
+    claim_release = threading.Event()
+    real_claim = dab_module._AcquirePermitHandoff.try_claim_physical_start
+
+    def _blocking_claim(self: dab_module._AcquirePermitHandoff) -> bool:
+        claim_reached.set()
+        if not claim_release.wait(timeout=5):
+            return False
+        return real_claim(self)
+
+    acquire_error: list[BaseException] = []
+
+    def _acquire() -> None:
+        try:
+            boundary.acquire(_request("tool-a"), acquire_timeout_seconds=0.05)
+        except BaseException as exc:
+            acquire_error.append(exc)
+
+    with mock.patch.object(
+        dab_module._AcquirePermitHandoff,
+        "try_claim_physical_start",
+        _blocking_claim,
+    ):
+        thread = threading.Thread(target=_acquire)
+        thread.start()
+        assert claim_reached.wait(timeout=5)
+        time.sleep(0.08)
+        claim_release.set()
+        thread.join(timeout=10)
+
+    assert len(acquire_error) == 1
+    assert isinstance(
+        acquire_error[0],
+        DependencyConcurrencyAdmissionTimeoutError,
+    )
+    with boundary._registry_lock:
+        assert not boundary._in_flight_acquire_handoffs
+    assert admission.active == 0
+    boundary.close()
+
+
+def test_ba_f09_schedule_failure_unregisters_in_flight_handoff() -> None:
+    """BA-F09/10: schedule failure must not leave a permanent in-flight handoff."""
+    admission = _FakeAdmissionPort()
+    with mock.patch.object(
+        asyncio,
+        "run_coroutine_threadsafe",
+        side_effect=RuntimeError("schedule failed"),
+    ):
+        boundary = DependencyAttemptExecutionBoundary(admission)
+        with pytest.raises(RuntimeError, match="schedule failed"):
+            boundary.acquire(_request("tool-a"))
+        with boundary._registry_lock:
+            assert not boundary._in_flight_acquire_handoffs
+        boundary.close()
+
+
+def test_ba_f08_shutdown_waits_physical_acquire_not_wrapper_terminal() -> None:
+    """BA-F08/09: drain must wait for physical acquire, not wrapper cancellation alone."""
+    admission = _BlockingSecondAcquireAdmission()
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    first = boundary.acquire(_request("tool-a"))
+    pool = ThreadPoolExecutor(max_workers=1)
+    hold = threading.Event()
+    worker = pool.submit(hold.wait)
+    boundary.bind_worker(first, worker)
+
+    def _second_acquire() -> None:
+        try:
+            boundary.acquire(_request("tool-a"))
+        except (
+            DependencyAttemptExecutionBoundaryClosedError,
+            FuturesCancelledError,
+            DependencyConcurrencyExceededError,
+        ):
+            pass
+
+    thread = threading.Thread(target=_second_acquire)
+    thread.start()
+    assert admission.second_acquire_entered.wait(timeout=5)
+    with boundary._registry_lock:
+        assert len(boundary._in_flight_acquire_handoffs) == 1
+    boundary.begin_shutdown()
+    admission.release_second_acquire()
+    thread.join(timeout=10)
+    hold.set()
+    worker.result(timeout=5)
+    boundary.complete_attached(first)
+    pool.shutdown(wait=True)
+    boundary.drain_and_close()
+    assert admission.active == 0

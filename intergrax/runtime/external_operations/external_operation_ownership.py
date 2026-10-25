@@ -16,6 +16,9 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationState,
 )
 from intergrax.contracts.external_operation_identity import ExternalOperationIdentity
+from intergrax.runtime.external_operations.certified_owner_loss_composition import (
+    bound_worker_execution_epoch_is_revoked,
+)
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
     ExternalOperationStateUpdate,
@@ -29,6 +32,14 @@ class ExternalOperationStartSuppressedError(RuntimeError):
 
 class ExternalOperationRetryBlockedError(RuntimeError):
     """Physical retry blocked until cancellation ownership is decided."""
+
+
+class ExternalOperationFencedCommitRejectedError(RuntimeError):
+    """Superseded worker cannot publish or mutate durable external-operation state."""
+
+
+class ExternalOperationCertifiedOwnerLossRequiredError(RuntimeError):
+    """RUNNING→UNKNOWN recovery requires canonical certified owner-loss evidence (parent L3)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,13 +56,14 @@ class ProcessLocalExternalOperationOwner:
 def request_operation_cancellation(
     store: ExternalOperationStateStore,
     *,
+    tenant_id: str,
     operation_id: str,
     cancellation_port: ExternalOperationCancellationPort | None = None,
 ) -> ExternalOperationState:
     """Idempotent cancellation request on durable intent state."""
-    record = store.load(operation_id)
+    record = store.load(tenant_id, operation_id)
     if record is None:
-        record = store.create_if_absent(operation_id)
+        record = store.create_if_absent(tenant_id, operation_id)
     if record.intent_state in (
         ExternalOperationIntentState.CANCELLATION_REQUESTED,
         ExternalOperationIntentState.TERMINATING,
@@ -59,6 +71,7 @@ def request_operation_cancellation(
     ):
         return record
     updated = store.compare_and_set(
+        tenant_id,
         operation_id,
         expected_revision=record.revision,
         update=ExternalOperationStateUpdate(
@@ -82,10 +95,11 @@ def assert_may_begin_physical_attempt(
     identity: ExternalOperationIdentity,
 ) -> ExternalOperationState:
     """Fail closed when cancellation precedes physical submit (case 1)."""
+    tenant_id = identity.tenant_id
     operation_id = identity.operation_id
-    record = store.load(operation_id)
+    record = store.load(tenant_id, operation_id)
     if record is None:
-        return store.create_if_absent(operation_id)
+        return store.create_if_absent(tenant_id, operation_id)
     if record.intent_state is not ExternalOperationIntentState.ACTIVE:
         raise ExternalOperationStartSuppressedError(
             f"external operation {operation_id!r} not active: {record.intent_state.value}",
@@ -109,11 +123,18 @@ def assert_may_begin_physical_attempt(
 def mark_physical_running(
     store: ExternalOperationStateStore,
     *,
+    tenant_id: str,
     operation_id: str,
     expected_revision: int,
     owner: ProcessLocalExternalOperationOwner,
 ) -> ExternalOperationState:
+    current = store.load(tenant_id, operation_id)
+    if current is not None and bound_worker_execution_epoch_is_revoked(current=current):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"revoked worker execution epoch cannot start physical effect for {operation_id!r}",
+        )
     return store.compare_and_set(
+        tenant_id,
         operation_id,
         expected_revision=expected_revision,
         update=ExternalOperationStateUpdate(
@@ -123,9 +144,72 @@ def mark_physical_running(
     )
 
 
+_TERMINAL_PHYSICAL = frozenset(
+    {
+        ExternalOperationPhysicalState.SUCCEEDED,
+        ExternalOperationPhysicalState.FAILED,
+        ExternalOperationPhysicalState.CANCELLED,
+        ExternalOperationPhysicalState.UNKNOWN,
+    },
+)
+
+
+def mark_physical_terminal_if_owner_matches(
+    store: ExternalOperationStateStore,
+    *,
+    tenant_id: str,
+    operation_id: str,
+    expected_revision: int,
+    physical_state: ExternalOperationPhysicalState,
+    owner: ProcessLocalExternalOperationOwner,
+    intent_state: ExternalOperationIntentState | None = None,
+) -> ExternalOperationState:
+    """CAS terminal commit only when ``owner`` still holds the RUNNING record."""
+    if physical_state not in _TERMINAL_PHYSICAL:
+        raise ValueError("physical_state must be terminal")
+    current = store.load(tenant_id, operation_id)
+    if current is None:
+        raise ExternalOperationNotFoundError(operation_id)
+    if current.physical_state in _TERMINAL_PHYSICAL:
+        if current.physical_state is physical_state:
+            if (
+                current.owner_token is not None
+                and current.owner_token != owner.token
+            ):
+                raise ExternalOperationFencedCommitRejectedError(
+                    f"stale owner cannot observe terminal for {operation_id!r}",
+                )
+            return current
+        raise ExternalOperationFencedCommitRejectedError(
+            f"late terminal rejected for {operation_id!r}: "
+            f"existing {current.physical_state.value}",
+        )
+    if (
+        current.physical_state is ExternalOperationPhysicalState.RUNNING
+        and current.owner_token is not None
+        and current.owner_token != owner.token
+    ):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"stale owner cannot commit terminal for {operation_id!r}",
+        )
+    if bound_worker_execution_epoch_is_revoked(current=current):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"revoked worker execution epoch cannot commit terminal for {operation_id!r}",
+        )
+    return mark_physical_terminal(
+        store,
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        expected_revision=expected_revision,
+        physical_state=physical_state,
+        intent_state=intent_state,
+    )
+
+
 def mark_physical_terminal(
     store: ExternalOperationStateStore,
     *,
+    tenant_id: str,
     operation_id: str,
     expected_revision: int,
     physical_state: ExternalOperationPhysicalState,
@@ -140,6 +224,7 @@ def mark_physical_terminal(
         raise ValueError("physical_state must be terminal")
     try:
         return store.compare_and_set(
+            tenant_id,
             operation_id,
             expected_revision=expected_revision,
             update=ExternalOperationStateUpdate(
@@ -148,7 +233,7 @@ def mark_physical_terminal(
             ),
         )
     except StaleExternalOperationStateError as stale:
-        current = store.load(operation_id)
+        current = store.load(tenant_id, operation_id)
         if current is None:
             raise stale
         if (
@@ -167,10 +252,12 @@ def mark_physical_terminal(
 def finalize_operation_intent(
     store: ExternalOperationStateStore,
     *,
+    tenant_id: str,
     operation_id: str,
     expected_revision: int,
 ) -> ExternalOperationState:
     return store.compare_and_set(
+        tenant_id,
         operation_id,
         expected_revision=expected_revision,
         update=ExternalOperationStateUpdate(
@@ -180,26 +267,65 @@ def finalize_operation_intent(
     )
 
 
+def finalize_operation_intent_if_owner_matches(
+    store: ExternalOperationStateStore,
+    *,
+    tenant_id: str,
+    operation_id: str,
+    expected_revision: int,
+    owner: ProcessLocalExternalOperationOwner,
+) -> ExternalOperationState:
+    """Clear owner and terminate intent only for the durable record holder."""
+    current = store.load(tenant_id, operation_id)
+    if current is None:
+        raise ExternalOperationNotFoundError(operation_id)
+    if (
+        current.owner_token is not None
+        and current.owner_token != owner.token
+    ):
+        raise ExternalOperationFencedCommitRejectedError(
+            f"stale owner cannot finalize intent for {operation_id!r}",
+        )
+    return finalize_operation_intent(
+        store,
+        tenant_id=tenant_id,
+        operation_id=operation_id,
+        expected_revision=expected_revision,
+    )
+
+
+def recover_running_operation_after_certified_owner_loss(
+    store: ExternalOperationStateStore,
+    *,
+    tenant_id: str,
+    operation_id: str,
+    expected_revision: int,
+    evidence_id: str | None = None,
+) -> ExternalOperationState:
+    """Apply staged certified owner-loss evidence (RUNNING→UNKNOWN) when configured."""
+    current = store.load(tenant_id, operation_id)
+    if current is None:
+        raise ExternalOperationNotFoundError(operation_id)
+    if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
+        return current
+    if evidence_id is None:
+        raise ExternalOperationCertifiedOwnerLossRequiredError(
+            f"certified owner-loss evidence required for RUNNING→UNKNOWN on {operation_id!r}",
+        )
+    return store.apply_certified_owner_loss(
+        tenant_id,
+        operation_id,
+        expected_revision=expected_revision,
+        evidence_id=evidence_id,
+    )
+
+
 def reconcile_orphaned_running_operations(
     store: ExternalOperationStateStore,
     *,
+    tenant_id: str,
     active_owner: ProcessLocalExternalOperationOwner,
 ) -> tuple[ExternalOperationState, ...]:
-    """Mark RUNNING records without the active owner as UNKNOWN (worker loss)."""
-    reconciled: list[ExternalOperationState] = []
-    for record in store.list_running():
-        if record.owner_token == active_owner.token:
-            continue
-        try:
-            updated = store.compare_and_set(
-                record.operation_id,
-                expected_revision=record.revision,
-                update=ExternalOperationStateUpdate(
-                    physical_state=ExternalOperationPhysicalState.UNKNOWN,
-                    intent_state=ExternalOperationIntentState.TERMINATING,
-                ),
-            )
-        except (StaleExternalOperationStateError, ExternalOperationNotFoundError):
-            continue
-        reconciled.append(updated)
-    return tuple(reconciled)
+    """No-op: process-local owner token mismatch is not proof of owner death (TOOL-LIFE-X Batch C)."""
+    del store, tenant_id, active_owner
+    return ()

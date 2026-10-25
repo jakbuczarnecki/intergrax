@@ -69,6 +69,12 @@ from intergrax.runtime.execution.active_execution_resume import (
     bind_active_execution_resume_plan,
     reset_active_execution_resume_plan,
 )
+from intergrax.contracts.root_execution_child_work_ingress import (
+    RootExecutionChildWorkIngressPort,
+)
+from intergrax.runtime.execution.host_root_catalog_child_ingress_draining_delegate import (
+    HostRootCatalogChildIngressDrainingDelegate,
+)
 from intergrax.runtime.execution.host_root_execution_intake import (
     HostFacadeRootExecutionIntake,
     HostRootExecutionIntakePayload,
@@ -372,6 +378,7 @@ class HostTaskExecution:
     _skill_host_wiring: HostSkillCatalogWiring | None = None
     _run_budget_persistence: RunBudgetPersistence | None = None
     _deadline_authority_resolver: ExecutionDeadlineAuthorityResolver | None = None
+    _root_child_work_ingress: RootExecutionChildWorkIngressPort | None = None
 
     def _launcher_for_task(
         self,
@@ -412,8 +419,12 @@ class HostTaskExecution:
             declarative_tool_invoker=self._declarative_tool_invoker,
             skill_host_wiring=self._skill_host_wiring,
         )
-        delegate = _HostTaskTerminalPublishingDelegate(
+        draining_router = HostRootCatalogChildIngressDrainingDelegate(
             router,
+            ingress=self._root_child_work_ingress,
+        )
+        delegate = _HostTaskTerminalPublishingDelegate(
+            draining_router,
             terminal_publisher=self._terminal_publisher,
             task=task,
         )
@@ -554,6 +565,8 @@ class HostTaskExecution:
         if held_root_capacity is not None:
             runtime_capacity = None
         await ActiveTaskRegistry.register(task, identity.run_id)
+        if self._root_child_work_ingress is not None:
+            self._root_child_work_ingress.bind_supervised_task(task.task_id)
         try:
             if restore_existing_execution:
                 try:
@@ -634,6 +647,8 @@ class HostTaskExecution:
             assert launch_result.intake_result is not None
             return launch_result.intake_result.result
         finally:
+            if self._root_child_work_ingress is not None:
+                self._root_child_work_ingress.unbind_supervised_task(task.task_id)
             if resume_plan_token is not None:
                 reset_active_execution_resume_plan(resume_plan_token)
             await ActiveTaskRegistry.unregister(task.task_id, identity.run_id)

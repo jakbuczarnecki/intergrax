@@ -243,6 +243,7 @@ class BaseLLMAdapter(ABC):
             owner=self._external_operation_owner,
             identity=(
                 llm_external_operation_identity(
+                    tenant_id=admission_attempt.intent.tenant_id,
                     provider_slug=self._provider_slug(),
                     model=str(self.model or ""),
                     call_scope="sync",
@@ -357,6 +358,7 @@ class BaseLLMAdapter(ABC):
                 owner=self._external_operation_owner,
                 identity=(
                     llm_external_operation_identity(
+                        tenant_id=admission_attempt.intent.tenant_id,
                         provider_slug=self._provider_slug(),
                         model=str(self.model or ""),
                         call_scope="stream",

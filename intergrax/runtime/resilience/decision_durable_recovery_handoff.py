@@ -79,6 +79,7 @@ async def resume_decision_from_durable_state_with_recovery_admission(
         owner = external_operation_owner or ProcessLocalExternalOperationOwner.mint()
         prepare_external_operations_for_recovery(
             external_operation_store,
+            tenant_id=key.tenant_id,
             active_owner=owner,
             operation_ids=external_operation_ids,
         )

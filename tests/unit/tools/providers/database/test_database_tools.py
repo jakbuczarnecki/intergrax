@@ -8,9 +8,17 @@ import pytest
 
 import sqlite3
 
-from intergrax.tools.providers.database.contracts import DatabaseDescribeSchemaInput, DatabaseExecuteInput, DatabaseQueryInput
+from intergrax.integrations.contracts.relational_store_bounded_query import (
+    RelationalStoreBoundedQueryPort,
+)
+from intergrax.integrations.relational_bounded_row_accumulation import accumulate_bounded_sql_rows
 from intergrax.integrations.relational_store_execution_adapter import (
     RelationalStoreExecutionAdapter,
+)
+from intergrax.tools.providers.database.contracts import (
+    DatabaseDescribeSchemaInput,
+    DatabaseExecuteInput,
+    DatabaseQueryInput,
 )
 from intergrax.tools.providers.database.service import database_describe_schema, database_execute, database_query
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -25,7 +33,7 @@ def _ctx_with_store(store: InMemoryRelationalStore) -> ToolWiringContext:
 pytestmark = pytest.mark.unit
 
 
-class InMemoryRelationalStore:
+class InMemoryRelationalStore(RelationalStoreBoundedQueryPort):
     def __init__(self) -> None:
         self._conn = sqlite3.connect(":memory:")
         self._conn.row_factory = sqlite3.Row
@@ -42,6 +50,22 @@ class InMemoryRelationalStore:
         rows = self._conn.execute(sql, params).fetchall()
         return [dict(row) for row in rows]
 
+    def fetch_query_bounded(
+        self,
+        sql: str,
+        params: Sequence[Any] = (),
+        *,
+        max_rows: int,
+        max_result_bytes: int,
+    ) -> tuple[tuple[Mapping[str, Any], ...], bool, str]:
+        cursor = self._conn.execute(sql, params)
+        accumulated, truncated, reason = accumulate_bounded_sql_rows(
+            (dict(row) for row in cursor),
+            max_rows=max_rows,
+            max_result_bytes=max_result_bytes,
+        )
+        return tuple(accumulated), truncated, reason
+
     def close(self) -> None:
         self._conn.close()
 
@@ -52,6 +76,7 @@ def test_database_query_returns_rows() -> None:
     out = database_query(ctx, DatabaseQueryInput(sql="SELECT * FROM items"))
     assert out.row_count == 1
     assert out.rows[0]["name"] == "alpha"
+    assert out.truncated is False
 
 
 def test_database_execute_inserts_row() -> None:

@@ -107,6 +107,12 @@ from intergrax.applications._shared.reliability_wiring import (
     ApplicationReliabilityWiring,
     wire_application_reliability,
 )
+from intergrax.applications._shared.tool_life_execution_recovery_wiring import (
+    ApplicationToolLifeExecutionRecoveryWiring,
+)
+from intergrax.applications._shared.tool_life_host_bootstrap_wiring import (
+    ToolLifeHostBootstrapWiringResolution,
+)
 from intergrax.applications._shared.security_assembly_resolver import (
     assert_security_assembly_valid,
 )
@@ -140,6 +146,10 @@ from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
     resolve_registry_assembly_mode,
+)
+from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
+    HostRootExecutionTransportDetachmentSupervisor,
+    build_host_root_execution_transport_detachment_supervisor,
 )
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -252,6 +262,7 @@ class HarnessHostRuntime:
     evaluation: ApplicationEvaluationWiring
     diagnostic_wiring: DiagnosticWiring
     execution: HostTaskExecution
+    transport_detachment_supervision: HostRootExecutionTransportDetachmentSupervisor
     _internal_composition: HarnessHostInternalComposition
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
@@ -271,6 +282,8 @@ class HarnessHostRuntime:
     _host_diagnostic_dependencies: HostDiagnosticReadDependencies | None = None
     orchestration_topology: HarnessHostOrchestrationTopologyWiring | None = None
     _owned_declarative_tool_invoker: CatalogDeclarativeToolInvoker | None = None
+    tool_life_execution_recovery: ApplicationToolLifeExecutionRecoveryWiring | None = None
+    tool_life_bootstrap_resolution: ToolLifeHostBootstrapWiringResolution | None = None
 
     @property
     def host_diagnostic_dependencies(self) -> HostDiagnosticReadDependencies | None:
@@ -334,6 +347,7 @@ def build_harness_host_runtime(
     strict_production_serving_execution_tenant_binding: (
         StrictProductionServingExecutionTenantBinding | None
     ) = None,
+    tool_life_durable_db_path: Path | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -570,6 +584,15 @@ def build_harness_host_runtime(
     resolved_meaningful_side_effect_authorization = (
         meaningful_side_effect_wiring.authorization_port
     )
+    from intergrax.applications._shared.tool_life_host_bootstrap_wiring import (
+        resolve_tool_life_host_bootstrap_wiring,
+    )
+
+    tool_life_bootstrap = resolve_tool_life_host_bootstrap_wiring(
+        effective_environment,
+        idempotency_db_path=idempotency_db_path,
+        tool_life_durable_db_path=tool_life_durable_db_path,
+    )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
         effective_environment,
@@ -578,6 +601,7 @@ def build_harness_host_runtime(
         tenant_id=resolved_tenant_id,
         idempotency_store=reliability_wiring.idempotency_store,
         meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
+        tool_life_execution_recovery=tool_life_bootstrap.wiring,
     )
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
         agent_checkpoint_store=agent_checkpoint_store,
@@ -749,6 +773,7 @@ def build_harness_host_runtime(
             meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
             submission_port_builder=strict_orchestration_topology_submission_port_builder,
         )
+    transport_detachment_supervision = build_host_root_execution_transport_detachment_supervisor()
     host_runtime = HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=effective_environment,
@@ -764,6 +789,7 @@ def build_harness_host_runtime(
         evaluation=evaluation_wiring,
         diagnostic_wiring=diagnostic_wiring,
         execution=execution,
+        transport_detachment_supervision=transport_detachment_supervision,
         orchestration_topology=orchestration_topology_wiring,
         _internal_composition=build_harness_host_internal_composition_from_materialization(
             orchestration,
@@ -784,6 +810,8 @@ def build_harness_host_runtime(
         ),
         _host_diagnostic_dependencies=host_diagnostic_dependencies,
         _owned_declarative_tool_invoker=declarative_tool_invoker,
+        tool_life_execution_recovery=tool_life_bootstrap.wiring,
+        tool_life_bootstrap_resolution=tool_life_bootstrap,
     )
     return host_runtime
 

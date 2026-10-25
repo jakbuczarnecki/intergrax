@@ -15,7 +15,10 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Any
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import (
+    IntegrationConfigurationError,
+    IntegrationError,
+)
 from intergrax.integrations.providers.relational_store.postgresql.config import (
     PostgreSQLIntegrationConfig,
     validate_schema_identifier,
@@ -76,6 +79,60 @@ class PostgreSQLExecutionResult:
     @property
     def rowcount(self) -> int:
         return self._cursor.rowcount
+
+
+class PostgreSQLBoundedFetchTransactionScope(str, Enum):
+    """How bounded fetch may use the connection transaction boundary."""
+
+    ADAPTER_OWNED_READONLY = "adapter_owned_readonly"
+    CALLER_OWNED = "caller_owned"
+
+
+class PostgreSQLBoundedFetchSafetyError(IntegrationError):
+    """Bounded fetch rejected: connection state is unsafe or ambiguous."""
+
+    def __init__(self, message: str, *, transaction_status: str = "") -> None:
+        super().__init__(message)
+        self.transaction_status = transaction_status
+
+
+def classify_postgresql_bounded_fetch_transaction_scope(
+    connection: Any,
+) -> PostgreSQLBoundedFetchTransactionScope:
+    """
+    Classify whether bounded fetch may open its own READ ONLY transaction.
+
+    IDLE → adapter-owned READ ONLY may begin. INTRANS → caller-owned; no BEGIN/commit/rollback.
+    INERROR, ACTIVE, UNKNOWN, and closed connections fail closed.
+    """
+    from psycopg import pq
+
+    if getattr(connection, "closed", False):
+        raise PostgreSQLBoundedFetchSafetyError(
+            "PostgreSQL connection is closed; bounded fetch cannot proceed.",
+            transaction_status="closed",
+        )
+
+    status = connection.info.transaction_status
+    if status == pq.TransactionStatus.IDLE:
+        return PostgreSQLBoundedFetchTransactionScope.ADAPTER_OWNED_READONLY
+    if status == pq.TransactionStatus.INTRANS:
+        return PostgreSQLBoundedFetchTransactionScope.CALLER_OWNED
+    if status == pq.TransactionStatus.INERROR:
+        raise PostgreSQLBoundedFetchSafetyError(
+            "PostgreSQL connection is in failed transaction state (INERROR); "
+            "caller must roll back before bounded fetch.",
+            transaction_status="INERROR",
+        )
+    if status == pq.TransactionStatus.ACTIVE:
+        raise PostgreSQLBoundedFetchSafetyError(
+            "PostgreSQL connection has an active query; bounded fetch rejected.",
+            transaction_status="ACTIVE",
+        )
+    raise PostgreSQLBoundedFetchSafetyError(
+        "PostgreSQL transaction status is UNKNOWN; bounded fetch fails closed.",
+        transaction_status="UNKNOWN",
+    )
 
 
 def set_local_config(

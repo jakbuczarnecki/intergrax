@@ -40,9 +40,6 @@ _CATALOG_INVOKER = (
     / "catalog_declarative_invoker.py"
 )
 _PERSISTENCE_PACKAGE = _REPO_ROOT / "intergrax" / "agents" / "persistence" / "__init__.py"
-_RUNTIME_CONTEXT = (
-    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "engine" / "runtime_context.py"
-)
 _RUNTIME_TOOL_INVOKER_COMPOSITION = (
     _REPO_ROOT
     / "intergrax"
@@ -52,10 +49,7 @@ _RUNTIME_TOOL_INVOKER_COMPOSITION = (
     / "runtime_tool_invoker_composition.py"
 )
 _APPROVED_RUNTIME_TOOL_INVOKER_OWNERS = (_RUNTIME_TOOL_INVOKER_COMPOSITION,)
-_PRODUCTION_RUNTIME_TOOL_INVOKER_WIRING = (
-    _DECLARATIVE_WIRING,
-    _RUNTIME_CONTEXT,
-)
+_PRODUCTION_RUNTIME_TOOL_INVOKER_WIRING = (_DECLARATIVE_WIRING,)
 _AGENTS_PRODUCTION_ROOT = _REPO_ROOT / "intergrax" / "agents"
 _AW_STAGE_LOOP = _REPO_ROOT / "intergrax" / "autonomous_work" / "work_stage_capability_loop.py"
 _U5_QUALIFICATION = (

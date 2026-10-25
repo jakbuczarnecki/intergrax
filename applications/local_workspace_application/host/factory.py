@@ -176,6 +176,7 @@ def create_local_workspace_backend_app(
             agent_registry=runtime.registry,
             tenant_id=host_tenant_id,
             idempotency_store=runtime.reliability.idempotency_store,
+            tool_life_execution_recovery=runtime.tool_life_execution_recovery,
         ),
     )
     lkw_host_execution = runtime.execution
@@ -404,7 +405,8 @@ def create_local_workspace_backend_app(
     if resolved_settings.include_mcp:
         from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
 
-        couple_fastapi_with_mcp = load_mcp_coupling()
+        load_mcp_coupling()
+        from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
         from local_workspace_application.mcp.server import (
             build_local_workspace_mcp_server,
         )
@@ -419,9 +421,11 @@ def create_local_workspace_backend_app(
             runtime,
             schedulers=[scheduler] if scheduler else None,
         )
-        app = couple_fastapi_with_mcp(
+        app = couple_harness_host_fastapi_with_mcp(
             app,
             mcp,
+            runtime=runtime,
+            env=env,
             mount_path=resolved_settings.mcp_mount_path,
             extra_lifespans=extra_lifespans,
         )

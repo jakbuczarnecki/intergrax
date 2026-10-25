@@ -3,7 +3,11 @@
 
 from __future__ import annotations
 
-from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.core.contracts import (
+    SideEffectRetrySafety,
+    ToolContract,
+    ToolRiskLevel,
+)
 from intergrax.tools.providers.http.contracts import HttpRequestInput, HttpRequestOutput
 from intergrax.tools.providers.http.handlers import HttpRequestHandler
 from intergrax.tools.providers.http.service import HTTP_REQUEST_TOOL_ID
@@ -25,6 +29,7 @@ def register_http_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
             output_schema=HttpRequestOutput,
             error_mapping={},
             side_effects=True,
+            side_effect_retry_safety=SideEffectRetrySafety.NOT_RETRY_SAFE,
             category="http",
             risk_level=ToolRiskLevel.HIGH,
             tags=("http", "integration", "network"),

@@ -12,7 +12,7 @@ from concurrent.futures import Future as ConcurrentFuture
 from concurrent.futures import TimeoutError as ConcurrentFuturesTimeoutError
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyAdmissionPort,
@@ -33,12 +33,27 @@ class DependencyAttemptReleaseInvariantError(RuntimeError):
     """Permit release failed for a physical dependency attempt (fail-closed)."""
 
 
+class _AcquireAbandonedBeforeDelivery(Exception):
+    """Async acquire granted after sync waiter abandoned (permit released on loop)."""
+
+
+class _AcquireSchedulingPhase(StrEnum):
+    """Atomic start vs pre-start terminal ownership (BA-F11)."""
+
+    REGISTERED = "REGISTERED"
+    PHYSICAL_STARTED = "PHYSICAL_STARTED"
+    PRE_START_TERMINAL = "PRE_START_TERMINAL"
+
+
 class _AcquireHandoffState(StrEnum):
     """Permit ownership between async grant completion and sync caller acceptance."""
 
     WAITING = "WAITING"
+    GRANT_AVAILABLE = "GRANT_AVAILABLE"
     CALLER_OWNS = "CALLER_OWNS"
     ABANDONED = "ABANDONED"
+    RELEASE_OBLIGATION_CLAIMED = "RELEASE_OBLIGATION_CLAIMED"
+    RELEASE_PENDING = "RELEASE_PENDING"
     RELEASED = "RELEASED"
 
 
@@ -48,20 +63,51 @@ class _AcquirePermitHandoff:
 
     _state: _AcquireHandoffState = _AcquireHandoffState.WAITING
     _lock: threading.Lock = field(default_factory=threading.Lock)
+    _scheduling_phase: _AcquireSchedulingPhase = _AcquireSchedulingPhase.REGISTERED
+    _held_permit: DependencyConcurrencyPermit | None = None
+    _release_scheduling_claimed: bool = False
+
+    def try_claim_physical_start(self) -> bool:
+        """Win physical admission vs pre-start terminal; linearized under handoff lock (BA-F11)."""
+        with self._lock:
+            if self._scheduling_phase is _AcquireSchedulingPhase.PRE_START_TERMINAL:
+                return False
+            self._scheduling_phase = _AcquireSchedulingPhase.PHYSICAL_STARTED
+            return True
+
+    def try_claim_pre_start_terminal(self) -> bool:
+        """Win pre-start terminal vs physical start; exactly one registry removal caller (BA-F11)."""
+        with self._lock:
+            if self._scheduling_phase is not _AcquireSchedulingPhase.REGISTERED:
+                return False
+            self._scheduling_phase = _AcquireSchedulingPhase.PRE_START_TERMINAL
+            return True
+
+    def physical_acquire_entered(self) -> bool:
+        with self._lock:
+            return self._scheduling_phase is _AcquireSchedulingPhase.PHYSICAL_STARTED
 
     def claim_successful_grant(self) -> bool:
         """Caller linearization immediately after a successful ``result()``."""
         with self._lock:
-            if self._state is not _AcquireHandoffState.WAITING:
+            if self._state not in (
+                _AcquireHandoffState.WAITING,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+            ):
                 return False
             self._state = _AcquireHandoffState.CALLER_OWNS
+            self._held_permit = None
             return True
 
     def mark_abandoned(self) -> None:
         with self._lock:
             if self._state is _AcquireHandoffState.CALLER_OWNS:
                 return
-            if self._state is _AcquireHandoffState.RELEASED:
+            if self._state in (
+                _AcquireHandoffState.RELEASED,
+                _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED,
+                _AcquireHandoffState.RELEASE_PENDING,
+            ):
                 return
             self._state = _AcquireHandoffState.ABANDONED
 
@@ -69,13 +115,103 @@ class _AcquirePermitHandoff:
         with self._lock:
             return self._state is _AcquireHandoffState.ABANDONED
 
-    def try_claim_abandoned_release(self) -> bool:
-        """Exactly one cleanup path may release an abandoned granted permit."""
+    def is_release_obligation_claimed(self) -> bool:
         with self._lock:
-            if self._state is not _AcquireHandoffState.ABANDONED:
+            return self._state is _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED
+
+    def is_release_complete(self) -> bool:
+        with self._lock:
+            return self._state is _AcquireHandoffState.RELEASED
+
+    def is_release_pending(self) -> bool:
+        with self._lock:
+            return self._state is _AcquireHandoffState.RELEASE_PENDING
+
+    def try_claim_release_obligation(self) -> bool:
+        """Reserve abandoned cleanup obligation before permit observation (not scheduling)."""
+        with self._lock:
+            if self._state in (
+                _AcquireHandoffState.CALLER_OWNS,
+                _AcquireHandoffState.RELEASED,
+                _AcquireHandoffState.RELEASE_PENDING,
+            ):
                 return False
-            self._state = _AcquireHandoffState.RELEASED
+            if self._state is _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED:
+                return False
+            if self._state in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+            ):
+                self._state = _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED
+                return True
+            return False
+
+    def try_claim_exclusive_release_scheduling(self) -> bool:
+        """Win exactly-once authority to schedule physical handoff permit release."""
+        with self._lock:
+            if self._state in (
+                _AcquireHandoffState.CALLER_OWNS,
+                _AcquireHandoffState.RELEASED,
+                _AcquireHandoffState.RELEASE_PENDING,
+            ):
+                return False
+            if self._release_scheduling_claimed:
+                return False
+            if self._state not in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+                _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED,
+            ):
+                return False
+            if self._state in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.GRANT_AVAILABLE,
+            ):
+                self._state = _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED
+            self._release_scheduling_claimed = True
             return True
+
+    def complete_release(self) -> None:
+        with self._lock:
+            self._state = _AcquireHandoffState.RELEASED
+
+    def mark_release_pending(self) -> None:
+        with self._lock:
+            if self._state is _AcquireHandoffState.RELEASED:
+                return
+            self._state = _AcquireHandoffState.RELEASE_PENDING
+
+    def take_stored_permit_for_release(self) -> DependencyConcurrencyPermit | None:
+        """Claim handoff-stored permit for abandoned cleanup (BA-F12)."""
+        with self._lock:
+            permit = self._held_permit
+            self._held_permit = None
+            return permit
+
+    def on_physical_grant(
+        self,
+        permit: DependencyConcurrencyPermit,
+    ) -> Literal["deliver", "release_in_coro", "noop"]:
+        """Linearize physical grant vs sync abandon on the admission event loop."""
+        with self._lock:
+            if self._state is _AcquireHandoffState.WAITING:
+                self._state = _AcquireHandoffState.GRANT_AVAILABLE
+                self._held_permit = permit
+                return "deliver"
+            if self._state in (
+                _AcquireHandoffState.ABANDONED,
+                _AcquireHandoffState.RELEASE_OBLIGATION_CLAIMED,
+            ):
+                self._state = _AcquireHandoffState.RELEASE_PENDING
+                return "release_in_coro"
+            if self._state is _AcquireHandoffState.CALLER_OWNS:
+                raise RuntimeError("invariant: physical grant after caller ownership")
+            if self._state in (
+                _AcquireHandoffState.RELEASED,
+                _AcquireHandoffState.RELEASE_PENDING,
+            ):
+                return "noop"
+            raise RuntimeError(f"unexpected acquire handoff state: {self._state!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +269,12 @@ class DependencyAttemptExecutionBoundary:
         self._pending_acquire_futures: set[ConcurrentFuture[DependencyConcurrencyPermit]] = (
             set()
         )
+        self._next_in_flight_acquire_seq = 0
+        self._in_flight_acquire_handoffs: dict[int, _AcquirePermitHandoff] = {}
+        self._in_flight_acquire_futures: dict[
+            int,
+            ConcurrentFuture[DependencyConcurrencyPermit],
+        ] = {}
         self._pending_async_release_futures: set[ConcurrentFuture[object]] = set()
         self._detached_pending_release: set[int] = set()
         self._release_failures: list[BaseException] = []
@@ -162,33 +304,88 @@ class DependencyAttemptExecutionBoundary:
         """Block until admission acquire completes or raises a typed admission error."""
         self._require_accepts_attempts()
         loop = self._require_loop()
+        handoff = _AcquirePermitHandoff()
+
+        with self._registry_lock:
+            in_flight_seq = self._next_in_flight_acquire_seq
+            self._next_in_flight_acquire_seq += 1
+            self._in_flight_acquire_handoffs[in_flight_seq] = handoff
+            if self._lifecycle is not _BoundaryLifecycle.OPEN:
+                shutdown_snapshot = [(in_flight_seq, handoff)]
+            else:
+                shutdown_snapshot = None
 
         async def _acquire_coro() -> DependencyConcurrencyPermit:
-            return await self._admission.acquire(request)
+            if not handoff.try_claim_physical_start():
+                raise asyncio.CancelledError()
+            try:
+                permit = await self._admission.acquire(request)
+                grant_action = handoff.on_physical_grant(permit)
+                if grant_action == "release_in_coro":
+                    await self._release_permit_for_abandoned_handoff(permit, handoff)
+                    raise _AcquireAbandonedBeforeDelivery()
+                if grant_action == "noop":
+                    raise _AcquireAbandonedBeforeDelivery()
+                return permit
+            finally:
+                self._unregister_in_flight_acquire(in_flight_seq)
 
-        acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
-        handoff = _AcquirePermitHandoff()
+        try:
+            acquire_future = asyncio.run_coroutine_threadsafe(_acquire_coro(), loop)
+        except BaseException:
+            self._unregister_in_flight_acquire_if_pre_start(in_flight_seq, handoff)
+            raise
+
+        with self._registry_lock:
+            self._in_flight_acquire_futures[in_flight_seq] = acquire_future
+            self._pending_acquire_futures.add(acquire_future)
+            if self._lifecycle is not _BoundaryLifecycle.OPEN:
+                shutdown_snapshot = [(in_flight_seq, handoff)]
 
         def _on_acquire_terminal(done_future: ConcurrentFuture[object]) -> None:
             del done_future
             if not acquire_future.done():
                 return
-            if acquire_future.cancelled():
-                if handoff.is_abandoned():
-                    self._maybe_release_abandoned_acquire_permit(
-                        acquire_future,
-                        handoff,
-                    )
-                return
-            if acquire_future.exception() is not None:
-                return
-            if not handoff.is_abandoned():
-                return
-            self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
+            try:
+                if acquire_future.cancelled():
+                    if (
+                        handoff.is_abandoned()
+                        or handoff.is_release_obligation_claimed()
+                        or handoff.is_release_pending()
+                    ):
+                        self._maybe_release_abandoned_acquire_permit(
+                            acquire_future,
+                            handoff,
+                        )
+                    return
+                exc = acquire_future.exception()
+                if exc is not None:
+                    if isinstance(exc, _AcquireAbandonedBeforeDelivery):
+                        return
+                    if (
+                        handoff.is_release_obligation_claimed()
+                        and not handoff.is_release_complete()
+                    ):
+                        self._maybe_release_abandoned_acquire_permit(
+                            acquire_future,
+                            handoff,
+                        )
+                    return
+                if not (
+                    handoff.is_abandoned()
+                    or handoff.is_release_obligation_claimed()
+                ):
+                    return
+                self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
+            finally:
+                self._unregister_in_flight_acquire_if_pre_start(
+                    in_flight_seq,
+                    handoff,
+                )
 
         acquire_future.add_done_callback(_on_acquire_terminal)
-        with self._registry_lock:
-            self._pending_acquire_futures.add(acquire_future)
+        if shutdown_snapshot is not None:
+            self._abort_in_flight_acquire(in_flight_seq, handoff, acquire_future)
         try:
             if acquire_timeout_seconds is None:
                 permit = acquire_future.result()
@@ -217,7 +414,10 @@ class DependencyAttemptExecutionBoundary:
                 self._pending_acquire_futures.discard(acquire_future)
 
         if not handoff.claim_successful_grant():
-            self._execute_permit_release(permit, wait=False)
+            if handoff.try_claim_exclusive_release_scheduling():
+                stored = handoff.take_stored_permit_for_release()
+                to_release = stored if stored is not None else permit
+                self._schedule_handoff_permit_release(to_release, handoff)
             raise RuntimeError(
                 "invariant: acquire permit granted after abandon handoff"
             )
@@ -319,9 +519,8 @@ class DependencyAttemptExecutionBoundary:
             if self._lifecycle is not _BoundaryLifecycle.OPEN:
                 return
             self._lifecycle = _BoundaryLifecycle.SHUTTING_DOWN
-            pending_acquires = list(self._pending_acquire_futures)
-        for pending in pending_acquires:
-            pending.cancel()
+            in_flight_snapshot = list(self._in_flight_acquire_handoffs.items())
+        self._abort_in_flight_acquires(in_flight_snapshot)
 
     def drain_and_close(self) -> None:
         """After physical workers drained, finish releases and stop admission loop."""
@@ -329,8 +528,16 @@ class DependencyAttemptExecutionBoundary:
             with self._registry_lock:
                 if self._lifecycle is _BoundaryLifecycle.CLOSED:
                     return
-                self._lifecycle = _BoundaryLifecycle.SHUTTING_DOWN
+                if self._lifecycle is _BoundaryLifecycle.OPEN:
+                    self._lifecycle = _BoundaryLifecycle.SHUTTING_DOWN
+                    in_flight_snapshot = list(self._in_flight_acquire_handoffs.items())
+                else:
+                    in_flight_snapshot = []
 
+            if in_flight_snapshot:
+                self._abort_in_flight_acquires(in_flight_snapshot)
+
+            self._wait_for_in_flight_acquires()
             self._wait_for_detached_releases()
             self._wait_for_pending_async_releases()
             failures = self._snapshot_release_failures()
@@ -460,15 +667,91 @@ class DependencyAttemptExecutionBoundary:
         handoff: _AcquirePermitHandoff,
     ) -> None:
         """Release a permit when the sync waiter abandoned an async acquire."""
-        if not handoff.try_claim_abandoned_release():
+        if handoff.is_release_pending() or handoff.is_release_complete():
             return
         if not acquire_future.done():
+            if not handoff.is_release_obligation_claimed():
+                handoff.try_claim_release_obligation()
             return
+        if not handoff.try_claim_exclusive_release_scheduling():
+            return
+        permit = handoff.take_stored_permit_for_release()
+        if permit is None and not acquire_future.cancelled():
+            try:
+                permit = acquire_future.result(timeout=0)
+            except _AcquireAbandonedBeforeDelivery:
+                return
+            except BaseException:
+                return
+        if permit is None:
+            return
+        self._schedule_handoff_permit_release(permit, handoff)
+
+    async def _release_permit_for_abandoned_handoff(
+        self,
+        permit: DependencyConcurrencyPermit,
+        handoff: _AcquirePermitHandoff,
+    ) -> None:
+        release_task = asyncio.create_task(permit.release())
+        release_cf = self._bridge_loop_task_to_concurrent_future(release_task)
+
+        def _release_done(release_cf_done: ConcurrentFuture[object]) -> None:
+            try:
+                release_cf_done.result()
+                handoff.complete_release()
+            except BaseException as exc:
+                self._record_lifecycle_failure(exc)
+            finally:
+                with self._registry_lock:
+                    self._pending_async_release_futures.discard(release_cf_done)
+
+        with self._registry_lock:
+            self._pending_async_release_futures.add(release_cf)
+        release_cf.add_done_callback(_release_done)
         try:
-            permit = acquire_future.result(timeout=0)
-        except BaseException:
-            return
-        self._execute_permit_release(permit, wait=False)
+            await asyncio.shield(release_task)
+        except asyncio.CancelledError:
+            raise
+
+    def _bridge_loop_task_to_concurrent_future(
+        self,
+        release_task: asyncio.Task[object],
+    ) -> ConcurrentFuture[object]:
+        """Expose an admission-loop release task to sync shutdown drain accounting."""
+        release_cf: ConcurrentFuture[object] = ConcurrentFuture()
+
+        def _task_terminal(task: asyncio.Task[object]) -> None:
+            try:
+                task.result()
+            except BaseException as exc:
+                release_cf.set_exception(exc)
+            else:
+                release_cf.set_result(None)
+
+        release_task.add_done_callback(_task_terminal)
+        return release_cf
+
+    def _schedule_handoff_permit_release(
+        self,
+        permit: DependencyConcurrencyPermit,
+        handoff: _AcquirePermitHandoff,
+    ) -> None:
+        handoff.mark_release_pending()
+        release_future = self._schedule_permit_release(permit)
+
+        def _release_done(release_cf: ConcurrentFuture[object]) -> None:
+            try:
+                release_cf.result()
+                handoff.complete_release()
+            except BaseException as exc:
+                self._record_lifecycle_failure(exc)
+            finally:
+                with self._registry_lock:
+                    self._pending_async_release_futures.discard(release_cf)
+
+        with self._registry_lock:
+            self._pending_async_release_futures.add(release_future)
+        release_future.add_done_callback(_release_done)
 
     def _execute_permit_release(
         self,
@@ -511,6 +794,57 @@ class DependencyAttemptExecutionBoundary:
             await permit.release()
 
         return asyncio.run_coroutine_threadsafe(_release_coro(), loop)
+
+    def _abort_in_flight_acquires(
+        self,
+        snapshot: list[tuple[int, _AcquirePermitHandoff]],
+    ) -> None:
+        """Mark shutdown abandon and cancel wrappers; physical map drains on coroutine finally."""
+        for in_flight_seq, handoff in snapshot:
+            with self._registry_lock:
+                acquire_future = self._in_flight_acquire_futures.get(in_flight_seq)
+            self._abort_in_flight_acquire(in_flight_seq, handoff, acquire_future)
+
+    def _abort_in_flight_acquire(
+        self,
+        in_flight_seq: int,
+        handoff: _AcquirePermitHandoff,
+        acquire_future: ConcurrentFuture[DependencyConcurrencyPermit] | None,
+    ) -> None:
+        handoff.mark_abandoned()
+        if acquire_future is None:
+            return
+        if acquire_future.done():
+            self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
+        else:
+            acquire_future.cancel()
+
+    def _unregister_in_flight_acquire(self, in_flight_seq: int) -> None:
+        with self._registry_lock:
+            self._in_flight_acquire_handoffs.pop(in_flight_seq, None)
+            self._in_flight_acquire_futures.pop(in_flight_seq, None)
+            self._drain_condition.notify_all()
+
+    def _unregister_in_flight_acquire_if_pre_start(
+        self,
+        in_flight_seq: int,
+        handoff: _AcquirePermitHandoff,
+    ) -> None:
+        """Terminal in-flight accounting when pre-start terminal wins the scheduling race."""
+        if handoff.try_claim_pre_start_terminal():
+            self._unregister_in_flight_acquire(in_flight_seq)
+
+    def _wait_for_in_flight_acquires(self) -> None:
+        """Quiesce every physical acquire coroutine (not wrapper-future terminal alone)."""
+        deadline = time.monotonic() + self._STARTUP_TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            with self._registry_lock:
+                if not self._in_flight_acquire_handoffs:
+                    return
+                self._drain_condition.wait(timeout=0.05)
+        raise RuntimeError(
+            "DependencyAttemptExecutionBoundary in-flight acquires did not drain"
+        )
 
     def _wait_for_pending_async_releases(self) -> None:
         deadline = time.monotonic() + self._STARTUP_TIMEOUT_SECONDS

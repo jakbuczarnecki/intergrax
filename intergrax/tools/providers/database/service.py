@@ -53,11 +53,18 @@ def _sql_params(params: list[SqlScalar]) -> tuple[SqlScalar, ...]:
 
 def database_query(ctx: ToolWiringContext, params: DatabaseQueryInput) -> DatabaseQueryOutput:
     result = _require_relational_store_execution(ctx).query(
-        RelationalQueryRequest(sql=params.sql.strip(), params=_sql_params(params.params)),
+        RelationalQueryRequest(
+            sql=params.sql.strip(),
+            params=_sql_params(params.params),
+            max_rows=params.max_rows,
+            max_result_bytes=params.max_result_bytes,
+        ),
     )
     return DatabaseQueryOutput(
         rows=[dict(row) for row in result.rows],
         row_count=result.row_count,
+        truncated=result.truncated,
+        limit_reason=result.limit_reason,
     )
 
 

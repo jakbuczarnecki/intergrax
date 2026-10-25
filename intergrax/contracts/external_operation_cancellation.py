@@ -9,10 +9,15 @@ recovery, or ownership.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from intergrax.contracts.certified_owner_loss_evidence import (
+        StagedCertifiedOwnerLossEvidenceV1,
+    )
 
 
 class ExternalOperationIntentState(StrEnum):
@@ -40,12 +45,31 @@ class ExternalOperationState:
     """Combined durable view for one logical operation_id."""
 
     operation_id: str
+    tenant_id: str
     intent_state: ExternalOperationIntentState
     physical_state: ExternalOperationPhysicalState
     created_at: datetime
     updated_at: datetime
     revision: int
     owner_token: str | None = None
+    ownership_epoch_fence: int | None = None
+    staged_certified_owner_loss: StagedCertifiedOwnerLossEvidenceV1 | None = None
+    consumed_certified_loss_evidence_ids: frozenset[str] = field(
+        default_factory=frozenset,
+    )
+    worker_instance_id: str | None = None
+    worker_ownership_epoch: int | None = None
+    consumed_redrive_admission_ids: frozenset[str] = field(
+        default_factory=frozenset,
+    )
+    bound_redrive_effect_contract_id: str | None = None
+    bound_redrive_effect_operation_key: str | None = None
+    bound_redrive_effect_contract_digest: str | None = None
+    bound_redrive_provider_id: str | None = None
+    bound_redrive_tool_id: str | None = None
+    bound_physical_idempotency_key: str | None = None
+    bound_physical_effect_fingerprint: str | None = None
+    bound_redrive_effect_binding_revision: int | None = None
 
 
 class ExternalOperationCancellationError(RuntimeError):

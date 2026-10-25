@@ -12,6 +12,9 @@ from typing import Any, Callable, Optional, Sequence
 from intergrax.integrations._shared.rest_search import hits_from_brave_payload, hits_from_serpapi_payload
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
+from intergrax.integrations.contracts.browser_automation_navigation import (
+    BrowserAutomationNavigationTimeoutPort,
+)
 from intergrax.integrations.contracts.collaboration_suite import (
     CalendarEvent,
     CalendarEventsResult,
@@ -430,17 +433,32 @@ class RestSearchProvider:
         return self._hits_fn(query, payload, limit)
 
 
-class PlaywrightBrowserAutomation:
+class PlaywrightBrowserAutomation(BrowserAutomationNavigationTimeoutPort):
     def __init__(self, browser: Any, *, timeout_ms: int) -> None:
         self._browser = browser
         self._timeout_ms = timeout_ms
         self._closed = False
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
+    @property
+    def navigation_timeout_integration_enforced(self) -> bool:
+        return True
+
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
         self._require_open()
+        timeout_ms = (
+            int(navigation_timeout_s * 1000)
+            if navigation_timeout_s is not None
+            else self._timeout_ms
+        )
         page = self._browser.new_page()
         try:
-            response = page.goto(url, wait_until=wait_until, timeout=self._timeout_ms)
+            response = page.goto(url, wait_until=wait_until, timeout=timeout_ms)
             status = int(attribute_access.optional(response, "status", 200) or 200)
             title = str(page.title() or "")
             html = str(page.content() or "")

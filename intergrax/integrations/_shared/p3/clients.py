@@ -14,6 +14,9 @@ from intergrax.integrations._shared.rest_search import hits_from_exa_payload, hi
 from intergrax.integrations._shared.vector_store_bridge import VectorStoreBridge
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
+from intergrax.integrations.contracts.browser_automation_navigation import (
+    BrowserAutomationNavigationTimeoutPort,
+)
 from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult, GraphStore
 from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries, TraceQueryResult, TraceRecord
 from intergrax.integrations.contracts.secrets_store import SecretsStore
@@ -235,7 +238,14 @@ class FirecrawlBrowserAutomation:
         self._client = client
         self._closed = False
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
+        _ = navigation_timeout_s
         self._require_open()
         payload = self._client.scrape(url)
         return PageContent(
@@ -255,14 +265,29 @@ class FirecrawlBrowserAutomation:
             raise IntegrationConfigurationError("Firecrawl browser automation is closed")
 
 
-class SeleniumBrowserAutomation:
+class SeleniumBrowserAutomation(BrowserAutomationNavigationTimeoutPort):
     def __init__(self, driver: Any, *, timeout_ms: int) -> None:
         self._driver = driver
         self._timeout_ms = timeout_ms
         self._closed = False
 
-    def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
+    @property
+    def navigation_timeout_integration_enforced(self) -> bool:
+        return True
+
+    def fetch_page(
+        self,
+        url: str,
+        *,
+        wait_until: str = "load",
+        navigation_timeout_s: float | None = None,
+    ) -> PageContent:
         self._require_open()
+        _ = wait_until
+        if navigation_timeout_s is not None and hasattr(self._driver, "set_page_load_timeout"):
+            self._driver.set_page_load_timeout(int(navigation_timeout_s))
+        elif hasattr(self._driver, "set_page_load_timeout"):
+            self._driver.set_page_load_timeout(int(self._timeout_ms / 1000))
         self._driver.get(url)
         title = str(attribute_access.optional(self._driver, "title", "") or "")
         html = str(attribute_access.optional(self._driver, "page_source", "") or "")

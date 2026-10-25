@@ -11,16 +11,33 @@ FastAPI routes at ``/``.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import FastAPI
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.fastapi_lifespan import LifespanFn, combine_lifespans
+from intergrax.applications._shared.mcp_task_control_coupling import (
+    resolve_mcp_coupling_task_control_mutation_boundary,
+)
+from intergrax.applications._shared.mcp_transport_detachment_supervision_coupling import (
+    build_transport_detachment_supervision_shutdown_lifespan,
+    resolve_mcp_coupling_transport_detachment_supervision,
+)
+from intergrax.contracts.root_execution_transport_detachment_supervision import (
+    RootExecutionTransportDetachmentSupervisionPort,
+)
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+
+if TYPE_CHECKING:
+    from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.harness_auth import (
     apply_harness_auth_middleware,
     resolve_harness_auth_state_from_app,
 )
-
-
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 def _normalize_mount_path(mount_path: str) -> str:
     path = (mount_path or "/mcp").strip()
     if not path.startswith("/"):
@@ -34,6 +51,8 @@ def couple_fastapi_with_mcp(
     *,
     mount_path: str = "/mcp",
     extra_lifespans: list[LifespanFn] | None = None,
+    task_control_mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    transport_detachment_supervision: RootExecutionTransportDetachmentSupervisionPort | None = None,
 ) -> FastAPI:
     """
     Mount *mcp* on a wrapper FastAPI app that also serves *fastapi_app* at ``/``.
@@ -44,6 +63,7 @@ def couple_fastapi_with_mcp(
     """
     mcp_mount = _normalize_mount_path(mount_path)
     mcp_app = mcp.http_app(path="/")
+    inner_auth = resolve_harness_auth_state_from_app(fastapi_app)
 
     lifespans: list[LifespanFn] = list(extra_lifespans or [])
     lifespans.append(mcp_app.lifespan)
@@ -55,11 +75,46 @@ def couple_fastapi_with_mcp(
         version=fastapi_app.version,
         lifespan=combined,
     )
+    if inner_auth is not None:
+        mcp_app.state.harness_auth = inner_auth
+    if task_control_mutation_boundary is not None:
+        mcp_app.state.task_control_mutation_boundary = task_control_mutation_boundary
+    if transport_detachment_supervision is not None:
+        mcp_app.state.root_execution_transport_detachment_supervision = (
+            transport_detachment_supervision
+        )
     wrapper.mount(mcp_mount, mcp_app)
     wrapper.mount("/", fastapi_app)
-    inner_auth = resolve_harness_auth_state_from_app(fastapi_app)
     require_auth = inner_auth.require_api_key if inner_auth is not None else False
     if inner_auth is not None:
         wrapper.state.harness_auth = inner_auth
     apply_harness_auth_middleware(wrapper, require_auth=require_auth)
     return wrapper
+
+
+def couple_harness_host_fastapi_with_mcp(
+    fastapi_app: FastAPI,
+    mcp: FastMCP,
+    *,
+    runtime: HarnessHostRuntime | None = None,
+    env: ApplicationEnvironmentProfile | None = None,
+    mount_path: str = "/mcp",
+    extra_lifespans: list[LifespanFn] | None = None,
+) -> FastAPI:
+    """Mount MCP with harness task-control cancel boundary aligned to HTTP task routes."""
+    boundary = resolve_mcp_coupling_task_control_mutation_boundary(
+        runtime=runtime,
+        env=env,
+    )
+    supervision = resolve_mcp_coupling_transport_detachment_supervision(runtime=runtime)
+    lifespans = list(extra_lifespans or [])
+    if supervision is not None:
+        lifespans.append(build_transport_detachment_supervision_shutdown_lifespan(supervision))
+    return couple_fastapi_with_mcp(
+        fastapi_app,
+        mcp,
+        mount_path=mount_path,
+        extra_lifespans=lifespans or None,
+        task_control_mutation_boundary=boundary,
+        transport_detachment_supervision=supervision,
+    )

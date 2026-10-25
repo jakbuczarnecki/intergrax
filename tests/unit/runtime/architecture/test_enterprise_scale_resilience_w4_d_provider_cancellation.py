@@ -61,6 +61,8 @@ from intergrax.runtime.nexus.tools.tool_operation_termination import (
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
+_TENANT = "tenant_w4d_test"
+
 
 def _identity() -> ExternalOperationIdentity:
     execution_id = mint_execution_id()
@@ -76,6 +78,7 @@ def _identity() -> ExternalOperationIdentity:
         dependency_kind=DependencyConcurrencyKind.LLM_PROVIDER,
         dependency_identity="openai",
         operation_id=operation_id,
+        tenant_id=_TENANT,
         physical_attempt_sequence=1,
     )
 
@@ -98,14 +101,14 @@ def test_native_cancel_success_cas_cancelled() -> None:
         termination_port=_ConfirmedTerminationPort(),
         capabilities=external_operation_capabilities_for_provider("openai"),
     )
-    store.create_if_absent(identity.operation_id, owner_token=owner.token)
+    store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner.token)
     ext_op.before_physical_call()
     ext_op.mark_running()
     ext_op.request_cancel()
     ext_op.complete_cancellation_after_termination(
         TerminationResult.physical_stop_confirmed(),
     )
-    loaded = store.load(identity.operation_id)
+    loaded = store.load(_TENANT, identity.operation_id)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.CANCELLED
     assert loaded.intent_state is ExternalOperationIntentState.TERMINATED
@@ -123,12 +126,12 @@ def test_provider_without_cancel_capability_marks_unknown() -> None:
         identity=identity,
         capabilities=caps,
     )
-    store.create_if_absent(identity.operation_id, owner_token=owner.token)
+    store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner.token)
     ext_op.before_physical_call()
     ext_op.mark_running()
     ext_op.request_cancel()
     ext_op.complete_cancellation_after_termination()
-    loaded = store.load(identity.operation_id)
+    loaded = store.load(_TENANT, identity.operation_id)
     assert loaded is not None
     assert loaded.physical_state is ExternalOperationPhysicalState.UNKNOWN
 
@@ -137,9 +140,10 @@ def test_cancel_race_twenty_workers_one_terminal_winner() -> None:
     store = InMemoryExternalOperationStateStore()
     owner = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token=owner.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner,
@@ -154,6 +158,7 @@ def test_cancel_race_twenty_workers_one_terminal_winner() -> None:
         barrier.wait()
         try:
             store.compare_and_set(
+                _TENANT,
                 identity.operation_id,
                 expected_revision=running.revision,
                 update=ExternalOperationStateUpdate(physical_state=physical),
@@ -241,16 +246,20 @@ def test_retry_blocked_after_cancelled_operation() -> None:
     store = InMemoryExternalOperationStateStore()
     owner = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token=owner.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner.token)
     running = mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner,
     )
-    cancelled = request_operation_cancellation(store, operation_id=identity.operation_id)
+    cancelled = request_operation_cancellation(
+        store, tenant_id=_TENANT, operation_id=identity.operation_id,
+    )
     mark_observed_cancellation_terminal(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=cancelled.revision,
         termination_result=TerminationResult.physical_stop_confirmed(),
@@ -261,6 +270,7 @@ def test_retry_blocked_after_cancelled_operation() -> None:
         dependency_kind=identity.dependency_kind,
         dependency_identity=identity.dependency_identity,
         operation_id=identity.operation_id,
+        tenant_id=identity.tenant_id,
         physical_attempt_sequence=2,
     )
     with pytest.raises(ExternalOperationStartSuppressedError):
@@ -294,9 +304,10 @@ def test_dispatch_observe_pipeline() -> None:
     store = InMemoryExternalOperationStateStore()
     owner = ProcessLocalExternalOperationOwner.mint()
     identity = _identity()
-    record = store.create_if_absent(identity.operation_id, owner_token=owner.token)
+    record = store.create_if_absent(_TENANT, identity.operation_id, owner_token=owner.token)
     mark_physical_running(
         store,
+        tenant_id=_TENANT,
         operation_id=identity.operation_id,
         expected_revision=record.revision,
         owner=owner,

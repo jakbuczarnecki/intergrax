@@ -5,9 +5,15 @@ from __future__ import annotations
 
 from intergrax.integrations.contracts.http_client import HttpClientBackend
 from intergrax.tools.providers.http.contracts import HttpRequestInput, HttpRequestOutput
+from intergrax.tools.providers.provider_resource_enforcement import (
+    ProviderResourceLimitExceeded,
+    bound_http_response_body,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 HTTP_REQUEST_TOOL_ID = "http.request"
+
+_SIDE_EFFECTFUL_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 
 def _require_http_client(ctx: ToolWiringContext) -> HttpClientBackend:
@@ -30,12 +36,27 @@ def http_request(ctx: ToolWiringContext, params: HttpRequestInput) -> HttpReques
             headers=dict(params.headers),
             body=params.body,
             timeout_s=params.timeout_s,
+            max_response_bytes=params.max_response_bytes,
         )
     except Exception as exc:  # noqa: BLE001 — tool boundary
+        if method in _SIDE_EFFECTFUL_METHODS:
+            raise RuntimeError(f"http_transport_error:{exc.__class__.__name__}") from exc
         return HttpRequestOutput(success=False, error=str(exc))
+    truncated = response.body_truncated_at_transport
+    body = response.body
+    if not response.transport_byte_ceiling_enforced:
+        try:
+            body, output_truncated = bound_http_response_body(
+                body,
+                max_response_bytes=params.max_response_bytes,
+            )
+        except ProviderResourceLimitExceeded as exc:
+            return HttpRequestOutput(success=False, error=exc.code)
+        truncated = truncated or output_truncated
     return HttpRequestOutput(
         success=200 <= response.status_code < 400,
         status_code=response.status_code,
-        body=response.body,
+        body=body,
         headers=dict(response.headers),
+        truncated=truncated,
     )

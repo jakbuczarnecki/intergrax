@@ -133,7 +133,8 @@ def create_poc_template_application(
     if settings.include_mcp:
         from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
 
-        couple_fastapi_with_mcp = load_mcp_coupling()
+        load_mcp_coupling()
+        from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
         from poc_template_application.mcp.server import build_poc_template_mcp_server
 
         mcp = build_poc_template_mcp_server(
@@ -146,9 +147,11 @@ def create_poc_template_application(
             runtime,
             schedulers=[scheduler] if scheduler else None,
         )
-        app = couple_fastapi_with_mcp(
+        app = couple_harness_host_fastapi_with_mcp(
             app,
             mcp,
+            runtime=runtime,
+            env=env,
             mount_path=settings.mcp_mount_path,
             extra_lifespans=extra_lifespans,
         )

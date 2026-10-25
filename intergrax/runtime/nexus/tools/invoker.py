@@ -116,13 +116,23 @@ from intergrax.runtime.external_operations.external_operation_state_store import
 from intergrax.runtime.external_operations.external_operation_ownership import (
     ProcessLocalExternalOperationOwner,
 )
+from intergrax.runtime.tools.http_side_effect_physical_outcome import (
+    http_side_effect_outcome_uncertain_after_submit,
+)
+from intergrax.runtime.tools.tool_operation_recovery import (
+    ToolInvocationTerminalDisposition,
+    disposition_message,
+    must_abandon_after_retry_exhaustion,
+    must_abandon_uncertain_outcome,
+    runtime_error_for_disposition,
+)
 from intergrax.runtime.external_operations.tool_external_operation_attempt import (
     ExternalOperationStartSuppressedError,
     ToolExternalOperationAttempt,
     tool_external_operation_identity,
 )
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
-from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import (
     ToolEffectCertainty,
     ToolExecutionRequest,
@@ -1201,7 +1211,7 @@ class RuntimeToolInvoker:
         pre_effect_claim: PreEffectClaimContext | None = None,
     ) -> ToolExecutionResult[BaseModel]:
         policy = contract.retry_policy
-        attempts = self._effective_max_attempts(contract)
+        attempts = self._effective_max_attempts(contract, request)
         last_exc: Optional[Exception] = None
 
         for attempt in range(1, attempts + 1):
@@ -1399,6 +1409,21 @@ class RuntimeToolInvoker:
                 timeout_certainty = ToolEffectCertainty.UNCERTAIN
                 if boundary is not None and not boundary.may_have_started:
                     timeout_certainty = ToolEffectCertainty.NOT_STARTED
+                if must_abandon_uncertain_outcome(
+                    effect_certainty=timeout_certainty,
+                    contract=contract,
+                    request=request,
+                ):
+                    return self._tool_result_terminal_disposition(
+                        state=state,
+                        contract=contract,
+                        request=request,
+                        agent_id=agent_id,
+                        disposition=ToolInvocationTerminalDisposition.ABANDONED,
+                        effect_certainty=timeout_certainty,
+                        trace_step="tool_invocation_abandoned",
+                        trace_message="Tool invocation abandoned after uncertain timeout.",
+                    )
                 result = ToolExecutionResult.fail(
                     RuntimeErrorCode.TIMEOUT,
                     msg,
@@ -1433,6 +1458,25 @@ class RuntimeToolInvoker:
                 code = self._map_error(contract, exc)
                 msg = f"{type(exc).__name__}: {exc}"
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
+                effect_started = boundary is not None and boundary.may_have_started
+                if must_abandon_after_retry_exhaustion(
+                    effect_may_have_started=effect_started,
+                    contract=contract,
+                    request=request,
+                ):
+                    return self._tool_result_terminal_disposition(
+                        state=state,
+                        contract=contract,
+                        request=request,
+                        agent_id=agent_id,
+                        disposition=ToolInvocationTerminalDisposition.ABANDONED,
+                        effect_certainty=ToolEffectCertainty.UNCERTAIN,
+                        trace_step="tool_invocation_abandoned",
+                        trace_message=(
+                            "Tool invocation abandoned after retry exhaustion "
+                            "with possible external effect."
+                        ),
+                    )
 
                 state.trace_event(
                     component=TraceComponent.TOOLS,
@@ -1546,6 +1590,46 @@ class RuntimeToolInvoker:
         )
         return result
 
+    def _tool_result_terminal_disposition(
+        self,
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        agent_id: str,
+        disposition: ToolInvocationTerminalDisposition,
+        effect_certainty: ToolEffectCertainty,
+        trace_step: str,
+        trace_message: str,
+    ) -> ToolExecutionResult[BaseModel]:
+        error_code = runtime_error_for_disposition(disposition)
+        message = disposition_message(disposition)
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step=trace_step,
+            message=trace_message,
+            level=TraceLevel.ERROR,
+            payload=ToolInvocationErrorDiagV1(
+                tool_id=contract.tool_id,
+                step_id=str(request.step_id),
+                error_code=error_code,
+                error_message=message,
+            ),
+        )
+        result = ToolExecutionResult.fail(
+            error_code,
+            message,
+            effect_certainty=effect_certainty,
+        )
+        self._emit_boundary_event(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+            result=result,
+        )
+        return result
+
     def _tool_result_task_cancelled(
         self,
         *,
@@ -1581,14 +1665,15 @@ class RuntimeToolInvoker:
         return result
 
     @staticmethod
-    def _effective_max_attempts(contract: ToolContract) -> int:
-        """Side-effect tools require positive retry-safety proof before automatic retry."""
-        policy_attempts = contract.retry_policy.max_attempts
-        if not contract.side_effects:
-            return policy_attempts
-        if contract.side_effect_retry_safety == SideEffectRetrySafety.NOT_RETRY_SAFE:
-            return 1
-        return policy_attempts
+    def _effective_max_attempts(
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> int:
+        from intergrax.runtime.tools.tool_operation_retry_classification import (
+            effective_max_retry_attempts,
+        )
+
+        return effective_max_retry_attempts(contract, request)
 
     @staticmethod
     def _remaining_parent_execution_seconds() -> float | None:
@@ -1654,6 +1739,7 @@ class RuntimeToolInvoker:
 
     def _build_tool_external_operation_attempt(
         self,
+        state: "RuntimeState",
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
         *,
@@ -1667,6 +1753,7 @@ class RuntimeToolInvoker:
                 identity=None,
             )
         identity = tool_external_operation_identity(
+            tenant_id=state.tenant_id,
             tool_id=contract.tool_id,
             step_id=str(request.step_id),
             physical_attempt_sequence=physical_attempt_sequence,
@@ -1745,6 +1832,24 @@ class RuntimeToolInvoker:
         if effect_boundary is not None:
             effect_boundary.may_have_started = True
 
+    @staticmethod
+    def _record_uncertain_physical_terminal(
+        ext_op: ToolExternalOperationAttempt,
+        *,
+        exc: BaseException,
+        effect_boundary: _ExternalEffectBoundary | None,
+    ) -> bool:
+        may_have_started = (
+            (effect_boundary is not None and effect_boundary.may_have_started)
+            or ext_op.physical_execution_admitted()
+        )
+        if not may_have_started:
+            return False
+        if http_side_effect_outcome_uncertain_after_submit(exc):
+            ext_op.mark_unknown()
+            return True
+        return False
+
     def _execute_once(
         self,
         state: "RuntimeState",
@@ -1759,11 +1864,17 @@ class RuntimeToolInvoker:
         request = self._apply_invocation_wiring(contract=contract, request=request)
         dep_boundary = self._dependency_attempt_boundary
         ext_op = self._build_tool_external_operation_attempt(
+            state,
             contract,
             request,
             physical_attempt_sequence=physical_attempt_sequence,
         )
-        ext_op.before_physical_submit()
+        ext_op.before_physical_submit(
+            catalog_tool_id=contract.tool_id,
+            catalog_tool=contract,
+            physical_idempotency_key=request.idempotency_key,
+            tool_input=request.input,
+        )
 
         if dep_boundary is None:
             timeout_s = self._physical_attempt_timeout_after_admission_seconds(contract)
@@ -1781,15 +1892,22 @@ class RuntimeToolInvoker:
                 and ext_op.operation_id is not None
             ):
                 self._tool_termination_port.bind_future(ext_op.operation_id, future)
+            result: BaseModel | None = None
             try:
-                return future.result(timeout=timeout_s)
+                result = future.result(timeout=timeout_s)
             except FuturesTimeoutError:
                 ext_op.mark_unknown()
                 raise
-            except BaseException:
+            except BaseException as exc:
                 if self._cooperative_cancellation_requested(state):
                     ext_op.request_cancel()
                     ext_op.complete_cancellation_after_termination()
+                elif self._record_uncertain_physical_terminal(
+                    ext_op,
+                    exc=exc,
+                    effect_boundary=effect_boundary,
+                ):
+                    pass
                 else:
                     ext_op.mark_failed()
                 raise
@@ -1801,6 +1919,7 @@ class RuntimeToolInvoker:
                     and ext_op.operation_id is not None
                 ):
                     self._tool_termination_port.unbind_future(ext_op.operation_id)
+            return result
 
         admission_request = DependencyConcurrencyAdmissionRequest(
             dependency=DependencyConcurrencyIdentity(
@@ -1855,14 +1974,32 @@ class RuntimeToolInvoker:
                 raise
             dep_boundary.complete_attached(attempt_handle)
             if future.done():
+                try:
+                    completed = future.result()
+                except BaseException as exc:
+                    if self._record_uncertain_physical_terminal(
+                        ext_op,
+                        exc=exc,
+                        effect_boundary=effect_boundary,
+                    ):
+                        pass
+                    else:
+                        ext_op.mark_failed()
+                    raise
                 ext_op.mark_succeeded()
-                return future.result()
+                return completed
             ext_op.mark_unknown()
             raise
-        except BaseException:
+        except BaseException as exc:
             if self._cooperative_cancellation_requested(state):
                 ext_op.request_cancel()
                 ext_op.complete_cancellation_after_termination()
+            elif self._record_uncertain_physical_terminal(
+                ext_op,
+                exc=exc,
+                effect_boundary=effect_boundary,
+            ):
+                pass
             else:
                 ext_op.mark_failed()
             dep_boundary.complete_attached(attempt_handle)

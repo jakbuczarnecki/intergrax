@@ -15,12 +15,17 @@ from intergrax.integrations.contracts.sql_scalar import SqlScalar
 class RelationalQueryRequest:
     sql: str
     params: tuple[SqlScalar, ...] = ()
+    max_rows: int | None = None
+    max_result_bytes: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class RelationalQueryResult:
     rows: tuple[dict[str, SqlScalar], ...]
     row_count: int
+    truncated: bool = False
+    limit_reason: str = ""
+    physical_bounds_enforced: bool = False
 
 
 @dataclass(frozen=True, slots=True)

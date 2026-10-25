@@ -5,13 +5,24 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any, Callable, Mapping, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.relational_store_bounded_query import (
+    RelationalStoreBoundedQueryPort,
+)
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
+from intergrax.integrations.providers.relational_store.postgresql.session import (
+    PostgreSQLBoundedFetchTransactionScope,
+    classify_postgresql_bounded_fetch_transaction_scope,
+)
+from intergrax.integrations.relational_bounded_row_accumulation import (
+    accumulate_bounded_sql_rows,
+)
 
 
-class _PostgreSQLRelationalStore:
+class _PostgreSQLRelationalStore(RelationalStoreBoundedQueryPort):
     """
     Minimal ``RelationalStore`` over an existing PostgreSQL connection.
 
@@ -48,6 +59,82 @@ class _PostgreSQLRelationalStore:
         cursor = conn.execute(sql, params)
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
+
+    def fetch_query_bounded(
+        self,
+        sql: str,
+        params: Sequence[Any] = (),
+        *,
+        max_rows: int,
+        max_result_bytes: int,
+    ) -> tuple[tuple[Mapping[str, Any], ...], bool, str]:
+        """
+        Fetch with row/byte ceilings using a PostgreSQL server-side cursor.
+
+        On an idle connection, opens a dedicated READ ONLY transaction and commits it
+        after the cursor is closed. Inside a caller-owned transaction, uses a named
+        server-side cursor only — no commit or rollback of caller state.
+        """
+        conn = self._require_connection()
+        scope = classify_postgresql_bounded_fetch_transaction_scope(conn)
+        owns_readonly_transaction = (
+            scope == PostgreSQLBoundedFetchTransactionScope.ADAPTER_OWNED_READONLY
+        )
+        cursor_name = f"igx_bq_{uuid.uuid4().hex}"
+        cursor: Any | None = None
+        fetch_error: BaseException | None = None
+        result: tuple[tuple[Mapping[str, Any], ...], bool, str] | None = None
+        try:
+            if owns_readonly_transaction:
+                conn.execute("BEGIN READ ONLY")
+            cursor = conn.cursor(cursor_name)
+            cursor.itersize = 1
+            cursor.execute(sql, params)
+
+            def _row_iter():
+                for row in cursor:
+                    yield dict(row)
+
+            accumulated, truncated, reason = accumulate_bounded_sql_rows(
+                _row_iter(),
+                max_rows=max_rows,
+                max_result_bytes=max_result_bytes,
+            )
+            result = (tuple(accumulated), truncated, reason)
+        except BaseException as exc:
+            fetch_error = exc
+        finally:
+            if cursor is not None:
+                try:
+                    cursor.close()
+                except BaseException as close_exc:
+                    if fetch_error is None:
+                        fetch_error = close_exc
+
+        if fetch_error is not None:
+            if owns_readonly_transaction:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            raise fetch_error
+
+        if owns_readonly_transaction:
+            try:
+                conn.commit()
+            except BaseException:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                raise
+        assert result is not None
+        return result
+
+    def cancel_backend(self) -> None:
+        """Request PostgreSQL backend cancellation for the store connection (physical cancel)."""
+        conn = self._require_connection()
+        conn.cancel()
 
     def close(self) -> None:
         if self._connection is not None:

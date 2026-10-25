@@ -4,7 +4,11 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
+from intergrax.integrations.contracts.browser_automation_navigation import (
+    navigation_timeout_enforced_for,
+)
 from intergrax.tools.providers.browser.contracts import BrowserFetchPageInput, BrowserFetchPageOutput
+from intergrax.tools.providers.provider_resource_enforcement import truncate_utf8_chars
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 BROWSER_FETCH_PAGE_TOOL_ID = "browser.fetch_page"
@@ -18,11 +22,20 @@ def _require_browser(ctx: ToolWiringContext) -> BrowserAutomation:
 
 
 def browser_fetch_page(ctx: ToolWiringContext, params: BrowserFetchPageInput) -> BrowserFetchPageOutput:
-    page = _require_browser(ctx).fetch_page(params.url.strip(), wait_until=params.wait_until)
+    browser = _require_browser(ctx)
+    timeout_enforced = navigation_timeout_enforced_for(browser)
+    page = browser.fetch_page(
+        params.url.strip(),
+        wait_until=params.wait_until,
+        navigation_timeout_s=params.navigation_timeout_s,
+    )
+    text, truncated = truncate_utf8_chars(page.text, params.max_text_chars)
     return BrowserFetchPageOutput(
         url=page.url,
         title=page.title,
-        text=page.text,
+        text=text,
         status_code=page.status_code,
         html_length=len(page.html or ""),
+        truncated=truncated,
+        navigation_timeout_enforced=timeout_enforced,
     )

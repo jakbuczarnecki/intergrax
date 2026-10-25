@@ -6,6 +6,10 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.integrations.contracts.sql_scalar import SqlScalar
+from intergrax.tools.providers.provider_resource_enforcement import (
+    DEFAULT_DATABASE_MAX_RESULT_BYTES,
+    DEFAULT_DATABASE_MAX_ROWS,
+)
 
 
 class DatabaseQueryInput(BaseModel):
@@ -16,6 +20,18 @@ class DatabaseQueryInput(BaseModel):
         default_factory=list,
         description="Positional bind parameters.",
     )
+    max_rows: int = Field(
+        default=DEFAULT_DATABASE_MAX_ROWS,
+        ge=1,
+        le=10_000,
+        description="Maximum rows returned (truncation when exceeded).",
+    )
+    max_result_bytes: int = Field(
+        default=DEFAULT_DATABASE_MAX_RESULT_BYTES,
+        ge=1,
+        le=16_777_216,
+        description="Maximum UTF-8 JSON size of the rows payload.",
+    )
 
 
 class DatabaseQueryOutput(BaseModel):
@@ -23,6 +39,11 @@ class DatabaseQueryOutput(BaseModel):
 
     rows: list[dict[str, SqlScalar]] = Field(default_factory=list)
     row_count: int = 0
+    truncated: bool = False
+    limit_reason: str = Field(
+        default="",
+        description="row_limit | byte_limit when truncated; empty otherwise.",
+    )
 
 
 class DatabaseExecuteInput(BaseModel):
