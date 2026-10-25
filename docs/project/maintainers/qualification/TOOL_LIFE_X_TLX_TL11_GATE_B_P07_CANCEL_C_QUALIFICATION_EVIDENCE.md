@@ -6,7 +6,8 @@
 | **Parent** | `TOOL-LIFE-X` §3.0.5 — **not CLOSED** |
 | **Operator authorization** | `OPERATOR APPROVED — TLX-TL11 GATE B — SCOPED CATALOG INVOCATION & CANCEL-C QUALIFICATION` |
 | **START_HEAD** | `480d89cf7d644daf3718330e59167378466094ca` |
-| **IMPLEMENTATION_HEAD** | *(see publication commit after push)* |
+| **IMPLEMENTATION_HEAD** | `586a53b1275762f413a4c7abfaf558d40d86e721` |
+| **PUBLICATION_HEAD** | `586a53b1275762f413a4c7abfaf558d40d86e721` |
 | **Disposition** | **`TLX-TL11-GATE-B-P07-CANCEL-C — READY FOR INDEPENDENT AUDIT`** (scoped) |
 
 **Non-closure:** No global `FRZ-*` PASS; no `TOOL-LIFE-X` parent CLOSED; no Gate A; no TL8 positive recovery; no production deployment; no new cancellation/deadline authority; subprocess L3 for **catalog invoke + physical HTTP cancel** remains **explicitly unproven** (fixture unchanged — see §7).
