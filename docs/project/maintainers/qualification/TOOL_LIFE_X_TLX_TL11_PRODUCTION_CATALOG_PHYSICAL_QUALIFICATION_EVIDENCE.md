@@ -29,8 +29,8 @@
 | SHA role | Value |
 | --- | --- |
 | **START_HEAD** | `f73c6e4660c9b4ff948ffd578c832bdba54197c2` |
-| **Implementation / test SHA** | *Recorded in git as publication commit of this batch (see `git log -1` on `development` after push)* |
-| **Publication SHA** | *Same commit as implementation/test SHA for this batch* |
+| **Implementation / test SHA** | `c6bda9b2e4f0b86efb42ecf63cf1a59832247f9f` |
+| **Publication SHA** | `c6bda9b2e4f0b86efb42ecf63cf1a59832247f9f` |
 
 **Reused evidence (unchanged SHA, still valid):** MCP-FINAL discovery @ `adef74d2…`; L3-R2 MCP host lifecycle @ `8b33d9a…`; TRUST-A / CANCEL-A / OWN-A2 qualification records on `development` line; `describe_catalog_tool` `registry.has` fix in MCP-FINAL batch.
 
