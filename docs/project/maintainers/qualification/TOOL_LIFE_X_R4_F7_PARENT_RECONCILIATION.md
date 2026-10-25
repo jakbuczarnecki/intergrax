@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **EXPECTED_START_HEAD** | `34777f9c7e1a66c672d3322b83ff2bbf65c4df81` |
-| **IMPLEMENTATION_SHA** | _(set at commit — see `git rev-parse HEAD` after R4 final batch)_ |
+| **IMPLEMENTATION_SHA** | `128ecdc8e62d6c0caaa3a3ef8a965b77af9bdc47` |
 | **Disposition** | `TOOL-LIFE-X R4 — PARTIAL / EXACT BLOCKERS` |
 
 ## Consolidated verification
