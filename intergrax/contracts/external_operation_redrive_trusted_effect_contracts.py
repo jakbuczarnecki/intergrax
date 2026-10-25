@@ -62,11 +62,23 @@ TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT: Final = ExternalEffectContract(
     ),
 )
 
+TOOL_LIFE_HTTP_READ_ONLY_QUAL_EFFECT: Final = ExternalEffectContract(
+    contract_id="tool_life.http_read_only.qual.v1",
+    operation_key="http_rest.read_only",
+    category=ExternalEffectCategory.INFRASTRUCTURE,
+    safety=ExternalEffectSafetyCapabilities(
+        idempotency=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
+        reconciliation=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
+        compensation=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
+    ),
+)
+
 _TRUSTED_REDRIVE_EFFECT_CONTRACTS: Final = (
     TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
     TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT,
     TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT,
     TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT,
+    TOOL_LIFE_HTTP_READ_ONLY_QUAL_EFFECT,
 )
 
 _TRUSTED_BY_CONTRACT_ID: Final = {
@@ -77,10 +89,50 @@ _TRUSTED_BY_CONTRACT_ID: Final = {
 _QUAL_SANCTIONED_EXECUTION_BINDING: Final = {
     ("http_rest", "http_request"): TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
     ("http_rest", "http_blind_post"): TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,
+    ("http_rest", "http_read_only"): TOOL_LIFE_HTTP_READ_ONLY_QUAL_EFFECT.contract_id,
     (
         "platform",
         "external_operation_physical_lifecycle",
     ): TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+    (
+        "mcp_catalog",
+        "tools_call",
+    ): TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT.contract_id,
+}
+
+# Authoritative catalog tool_id → (contract_id, provider_id, provider_execution_tool_id).
+# No permissive default: unknown catalog tools must not inherit platform lifecycle Class B.
+_CATALOG_TOOL_SANCTIONED_REDRIVE_BINDING: Final = {
+    "http.request": (
+        TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+        "http_rest",
+        "http_request",
+    ),
+    "http_request": (
+        TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+        "http_rest",
+        "http_request",
+    ),
+    "http_blind_post": (
+        TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT.contract_id,
+        "http_rest",
+        "http_blind_post",
+    ),
+    "http.read_only": (
+        TOOL_LIFE_HTTP_READ_ONLY_QUAL_EFFECT.contract_id,
+        "http_rest",
+        "http_read_only",
+    ),
+    "external_operation_physical_lifecycle": (
+        TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+        "platform",
+        "external_operation_physical_lifecycle",
+    ),
+    "invoke_catalog_tool": (
+        TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT.contract_id,
+        "mcp_catalog",
+        "tools_call",
+    ),
 }
 
 
@@ -113,28 +165,31 @@ def assert_trusted_redrive_binding_matches_execution_context(
         )
 
 
+def catalog_tool_has_sanctioned_redrive_effect_binding(catalog_tool_id: str) -> bool:
+    """True when catalog tool_id has an explicit trusted effect mapping (not a default)."""
+    normalized_tool = catalog_tool_id.strip()
+    return bool(normalized_tool) and normalized_tool in _CATALOG_TOOL_SANCTIONED_REDRIVE_BINDING
+
+
 def resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool(
     catalog_tool_id: str,
 ) -> tuple[str, str, str]:
     """
     Resolve authoritative (contract_id, provider_id, binding_tool_id) for durable binding.
 
-    Uses sanctioned qual registry entries when ``catalog_tool_id`` matches a bound tool;
-    otherwise falls back to platform durable physical lifecycle identity.
+    Requires an explicit catalog entry; unknown tools cannot acquire platform lifecycle Class B.
     """
     normalized_tool = catalog_tool_id.strip()
     if not normalized_tool:
         raise ExternalOperationRedriveEffectBindingMismatchError(
             "catalog tool_id is required for sanctioned redrive effect binding",
         )
-    for (provider_id, binding_tool_id), contract_id in _QUAL_SANCTIONED_EXECUTION_BINDING.items():
-        if binding_tool_id == normalized_tool:
-            return contract_id, provider_id, binding_tool_id
-    return (
-        TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
-        "platform",
-        "external_operation_physical_lifecycle",
-    )
+    resolved = _CATALOG_TOOL_SANCTIONED_REDRIVE_BINDING.get(normalized_tool)
+    if resolved is None:
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            f"no sanctioned redrive effect binding for catalog tool {normalized_tool!r}",
+        )
+    return resolved
 
 
 def resolve_trusted_redrive_effect_contract(contract_id: str) -> ExternalEffectContract:
@@ -155,9 +210,11 @@ def resolve_trusted_redrive_effect_contract(contract_id: str) -> ExternalEffectC
 __all__ = [
     "TOOL_LIFE_HTTP_BLIND_POST_QUAL_EFFECT",
     "TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT",
+    "TOOL_LIFE_HTTP_READ_ONLY_QUAL_EFFECT",
     "TOOL_LIFE_MCP_TOOLS_CALL_DEFAULT_QUAL_EFFECT",
     "TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT",
     "assert_trusted_redrive_binding_matches_execution_context",
+    "catalog_tool_has_sanctioned_redrive_effect_binding",
     "resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool",
     "resolve_trusted_redrive_effect_contract",
 ]

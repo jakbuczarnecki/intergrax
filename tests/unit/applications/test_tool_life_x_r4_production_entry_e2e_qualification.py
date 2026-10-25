@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
@@ -15,9 +14,6 @@ from intergrax.applications._shared.tool_life_execution_recovery_wiring import (
     wire_tool_life_durable_single_host_execution_recovery,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.external_operation_redrive_trusted_effect_contracts import (
-    TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
-)
 from intergrax.contracts.persistence_topology import DeploymentTopology, PersistenceTopology
 from lab_application.manifest import build_lab_manifest
 from lab_application.host.settings import LabApplicationSettings
@@ -204,9 +200,7 @@ def test_production_invoker_records_trusted_binding_before_physical_effect(
     assert identity.operation_id is not None
     bound = store.load(state.tenant_id, identity.operation_id)
     assert bound is not None
-    assert (
-        bound.bound_redrive_effect_contract_id
-        == TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id
-    )
-    assert bound.bound_physical_idempotency_key == "idem-r4-prod-1"
+    assert bound.bound_redrive_effect_contract_id is None
+    assert bound.bound_redrive_effect_contract_digest is None
+    assert bound.bound_physical_idempotency_key is None
     invoker.close()
