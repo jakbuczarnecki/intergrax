@@ -90,10 +90,18 @@ def assert_trusted_redrive_binding_matches_execution_context(
     provider_id: str | None,
     tool_id: str | None,
 ) -> None:
-    """Reject binding a Class B contract to a Class C provider/tool execution context."""
+    """Reject binding without sanctioned provider/tool execution identity."""
     if provider_id is None or tool_id is None:
-        return
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            "trusted redrive binding requires sanctioned provider_id and tool_id "
+            "execution identity",
+        )
     key = (provider_id.strip(), tool_id.strip())
+    if not key[0] or not key[1]:
+        raise ExternalOperationRedriveEffectBindingMismatchError(
+            "trusted redrive binding requires sanctioned provider_id and tool_id "
+            "execution identity",
+        )
     expected_contract_id = _QUAL_SANCTIONED_EXECUTION_BINDING.get(key)
     if expected_contract_id is None:
         raise ExternalOperationRedriveEffectBindingMismatchError(

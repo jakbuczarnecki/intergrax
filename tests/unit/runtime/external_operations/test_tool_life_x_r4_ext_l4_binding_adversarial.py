@@ -31,6 +31,7 @@ from intergrax.runtime.external_operations.redrive_external_operation_authority 
     transfer_redrive_authority_after_reconciliation,
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
+    ExternalOperationStateUpdate,
     StaleExternalOperationStateError,
 )
 from intergrax.runtime.external_operations.sqlite_tool_life_durable_stores import (
@@ -91,6 +92,129 @@ def _unknown_after_loss(bundle: SqliteToolLifeDurableStoresBundle) -> object:
         expected_revision=staged.revision,
         evidence_id=staged.staged_certified_owner_loss.evidence.evidence_id,
     )
+
+
+@pytest.mark.parametrize(
+    ("provider_id", "tool_id"),
+    [
+        (None, None),
+        (None, "http_request"),
+        ("http_rest", None),
+    ],
+)
+def test_class_b_bind_rejected_without_sanctioned_execution_identity(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+    provider_id: str | None,
+    tool_id: str | None,
+) -> None:
+    store = durable_bundle.external_operation_state
+    record = store.create_if_absent(_TENANT, "op-missing-identity")
+    with pytest.raises(ExternalOperationRedriveEffectBindingMismatchError):
+        bind_authoritative_redrive_effect_to_operation(
+            store,
+            tenant_id=_TENANT,
+            operation_id="op-missing-identity",
+            expected_revision=record.revision,
+            trusted_effect_contract_id=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+            provider_id=provider_id,
+            tool_id=tool_id,
+        )
+
+
+def test_bind_rejected_for_unknown_sanctioned_provider_tool(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    store = durable_bundle.external_operation_state
+    record = store.create_if_absent(_TENANT, "op-unknown-binding")
+    with pytest.raises(ExternalOperationRedriveEffectBindingMismatchError):
+        bind_authoritative_redrive_effect_to_operation(
+            store,
+            tenant_id=_TENANT,
+            operation_id="op-unknown-binding",
+            expected_revision=record.revision,
+            trusted_effect_contract_id=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+            provider_id="unknown_provider",
+            tool_id="unknown_tool",
+        )
+
+
+def test_bind_accepts_valid_class_b_http_execution_context(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    store = durable_bundle.external_operation_state
+    record = store.create_if_absent(_TENANT, "op-http-class-b-bind")
+    bound = bind_authoritative_redrive_effect_to_operation(
+        store,
+        tenant_id=_TENANT,
+        operation_id="op-http-class-b-bind",
+        expected_revision=record.revision,
+        trusted_effect_contract_id=TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id,
+        provider_id="http_rest",
+        tool_id="http_request",
+    )
+    assert bound.bound_redrive_provider_id == "http_rest"
+    assert bound.bound_redrive_tool_id == "http_request"
+    assert (
+        bound.bound_redrive_effect_contract_id
+        == TOOL_LIFE_HTTP_IDEMPOTENT_POST_QUAL_EFFECT.contract_id
+    )
+
+
+def test_bind_accepts_valid_platform_durable_execution_context(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    store = durable_bundle.external_operation_state
+    record = store.create_if_absent(_TENANT, "op-platform-bind")
+    bound = bind_authoritative_redrive_effect_to_operation(
+        store,
+        tenant_id=_TENANT,
+        operation_id="op-platform-bind",
+        expected_revision=record.revision,
+        trusted_effect_contract_id=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+        provider_id="platform",
+        tool_id="external_operation_physical_lifecycle",
+    )
+    assert bound.bound_redrive_provider_id == "platform"
+    assert bound.bound_redrive_tool_id == "external_operation_physical_lifecycle"
+
+
+def test_tampered_durable_binding_digest_rejected_at_redrive(
+    durable_bundle: SqliteToolLifeDurableStoresBundle,
+) -> None:
+    store = durable_bundle.external_operation_state
+    record = store.create_if_absent(_TENANT, "op-tampered-digest")
+    bind_authoritative_redrive_effect_to_operation(
+        store,
+        tenant_id=_TENANT,
+        operation_id="op-tampered-digest",
+        expected_revision=record.revision,
+        trusted_effect_contract_id=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT.contract_id,
+        provider_id="platform",
+        tool_id="external_operation_physical_lifecycle",
+    )
+    loaded = store.load(_TENANT, "op-tampered-digest")
+    assert loaded is not None
+    store.compare_and_set(
+        _TENANT,
+        "op-tampered-digest",
+        expected_revision=loaded.revision,
+        update=ExternalOperationStateUpdate(
+            bound_redrive_effect_contract_digest="0" * 64,
+        ),
+    )
+    recovery_worker = worker_instance()
+    with pytest.raises(ExternalOperationRedriveEffectBindingMismatchError):
+        transfer_redrive_authority_after_reconciliation(
+            store,
+            tenant_id=_TENANT,
+            operation_id="op-tampered-digest",
+            expected_revision=loaded.revision + 1,
+            trusted_effect_contract=TOOL_LIFE_PLATFORM_DURABLE_PHYSICAL_LIFECYCLE_EFFECT,
+            worker_instance_id=str(recovery_worker.worker_instance_id),
+            worker_ownership_epoch=2,
+            provider_id="platform",
+            tool_id="external_operation_physical_lifecycle",
+        )
 
 
 def test_class_b_contract_bind_rejected_for_class_c_tool_execution_context(
