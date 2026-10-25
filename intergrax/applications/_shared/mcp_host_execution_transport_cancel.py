@@ -21,6 +21,8 @@ from intergrax.contracts.root_execution_transport_detachment_supervision import 
     RootExecutionTransportDetachmentHandoffDisposition,
     RootExecutionTransportDetachmentHandoffRequest,
     RootExecutionTransportDetachmentSupervisionPort,
+    RootExecutionTransportPreStartFinalizationDisposition,
+    RootExecutionTransportPreStartFinalizationRequest,
 )
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -82,22 +84,37 @@ async def _finalize_protected_mcp_root_execution_admission_caller_abort(
     Linearize admission caller abort without leaving a gated task unowned or indefinitely closed.
 
     When supervision was accepted and the transport waiter will continue, open the start gate
-    so accountable supervised Execution can proceed. Otherwise relinquish supervision and
-    terminate the gated host task (bounded, fail closed).
+    so accountable supervised Execution can proceed. Otherwise request canonical pre-start
+    finalization (terminate under supervision, then release) or bounded terminate when unsupervised.
     """
     if gate_opened:
         return
-    holds = supervision_port.holds_root_execution_supervision(
-        task_id=task.task_id,
-        host_asyncio_task=launch.host_task,
-    )
-    if holds:
-        if transport_waiter_will_continue:
-            launch.execution_start_gate.set()
-            return
-        await supervision_port.relinquish_root_execution_supervision_admission(
+    finalization = await supervision_port.finalize_root_execution_supervision_before_start(
+        RootExecutionTransportPreStartFinalizationRequest(
             task_id=task.task_id,
             host_asyncio_task=launch.host_task,
+            execution_start_gate=launch.execution_start_gate,
+            transport_waiter_will_continue=transport_waiter_will_continue,
+            host_terminate_timeout_s=_REFUSED_ADMISSION_HOST_TERMINATE_S,
+        )
+    )
+    if (
+        finalization.disposition
+        is RootExecutionTransportPreStartFinalizationDisposition.SUPERVISED_CONTINUATION_GATE_OPENED
+    ):
+        return
+    if (
+        finalization.disposition
+        is RootExecutionTransportPreStartFinalizationDisposition.TERMINATED_UNDER_SUPERVISION
+    ):
+        return
+    if (
+        finalization.disposition
+        is RootExecutionTransportPreStartFinalizationDisposition.HOST_NOT_TERMINAL_UNDER_SUPERVISION
+    ):
+        raise McpProtectedHostExecutionAdmissionError(
+            "protected MCP root execution host task did not terminate under supervision "
+            "after admission caller abort"
         )
     await _terminate_gated_host_task_after_refused_admission(launch.host_task)
 

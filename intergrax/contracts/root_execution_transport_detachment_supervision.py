@@ -19,6 +19,15 @@ class RootExecutionTransportDetachmentHandoffDisposition(StrEnum):
     REFUSED = "REFUSED"
 
 
+class RootExecutionTransportPreStartFinalizationDisposition(StrEnum):
+    """Outcome of canonical pre-start supervision finalization (OWN-A2 admission cleanup)."""
+
+    SUPERVISED_CONTINUATION_GATE_OPENED = "supervised_continuation_gate_opened"
+    TERMINATED_UNDER_SUPERVISION = "terminated_under_supervision"
+    NOT_SUPERVISED = "not_supervised"
+    HOST_NOT_TERMINAL_UNDER_SUPERVISION = "host_not_terminal_under_supervision"
+
+
 class RootExecutionTransportDetachmentHandoffRefusalReason(StrEnum):
     SHUTDOWN_IN_PROGRESS = "shutdown_in_progress"
     NO_ACTIVE_BINDING = "no_active_binding"
@@ -42,6 +51,33 @@ class RootExecutionTransportAdmissionRequest:
         validate_task_id(self.task_id)
         if not self.verified_tenant_id:
             raise ValueError("verified_tenant_id required")
+
+
+@dataclass(frozen=True, slots=True)
+class RootExecutionTransportPreStartFinalizationRequest:
+    """Terminate or continue gated host work while retaining accountable supervision."""
+
+    task_id: TaskId
+    host_asyncio_task: asyncio.Task[object]
+    execution_start_gate: asyncio.Event
+    transport_waiter_will_continue: bool
+    host_terminate_timeout_s: float = 1.0
+
+    def __post_init__(self) -> None:
+        validate_task_id(self.task_id)
+        if self.host_terminate_timeout_s <= 0:
+            raise ValueError("host_terminate_timeout_s must be positive")
+
+
+@dataclass(frozen=True, slots=True)
+class RootExecutionTransportPreStartFinalizationResult:
+    disposition: RootExecutionTransportPreStartFinalizationDisposition
+
+    def __post_init__(self) -> None:
+        if type(self.disposition) is not RootExecutionTransportPreStartFinalizationDisposition:
+            raise TypeError(
+                "disposition must be RootExecutionTransportPreStartFinalizationDisposition"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,10 +163,25 @@ class RootExecutionTransportDetachmentSupervisionPort(Protocol):
         """
         ...
 
+    async def finalize_root_execution_supervision_before_start(
+        self,
+        request: RootExecutionTransportPreStartFinalizationRequest,
+    ) -> RootExecutionTransportPreStartFinalizationResult:
+        """
+        Single owner for pre-start cancellation, terminal observation, and supervision release.
+
+        Retains strong supervision until the gated host task is terminal (or opens the start gate
+        when supervised continuation is required). Does not relinquish on non-terminal timeout.
+        """
+        ...
+
 
 __all__ = [
     "RootExecutionTransportAdmissionRequest",
     "RootExecutionTransportAdmissionResult",
+    "RootExecutionTransportPreStartFinalizationDisposition",
+    "RootExecutionTransportPreStartFinalizationRequest",
+    "RootExecutionTransportPreStartFinalizationResult",
     "RootExecutionTransportDetachmentHandoffDisposition",
     "RootExecutionTransportDetachmentHandoffRefusalReason",
     "RootExecutionTransportDetachmentHandoffRequest",

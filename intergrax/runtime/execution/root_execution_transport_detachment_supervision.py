@@ -18,6 +18,9 @@ from intergrax.contracts.root_execution_transport_detachment_supervision import 
     RootExecutionTransportDetachmentHandoffRequest,
     RootExecutionTransportDetachmentHandoffResult,
     RootExecutionTransportDetachmentSupervisionPort,
+    RootExecutionTransportPreStartFinalizationDisposition,
+    RootExecutionTransportPreStartFinalizationRequest,
+    RootExecutionTransportPreStartFinalizationResult,
 )
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
@@ -25,6 +28,37 @@ from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 _logger = logging.getLogger(__name__)
 
 _DEFAULT_SHUTDOWN_DRAIN_S = 30.0
+
+
+async def _await_host_asyncio_task_terminal(
+    host_task: asyncio.Task[object],
+    *,
+    timeout_s: float,
+) -> bool:
+    """Wait for *host_task* to complete without cancelling it; shielded against caller cancel."""
+    if host_task.done():
+        return True
+    try:
+        await asyncio.wait_for(asyncio.shield(host_task), timeout=timeout_s)
+    except asyncio.TimeoutError:
+        return host_task.done()
+    except asyncio.CancelledError:
+        if host_task.done():
+            return True
+        try:
+            await asyncio.wait_for(asyncio.shield(host_task), timeout=timeout_s)
+        except asyncio.TimeoutError:
+            return host_task.done()
+        except asyncio.CancelledError:
+            return host_task.done()
+    return host_task.done()
+
+
+async def _retrieve_host_asyncio_task_outcome(host_task: asyncio.Task[object]) -> None:
+    if not host_task.done():
+        return
+    with contextlib.suppress(asyncio.CancelledError, Exception):
+        host_task.result()
 
 
 def _duplicate_handoff_result(
@@ -153,6 +187,56 @@ class HostRootExecutionTransportDetachmentSupervisor:
 
         return RootExecutionTransportAdmissionResult(
             disposition=RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED,
+        )
+
+    async def finalize_root_execution_supervision_before_start(
+        self,
+        request: RootExecutionTransportPreStartFinalizationRequest,
+    ) -> RootExecutionTransportPreStartFinalizationResult:
+        host_task = request.host_asyncio_task
+        if request.transport_waiter_will_continue:
+            if self.holds_root_execution_supervision(
+                task_id=request.task_id,
+                host_asyncio_task=host_task,
+            ):
+                request.execution_start_gate.set()
+                return RootExecutionTransportPreStartFinalizationResult(
+                    disposition=(
+                        RootExecutionTransportPreStartFinalizationDisposition.SUPERVISED_CONTINUATION_GATE_OPENED
+                    ),
+                )
+            return RootExecutionTransportPreStartFinalizationResult(
+                disposition=RootExecutionTransportPreStartFinalizationDisposition.NOT_SUPERVISED,
+            )
+
+        if not self.holds_root_execution_supervision(
+            task_id=request.task_id,
+            host_asyncio_task=host_task,
+        ):
+            return RootExecutionTransportPreStartFinalizationResult(
+                disposition=RootExecutionTransportPreStartFinalizationDisposition.NOT_SUPERVISED,
+            )
+
+        if not host_task.done():
+            host_task.cancel()
+        completed = await _await_host_asyncio_task_terminal(
+            host_task,
+            timeout_s=request.host_terminate_timeout_s,
+        )
+        await _retrieve_host_asyncio_task_outcome(host_task)
+        if not completed:
+            return RootExecutionTransportPreStartFinalizationResult(
+                disposition=(
+                    RootExecutionTransportPreStartFinalizationDisposition.HOST_NOT_TERMINAL_UNDER_SUPERVISION
+                ),
+            )
+
+        await self.relinquish_root_execution_supervision_admission(
+            task_id=request.task_id,
+            host_asyncio_task=host_task,
+        )
+        return RootExecutionTransportPreStartFinalizationResult(
+            disposition=RootExecutionTransportPreStartFinalizationDisposition.TERMINATED_UNDER_SUPERVISION,
         )
 
     async def relinquish_root_execution_supervision_admission(

@@ -16,6 +16,8 @@ from intergrax.contracts.root_execution_transport_detachment_supervision import 
     RootExecutionTransportDetachmentHandoffDisposition,
     RootExecutionTransportDetachmentHandoffRefusalReason,
     RootExecutionTransportDetachmentHandoffRequest,
+    RootExecutionTransportPreStartFinalizationDisposition,
+    RootExecutionTransportPreStartFinalizationRequest,
 )
 from intergrax.runtime.execution.root_execution_transport_detachment_supervision import (
     build_host_root_execution_transport_detachment_supervisor,
@@ -337,3 +339,56 @@ async def test_relinquish_admission_drops_supervision_without_cancelling_host() 
     assert not host_coro.done()
     host_done.set()
     await asyncio.wait_for(host_coro, timeout=3.0)
+
+
+@pytest.mark.asyncio
+async def test_finalize_pre_start_retains_supervision_until_host_terminal() -> None:
+    """Pre-start finalization must not relinquish supervision before the gated host is terminal."""
+    supervisor = build_host_root_execution_transport_detachment_supervisor()
+    task = Task(tenant_id=_TENANT, user_id="u", message="m")
+    execution_start_gate = asyncio.Event()
+    release_cancel = asyncio.Event()
+
+    async def _gated_host() -> None:
+        try:
+            await execution_start_gate.wait()
+        except asyncio.CancelledError:
+            await release_cancel.wait()
+            raise
+
+    host_coro = asyncio.create_task(_gated_host())
+    await asyncio.sleep(0)
+    admitted = await supervisor.admit_root_execution_supervision(
+        RootExecutionTransportAdmissionRequest(
+            task_id=task.task_id,
+            verified_tenant_id=_TENANT,
+            caller_request_identity=_principal(),
+            host_asyncio_task=host_coro,
+        )
+    )
+    assert admitted.disposition is RootExecutionTransportDetachmentHandoffDisposition.ACCEPTED
+
+    finalize = asyncio.create_task(
+        supervisor.finalize_root_execution_supervision_before_start(
+            RootExecutionTransportPreStartFinalizationRequest(
+                task_id=task.task_id,
+                host_asyncio_task=host_coro,
+                execution_start_gate=execution_start_gate,
+                transport_waiter_will_continue=False,
+                host_terminate_timeout_s=3.0,
+            )
+        )
+    )
+    await asyncio.sleep(0.05)
+    assert supervisor.holds_root_execution_supervision(
+        task_id=task.task_id,
+        host_asyncio_task=host_coro,
+    )
+    release_cancel.set()
+    result = await asyncio.wait_for(finalize, timeout=5.0)
+    assert (
+        result.disposition
+        is RootExecutionTransportPreStartFinalizationDisposition.TERMINATED_UNDER_SUPERVISION
+    )
+    assert host_coro.done()
+    assert supervisor.supervised_count() == 0
