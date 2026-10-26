@@ -17,6 +17,7 @@ from tests.qualification.dist_scale_x.evidence_manifest import (
     DistScaleXEvidenceManifest,
     catalog_integrity_digest,
     load_and_validate_manifest_file,
+    manifest_path_for_run,
     validate_manifest_mapping,
     write_manifest,
 )
@@ -169,3 +170,79 @@ def test_l2_manifest_file_negative_missing_keys(tmp_path: Path) -> None:
     bad_path.write_text(json.dumps({"run_id": "only"}), encoding="utf-8")
     violations = load_and_validate_manifest_file(bad_path)
     assert violations
+
+
+def _manifest_payload_with_record(record: DistScaleXEvidenceRecord) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "run_id": "binding-probe",
+        "code_sha": DIST_SCALE_X_P1_START_HEAD,
+        "catalog_integrity_sha256": catalog_integrity_digest(),
+        "environment_definition": "local deterministic pytest",
+        "topology_description": "metadata-only P1 validation",
+        "qualification_phase": "P1",
+        "records": [
+            {
+                "record_id": record.record_id,
+                "code_sha": record.code_sha,
+                "topology_description": record.topology_description,
+                "environment_definition": record.environment_definition,
+                "workload_id": record.workload_id,
+                "dimension_ids": list(record.dimension_ids),
+                "duration_seconds": record.duration_seconds,
+                "metrics": {},
+                "fault_description": record.fault_description,
+                "disposition": record.disposition.value,
+            }
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("override_field", "override_value", "expected_fragment"),
+    [
+        ("code_sha", "0" * 40, "code_sha does not match manifest"),
+        ("topology_description", "wrong topology", "topology_description does not match manifest"),
+        ("environment_definition", "wrong environment", "environment_definition does not match manifest"),
+    ],
+)
+def test_l2_manifest_record_binding_mismatch_rejects_pass(
+    override_field: str,
+    override_value: str,
+    expected_fragment: str,
+) -> None:
+    record = _minimal_pass_record(**{override_field: override_value})
+    violations = validate_manifest_mapping(_manifest_payload_with_record(record))
+    assert any(expected_fragment in v for v in violations)
+    binding_violations = tuple(v for v in violations if "record[0]" in v)
+    assert resolve_effective_disposition(record, structural_violations=binding_violations) == (
+        EvidenceDisposition.FAIL
+    )
+
+
+def test_l2_manifest_run_id_must_match_proof_run_directory() -> None:
+    run_id = "f02-run-directory-binding"
+    record = _minimal_pass_record()
+    manifest = DistScaleXEvidenceManifest(
+        schema_version=1,
+        run_id="copied-from-other-run",
+        code_sha=DIST_SCALE_X_P1_START_HEAD,
+        catalog_integrity_sha256=catalog_integrity_digest(),
+        environment_definition="local deterministic pytest",
+        topology_description="metadata-only P1 validation",
+        qualification_phase="P1",
+        records=(record,),
+    )
+    path = manifest_path_for_run(_REPO_ROOT, run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest.to_dict(), sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    violations = load_and_validate_manifest_file(path)
+    assert any("run_id does not match proof run directory" in v for v in violations)
+
+
+def test_l2_manifest_rejects_unknown_qualification_phase() -> None:
+    record = _minimal_pass_record()
+    payload = _manifest_payload_with_record(record)
+    payload["qualification_phase"] = "P2-pre"
+    violations = validate_manifest_mapping(payload)
+    assert any("qualification_phase not in catalog batch definitions" in v for v in violations)

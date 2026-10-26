@@ -17,6 +17,7 @@ from tests.qualification.dist_scale_x._constants import (
 )
 import tests.qualification.dist_scale_x.catalog as dist_scale_x_catalog
 from tests.qualification.dist_scale_x.catalog import (
+    DIST_SCALE_X_MANIFEST_QUALIFICATION_PHASES,
     DistScaleBackendEntry,
     DistScaleDimensionEntry,
     DistScaleExitCriterionEntry,
@@ -26,6 +27,7 @@ from tests.qualification.dist_scale_x.catalog import (
 )
 from tests.qualification.dist_scale_x.evidence_schema import (
     DistScaleXEvidenceRecord,
+    EvidenceDisposition,
     evidence_record_from_mapping,
     validate_evidence_record,
 )
@@ -179,7 +181,20 @@ def manifest_path_for_run(repo_root: Path, run_id: str) -> Path:
     return proof_run_directory(repo_root, run_id) / DIST_SCALE_X_MANIFEST_FILENAME
 
 
-def validate_manifest_mapping(payload: Mapping[str, Any]) -> tuple[str, ...]:
+def expected_run_id_from_manifest_path(path: Path) -> str | None:
+    """Extract `<run_id>` when path is under `.tmp/proof/dist-scale-x/<run_id>/`."""
+    parts = path.resolve().parts
+    for index, part in enumerate(parts):
+        if part == "dist-scale-x" and index + 1 < len(parts):
+            return parts[index + 1]
+    return None
+
+
+def validate_manifest_mapping(
+    payload: Mapping[str, Any],
+    *,
+    expected_run_id: str | None = None,
+) -> tuple[str, ...]:
     violations: list[str] = []
     required_keys = (
         "schema_version",
@@ -207,6 +222,23 @@ def validate_manifest_mapping(payload: Mapping[str, Any]) -> tuple[str, ...]:
     if not str(payload.get("topology_description", "")).strip():
         violations.append("manifest topology_description empty")
 
+    phase_raw = str(payload.get("qualification_phase", "")).strip()
+    if not phase_raw:
+        violations.append("manifest qualification_phase empty")
+    elif phase_raw not in DIST_SCALE_X_MANIFEST_QUALIFICATION_PHASES:
+        violations.append("manifest qualification_phase not in catalog batch definitions")
+
+    manifest_run_id = str(payload.get("run_id", "")).strip()
+    if expected_run_id is not None and manifest_run_id:
+        if manifest_run_id != expected_run_id:
+            violations.append(
+                "manifest run_id does not match proof run directory",
+            )
+
+    manifest_code_sha = str(payload.get("code_sha", ""))
+    manifest_environment = str(payload.get("environment_definition", ""))
+    manifest_topology = str(payload.get("topology_description", ""))
+
     catalog_violations = validate_dist_scale_x_catalog_mappings()
     if catalog_violations:
         for cv in catalog_violations:
@@ -231,6 +263,18 @@ def validate_manifest_mapping(payload: Mapping[str, Any]) -> tuple[str, ...]:
         for rv in record_violations:
             violations.append(f"record[{index}]: {rv}")
 
+        if record.disposition in (EvidenceDisposition.PASS, EvidenceDisposition.FAIL):
+            if record.code_sha != manifest_code_sha:
+                violations.append(f"record[{index}] code_sha does not match manifest code_sha")
+            if record.environment_definition != manifest_environment:
+                violations.append(
+                    f"record[{index}] environment_definition does not match manifest",
+                )
+            if record.topology_description != manifest_topology:
+                violations.append(
+                    f"record[{index}] topology_description does not match manifest",
+                )
+
     return tuple(violations)
 
 
@@ -246,4 +290,5 @@ def load_and_validate_manifest_file(path: Path) -> tuple[str, ...]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         return ("manifest root must be object",)
-    return validate_manifest_mapping(payload)
+    expected_run_id = expected_run_id_from_manifest_path(path)
+    return validate_manifest_mapping(payload, expected_run_id=expected_run_id)

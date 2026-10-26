@@ -464,6 +464,18 @@ DIST_SCALE_X_P1_SELECTION_BATCH: tuple[str, ...] = (
     *DIST_SCALE_X_P1_L2_PYTEST_TARGETS,
 )
 
+# Manifest `qualification_phase` values — frozen plan §7 batches P0–P7 (not implementation_batch labels).
+DIST_SCALE_X_MANIFEST_QUALIFICATION_PHASES: tuple[str, ...] = (
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+)
+
 
 def dist_scale_x_all_p1_gate_node_ids() -> tuple[str, ...]:
     nodes: list[str] = []
