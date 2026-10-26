@@ -27,6 +27,7 @@ class DistScaleXSelectionEntry:
 
 
 DIST_SCALE_X_P2_L3_L4_PYTEST_TARGETS: tuple[str, ...] = (
+    "tests/qualification/dist_scale_x/test_dist_scale_x_p2_e01_lkw_trace.py",
     "tests/qualification/dist_scale_x/test_dist_scale_x_p2_l3_l4_qualification.py",
 )
 
