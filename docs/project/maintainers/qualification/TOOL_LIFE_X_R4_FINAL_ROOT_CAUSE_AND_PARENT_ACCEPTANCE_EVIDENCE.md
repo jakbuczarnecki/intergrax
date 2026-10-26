@@ -4,10 +4,14 @@
 
 | Field | Value |
 |---|---|
+| Operator START_HEAD (F8-Q01/Q02 correction batch) | `fdde0189157fbcdcf71012c24df57ec0350f7352` |
 | Operator START_HEAD (EXT-L4 oracle batch) | `49849716c67cc293a692d2e1afe6f5cf1088164c` |
-| IMPLEMENTATION_SHA | `85c81f8abf3913b5810845d9def0b859f937141f` |
-| PUBLICATION_HEAD | `85c81f8abf3913b5810845d9def0b859f937141f` |
+| IMPLEMENTATION_SHA (oracle durable write path) | `85c81f8abf3913b5810845d9def0b859f937141f` |
+| IMPLEMENTATION_SHA (F8-Q01/Q02 closure) | Same as **PUBLICATION_HEAD** (single coherent commit: deterministic SQLite fault test + evidence) |
+| EXECUTION_SHA | Same as F8-Q01/Q02 **IMPLEMENTATION_SHA** — L1/L2 executed on the candidate tree committed as **PUBLICATION_HEAD** |
+| PUBLICATION_HEAD | **Containing Git commit** on `development` for this evidence revision (resolve exact SHA on GitHub: latest commit touching this file, or `git rev-parse HEAD` after sync). Not the pre-Q02 `85c81f8ab…` oracle-only pin. |
 | Prior implementation baseline (operator pin) | `10804d0e024e446274b60421a84797ec55e52f88` |
+| Lineage (abbrev.) | `10804d0e…` → `85c81f8ab…` (oracle) → `fdde018915…` (evidence SHA mis-pin) → **PUBLICATION_HEAD** (Q01/Q02) |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
 | ADR | [`ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md`](../architecture/ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md) |
@@ -60,9 +64,28 @@
 - Effect rows committed before in-memory cache update; cache is non-authoritative across instances/processes.
 - Retention enforced via `COUNT(*)` on `class_b_effects` before insert.
 - `ClassBHttpProviderOraclePersistenceError` on `sqlite3.Error` or corrupt stored JSON → HTTP 503 fail-closed.
-- Negative matrix: `test_tool_life_x_r4_class_b_http_provider_oracle_negatives.py` (dual-instance threads, payload conflict race, subprocess spawn replay, chmod write failure, corrupt row, retention after restart, HTTP status contract, parallel HTTP single row).
+- Negative matrix: `test_tool_life_x_r4_class_b_http_provider_oracle_negatives.py` (dual-instance threads, payload conflict race, subprocess spawn replay, corrupt row, retention after restart, HTTP status contract, parallel HTTP single row).
 
 **Production contracts:** unchanged — fix scoped to qualification oracle module and tests.
+
+## 2d. F8-Q01 / F8-Q02 final correction (EXT-L4)
+
+| ID | Issue | Resolution |
+|---|---|---|
+| F8-Q01 | `test_oracle_commit_failure_no_memory_effect` used `os.chmod(S_IREAD)` — non-portable, non-deterministic SQLite write-failure simulation | Replaced with test-scoped SQLite `BEFORE INSERT` trigger `RAISE(ABORT, 'qual_injected_sqlite_write_failure')` on `class_b_effects` for the rejected key only (`test_oracle_sqlite_insert_failure_rollback_no_phantom_cache`) |
+| F8-Q02 | Evidence published @ `fdde018915…` but **PUBLICATION_HEAD** still pointed at oracle implementation `85c81f8ab…` | Reconciled **START_HEAD**, **IMPLEMENTATION_SHA**, **EXECUTION_SHA**, **PUBLICATION_HEAD** semantics in §12; **containing-commit** convention for self-referential publication SHA |
+
+**F8-Q01 proof (write failure / rollback — not COMMIT-time certification):**
+
+1. Seed effect committed (`seed` key).
+2. Fault trigger installed for `new-key` INSERT only.
+3. `oracle.apply_post` → `ClassBHttpProviderOraclePersistenceError` with `sqlite3.Error` cause.
+4. No SQLite row, no `_memory` entry for rejected key; seed row preserved.
+5. Trigger dropped (fixture `finally`); retry succeeds once; replay idempotent; fresh oracle instance sees durable effects.
+
+**F8-Q01 residual:** Trigger exercises real SQL INSERT failure inside `BEGIN IMMEDIATE` transaction rollback path; does not inject failure at final `COMMIT` boundary.
+
+**F8 independent acceptance:** **PENDING** — implementer qualification only.
 
 ## 3. Defects A–E (implementation)
 
@@ -108,9 +131,11 @@ uv run pytest `
   -q -p no:xdist
 ```
 
-**Result:** 67 passed — log `.tmp/session/TOOL-LIFE-X-R4-F8-EXT-L4/pytest-l2-consolidated.log`
+**Result:** 67 passed @ F8-Q01/Q02 **EXECUTION_SHA** — log `.tmp/session/TOOL-LIFE-X-R4-F8-Q01-Q02/pytest-l2-consolidated.log` (prior EXT-L4: `.tmp/session/TOOL-LIFE-X-R4-F8-EXT-L4/pytest-l2-consolidated.log`)
 
-**L1 (oracle-only):** 10 passed — `.tmp/session/TOOL-LIFE-X-R4-F8-EXT-L4/pytest-l1-oracle.log`
+**L1 (oracle-only):** `uv run pytest -q -p no:xdist tests/unit/runtime/external_operations/test_tool_life_x_r4_class_b_http_provider_oracle_negatives.py` — **8 passed** — `.tmp/session/TOOL-LIFE-X-R4-F8-Q01-Q02/pytest-l1-oracle.log` (`PYTHONHASHSEED=0`, Windows, `uv` pytest)
+
+**L1 command (Q01):** same path as above; environment: local Windows dev, `uv run pytest`, `-p no:xdist`.
 
 **Strict production E2E:** `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` — `production_mode=True`, dependency boundary, governance `http` capability, lost-ack, redrive, `oracle.effect_count == 1`.
 
@@ -124,7 +149,9 @@ uv run pytest `
 |---|---|---|---|
 | F8-redrive-A | `sanctioned_physical_redrive_dispatch_admission` | `test_tool_life_x_r4_f8_redrive_dispatch_adversarial.py` | VALIDATION REQUIRED @ audit SHA |
 | F8-04 production admission | `declarative_tool_wiring` + invoker | strict-host E2E | VALIDATION REQUIRED @ audit SHA |
-| BLOCKER D oracle | qual oracle module | oracle negatives + B2 HTTP qual + L2 | **RE-VALIDATED** @ IMPLEMENTATION_SHA |
+| BLOCKER D oracle | qual oracle module | oracle negatives + B2 HTTP qual + L2 | **RE-VALIDATED** @ `85c81f8ab…` + Q01 deterministic fault @ **EXECUTION_SHA** |
+| F8-Q01 SQLite fault | test trigger INSERT ABORT | L1 oracle negatives | **PASS** @ **EXECUTION_SHA** |
+| F8-Q02 evidence SHA | this document §12 | publication lineage | **RECONCILED** @ **PUBLICATION_HEAD** |
 | FRZ-* global | platform | EQG full unit gate | BLOCKED (collection errors unrelated) |
 | Parent CLOSED | operator F8 | independent audit | OPERATOR DECISION REQUIRED |
 
@@ -179,9 +206,12 @@ Implementation and scoped L2 support **READY FOR INDEPENDENT F8 EXT-L4 AUDIT**. 
 
 | Field | Value |
 |---|---|
-| START_HEAD | `49849716c67cc293a692d2e1afe6f5cf1088164c` |
-| IMPLEMENTATION_SHA | `85c81f8abf3913b5810845d9def0b859f937141f` |
-| PUBLICATION_HEAD | `85c81f8abf3913b5810845d9def0b859f937141f` |
+| START_HEAD (F8-Q01/Q02 batch) | `fdde0189157fbcdcf71012c24df57ec0350f7352` |
+| START_HEAD (EXT-L4 oracle batch) | `49849716c67cc293a692d2e1afe6f5cf1088164c` |
+| IMPLEMENTATION_SHA (oracle code) | `85c81f8abf3913b5810845d9def0b859f937141f` |
+| IMPLEMENTATION_SHA (Q01/Q02) | **PUBLICATION_HEAD** (test + evidence only; oracle production path unchanged) |
+| EXECUTION_SHA | **PUBLICATION_HEAD** (L1/L2 run on committed candidate immediately before push) |
+| PUBLICATION_HEAD | Git commit on `development` **containing this file revision** (self-referential; auditor resolves exact SHA from GitHub — must not be confused with oracle-only `85c81f8ab…`) |
 
 ## 13. F8 EXT-L4 impact matrix (oracle delta)
 
@@ -190,7 +220,9 @@ Implementation and scoped L2 support **READY FOR INDEPENDENT F8 EXT-L4 AUDIT**. 
 | F8-A | `class_b_qualification_provenance` | qual handler type | `10804d0e…` | none | **REUSE** | L2 if oracle touched HTTP bind | **REUSE** — L2 pass | — |
 | F8-B | invoker redrive | sanctioned redrive | `10804d0e…` | none | **REUSE** | adversarial L2 | **REUSE** — L2 pass | — |
 | F8-C | strict E2E | production_mode admission | `10804d0e…` | indirect (shared oracle in E2E) | partial re-proof | strict E2E L2 | **RE-VALIDATED** | — |
-| F8-D | qual oracle | none (test-only) | prior oracle | **SUBSTANTIVE** | **INVALIDATED** for durability/concurrency claims | L1+L2 negatives | **PASS** @ IMPLEMENTATION_SHA | — |
+| F8-D | qual oracle | none (test-only) | prior oracle | **SUBSTANTIVE** (Q01 test-only) | chmod negative **INVALIDATED**; trigger negative **PASS** | L1+L2 negatives | **PASS** @ **EXECUTION_SHA** | — |
+| F8-Q01 | oracle negatives test | none | chmod test | **SUBSTANTIVE** | prior chmod claim **INVALIDATED** | L1 deterministic INSERT fault | **PASS** | — |
+| F8-Q02 | evidence publication | none | `fdde018915…` mis-pin | **DOC** | misleading PUBLICATION_HEAD **INVALIDATED** | §12 reconciliation | **PASS** @ **PUBLICATION_HEAD** | — |
 | F8-E | governance exceptions | tool governance errors | `10804d0e…` | none | **REUSE** | L2 | **REUSE** | — |
 | EC12 | HTTP Class B physical | trusted effect registry | prior bundles | oracle fixture only | extended | L2 integrated + strict | **PASS scoped** | — |
 | EC14 | redrive binding | `bound_redrive_effect_*` | EXT-L4 | none | **REUSE** | adversarial | **REUSE** | — |

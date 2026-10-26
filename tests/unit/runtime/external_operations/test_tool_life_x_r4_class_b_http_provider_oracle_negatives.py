@@ -5,9 +5,7 @@
 from __future__ import annotations
 
 import multiprocessing as mp
-import os
 import sqlite3
-import stat
 import threading
 import urllib.error
 import urllib.request
@@ -28,6 +26,38 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _BODY = b'{"action":"charge"}'
 _ALT_BODY = b'{"action":"other"}'
+_QUAL_INSERT_FAULT_TRIGGER = "qual_fault_class_b_effects_insert"
+
+
+def _install_insert_fault_trigger(db: Path, rejected_key: str) -> None:
+    escaped = rejected_key.replace("'", "''")
+    with sqlite3.connect(db) as conn:
+        conn.execute(
+            f"""
+            CREATE TRIGGER {_QUAL_INSERT_FAULT_TRIGGER}
+            BEFORE INSERT ON class_b_effects
+            WHEN NEW.idempotency_key = '{escaped}'
+            BEGIN
+                SELECT RAISE(ABORT, 'qual_injected_sqlite_write_failure');
+            END;
+            """
+        )
+        conn.commit()
+
+
+def _remove_insert_fault_trigger(db: Path) -> None:
+    with sqlite3.connect(db) as conn:
+        conn.execute(f"DROP TRIGGER IF EXISTS {_QUAL_INSERT_FAULT_TRIGGER}")
+        conn.commit()
+
+
+def _row_exists(db: Path, idempotency_key: str) -> bool:
+    with sqlite3.connect(db) as conn:
+        row = conn.execute(
+            "SELECT 1 FROM class_b_effects WHERE idempotency_key = ?",
+            (idempotency_key,),
+        ).fetchone()
+    return row is not None
 
 
 def _apply_post_in_subprocess(db_path: str, key: str, body: bytes) -> None:
@@ -108,18 +138,38 @@ def test_oracle_subprocess_replay_after_restart(tmp_path: Path) -> None:
     assert oracle.effect_count(key) == 1
 
 
-def test_oracle_commit_failure_no_memory_effect(tmp_path: Path) -> None:
+def test_oracle_sqlite_insert_failure_rollback_no_phantom_cache(tmp_path: Path) -> None:
+    """Deterministic SQLite write failure (INSERT ABORT), not COMMIT-time injection."""
     db = tmp_path / "fail.db"
+    rejected_key = "new-key"
     oracle = ClassBHttpProviderOracle(db_path=db)
-    oracle.apply_post(idempotency_key="seed", body=_BODY)
-    os.chmod(db, stat.S_IREAD)
+    seed = oracle.apply_post(idempotency_key="seed", body=_BODY)
+    assert seed.replay is False and seed.effect_count == 1
+    _install_insert_fault_trigger(db, rejected_key)
     try:
-        with pytest.raises(ClassBHttpProviderOraclePersistenceError):
-            oracle.apply_post(idempotency_key="new-key", body=_BODY)
-        assert oracle.effect_count("new-key") == 0
-        assert "new-key" not in oracle._memory  # noqa: SLF001
+        with pytest.raises(ClassBHttpProviderOraclePersistenceError) as exc_info:
+            oracle.apply_post(idempotency_key=rejected_key, body=_BODY)
+        assert isinstance(exc_info.value.__cause__, sqlite3.Error)
+        assert oracle.effect_count(rejected_key) == 0
+        assert not _row_exists(db, rejected_key)
+        assert rejected_key not in oracle._memory  # noqa: SLF001
+        assert oracle.effect_count("seed") == 1
+        assert _row_exists(db, "seed")
     finally:
-        os.chmod(db, stat.S_IWRITE | stat.S_IREAD)
+        _remove_insert_fault_trigger(db)
+
+    recovered = oracle.apply_post(idempotency_key=rejected_key, body=_BODY)
+    assert recovered.replay is False and recovered.effect_count == 1
+    replay = oracle.apply_post(idempotency_key=rejected_key, body=_BODY)
+    assert replay.replay is True and replay.effect_count == 1
+    assert oracle.effect_count(rejected_key) == 1
+
+    fresh = ClassBHttpProviderOracle(db_path=db)
+    assert fresh.effect_count(rejected_key) == 1
+    assert fresh.effect_count("seed") == 1
+    durable_replay = fresh.apply_post(idempotency_key=rejected_key, body=_BODY)
+    assert durable_replay.replay is True
+    assert fresh.effect_count(rejected_key) == 1
 
 
 def test_oracle_corrupt_row_fail_closed(tmp_path: Path) -> None:
