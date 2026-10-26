@@ -7,7 +7,9 @@
 | **START_HEAD** | `fefa874c412519086caebbd13f1a53e47a9586ed` |
 | **P2_RECONCILIATION + P3_ENVELOPE_PUBLICATION** | `e97b228f4f883b90bd562d9624e390ab53df7b79` |
 | **IMPLEMENTATION_SHA** (Windows PG throttle) | `5bc896e2797708f9b71efd1b6611bc910168e4be` |
-| **EXECUTION_SHA** (physical P3) | `5bc896e2797708f9b71efd1b6611bc910168e4be` |
+| **EXECUTION_SHA** (WL-2/3/4 + HTTP WL-6) | `5bc896e2797708f9b71efd1b6611bc910168e4be` |
+| **IMPLEMENTATION_SHA** (WL-6 RabbitMQ M) | `fc5960a15b02c98e46abbce0534b63ac1322864a` |
+| **EXECUTION_SHA** (WL-6 RabbitMQ M physical) | `fc5960a15b02c98e46abbce0534b63ac1322864a` |
 
 ## Preflight (structural)
 
@@ -33,7 +35,8 @@ P2 physical batch **not** used as P3 preflight.
 | `wl04-slow-deadline-4c2150a5ac05` | WL-4 slow | PASS |
 | `wl04-fault-mix-0da741ea0740` | WL-4 mix | PASS |
 | `wl04-lost-ack-045b1c18abb9` | WL-4 lost_ack | PASS |
-| `wl06-storm-dda074987eb6` | WL-6 HTTP retry storm | PASS |
+| `wl06-storm-dda074987eb6` | WL-6 HTTP retry storm (supplementary @ `5bc896e27`) | PASS |
+| `wl06-rabbit-61f709aa5dd6` | WL-6 RabbitMQ M retry storm @ `fc5960a15` | PASS |
 | `wl02-p3-3c61beaf2929` | WL-2 85% measured | PASS |
 | `wl03-hot-38a284878286` | WL-3 hot key | PASS |
 
@@ -50,7 +53,8 @@ P2 physical batch **not** used as P3 preflight.
 ## Implementation notes
 
 - Hot share: `p3_task_load.py` 17/20 schedule.
-- WL-4/6: `p3_strict_http_stack.py`; WL-2/3: `p3_task_load.py`, `p3_multiprocess_worker.py`.
+- WL-4/6 HTTP: `p3_strict_http_stack.py`; WL-6 Rabbit: `p3_rabbit_multiprocess_worker.py`, `wl_06_rabbit_broker_storm.py`; WL-2/3: `p3_task_load.py`, `p3_multiprocess_worker.py`.
+- WL-6 Rabbit validation log: `.tmp/session/dist-scale-x-p3-wl6-rabbit/validation.log` (L1/L2 + physical).
 - Selection: `DIST_SCALE_X_P3_SELECTION_BATCH` in `selection.py`; wrapper `test_dist_scale_x_p3_qualification_batch.py` (subprocess; do not nest inside full physical rerun in agent sessions).
 
 ## P2 evidence

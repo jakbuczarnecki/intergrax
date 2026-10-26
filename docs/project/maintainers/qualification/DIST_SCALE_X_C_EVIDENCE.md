@@ -18,4 +18,14 @@ Manifest: `.tmp/proof/dist-scale-x/dim-c-d6aa8fe9d287/dist_scale_x_evidence_mani
 | --- | --- |
 | `dim-c-3e7c5e570951` @ `ee5a8371e` | Offered rate ≈ submit count / 60s without 1.5× rate control — insufficient overload evidence |
 
-Provenance: [DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md)
+## P3 supporting slice (WL-6 RabbitMQ @ fault window)
+
+| Field | Value |
+| --- | --- |
+| **EXECUTION_SHA** | `fc5960a15b02c98e46abbce0534b63ac1322864a` |
+
+| run_id | Notes |
+| --- | --- |
+| `wl06-rabbit-61f709aa5dd6` | Retry amplification under 20% transient handler faults; bounded drain; broker terminal reconciliation on latest handles |
+
+Provenance: [DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md) · P3: [DIST_SCALE_X_P3_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P3_PHYSICAL_PROVENANCE.md)
