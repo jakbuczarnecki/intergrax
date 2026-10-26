@@ -1,6 +1,6 @@
 # TOOL-LIFE-X R4 — final root-cause remediation and parent qualification evidence
 
-**Disposition:** `READY FOR INDEPENDENT F8 EXT-L4 AUDIT` (implementation) · **not** parent CLOSED · **not** FRZ promotion · **not** production activation
+**Disposition:** `READY FOR INDEPENDENT F8 EXT-L4 AUDIT` (implementation) · **superseded for parent status** by [`TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md`](TOOL_LIFE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) (`CLOSED — INDEPENDENTLY ACCEPTED` @ `154864070…`) · **not** FRZ promotion · **not** production activation
 
 | Field | Value |
 |---|---|
