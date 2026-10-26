@@ -41,6 +41,7 @@ DIST_SCALE_X_P3_L3_L4_PYTEST_TARGETS: tuple[str, ...] = (
     "tests/qualification/dist_scale_x/wl_03_hot_key_contention.py",
     "tests/qualification/dist_scale_x/wl_04_http_physical_qualification.py",
     "tests/qualification/dist_scale_x/wl_06_retry_storm.py",
+    "tests/qualification/dist_scale_x/wl_06_rabbit_broker_storm.py",
 )
 
 DIST_SCALE_X_P3_SELECTION_BATCH: tuple[str, ...] = DIST_SCALE_X_P3_L3_L4_PYTEST_TARGETS

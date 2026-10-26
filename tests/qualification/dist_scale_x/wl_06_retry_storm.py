@@ -25,7 +25,7 @@ from tests.qualification.dist_scale_x.p3_strict_http_stack import (
 pytestmark = [pytest.mark.qualification, pytest.mark.integration, pytest.mark.network]
 
 
-def test_p3_wl06_retry_storm_http_invoker_drain() -> None:
+def test_p3_wl06_retry_storm_http_invoker_supplementary() -> None:
     require_p3_infra()
     run_id = new_run_id("wl06-storm")
     tmp = Path(__file__).resolve().parents[3] / ".tmp" / "session" / "dist-scale-x-p3-wl6" / run_id
@@ -51,11 +51,11 @@ def test_p3_wl06_retry_storm_http_invoker_drain() -> None:
         assert amp < 50.0, f"retry amplification excessive: {amp}"
         topology = (
             f"P3 WL-6; fault_window_s={WL6_FAULT_SECONDS}; drain_cap_s={WL6_DRAIN_CAP_SECONDS}; "
-            f"fault_mix=20% class via HTTP mix handler; broker=RabbitMQ M not required for invoker path"
+            f"fault_mix=20% class via HTTP mix handler; supplementary HTTP slice (RabbitMQ M in wl_06_rabbit_broker_storm)"
         )
         record = p3_record(
             run_id=run_id,
-            suffix="wl06",
+            suffix="wl06-http",
             workload_id="WL-6",
             dimension_ids=("C", "E"),
             duration_seconds=WL6_FAULT_SECONDS + min(60.0, WL6_DRAIN_CAP_SECONDS),
