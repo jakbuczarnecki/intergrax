@@ -58,16 +58,19 @@ def strict_durable_application_environment() -> ApplicationEnvironmentProfile:
 
 def http_capability_governance(
     *,
-    tenant_id: str,
+    tenant_ids: tuple[str, ...],
     agent_id: str,
 ) -> AgentRuntimeGovernanceBoundary:
-    grant = CapabilityGrant(
-        tenant_id=tenant_id,
-        agent_id=agent_id,
-        allowed_capabilities=frozenset({"http"}),
+    grants = tuple(
+        CapabilityGrant(
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            allowed_capabilities=frozenset({"http"}),
+        )
+        for tenant_id in tenant_ids
     )
     pipeline = AgentRuntimeGovernancePipeline(
-        capability_resolver=InMemoryCapabilityGrantResolver((grant,)),
+        capability_resolver=InMemoryCapabilityGrantResolver(grants),
         policy_engine=AgentRuntimePolicyEngine((AllowAllPolicyProvider(),)),
         audit_recorder=GovernanceAuditRecorder(InMemoryGovernanceAuditSink()),
     )
@@ -79,7 +82,7 @@ def build_p3_strict_production_invoker_bundle(
     *,
     idempotency_db_path: str,
     tool_life_execution_recovery: object,
-    tenant_id: str,
+    tenant_ids: tuple[str, ...],
     agent_id: str,
     meaningful_side_effect_authorization: _RecordingMseBoundary,
 ):
@@ -96,7 +99,7 @@ def build_p3_strict_production_invoker_bundle(
         tool_wiring,
         idempotency_store=SQLiteIdempotencyStore(idempotency_db_path),
         agent_runtime_governance=http_capability_governance(
-            tenant_id=tenant_id,
+            tenant_ids=tenant_ids,
             agent_id=agent_id,
         ),
         canonical_inner_execution_guard=_AllowingTestGuard(),

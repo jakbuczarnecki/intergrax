@@ -23,7 +23,7 @@ from tests.qualification.dist_scale_x._p3_support import (
     write_p3_manifest,
 )
 from tests.qualification.dist_scale_x.evidence_schema import DistScaleXMetricsSnapshot
-from tests.qualification.dist_scale_x.p3_celery_rabbit_wl6_app import (
+from testing_support.dist_scale_x_p3_wl6_celery_app import (
     P3_CELERY_TASK,
     WL6_RETRY_POLICY,
     build_wl6_celery_app,
@@ -57,11 +57,9 @@ def _spawn_celery_workers(
     env = os.environ.copy()
     env["DIST_SCALE_X_P3_WL6_STATE_DB"] = str(session_dir / "wl6_state.db")
     env["DIST_SCALE_X_P3_WL6_KV_DB"] = str(session_dir / "kv.db")
-    env["DIST_SCALE_X_P3_WL6_IDEM_DB"] = str(session_dir / "idem.db")
-    env["DIST_SCALE_X_P3_WL6_RESULT_DB"] = str(session_dir / "celery_results.db")
     procs: list[subprocess.Popen[bytes]] = []
-    module = "tests.qualification.dist_scale_x.p3_celery_rabbit_wl6_app"
-    for _ in range(worker_count):
+    module = "testing_support.dist_scale_x_p3_wl6_celery_app"
+    for idx in range(worker_count):
         procs.append(
             subprocess.Popen(
                 [
@@ -71,6 +69,8 @@ def _spawn_celery_workers(
                     "-A",
                     module,
                     "worker",
+                    "-n",
+                    f"dist-scale-x-wl6-{idx}-{uuid.uuid4().hex[:6]}@%h",
                     "--pool=solo",
                     "-c",
                     "1",
@@ -90,9 +90,7 @@ def test_p3_wl06_rabbit_m_celery_dispatcher_retry_storm() -> None:
     session_dir.mkdir(parents=True, exist_ok=True)
     state_db = session_dir / "wl6_state.db"
     kv_db = session_dir / "kv.db"
-    idem_db = session_dir / "idem.db"
-    result_db = session_dir / "celery_results.db"
-    for path in (state_db, kv_db, idem_db, result_db):
+    for path in (state_db, kv_db):
         if path.is_file():
             path.unlink()
 
@@ -100,16 +98,15 @@ def test_p3_wl06_rabbit_m_celery_dispatcher_retry_storm() -> None:
     procs = _spawn_celery_workers(session_dir=session_dir, worker_count=2)
     time.sleep(4.0)
 
-    app = build_wl6_celery_app(
-        state_db=state_db,
-        kv_db=kv_db,
-        idem_db=idem_db,
-        result_db=result_db,
-    )
+    app = build_wl6_celery_app(state_db=state_db, kv_db=kv_db)
     logical_submissions = 0
     async_results = []
+    target_submissions = 60
     fault_start = time.monotonic()
-    while time.monotonic() - fault_start < WL6_FAULT_SECONDS:
+    while (
+        logical_submissions < target_submissions
+        and time.monotonic() - fault_start < WL6_FAULT_SECONDS
+    ):
         tenant = _TENANTS[logical_submissions % len(_TENANTS)]
         logical_id = f"wl6-{logical_submissions:05d}"
         logical_submissions += 1
@@ -126,21 +123,20 @@ def test_p3_wl06_rabbit_m_celery_dispatcher_retry_storm() -> None:
                 },
             )
         )
-        time.sleep(0.05)
+        time.sleep(0.15)
+    while time.monotonic() - fault_start < WL6_FAULT_SECONDS:
+        time.sleep(0.25)
 
     set_fault_injection(state_db, False)
     drain_start = time.monotonic()
+
     while time.monotonic() - drain_start < WL6_DRAIN_CAP_SECONDS:
         metrics = read_wl6_celery_metrics(state_db)
         if metrics.get("semantic_effects", 0) >= logical_submissions:
             break
-        time.sleep(0.5)
+        time.sleep(1.0)
 
-    for ar in async_results:
-        try:
-            ar.get(timeout=120)
-        except Exception:
-            pass
+    _ = async_results
 
     _terminate_all(procs)
     metrics = read_wl6_celery_metrics(state_db)

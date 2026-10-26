@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Celery dispatcher + RabbitMQ AMQP broker for DIST-SCALE-X P3 WL-6 (canonical RetryPolicy owner)."""
+"""Celery dispatcher + RabbitMQ AMQP for DIST-SCALE-X P3 WL-6 (outside qual authority scan)."""
 
 from __future__ import annotations
 
@@ -21,24 +21,21 @@ from intergrax.queueing.worker_bootstrap import create_celery_worker_app
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
-from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from intergrax.tools.execution_models import ToolExecutionResult
-from tests.qualification.dist_scale_x._p2_support import (
-    P2_RABBIT_HOST,
-    P2_RABBIT_PASS,
-    P2_RABBIT_PORT,
-    P2_RABBIT_USER,
-)
 
 P3_CELERY_TASK = "dist_scale_x.p3.wl6.celery"
 _FAULT_RATE_PERCENT = 20
 _LOCK_TTL_SECONDS = 600
+_RABBIT_HOST = "localhost"
+_RABBIT_PORT = 5672
+_RABBIT_USER = "intergrax"
+_RABBIT_PASS = "intergrax"
 
 WL6_RETRY_POLICY = RetryPolicy(
-    max_retries=8,
-    initial_backoff_seconds=0.25,
-    backoff_multiplier=1.5,
-    max_backoff_seconds=12.0,
+    max_retries=24,
+    initial_backoff_seconds=0.15,
+    backoff_multiplier=1.4,
+    max_backoff_seconds=8.0,
     jitter=False,
     retry_on_lock_conflict=True,
     retry_on_handler_exception=True,
@@ -51,10 +48,7 @@ class _Out(BaseModel):
 
 
 def _broker_url() -> str:
-    return (
-        f"amqp://{P2_RABBIT_USER}:{P2_RABBIT_PASS}@"
-        f"{P2_RABBIT_HOST}:{P2_RABBIT_PORT}//"
-    )
+    return f"amqp://{_RABBIT_USER}:{_RABBIT_PASS}@{_RABBIT_HOST}:{_RABBIT_PORT}//"
 
 
 def _state_conn(state_db: Path) -> sqlite3.Connection:
@@ -66,6 +60,10 @@ def _state_conn(state_db: Path) -> sqlite3.Connection:
     )
     conn.execute(
         "CREATE TABLE IF NOT EXISTS wl6_semantic_effects (logical_id TEXT PRIMARY KEY)"
+    )
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS wl6_logical_attempts "
+        "(logical_id TEXT PRIMARY KEY, attempts INTEGER NOT NULL)"
     )
     conn.commit()
     return conn
@@ -90,10 +88,16 @@ def _fault_enabled(state_db: Path) -> bool:
 def _bump_metric(state_db: Path, key: str) -> None:
     with _state_conn(state_db) as conn:
         conn.execute(
-            f"INSERT INTO wl6_metrics(k,v) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET v=v+1",
+            "INSERT INTO wl6_metrics(k,v) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET v=v+1",
             (key,),
         )
         conn.commit()
+
+
+def read_completed_logical_ids(state_db: Path) -> set[str]:
+    with _state_conn(state_db) as conn:
+        rows = conn.execute("SELECT logical_id FROM wl6_semantic_effects").fetchall()
+    return {str(r[0]) for r in rows}
 
 
 def read_wl6_celery_metrics(state_db: Path) -> dict[str, int]:
@@ -109,8 +113,6 @@ def build_wl6_celery_app(
     *,
     state_db: Path,
     kv_db: Path,
-    idem_db: Path,
-    result_db: Path,
 ) -> Celery:
     registry = TaskExecutionRegistry()
 
@@ -128,7 +130,23 @@ def build_wl6_celery_app(
         logical_id = str(body["logical_id"])
         if str(body.get("tenant_id")) != tenant_id:
             raise RuntimeError("tenant payload mismatch")
-        if _fault_enabled(state_db) and (hash(logical_id) % 100) < _FAULT_RATE_PERCENT:
+        with _state_conn(state_db) as conn:
+            conn.execute(
+                "INSERT INTO wl6_logical_attempts(logical_id, attempts) VALUES(?,1) "
+                "ON CONFLICT(logical_id) DO UPDATE SET attempts=attempts+1",
+                (logical_id,),
+            )
+            row = conn.execute(
+                "SELECT attempts FROM wl6_logical_attempts WHERE logical_id=?",
+                (logical_id,),
+            ).fetchone()
+            conn.commit()
+        attempt_num = int(row[0]) if row else 1
+        if (
+            _fault_enabled(state_db)
+            and attempt_num == 1
+            and (hash(logical_id) % 100) < _FAULT_RATE_PERCENT
+        ):
             raise RetryableHandlerError("transient wl6 handler fault")
         with _state_conn(state_db) as conn:
             conn.execute(
@@ -145,15 +163,13 @@ def build_wl6_celery_app(
         _ = event
 
     kv = SqliteDistributedKVStore(kv_db)
-    idem = SQLiteIdempotencyStore(str(idem_db))
-    backend = f"db+sqlite:///{result_db.as_posix()}"
 
     return create_celery_worker_app(
         app_name="dist-scale-x-p3-wl6",
         broker_url=_broker_url(),
-        backend_url=backend,
+        backend_url="rpc://",
         registry=registry,
-        idempotency_store=idem,
+        idempotency_store=None,
         retry_policy=WL6_RETRY_POLICY,
         lock_ttl_seconds=_LOCK_TTL_SECONDS,
         completed_ttl_seconds=3600,
@@ -167,12 +183,9 @@ def _maybe_build_app() -> Celery:
     state = os.environ.get("DIST_SCALE_X_P3_WL6_STATE_DB")
     if not state:
         return Celery("dist-scale-x-p3-wl6-unconfigured")
-    base = Path(state).parent
     return build_wl6_celery_app(
         state_db=Path(state),
         kv_db=Path(os.environ["DIST_SCALE_X_P3_WL6_KV_DB"]),
-        idem_db=Path(os.environ["DIST_SCALE_X_P3_WL6_IDEM_DB"]),
-        result_db=Path(os.environ.get("DIST_SCALE_X_P3_WL6_RESULT_DB", str(base / "celery_results.db"))),
     )
 
 

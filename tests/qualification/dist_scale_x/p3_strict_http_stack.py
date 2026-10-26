@@ -161,7 +161,7 @@ def start_p3_strict_http_stack(
         tool_wiring,
         idempotency_db_path=str(tmp_path / "strict_idempotency.db"),
         tool_life_execution_recovery=wiring,
-        tenant_id="tenant-a",
+        tenant_ids=("tenant-a", "tenant-b"),
         agent_id="dist-scale-x-p3",
         meaningful_side_effect_authorization=_RecordingMseBoundary(allow=mse_allow),
     )
@@ -222,7 +222,7 @@ def invoke_idempotent_post(
         governance_tenant_id=tenant_id,
         governance_principal_id="dist-scale-x-p3",
     ):
-        result = stack.invoker.invoke(state=state, agent_id="dist-scale-x", request=request)
+        result = stack.invoker.invoke(state=state, agent_id="dist-scale-x-p3", request=request)
     if result.success:
         stack.stats.logical_success += 1
         return True

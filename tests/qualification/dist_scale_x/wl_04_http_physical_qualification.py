@@ -104,17 +104,19 @@ def test_p3_wl04_http_scenario_classes(tmp_path: Path, fault_mode: str, label: s
 
 
 def test_p3_wl04_strict_host_mse_denies_without_authorization(tmp_path: Path) -> None:
+    from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+
     require_p3_infra()
     run_id = new_run_id("wl04-mse-deny")
     stack = start_p3_strict_http_stack(tmp_path / run_id, fault_mode="ok", mse_allow=False)
     try:
-        ok = invoke_idempotent_post(
-            stack,
-            tenant_id="tenant-a",
-            idempotency_key="mse-deny-key",
-            body='{"probe":1}',
-        )
-        assert not ok, "strict-host MSE must block HTTP side effect without authorization"
+        with pytest.raises(ToolGovernanceDeniedError, match="test-mse"):
+            invoke_idempotent_post(
+                stack,
+                tenant_id="tenant-a",
+                idempotency_key="mse-deny-key",
+                body='{"probe":1}',
+            )
     finally:
         stack.close()
 
