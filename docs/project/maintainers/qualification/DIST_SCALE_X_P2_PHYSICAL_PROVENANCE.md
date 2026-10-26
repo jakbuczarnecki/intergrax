@@ -6,7 +6,8 @@
 | --- | --- |
 | **START_HEAD** (corrective batch) | `cc2d52245c1daf8c27bc1cfa1040f8885d3d7ee5` |
 | **IMPLEMENTATION_SHA** (B01–B04/E01 core) | `16ad35b7b1cc651763a6320f4e7b86bcbb1f0748` |
-| **EXECUTION_SHA** / **EVIDENCE_SHA** | `ee5a8371e2bf2203d420ea89c6b697ca2ee78d4c` |
+| **EXECUTION_SHA** (B01/B04/E01 + WL-1/WL-2) | `ee5a8371e2bf2203d420ea89c6b697ca2ee78d4c` |
+| **EXECUTION_SHA** (final B02/B03 closure) | `2f7b74300845ac31eeaae4bd676f75c0f6b690ff` |
 | **THRESHOLD_LOCK_PUBLICATION_SHA** | `53aca60e554e906e8efc5747a6053aad9d322181` |
 
 Prior acceptance @ `3cbd8bea0` / `cc2d52245` — **superseded** for B01–B04 findings (enqueue-only accounting); retained as diagnostic history only.
@@ -40,8 +41,8 @@ Short env overrides (`DIST_SCALE_X_P2_POINT_DURATION_SECONDS=8`, etc.) — smoke
 | ID | Fix |
 | --- | --- |
 | **B01** | `p2_task_load.py` — completed-work throughput, in-flight=2, 30/70 mix @ ≥30 samples, drain/reconcile, p95 on completion latency |
-| **B02** | Rabbit: 2 OS workers, per-PID completion logs, submitted == handler invocations, drain before PASS |
-| **B03** | dim C: sustainable rate from **N=2 @ 180s**, 1.5× overload, depth samples + post-overload drain |
+| **B02** | Rabbit: shared `SqliteDistributedKVStore`; terminal `get_status`/`get_result` after `process_message` (broker KV contract); negative: pending without worker |
+| **B03** | dim C: scheduled 1.5× offered/s vs N=2×180s baseline; ±12% measured rate band; backlog + drain metrics |
 | **B04** | WL-2: per-tenant completions, `assert_cross_tenant_queue_fail_closed` on `DocumentStoreTaskQueue` |
 | **E01** | `test_dist_scale_x_p2_e01_lkw_trace.py` — LOCK OD-02 harness; LKW `background_worker_main` = Kafka **R** (P2 excluded); PG/Rabbit M = platform consumer stack |
 
@@ -57,3 +58,19 @@ Short env overrides (`DIST_SCALE_X_P2_POINT_DURATION_SECONDS=8`, etc.) — smoke
 | OS processes | `subprocess.Popen` × N |
 
 **E01 note:** Full LKW `background_worker_main` + `HostTaskExecutionPort` Kafka ingest is **not** replayed @ P2 (LOCK excludes Kafka R). Contract trace tests document equivalence boundary.
+
+## Final B02/B03 closure @ `2f7b74300`
+
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `3fde914a2114ab7b740c672832751e5d5e0459ff` |
+| **Command** | `uv run pytest …::test_p2_wl01_rabbit_m_two_os_worker_processes …::test_p2_dim_c_backpressure_bounded_overload_step` |
+| **Parameters** | `POINT=180`, `OVERLOAD=60` |
+| **Log** | `.tmp/session/dist-scale-x-p2-final-b02-b03/physical-180s-pytest.log` (~443s) |
+
+| run_id | Scope | Disposition |
+| --- | --- | --- |
+| `wl01-rabbit-2b54945c3c0f` | B02 — 1407 broker KV terminals == submissions | PASS |
+| `dim-c-d6aa8fe9d287` | B03 — target 4.36/s, actual 4.37/s; max_depth 102; drain 39→0 | PASS |
+
+WL-1 scaling (`wl01-scale-738d211df7ea`) and WL-2 (`wl02-hot-3719cd260bf3`) **not** re-run — no invalidation.
