@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Operator START_HEAD (EXT-L4 oracle batch) | `49849716c67cc293a692d2e1afe6f5cf1088164c` |
-| IMPLEMENTATION_SHA | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
-| PUBLICATION_HEAD | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
+| IMPLEMENTATION_SHA | `85c81f8abf3913b5810845d9def0b859f937141f` |
+| PUBLICATION_HEAD | `85c81f8abf3913b5810845d9def0b859f937141f` |
 | Prior implementation baseline (operator pin) | `10804d0e024e446274b60421a84797ec55e52f88` |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
@@ -180,8 +180,8 @@ Implementation and scoped L2 support **READY FOR INDEPENDENT F8 EXT-L4 AUDIT**. 
 | Field | Value |
 |---|---|
 | START_HEAD | `49849716c67cc293a692d2e1afe6f5cf1088164c` |
-| IMPLEMENTATION_SHA | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
-| PUBLICATION_HEAD | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
+| IMPLEMENTATION_SHA | `85c81f8abf3913b5810845d9def0b859f937141f` |
+| PUBLICATION_HEAD | `85c81f8abf3913b5810845d9def0b859f937141f` |
 
 ## 13. F8 EXT-L4 impact matrix (oracle delta)
 
