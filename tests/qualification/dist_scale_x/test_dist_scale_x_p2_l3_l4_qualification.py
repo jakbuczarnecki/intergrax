@@ -234,7 +234,7 @@ def test_p2_wl01_rabbit_m_two_os_worker_processes() -> None:
     registry.register(_RABBIT_TASK, handler)
     submitted = 0
     start = time.monotonic()
-    duration = min(float(POINT_DURATION_SECONDS), 60.0)
+    duration = float(POINT_DURATION_SECONDS)
     while time.monotonic() - start < duration:
         queue.enqueue(
             TaskRequest(
