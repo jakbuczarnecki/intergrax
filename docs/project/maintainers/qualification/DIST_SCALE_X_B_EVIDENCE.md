@@ -2,15 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| **Phase** | P2 |
-| **Workload** | WL-1 |
-| **Execution SHA** | `db592f413c1f4de2744ffabbe3f2ff58189a353c` |
+| **EXECUTION_SHA** | `3cbd8bea0864a785c10cd39260345834a6e11dca` |
 
-## Horizontal scale proof
+| run_id | Evidence |
+| --- | --- |
+| `wl01-scale-6501c3f25785` | N=1→N=2 OS workers; `scaling_efficiency` ≈ 0.52 @ 180s points (envelope only) |
+| `wl01-rabbit-1ab20b1dbbf0` | 2 Rabbit consumer OS processes @ 180s |
 
-| run_id | Workers | scaling_efficiency (envelope) | dup FX |
-| --- | --- | --- | --- |
-| `wl01-scale-cea67e78df1f` | N=1 → N=2 OS processes (`p2_multiprocess_worker.py`) | ~0.54 @ 8s window (documented, not a numeric guard) | none observed |
-| `wl01-rabbit-b21aed41fc5e` | 2 Rabbit consumer OS processes | throughput recorded | none observed |
-
-Manifest: `.tmp/proof/dist-scale-x/wl01-scale-cea67e78df1f/dist_scale_x_evidence_manifest.json`
+Manifest: `.tmp/proof/dist-scale-x/wl01-scale-6501c3f25785/dist_scale_x_evidence_manifest.json`

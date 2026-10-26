@@ -2,16 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| **Phase** | P2 |
-| **Workload** | WL-1 overload step |
-| **Execution SHA** | `db592f413c1f4de2744ffabbe3f2ff58189a353c` |
+| **EXECUTION_SHA** | `3cbd8bea0864a785c10cd39260345834a6e11dca` |
 
-## Backpressure step
+| run_id | Overload |
+| --- | --- |
+| `dim-c-5d269dfb599a` | 1.5× sustainable submit, **60s** step |
 
-| run_id | max_queue_depth observed | Result |
-| --- | --- | --- |
-| `dim-c-b7677adc6eb7` | bounded (&lt; 10000 guard) | PASS |
-
-Manifest: `.tmp/proof/dist-scale-x/dim-c-b7677adc6eb7/dist_scale_x_evidence_manifest.json`
-
-Overload: 1.5× sustainable submit @ N=2 worker topology (see LOCK record).
+Manifest: `.tmp/proof/dist-scale-x/dim-c-5d269dfb599a/dist_scale_x_evidence_manifest.json`

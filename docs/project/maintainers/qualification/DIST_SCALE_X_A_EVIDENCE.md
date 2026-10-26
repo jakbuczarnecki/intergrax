@@ -2,18 +2,15 @@
 
 | Field | Value |
 | --- | --- |
-| **Phase** | P2 |
-| **Workload** | WL-1, WL-2 (slice) |
-| **Execution SHA** | `db592f413c1f4de2744ffabbe3f2ff58189a353c` |
-| **Threshold lock** | [DIST_SCALE_X_THRESHOLD_LOCK_RECORD.md](DIST_SCALE_X_THRESHOLD_LOCK_RECORD.md) — `ENVELOPE_ONLY`, enum `NOT_LOCKED` |
-| **Agent verification** | `DIST_SCALE_X_P2_POINT_DURATION_SECONDS=8` (accelerated); LOCK canonical **180s** per point for L9 replay |
+| **EXECUTION_SHA** | `3cbd8bea0864a785c10cd39260345834a6e11dca` |
+| **Acceptance window** | 180s per point (LOCK); log `.tmp/session/dist-scale-x-p2-180s/full-qual-pytest.log` |
 
-## Runs
+## Authoritative runs
 
-| run_id | Path | Notes |
-| --- | --- | --- |
-| `wl01-scale-cea67e78df1f` | `.tmp/proof/dist-scale-x/wl01-scale-cea67e78df1f/` | WL-1 throughput envelope N=1 vs N=2, DocumentStore+PG workers |
-| `wl02-hot-438181f1b54b` | `.tmp/proof/dist-scale-x/wl02-hot-438181f1b54b/` | Hot-tenant slice (dim A load) |
-| `wl01-rabbit-b21aed41fc5e` | `.tmp/proof/dist-scale-x/wl01-rabbit-b21aed41fc5e/` | Rabbit M concurrent submit path |
+| run_id | Workload |
+| --- | --- |
+| `wl01-scale-6501c3f25785` | WL-1 throughput N=1/N=2 @ 180s each |
+| `wl02-hot-d95a93037d25` | WL-2 hot 80% + 60s warmup + 180s measure |
+| `wl01-rabbit-1ab20b1dbbf0` | Rabbit M submit load @ 180s |
 
-**Correctness:** no `correctness_violations` in manifests; no `performance_threshold_metric_ids` on PASS.
+Provenance: [DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md)
