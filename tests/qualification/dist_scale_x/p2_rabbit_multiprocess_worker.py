@@ -11,6 +11,7 @@ import time
 import uuid
 from pathlib import Path
 
+from intergrax.distributed.providers.sqlite_kv_store import SqliteDistributedKVStore
 from intergrax.integrations.providers.message_bus.rabbitmq.bundle import (
     create_rabbitmq_integration,
     create_rabbitmq_worker,
@@ -62,21 +63,17 @@ class _Out(BaseModel):
     ok: bool = True
 
 
-def _append_completion(metrics_dir: Path | None, run_id: str) -> None:
-    if metrics_dir is None:
-        return
-    metrics_dir.mkdir(parents=True, exist_ok=True)
-    path = metrics_dir / f"completions_{os.getpid()}.log"
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(f"{run_id}\n")
-        handle.flush()
+def _resolve_kv_store(kv_db: str) -> DistributedKVStore:
+    if kv_db.strip():
+        return SqliteDistributedKVStore(Path(kv_db))
+    return InMemoryKVStore()
 
 
 def poll_loop(
     queue_name: str,
     stop_idle_s: float,
     *,
-    metrics_dir: Path | None = None,
+    kv_db: str,
 ) -> int:
     registry = TaskExecutionRegistry()
 
@@ -88,12 +85,11 @@ def poll_loop(
         idempotency_key,
         execution_identity,
     ):
-        _ = tenant_id, payload, idempotency_key, execution_identity
-        _append_completion(metrics_dir, run_id)
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
         return ToolExecutionResult(success=True, output=_Out(), error=None)
 
     registry.register("dist_scale_x.p2.rabbit", handler)
-    kv = InMemoryKVStore()
+    kv = _resolve_kv_store(kv_db)
     bundle = create_rabbitmq_integration(
         kv_store=kv,
         host=P2_RABBIT_HOST,
@@ -132,14 +128,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--queue", default=f"dist-scale-x-p2-{uuid.uuid4().hex[:8]}")
     parser.add_argument("--stop-idle-s", type=float, default=2.0)
-    parser.add_argument("--metrics-dir", default="")
+    parser.add_argument("--kv-db", default="")
     args = parser.parse_args()
-    metrics = Path(args.metrics_dir) if args.metrics_dir.strip() else None
     processed = 0
     try:
-        processed = poll_loop(args.queue, args.stop_idle_s, metrics_dir=metrics)
+        processed = poll_loop(args.queue, args.stop_idle_s, kv_db=args.kv_db)
     finally:
-        if metrics is not None:
+        if args.kv_db.strip():
+            metrics = Path(args.kv_db).parent
             metrics.mkdir(parents=True, exist_ok=True)
             (metrics / f"worker_{os.getpid()}.json").write_text(
                 json.dumps({"processed": processed}),

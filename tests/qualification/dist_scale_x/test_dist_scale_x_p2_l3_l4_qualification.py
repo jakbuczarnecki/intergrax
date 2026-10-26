@@ -15,11 +15,10 @@ import pytest
 from intergrax.integrations.providers.document_store.postgresql.bundle import (
     create_postgresql_document_store,
 )
+from intergrax.distributed.providers.sqlite_kv_store import SqliteDistributedKVStore
 from intergrax.integrations.providers.message_bus.rabbitmq.bundle import create_rabbitmq_integration
-from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest, TaskStatus
+from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
-from intergrax.queueing.worker.registry import TaskExecutionRegistry
-from intergrax.tools.execution_models import ToolExecutionResult
 from pydantic import BaseModel
 from testing_support.uca6c_r6_r5_9_r4_postgresql_durable_document_store import (
     drop_postgresql_document_schema,
@@ -43,7 +42,14 @@ from tests.qualification.dist_scale_x.evidence_schema import (
     DistScaleXMetricsSnapshot,
     EvidenceDisposition,
 )
-from tests.qualification.dist_scale_x.p2_rabbit_multiprocess_worker import InMemoryKVStore
+from tests.qualification.dist_scale_x.p2_broker_reconcile import (
+    assert_broker_run_acceptance,
+    reconcile_broker_task_handles,
+)
+from tests.qualification.dist_scale_x.p2_dim_c_overload import (
+    assert_overload_acceptance,
+    run_rate_controlled_overload_step,
+)
 from tests.qualification.dist_scale_x.p2_task_load import (
     P2_MAX_IN_FLIGHT,
     P2_TASK_PAYLOAD_BYTES,
@@ -143,22 +149,6 @@ def _measure_point(n_workers: int, duration_s: float) -> tuple[TaskLoadAccountin
     return accounting, schema
 
 
-def _rabbit_completion_ids(metrics_dir: Path) -> set[str]:
-    ids: set[str] = set()
-    for path in metrics_dir.glob("completions_*.log"):
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                ids.add(line.strip())
-    return ids
-
-
-def _rabbit_completion_line_count(metrics_dir: Path) -> int:
-    total = 0
-    for path in metrics_dir.glob("completions_*.log"):
-        total += sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
-    return total
-
-
 def test_p2_wl01_l4_document_store_scaling_envelope() -> None:
     require_p2_infra()
     run_id = new_run_id("wl01-scale")
@@ -213,6 +203,7 @@ def test_p2_wl01_rabbit_m_two_os_worker_processes() -> None:
     queue_name = f"dist-scale-x-p2-{uuid.uuid4().hex[:10]}"
     metrics_dir = _REPO_ROOT / ".tmp" / "session" / "dist-scale-x-p2-rabbit" / run_id
     metrics_dir.mkdir(parents=True, exist_ok=True)
+    kv_db = metrics_dir / "broker_kv.db"
     duration = float(POINT_DURATION_SECONDS)
     worker_idle_s = duration + _RABBIT_DRAIN_SECONDS + 30.0
     module = "tests.qualification.dist_scale_x.p2_rabbit_multiprocess_worker"
@@ -226,15 +217,15 @@ def test_p2_wl01_rabbit_m_two_os_worker_processes() -> None:
                 queue_name,
                 "--stop-idle-s",
                 str(worker_idle_s),
-                "--metrics-dir",
-                str(metrics_dir),
+                "--kv-db",
+                str(kv_db),
             ],
             cwd=_REPO_ROOT,
         )
         for _ in range(2)
     ]
     time.sleep(1.5)
-    kv = InMemoryKVStore()
+    kv = SqliteDistributedKVStore(kv_db)
     bundle = create_rabbitmq_integration(
         kv_store=kv,
         host="localhost",
@@ -243,49 +234,37 @@ def test_p2_wl01_rabbit_m_two_os_worker_processes() -> None:
         queue=queue_name,
     )
     queue = bundle.message_bus
-    registry = TaskExecutionRegistry()
-
-    def handler(*, tenant_id: str, run_id: str, payload: bytes, idempotency_key):
-        _ = tenant_id, run_id, payload, idempotency_key
-        return ToolExecutionResult.ok(_TaskOut(tenant_id=tenant_id, kind="write"))
-
-    registry.register(_RABBIT_TASK, handler)
-    submitted = 0
+    handles: list = []
     start = time.monotonic()
     while time.monotonic() - start < duration:
         _assert_workers_alive(procs)
-        rid = f"r-{submitted}"
-        queue.enqueue(
-            TaskRequest(
-                tenant_id="tenant-a",
-                run_id=rid,
-                task_name=_RABBIT_TASK,
-                payload=b"x" * P2_TASK_PAYLOAD_BYTES,
+        handles.append(
+            queue.enqueue(
+                TaskRequest(
+                    tenant_id="tenant-a",
+                    run_id=f"r-{len(handles)}",
+                    task_name=_RABBIT_TASK,
+                    payload=b"x" * P2_TASK_PAYLOAD_BYTES,
+                )
             )
         )
-        submitted += 1
         time.sleep(0.05)
+    submitted = len(handles)
     drain_deadline = time.monotonic() + _RABBIT_DRAIN_SECONDS
     while time.monotonic() < drain_deadline:
         _assert_workers_alive(procs)
-        if len(_rabbit_completion_ids(metrics_dir)) >= submitted:
+        broker_partial = reconcile_broker_task_handles(queue, handles)
+        if broker_partial.pending == 0 and broker_partial.succeeded >= submitted:
             break
         time.sleep(0.25)
     _terminate_all(procs)
-    completed_ids = _rabbit_completion_ids(metrics_dir)
-    completion_lines = _rabbit_completion_line_count(metrics_dir)
-    assert submitted > 0
-    assert len(completed_ids) >= submitted, (
-        f"broker handler completions: submitted={submitted} unique={len(completed_ids)}"
-    )
-    assert completion_lines >= submitted, (
-        f"handler invocations: submitted={submitted} lines={completion_lines}"
-    )
-    assert completion_lines == len(completed_ids), "duplicate handler side effects detected"
-    thr = len(completed_ids) / duration
+    broker = reconcile_broker_task_handles(queue, handles)
+    assert_broker_run_acceptance(broker)
+    thr = broker.succeeded / duration
     topology = (
         f"RabbitMQ M; queue={queue_name}; OS worker processes=2; "
-        f"duration_s={duration}; path=create_rabbitmq_integration+create_rabbitmq_worker"
+        f"duration_s={duration}; path=create_rabbitmq_integration+create_rabbitmq_worker; "
+        f"terminal_evidence=BrokerBackedTaskQueue KV after process_message (auto_ack consume)"
     )
     record = DistScaleXEvidenceRecord(
         record_id=f"{run_id}-rabbit",
@@ -299,15 +278,47 @@ def test_p2_wl01_rabbit_m_two_os_worker_processes() -> None:
             throughput_per_sec=thr,
             error_rate=0.0,
             extra={
-                "submitted": float(submitted),
-                "completed": float(len(completed_ids)),
-                "handler_invocations": float(completion_lines),
+                "submitted": float(broker.submitted),
+                "broker_terminal_succeeded": float(broker.succeeded),
+                "broker_terminal_failed": float(broker.failed),
+                "broker_pending_after_drain": float(broker.pending),
             },
         ),
         fault_description="none",
         disposition=EvidenceDisposition.PASS,
     )
     write_p2_manifest(run_id=run_id, records=(record,), topology_description=topology)
+
+
+def test_p2_b02_broker_kv_pending_without_worker_negative() -> None:
+    """Without consumers, broker KV must remain non-terminal (no false PASS)."""
+    require_p2_infra()
+    queue_name = f"dist-scale-x-p2-neg-{uuid.uuid4().hex[:10]}"
+    kv_db = _REPO_ROOT / ".tmp" / "session" / "dist-scale-x-p2-rabbit" / "negative-kv.db"
+    kv_db.parent.mkdir(parents=True, exist_ok=True)
+    if kv_db.is_file():
+        kv_db.unlink()
+    kv = SqliteDistributedKVStore(kv_db)
+    bundle = create_rabbitmq_integration(
+        kv_store=kv,
+        host="localhost",
+        username="intergrax",
+        password="intergrax",
+        queue=queue_name,
+    )
+    handle = bundle.message_bus.enqueue(
+        TaskRequest(
+            tenant_id="tenant-a",
+            run_id="neg-1",
+            task_name=_RABBIT_TASK,
+            payload=b"{}",
+        )
+    )
+    accounting = reconcile_broker_task_handles(bundle.message_bus, [handle])
+    assert accounting.pending == 1
+    assert accounting.succeeded == 0
+    with pytest.raises(AssertionError, match="outstanding"):
+        assert_broker_run_acceptance(accounting)
 
 
 def test_p2_wl02_hot_tenant_tenant_isolation_slice() -> None:
@@ -396,13 +407,8 @@ def test_p2_dim_c_backpressure_bounded_overload_step() -> None:
     time.sleep(1.0)
     store = create_postgresql_document_store(tenant_schema=schema, dsn=dsn)
     queue = DocumentStoreTaskQueue(store)
-    depth_samples: list[int] = []
-    offered = 0
-    completed_ids_overload: set[str] = set()
-    max_depth = 0
+    overload = None
     sustainable = 0.0
-    depth_before_drain = 0
-    depth_after_drain = 0
     try:
         baseline = run_document_store_completed_work_load(
             queue,
@@ -415,71 +421,56 @@ def test_p2_dim_c_backpressure_bounded_overload_step() -> None:
         baseline.assert_acceptance_reconciled()
         sustainable = baseline.useful_throughput_per_sec(float(POINT_DURATION_SECONDS))
         assert sustainable > 0.0
-        offer_rate = sustainable * 1.5
-        burst_deadline = time.monotonic() + float(OVERLOAD_STEP_SECONDS)
-        pending_handles: list[TaskHandle] = []
-        while time.monotonic() < burst_deadline:
-            _assert_workers_alive(workers)
-            batch = max(int(offer_rate * 0.05) + 1, 1)
-            for _ in range(batch):
-                handle = queue.enqueue(
-                    TaskRequest(
-                        tenant_id="tenant-a",
-                        run_id=f"burst-{offered}",
-                        task_name=_TASK_NAME,
-                        payload=b"x" * P2_TASK_PAYLOAD_BYTES,
-                    )
-                )
-                pending_handles.append(handle)
-                offered += 1
-            depth = pending_task_count(queue, "tenant-a") + pending_task_count(queue, "tenant-b")
-            depth_samples.append(depth)
-            max_depth = max(max_depth, depth)
-            for handle in pending_handles:
-                if queue.get_status(handle) is TaskStatus.SUCCEEDED:
-                    completed_ids_overload.add(handle.task_id)
-            time.sleep(0.05)
-        completed_during_overload = len(completed_ids_overload)
-        depth_before_drain = pending_task_count(queue, "tenant-a") + pending_task_count(queue, "tenant-b")
-        assert max_depth > 0, "overload must build observable queue depth"
-        assert offered >= completed_during_overload
-        assert offered > 0 and completed_during_overload > 0, "overload step must admit and complete work"
-        assert max_depth >= depth_before_drain, "peak depth must reflect transient backlog under overload"
+        overload = run_rate_controlled_overload_step(
+            queue,
+            sustainable_completed_per_sec=sustainable,
+            duration_s=float(OVERLOAD_STEP_SECONDS),
+            task_name=_TASK_NAME,
+        )
+        assert_overload_acceptance(overload)
         drain_deadline = time.monotonic() + 60.0
         while time.monotonic() < drain_deadline:
             _assert_workers_alive(workers)
             depth = pending_task_count(queue, "tenant-a") + pending_task_count(queue, "tenant-b")
-            depth_samples.append(depth)
+            overload.depth_samples.append(depth)
             if depth == 0:
                 break
             time.sleep(0.25)
-        depth_after_drain = pending_task_count(queue, "tenant-a") + pending_task_count(queue, "tenant-b")
-        assert depth_after_drain < depth_before_drain or depth_after_drain == 0, (
+        overload.depth_after_drain = pending_task_count(queue, "tenant-a") + pending_task_count(
+            queue,
+            "tenant-b",
+        )
+        assert overload.depth_after_drain < overload.depth_before_drain or overload.depth_after_drain == 0, (
             "queue must drain or recover after overload step"
         )
     finally:
         _terminate_all(workers)
         drop_postgresql_document_schema(schema, dsn=dsn)
+    assert overload is not None
     record = DistScaleXEvidenceRecord(
         record_id=f"{run_id}-dim-c",
         code_sha=code_sha(),
         topology_description=(
-            f"dim C: N=2 baseline {POINT_DURATION_SECONDS}s; overload 1.5x sustainable={sustainable:.3f}/s; "
-            f"step={OVERLOAD_STEP_SECONDS}s; depth_samples={len(depth_samples)}"
+            f"dim C: N=2 baseline {POINT_DURATION_SECONDS}s; target_offered={overload.target_offered_per_sec:.3f}/s; "
+            f"actual_offered={overload.actual_offered_per_sec:.3f}/s; step={OVERLOAD_STEP_SECONDS}s; "
+            f"depth_samples={len(overload.depth_samples)}"
         ),
         environment_definition=LOCK_ENV_DEFINITION,
         workload_id="WL-1",
         dimension_ids=("C",),
         duration_seconds=float(POINT_DURATION_SECONDS + OVERLOAD_STEP_SECONDS),
         metrics=DistScaleXMetricsSnapshot(
-            max_queue_depth=max_depth,
+            max_queue_depth=overload.max_queue_depth,
             error_rate=0.0,
             extra={
                 "sustainable_completed_per_sec": sustainable,
-                "offered_overload": float(offered),
-                "completed_during_overload": float(completed_during_overload),
-                "depth_before_drain": float(depth_before_drain),
-                "depth_after_drain": float(depth_after_drain),
+                "target_offered_per_sec": overload.target_offered_per_sec,
+                "actual_offered_per_sec": overload.actual_offered_per_sec,
+                "submitted_overload": float(overload.submitted),
+                "completed_terminal_overload": float(overload.completed_terminal),
+                "outstanding_after_overload": float(overload.outstanding_after_step),
+                "depth_before_drain": float(overload.depth_before_drain),
+                "depth_after_drain": float(overload.depth_after_drain),
             },
         ),
         fault_description="bounded overload step",
