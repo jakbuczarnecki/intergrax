@@ -99,13 +99,13 @@ def run_p3_hot_tenant_completed_work_load(
         open_tasks.append(
             OpenTask(handle=handle, submitted_at=time.monotonic(), kind=kind, tenant_id=tenant),
         )
-        time.sleep(0.02)
+        time.sleep(0.06)
     drain_deadline = time.monotonic() + P2_TASK_COMPLETION_DRAIN_SECONDS
     while open_tasks and time.monotonic() < drain_deadline:
         if worker_health is not None:
             worker_health()
         _poll_open(queue, open_tasks, accounting, now=time.monotonic())
-        time.sleep(0.02)
+        time.sleep(0.06)
     if open_tasks:
         accounting.timed_out += len(open_tasks)
         open_tasks.clear()

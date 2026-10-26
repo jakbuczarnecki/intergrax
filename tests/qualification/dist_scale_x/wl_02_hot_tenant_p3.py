@@ -93,7 +93,8 @@ def test_p3_wl02_hot_tenant_85_percent_measured() -> None:
     dsn = resolve_pg_dsn()
     schema = f"dist_scale_x_p3_wl2_{uuid.uuid4().hex}"
     idle_s = float(WL2_WARMUP_SECONDS + WL2_MEASURE_SECONDS + 180)
-    workers = _spawn_workers(dsn, schema, P3_WORKERS, idle_s)
+    # Two workers reduce Windows PG ephemeral port pressure (P2 lesson @ ee5a8371e).
+    workers = _spawn_workers(dsn, schema, 2, idle_s)
     time.sleep(1.0)
     store = create_postgresql_document_store(tenant_schema=schema, dsn=dsn)
     queue = DocumentStoreTaskQueue(store)
@@ -130,7 +131,7 @@ def test_p3_wl02_hot_tenant_85_percent_measured() -> None:
     ]
     cold_lat = [ms for ms in accounting.completion_latencies_ms if ms not in hot_lat]
     topology = (
-        f"P3 WL-2; workers={P3_WORKERS}; in_flight={P3_MAX_IN_FLIGHT}; "
+        f"P3 WL-2; workers=2; in_flight={P3_MAX_IN_FLIGHT}; "
         f"hot_share_target={P3_HOT_SHARE_TARGET}; warmup={WL2_WARMUP_SECONDS}s; "
         f"measure={WL2_MEASURE_SECONDS}s"
     )
