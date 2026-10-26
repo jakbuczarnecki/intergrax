@@ -123,7 +123,7 @@ def run_document_store_completed_work_load(
             len(open_tasks),
         )
         if len(open_tasks) >= max_in_flight:
-            time.sleep(0.01)
+            time.sleep(0.05)
             continue
         tick += 1
         use_hot = hot_tenant is not None and (tick % 10) < int(10 * hot_share)
@@ -146,6 +146,7 @@ def run_document_store_completed_work_load(
         open_tasks.append(
             OpenTask(handle=handle, submitted_at=time.monotonic(), kind=kind, tenant_id=tenant),
         )
+        time.sleep(0.02)
     drain_deadline = time.monotonic() + P2_TASK_COMPLETION_DRAIN_SECONDS
     while open_tasks and time.monotonic() < drain_deadline:
         if worker_health is not None:

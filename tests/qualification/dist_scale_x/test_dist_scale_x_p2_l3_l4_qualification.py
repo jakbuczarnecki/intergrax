@@ -138,6 +138,7 @@ def _measure_point(n_workers: int, duration_s: float) -> tuple[TaskLoadAccountin
         accounting.assert_acceptance_reconciled()
     finally:
         _terminate_all(workers)
+        time.sleep(3.0)
         drop_postgresql_document_schema(schema, dsn=dsn)
     return accounting, schema
 
@@ -163,6 +164,7 @@ def test_p2_wl01_l4_document_store_scaling_envelope() -> None:
     run_id = new_run_id("wl01-scale")
     duration = float(POINT_DURATION_SECONDS)
     n1, _ = _measure_point(1, duration)
+    time.sleep(15.0)
     n2, _ = _measure_point(2, duration)
     thr1 = n1.useful_throughput_per_sec(duration)
     thr2 = n2.useful_throughput_per_sec(duration)
