@@ -15,7 +15,15 @@ from tests.qualification.dist_scale_x._constants import (
     DIST_SCALE_X_MANIFEST_SCHEMA_VERSION,
     DIST_SCALE_X_PROOF_ROOT_REL,
 )
-from tests.qualification.dist_scale_x.catalog import validate_dist_scale_x_catalog_mappings
+import tests.qualification.dist_scale_x.catalog as dist_scale_x_catalog
+from tests.qualification.dist_scale_x.catalog import (
+    DistScaleBackendEntry,
+    DistScaleDimensionEntry,
+    DistScaleExitCriterionEntry,
+    DistScaleHistoricalEvidenceEntry,
+    DistScaleWorkloadEntry,
+    validate_dist_scale_x_catalog_mappings,
+)
 from tests.qualification.dist_scale_x.evidence_schema import (
     DistScaleXEvidenceRecord,
     evidence_record_from_mapping,
@@ -76,9 +84,90 @@ class DistScaleXEvidenceManifest:
         }
 
 
+def _canonical_dimension_entry(entry: DistScaleDimensionEntry) -> dict[str, Any]:
+    return {
+        "dimension_id": entry.dimension_id,
+        "title": entry.title,
+        "workload_ids": list(entry.workload_ids),
+        "exit_criterion_ids": list(entry.exit_criterion_ids),
+        "implementation_batch": entry.implementation_batch,
+        "p1_structural_gate_node_ids": list(entry.p1_structural_gate_node_ids),
+    }
+
+
+def _canonical_workload_entry(entry: DistScaleWorkloadEntry) -> dict[str, Any]:
+    return {
+        "workload_id": entry.workload_id,
+        "title": entry.title,
+        "dimension_ids": list(entry.dimension_ids),
+        "exit_criterion_ids": list(entry.exit_criterion_ids),
+        "mandatory_backend_ids": list(entry.mandatory_backend_ids),
+        "implementation_batch": entry.implementation_batch,
+        "future_qual_owner_glob": entry.future_qual_owner_glob,
+    }
+
+
+def _canonical_exit_criterion_entry(entry: DistScaleExitCriterionEntry) -> dict[str, Any]:
+    return {
+        "exit_id": entry.exit_id,
+        "title": entry.title,
+        "dimension_ids": list(entry.dimension_ids),
+        "workload_ids": list(entry.workload_ids),
+        "evidence_layer": entry.evidence_layer,
+    }
+
+
+def _canonical_backend_entry(entry: DistScaleBackendEntry) -> dict[str, Any]:
+    return {
+        "backend_id": entry.backend_id,
+        "name": entry.name,
+        "qualification_class": entry.qualification_class.value,
+        "code_anchor": entry.code_anchor,
+        "qualification_owner": entry.qualification_owner,
+        "implementation_batch": entry.implementation_batch,
+        "operator_decision_required": entry.operator_decision_required,
+    }
+
+
+def _canonical_historical_evidence_entry(entry: DistScaleHistoricalEvidenceEntry) -> dict[str, Any]:
+    return {
+        "stage_id": entry.stage_id,
+        "accepted_sha": entry.accepted_sha,
+        "reconciliation": entry.reconciliation,
+        "scope_note": entry.scope_note,
+    }
+
+
+def canonical_dist_scale_x_catalog_document() -> dict[str, Any]:
+    """Deterministic, materially complete catalog body for integrity binding."""
+    mapping_violations = validate_dist_scale_x_catalog_mappings()
+    return {
+        "catalog_integrity_schema": "dist-scale-x-catalog-integrity-v1",
+        "structural_validation": {"violations": list(mapping_violations)},
+        "dimensions": [
+            _canonical_dimension_entry(e) for e in dist_scale_x_catalog.DIST_SCALE_X_DIMENSION_CATALOG
+        ],
+        "workloads": [
+            _canonical_workload_entry(e) for e in dist_scale_x_catalog.DIST_SCALE_X_WORKLOAD_CATALOG
+        ],
+        "exit_criteria": [
+            _canonical_exit_criterion_entry(e) for e in dist_scale_x_catalog.DIST_SCALE_X_EXIT_CRITERION_CATALOG
+        ],
+        "backends": [_canonical_backend_entry(e) for e in dist_scale_x_catalog.DIST_SCALE_X_BACKEND_CATALOG],
+        "historical_evidence": [
+            _canonical_historical_evidence_entry(e)
+            for e in dist_scale_x_catalog.DIST_SCALE_X_HISTORICAL_EVIDENCE_CATALOG
+        ],
+        "threshold_lock_state": dist_scale_x_catalog.DIST_SCALE_X_THRESHOLD_LOCK_STATE.value,
+    }
+
+
 def catalog_integrity_digest() -> str:
-    violations = validate_dist_scale_x_catalog_mappings()
-    payload = json.dumps({"violations": violations}, sort_keys=True, separators=(",", ":"))
+    payload = json.dumps(
+        canonical_dist_scale_x_catalog_document(),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -117,6 +206,12 @@ def validate_manifest_mapping(payload: Mapping[str, Any]) -> tuple[str, ...]:
         violations.append("manifest environment_definition empty")
     if not str(payload.get("topology_description", "")).strip():
         violations.append("manifest topology_description empty")
+
+    catalog_violations = validate_dist_scale_x_catalog_mappings()
+    if catalog_violations:
+        for cv in catalog_violations:
+            violations.append(f"catalog structural violation: {cv}")
+        return tuple(violations)
 
     expected_digest = catalog_integrity_digest()
     if str(payload.get("catalog_integrity_sha256", "")) != expected_digest:

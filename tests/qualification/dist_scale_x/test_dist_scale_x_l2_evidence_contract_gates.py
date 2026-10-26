@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pytest
 
+import tests.qualification.dist_scale_x.catalog as dist_scale_x_catalog
 from tests.qualification.dist_scale_x._constants import DIST_SCALE_X_P1_START_HEAD
+from tests.qualification.dist_scale_x.catalog import validate_dist_scale_x_catalog_mappings
 from tests.qualification.dist_scale_x.evidence_manifest import (
     DistScaleXEvidenceManifest,
     catalog_integrity_digest,
@@ -114,6 +116,20 @@ def test_l2_manifest_roundtrip_under_tmp_proof_layout() -> None:
     assert ".tmp/proof/dist-scale-x" in path.as_posix()
     violations = load_and_validate_manifest_file(path)
     assert violations == ()
+
+
+def test_l2_catalog_digest_binds_material_catalog_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+    baseline_digest = catalog_integrity_digest()
+    assert validate_dist_scale_x_catalog_mappings() == ()
+
+    first = dist_scale_x_catalog.DIST_SCALE_X_DIMENSION_CATALOG[0]
+    mutated_catalog = (
+        replace(first, title=f"{first.title} — material-field probe"),
+        *dist_scale_x_catalog.DIST_SCALE_X_DIMENSION_CATALOG[1:],
+    )
+    monkeypatch.setattr(dist_scale_x_catalog, "DIST_SCALE_X_DIMENSION_CATALOG", mutated_catalog)
+    assert validate_dist_scale_x_catalog_mappings() == ()
+    assert catalog_integrity_digest() != baseline_digest
 
 
 def test_l2_manifest_rejects_stale_catalog_digest() -> None:
