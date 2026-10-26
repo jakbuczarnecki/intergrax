@@ -15,21 +15,14 @@ from typing import Literal
 
 import httpx
 
-from intergrax.applications._shared.declarative_tool_wiring import (
-    build_declarative_invoker_from_tool_wiring,
-)
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications._shared.tool_life_execution_recovery_wiring import (
     wire_tool_life_durable_single_host_execution_recovery,
 )
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-    PolicyRulesProfile,
-)
+from intergrax.applications.contracts.environment_profile import PolicyRulesProfile
 from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.contracts.tool_profile import ToolProfile
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.http.bundle import register_http_tools
@@ -45,7 +38,11 @@ from tests.unit.runtime.external_operations.tool_life_x_r4_class_b_http_provider
     ClassBHttpProviderOracle,
     class_b_http_handler_for_oracle,
 )
-from tests.unit.runtime.nexus.tools.test_gr10_r9_orchestration_mse import _RecordingMseBoundary
+from tests.qualification.dist_scale_x.p3_strict_host_invoker import (
+    _RecordingMseBoundary,
+    build_p3_strict_production_invoker_bundle,
+    strict_durable_application_environment,
+)
 from tests.unit.tools.providers.test_tool_life_x_batch_e_real_infrastructure_adversarial import (
     _allowlist_client,
 )
@@ -128,6 +125,7 @@ def start_p3_strict_http_stack(
     *,
     fault_mode: Literal["mix", "ok", "503", "slow", "lost_ack"] = "ok",
     slow_seconds: float = 30.0,
+    mse_allow: bool = True,
 ) -> P3StrictHttpStack:
     import os
 
@@ -154,37 +152,19 @@ def start_p3_strict_http_stack(
     ctx = ToolWiringContext(http_client=client)
     register_http_tools(registry, ctx)
     register_tool_life_http_class_b_qualification_tools(registry, ctx)
-    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="dist-scale-x.p3.wl4")
     tool_wiring = ApplicationToolWiring(
         profile=ToolProfile(enabled=[P3_HTTP_TOOL_ID]),
         wiring_context=ctx,
         registry=registry,
     )
-    from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
-        resolve_dependency_concurrency_admission_configuration,
-    )
-    from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
-        materialize_tool_dependency_attempt_boundary,
-    )
-
-    admission = resolve_dependency_concurrency_admission_configuration(
-        env.reliability_profile.dependency_concurrency_admission,
-        production_mode=False,
-    )
-    boundary = materialize_tool_dependency_attempt_boundary(
-        admission,
-        production_mode=False,
-    )
-    bundle = build_declarative_invoker_from_tool_wiring(
+    bundle, _boundary = build_p3_strict_production_invoker_bundle(
         tool_wiring,
-        idempotency_store=InMemoryIdempotencyStore(),
-        meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
+        idempotency_db_path=str(tmp_path / "strict_idempotency.db"),
         tool_life_execution_recovery=wiring,
-        dependency_attempt_boundary=boundary,
-        production_mode=False,
+        tenant_id="tenant-a",
+        agent_id="dist-scale-x-p3",
+        meaningful_side_effect_authorization=_RecordingMseBoundary(allow=mse_allow),
     )
-    if bundle is None:
-        raise RuntimeError("declarative invoker required for P3 WL-4")
     invoker = bundle.tool_invoker
     return P3StrictHttpStack(
         server=server,
@@ -211,7 +191,8 @@ def invoke_idempotent_post(
     state = build_runtime_state_for_tests(run_id=P3_RUN_SEED)
     state.context.config.tenant_id = tenant_id
     state.request.tenant_id = tenant_id
-    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="dist-scale-x.p3.wl4")
+    env = strict_durable_application_environment()
+    state.context.config.production_mode = True
     state.context.config.policy_bundle = wire_policy_bundle(
         env.model_copy(
             update={

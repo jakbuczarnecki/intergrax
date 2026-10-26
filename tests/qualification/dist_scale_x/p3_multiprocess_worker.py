@@ -29,14 +29,17 @@ class _Out(BaseModel):
     ok: bool = True
 
 
-def _bump_effect_counter(db_path: Path) -> int:
+def _record_semantic_effect(db_path: Path, idempotency_key: str) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
-        conn.execute("CREATE TABLE IF NOT EXISTS effects (k TEXT PRIMARY KEY, v INTEGER NOT NULL)")
-        conn.execute("INSERT INTO effects(k,v) VALUES('logical',1) ON CONFLICT(k) DO UPDATE SET v=v+1")
-        row = conn.execute("SELECT v FROM effects WHERE k='logical'").fetchone()
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS semantic_effects (idempotency_key TEXT PRIMARY KEY)"
+        )
+        conn.execute(
+            "INSERT OR IGNORE INTO semantic_effects(idempotency_key) VALUES(?)",
+            (idempotency_key,),
+        )
         conn.commit()
-        return int(row[0])
 
 
 def _build_worker(
@@ -59,8 +62,9 @@ def _build_worker(
         idempotency_key,
         execution_identity,
     ):
-        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
-        _bump_effect_counter(effect_path)
+        _ = tenant_id, run_id, payload, execution_identity
+        key = idempotency_key or run_id
+        _record_semantic_effect(effect_path, key)
         return ToolExecutionResult.ok(_Out())
 
     registry.register(task_name, handler)
@@ -105,7 +109,11 @@ def read_effect_count(effect_db: str) -> int:
     if not path.is_file():
         return 0
     with sqlite3.connect(path) as conn:
-        row = conn.execute("SELECT v FROM effects WHERE k='logical'").fetchone()
+        try:
+            row = conn.execute("SELECT COUNT(*) FROM semantic_effects").fetchone()
+        except sqlite3.OperationalError:
+            row = conn.execute("SELECT v FROM effects WHERE k='logical'").fetchone()
+            return int(row[0]) if row else 0
     return int(row[0]) if row else 0
 
 

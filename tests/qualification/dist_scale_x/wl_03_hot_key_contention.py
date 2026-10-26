@@ -144,7 +144,7 @@ def test_p3_wl03_hot_idempotency_key_single_logical_effect() -> None:
     effects = read_effect_count(str(effect_db))
     assert len(unique_handles) == 1, f"queue idempotency collapsed to one task_id, got {len(unique_handles)}"
     assert succeeded == 1, f"expected one terminal SUCCEEDED task, got {succeeded}"
-    assert effects >= 1, "handler must run at least once"
+    assert effects == 1, f"expected exactly one semantic effect, got {effects}"
     assert submitted > 10
     topology = (
         f"P3 WL-3; workers={P3_WORKERS}; in_flight_cap={P3_MAX_IN_FLIGHT}; "

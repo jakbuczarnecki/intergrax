@@ -123,13 +123,13 @@ def test_p3_wl02_hot_tenant_85_percent_measured() -> None:
         _terminate(workers)
         time.sleep(2.0)
         drop_postgresql_document_schema(schema, dsn=dsn)
-    hot_lat = [
+    hot_lat = list(accounting.completion_latencies_by_tenant.get(hot, ()))
+    cold_lat = [
         ms
-        for _tid, count in accounting.completions_by_tenant.items()
-        for ms in accounting.completion_latencies_ms[:count]
-        if _tid == hot
+        for tid, samples in accounting.completion_latencies_by_tenant.items()
+        if tid in cold
+        for ms in samples
     ]
-    cold_lat = [ms for ms in accounting.completion_latencies_ms if ms not in hot_lat]
     topology = (
         f"P3 WL-2; workers=2; in_flight={P3_MAX_IN_FLIGHT}; "
         f"hot_share_target={P3_HOT_SHARE_TARGET}; warmup={WL2_WARMUP_SECONDS}s; "

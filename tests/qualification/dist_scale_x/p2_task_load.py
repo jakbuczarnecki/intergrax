@@ -37,6 +37,7 @@ class TaskLoadAccounting:
     read_submitted: int = 0
     write_submitted: int = 0
     completion_latencies_ms: list[float] = field(default_factory=list)
+    completion_latencies_by_tenant: dict[str, list[float]] = field(default_factory=dict)
     completions_by_tenant: dict[str, int] = field(default_factory=dict)
     max_in_flight_observed: int = 0
 
@@ -80,7 +81,11 @@ def _poll_open(
         status = queue.get_status(item.handle)
         if status is TaskStatus.SUCCEEDED:
             accounting.completed += 1
-            accounting.completion_latencies_ms.append((now - item.submitted_at) * 1000.0)
+            latency_ms = (now - item.submitted_at) * 1000.0
+            accounting.completion_latencies_ms.append(latency_ms)
+            accounting.completion_latencies_by_tenant.setdefault(item.tenant_id, []).append(
+                latency_ms,
+            )
             accounting.completions_by_tenant[item.tenant_id] = (
                 accounting.completions_by_tenant.get(item.tenant_id, 0) + 1
             )
