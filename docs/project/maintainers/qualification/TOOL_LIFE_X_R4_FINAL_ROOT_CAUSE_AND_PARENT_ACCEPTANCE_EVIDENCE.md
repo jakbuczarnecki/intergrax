@@ -4,9 +4,10 @@
 
 | Field | Value |
 |---|---|
-| Operator START_HEAD (this batch) | `870e9ae466ec7d6e999c2a4c03b6e05ad52e7cd7` |
-| IMPLEMENTATION_SHA | `10804d0e024e446274b60421a84797ec55e52f88` |
-| PUBLICATION_HEAD | `a0a7abdb611368d56a2fdc5e1fb622d76f45d144` |
+| Operator START_HEAD (EXT-L4 oracle batch) | `49849716c67cc293a692d2e1afe6f5cf1088164c` |
+| IMPLEMENTATION_SHA | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
+| PUBLICATION_HEAD | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
+| Prior implementation baseline (operator pin) | `10804d0e024e446274b60421a84797ec55e52f88` |
 | Branch | `development` |
 | Roadmap authority | `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` §3.0.5 (EC1–EC15 canonical) |
 | ADR | [`ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md`](../architecture/ADR_ENTERPRISE_TOOL_LIFE_X_CERTIFIED_OWNER_LOSS_AND_STALLED_POLICY.md) |
@@ -49,6 +50,20 @@
 | F8-04 / F8-C | **Qualified** — strict-host E2E with `production_mode=True`, dependency admission, full redrive chain |
 | F8-redrive-A/B | **Fixed** — `assert_sanctioned_physical_redrive_dispatch_admitted` + invoker parity |
 
+## 2c. EXT-L4 consolidated correction (BLOCKER D — qualification oracle)
+
+**Symptom (Disposition C):** In-memory cache preceded SQLite commit; per-instance `threading.Lock` did not serialize cross-instance writers; concurrent first-writes could race on `PRIMARY KEY`; durable commit failure could leave a phantom in-memory effect; retention used `len(_memory)` instead of authoritative row count.
+
+**Remediation (qualification-only):**
+
+- SQLite `BEGIN IMMEDIATE` transactions for all durable writes and replays.
+- Effect rows committed before in-memory cache update; cache is non-authoritative across instances/processes.
+- Retention enforced via `COUNT(*)` on `class_b_effects` before insert.
+- `ClassBHttpProviderOraclePersistenceError` on `sqlite3.Error` or corrupt stored JSON → HTTP 503 fail-closed.
+- Negative matrix: `test_tool_life_x_r4_class_b_http_provider_oracle_negatives.py` (dual-instance threads, payload conflict race, subprocess spawn replay, chmod write failure, corrupt row, retention after restart, HTTP status contract, parallel HTTP single row).
+
+**Production contracts:** unchanged — fix scoped to qualification oracle module and tests.
+
 ## 3. Defects A–E (implementation)
 
 | ID | Disposition |
@@ -56,7 +71,7 @@
 | A | Redrive dispatch admission — `sanctioned_physical_redrive_dispatch_admission.py` |
 | B | `invoke_sanctioned_physical_redrive` — `_prepare_invocation`, protected-work, `before_external_effect_sanctioned_physical_redrive`, `_execute_once`, `after_external_effect` |
 | C | Exact-type qual handler provenance — `class_b_qualification_provenance.py` |
-| D | Provider oracle + SQLite durability tests |
+| D | Provider oracle — SQLite-authoritative idempotency + negative matrix |
 | E | Production admission E2E green (see §2) |
 
 ## 4. Changed owners (this batch)
@@ -69,7 +84,8 @@
 | `intergrax/contracts/idempotency_store.py` + store impls | B — `reconcile_suspended_pre_effect_for_sanctioned_physical_redrive` |
 | `intergrax/tools/providers/http/class_b_qualification_provenance.py` | C — exact handler type |
 | `intergrax/runtime/agent_governance/errors.py` | E — exception traceback fix |
-| `tests/.../test_tool_life_x_r4_f8_remediation.py` | E2E + oracle tests |
+| `tests/.../test_tool_life_x_r4_f8_remediation.py` | E2E + oracle smoke |
+| `tests/.../test_tool_life_x_r4_class_b_http_provider_oracle_negatives.py` | D — concurrency/durability negatives |
 | `tests/.../test_tool_life_x_r4_f8_redrive_dispatch_adversarial.py` | A/B negatives |
 | `tests/.../tool_life_x_r4_class_b_http_provider_oracle.py` | D — oracle |
 
@@ -88,10 +104,13 @@ uv run pytest `
   tests/unit/runtime/external_operations/test_tool_life_x_r4_f6_scenario_24_recovery.py `
   tests/unit/applications/test_tool_life_x_r4_production_entry_e2e_qualification.py `
   tests/unit/runtime/nexus/tools/test_tool_life_x_r4_terminal_lifecycle_invoker.py `
+  tests/unit/runtime/external_operations/test_tool_life_x_r4_class_b_http_provider_oracle_negatives.py `
   -q -p no:xdist
 ```
 
-**Result:** 59 passed — log `.tmp/session/TOOL-LIFE-X-R4/pytest-l2-consolidated.log`
+**Result:** 67 passed — log `.tmp/session/TOOL-LIFE-X-R4-F8-EXT-L4/pytest-l2-consolidated.log`
+
+**L1 (oracle-only):** 10 passed — `.tmp/session/TOOL-LIFE-X-R4-F8-EXT-L4/pytest-l1-oracle.log`
 
 **Strict production E2E:** `test_canonical_strict_host_class_b_lost_ack_recovery_single_effect_e2e` — `production_mode=True`, dependency boundary, governance `http` capability, lost-ack, redrive, `oracle.effect_count == 1`.
 
@@ -105,7 +124,7 @@ uv run pytest `
 |---|---|---|---|
 | F8-redrive-A | `sanctioned_physical_redrive_dispatch_admission` | `test_tool_life_x_r4_f8_redrive_dispatch_adversarial.py` | VALIDATION REQUIRED @ audit SHA |
 | F8-04 production admission | `declarative_tool_wiring` + invoker | strict-host E2E | VALIDATION REQUIRED @ audit SHA |
-| BLOCKER D oracle | qual oracle module | oracle + B2 HTTP qual | VALIDATION REQUIRED @ audit SHA |
+| BLOCKER D oracle | qual oracle module | oracle negatives + B2 HTTP qual + L2 | **RE-VALIDATED** @ IMPLEMENTATION_SHA |
 | FRZ-* global | platform | EQG full unit gate | BLOCKED (collection errors unrelated) |
 | Parent CLOSED | operator F8 | independent audit | OPERATOR DECISION REQUIRED |
 
@@ -160,6 +179,24 @@ Implementation and scoped L2 support **READY FOR INDEPENDENT F8 EXT-L4 AUDIT**. 
 
 | Field | Value |
 |---|---|
-| START_HEAD | `870e9ae466ec7d6e999c2a4c03b6e05ad52e7cd7` |
-| IMPLEMENTATION_SHA | `10804d0e024e446274b60421a84797ec55e52f88` |
-| PUBLICATION_HEAD | `a0a7abdb611368d56a2fdc5e1fb622d76f45d144` |
+| START_HEAD | `49849716c67cc293a692d2e1afe6f5cf1088164c` |
+| IMPLEMENTATION_SHA | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
+| PUBLICATION_HEAD | `8cc275561f4497dd69f1575ccf1cef531406d14b` |
+
+## 13. F8 EXT-L4 impact matrix (oracle delta)
+
+| Element | Canonical owner | Affected contracts | Prior evidence SHA | Change impact | Historical validity | Required validation | Result | Blocker |
+|---|---|---|---|---|---|---|---|---|
+| F8-A | `class_b_qualification_provenance` | qual handler type | `10804d0e…` | none | **REUSE** | L2 if oracle touched HTTP bind | **REUSE** — L2 pass | — |
+| F8-B | invoker redrive | sanctioned redrive | `10804d0e…` | none | **REUSE** | adversarial L2 | **REUSE** — L2 pass | — |
+| F8-C | strict E2E | production_mode admission | `10804d0e…` | indirect (shared oracle in E2E) | partial re-proof | strict E2E L2 | **RE-VALIDATED** | — |
+| F8-D | qual oracle | none (test-only) | prior oracle | **SUBSTANTIVE** | **INVALIDATED** for durability/concurrency claims | L1+L2 negatives | **PASS** @ IMPLEMENTATION_SHA | — |
+| F8-E | governance exceptions | tool governance errors | `10804d0e…` | none | **REUSE** | L2 | **REUSE** | — |
+| EC12 | HTTP Class B physical | trusted effect registry | prior bundles | oracle fixture only | extended | L2 integrated + strict | **PASS scoped** | — |
+| EC14 | redrive binding | `bound_redrive_effect_*` | EXT-L4 | none | **REUSE** | adversarial | **REUSE** | — |
+| FRZ-* global | platform | EQG full unit | prior | none | **REUSE** | `gate and not no_ci` collect | **BLOCKED** | 16 collection errors (RAG/harness) |
+| Parent CLOSED | operator F8 | independent audit | — | — | n/a | external sign-off | **OPEN** | independent EXT-L4 |
+
+Scenarios **1–24**, **G-A01–G-A09**, **EC1–EC15** (except EC12 row above): **REUSE** prior scoped PASS @ `10804d0e…` / EXT-L4 bundles; **no automated full re-run** — consolidated L2 green confirms no regression on touched F8 modules. Independent auditor re-proof @ publication SHA remains **VALIDATION REQUIRED** per scenario row in [`TOOL_LIFE_X_R4_EXT_L4_CORRECTIVE_EVIDENCE_BUNDLE.md`](TOOL_LIFE_X_R4_EXT_L4_CORRECTIVE_EVIDENCE_BUNDLE.md).
+
+**EQG classification:** `F8-SCOPED QUALIFICATION` — 67/67 L2 PASS; `TOOL-LIFE-X PARENT CERTIFICATION` — **PARTIAL** (oracle gap closed, parent gate still OPEN); `GLOBAL PLATFORM EQG/FRZ` — **BLOCKED** (pre-existing collection errors, not introduced by this delta).
