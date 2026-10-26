@@ -230,6 +230,12 @@ class LegacyOnlyIdempotencyStore(IdempotencyStore):
         del args, kwargs
         return False
 
+    def reconcile_suspended_pre_effect_for_sanctioned_physical_redrive(
+        self, *args, **kwargs
+    ):  # noqa: ANN002, ANN003
+        del args, kwargs
+        return False
+
     def external_effect_may_have_started(self, tenant_id: str, key: str) -> bool:
         del tenant_id, key
         return False

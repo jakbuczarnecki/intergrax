@@ -325,6 +325,34 @@ class InMemoryIdempotencyStore(IdempotencyStore):
             del self._store[composite_key]
             return True
 
+    def reconcile_suspended_pre_effect_for_sanctioned_physical_redrive(
+        self,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        *,
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> bool:
+        validate_pre_effect_recovery_authority(recovery_authority)
+        composite_key = (tenant_id, key)
+        with self._lock:
+            entry = self._store.get(composite_key)
+            if entry is None:
+                return False
+            assert_operation_identity_compatible(
+                entry.operation_identity,
+                operation_identity,
+            )
+            if entry.status == InvocationStatus.UNCERTAIN:
+                del self._store[composite_key]
+                return True
+            if entry.status != InvocationStatus.STARTED:
+                return False
+            if not entry.external_effect_may_have_started:
+                return False
+            del self._store[composite_key]
+            return True
+
     def record_started(
         self,
         tenant_id: str,

@@ -18,6 +18,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationOperationIdentity,
     InvocationUncertaintyError,
     PreEffectSuspendedWorkRecoveryAuthority,
+    validate_pre_effect_recovery_authority,
 )
 from intergrax.runtime.execution.idempotency_runtime_state_bridge import (
     RuntimeErrorCode,
@@ -124,6 +125,37 @@ class IdempotencyPreEffectCoordinator:
             claim_result=claim_result,
             tenant_id=tenant_id,
             key=key,
+        )
+
+    def before_external_effect_sanctioned_physical_redrive(
+        self,
+        *,
+        state: RuntimeStateContract,
+        contract: ToolContract,
+        request: ToolExecutionRequest[PydanticBaseModel],
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> PreEffectCoordinationResult:
+        validate_pre_effect_recovery_authority(recovery_authority)
+        tenant_id = state.tenant_id
+        key = request.idempotency_key
+        if key is None:
+            raise RuntimeError(
+                "Idempotency key is required for sanctioned physical redrive.",
+            )
+        operation_identity = compute_invocation_operation_identity(
+            request.tool_id,
+            request.input,
+        )
+        self._store.reconcile_suspended_pre_effect_for_sanctioned_physical_redrive(
+            tenant_id,
+            key,
+            operation_identity,
+            recovery_authority=recovery_authority,
+        )
+        return self.before_external_effect(
+            state=state,
+            contract=contract,
+            request=request,
         )
 
     def after_external_effect(

@@ -431,10 +431,18 @@ class _ExternalOperationStateCertificationSemantics:
         current = self._get_scoped(tenant_id, operation_id)
         if current is None:
             raise ExternalOperationNotFoundError(operation_id)
-        if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
+        if current.physical_state not in (
+            ExternalOperationPhysicalState.RUNNING,
+            ExternalOperationPhysicalState.UNKNOWN,
+        ):
             raise CertifiedOwnerLossEvidenceRejectedError(
-                "staging requires physical RUNNING",
+                "staging requires physical RUNNING or UNKNOWN",
             )
+        if current.physical_state is ExternalOperationPhysicalState.UNKNOWN:
+            if current.worker_instance_id is None or current.worker_ownership_epoch is None:
+                raise CertifiedOwnerLossEvidenceRejectedError(
+                    "UNKNOWN staging requires bound worker execution ownership",
+                )
         evidence = staged.evidence
         if evidence.epoch.tenant_id != current.tenant_id:
             raise CertifiedOwnerLossEvidenceRejectedError("epoch tenant mismatch")
@@ -493,6 +501,32 @@ class _ExternalOperationStateCertificationSemantics:
             raise CertifiedOwnerLossEvidenceRejectedError("evidence_id mismatch")
         if evidence_id in current.consumed_certified_loss_evidence_ids:
             raise CertifiedOwnerLossEvidenceRejectedError("evidence already consumed")
+        if current.physical_state is ExternalOperationPhysicalState.UNKNOWN:
+            if staged_slot is None:
+                raise CertifiedOwnerLossEvidenceRejectedError("no staged evidence")
+            evidence = staged_slot.evidence
+            if evidence.evidence_id != evidence_id:
+                raise CertifiedOwnerLossEvidenceRejectedError("evidence_id mismatch")
+            if evidence_id in current.consumed_certified_loss_evidence_ids:
+                raise CertifiedOwnerLossEvidenceRejectedError("evidence already consumed")
+            if evidence.epoch.tenant_id != current.tenant_id:
+                raise CertifiedOwnerLossEvidenceRejectedError("cross-tenant evidence")
+            if evidence.issuer_id not in binding.allowed_issuer_ids:
+                raise CertifiedOwnerLossEvidenceRejectedError("issuer not allowlisted")
+            _validate_evidence_digest(evidence)
+            consumed = frozenset(
+                set(current.consumed_certified_loss_evidence_ids) | {evidence_id},
+            )
+            return self._compare_and_set_locked(
+                tenant_id,
+                operation_id,
+                expected_revision=expected_revision,
+                update=ExternalOperationStateUpdate(
+                    ownership_epoch_fence=evidence.monotonic_fence,
+                    clear_staged_certified_owner_loss=True,
+                    consumed_certified_loss_evidence_ids=consumed,
+                ),
+            )
         if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
             raise CertifiedOwnerLossEvidenceRejectedError("apply requires physical RUNNING")
         if evidence.epoch.tenant_id != current.tenant_id:

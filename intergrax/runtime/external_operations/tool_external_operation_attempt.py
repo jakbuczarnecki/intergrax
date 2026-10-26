@@ -46,6 +46,7 @@ from intergrax.runtime.external_operations.tool_external_operation_redrive_bindi
 )
 from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
 from intergrax.tools.core.contracts import ToolContract
+from intergrax.tools.registry.runtime import RegisteredTool
 from pydantic import BaseModel
 
 
@@ -139,6 +140,7 @@ class ToolExternalOperationAttempt:
         *,
         catalog_tool_id: str | None = None,
         catalog_tool: ToolContract | None = None,
+        registered_tool: RegisteredTool | None = None,
         physical_idempotency_key: str | None = None,
         tool_input: BaseModel | None = None,
     ) -> None:
@@ -158,14 +160,13 @@ class ToolExternalOperationAttempt:
                 catalog_tool_id,
                 tool_input,
             ).operation_fingerprint
-        tool_tags = catalog_tool.tags if catalog_tool is not None else None
         self._revision = bind_sanctioned_redrive_effect_before_tool_physical_execution(
             store,
             tenant_id=identity.tenant_id,
             operation_id=identity.operation_id,
             expected_revision=self._revision,
             catalog_tool_id=catalog_tool_id,
-            catalog_tool_tags=tool_tags,
+            registered_tool=registered_tool,
             physical_idempotency_key=physical_idempotency_key,
             physical_effect_fingerprint=effect_fingerprint,
         )

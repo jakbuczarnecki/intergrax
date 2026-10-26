@@ -114,9 +114,14 @@ def assert_may_begin_physical_attempt(
             ExternalOperationPhysicalState.CANCELLED,
             ExternalOperationPhysicalState.UNKNOWN,
         ):
-            raise ExternalOperationRetryBlockedError(
-                f"retry blocked for {operation_id!r}: physical {record.physical_state.value}",
-            )
+            if not (
+                record.physical_state is ExternalOperationPhysicalState.NOT_STARTED
+                and record.consumed_redrive_admission_ids
+            ):
+                raise ExternalOperationRetryBlockedError(
+                    f"retry blocked for {operation_id!r}: "
+                    f"physical {record.physical_state.value}",
+                )
     return record
 
 

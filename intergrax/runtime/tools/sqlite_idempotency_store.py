@@ -594,6 +594,75 @@ class SQLiteIdempotencyStore(IdempotencyStore):
             conn.commit()
             return deleted.rowcount == 1
 
+    def reconcile_suspended_pre_effect_for_sanctioned_physical_redrive(
+        self,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        *,
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> bool:
+        validate_pre_effect_recovery_authority(recovery_authority)
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                """
+                SELECT status, operation_tool_id, operation_fingerprint,
+                       external_effect_may_have_started, schema_version
+                FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ?
+                """,
+                (tenant_id, key),
+            ).fetchone()
+            if row is not None:
+                self._require_ledger_schema(row)
+            if row is None:
+                conn.commit()
+                return False
+            assert_operation_identity_compatible(
+                self._row_operation_identity(row),
+                operation_identity,
+            )
+            status = InvocationStatus(row["status"])
+            if status is InvocationStatus.UNCERTAIN:
+                deleted = conn.execute(
+                    """
+                    DELETE FROM idempotency_ledger
+                    WHERE tenant_id = ? AND key = ? AND status = ?
+                      AND schema_version = ?
+                    """,
+                    (
+                        tenant_id,
+                        key,
+                        InvocationStatus.UNCERTAIN.value,
+                        SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
+                    ),
+                )
+                conn.commit()
+                return deleted.rowcount == 1
+            if status is not InvocationStatus.STARTED:
+                conn.commit()
+                return False
+            if not bool(row["external_effect_may_have_started"]):
+                conn.commit()
+                return False
+            deleted = conn.execute(
+                """
+                DELETE FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ? AND status = ?
+                  AND external_effect_may_have_started = 1
+                  AND schema_version = ?
+                """,
+                (
+                    tenant_id,
+                    key,
+                    InvocationStatus.STARTED.value,
+                    SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1,
+                ),
+            )
+            conn.commit()
+            return deleted.rowcount == 1
+
     def record_started(
         self,
         tenant_id: str,

@@ -16,7 +16,7 @@ class SideEffectAuthorizationFailureReason(StrEnum):
     NON_ENFORCING_MODE = "non_enforcing_mode"
 
 
-@dataclass(frozen=True)
+@dataclass
 class MeaningfulSideEffectAuthorizationRequiredError(RuntimeError):
     """Raised when a side-effecting tool lacks recognized enforcing authorization."""
 

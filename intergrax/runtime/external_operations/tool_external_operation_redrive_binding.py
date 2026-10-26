@@ -31,7 +31,7 @@ def bind_sanctioned_redrive_effect_before_tool_physical_execution(
     operation_id: str,
     expected_revision: int,
     catalog_tool_id: str,
-    catalog_tool_tags: tuple[str, ...] | None = None,
+    registered_tool: object | None = None,
     physical_idempotency_key: str | None = None,
     physical_effect_fingerprint: str | None = None,
 ) -> int:
@@ -40,7 +40,7 @@ def bind_sanctioned_redrive_effect_before_tool_physical_execution(
         return expected_revision
     assert_sanctioned_class_b_catalog_tool_provenance(
         catalog_tool_id=catalog_tool_id,
-        catalog_tool_tags=catalog_tool_tags,
+        registered_tool=registered_tool,
     )
     contract_id, provider_id, binding_tool_id = (
         resolve_sanctioned_trusted_redrive_effect_binding_for_catalog_tool(

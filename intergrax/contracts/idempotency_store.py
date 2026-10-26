@@ -267,6 +267,22 @@ class IdempotencyStore(ABC):
         """
 
     @abstractmethod
+    def reconcile_suspended_pre_effect_for_sanctioned_physical_redrive(
+        self,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        *,
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> bool:
+        """
+        Clear STARTED+may_have_started or UNCERTAIN rows after sanctioned redrive admission.
+
+        Caller must validate ``recovery_authority`` against the durable external-operation
+        worker execution fence. Returns True when a suspended row was removed.
+        """
+
+    @abstractmethod
     def record_started(
         self,
         tenant_id: str,

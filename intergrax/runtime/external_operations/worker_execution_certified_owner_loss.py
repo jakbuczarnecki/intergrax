@@ -168,8 +168,18 @@ class WorkerExecutionCertifiedOwnerLossCertifier:
         current = self.store.load(tenant_id, operation_id)
         if current is None:
             raise ExternalOperationNotFoundError(operation_id)
-        if current.physical_state is not ExternalOperationPhysicalState.RUNNING:
-            raise CertifiedOwnerLossEvidenceRejectedError("staging requires physical RUNNING")
+        if current.physical_state not in (
+            ExternalOperationPhysicalState.RUNNING,
+            ExternalOperationPhysicalState.UNKNOWN,
+        ):
+            raise CertifiedOwnerLossEvidenceRejectedError(
+                "staging requires physical RUNNING or UNKNOWN",
+            )
+        if current.physical_state is ExternalOperationPhysicalState.UNKNOWN:
+            if current.worker_instance_id is None or current.worker_ownership_epoch is None:
+                raise CertifiedOwnerLossEvidenceRejectedError(
+                    "UNKNOWN staging requires bound worker execution ownership",
+                )
         if current.worker_instance_id is None or current.worker_ownership_epoch is None:
             raise CertifiedOwnerLossEvidenceRejectedError(
                 "worker execution ownership not bound on durable record",
