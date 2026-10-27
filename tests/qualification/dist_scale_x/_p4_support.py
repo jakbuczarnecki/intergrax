@@ -128,7 +128,7 @@ def docker_pause_pg(container: str | None = None) -> None:
 
 def docker_unpause_pg(container: str | None = None) -> None:
     name = container or P4_PG_CONTAINER
-    subprocess.run(["docker", "unpause", name], check=True, capture_output=True)
+    subprocess.run(["docker", "unpause", name], check=False, capture_output=True)
 
 
 def bounded_pg_outage(seconds: int | None = None) -> None:

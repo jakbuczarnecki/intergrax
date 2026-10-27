@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import uuid
 from dataclasses import dataclass
 from typing import Callable
 
@@ -13,6 +12,7 @@ from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
+    mint_task_id,
     reset_active_execution_identity,
 )
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
@@ -152,4 +152,4 @@ def execute_p4_persistence_op(
 
 
 def mint_qual_task_id() -> str:
-    return f"wl5-{uuid.uuid4().hex[:16]}"
+    return str(mint_task_id())
