@@ -2,7 +2,8 @@
 
 | Field | Value |
 | --- | --- |
-| **EXECUTION_SHA** | `5bc896e2797708f9b71efd1b6611bc910168e4be` |
+| **EXECUTION_SHA** | `8656fb7d8c42e24e1448c4b7e97f18a15c1d765c` |
+| **Prior EXECUTION_SHA** | `5bc896e2797708f9b71efd1b6611bc910168e4be` (historical) |
 | **Envelope** | `DIST-SCALE-X-ENVELOPE-P3-v1` |
 | **Lock** | `ENVELOPE_ONLY` / `NOT_LOCKED` |
 
@@ -10,8 +11,8 @@
 
 | run_id | Workload | Notes |
 | --- | --- | --- |
-| `wl02-p3-3c61beaf2929` | WL-2 | Measured hot share **0.856** (target 0.85); p95 hot/cold; cold completed work |
-| `wl03-hot-38a284878286` | WL-3 | 3124 submissions, **1** terminal SUCCEEDED; single logical effect |
+| `wl02-p3-1a787bdee1a0` | WL-2 | hot share **0.851**; p95 hot/cold per-tenant (E01) |
+| `wl03-hot-47ba51e7ad6a` | WL-3 | **1** semantic effect; ingress idempotency + 4×2 workers |
 
 Manifests: `.tmp/proof/dist-scale-x/<run_id>/dist_scale_x_evidence_manifest.json`
 

@@ -14,11 +14,11 @@
 
 | Field | Value |
 | --- | --- |
-| **EXECUTION_SHA** | `5bc896e2797708f9b71efd1b6611bc910168e4be` |
+| **EXECUTION_SHA** | `8656fb7d8c42e24e1448c4b7e97f18a15c1d765c` |
 
 | run_id | Notes |
 | --- | --- |
-| `wl02-p3-3c61beaf2929` | 85% measured hot share; cold tenant completions; tenant isolation negatives in module |
+| `wl02-p3-1a787bdee1a0` | 85% measured hot share; cold progress; cross-tenant fail-closed |
 
 Manifest: `.tmp/proof/dist-scale-x/wl02-p3-3c61beaf2929/dist_scale_x_evidence_manifest.json`
 

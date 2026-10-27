@@ -63,18 +63,15 @@ def resolve_pg_dsn() -> str:
 
 
 def pg_port_open(dsn: str | None = None) -> bool:
+    """PostgreSQL readiness — protocol handshake (TCP-only check is insufficient on Docker Desktop)."""
     dsn = dsn or resolve_pg_dsn()
-    host = "localhost"
-    port = 5432
-    if "@" in dsn and ":" in dsn.split("@")[-1]:
-        host_port = dsn.split("@")[-1].split("/")[0]
-        if ":" in host_port:
-            host, port_str = host_port.split(":", 1)
-            port = int(port_str)
     try:
-        with socket.create_connection((host, port), timeout=2.0):
-            return True
-    except OSError:
+        import psycopg
+
+        with psycopg.connect(dsn, connect_timeout=3) as conn:
+            conn.execute("SELECT 1")
+        return True
+    except Exception:
         return False
 
 

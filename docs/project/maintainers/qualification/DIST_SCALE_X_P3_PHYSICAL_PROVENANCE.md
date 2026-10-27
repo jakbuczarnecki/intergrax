@@ -10,7 +10,8 @@
 | **EXECUTION_SHA** (WL-2/3/4 + HTTP WL-6) | `5bc896e2797708f9b71efd1b6611bc910168e4be` |
 | **IMPLEMENTATION_SHA** (WL-6 RabbitMQ M) | `fc5960a15b02c98e46abbce0534b63ac1322864a` |
 | **AUDIT_CORRECTIVE_IMPLEMENTATION** | `4a790e8f70700257028aa2f7d344514cc6c6d080` |
-| **AUDIT_CORRECTIVE_EXECUTION_SHA** | `e6020efc3f299afc9ff776fd8a1e4a4ac1ac913c` |
+| **AUDIT_CORRECTIVE_EXECUTION_SHA** (WL-4/WL-6) | `e6020efc3f299afc9ff776fd8a1e4a4ac1ac913c` |
+| **EXECUTION_SHA** (WL-2/3 post-audit) | `8656fb7d8c42e24e1448c4b7e97f18a15c1d765c` |
 
 ## Preflight (structural)
 
@@ -39,18 +40,20 @@ P2 physical batch **not** used as P3 preflight.
 | `wl06-storm-dda074987eb6` | WL-6 HTTP retry storm (supplementary @ `5bc896e27`) | PASS |
 | `wl06-rabbit-df8123a9c607` | WL-6 Celery RetryPolicy @ Rabbit AMQP @ `e6020efc3` | PASS |
 | `wl06-rabbit-61f709aa5dd6` | superseded (test redrive) @ `fc5960a15` | diagnostic |
-| `wl02-p3-3c61beaf2929` | WL-2 85% measured | PASS |
-| `wl03-hot-38a284878286` | WL-3 hot key | PASS |
+| `wl02-p3-1a787bdee1a0` | WL-2 E01 p95 per-tenant @ `8656fb7d8` | PASS |
+| `wl03-hot-47ba51e7ad6a` | WL-3 exactly-one effect @ `8656fb7d8` | PASS |
+| `wl02-p3-3c61beaf2929` | WL-2 @ `5bc896e27` (historical) | PASS |
+| `wl03-hot-38a284878286` | WL-3 @ `5bc896e27` (historical) | PASS |
 
 `catalog_integrity_sha256`: `118155c03887d12d04184526018bf8020f7a124ceb513b39ec2c025e0c826268` (`NOT_LOCKED`).
 
-## WL-2 measured hot share
+## WL-2 measured hot share (authoritative @ `8656fb7d8`)
 
-**0.856** completed-work share (321 hot / 375 total); target 0.85 @ 60s warmup + 120s measure; **2** OS workers (Windows PG port mitigation; WL-3 retains 4 workers).
+**0.851**; p95 hot **656 ms** / cold **688 ms** (`wl02-p3-1a787bdee1a0`); **2** workers; 60s+120s envelope.
 
-## WL-3 idempotency
+## WL-3 idempotency (authoritative @ `8656fb7d8`)
 
-3124 logical submissions → **1** `SUCCEEDED` task; `logical_effects` ≥ 1; workers=4, in_flight=2.
+`wl03-hot-47ba51e7ad6a` — **1** semantic effect; **1** terminal SUCCEEDED; workers=4, in_flight=2.
 
 ## Implementation notes
 

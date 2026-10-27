@@ -41,6 +41,35 @@
 | Code | `completion_latencies_by_tenant` in `p2_task_load.py`; WL-2 uses per-tenant lists for p95 hot/cold. |
 | Physical regen | Required @ `e6020efc3` when PostgreSQL host path healthy — **pending** if `127.0.0.1:5434` handshake fails. |
 
+## Infra recovery (2026-10-27)
+
+| Check | Result |
+| --- | --- |
+| Docker | 27.5.1; `intergrax-postgresql` healthy (`postgres:16.6`, `0.0.0.0:5434→5432`) |
+| In-container | `pg_isready` + `SELECT 1` OK |
+| Host `127.0.0.1:5434` | TCP OK via `wslrelay`, **PostgreSQL handshake timeout** (stale `CLOSE_WAIT`) |
+| Host `172.26.96.1:5434` | **psycopg OK** (hits `com.docker.backend` publish) |
+| Qual run | `INTERGRAX_POSTGRESQL_DSN=postgresql://intergrax:intergrax@172.26.96.1:5434/intergrax` |
+| RabbitMQ | container ping OK; host `pika` AMQP **not ready** — **not required** for WL-2/3 |
+
+`pg_port_open()` now uses psycopg handshake (qual helper).
+
+## WL-2 / WL-3 @ `8656fb7d8`
+
+| run_id | Result |
+| --- | --- |
+| `wl02-p3-1a787bdee1a0` | hot share **0.851**; p95 hot **656 ms**; p95 cold **688 ms** |
+| `wl03-hot-47ba51e7ad6a` | `logical_effects` **1**; workers **4**; submissions **3185** |
+
+Log: `.tmp/session/dist-scale-x-p3-infra-recovery/wl02-wl03-physical.log`
+
+## B01 — AMQP vs TaskQueue (broker M)
+
+| Path | Role |
+| --- | --- |
+| **RabbitMQ as AMQP** + `create_celery_worker_app` | Approved WL-6 retry owner (`RetryPolicy` / dispatcher); evidence `wl06-rabbit-df8123a9c607` @ `e6020efc3` |
+| **`create_rabbitmq_worker` + `RabbitMQMessageConsumer` (`auto_ack`)** | P2 throughput / KV terminal path; **no** broker redelivery; not a retry storm owner |
+
 ## Validation log
 
-`.tmp/session/dist-scale-x-p3-audit-corrective/`
+`.tmp/session/dist-scale-x-p3-audit-corrective/` · `.tmp/session/dist-scale-x-p3-infra-recovery/`
