@@ -9,8 +9,8 @@
 | Label | SHA |
 | --- | --- |
 | **START_HEAD** | `ddb18890a216b0c51abc9e463efc31f73dcfe359` |
-| **EXECUTION_SHA (pre-publication)** | `ddb18890a216b0c51abc9e463efc31f73dcfe359` |
-| **IMPLEMENTATION_SHA** | @ P7 publication commit on `development` |
+| **EXECUTION_SHA (physical)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
+| **IMPLEMENTATION_SHA** | @ P7 publication commit on `development` (post batch-gate fix) |
 
 ## Preflight L1/L2
 
@@ -22,7 +22,8 @@
 
 | Command | Result |
 | --- | --- |
-| `uv run pytest tests/qualification/dist_scale_x/p5_network_unavailable.py tests/qualification/dist_scale_x/p5_j_evidence_contract.py tests/qualification/dist_scale_x/p5_resource_exhaustion.py -q` | **9 passed** (~98s) — `.tmp/session/dist-scale-x-p5-l9/p5-inner-selection.log` |
+| `uv run pytest tests/qualification/dist_scale_x/test_dist_scale_x_p5_qualification_batch.py -q` | **1 passed** (~99s inner selection) — session `2026-10-27` |
+| Inner targets | `p5_network_unavailable`, `p5_j_evidence_contract`, `p5_resource_exhaustion` — **9 passed** |
 
 Envelope: [DIST_SCALE_X_P5_ENVELOPE_RECORD.md](DIST_SCALE_X_P5_ENVELOPE_RECORD.md).
 
@@ -30,9 +31,9 @@ Envelope: [DIST_SCALE_X_P5_ENVELOPE_RECORD.md](DIST_SCALE_X_P5_ENVELOPE_RECORD.m
 
 | run_id | Dimension | Module |
 | --- | --- | --- |
-| `p5-i-pg-dc2c42221919` | I-02 | `p5_network_unavailable` |
-| `p5-i-rabbit-2ac2a37b3906` | I-01 | `p5_network_unavailable` |
-| `p5-l-adm-f62a0e1a39b5` | L | `p5_resource_exhaustion` |
+| `p5-i-pg-4505025d49b1` | I-02 | `p5_network_unavailable` |
+| `p5-i-rabbit-44661d76496e` | I-01 | `p5_network_unavailable` |
+| `p5-l-adm-6b641a72fd3e` | L | `p5_resource_exhaustion` |
 
 Local tree: `.tmp/proof/dist-scale-x/<run_id>/dist_scale_x_evidence_manifest.json` @ **EXECUTION_SHA**.
 

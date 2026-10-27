@@ -14,10 +14,10 @@
 
 **Exit 11:** requires `soak_complete_envelope=1` in manifest metrics.
 
-## Session result @ EXECUTION_SHA `ddb18890…`
+## Session result @ EXECUTION_SHA `9ac74ca3849013e729dbc8c893f64427ef588f94`
 
-| run_id | duration_s | soak_complete_envelope |
-| --- | --- | --- |
-| `wl07-soak-555c362086fc` | 120 | 0 |
+| run_id | duration_s | soak_complete_envelope | errors |
+| --- | --- | --- | --- |
+| `wl07-soak-41ad330f8ef2` | 120 | 0 | 0 |
 
-**Blocker:** operator must run `DIST_SCALE_X_WL7_DURATION_SECONDS=14400` for exit 11 closure.
+**Blocker:** operator must run `DIST_SCALE_X_WL7_DURATION_SECONDS=14400` for exit 11 closure. Harness correctness **PASS**; envelope duration **NOT MET**.

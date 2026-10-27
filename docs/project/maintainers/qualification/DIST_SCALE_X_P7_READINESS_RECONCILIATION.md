@@ -4,6 +4,7 @@
 | --- | --- |
 | **Operator authorization** | G-01 integrated P5–L9 execution |
 | **START_HEAD** | `ddb18890a216b0c51abc9e463efc31f73dcfe359` |
+| **EXECUTION_SHA (P5/P6 physical)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
 | **Parent** | **OPEN** — not CLOSED / not INDEPENDENTLY ACCEPTED |
 | **FRZ PASS** | **0** |
 
@@ -37,3 +38,5 @@
 
 - `DependencyConcurrencyAdmissionRequest.tenant_id` in P5 L admission test.
 - `wl_07_soak_mixed_load` import for `execute_p4_persistence_op`.
+- P5/P6 consolidated batch gates: in-process `pytest.main` per selection target (Windows nested-subprocess hang).
+- Rabbit outage helpers: bounded `finally` restart; `docker stop` non-fatal.
