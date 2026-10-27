@@ -41,7 +41,10 @@ from intergrax.runtime.persistence.postgresql_opens import open_postgresql_decis
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 
-from tests.qualification.dist_scale_x._p4_support import prime_p4_qualification_stores
+from tests.qualification.dist_scale_x._p4_support import (
+    P4_QUAL_DECISION_ID,
+    prime_p4_qualification_stores,
+)
 from tests.qualification.dist_scale_x.p4_decision_checkpoint_sample import (
     build_p4_qualification_decision_checkpoint,
 )
@@ -66,12 +69,20 @@ def execute_p4_persistence_op(
     document_store_factory: Callable[[], ConditionalDocumentStore] | None = None,
 ) -> P4OpResult:
     """~90% write (F01+F03+F07+F09), ~10% read (F01/F03)."""
-    prime_p4_qualification_stores(dsn, schema)
+    is_read = op_index % 10 == 0
+    try:
+        prime_p4_qualification_stores(dsn, schema)
+    except Exception as exc:  # noqa: BLE001 — qualification surface
+        return P4OpResult(
+            kind="read_error" if is_read else "write_error",
+            tenant_id=tenant_id,
+            task_id=task_id or "",
+            error=f"{type(exc).__name__}:{exc}",
+        )
     config = PostgreSQLIntegrationConfig.from_env().model_copy(
         update={"dsn": dsn, "tenant_schema": schema},
     )
     store = PostgreSQLTaskCheckpointStore(config=config)
-    is_read = op_index % 10 == 0
     if is_read:
         if not task_id:
             return P4OpResult(kind="read_skip", tenant_id=tenant_id, task_id="")
@@ -122,6 +133,7 @@ def execute_p4_persistence_op(
             checkpoint=build_p4_qualification_decision_checkpoint(
                 tenant_id=tenant_id,
                 subject=f"wl5-{op_index}",
+                decision_id=P4_QUAL_DECISION_ID,
             ),
         )
         event = sample_runtime_event(tenant_id=tenant_id, run_id=run_id)

@@ -28,6 +28,7 @@ WL5_WRITE_RATE_CAP = float(os.environ.get("DIST_SCALE_X_P4_WL5_WRITE_RATE_CAP", 
 WL5_PAYLOAD_BYTES = int(os.environ.get("DIST_SCALE_X_P4_WL5_PAYLOAD_BYTES", "1024"))
 P4_FAULT_WINDOW_SECONDS = int(os.environ.get("DIST_SCALE_X_P4_FAULT_WINDOW_SECONDS", "30"))
 P4_PG_CONTAINER = os.environ.get("DIST_SCALE_X_P4_PG_CONTAINER", "intergrax-postgresql")
+P4_QUAL_DECISION_ID = "decision_0123456789abcdef0123456789abcdef"
 
 
 def require_p4_pg_infra() -> None:
