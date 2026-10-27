@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.errors import AgentImportError
+from intergrax.contracts.agent_binding_errors import AgentImportError
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
@@ -61,6 +61,4 @@ def build_agent_contract(agent_type: type[Tier2Agent]) -> AgentContract:
         return _research_contract()
     if qualname == _SUMMARY_AGENT_QUALNAME:
         return _summary_contract()
-    raise AgentImportError(
-        f"No declarative AgentContract for agent type {agent_type!r} in research package"
-    )
+    raise AgentImportError(f"No declarative AgentContract for agent type {agent_type!r} in research package")

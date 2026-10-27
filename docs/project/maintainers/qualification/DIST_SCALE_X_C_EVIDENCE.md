@@ -2,10 +2,30 @@
 
 | Field | Value |
 | --- | --- |
-| **EXECUTION_SHA** | `3cbd8bea0864a785c10cd39260345834a6e11dca` |
+| **EXECUTION_SHA** (authoritative) | `2f7b74300845ac31eeaae4bd676f75c0f6b690ff` |
 
-| run_id | Overload |
+## Authoritative run (final B03)
+
+| run_id | Notes |
 | --- | --- |
-| `dim-c-5d269dfb599a` | 1.5× sustainable submit, **60s** step |
+| `dim-c-d6aa8fe9d287` | Baseline sustainable ≈ **2.91** completed/s (N=2×180s); target offered **4.36/s** (1.5×); actual **4.37/s** (±12% band); submitted 262 / completed-terminal 214 / outstanding 48 at step end; `max_queue_depth` **102**; drain **39→0** |
 
-Manifest: `.tmp/proof/dist-scale-x/dim-c-5d269dfb599a/dist_scale_x_evidence_manifest.json`
+Manifest: `.tmp/proof/dist-scale-x/dim-c-d6aa8fe9d287/dist_scale_x_evidence_manifest.json`
+
+## Historical (superseded for B03 offered-rate proof)
+
+| run_id | Limitation |
+| --- | --- |
+| `dim-c-3e7c5e570951` @ `ee5a8371e` | Offered rate ≈ submit count / 60s without 1.5× rate control — insufficient overload evidence |
+
+## P3 supporting slice (WL-6 RabbitMQ @ fault window)
+
+| Field | Value |
+| --- | --- |
+| **EXECUTION_SHA** | `fc5960a15b02c98e46abbce0534b63ac1322864a` |
+
+| run_id | Notes |
+| --- | --- |
+| `wl06-rabbit-61f709aa5dd6` | Retry amplification under 20% transient handler faults; bounded drain; broker terminal reconciliation on latest handles |
+
+Provenance: [DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P2_PHYSICAL_PROVENANCE.md) · P3: [DIST_SCALE_X_P3_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P3_PHYSICAL_PROVENANCE.md)

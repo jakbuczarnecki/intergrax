@@ -34,6 +34,8 @@ applications/ MAY import from agents/ and intergrax/
 
 **Default behavior:** do not auto-load iteration rule, AGENT_INSTRUCTIONS, plan/arch hubs, or domain guides. If read scope exceeds operator-listed files → **STOP** and ask.
 
+**Enterprise quality workflow (hooks + CI):** [`docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md`](docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md) — `uv run python scripts/dev/install_git_hooks.py`.
+
 **Token setup:** [`docs/project/technical/guides/CURSOR_TOKEN_SETUP.md`](docs/project/technical/guides/CURSOR_TOKEN_SETUP.md)
 
 **Do not delete this file via Cursor Settings** - use stub + full reference split (CURSOR_TOKEN_SETUP F2).

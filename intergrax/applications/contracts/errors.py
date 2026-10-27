@@ -2,8 +2,9 @@
 # Intergrax framework – proprietary and confidential.
 
 
-class AgentImportError(ImportError):
-    """Failed to import or instantiate an agent from a binding."""
+from intergrax.contracts.agent_binding_errors import AgentImportError
+
+__all__ = ["AgentImportError", "ApplicationManifestConformanceError"]
 
 
 class ApplicationManifestConformanceError(ValueError):

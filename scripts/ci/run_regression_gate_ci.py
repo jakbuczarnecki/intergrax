@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
-import sys
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -36,34 +35,111 @@ def _uv_sync() -> Step:
     return Step("Install dependencies (CI minimal)", ["uv", "sync", "--extra", "dev-ci", "--frozen"])
 
 
-def _ci_smoke_job() -> Job:
-    return Job(
-        "ci-smoke",
-        (
-            _uv_sync(),
-            Step("CI smoke unit tests", ["uv", "run", "python", "scripts/ci/run_ci_smoke_pytest.py"]),
-            Step(
-                "Tier boundary audits (instant)",
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "scripts/maintenance/check_harness_no_getattr.py",
-                    "&&",
-                    "uv",
-                    "run",
-                    "python",
-                    "scripts/maintenance/check_agents_no_tier3_imports.py",
-                    "&&",
-                    "uv",
-                    "run",
-                    "python",
-                    "scripts/ci/check_ci_gate_test_purity.py",
-                ],
-                env={"INTERGRAX_CI_TEST_MARKER": "ci_smoke"},
-            ),
+def _uv_run(*args: str, frozen: bool = True) -> list[str]:
+    command = ["uv", "run"]
+    if frozen:
+        command.append("--frozen")
+    command.extend(args)
+    return command
+
+
+def fast_steps() -> tuple[Step, ...]:
+    """Pre-push default: instant gates only (full ci_smoke runs on GitHub Actions)."""
+    return (
+        Step(
+            "Environment conformance (CI profile)",
+            _uv_run("python", "scripts/maintenance/check_environment_conformance.py", "--profile", "ci"),
+        ),
+        Step("Workspace lock consistency", ["uv", "lock", "--check"]),
+        Step(
+            "Ruff on changed Python paths (push)",
+            _uv_run("python", "scripts/ci/run_ruff_changed_paths.py", "--mode", "push"),
+        ),
+        Step(
+            "Tier boundary: agents reflection (smoke)",
+            _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py", "--smoke"),
+        ),
+        Step(
+            "Tier boundary: agents tier-3 imports",
+            _uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
         ),
     )
+
+
+def smoke_steps(include_uv_sync: bool) -> tuple[Step, ...]:
+    """SSOT for Regression gate ci-smoke (unit-tests.yml + pre-push)."""
+    steps: list[Step] = []
+    if include_uv_sync:
+        steps.append(_uv_sync())
+    steps.extend(
+        [
+            Step(
+                "Environment conformance (CI profile)",
+                _uv_run("python", "scripts/maintenance/check_environment_conformance.py", "--profile", "ci"),
+            ),
+            Step("Workspace lock consistency", ["uv", "lock", "--check"]),
+            Step("CI smoke unit tests", _uv_run("python", "scripts/ci/run_ci_smoke_pytest.py")),
+            Step(
+                "Tier boundary: agents reflection (smoke)",
+                _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py", "--smoke"),
+            ),
+            Step(
+                "Tier boundary: agents tier-3 imports",
+                _uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
+            ),
+        ]
+    )
+    return tuple(steps)
+
+
+def split_command_chain(command: list[str]) -> list[list[str]]:
+    """Split a command list on ``&&`` tokens (no shell)."""
+    segments: list[list[str]] = []
+    current: list[str] = []
+    for token in command:
+        if token == "&&":
+            if current:
+                segments.append(current)
+                current = []
+            continue
+        current.append(token)
+    if current:
+        segments.append(current)
+    return segments
+
+
+def _ci_smoke_job(include_uv_sync: bool = True) -> Job:
+    return Job("ci-smoke", smoke_steps(include_uv_sync))
+
+
+def _fast_push_job() -> Job:
+    return Job("push-fast", fast_steps())
+
+
+def enterprise_extra_steps() -> tuple[Step, ...]:
+    """QUAL-X-oriented governance scripts on top of smoke (local / dispatch)."""
+    scripts = (
+        "check_agents_vendor_imports.py",
+        "check_integration_vendor_imports.py",
+        "check_application_production_gates.py",
+        "check_docs_domain_pairs.py",
+    )
+    extra = tuple(
+        Step(
+            f"Enterprise governance: {script}",
+            _uv_run("python", f"scripts/{_SCRIPT_PATHS[script]}"),
+        )
+        for script in scripts
+    )
+    full_harness = Step(
+        "Enterprise: harness getattr/setattr (full scan)",
+        _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py"),
+    )
+    return (*extra, full_harness)
+
+
+def _enterprise_job(include_uv_sync: bool = True) -> Job:
+    return Job("enterprise-gate", (*smoke_steps(include_uv_sync), *enterprise_extra_steps()))
 
 
 def _gate_tests_job() -> Job:
@@ -201,9 +277,13 @@ def _gate_closeout_job() -> Job:
     )
 
 
-def _jobs_for_profile(profile: str) -> list[Job]:
+def _jobs_for_profile(profile: str, include_uv_sync: bool = True) -> list[Job]:
+    if profile == "fast":
+        return [_fast_push_job()]
     if profile == "smoke":
-        return [_ci_smoke_job()]
+        return [_ci_smoke_job(include_uv_sync)]
+    if profile == "enterprise":
+        return [_enterprise_job(include_uv_sync)]
     if profile == "full":
         return [
             _gate_tests_job(),
@@ -212,24 +292,23 @@ def _jobs_for_profile(profile: str) -> list[Job]:
             _gate_closeout_job(),
         ]
     if profile == "all":
-        return [_ci_smoke_job(), *_jobs_for_profile("full")]
+        return [_ci_smoke_job(include_uv_sync), *_jobs_for_profile("full", include_uv_sync)]
     raise ValueError(f"unsupported profile: {profile}")
 
 
 def _run_step(step: Step) -> int:
     env = os.environ.copy()
+    env.setdefault("PYTHONUNBUFFERED", "1")
     if step.env:
         env.update(step.env)
-    shell = sys.platform == "win32"
     command = step.command
-    if shell and "&&" in command:
-        command_str = " ".join(command)
-        print(f"  $ {command_str}")
-        completed = subprocess.run(command_str, cwd=_REPO, env=env, shell=True, check=False)
-        return completed.returncode
-    print(f"  $ {' '.join(command)}")
-    completed = subprocess.run(command, cwd=_REPO, env=env, check=False)
-    return completed.returncode
+    segments = split_command_chain(command) if "&&" in command else [command]
+    for segment in segments:
+        print(f"  $ {' '.join(segment)}", flush=True)
+        completed = subprocess.run(segment, cwd=_REPO, env=env, check=False)
+        if completed.returncode != 0:
+            return completed.returncode
+    return 0
 
 
 def _run_job(job: Job) -> tuple[int, float]:
@@ -259,18 +338,21 @@ def _print_summary(results: Sequence[tuple[str, int, float]]) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Run Regression gate CI profiles locally (unit-tests.yml parity)."
-    )
+    parser = argparse.ArgumentParser(description="Run Regression gate CI profiles locally (unit-tests.yml parity).")
     parser.add_argument(
         "--profile",
-        choices=("smoke", "full", "all"),
+        choices=("fast", "smoke", "enterprise", "full", "all"),
         default="all",
-        help="smoke=PR/push CI; full=nightly jobs; all=smoke then full (default).",
+        help="fast=pre-push (seconds); smoke=PR CI pytest; enterprise=smoke+governance; full=nightly.",
+    )
+    parser.add_argument(
+        "--skip-uv-sync",
+        action="store_true",
+        help="Skip uv sync step (use when dependencies are already installed, e.g. GitHub Actions).",
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
-    jobs = _jobs_for_profile(args.profile)
+    jobs = _jobs_for_profile(args.profile, include_uv_sync=not args.skip_uv_sync)
     results: list[tuple[str, int, float]] = []
     for job in jobs:
         code, elapsed = _run_job(job)

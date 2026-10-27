@@ -4,54 +4,73 @@
 
 | Label | SHA |
 | --- | --- |
-| **START_HEAD** | `db592f413c1f4de2744ffabbe3f2ff58189a353c` |
-| **IMPLEMENTATION_SHA** | `53aca60e554e906e8efc5747a6053aad9d322181` |
-| **EXECUTION_SHA** (full-duration acceptance) | `3cbd8bea0864a785c10cd39260345834a6e11dca` |
-| **EVIDENCE_SHA** (manifest `code_sha`) | `3cbd8bea0864a785c10cd39260345834a6e11dca` |
+| **START_HEAD** (corrective batch) | `cc2d52245c1daf8c27bc1cfa1040f8885d3d7ee5` |
+| **IMPLEMENTATION_SHA** (B01–B04/E01 core) | `16ad35b7b1cc651763a6320f4e7b86bcbb1f0748` |
+| **EXECUTION_SHA** (B01/B04/E01 + WL-1/WL-2) | `ee5a8371e2bf2203d420ea89c6b697ca2ee78d4c` |
+| **EXECUTION_SHA** (final B02/B03 closure) | `2f7b74300845ac31eeaae4bd676f75c0f6b690ff` |
 | **THRESHOLD_LOCK_PUBLICATION_SHA** | `53aca60e554e906e8efc5747a6053aad9d322181` |
-| **PUBLICATION_HEAD** | `3cbd8bea0864a785c10cd39260345834a6e11dca` |
+
+Prior acceptance @ `3cbd8bea0` / `cc2d52245` — **superseded** for B01–B04 findings (enqueue-only accounting); retained as diagnostic history only.
 
 ## Diagnostic runs (8s — not acceptance)
 
-| Executed tree | P2 committed? | Parameters | Limitation |
-| --- | --- | --- | --- |
-| `db592f413` + **uncommitted** P2 sources | No | `DIST_SCALE_X_P2_POINT_DURATION_SECONDS=8` | Manifests with `code_sha=db592f413` are smoke/diagnostic only |
+Short env overrides (`DIST_SCALE_X_P2_POINT_DURATION_SECONDS=8`, etc.) — smoke only; see `.tmp/session/dist-scale-x-p2-corrective/smoke-pytest.log`.
 
-## Full-duration acceptance @ EXECUTION_SHA `3cbd8bea0`
+## Corrective acceptance @ EXECUTION_SHA `ee5a8371e`
 
 | Field | Value |
 | --- | --- |
-| **Command** | `uv run pytest tests/qualification/dist_scale_x/test_dist_scale_x_p2_l3_l4_qualification.py -q --tb=short` |
-| **Parameters** | `POINT=180`, `WL2_WARMUP=60`, `OVERLOAD=60` |
-| **Wall time** | ~861s (pytest log: `.tmp/session/dist-scale-x-p2-180s/full-qual-pytest.log`) |
-| **Infra** | `intergrax-postgresql` (5434→5432), `intergrax-rabbitmq` (5672); images per LOCK |
-| **Workers** | 1–2 OS subprocesses per test (`p2_multiprocess_worker`, `p2_rabbit_multiprocess_worker`) |
-| **F02 validation** | All four manifests `load_and_validate_manifest_file` → empty violations |
+| **Command** | `uv run pytest tests/qualification/dist_scale_x/test_dist_scale_x_p2_l3_l4_qualification.py -q --tb=line` |
+| **Parameters** | `POINT=180`, `WL2_WARMUP=60`, `OVERLOAD=60` (defaults) |
+| **Wall time** | ~1052s — `.tmp/session/dist-scale-x-p2-corrective-180s/full-qual-pytest.log` |
+| **Infra** | `intergrax-postgresql` (5434→5432), `intergrax-rabbitmq` (5672) |
+| **Workers** | OS subprocesses: `p2_multiprocess_worker` (`DocumentStoreTaskWorker`), `p2_rabbit_multiprocess_worker` (`create_rabbitmq_worker`) |
+| **F02** | Four manifests below → `load_and_validate_manifest_file` PASS |
 
-| run_id | Workload / dim | duration_s (record) | Manifest path |
-| --- | --- | --- | --- |
-| `wl01-scale-6501c3f25785` | WL-1 N=1+N=2, A/B | 360 | `.tmp/proof/dist-scale-x/wl01-scale-6501c3f25785/` |
-| `wl01-rabbit-1ab20b1dbbf0` | WL-1 Rabbit M, B | 180 | `.tmp/proof/dist-scale-x/wl01-rabbit-1ab20b1dbbf0/` |
-| `wl02-hot-d95a93037d25` | WL-2, A/K | 240 (60+180) | `.tmp/proof/dist-scale-x/wl02-hot-d95a93037d25/` |
-| `dim-c-5d269dfb599a` | WL-1 dim C | 60 overload step | `.tmp/proof/dist-scale-x/dim-c-5d269dfb599a/` |
+| run_id | Workload / dim | Manifest |
+| --- | --- | --- |
+| `wl01-scale-738d211df7ea` | WL-1 N=1+N=2 completed-work @ 180s | `.tmp/proof/dist-scale-x/wl01-scale-738d211df7ea/` |
+| `wl01-rabbit-f416144afd42` | Rabbit M @ 180s, handler completion accounting | `.tmp/proof/dist-scale-x/wl01-rabbit-f416144afd42/` |
+| `wl02-hot-3719cd260bf3` | WL-2 60+180s, cold progress + cross-tenant fail-closed | `.tmp/proof/dist-scale-x/wl02-hot-3719cd260bf3/` |
+| `dim-c-3e7c5e570951` | dim C: N=2 baseline 180s + 1.5× overload 60s | `.tmp/proof/dist-scale-x/dim-c-3e7c5e570951/` |
 
-`catalog_integrity_sha256` @ execution: `118155c03887d12d04184526018bf8020f7a124ceb513b39ec2c025e0c826268` (enum `NOT_LOCKED`).
+`catalog_integrity_sha256`: `118155c03887d12d04184526018bf8020f7a124ceb513b39ec2c025e0c826268` (`NOT_LOCKED`).
+
+## Corrective mechanisms (B01–B04)
+
+| ID | Fix |
+| --- | --- |
+| **B01** | `p2_task_load.py` — completed-work throughput, in-flight=2, 30/70 mix @ ≥30 samples, drain/reconcile, p95 on completion latency |
+| **B02** | Rabbit: shared `SqliteDistributedKVStore`; terminal `get_status`/`get_result` after `process_message` (broker KV contract); negative: pending without worker |
+| **B03** | dim C: scheduled 1.5× offered/s vs N=2×180s baseline; ±12% measured rate band; backlog + drain metrics |
+| **B04** | WL-2: per-tenant completions, `assert_cross_tenant_queue_fail_closed` on `DocumentStoreTaskQueue` |
+| **E01** | `test_dist_scale_x_p2_e01_lkw_trace.py` — LOCK OD-02 harness; LKW `background_worker_main` = Kafka **R** (P2 excluded); PG/Rabbit M = platform consumer stack |
 
 ## Architecture path (as exercised)
 
 | Stage | Implementation |
 | --- | --- |
-| Submit | `TaskRequest` → `DocumentStoreTaskQueue.enqueue` (PG `create_postgresql_document_store`) or Rabbit `create_rabbitmq_integration` → `message_bus.enqueue` |
-| Queue M | `DocumentStoreTaskQueue` + **RabbitMQ** `create_rabbitmq_worker` / consumer subprocesses |
-| Worker | Subprocess `DocumentStoreTaskWorker.drain_once` → `execute_logical_task` → `TaskExecutionRegistry` handler |
-| Durable state | PostgreSQL document-store schemas (per-run isolated schema, dropped after test) |
-| Tenant | `tenant_id` on `TaskRequest`; WL-2 hot/cold mix 80% |
-| OS processes | `subprocess.Popen` × N (independent workers) |
+| Submit | `TaskRequest` → `DocumentStoreTaskQueue.enqueue` / Rabbit `create_rabbitmq_integration` |
+| Admission | `wire_background_execution_admission_dependencies` + `admit_background_execution_handler` (workers) |
+| Worker | `DocumentStoreTaskWorker.drain_once` / `create_rabbitmq_worker.process_message` |
+| Durable state | PostgreSQL per-run schema |
+| Tenant | `tenant_id` on requests; cross-tenant `get_status`/`get_result` fail-closed proof |
+| OS processes | `subprocess.Popen` × N |
 
-**Scoped deviation (documented):** qual harness uses `DocumentStoreTaskWorker` subprocess entrypoints, not full `local_workspace_application.host.background_worker_main` + `HostTaskExecutionPort` LKW binary. Same platform consumer stack (`colocated_worker` semantics). Independent audit may require LKW binary replay; not expanded in this batch.
+**E01 note:** Full LKW `background_worker_main` + `HostTaskExecutionPort` Kafka ingest is **not** replayed @ P2 (LOCK excludes Kafka R). Contract trace tests document equivalence boundary.
 
-## Integrity
+## Final B02/B03 closure @ `2f7b74300`
 
-- No `performance_threshold_metric_ids` on PASS.
-- No `correctness_violations`.
-- Record↔manifest binding validated (F02).
+| Field | Value |
+| --- | --- |
+| **START_HEAD** | `3fde914a2114ab7b740c672832751e5d5e0459ff` |
+| **Command** | `uv run pytest …::test_p2_wl01_rabbit_m_two_os_worker_processes …::test_p2_dim_c_backpressure_bounded_overload_step` |
+| **Parameters** | `POINT=180`, `OVERLOAD=60` |
+| **Log** | `.tmp/session/dist-scale-x-p2-final-b02-b03/physical-180s-pytest.log` (~443s) |
+
+| run_id | Scope | Disposition |
+| --- | --- | --- |
+| `wl01-rabbit-2b54945c3c0f` | B02 — 1407 broker KV terminals == submissions | PASS |
+| `dim-c-d6aa8fe9d287` | B03 — target 4.36/s, actual 4.37/s; max_depth 102; drain 39→0 | PASS |
+
+WL-1 scaling (`wl01-scale-738d211df7ea`) and WL-2 (`wl02-hot-3719cd260bf3`) **not** re-run — no invalidation.

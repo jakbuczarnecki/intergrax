@@ -1,0 +1,6 @@
+#!/bin/sh
+# Intergrax pre-push enterprise gate (smoke by default). Install: scripts/dev/install_git_hooks.py
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+exec uv run python -u scripts/ci/run_push_gate.py
