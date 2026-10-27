@@ -56,9 +56,15 @@
 
 Ten rekord **nie** zastępuje G-06, **nie** publikuje G-06 PASS, **nie** wykonuje G-07, **nie** zamyka parent i **nie** zmienia globalnego FRZ. SAC `SAC-DIST-SCALE-X-v1` pozostaje bez amendment.
 
+## Supersession
+
+Ten rekord **zostanie zastąpiony** (superseded) po formalnym zamknięciu parenta **`DIST-SCALE-X` = `CLOSED — INDEPENDENTLY ACCEPTED`** — finalizacja [DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) po **G-07** i aktualizacji roadmap §5. **Do tego momentu** rekord pozostaje **aktywny**; sekcja supersession **nie** oznacza jeszcze statusu superseded.
+
 ## Related records
 
 | Record | Role |
 | --- | --- |
 | [DIST_SCALE_X_PARENT_QUALIFICATION_EVIDENCE.md](DIST_SCALE_X_PARENT_QUALIFICATION_EVIDENCE.md) | L9 matrix — parent **OPEN** |
 | [DIST_SCALE_X_P7_READINESS_RECONCILIATION.md](DIST_SCALE_X_P7_READINESS_RECONCILIATION.md) | P5–P7 integrated disposition |
+| [DIST_SCALE_X_G06_G07_OPERATOR_GATE.md](DIST_SCALE_X_G06_G07_OPERATOR_GATE.md) | G-06/G-07 operator checklist |
+| [DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) | T-PARENT-01 — **DRAFT** until G-06+G-07+WL-7 |
