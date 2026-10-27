@@ -55,6 +55,21 @@ DIST_SCALE_X_P4_L3_L4_PYTEST_TARGETS: tuple[str, ...] = (
 
 DIST_SCALE_X_P4_SELECTION_BATCH: tuple[str, ...] = DIST_SCALE_X_P4_L3_L4_PYTEST_TARGETS
 
+DIST_SCALE_X_P5_L3_L4_PYTEST_TARGETS: tuple[str, ...] = (
+    "tests/qualification/dist_scale_x/p5_network_unavailable.py",
+    "tests/qualification/dist_scale_x/p5_j_evidence_contract.py",
+    "tests/qualification/dist_scale_x/p5_resource_exhaustion.py",
+)
+
+DIST_SCALE_X_P5_SELECTION_BATCH: tuple[str, ...] = DIST_SCALE_X_P5_L3_L4_PYTEST_TARGETS
+
+DIST_SCALE_X_P6_L3_L4_PYTEST_TARGETS: tuple[str, ...] = (
+    "tests/qualification/dist_scale_x/p6_chaos_matrix.py",
+    "tests/qualification/dist_scale_x/wl_07_soak_mixed_load.py",
+)
+
+DIST_SCALE_X_P6_SELECTION_BATCH: tuple[str, ...] = DIST_SCALE_X_P6_L3_L4_PYTEST_TARGETS
+
 DIST_SCALE_X_P1_SELECTION_CATALOG: tuple[DistScaleXSelectionEntry, ...] = (
     DistScaleXSelectionEntry(
         DistScaleXQualificationLayer.L1_CATALOG,
