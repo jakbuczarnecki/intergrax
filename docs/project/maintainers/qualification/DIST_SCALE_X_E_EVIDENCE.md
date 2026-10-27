@@ -3,7 +3,8 @@
 | Field | Value |
 | --- | --- |
 | **EXECUTION_SHA** (WL-2/3/4 + HTTP WL-6) | `5bc896e2797708f9b71efd1b6611bc910168e4be` |
-| **EXECUTION_SHA** (RabbitMQ M WL-6) | `fc5960a15b02c98e46abbce0534b63ac1322864a` |
+| **EXECUTION_SHA** (WL-6 Celery @ RabbitMQ AMQP, audit B01) | `e6020efc3f299afc9ff776fd8a1e4a4ac1ac913c` |
+| **EXECUTION_SHA** (WL-4 strict-host @ audit B03) | `e6020efc3f299afc9ff776fd8a1e4a4ac1ac913c` |
 | **Envelope** | `DIST-SCALE-X-ENVELOPE-P3-v1` |
 
 ## WL-4 strict-host HTTP
@@ -22,9 +23,10 @@ Detail: [DIST_SCALE_X_WL4_HTTP_LOOPBACK_PHYSICAL_EVIDENCE.md](DIST_SCALE_X_WL4_H
 
 | run_id | Path | Notes |
 | --- | --- | --- |
-| `wl06-rabbit-61f709aa5dd6` | **RabbitMQ M** (mandatory) | 198 logical submissions; **971** physical handler attempts; amp ≈ **4.90**; semantic effects **198** (no dup); 120s fault @ 20% `RetryableHandlerError`; drain to terminal success |
-| `wl06-storm-dda074987eb6` | HTTP invoker (supplementary @ `5bc896e27`) | amp ≈ **1.07**; strict-host slice |
+| `wl06-rabbit-df8123a9c607` | **RabbitMQ M + Celery dispatcher** (authoritative) | 60 logical; 74 physical attempts; 14 dispatcher retries; amp **1.23**; `RetryPolicy` owner |
+| `wl06-storm-dda074987eb6` | HTTP invoker (supplementary @ `5bc896e27`) | amp ≈ **1.07** |
+| `wl06-rabbit-61f709aa5dd6` | superseded diagnostic | test-loop redrive — not canonical |
 
-Rabbit path: `create_rabbitmq_integration` + `create_rabbitmq_worker` + `execute_logical_task` handler; qual orchestration re-enqueues on broker `FAILED` during fault/drain (consumer `auto_ack` — no broker redelivery).
+Detail: [DIST_SCALE_X_P3_AUDIT_CORRECTIVE_CLOSURE.md](DIST_SCALE_X_P3_AUDIT_CORRECTIVE_CLOSURE.md)
 
 Provenance: [DIST_SCALE_X_P3_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P3_PHYSICAL_PROVENANCE.md)

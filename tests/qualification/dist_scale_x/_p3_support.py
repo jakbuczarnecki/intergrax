@@ -52,6 +52,16 @@ def require_p3_infra() -> None:
     require_p2_infra()
 
 
+def require_p3_pg_infra() -> None:
+    """WL-2/WL-3 DocumentStore physical paths — PostgreSQL only."""
+    from tests.qualification.dist_scale_x._p2_support import pg_port_open
+
+    if not pg_port_open():
+        import pytest
+
+        pytest.skip("PostgreSQL not reachable for DIST-SCALE-X P3 qual")
+
+
 def new_run_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:12]}"
 

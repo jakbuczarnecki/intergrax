@@ -29,7 +29,7 @@ from tests.qualification.dist_scale_x._p3_support import (
     WL3_WARMUP_SECONDS,
     new_run_id,
     p3_record,
-    require_p3_infra,
+    require_p3_pg_infra,
     write_p3_manifest,
 )
 from tests.qualification.dist_scale_x.evidence_schema import DistScaleXMetricsSnapshot
@@ -44,7 +44,7 @@ _IDEM_KEY = "dist-scale-x-p3-wl3-hot-key"
 
 
 def test_p3_wl03_hot_idempotency_key_single_logical_effect() -> None:
-    require_p3_infra()
+    require_p3_pg_infra()
     run_id = new_run_id("wl03-hot")
     dsn = resolve_pg_dsn()
     schema = f"dist_scale_x_p3_wl3_{uuid.uuid4().hex}"

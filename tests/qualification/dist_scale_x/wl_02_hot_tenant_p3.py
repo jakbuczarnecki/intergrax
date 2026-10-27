@@ -28,7 +28,7 @@ from tests.qualification.dist_scale_x._p3_support import (
     new_run_id,
     p3_record,
     percentile_ms,
-    require_p3_infra,
+    require_p3_pg_infra,
     write_p3_manifest,
 )
 from tests.qualification.dist_scale_x.p3_task_load import (
@@ -88,7 +88,7 @@ def _workers_alive(procs: list[subprocess.Popen[bytes]]) -> None:
 
 
 def test_p3_wl02_hot_tenant_85_percent_measured() -> None:
-    require_p3_infra()
+    require_p3_pg_infra()
     run_id = new_run_id("wl02-p3")
     dsn = resolve_pg_dsn()
     schema = f"dist_scale_x_p3_wl2_{uuid.uuid4().hex}"
