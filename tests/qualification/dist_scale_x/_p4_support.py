@@ -34,7 +34,21 @@ def require_p4_pg_infra() -> None:
     if not pg_port_open():
         import pytest
 
-        pytest.skip("PostgreSQL handshake failed for DIST-SCALE-X P4")
+        pytest.fail("QUALIFICATION BLOCKED: PostgreSQL handshake failed for DIST-SCALE-X P4")
+
+
+def require_p4_docker_infra() -> None:
+    import pytest
+
+    try:
+        subprocess.run(
+            ["docker", "info"],
+            check=True,
+            capture_output=True,
+            timeout=15,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        pytest.fail(f"QUALIFICATION BLOCKED: Docker required for F-STORAGE ({exc})")
 
 
 def qual_pg_schema(run_id: str) -> str:
@@ -142,6 +156,7 @@ __all__ = [
     "ensure_qual_pg_schema",
     "prime_p4_qualification_stores",
     "qual_pg_schema",
+    "require_p4_docker_infra",
     "require_p4_pg_infra",
     "resolve_pg_dsn",
     "write_p3_manifest",

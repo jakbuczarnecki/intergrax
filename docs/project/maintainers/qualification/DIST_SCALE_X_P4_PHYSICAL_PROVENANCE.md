@@ -8,7 +8,9 @@
 | **IMPLEMENTATION_SHA (P4-A initial)** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
 | **PUBLICATION_SHA (initial evidence)** | `bf3b21df115a271e2a4332b81644d3dca54d4bab` |
 | **IMPLEMENTATION_SHA (Protocol 03→04 correction)** | `eade40553` (full: `eade40553…` @ `git rev-parse eade40553`) |
+| **IMPLEMENTATION_SHA (final differential correction)** | **UNCOMMITTED** @ working tree (post-`fbbfa381`) |
 | **EXECUTION_SHA (authoritative physical)** | **PENDING** — qual PG + Docker required |
+| **PUBLICATION_SHA** | **PENDING** — no push until EXECUTION_SHA recorded |
 
 ## Preflight (structural, no PG)
 
@@ -23,9 +25,9 @@
 | --- | --- |
 | **C01** WL-5 full 60s+120s, gate, N=2 OS workers, F01–F09 op | **Code complete**; authoritative PASS **pending** PG re-run |
 | **C02** F01/F03/F07/F09 in `p4_persistence_op` | **Delivered** |
-| **C03** G crash matrix | **Delivered** (`p4_physical_crash.py`) |
+| **C03** G crash matrix | **Code complete** — staged F01→F09 + post-kill PG inspect (`p4_staged_persistence`, `p4_pg_state_inspection`); **PASS pending** live PG |
 | **C04** PG contract unit tests | **Delivered** (`test_postgresql_task_checkpoint_store_contract.py`, F03 tests) |
-| **C05** F-EVENT qual test; F-STORAGE docker pause | **Partial** — storage skip when pause ineffective |
+| **C05** F-EVENT qual test; F-STORAGE docker pause | **Code complete** — F-EVENT injected; F-STORAGE **fail** if no write errors (no skip-as-PASS); **PASS pending** Docker+PG |
 
 ## Production delta (correction)
 

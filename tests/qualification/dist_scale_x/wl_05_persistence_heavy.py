@@ -50,6 +50,7 @@ def _spawn_workers(
     gate_db: Path,
     stop_file: Path,
     metrics_dir: Path,
+    phase_file: Path,
 ) -> list[subprocess.Popen[bytes]]:
     module = "tests.qualification.dist_scale_x.p4_multiprocess_worker"
     procs: list[subprocess.Popen[bytes]] = []
@@ -79,6 +80,8 @@ def _spawn_workers(
                     str(gate_db),
                     "--writers",
                     str(WL5_WRITERS),
+                    "--phase-file",
+                    str(phase_file),
                 ],
                 cwd=_REPO_ROOT,
             ),
@@ -108,16 +111,17 @@ def _drain_gate(gate: Wl5RateGate, timeout_s: float = 45.0) -> None:
         time.sleep(0.1)
 
 
-def _collect_metrics(metrics_dir: Path) -> dict[str, float]:
-    writes = 0.0
-    reads = 0.0
-    errors = 0.0
+def _collect_metrics(metrics_dir: Path) -> dict[str, dict[str, float]]:
+    warmup = {"writes": 0.0, "reads": 0.0, "errors": 0.0}
+    measure = {"writes": 0.0, "reads": 0.0, "errors": 0.0}
     for path in metrics_dir.glob("worker_*.json"):
         payload = json.loads(path.read_text(encoding="utf-8"))
-        writes += float(payload.get("writes", 0))
-        reads += float(payload.get("reads", 0))
-        errors += float(payload.get("errors", 0))
-    return {"writes": writes, "reads": reads, "errors": errors}
+        for phase, bucket in (("warmup", warmup), ("measure", measure)):
+            phase_data = payload.get(phase, {})
+            bucket["writes"] += float(phase_data.get("writes", 0))
+            bucket["reads"] += float(phase_data.get("reads", 0))
+            bucket["errors"] += float(phase_data.get("errors", 0))
+    return {"warmup": warmup, "measure": measure}
 
 
 def _run_wl5_phase(
@@ -140,22 +144,26 @@ def test_wl05_persistence_heavy_baseline() -> None:
     session_dir.mkdir(parents=True, exist_ok=True)
     gate_db = session_dir / "gate.db"
     stop_file = session_dir / "stop"
+    phase_file = session_dir / "phase"
     metrics_dir = session_dir / "metrics"
     metrics_dir.mkdir(exist_ok=True)
     if stop_file.exists():
         stop_file.unlink()
+    if phase_file.exists():
+        phase_file.unlink()
+    phase_file.write_text("warmup", encoding="utf-8")
     gate = Wl5RateGate(gate_db)
-    warmup_snapshot = {"writes": 0.0, "reads": 0.0, "errors": 0.0}
     procs = _spawn_workers(
         dsn=dsn,
         schema=schema,
         gate_db=gate_db,
         stop_file=stop_file,
         metrics_dir=metrics_dir,
+        phase_file=phase_file,
     )
     try:
         warmup_offered = _run_wl5_phase(gate=gate, duration_s=float(WL5_WARMUP_SECONDS))
-        warmup_snapshot = _collect_metrics(metrics_dir)
+        phase_file.write_text("measure", encoding="utf-8")
         measure_offered = _run_wl5_phase(gate=gate, duration_s=float(WL5_MEASURE_SECONDS))
         stop_file.write_text("stop", encoding="utf-8")
         for proc in procs:
@@ -167,11 +175,9 @@ def test_wl05_persistence_heavy_baseline() -> None:
                 proc.wait(timeout=10)
     for proc in procs:
         assert proc.returncode == 0, f"worker exit {proc.returncode}"
-    full_metrics = _collect_metrics(metrics_dir)
-    measure_metrics = {
-        key: full_metrics[key] - warmup_snapshot.get(key, 0.0)
-        for key in ("writes", "reads", "errors")
-    }
+    phase_metrics = _collect_metrics(metrics_dir)
+    warmup_metrics = phase_metrics["warmup"]
+    measure_metrics = phase_metrics["measure"]
     total_writes = measure_metrics["writes"]
     total_reads = measure_metrics["reads"]
     total_ops = total_writes + total_reads
@@ -205,9 +211,13 @@ def test_wl05_persistence_heavy_baseline() -> None:
                     extra={
                         "warmup_offered": float(warmup_offered),
                         "measure_offered": float(measure_offered),
+                        "warmup_writes": warmup_metrics["writes"],
+                        "warmup_reads": warmup_metrics["reads"],
                         "measure_writes": total_writes,
                         "measure_reads": total_reads,
                         "measure_read_share": read_share,
+                        "warmup_errors": warmup_metrics["errors"],
+                        "measure_errors": measure_metrics["errors"],
                         "write_rate_cap": WL5_WRITE_RATE_CAP,
                     },
                 ),

@@ -7,16 +7,18 @@
 
 ## Harness
 
-- `p4_crash_worker.py` — hard kill at sync boundaries (`G-01`…`G-06`).
-- `p4_physical_crash.py` — parametrized boundary reachability + `proc.kill()`.
+- `p4_staged_persistence.py` — production ports through F01→F03→F07→F09 boundaries.
+- `p4_crash_worker.py` — reach boundary, write `state.json`, sync marker, await kill.
+- `p4_pg_state_inspection.py` — independent-process PostgreSQL assertions.
+- `p4_physical_crash.py` — SIGKILL + `assert_boundary_snapshot` per boundary.
 
 ## Executed scenarios (requires live qual PG)
 
 | ID | Status | Observation |
 | --- | --- | --- |
-| **G-01…G-06** sync + kill | **READY** | Passed in corrective dev session @ psycopg handshake; re-run when PG qual infra up |
-| **G-02 F01-only path** | **READY** | Dedicated F01 persist before `after_f01` sync (avoids full F01–F09 latency) |
+| **G-01…G-06** staged + kill + PG inspect | **BLOCKED** | Not executed @ final differential (PG handshake false) |
+| **H** SIGKILL @ G-06 + recovery | **BLOCKED** | `p4_physical_restart.py` — pending live PG |
 
 ## Residual
 
-Re-execute `p4_physical_crash.py` @ corrective `IMPLEMENTATION_SHA` after infra preflight. Post-kill durable assertions beyond sync markers remain **ENVELOPE_ONLY** observation.
+Authoritative matrix PASS requires `p4_physical_crash.py` + H test @ committed **IMPLEMENTATION_SHA** with **EXECUTION_SHA** in provenance.

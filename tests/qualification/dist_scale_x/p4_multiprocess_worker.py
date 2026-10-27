@@ -32,15 +32,40 @@ def worker_loop(
     worker_index: int,
     gate_db: Path,
     writers: int,
+    phase_file: Path | None = None,
 ) -> None:
     gate = Wl5RateGate(gate_db)
     last_write_task_id = ""
-    writes = 0
-    reads = 0
-    errors = 0
+    phase = "warmup"
+    metrics: dict[str, dict[str, int]] = {
+        "warmup": {"writes": 0, "reads": 0, "errors": 0},
+        "measure": {"writes": 0, "reads": 0, "errors": 0},
+    }
     pad = _pad(payload_bytes)
+
+    def _flush_phase_file() -> None:
+        if phase_file is None:
+            return
+        phase_path = phase_file.parent / f"{metrics_file.stem}_{phase}.json"
+        phase_path.write_text(
+            json.dumps(
+                {
+                    "worker_id": worker_id,
+                    "worker_index": worker_index,
+                    "phase": phase,
+                    **metrics[phase],
+                },
+            ),
+            encoding="utf-8",
+        )
+
     try:
         while not stop_file.exists():
+            if phase_file is not None and phase_file.exists():
+                new_phase = phase_file.read_text(encoding="utf-8").strip()
+                if new_phase in metrics and new_phase != phase:
+                    _flush_phase_file()
+                    phase = new_phase
             seq = gate.try_claim(worker_id)
             if seq is None:
                 time.sleep(0.005)
@@ -57,12 +82,13 @@ def worker_loop(
                 payload_pad=pad,
                 task_id=read_task_id if is_read else write_task_id,
             )
+            bucket = metrics[phase]
             if result.error:
-                errors += 1
-            elif result.kind == "read":
-                reads += 1
+                bucket["errors"] += 1
+            elif result.kind in {"read", "read_miss", "read_skip"}:
+                bucket["reads"] += 1
             elif result.kind == "write":
-                writes += 1
+                bucket["writes"] += 1
                 last_write_task_id = result.task_id
     except Exception as exc:  # noqa: BLE001
         metrics_file.write_text(
@@ -70,16 +96,16 @@ def worker_loop(
             encoding="utf-8",
         )
         raise
+    _flush_phase_file()
+    totals = {
+        "writes": metrics["warmup"]["writes"] + metrics["measure"]["writes"],
+        "reads": metrics["warmup"]["reads"] + metrics["measure"]["reads"],
+        "errors": metrics["warmup"]["errors"] + metrics["measure"]["errors"],
+        "warmup": metrics["warmup"],
+        "measure": metrics["measure"],
+    }
     metrics_file.write_text(
-        json.dumps(
-            {
-                "worker_id": worker_id,
-                "worker_index": worker_index,
-                "writes": writes,
-                "reads": reads,
-                "errors": errors,
-            },
-        ),
+        json.dumps({"worker_id": worker_id, "worker_index": worker_index, **totals}),
         encoding="utf-8",
     )
 
@@ -95,6 +121,7 @@ def main() -> None:
     parser.add_argument("--worker-index", type=int, default=0)
     parser.add_argument("--gate-db", required=True)
     parser.add_argument("--writers", type=int, default=2)
+    parser.add_argument("--phase-file", default="")
     args = parser.parse_args()
     worker_loop(
         dsn=args.dsn,
@@ -107,6 +134,7 @@ def main() -> None:
         worker_index=args.worker_index,
         gate_db=Path(args.gate_db),
         writers=args.writers,
+        phase_file=Path(args.phase_file) if args.phase_file else None,
     )
 
 

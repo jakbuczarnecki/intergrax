@@ -41,6 +41,7 @@ from intergrax.runtime.persistence.postgresql_opens import open_postgresql_decis
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 
+from tests.qualification.dist_scale_x._p4_support import prime_p4_qualification_stores
 from tests.qualification.dist_scale_x.p4_decision_checkpoint_sample import (
     build_p4_qualification_decision_checkpoint,
 )
@@ -65,6 +66,7 @@ def execute_p4_persistence_op(
     document_store_factory: Callable[[], ConditionalDocumentStore] | None = None,
 ) -> P4OpResult:
     """~90% write (F01+F03+F07+F09), ~10% read (F01/F03)."""
+    prime_p4_qualification_stores(dsn, schema)
     config = PostgreSQLIntegrationConfig.from_env().model_copy(
         update={"dsn": dsn, "tenant_schema": schema},
     )

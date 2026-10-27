@@ -12,8 +12,8 @@
 | Scenario | Status | Notes |
 | --- | --- | --- |
 | **F-PARTIAL** (WL-4 HTTP cite) | **CITED** | Historical @ P3 `e6020efc3f299afc9ff776fd8a1e4a4ac1ac913c` |
-| **F-EVENT** | **IMPLEMENTED / PG-pending** | `p4_physical_faults.py::test_p4_f_event_append_outage_fail_closed` — qual-local `append` patch (narrow seam, not production API) |
-| **F-STORAGE** | **PG-pending** | `test_p4_f_storage_pg_pause_surfaces_write_error` skips when `docker pause` does not surface errors; requires Docker + qual PG container |
+| **F-EVENT** | **BLOCKED** | `test_p4_f_event_injected_append_outage_fail_closed` — labeled injected F07 path; PG down |
+| **F-STORAGE** | **BLOCKED** | Bounded pause + mandatory write errors; `pytest.fail` if Docker/PG missing (no skip-as-PASS) |
 
 ## Residual
 
