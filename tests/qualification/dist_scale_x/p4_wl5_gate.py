@@ -27,6 +27,17 @@ class Wl5RateGate:
             conn.execute("INSERT OR IGNORE INTO offered(seq) VALUES (?)", (seq,))
             conn.commit()
 
+    def offer_next(self) -> int:
+        """Offer the next monotonic seq (continuous across warmup + measure)."""
+        with sqlite3.connect(self._path) as conn:
+            row = conn.execute(
+                "SELECT COALESCE(MAX(seq), -1) + 1 FROM offered",
+            ).fetchone()
+            seq = int(row[0])
+            conn.execute("INSERT INTO offered(seq) VALUES (?)", (seq,))
+            conn.commit()
+            return seq
+
     def try_claim(self, worker: str) -> int | None:
         with sqlite3.connect(self._path) as conn:
             row = conn.execute(

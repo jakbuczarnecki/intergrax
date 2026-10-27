@@ -92,17 +92,17 @@ def _spawn_workers(
 def _offer_phase(gate: Wl5RateGate, duration_s: float) -> int:
     interval = 1.0 / WL5_WRITE_RATE_CAP
     deadline = time.monotonic() + duration_s
-    seq = 0
+    offered = 0
     next_offer = time.monotonic()
     while time.monotonic() < deadline:
         now = time.monotonic()
         if now < next_offer:
             time.sleep(min(0.01, next_offer - now))
             continue
-        gate.offer(seq)
-        seq += 1
+        gate.offer_next()
+        offered += 1
         next_offer += interval
-    return seq
+    return offered
 
 
 def _drain_gate(gate: Wl5RateGate, timeout_s: float = 45.0) -> None:
