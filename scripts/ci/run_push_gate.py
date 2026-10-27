@@ -30,19 +30,28 @@ def main() -> int:
         return 0
 
     if config.diff_scoped_gates:
+        rules = "extras" if config.profile == "fast" else "all"
         diff = subprocess.run(
-            [sys.executable, "-u", str(_CI_DIR / "diff_scoped_gates.py"), "--mode", "push"],
+            [
+                sys.executable,
+                "-u",
+                str(_CI_DIR / "diff_scoped_gates.py"),
+                "--mode",
+                "push",
+                "--rules",
+                rules,
+            ],
             cwd=_REPO,
             check=False,
         )
         if diff.returncode != 0:
-            print("[ERROR] Diff-scoped gates failed before regression smoke.", file=sys.stderr)
+            print("[ERROR] Diff-scoped gates failed before push gate.", file=sys.stderr)
             return diff.returncode
 
     print(f"[INFO] Running push gate profile={config.profile} ...", flush=True)
     regression = _REPO / "scripts" / "ci" / "run_regression_gate_ci.py"
     command = [sys.executable, "-u", str(regression), "--profile", config.profile]
-    if config.skip_uv_sync_on_push and config.profile in {"smoke", "enterprise"}:
+    if config.skip_uv_sync_on_push and config.profile in {"fast", "smoke", "enterprise"}:
         command.append("--skip-uv-sync")
         print("[INFO] Pre-push smoke skips uv sync (run uv sync --extra dev-ci after lock changes).", flush=True)
     completed = subprocess.run(command, cwd=_REPO, check=False)

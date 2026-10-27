@@ -364,7 +364,7 @@ integrations-slack = [
 ]
 
 [tool.intergrax.push_gate]
-profile = "smoke"
+profile = "fast"
 skip_env = "INTERGRAX_SKIP_PUSH_GATE"
 skip_uv_sync_on_push = true
 pre_commit_ruff = true

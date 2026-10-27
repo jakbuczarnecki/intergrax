@@ -7,8 +7,8 @@ Operator-facing map of **automated** quality enforcement. Semantic **FRZ-*** fre
 | Layer | When | Entrypoint |
 |-------|------|------------|
 | Pre-commit | `git commit` | `.githooks/pre-commit` → `run_pre_commit_gate.py` (ruff + diff-scoped) |
-| Pre-push | `git push` | `.githooks/pre-push` → `run_push_gate.py` (diff-scoped + smoke) |
-| CI smoke | PR / push `main`, `development` | `.github/workflows/unit-tests.yml` |
+| Pre-push | `git push` | `.githooks/pre-push` → `run_push_gate.py` (**`fast`**, seconds) |
+| CI smoke | PR / push `main`, `development` | `.github/workflows/unit-tests.yml` (~1900 `ci_smoke` tests) |
 | Enterprise local | Maintainer | `run_regression_gate_ci.py --profile enterprise` |
 | Full regression | Dispatch / nightly parity | `--profile full` / `all` |
 
@@ -23,7 +23,8 @@ uv run python scripts/dev/verify_push_gate_readiness.py
 
 ## Profiles
 
-- **smoke** — default pre-push; SSOT with CI `ci-smoke`.
+- **fast** — default pre-push (instant gates + ruff on diff); **CI** owns full pytest smoke.
+- **smoke** — full `ci_smoke` pytest (manual / CI only).
 - **enterprise** — smoke + vendor/docs/production governance scripts (QUAL-X subset).
 - **full** / **all** — full unit gate + governance wiring + closeout (long).
 

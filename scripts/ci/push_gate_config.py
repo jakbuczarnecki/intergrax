@@ -13,7 +13,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PYPROJECT = _REPO_ROOT / "pyproject.toml"
 
-_VALID_PROFILES = frozenset({"smoke", "enterprise", "full", "all", "off"})
+_VALID_PROFILES = frozenset({"fast", "smoke", "enterprise", "full", "all", "off"})
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ def load_push_gate_config(pyproject: Path | None = None) -> PushGateConfig:
     with path.open("rb") as handle:
         data = tomllib.load(handle)
     section = data.get("tool", {}).get("intergrax", {}).get("push_gate", {})
-    profile = str(section.get("profile", "smoke")).strip().lower()
+    profile = str(section.get("profile", "fast")).strip().lower()
     if profile not in _VALID_PROFILES:
         raise ValueError(f"invalid [tool.intergrax.push_gate] profile: {profile}")
     skip_env = str(section.get("skip_env", "INTERGRAX_SKIP_PUSH_GATE")).strip()

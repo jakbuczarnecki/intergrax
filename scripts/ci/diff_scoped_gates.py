@@ -28,7 +28,7 @@ class DiffScopedRule:
     script_args: tuple[str, ...] = ()
 
 
-DEFAULT_RULES: tuple[DiffScopedRule, ...] = (
+TIER_RULES: tuple[DiffScopedRule, ...] = (
     DiffScopedRule(
         ("agents/",),
         "scripts/maintenance/check_agents_no_tier3_imports.py",
@@ -40,6 +40,9 @@ DEFAULT_RULES: tuple[DiffScopedRule, ...] = (
         "harness getattr/setattr AST gate (smoke scan)",
         ("--smoke",),
     ),
+)
+
+EXTRA_RULES: tuple[DiffScopedRule, ...] = (
     DiffScopedRule(
         ("applications/",),
         "scripts/ci/check_workspace_cleanup.py",
@@ -50,6 +53,11 @@ DEFAULT_RULES: tuple[DiffScopedRule, ...] = (
         "scripts/docs/check_docs_domain_pairs.py",
         "docs domain pair integrity",
     ),
+)
+
+DEFAULT_RULES: tuple[DiffScopedRule, ...] = (
+    *TIER_RULES,
+    *EXTRA_RULES,
 )
 
 
@@ -93,9 +101,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="push",
         help="push=commits since upstream merge-base; staged=index for pre-commit.",
     )
+    parser.add_argument(
+        "--rules",
+        choices=("all", "extras", "tier"),
+        default="all",
+        help="all=default; extras=apps/docs only (pair with push-fast tier steps); tier=tier scripts only.",
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
     paths = push_paths() if args.mode == "push" else staged_paths()
-    return run_rules(paths, DEFAULT_RULES)
+    if args.rules == "extras":
+        rules = EXTRA_RULES
+    elif args.rules == "tier":
+        rules = TIER_RULES
+    else:
+        rules = DEFAULT_RULES
+    return run_rules(paths, rules)
 
 
 if __name__ == "__main__":

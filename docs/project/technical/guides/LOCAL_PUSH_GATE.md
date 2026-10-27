@@ -1,6 +1,8 @@
-# Local pre-push gate (smoke)
+# Local pre-push gate (`fast`)
 
-Mechanical regression checks before `git push` — parity with the GitHub **Regression gate** `ci-smoke` job. This is **not** a full [FRZ-*](../../../maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) enterprise-freeze certification (those criteria need qualification SHA, audits, and evidence ledgers). It enforces the **automated gates** mapped in [QUAL-X gate inventory](../../../maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md).
+**Pre-push (default `profile = fast`):** second-scale static gates — **no** full `ci_smoke` pytest (~1900 tests). **GitHub Actions** runs the full **Regression gate** `ci-smoke` job on PR / push to `main` / `development` (server-side guarantee).
+
+Not a full [FRZ-*](../../../maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) freeze certification. Mechanical gates align with [QUAL-X](../../../maintainers/qualification/QUAL_X_ENTERPRISE_QUALIFICATION_BASELINE_AND_GATE_INVENTORY.md).
 
 ## Install (once per clone)
 
@@ -24,28 +26,29 @@ Git sets `core.hooksPath` to `.githooks` **only in this repository** (not global
 
 On Windows, Git for Windows runs `.githooks/pre-push` via `sh`. You can also run `.githooks/pre-push.ps1` manually.
 
-## What smoke runs (SSOT)
+## What pre-push `fast` runs
 
-Implemented in `scripts/ci/run_regression_gate_ci.py` → `smoke_steps()`:
+`run_push_gate.py` → diff-scoped **extras** (apps/docs when touched) + `run_regression_gate_ci.py --profile fast`:
 
-1. `uv sync --extra dev-ci --frozen` (skipped in CI and pre-push when `skip_uv_sync_on_push`)
-2. `check_environment_conformance.py --profile ci`
-3. `uv lock --check`
-4. `run_ci_smoke_pytest.py` (`ci_smoke` marker)
-5. `check_harness_no_getattr.py --smoke` (agents tree; full scan in `enterprise` profile)
-6. `check_agents_no_tier3_imports.py`
+1. `check_environment_conformance.py --profile ci`
+2. `uv lock --check`
+3. `run_ruff_changed_paths.py` (changed `.py` only)
+4. `check_harness_no_getattr.py --smoke`
+5. `check_agents_no_tier3_imports.py`
 
-Manual equivalent (hook parity):
+Hook entrypoint:
 
 ```bash
 uv run python -u scripts/ci/run_push_gate.py
 ```
 
-Full smoke including `uv sync` (CI parity with fresh env):
+**Full CI smoke** (minutes — before merge or manually):
 
 ```bash
-uv run python scripts/ci/run_regression_gate_ci.py --profile smoke
+uv run python scripts/ci/run_regression_gate_ci.py --profile smoke --skip-uv-sync
 ```
+
+Set `profile = "smoke"` in `pyproject.toml` only if you intentionally want pytest on every push (not recommended).
 
 Windows batch wrapper: `scripts/ci/run_before_push_ci_smoke.bat`.
 
@@ -53,7 +56,7 @@ Windows batch wrapper: `scripts/ci/run_before_push_ci_smoke.bat`.
 
 ```toml
 [tool.intergrax.push_gate]
-profile = "smoke"   # smoke | full | all | off
+profile = "fast"    # fast (default pre-push) | smoke | enterprise | full | all | off
 skip_env = "INTERGRAX_SKIP_PUSH_GATE"
 skip_uv_sync_on_push = true
 ```

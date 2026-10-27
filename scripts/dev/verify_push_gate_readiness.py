@@ -47,8 +47,8 @@ def main() -> int:
         from run_regression_gate_ci import smoke_steps  # noqa: PLC0415
 
         config = load_push_gate_config()
-        if config.profile not in {"smoke", "full", "all"}:
-            _fail(f"push_gate profile={config.profile} (expected smoke for rollout)")
+        if config.profile not in {"fast", "smoke", "full", "all"}:
+            _fail(f"push_gate profile={config.profile} (expected fast for pre-push rollout)")
             errors += 1
         else:
             _ok(f"push_gate profile={config.profile}")

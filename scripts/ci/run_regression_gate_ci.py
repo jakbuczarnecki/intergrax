@@ -43,6 +43,29 @@ def _uv_run(*args: str, frozen: bool = True) -> list[str]:
     return command
 
 
+def fast_steps() -> tuple[Step, ...]:
+    """Pre-push default: instant gates only (full ci_smoke runs on GitHub Actions)."""
+    return (
+        Step(
+            "Environment conformance (CI profile)",
+            _uv_run("python", "scripts/maintenance/check_environment_conformance.py", "--profile", "ci"),
+        ),
+        Step("Workspace lock consistency", ["uv", "lock", "--check"]),
+        Step(
+            "Ruff on changed Python paths (push)",
+            _uv_run("python", "scripts/ci/run_ruff_changed_paths.py", "--mode", "push"),
+        ),
+        Step(
+            "Tier boundary: agents reflection (smoke)",
+            _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py", "--smoke"),
+        ),
+        Step(
+            "Tier boundary: agents tier-3 imports",
+            _uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
+        ),
+    )
+
+
 def smoke_steps(include_uv_sync: bool) -> tuple[Step, ...]:
     """SSOT for Regression gate ci-smoke (unit-tests.yml + pre-push)."""
     steps: list[Step] = []
@@ -87,6 +110,10 @@ def split_command_chain(command: list[str]) -> list[list[str]]:
 
 def _ci_smoke_job(include_uv_sync: bool = True) -> Job:
     return Job("ci-smoke", smoke_steps(include_uv_sync))
+
+
+def _fast_push_job() -> Job:
+    return Job("push-fast", fast_steps())
 
 
 def enterprise_extra_steps() -> tuple[Step, ...]:
@@ -251,6 +278,8 @@ def _gate_closeout_job() -> Job:
 
 
 def _jobs_for_profile(profile: str, include_uv_sync: bool = True) -> list[Job]:
+    if profile == "fast":
+        return [_fast_push_job()]
     if profile == "smoke":
         return [_ci_smoke_job(include_uv_sync)]
     if profile == "enterprise":
@@ -312,9 +341,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run Regression gate CI profiles locally (unit-tests.yml parity).")
     parser.add_argument(
         "--profile",
-        choices=("smoke", "enterprise", "full", "all"),
+        choices=("fast", "smoke", "enterprise", "full", "all"),
         default="all",
-        help="smoke=PR/push CI; enterprise=smoke+governance; full=nightly; all=smoke then full.",
+        help="fast=pre-push (seconds); smoke=PR CI pytest; enterprise=smoke+governance; full=nightly.",
     )
     parser.add_argument(
         "--skip-uv-sync",
