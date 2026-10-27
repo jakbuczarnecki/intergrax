@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+exec uv run python -u scripts/ci/run_pre_commit_gate.py

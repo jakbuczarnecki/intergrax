@@ -366,6 +366,18 @@ integrations-slack = [
 [tool.intergrax.push_gate]
 profile = "smoke"
 skip_env = "INTERGRAX_SKIP_PUSH_GATE"
+skip_uv_sync_on_push = true
+pre_commit_ruff = true
+diff_scoped_gates = true
+skip_env_pre_commit = "INTERGRAX_SKIP_PRE_COMMIT_GATE"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["intergrax", "agents", "applications", "scripts", "tests", "testing_support"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "applications", "agents"]

@@ -21,8 +21,7 @@ def main() -> int:
     config = load_push_gate_config()
     if push_gate_skipped(config):
         print(
-            f"[WARN] Push gate skipped ({config.skip_env} is set). "
-            "Use only for emergencies.",
+            f"[WARN] Push gate skipped ({config.skip_env} is set). Use only for emergencies.",
             file=sys.stderr,
         )
         return 0
@@ -30,13 +29,23 @@ def main() -> int:
         print("[INFO] Push gate profile is off ([tool.intergrax.push_gate]).")
         return 0
 
-    print(f"[INFO] Running push gate profile={config.profile} ...")
+    if config.diff_scoped_gates:
+        diff = subprocess.run(
+            [sys.executable, "-u", str(_CI_DIR / "diff_scoped_gates.py"), "--mode", "push"],
+            cwd=_REPO,
+            check=False,
+        )
+        if diff.returncode != 0:
+            print("[ERROR] Diff-scoped gates failed before regression smoke.", file=sys.stderr)
+            return diff.returncode
+
+    print(f"[INFO] Running push gate profile={config.profile} ...", flush=True)
     regression = _REPO / "scripts" / "ci" / "run_regression_gate_ci.py"
-    completed = subprocess.run(
-        [sys.executable, str(regression), "--profile", config.profile],
-        cwd=_REPO,
-        check=False,
-    )
+    command = [sys.executable, "-u", str(regression), "--profile", config.profile]
+    if config.skip_uv_sync_on_push and config.profile in {"smoke", "enterprise"}:
+        command.append("--skip-uv-sync")
+        print("[INFO] Pre-push smoke skips uv sync (run uv sync --extra dev-ci after lock changes).", flush=True)
+    completed = subprocess.run(command, cwd=_REPO, check=False)
     if completed.returncode != 0:
         print("[ERROR] Push gate failed. Fix issues or set bypass only in emergencies.", file=sys.stderr)
     return completed.returncode

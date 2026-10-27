@@ -4,9 +4,9 @@ setlocal
 REM Run from repository root so paths match GitHub Actions.
 cd /d "%~dp0\..\.."
 
-echo [INFO] Running pre-push CI smoke gate...
-echo [INFO] Command: uv run python scripts/ci/run_regression_gate_ci.py --profile smoke
-uv run python scripts/ci/run_regression_gate_ci.py --profile smoke
+echo [INFO] Running pre-push CI smoke gate (same entrypoint as .githooks/pre-push)...
+echo [INFO] Command: uv run python -u scripts/ci/run_push_gate.py
+uv run python -u scripts/ci/run_push_gate.py
 set EXIT_CODE=%ERRORLEVEL%
 
 if not "%EXIT_CODE%"=="0" (

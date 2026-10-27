@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.errors import AgentImportError
+from intergrax.contracts.agent_binding_errors import AgentImportError
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.tier2_agent import Tier2Agent
@@ -64,6 +64,4 @@ def build_agent_contract(agent_type: type[Tier2Agent]) -> AgentContract:
             name="Composer Mock Agent",
             capability="lab.composer_mock",
         )
-    raise AgentImportError(
-        f"No declarative AgentContract for agent type {agent_type!r} in lab package"
-    )
+    raise AgentImportError(f"No declarative AgentContract for agent type {agent_type!r} in lab package")

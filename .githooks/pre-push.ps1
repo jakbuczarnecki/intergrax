@@ -2,5 +2,5 @@
 $ErrorActionPreference = "Stop"
 $Root = git rev-parse --show-toplevel
 Set-Location $Root
-& uv run python scripts/ci/run_push_gate.py
+& uv run python -u scripts/ci/run_push_gate.py
 exit $LASTEXITCODE

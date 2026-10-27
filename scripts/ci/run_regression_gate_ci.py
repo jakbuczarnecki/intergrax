@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
-import sys
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -58,20 +57,62 @@ def smoke_steps(include_uv_sync: bool) -> tuple[Step, ...]:
             Step("Workspace lock consistency", ["uv", "lock", "--check"]),
             Step("CI smoke unit tests", _uv_run("python", "scripts/ci/run_ci_smoke_pytest.py")),
             Step(
-                "Tier boundary audits (instant)",
-                [
-                    *_uv_run("python", "scripts/maintenance/check_harness_no_getattr.py"),
-                    "&&",
-                    *_uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
-                ],
+                "Tier boundary: agents reflection (smoke)",
+                _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py", "--smoke"),
+            ),
+            Step(
+                "Tier boundary: agents tier-3 imports",
+                _uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
             ),
         ]
     )
     return tuple(steps)
 
 
+def split_command_chain(command: list[str]) -> list[list[str]]:
+    """Split a command list on ``&&`` tokens (no shell)."""
+    segments: list[list[str]] = []
+    current: list[str] = []
+    for token in command:
+        if token == "&&":
+            if current:
+                segments.append(current)
+                current = []
+            continue
+        current.append(token)
+    if current:
+        segments.append(current)
+    return segments
+
+
 def _ci_smoke_job(include_uv_sync: bool = True) -> Job:
     return Job("ci-smoke", smoke_steps(include_uv_sync))
+
+
+def enterprise_extra_steps() -> tuple[Step, ...]:
+    """QUAL-X-oriented governance scripts on top of smoke (local / dispatch)."""
+    scripts = (
+        "check_agents_vendor_imports.py",
+        "check_integration_vendor_imports.py",
+        "check_application_production_gates.py",
+        "check_docs_domain_pairs.py",
+    )
+    extra = tuple(
+        Step(
+            f"Enterprise governance: {script}",
+            _uv_run("python", f"scripts/{_SCRIPT_PATHS[script]}"),
+        )
+        for script in scripts
+    )
+    full_harness = Step(
+        "Enterprise: harness getattr/setattr (full scan)",
+        _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py"),
+    )
+    return (*extra, full_harness)
+
+
+def _enterprise_job(include_uv_sync: bool = True) -> Job:
+    return Job("enterprise-gate", (*smoke_steps(include_uv_sync), *enterprise_extra_steps()))
 
 
 def _gate_tests_job() -> Job:
@@ -212,6 +253,8 @@ def _gate_closeout_job() -> Job:
 def _jobs_for_profile(profile: str, include_uv_sync: bool = True) -> list[Job]:
     if profile == "smoke":
         return [_ci_smoke_job(include_uv_sync)]
+    if profile == "enterprise":
+        return [_enterprise_job(include_uv_sync)]
     if profile == "full":
         return [
             _gate_tests_job(),
@@ -226,18 +269,17 @@ def _jobs_for_profile(profile: str, include_uv_sync: bool = True) -> list[Job]:
 
 def _run_step(step: Step) -> int:
     env = os.environ.copy()
+    env.setdefault("PYTHONUNBUFFERED", "1")
     if step.env:
         env.update(step.env)
-    shell = sys.platform == "win32"
     command = step.command
-    if shell and "&&" in command:
-        command_str = " ".join(command)
-        print(f"  $ {command_str}")
-        completed = subprocess.run(command_str, cwd=_REPO, env=env, shell=True, check=False)
-        return completed.returncode
-    print(f"  $ {' '.join(command)}")
-    completed = subprocess.run(command, cwd=_REPO, env=env, check=False)
-    return completed.returncode
+    segments = split_command_chain(command) if "&&" in command else [command]
+    for segment in segments:
+        print(f"  $ {' '.join(segment)}", flush=True)
+        completed = subprocess.run(segment, cwd=_REPO, env=env, check=False)
+        if completed.returncode != 0:
+            return completed.returncode
+    return 0
 
 
 def _run_job(job: Job) -> tuple[int, float]:
@@ -267,14 +309,12 @@ def _print_summary(results: Sequence[tuple[str, int, float]]) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Run Regression gate CI profiles locally (unit-tests.yml parity)."
-    )
+    parser = argparse.ArgumentParser(description="Run Regression gate CI profiles locally (unit-tests.yml parity).")
     parser.add_argument(
         "--profile",
-        choices=("smoke", "full", "all"),
+        choices=("smoke", "enterprise", "full", "all"),
         default="all",
-        help="smoke=PR/push CI; full=nightly jobs; all=smoke then full (default).",
+        help="smoke=PR/push CI; enterprise=smoke+governance; full=nightly; all=smoke then full.",
     )
     parser.add_argument(
         "--skip-uv-sync",

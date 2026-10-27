@@ -49,10 +49,11 @@ def install() -> int:
     if not _HOOKS_DIR.is_dir():
         print(f"Missing hooks directory: {_HOOKS_DIR}", file=sys.stderr)
         return 1
-    pre_push = _HOOKS_DIR / "pre-push"
-    if not pre_push.is_file():
-        print(f"Missing pre-push hook: {pre_push}", file=sys.stderr)
-        return 1
+    for hook_name in ("pre-push", "pre-commit"):
+        hook_path = _HOOKS_DIR / hook_name
+        if not hook_path.is_file():
+            print(f"Missing hook: {hook_path}", file=sys.stderr)
+            return 1
 
     result = _run_git("config", "core.hooksPath", _HOOKS_REL)
     if result.returncode != 0:
@@ -60,11 +61,15 @@ def install() -> int:
         return result.returncode
 
     if os.name != "nt":
-        os.chmod(pre_push, pre_push.stat().st_mode | 0o111)
+        for hook_name in ("pre-push", "pre-commit"):
+            hook_path = _HOOKS_DIR / hook_name
+            os.chmod(hook_path, hook_path.stat().st_mode | 0o111)
 
     print(f"[OK] core.hooksPath = {_HOOKS_REL}")
-    print("Pre-push runs: uv run python scripts/ci/run_push_gate.py")
-    print("Docs: docs/project/technical/guides/LOCAL_PUSH_GATE.md")
+    print("Pre-commit: uv run python -u scripts/ci/run_pre_commit_gate.py")
+    print("Pre-push:   uv run python -u scripts/ci/run_push_gate.py")
+    print("Docs: docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md")
+    print("Readiness: uv run python scripts/dev/verify_push_gate_readiness.py")
     return 0
 
 
@@ -85,7 +90,7 @@ def status() -> int:
     current = _hooks_path()
     active = current == _HOOKS_REL
     print(f"core.hooksPath: {current or '(default)'}")
-    print(f"intergrax pre-push gate: {'active' if active else 'inactive'}")
+    print(f"intergrax hooks (.githooks): {'active' if active else 'inactive'}")
     return 0
 
 
