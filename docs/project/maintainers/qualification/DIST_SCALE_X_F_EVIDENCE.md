@@ -3,18 +3,20 @@
 | Field | Value |
 | --- | --- |
 | **START_HEAD** | `50838f077a70d35abb527fc4a499416f5971f1b0` |
-| **IMPLEMENTATION_SHA (initial)** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
-| **Corrective batch** | See `DIST_SCALE_X_P4_PHYSICAL_PROVENANCE.md` — `IMPLEMENTATION_SHA` after Protocol 03→04 correction |
+| **IMPLEMENTATION_SHA** | `f0c49fd3cff8c00fef096e4db96f7ddcf07c9845` |
+| **EXECUTION_SHA** | `f0c49fd3cff8c00fef096e4db96f7ddcf07c9845` |
+| **run_id** | `p4-a-20261027-094853` |
 | **Envelope** | `DIST-SCALE-X-ENVELOPE-P4-v1` (`ENVELOPE_ONLY` / `NOT_LOCKED`) |
+| **Disposition** | **DIST-SCALE-X P4-A — READY FOR INDEPENDENT AUDIT** (scoped) |
 
 ## Executed scenarios
 
 | Scenario | Status | Notes |
 | --- | --- | --- |
 | **F-PARTIAL** (WL-4 HTTP cite) | **CITED** | Historical @ P3 `e6020efc3f299afc9ff776fd8a1e4a4ac1ac913c` |
-| **F-EVENT** | **BLOCKED** | `test_p4_f_event_injected_append_outage_fail_closed` — labeled injected F07 path; PG down |
-| **F-STORAGE** | **BLOCKED** | Bounded pause + mandatory write errors; `pytest.fail` if Docker/PG missing (no skip-as-PASS) |
+| **F-EVENT** | **PASS** | `test_p4_f_event_injected_append_outage_fail_closed` — injected F07 append outage; F01 partial durable, F03/F07/F09 absent |
+| **F-STORAGE** | **PASS** | `test_p4_f_storage_pg_pause_surfaces_write_error` — writes under `docker pause` on `intergrax-postgresql`; persistence errors surfaced |
 
 ## Residual
 
-Dimension **F** storage-wide outage evidence **not** closed on this workstation when Docker Desktop is stopped.
+None for dimension **F** @ `EXECUTION_SHA` on qual PostgreSQL + Docker host used for this run.
