@@ -7,7 +7,7 @@
 | **START_HEAD** | `50838f077a70d35abb527fc4a499416f5971f1b0` |
 | **IMPLEMENTATION_SHA (P4-A initial)** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
 | **PUBLICATION_SHA (initial evidence)** | `bf3b21df115a271e2a4332b81644d3dca54d4bab` |
-| **IMPLEMENTATION_SHA (Protocol 03→04 correction)** | *(this commit — see `git rev-parse HEAD` after push)* |
+| **IMPLEMENTATION_SHA (Protocol 03→04 correction)** | `eade40553` (full: `eade40553…` @ `git rev-parse eade40553`) |
 | **EXECUTION_SHA (authoritative physical)** | **PENDING** — qual PG + Docker required |
 
 ## Preflight (structural, no PG)

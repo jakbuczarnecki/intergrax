@@ -8,7 +8,7 @@ import os
 import subprocess
 import time
 
-from tests.qualification.dist_scale_x._p2_support import pg_port_open, require_p2_infra, resolve_pg_dsn
+from tests.qualification.dist_scale_x._p2_support import pg_port_open, resolve_pg_dsn
 from tests.qualification.dist_scale_x._p3_support import (
     code_sha,
     new_run_id,
