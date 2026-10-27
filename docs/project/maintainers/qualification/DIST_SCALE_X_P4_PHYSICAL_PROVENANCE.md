@@ -2,7 +2,7 @@
 
 ## Disposition
 
-**DIST-SCALE-X P4-A — READY FOR FINAL INDEPENDENT AUDIT** (WL-5 gate seq corrected @ `f1389fdaa4d69fb343dfc42e2040c2f8ebb2c39b`; F/G/H evidence reused from prior batch @ `f0c49fd3cff8c00fef096e4db96f7ddcf07c9845`; parent DIST-SCALE-X remains **OPEN**).
+**DIST-SCALE-X P4-A — CLOSED / INDEPENDENTLY ACCEPTED (SCOPED)** — formal record [DIST_SCALE_X_P4_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_P4_FORMAL_CLOSURE_RECONCILIATION.md). WL-5 @ `f1389fdaa4d69fb343dfc42e2040c2f8ebb2c39b`; F/G/H @ `f0c49fd3cff8c00fef096e4db96f7ddcf07c9845`; parent DIST-SCALE-X **OPEN**.
 
 ## SHA lineage
 

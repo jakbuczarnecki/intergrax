@@ -8,7 +8,7 @@
 | **run_id** | `p4-a-20261027-094853` |
 | **Envelope** | `DIST-SCALE-X-ENVELOPE-P4-v1` |
 | **Recovery cap** | 120s (envelope) |
-| **Disposition** | **DIST-SCALE-X P4-A — READY FOR INDEPENDENT AUDIT** (scoped) |
+| **Disposition** | **DIST-SCALE-X P4-A — CLOSED / INDEPENDENTLY ACCEPTED (SCOPED)** — [DIST_SCALE_X_P4_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_P4_FORMAL_CLOSURE_RECONCILIATION.md) |
 
 ## Harness
 
