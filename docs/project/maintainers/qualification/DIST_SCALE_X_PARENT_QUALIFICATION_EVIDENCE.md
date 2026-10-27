@@ -5,7 +5,9 @@
 | **SAC** | `SAC-DIST-SCALE-X-v1` |
 | **START_HEAD** | `ddb18890a216b0c51abc9e463efc31f73dcfe359` |
 | **EXECUTION_SHA (P5/P6 physical)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
-| **Disposition** | **READY FOR INDEPENDENT AUDIT (scoped)** — **PARTIAL** on WL-7 4 h (exit 11) |
+| **AUDIT_BASELINE_SHA** | `6f4193fa9a06204b32fab76a9774511ef0a6ad72` |
+| **Disposition** | **READY FOR INDEPENDENT AUDIT** — WL-7 **14400 s** physical **deferred** ([deferral](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md)) |
+| **G-06 handoff** | [DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md](DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md) |
 | **Parent CLOSED** | **FORBIDDEN** until G-06 + G-07 |
 
 ## L9 exit matrix (16 rows) — T-L9-01
@@ -38,7 +40,9 @@
 | P5 provenance | [DIST_SCALE_X_P5_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P5_PHYSICAL_PROVENANCE.md) |
 | P6 provenance | [DIST_SCALE_X_P6_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P6_PHYSICAL_PROVENANCE.md) |
 | P7 reconciliation | [DIST_SCALE_X_P7_READINESS_RECONCILIATION.md](DIST_SCALE_X_P7_READINESS_RECONCILIATION.md) |
+| L9 G-06 handoff | [DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md](DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md) |
+| WL-7 deferral | [DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md) |
 
 ## T-L9-03
 
-**AGENT STOP** — no G-06/G-07; no parent CLOSED; no FRZ PASS; no EBH-5.
+**AGENT STOP** — dossier complete for **G-06 documentary audit** (WL-7 4 h physical excluded per deferral). No G-07; no parent CLOSED; no FRZ PASS; no EBH-5.

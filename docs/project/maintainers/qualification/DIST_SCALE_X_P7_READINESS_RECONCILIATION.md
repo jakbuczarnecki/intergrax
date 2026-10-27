@@ -32,7 +32,11 @@
 
 ## Integrated disposition (T-P7-09)
 
-**DIST-SCALE-X P5–P7 — READY FOR INDEPENDENT AUDIT (scoped)** with **one open qual blocker:** WL-7 **14400 s** soak (L9 row 11). **G-06 / G-07** remain operator/auditor outside agent authority.
+**DIST-SCALE-X P5–P7 — READY FOR INDEPENDENT AUDIT** @ **AUDIT_BASELINE_SHA** `6f4193fa9a06204b32fab76a9774511ef0a6ad72`.
+
+**G-06:** [DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md](DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md) — documentary + SHA audit **without** WL-7 **14400 s** physical run ([deferral](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md)).
+
+**G-07** remains operator-only after independent PASS; parent **OPEN**.
 
 ## Fixes in this publication
 
