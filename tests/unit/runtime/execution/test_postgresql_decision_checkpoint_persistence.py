@@ -92,3 +92,32 @@ def test_pg_decision_checkpoint_create_and_stale_cas() -> None:
     save_decision_checkpoint(store, checkpoint=checkpoint)
     with pytest.raises(StaleDecisionCheckpointWriteError):
         store.save(checkpoint=checkpoint, expected_revision=0)
+
+
+@pytest.mark.unit
+def test_pg_decision_load_materialized_and_tenant_isolation() -> None:
+    from intergrax.integrations.providers.relational_store.postgresql.config import (
+        PostgreSQLIntegrationConfig,
+    )
+    from intergrax.runtime.execution.decision_finalization_conformance import (
+        conformance_artifact_payload_codec_registry,
+    )
+    from intergrax.runtime.execution.decision_checkpoint_persistence import save_decision_checkpoint
+    from intergrax.runtime.execution.postgresql_decision_checkpoint_persistence import (
+        PostgreSQLDecisionCheckpointPersistence,
+    )
+
+    config = PostgreSQLIntegrationConfig.from_env().model_copy(
+        update={"tenant_schema": "dist_scale_x_p4_f03_iso"},
+    )
+    codecs = conformance_artifact_payload_codec_registry()
+    store = PostgreSQLDecisionCheckpointPersistence(config=config, payload_codecs=codecs)
+    checkpoint = _sample_checkpoint()
+    save_decision_checkpoint(store, checkpoint=checkpoint)
+    key = checkpoint.finalization.key
+    materialized = store.load_materialized(key=key)
+    assert materialized is not None
+    assert store.load(key=key) is not None
+    other = _sample_checkpoint()
+    other_key = other.finalization.key
+    assert store.load_materialized(key=other_key) is None or other_key != key

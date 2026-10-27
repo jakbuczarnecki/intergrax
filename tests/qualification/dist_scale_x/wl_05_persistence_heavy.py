@@ -1,13 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DIST-SCALE-X WL-5 persistence-heavy (P4-A)."""
+"""DIST-SCALE-X WL-5 persistence-heavy (P4-A) — full envelope."""
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pytest
@@ -22,9 +22,10 @@ from tests.qualification.dist_scale_x._p4_support import (
     code_sha,
     new_run_id,
     qual_pg_schema,
+    prime_p4_qualification_stores,
     require_p4_pg_infra,
     resolve_pg_dsn,
-    write_p3_manifest,
+    write_p4_manifest,
 )
 from tests.qualification.dist_scale_x.evidence_schema import (
     CorrectnessInvariantViolation,
@@ -32,85 +33,23 @@ from tests.qualification.dist_scale_x.evidence_schema import (
     DistScaleXMetricsSnapshot,
     EvidenceDisposition,
 )
-from tests.qualification.dist_scale_x.p4_persistence_op import (
-    execute_p4_persistence_op,
-    mint_qual_task_id,
-)
+from tests.qualification.dist_scale_x.p4_wl5_gate import Wl5RateGate
 
 pytestmark = pytest.mark.qualification
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PYTHON = sys.executable
 _TENANTS = ("tenant-a", "tenant-b")
+_READ_SHARE_TOLERANCE = 0.05
 
 
-def _rate_limited_driver(
+def _spawn_workers(
     *,
     dsn: str,
     schema: str,
-    duration_s: float,
-    writers: int,
-    rate_cap: float,
-    payload_bytes: int,
-) -> tuple[int, int, int, list[str]]:
-    """Aggregate driver: caps offered ops/s across concurrent writers."""
-    pad = "w" * payload_bytes
-    offered = 0
-    completed = 0
-    errors = 0
-    violations: list[str] = []
-    min_interval = 1.0 / rate_cap if rate_cap > 0 else 0.0
-    deadline = time.monotonic() + duration_s
-    next_tick = time.monotonic()
-    task_by_tenant: dict[str, str] = {}
-
-    def _one_op(tenant: str, index: int) -> None:
-        nonlocal completed, errors
-        tid = task_by_tenant.get(tenant)
-        if index % 10 != 0 or tid is None:
-            tid = mint_qual_task_id()
-            task_by_tenant[tenant] = tid
-        result = execute_p4_persistence_op(
-            dsn=dsn,
-            schema=schema,
-            tenant_id=tenant,
-            op_index=index,
-            payload_pad=pad,
-            task_id=tid if index % 10 == 0 else None,
-        )
-        if result.error:
-            errors += 1
-            violations.append(result.error)
-        else:
-            completed += 1
-            if result.kind == "write":
-                task_by_tenant[tenant] = result.task_id
-
-    futures = []
-    with ThreadPoolExecutor(max_workers=writers) as pool:
-        tick = 0
-        while time.monotonic() < deadline:
-            now = time.monotonic()
-            if now < next_tick:
-                time.sleep(min(0.01, next_tick - now))
-                continue
-            tenant = _TENANTS[tick % len(_TENANTS)]
-            offered += 1
-            futures.append(pool.submit(_one_op, tenant, tick))
-            tick += 1
-            next_tick += min_interval
-        for future in as_completed(futures):
-            future.result()
-    return offered, completed, errors, violations
-
-
-def _spawn_os_workers(
-    *,
-    dsn: str,
-    schema: str,
+    gate_db: Path,
     stop_file: Path,
     metrics_dir: Path,
-    duration_s: float,
 ) -> list[subprocess.Popen[bytes]]:
     module = "tests.qualification.dist_scale_x.p4_multiprocess_worker"
     procs: list[subprocess.Popen[bytes]] = []
@@ -136,24 +75,59 @@ def _spawn_os_workers(
                     str(metrics),
                     "--worker-index",
                     str(idx),
+                    "--gate-db",
+                    str(gate_db),
+                    "--writers",
+                    str(WL5_WRITERS),
                 ],
                 cwd=_REPO_ROOT,
             ),
         )
-    time.sleep(duration_s)
-    stop_file.write_text("stop", encoding="utf-8")
     return procs
 
 
-def _terminate(procs: list[subprocess.Popen[bytes]]) -> None:
-    for proc in procs:
-        if proc.poll() is None:
-            proc.terminate()
-    for proc in procs:
-        try:
-            proc.wait(timeout=20)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+def _offer_phase(gate: Wl5RateGate, duration_s: float) -> int:
+    interval = 1.0 / WL5_WRITE_RATE_CAP
+    deadline = time.monotonic() + duration_s
+    seq = 0
+    next_offer = time.monotonic()
+    while time.monotonic() < deadline:
+        now = time.monotonic()
+        if now < next_offer:
+            time.sleep(min(0.01, next_offer - now))
+            continue
+        gate.offer(seq)
+        seq += 1
+        next_offer += interval
+    return seq
+
+
+def _drain_gate(gate: Wl5RateGate, timeout_s: float = 45.0) -> None:
+    deadline = time.monotonic() + timeout_s
+    while gate.pending_offers() > 0 and time.monotonic() < deadline:
+        time.sleep(0.1)
+
+
+def _collect_metrics(metrics_dir: Path) -> dict[str, float]:
+    writes = 0.0
+    reads = 0.0
+    errors = 0.0
+    for path in metrics_dir.glob("worker_*.json"):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        writes += float(payload.get("writes", 0))
+        reads += float(payload.get("reads", 0))
+        errors += float(payload.get("errors", 0))
+    return {"writes": writes, "reads": reads, "errors": errors}
+
+
+def _run_wl5_phase(
+    *,
+    gate: Wl5RateGate,
+    duration_s: float,
+) -> int:
+    offered = _offer_phase(gate, duration_s)
+    _drain_gate(gate)
+    return offered
 
 
 def test_wl05_persistence_heavy_baseline() -> None:
@@ -161,72 +135,86 @@ def test_wl05_persistence_heavy_baseline() -> None:
     dsn = resolve_pg_dsn()
     run_id = new_run_id("wl05-p4")
     schema = qual_pg_schema(run_id)
-    offered_w, completed_w, errors_w, viol_w = _rate_limited_driver(
-        dsn=dsn,
-        schema=schema,
-        duration_s=float(WL5_WARMUP_SECONDS),
-        writers=WL5_WRITERS,
-        rate_cap=WL5_WRITE_RATE_CAP,
-        payload_bytes=WL5_PAYLOAD_BYTES,
-    )
-    offered_m, completed_m, errors_m, viol_m = _rate_limited_driver(
-        dsn=dsn,
-        schema=schema,
-        duration_s=float(WL5_MEASURE_SECONDS),
-        writers=WL5_WRITERS,
-        rate_cap=WL5_WRITE_RATE_CAP,
-        payload_bytes=WL5_PAYLOAD_BYTES,
-    )
-    tmp = _REPO_ROOT / ".tmp" / "session" / f"p4-wl05-{run_id}"
-    tmp.mkdir(parents=True, exist_ok=True)
-    stop_file = tmp / "stop"
-    metrics_dir = tmp / "metrics"
+    prime_p4_qualification_stores(dsn, schema)
+    session_dir = _REPO_ROOT / ".tmp" / "session" / f"p4-wl05-{run_id}"
+    session_dir.mkdir(parents=True, exist_ok=True)
+    gate_db = session_dir / "gate.db"
+    stop_file = session_dir / "stop"
+    metrics_dir = session_dir / "metrics"
     metrics_dir.mkdir(exist_ok=True)
-    procs = _spawn_os_workers(
+    if stop_file.exists():
+        stop_file.unlink()
+    gate = Wl5RateGate(gate_db)
+    warmup_snapshot = {"writes": 0.0, "reads": 0.0, "errors": 0.0}
+    procs = _spawn_workers(
         dsn=dsn,
         schema=schema,
+        gate_db=gate_db,
         stop_file=stop_file,
         metrics_dir=metrics_dir,
-        duration_s=min(5.0, float(WL5_MEASURE_SECONDS)),
     )
-    _terminate(procs)
-
-    violations = tuple(viol_w + viol_m)
-    correctness = ()
-    if violations:
-        correctness = (CorrectnessInvariantViolation.LOST_EVIDENCE,)
-    manifest_path = write_p3_manifest(
+    try:
+        warmup_offered = _run_wl5_phase(gate=gate, duration_s=float(WL5_WARMUP_SECONDS))
+        warmup_snapshot = _collect_metrics(metrics_dir)
+        measure_offered = _run_wl5_phase(gate=gate, duration_s=float(WL5_MEASURE_SECONDS))
+        stop_file.write_text("stop", encoding="utf-8")
+        for proc in procs:
+            proc.wait(timeout=60)
+    finally:
+        for proc in procs:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=10)
+    for proc in procs:
+        assert proc.returncode == 0, f"worker exit {proc.returncode}"
+    full_metrics = _collect_metrics(metrics_dir)
+    measure_metrics = {
+        key: full_metrics[key] - warmup_snapshot.get(key, 0.0)
+        for key in ("writes", "reads", "errors")
+    }
+    total_writes = measure_metrics["writes"]
+    total_reads = measure_metrics["reads"]
+    total_ops = total_writes + total_reads
+    read_share = total_reads / total_ops if total_ops else 0.0
+    target_read = 0.10
+    violations: list[str] = []
+    if measure_metrics["errors"] > 0:
+        violations.append(f"errors={measure_metrics['errors']}")
+    if total_ops > 50 and abs(read_share - target_read) > _READ_SHARE_TOLERANCE:
+        violations.append(f"read_share={read_share:.3f}")
+    correctness = (CorrectnessInvariantViolation.LOST_EVIDENCE,) if violations else ()
+    manifest_path = write_p4_manifest(
         run_id=run_id,
         records=(
             DistScaleXEvidenceRecord(
                 record_id=f"{run_id}-wl5-base",
                 code_sha=code_sha(),
-                topology_description=f"P4 WL-5 PG M; schema={schema}; writers={WL5_WRITERS}",
+                topology_description=(
+                    f"P4 WL-5 PG M; schema={schema}; writers={WL5_WRITERS}; "
+                    f"worker_pids={[p.pid for p in procs]}"
+                ),
                 environment_definition=P4_ENV_DEFINITION,
                 workload_id="WL-5",
                 dimension_ids=("A",),
                 duration_seconds=float(WL5_WARMUP_SECONDS + WL5_MEASURE_SECONDS),
                 fault_description="baseline fault rate 0%",
-                disposition=EvidenceDisposition.PASS
-                if not correctness
-                else EvidenceDisposition.FAIL,
+                disposition=EvidenceDisposition.PASS if not correctness else EvidenceDisposition.FAIL,
                 metrics=DistScaleXMetricsSnapshot(
-                    throughput_per_sec=(completed_w + completed_m)
-                    / max(1.0, float(WL5_WARMUP_SECONDS + WL5_MEASURE_SECONDS)),
-                    error_rate=(errors_w + errors_m)
-                    / max(1.0, float(offered_w + offered_m)),
+                    throughput_per_sec=total_ops / max(1.0, float(WL5_MEASURE_SECONDS)),
+                    error_rate=measure_metrics["errors"] / max(1.0, total_ops),
                     extra={
-                        "offered_operations": float(offered_w + offered_m),
-                        "completed_operations": float(completed_w + completed_m),
-                        "os_worker_processes": float(len(procs)),
+                        "warmup_offered": float(warmup_offered),
+                        "measure_offered": float(measure_offered),
+                        "measure_writes": total_writes,
+                        "measure_reads": total_reads,
+                        "measure_read_share": read_share,
                         "write_rate_cap": WL5_WRITE_RATE_CAP,
                     },
                 ),
                 correctness_violations=correctness,
             ),
         ),
-        topology_description=f"P4 WL-5 PG M; tenants={_TENANTS}; dsn=redacted",
+        topology_description=f"P4 WL-5; tenants={_TENANTS}; session={session_dir.name}",
     )
     assert manifest_path.exists()
-    assert not violations, violations[:5]
-
+    assert not violations, violations

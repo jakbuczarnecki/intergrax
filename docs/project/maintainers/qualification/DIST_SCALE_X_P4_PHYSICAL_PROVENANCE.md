@@ -5,39 +5,38 @@
 | Label | SHA |
 | --- | --- |
 | **START_HEAD** | `50838f077a70d35abb527fc4a499416f5971f1b0` |
-| **IMPLEMENTATION_SHA** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
-| **EXECUTION_SHA** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` — consolidated P4 batch @ shortened WL-5 envelope |
-| **PUBLICATION_SHA** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
+| **IMPLEMENTATION_SHA (P4-A initial)** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
+| **PUBLICATION_SHA (initial evidence)** | `bf3b21df115a271e2a4332b81644d3dca54d4bab` |
+| **IMPLEMENTATION_SHA (Protocol 03→04 correction)** | *(this commit — see `git rev-parse HEAD` after push)* |
+| **EXECUTION_SHA (authoritative physical)** | **PENDING** — qual PG + Docker required |
 
-## Preflight (structural)
+## Preflight (structural, no PG)
 
 | Command | Result |
 | --- | --- |
-| `uv run pytest tests/qualification/dist_scale_x/test_dist_scale_x_l1_catalog_integrity.py tests/qualification/dist_scale_x/test_dist_scale_x_l2_evidence_contract_gates.py -q` | 28 passed |
-| `uv run pytest tests/unit/runtime/long_running/test_postgresql_task_checkpoint_store.py tests/unit/runtime/execution/test_postgresql_decision_checkpoint_persistence.py -q` | PG-gated unit negatives |
+| L1/L2 catalog + evidence gates | 28 passed @ correction session |
+| P4 batch (`test_dist_scale_x_p4_qualification_batch`) | Requires live PostgreSQL |
 
-## Physical acceptance (consolidated batch)
+## Corrective batch scope (C01–C05)
 
-| Field | Value |
+| ID | Status |
 | --- | --- |
-| **Command** | `uv run pytest tests/qualification/dist_scale_x/test_dist_scale_x_p4_qualification_batch.py -q` |
-| **Envelope override (batch driver)** | `DIST_SCALE_X_P4_WL5_WARMUP_SECONDS=2`, `DIST_SCALE_X_P4_WL5_MEASURE_SECONDS=3` (smoke — **not** full 60s/120s lock) |
-| **Infra** | Local PostgreSQL 16.6 qual container; DSN via `INTERGRAX_POSTGRESQL_DSN` |
-| **Families** | SX-F01 PG, SX-F03 PG, SX-F07/F09 via PG DocumentStore in `p4_persistence_op` |
-| **catalog_integrity_sha256** | `118155c03887d12d04184526018bf8020f7a124ceb513b39ec2c025e0c826268` |
+| **C01** WL-5 full 60s+120s, gate, N=2 OS workers, F01–F09 op | **Code complete**; authoritative PASS **pending** PG re-run |
+| **C02** F01/F03/F07/F09 in `p4_persistence_op` | **Delivered** |
+| **C03** G crash matrix | **Delivered** (`p4_physical_crash.py`) |
+| **C04** PG contract unit tests | **Delivered** (`test_postgresql_task_checkpoint_store_contract.py`, F03 tests) |
+| **C05** F-EVENT qual test; F-STORAGE docker pause | **Partial** — storage skip when pause ineffective |
 
-| Module | Disposition | Gap |
-| --- | --- | --- |
-| `wl_05_persistence_heavy.py` | Smoke PASS @ shortened envelope | Full 60s+120s @ 40 writes/s aggregate **pending** |
-| `p4_physical_restart.py` | G/H partial PASS | F matrix / G kill / full H reload **open** |
+## Production delta (correction)
 
-## Evidence documents
+- Concurrent DDL: `pg_advisory_xact_lock` in F01/F03 `_ensure_schema`.
+- Qual: `prime_p4_qualification_stores`, `Wl5RateGate`, WL-5 worker driver, schema race handling.
 
-- [DIST_SCALE_X_F_EVIDENCE.md](DIST_SCALE_X_F_EVIDENCE.md) — **incomplete**
-- [DIST_SCALE_X_G_EVIDENCE.md](DIST_SCALE_X_G_EVIDENCE.md) — **partial**
-- [DIST_SCALE_X_H_EVIDENCE.md](DIST_SCALE_X_H_EVIDENCE.md) — **partial**
+## Infra note
+
+Physical tests require **psycopg handshake** to qual DSN (`INTERGRAX_POSTGRESQL_DSN` or localhost:5434) and, for F-STORAGE, **Docker Desktop** for `intergrax-postgresql` pause/unpause.
 
 ## P4 / parent status
 
-- **P4-A:** implementation delivered; physical qualification **partial** — not P4 scoped accepted.
+- **P4-A:** correction landed; **EXECUTION_SHA** not recorded on PG-down workstation.
 - **DIST-SCALE-X parent:** **OPEN**

@@ -1,10 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DIST-SCALE-X P4 consolidated qualification batch."""
+"""DIST-SCALE-X P4 consolidated qualification batch (full envelope)."""
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -19,15 +18,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_dist_scale_x_p4_consolidated_batch_passes() -> None:
-    env = os.environ.copy()
-    env.setdefault("DIST_SCALE_X_P4_WL5_WARMUP_SECONDS", "2")
-    env.setdefault("DIST_SCALE_X_P4_WL5_MEASURE_SECONDS", "3")
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", *DIST_SCALE_X_P4_SELECTION_BATCH, "-q", "--tb=short"],
         cwd=_REPO_ROOT,
         capture_output=True,
         text=True,
         check=False,
-        env=env,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr

@@ -82,8 +82,16 @@ class PostgreSQLTaskCheckpointStore(TaskCheckpointPersistence):
             (self._stream_advisory_key(tenant_id, task_id),),
         )
 
+    def _schema_init_advisory_key(self) -> int:
+        digest = hashlib.sha256(f"ddl:{self._provider.tenant_schema}".encode()).digest()
+        return struct.unpack("!q", digest[:8])[0]
+
     def _ensure_schema(self) -> None:
         with self._provider.transaction() as session:
+            session.execute(
+                "SELECT pg_advisory_xact_lock(%s)",
+                (self._schema_init_advisory_key(),),
+            )
             session.execute(
                 """
                 CREATE TABLE IF NOT EXISTS task_checkpoints (

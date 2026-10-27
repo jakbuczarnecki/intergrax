@@ -5,13 +5,18 @@
 | **START_HEAD** | `50838f077a70d35abb527fc4a499416f5971f1b0` |
 | **Envelope** | `DIST-SCALE-X-ENVELOPE-P4-v1` |
 
-## Executed scenarios
+## Harness
+
+- `p4_crash_worker.py` — hard kill at sync boundaries (`G-01`…`G-06`).
+- `p4_physical_crash.py` — parametrized boundary reachability + `proc.kill()`.
+
+## Executed scenarios (requires live qual PG)
 
 | ID | Status | Observation |
 | --- | --- | --- |
-| **G-02 class** (stale F01 CAS across connections) | **EXECUTED** | `tests/qualification/dist_scale_x/p4_physical_restart.py::test_p4_g_cross_process_cas_conflict` |
-| **G-01..G-06** (process kill at commit boundaries) | **NOT EXECUTED** | No instrumented kill harness for F07/F09/G-05 effect boundaries in this batch |
+| **G-01…G-06** sync + kill | **READY** | Passed in corrective dev session @ psycopg handshake; re-run when PG qual infra up |
+| **G-02 F01-only path** | **READY** | Dedicated F01 persist before `after_f01` sync (avoids full F01–F09 latency) |
 
 ## Residual
 
-Full crash-consistency matrix **not** closed for P4-A.
+Re-execute `p4_physical_crash.py` @ corrective `IMPLEMENTATION_SHA` after infra preflight. Post-kill durable assertions beyond sync markers remain **ENVELOPE_ONLY** observation.

@@ -4,53 +4,80 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-from tests.qualification.dist_scale_x._p4_support import qual_pg_schema, require_p4_pg_infra, resolve_pg_dsn
+from tests.qualification.dist_scale_x._p4_support import new_run_id, qual_pg_schema, require_p4_pg_infra, resolve_pg_dsn
 
 pytestmark = [pytest.mark.qualification, pytest.mark.integration]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PYTHON = sys.executable
+_MODULE = "tests.qualification.dist_scale_x.p4_restart_worker"
 
 
-def test_p4_h_durable_restart_reload_checkpoint() -> None:
-    """H-01: new OS process reloads F01 checkpoint from same PG DSN/schema."""
+def test_p4_h_durable_restart_all_families() -> None:
+    """H-01: distinct OS process reloads F01/F03/F09 from same PostgreSQL state."""
     require_p4_pg_infra()
     dsn = resolve_pg_dsn()
-    schema = qual_pg_schema("p4-h-restart")
-    module = "tests.qualification.dist_scale_x.p4_restart_worker"
-    out = _REPO_ROOT / ".tmp" / "session" / "p4-h-restart" / "state.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    proc = subprocess.run(
+    schema = qual_pg_schema(new_run_id("p4-h"))
+    session = _REPO_ROOT / ".tmp" / "session" / f"p4-h-{schema}"
+    session.mkdir(parents=True, exist_ok=True)
+    identity_path = session / "identity.json"
+    reload_path = session / "reload.json"
+    write = subprocess.run(
         [
             _PYTHON,
             "-m",
-            module,
+            _MODULE,
             "--dsn",
             dsn,
             "--schema",
             schema,
+            "--mode",
+            "write",
             "--out",
-            str(out),
+            str(identity_path),
         ],
         cwd=_REPO_ROOT,
         capture_output=True,
         text=True,
         check=False,
     )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert out.exists()
-    payload = out.read_text(encoding="utf-8")
-    assert "revision" in payload
+    assert write.returncode == 0, write.stdout + write.stderr
+    reload = subprocess.run(
+        [
+            _PYTHON,
+            "-m",
+            _MODULE,
+            "--dsn",
+            dsn,
+            "--schema",
+            schema,
+            "--mode",
+            "reload",
+            "--identity",
+            str(identity_path),
+            "--out",
+            str(reload_path),
+        ],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert reload.returncode == 0, reload.stdout + reload.stderr
+    payload = json.loads(reload_path.read_text(encoding="utf-8"))
+    assert payload["f01_revision"] == 1
+    assert payload["f03_present"] is True
+    assert payload["f09_present"] is True
 
 
 def test_p4_g_cross_process_cas_conflict() -> None:
-    """G-02 class: stale CAS visible across independent connections."""
     require_p4_pg_infra()
     from intergrax.integrations.providers.relational_store.postgresql.config import (
         PostgreSQLIntegrationConfig,
