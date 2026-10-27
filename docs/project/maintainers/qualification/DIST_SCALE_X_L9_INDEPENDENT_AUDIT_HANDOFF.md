@@ -9,6 +9,7 @@
 | **SAC** | `SAC-DIST-SCALE-X-v1` (OD-03) |
 | **Agent disposition** | **READY FOR INDEPENDENT AUDIT** |
 | **Physical WL-7 4 h** | **OUT OF SCOPE for this audit** — operator deferred; see [DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md) |
+| **Interim scoped record** | [DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md](DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md) — **does not replace** G-06; no auditor verdict implied |
 
 ## Auditor mandate (G-06)
 

@@ -9,6 +9,7 @@
 | **Disposition** | **READY FOR INDEPENDENT AUDIT** — WL-7 **14400 s** physical **deferred** ([deferral](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md)) |
 | **G-06 handoff** | [DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md](DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md) |
 | **Parent CLOSED** | **FORBIDDEN** until G-06 + G-07 |
+| **Interim scoped acceptance** | [DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md](DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md) — **not** full certification; parent **OPEN** |
 
 ## L9 exit matrix (16 rows) — T-L9-01
 
@@ -24,7 +25,7 @@
 | 8 | Partial failure | P4 F + P5 I | PG+HTTP | `f0c49fd3…` + `9ac74ca…` | **PASS** |
 | 9 | Tenant stress | WL-2 K | multi-tenant | `8656fb7d8` | **ALREADY PROVEN** |
 | 10 | Resource exhaustion L | P5 L + P3 reuse | admission | `9ac74ca…` | **PASS** |
-| 11 | Soak M | WL-7 | mixed load | `9ac74ca…` harness | **BLOCKED** (14400 s) |
+| 11 | Soak M | WL-7 | mixed load | `9ac74ca…` harness | **BLOCKED** (14400 s) — interim scoped acceptance **does not** clear row 11 ([interim record](DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md)) |
 | 12 | Chaos N | P6 matrix | seeded | `9ac74ca…` | **PASS** |
 | 13 | Zero invariant violations | manifests | — | per run | **PASS** on accepted runs |
 | 14 | Capacity envelope | [P7 capacity](DIST_SCALE_X_CAPACITY_ENVELOPE.md) | — | `9ac74ca…` | **PASS** (ENVELOPE_ONLY) |
