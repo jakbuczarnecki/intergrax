@@ -11,9 +11,8 @@ import time
 import pytest
 
 from tests.qualification.dist_scale_x._p4_support import (
-    P4_FAULT_WINDOW_SECONDS,
     P4_PG_CONTAINER,
-    bounded_pg_outage,
+    docker_pause_pg,
     docker_unpause_pg,
     new_run_id,
     prime_p4_qualification_stores,
@@ -51,14 +50,13 @@ def test_p4_f_storage_pg_pause_surfaces_write_error() -> None:
                 errors.append(result.error)
             time.sleep(0.15)
 
-    thread = threading.Thread(target=_writer, daemon=True)
-    thread.start()
-    time.sleep(0.5)
+    docker_pause_pg()
     try:
-        bounded_pg_outage(seconds=min(30, P4_FAULT_WINDOW_SECONDS))
+        thread = threading.Thread(target=_writer, daemon=True)
+        thread.start()
+        thread.join(timeout=90)
     finally:
         docker_unpause_pg()
-    thread.join(timeout=90)
     assert attempts > 0, "no write attempts during F-STORAGE window"
     assert errors, f"expected persistence errors during pause on {P4_PG_CONTAINER}"
 
