@@ -5,6 +5,7 @@
 | **Operator authorization** | `OPERATOR APPROVED — DIST-SCALE-X P3 INDEPENDENT DISPOSITION AND FORMAL CLOSURE PUBLICATION` |
 | **Batch** | P3 scoped acceptance (not parent CLOSED) |
 | **P3 closure publication baseline (START_HEAD)** | `5e696ceacec57beb7ec7756743f12989be7319ce` |
+| **P3_CLOSURE_PUBLICATION_SHA** | `8191334e97130ec83ef75b603a30732237990b24` |
 | **SAC** | `SAC-DIST-SCALE-X-v1` (unchanged) |
 | **Parent DIST-SCALE-X** | **OPEN** — not CLOSED; not INDEPENDENTLY ACCEPTED |
 | **Global FRZ PASS** | **0** — no promotion from this record |

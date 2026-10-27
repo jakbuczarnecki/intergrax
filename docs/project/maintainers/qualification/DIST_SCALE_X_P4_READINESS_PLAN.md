@@ -5,8 +5,8 @@
 | **Mode** | Read-only planning — **no implementation**, **no physical execution** |
 | **SAC** | `SAC-DIST-SCALE-X-v1` |
 | **Whole-stage plan** | `dist-scale-x_whole_stage_e7172e11.plan.md` (Gate A/B accepted; cited in P0 inventory) |
-| **Git baseline** | P3 formal closure publication SHA (record in [DIST_SCALE_X_P3_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_P3_FORMAL_CLOSURE_RECONCILIATION.md)) |
-| **P3 closure SHA** | Same as baseline — enter P4 only after operator accepts P3 reconciliation on `origin/development` |
+| **Git baseline** | Enter P4 implementation from **`8191334e97130ec83ef75b603a30732237990b24`** onward |
+| **P3 closure SHA** | `8191334e97130ec83ef75b603a30732237990b24` ([DIST_SCALE_X_P3_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_P3_FORMAL_CLOSURE_RECONCILIATION.md)) |
 
 ---
 
