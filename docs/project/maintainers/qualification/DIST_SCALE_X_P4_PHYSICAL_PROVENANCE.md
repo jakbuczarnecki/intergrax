@@ -14,7 +14,7 @@
 | **IMPLEMENTATION_SHA (WL-5 gate seq fix)** | `f1389fdaa4d69fb343dfc42e2040c2f8ebb2c39b` |
 | **EXECUTION_SHA (authoritative WL-5 physical)** | `f1389fdaa4d69fb343dfc42e2040c2f8ebb2c39b` |
 | **EXECUTION_SHA (prior batch F/G/H/C02–C05)** | `f0c49fd3cff8c00fef096e4db96f7ddcf07c9845` |
-| **PUBLICATION_SHA** | `685a1752844424cd76767dfd0ac12b0dc98d537f` |
+| **PUBLICATION_SHA** | `8977df72d00a5c11f63e7888b58fcc12fdf33d29` |
 
 Intermediate commits on `development`: `b965f05a5`, `e3519de78`, `9f0c53e2c36e3549de9776fbeef44e9c14bc60c2` (pre-correction HEAD).
 
