@@ -5,9 +5,9 @@
 | Label | SHA |
 | --- | --- |
 | **START_HEAD** | `50838f077a70d35abb527fc4a499416f5971f1b0` |
-| **IMPLEMENTATION_SHA** | *(see git commit containing this file)* |
-| **EXECUTION_SHA** | Same as IMPLEMENTATION_SHA for consolidated batch below |
-| **PUBLICATION_SHA** | Same commit as evidence publication |
+| **IMPLEMENTATION_SHA** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
+| **EXECUTION_SHA** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` — consolidated P4 batch @ shortened WL-5 envelope |
+| **PUBLICATION_SHA** | `04329842a0ffc3f62eb928dbf85a49919cf5fb10` |
 
 ## Preflight (structural)
 
