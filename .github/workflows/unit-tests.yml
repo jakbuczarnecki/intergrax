@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 #
 # CI profiles:
-#   pull_request, push (main) - minimal: lock + ci_smoke pytest + tier-boundary scripts only
+#   pull_request, push (main, development) - smoke via scripts/ci/run_regression_gate_ci.py --profile smoke
 #   workflow_dispatch (full) - full gate + governance + closeout (manual; no scheduled nightly)
 #   workflow_dispatch (smoke) - same as PR (debug)
 #   workflow_dispatch (diagnostics_full) - one exact-SHA full tests/unit/runtime/diagnostics qualification
@@ -18,7 +18,7 @@ name: Regression gate
 
 on:
   push:
-    branches: [main]
+    branches: [main, development]
     paths-ignore:
       - "docs/**"
       - "**/*.md"
@@ -56,7 +56,13 @@ jobs:
   ci-smoke:
     if: >-
       github.event_name == 'pull_request' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (
+        github.event_name == 'push' &&
+        (
+          github.ref == 'refs/heads/main' ||
+          github.ref == 'refs/heads/development'
+        )
+      ) ||
       (
         github.event_name == 'workflow_dispatch' &&
         github.event.inputs.profile == 'smoke'
@@ -78,19 +84,8 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
-      - name: Environment conformance (CI profile)
-        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
-
-      - name: Workspace lock consistency
-        run: uv lock --check
-
-      - name: CI smoke unit tests
-        run: uv run --frozen python scripts/ci/run_ci_smoke_pytest.py
-
-      - name: Tier boundary audits (instant)
-        run: >-
-          uv run --frozen python scripts/maintenance/check_harness_no_getattr.py
-          && uv run --frozen python scripts/maintenance/check_agents_no_tier3_imports.py
+      - name: Regression gate smoke (SSOT)
+        run: uv run --frozen python scripts/ci/run_regression_gate_ci.py --profile smoke --skip-uv-sync
 
   platform-plugin-windows-e2e:
     if: >-

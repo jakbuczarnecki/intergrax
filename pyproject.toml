@@ -363,6 +363,10 @@ integrations-slack = [
   "aiohttp>=3.9",
 ]
 
+[tool.intergrax.push_gate]
+profile = "smoke"
+skip_env = "INTERGRAX_SKIP_PUSH_GATE"
+
 [tool.pytest.ini_options]
 testpaths = ["tests", "applications", "agents"]
 # Application tests live under ``applications/<app>/tests/`` (discovered via ``testpaths`` ``applications``).

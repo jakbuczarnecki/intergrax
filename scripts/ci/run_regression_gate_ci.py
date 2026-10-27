@@ -36,34 +36,42 @@ def _uv_sync() -> Step:
     return Step("Install dependencies (CI minimal)", ["uv", "sync", "--extra", "dev-ci", "--frozen"])
 
 
-def _ci_smoke_job() -> Job:
-    return Job(
-        "ci-smoke",
-        (
-            _uv_sync(),
-            Step("CI smoke unit tests", ["uv", "run", "python", "scripts/ci/run_ci_smoke_pytest.py"]),
+def _uv_run(*args: str, frozen: bool = True) -> list[str]:
+    command = ["uv", "run"]
+    if frozen:
+        command.append("--frozen")
+    command.extend(args)
+    return command
+
+
+def smoke_steps(include_uv_sync: bool) -> tuple[Step, ...]:
+    """SSOT for Regression gate ci-smoke (unit-tests.yml + pre-push)."""
+    steps: list[Step] = []
+    if include_uv_sync:
+        steps.append(_uv_sync())
+    steps.extend(
+        [
+            Step(
+                "Environment conformance (CI profile)",
+                _uv_run("python", "scripts/maintenance/check_environment_conformance.py", "--profile", "ci"),
+            ),
+            Step("Workspace lock consistency", ["uv", "lock", "--check"]),
+            Step("CI smoke unit tests", _uv_run("python", "scripts/ci/run_ci_smoke_pytest.py")),
             Step(
                 "Tier boundary audits (instant)",
                 [
-                    "uv",
-                    "run",
-                    "python",
-                    "scripts/maintenance/check_harness_no_getattr.py",
+                    *_uv_run("python", "scripts/maintenance/check_harness_no_getattr.py"),
                     "&&",
-                    "uv",
-                    "run",
-                    "python",
-                    "scripts/maintenance/check_agents_no_tier3_imports.py",
-                    "&&",
-                    "uv",
-                    "run",
-                    "python",
-                    "scripts/ci/check_ci_gate_test_purity.py",
+                    *_uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
                 ],
-                env={"INTERGRAX_CI_TEST_MARKER": "ci_smoke"},
             ),
-        ),
+        ]
     )
+    return tuple(steps)
+
+
+def _ci_smoke_job(include_uv_sync: bool = True) -> Job:
+    return Job("ci-smoke", smoke_steps(include_uv_sync))
 
 
 def _gate_tests_job() -> Job:
@@ -201,9 +209,9 @@ def _gate_closeout_job() -> Job:
     )
 
 
-def _jobs_for_profile(profile: str) -> list[Job]:
+def _jobs_for_profile(profile: str, include_uv_sync: bool = True) -> list[Job]:
     if profile == "smoke":
-        return [_ci_smoke_job()]
+        return [_ci_smoke_job(include_uv_sync)]
     if profile == "full":
         return [
             _gate_tests_job(),
@@ -212,7 +220,7 @@ def _jobs_for_profile(profile: str) -> list[Job]:
             _gate_closeout_job(),
         ]
     if profile == "all":
-        return [_ci_smoke_job(), *_jobs_for_profile("full")]
+        return [_ci_smoke_job(include_uv_sync), *_jobs_for_profile("full", include_uv_sync)]
     raise ValueError(f"unsupported profile: {profile}")
 
 
@@ -268,9 +276,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="all",
         help="smoke=PR/push CI; full=nightly jobs; all=smoke then full (default).",
     )
+    parser.add_argument(
+        "--skip-uv-sync",
+        action="store_true",
+        help="Skip uv sync step (use when dependencies are already installed, e.g. GitHub Actions).",
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
-    jobs = _jobs_for_profile(args.profile)
+    jobs = _jobs_for_profile(args.profile, include_uv_sync=not args.skip_uv_sync)
     results: list[tuple[str, int, float]] = []
     for job in jobs:
         code, elapsed = _run_job(job)
