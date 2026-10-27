@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Protocol** | ECAP Parent Closure Audit (documentary + GitHub SHA verification) |
-| **AUDIT_BASELINE_SHA** | `6f4193fa9a06204b32fab76a9774511ef0a6ad72` |
+| **AUDIT_BASELINE_SHA** | `4a65c2ce0f02525cf5e87032e9f0ada98c5ad5f2` |
 | **START_HEAD** | `ddb18890a216b0c51abc9e463efc31f73dcfe359` |
 | **EXECUTION_SHA (P5/P6 physical @ agent)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
 | **SAC** | `SAC-DIST-SCALE-X-v1` (OD-03) |
@@ -12,7 +12,7 @@
 
 ## Auditor mandate (G-06)
 
-Verify on **GitHub @ AUDIT_BASELINE_SHA** (not local `.tmp/` alone):
+Use [DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md](DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md) as the G-06 procedure. Verify on **GitHub @ AUDIT_BASELINE_SHA** (not local `.tmp/` alone):
 
 1. Qual harness P5/P6 code, selection batches, evidence schema/manifest contracts.
 2. Published evidence docs I–N, P5/P6 provenance, P7 envelopes, parent matrix.
@@ -31,6 +31,7 @@ Verify on **GitHub @ AUDIT_BASELINE_SHA** (not local `.tmp/` alone):
 | P5 provenance | [DIST_SCALE_X_P5_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P5_PHYSICAL_PROVENANCE.md) |
 | P6 provenance | [DIST_SCALE_X_P6_PHYSICAL_PROVENANCE.md](DIST_SCALE_X_P6_PHYSICAL_PROVENANCE.md) |
 | Catalog | `tests/qualification/dist_scale_x/catalog.py` |
+| G-06 checklist | [DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md](DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md) |
 
 ## Expected auditor outcome
 
