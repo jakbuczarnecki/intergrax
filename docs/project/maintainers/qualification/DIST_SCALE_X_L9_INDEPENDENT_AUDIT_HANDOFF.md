@@ -8,7 +8,8 @@
 | **EXECUTION_SHA (P5/P6 physical @ agent)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
 | **SAC** | `SAC-DIST-SCALE-X-v1` (OD-03) |
 | **Agent disposition** | **READY FOR INDEPENDENT AUDIT** |
-| **Physical WL-7 4 h** | **OUT OF SCOPE for this audit** — operator deferred; see [DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md) |
+| **Physical WL-7 4 h** | **NOT PROVEN** — **NOT conducted** (`OPERATOR_CANCEL_4H`); **explicitly not claimed** |
+| **Physical WL-7 1 h substitute** | **IN SCOPE (amendment)** — [DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md); auditor treats row **11** as **PARTIAL** with **4 h** footnote |
 | **Interim scoped record** | [DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md](DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md) — **does not replace** G-06; no auditor verdict implied |
 
 ## Auditor mandate (G-06)
@@ -19,7 +20,7 @@ Use [DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md](DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md)
 2. Published evidence docs I–N, P5/P6 provenance, P7 envelopes, parent matrix.
 3. P1–P4 reconciliation SHAs unchanged; no silent SAC amendment.
 4. L9 matrix rows 1–10, 12–15 — disposition vs cited EXECUTION_SHA.
-5. Rows **11** and **16** — explicitly **OPEN / BLOCKED** until WL-7 `14400 s` physical (separate qualification run).
+5. Rows **11** and **16** — **1 h substitute** path: row **11** **PARTIAL / VALIDATION** if manifest proves **3600 s**; **14400 s** remains **NOT PROVEN** unless operator completes separate 4 h run.
 
 **Forbidden for auditor to grant:** parent **CLOSED**, **INDEPENDENTLY ACCEPTED**, global **FRZ PASS**, **EBH-5**.
 
@@ -40,6 +41,6 @@ Use [DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md](DIST_SCALE_X_L9_AUDITOR_CHECKLIST.md)
 
 | Verdict | When |
 | --- | --- |
-| **AUDIT PASS (scoped)** | Implementation + documentary evidence consistent @ SHA; row 11 deferral accepted |
+| **AUDIT PASS (scoped)** | Implementation + documentary evidence consistent @ SHA; row **11** **1 h PROVEN** acceptable with **4 h NOT PROVEN** footnote |
 | **AUDIT FAIL** | Contradiction, missing owner, mock-only **M** claim, or undocumented SAC drift |
 | **Parent CLOSED** | Only after **G-07** following PASS + optional WL-7 physical completion |

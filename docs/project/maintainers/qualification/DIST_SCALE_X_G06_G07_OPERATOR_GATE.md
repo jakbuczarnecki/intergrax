@@ -13,12 +13,13 @@
 
 | Gate / work | Status @ prep | Blocks |
 | --- | --- | --- |
-| **WL-7** physical `14400 s` (`soak_complete_envelope=1`, `errors=0`) | **NOT PROVEN** — may be **in progress** in a sibling operator session; see [DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md) | **Full** G-06 PASS (recommended for parent closure without PARTIAL on rows **11** / **16**); **G-07 full parent CLOSED** |
+| **WL-7** physical `14400 s` | **NOT PROVEN** — **NOT conducted**; see deferral + [DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md) |
+| **WL-7** physical `3600 s` (1 h substitute) | **PROVEN** — `wl07-soak-c8e86ebef60e`, `soak_complete_envelope=1` | **G-06 scoped** eligible — row **11** **PARTIAL**†; **not** full **14400 s** closure |
 | **T-L9-01..03** matrix refresh @ post–WL-7 SHA | Pending until WL-7 PASS (or explicit scoped-audit path) | Updated `AUDIT_BASELINE_SHA` in handoff before **final** G-06 pin |
 | **G-06** independent audit | **Pending** — checklist + handoff ready | **G-07**, **T-PARENT-01** finalization, roadmap §5 CLOSED |
 | **G-07** operator closure | **Blocked** until G-06 **PASS** (scoped or full per path) | **T-PARENT-02** roadmap §5 |
 
-**Until WL-7 PASS:** treat G-06 as **scoped-audit eligible** only (handoff currently marks WL-7 **OUT OF SCOPE**); do **not** issue parent **CLOSED** or claim rows **11** / **16** PASS without proven soak.
+**G-06 scoped path:** after **1 h** substitute PASS + matrix refresh — **AUDIT PASS (scoped)** allowed; **4 h** must remain **NOT PROVEN** in auditor notes. **G-07 / parent CLOSED** still **forbidden** without operator **G-07** after G-06.
 
 ---
 

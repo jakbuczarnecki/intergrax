@@ -22,11 +22,12 @@
 
 | Item | Status |
 | --- | --- |
-| WL-7 physical soak **14400 s** (`soak_complete_envelope=1`) | **NOT PROVEN** — deferral + nieudany resume (~97% wall, brak manifestu) — [DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md) |
+| WL-7 physical soak **14400 s** (`soak_complete_envelope=1` @ 4 h lock) | **NOT PROVEN** — **4 h NOT conducted** (`OPERATOR_CANCEL_4H`); operator path: **1 h substitute** — [DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md) |
+| WL-7 **1 h** substitute soak (amendment) | **PROVEN** — `wl07-soak-c8e86ebef60e`, `soak_complete_envelope=1` @ `9a06232…` |
 | **G-06** independent audit | **NOT COMPLETE** — handoff gotowy; werdykt audytora **nie** wydany — [DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md](DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md) |
 | **G-07** parent closure | **NOT COMPLETE** — operator-only po G-06 |
-| L9 row **11** (soak M) | **BLOCKED** |
-| L9 row **16** (blockers = 0) | **BLOCKED** (row 11) |
+| L9 row **11** (soak M) | **PARTIAL / VALIDATION** on **1 h** path — **BLOCKED** on original **14400 s** bar |
+| L9 row **16** (blockers = 0) | **VALIDATION** — † original **14400 s** not proven |
 | Parent **CLOSED** / **INDEPENDENTLY ACCEPTED** | **FORBIDDEN** — parent pozostaje **OPEN** — [DIST_SCALE_X_PARENT_QUALIFICATION_EVIDENCE.md](DIST_SCALE_X_PARENT_QUALIFICATION_EVIDENCE.md) |
 | Global **FRZ PASS** | **bez zmian** (nie podnoszone tym rekordem) |
 | **EBH-5** formally entered | **FORBIDDEN** — hard dep pozostaje zamknięcie parent DIST-SCALE |
@@ -50,7 +51,7 @@
 | Planowanie downstream, EBH-5 **prep** (bez formalnego wejścia) | Parent **CLOSED**, **G-07**, **FRZ PASS** |
 | Aktualizacje **doc-only** spójne z SAC v1 i OPEN parent | Twierdzenie **EBH-5 entered** |
 | Kontynuacja G-06 (niezależny audyt) | WL-7 **14400 s** jako **PROVEN** bez osobnego runu |
-| Harmonogram soak po zasobach operatora | Rows **11** / **16** PASS bez manifestu `soak_complete_envelope=1` |
+| **1 h** WL-7 substitute per amendment | Rows **11** / **16** **PASS** na **oryginalnym 4 h** bez **14400 s** runu |
 
 ## Authority boundaries (unchanged)
 

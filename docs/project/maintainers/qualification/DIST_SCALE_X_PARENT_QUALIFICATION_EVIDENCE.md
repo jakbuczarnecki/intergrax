@@ -6,7 +6,8 @@
 | **START_HEAD** | `ddb18890a216b0c51abc9e463efc31f73dcfe359` |
 | **EXECUTION_SHA (P5/P6 physical)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
 | **AUDIT_BASELINE_SHA** | `6f4193fa9a06204b32fab76a9774511ef0a6ad72` |
-| **Disposition** | **READY FOR INDEPENDENT AUDIT** — WL-7 **14400 s** physical **deferred** ([deferral](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md)) |
+| **Disposition** | **READY FOR INDEPENDENT AUDIT** — WL-7 **1 h substitute PROVEN**; **14400 s NOT conducted** ([amendment](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md)) |
+| **WL-7 EXECUTION_SHA (1 h)** | `9a062322826de8444d430eed1556d7463a2cd2bf` |
 | **G-06 handoff** | [DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md](DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md) |
 | **Parent CLOSED** | **FORBIDDEN** until G-06 + G-07 |
 | **Interim scoped acceptance** | [DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md](DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md) — **not** full certification; parent **OPEN** |
@@ -15,7 +16,7 @@
 
 | ID | Requirement | Evidence | Phys | EXECUTION_SHA | Disp |
 | --- | --- | --- | --- | --- | --- |
-| 1 | WL-1..7 specs | [WL specs](DIST_SCALE_X_WORKLOAD_WL1_WL7_SPECS.md); WL-7 harness | PG+Rabbit | `9ac74ca…` | **PARTIAL** (4 h pending) |
+| 1 | WL-1..7 specs | [WL specs](DIST_SCALE_X_WORKLOAD_WL1_WL7_SPECS.md); WL-7 **1 h** soak | PG+Rabbit | `9a06232…` | **PARTIAL**† (4 h **NOT conducted**) |
 | 2 | Production adapters MB-1..5 | P2–P5 reuse + P6 | LKW+PG+Rabbit | Multiple cited | **ALREADY PROVEN** + P5/P6 slices |
 | 3 | Multi-worker | P2 WL-1 | N≥2 | `ee5a8371…` | **ALREADY PROVEN** |
 | 4 | Overload | P2/P3 | — | P2/P3 SHAs | **ALREADY PROVEN** |
@@ -25,12 +26,12 @@
 | 8 | Partial failure | P4 F + P5 I | PG+HTTP | `f0c49fd3…` + `9ac74ca…` | **PASS** |
 | 9 | Tenant stress | WL-2 K | multi-tenant | `8656fb7d8` | **ALREADY PROVEN** |
 | 10 | Resource exhaustion L | P5 L + P3 reuse | admission | `9ac74ca…` | **PASS** |
-| 11 | Soak M | WL-7 | mixed load | `9ac74ca…` harness | **BLOCKED** (14400 s) — interim scoped acceptance **does not** clear row 11 ([interim record](DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md)) |
+| 11 | Soak M | WL-7 | mixed load **3600 s** | `9a06232…` `wl07-soak-c8e86ebef60e` | **PARTIAL**† — **1 h PROVEN** (`soak_complete_envelope=1`, 0 errors); **4 h NOT conducted** ([amendment](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md)) |
 | 12 | Chaos N | P6 matrix | seeded | `9ac74ca…` | **PASS** |
 | 13 | Zero invariant violations | manifests | — | per run | **PASS** on accepted runs |
 | 14 | Capacity envelope | [P7 capacity](DIST_SCALE_X_CAPACITY_ENVELOPE.md) | — | `9ac74ca…` | **PASS** (ENVELOPE_ONLY) |
 | 15 | Failure envelope | [P7 failure](DIST_SCALE_X_FAILURE_ENVELOPE.md) | — | same | **PASS** (ENVELOPE_ONLY) |
-| 16 | Blockers = 0 | this matrix | — | — | **BLOCKED** (row 11) |
+| 16 | Blockers = 0 | this matrix | — | — | **VALIDATION** — no open **implementation** blockers; row **11** † footnote (original **14400 s** not proven) |
 
 ## Proof bundle index (T-L9-02)
 
@@ -46,4 +47,6 @@
 
 ## T-L9-03
 
-**AGENT STOP** — dossier complete for **G-06 documentary audit** (WL-7 4 h physical excluded per deferral). No G-07; no parent CLOSED; no FRZ PASS; no EBH-5.
+† **Operator envelope amendment:** full **14400 s** WL-7 soak **NOT PROVEN**; substitute **3600 s** @ [DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md). Manifest: `.tmp/proof/dist-scale-x/wl07-soak-c8e86ebef60e/`.
+
+**AGENT STOP** — dossier ready for **G-06 scoped audit** (1 h physical **in scope**; 4 h **explicitly NOT PROVEN**). No G-07; no parent CLOSED; no FRZ PASS; no EBH-5.

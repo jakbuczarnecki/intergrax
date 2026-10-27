@@ -2,7 +2,7 @@
 
 ## Disposition
 
-**P6 M/N — PARTIAL (scoped)** — WL-7 **harness PASS** @ 120 s; **exit 11** (14400 s soak) **BLOCKED** until operator sets `DIST_SCALE_X_WL7_DURATION_SECONDS=14400`. Chaos matrix **4/4 PASS**.
+**P6 M/N — PARTIAL (scoped)** — WL-7 **1 h substitute PASS** @ `9a062322826de8444d430eed1556d7463a2cd2bf` (`soak_complete_envelope=1` @ **3600 s** amendment); **14400 s NOT conducted**. Chaos matrix **4/4 PASS** @ `9ac74ca…`.
 
 ## SHA lineage
 
@@ -30,7 +30,19 @@ Envelope: [DIST_SCALE_X_P6_ENVELOPE_RECORD.md](DIST_SCALE_X_P6_ENVELOPE_RECORD.m
 | **run_id** | `wl07-soak-41ad330f8ef2` |
 | **p95_latency_ms** | ~463 (manifest) |
 
-**Blocker:** full 4 h soak not executed in agent session.
+## WL-7 soak — 1 h substitute (2026-10-27)
+
+| Field | Value |
+| --- | --- |
+| **run_id** | `wl07-soak-c8e86ebef60e` |
+| **EXECUTION_SHA** | `9a062322826de8444d430eed1556d7463a2cd2bf` |
+| **Duration** | 3600 s |
+| **soak_complete_envelope** | **1** (`MIN_ENVELOPE_SECONDS=3600`) |
+| **errors** | 0 (9386 writes) |
+| **Manifest** | `.tmp/proof/dist-scale-x/wl07-soak-c8e86ebef60e/` |
+| **Amendment** | [DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md) |
+
+**Footnote:** original P6 **14400 s** lock **NOT satisfied** — operator substitute only.
 
 ## Chaos matrix (N)
 

@@ -23,3 +23,14 @@
 Isolated qual worker SIGKILL; PG `docker pause`; Rabbit `docker stop`/`start`; HTTP 503/slow; event-store deny wrapper; tool slow > deadline.
 
 **Forbidden:** volume delete, shared prod stop, host-wide network, live vendors.
+
+---
+
+## Operator amendment — 1 h WL-7 substitute (2026-10-27)
+
+| Field | Value |
+| --- | --- |
+| **Record** | [DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md) |
+| **Effect** | **14400 s** remains the **original P6 lock** in this document; **full 4 h NOT conducted** in the active qualification cycle |
+| **Approved substitute** | **3600 s** soak — `DIST_SCALE_X_WL7_DURATION_SECONDS=3600` and `DIST_SCALE_X_WL7_MIN_ENVELOPE_SECONDS=3600` for `soak_complete_envelope=1` under amendment only |
+| **4 h history** | Deferral, pause, failed resume (~97%), build-session **OPERATOR_CANCEL_4H** — unchanged; not deleted |
