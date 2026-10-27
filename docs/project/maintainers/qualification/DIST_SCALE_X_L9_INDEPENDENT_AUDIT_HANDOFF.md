@@ -3,9 +3,10 @@
 | Field | Value |
 | --- | --- |
 | **Protocol** | ECAP Parent Closure Audit (documentary + GitHub SHA verification) |
-| **AUDIT_BASELINE_SHA** | `4a65c2ce0f02525cf5e87032e9f0ada98c5ad5f2` |
+| **AUDIT_BASELINE_SHA** | `1786a7fc762360dfa90c9ac7eddf2ae30c0c4327` |
 | **START_HEAD** | `ddb18890a216b0c51abc9e463efc31f73dcfe359` |
 | **EXECUTION_SHA (P5/P6 physical @ agent)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
+| **EXECUTION_SHA (WL-7 1 h substitute soak)** | `9a062322826de8444d430eed1556d7463a2cd2bf` · run_id `wl07-soak-c8e86ebef60e` |
 | **SAC** | `SAC-DIST-SCALE-X-v1` (OD-03) |
 | **Agent disposition** | **READY FOR INDEPENDENT AUDIT** |
 | **Physical WL-7 4 h** | **NOT PROVEN** — **NOT conducted** (`OPERATOR_CANCEL_4H`); **explicitly not claimed** |
