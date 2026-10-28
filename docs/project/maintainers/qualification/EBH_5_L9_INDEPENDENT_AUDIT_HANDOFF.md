@@ -63,6 +63,7 @@ Registry SSOT: [`_behavioral_proof_registry.py`](../../../tests/qualification/eb
 | G06-01 | — | ACCEPT if `test_ebh5_g06_01_*` green @ SHA | |
 | G06-02 | — | ACCEPT if fixed substrate registry complete | Operator ADR review dates |
 | G06-03 | — | ACCEPT if matrix md = SSOT (5 QUALIFIED) | |
+| G06-04 | — | ACCEPT if TEST_EXECUTION_SHA = IMPLEMENTATION_SHA @ `a094252c7…` | 57 passed, 1 skipped |
 | _other_ | | | |
 
 ## Forbidden verdicts

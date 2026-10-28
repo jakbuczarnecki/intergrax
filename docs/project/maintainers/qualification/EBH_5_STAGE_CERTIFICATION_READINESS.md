@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-5 FINAL CORRECTIVE BATCH — READY FOR INDEPENDENT PARENT AUDIT** |
+| **Disposition** | **EBH-5 — TECHNICALLY COMPLETE / INDEPENDENT AUDIT AND OPERATOR DECISIONS PENDING** |
 | **Roadmap row** | EBH-5 → **`READY FOR AUDIT`** (not CLOSED) |
 | **Parent CLOSED** | **Forbidden** until OD-EBH5-07 AUDIT PASS + OD-EBH5-08 |
 
