@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-5 — TECHNICALLY COMPLETE / INDEPENDENT AUDIT AND OPERATOR DECISIONS PENDING** |
+| **Disposition** | **SAC FROZEN — INDEPENDENT PROTOCOL 03 AUDIT PENDING** |
 | **Roadmap row** | EBH-5 → **`READY FOR AUDIT`** (not CLOSED) |
 | **Parent CLOSED** | **Forbidden** until OD-EBH5-07 AUDIT PASS + OD-EBH5-08 |
 
@@ -17,7 +17,7 @@
 | Fixed substrates + SQLite annex | **PASS** (G06-02 registry) |
 | RPL-G green | **PASS** |
 | Independent exact-SHA audit accepted | **OPEN** (OD-EBH5-07) |
-| SAC frozen | **OPEN** (OD-EBH5-02) |
+| SAC frozen | **PASS** (OD-EBH5-02 @ 2026-10-28) |
 
 ## Certification command bundle
 
