@@ -22,7 +22,7 @@
 | RPL-G | [`test_ebh_5_rpl_g_regression_gates.py`](../../../tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py) |
 | CONFIG-X reconciliation | [`_config_x_reconciliation.py`](../../../tests/qualification/ebh_5/_config_x_reconciliation.py) |
 | Proof integrity gates | [`test_ebh_5_proof_integrity_gates.py`](../../../tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py) |
-| Protocol 03 corrective | [EBH_5_PROTOCOL03_CORRECTIVE_RECONCILIATION.md](EBH_5_PROTOCOL03_CORRECTIVE_RECONCILIATION.md) |
+| Protocol 03 final correction | [EBH_5_PROTOCOL03_FINAL_CORRECTION.md](EBH_5_PROTOCOL03_FINAL_CORRECTION.md) |
 
 ## Verification command (L2 + L3)
 
@@ -30,7 +30,7 @@
 uv run pytest tests/qualification/ebh_5/ -q
 ```
 
-**Expected @ corrective batch:** 46 passed, 1 skipped (optional RAG graph module). Re-run after any change; do not attribute results to a new SHA without executing the suite at that HEAD.
+**Expected @ final correction:** 48 passed, 1 skipped (optional RAG graph module). Re-run after any change; do not attribute results to a new SHA without executing the suite at that HEAD.
 
 ## FRZ impact
 

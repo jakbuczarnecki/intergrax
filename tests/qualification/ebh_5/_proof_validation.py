@@ -43,7 +43,7 @@ def pytest_test_function_exists(node_id: str) -> bool:
         return False
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and node.name == func_name:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:
             return True
     return False
 

@@ -5,14 +5,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+from intergrax.applications._shared.runtime_event_delivery_wiring import (
+    resolve_application_runtime_event_delivery_wiring,
+)
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.control_plane_mutation import (
     control_plane_mutation_request_digest,
     evidence_from_request_and_decision,
 )
 from intergrax.contracts.event_delivery import ObservabilityExportPayload
-from intergrax.contracts.observability_export import OtlpTransportPort
+from intergrax.contracts.observability_export import ExporterKind, OtlpTransportPort
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations._shared.conformance import assert_key_value_cache
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -38,14 +43,59 @@ from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.integrations.registry.plugin_register import register_integration_plugin
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
+from intergrax.runtime.observability.event_delivery.export_factory import ObservabilityExportSinkFactory
+from intergrax.runtime.observability.event_delivery.otlp_event_export_sink import OtlpEventExportSink
+from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer_engine
 from intergrax.tokenizers.providers.simple_tokenizer import SimpleTokenizer
 from intergrax.tokenizers.providers.tiktoken_tokenizer import TiktokenTokenizer
 from intergrax.tokenizers.registry.tokenizer_registry import TokenizerRegistry
+from intergrax.tokenizers.tokenizer_manager import TokenizerManager
 
 pytestmark = [
     pytest.mark.unit,
     pytest.mark.qualification,
 ]
+
+
+class _Ebh5RecordingOtlpTransport(OtlpTransportPort):
+    def __init__(self) -> None:
+        self.received: list[ObservabilityExportPayload] = []
+
+    def export(self, payload: ObservabilityExportPayload) -> None:
+        self.received.append(payload)
+
+    def flush(self) -> None:
+        return
+
+    def close(self) -> None:
+        return
+
+
+def _ebh5_bounded_otlp_env() -> ApplicationEnvironmentProfile:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ebh5.otlp.transport")
+    env.observability_profile = env.observability_profile.model_copy(
+        update={
+            "bounded_event_delivery_enabled": True,
+            "observability_exporter_kind": ExporterKind.OTLP,
+            "otlp_export_endpoint": "http://127.0.0.1:4318/v1/logs",
+        },
+    )
+    return env
+
+
+def _ebh5_tokenizer_registry(*, default_tokenizer_id: str) -> TokenizerRegistry:
+    registry = TokenizerRegistry(default_tokenizer_id=default_tokenizer_id)
+    registry.register(SimpleTokenizer())
+    registry.register(TiktokenTokenizer())
+    return registry
+
+
+def _ebh5_tokenizer_manager(*, default_tokenizer_id: str) -> TokenizerManager:
+    return TokenizerManager(
+        engine=create_default_tokenizer_engine(
+            registry=_ebh5_tokenizer_registry(default_tokenizer_id=default_tokenizer_id),
+        ),
+    )
 
 
 def _ebh5_int_config_target(
@@ -127,33 +177,55 @@ def test_ebh5_behavioral_relational_store_sqlite_via_sanctioned_profile(tmp_path
     integration.close()
 
 
-def test_ebh5_behavioral_tokenizer_alternate_without_consumer_change() -> None:
-    simple = SimpleTokenizer()
-    tiktoken = TiktokenTokenizer()
-    reg = TokenizerRegistry([simple, tiktoken], default_tokenizer_id="simple")
-    alt = TokenizerRegistry([simple, tiktoken], default_tokenizer_id="tiktoken")
-    assert reg.get("simple").count_tokens(text="hello") >= 1
-    assert alt.get("tiktoken").count_tokens(text="hello") >= 1
+def test_ebh5_behavioral_tokenizer_selection_via_bootstrap_composition() -> None:
+    text = "Intergrax EBH-5 tokenizer selection proof"
+    simple_default = _ebh5_tokenizer_manager(default_tokenizer_id="simple")
+    tiktoken_default = _ebh5_tokenizer_manager(default_tokenizer_id="tiktoken")
+
+    def _count_tokens(manager: TokenizerManager) -> int:
+        return manager.count_tokens(text)
+
+    assert _count_tokens(simple_default) >= 1
+    assert _count_tokens(tiktoken_default) >= 1
+    engine = create_default_tokenizer_engine(registry=_ebh5_tokenizer_registry(default_tokenizer_id="simple"))
+    assert engine.count_tokens(tokenizer_id="tiktoken", text=text) >= 1
 
 
-def test_ebh5_behavioral_otlp_transport_port_injection() -> None:
-    class RecordingTransport(OtlpTransportPort):
-        def __init__(self) -> None:
-            self.received: list[ObservabilityExportPayload] = []
+def test_ebh5_behavioral_tokenizer_selection_negative_unknown_default() -> None:
+    registry = TokenizerRegistry(default_tokenizer_id="does-not-exist")
+    registry.register(SimpleTokenizer())
+    with pytest.raises(ValueError, match="Default tokenizer not found"):
+        registry.get(None)
 
-        def export(self, payload: ObservabilityExportPayload) -> None:
-            self.received.append(payload)
 
-        def flush(self) -> None:
-            return
+@pytest.mark.asyncio
+async def test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring() -> None:
+    recording = _Ebh5RecordingOtlpTransport()
+    env = _ebh5_bounded_otlp_env()
+    factory = ObservabilityExportSinkFactory(otlp_transport=recording)
+    with patch(
+        "intergrax.applications._shared.runtime_event_delivery_wiring._create_export_transport",
+        return_value=None,
+    ):
+        wiring = resolve_application_runtime_event_delivery_wiring(
+            env,
+            export_sink_factory=factory,
+        )
+    assert wiring.bounded_sink is not None
+    sink = wiring.event_export_sink
+    assert isinstance(sink, OtlpEventExportSink)
+    payload = ObservabilityExportPayload(event_id="ebh5-otlp-wiring", kind="runtime.event")
+    await sink.export(payload)
+    assert len(recording.received) == 1
+    assert recording.received[0].event_id == "ebh5-otlp-wiring"
 
-        def close(self) -> None:
-            return
 
-    transport = RecordingTransport()
-    payload = ObservabilityExportPayload(event_id="ebh5", kind="test")
-    transport.export(payload)
-    assert len(transport.received) == 1
+@pytest.mark.asyncio
+async def test_ebh5_behavioral_otlp_transport_negative_missing_injected_transport() -> None:
+    sink = OtlpEventExportSink(transport=None)
+    payload = ObservabilityExportPayload(event_id="ebh5-otlp-none", kind="test")
+    await sink.export(payload)
+    assert sink._transport is None  # noqa: SLF001
 
 
 def test_ebh5_behavioral_kv_external_plugin_via_sanctioned_composition() -> None:

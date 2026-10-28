@@ -10,8 +10,14 @@ from typing import Final
 
 EBH5_EVIDENCE_SUITE: Final[str] = "tests/qualification/ebh_5/"
 
-# Parent wave commit audited by Protocol 03 (corrective batch baseline).
+# Parent wave commit (pre-corrective implementation baseline).
 AUDIT_BASELINE_SHA: Final[str] = "83a376b3e1b312e2e4f88da548c99c328f3589f7"
+
+# Corrective publication SHA (Protocol 03 corrective batch).
+CORRECTIVE_PUBLICATION_SHA: Final[str] = "ffe0aae8d2b64a558a18226cc1435f0058ff561b"
+
+# Independent audit entry point for final F01/F02 correction wave.
+AUDITED_HEAD_SHA: Final[str] = CORRECTIVE_PUBLICATION_SHA
 
 
 @lru_cache(maxsize=1)

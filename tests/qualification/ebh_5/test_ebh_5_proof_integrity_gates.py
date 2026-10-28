@@ -87,7 +87,7 @@ def test_ebh5_proof_sqlite_closed_world_accountability() -> None:
         ),
         (
             "observability.otlp_transport",
-            "tests/unit/foo.py::test_ebh5_behavioral_otlp_transport_port_injection",
+            "tests/unit/foo.py::test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring",
             "ebh_5",
         ),
         (
@@ -117,10 +117,10 @@ def test_ebh5_proof_sha_format_does_not_imply_git_object() -> None:
     assert is_valid_git_sha40(fake)
     assert (
         parse_pytest_node_id(
-            "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_otlp_transport_port_injection",
+            "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring",
         )
         is not None
     )
     assert pytest_test_function_exists(
-        "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_otlp_transport_port_injection",
+        "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring",
     )

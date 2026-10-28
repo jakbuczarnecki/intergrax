@@ -13,7 +13,7 @@
 | Inventory complete, `unclassified=0` | **PASS** (gates) |
 | Matrix for `extensibility_promised=yes` | **PASS** |
 | Reachability evidence | **PASS** |
-| Behavioral proof per **QUALIFIED** row | **PASS** (4 rows + cited historical scoped proofs) |
+| Behavioral proof per **QUALIFIED** row | **PASS** (5 rows — sanctioned composition L3 @ execution SHA) |
 | Fixed substrates + SQLite annex | **PASS** |
 | RPL-G green | **PASS** |
 | Independent exact-SHA audit accepted | **OPEN** |
@@ -29,4 +29,4 @@ uv run pytest tests/qualification/config_x/test_config_x_final_reconciliation_ga
 
 - [EBH_5_PARENT_QUALIFICATION_DOSSIER.md](EBH_5_PARENT_QUALIFICATION_DOSSIER.md)
 - [EBH_5_IMPLEMENTATION_WAVE_RECONCILIATION.md](EBH_5_IMPLEMENTATION_WAVE_RECONCILIATION.md)
-- [SAC_EBH_5_v1_PROPOSAL.md](SAC_EBH_5_v1_PROPOSAL.md)
+- [EBH_5_PROTOCOL03_FINAL_CORRECTION.md](EBH_5_PROTOCOL03_FINAL_CORRECTION.md)
