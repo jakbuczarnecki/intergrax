@@ -2,32 +2,31 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **READY FOR AUDIT (CANDIDATE)** — **not CLOSED**; P0–P6 **RECONCILED @ PRE-PUBLICATION** |
-| **Roadmap row** | EBH-6 → VBN mechanical slice @ `badb7a086…`; operator/L9 gates OPEN |
+| **Disposition** | **READY FOR AUDIT (CANDIDATE)** — **not CLOSED** |
+| **Roadmap row** | EBH-6 → VBN mechanical slice @ `716efd67…` |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** |
-| **TEST_EXECUTION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
-| **Pytest (2026-10-28)** | **23 passed** — `.tmp/session/ebh-6-publication-reconcile/pytest.log` |
-| **Git publication** | **BLOCKED** — see [EBH_6_P0_P6_RECONCILIATION_AND_CERTIFICATION_HANDOFF.md](EBH_6_P0_P6_RECONCILIATION_AND_CERTIFICATION_HANDOFF.md) |
+| **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **CERTIFICATION_HANDOFF_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
 | Criterion | Status |
 | --- | --- |
-| CORE_HARDCODING_FINDINGS_REGISTER complete | **PASS** (57 rows, unclassified=0) |
+| CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, inventory unclassified=0) |
+| Layer L9 sample complete | **OPEN** — 16 DISCOVERY REQUIRED rows |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
-| SQLite annex @ HEAD | **PASS** |
+| SQLite annex @ HEAD | **PASS** (38 paths) |
 | Architecture-family matrix catalog | **PASS** (23 rows) |
-| EBH-6 qualification pytest | **PASS** — 23/23 @ TEST_EXECUTION_SHA (PRE-PUBLICATION) |
-| P0–P6 engineering reconcile | **PASS (scoped)** — handoff doc recorded |
-| Git aligned to STAGE_BASELINE_SHA | **FAIL** — local behind `d3953f2…` |
+| EBH-6 qualification pytest | **PASS** @ TEST_EXECUTION_SHA |
 | Independent exact-SHA audit | **OPEN (L9 / P7)** |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / P8)** |
-| EBH-5 parent closure | **OPEN (OD-EBH5-08)** |
+| EBH-5 parent closure | **CLOSED** @ **OD-EBH5-08 APPROVED 2026-10-28** |
 
 ## References
 
+- [EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md)
 - [EBH_6_PARENT_CERTIFICATION_DOSSIER.md](EBH_6_PARENT_CERTIFICATION_DOSSIER.md)
 - [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md)
 - [EBH_6_OPERATOR_DECISION_REGISTER.md](EBH_6_OPERATOR_DECISION_REGISTER.md)
@@ -37,3 +36,4 @@
 - No global FRZ PASS
 - No DUP-X closure
 - No ARCH-FREEZE entry
+- No AUDIT PASS / OD-EBH6-08

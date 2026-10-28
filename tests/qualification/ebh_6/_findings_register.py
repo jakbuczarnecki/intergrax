@@ -40,6 +40,7 @@ class HardcodingFindingClassification(StrEnum):
     PROHIBITED_LEAKAGE = "PROHIBITED — VENDOR-SPECIFIC CONTRACT LEAKAGE"
     REQUIRES_ADR = "REQUIRES ARCHITECTURE DECISION"
     EVIDENCE_REQUIRED = "EVIDENCE REQUIRED"
+    DISCOVERY_REQUIRED = "DISCOVERY REQUIRED — L9 LAYER SAMPLE"
 
 
 class ProductionEffective(StrEnum):
@@ -122,24 +123,48 @@ def _sqlite_findings() -> tuple[HardcodingFindingRecord, ...]:
     return tuple(rows)
 
 
+_LAYER_DETECTION_CLASSES: Final[tuple[HardcodingDetectionClass, ...]] = (
+    HardcodingDetectionClass.A,
+    HardcodingDetectionClass.B,
+    HardcodingDetectionClass.C,
+    HardcodingDetectionClass.D,
+    HardcodingDetectionClass.E,
+    HardcodingDetectionClass.F,
+    HardcodingDetectionClass.G,
+    HardcodingDetectionClass.H,
+    HardcodingDetectionClass.I,
+    HardcodingDetectionClass.J,
+    HardcodingDetectionClass.A,
+    HardcodingDetectionClass.B,
+    HardcodingDetectionClass.C,
+    HardcodingDetectionClass.D,
+    HardcodingDetectionClass.E,
+    HardcodingDetectionClass.F,
+)
+
+
 def _layer_coverage_findings() -> tuple[HardcodingFindingRecord, ...]:
     head = evidence_git_head_sha()
     rows: list[HardcodingFindingRecord] = []
     for idx, layer in enumerate(EBH6_AUDIT_LAYERS, start=1):
+        det = _LAYER_DETECTION_CLASSES[idx - 1]
         rows.append(
             HardcodingFindingRecord(
                 finding_id=f"EBH6-LAYER-{idx:02d}",
                 layer=layer,
-                detection_class=HardcodingDetectionClass.H,
-                classification=HardcodingFindingClassification.ALLOWED_INTERNAL,
-                location=f"closed-world:tests/qualification/ebh_6/_closed_world_discovery.py#{layer}",
-                production_effective=ProductionEffective.NO,
+                detection_class=det,
+                classification=HardcodingFindingClassification.DISCOVERY_REQUIRED,
+                location=f"layer-obligation:{layer} — L9 must sample production paths (not sentinel RESOLVED)",
+                production_effective=ProductionEffective.YES,
                 concern_ids=(),
-                violated_invariant="Roadmap §3.0.8 layer coverage",
+                violated_invariant=f"Roadmap §3.0.8 universal hardcoding audit — class {det.value} layer `{layer}`",
                 remediation_class=RemediationClass.MERGE,
-                status=FindingStatus.RESOLVED,
+                status=FindingStatus.OPEN,
                 evidence_sha=head,
-                notes="Discovery batch touched layer; no new PROHIBITED finding",
+                notes=(
+                    "Mechanical layer catalog row only; does not prove A–J clean scan @ HEAD. "
+                    "Protocol 03 L9 must attach path/symbol/owner/reachability evidence or findings."
+                ),
             ),
         )
     return tuple(rows)
@@ -201,6 +226,7 @@ def findings_by_id() -> dict[str, HardcodingFindingRecord]:
 
 
 def count_unclassified() -> int:
+    """Rows lacking explicit vendor classification — not L9 DISCOVERY_REQUIRED layer obligations."""
     return sum(
         1
         for row in all_hardcoding_findings()

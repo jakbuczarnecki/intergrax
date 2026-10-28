@@ -3,8 +3,9 @@
 | Field | Value |
 | --- | --- |
 | **Purpose** | Single current-HEAD rollup per VBN spec §2.7 |
-| **HEAD_SHA (git evidence)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
-| **IMPLEMENTATION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
+| **HEAD_SHA (git evidence)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **IMPLEMENTATION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **Disposition** | **READY FOR INDEPENDENT REVIEW** — not ARCH-FREEZE entry |
 
@@ -14,7 +15,7 @@
 | --- | --- |
 | EBH-5 inventory replay | **unclassified=0** (mechanical) |
 | EBH-5 replaceability matrix | **51 NYQ** — explicit limitation |
-| CORE_HARDCODING_FINDINGS_REGISTER | **57 findings**, prohibited unresolved **0** |
+| CORE_HARDCODING_FINDINGS_REGISTER | **57 findings**, prohibited unresolved **0**; **16 layer rows OPEN (L9)** |
 | SQLite annex diff | **Closed-world match** (38 paths) |
 | RPL-G @ HEAD | Replay via EBH-5 gates (subset) |
 
@@ -57,4 +58,4 @@ Historical FRZ-CFG PASS preserved @ fac9a43f…; EBH-6 records current-HEAD stru
 uv run pytest tests/qualification/ebh_6/ -q
 ```
 
-Log: `.tmp/proof/ebh-6/pytest.log`
+Log: `.tmp/session/ebh-6-pre-cert/pytest.log`

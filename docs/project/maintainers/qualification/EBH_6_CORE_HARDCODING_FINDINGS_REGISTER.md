@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **IMPLEMENTATION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
+| **IMPLEMENTATION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 | **Mechanical SSOT** | [`tests/qualification/ebh_6/_findings_register.py`](../../../tests/qualification/ebh_6/_findings_register.py) |
 | **Schema authority** | [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.2 |
 
@@ -10,9 +10,9 @@
 
 | Criterion | Status |
 | --- | --- |
-| `unclassified_findings` | **0** |
+| `unclassified_findings` (inventory-style) | **0** |
 | In-scope `PROHIBITED-*` unresolved | **0** |
-| Production-effective `unknown` | **0** |
+| Layer A–J production sample complete | **NO** — see `EBH6-LAYER-*` OPEN |
 
 ## Finding population (closed-world)
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | Tracked architecture debts | 2 | Q2-D2 (RATIFIED ADR track), BND-COMPAT-R3 (lab-only) |
 | VBN inventory replay | 1 | EBH-5 inventory @ HEAD |
-| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — RESOLVED |
+| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — **OPEN / DISCOVERY REQUIRED — L9 LAYER SAMPLE** |
 | SQLite annex @ HEAD | 38 | `EBH6-SQLITE-*` — mapped from EBH-5 annex |
 | **Total** | **57** | Full rows in Python SSOT only |
 
@@ -31,6 +31,7 @@
 | EBH6-DEBT-Q2-D2 | F | REQUIRES ARCHITECTURE DECISION | RATIFIED |
 | EBH6-DEBT-BND-COMPAT-R3 | H | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RATIFIED |
 | EBH6-VBN-INVENTORY-REPLAY | I | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RESOLVED |
+| EBH6-LAYER-01 (example) | A | DISCOVERY REQUIRED — L9 LAYER SAMPLE | OPEN |
 
 ## Reuse (by reference)
 
@@ -40,3 +41,5 @@
 ## DUP-X input note
 
 Findings classes **D/E** shadow duplicate mechanisms may overlap **DUP-X** scope — unresolved duplicates must not be silently closed here.
+
+Pre-cert reconciliation: [`EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md`](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md).

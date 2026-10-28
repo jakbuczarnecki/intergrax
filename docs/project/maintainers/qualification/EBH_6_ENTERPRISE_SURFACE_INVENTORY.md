@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **IMPLEMENTATION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
+| **IMPLEMENTATION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 | **Discovery SSOT** | [`tests/qualification/ebh_6/_closed_world_discovery.py`](../../../tests/qualification/ebh_6/_closed_world_discovery.py) |
 
 Closed-world inventory of composition roots, sanctioned production sites, application wiring, and integration bundles for L3 reachability (roadmap §3.0.8).
@@ -39,7 +39,7 @@ Replay: EBH-5 annex + HEAD diff — `assert_ebh6_sqlite_annex_accountability()` 
 
 ## Universal audit layers (§3.0.8)
 
-Sixteen closed-world layer ids in `EBH6_AUDIT_LAYERS` — each mapped to `EBH6-LAYER-*` findings in [`EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md`](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md).
+Sixteen closed-world layer ids in `EBH6_AUDIT_LAYERS` — each mapped to **OPEN** `EBH6-LAYER-*` (**DISCOVERY REQUIRED — L9 LAYER SAMPLE**) in [`EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md`](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md).
 
 ## Explicit non-claims
 

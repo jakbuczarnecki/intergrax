@@ -66,10 +66,12 @@
 - `EBH_6_EVIDENCE_FRESHNESS_LEDGER.md` (post-fetch SHA facts)
 - `EBH_6_OPERATOR_DECISION_REGISTER.md` (origin drift note only)
 
-## Remains for independent Protocol 03 (P7+)
+## Pre-cert reconcile addendum (2026-10-28 @ `716efd67…`)
 
-1. Exact-SHA audit @ post-pull **CERTIFICATION_HANDOFF_SHA**
-2. Adversarial negatives (ECAP §2.B B4) beyond mechanical gates
-3. Family matrix **PENDING** rows — independent disposition per family
-4. Auditor-authored pass/reject record — **no agent PASS**
-5. Operator **OD-EBH6-08** only after accepted L9 outcome
+- [`EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md`](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md) — AUD-01..04 reconciliation
+- Layer sentinels replaced with honest L9 obligations in `_findings_register.py`
+- EBH-5 **CLOSED** @ OD-EBH5-08; stale `badb7a086…` demoted to historical ledger
+- **CERTIFICATION_HANDOFF_SHA** = `716efd6716a51dc933b85adfe78d6bd13b73bdbf`
+
+Historical P0–P6 narrative above preserved; SHA facts superseded by freshness ledger + pre-cert doc.
+
