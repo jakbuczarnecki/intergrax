@@ -272,7 +272,7 @@ Independent plan auditor checks:
 | --- | --- |
 | **Document** | This file |
 | **IMPLEMENTATION_SHA** | `37ad12e766e2ffb14f89b0053a8e021b92ef167f` (plan baseline HEAD) |
-| **PLAN_PUBLICATION_SHA** | *(set @ plan commit)* |
+| **PLAN_PUBLICATION_SHA** | `4716db3c20e50b35b62c8694019a061f3fe8b713` |
 | **Status** | **READY FOR INDEPENDENT PLAN AUDIT** |
 
 **Related SHA @ plan baseline:** IMPLEMENTATION `1f3fb2ae3…` · CERTIFICATION_HANDOFF `3f0a25439…` (production audit) · HEAD @ plan start `37ad12e766e2ffb14f89b0053a8e021b92ef167f`.
