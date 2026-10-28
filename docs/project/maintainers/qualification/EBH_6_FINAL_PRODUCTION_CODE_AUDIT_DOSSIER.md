@@ -4,8 +4,8 @@
 | --- | --- |
 | **Status** | **PARTIAL / EXACT BLOCKERS** — production code audit batch complete; **Protocol 03 OPEN** |
 | **EXPECTED_START_HEAD** | `f3e39db3f378e5779d5006f54223358237430695` |
-| **IMPLEMENTATION_SHA** | *(qual commit)* |
-| **TEST_EXECUTION_SHA** | *(same)* |
+| **IMPLEMENTATION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
+| **TEST_EXECUTION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
 | **CERTIFICATION_HANDOFF_SHA** | *(publication commit)* |
 
 **Companion:** [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) (mechanism inventory) · [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md).

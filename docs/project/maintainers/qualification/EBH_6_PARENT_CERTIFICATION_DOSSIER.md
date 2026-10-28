@@ -4,10 +4,9 @@
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
 | **Status** | **EBH-6 — PRODUCTION CODE AUDIT / PARTIAL — EXACT BLOCKERS** |
-| **IMPLEMENTATION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
-| **TEST_EXECUTION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
-| **CERTIFICATION_HANDOFF_SHA** | `9a731157bb833fbbab605191f0114aaa65c83292` |
-| **EXPECTED_START_HEAD** | `d9f6b2a1b6ce600e4f1df8ecafc9c4d2790d5c45` |
+| **IMPLEMENTATION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
+| **TEST_EXECUTION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
+| **EXPECTED_START_HEAD** | `f3e39db3f378e5779d5006f54223358237430695` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)
