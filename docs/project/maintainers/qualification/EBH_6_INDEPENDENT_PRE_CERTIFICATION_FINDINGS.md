@@ -5,6 +5,7 @@
 | **CURRENT_HEAD** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 | **EXPECTED_START_HEAD** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 | **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` (pytest @ pre-cert reconcile) |
+| **PRE-CERT PUBLICATION_SHA** | `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` |
 | **CERTIFICATION_HANDOFF_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 | **Disposition** | **READY FOR INDEPENDENT AUDIT (CANDIDATE)** — **not CLOSED**; blockers remain |
 
@@ -82,21 +83,19 @@ Detection classes **A–J** (VBN §2.2) vs mandatory §3.0.8 layer audit. **Laye
 
 | Scope | Requires OD-EBH6-01? |
 | --- | --- |
-| Doc/qualification SHA + honesty reconciliation (this batch) | **No** — completed uncommitted |
+| Doc/qualification SHA + honesty reconciliation (this batch) | **Published** @ **PRE-CERT PUBLICATION_SHA** `a7d133a91…` on `origin/development` |
 | Production remediation of PROHIBITED findings | **Yes** — none mechanical unresolved in frozen scope |
 | DUP-X duplicate mechanism closure | **Yes** — separate stage |
 | Full A–J manual production sampling | **L9 auditor work** — not agent closure |
 
 ## Operator decisions needed
 
-1. **OD-EBH6-02** — accept EBH-6 plan / pre-cert pack for Protocol 03 scheduling.
+1. **OD-EBH6-02** — accept EBH-6 plan / pre-cert pack for Protocol 03 scheduling (@ **PRE-CERT PUBLICATION_SHA**).
 2. **OD-EBH6-01** — only if implementation wave / production delta required before L9.
-3. **Commit policy** — operator may commit this doc-only reconciliation separately (no agent push unless requested).
-4. **OD-EBH6-08** — only after independent L9 PASS (forbidden now).
-
+3. **OD-EBH6-08** — only after independent L9 PASS (forbidden now).
 ## Protocol 03 readiness
 
-**READY FOR INDEPENDENT AUDIT (CANDIDATE)** @ `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — handoff pack + honest gaps documented.
+**READY FOR INDEPENDENT AUDIT (CANDIDATE)** @ **PRE-CERT PUBLICATION_SHA** `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` (implementation evidence @ `716efd67…`) — handoff pack + honest gaps documented.
 
 **BLOCKED** for: parent CLOSED, global FRZ PASS, AUDIT PASS self-issue, wave closure without **OD-EBH6-01**.
 

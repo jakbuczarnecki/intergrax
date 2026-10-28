@@ -6,6 +6,7 @@
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
 | **CERTIFICATION_HANDOFF_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 | **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **PRE-CERT PUBLICATION_SHA** | `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` @ handoff SHA |
 
 ## Commands @ CERTIFICATION_HANDOFF_SHA

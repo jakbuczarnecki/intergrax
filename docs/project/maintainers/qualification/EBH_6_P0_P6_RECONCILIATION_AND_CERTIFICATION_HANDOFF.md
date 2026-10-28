@@ -72,6 +72,5 @@
 - Layer sentinels replaced with honest L9 obligations in `_findings_register.py`
 - EBH-5 **CLOSED** @ OD-EBH5-08; stale `badb7a086…` demoted to historical ledger
 - **CERTIFICATION_HANDOFF_SHA** = `716efd6716a51dc933b85adfe78d6bd13b73bdbf`
-
-Historical P0–P6 narrative above preserved; SHA facts superseded by freshness ledger + pre-cert doc.
+- **PRE-CERT PUBLICATION_SHA** = `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` (doc/qual publication on `development`) SHA facts superseded by freshness ledger + pre-cert doc.
 

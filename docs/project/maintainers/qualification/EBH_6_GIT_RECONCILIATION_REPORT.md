@@ -23,6 +23,6 @@
 
 ## Pre-cert reconcile
 
-Doc/qualification honesty batch @ `716efd67…` — **uncommitted** unless operator commits separately.
+**PRE-CERT PUBLICATION_SHA** `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` — published on `origin/development` (doc/qual only; **IMPLEMENTATION_SHA** remains `716efd67…`).
 
 See [`EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md`](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md).

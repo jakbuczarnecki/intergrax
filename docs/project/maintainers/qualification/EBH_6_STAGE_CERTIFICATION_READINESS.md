@@ -2,10 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **READY FOR AUDIT (CANDIDATE)** — **not CLOSED** |
+| **Disposition** | **READY FOR AUDIT (CANDIDATE)** — **not CLOSED** · pre-cert pack @ **PRE-CERT PUBLICATION_SHA** `a7d133a91…` |
 | **Roadmap row** | EBH-6 → VBN mechanical slice @ `716efd67…` |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** |
 | **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **PRE-CERT PUBLICATION_SHA** | `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` |
 | **CERTIFICATION_HANDOFF_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
