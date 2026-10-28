@@ -4,7 +4,8 @@
 | --- | --- |
 | **Parent** | EBH-5 — Replaceability & Vendor/Backend Certification |
 | **Prior stage** | DIST-SCALE-X = **CLOSED — OPERATOR SCOPED ACCEPTANCE** @ `df485a962688c4fdc4c4e95fea4005d614578c2d` |
-| **Wave status** | **IMPLEMENTATION COMPLETE — READY FOR INDEPENDENT STAGE CERTIFICATION** |
+| **AUDIT_BASELINE_SHA** | `83a376b3e1b312e2e4f88da548c99c328f3589f7` |
+| **Wave status** | **Protocol 03 corrective batch — READY FOR INDEPENDENT RE-AUDIT** (post corrective commit) |
 | **Independent parent CLOSED** | **NO** — Protocol 03 pending |
 | **new global FRZ PASS** | **0** |
 
@@ -17,11 +18,16 @@
 - Lab adaptive SQLite path remediation (GAP-01).
 - Dossier, L9 handoff, SAC proposal, operator decision register.
 
+- Proof integrity gates + SQLite closed-world registry (`_proof_validation`, `_sqlite_touchpoint_registry`).
+- Protocol 03 corrective reconciliation dossier.
+
 ## Verification
 
 ```powershell
 uv run pytest tests/qualification/ebh_5/ -q
 ```
+
+**Expected @ corrective batch:** 46 passed, 1 skipped.
 
 ## Explicit OPEN (stage certification scope)
 

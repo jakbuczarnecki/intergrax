@@ -13,6 +13,9 @@ from tests.qualification.config_x._config_x_concern_inventory import (
     ConfigConcernRecord,
 )
 from tests.qualification.config_x._config_x_types import ConfigClassification
+from tests.qualification.ebh_5._behavioral_proof_registry import (
+    QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE,
+)
 from tests.qualification.ebh_5._runtime_platform_concerns import (
     RUNTIME_PLATFORM_CONCERNS,
     roadmap_domain_for_integration_category,
@@ -60,6 +63,8 @@ def _classification_from_config(row: ConfigConcernRecord) -> ExtensibilityClassi
         return ExtensibilityClassification.REPLACEABLE_QUALIFIED
     if row.concern_id == "observability.otlp_transport":
         return ExtensibilityClassification.REPLACEABLE_QUALIFIED
+    if row.concern_id == "tokenizer.selection":
+        return ExtensibilityClassification.REPLACEABLE_QUALIFIED
     return ExtensibilityClassification.REPLACEABLE_NOT_YET
 
 
@@ -92,10 +97,11 @@ def vendor_record_from_config_x(row: ConfigConcernRecord) -> VendorBackendConcer
     behavioral = (
         "PENDING — EBH_5 Package C"
         if rpl_h == ExtensibilityClassification.REPLACEABLE_NOT_YET
-        else "INT-CONFIG / CONFIG-X / HARNESS scoped @ cited SHA"
+        else QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE.get(
+            row.concern_id,
+            "PENDING — EBH_5 Package C",
+        )
     )
-    if row.concern_id == "tokenizer.selection":
-        behavioral = "test_config_x_r1_remediation_gates"
     return VendorBackendConcernRecord(
         concern_id=row.concern_id,
         domain=_roadmap_domain_for_config(row),

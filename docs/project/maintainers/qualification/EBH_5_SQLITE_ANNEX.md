@@ -1,14 +1,14 @@
 # EBH-5 — SQLite mandatory annex
 
-**Evidence SHA:** `5c9b66db632976ada039d406474530d7c6cb5f86` (refresh at closure)
+**AUDIT_BASELINE_SHA:** `83a376b3e1b312e2e4f88da548c99c328f3589f7`
 
-**Discovery:** `discover_sqlite_connect_paths_under_intergrax()` in [`_closed_world_discovery.py`](../../../tests/qualification/ebh_5/_closed_world_discovery.py).
+**Touchpoint SSOT:** [`_sqlite_touchpoint_registry.py`](../../../tests/qualification/ebh_5/_sqlite_touchpoint_registry.py) — **38** paths, closed-world vs `discover_sqlite_connect_paths_under_intergrax()`.
 
 ## Summary classification
 
 | Group | RPL-H | Notes |
 | --- | --- | --- |
-| Integration `relational_store/sqlite` | REPLACEABLE — QUALIFIED | INT-CONFIG-REAL-X + sanctioned `IntegrationProfile` |
+| Integration `relational_store/sqlite` | REPLACEABLE — QUALIFIED | EBH-5 L3 `test_ebh5_behavioral_relational_store_sqlite_via_sanctioned_profile` |
 | Runtime persistence SQLite impls | FIXED SUBSTRATE — RATIFIED | Checkpoint, human, idempotency, trace, agent stores — Tier-3 composition |
 | `single_node_production_profile_v1` triad | FIXED SUBSTRATE — RATIFIED | GCA/PIS/AD paths under DATA_DIR |
 | Lab adaptive signal/proposal | INTERNAL | Lab factory scoped paths (GAP-01 remediated) |

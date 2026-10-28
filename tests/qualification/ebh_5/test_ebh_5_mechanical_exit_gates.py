@@ -8,7 +8,11 @@ from pathlib import Path
 
 import pytest
 from tests.qualification.config_x._config_x_discovery import discover_active_blocker_path_keys
-from tests.qualification.ebh_5._evidence_manifest import evidence_git_head_sha
+from tests.qualification.ebh_5._evidence_manifest import (
+    AUDIT_BASELINE_SHA,
+    assert_audit_baseline_resolvable,
+    evidence_git_head_sha,
+)
 from tests.qualification.ebh_5._replaceability_matrix import (
     CROSS_LAYER_REPLACEABILITY_MATRIX,
     matrix_by_concern_id,
@@ -70,7 +74,9 @@ def test_ebh5_exit_mandatory_qualification_docs_present() -> None:
 
 
 def test_ebh5_exit_evidence_sha_recorded() -> None:
+    assert_audit_baseline_resolvable()
     sha = evidence_git_head_sha()
     assert len(sha) == 40
     dossier = (_REPO_ROOT / _MANDATORY_QUAL_DOCS[6]).read_text(encoding="utf-8")
     assert "READY FOR INDEPENDENT" in dossier
+    assert AUDIT_BASELINE_SHA in dossier or "83a376b3" in dossier

@@ -7,11 +7,30 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from intergrax.contracts.control_plane_mutation import (
+    control_plane_mutation_request_digest,
+    evidence_from_request_and_decision,
+)
 from intergrax.contracts.event_delivery import ObservabilityExportPayload
 from intergrax.contracts.observability_export import OtlpTransportPort
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations._shared.conformance import assert_key_value_cache
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.existing_capability_configuration import (
+    ExistingCapabilityConfigurationRealizationRequest,
+    ExistingCapabilityIntegrationTarget,
+    project_control_plane_mutation_request,
+)
 from intergrax.integrations.examples.custom_memory_kv import MANIFEST, CustomMemoryKvPlugin
+from intergrax.integrations.existing_capability_configuration_service import (
+    ExistingCapabilityConfigurationRealizationService,
+)
+from intergrax.integrations.providers.relational_store.sqlite.configuration_realization import (
+    SQLiteRelationalStoreConfigurationRealizationStrategy,
+)
+from intergrax.integrations.providers.relational_store.sqlite.integration import (
+    SQLITE_RELATIONAL_STORE_PROVIDER_ID,
+)
 from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.catalog_manifests import SQLITE
@@ -27,6 +46,72 @@ pytestmark = [
     pytest.mark.unit,
     pytest.mark.qualification,
 ]
+
+
+def _ebh5_int_config_target(
+    request: ExistingCapabilityConfigurationRealizationRequest,
+) -> ExistingCapabilityIntegrationTarget:
+    return ExistingCapabilityIntegrationTarget(
+        tenant_id=request.tenant_id,
+        integration_category=request.integration_category,
+        provider_id=request.provider_id,
+        resource_scope=request.resource_scope,
+        current_revision=request.current_revision,
+    )
+
+
+def test_ebh5_behavioral_int_config_sqlite_strategy_via_generic_service() -> None:
+    from intergrax.contracts.agent_run import RequestIdentity
+    from intergrax.contracts.agent_run_enums import PrincipalType
+    from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRisk
+    from intergrax.integrations.providers.relational_store.sqlite.configuration_realization import (
+        SQLiteRelationalStoreConfigurationPayload,
+    )
+
+    payload = SQLiteRelationalStoreConfigurationPayload(
+        data_dir=Path("/data/tenant/store"),
+        relational_db=Path("/data/tenant/store/custom.db"),
+    )
+    request = ExistingCapabilityConfigurationRealizationRequest(
+        request_id="ebh5-int-config",
+        tenant_id="tenant-a",
+        principal=RequestIdentity(
+            tenant_id="tenant-a",
+            user_id="user-1",
+            principal_type=PrincipalType.USER,
+            auth_subject="user-1",
+        ),
+        integration_category=IntegrationCategory.RELATIONAL_STORE,
+        provider_id=SQLITE_RELATIONAL_STORE_PROVIDER_ID,
+        resource_scope="scope-relational-ebh5",
+        configuration=payload,
+        configuration_fingerprint=payload.configuration_fingerprint,
+        current_revision="rev-1",
+        risk_classification=ControlPlaneMutationRisk.LOW,
+    )
+    target = _ebh5_int_config_target(request)
+
+    class _StaticResolver:
+        def resolve_existing_integration(
+            self,
+            req: ExistingCapabilityConfigurationRealizationRequest,
+        ) -> ExistingCapabilityIntegrationTarget:
+            return target
+
+    service = ExistingCapabilityConfigurationRealizationService(
+        strategies=(SQLiteRelationalStoreConfigurationRealizationStrategy(),),
+        existing_integration_resolver=_StaticResolver(),
+    )
+    governance = project_control_plane_mutation_request(request)
+    digest = control_plane_mutation_request_digest(governance)
+    decision = PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
+    evidence = evidence_from_request_and_decision(
+        governance,
+        decision=decision,
+        request_digest=digest,
+    )
+    result = service.realize_admitted(request, authorization_evidence=evidence)
+    assert result.configured_binding.provider_id == SQLITE_RELATIONAL_STORE_PROVIDER_ID
 
 
 def test_ebh5_behavioral_relational_store_sqlite_via_sanctioned_profile(tmp_path: Path) -> None:

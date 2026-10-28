@@ -19,7 +19,13 @@ from tests.qualification.ebh_5._config_x_reconciliation import (
     assert_config_x_coverage_complete,
     config_x_reconciliation_rows,
 )
-from tests.qualification.ebh_5._evidence_manifest import EBH5_EVIDENCE_SUITE, evidence_git_head_sha
+from tests.qualification.ebh_5._evidence_manifest import (
+    AUDIT_BASELINE_SHA,
+    EBH5_EVIDENCE_SUITE,
+    assert_audit_baseline_resolvable,
+    evidence_git_head_sha,
+    proof_execution_sha,
+)
 from tests.qualification.ebh_5._replaceability_matrix import (
     CROSS_LAYER_REPLACEABILITY_MATRIX,
     undocumented_qualified_rows,
@@ -94,17 +100,14 @@ def test_ebh5_q08_composition_roots_exist() -> None:
         assert (_REPO_ROOT / path).is_file(), path
 
 
-def test_ebh5_q09_sqlite_annex_candidates_inventoried() -> None:
-    sqlite_paths = discover_sqlite_connect_paths_under_intergrax()
-    assert len(sqlite_paths) >= 30
-    inventory_paths = frozenset(row.vendor_code_location for row in VENDOR_BACKEND_DEPENDENCY_INVENTORY)
-    covered = sum(
-        1
-        for p in sqlite_paths
-        if any(p.startswith(prefix.rstrip("*")) or prefix in p for prefix in inventory_paths)
-        or any(p in row.vendor_code_location for row in VENDOR_BACKEND_DEPENDENCY_INVENTORY)
+def test_ebh5_q09_sqlite_touchpoints_fully_accounted() -> None:
+    from tests.qualification.ebh_5._sqlite_touchpoint_registry import (
+        SQLITE_TOUCHPOINT_COUNT,
+        assert_closed_world_sqlite_accountability,
     )
-    assert covered >= 10
+
+    assert SQLITE_TOUCHPOINT_COUNT == len(discover_sqlite_connect_paths_under_intergrax())
+    assert_closed_world_sqlite_accountability()
 
 
 def test_ebh5_q10_inventory_reload_stable() -> None:
@@ -116,6 +119,9 @@ def test_ebh5_q11_config_x_inventory_unchanged_count() -> None:
 
 
 def test_ebh5_q12_evidence_suite_and_sha() -> None:
+    assert_audit_baseline_resolvable()
     sha = evidence_git_head_sha()
     assert len(sha) == 40
+    assert len(AUDIT_BASELINE_SHA) == 40
+    assert proof_execution_sha() == sha
     assert (_REPO_ROOT / EBH5_EVIDENCE_SUITE).is_dir()
