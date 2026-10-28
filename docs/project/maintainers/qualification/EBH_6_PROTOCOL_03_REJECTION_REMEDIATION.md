@@ -6,7 +6,7 @@
 | **Rejection root cause** | Mechanical catalog completeness ≠ production-path invariant evidence (`paths[:3]`, template L3, catalog-only family gates) |
 | **IMPLEMENTATION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
 | **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
-| **PUBLICATION_SHA** | *(doc commit following implementation)* |
+| **PUBLICATION_SHA** | `e150b0c520e4f6740532e28bc2a029f78b06162e` |
 | **Prior remediation IMPLEMENTATION** | `475c20289a1ef0420461a1ba748c792a10ea3e99` — **HISTORICAL** |
 | **Historical L9 wave** | `bc25e27b14b7172ef79951765e76d19578d9beb3` / `ce148559539583f4569d7a43c245e6c830e60a06` — **HISTORICAL** |
 

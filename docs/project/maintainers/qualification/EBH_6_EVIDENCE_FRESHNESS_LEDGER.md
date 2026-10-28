@@ -6,7 +6,7 @@
 | **IMPLEMENTATION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
 | **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
 | **CERTIFICATION_HANDOFF_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
-| **PUBLICATION_SHA (P03 final)** | *(this doc commit)* |
+| **PUBLICATION_SHA (P03 final)** | `e150b0c520e4f6740532e28bc2a029f78b06162e` |
 
 ## SHA ladder
 
