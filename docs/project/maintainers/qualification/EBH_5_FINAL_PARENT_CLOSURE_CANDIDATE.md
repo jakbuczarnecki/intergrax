@@ -2,28 +2,26 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **SAC FROZEN ? INDEPENDENT PROTOCOL 03 AUDIT PENDING** |
+| **Disposition** | **PROTOCOL 03 PASS (SCOPED) ? AWAITING OD-EBH5-08 OPERATOR SIGNATURE** |
 | **Parent CLOSED** | **NO** |
-| **Operator decisions START_HEAD** | `89bb6fed979f96e0fcd9e4b560acdc1399dd2574` |
-| **IMPLEMENTATION_SHA** | `87fe8016ec5c716135beb6f7251116e9458748dd` |
-| **TEST_EXECUTION_SHA** | `87fe8016ec5c716135beb6f7251116e9458748dd` |
-| **PUBLICATION_SHA** | `c255f53859e619f1297768300a3b7b46cc027212` |
-| **CERTIFICATION_HANDOFF_SHA** | `87fe8016ec5c716135beb6f7251116e9458748dd` |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `33ecf19cc020b112d9e586c87b49e819202f5d6d` |
+| **Operator closure gate** | [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) |
 
-## G06 / operator
+## G06 / operator / audit
 
 | Item | Status |
 | --- | --- |
-| G06-02 fixed substrates | **CLOSED** ? 3? RATIFIED in SSOT |
+| G06-02 fixed substrates | **RATIFIED** in SSOT |
 | SAC-EBH-5-v1 | **FROZEN** @ 2026-10-28 |
-| Protocol 03 | **PENDING** (OD-EBH5-07) |
+| Protocol 03 (OD-EBH5-07) | **INDEPENDENT AUDIT PASS (SCOPED)** @ 2026-10-28 |
+| OD-EBH5-08 | **OPEN** |
 
-## Tests @ TEST_EXECUTION_SHA
+## Tests @ INDEPENDENT_ACCEPTANCE_BASELINE_SHA
 
 ```text
-57 passed, 1 skipped (reachability ? graph integration module absent)
+67 passed, 1 skipped (reachability ? graph integration module absent)
 ```
 
 ## STOP
 
-Independent auditor @ **CERTIFICATION_HANDOFF_SHA** before OD-EBH5-08 CLOSED publication.
+Record **`OPERATOR APPROVED ? EBH-5 FORMAL PARENT CLOSURE PUBLICATION (SCOPED)`** before roadmap parent **CLOSED**.

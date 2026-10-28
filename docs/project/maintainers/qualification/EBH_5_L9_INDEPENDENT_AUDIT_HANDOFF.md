@@ -66,7 +66,8 @@ Registry SSOT: [`_behavioral_proof_registry.py`](../../../tests/qualification/eb
 | G06-03 | — | ACCEPT if matrix md = SSOT (5 QUALIFIED) | |
 | G06-04 | — | ACCEPT @ `87fe8016…` after operator batch | 57 passed, 1 skipped |
 | OD-EBH5-02/04 | — | SAC FROZEN + fixed substrates RATIFIED @ 2026-10-28 | register + SSOT |
-| _other_ | | | |
+| OD-EBH5-07 | — | **ACCEPT (SCOPED)** @ `33ecf19cc020b112d9e586c87b49e819202f5d6d` — [`EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) | ChatGPT 2026-10-28 |
+| OD-EBH5-08 | — | **OPEN** — operator signature required | [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) |
 
 ## Forbidden verdicts
 

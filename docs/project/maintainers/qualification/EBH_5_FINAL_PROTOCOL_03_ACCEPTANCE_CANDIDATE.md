@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-5 ? SQLITE RPL-F FINAL CORRECTION READY FOR INDEPENDENT ACCEPTANCE** |
+| **Disposition** | **PROTOCOL 03 INDEPENDENT AUDIT PASS (SCOPED) ? PARENT OPEN (OD-EBH5-08)** |
 | **START_HEAD** | `f2ec11ae60bef3f44d5c4415adecce8f629e44d9` |
 | **IMPLEMENTATION_SHA** | `33ecf19cc020b112d9e586c87b49e819202f5d6d` |
 | **TEST_EXECUTION_SHA** | `33ecf19cc020b112d9e586c87b49e819202f5d6d` |
@@ -69,7 +69,7 @@ Evidence SHA for pytest nodes = **TEST_EXECUTION_SHA**. SSOT: `_rpl_f_evidence_r
 
 | Gate | Status |
 | --- | --- |
-| OD-EBH5-07 Protocol 03 independent acceptance | **OPEN** ? corrective SQLite RPL-F evidence @ **CERTIFICATION_HANDOFF_SHA** |
-| OD-EBH5-08 CLOSED publication | **OPEN** |
+| OD-EBH5-07 Protocol 03 independent acceptance | **CLOSED ? INDEPENDENT AUDIT PASS (SCOPED)** @ `33ecf19cc?` ? [`EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) |
+| OD-EBH5-08 CLOSED publication | **OPEN** ? [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) |
 
-**STOP** ? no agent-issued AUDIT PASS or EBH-5 CLOSED.
+**STOP** ? no parent **CLOSED ? INDEPENDENTLY ACCEPTED** until **OD-EBH5-08** operator phrase is recorded.

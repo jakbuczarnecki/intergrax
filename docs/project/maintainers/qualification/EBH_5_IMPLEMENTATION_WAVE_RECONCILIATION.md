@@ -5,8 +5,8 @@
 | **Parent** | EBH-5 — Replaceability & Vendor/Backend Certification |
 | **Prior stage** | DIST-SCALE-X = **CLOSED — OPERATOR SCOPED ACCEPTANCE** @ `df485a962688c4fdc4c4e95fea4005d614578c2d` |
 | **AUDIT_BASELINE_SHA** | `83a376b3e1b312e2e4f88da548c99c328f3589f7` |
-| **Wave status** | **Protocol 03 corrective batch — READY FOR INDEPENDENT RE-AUDIT** (post corrective commit) |
-| **Independent parent CLOSED** | **NO** — Protocol 03 pending |
+| **Wave status** | **Protocol 03 INDEPENDENT AUDIT PASS (SCOPED)** @ `33ecf19cc…` — parent **OPEN** (OD-EBH5-08) |
+| **Independent parent CLOSED** | **NO** — pending **OD-EBH5-08** |
 | **new global FRZ PASS** | **0** |
 
 ## Scope delivered

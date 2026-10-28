@@ -11,8 +11,8 @@
 | OD-EBH5-04-C | Single-node profile v1 SQLite triad | **RATIFIED — SCOPED PROD-Q** (unchanged; prior qualification) | `platform.single_node_profile_v1.sqlite_triad` |
 | OD-EBH5-05 | Accept DIST-SCALE historical vendor proofs @ scoped SHA | **RECOMMENDED** | message_bus L3 deferral |
 | OD-EBH5-06 | PROD-Q F02-14 isinstance debt disposition | **TRACKED DEBT** | FRZ-RPL-04 global only |
-| OD-EBH5-07 | Independent auditor + Protocol 03 | **OPEN** | CLOSED — INDEPENDENTLY ACCEPTED |
-| OD-EBH5-08 | Roadmap §5 EBH-5 closure publication | **OPEN** | Post-audit only |
+| OD-EBH5-07 | Independent auditor + Protocol 03 | **CLOSED — INDEPENDENT AUDIT PASS (SCOPED)** @ **2026-10-28** — auditor ChatGPT; baseline `33ecf19cc020b112d9e586c87b49e819202f5d6d` — [`EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) | — |
+| OD-EBH5-08 | Roadmap §5 EBH-5 closure publication | **OPEN — READY FOR OPERATOR SIGNATURE** — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) | Parent **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
 
 ## Operator approval record (2026-10-28)
 
@@ -22,6 +22,12 @@ OPERATOR APPROVED — OD-EBH5-04 RUNTIME SQLITE FIXED SUBSTRATE (SCOPED)
 OPERATOR APPROVED — OD-EBH5-04 LAB ADAPTIVE SQLITE FIXED SUBSTRATE (LAB ONLY)
 ```
 
+## Independent audit record (2026-10-28)
+
+```text
+OD-EBH5-07 — INDEPENDENT AUDIT PASS — SCOPED @ 33ecf19cc020b112d9e586c87b49e819202f5d6d (ChatGPT)
+```
+
 Recorded by publication batch on `development` — resolve **OPERATOR_DECISIONS_PUBLICATION_SHA** in [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md).
 
-Cursor/agent **STOP** before OD-EBH5-07/08 closure publication.
+**STOP:** Agent must **not** self-approve **OD-EBH5-08** or publish parent **CLOSED** without canonical operator phrase in this register.
