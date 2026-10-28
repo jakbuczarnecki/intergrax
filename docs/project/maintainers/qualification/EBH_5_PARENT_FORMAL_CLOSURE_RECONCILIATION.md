@@ -3,12 +3,12 @@
 | Field | Value |
 | --- | --- |
 | **Parent** | EBH-5 — Replaceability & Vendor/Backend Certification |
-| **Disposition** | **`PROTOCOL 03 PASS (SCOPED) — PARENT OPEN (OD-EBH5-08)`** |
-| **Parent CLOSED** | **NO** |
+| **Disposition** | **`CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`** |
+| **Parent CLOSED** | **YES — 2026-10-28 (OD-EBH5-08)** |
 | **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `33ecf19cc020b112d9e586c87b49e819202f5d6d` |
 | **OD-EBH5-07** | **`INDEPENDENT AUDIT PASS — SCOPED`** (ChatGPT, 2026-10-28) — [`EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) |
-| **OD-EBH5-08** | **OPEN** — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) |
-| **DOCUMENTATION_PUBLICATION_SHA** | `6c1eb84eadb30d5e7a8069ef0fbc6b605ac3c49d` |
+| **OD-EBH5-08** | **APPROVED 2026-10-28** — `OPERATOR APPROVED — EBH-5 FORMAL PARENT CLOSURE PUBLICATION (SCOPED)` — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) |
+| **DOCUMENTATION_PUBLICATION_SHA** | Closure publication commit: resolve from `origin/development` (documentation-only chain; exact baseline remains `33ecf19cc020b112d9e586c87b49e819202f5d6d`) |
 | **pytest @ publication** | **0** (evidence @ **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** only) |
 
 ## Scoped acceptance summary
@@ -26,6 +26,6 @@
 
 ## Honest label
 
-Parent remains **OPEN** until operator **`OPERATOR APPROVED — EBH-5 FORMAL PARENT CLOSURE PUBLICATION (SCOPED)`** is recorded. Independent Protocol 03 **PASS (SCOPED)** does **not** auto-close the parent under ECAP + operator register.
+Parent **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** after independent Protocol 03 PASS and explicit operator **`OPERATOR APPROVED — EBH-5 FORMAL PARENT CLOSURE PUBLICATION (SCOPED)`** (received 2026-10-28). **Next mandatory stage: EBH-6**, eligible but not entered.
 
 **new global FRZ PASS = 0**
