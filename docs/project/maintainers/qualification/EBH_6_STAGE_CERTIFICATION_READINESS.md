@@ -15,14 +15,14 @@
 | --- | --- |
 | CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
 | Layer L9 attestation (16) | **L9_EVIDENCE_SUBMITTED** + grouped A–J reconciliation |
-| A–J EVIDENCE_REQUIRED @ HEAD | **342** (honest gaps — P03-01) |
+| A–J EVIDENCE_REQUIRED @ HEAD | **327** (109 gap groups — production code audit) |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
 | Architecture-family matrix | **PASS** (23 rows; CMP/PRD/REG/DOC reconciled) |
 | EBH-6 qualification pytest | **PASS** — **57 passed** @ `d051f5843d731d539a32eaaa9079f8f50aebace6` |
 | Semantic audit dossier | [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) |
-| Independent exact-SHA audit | **CANDIDATE — PARTIAL (342 A–J gaps @ HEAD)** |
+| Independent exact-SHA audit | **CANDIDATE — PARTIAL (109 A–J gap groups @ HEAD)** |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / P8)** |
 | EBH-5 parent closure | **CLOSED** @ **OD-EBH5-08 APPROVED 2026-10-28** |

@@ -56,6 +56,25 @@ _RPLG = (
     "::test_ebh5_rpl_g_config_x_active_blockers_remain_empty"
 )
 _EBH5_INV = "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+_EBH5_REACH_SLUG = (
+    "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed"
+)
+_EBH5_REACH_FACTORY = (
+    "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py"
+    "::test_ebh5_reach_factory_module_is_sanctioned_composition_owner"
+)
+_EBH5_REACH_ENV = (
+    "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py"
+    "::test_ebh5_reach_env_slug_is_canonical_merge_not_shadow_registry"
+)
+_EBH5_REACH_RAG_GRAPH = (
+    "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py"
+    "::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph"
+)
+_NPSC5E = (
+    "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py"
+    "::test_no_recovery_god_object_in_production"
+)
 _W5_SINK = (
     "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py"
     "::test_production_composition_creates_bounded_sink"
@@ -152,6 +171,18 @@ _ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[st
         (_RPLG,),
         "RPL-G slice — 51 NYQ matrix rows remain deferred.",
     ),
+    ("integrations", "A"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "EBH-5 vendor inventory completeness (qual mechanical) on integration scope.",
+        (_EBH5_INV, _REG_PROHIBITED),
+        "Inventory completeness — not live adapter construction audit.",
+    ),
+    ("integrations", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Integration bundle L3 call chains inventoried per mechanism records.",
+        (_EBH5_INV,),
+        "L3 annex index — not integration factory behavioral replay.",
+    ),
     ("observability_diagnostics", "G"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
         "W5-B2: production composition wires bounded observability sink.",
@@ -188,17 +219,38 @@ _ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[st
         (_REG_DEBT,),
         "Register-only for class F on app _shared.",
     ),
-    ("integrations", "A"): (
+    ("integrations", "B"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
-        "EBH-5 vendor inventory completeness (qual mechanical) on integration scope.",
-        (_EBH5_INV, _REG_PROHIBITED),
-        "Inventory completeness — not live adapter construction audit.",
+        "Production code: registry factory enforces PlatformIntegrationContract + category "
+        "match; no alternate materialization path in factory.py.",
+        (_EBH5_REACH_SLUG, _EBH5_REACH_FACTORY, _REG_PROHIBITED),
+        "Factory module only — not all integration bundles statically rescanned @ HEAD.",
     ),
-    ("integrations", "H"): (
+    ("integrations", "C"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
-        "Integration bundle L3 call chains inventoried per mechanism records.",
-        (_EBH5_INV,),
-        "L3 annex index — not integration factory behavioral replay.",
+        "Production code: resolve() order explicit slug → profile → env → IntegrationConfigurationError (fail-closed).",
+        (_EBH5_REACH_SLUG, _EBH5_REACH_FACTORY),
+        "Single sanctioned factory — not shadow config paths platform-wide.",
+    ),
+    ("integrations", "I"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Production code: IntegrationProfile + INTERGRAX_INTEGRATION_* env merge; "
+        "application bridge attaches profile to RuntimeConfig without second selector.",
+        (_EBH5_REACH_ENV, "intergrax/applications/_shared/integration_runtime_bridge.py"),
+        "Config authority on integration slice — not all hosting/runtime_hosting class-I cells.",
+    ),
+    ("composition_roots", "C"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "EBH-5 reachability: integrations/registry/factory.py is sanctioned "
+        "materialization owner (resolve_from_profile / resolve_slug).",
+        (_EBH5_REACH_FACTORY, _SANCTIONED),
+        "Integration factory root — not every TRACE-X composition site replayed.",
+    ),
+    ("reliability_recovery", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "L3 recovery mechanisms + NPSC5e no recovery god-object gate on production paths.",
+        (_NPSC5E,),
+        "Sample L3 recovery admission — not full reachability replay.",
     ),
     ("runtime_hosting", "C"): (
         AjControlOutcome.PARTIAL_CANDIDATE,

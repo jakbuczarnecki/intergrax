@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **EBH-6 — SEMANTIC AUDIT SUBMITTED / PARTIAL — EXACT BLOCKERS REMAIN** |
+| **Status** | **EBH-6 — PRODUCTION CODE AUDIT / PARTIAL — EXACT BLOCKERS** |
 | **IMPLEMENTATION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
 | **TEST_EXECUTION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
 | **CERTIFICATION_HANDOFF_SHA** | `9a731157bb833fbbab605191f0114aaa65c83292` |

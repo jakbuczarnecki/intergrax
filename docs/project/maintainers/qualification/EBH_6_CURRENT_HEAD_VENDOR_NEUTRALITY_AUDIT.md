@@ -30,8 +30,8 @@ Mechanical census @ **bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289** (57 pytest pass
 | Outcome | Cells (480 total) |
 | --- | ---: |
 | PASS_CANDIDATE | 3 |
-| PARTIAL_CANDIDATE | 52 |
-| EVIDENCE_REQUIRED | 342 |
+| PARTIAL_CANDIDATE | 67 |
+| EVIDENCE_REQUIRED | 327 |
 | FINDING | 2 |
 | N/A — WITH EVIDENCE | 81 |
 
@@ -90,7 +90,7 @@ SSOT: [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_e
 
 Implementer submits **PASS_CANDIDATE / PARTIAL_CANDIDATE / EVIDENCE_REQUIRED / FINDING / N/A** matrix above for auditor replay @ **CERTIFICATION_HANDOFF_SHA**. **No agent-issued AUDIT PASS**, no EBH-6 CLOSED, no global FRZ PASS.
 
-Consolidated dossier: [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md) · [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md).
+Consolidated dossier: [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md) · [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) · [EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md](EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md).
 
 ## Verification
 

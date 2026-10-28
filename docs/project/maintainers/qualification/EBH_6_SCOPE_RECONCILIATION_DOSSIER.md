@@ -13,6 +13,8 @@ Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](..
 
 **Mechanism-first semantic audit:** [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) (**PARTIAL / EXACT BLOCKERS** @ handoff SHA).
 
+**Production code audit:** [EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md](EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md) — **109** gap groups / **327** EVIDENCE cells @ IMPLEMENTATION_SHA.
+
 Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) § EBH-6 / §3.0.8. VBN: [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md).
 
 ## SCOPE-01 — A–J grouped reconciliation
@@ -20,8 +22,8 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 352 prior `EVIDENCE_REQUIRED` cells reconciled via **one row per (layer, applicable class)** — not 352 micro-iterations.
 
 | **PASS_CANDIDATE** (udowodnione — bezpośredni gate) | 3 |
-| **PARTIAL_CANDIDATE** (częściowo) | 52 |
-| **EVIDENCE_REQUIRED** (brakujący dowód @ HEAD) | 342 |
+| **PARTIAL_CANDIDATE** (częściowo) | 67 |
+| **EVIDENCE_REQUIRED** (brakujący dowód @ HEAD) | 327 |
 | **FINDING** | 2 |
 | **N/A — WITH EVIDENCE** | 81 |
 
