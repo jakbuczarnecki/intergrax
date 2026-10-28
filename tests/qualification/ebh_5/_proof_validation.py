@@ -84,6 +84,13 @@ def validate_qualified_matrix_row(row: ReplaceabilityMatrixRow) -> str | None:
         return f"{row.concern_id}: {err}"
     if row.concern_id not in QUALIFIED_CONCERN_IDS:
         return f"{row.concern_id}: QUALIFIED row not in canonical registry"
+    from tests.qualification.ebh_5._rpl_f_evidence_registry import rpl_f_disposition
+
+    rpl_f = rpl_f_disposition(row.concern_id)
+    if rpl_f is None:
+        return f"{row.concern_id}: missing RPL-F disposition"
+    if row.rpl_f != rpl_f.gate:
+        return f"{row.concern_id}: matrix rpl_f {row.rpl_f} != registry {rpl_f.gate}"
     return None
 
 

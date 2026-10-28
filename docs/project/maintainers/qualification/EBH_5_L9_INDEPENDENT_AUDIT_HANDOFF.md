@@ -50,7 +50,7 @@ Registry SSOT: [`_behavioral_proof_registry.py`](../../../tests/qualification/eb
 ## Limitations (explicit)
 
 - **51** matrix rows **NOT YET QUALIFIED** — deferred to EBH-7 scope; not false PASS.
-- **RPL-F** **NA** on all five QUALIFIED rows (no mandatory failure/recovery L3 in EBH-5).
+- **RPL-F** per-concern **PASS** with resolvable failure/recovery pytest nodes — see `_rpl_f_evidence_registry.py`.
 - **OTLP asymmetry:** empty endpoint + `ExporterKind.OTLP` disables transport without `ConfigurationError`; DISTRIBUTED_OTLP misconfig raises — see [`EBH_5_PROTOCOL03_FINAL_CORRECTION.md`](EBH_5_PROTOCOL03_FINAL_CORRECTION.md).
 - **Reachability:** `integration.graph` module absent → 1 skipped test.
 - **CONFIG-X** PASS @ `fac9a43f…` preserved; current-HEAD obligations additive only.

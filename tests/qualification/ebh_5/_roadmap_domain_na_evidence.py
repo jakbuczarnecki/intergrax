@@ -20,6 +20,7 @@ class RoadmapDomainDisposition:
     covered_concern_ids: tuple[str, ...]
     discovery_paths: tuple[str, ...]
     production_entrypoints: tuple[str, ...]
+    discovery_limitations: str
     rationale: str
 
 
@@ -36,6 +37,10 @@ _DOMAIN_DISPOSITIONS: Final[tuple[RoadmapDomainDisposition, ...]] = (
             "intergrax/integrations/registry/factory.py",
             "intergrax/applications/_shared/memory_wiring.py",
         ),
+        discovery_limitations=(
+            "IntegrationCategory enum + CONFIG-X inventory only; does not assert absence of cache tech "
+            "outside integration profile selection."
+        ),
         rationale=(
             "No standalone roadmap domain-4 IntegrationCategory; production KV/cache selection "
             "is concern integration.key_value_cache (domain KEY_VALUE), not a duplicate cache catalog row."
@@ -50,6 +55,7 @@ _DOMAIN_DISPOSITIONS: Final[tuple[RoadmapDomainDisposition, ...]] = (
             "intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py",
         ),
         production_entrypoints=("intergrax/runtime/observability/exporters/distributed/distributed_configuration.py",),
+        discovery_limitations="Static file review only; does not prove absence of future coordination vendors.",
         rationale=(
             "Coordination is runtime/distributed contracts and composition wiring — "
             "no separate vendor/backend catalog concern in EBH-5 closed-world inventory."
@@ -64,6 +70,7 @@ _DOMAIN_DISPOSITIONS: Final[tuple[RoadmapDomainDisposition, ...]] = (
             "tests/qualification/config_x/_config_x_concern_inventory.py",
         ),
         production_entrypoints=("intergrax/applications/_shared/runtime_event_delivery_wiring.py",),
+        discovery_limitations=("CONFIG-X has no LOGGING domain row; logging via observability concern only."),
         rationale=(
             "Logging sinks are wired via observability/event delivery profile — "
             "not an isolated IntegrationCategory row in CONFIG-X inventory."
@@ -78,6 +85,7 @@ _DOMAIN_DISPOSITIONS: Final[tuple[RoadmapDomainDisposition, ...]] = (
             "intergrax/integrations/contracts/base.py",
         ),
         production_entrypoints=("intergrax/applications/_shared/runtime_event_delivery_wiring.py",),
+        discovery_limitations="Same observability profile path as logging; no separate metrics IntegrationCategory.",
         rationale=(
             "Metrics export uses observability profile (OTLP/diagnostics backends) — "
             "no isolated metrics-vendor concern in EBH-5 inventory."
@@ -95,6 +103,10 @@ _DOMAIN_DISPOSITIONS: Final[tuple[RoadmapDomainDisposition, ...]] = (
             "intergrax/integrations/registry/factory.py",
             "intergrax/integrations/execution_bound_integration_resolution.py",
         ),
+        discovery_limitations=(
+            "HTTP selection absorbed by integration categories (EXTERNAL_MCP etc.); "
+            "no domain-28 duplicate inventory row."
+        ),
         rationale=(
             "HTTP client surfaces map to EXTERNAL_MCP / integration adapter concerns — "
             "roadmap domain 28 is not duplicated as its own inventory category."
@@ -105,10 +117,12 @@ _DOMAIN_DISPOSITIONS: Final[tuple[RoadmapDomainDisposition, ...]] = (
         kind="N/A — WITH EVIDENCE",
         covered_concern_ids=(),
         discovery_paths=(
-            "intergrax/",
-            "applications/",
+            "intergrax/applications/_shared/runtime_event_delivery_wiring.py",
+            "intergrax/applications/_shared/memory_wiring.py",
+            "applications/lab_application/host/factory.py",
         ),
         production_entrypoints=(),
+        discovery_limitations=("Composition-root bounded scan only; EVOL-X/ENT-AUDIT-X may add eval vendors later."),
         rationale=(
             "Bounded scan: no production-effective eval-analytics vendor selection module "
             "in intergrax/applications composition roots; deferred to EVOL-X / ENT-AUDIT-X — "
@@ -123,7 +137,10 @@ def roadmap_domain_na_dispositions() -> tuple[RoadmapDomainDisposition, ...]:
 
 
 def roadmap_domain_na_validation_errors() -> tuple[str, ...]:
+    from tests.qualification.ebh_5._vendor_backend_inventory import inventory_concern_ids
+
     errors: list[str] = []
+    known_concerns = inventory_concern_ids()
     by_domain = {d.domain: d for d in _DOMAIN_DISPOSITIONS}
     for domain in (
         RoadmapVendorDomain.CACHE,
@@ -139,6 +156,11 @@ def roadmap_domain_na_validation_errors() -> tuple[str, ...]:
             continue
         if not disp.kind.startswith("N/A"):
             errors.append(f"{domain.value}: expected N/A disposition")
+        if not disp.discovery_limitations.strip():
+            errors.append(f"{domain.value}: missing discovery_limitations")
+        for cid in disp.covered_concern_ids:
+            if cid not in known_concerns:
+                errors.append(f"{domain.value}: covered concern {cid} not in inventory")
         for rel in disp.discovery_paths:
             path = _REPO_ROOT / rel
             if rel.endswith("/"):

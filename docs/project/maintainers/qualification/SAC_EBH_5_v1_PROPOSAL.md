@@ -37,7 +37,6 @@
 - **RPL-F NA** on QUALIFIED rows — no failure/recovery L3 in this stage.
 - **OTLP empty endpoint** vs **DISTRIBUTED_OTLP ConfigurationError** asymmetry — documented.
 - **Reachability** skip when graph integration module absent.
-- **G06-02 review_date** — dossier cycle date; not operator signature on ADR.
 - **Historical SHA ladder** — auditor uses **CERTIFICATION_HANDOFF_SHA** for verdict.
 
 ## Operator freeze record (executed)

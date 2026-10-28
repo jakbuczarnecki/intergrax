@@ -12,6 +12,7 @@ from tests.qualification.ebh_5._behavioral_proof_registry import (
     QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE,
     QUALIFIED_CONCERN_REGRESSION_GATES,
 )
+from tests.qualification.ebh_5._rpl_f_evidence_registry import rpl_f_gate_for_qualified
 from tests.qualification.ebh_5._vendor_backend_inventory import (
     concerns_with_extensibility_yes,
 )
@@ -70,6 +71,7 @@ def _qualified_override(concern_id: str) -> ReplaceabilityMatrixRow:
         behavioral=QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[concern_id],
         alternate=QUALIFIED_CONCERN_ALTERNATE_REF[concern_id],
         gates=QUALIFIED_CONCERN_REGRESSION_GATES[concern_id],
+        rpl_f=rpl_f_gate_for_qualified(concern_id),
     )
 
 
