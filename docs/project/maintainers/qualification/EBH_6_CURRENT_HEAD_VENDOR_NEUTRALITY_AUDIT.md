@@ -4,9 +4,9 @@
 | --- | --- |
 | **Purpose** | Current-HEAD rollup per [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.7 |
 | **EXPECTED_START_HEAD (P03 integrity batch)** | `1858eafb84cfcc6c9197556bb24804e6bce864d8` |
-| **IMPLEMENTATION_SHA** | *(qual commit — P03-01/02)* |
-| **TEST_EXECUTION_SHA** | *(same as IMPLEMENTATION_SHA)* |
-| **CERTIFICATION_HANDOFF_SHA** | *(same as IMPLEMENTATION_SHA)* |
+| **IMPLEMENTATION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
+| **TEST_EXECUTION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
+| **CERTIFICATION_HANDOFF_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
 | **PUBLICATION_SHA (P0–P6)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` — **HISTORICAL** |
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` — preserved |
@@ -25,7 +25,7 @@ Grouped A–J adjudication: [`_l3_aj_group_reconciliation.py`](../../../tests/qu
 
 ## A–J obligation cells (@ IMPLEMENTATION_SHA)
 
-Mechanical census @ **0549a12…** follow-on (P03-01 corrected @ IMPLEMENTATION_SHA below):
+Mechanical census @ **bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289** (57 pytest passed):
 
 | Outcome | Cells (480 total) |
 | --- | ---: |

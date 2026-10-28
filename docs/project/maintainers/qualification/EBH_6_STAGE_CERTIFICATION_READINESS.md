@@ -6,8 +6,8 @@
 | **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** |
 | **EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
-| **IMPLEMENTATION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
-| **TEST_EXECUTION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **IMPLEMENTATION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
+| **TEST_EXECUTION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
@@ -20,8 +20,8 @@
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
 | Architecture-family matrix | **PASS** (23 rows; CMP/PRD/REG/DOC reconciled) |
-| EBH-6 qualification pytest | **PASS** — **57 passed** @ `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
-| Independent exact-SHA audit | **READY FOR FINAL INDEPENDENT AUDIT (Protocol 03)** |
+| EBH-6 qualification pytest | **PASS** — **57 passed** @ `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
+| Independent exact-SHA audit | **CANDIDATE — PARTIAL (342 A–J gaps @ HEAD)** |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / P8)** |
 | EBH-5 parent closure | **CLOSED** @ **OD-EBH5-08 APPROVED 2026-10-28** |
