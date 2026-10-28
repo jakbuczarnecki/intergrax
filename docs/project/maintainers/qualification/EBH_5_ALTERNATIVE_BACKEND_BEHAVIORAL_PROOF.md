@@ -8,7 +8,7 @@
 | Tokenizer via bootstrap composition | `test_ebh5_behavioral_tokenizer_selection_via_bootstrap_composition` | `tokenizer.selection` |
 | KV external plugin | `test_ebh5_behavioral_kv_external_plugin_via_sanctioned_composition` | `integration.key_value_cache` |
 
-**Negatywne (F01/F02):** `test_ebh5_behavioral_otlp_transport_negative_missing_injected_transport`, `test_ebh5_behavioral_tokenizer_selection_negative_unknown_default`.
+**Negatywne (F01/F02):** `test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration`, `test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed`, `test_ebh5_behavioral_tokenizer_selection_negative_unknown_default`.
 
 **Suite:** [`test_ebh_5_behavioral_proofs.py`](../../../tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py)
 

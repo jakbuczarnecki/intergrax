@@ -30,7 +30,7 @@
 uv run pytest tests/qualification/ebh_5/ -q
 ```
 
-**Expected @ final correction:** 48 passed, 1 skipped (optional RAG graph module). Re-run after any change; do not attribute results to a new SHA without executing the suite at that HEAD.
+**Expected @ final correction:** 49 passed, 1 skipped (optional RAG graph module). Re-run after any change; do not attribute results to a new SHA without executing the suite at that HEAD.
 
 ## FRZ impact
 

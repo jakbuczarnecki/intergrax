@@ -5,19 +5,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile.bundles import GovernanceBundle
 from intergrax.contracts.control_plane_mutation import (
     control_plane_mutation_request_digest,
     evidence_from_request_and_decision,
 )
 from intergrax.contracts.event_delivery import ObservabilityExportPayload
-from intergrax.contracts.observability_export import ExporterKind, OtlpTransportPort
+from intergrax.contracts.observability_export import ConfigurationError, ExporterKind, OtlpTransportPort
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations._shared.conformance import assert_key_value_cache
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -45,6 +45,8 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.observability.event_delivery.export_factory import ObservabilityExportSinkFactory
 from intergrax.runtime.observability.event_delivery.otlp_event_export_sink import OtlpEventExportSink
+from intergrax.runtime.observability.exporters.distributed.collector_transport import CollectorTransport
+from intergrax.runtime.observability.exporters.otlp.otlp_transport import OtlpTransport
 from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer_engine
 from intergrax.tokenizers.providers.simple_tokenizer import SimpleTokenizer
 from intergrax.tokenizers.providers.tiktoken_tokenizer import TiktokenTokenizer
@@ -71,16 +73,33 @@ class _Ebh5RecordingOtlpTransport(OtlpTransportPort):
         return
 
 
+_EBH5_OTLP_ENDPOINT = "http://127.0.0.1:4318/v1/logs"
+_EBH5_OTLP_SERVICE = "intergrax-ebh5-otlp"
+
+
 def _ebh5_bounded_otlp_env() -> ApplicationEnvironmentProfile:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ebh5.otlp.transport")
     env.observability_profile = env.observability_profile.model_copy(
         update={
             "bounded_event_delivery_enabled": True,
             "observability_exporter_kind": ExporterKind.OTLP,
-            "otlp_export_endpoint": "http://127.0.0.1:4318/v1/logs",
+            "otlp_export_endpoint": _EBH5_OTLP_ENDPOINT,
         },
     )
     return env
+
+
+def _ebh5_distributed_otlp_env() -> ApplicationEnvironmentProfile:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ebh5.otlp.distributed")
+    observability = GovernanceBundle.enterprise_cluster_observability(
+        otlp_export_endpoint=_EBH5_OTLP_ENDPOINT,
+        observability_export_service_name=_EBH5_OTLP_SERVICE,
+    )
+    return env.model_copy(
+        update={
+            "governance": env.governance.model_copy(update={"observability": observability}),
+        },
+    )
 
 
 def _ebh5_tokenizer_registry(*, default_tokenizer_id: str) -> TokenizerRegistry:
@@ -200,32 +219,65 @@ def test_ebh5_behavioral_tokenizer_selection_negative_unknown_default() -> None:
 
 @pytest.mark.asyncio
 async def test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring() -> None:
+    pytest.importorskip("opentelemetry.sdk._logs")
+
+    env_otlp = _ebh5_bounded_otlp_env()
+    wiring_otlp = resolve_application_runtime_event_delivery_wiring(env_otlp)
+    assert wiring_otlp.bounded_sink is not None
+    assert isinstance(wiring_otlp.otlp_transport, OtlpTransport)
+    assert isinstance(wiring_otlp.event_export_sink, OtlpEventExportSink)
+
+    env_distributed = _ebh5_distributed_otlp_env()
+    wiring_distributed = resolve_application_runtime_event_delivery_wiring(env_distributed)
+    assert isinstance(wiring_distributed.otlp_transport, CollectorTransport)
+    assert isinstance(wiring_distributed.event_export_sink, OtlpEventExportSink)
+    assert type(wiring_otlp.otlp_transport) is not type(wiring_distributed.otlp_transport)
+
     recording = _Ebh5RecordingOtlpTransport()
-    env = _ebh5_bounded_otlp_env()
     factory = ObservabilityExportSinkFactory(otlp_transport=recording)
-    with patch(
-        "intergrax.applications._shared.runtime_event_delivery_wiring._create_export_transport",
-        return_value=None,
-    ):
-        wiring = resolve_application_runtime_event_delivery_wiring(
-            env,
-            export_sink_factory=factory,
-        )
-    assert wiring.bounded_sink is not None
-    sink = wiring.event_export_sink
+    wiring_injected = resolve_application_runtime_event_delivery_wiring(
+        env_otlp,
+        export_sink_factory=factory,
+    )
+    sink = wiring_injected.event_export_sink
     assert isinstance(sink, OtlpEventExportSink)
     payload = ObservabilityExportPayload(event_id="ebh5-otlp-wiring", kind="runtime.event")
     await sink.export(payload)
     assert len(recording.received) == 1
     assert recording.received[0].event_id == "ebh5-otlp-wiring"
+    assert isinstance(wiring_injected.otlp_transport, OtlpTransport)
+
+
+def test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ebh5.otlp.invalid-distributed")
+    env.observability_profile = env.observability_profile.model_copy(
+        update={
+            "bounded_event_delivery_enabled": True,
+            "observability_exporter_kind": ExporterKind.DISTRIBUTED_OTLP,
+            "otlp_export_endpoint": "",
+            "observability_export_service_name": _EBH5_OTLP_SERVICE,
+        },
+    )
+    with pytest.raises(ConfigurationError):
+        resolve_application_runtime_event_delivery_wiring(env)
 
 
 @pytest.mark.asyncio
-async def test_ebh5_behavioral_otlp_transport_negative_missing_injected_transport() -> None:
-    sink = OtlpEventExportSink(transport=None)
-    payload = ObservabilityExportPayload(event_id="ebh5-otlp-none", kind="test")
-    await sink.export(payload)
-    assert sink._transport is None  # noqa: SLF001
+async def test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ebh5.otlp.no-endpoint")
+    env.observability_profile = env.observability_profile.model_copy(
+        update={
+            "bounded_event_delivery_enabled": True,
+            "observability_exporter_kind": ExporterKind.OTLP,
+            "otlp_export_endpoint": "",
+        },
+    )
+    wiring = resolve_application_runtime_event_delivery_wiring(env)
+    assert wiring.otlp_transport is None
+    assert isinstance(wiring.event_export_sink, OtlpEventExportSink)
+    payload = ObservabilityExportPayload(event_id="ebh5-otlp-disabled", kind="test")
+    await wiring.event_export_sink.export(payload)
+    assert wiring.otlp_transport is None
 
 
 def test_ebh5_behavioral_kv_external_plugin_via_sanctioned_composition() -> None:

@@ -12,10 +12,10 @@
 | --- | --- |
 | Produkcyjny odbiorca | `ApplicationRuntimeEventDeliveryWiring` → `OtlpEventExportSink` (bounded event delivery) |
 | Kontrakt | `OtlpTransportPort` + `EventExportSinkPort` |
-| Punkt wyboru | Tier-3 `resolve_application_runtime_event_delivery_wiring` + `ObservabilityExportSinkFactory(otlp_transport=…)` |
-| Alternatywy | `OtlpTransport` / `CollectorTransport` via profile; test dowodzi wstrzyknięcia przez factory |
-| Dowód | `test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring` |
-| Negatywny | `test_ebh5_behavioral_otlp_transport_negative_missing_injected_transport` |
+| Punkt wyboru | Tier-3 `resolve_application_runtime_event_delivery_wiring` + `ObservabilityExportProfile` / governance observability bundle; opcjonalnie `export_sink_factory` z `ObservabilityExportSinkFactory(otlp_transport=…)` |
+| Alternatywy | `OtlpTransport` (OTLP) vs `CollectorTransport` (DISTRIBUTED_OTLP) via profil; test portu przez factory DI |
+| Dowód | `test_ebh5_behavioral_otlp_transport_via_sanctioned_composition_wiring` — **bez** patch `_create_export_transport` |
+| Negatywny | `test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration`; `test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed` |
 | RPL-F | **NA** (brak obowiązkowego failure/recovery w zakresie EBH-5) |
 
 ## F02 — `tokenizer.selection`
@@ -42,4 +42,4 @@
 uv run pytest tests/qualification/ebh_5/ -q
 ```
 
-**Expected after final correction:** 48 passed, 1 skipped.
+**Expected after final correction:** 49 passed, 1 skipped.
