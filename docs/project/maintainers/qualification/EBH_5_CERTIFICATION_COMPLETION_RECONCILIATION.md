@@ -2,51 +2,31 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **SAC FROZEN ? INDEPENDENT PROTOCOL 03 AUDIT PENDING** |
+| **Disposition** | **EBH-5 ? OD-EBH5-07 CORRECTIVE EVIDENCE READY FOR INDEPENDENT RE-AUDIT** |
 | **Parent CLOSED** | **NO** |
-| **Operator decisions START_HEAD** | `89bb6fed979f96e0fcd9e4b560acdc1399dd2574` |
-| **IMPLEMENTATION_SHA** | `87fe8016ec5c716135beb6f7251116e9458748dd` |
-| **TEST_EXECUTION_SHA** | `87fe8016ec5c716135beb6f7251116e9458748dd` |
-| **CERTIFICATION_HANDOFF_SHA** | `87fe8016ec5c716135beb6f7251116e9458748dd` |
-| **PUBLICATION_SHA** | `c255f53859e619f1297768300a3b7b46cc027212` |
+| **CERTIFICATION_HANDOFF_SHA** | `7b4259f3467555ee3bd4bed603a773807c8a56ea` |
+| **Remediation dossier** | [`EBH_5_PROTOCOL_03_REMEDIATION_RECONCILIATION.md`](EBH_5_PROTOCOL_03_REMEDIATION_RECONCILIATION.md) |
 
 ## SHA ladder (do not collapse)
 
 | Label | SHA | Meaning |
 | --- | --- | --- |
-| Wave baseline | `83a376b3e1b312e2e4f88da548c99c328f3589f7` | First EBH-5 implementation wave audited |
-| Terminal G06/G04 | `a094252c7cf049320ea8b317b6e2d38fe1ef16fe` | Prior certification handoff |
-| **Operator decisions** | `87fe8016ec5c716135beb6f7251116e9458748dd` | SAC FROZEN + OD-EBH5-04-A/B @ 2026-10-28 |
+| Operator decisions | `87fe8016ec5c716135beb6f7251116e9458748dd` | SAC FROZEN @ 2026-10-28 |
+| **OD-EBH5-07 remediation** | `7b4259f3467555ee3bd4bed603a773807c8a56ea` | RPL-F + domain N/A evidence |
+| Publication (remediation docs) | `d60adeb6bff3ec12613add2296410af411e6212b` | Handoff SHA ladder update |
 
-## Operator disposition @ IMPLEMENTATION_SHA
+## Operator gates
 
 | ID | Status |
 | --- | --- |
-| OD-EBH5-02 | **APPROVED 2026-10-28** ? SAC **FROZEN** |
-| OD-EBH5-04-A | **APPROVED 2026-10-28** ? runtime SQLite scoped FIXED |
-| OD-EBH5-04-B | **APPROVED 2026-10-28** ? lab adaptive SQLite lab-only FIXED |
-| OD-EBH5-07 | **OPEN** |
+| OD-EBH5-02 | **APPROVED** ? SAC **FROZEN** |
+| OD-EBH5-04 | **APPROVED** ? fixed substrates **RATIFIED** |
+| OD-EBH5-07 | **OPEN** ? independent Protocol 03 @ handoff SHA |
 | OD-EBH5-08 | **OPEN** |
 
-## ?3.0.8 exit checklist
+## Verification @ TEST_EXECUTION_SHA (`7b4259f34?`)
 
-| Criterion | Status |
-| --- | --- |
-| Closed-world inventory | **PASS** |
-| Fixed substrates (ratification) | **PASS** @ operator 2026-10-28 |
-| SAC freeze | **PASS** |
-| Independent audit | **OPEN** |
-| Parent closure | **BLOCKED** |
-
-## Verification @ TEST_EXECUTION_SHA
-
-```powershell
-uv run pytest tests/qualification/ebh_5/ -q
-```
-
-**EBH-5:** **57 passed, 1 skipped** @ `87fe8016ec5c716135beb6f7251116e9458748dd` ? skip: reachability (graph module absent).
-
-Log: `.tmp/session/ebh5-operator-decisions/`
+**EBH-5:** **62 passed, 1 skipped** ? log `.tmp/session/ebh5-od-ebh5-07/`
 
 ## Closure candidate
 
