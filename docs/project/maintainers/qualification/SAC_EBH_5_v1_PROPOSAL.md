@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | **Contract ID** | `SAC-EBH-5-v1` |
-| **Status** | **PROPOSED / NOT FROZEN** |
-| **Freeze gate** | `OPERATOR APPROVED — EBH-5 SAC FREEZE` |
+| **Status** | **FROZEN** @ **2026-10-28** (`OPERATOR APPROVED — EBH-5 SAC FREEZE`) |
+| **Freeze gate** | **SATISFIED** |
 | **Prerequisite** | DIST-SCALE-X = **CLOSED — OPERATOR SCOPED ACCEPTANCE** |
 
 ## Frozen acceptance (when approved)
@@ -29,7 +29,7 @@
 | Protocol 03 handoff dossier | Yes |
 | RPL-G + CONFIG-X blockers empty | Yes (gates) |
 | Independent AUDIT PASS | **No** — OD-EBH5-07 |
-| Operator SAC freeze recorded | **No** — OD-EBH5-02 |
+| Operator SAC freeze recorded | **Yes** — OD-EBH5-02 @ 2026-10-28 |
 
 ## Rozbieżności / open points (not SAC violations until auditor rules)
 
@@ -40,14 +40,14 @@
 - **G06-02 review_date** — dossier cycle date; not operator signature on ADR.
 - **Historical SHA ladder** — auditor uses **CERTIFICATION_HANDOFF_SHA** for verdict.
 
-## Do podpisu operatora (not executed by agent)
+## Operator freeze record (executed)
 
 ```text
 OPERATOR APPROVED — EBH-5 SAC FREEZE
 ```
 
-Record in [`EBH_5_OPERATOR_DECISION_REGISTER.md`](EBH_5_OPERATOR_DECISION_REGISTER.md) OD-EBH5-02 only after independent review of this proposal.
+Recorded **2026-10-28** in [`EBH_5_OPERATOR_DECISION_REGISTER.md`](EBH_5_OPERATOR_DECISION_REGISTER.md) OD-EBH5-02. Criteria in this contract are unchanged from proposal text above.
 
-## Operator decisions required
+## Operator decisions still open
 
 See [EBH_5_OPERATOR_DECISION_REGISTER.md](EBH_5_OPERATOR_DECISION_REGISTER.md).

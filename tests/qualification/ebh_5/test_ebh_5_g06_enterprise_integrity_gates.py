@@ -63,14 +63,8 @@ def test_ebh5_g06_01_roadmap_six_na_domains_have_discovery_evidence() -> None:
 
 
 def test_ebh5_g06_02_fixed_substrate_ratification_status_explicit() -> None:
-    statuses = {row.decision_status for row in fixed_substrate_decisions()}
-    assert FixedSubstrateDecisionStatus.NOT_RATIFIED not in statuses
-    pending = sum(
-        1
-        for row in fixed_substrate_decisions()
-        if row.decision_status == FixedSubstrateDecisionStatus.PROPOSED_OPERATOR_PENDING
-    )
-    assert pending >= 1
+    for row in fixed_substrate_decisions():
+        assert row.decision_status == FixedSubstrateDecisionStatus.RATIFIED
     assert_fixed_substrate_closed_world()
     assert len(fixed_substrate_decisions()) >= 3
 

@@ -39,10 +39,13 @@ _FIXED_SUBSTRATE_DECISIONS: Final[tuple[FixedSubstrateDecisionRecord, ...]] = (
         technology="SQLite file-backed runtime stores",
         scope_paths="intergrax/runtime/**/sqlite*.py; intergrax/agents/persistence/*sqlite*",
         canonical_contract="Per-store port contracts (checkpoint, human, idempotency, trace, agent, tool-life)",
-        ratification_authority="Platform maintainer dossier — OD-EBH5-04 DEFAULT FIXED (not operator signature)",
+        ratification_authority=(
+            "Operator 2026-10-28 — OD-EBH5-04 RUNTIME SQLITE FIXED SUBSTRATE (SCOPED); "
+            "STATE-X SX-F* + EBH_5_SQLITE_ANNEX"
+        ),
         adr_ref="STATE-X fixed-substrate inventory SX-F*; EBH_5_SQLITE_ANNEX.md",
         multi_instance_constraints="Single-node / profile-scoped; not horizontally scalable substrate",
-        review_date="Operator re-review required — dossier date 2026-10-28 is not ratification signature",
+        review_date="2026-10-28 — operator ratification (scoped FIXED; not distributed scale)",
         inventory_concern_ids=(
             "runtime.checkpoint.task",
             "runtime.human.decision",
@@ -55,9 +58,9 @@ _FIXED_SUBSTRATE_DECISIONS: Final[tuple[FixedSubstrateDecisionRecord, ...]] = (
             "runtime.tool_life.durable",
             "runtime.enterprise_reliability.provider_invocation",
         ),
-        decision_status=FixedSubstrateDecisionStatus.PROPOSED_OPERATOR_PENDING,
+        decision_status=FixedSubstrateDecisionStatus.RATIFIED,
         decision_evidence_sha=(
-            "OD-EBH5-04 + EBH_5_SQLITE_ANNEX @ wave baseline 83a376b3e1b312e2e4f88da548c99c328f3589f7"
+            "OD-EBH5-04-A @ 2026-10-28; STATE-X/SQLite annex; wave 83a376b3e1b312e2e4f88da548c99c328f3589f7"
         ),
     ),
     FixedSubstrateDecisionRecord(
@@ -71,7 +74,7 @@ _FIXED_SUBSTRATE_DECISIONS: Final[tuple[FixedSubstrateDecisionRecord, ...]] = (
         ratification_authority="PROD-Q single-node profile qualification chain (scoped acceptance)",
         adr_ref="PROD-Q ADR chain; DIST-SCALE-X scoped topology evidence",
         multi_instance_constraints="Strict single-node topology; advisory cross-process lock only",
-        review_date="Scoped PROD-Q acceptance — operator OD-EBH5-04 reaffirmation pending",
+        review_date="2026-10-28 — scoped PROD-Q acceptance (single-node triad)",
         inventory_concern_ids=("platform.single_node_profile_v1.sqlite_triad",),
         decision_status=FixedSubstrateDecisionStatus.RATIFIED,
         decision_evidence_sha="83a376b3e1b312e2e4f88da548c99c328f3589f7 (PROD-Q scoped wave baseline)",
@@ -81,13 +84,13 @@ _FIXED_SUBSTRATE_DECISIONS: Final[tuple[FixedSubstrateDecisionRecord, ...]] = (
         technology="SQLite adaptive signal/proposal stores",
         scope_paths="applications/lab_application/host/factory.py; intergrax/runtime/adaptive/*_store.py",
         canonical_contract="Lab factory adaptive store paths (GAP-01 remediated)",
-        ratification_authority="Lab harness composition owner — H_REFERENCE scope",
-        adr_ref="EBH-5 GAP-01 remediation record; OD-EBH5-04 lab-only",
+        ratification_authority=("Operator 2026-10-28 — OD-EBH5-04 LAB ADAPTIVE SQLITE FIXED SUBSTRATE (LAB ONLY)"),
+        adr_ref="EBH-5 GAP-01 remediation record; OD-EBH5-04-B lab-only",
         multi_instance_constraints="Lab harness only; not production extensibility claim",
-        review_date="Lab scope — operator OD-EBH5-04 lab disposition",
+        review_date="2026-10-28 — operator ratification (lab-only FIXED)",
         inventory_concern_ids=(),
-        decision_status=FixedSubstrateDecisionStatus.PROPOSED_OPERATOR_PENDING,
-        decision_evidence_sha="EBH-5 GAP-01 remediation @ corrective ffe0aae8d2b64a558a18226cc1435f0058ff561b",
+        decision_status=FixedSubstrateDecisionStatus.RATIFIED,
+        decision_evidence_sha="OD-EBH5-04-B @ 2026-10-28; GAP-01 @ ffe0aae8d2b64a558a18226cc1435f0058ff561b",
     ),
 )
 

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | Ratification records for EBH-5 — **not** global FRZ PASS |
+| **Status** | Operator decisions **2026-10-28** recorded — **not** global FRZ PASS |
 | **SSOT** | [`tests/qualification/ebh_5/_fixed_substrate_registry.py`](../../../tests/qualification/ebh_5/_fixed_substrate_registry.py) |
 | **Operator packet** | [`EBH_5_OD_EBH5_02_SAC_FREEZE_PACKET.md`](EBH_5_OD_EBH5_02_SAC_FREEZE_PACKET.md) |
 
@@ -10,9 +10,9 @@
 
 | substrate_id | decision_status | canonical_contract | ratification_authority | decision_evidence_sha |
 | --- | --- | --- | --- | --- |
-| `runtime-sqlite-persistence-bundle` | **PROPOSED — OPERATOR PENDING** | Per-store port contracts | OD-EBH5-04 DEFAULT FIXED | STATE-X / SQLite annex @ wave `83a376b3…` |
+| `runtime-sqlite-persistence-bundle` | **RATIFIED — SCOPED** @ 2026-10-28 | Per-store port contracts | OD-EBH5-04-A operator scoped | STATE-X / SQLite annex + OD-EBH5-04-A |
 | `single-node-profile-v1-sqlite-triad` | **RATIFIED — SCOPED PROD-Q** | SingleNodeProductionProfileV1Config | PROD-Q chain | `83a376b3…` scoped baseline |
-| `lab-adaptive-sqlite` | **PROPOSED — OPERATOR PENDING** | Lab adaptive stores | Lab harness H_REFERENCE | GAP-01 @ `ffe0aae8…` |
+| `lab-adaptive-sqlite` | **RATIFIED — LAB ONLY** @ 2026-10-28 | Lab adaptive stores | OD-EBH5-04-B operator lab-only | GAP-01 + OD-EBH5-04-B |
 
 Legacy columns (scope, ADR, constraints) remain in Python SSOT.
 

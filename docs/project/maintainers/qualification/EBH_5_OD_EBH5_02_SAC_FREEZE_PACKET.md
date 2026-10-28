@@ -4,7 +4,7 @@
 | --- | --- |
 | **Decision ID** | OD-EBH5-02 |
 | **Action** | Approve **SAC-EBH-5-v1** freeze |
-| **Status** | **READY FOR OPERATOR DECISION** (not approved) |
+| **Status** | **EXECUTED 2026-10-28** — operator approvals recorded |
 | **Blocks** | OD-EBH5-08 parent CLOSED |
 
 ## Package contents
@@ -18,10 +18,10 @@
 
 | Sub-ID | Topic | SSOT status |
 | --- | --- | --- |
-| OD-EBH5-02-A | SAC-EBH-5-v1 freeze | **OPEN** |
-| OD-EBH5-04 reaffirm | Runtime SQLite FIXED bundle | **PROPOSED — OPERATOR PENDING** |
-| OD-EBH5-04 lab | Lab adaptive SQLite | **PROPOSED — OPERATOR PENDING** |
-| OD-EBH5-04 scoped | Single-node triad | **RATIFIED — SCOPED PROD-Q** (reaffirmation optional) |
+| OD-EBH5-02-A | SAC-EBH-5-v1 freeze | **APPROVED 2026-10-28** |
+| OD-EBH5-04 reaffirm | Runtime SQLite FIXED bundle | **APPROVED 2026-10-28** — scoped |
+| OD-EBH5-04 lab | Lab adaptive SQLite | **APPROVED 2026-10-28** — lab only |
+| OD-EBH5-04 scoped | Single-node triad | **RATIFIED — SCOPED PROD-Q** (prior) |
 
 ## Required operator record (not pre-filled)
 
