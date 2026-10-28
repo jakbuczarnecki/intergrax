@@ -1,278 +1,346 @@
-# EBH-6 — Final Blocker Closure Plan
+# EBH-6 — Definitive Final Blocker Closure Plan
+
+> **FINAL COMPLETE CLOSURE PLAN — READY FOR INDEPENDENT PLAN AUDIT**
 
 | Field | Value |
 | --- | --- |
-| **Status** | **READY FOR INDEPENDENT PLAN AUDIT** |
 | **Mode** | PLAN ONLY — no implementation authorized by this document |
-| **EXPECTED_START_HEAD** | `37ad12e766e2ffb14f89b0053a8e021b92ef167f` |
-| **Baseline census @ HEAD** | **109** A–J gap groups · **327** EVIDENCE cells · **8** L9 BLK · **23** families PENDING · Protocol 03 OPEN |
+| **EXPECTED_START_HEAD** | `4a6ad89f3954605968f7d4459fbaf49b8781550a` |
+| **PLAN_PUBLICATION_SHA** | *(recorded in §10 after publication commit)* |
 
-**Authorities:** Roadmap §3.0.8 / §5 · FRZ checklist · ECAP · VBN spec · SYSTEM_INVARIANTS · Architecture Principles · [EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md](EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md) · [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md).
+### Summary metrics (plan baseline @ EXPECTED_START_HEAD)
 
-**Explicit non-goals:** No Protocol 03 PASS · no OD-EBH6-08 · no EBH-6 CLOSED · no DUP-X / EBH-7 / live PROD-Q · no new audit framework · no production delta without **OD-EBH6-01**.
+| Metric | Value |
+| --- | ---: |
+| Original gap groups (`EVIDENCE_REQUIRED`) | **109** |
+| Applicable obligation surface (L9 layer × class) | **133** |
+| Mechanism cell rollup (informational L3 annex) | **480** |
+| Mandatory EBH-6 group closures (target) | **109 → 0** `EVIDENCE_REQUIRED` |
+| Layer attestation rows (`EBH6-LAYER-*`) | **16** (must reach RESOLVED or registered finding) |
+| L9 BLK auditor disposition | **8** (PENDING → decided) |
+| Family independent auditor disposition | **23** (PENDING → decided) |
+| Deferred to EBH-7 (matrix behavioral, NYQ) | **51** replaceability rows (not 109 groups) |
+| Deferred to DUP-X | Platform duplicate-mechanism census (class D spot only @ EBH-6) |
+| Deferred PROD-Q | PRD family live qualification (Path B) |
+| Remediation blockers (conditional) | **0–N** PROHIBITED findings + **0–1** Q2-D2 (operator) |
+| Unique TASK-IDs (plan WBS) | **~35** |
+| Execution batches | **7** (B1–B7) |
+| Operator decisions | **OD-EBH6-Q2D2**, **OD-EBH6-01**, **OD-EBH6-08** |
+| Protocol 03 | OPEN until Batch 6 |
+
+**Authorities:** [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §3.0.8 / §5 · FRZ checklist · ECAP · VBN spec · [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) · [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md) · [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md).
+
+**Explicit non-goals for this document:** No production code changes · no `_ADJUDICATION` promotion until authorized batches · no Protocol 03 PASS · no OD-EBH6-08 · no EBH-6 stage CLOSED · no live PROD-Q · no full DUP-X program · no EBH-7 behavioral matrix closure.
 
 ---
 
-## Executive summary
+## Preface — Why the prior closure plan was rejected (PL-01..PL-05)
 
-Closing EBH-6 requires **independent Protocol 03 acceptance** plus closing **109 grouped obligations** through a **small number of mechanism-scoped evidence waves** (mostly qualification replay and targeted gates), not 109 isolated tests. **51 NYQ** replaceability rows remain **EBH-7**. This plan maps blockers → invariants → owners → reusable proofs → batches.
+The superseded [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) revision (work-package bundling without normative crosswalk) failed independent plan audit for five structural reasons. Each maps to a corrective principle enforced in this document.
+
+| ID | Root cause in rejected plan | Corrective principle |
+| --- | --- | --- |
+| **PL-01** | Treated **109 gap groups** as uniformly mandatory EBH-6 without normative crosswalk to [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) L9-A matrix (**133** applicable pairs) vs roadmap **§3.0.8 EBH-6 mechanical exit** (four bullets only) vs VBN artifact duties | Every group receives an explicit **normative bucket** (EBH-6 mandatory / deferred with citation / N/A fix) before work |
+| **PL-02** | Layer closure described as WP bundles without **closed-world inventory + L3 + register row** per L9 plan PL-02 | Each of **16 layers** (`EBH6-LAYER-01..16`) must reach **RESOLVED** or a registered finding — not only `_ADJUDICATION` promotion |
+| **PL-03** | **Qualification gap** (no gate yet) conflated with **architecture defect**; register mechanical PASS treated as progress toward closure | RC-03 taxonomy drives tasks: replay vs new gate vs OD-EBH6-01 vs ADR |
+| **PL-04** | Protocol 03 batch “0” before evidence completeness; **“0–30 may remain”** closure arithmetic | Batches 1–5 must leave **zero `EVIDENCE_REQUIRED` groups** at implementer handoff; Protocol 03 only in **Batch 6** |
+| **PL-05** | Ignored SHA drift ([EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md) `0549a12…` vs [EBH_6_PARENT_CERTIFICATION_DOSSIER.md](EBH_6_PARENT_CERTIFICATION_DOSSIER.md) `1f3fb2ae3…` vs [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) stale headers) | **Single SHA reconciliation** in Batch 1 (one commit), then monotonic ladder |
+
+**SSOT confusion (current → target):** **133** applicable layer×class pairs roll up to **109** default `EVIDENCE_REQUIRED` groups in [`_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), which in turn relate to **480** mechanism cells as an L3 annex display — not as the Protocol 03 counting unit. Closure target: **133** auditor-visible dispositions, **16** layer rows **RESOLVED**, zero gap groups at handoff.
 
 ---
 
-## Zadanie 1 — 109 grup A–J (grupowanie mechanizmów)
+## Section 1 — Root Cause Analysis (RC-01..RC-05)
 
-### 1.1 SSOT and counting
+### RC-01 — Scope inflation vs roadmap
 
-| Item | Source |
+**Roadmap §3.0.8 EBH-6 mechanical exit** ([PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), approximately lines 1516–1521) requires: findings register complete, **`CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT` accepted**, PROHIBITED unresolved count zero, and CONFIG-X reconciled.
+
+**Extended EBH-6 obligation** (same §3.0.8 plus VBN §2.7) adds a current-HEAD **universal hardcoding re-audit across all layers**, producing updates to [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md) and L9 layer/family evidence.
+
+**The 109 groups are not 109 roadmap bullets.** They are the default **`EVIDENCE_REQUIRED`** disposition in `_l3_aj_group_reconciliation.py` wherever no class-specific gate is bound. Semantically this means “register mechanical exit ≠ behavioral proof,” not “109 distinct production defects awaiting 109 fixes.”
+
+**Normative triage rule (per group):**
+
+| Bucket | Criteria | Count @ EXPECTED_START_HEAD |
+| --- | --- | ---: |
+| **M-EBH6** | L9-A **Y** + no later-stage owner for the proof class | **109** (all current gaps — close with evidence or FINDING) |
+| **M-EBH6-LAYER** | Layer row `EBH6-LAYER-*` OPEN until inventory + L3 + register | **16** |
+| **DEF-EBH7** | RPL **behavioral** proof for **51 NYQ** matrix rows (`REPLACEABLE — NOT YET QUALIFIED`) | **51 rows** (not 14 J cells alone) |
+| **DEF-DUPX** | Duplicate-authority **platform** census (class D deep) | DUP-X program |
+| **DEF-PRODQ** | Live provider qualification | PRD family / Path B |
+| **DEF-REPLAY** | ROADMAP-REPLAY-X / ENT-AUDIT-X | Post-EBH-6 |
+| **N/A** | L9-A **N** with audited rationale in `_layer_evidence` | **27** pairs (already **N/A — WITH EVIDENCE** in cells) |
+
+**Forbidden:** reclassifying **M-EBH6** → EBH-7 without VBN/RPL row plus L9-A **J** applicability proof for that layer.
+
+### RC-02 — Matrix model
+
+- **Certification unit for Protocol 03:** **133** applicable (layer × class) pairs + **16** layer attestations + **23** families + **8** L9 BLK items — not 480 cells.
+- **480 cells:** L3 annex display (48 mechanisms × applicable classes); retain for reachability narrative, **not** for closure counting.
+- **Redundancy:** Multiple classes on the same layer often share one **closed-world scan + one negative gate** (same production risk). Address via **shared TASK** with an explicit covered group list.
+
+**Model correction (Batch 1, qualification-only):** Document in the scope dossier that closure census uses **133** groups; optional integrity test: `len(EVIDENCE groups) + resolved groups == applicable pairs`.
+
+### RC-03 — Architecture vs qualification (taxonomy)
+
+| Class | Description | @ EXPECTED_START_HEAD |
+| --- | --- | ---: |
+| (1) Mechanism OK, replay only | Historical stage gates suffice | ~24 groups already PARTIAL/PASS |
+| (2) Mechanism OK, missing gate | Need new or extended qual gate | **109** groups |
+| (3) Not EBH-6 scope | PRD live, 51 NYQ behavioral, DUP-X platform | Deferred with cite |
+| (4) Prod violation | Register-tracked findings | **Q2-D2** (RATIFIED FINDING); **BND-COMPAT-R3** (RATIFIED, non-prod) |
+| (5) ADR | Design decision required | Only if scan finds REQUIRES_ADR |
+| (6) Skip/stale test | Test path drift | **RAG graph** → [`graph_store_bootstrap.py`](../../../intergrax/rag/graph/bootstrap/graph_store_bootstrap.py) |
+
+### RC-04 — Why tests failed to close EBH-6 alone
+
+| Layer | Issue |
 | --- | --- |
-| Gap groups | `_l3_aj_group_reconciliation.py` → `EBH6-P03-AJ-{layer}-{class}` |
-| Applicability | `_layer_evidence.py` L9-A matrix (N/A = 81 cells with rationale) |
-| L3 anchor | 48 records in `_l3_reachability_evidence.py` |
+| Register integrity | Proves **counts**, not class behavior |
+| `_ADJUDICATION` PARTIAL | Often **inventory/reachability index**, not closed-world scan |
+| EE-A1 / factory tests | **Slice** only (execution, integrations) |
+| Skipped reachability | [`test_ebh5_reach_no_second_global_provider_registry_in_rag_graph`](../../../tests/qualification/ebh_5/test_ebh_5_reachability_gates.py) — path drift vs `integration_graph_store.py` |
+| Historical PASS | CONFIG-X, GOV-X2, etc. — **scope-bound**; ECAP-P2 forbids banner-only upgrades |
 
-**Already PARTIAL/PASS (do not re-audit generically):** 3 PASS + 67 PARTIAL groups including integrations factory slice, execution×B, governance×H, CONFIG-X hosting slice, etc. (see production code audit dossier).
+### RC-05 — SHA reconciliation (Batch 1 deliverable)
 
-### 1.2 Work packages (109 groups → **9 invariant bundles**)
+After Batch 1, maintain a **single authoritative ladder**:
 
-Each bundle lists **classes × layers** covered among the **109** gap groups. One bundle = one qualification wave + one replay gate family where possible.
+| Field | Source of truth |
+| --- | --- |
+| `IMPLEMENTATION_SHA` | Last qualification + documentation evidence commit |
+| `TEST_EXECUTION_SHA` | Must equal `IMPLEMENTATION_SHA` at pytest |
+| `CERTIFICATION_HANDOFF_SHA` | Final publication commit before Protocol 03 |
+| `PLAN_PUBLICATION_SHA` | Git commit publishing this plan (§10) |
 
-| WP-ID | Invariant (FRZ / VBN) | Semantic owner | Production path (representative) | Mandatory @ EBH-6? | Existing evidence to reuse | Missing evidence (concrete) | Bundled groups (count) | Prod code change? |
-| --- | --- | --- | --- | --- | --- | --- | ---: | --- |
-| **WP-A-VENDOR** | FRZ-PRD / VBN class **A** — production-effective vendor **authorship** of selection | Integrations + per-layer composition | `integrations/registry/factory.py`; layer-specific wiring under `applications/_shared/*_bridge.py` | **Yes** (13 layers × A) | EBH-5 inventory; integrations×A PARTIAL; factory fail-closed tests | **Per-layer closed-world scan** or TRACE-X parity proving no shadow selector outside factory/profile (not integration layer only) | **13** | **No** if static+reachability gates suffice; **Yes** if scan finds PROHIBITED literal |
-| **WP-B-HARD** | VBN class **B** — hardcoding / bypass on production paths | Layer owners per roadmap | EE-A1 surface (execution); other layers via `_layer_evidence` path lists | **Yes** (9 layers × B) | EE-A1 P0 (execution); hardening-3 boundary | **Layer-scoped static census** tied to closed-world paths @ HEAD (one gate module parametrized by layer prefix) | **9** | **Only if** census flags PROHIBITED → OD-EBH6-01 |
-| **WP-C-DEFAULT** | Class **C** — implicit defaults / shadow config | Runtime hosting + composition | `runtime_config_bridge.materialize_runtime_config`; `context_bootstrap` | **Yes** (12 layers × C) | CONFIG-X 54/54 mapping; integrations factory fail-closed | **Behavioral proof**: unset mandatory profile/category → fail-closed on **sanctioned production roots** (extend EBH-5 behavioral negatives pattern) | **12** | Unlikely; fail-closed already in factory |
-| **WP-D-DUP** | Class **D** — duplicate authority / parallel registries | Governance, recovery, tools | Governance middleware; recovery boundary; tool registry | **Yes** (12 layers × D) | NPSC42/NPSC5e samples | **Single “duplicate selector” static gate** per layer closed-world (grep AST for second `resolve_*` registry) | **12** | No unless finding |
-| **WP-E-SHADOW** | Class **E** — shadow persistence authority | State / integrations edge | SQLite bundles; annex touchpoints | **Yes** (6 layers × E) | SQLite annex accountability | **Behavioral**: canonical store path cannot open sqlite except via integration bundle (subset of annex touchpoints) | **6** | No unless annex violation |
-| **WP-F-TYP** | FRZ-TYP-03 class **F** | Contracts + semantic core + … | Public seams in `_layer_evidence` path lists | **Yes** (13 layers × F) | Register ratified rows; Q2-D2 FINDING on L3-SMC-03 | **Pyright/AST gate** on inventoried public surfaces OR accept FINDING+RATIFIED for closure policy (see §4) | **13** | **Q2-D2 only** via OD-EBH6-01 if operator requires remediation before ARCH-FREEZE |
-| **WP-G-OBS** | FRZ-OBS class **G** — diagnostics/OBS must not mint truth | Observability plane | W5 wiring; `runtime_event_bus`; diagnostic orchestrator | **Yes** (9 layers × G) | W5-B2 partial | **Replay W5 + CTRL-X R2** on L3-OBS mechanisms (one parametrized qual module) | **9** | No |
-| **WP-H-REACH** | Class **H** — reachability from sanctioned roots | TRACE-X + layer L3 | Registered composition sites; per-layer entrypoints in L3 annex | **Yes** (8 layers × H) | Sanctioned roots non-empty; partial H on several layers | **TRACE-X closed-world replay @ HEAD** for each gap layer’s `_layer_evidence.production_effective_samples` | **8** | No unless new bypass |
-| **WP-I-INSTALL** | Class **I** — install-time / env coupling | Hosting + integrations | Env slugs; host profile loaders | **Yes** (13 layers × I) | CONFIG-X + env slug merge test | **Documented env contract test** per concern class (extend CONFIG-X reconciliation, not 13 tests) | **13** | No |
-| **WP-J-RPL** | FRZ-RPL class **J** — replaceability behavioral proof | Integrations + matrix | RPL-G; integration factory | **Yes** (14 layers × J) | RPL-G empty blockers; integrations×J PARTIAL | **EBH-7 / 51 NYQ** for full matrix; EBH-6 minimum = **RPL-G + qualified row replay** for layers claiming extensibility in L9 annex | **14** | No @ EBH-6 (EBH-7 scope) |
+**Demote to HISTORICAL sections only** (no banner-only commits): `0549a12…`, `716efd67…`, `d993f49…`, `475c202…` in [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md), [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md), [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md) headers — reconcile in **T-SHA-01**.
 
-**Crosswalk check:** 13+9+12+12+6+13+9+8+13+14 = **109** gap groups (classes overlap same layer once per class letter).
+---
 
-**Bundling rule:** Implement **one qual gate file per WP-ID** (parametrized by `EBH6_AUDIT_LAYERS` + class), updating `_ADJUDICATION` only when the gate’s `invariant_proves` string matches the WP invariant — **never** cell-by-cell PASS without gate.
+## Section 2 — Canonical Scope and Exclusions
 
-### 1.3 Layers with highest density (prioritize within batches)
+**In scope for EBH-6 closure:** Roadmap EBH-6 row + §3.0.8 layer re-audit + VBN artifacts @ HEAD + ECAP §2.B parent closure + Protocol 03 + **23** family **independent** disposition + **8** L9 BLK replay.
 
-| Layer | Gap groups (of 10 classes) | Lead WP-IDs |
+**Explicit exclusions (normative cite required in handoff):**
+
+- Live **PROD-Q** (FRZ-PRD Path B).
+- **51 NYQ behavioral qualification** (EBH-7; matrix rows, not EBH-6 group count).
+- **DUP-X** duplicate-mechanism program (EBH-6 classifies + spot-gates class D only).
+- **ENT-AUDIT-X** runner and **ARCH-FREEZE** global FRZ PASS (separate stage gates).
+
+**J class @ EBH-6:** Each applicable layer requires **RPL-H classification** for inventoried concerns plus RPL-G/regression — **not** full alternate-backend behavioral proof for every NYQ row.
+
+---
+
+## Section 3 — Definitive Acceptance Contract
+
+Independent closure requires **all four** contract blocks (A–D). Partial mechanical PASS without B–D is not EBH-6 handoff.
+
+### A. Mechanical exit (roadmap §3.0.8)
+
+| Criterion | Verification |
+| --- | --- |
+| Register complete | `test_ebh6_findings_unclassified_zero` |
+| PROHIBITED unresolved = 0 | `test_ebh6_prohibited_unresolved_zero` |
+| CONFIG-X reconciled | `test_ebh6_config_x_all_concerns_mapped_at_head` |
+| CURRENT_HEAD audit **accepted** | Independent Protocol 03 sign-off on [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md) |
+
+### B. Architecture recertification
+
+| Criterion | Verification |
+| --- | --- |
+| 16 layers | Each `EBH6-LAYER-*` → **RESOLVED** or PROHIBITED/ALLOWED with evidence in `_findings_register.py` |
+| 133 applicable A–J | No `EVIDENCE_REQUIRED` in `aj_group_by_layer_class()` at handoff |
+| 48 L3 records | Each production-effective path has L3 gate + group disposition ≠ EVIDENCE |
+| 23 families | Independent disposition ≠ PENDING (auditor) |
+| 8 L9 BLK | Auditor replay of cited gates @ SHA |
+| EBH-6 vs later stages | Deferred items listed in §2 with FRZ/VBN cite |
+
+### C. Evidence freshness
+
+| Criterion | Verification |
+| --- | --- |
+| Exact SHA pytest | One consolidated command; log under `.tmp/session/ebh-6-final-closure/` |
+| Ledger = dossier = handoff | Single reconciliation commit (T-SHA-01) |
+| No historical PASS upgrade | ECAP-P2 checklist in auditor report |
+
+### D. Independent acceptance
+
+| Criterion | Verification |
+| --- | --- |
+| ECAP §2.B B1–B6 | [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md) updated @ handoff SHA |
+| 23 families | `_family_catalog.INDEPENDENT_AUDITOR_DISPOSITION` |
+| Outcome | PASS or **mandatory findings list** — not implementer PASS |
+| OD-EBH6-08 | Operator stage closure **only** after Protocol 03 PASS |
+
+---
+
+## Section 4 — Mandatory Blocker Inventory (closure target)
+
+At implementer handoff (end of Batch 5), the following inventory must read as the “must become” column — no acceptable residual “unknown 0–30” gap groups.
+
+| Blocker class | Count @ EXPECTED_START_HEAD | Must become @ handoff |
 | --- | ---: | --- |
-| `events_traceability` | 10 | H, G, A, J, I, F, D, C, B |
-| `background_workers_infra_adapters` | 10 | same pattern |
-| `rag_memory` | 10 | A, WP-RAG (§3), J, I, … |
-| `application_services` | 7 | H, I, J, F, D, C, A |
-| `integrations` | 5 | D, E, F, G (+ J/A/H/C/I/B already partial) |
+| `EVIDENCE_REQUIRED` groups | **109** | **0** |
+| `EBH6-LAYER-*` OPEN | **16** | **0 OPEN** (RESOLVED or registered finding) |
+| L9 BLK auditor PENDING | **8** | **8 decided** |
+| Family auditor PENDING | **23** | **23 decided** |
+| Protocol 03 | OPEN | **PASS or REJECT with findings** |
+| OD-EBH6-01 | OPEN | OPEN unless remediation batch executed |
+| OD-EBH6-08 | OPEN | CLOSED only post-audit (Batch 7) |
 
 ---
 
-## Zadanie 2 — 8 blockerów L9 i 23 rodziny
+## Section 5 — Full Task Breakdown (TASK-IDs)
 
-**Separation:** `_family_l9_evidence.py` = implementer proposal; `_family_catalog.INDEPENDENT_AUDITOR_DISPOSITION` = **unchanged PENDING** until Protocol 03.
+**Convention:** Each TASK lists covered **group IDs** (`layer×class`). **DONE** = gate green + `_ADJUDICATION` update (when batch authorized) + register/layer row if needed.
 
-### 2.1 L9 blockers → families
+### Normative and SHA (Batch 1)
 
-| L9 blocker | Family | Mandatory invariant | Existing evidence | Missing for independent acceptance | Acceptance gate |
-| --- | --- | --- | --- | --- | --- |
-| EBH6-BLK-L9-OWN-01 | OWN | Single semantic owner on EE surfaces | `test_ee_final_arch_owner_matrix_documented` | Live duplicate-owner scan @ HEAD (optional EBH-7) | Independent replay @ SHA |
-| EBH6-BLK-L9-EXE-01 | EXE | No production execution bypass | EE-A1 P0 inventory | L3 execution mechanism cross-check (already indexed) | Protocol 03 + EE-A1 |
-| EBH6-BLK-L9-GOV-01 | GOV | Governance ≠ execution identity | NPSC42 H1 tests | Full GOV-X2 replay **not** required for EBH-6 if plan WP accepts subset | NPSC42 H1 @ SHA |
-| EBH6-BLK-L9-REC-01 | REC | No recovery god-object | NPSC5e + W3-C4 | DIST-SCALE-X full replay deferred | NPSC5e + W3 on L3-REC |
-| EBH6-BLK-L9-SEC-01 | SEC | Security composition fail-closed | CTRL-X R1 | Full SEC family matrix | CTRL-X R1 @ SHA |
-| EBH6-BLK-L9-REL-01 | REL | Capacity ≠ execution owner | EE-B1-2 gate | Full REL/backpressure matrix | EE-B1-2 @ SHA |
-| EBH6-BLK-L9-HRN-01 | HRN | Harness boundary | HRN qual bundle | Reference harness drift replay | HRN bundle @ SHA |
-| EBH6-BLK-L9-TEN-01 | TEN | Tenant scope | `test_tenant_scope` | Cross-scenario blast radius (EBH-7) | Tenant gate @ SHA |
+| TASK-ID | Scope | Closes | OD-EBH6-01 |
+| --- | --- | --- | --- |
+| **T-NORM-01** | Audit 109 groups vs L9-A table in L9 plan; fix any `_layer_evidence` vs L9-A mismatch | Misclassified applicability | No |
+| **T-SHA-01** | Reconcile ledger, handoff, parent/scope/VBN/semantic/production dossiers to one ladder | RC-05 | No |
+| **T-DOC-01** | Supersede rejected closure plan with this document §1–10 | Plan audit | No |
 
-### 2.2 All 23 families (summary map)
+### Layer closed-world + L3 (Batch 2) — PL-02
 
-| Family | Mandatory invariant (implementer bundle) | Existing evidence | Missing @ EBH-6 closure | Historical PASS vs replay |
+For each **EBH6-LAYER-NN** (16 layers; implementation may merge to four quadrant tasks):
+
+| TASK-ID | Layers | Actions | Evidence | Reuse tests |
 | --- | --- | --- | --- | --- |
-| BND | Tier import directions | Hardening-3 gate | Full BND reachability census | EBH-2I scoped PASS — **replay tier gate @ HEAD** |
-| OWN | Owner uniqueness | EE owner matrix test | Duplicate-owner scan | Partial — **L9 BLK** |
-| CTR | No PROHIBITED leakage | Register prohibited=0 | Runtime leakage sweep | INT-CONFIG historical — **register only** |
-| TYP | Typing debt disposition | Register ratified Q2-D2 | Public seam pyright (policy §4) | GOV-X2 historical — **debt RATIFIED** |
-| PLG | Plugin SPI / no RAG-local registry | EBH-5 inventory | SPI behavioral matrix | EBH-5 scoped |
-| RPL | RPL-G + matrix | RPL-G gate | **51 NYQ rows** | CONFIG-X preserved — **EBH-7** |
-| EXE | Single ExecutionRuntime | EE-A1 | L3 cross-ref | EE-A1 historical — **replay @ HEAD** |
-| GOV | Governance boundary | NPSC42 H1 | GOV-X2 full | GOV-X2 CLOSED — **subset replay** |
-| STA | SQLite annex | Annex gate | Canonical store behavior | STATE-X scoped |
-| REC | Recovery plane | NPSC5e/W3 | NPSC5e full replay | Partial — **L9 BLK** |
-| CMP | COMPAT policy unchanged | Scope dossier attestation | Consumer blast-radius | COMPAT-X CLOSED — **no HEAD behavioral claim** |
-| CFG | CONFIG-X reconciliation | 54/54 gate | Live materialization audit | FRZ-CFG PASS @ fac9a43f — **reconcile only** |
-| SEC | Fail-closed security | CTRL-X R1 | Full SEC | CTRL-X scoped — **L9 BLK** |
-| REL | Capacity architecture | EE-B1-2 | Full REL matrix | W4 scoped — **L9 BLK** |
-| CTL | Control-plane attach | CTRL-X R2 | Twelve-plane drift | CTRL-X historical |
-| OBS | OBS non-authoritative | W5-B2 | TRACE-X global | HARNESS-W5 scoped |
-| TRC | Trace spine | TRACE-X P4 samples | Full terminal-state completeness | TRACE-X partial |
-| PRD | Provider qualification | Register + EBH-5 | **Live PROD-Q** | Path B OUT OF SCOPE |
-| REG | Regression bundle | EBH-6 pytest bundle | QUAL-X global | Not FRZ-REG PASS |
-| HRN | Harness boundary | HRN bundle | Drift replay | **L9 BLK** |
-| TEN | Tenant isolation | Tenant scope test | EVOL blast radius | TENANT-X CLOSED — **replay gate** |
-| DOC | Mandatory docs | Scope dossier content gate | FRZ-DOC global | Scoped candidate |
-| VBN | VBN artifacts @ HEAD | Register + VBN audit md | Independent VBN PASS | EBH-6 parent stage |
+| **T-LAY-CTR-SMC** | contracts, semantic_core | Closed-world paths from `_closed_world_discovery`; map findings; L3 samples | Layer gate module | hardening-3, EE-A1, Q2-D2 register |
+| **T-LAY-APP-CMP** | application_services, composition_roots | TRACE-X registry parity per sample | L3 replay | trace_x, sanctioned roots |
+| **T-LAY-GOV-EXE** | governance, execution | NPSC42 + EE-A1 on inventoried paths | L3 | npsc42, execution identity |
+| **T-LAY-INT-STA** | integrations, state_persistence | Factory + sqlite annex + bundles | L3 | ebh5 reachability, sqlite gate |
+| **T-LAY-REC-OBS** | reliability_recovery, observability_diagnostics | Recovery boundary + W5 | L3 | npsc5e, w5-b2 |
+| **T-LAY-TRC-WRK** | events_traceability, background_workers | Event spine + worker census | L3 | trace_x, ebh5 |
+| **T-LAY-AGD-RAG** | agent_distribution, rag_memory | Lifecycle + RAG bootstrap path | L3 | agent lifecycle, **T-RAG-01** |
+| **T-LAY-HST-TLC** | runtime_hosting, tools_skills_capabilities | CONFIG-X + tool SPI | L3 | config_x, plugin gates |
 
-**Acceptance gate (all families):** Independent auditor sets disposition @ **CERTIFICATION_HANDOFF_SHA** after ECAP §2.B/§2.C replay — implementer cannot set PASS.
+**DONE per layer:** `EBH6-LAYER-*` → RESOLVED in register narrative + ≥3 L3 samples or documented `production_effective=no`.
+
+### Class gate bundles (Batch 3) — closes 109 groups
+
+| TASK-ID | Classes | Mechanism | New qual (minimal) | Groups |
+| --- | --- | --- | --- | ---: |
+| **T-CLS-A** | A | Per-layer vendor authorship scan on `_layer_evidence.closed_world_paths` | One parametrized AST gate | 13 |
+| **T-CLS-B** | B | Hardcoding/bypass census | Extend EE-A1 pattern | 9 |
+| **T-CLS-C** | C | Fail-closed defaults on sanctioned roots | EBH-5 behavioral negatives | 12 |
+| **T-CLS-D** | D | Duplicate selector spot-check (not full DUP-X) | Static gate + register row | 12 |
+| **T-CLS-E** | E | Shadow store / sqlite authority | Annex touchpoint subset | 6 |
+| **T-CLS-F** | F | Public seam typing / register | **Operator branch** (§7) | 13 |
+| **T-CLS-G** | G | OBS non-authority | W5 + CTRL-X R2 replay | 9 |
+| **T-CLS-H** | H | Reachability from sanctioned roots | TRACE-X parametrized | 8 |
+| **T-CLS-I** | I | Env/install coupling | CONFIG-X env contract extension | 13 |
+| **T-CLS-J** | J | RPL-H row + RPL-G per concern | Matrix citation gate (no NYQ behavioral) | 14 |
+
+**T-RAG-01** (within T-LAY-AGD-RAG + T-CLS-A): Update EBH-5 test path to [`graph_store_bootstrap.py`](../../../intergrax/rag/graph/bootstrap/graph_store_bootstrap.py); assert no shadow `graph_store_backend`; rerun reachability suite.
+
+### Families and L9 BLK (Batch 4)
+
+| TASK-ID | Scope | DONE |
+| --- | --- | --- |
+| **T-FAM-01** | Package auditor replay bundle: 23 rows from `_family_l9_evidence.py` + gate IDs | Handoff doc complete |
+| **T-L9BLK-01** | Map 8 blockers to executed pytest @ SHA | Auditor checklist |
+
+### Production remediation (Batch 5 — conditional)
+
+| TASK-ID | Trigger | Scope | OD-EBH6-01 |
+| --- | --- | --- | --- |
+| **T-REM-Q2D2** | Operator rejects RATIFIED-only closure for TYP/EBH-6 | `nexus_loop.py` ADE typing | **Yes** |
+| **T-REM-PROH** | T-CLS-* finds PROHIBITED | Scoped prod fix | **Yes** |
+
+### Final publication (Batch 5)
+
+| TASK-ID | Actions |
+| --- | --- |
+| **T-PUB-01** | Single pytest @ IMPLEMENTATION_SHA; update all CURRENT SHA fields; census shows **0 EVIDENCE groups** |
+| **T-PUB-02** | Update VBN audit + scope dossier final banner **candidate handoff** (not CLOSED) |
+
+### Protocol 03 and operator (Batch 6–7)
+
+| TASK-ID | Actions |
+| --- | --- |
+| **T-P03-01** | Independent ECAP B1–B6; update dispositions |
+| **T-OD-08** | Operator OD-EBH6-08 only if P03 PASS |
 
 ---
 
-## Zadanie 3 — RAG skipped (EBH-5 reachability)
+## Section 6 — Batch Execution Plan (B1–B7)
 
-### 3.1 Root cause
+| Batch | Name | Tasks | Exit gate |
+| --- | --- | --- | --- |
+| **B1** | Normative scope + SHA reconciliation | T-NORM-01, T-SHA-01, T-DOC-01 | L9-A ↔ `_layer_evidence` consistent; one SHA ladder |
+| **B2** | Production closed-world + L3 (16 layers) | T-LAY-* | All `EBH6-LAYER-*` RESOLVED |
+| **B3** | Class gates (109 groups → 0 EVIDENCE) | T-CLS-*, T-RAG-01 | `EV_GROUPS == 0` |
+| **B4** | Family + L9 BLK handoff pack | T-FAM-01, T-L9BLK-01 | Handoff ready @ SHA |
+| **B5** | Final qual publication (+ optional T-REM-*) | T-PUB-* | Consolidated pytest PASS |
+| **B6** | Protocol 03 | T-P03-01 | Independent PASS or findings |
+| **B7** | OD-EBH6-08 | T-OD-08 | Roadmap EBH-6 CLOSED |
 
-| Fact | Detail |
-| --- | --- |
-| Test | `test_ebh5_reach_no_second_global_provider_registry_in_rag_graph` |
-| Expected path | `intergrax/rag/graph/integration_graph_store.py` |
-| @ HEAD | **File absent** — pytest **skips** with `"graph integration module absent"` |
-| Actual layout | `intergrax/rag/graph/bootstrap/graph_store_bootstrap.py` adapts `IntegrationGraphStore` → `RagGraphStore`; contracts under `rag/graph/contracts/` |
-
-### 3.2 Disposition (plan)
-
-| Option | Recommendation |
-| --- | --- |
-| Mechanism absent | **Rejected** — RAG graph materialization exists via bootstrap adapter |
-| Test stale | **Accepted** — path renamed/refactored; test targets removed module name |
-| Missing dependency | **Rejected** — skip is file existence check, not import failure |
-| Missing qualification | **Partial** — invariant “no `graph_store_backend` shadow field” should apply to **current** module(s) |
-
-**Planned closure (qual-only, Batch B-RAG):**
-
-1. Repoint gate to `graph_store_bootstrap.py` (+ any graph provider modules in closed-world list) — **qual test edit only** (no prod).
-2. Re-run reachability gate; if pass, promote `rag_memory×A` to **PARTIAL_CANDIDATE** with explicit `scope_limitation` (graph bootstrap slice).
-3. Do **not** install packages; static read + existing EBH-2G historical evidence cited as supplementary, not global PASS.
-
-**Operator approval:** Doc-only + qual test path fix — **no OD-EBH6-01**.
+**Hard sequencing rule:** **No Batch 6 before Batch 5** census shows **0** gap groups and **16** resolved layer rows.
 
 ---
 
-## Zadanie 4 — Q2-D2 (EBH6-DEBT-Q2-D2)
+## Section 7 — Operator Decisions
 
-| Field | Value |
-| --- | --- |
-| Register status | **RATIFIED** (`_findings_register.py`) |
-| Classification | **REQUIRES_ADR** · remediation_class **ADR** |
-| Location | `intergrax/runtime/nexus/nexus_loop.py` — ADE typing seam |
-| Invariant | **FRZ-TYP-03** (generic object semantic seam) |
-| Production-effective | **YES** |
-| L3 disposition | **FINDING** on mechanism L3-SMC-03 (not auto-PASS) |
-
-### 4.1 EBH-6 closure policy (plan)
-
-| Statement | Plan |
-| --- | --- |
-| RATIFIED ≠ mandatory prod fix in EBH-6 | **Correct** — EBH-6 may close with **FINDING + RATIFIED** recorded and independent auditor acceptance of debt disposition |
-| When prod fix required | **ARCH-FREEZE / EBH-7** or operator mandate — triggers **OD-EBH6-01** |
-| OD-EBH6-01 scope (if opened) | Narrow typing fix on ADE projection in `nexus_loop.py` to `AuthoritativeDecisionExposure[...]` without widening public ABI; pyright on nexus public surface; update register row to RESOLVED with evidence SHA |
-
-**WP-F-TYP** must document auditor choice: **accept RATIFIED** for Protocol 03 vs **require remediation** before EBH-6 CLOSED (operator decision register).
+| Decision | Question | Default if silent |
+| --- | --- | --- |
+| **OD-EBH6-Q2D2** | Accept **RATIFIED** Q2-D2 for EBH-6 Protocol 03 (FINDING row + no prod change)? | Align with GOV-X2 / FRZ-TYP notes: RATIFIED acceptable for **stage**; ARCH-FREEZE may require **T-REM-Q2D2** |
+| **OD-EBH6-01** | Open implementation wave for Q2-D2 or PROHIBITED fixes? | Stay OPEN |
+| **OD-EBH6-08** | Publish stage closure on roadmap | After P03 PASS only (Batch 7) |
 
 ---
 
-## Zadanie 5 — Execution batches (minimal)
+## Section 8 — Closure Simulation (must pass before publish)
 
-### Batch 0 — Independent Protocol 03 (mandatory, no implementer PASS)
+Pre-publication dry-run: each row must be satisfiable at handoff SHA without residual unknown gaps.
 
-| Field | Content |
-| --- | --- |
-| Scope | Replay @ `CERTIFICATION_HANDOFF_SHA`: 109 groups, 48 L3, 23 families, 8 L9 BLK |
-| Files | Existing qual SSOT + dossiers only |
-| Closes | **None** (auditor disposition only) |
-| Tests | Consolidated pytest command in VBN audit md |
-| Cost/risk | Auditor time; risk of REJECT if WP bundles insufficient |
-| Acceptance | Auditor attestation; FRZ updates **forbidden** to implementer |
-| Dependencies | None |
-| Operator | Schedule independent auditor |
+| Acceptance criterion | Task(s) | Evidence | Test | Independent | Residual risk |
+| --- | --- | --- | --- | --- | --- |
+| Register mechanical | T-PUB-01 | register gates | ebh6 integrity | Auditor spot-check | None if green |
+| 0 PROHIBITED | T-CLS-B, scans | register | prohibited=0 | Auditor | **T-REM-PROH** if scan hits |
+| CONFIG-X | T-CLS-I, CFG family | 54/54 | config_x gate | Auditor | None |
+| VBN audit accepted | T-PUB-02, T-P03-01 | VBN md | consolidated pytest | **Protocol 03** | Reject → B3 gap |
+| 133 A–J dispositions | T-CLS-* | `_ADJUDICATION` | parametrized class gates | Auditor | **0 EVIDENCE** required |
+| 16 layers | T-LAY-* | LAYER rows | L3 integrity | Auditor | None |
+| 23 families | T-FAM-01, T-P03-01 | catalog | family gates | Auditor | PENDING forbidden at closure |
+| 8 L9 BLK | T-L9BLK-01, T-P03-01 | l9 evidence | cited pytest | Auditor | None |
+| Q2-D2 | T-CLS-F + OD decision | FINDING/RATIFIED or REM | typing gate / register | Auditor | Prod only if OD-EBH6-01 |
+| 51 NYQ | **Out of scope** | matrix doc | RPL-G only | EBH-7 | Documented deferral |
+| SHA freshness | T-SHA-01, T-PUB-01 | ledger | pytest @ SHA | Auditor | None |
 
-### Batch 1 — WP-H-REACH + TRACE-X (qual)
-
-| Scope | Closed-world reachability for **8** gap H groups |
-| Areas | `tests/qualification/trace_x/`, `_l3_reachability_evidence.py` refs, `_ADJUDICATION` updates |
-| Closes | **WP-H-REACH** (8 groups) |
-| Tests | Existing TRACE-X P4/P5 gates + one parametrized “sanctioned root reaches layer sample” qual module |
-| Prod change | No |
-| Operator | None (qual-only) |
-
-### Batch 2 — WP-A-VENDOR + WP-B-HARD (qual static)
-
-| Scope | Layer-parametrized static gates using `_layer_evidence.closed_world_paths` |
-| Closes | Up to **22** groups (13 A + 9 B) — **PARTIAL** unless scan clean → PASS_CANDIDATE per layer |
-| Tests | Extend pattern from EE-A1 / EBH-6 mechanical exit — **one module, parametrized** |
-| Prod change | Only if PROHIBITED finding → stop → OD-EBH6-01 |
-| Operator | Approve if PROHIBITED remediation scope opened |
-
-### Batch 3 — WP-C-DEFAULT + WP-I-INSTALL (qual behavioral)
-
-| Scope | Fail-closed configuration negatives on sanctioned composition registry |
-| Closes | Up to **25** groups (12 C + 13 I) — likely **PARTIAL** |
-| Tests | Reuse EBH-5 behavioral negative patterns |
-| Prod change | No |
-| Operator | None |
-
-### Batch 4 — WP-G-OBS + WP-D-DUP + WP-E-SHADOW (qual)
-
-| Scope | W5/CTRL-X replay + static duplicate-selector scan + sqlite annex subset |
-| Closes | Up to **27** groups (9+12+6) |
-| Tests | Existing W5 + new parametrized static scans (qual) |
-| Prod change | No |
-| Operator | None |
-
-### Batch 5 — B-RAG (qual test repair)
-
-| Scope | Fix EBH-5 reachability path; re-adjudicate `rag_memory×A` |
-| Closes | **1** group (A on rag_memory) → PARTIAL expected |
-| Tests | `test_ebh5_reach_no_second_global_provider_registry_in_rag_graph` → current paths |
-| Prod change | No |
-| Operator | None |
-
-### Batch 6 — WP-F-TYP + WP-J-RPL (policy + EBH-7 boundary)
-
-| Scope | Document auditor policy on Q2-D2; link **14** J groups to RPL matrix NYQ deferral |
-| Closes | **13** F groups as PARTIAL/FINDING per policy; **J** groups remain PARTIAL with EBH-7 pointer |
-| Tests | Optional pyright gate (qual) — **operator chooses** vs RATIFIED acceptance |
-| Prod change | Q2-D2 only via Batch O1 |
-| Operator | **Decision:** accept RATIFIED for EBH-6 vs require OD-EBH6-01 before stage CLOSED |
-
-### Batch O1 — OD-EBH6-01 (production, optional)
-
-| Scope | Q2-D2 remediation + any PROHIBITED from Batch 2 |
-| Closes | Register debt RESOLVED; may upgrade semantic_core×F |
-| Operator | **Required OD-EBH6-01** |
-
-### Batch EBH-7 (out of EBH-6)
-
-| Scope | 51 NYQ replaceability rows |
-| Closes | RPL **global** — not EBH-6 |
+**Simulation result:** This plan is **COMPLETE** as a closure blueprint only if implementer executes B1–B5 to **0 EVIDENCE groups** and **16 RESOLVED layers**. Unknown defects discovered in scans → **T-REM-PROH** + re-audit (repeat B3), not stage CLOSED.
 
 ---
 
-## Closure arithmetic (realistic)
+## Section 9 — Independent Audit Handoff
 
-| Milestone | Blockers remaining |
-| --- | --- |
-| After Batches 1–5 (implementer qual) | **0–30** gap groups (J + policy F + auditor disagreement) |
-| After Protocol 03 accept | Auditor sets family dispositions + L9 BLK |
-| After OD-EBH6-08 (operator) | Stage CLOSED on roadmap — **not in this plan** |
-| EBH-7 | NYQ + full RPL behavioral |
+Update [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md) at **`CERTIFICATION_HANDOFF_SHA`** (Batch 5 publication, not this plan commit) with:
 
----
-
-## Verification (plan audit)
-
-Independent plan auditor checks:
-
-1. Bundle count **≤ 6 implementer batches** (+ Protocol 03 + optional O1).
-2. No claim of 109 separate tests.
-3. RAG skip explained and qual-only fix path.
-4. Q2-D2 not forced into prod without OD-EBH6-01.
-5. 51 NYQ explicitly deferred.
+- Consolidated pytest command (ebh_6 + ebh_5 reachability + hardening-3 + rpl-g).
+- Explicit **133-group** disposition export from `aj_group_by_layer_class()`.
+- Family disposition export from `_family_catalog`.
+- Link to this plan §8 simulation table and §3 acceptance contract A–D.
 
 ---
 
-## Publication
+## Section 10 — Git Publication Record
 
-| Field | Value |
+**This deliverable (plan publication only):**
+
+1. Replaced prior rejected [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) with sections 1–10 above.
+2. Status banner: **FINAL COMPLETE CLOSURE PLAN — READY FOR INDEPENDENT PLAN AUDIT**.
+3. Published on branch **`development`** from baseline **`4a6ad89f3954605968f7d4459fbaf49b8781550a`**.
+
+| Record | Value |
 | --- | --- |
-| **Document** | This file |
-| **IMPLEMENTATION_SHA** | `37ad12e766e2ffb14f89b0053a8e021b92ef167f` (plan baseline HEAD) |
-| **PLAN_PUBLICATION_SHA** | `4716db3c20e50b35b62c8694019a061f3fe8b713` |
-| **Status** | **READY FOR INDEPENDENT PLAN AUDIT** |
+| **PLAN_PUBLICATION_SHA** | `__PLAN_PUBLICATION_SHA__` |
+| **Branch** | `development` |
+| **Post-approval implementation** | B1–B7 only after independent plan audit PASS; no production code or `_ADJUDICATION` changes from this commit alone |
 
-**Related SHA @ plan baseline:** IMPLEMENTATION `1f3fb2ae3…` · CERTIFICATION_HANDOFF `3f0a25439…` (production audit) · HEAD @ plan start `37ad12e766e2ffb14f89b0053a8e021b92ef167f`.
+---
+
+*End of definitive EBH-6 closure plan document.*
