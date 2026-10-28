@@ -2,17 +2,17 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **EBH-6 B3 COMPLETE — CANDIDATE P03 HANDOFF** (`EV_GROUPS=0`; OD-EBH6-Q2D2 OPEN) |
+| **Status** | **P03 INTEGRITY REMEDIATION — PARTIAL / EXACT EVIDENCE BLOCKERS** (`EV_GROUPS=109`; OD-EBH6-Q2D2 OPEN) |
 | **Closure plan authority** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ **PLAN_PUBLICATION_SHA** `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
-| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
-| **TEST_EXECUTION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
-| **CERTIFICATION_HANDOFF_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
+| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
+| **IMPLEMENTATION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **TEST_EXECUTION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **CERTIFICATION_HANDOFF_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
 
 Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), [`_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py), [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py), [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
 
-**Normative crosswalk (T-NORM-01 @ B1):** L9-A matrix in [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) ↔ `_layer_evidence.layer_aj_applicability` — **133** applicable (layer × class) pairs; B3 class gates (`_aj_class_gate_scan.py`) + `_l3_aj_group_reconciliation.py` — **`EV_GROUPS=0`** @ B3 exit (480 L3 cells = annex display only).
+**Normative crosswalk (T-NORM-01 @ B1):** L9-A matrix in [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) ↔ `_layer_evidence.layer_aj_applicability` — **133** applicable (layer × class) pairs; B3 class gates (`_aj_class_gate_scan.py`) invoke reused qual gates + full closed-world scans (no `[:16]`/`[:48]` caps); `_l3_aj_group_reconciliation.py` — **109 × `EVIDENCE_REQUIRED`** @ honest adjudication (480 L3 cells mirror group outcomes).
 
 **Mechanism-first semantic audit:** [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) (**PARTIAL / EXACT BLOCKERS** @ pre-B1 handoff SHA until B5).
 
@@ -24,7 +24,7 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 | --- | --- | --- |
 | **B1** | T-NORM-01, T-SHA-01, T-DOC-01 | L9-A ↔ `_layer_evidence`; single SHA ladder — **done** |
 | **B2** | T-LAY-* (8 packages, 16 layers) | Verified closed-world inventory + L3 **per layer** — **done** (`test_ebh_6_b2_layer_closed_world_integrity.py`); **not** auto-RESOLVED |
-| **B3** | T-CLS-* | **All 133** applicable groups satisfy §3.B B3 gate; **`EV_GROUPS == 0` alone insufficient**; layer **CANDIDATE-RESOLVED** only after layer controls reconciled |
+| **B3** | T-CLS-* | **133** groups adjudicated; **109** remain `EVIDENCE_REQUIRED` with `EBH6-P03-AJ-*` blockers; class gates run reused behavioral/arch gates — **not** Protocol 03 PASS |
 | **B4–B7** | Families, publication, P03, OD-EBH6-08 | See closure plan §6 — **no B6** before B5 zero gap groups |
 
 ## SCOPE-01 — A–J grouped reconciliation (@ IMPLEMENTATION_SHA)
@@ -32,8 +32,9 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 | Outcome (133 groups) | Count |
 | --- | ---: |
 | **EVIDENCE_REQUIRED** (mandatory gap @ HEAD) | **109** |
-| **PARTIAL_CANDIDATE** | 23 |
-| **PASS_CANDIDATE** | 1 |
+| **PARTIAL_CANDIDATE** | 22 |
+| **PASS_CANDIDATE** | 1 (`execution` × B — EE-A1) |
+| **FINDING** | 1 (`semantic_core` × F — Q2-D2) |
 
 L3 obligation cells (480 mechanism rollup): see [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md) — **not** the Protocol 03 counting unit.
 

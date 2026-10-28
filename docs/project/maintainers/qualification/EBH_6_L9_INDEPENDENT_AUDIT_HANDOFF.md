@@ -4,12 +4,12 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **B3 COMPLETE — CANDIDATE P03 HANDOFF** (`EV_GROUPS=0`; 23×PENDING independent disposition unchanged) |
-| **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B2 EXPECTED_START_HEAD** | `11b896f7a35007e14ba859211351ec144c7a083e` |
-| **IMPLEMENTATION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
-| **TEST_EXECUTION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
-| **CERTIFICATION_HANDOFF_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
+| **Disposition** | **P03 INTEGRITY REMEDIATION — PARTIAL / EXACT EVIDENCE BLOCKERS** (`EV_GROUPS=109`; 23×PENDING independent disposition unchanged) |
+| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
+| **IMPLEMENTATION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **TEST_EXECUTION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **CERTIFICATION_HANDOFF_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **Historical handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
 ## Commands @ TEST_EXECUTION_SHA (B3 L3 closure)

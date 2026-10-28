@@ -11,7 +11,10 @@ from tests.qualification.ebh_6._evidence_manifest import evidence_git_head_sha
 from tests.qualification.ebh_6._family_catalog import EBH6_FAMILY_CATALOG, FamilyIndependentDisposition
 from tests.qualification.ebh_6._family_l9_evidence import FAMILY_L9_EVIDENCE
 from tests.qualification.ebh_6._findings_register import FindingStatus, all_hardcoding_findings
-from tests.qualification.ebh_6._l3_aj_group_reconciliation import aj_group_by_layer_class
+from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
+    aj_group_by_layer_class,
+    count_evidence_required_groups,
+)
 
 
 def export_aj_group_dispositions() -> tuple[dict[str, Any], ...]:
@@ -95,6 +98,10 @@ def p03_handoff_bundle() -> dict[str, Any]:
         "layer_candidate_resolved_count": sum(
             1 for row in export_layer_register_snapshot() if row["status"] == FindingStatus.CANDIDATE_RESOLVED.value
         ),
+        "layer_l9_evidence_submitted_count": sum(
+            1 for row in export_layer_register_snapshot() if row["status"] == FindingStatus.L9_EVIDENCE_SUBMITTED.value
+        ),
+        "aj_evidence_required_count": count_evidence_required_groups(),
         "independent_disposition_pending": sum(
             1
             for row in export_family_dispositions()

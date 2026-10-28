@@ -2,13 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-6 B2 COMPLETE — PARTIAL / EXACT BLOCKERS** — **not CLOSED** |
-| **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ **PLAN_PUBLICATION_SHA** `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
-| **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** (B6–B7) |
-| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
-| **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
+| **Disposition** | **P03 INTEGRITY REMEDIATION — PARTIAL / EXACT EVIDENCE BLOCKERS** (109 × `EVIDENCE_REQUIRED`; not CLOSED) |
+| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
+| **IMPLEMENTATION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **TEST_EXECUTION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 

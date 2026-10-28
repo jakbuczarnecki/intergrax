@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Final
 
+import pytest
 from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
 from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability, layer_evidence_by_id
 
@@ -72,7 +74,10 @@ _W5_SINK = (
     "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py"
     "::test_production_composition_creates_bounded_sink"
 )
-_LIFECYCLE = "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py"
+_LIFECYCLE = (
+    "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py"
+    "::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+)
 _B3_Q2D2 = "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py::test_ebh6_b3_q2d2_semantic_core_f_is_finding"
 _REGISTER_SSOT = "tests/qualification/ebh_6/_findings_register.py"
 
@@ -169,7 +174,7 @@ def _layer_py_files(layer: str) -> tuple[Path, ...]:
         if path.is_file() and rel.endswith(".py"):
             files.append(path)
         elif path.is_dir():
-            files.extend(sorted(path.rglob("*.py"))[:64])
+            files.extend(sorted(path.rglob("*.py")))
     return tuple(files)
 
 
@@ -177,35 +182,45 @@ def _read_py(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def assert_no_vendor_sdk_imports_in_text(text: str, rel: str, *, skip_provider_tree: bool) -> None:
+    if skip_provider_tree:
+        return
+    for line in text.splitlines():
+        if not line.startswith(("import ", "from ")):
+            continue
+        lowered = line.lower()
+        for marker in _VENDOR_SDK_IMPORT_MARKERS:
+            token = marker.rstrip(".")
+            if token in lowered and (f"import {token}" in lowered or f"from {token}" in lowered):
+                raise AssertionError(f"{rel}: vendor SDK import {marker!r}")
+
+
+def assert_no_shadow_selector_markers(text: str, rel: str) -> None:
+    for marker in _SHADOW_SELECTOR_MARKERS:
+        if marker in text:
+            raise AssertionError(f"{rel}: shadow selector {marker!r}")
+
+
 def scan_class_a_vendor_authorship(layer: str) -> None:
     files = _layer_py_files(layer)
     assert files, f"T-CLS-A: no python paths for {layer}"
-    for path in files[:48]:
+    for path in files:
         text = _read_py(path)
         rel = path.relative_to(_REPO_ROOT).as_posix()
-        if rel.startswith("intergrax/integrations/providers/"):
-            continue
-        for line in text.splitlines():
-            if not line.startswith(("import ", "from ")):
-                continue
-            lowered = line.lower()
-            for marker in _VENDOR_SDK_IMPORT_MARKERS:
-                token = marker.rstrip(".")
-                if token in lowered and (f"import {token}" in lowered or f"from {token}" in lowered):
-                    assert False, f"{rel}: vendor SDK import {marker!r}"
+        skip = "/providers/" in rel or rel.startswith("intergrax/integrations/providers/")
+        assert_no_vendor_sdk_imports_in_text(text, rel, skip_provider_tree=skip)
         if layer in ("contracts", "governance") and "integrations.providers" in text:
             assert "TYPE_CHECKING" in text or "Protocol" in text, rel
 
 
 def scan_class_b_hardcoding(layer: str) -> None:
-    if layer in ("execution", "semantic_core", "application_services", "integrations"):
-        ee_path = (
-            _REPO_ROOT / "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py"
-        )
-        assert ee_path.is_file()
-    files = _layer_py_files(layer)[:24]
+    if layer not in ("execution", "semantic_core", "agent_distribution"):
+        return
+    files = _layer_py_files(layer)
     forbidden_literals = ('"openai"', "'openai'", '"gpt-4"', '"claude"')
     for path in files:
+        if "/providers/" in path.as_posix():
+            continue
         text = _read_py(path)
         for lit in forbidden_literals:
             if lit in text and "test" not in path.parts:
@@ -214,28 +229,23 @@ def scan_class_b_hardcoding(layer: str) -> None:
 
 def scan_class_c_fail_closed(layer: str) -> None:
     factory = _REPO_ROOT / "intergrax/integrations/registry/factory.py"
-    assert factory.is_file()
     text = _read_py(factory)
-    assert "IntegrationConfigurationError" in text or "raise" in text
+    assert "IntegrationConfigurationError" in text
+    assert "raise" in text
     if layer in ("runtime_hosting", "integrations", "composition_roots"):
         assert "resolve_slug" in text or "resolve_from_profile" in text
 
 
 def scan_class_d_duplicate_selector(layer: str) -> None:
-    files = _layer_py_files(layer)[:32]
-    for path in files:
-        text = _read_py(path)
-        for marker in _SHADOW_SELECTOR_MARKERS:
-            assert marker not in text, f"{path}: shadow selector {marker!r}"
+    for path in _layer_py_files(layer):
+        assert_no_shadow_selector_markers(_read_py(path), path.relative_to(_REPO_ROOT).as_posix())
 
 
 def scan_class_e_shadow_store(layer: str) -> None:
-    if layer == "state_persistence":
-        sqlite_gate = _REPO_ROOT / "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py"
-        assert sqlite_gate.is_file()
+    if layer not in ("state_persistence", "application_services", "events_traceability", "reliability_recovery"):
+        return
     allowed_sqlite_layers = ("state_persistence", "application_services", "events_traceability")
-    files = _layer_py_files(layer)[:16]
-    for path in files:
+    for path in _layer_py_files(layer):
         text = _read_py(path)
         if "sqlite" in text.lower() and layer not in allowed_sqlite_layers:
             rel = path.relative_to(_REPO_ROOT).as_posix()
@@ -246,41 +256,30 @@ def scan_class_f_typing_seam(layer: str) -> None:
     if layer == "semantic_core":
         reg = _REPO_ROOT / "tests/qualification/ebh_6/_findings_register.py"
         assert "EBH6-DEBT-Q2-D2" in _read_py(reg)
-        return
-    assert (_REPO_ROOT / _REG_DEBT.split("::")[0]).is_file()
 
 
 def scan_class_g_obs_non_authority(layer: str) -> None:
-    if layer in ("observability_diagnostics", "execution", "integrations", "governance"):
-        w5 = _REPO_ROOT / "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py"
-        assert w5.is_file()
+    return
 
 
 def scan_class_h_reachability(layer: str) -> None:
     mech = _REPO_ROOT / "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py"
-    assert mech.is_file()
     assert "sanctioned_composition_roots" in _read_py(mech)
-    if layer == "agent_distribution":
-        lifecycle = (
-            _REPO_ROOT / "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py"
-        )
-        assert lifecycle.is_file()
 
 
 def scan_class_i_env_coupling(layer: str) -> None:
-    cfg = _REPO_ROOT / "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py"
-    assert cfg.is_file()
     if layer in ("integrations", "runtime_hosting"):
         bridge = _REPO_ROOT / "intergrax/applications/_shared/integration_runtime_bridge.py"
         if bridge.is_file():
-            assert "IntegrationProfile" in _read_py(bridge) or "profile" in _read_py(bridge).lower()
+            bridge_text = _read_py(bridge)
+            assert "IntegrationProfile" in bridge_text or "profile" in bridge_text.lower()
 
 
 def scan_class_j_replaceability(layer: str) -> None:
-    rpl = _REPO_ROOT / "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py"
-    assert rpl.is_file()
-    inv = _REPO_ROOT / "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py"
-    assert inv.is_file()
+    if layer != "integrations":
+        return
+    factory = _REPO_ROOT / "intergrax/integrations/registry/factory.py"
+    assert "PlatformIntegrationContract" in _read_py(factory)
 
 
 _SCANNERS = {
@@ -297,7 +296,40 @@ _SCANNERS = {
 }
 
 
+def _pytest_node_ids(refs: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(r for r in refs if "::test_" in r)
+
+
+_reuse_ran: set[str] = set()
+
+
+def _invoke_reuse_gate(node_id: str) -> None:
+    if node_id in _reuse_ran:
+        return
+    rel, func = node_id.split("::", 1)
+    path = _REPO_ROOT / rel
+    assert path.is_file(), f"missing reuse gate: {node_id}"
+    exit_code = pytest.main(["-q", "--tb=line", f"{path}::{func}"])
+    assert exit_code == 0, f"reuse gate failed: {node_id}"
+    _reuse_ran.add(node_id)
+
+
+@lru_cache(maxsize=16)
+def _invoke_class_reuse_gates(detection_class: str) -> None:
+    for node in _pytest_node_ids(_CLASS_REUSE.get(detection_class, (_REG_PROHIBITED,))):
+        _invoke_reuse_gate(node)
+
+
+@lru_cache(maxsize=128)
+def _invoke_layer_class_extra_gates(layer: str, detection_class: str) -> None:
+    extra = _LAYER_CLASS_EXTRA_REFS.get((layer, detection_class), ())
+    for node in _pytest_node_ids(extra):
+        _invoke_reuse_gate(node)
+
+
 def run_class_gate_scan(layer: str, detection_class: str) -> None:
+    _invoke_class_reuse_gates(detection_class)
+    _invoke_layer_class_extra_gates(layer, detection_class)
     scanner = _SCANNERS[detection_class]
     scanner(layer)
 
@@ -305,9 +337,7 @@ def run_class_gate_scan(layer: str, detection_class: str) -> None:
 def _default_outcome(layer: str, detection_class: str) -> str:
     if (layer, detection_class) == ("semantic_core", "F"):
         return "FINDING"
-    if detection_class in ("A", "C") and layer in ("integrations", "execution"):
-        return "PASS_CANDIDATE"
-    return "PARTIAL_CANDIDATE"
+    return "EVIDENCE_REQUIRED"
 
 
 def _default_proves(layer: str, detection_class: str) -> str:
@@ -316,13 +346,16 @@ def _default_proves(layer: str, detection_class: str) -> str:
             "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam; ratification ≠ independent acceptance "
             "(OD-EBH6-Q2D2 OPEN)."
         )
-    return f"T-CLS-{detection_class} parametrized gate on `{layer}` closed-world paths + reuse gates."
+    return (
+        f"T-CLS-{detection_class} @ `{layer}` — closed-world slice + class reuse gates run; "
+        "no independent layer×class behavioral proof on record (mandatory blocker)."
+    )
 
 
 def _default_scope(detection_class: str) -> str:
     return (
-        f"Class-{detection_class} mechanical slice @ HEAD — not full platform behavioral qual "
-        "(51 NYQ / DUP-X deferred where noted)."
+        f"Class-{detection_class} mechanical scan + reused qual gates only — "
+        "not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
     )
 
 

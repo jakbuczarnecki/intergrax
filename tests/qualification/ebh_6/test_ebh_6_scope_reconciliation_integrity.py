@@ -47,11 +47,11 @@ def test_ebh6_scope_aj_groups_complete() -> None:
         count_evidence_required_groups,
     )
 
-    assert count_evidence_required_groups() == 0
     groups = aj_group_by_layer_class()
     ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
     assert len(groups) == 133
-    assert ev_req == 0
+    assert ev_req == count_evidence_required_groups()
+    assert ev_req >= 100
 
 
 def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
@@ -60,6 +60,7 @@ def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
     from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
         AjControlOutcome,
         aj_group_by_layer_class,
+        count_evidence_required_groups,
     )
     from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
 
@@ -96,4 +97,5 @@ def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
     ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
     assert applicable == 133
     assert len(groups) == 133
-    assert ev_req == 0
+    assert ev_req == count_evidence_required_groups()
+    assert ev_req >= 100

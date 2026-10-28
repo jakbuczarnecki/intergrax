@@ -2,9 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
-| **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
+| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
+| **IMPLEMENTATION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **TEST_EXECUTION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (unchanged until B5 publication) |
 | **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` — [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) |
 
@@ -28,7 +28,8 @@
 | Pre-cert IMPLEMENTATION | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` | Pre-cert anchor |
 | L9 plan operator anchor | `d993f49ed3698b1decf399796a6e502b2221caaa` | L9 doc wave |
 | P03 remediation IMPLEMENTATION | `475c20289a1ef0420461a1ba748c792a10ea3e99` | Register header historical |
-| P03 final disposition | `f87a6dfc988bb720b6e7475e3cffe279d9290198` | HISTORICAL |
+| P03 handoff (EV=0 mask — REJECTED) | `129eee82dff33fd4d815643387a10fa2d56058bf` | Superseded by P03 integrity remediation |
+| **P03 integrity IMPLEMENTATION** | `b313835d7cf035b503eea56958b92eebfb43f997` | **CURRENT** |
 | Operator EXPECTED_START_HEAD (P03 integrity) | `f3e39db3f378e5779d5006f54223358237430695` | Superseded |
 | STAGE_BASELINE (scope wave) | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` | Superseded |
 | PRE-PUBLICATION local batch | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` | **do not cite as HEAD** |
@@ -43,6 +44,10 @@
 - **L9 Protocol 03** OPEN — **no B6** until B5 census **0** `EVIDENCE_REQUIRED` groups + B3 §3.B gate
 - **109** A–J gap groups @ B2 IMPLEMENTATION_SHA (133 applicable pairs — normative crosswalk)
 
-## Pytest log (B2)
+## Pytest log (P03 integrity remediation)
+
+Consolidated @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-evidence-integrity/pytest.log` (**176 passed** — aj gates, b3 exit, scope, l3 integrity, register, mechanical exit, CONFIG-X)
+
+## Pytest log (B2 — historical)
 
 Consolidated L1+L2 @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-b2/pytest.log`

@@ -4,36 +4,37 @@
 | --- | --- |
 | **Purpose** | Current-HEAD rollup per [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.7 |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B2 EXPECTED_START_HEAD** | `11b896f7a35007e14ba859211351ec144c7a083e` |
-| **IMPLEMENTATION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
-| **TEST_EXECUTION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
-| **CERTIFICATION_HANDOFF_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
+| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` — **HISTORICAL** |
+| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
+| **IMPLEMENTATION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **TEST_EXECUTION_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **CERTIFICATION_HANDOFF_SHA** | `b313835d7cf035b503eea56958b92eebfb43f997` |
+| **Historical P03 handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
 | **P03 integrity IMPLEMENTATION** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` — **HISTORICAL** |
-| **Disposition** | **B3 COMPLETE — CANDIDATE P03 HANDOFF** (`EV_GROUPS=0`; Q2-D2 FINDING / OD-EBH6-Q2D2 OPEN) |
+| **Disposition** | **P03 INTEGRITY REMEDIATION — PARTIAL / EXACT EVIDENCE BLOCKERS** (`EV_GROUPS=109`; Q2-D2 FINDING / OD-EBH6-Q2D2 OPEN) |
 
 ## Mandatory audit layers (roadmap §3.0.8)
 
 16 layers inventoried @ HEAD via [`tests/qualification/ebh_6/_closed_world_discovery.py`](../../../tests/qualification/ebh_6/_closed_world_discovery.py) and [`EBH_6_ENTERPRISE_SURFACE_INVENTORY.md`](EBH_6_ENTERPRISE_SURFACE_INVENTORY.md).
 
-Register rows **`EBH6-LAYER-01..16`**: status **`CANDIDATE-RESOLVED`** (B3 layer controls reconciled — not independent RESOLVED).
+Register rows **`EBH6-LAYER-01..16`**: status **`L9_EVIDENCE_SUBMITTED`** (≥1 mandatory A–J gap per layer — not CANDIDATE-RESOLVED).
 
 L3 per-mechanism annex: [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) (**49** mechanisms — B2 graph bootstrap + hosting path correction).
 
 Grouped A–J adjudication: [`_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py) — **no unconditional PASS promotion (P03-01)**.
 
-## A–J obligation cells (@ IMPLEMENTATION_SHA)
+## A–J obligation groups (@ IMPLEMENTATION_SHA)
 
-Mechanical census @ **bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289** (57 pytest passed):
+Mechanical census @ **P03 integrity remediation** (`tests/qualification/ebh_6/` — `.tmp/session/ebh-6-evidence-integrity/pytest.log`):
 
-| Outcome | Cells (480 total) |
+| Outcome | Groups (133 applicable pairs) |
 | --- | ---: |
-| PASS_CANDIDATE | 3 |
-| PARTIAL_CANDIDATE | 67 |
-| EVIDENCE_REQUIRED | 327 |
-| FINDING | 2 |
-| N/A — WITH EVIDENCE | 81 |
+| EVIDENCE_REQUIRED | **109** |
+| PARTIAL_CANDIDATE | **22** |
+| PASS_CANDIDATE | **1** |
+| FINDING | **1** (`semantic_core` × F) |
 
 ## CORE_HARDCODING_FINDINGS_REGISTER (@ HEAD)
 

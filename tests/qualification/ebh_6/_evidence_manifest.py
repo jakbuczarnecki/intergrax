@@ -11,14 +11,14 @@ from typing import Final
 EBH6_EVIDENCE_SUITE: Final[str] = "tests/qualification/ebh_6/"
 
 # Operator planning anchor — EBH-6 wave START_HEAD @ approved execution.
-EXPECTED_START_HEAD: Final[str] = "11b896f7a35007e14ba859211351ec144c7a083e"
+EXPECTED_START_HEAD: Final[str] = "24cd97299cb412c610b19c86b29f99ace707baff"
 
 EBH5_INDEPENDENT_AUDIT_SHA: Final[str] = "33ecf19cc020b112d9e586c87b49e819202f5d6d"
 CONFIG_X_HISTORICAL_PASS_SHA: Final[str] = "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb"
 EBH5_AUDIT_BASELINE_SHA: Final[str] = "83a376b3e1b312e2e4f88da548c99c328f3589f7"
 
 # Qualification artifact publication commit (P0–P6 tree); HEAD may advance for doc-only SHA ledger updates.
-EBH6_PUBLICATION_SHA: Final[str] = "129eee82dff33fd4d815643387a10fa2d56058bf"
+EBH6_PUBLICATION_SHA: Final[str] = "b313835d7cf035b503eea56958b92eebfb43f997"
 
 
 @lru_cache(maxsize=1)

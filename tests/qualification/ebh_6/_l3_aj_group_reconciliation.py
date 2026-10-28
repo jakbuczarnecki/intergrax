@@ -79,7 +79,10 @@ _W5_SINK = (
     "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py"
     "::test_production_composition_creates_bounded_sink"
 )
-_LIFECYCLE = "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py"
+_LIFECYCLE = (
+    "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py"
+    "::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+)
 _REGISTER_SSOT = "tests/qualification/ebh_6/_findings_register.py"
 
 

@@ -66,17 +66,30 @@ def test_aj_evidence_required_honest_not_zero() -> None:
     from tests.qualification.ebh_6._l3_aj_group_reconciliation import count_evidence_required_groups
     from tests.qualification.ebh_6._l3_reachability_evidence import count_l3_aj_outcomes
 
-    assert count_evidence_required_groups() == 0
+    ev_groups = count_evidence_required_groups()
+    assert ev_groups >= 100, ev_groups
     counts = count_l3_aj_outcomes()
-    assert counts.get("EVIDENCE_REQUIRED", 0) == 0, counts
+    assert counts.get("EVIDENCE_REQUIRED", 0) >= 100, counts
     assert counts.get("FINDING", 0) >= 1, counts
 
 
 def test_layer_register_not_false_resolved() -> None:
+    from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome, aj_group_by_layer_class
+    from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
+
     layer_rows = [row for row in all_hardcoding_findings() if row.finding_id.startswith("EBH6-LAYER-")]
     assert len(layer_rows) == 16
     for row in layer_rows:
-        assert row.status == FindingStatus.CANDIDATE_RESOLVED, row.finding_id
+        layer = row.layer
+        layer_ev = any(
+            aj_group_by_layer_class()[(layer, aj.detection_class)].outcome == AjControlOutcome.EVIDENCE_REQUIRED
+            for aj in layer_aj_applicability(layer)
+            if aj.applicable
+        )
+        if layer_ev:
+            assert row.status == FindingStatus.L9_EVIDENCE_SUBMITTED, row.finding_id
+        else:
+            assert row.status == FindingStatus.CANDIDATE_RESOLVED, row.finding_id
         assert "_l3_reachability_evidence.py" in row.location
 
 
