@@ -2,25 +2,25 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **P03 INTEGRITY REMEDIATION — PARTIAL / EXACT EVIDENCE BLOCKERS** (109 × `EVIDENCE_REQUIRED`; not CLOSED) |
-| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
-| **IMPLEMENTATION_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
-| **TEST_EXECUTION_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
+| **Disposition** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** (`EV_GROUPS=0`; **OD-EBH6-Q2D2 OPEN**) |
+| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
+| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
 | Criterion | Status |
 | --- | --- |
 | CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
-| Layer L9 attestation (16) | **L9_EVIDENCE_SUBMITTED** — **B2 inventory+L3 verified**; **not** auto-RESOLVED |
-| A–J applicable pairs / gap groups @ B2 HEAD | **133** pairs / **109** `EVIDENCE_REQUIRED` groups |
-| EBH-6 B2 pytest (L1+L2) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-b2/pytest.log` |
+| Layer L9 attestation (16) | **CANDIDATE-RESOLVED** — B5 A–J controls reconciled; **not** independent RESOLVED |
+| A–J applicable pairs / gap groups @ B5 HEAD | **133** pairs / **0** `EVIDENCE_REQUIRED` groups |
+| EBH-6 B5 pytest (L3 consolidated) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-final-evidence/pytest.log` |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
 | Architecture-family matrix | **PASS** (23 rows) |
 | EBH-6 B1 pytest subset | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-b1/pytest.log` |
-| Independent exact-SHA audit | **NOT READY** — B5 zero gap groups + B3 §3.B gate before B6 |
+| Independent exact-SHA audit | **READY FOR B6** — implementer mandatory gaps **0**; **OD-EBH6-Q2D2** remains operator OPEN |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / B7)** |
 | EBH-5 parent closure | **CLOSED** @ **OD-EBH5-08 APPROVED 2026-10-28** |

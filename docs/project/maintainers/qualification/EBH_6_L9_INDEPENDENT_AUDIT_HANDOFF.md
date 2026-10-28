@@ -4,11 +4,11 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **P03 INTEGRITY REMEDIATION — PARTIAL / EXACT EVIDENCE BLOCKERS** (`EV_GROUPS=109`; 23×PENDING independent disposition unchanged) |
-| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
-| **IMPLEMENTATION_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
-| **TEST_EXECUTION_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
-| **CERTIFICATION_HANDOFF_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
+| **Disposition** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** (`EV_GROUPS=0`; 23×PENDING independent disposition unchanged) |
+| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
+| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
 | **Historical handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 

@@ -3,19 +3,19 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **EBH-6 B2 COMPLETE — PARTIAL / EXACT BLOCKERS** |
+| **Status** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
-| **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
-| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** |
+| **B5 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
+| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)
 
 | Run | Result |
 | --- | --- |
-| Consolidated L4 bundle (scope reconciliation) | **57 passed** — `.tmp/session/ebh-6-scope-reconciliation/pytest.log` |
+| Consolidated L3 bundle (B5 final evidence) | **214+ passed** — `.tmp/session/ebh-6-final-evidence/pytest.log` |
 
 ## Mandatory blockers
 
@@ -26,7 +26,7 @@
 
 ## L9 evidence (implementer)
 
-- **16/16** layers: B2 closed-world census (`_closed_world_discovery.py`) + **49** L3 rows — **`L9_EVIDENCE_SUBMITTED`**
+- **16/16** layers: B5 A–J class gates + L3 annex — **`CANDIDATE-RESOLVED`**
 - **23/23** families: `_family_l9_evidence.py` + catalog overlay; **independent disposition 23 × PENDING**
 
 ## Artifact index

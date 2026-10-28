@@ -5,21 +5,21 @@
 | **Purpose** | Current-HEAD rollup per [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.7 |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` — **HISTORICAL** |
-| **P03 EXPECTED_START_HEAD** | `24cd97299cb412c610b19c86b29f99ace707baff` |
-| **IMPLEMENTATION_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
-| **TEST_EXECUTION_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
-| **CERTIFICATION_HANDOFF_SHA** | `1539c886ddd63f551b62352ad97b182569eb8444` |
+| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
+| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
 | **Historical P03 handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
-| **P03 integrity IMPLEMENTATION** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` — **HISTORICAL** |
-| **Disposition** | **P03 INTEGRITY REMEDIATION — PARTIAL / EXACT EVIDENCE BLOCKERS** (`EV_GROUPS=109`; Q2-D2 FINDING / OD-EBH6-Q2D2 OPEN) |
+| **P03 integrity IMPLEMENTATION** | `1539c886ddd63f551b62352ad97b182569eb8444` — **HISTORICAL** |
+| **Disposition** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** (`EV_GROUPS=0`; **OD-EBH6-Q2D2 OPEN** on `semantic_core` × F) |
 
 ## Mandatory audit layers (roadmap §3.0.8)
 
 16 layers inventoried @ HEAD via [`tests/qualification/ebh_6/_closed_world_discovery.py`](../../../tests/qualification/ebh_6/_closed_world_discovery.py) and [`EBH_6_ENTERPRISE_SURFACE_INVENTORY.md`](EBH_6_ENTERPRISE_SURFACE_INVENTORY.md).
 
-Register rows **`EBH6-LAYER-01..16`**: status **`L9_EVIDENCE_SUBMITTED`** (≥1 mandatory A–J gap per layer — not CANDIDATE-RESOLVED).
+Register rows **`EBH6-LAYER-01..16`**: status **`CANDIDATE-RESOLVED`** (all applicable A–J controls evidenced @ B5 — Protocol 03 acceptance pending).
 
 L3 per-mechanism annex: [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) (**49** mechanisms — B2 graph bootstrap + hosting path correction).
 
@@ -27,14 +27,14 @@ Grouped A–J adjudication: [`_l3_aj_group_reconciliation.py`](../../../tests/qu
 
 ## A–J obligation groups (@ IMPLEMENTATION_SHA)
 
-Mechanical census @ **P03 integrity remediation** (`tests/qualification/ebh_6/` — `.tmp/session/ebh-6-evidence-integrity/pytest.log`):
+Mechanical census @ **B5 final evidence** (`tests/qualification/ebh_6/` — `.tmp/session/ebh-6-final-evidence/pytest.log`):
 
 | Outcome | Groups (133 applicable pairs) |
 | --- | ---: |
-| EVIDENCE_REQUIRED | **109** |
-| PARTIAL_CANDIDATE | **22** |
-| PASS_CANDIDATE | **1** |
-| FINDING | **1** (`semantic_core` × F) |
+| EVIDENCE_REQUIRED | **0** |
+| PARTIAL_CANDIDATE | **131** |
+| PASS_CANDIDATE | **1** (`execution` × B — EE-A1) |
+| FINDING | **1** (`semantic_core` × F — Q2-D2 / OD-EBH6-Q2D2 OPEN) |
 
 ## CORE_HARDCODING_FINDINGS_REGISTER (@ HEAD)
 
@@ -43,7 +43,7 @@ Mechanical census @ **P03 integrity remediation** (`tests/qualification/ebh_6/` 
 | Total rows | **57** |
 | unclassified (inventory-style) | **0** (`test_ebh6_findings_unclassified_zero`) |
 | PROHIBITED unresolved (frozen scope) | **0** (`test_ebh6_prohibited_unresolved_zero`) |
-| Layer L9 rows | **16 × L9_EVIDENCE_SUBMITTED** |
+| Layer L9 rows | **16 × CANDIDATE-RESOLVED** |
 | Tracked findings | Q2-D2 **RATIFIED**; BND-COMPAT-R3 **RATIFIED** (lab-only) |
 
 SSOT: [`_findings_register.py`](../../../tests/qualification/ebh_6/_findings_register.py) · narrative: [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md).
