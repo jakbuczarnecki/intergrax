@@ -2,9 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| **IMPLEMENTATION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
 | **Mechanical SSOT** | [`tests/qualification/ebh_6/_findings_register.py`](../../../tests/qualification/ebh_6/_findings_register.py) |
 | **L9 layer annex** | [`tests/qualification/ebh_6/_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py) |
+| **L3 reachability annex** | [`tests/qualification/ebh_6/_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) |
 | **Schema authority** | [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.2 |
 
 ## Mechanical exit (@ qualification SHA)
@@ -13,7 +14,7 @@
 | --- | --- |
 | `unclassified_findings` (inventory-style) | **0** |
 | In-scope `PROHIBITED-*` unresolved | **0** |
-| Layer A–J L9 attestation (16 layers) | **RESOLVED @ `_layer_evidence.py`** — independent Protocol 03 still required |
+| Layer A–J L9 attestation (16 layers) | **`L9_EVIDENCE_SUBMITTED`** @ `_l3_reachability_evidence.py` — independent Protocol 03 re-audit required |
 
 ## Finding population (closed-world)
 
@@ -21,7 +22,7 @@
 | --- | --- | --- |
 | Tracked architecture debts | 2 | Q2-D2 (RATIFIED ADR track), BND-COMPAT-R3 (lab-only) |
 | VBN inventory replay | 1 | EBH-5 inventory @ HEAD |
-| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — **RESOLVED** with closed-world path inventory + A–J matrix |
+| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — **`L9_EVIDENCE_SUBMITTED`** + L3 mechanism annex |
 | SQLite annex @ HEAD | 38 | `EBH6-SQLITE-*` — mapped from EBH-5 annex |
 | **Total** | **57** | Full rows in Python SSOT only |
 
@@ -29,7 +30,7 @@
 
 | finding_id | layer | status | evidence |
 | --- | --- | --- | --- |
-| EBH6-LAYER-01..16 | §3.0.8 layers | **RESOLVED** | `_layer_evidence.py` — path inventory, SYS-INV refs, L3 narrative, gate refs |
+| EBH6-LAYER-01..16 | §3.0.8 layers | **L9_EVIDENCE_SUBMITTED** | `_l3_reachability_evidence.py` — entrypoint, call_chain, A–J per mechanism |
 
 Spot-check samples **do not** prove global absence of violations — closed-world inventory + mechanical gates only.
 
@@ -40,7 +41,7 @@ Spot-check samples **do not** prove global absence of violations — closed-worl
 | EBH6-DEBT-Q2-D2 | F | REQUIRES ARCHITECTURE DECISION | RATIFIED |
 | EBH6-DEBT-BND-COMPAT-R3 | H | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RATIFIED |
 | EBH6-VBN-INVENTORY-REPLAY | I | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RESOLVED |
-| EBH6-LAYER-07 (example) | G | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RESOLVED |
+| EBH6-LAYER-07 (example) | G | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | L9_EVIDENCE_SUBMITTED |
 
 ## Reuse (by reference)
 

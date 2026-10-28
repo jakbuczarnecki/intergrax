@@ -4,10 +4,10 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **EBH-6 — FINAL L9 EVIDENCE READY FOR INDEPENDENT CERTIFICATION** |
+| **Disposition** | **EBH-6 — PROTOCOL 03 REJECTION REMEDIATED / READY FOR RE-AUDIT** |
 | **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **CERTIFICATION_HANDOFF_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
-| **TEST_EXECUTION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **CERTIFICATION_HANDOFF_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
 ## Commands @ CERTIFICATION_HANDOFF_SHA
@@ -15,19 +15,20 @@
 ```powershell
 git checkout development
 git rev-parse HEAD
-New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-l9
-uv run pytest tests/qualification/ebh_6/ tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-l9/pytest.log
+New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-p03-remediation
+uv run pytest tests/qualification/ebh_6/ tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-p03-remediation/pytest.log
 ```
 
 ## Handoff pack (B1–B5)
 
 1. [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md)
 2. [EBH_6_ENTERPRISE_SURFACE_INVENTORY.md](EBH_6_ENTERPRISE_SURFACE_INVENTORY.md) + `_closed_world_discovery.py`
-3. [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md) + `_layer_evidence.py`
+3. [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md) + `_layer_evidence.py` + `_l3_reachability_evidence.py`
 4. [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md)
 5. [EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md](EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md)
-6. L4 log: `.tmp/session/ebh-6-l9/pytest.log`
+6. L4 log: `.tmp/session/ebh-6-p03-remediation/pytest.log`
 7. [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md)
+8. [EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md](EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md)
 
 ## Mechanical exit §3.0.8 (verify)
 
@@ -38,7 +39,7 @@ uv run pytest tests/qualification/ebh_6/ tests/qualification/ebh_5/test_ebh_5_me
 | CONFIG-X mapped | 54/54 |
 | SQLite annex | 38 @ HEAD |
 | Family matrix | 23 rows; **independent 23 × PENDING** |
-| Layer L9 | **16 RESOLVED** with `_layer_evidence.py` annex |
+| Layer L9 | **16 × L9_EVIDENCE_SUBMITTED** + `_l3_reachability_evidence.py` per-mechanism annex |
 
 ## Limitations (explicit)
 

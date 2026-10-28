@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **EBH-6 — FINAL L9 EVIDENCE READY FOR INDEPENDENT CERTIFICATION** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
-| **IMPLEMENTATION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
-| **TEST_EXECUTION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
-| **CERTIFICATION_HANDOFF_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **Status** | **EBH-6 — PROTOCOL 03 REJECTION REMEDIATED / READY FOR RE-AUDIT** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
+| **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| **CERTIFICATION_HANDOFF_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
 | **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
@@ -14,26 +14,27 @@
 
 | Run | Result |
 | --- | --- |
-| Consolidated L4 bundle (plan L9-E) | **44 passed** — `.tmp/session/ebh-6-l9/pytest.log` |
+| Consolidated L4 bundle (P03 remediation) | **52 passed** — `.tmp/session/ebh-6-p03-remediation/pytest.log` |
 
 ## Mandatory blockers
 
 - **OD-EBH6-01** OPEN — wave / `production delta` (roadmap §3.0.8)
 - **OD-EBH6-08** OPEN — parent closure forbidden until L9 PASS
-- **L9 / Protocol 03** — no pass record (**B-L9-5 not executed**)
+- **L9 / Protocol 03** — **READY FOR RE-AUDIT** @ CERTIFICATION_HANDOFF_SHA (prior reject remediated — not PASS)
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution only
 
 ## L9 evidence (implementer)
 
-- **16/16** layers: `_layer_evidence.py` + RESOLVED `EBH6-LAYER-*` register rows
-- **23/23** families: `implementer_proposed_disposition` populated; **independent disposition 23 × PENDING**
+- **16/16** layers: `_l3_reachability_evidence.py` + **`L9_EVIDENCE_SUBMITTED`** `EBH6-LAYER-*` rows
+- **23/23** families: `_family_l9_evidence.py` + catalog overlay; **independent disposition 23 × PENDING**
 
 ## Artifact index
 
 | Artifact | Location |
 | --- | --- |
 | L9 plan | [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) |
-| Layer annex | [`tests/qualification/ebh_6/_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py) |
+| P03 remediation | [EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md](EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md) |
+| L3 annex | [`tests/qualification/ebh_6/_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) |
 | Pre-cert findings | [EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md) |
 | Operator decisions | [EBH_6_OPERATOR_DECISION_REGISTER.md](EBH_6_OPERATOR_DECISION_REGISTER.md) |
 | Freshness ledger | [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md) |
