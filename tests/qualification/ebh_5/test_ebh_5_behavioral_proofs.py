@@ -17,7 +17,12 @@ from intergrax.contracts.control_plane_mutation import (
     evidence_from_request_and_decision,
 )
 from intergrax.contracts.event_delivery import ObservabilityExportPayload
-from intergrax.contracts.observability_export import ConfigurationError, ExporterKind, OtlpTransportPort
+from intergrax.contracts.observability_export import (
+    ConfigurationError,
+    ExporterKind,
+    OtlpTransportError,
+    OtlpTransportPort,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations._shared.conformance import assert_key_value_cache
 from intergrax.integrations.contracts.base import IntegrationCategory, UnknownIntegrationError
@@ -29,6 +34,8 @@ from intergrax.integrations.contracts.existing_capability_configuration import (
     project_control_plane_mutation_request,
 )
 from intergrax.integrations.examples.custom_memory_kv import MANIFEST, CustomMemoryKvPlugin
+from intergrax.integrations.examples.custom_memory_kv.adapter import InProcessKeyValueCache
+from intergrax.integrations.examples.custom_memory_kv.integration import CustomMemoryKvIntegration
 from intergrax.integrations.existing_capability_configuration_service import (
     ExistingCapabilityConfigurationRealizationService,
 )
@@ -379,3 +386,158 @@ def test_ebh5_behavioral_kv_manifest_slug_alternate() -> None:
     )
     cache = resolve_from_profile(profile, IntegrationCategory.KEY_VALUE_CACHE)
     assert_key_value_cache(cache)
+
+
+class _Ebh5FailingOtlpTransport(OtlpTransportPort):
+    def export(self, payload: ObservabilityExportPayload) -> None:
+        _ = payload
+        raise OtlpTransportError("injected active transport export fault")
+
+    def flush(self) -> None:
+        return
+
+    def close(self) -> None:
+        return
+
+
+@pytest.mark.asyncio
+async def test_ebh5_rpl_f_otlp_active_transport_export_failure_propagates() -> None:
+    env = _ebh5_bounded_otlp_env()
+    factory = ObservabilityExportSinkFactory(otlp_transport=_Ebh5FailingOtlpTransport())
+    wiring = resolve_application_runtime_event_delivery_wiring(
+        env,
+        export_sink_factory=factory,
+    )
+    assert isinstance(wiring.event_export_sink, OtlpEventExportSink)
+    payload = ObservabilityExportPayload(event_id="ebh5-rpl-f-otlp-fault", kind="runtime.event")
+    with pytest.raises(OtlpTransportError, match="injected active transport"):
+        await wiring.event_export_sink.export(payload)
+
+
+class _Ebh5FailingActiveTokenizer(SimpleTokenizer):
+    id = "failing-active"
+
+    def count_tokens(self, *, text: str) -> int:
+        _ = text
+        raise RuntimeError("injected active tokenizer fault")
+
+
+def test_ebh5_rpl_f_tokenizer_active_provider_tokenization_failure() -> None:
+    registry = TokenizerRegistry(default_tokenizer_id="failing-active")
+    registry.register(_Ebh5FailingActiveTokenizer())
+    manager = TokenizerManager(
+        engine=create_default_tokenizer_engine(registry=registry),
+    )
+    with pytest.raises(RuntimeError, match="injected active tokenizer"):
+        manager.count_tokens("Intergrax RPL-F proof")
+
+
+def test_ebh5_rpl_f_relational_active_store_execute_failure(tmp_path: Path) -> None:
+    clear_catalog()
+    register_sqlite_integration()
+    profile = IntegrationProfile(
+        relational_store=SQLITE,
+        options={SQLITE.slug: {"data_dir": str(tmp_path)}},
+    )
+    integration = resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)
+    assert isinstance(integration, RelationalStoreIntegrationContract)
+    integration.connect()
+    with pytest.raises(Exception):
+        integration.execute("NOT VALID SQL FOR RPL-F INJECTION")
+
+
+class _Ebh5InjectedRealizationFailureStrategy(SQLiteRelationalStoreConfigurationRealizationStrategy):
+    def can_realize(
+        self,
+        request: ExistingCapabilityConfigurationRealizationRequest,
+        existing_target: ExistingCapabilityIntegrationTarget,
+    ) -> bool:
+        _ = request, existing_target
+        return True
+
+    def realize(
+        self,
+        request: ExistingCapabilityConfigurationRealizationRequest,
+        existing_target: ExistingCapabilityIntegrationTarget,
+    ):
+        _ = request, existing_target
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.REALIZATION_FAILED,
+            detail="injected active strategy fault",
+        )
+
+
+def test_ebh5_rpl_f_int_config_active_strategy_realization_failure() -> None:
+    from intergrax.contracts.agent_run import RequestIdentity
+    from intergrax.contracts.agent_run_enums import PrincipalType
+    from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRisk
+    from intergrax.integrations.providers.relational_store.sqlite.configuration_realization import (
+        SQLiteRelationalStoreConfigurationPayload,
+    )
+
+    payload = SQLiteRelationalStoreConfigurationPayload(
+        data_dir=Path("/data/tenant/store"),
+        relational_db=Path("/data/tenant/store/custom.db"),
+    )
+    request = ExistingCapabilityConfigurationRealizationRequest(
+        request_id="ebh5-rpl-f-int-config",
+        tenant_id="tenant-a",
+        principal=RequestIdentity(
+            tenant_id="tenant-a",
+            user_id="user-1",
+            principal_type=PrincipalType.USER,
+            auth_subject="user-1",
+        ),
+        integration_category=IntegrationCategory.RELATIONAL_STORE,
+        provider_id=SQLITE_RELATIONAL_STORE_PROVIDER_ID,
+        resource_scope="scope-rpl-f",
+        configuration=payload,
+        configuration_fingerprint=payload.configuration_fingerprint,
+        current_revision="rev-1",
+        risk_classification=ControlPlaneMutationRisk.LOW,
+    )
+
+    class _StaticResolver:
+        def resolve_existing_integration(
+            self,
+            req: ExistingCapabilityConfigurationRealizationRequest,
+        ) -> ExistingCapabilityIntegrationTarget:
+            return _ebh5_int_config_target(req)
+
+    service = ExistingCapabilityConfigurationRealizationService(
+        strategies=(_Ebh5InjectedRealizationFailureStrategy(),),
+        existing_integration_resolver=_StaticResolver(),
+    )
+    governance = project_control_plane_mutation_request(request)
+    digest = control_plane_mutation_request_digest(governance)
+    decision = PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
+    evidence = evidence_from_request_and_decision(
+        governance,
+        decision=decision,
+        request_digest=digest,
+    )
+    with pytest.raises(ExistingCapabilityConfigurationRealizationError) as exc_info:
+        service.realize_admitted(request, authorization_evidence=evidence)
+    assert exc_info.value.reason == ExistingCapabilityConfigurationRealizationFailureReason.REALIZATION_FAILED
+
+
+class _Ebh5FaultInjectedKvClient(InProcessKeyValueCache):
+    def set(
+        self,
+        tenant_id: str,
+        key: str,
+        value: bytes,
+        *,
+        ttl_seconds: int | None = None,
+    ) -> None:
+        _ = tenant_id, key, value, ttl_seconds
+        raise RuntimeError("injected active kv provider fault")
+
+
+def test_ebh5_rpl_f_kv_active_plugin_operation_failure() -> None:
+    integration = CustomMemoryKvIntegration.from_client(_Ebh5FaultInjectedKvClient())
+    profile = IntegrationProfile(key_value_cache=integration)
+    cache = resolve_from_profile(profile, IntegrationCategory.KEY_VALUE_CACHE)
+    assert_key_value_cache(cache)
+    with pytest.raises(RuntimeError, match="injected active kv"):
+        cache.set("tenant-a", "key", b"value")

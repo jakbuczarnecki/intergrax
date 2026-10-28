@@ -20,42 +20,27 @@ class RplFDisposition:
     normative_na_rationale: str = ""
 
 
+_RPL_F_ACTIVE_PROOF_NODES: Final[dict[str, tuple[str, ...]]] = {
+    "observability.otlp_transport": (
+        f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_otlp_active_transport_export_failure_propagates",
+    ),
+    "tokenizer.selection": (f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_tokenizer_active_provider_tokenization_failure",),
+    "persistence.relational_sqlite_lab": (
+        f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_relational_active_store_execute_failure",
+    ),
+    "int_config.configure_existing": (
+        f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_int_config_active_strategy_realization_failure",
+    ),
+    "integration.key_value_cache": (f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_kv_active_plugin_operation_failure",),
+}
+
 _RPL_F_BY_CONCERN: Final[dict[str, RplFDisposition]] = {
-    "observability.otlp_transport": RplFDisposition(
-        concern_id="observability.otlp_transport",
+    concern_id: RplFDisposition(
+        concern_id=concern_id,
         gate=RplGateStatus.PASS,
-        proof_pytest_nodes=(
-            f"{_BEHAVIORAL_MODULE}::test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration",
-            f"{_BEHAVIORAL_MODULE}::test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed",
-        ),
-        normative_na_rationale="",
-    ),
-    "tokenizer.selection": RplFDisposition(
-        concern_id="tokenizer.selection",
-        gate=RplGateStatus.PASS,
-        proof_pytest_nodes=(
-            f"{_BEHAVIORAL_MODULE}::test_ebh5_behavioral_tokenizer_selection_negative_unknown_default",
-        ),
-    ),
-    "persistence.relational_sqlite_lab": RplFDisposition(
-        concern_id="persistence.relational_sqlite_lab",
-        gate=RplGateStatus.PASS,
-        proof_pytest_nodes=(
-            f"{_BEHAVIORAL_MODULE}::test_ebh5_behavioral_relational_store_negative_unregistered_provider_fail_closed",
-        ),
-    ),
-    "int_config.configure_existing": RplFDisposition(
-        concern_id="int_config.configure_existing",
-        gate=RplGateStatus.PASS,
-        proof_pytest_nodes=(
-            f"{_BEHAVIORAL_MODULE}::test_ebh5_behavioral_int_config_negative_unsupported_strategy_fail_closed",
-        ),
-    ),
-    "integration.key_value_cache": RplFDisposition(
-        concern_id="integration.key_value_cache",
-        gate=RplGateStatus.PASS,
-        proof_pytest_nodes=(f"{_BEHAVIORAL_MODULE}::test_ebh5_behavioral_kv_negative_unregistered_plugin_fail_closed",),
-    ),
+        proof_pytest_nodes=_RPL_F_ACTIVE_PROOF_NODES[concern_id],
+    )
+    for concern_id in _RPL_F_ACTIVE_PROOF_NODES
 }
 
 
