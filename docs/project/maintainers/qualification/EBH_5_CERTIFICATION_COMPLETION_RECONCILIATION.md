@@ -2,14 +2,14 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-5 ? FINAL RPL-F EVIDENCE COMPLETE / READY FOR INDEPENDENT CLOSURE AUDIT** |
+| **Disposition** | **EBH-5 ? SQLITE RPL-F FINAL CORRECTION READY FOR INDEPENDENT ACCEPTANCE** |
 | **Parent CLOSED** | **NO** |
-| **CERTIFICATION_HANDOFF_SHA** | `c723934998e2a3baae7299b472995f9ba96bd8bb` |
+| **CERTIFICATION_HANDOFF_SHA** | `33ecf19cc020b112d9e586c87b49e819202f5d6d` |
 | **Acceptance candidate** | [`EBH_5_FINAL_PROTOCOL_03_ACCEPTANCE_CANDIDATE.md`](EBH_5_FINAL_PROTOCOL_03_ACCEPTANCE_CANDIDATE.md) |
 
 ## Verification @ TEST_EXECUTION_SHA
 
-**EBH-5:** **67 passed, 1 skipped** @ `c723934998e2a3baae7299b472995f9ba96bd8bb` ? log `.tmp/session/ebh5-rpl-f-final/`
+**EBH-5:** **67 passed, 1 skipped** @ `33ecf19cc020b112d9e586c87b49e819202f5d6d` ? log `.tmp/session/ebh5-sqlite-rpl-f-correction/pytest-ebh5-postcommit.log` (skip: `integration.graph` module absent)
 
 ## Operator gates
 

@@ -4,7 +4,7 @@
 | --- | --- |
 | **Parent** | EBH-5 — Replaceability & Vendor/Backend Certification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit |
-| **CERTIFICATION_HANDOFF_SHA** | Publication commit documented in [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md) |
+| **CERTIFICATION_HANDOFF_SHA** | `33ecf19cc020b112d9e586c87b49e819202f5d6d` (publication: [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md)) |
 | **Wave containment** | `git merge-base --is-ancestor 83a376b3e1b312e2e4f88da548c99c328f3589f7 HEAD` must succeed |
 
 ## Historical SHA (not audit entry)
@@ -51,6 +51,7 @@ Registry SSOT: [`_behavioral_proof_registry.py`](../../../tests/qualification/eb
 
 - **51** matrix rows **NOT YET QUALIFIED** — deferred to EBH-7 scope; not false PASS.
 - **RPL-F** per-concern **PASS** with resolvable failure/recovery pytest nodes — see `_rpl_f_evidence_registry.py`.
+- **SQLite RPL-F (OD-EBH5-07 corrective):** active provider `sqlite`; `RelationalStoreIntegrationContract` via sanctioned registry + `IntegrationProfile`; connect + control DML; deterministic operational fault by closing active `sqlite3.Connection`; valid SQL `execute` raises `sqlite3.ProgrammingError` (`closed database`); no silent fallback to another provider; recovery not claimed; pytest `test_ebh5_rpl_f_relational_active_store_operational_failure_after_connect`.
 - **OTLP asymmetry:** empty endpoint + `ExporterKind.OTLP` disables transport without `ConfigurationError`; DISTRIBUTED_OTLP misconfig raises — see [`EBH_5_PROTOCOL03_FINAL_CORRECTION.md`](EBH_5_PROTOCOL03_FINAL_CORRECTION.md).
 - **Reachability:** `integration.graph` module absent → 1 skipped test.
 - **CONFIG-X** PASS @ `fac9a43f…` preserved; current-HEAD obligations additive only.
