@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **EBH-6 — SCOPE RECONCILED / READY FOR FINAL INDEPENDENT AUDIT** |
+| **Status** | **EBH-6 — P03 INTEGRITY CORRECTED / PARTIAL — EXACT BLOCKERS REMAIN** |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
 | **EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
 | **IMPLEMENTATION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
@@ -17,12 +17,11 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 
 352 prior `EVIDENCE_REQUIRED` cells reconciled via **one row per (layer, applicable class)** — not 352 micro-iterations.
 
-| Post-reconciliation outcome | Count (480 cells) |
-| --- | ---: |
-| PASS_CANDIDATE (group bundle) | 397 |
-| FINDING (unchanged) | 2 |
-| N/A — WITH EVIDENCE | 81 |
-| EVIDENCE_REQUIRED | **0** |
+| **PASS_CANDIDATE** (udowodnione — bezpośredni gate) | 3 |
+| **PARTIAL_CANDIDATE** (częściowo) | 52 |
+| **EVIDENCE_REQUIRED** (brakujący dowód @ HEAD) | 342 |
+| **FINDING** | 2 |
+| **N/A — WITH EVIDENCE** | 81 |
 
 **Positive proofs (group bundles):** register `unclassified=0`, `prohibited unresolved=0`; CONFIG-X 54/54 mapping; tier boundary gate; sanctioned roots; layer gate tests from `_layer_evidence.layer_gate_test_ids`; behavioral gates cited per mechanism `L3_gate=`.
 

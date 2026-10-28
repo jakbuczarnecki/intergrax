@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Grouped A–J evidence reconciliation — SCOPE-01 (no per-cell micro-iterations)."""
+"""Grouped A–J evidence reconciliation — P03-01 (no unconditional PASS promotion)."""
 
 from __future__ import annotations
 
@@ -10,11 +10,12 @@ from functools import lru_cache
 from typing import Final
 
 from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
-from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability, layer_gate_test_ids
+from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
 
 
 class AjControlOutcome(StrEnum):
     PASS_CANDIDATE = "PASS_CANDIDATE"
+    PARTIAL_CANDIDATE = "PARTIAL_CANDIDATE"
     EVIDENCE_REQUIRED = "EVIDENCE_REQUIRED"
     FINDING = "FINDING"
     NA_WITH_EVIDENCE = "N/A — WITH EVIDENCE"
@@ -29,9 +30,9 @@ _REG_UNCLASS = (
 _REG_DEBT = (
     "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified"
 )
-_TIER0 = (
+_BND_GATE = (
     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
-    "::test_tier0_must_not_import_agents_or_applications"
+    "::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
 )
 _CFGX = (
     "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py"
@@ -59,7 +60,7 @@ _W5_SINK = (
     "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py"
     "::test_production_composition_creates_bounded_sink"
 )
-_VBN_AUDIT = "docs/project/maintainers/qualification/EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md"
+_LIFECYCLE = "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py"
 _REGISTER_SSOT = "tests/qualification/ebh_6/_findings_register.py"
 
 
@@ -72,7 +73,8 @@ class AjGroupReconciliation:
     invariant_ref: str
     outcome: AjControlOutcome
     evidence_refs: tuple[str, ...]
-    scope_note: str
+    invariant_proves: str
+    scope_limitation: str
     mandatory_blocker: str | None = None
 
 
@@ -95,64 +97,170 @@ _LAYER_OWNERS: Final[dict[str, str]] = {
     "background_workers_infra_adapters": "Worker / queue adapters",
 }
 
+_ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]]] = {
+    ("execution", "B"): (
+        AjControlOutcome.PASS_CANDIDATE,
+        "EE-A1 P0 inventory: zero production execution bypass paths (static scan).",
+        (_EE_A1,),
+        "EE-A1 certified surface — not whole-platform class-B census.",
+    ),
+    ("execution", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "L3 execution entrypoints + EE-A1 bypass inventory on execution layer samples.",
+        (_EE_A1, _SANCTIONED),
+        "Sample L3 mechanisms — not exhaustive reachability proof.",
+    ),
+    ("semantic_core", "B"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "EE-A1 bypass inventory intersecting nexus/core execution surfaces.",
+        (_EE_A1,),
+        "Execution bypass scan — not all semantic_core vendor literals.",
+    ),
+    ("semantic_core", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "L3 nexus/execution call chains + sanctioned roots registry present.",
+        (_SANCTIONED,),
+        "Mechanism-level L3 index — not independent reachability re-run.",
+    ),
+    ("composition_roots", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "TRACE-X sanctioned production composition sites registered non-empty.",
+        (_SANCTIONED,),
+        "Registry presence — not per-root wiring replay @ HEAD.",
+    ),
+    ("governance", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "NPSC42 H1: governance planes do not mint execution identity.",
+        (_GOV_H1,),
+        "NPSC42 frozen subset — not full GOV-X2 replay.",
+    ),
+    ("state_persistence", "E"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "SQLite annex paths accountable vs EBH-5 touchpoint registry.",
+        (_SQLITE,),
+        "Annex accountability — not all shadow-store class-E obligations.",
+    ),
+    ("state_persistence", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Persistence L3 chains + sqlite annex gate.",
+        (_SQLITE,),
+        "Annex + samples — not canonical store behavioral qual.",
+    ),
+    ("integrations", "J"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "RPL-G: CONFIG-X active blocker list empty @ HEAD.",
+        (_RPLG,),
+        "RPL-G slice — 51 NYQ matrix rows remain deferred.",
+    ),
+    ("observability_diagnostics", "G"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "W5-B2: production composition wires bounded observability sink.",
+        (_W5_SINK,),
+        "Single wiring scenario — not global OBS qualification.",
+    ),
+    ("agent_distribution", "B"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "HARDENING-3 contracts/runtime boundary + agent_distribution lifecycle gate.",
+        (_BND_GATE, _LIFECYCLE),
+        "Boundary/lifecycle subset — not all agents/ backend literals.",
+    ),
+    ("agent_distribution", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Agent distribution L3 mechanisms + lifecycle architecture gate.",
+        (_LIFECYCLE,),
+        "Integration gate — not full tier-2 agent census.",
+    ),
+    ("contracts", "F"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Register: Q2-D2 / debt rows ratified — not contract typing re-audit.",
+        (_REG_DEBT,),
+        "Register disposition — not FRZ-TYP behavioral proof.",
+    ),
+    ("semantic_core", "F"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Register ratified Q2-D2 on nexus typing seam (see EBH6-DEBT-Q2-D2).",
+        (_REG_DEBT,),
+        "Single tracked debt — not core-wide typing closure.",
+    ),
+    ("application_services", "F"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Register ratified debt disposition for tracked seams.",
+        (_REG_DEBT,),
+        "Register-only for class F on app _shared.",
+    ),
+    ("integrations", "A"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "EBH-5 vendor inventory completeness (qual mechanical) on integration scope.",
+        (_EBH5_INV, _REG_PROHIBITED),
+        "Inventory completeness — not live adapter construction audit.",
+    ),
+    ("integrations", "H"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "Integration bundle L3 call chains inventoried per mechanism records.",
+        (_EBH5_INV,),
+        "L3 annex index — not integration factory behavioral replay.",
+    ),
+    ("runtime_hosting", "C"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "CONFIG-X 54/54 concern mapping @ HEAD (structural reconciliation).",
+        (_CFGX,),
+        "Mapping completeness — not host profile materialization audit.",
+    ),
+    ("runtime_hosting", "I"): (
+        AjControlOutcome.PARTIAL_CANDIDATE,
+        "CONFIG-X mapping + EBH-5 inventory for hosting-related concerns.",
+        (_CFGX, _EBH5_INV),
+        "Reconciliation inventory — not install-time default proof.",
+    ),
+}
 
-def _class_evidence(layer: str, detection_class: str, layer_gates: tuple[str, ...]) -> tuple[str, ...]:
-    base = (_REG_PROHIBITED, _REG_UNCLASS, _REGISTER_SSOT, _VBN_AUDIT)
-    extra: tuple[str, ...] = ()
-    if detection_class == "H":
-        extra = (_SANCTIONED, _TIER0) + layer_gates
-    elif detection_class == "A":
-        extra = (_EBH5_INV,) if layer in ("integrations", "rag_memory", "tools_skills_capabilities") else ()
-    elif detection_class == "B":
-        extra = (_TIER0, _EE_A1) if layer in ("execution", "semantic_core") else (_TIER0,)
-    elif detection_class == "C":
-        extra = (_CFGX,)
-    elif detection_class == "D":
-        extra = (_EBH5_INV,) if layer in ("integrations", "application_services", "rag_memory") else ()
-    elif detection_class == "E":
-        extra = (_SQLITE,) if layer == "state_persistence" else ()
-    elif detection_class == "F":
-        extra = (_REG_DEBT,) if layer in ("semantic_core", "contracts", "application_services") else ()
-    elif detection_class == "G":
-        extra = (_W5_SINK,) if layer in ("observability_diagnostics", "execution", "governance") else ()
-    elif detection_class == "I":
-        if layer in ("integrations", "runtime_hosting", "background_workers_infra_adapters"):
-            extra = (_CFGX, _EBH5_INV)
-        else:
-            extra = (_CFGX,)
-    elif detection_class == "J":
-        extra = (_RPLG, "EBH_5_CROSS_LAYER_REPLACEABILITY_MATRIX — 51 NYQ deferred EBH-7")
-    refs = tuple(dict.fromkeys(base + extra + layer_gates))
-    return refs
+
+def _default_blocker(layer: str, detection_class: str) -> str:
+    return f"EBH6-P03-AJ-{layer}-{detection_class}"
+
+
+def _adjudicate_layer_class(layer: str, detection_class: str) -> AjGroupReconciliation:
+    owner = _LAYER_OWNERS[layer]
+    key = (layer, detection_class)
+    if key in _ADJUDICATION:
+        outcome, proves, refs, scope = _ADJUDICATION[key]
+        return AjGroupReconciliation(
+            f"AJG-{layer}-{detection_class}",
+            layer,
+            detection_class,
+            owner,
+            f"Roadmap §3.0.8 class {detection_class} @ {layer}",
+            outcome,
+            refs,
+            proves,
+            scope,
+            None,
+        )
+    register_only = (_REG_PROHIBITED, _REG_UNCLASS, _REGISTER_SSOT)
+    return AjGroupReconciliation(
+        f"AJG-{layer}-{detection_class}",
+        layer,
+        detection_class,
+        owner,
+        f"Roadmap §3.0.8 class {detection_class} @ {layer}",
+        AjControlOutcome.EVIDENCE_REQUIRED,
+        register_only,
+        (
+            "Register mechanical exit (unclassified=0, prohibited unresolved=0) "
+            f"does not prove class-{detection_class} behavioral invariant on production paths."
+        ),
+        "EBH-6 VBN slice — mandatory class-specific gate missing @ HEAD",
+        _default_blocker(layer, detection_class),
+    )
 
 
 def _build_group_table() -> dict[tuple[str, str], AjGroupReconciliation]:
     table: dict[tuple[str, str], AjGroupReconciliation] = {}
     for layer in EBH6_AUDIT_LAYERS:
-        gates = layer_gate_test_ids(layer)
-        owner = _LAYER_OWNERS[layer]
         for aj in layer_aj_applicability(layer):
             if not aj.applicable:
                 continue
-            dc = aj.detection_class
-            refs = _class_evidence(layer, dc, gates)
-            blocker = None
-            outcome = AjControlOutcome.PASS_CANDIDATE
-            if dc == "J" and layer in ("rag_memory", "tools_skills_capabilities"):
-                scope = "51 NYQ rows — partial replaceability evidence only"
-            else:
-                scope = "EBH-6 VBN mechanical slice — grouped closed-world + behavioral gate bundle"
-            table[(layer, dc)] = AjGroupReconciliation(
-                f"AJG-{layer}-{dc}",
-                layer,
-                dc,
-                owner,
-                f"Roadmap §3.0.8 class {dc} @ {layer}",
-                outcome,
-                refs,
-                scope,
-                blocker,
-            )
+            table[(layer, aj.detection_class)] = _adjudicate_layer_class(layer, aj.detection_class)
     return table
 
 
@@ -166,14 +274,32 @@ def format_group_evidence_ref(
     mechanism_id: str,
     primary_gate: str,
 ) -> str:
-    joined = " | ".join(group.evidence_refs[:4])
-    if len(group.evidence_refs) > 4:
-        joined += f" | +{len(group.evidence_refs) - 4} refs"
-    return f"group={group.group_id}; mechanism={mechanism_id}; L3_gate={primary_gate}; bundle=[{joined}]"
+    joined = " | ".join(group.evidence_refs[:5])
+    if len(group.evidence_refs) > 5:
+        joined += f" | +{len(group.evidence_refs) - 5} refs"
+    return (
+        f"group={group.group_id}; outcome={group.outcome.value}; "
+        f"proves={group.invariant_proves}; mechanism={mechanism_id}; "
+        f"L3_gate={primary_gate}; refs=[{joined}]"
+    )
+
+
+def summarize_aj_obligation_cells() -> dict[str, int]:
+    from tests.qualification.ebh_6._l3_reachability_evidence import all_l3_reachability_records
+
+    counts: dict[str, int] = {}
+    for rec in all_l3_reachability_records():
+        for ctrl in rec.aj_controls:
+            key = ctrl.outcome.value
+            counts[key] = counts.get(key, 0) + 1
+    return counts
 
 
 def assert_aj_group_reconciliation_complete() -> None:
     for layer in EBH6_AUDIT_LAYERS:
         for aj in layer_aj_applicability(layer):
             if aj.applicable:
-                assert (layer, aj.detection_class) in aj_group_by_layer_class(), layer
+                g = aj_group_by_layer_class()[(layer, aj.detection_class)]
+                assert g.invariant_proves.strip()
+                if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED:
+                    assert g.mandatory_blocker, g.group_id

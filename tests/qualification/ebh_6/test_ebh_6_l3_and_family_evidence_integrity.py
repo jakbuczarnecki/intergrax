@@ -57,17 +57,17 @@ def test_applicable_aj_not_auto_pass() -> None:
     for rec in all_l3_reachability_records():
         for ctrl in rec.aj_controls:
             assert ctrl.outcome.value not in _FORBIDDEN_AJ, rec.mechanism_id
-            if ctrl.outcome == AjControlOutcome.PASS_CANDIDATE:
+            if ctrl.outcome in (AjControlOutcome.PASS_CANDIDATE, AjControlOutcome.PARTIAL_CANDIDATE):
                 assert "group=AJG-" in ctrl.evidence_ref, rec.mechanism_id
-            if ctrl.outcome == AjControlOutcome.EVIDENCE_REQUIRED:
-                assert ctrl.evidence_ref.strip()
+                assert "proves=" in ctrl.evidence_ref, rec.mechanism_id
 
 
-def test_aj_evidence_required_reconciled_via_groups() -> None:
+def test_aj_evidence_required_honest_not_zero() -> None:
     from tests.qualification.ebh_6._l3_reachability_evidence import count_l3_aj_outcomes
 
     counts = count_l3_aj_outcomes()
-    assert counts.get("EVIDENCE_REQUIRED", 0) == 0, counts
+    assert counts.get("EVIDENCE_REQUIRED", 0) > 0, "P03-01 requires explicit missing-evidence cells"
+    assert counts.get("PASS_CANDIDATE", 0) < 100, counts
 
 
 def test_layer_register_not_false_resolved() -> None:

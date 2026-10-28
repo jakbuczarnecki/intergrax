@@ -70,14 +70,17 @@ def _aj_controls_for_mechanism(
                 AjControlResult(
                     aj.detection_class,
                     AjControlOutcome.EVIDENCE_REQUIRED,
-                    (f"{group.mandatory_blocker or group.group_id}: mechanism={mechanism_id}; entrypoint={entrypoint}"),
+                    (
+                        f"{group.mandatory_blocker}: {group.invariant_proves} "
+                        f"mechanism={mechanism_id}; entrypoint={entrypoint}"
+                    ),
                 ),
             )
         else:
             rows.append(
                 AjControlResult(
                     aj.detection_class,
-                    AjControlOutcome.PASS_CANDIDATE,
+                    group.outcome,
                     format_group_evidence_ref(group, mechanism_id, primary_gate),
                 ),
             )
@@ -142,7 +145,7 @@ _L3_MECHANISMS: Final[tuple[L3ReachabilityRecord, ...]] = (
         "Platform contracts tier",
         "HostProfile / IntegrationProfile contracts",
         "Application composition (_shared)",
-        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_tier0_must_not_import_agents_or_applications",
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
     ),
     _m(
         "L3-CTR-02",
@@ -581,7 +584,7 @@ _L3_MECHANISMS: Final[tuple[L3ReachabilityRecord, ...]] = (
         "Agent distribution tier",
         "Agent contract ports",
         "Application host roster",
-        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_tier0_must_not_import_agents_or_applications",
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
     ),
     _m(
         "L3-AGD-02",
@@ -808,5 +811,9 @@ def assert_l3_reachability_complete() -> None:
                 assert ctrl.evidence_ref.strip(), rec.mechanism_id
                 if ctrl.outcome == AjControlOutcome.NA_WITH_EVIDENCE:
                     assert ctrl.evidence_ref.startswith("N/A — WITH EVIDENCE:"), rec.mechanism_id
-                if ctrl.outcome == AjControlOutcome.PASS_CANDIDATE:
+                if ctrl.outcome in (
+                    AjControlOutcome.PASS_CANDIDATE,
+                    AjControlOutcome.PARTIAL_CANDIDATE,
+                ):
                     assert "group=AJG-" in ctrl.evidence_ref, f"{rec.mechanism_id}/{ctrl.detection_class}"
+                    assert "proves=" in ctrl.evidence_ref, rec.mechanism_id

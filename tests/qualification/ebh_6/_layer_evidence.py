@@ -356,7 +356,7 @@ def _gates(layer: str) -> tuple[str, ...]:
         "execution": ("tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py",),
         "agent_distribution": (
             "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
-            "::test_tier0_must_not_import_agents_or_applications",
+            "::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
         ),
     }
     return common + extra.get(layer, ())

@@ -80,7 +80,7 @@ _EBH6_FAMILY_CATALOG_BASE: tuple[ArchitectureFamilyRecertRow, ...] = (
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.CURRENT,
         "",
-        (_nid(_BND, "test_tier0_must_not_import_agents_or_applications"),),
+        (_nid(_BND, "test_hardening_3_contracts_do_not_import_runtime_except_allowlist"),),
         "P1",
         "No new PROVEN boundary violation on production path",
         FamilyIndependentDisposition.PENDING,

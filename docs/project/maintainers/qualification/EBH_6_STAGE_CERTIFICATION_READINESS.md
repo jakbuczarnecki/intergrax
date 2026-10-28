@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-6 — SCOPE RECONCILED / READY FOR FINAL INDEPENDENT AUDIT** — **not CLOSED** |
+| **Disposition** | **EBH-6 — P03 INTEGRITY CORRECTED / PARTIAL — EXACT BLOCKERS REMAIN** — **not CLOSED** |
 | **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** |
 | **EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
@@ -15,7 +15,7 @@
 | --- | --- |
 | CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
 | Layer L9 attestation (16) | **L9_EVIDENCE_SUBMITTED** + grouped A–J reconciliation |
-| A–J EVIDENCE_REQUIRED @ HEAD | **0** (SCOPE-01 group bundle) |
+| A–J EVIDENCE_REQUIRED @ HEAD | **342** (honest gaps — P03-01) |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
