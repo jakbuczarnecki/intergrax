@@ -6,7 +6,7 @@
 | --- | --- |
 | **Mode** | PLAN ONLY — no implementation authorized by this document |
 | **EXPECTED_START_HEAD** | `12a34692e0b5a8113a264d71ce5185dd609da5b9` |
-| **PLAN_PUBLICATION_SHA** | *(set in §10 after publication commit)* |
+| **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 
 ### Summary metrics (plan baseline @ EXPECTED_START_HEAD)
 
@@ -375,7 +375,7 @@ Update [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOF
 
 | Record | Value |
 | --- | --- |
-| **PLAN_PUBLICATION_SHA** | *(updated in follow-up publication commit)* |
+| **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Branch** | `development` |
 | **Post-approval implementation** | B1–B7 only after independent plan audit PASS; no production code or `_ADJUDICATION` changes from this commit alone |
 
