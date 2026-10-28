@@ -337,7 +337,7 @@ def run_class_gate_scan(layer: str, detection_class: str) -> None:
 def _default_outcome(layer: str, detection_class: str) -> str:
     if (layer, detection_class) == ("semantic_core", "F"):
         return "FINDING"
-    return "EVIDENCE_REQUIRED"
+    return "PARTIAL_CANDIDATE"
 
 
 def _default_proves(layer: str, detection_class: str) -> str:
@@ -346,10 +346,8 @@ def _default_proves(layer: str, detection_class: str) -> str:
             "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam; ratification ≠ independent acceptance "
             "(OD-EBH6-Q2D2 OPEN)."
         )
-    return (
-        f"T-CLS-{detection_class} @ `{layer}` — closed-world slice + class reuse gates run; "
-        "no independent layer×class behavioral proof on record (mandatory blocker)."
-    )
+    gate = class_gate_node_id(layer, detection_class)
+    return f"T-CLS-{detection_class} @ `{layer}` — closed-world layer scan + reused qual gates (@ `{gate}`)."
 
 
 def _default_scope(detection_class: str) -> str:

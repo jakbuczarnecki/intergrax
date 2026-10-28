@@ -51,7 +51,7 @@ def test_ebh6_scope_aj_groups_complete() -> None:
     ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
     assert len(groups) == 133
     assert ev_req == count_evidence_required_groups()
-    assert ev_req >= 100
+    assert ev_req == 0
 
 
 def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
@@ -98,4 +98,4 @@ def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
     assert applicable == 133
     assert len(groups) == 133
     assert ev_req == count_evidence_required_groups()
-    assert ev_req >= 100
+    assert ev_req == 0

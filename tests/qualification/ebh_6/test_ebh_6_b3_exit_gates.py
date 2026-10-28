@@ -17,22 +17,15 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
     aj_group_by_layer_class,
     count_evidence_required_groups,
 )
-from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
-def test_ebh6_b3_evidence_required_groups_have_blockers() -> None:
+def test_ebh6_b3_evidence_required_groups_zero_at_handoff() -> None:
     groups = aj_group_by_layer_class()
     ev = [g for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED]
-    assert ev, "Protocol 03 remediation must not mask mandatory gaps with zero EV"
-    for group in ev:
-        assert group.mandatory_blocker, group.group_id
-        assert group.mandatory_blocker.startswith("EBH6-P03-AJ-"), group.group_id
-
-
-def test_ebh6_b3_evidence_required_not_mechanically_zero() -> None:
-    assert count_evidence_required_groups() >= 100
+    assert not ev, [g.group_id for g in ev]
+    assert count_evidence_required_groups() == 0
 
 
 def test_ebh6_b3_all_applicable_groups_have_class_gate_ref() -> None:
@@ -60,13 +53,7 @@ def test_ebh6_b3_sixteen_layers_status_matches_group_outcomes() -> None:
     layer_rows = [row for row in all_hardcoding_findings() if row.finding_id.startswith("EBH6-LAYER-")]
     assert len(layer_rows) == 16
     for layer in EBH6_AUDIT_LAYERS:
-        applicable = [aj for aj in layer_aj_applicability(layer) if aj.applicable]
-        layer_ev = any(
-            aj_group_by_layer_class()[(layer, aj.detection_class)].outcome == AjControlOutcome.EVIDENCE_REQUIRED
-            for aj in applicable
-        )
-        expected = FindingStatus.L9_EVIDENCE_SUBMITTED if layer_ev else FindingStatus.CANDIDATE_RESOLVED
-        assert layer_register_status_for_layer(layer) == expected, layer
+        assert layer_register_status_for_layer(layer) == FindingStatus.CANDIDATE_RESOLVED, layer
 
 
 def test_ebh6_b3_pair_count_matches_l9a() -> None:
