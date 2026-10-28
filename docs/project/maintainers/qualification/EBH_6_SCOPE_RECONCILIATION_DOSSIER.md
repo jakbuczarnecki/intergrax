@@ -7,7 +7,7 @@
 | **EXPECTED_START_HEAD** | `f3e39db3f378e5779d5006f54223358237430695` |
 | **IMPLEMENTATION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
 | **TEST_EXECUTION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
-| **CERTIFICATION_HANDOFF_SHA** | `9a731157bb833fbbab605191f0114aaa65c83292` |
+| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` |
 
 Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py), [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
 
