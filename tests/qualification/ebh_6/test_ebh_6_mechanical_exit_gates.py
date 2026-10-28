@@ -38,6 +38,8 @@ _MANDATORY_QUAL_DOCS: tuple[str, ...] = (
     "docs/project/maintainers/qualification/EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md",
     "docs/project/maintainers/qualification/EBH_6_STAGE_CERTIFICATION_READINESS.md",
     "docs/project/maintainers/qualification/EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md",
+    "docs/project/maintainers/qualification/EBH_6_SCOPE_RECONCILIATION_DOSSIER.md",
+    "docs/project/maintainers/qualification/EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md",
 )
 
 

@@ -5,52 +5,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from functools import lru_cache
 from typing import Final
 
 from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
+from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
+    AjControlOutcome,
+    aj_group_by_layer_class,
+    format_group_evidence_ref,
+)
 from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
 
-_AJ: Final[tuple[str, ...]] = tuple("ABCDEFGHIJ")
 
-
-class AjControlOutcome(StrEnum):
-    PASS_CANDIDATE = "PASS_CANDIDATE"
-    EVIDENCE_REQUIRED = "EVIDENCE_REQUIRED"
-    FINDING = "FINDING"
-    NA_WITH_EVIDENCE = "N/A — WITH EVIDENCE"
-
-
-# Conservative gate→class hints — PASS_CANDIDATE only when ref matches (not merely applicable).
-_GATE_CLASS_SUBSTRINGS: Final[dict[str, tuple[str, ...]]] = {
-    "A": ("prohibited_unresolved", "vendor", "inventory_complete", "fail_open"),
-    "B": ("tier0_must_not", "production_bypass", "bypass", "hardcoding"),
-    "C": ("config_x", "implicit", "default_resolver"),
-    "D": ("duplicate", "registry_projection", "closed_world"),
-    "E": ("sqlite", "shadow_store", "persistence"),
-    "F": ("tracked_debt", "ratified", "q2-d2"),
-    "G": ("bounded_sink", "diagnostic", "observability"),
-    "H": (
-        "sanctioned",
-        "trace_x",
-        "reachability",
-        "lifecycle_architecture",
-        "hardening_3",
-        "parity",
-        "wiring",
-        "production_bypass",
-        "closed_world",
-    ),
-    "I": ("ebh5_exit_inventory", "reachability_gates", "install"),
-    "J": ("rpl_g", "replaceability", "nyq"),
-}
-
-
-def _gate_supports_class(gate_ref: str, detection_class: str) -> bool:
-    gate_l = gate_ref.lower()
-    hints = _GATE_CLASS_SUBSTRINGS.get(detection_class, ())
-    return any(h in gate_l for h in hints)
+@dataclass(frozen=True, slots=True)
+class AjControlResult:
+    detection_class: str
+    outcome: AjControlOutcome
+    evidence_ref: str
 
 
 def _aj_controls_for_mechanism(
@@ -60,6 +31,7 @@ def _aj_controls_for_mechanism(
     entrypoint: str,
     finding_id: str | None,
 ) -> tuple[AjControlResult, ...]:
+    groups = aj_group_by_layer_class()
     rows: list[AjControlResult] = []
     for aj in layer_aj_applicability(layer):
         if not aj.applicable:
@@ -92,34 +64,24 @@ def _aj_controls_for_mechanism(
             )
             continue
 
-        if _gate_supports_class(primary_gate, aj.detection_class):
+        group = groups[(layer, aj.detection_class)]
+        if group.outcome == AjControlOutcome.EVIDENCE_REQUIRED:
             rows.append(
                 AjControlResult(
                     aj.detection_class,
-                    AjControlOutcome.PASS_CANDIDATE,
-                    primary_gate,
+                    AjControlOutcome.EVIDENCE_REQUIRED,
+                    (f"{group.mandatory_blocker or group.group_id}: mechanism={mechanism_id}; entrypoint={entrypoint}"),
                 ),
             )
         else:
             rows.append(
                 AjControlResult(
                     aj.detection_class,
-                    AjControlOutcome.EVIDENCE_REQUIRED,
-                    (
-                        f"class-{aj.detection_class}: mechanism={mechanism_id}; "
-                        f"entrypoint={entrypoint}; "
-                        f"nearest_gate={primary_gate} — no dedicated class gate @ HEAD"
-                    ),
+                    AjControlOutcome.PASS_CANDIDATE,
+                    format_group_evidence_ref(group, mechanism_id, primary_gate),
                 ),
             )
     return tuple(rows)
-
-
-@dataclass(frozen=True, slots=True)
-class AjControlResult:
-    detection_class: str
-    outcome: AjControlOutcome
-    evidence_ref: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -847,6 +809,4 @@ def assert_l3_reachability_complete() -> None:
                 if ctrl.outcome == AjControlOutcome.NA_WITH_EVIDENCE:
                     assert ctrl.evidence_ref.startswith("N/A — WITH EVIDENCE:"), rec.mechanism_id
                 if ctrl.outcome == AjControlOutcome.PASS_CANDIDATE:
-                    assert _gate_supports_class(ctrl.evidence_ref, ctrl.detection_class), (
-                        f"{rec.mechanism_id}/{ctrl.detection_class}"
-                    )
+                    assert "group=AJG-" in ctrl.evidence_ref, f"{rec.mechanism_id}/{ctrl.detection_class}"

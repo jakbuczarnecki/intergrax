@@ -362,6 +362,10 @@ def _gates(layer: str) -> tuple[str, ...]:
     return common + extra.get(layer, ())
 
 
+def layer_gate_test_ids(layer: str) -> tuple[str, ...]:
+    return _gates(layer)
+
+
 def layer_aj_applicability(layer: str) -> tuple[AjApplicability, ...]:
     return _LAYER_AJ[layer]
 

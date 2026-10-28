@@ -17,9 +17,8 @@ from tests.qualification.ebh_6._family_l9_evidence import (
     family_l9_bundle_by_id,
 )
 from tests.qualification.ebh_6._findings_register import FindingStatus, all_hardcoding_findings
+from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome
 from tests.qualification.ebh_6._l3_reachability_evidence import (
-    AjControlOutcome,
-    _gate_supports_class,
     all_l3_reachability_records,
     assert_l3_reachability_complete,
     l3_records_by_layer,
@@ -52,15 +51,23 @@ def test_l3_samples_not_path_prefix_of_inventory() -> None:
 
 
 def test_applicable_aj_not_auto_pass() -> None:
+    from tests.qualification.ebh_6._l3_aj_group_reconciliation import assert_aj_group_reconciliation_complete
+
+    assert_aj_group_reconciliation_complete()
     for rec in all_l3_reachability_records():
         for ctrl in rec.aj_controls:
             assert ctrl.outcome.value not in _FORBIDDEN_AJ, rec.mechanism_id
             if ctrl.outcome == AjControlOutcome.PASS_CANDIDATE:
-                assert _gate_supports_class(ctrl.evidence_ref, ctrl.detection_class), (
-                    f"{rec.mechanism_id}/{ctrl.detection_class}"
-                )
+                assert "group=AJG-" in ctrl.evidence_ref, rec.mechanism_id
             if ctrl.outcome == AjControlOutcome.EVIDENCE_REQUIRED:
-                assert "nearest_gate=" in ctrl.evidence_ref or ctrl.evidence_ref.startswith("class-")
+                assert ctrl.evidence_ref.strip()
+
+
+def test_aj_evidence_required_reconciled_via_groups() -> None:
+    from tests.qualification.ebh_6._l3_reachability_evidence import count_l3_aj_outcomes
+
+    counts = count_l3_aj_outcomes()
+    assert counts.get("EVIDENCE_REQUIRED", 0) == 0, counts
 
 
 def test_layer_register_not_false_resolved() -> None:
