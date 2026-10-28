@@ -5,8 +5,8 @@
 | **Disposition** | **IMPLEMENTATION AND CERTIFICATION DOSSIER COMPLETE / OPERATOR OR INDEPENDENT AUDIT GATE PENDING** |
 | **Parent CLOSED** | **NO** |
 | **START_HEAD (this batch)** | `3e9460465d46a64f82022d37130891d940a810e2` |
-| **CERTIFICATION_HANDOFF_SHA** | Git HEAD of publication commit containing this file (`certification_handoff_sha()` @ audit) |
-| **TEST_EXECUTION_SHA** | `3e9460465d46a64f82022d37130891d940a810e2` (suite run before publication commit; re-run @ handoff SHA mandatory for auditor) |
+| **CERTIFICATION_HANDOFF_SHA** | `74bac73210cc017babc9a681c5580ba2f0a59ba9` |
+| **TEST_EXECUTION_SHA** | `74bac73210cc017babc9a681c5580ba2f0a59ba9` (49 passed, 1 skipped @ `uv run pytest tests/qualification/ebh_5/ -q`) |
 
 ## SHA ladder (do not collapse)
 
@@ -16,7 +16,7 @@
 | Corrective | `ffe0aae8d2b64a558a18226cc1435f0058ff561b` | Protocol 03 corrective batch |
 | F01/F02 final | `e29aa40e1d83ffce57a1fc8039ea6914364910f9` | Behavioral F01/F02 composition proofs |
 | F01 OTLP refinement | `3e9460465d46a64f82022d37130891d940a810e2` | OTLP without `_create_export_transport` patch |
-| Handoff publication | _this commit_ | Independent auditor entry SHA |
+| Handoff publication | `74bac73210cc017babc9a681c5580ba2f0a59ba9` | Independent auditor entry SHA |
 
 ## Plan tasks
 
