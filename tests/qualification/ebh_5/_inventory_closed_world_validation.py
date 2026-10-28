@@ -4,6 +4,13 @@
 
 from __future__ import annotations
 
+from typing import Final
+
+from tests.qualification.ebh_5._behavioral_proof_registry import QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE
+from tests.qualification.ebh_5._roadmap_domain_na_evidence import (
+    roadmap_domain_na_dispositions,
+    roadmap_domain_na_validation_errors,
+)
 from tests.qualification.ebh_5._vendor_backend_inventory import VENDOR_BACKEND_DEPENDENCY_INVENTORY
 from tests.qualification.ebh_5._vendor_backend_types import (
     ConcernConclusion,
@@ -18,35 +25,13 @@ _FORBIDDEN_PLACEHOLDERS: frozenset[str] = frozenset(
         "UNKNOWN",
         "TBD",
         "TODO",
-        "PENDING — EBH_5 Package C",
     },
 )
 
+_PENDING_BEHAVIORAL_EVIDENCE: Final[str] = "PENDING — EBH_5 Package C"
+
 _DOMAIN_NA_WITH_EVIDENCE: dict[RoadmapVendorDomain, str] = {
-    RoadmapVendorDomain.CACHE: (
-        "N/A — WITH EVIDENCE: no production-effective distributed cache catalog concern; "
-        "KV/cache via integration categories and runtime fixed stores only."
-    ),
-    RoadmapVendorDomain.DISTRIBUTED_COORDINATION: (
-        "N/A — WITH EVIDENCE: coordination via runtime/distributed contracts; "
-        "no standalone vendor catalog row in EBH-5 wave."
-    ),
-    RoadmapVendorDomain.LOGGING: (
-        "N/A — WITH EVIDENCE: logging sinks wired via observability/event delivery; "
-        "not a separate integration category in CONFIG-X inventory."
-    ),
-    RoadmapVendorDomain.METRICS: (
-        "N/A — WITH EVIDENCE: metrics via observability profile and plugins; "
-        "no isolated metrics vendor concern in closed-world inventory."
-    ),
-    RoadmapVendorDomain.NETWORK_HTTP: (
-        "N/A — WITH EVIDENCE: HTTP client concerns covered under EXTERNAL_MCP / "
-        "integration HTTP adapters — not duplicated as domain 28 row."
-    ),
-    RoadmapVendorDomain.EVAL_ANALYTICS: (
-        "N/A — WITH EVIDENCE: evaluation analytics deferred to EVOL-X / ENT-AUDIT-X scope; "
-        "no production-effective eval vendor row in EBH-5 inventory."
-    ),
+    disp.domain: f"N/A — WITH EVIDENCE: {disp.rationale}" for disp in roadmap_domain_na_dispositions()
 }
 
 
@@ -85,18 +70,35 @@ def validate_inventory_record(row: VendorBackendConcernRecord) -> tuple[str, ...
         ("structural_replaceability_evidence_id", row.structural_replaceability_evidence_id),
         ("outstanding_debt", row.outstanding_debt),
     ):
-        if any(ph in value for ph in _FORBIDDEN_PLACEHOLDERS if ph != "PENDING — EBH_5 Package C"):
+        if any(ph in value for ph in _FORBIDDEN_PLACEHOLDERS):
             errors.append(f"{cid}: forbidden placeholder in {field_name}")
 
+    behavioral = row.behavioral_qualification_evidence_id.strip()
+    if any(ph in behavioral for ph in _FORBIDDEN_PLACEHOLDERS):
+        errors.append(f"{cid}: forbidden placeholder in behavioral_qualification_evidence_id")
+
     if row.extensibility_classification == ExtensibilityClassification.REPLACEABLE_NOT_YET:
-        evid = row.behavioral_qualification_evidence_id
-        if evid not in _FORBIDDEN_PLACEHOLDERS and not evid.startswith("tests/"):
-            if "PENDING" not in row.behavioral_qualification_evidence_id and row.concern_id not in (
-                "integration.key_value_cache",
-            ):
-                pass  # NOT YET may cite pending string
-        if row.outstanding_debt == "" and row.extensibility_promised == ExtensibilityPromised.YES:
-            errors.append(f"{cid}: NOT YET without outstanding_debt")
+        if behavioral == "N/A" and row.outstanding_debt.strip():
+            pass  # debt-tracked NOT YET without Package C L3 (e.g. OD-EBH5-06)
+        elif behavioral == _PENDING_BEHAVIORAL_EVIDENCE:
+            if not row.outstanding_debt.strip():
+                errors.append(f"{cid}: NOT YET PENDING behavioral requires outstanding_debt")
+        elif behavioral.startswith("tests/"):
+            errors.append(f"{cid}: NOT YET must not cite tests/ proof without QUALIFIED classification")
+        elif "PENDING" not in behavioral.upper():
+            errors.append(
+                f"{cid}: NOT YET behavioral evidence must be {_PENDING_BEHAVIORAL_EVIDENCE!r} "
+                "or contain explicit PENDING marker with debt",
+            )
+        elif not row.outstanding_debt.strip():
+            errors.append(f"{cid}: NOT YET custom PENDING behavioral requires outstanding_debt")
+
+    if row.extensibility_classification == ExtensibilityClassification.REPLACEABLE_QUALIFIED:
+        expected = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE.get(cid)
+        if expected is None:
+            errors.append(f"{cid}: QUALIFIED without behavioral proof registry entry")
+        elif behavioral != expected:
+            errors.append(f"{cid}: QUALIFIED behavioral must match registry node")
 
     if row.extensibility_classification == ExtensibilityClassification.ARCHITECTURE_BLOCKER:
         if row.conclusion != ConcernConclusion.BLOCKER:
@@ -124,6 +126,8 @@ def inventory_validation_errors() -> tuple[str, ...]:
 
     for row in VENDOR_BACKEND_DEPENDENCY_INVENTORY:
         errors.extend(validate_inventory_record(row))
+
+    errors.extend(roadmap_domain_na_validation_errors())
 
     covered_domains = {row.domain for row in VENDOR_BACKEND_DEPENDENCY_INVENTORY}
     for domain in RoadmapVendorDomain:

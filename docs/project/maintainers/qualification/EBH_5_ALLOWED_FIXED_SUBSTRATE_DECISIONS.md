@@ -4,9 +4,19 @@
 | --- | --- |
 | **Status** | Ratification records for EBH-5 — **not** global FRZ PASS |
 | **SSOT** | [`tests/qualification/ebh_5/_fixed_substrate_registry.py`](../../../tests/qualification/ebh_5/_fixed_substrate_registry.py) |
-| **Evidence SHA** | [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md) |
+| **Operator packet** | [`EBH_5_OD_EBH5_02_SAC_FREEZE_PACKET.md`](EBH_5_OD_EBH5_02_SAC_FREEZE_PACKET.md) |
 
 ## Decisions (G06-02)
+
+| substrate_id | decision_status | canonical_contract | ratification_authority | decision_evidence_sha |
+| --- | --- | --- | --- | --- |
+| `runtime-sqlite-persistence-bundle` | **PROPOSED — OPERATOR PENDING** | Per-store port contracts | OD-EBH5-04 DEFAULT FIXED | STATE-X / SQLite annex @ wave `83a376b3…` |
+| `single-node-profile-v1-sqlite-triad` | **RATIFIED — SCOPED PROD-Q** | SingleNodeProductionProfileV1Config | PROD-Q chain | `83a376b3…` scoped baseline |
+| `lab-adaptive-sqlite` | **PROPOSED — OPERATOR PENDING** | Lab adaptive stores | Lab harness H_REFERENCE | GAP-01 @ `ffe0aae8…` |
+
+Legacy columns (scope, ADR, constraints) remain in Python SSOT.
+
+## Decisions table (legacy summary)
 
 | substrate_id | technology | scope_paths | contract_if_any | ratification_authority | adr_ref | multi_instance_constraints | review_date |
 | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -23,7 +23,8 @@
 | --- | --- |
 | SSOT inventory/matrix/proof registry | Yes |
 | G06 closed-world inventory validation | Yes |
-| G06 fixed substrate registry | Yes |
+| G06 fixed substrate registry | Yes — explicit RATIFIED / PROPOSED statuses |
+| G06-04 TEST_EXECUTION_SHA = IMPLEMENTATION_SHA | Yes — post-commit pytest @ clean tree |
 | Five QUALIFIED behavioral proofs resolvable | Yes |
 | Protocol 03 handoff dossier | Yes |
 | RPL-G + CONFIG-X blockers empty | Yes (gates) |
