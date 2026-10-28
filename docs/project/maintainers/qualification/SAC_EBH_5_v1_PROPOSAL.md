@@ -21,7 +21,9 @@
 
 | Item | Ready |
 | --- | --- |
-| SSOT inventory/matrix/proof registry | Yes @ CERTIFICATION_HANDOFF_SHA |
+| SSOT inventory/matrix/proof registry | Yes |
+| G06 closed-world inventory validation | Yes |
+| G06 fixed substrate registry | Yes |
 | Five QUALIFIED behavioral proofs resolvable | Yes |
 | Protocol 03 handoff dossier | Yes |
 | RPL-G + CONFIG-X blockers empty | Yes (gates) |
@@ -32,9 +34,10 @@
 
 - **51 NOT YET QUALIFIED** — intentional; EBH-7 convergence.
 - **RPL-F NA** on QUALIFIED rows — no failure/recovery L3 in this stage.
-- **OTLP empty endpoint** vs **DISTRIBUTED_OTLP ConfigurationError** asymmetry — documented in final correction dossier.
+- **OTLP empty endpoint** vs **DISTRIBUTED_OTLP ConfigurationError** asymmetry — documented.
 - **Reachability** skip when graph integration module absent.
-- **Historical SHA ladder** — multiple commits; auditor must use CERTIFICATION_HANDOFF_SHA only for verdict.
+- **G06-02 review_date** — dossier cycle date; not operator signature on ADR.
+- **Historical SHA ladder** — auditor uses **CERTIFICATION_HANDOFF_SHA** for verdict.
 
 ## Do podpisu operatora (not executed by agent)
 

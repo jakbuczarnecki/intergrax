@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **DOSSIER COMPLETE — INDEPENDENT AUDIT PENDING (Protocol 03)** |
+| **Disposition** | **EBH-5 FINAL CORRECTIVE BATCH — READY FOR INDEPENDENT PARENT AUDIT** |
 | **Roadmap row** | EBH-5 → **`READY FOR AUDIT`** (not CLOSED) |
 | **Parent CLOSED** | **Forbidden** until OD-EBH5-07 AUDIT PASS + OD-EBH5-08 |
 
@@ -10,11 +10,11 @@
 
 | Criterion | Status |
 | --- | --- |
-| Inventory complete, `unclassified=0` | **PASS** (gates) |
+| Inventory complete, `unclassified=0` | **PASS** (G06-01 full validation) |
 | Matrix for `extensibility_promised=yes` | **PASS** |
 | Reachability evidence | **PASS** (1 optional skip) |
 | Behavioral proof per **QUALIFIED** row | **PASS** (5 — composition L3 @ TEST_EXECUTION_SHA) |
-| Fixed substrates + SQLite annex | **PASS** |
+| Fixed substrates + SQLite annex | **PASS** (G06-02 registry) |
 | RPL-G green | **PASS** |
 | Independent exact-SHA audit accepted | **OPEN** (OD-EBH5-07) |
 | SAC frozen | **OPEN** (OD-EBH5-02) |

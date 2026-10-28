@@ -145,12 +145,11 @@ def inventory_concern_ids() -> frozenset[str]:
 
 
 def count_unclassified() -> int:
-    return sum(
-        1
-        for row in VENDOR_BACKEND_DEPENDENCY_INVENTORY
-        if row.extensibility_classification == ExtensibilityClassification.ARCHITECTURE_BLOCKER
-        and row.conclusion == ConcernConclusion.BLOCKER
+    from tests.qualification.ebh_5._inventory_closed_world_validation import (
+        inventory_validation_errors,
     )
+
+    return len(inventory_validation_errors())
 
 
 def concerns_with_extensibility_yes() -> tuple[VendorBackendConcernRecord, ...]:

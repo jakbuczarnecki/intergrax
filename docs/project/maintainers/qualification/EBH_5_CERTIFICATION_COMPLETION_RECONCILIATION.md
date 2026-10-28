@@ -2,11 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **IMPLEMENTATION AND CERTIFICATION DOSSIER COMPLETE / OPERATOR OR INDEPENDENT AUDIT GATE PENDING** |
+| **Disposition** | **EBH-5 FINAL CORRECTIVE BATCH — READY FOR INDEPENDENT PARENT AUDIT** |
 | **Parent CLOSED** | **NO** |
-| **START_HEAD (this batch)** | `3e9460465d46a64f82022d37130891d940a810e2` |
+| **G06 batch START_HEAD** | `b1d3cea3611f9f1c4af36daecc4f900a11b93e18` |
 | **CERTIFICATION_HANDOFF_SHA** | `74bac73210cc017babc9a681c5580ba2f0a59ba9` |
-| **TEST_EXECUTION_SHA** | `74bac73210cc017babc9a681c5580ba2f0a59ba9` (49 passed, 1 skipped @ `uv run pytest tests/qualification/ebh_5/ -q`) |
+| **TEST_EXECUTION_SHA** | `b1d3cea3611f9f1c4af36daecc4f900a11b93e18` (54 passed, 1 skipped EBH-5; 18 passed CONFIG-X @ G06 batch) |
 
 ## SHA ladder (do not collapse)
 
@@ -16,7 +16,8 @@
 | Corrective | `ffe0aae8d2b64a558a18226cc1435f0058ff561b` | Protocol 03 corrective batch |
 | F01/F02 final | `e29aa40e1d83ffce57a1fc8039ea6914364910f9` | Behavioral F01/F02 composition proofs |
 | F01 OTLP refinement | `3e9460465d46a64f82022d37130891d940a810e2` | OTLP without `_create_export_transport` patch |
-| Handoff publication | `74bac73210cc017babc9a681c5580ba2f0a59ba9` | Independent auditor entry SHA |
+| Handoff publication | `74bac73210cc017babc9a681c5580ba2f0a59ba9` | Prior independent auditor entry SHA |
+| G06 implementation | _set at commit_ | Enterprise G06-01..03 batch |
 
 ## Plan tasks
 
@@ -28,9 +29,32 @@
 | Dossier SHA ladder | **DONE** |
 | SAC freeze packet | **DONE** (PROPOSED only) |
 | Protocol 03 handoff | **DONE** (STOP before AUDIT PASS) |
-| Pytest validation | **DONE** @ TEST_EXECUTION_SHA |
-| Commit/push | **DONE** @ CERTIFICATION_HANDOFF_SHA |
+| Pytest validation | **DONE** @ G06 TEST_EXECUTION (see below) |
+| Commit/push G06 | **PENDING** → updates CERTIFICATION_HANDOFF_SHA |
 | Parent CLOSED (OD-EBH5-08) | **BLOCKED** |
+
+## G06 corrective batch (enterprise)
+
+| ID | Disposition |
+| --- | --- |
+| **G06-01** | `_inventory_closed_world_validation.py` — full record + 31-domain coverage; `count_unclassified()` = validation errors |
+| **G06-02** | `_fixed_substrate_registry.py` — ratification fields; gate maps inventory FIXED concerns |
+| **G06-03** | Matrix md + SSOT — **5** QUALIFIED including `integration.key_value_cache` |
+
+## §3.0.8 exit checklist (implementation)
+
+| Criterion | Status |
+| --- | --- |
+| Closed-world inventory | **PASS** (G06-01) |
+| 31 roadmap domains | **PASS** (6× N/A — WITH EVIDENCE) |
+| Matrix + behavioral proofs | **PASS** |
+| Fixed substrates | **PASS** (G06-02) |
+| SQLite annex | **PASS** |
+| RPL-G | **PASS** |
+| CONFIG-X 54/54 | **PASS** (separate gate) |
+| Independent audit | **OPEN** |
+| SAC freeze | **OPEN** |
+| Parent closure | **BLOCKED** |
 
 ## SSOT counts
 
@@ -49,9 +73,9 @@ uv run pytest tests/qualification/ebh_5/ -q
 uv run pytest tests/qualification/config_x/test_config_x_final_reconciliation_gates.py -q
 ```
 
-**EBH-5 suite result:** **49 passed, 1 skipped** (reachability graph module optional) @ working tree validation.
+**EBH-5 suite result:** **54 passed, 1 skipped** (reachability graph module optional) @ `b1d3cea3611f9f1c4af36daecc4f900a11b93e18`.
 
-**CONFIG-X final reconciliation:** **18 passed** @ same session.
+**CONFIG-X final reconciliation:** **18 passed** @ same session (log: `.tmp/session/ebh5-g06-closure/`).
 
 ## Operator gates (OPEN)
 

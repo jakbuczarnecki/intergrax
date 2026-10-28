@@ -3,15 +3,18 @@
 | Field | Value |
 | --- | --- |
 | **Status** | Ratification records for EBH-5 — **not** global FRZ PASS |
-| **Evidence SHA** | Handoff @ [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md) |
+| **SSOT** | [`tests/qualification/ebh_5/_fixed_substrate_registry.py`](../../../tests/qualification/ebh_5/_fixed_substrate_registry.py) |
+| **Evidence SHA** | [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md) |
 
-## Decisions
+## Decisions (G06-02)
 
-| substrate_id | technology | scope_paths | contract | multi_instance_constraints | adr_ref |
-| --- | --- | --- | --- | --- | --- |
-| `runtime-sqlite-persistence-bundle` | SQLite file stores | `intergrax/runtime/**/sqlite*.py`, `intergrax/agents/persistence/*sqlite*` | Port per store (TaskCheckpointPersistence, etc.) | Single-node / lab / profile-scoped; not claimed horizontally scalable | STATE-X inventory SX-F* |
-| `single-node-profile-v1-sqlite-triad` | SQLite (GCA, PIS, AD) | `intergrax/applications/_shared/single_node_production_profile_v1.py` | `SingleNodeProductionProfileV1Config` | Strict single-node topology; advisory cross-process lock | PROD-Q ADR chain |
-| `lab-adaptive-sqlite` | SQLite | `applications/lab_application/host/factory.py` | SignalStore / ProposalStore | Lab harness only; paths under lab trace/checkpoint anchor | EBH-5 GAP-01 remediation |
+| substrate_id | technology | scope_paths | contract_if_any | ratification_authority | adr_ref | multi_instance_constraints | review_date |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `runtime-sqlite-persistence-bundle` | SQLite file-backed runtime stores | `intergrax/runtime/**/sqlite*.py`; agents persistence | Per-store port contracts | Platform maintainer + OD-EBH5-04 FIXED | STATE-X SX-F*; SQLite annex | Single-node / profile-scoped | 2026-10-28 — EBH-5 review cycle |
+| `single-node-profile-v1-sqlite-triad` | SQLite GCA/PIS/AD | `single_node_production_profile_v1.py` | SingleNodeProductionProfileV1Config | PROD-Q qualification chain | PROD-Q ADR; DIST-SCALE scoped | Strict single-node | 2026-10-28 — EBH-5 review cycle |
+| `lab-adaptive-sqlite` | SQLite adaptive stores | lab factory + `runtime/adaptive/*` | Lab factory paths (GAP-01) | Lab harness owner — H_REFERENCE | EBH-5 GAP-01; OD-EBH5-04 | Lab only | 2026-10-28 — EBH-5 review cycle |
+
+Inventory `FIXED SUBSTRATE — RATIFIED WITH EVIDENCE` concern_ids must map to `runtime-sqlite-persistence-bundle` or `single-node-profile-v1-sqlite-triad` (see SSOT gate).
 
 ## Operator review (OD-EBH5-04)
 

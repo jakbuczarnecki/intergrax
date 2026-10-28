@@ -56,11 +56,14 @@ Registry SSOT: [`_behavioral_proof_registry.py`](../../../tests/qualification/eb
 - **CONFIG-X** PASS @ `fac9a43f…` preserved; current-HEAD obligations additive only.
 - **DIST-SCALE-X** remains operator scoped acceptance — do not rewrite as independent CLOSED.
 
-## Findings disposition (auditor fills)
+## Findings disposition (auditor fills — includes G06-01..03)
 
 | Finding ID | Severity | Disposition | Follow-up |
 | --- | --- | --- | --- |
-| _empty_ | | ACCEPT / REJECT / DEFER | |
+| G06-01 | — | ACCEPT if `test_ebh5_g06_01_*` green @ SHA | |
+| G06-02 | — | ACCEPT if fixed substrate registry complete | Operator ADR review dates |
+| G06-03 | — | ACCEPT if matrix md = SSOT (5 QUALIFIED) | |
+| _other_ | | | |
 
 ## Forbidden verdicts
 
