@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
-| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
+| **IMPLEMENTATION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
+| **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (unchanged until B5 publication) |
 | **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` — [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) |
 
@@ -13,7 +13,7 @@
 | Label | SHA | Freshness |
 | --- | --- | --- |
 | B2 **EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` | **CURRENT** |
-| B2 **IMPLEMENTATION_SHA** / **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* | **CURRENT** after B2 ladder commit |
+| B2 **IMPLEMENTATION_SHA** / **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` | **CURRENT** after B2 ladder commit |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
 | B1 **IMPLEMENTATION_SHA** (historical) | `446dfa7263b6571a11bdd2a973e66e57892eacca` | Superseded by B2 wave |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` | **pre-B1 handoff** — update @ B5 only |

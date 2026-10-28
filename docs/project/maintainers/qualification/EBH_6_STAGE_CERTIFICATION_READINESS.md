@@ -7,8 +7,8 @@
 | **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** (B6–B7) |
 | **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
-| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
+| **IMPLEMENTATION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
+| **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 

@@ -7,8 +7,8 @@
 | **Disposition** | **B2 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 groups; P03 after B5) |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
-| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
+| **IMPLEMENTATION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
+| **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (refresh @ B5) |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 

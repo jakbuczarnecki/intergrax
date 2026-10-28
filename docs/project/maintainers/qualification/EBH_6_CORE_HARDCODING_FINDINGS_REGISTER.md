@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **B2 IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
+| **B2 IMPLEMENTATION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
 | **B1 IMPLEMENTATION_SHA (historical)** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
 | **Historical IMPLEMENTATION (P03 remediation)** | `475c20289a1ef0420461a1ba748c792a10ea3e99` — **HISTORICAL** |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
