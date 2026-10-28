@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **IMPLEMENTATION_SHA** | *(set at L9 evidence commit — see freshness ledger)* |
+| **IMPLEMENTATION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
 | **Mechanical SSOT** | [`tests/qualification/ebh_6/_findings_register.py`](../../../tests/qualification/ebh_6/_findings_register.py) |
 | **L9 layer annex** | [`tests/qualification/ebh_6/_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py) |
 | **Schema authority** | [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.2 |

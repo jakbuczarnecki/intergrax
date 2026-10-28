@@ -6,8 +6,8 @@
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
 | **Disposition** | **EBH-6 — FINAL L9 EVIDENCE READY FOR INDEPENDENT CERTIFICATION** |
 | **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **CERTIFICATION_HANDOFF_SHA** | *(IMPLEMENTATION_SHA @ evidence commit)* |
-| **TEST_EXECUTION_SHA** | *(consolidated pytest @ IMPLEMENTATION_SHA)* |
+| **CERTIFICATION_HANDOFF_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **TEST_EXECUTION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
 ## Commands @ CERTIFICATION_HANDOFF_SHA

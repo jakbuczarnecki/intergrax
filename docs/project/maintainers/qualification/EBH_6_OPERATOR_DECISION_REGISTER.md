@@ -19,9 +19,9 @@ OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN
 | Field | Value |
 | --- | --- |
 | Branch | `development` |
-| **IMPLEMENTATION_SHA** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` (pre-L9 wave baseline; updated at evidence commit) |
+| **IMPLEMENTATION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
 | **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **TEST_EXECUTION_SHA** | *(recorded @ B-L9-4 — see freshness ledger)* |
+| **TEST_EXECUTION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
 | EBH-5 parent | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** @ OD-EBH5-08 |
 | EBH-5 independent audit SHA | `33ecf19cc020b112d9e586c87b49e819202f5d6d` (OD-EBH5-07 satisfied) |
 | Agent closure | **Forbidden** — no OD-EBH6-08, no `EBH-6 — CLOSED` |

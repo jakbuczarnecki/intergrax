@@ -3,15 +3,16 @@
 | Field | Value |
 | --- | --- |
 | **STAGE_BASELINE / EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **IMPLEMENTATION_SHA** | *(updated at L9 evidence commit)* |
-| **TEST_EXECUTION_SHA** | *(must equal IMPLEMENTATION_SHA after consolidated pytest — B-L9-4)* |
-| **CERTIFICATION_HANDOFF_SHA** | *(aligned to IMPLEMENTATION_SHA @ handoff)* |
-| **PUBLICATION_SHA (L9 plan)** | *(plan commit SHA — see git log)* |
+| **IMPLEMENTATION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **TEST_EXECUTION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **CERTIFICATION_HANDOFF_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **PUBLICATION_SHA (L9 plan)** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
 
 ## SHA ladder
 
 | Label | SHA | Freshness |
 | --- | --- | --- |
+| L9 IMPLEMENTATION / TEST_EXECUTION | `bc25e27b14b7172ef79951765e76d19578d9beb3` | **CURRENT** |
 | Operator **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` | **CURRENT** (execution start) |
 | Plan doc anchor (historical note) | `d993f49ed3698b1decf399796a6e502b2221caaa` | **HISTORICAL** — superseded by wave-2 HEAD |
 | Pre-cert IMPLEMENTATION | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` | **HISTORICAL** |

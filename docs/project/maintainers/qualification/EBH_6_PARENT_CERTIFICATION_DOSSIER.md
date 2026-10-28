@@ -4,9 +4,9 @@
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
 | **Status** | **EBH-6 — FINAL L9 EVIDENCE READY FOR INDEPENDENT CERTIFICATION** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
-| **IMPLEMENTATION_SHA** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **TEST_EXECUTION_SHA** | *(set after consolidated pytest — see ledger)* |
-| **CERTIFICATION_HANDOFF_SHA** | *(aligned to IMPLEMENTATION_SHA)* |
+| **IMPLEMENTATION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **TEST_EXECUTION_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
+| **CERTIFICATION_HANDOFF_SHA** | `bc25e27b14b7172ef79951765e76d19578d9beb3` |
 | **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
@@ -14,7 +14,7 @@
 
 | Run | Result |
 | --- | --- |
-| Consolidated L4 bundle (plan L9-E) | `.tmp/session/ebh-6-l9/pytest.log` |
+| Consolidated L4 bundle (plan L9-E) | **44 passed** — `.tmp/session/ebh-6-l9/pytest.log` |
 
 ## Mandatory blockers
 
