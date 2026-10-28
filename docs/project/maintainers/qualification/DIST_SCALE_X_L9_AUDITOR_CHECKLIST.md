@@ -7,7 +7,7 @@
 | **Handoff** | [DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md](DIST_SCALE_X_L9_INDEPENDENT_AUDIT_HANDOFF.md) |
 | **SAC** | `SAC-DIST-SCALE-X-v1` — bez amendment (OD-03) |
 
-**Uwaga sesji:** soak WL-7 **4 h** (`14400 s`) może być w toku poza tym audytem (logi operatora: `.tmp/session/dist-scale-x-wl7-4h/`). G-06 **nie wymaga** ukończenia soak przy zaakceptowanym deferralu; po zakończeniu soak audytor **nie** automatycznie zamyka parent — aktualizacja wierszy 1/11/16 to osobna kwalifikacja.
+**Uwaga sesji:** soak WL-7 **4 h** (`14400 s`) **nie** ukończony (2026-10-27 resume ~97% wall, brak manifestu — [deferral § Failed resume](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md)). G-06 **nie wymaga** pełnego soak przy zaakceptowanym deferralu; po **udanym** soak audytor **nie** automatycznie zamyka parent — aktualizacja wierszy 1/11/16 to osobna kwalifikacja.
 
 ---
 

@@ -9,15 +9,21 @@
 | Item | Value |
 | --- | --- |
 | Test | `test_p6_wl07_mixed_soak_stability` |
-| Full envelope duration | 14400 s (`DIST_SCALE_X_WL7_DURATION_SECONDS`) |
-| Harness default | 120 s + skip until full duration configured |
+| Original P6 lock | 14400 s — **NOT conducted** (see amendment) |
+| **1 h substitute** | 3600 s — both `DIST_SCALE_X_WL7_DURATION_SECONDS` and `DIST_SCALE_X_WL7_MIN_ENVELOPE_SECONDS` |
 
-**Exit 11:** requires `soak_complete_envelope=1` in manifest metrics.
+**Exit 11 (amendment path):** `soak_complete_envelope=1` @ **3600 s** — [DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md](DIST_SCALE_X_WL7_ENVELOPE_AMENDMENT_1H_RECORD.md).
 
-## Session result @ EXECUTION_SHA `9ac74ca3849013e729dbc8c893f64427ef588f94`
+## Harness @ `9ac74ca…`
 
 | run_id | duration_s | soak_complete_envelope | errors |
 | --- | --- | --- | --- |
 | `wl07-soak-41ad330f8ef2` | 120 | 0 | 0 |
 
-**Blocker:** operator must run `DIST_SCALE_X_WL7_DURATION_SECONDS=14400` for exit 11 closure. Harness correctness **PASS**; envelope duration **NOT MET**.
+## Physical 1 h substitute @ `9a062322826de8444d430eed1556d7463a2cd2bf`
+
+| run_id | duration_s | soak_complete_envelope | errors |
+| --- | --- | --- | --- |
+| `wl07-soak-c8e86ebef60e` | 3600 | **1** | 0 |
+
+Manifest: `.tmp/proof/dist-scale-x/wl07-soak-c8e86ebef60e/`. **4 h NOT PROVEN.**
