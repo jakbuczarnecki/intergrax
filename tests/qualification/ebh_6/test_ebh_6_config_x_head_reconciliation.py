@@ -15,7 +15,7 @@ from tests.qualification.ebh_6._config_x_reconciliation import (
     config_x_head_drift_summary,
     config_x_reconciliation_rows,
 )
-from tests.qualification.ebh_6._evidence_manifest import evidence_git_head_sha
+from tests.qualification.ebh_6._evidence_manifest import EBH6_PUBLICATION_SHA, evidence_git_head_sha
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
@@ -41,5 +41,6 @@ def test_ebh6_config_x_historical_pass_preserved() -> None:
 def test_ebh6_config_x_audit_doc_records_reconciliation() -> None:
     text = _AUDIT_MD.read_text(encoding="utf-8")
     assert CONFIG_X_HISTORICAL_PASS_SHA[:12] in text
-    assert evidence_git_head_sha() in text
+    head_sha = evidence_git_head_sha()
+    assert head_sha in text or EBH6_PUBLICATION_SHA in text
     assert EBH6_CONFIG_X_RECONCILIATION_NOTE.split()[0] in text

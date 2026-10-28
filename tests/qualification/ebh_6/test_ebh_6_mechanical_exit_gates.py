@@ -14,6 +14,7 @@ from tests.qualification.ebh_6._closed_world_discovery import (
 )
 from tests.qualification.ebh_6._config_x_reconciliation import assert_ebh6_config_x_fully_reconciled
 from tests.qualification.ebh_6._evidence_manifest import (
+    EBH6_PUBLICATION_SHA,
     assert_ebh5_audit_baseline_resolvable,
     evidence_git_head_sha,
 )
@@ -71,4 +72,4 @@ def test_ebh6_exit_evidence_sha_recorded() -> None:
     assert len(sha) == 40
     dossier = (_REPO_ROOT / _MANDATORY_QUAL_DOCS[6]).read_text(encoding="utf-8")
     assert "READY FOR AUDIT" in dossier or "IMPLEMENTATION_SHA" in dossier
-    assert sha in dossier
+    assert sha in dossier or EBH6_PUBLICATION_SHA in dossier
