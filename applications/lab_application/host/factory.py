@@ -5,61 +5,64 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import Depends, FastAPI
-
-from intergrax.debug.app import create_debug_app
-from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
-from intergrax.debug.hitl_service import DebugHitlResumeService
-from intergrax.debug.interaction_service import DebugInteractionIntakeService
-from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
-from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
-)
-from lab_application.host.agent_builders import build_lab_agent_builders
-from lab_application.host.settings import LabApplicationSettings
-from lab_application.host.tool_wiring import wire_lab_tools
-from lab_application.host.wiring import bootstrap_lab_integration_wiring
-from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
-from lab_application.manifest import build_lab_manifest
-from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.harness_auth import (
     require_harness_auth,
     resolve_harness_api_key,
 )
-from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, default_proposal_store_path
-from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
-from lab_application.serving.fastapi_router import mount_lab_routes
-from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     wire_harness_host_long_running_scheduler,
     wire_harness_host_task_control,
 )
-from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
-from intergrax.applications._shared.replay_routes import create_replay_router
-from intergrax.applications._shared.scaling_wiring import wire_application_scaling
 from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
     bootstrap_harness_host_platform,
     resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
 )
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.identity_wiring import wire_application_identity
+from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
+from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
+from intergrax.applications._shared.replay_routes import create_replay_router
+from intergrax.applications._shared.scaling_wiring import wire_application_scaling
+from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
+)
+from intergrax.debug.app import create_debug_app
+from intergrax.debug.hitl_service import DebugHitlResumeService
+from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
+from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore
+from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore
+from intergrax.runtime.interactions.router import create_interaction_intake_router
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
+from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
+
+from lab_application.host.agent_builders import build_lab_agent_builders
+from lab_application.host.integration_wiring import LabIntegrationWiring
+from lab_application.host.settings import LabApplicationSettings
+from lab_application.host.tool_wiring import wire_lab_tools
+from lab_application.host.wiring import bootstrap_lab_integration_wiring
+from lab_application.manifest import build_lab_manifest
+from lab_application.serving.fastapi_router import mount_lab_routes
+
+
+def _lab_adaptive_store_paths(integrations: LabIntegrationWiring) -> tuple[Path, Path]:
+    """Lab-scoped adaptive SQLite paths — not repo-root default_proposal/signal paths."""
+    anchor = integrations.trace_db_path or integrations.checkpoints_db_path
+    base = (anchor.parent if anchor is not None else Path("build/lab")) / "adaptive"
+    return base / "signals.db", base / "proposals.db"
 
 
 def create_lab_application(
     *,
-    settings: Optional[LabApplicationSettings] = None,
+    settings: LabApplicationSettings | None = None,
     db_path: Path | None = None,
     experiments_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -156,6 +159,8 @@ def create_lab_application(
         checkpoint_store=integrations.checkpoint_store,
     )
 
+    adaptive_signal_path, adaptive_proposal_path = _lab_adaptive_store_paths(integrations)
+
     app = create_debug_app(
         db_path=integrations.trace_db_path,
         experiments_db_path=integrations.experiments_db_path,
@@ -168,8 +173,8 @@ def create_lab_application(
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
         delivery_ledger=integrations.delivery_ledger,
-        adaptive_signal_store=SQLiteSignalStore(db_path=default_signal_store_path()),
-        adaptive_proposal_store=SQLiteProposalStore(db_path=default_proposal_store_path()),
+        adaptive_signal_store=SQLiteSignalStore(db_path=adaptive_signal_path),
+        adaptive_proposal_store=SQLiteProposalStore(db_path=adaptive_proposal_path),
         include_adaptive_debug_routes=lab_env.adaptive_profile.debug_readonly_routes,
         include_integration_health_routes=settings.harness,
     )
@@ -214,7 +219,9 @@ def create_lab_application(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+
         from lab_application.mcp.server import build_lab_mcp_server
+
         tool_wiring = wire_lab_tools(
             integration_profile=integrations.profile,
             harness=settings.harness,
