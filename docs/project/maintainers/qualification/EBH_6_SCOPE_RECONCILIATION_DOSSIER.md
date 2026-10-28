@@ -5,9 +5,9 @@
 | **Status** | **EBH-6 — SCOPE RECONCILED / READY FOR FINAL INDEPENDENT AUDIT** |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
 | **EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
-| **IMPLEMENTATION_SHA** | *(set @ qual commit)* |
-| **TEST_EXECUTION_SHA** | *(same as IMPLEMENTATION_SHA)* |
-| **CERTIFICATION_HANDOFF_SHA** | *(same as IMPLEMENTATION_SHA)* |
+| **IMPLEMENTATION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **TEST_EXECUTION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **CERTIFICATION_HANDOFF_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
 
 Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py), [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
 
@@ -19,7 +19,7 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 
 | Post-reconciliation outcome | Count (480 cells) |
 | --- | ---: |
-| PASS_CANDIDATE (group bundle) | *see pytest @ HEAD* |
+| PASS_CANDIDATE (group bundle) | 397 |
 | FINDING (unchanged) | 2 |
 | N/A — WITH EVIDENCE | 81 |
 | EVIDENCE_REQUIRED | **0** |
@@ -44,6 +44,12 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 All `EBH6-LAYER-*`: **`L9_EVIDENCE_SUBMITTED`** with ≥3 L3 mechanisms each (`_l3_reachability_evidence.py`).
 
 ## 23 families — implementer proposals
+
+| disposition | count |
+| --- | ---: |
+| PASS_CANDIDATE | 2 (EXE, GOV) |
+| SCOPED CANDIDATE | 21 |
+| EVIDENCE REQUIRED | 0 |
 
 See [`EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md`](EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md) + `_family_l9_evidence.l9_evidence_disposition`.
 

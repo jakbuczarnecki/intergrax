@@ -4,10 +4,10 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **EBH-6 — PROTOCOL 03 FINAL EVIDENCE DISPOSITION / READY FOR RE-AUDIT** |
-| **EXPECTED_START_HEAD** | `acbe1c92f1ccf84fc635eec43784973a08c2ac02` |
-| **CERTIFICATION_HANDOFF_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
-| **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **Disposition** | **EBH-6 — SCOPE RECONCILED / READY FOR FINAL INDEPENDENT AUDIT** |
+| **EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
+| **CERTIFICATION_HANDOFF_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **TEST_EXECUTION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
 ## Commands @ CERTIFICATION_HANDOFF_SHA
@@ -28,7 +28,7 @@ uv run pytest tests/qualification/ebh_6/ tests/qualification/ebh_5/test_ebh_5_me
 5. [EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md](EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md)
 6. L4 log: `.tmp/session/ebh-6-p03-remediation/pytest.log`
 7. [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md)
-8. [EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md](EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md)
+8. [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md)
 
 ## Mechanical exit §3.0.8 (verify)
 

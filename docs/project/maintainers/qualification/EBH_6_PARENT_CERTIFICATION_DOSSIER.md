@@ -3,18 +3,18 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **EBH-6 — PROTOCOL 03 FINAL EVIDENCE DISPOSITION / READY FOR RE-AUDIT** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
-| **IMPLEMENTATION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
-| **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
-| **CERTIFICATION_HANDOFF_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
-| **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
+| **Status** | **EBH-6 — SCOPE RECONCILED / READY FOR FINAL INDEPENDENT AUDIT** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
+| **IMPLEMENTATION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **TEST_EXECUTION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **CERTIFICATION_HANDOFF_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)
 
 | Run | Result |
 | --- | --- |
-| Consolidated L4 bundle (P03 final disposition) | **54 passed** — `.tmp/session/ebh-6-p03-remediation/pytest-p03-final.log` |
+| Consolidated L4 bundle (scope reconciliation) | **57 passed** — `.tmp/session/ebh-6-scope-reconciliation/pytest.log` |
 
 ## Mandatory blockers
 
@@ -34,6 +34,8 @@
 | --- | --- |
 | L9 plan | [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) |
 | P03 remediation | [EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md](EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md) |
+| Scope reconciliation | [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md) |
+| A–J group SSOT | [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py) |
 | L3 annex | [`tests/qualification/ebh_6/_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) |
 | Pre-cert findings | [EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md) |
 | Operator decisions | [EBH_6_OPERATOR_DECISION_REGISTER.md](EBH_6_OPERATOR_DECISION_REGISTER.md) |
