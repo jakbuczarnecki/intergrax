@@ -15,6 +15,7 @@ from tests.qualification.ebh_5._sqlite_touchpoint_registry import (
 )
 from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
 from tests.qualification.ebh_6._evidence_manifest import evidence_git_head_sha
+from tests.qualification.ebh_6._l3_reachability_evidence import mechanism_ids_for_layer
 from tests.qualification.ebh_6._layer_evidence import layer_evidence_by_id
 
 
@@ -62,6 +63,7 @@ class FindingStatus(StrEnum):
     RESOLVED = "RESOLVED"
     RATIFIED = "RATIFIED"
     REPLAY_REOPENED = "REPLAY-REOPENED"
+    L9_EVIDENCE_SUBMITTED = "L9_EVIDENCE_SUBMITTED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,6 +158,7 @@ def _layer_coverage_findings() -> tuple[HardcodingFindingRecord, ...]:
         evidence = annex[finding_id]
         det = _layer_primary_detection_class(layer)
         path_count = len(evidence.closed_world_paths)
+        mech_ids = mechanism_ids_for_layer(layer)
         rows.append(
             HardcodingFindingRecord(
                 finding_id=finding_id,
@@ -163,19 +166,19 @@ def _layer_coverage_findings() -> tuple[HardcodingFindingRecord, ...]:
                 detection_class=det,
                 classification=HardcodingFindingClassification.ALLOWED_INTERNAL,
                 location=(
-                    f"tests/qualification/ebh_6/_layer_evidence.py — "
-                    f"{path_count} closed-world paths; L3: {evidence.l3_narrative[:120]}…"
+                    "tests/qualification/ebh_6/_l3_reachability_evidence.py — "
+                    f"mechanisms={','.join(mech_ids)}; inventory_paths={path_count}"
                 ),
                 production_effective=ProductionEffective.YES,
                 concern_ids=evidence.sys_inv_refs[:2],
-                violated_invariant=f"Roadmap §3.0.8 layer `{layer}` — L9 attested (no PROHIBITED-* unresolved)",
+                violated_invariant=f"Roadmap §3.0.8 layer `{layer}` — L3 evidence pack (implementer)",
                 remediation_class=RemediationClass.MERGE,
-                status=FindingStatus.RESOLVED,
+                status=FindingStatus.L9_EVIDENCE_SUBMITTED,
                 evidence_sha=head,
                 notes=(
-                    f"L9 closed-world inventory + A–J matrix @ `_layer_evidence.py`; "
-                    f"samples={len(evidence.production_effective_samples)}; "
-                    "spot-check ≠ global absence — independent Protocol 03 required."
+                    "Implementer L3 pack submitted — not independent RESOLVED; "
+                    "closed-world inventory + per-mechanism A–J controls; "
+                    "auditor Protocol 03 re-audit required."
                 ),
             ),
         )

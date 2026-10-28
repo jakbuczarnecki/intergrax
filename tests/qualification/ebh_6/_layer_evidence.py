@@ -362,14 +362,30 @@ def _gates(layer: str) -> tuple[str, ...]:
     return common + extra.get(layer, ())
 
 
+def layer_aj_applicability(layer: str) -> tuple[AjApplicability, ...]:
+    return _LAYER_AJ[layer]
+
+
 @lru_cache(maxsize=1)
 def all_layer_evidence() -> tuple[LayerL9Evidence, ...]:
+    from tests.qualification.ebh_6._l3_reachability_evidence import (
+        l3_records_by_layer,
+        mechanism_ids_for_layer,
+    )
+
     rows: list[LayerL9Evidence] = []
     for idx, layer in enumerate(EBH6_AUDIT_LAYERS, start=1):
         paths = _layer_paths(layer)
-        samples = paths[:3] if len(paths) >= 3 else paths
-        if len(samples) < 3 and layer == "composition_roots":
-            samples = tuple(sorted(discover_composition_root_paths()))[:3]
+        l3_records = l3_records_by_layer(layer)
+        mech_ids = mechanism_ids_for_layer(layer)
+        prod_samples = tuple(r.entrypoint for r in l3_records if r.production_effective)
+        if not prod_samples:
+            prod_samples = tuple(r.entrypoint for r in l3_records)
+        l3_index = (
+            f"{len(l3_records)} L3 mechanisms ({', '.join(mech_ids[:3])}"
+            f"{'…' if len(mech_ids) > 3 else ''}) — "
+            "annex tests/qualification/ebh_6/_l3_reachability_evidence.py"
+        )
         rows.append(
             LayerL9Evidence(
                 finding_id=f"EBH6-LAYER-{idx:02d}",
@@ -377,8 +393,8 @@ def all_layer_evidence() -> tuple[LayerL9Evidence, ...]:
                 closed_world_paths=paths,
                 aj_applicability=_LAYER_AJ[layer],
                 sys_inv_refs=_sys_inv(layer),
-                l3_narrative=_l3_narrative(layer),
-                production_effective_samples=samples,
+                l3_narrative=l3_index,
+                production_effective_samples=prod_samples[:3] if len(prod_samples) > 3 else prod_samples,
                 gate_test_ids=_gates(layer),
             ),
         )
@@ -390,6 +406,9 @@ def layer_evidence_by_id() -> dict[str, LayerL9Evidence]:
 
 
 def assert_l9_layer_evidence_complete() -> None:
+    from tests.qualification.ebh_6._l3_reachability_evidence import assert_l3_reachability_complete
+
+    assert_l3_reachability_complete()
     evidence = all_layer_evidence()
     assert len(evidence) == 16
     for row in evidence:
@@ -400,5 +419,6 @@ def assert_l9_layer_evidence_complete() -> None:
             if not aj.applicable:
                 assert aj.rationale.strip(), row.finding_id
         assert row.l3_narrative.strip()
-        assert row.production_effective_samples or row.layer in ("governance",)
+        assert "L3 mechanisms" in row.l3_narrative
+        assert len(row.production_effective_samples) >= 1
         assert row.sys_inv_refs

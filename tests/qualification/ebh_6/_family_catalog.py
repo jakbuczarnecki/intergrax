@@ -69,7 +69,7 @@ _EBH5_RPLG = "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py"
 _CTRL_CATALOG = "tests/qualification/control_planes/ctrl_x/catalog.py"
 
 
-EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
+_EBH6_FAMILY_CATALOG_BASE: tuple[ArchitectureFamilyRecertRow, ...] = (
     ArchitectureFamilyRecertRow(
         "BND",
         "Hard layer boundaries",
@@ -452,6 +452,48 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         FamilyIndependentDisposition.PENDING,
         ImplementerProposedDisposition.PENDING,
     ),
+)
+
+
+def _merge_catalog_with_l9_bundles(
+    base: tuple[ArchitectureFamilyRecertRow, ...],
+) -> tuple[ArchitectureFamilyRecertRow, ...]:
+    from tests.qualification.ebh_6._family_l9_evidence import family_l9_bundle_by_id
+
+    bundles = family_l9_bundle_by_id()
+    merged: list[ArchitectureFamilyRecertRow] = []
+    for row in base:
+        bundle = bundles[row.family_id]
+        gates = bundle.gate_test_ids if bundle.gate_test_ids else row.gate_test_ids
+        missing = row.missing_proof
+        if bundle.blocker_id and bundle.gate_test_ids:
+            missing = f"{bundle.blocker_id} — invariant gates @ HEAD (implementer L9 annex)"
+        elif bundle.gate_test_ids and missing.startswith("EBH6-BLK"):
+            missing = ""
+        merged.append(
+            ArchitectureFamilyRecertRow(
+                row.family_id,
+                row.ecap_theme,
+                row.frz_family,
+                row.primary_historical_owner,
+                row.authority,
+                row.scope_paths,
+                row.existing_evidence_sha,
+                row.freshness,
+                missing,
+                gates,
+                row.remediation_batch,
+                row.acceptance_rule,
+                row.independent_disposition,
+                bundle.implementer_proposed_disposition,
+                row.notes,
+            ),
+        )
+    return tuple(merged)
+
+
+EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = _merge_catalog_with_l9_bundles(
+    _EBH6_FAMILY_CATALOG_BASE,
 )
 
 
