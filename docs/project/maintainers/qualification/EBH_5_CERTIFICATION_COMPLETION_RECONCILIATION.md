@@ -5,7 +5,7 @@
 | **Disposition** | **EBH-5 FINAL CORRECTIVE BATCH — READY FOR INDEPENDENT PARENT AUDIT** |
 | **Parent CLOSED** | **NO** |
 | **G06 batch START_HEAD** | `b1d3cea3611f9f1c4af36daecc4f900a11b93e18` |
-| **CERTIFICATION_HANDOFF_SHA** | `74bac73210cc017babc9a681c5580ba2f0a59ba9` |
+| **CERTIFICATION_HANDOFF_SHA** | `8e75904156f28a805c5ebc6276c56f551af28117` |
 | **TEST_EXECUTION_SHA** | `b1d3cea3611f9f1c4af36daecc4f900a11b93e18` (54 passed, 1 skipped EBH-5; 18 passed CONFIG-X @ G06 batch) |
 
 ## SHA ladder (do not collapse)
@@ -17,7 +17,7 @@
 | F01/F02 final | `e29aa40e1d83ffce57a1fc8039ea6914364910f9` | Behavioral F01/F02 composition proofs |
 | F01 OTLP refinement | `3e9460465d46a64f82022d37130891d940a810e2` | OTLP without `_create_export_transport` patch |
 | Handoff publication | `74bac73210cc017babc9a681c5580ba2f0a59ba9` | Prior independent auditor entry SHA |
-| G06 implementation | _set at commit_ | Enterprise G06-01..03 batch |
+| G06 implementation | `8e75904156f28a805c5ebc6276c56f551af28117` | Enterprise G06-01..03 batch |
 
 ## Plan tasks
 
@@ -30,7 +30,7 @@
 | SAC freeze packet | **DONE** (PROPOSED only) |
 | Protocol 03 handoff | **DONE** (STOP before AUDIT PASS) |
 | Pytest validation | **DONE** @ G06 TEST_EXECUTION (see below) |
-| Commit/push G06 | **PENDING** → updates CERTIFICATION_HANDOFF_SHA |
+| Commit/push G06 | **DONE** @ CERTIFICATION_HANDOFF_SHA |
 | Parent CLOSED (OD-EBH5-08) | **BLOCKED** |
 
 ## G06 corrective batch (enterprise)
