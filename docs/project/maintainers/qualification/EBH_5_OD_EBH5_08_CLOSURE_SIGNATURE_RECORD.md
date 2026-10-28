@@ -4,20 +4,20 @@
 | --- | --- |
 | **Decision ID** | OD-EBH5-08 |
 | **Action** | Publish **`EBH-5 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`** in roadmap §5 and stage table |
-| **Status** | **OPEN — READY FOR OPERATOR SIGNATURE** |
+| **Status** | **APPROVED — 2026-10-28** |
 | **Prerequisite** | **OD-EBH5-07** = **`INDEPENDENT AUDIT PASS — SCOPED`** @ `33ecf19cc020b112d9e586c87b49e819202f5d6d` (**satisfied 2026-10-28**) |
 
 ## Verification (2026-10-28 publication batch)
 
 | Check | Result |
 | --- | --- |
-| Canonical operator phrase in [`EBH_5_OPERATOR_DECISION_REGISTER.md`](EBH_5_OPERATOR_DECISION_REGISTER.md) | **NOT FOUND** |
+| Canonical operator phrase in [`EBH_5_OPERATOR_DECISION_REGISTER.md`](EBH_5_OPERATOR_DECISION_REGISTER.md) | **FOUND — operator explicit approval 2026-10-28, recorded in operator decision register** |
 | Prior operator publication (`OPERATOR APPROVED — EBH-5 SAC FREEZE`, OD-EBH5-04*) | **Present** — does **not** substitute for OD-EBH5-08 |
 | Agent instruction to “bring EBH-5 to closure” | **Insufficient** — ECAP requires explicit closure publication authority |
 
-**Conclusion:** Do **not** record OD-EBH5-08 as **APPROVED** or publish parent **CLOSED** until operator emits the required phrase below.
+**Conclusion:** Operator has now explicitly approved OD-EBH5-08; formal scoped parent closure publication is authorized. Historical pre-signature verification above is superseded by this decision.
 
-## Required operator wording (canonical)
+## Operator wording (received and approved 2026-10-28)
 
 ```text
 OPERATOR APPROVED — EBH-5 FORMAL PARENT CLOSURE PUBLICATION (SCOPED)
@@ -30,7 +30,7 @@ INDEPENDENT_ACCEPTANCE_BASELINE_SHA = 33ecf19cc020b112d9e586c87b49e819202f5d6d
 Scoped limitations per EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md — no global FRZ PASS.
 ```
 
-## On signature — publication obligations
+## Publication obligations following received signature
 
 1. Set OD-EBH5-08 **APPROVED** with date and exact phrase in operator register.
 2. Update roadmap §3.0.8, stage row **EBH-5**, and §5 ledger to **`CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`**.
