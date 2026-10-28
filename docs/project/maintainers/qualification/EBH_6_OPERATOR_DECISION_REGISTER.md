@@ -4,7 +4,7 @@
 | --- | --- | --- | --- |
 | OD-EBH5-08 | EBH-5 formal parent closure publication | **APPROVED — 2026-10-28** — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) | — (EBH-5 parent **CLOSED — SCOPED**) |
 | OD-EBH6-01 | Authorize EBH-6 implementation wave (`OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN`) | **OPEN** | **Blocker** for `production delta` and formal wave closure |
-| OD-EBH6-02 | Accept EBH-6 plan / scope (independent plan audit) | **OPEN** | Protocol 03 plan review |
+| OD-EBH6-02 | Accept EBH-6 plan / scope (independent plan audit) | **APPROVED — 2026-10-28** — `OPERATOR APPROVED — EBH-6 L9 EVIDENCE EXECUTION (OD-EBH6-02)` — **does not** equal independent code acceptance or Protocol 03 PASS | Protocol 03 plan review **unblocked for B-L9-5** |
 | OD-EBH6-ADR-* | Finding `REQUIRES ARCHITECTURE DECISION` without ADR | **TRACKED** | P3 remediation blocked per finding |
 | OD-EBH6-08 | Formal EBH-6 closure publication | **OPEN** | P8 only after L9 PASS |
 
@@ -19,9 +19,9 @@ OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN
 | Field | Value |
 | --- | --- |
 | Branch | `development` |
-| **IMPLEMENTATION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **EXPECTED_START_HEAD** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **IMPLEMENTATION_SHA** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` (pre-L9 wave baseline; updated at evidence commit) |
+| **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
+| **TEST_EXECUTION_SHA** | *(recorded @ B-L9-4 — see freshness ledger)* |
 | EBH-5 parent | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** @ OD-EBH5-08 |
 | EBH-5 independent audit SHA | `33ecf19cc020b112d9e586c87b49e819202f5d6d` (OD-EBH5-07 satisfied) |
 | Agent closure | **Forbidden** — no OD-EBH6-08, no `EBH-6 — CLOSED` |

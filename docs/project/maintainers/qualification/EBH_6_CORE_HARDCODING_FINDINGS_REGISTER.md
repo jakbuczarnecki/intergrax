@@ -2,8 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| **IMPLEMENTATION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **IMPLEMENTATION_SHA** | *(set at L9 evidence commit — see freshness ledger)* |
 | **Mechanical SSOT** | [`tests/qualification/ebh_6/_findings_register.py`](../../../tests/qualification/ebh_6/_findings_register.py) |
+| **L9 layer annex** | [`tests/qualification/ebh_6/_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py) |
 | **Schema authority** | [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.2 |
 
 ## Mechanical exit (@ qualification SHA)
@@ -12,7 +13,7 @@
 | --- | --- |
 | `unclassified_findings` (inventory-style) | **0** |
 | In-scope `PROHIBITED-*` unresolved | **0** |
-| Layer A–J production sample complete | **NO** — see `EBH6-LAYER-*` OPEN |
+| Layer A–J L9 attestation (16 layers) | **RESOLVED @ `_layer_evidence.py`** — independent Protocol 03 still required |
 
 ## Finding population (closed-world)
 
@@ -20,9 +21,17 @@
 | --- | --- | --- |
 | Tracked architecture debts | 2 | Q2-D2 (RATIFIED ADR track), BND-COMPAT-R3 (lab-only) |
 | VBN inventory replay | 1 | EBH-5 inventory @ HEAD |
-| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — **OPEN / DISCOVERY REQUIRED — L9 LAYER SAMPLE** |
+| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — **RESOLVED** with closed-world path inventory + A–J matrix |
 | SQLite annex @ HEAD | 38 | `EBH6-SQLITE-*` — mapped from EBH-5 annex |
 | **Total** | **57** | Full rows in Python SSOT only |
+
+## Layer status summary (L9 implementer attestation)
+
+| finding_id | layer | status | evidence |
+| --- | --- | --- | --- |
+| EBH6-LAYER-01..16 | §3.0.8 layers | **RESOLVED** | `_layer_evidence.py` — path inventory, SYS-INV refs, L3 narrative, gate refs |
+
+Spot-check samples **do not** prove global absence of violations — closed-world inventory + mechanical gates only.
 
 ## Representative tracked entries
 
@@ -31,7 +40,7 @@
 | EBH6-DEBT-Q2-D2 | F | REQUIRES ARCHITECTURE DECISION | RATIFIED |
 | EBH6-DEBT-BND-COMPAT-R3 | H | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RATIFIED |
 | EBH6-VBN-INVENTORY-REPLAY | I | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RESOLVED |
-| EBH6-LAYER-01 (example) | A | DISCOVERY REQUIRED — L9 LAYER SAMPLE | OPEN |
+| EBH6-LAYER-07 (example) | G | ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM | RESOLVED |
 
 ## Reuse (by reference)
 

@@ -11,7 +11,7 @@ from typing import Final
 EBH6_EVIDENCE_SUITE: Final[str] = "tests/qualification/ebh_6/"
 
 # Operator planning anchor — not present in local object database until fetch.
-EXPECTED_START_HEAD: Final[str] = "716efd6716a51dc933b85adfe78d6bd13b73bdbf"
+EXPECTED_START_HEAD: Final[str] = "4736e4e4a00aff44afea9a28f91d188631ae43f1"
 
 EBH5_INDEPENDENT_AUDIT_SHA: Final[str] = "33ecf19cc020b112d9e586c87b49e819202f5d6d"
 CONFIG_X_HISTORICAL_PASS_SHA: Final[str] = "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb"

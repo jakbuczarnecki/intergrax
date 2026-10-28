@@ -2,31 +2,33 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **READY FOR AUDIT (CANDIDATE)** — **not CLOSED** · pre-cert pack @ **PRE-CERT PUBLICATION_SHA** `a7d133a91…` |
-| **Roadmap row** | EBH-6 → VBN mechanical slice @ `716efd67…` |
+| **Disposition** | **EBH-6 — FINAL L9 EVIDENCE READY FOR INDEPENDENT CERTIFICATION** — **not CLOSED** |
+| **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** |
-| **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **PRE-CERT PUBLICATION_SHA** | `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` |
-| **CERTIFICATION_HANDOFF_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
+| **IMPLEMENTATION_SHA** | *(L9 evidence commit — see ledger)* |
+| **TEST_EXECUTION_SHA** | *(consolidated pytest @ IMPLEMENTATION_SHA)* |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
 | Criterion | Status |
 | --- | --- |
-| CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, inventory unclassified=0) |
-| Layer L9 sample complete | **OPEN** — 16 DISCOVERY REQUIRED rows |
+| CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
+| Layer L9 attestation (16) | **PASS (implementer)** — `_layer_evidence.py` + RESOLVED LAYER rows |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
-| Architecture-family matrix catalog | **PASS** (23 rows) |
+| Architecture-family matrix catalog | **PASS** (23 rows; implementer proposals only) |
 | EBH-6 qualification pytest | **PASS** @ TEST_EXECUTION_SHA |
-| Independent exact-SHA audit | **OPEN (L9 / P7)** |
+| Independent exact-SHA audit | **OPEN (L9 / Protocol 03 — B-L9-5)** |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / P8)** |
 | EBH-5 parent closure | **CLOSED** @ **OD-EBH5-08 APPROVED 2026-10-28** |
+| Plan execution (**OD-EBH6-02**) | **APPROVED 2026-10-28** |
 
 ## References
 
+- [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md)
 - [EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md)
 - [EBH_6_PARENT_CERTIFICATION_DOSSIER.md](EBH_6_PARENT_CERTIFICATION_DOSSIER.md)
 - [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md)
@@ -38,3 +40,4 @@
 - No DUP-X closure
 - No ARCH-FREEZE entry
 - No AUDIT PASS / OD-EBH6-08
+- No independent **`INDEPENDENT_AUDITOR_DISPOSITION`** acceptance (23 × PENDING)

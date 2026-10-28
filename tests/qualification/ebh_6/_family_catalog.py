@@ -26,6 +26,16 @@ class FamilyIndependentDisposition(StrEnum):
     NOT_APPLICABLE_WITH_EVIDENCE = "N/A — WITH EVIDENCE"
 
 
+class ImplementerProposedDisposition(StrEnum):
+    PENDING = "PENDING (proposed)"
+    REPLAY_PASS = "REPLAY PASS (proposed)"
+    PASS = "PASS (proposed)"
+    PASS_SCOPED = "PASS scoped (proposed)"
+    REPLAY_PASS_SCOPED = "REPLAY PASS scoped (proposed)"
+    NA_WITH_EVIDENCE = "N/A — WITH EVIDENCE (proposed)"
+    PENDING_TO_REPLAY_PASS = "PENDING→REPLAY PASS (proposed)"
+
+
 @dataclass(frozen=True, slots=True)
 class ArchitectureFamilyRecertRow:
     family_id: str
@@ -41,6 +51,7 @@ class ArchitectureFamilyRecertRow:
     remediation_batch: str
     acceptance_rule: str
     independent_disposition: FamilyIndependentDisposition
+    implementer_proposed_disposition: ImplementerProposedDisposition
     notes: str = ""
 
 
@@ -72,7 +83,8 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         (_nid(_BND, "test_tier0_must_not_import_agents_or_applications"),),
         "P1",
         "No new PROVEN boundary violation on production path",
-        FamilyIndependentDisposition.REPLAY_PASS,
+        FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.REPLAY_PASS,
         "DEBT-BND-COMPAT-R3 tracked lab-only in findings register",
     ),
     ArchitectureFamilyRecertRow(
@@ -84,11 +96,12 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("intergrax/runtime/", "intergrax/contracts/"),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.CURRENT,
-        "",
+        "EBH6-BLK-L9-OWN-01 — no ownership rescan",
         (_nid(_EBH6_FAM, "test_ebh6_family_catalog_covers_applicable_themes"),),
         "P1",
         "No new duplicate semantic owner",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "CTR",
@@ -104,6 +117,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P1",
         "No contract leakage finding PROHIBITED unresolved",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "TYP",
@@ -119,6 +133,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P3-if-mandatory",
         "Q2-D2 RATIFIED or remediated before closure",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "PLG",
@@ -133,7 +148,8 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         (_nid(_EBH5_MECH, "test_ebh5_exit_inventory_complete"),),
         "P1",
         "No global PASS promotion; no regression vs EBH-5",
-        FamilyIndependentDisposition.REPLAY_PASS,
+        FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.REPLAY_PASS,
     ),
     ArchitectureFamilyRecertRow(
         "RPL",
@@ -148,7 +164,8 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         (_nid(_EBH5_RPLG, "test_ebh5_rpl_g_config_x_active_blockers_remain_empty"),),
         "P4",
         "Hardcoding re-audit only; matrix drift documented",
-        FamilyIndependentDisposition.REPLAY_PASS,
+        FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.REPLAY_PASS,
     ),
     ArchitectureFamilyRecertRow(
         "EXE",
@@ -159,11 +176,12 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("intergrax/runtime/execution/",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.HISTORICAL,
-        "",
+        "EBH6-BLK-L9-EXE-01",
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P1",
         "No shadow execution path sample regression",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "GOV",
@@ -174,11 +192,12 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("intergrax/runtime/governance/",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.HISTORICAL,
-        "",
+        "EBH6-BLK-L9-GOV-01",
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P1",
         "Subset replay — no new bypass",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "STA",
@@ -194,6 +213,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P2",
         "SQLite touchpoints classified; no new shadow store",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PASS_SCOPED,
     ),
     ArchitectureFamilyRecertRow(
         "REC",
@@ -204,11 +224,12 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("intergrax/runtime/resilience/",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.HISTORICAL,
-        "",
+        "EBH6-BLK-L9-REC-01",
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P1",
         "Drift-only replay",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "CMP",
@@ -223,7 +244,8 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P1",
         "Policy unchanged — consumer impact not EVOL scope",
-        FamilyIndependentDisposition.NOT_APPLICABLE_WITH_EVIDENCE,
+        FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.NA_WITH_EVIDENCE,
     ),
     ArchitectureFamilyRecertRow(
         "CFG",
@@ -238,7 +260,8 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         (_nid(_EBH6_CFG, "test_ebh6_config_x_all_concerns_mapped_at_head"),),
         "P4",
         "54/54 mapped; historical PASS preserved",
-        FamilyIndependentDisposition.REPLAY_PASS,
+        FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.REPLAY_PASS,
     ),
     ArchitectureFamilyRecertRow(
         "SEC",
@@ -249,7 +272,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("intergrax/runtime/security/",),
         "318a4d835534ef5c48575f4649551c957dacd8ea"[:12] + "…",
         FamilyEvidenceFreshness.HISTORICAL,
-        "",
+        "EBH6-BLK-L9-SEC-01",
         (
             _nid(
                 "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py",
@@ -259,6 +282,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P1",
         "Spot-check only — CTRL-X CLOSED @ historical SHA",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "REL",
@@ -269,11 +293,12 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("intergrax/runtime/resilience/",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.HISTORICAL,
-        "",
+        "EBH6-BLK-L9-REL-01",
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P1",
         "Selected guard replay",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "CTL",
@@ -293,7 +318,8 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ),
         "P1",
         "Drift check only",
-        FamilyIndependentDisposition.REPLAY_PASS,
+        FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.REPLAY_PASS,
     ),
     ArchitectureFamilyRecertRow(
         "OBS",
@@ -309,6 +335,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P1",
         "OTLP qualified row replay @ HEAD",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "TRC",
@@ -324,6 +351,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P1",
         "Sanctioned roots wired for L3",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PASS,
     ),
     ArchitectureFamilyRecertRow(
         "PRD",
@@ -338,7 +366,8 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P6",
         "Live slice excluded from EBH-6 closure",
-        FamilyIndependentDisposition.NOT_APPLICABLE_WITH_EVIDENCE,
+        FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.NA_WITH_EVIDENCE,
     ),
     ArchitectureFamilyRecertRow(
         "REG",
@@ -354,6 +383,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P5",
         "EBH-6 gates only — not QUAL-X closure",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING_TO_REPLAY_PASS,
     ),
     ArchitectureFamilyRecertRow(
         "HRN",
@@ -364,11 +394,12 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("tests/qualification/harness_02/",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.HISTORICAL,
-        "",
+        "EBH6-BLK-L9-HRN-01",
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P1",
         "Subset replay",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
     ArchitectureFamilyRecertRow(
         "TEN",
@@ -379,11 +410,12 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         ("tests/unit/runtime/security/test_tenant_scope.py",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.HISTORICAL,
-        "TENANT-X global not entered",
+        "EBH6-BLK-L9-TEN-01",
         (_nid(_EBH6_FAM, "test_ebh6_family_row_count_closed_world"),),
         "P1",
         "Spot-check — no global TEN promotion",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.REPLAY_PASS_SCOPED,
     ),
     ArchitectureFamilyRecertRow(
         "DOC",
@@ -399,6 +431,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P6",
         "Dossier + matrix docs present",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PASS,
     ),
     ArchitectureFamilyRecertRow(
         "VBN",
@@ -417,6 +450,7 @@ EBH6_FAMILY_CATALOG: Final[tuple[ArchitectureFamilyRecertRow, ...]] = (
         "P2-P4",
         "unclassified=0; prohibited unresolved=0 in frozen scope",
         FamilyIndependentDisposition.PENDING,
+        ImplementerProposedDisposition.PENDING,
     ),
 )
 

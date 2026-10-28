@@ -35,7 +35,14 @@ def test_ebh6_family_independent_disposition_not_closed() -> None:
     pending = [
         row for row in EBH6_FAMILY_CATALOG if row.independent_disposition == FamilyIndependentDisposition.PENDING
     ]
-    assert pending, "L9 must review pending families"
+    assert len(pending) == len(EBH6_FAMILY_CATALOG), "L9 auditor must set independent disposition — all PENDING"
+
+
+def test_ebh6_family_implementer_proposed_disposition_populated() -> None:
+    from tests.qualification.ebh_6._family_catalog import ImplementerProposedDisposition
+
+    for row in EBH6_FAMILY_CATALOG:
+        assert isinstance(row.implementer_proposed_disposition, ImplementerProposedDisposition)
 
 
 def test_ebh6_family_gate_test_paths_exist() -> None:

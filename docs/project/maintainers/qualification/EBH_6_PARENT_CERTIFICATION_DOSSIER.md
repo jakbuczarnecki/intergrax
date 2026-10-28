@@ -3,72 +3,58 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **READY FOR AUDIT** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
-| **IMPLEMENTATION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **CERTIFICATION_HANDOFF_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
+| **Status** | **EBH-6 — FINAL L9 EVIDENCE READY FOR INDEPENDENT CERTIFICATION** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
+| **IMPLEMENTATION_SHA** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
+| **TEST_EXECUTION_SHA** | *(set after consolidated pytest — see ledger)* |
+| **CERTIFICATION_HANDOFF_SHA** | *(aligned to IMPLEMENTATION_SHA)* |
+| **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
-| **QUALIFICATION_SHA** | Same as TEST_EXECUTION_SHA when pytest @ run time |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)
 
 | Run | Result |
 | --- | --- |
-| `uv run pytest tests/qualification/ebh_6/ -q` | See `.tmp/session/ebh-6-pre-cert/pytest.log` |
+| Consolidated L4 bundle (plan L9-E) | `.tmp/session/ebh-6-l9/pytest.log` |
 
 ## Mandatory blockers
 
 - **OD-EBH6-01** OPEN — wave / `production delta` (roadmap §3.0.8)
-- **OD-EBH6-02**, **OD-EBH6-08** OPEN
-- **L9 / Protocol 03** — no pass record
-- **16** layer rows OPEN — L9 A–J sample required
+- **OD-EBH6-08** OPEN — parent closure forbidden until L9 PASS
+- **L9 / Protocol 03** — no pass record (**B-L9-5 not executed**)
+- **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution only
 
-## Reconcile pass artifacts
+## L9 evidence (implementer)
 
-- [EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md)
-- [EBH_6_GIT_RECONCILIATION_REPORT.md](EBH_6_GIT_RECONCILIATION_REPORT.md)
-- [EBH_6_P0_P6_RECONCILIATION_AND_CERTIFICATION_HANDOFF.md](EBH_6_P0_P6_RECONCILIATION_AND_CERTIFICATION_HANDOFF.md)
+- **16/16** layers: `_layer_evidence.py` + RESOLVED `EBH6-LAYER-*` register rows
+- **23/23** families: `implementer_proposed_disposition` populated; **independent disposition 23 × PENDING**
 
 ## Artifact index
 
 | Artifact | Location |
 | --- | --- |
+| L9 plan | [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) |
+| Layer annex | [`tests/qualification/ebh_6/_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py) |
 | Pre-cert findings | [EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md) |
 | Operator decisions | [EBH_6_OPERATOR_DECISION_REGISTER.md](EBH_6_OPERATOR_DECISION_REGISTER.md) |
-| Surface inventory | [EBH_6_ENTERPRISE_SURFACE_INVENTORY.md](EBH_6_ENTERPRISE_SURFACE_INVENTORY.md) |
 | Freshness ledger | [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md) |
 | Family matrix | [EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md](EBH_6_ARCHITECTURE_FAMILY_RECERTIFICATION_MATRIX.md) |
 | Hardcoding register | [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md) |
-| Neutrality audit | [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md) |
 | L9 handoff | [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md) |
 | Readiness | [EBH_6_STAGE_CERTIFICATION_READINESS.md](EBH_6_STAGE_CERTIFICATION_READINESS.md) |
 | Qualification SSOT | [`tests/qualification/ebh_6/`](../../../tests/qualification/ebh_6/) |
 
-## EBH-5 reuse (by reference)
-
-| Artifact | EBH-5 path |
-| --- | --- |
-| Inventory | [EBH_5_VENDOR_BACKEND_DEPENDENCY_INVENTORY.md](EBH_5_VENDOR_BACKEND_DEPENDENCY_INVENTORY.md) |
-| Matrix | [EBH_5_CROSS_LAYER_REPLACEABILITY_MATRIX.md](EBH_5_CROSS_LAYER_REPLACEABILITY_MATRIX.md) |
-| Parent closure | **CLOSED** @ OD-EBH5-08 APPROVED 2026-10-28 |
-| Protocol 03 PASS (scoped) | [EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md](EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) |
-
-## FRZ traceability
-
-Contributions toward current-HEAD evidence for applicable families — **does not** promote global FRZ PASS. See family matrix + findings register for SYS-INV / FRZ linkage per row.
-
 ## Known limitations (auditor ack required)
 
-- **OD-EBH6-01** OPEN — wave open phrase not recorded
-- **51** EBH-5 NYQ rows
+- **OD-EBH6-01** OPEN
+- **51** EBH-5 NYQ rows (EBH-7)
 - **PROD-Q** live slice out of scope
 - **DUP-X** deferred
-- Layer **EBH6-LAYER-*** — DISCOVERY REQUIRED, not RESOLVED sentinels
+- Family **L9 blockers:** EBH6-BLK-L9-OWN-01, EXE-01, GOV-01, REC-01, SEC-01, REL-01, HRN-01, TEN-01
 
-## Verification command
+## Verification command (consolidated)
 
 ```powershell
-uv run pytest tests/qualification/ebh_6/ -q
+uv run pytest tests/qualification/ebh_6/ tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py -q
 ```
 
 ## Forbidden claims

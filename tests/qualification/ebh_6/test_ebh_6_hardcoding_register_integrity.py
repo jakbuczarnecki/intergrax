@@ -42,10 +42,20 @@ def test_ebh6_sqlite_findings_cover_annex() -> None:
 
 
 def test_ebh6_layer_coverage_findings_complete() -> None:
+    from tests.qualification.ebh_6._layer_evidence import assert_l9_layer_evidence_complete
+
+    assert_l9_layer_evidence_complete()
     layer_rows = [row for row in all_hardcoding_findings() if row.finding_id.startswith("EBH6-LAYER-")]
     assert len(layer_rows) == 16
-    assert all(row.status == FindingStatus.OPEN for row in layer_rows)
-    assert all(row.classification == HardcodingFindingClassification.DISCOVERY_REQUIRED for row in layer_rows)
+    assert all(row.status == FindingStatus.RESOLVED for row in layer_rows)
+    assert all(row.classification != HardcodingFindingClassification.DISCOVERY_REQUIRED for row in layer_rows)
+
+
+def test_ebh6_layer_evidence_annex_non_empty() -> None:
+    from tests.qualification.ebh_6._layer_evidence import all_layer_evidence
+
+    for row in all_layer_evidence():
+        assert row.closed_world_paths
 
 
 def test_ebh6_tracked_debt_findings_ratified() -> None:

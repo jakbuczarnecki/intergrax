@@ -37,7 +37,7 @@ Detection classes **A–J** (VBN §2.2) vs mandatory §3.0.8 layer audit. **Laye
 | **I** | Inventory / concern mapping | **EBH6-VBN-INVENTORY-REPLAY** | integrations | Mechanical only |
 | **J** | Extensibility claims vs proof | **51 NYQ** EBH-5 matrix rows | tools_skills_capabilities, rag_memory | **EBH-7 scope — explicit limitation** |
 
-**16 layer rows:** `EBH6-LAYER-01..16` — all **OPEN** / **DISCOVERY REQUIRED** until L9 attaches evidence.
+**16 layer rows:** `EBH6-LAYER-01..16` — **RESOLVED @ B-L9-2** with [`_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py) closed-world inventory; independent Protocol 03 still required.
 
 ## 23 architecture-family dispositions
 

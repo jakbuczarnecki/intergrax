@@ -2,11 +2,8 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **EBH-6 — FINAL L9 PLAN CORRECTED / READY FOR EXECUTION APPROVAL** |
-| **Plan mode** | PLAN ONLY — no implementation, no Protocol 03 PASS, no EBH-6 CLOSED, no new roadmap stages |
-| **Branch** | `development` |
-| **STAGE_BASELINE / CURRENT HEAD** | `d993f49ed3698b1decf399796a6e502b2221caaa` |
-| **Operator anchor** | `EXPECTED_START_HEAD` = `d993f49ed3698b1decf399796a6e502b2221caaa` |
+| **Status** | **EXECUTION IN PROGRESS — B-L9-1..4** (OD-EBH6-02 approved) |
+| **Operator anchor** | `EXPECTED_START_HEAD` = `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
 | **Blocks** | **OD-EBH6-02** (plan acceptance); **L9 Protocol 03**; **OD-EBH6-08** (post-L9 only) |
 | **Normative** | Roadmap §3.0.8, §5; ECAP §2.B B1–B6, L1–L9; VBN evidence spec §2.2 |
 
