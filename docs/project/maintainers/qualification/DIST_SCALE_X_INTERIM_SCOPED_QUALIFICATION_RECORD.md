@@ -9,7 +9,8 @@
 | **RECORD_PUBLICATION_SHA** | Tip `development` przy commicie `docs(qual): DIST-SCALE-X interim scoped qualification record` — `git log -1 --format=%H -- docs/project/maintainers/qualification/DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md` |
 | **EXECUTION_SHA (P5/P6 physical)** | `9ac74ca3849013e729dbc8c893f64427ef588f94` |
 | **AUDIT_BASELINE_SHA (L9 dossier)** | `6f4193fa9a06204b32fab76a9774511ef0a6ad72` (parent); handoff może cytować wcześniejszy tip audytora — bez zmiany SAC |
-| **Disposition** | **INTERIM SCOPED ACCEPTANCE** — implementacja **P5–P7** + pakiet dokumentacyjny L9 @ SHA powyżej |
+| **Disposition** | **`SUPERSEDED`** — zastąpiony przez [DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) @ **G-07** (2026-10-28) |
+| **Prior disposition (historical)** | **INTERIM SCOPED ACCEPTANCE** — implementacja **P5–P7** + pakiet dokumentacyjny L9 @ SHA powyżej |
 
 ## Werdykt (zakres operatora)
 
@@ -59,7 +60,7 @@ Ten rekord **nie** zastępuje G-06, **nie** publikuje G-06 PASS, **nie** wykonuj
 
 ## Supersession
 
-Ten rekord **zostanie zastąpiony** (superseded) po formalnym zamknięciu parenta **`DIST-SCALE-X` = `CLOSED — INDEPENDENTLY ACCEPTED`** — finalizacja [DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md) po **G-07** i aktualizacji roadmap §5. **Do tego momentu** rekord pozostaje **aktywny**; sekcja supersession **nie** oznacza jeszcze statusu superseded.
+**Status:** **`SUPERSEDED`** (2026-10-28) — parent **`DIST-SCALE-X` = `CLOSED — OPERATOR SCOPED ACCEPTANCE`** — [DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md); roadmap §5 zaktualizowany. Treść poniżej pozostaje jako **audit trail** interim 2026-10-27.
 
 ## Related records
 

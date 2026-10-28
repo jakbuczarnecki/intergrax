@@ -23,14 +23,14 @@ Per `wl_07_soak_mixed_load.py`: `soak_complete_envelope=1` only when `duration >
 | --- | --- |
 | WL-7 **1 h** physical soak **PROVEN** (if PASS, manifest `soak_complete_envelope=1`, `errors=0`) | **Yes** — under this amendment |
 | Original P6 **14400 s** lock satisfied without further operator action | **No** — **4 h NOT PROVEN** |
-| Parent **CLOSED**, **G-07**, global **FRZ PASS** | **Forbidden** without **G-07** after **G-06** |
+| Parent **CLOSED** (scoped) | **Allowed** @ G-07 2026-10-28 — **not** **INDEPENDENTLY ACCEPTED** without external G-06 |
 
 ## L9 matrix disposition (this cycle)
 
 | Row | Disposition |
 | --- | --- |
-| **11** (soak M) | **PARTIAL / VALIDATION** — **1 h PROVEN** (if pass) with footnote **4 h NOT conducted**; not the pre-amendment **14400 s** bar |
-| **16** (blockers) | Per matrix rules after row **11** refresh — **not** full **16/16** closure on original 4 h envelope unless operator later amends or completes 4 h |
+| **11** (soak M) | **PASS (SCOPED)** @ parent closure — **1 h PROVEN**; **14400 s** deferred non-blocking — [DIST_SCALE_X_WL7_4H_DEFERRED_NON_BLOCKING_RECORD.md](DIST_SCALE_X_WL7_4H_DEFERRED_NON_BLOCKING_RECORD.md) |
+| **16** (blockers) | **PASS (SCOPED)** @ parent closure — **not BLOCKED** on 4 h deferral |
 
 ## Session evidence
 
@@ -44,4 +44,5 @@ Per `wl_07_soak_mixed_load.py`: `soak_complete_envelope=1` only when `duration >
 
 - [DIST_SCALE_X_P6_ENVELOPE_RECORD.md](DIST_SCALE_X_P6_ENVELOPE_RECORD.md) — amendment section
 - [DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md](DIST_SCALE_X_WL7_PHYSICAL_DEFERRAL_RECORD.md)
-- [DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md](DIST_SCALE_X_INTERIM_SCOPED_QUALIFICATION_RECORD.md)
+- [DIST_SCALE_X_WL7_4H_DEFERRED_NON_BLOCKING_RECORD.md](DIST_SCALE_X_WL7_4H_DEFERRED_NON_BLOCKING_RECORD.md)
+- [DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md](DIST_SCALE_X_PARENT_FORMAL_CLOSURE_RECONCILIATION.md)

@@ -7,13 +7,13 @@
 | **Envelope** | [DIST_SCALE_X_P6_ENVELOPE_RECORD.md](DIST_SCALE_X_P6_ENVELOPE_RECORD.md) — duration **14400 s** unchanged |
 | **Harness evidence** | `wl07-soak-41ad330f8ef2` @ EXECUTION_SHA `9ac74ca…`, `soak_complete_envelope=0`, 120 s, 0 errors |
 
-## Effect on exit criteria
+## Effect on exit criteria (historical → superseded @ parent closure)
 
-| Criterion | Until full soak |
+| Criterion | @ parent closure 2026-10-28 |
 | --- | --- |
-| L9 row **11** (soak M) | **BLOCKED** / **VALIDATION REQUIRED** |
-| L9 row **16** (blockers) | **BLOCKED** (row 11 open) |
-| Parent **CLOSED** | **FORBIDDEN** until soak + G-06 PASS + G-07 |
+| L9 row **11** (soak M) | **PASS (SCOPED)** — 1 h authoritative; 4 h deferred — [DIST_SCALE_X_WL7_4H_DEFERRED_NON_BLOCKING_RECORD.md](DIST_SCALE_X_WL7_4H_DEFERRED_NON_BLOCKING_RECORD.md) |
+| L9 row **16** (blockers) | **PASS (SCOPED)** — **not BLOCKED** |
+| Parent **CLOSED** | **`CLOSED — OPERATOR SCOPED ACCEPTANCE`** @ G-07 |
 
 ## Aborted partial physical attempt (2026-10-27)
 
