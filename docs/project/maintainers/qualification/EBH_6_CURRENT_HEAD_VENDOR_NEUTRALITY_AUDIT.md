@@ -90,7 +90,7 @@ SSOT: [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_e
 
 Implementer submits **PASS_CANDIDATE / PARTIAL_CANDIDATE / EVIDENCE_REQUIRED / FINDING / N/A** matrix above for auditor replay @ **CERTIFICATION_HANDOFF_SHA**. **No agent-issued AUDIT PASS**, no EBH-6 CLOSED, no global FRZ PASS.
 
-Consolidated dossier: [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md).
+Consolidated dossier: [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md) · [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md).
 
 ## Verification
 

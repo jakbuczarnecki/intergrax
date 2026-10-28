@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **EBH-6 — P03 INTEGRITY CORRECTED / PARTIAL — EXACT BLOCKERS REMAIN** |
+| **Status** | **EBH-6 — SEMANTIC AUDIT SUBMITTED / PARTIAL — EXACT BLOCKERS REMAIN** |
 | **IMPLEMENTATION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
 | **TEST_EXECUTION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
 | **CERTIFICATION_HANDOFF_SHA** | `d7b6442887941b6941a291b0efcf1271b9aee1de` |
