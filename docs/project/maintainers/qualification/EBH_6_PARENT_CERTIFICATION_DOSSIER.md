@@ -5,26 +5,26 @@
 | **Stage** | EBH-6 — Final Architecture Recertification |
 | **Status** | **READY FOR AUDIT** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
 | **START_HEAD** (local batch) | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
-| **STAGE_BASELINE_SHA** (operator / origin) | `d3953f2dee5ca2ab56954e2bf64e4b4f5af828c6` — on **origin/development**; local branch **behind** (see [EBH_6_GIT_RECONCILIATION_REPORT.md](EBH_6_GIT_RECONCILIATION_REPORT.md)) |
+| **STAGE_BASELINE_SHA** (operator / origin) | `d3953f2dee5ca2ab56954e2bf64e4b4f5af828c6` — **origin/development** pre-publication parent |
 | **IMPLEMENTATION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
-| **TEST_EXECUTION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` — **PRE-PUBLICATION** |
+| **TEST_EXECUTION_SHA** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` — post-publication pytest @ HEAD |
 | **QUALIFICATION_SHA** | Same as TEST_EXECUTION_SHA when pytest @ run time |
-| **PUBLICATION_SHA** | **TBD** — untracked artifacts; no agent commit |
+| **PUBLICATION_SHA** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
+| **GIT_EVIDENCE_HEAD** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)
 
 | Run | Result |
 | --- | --- |
-| `uv run pytest tests/qualification/ebh_6/ -q` | **23 passed** (2026-10-28, PRE-PUBLICATION) |
-| Log | `.tmp/session/ebh-6-publication-reconcile/pytest.log` |
+| `uv run pytest tests/qualification/ebh_6/ -q` | **23 passed** (2026-10-28, @ PUBLICATION_SHA) |
+| Log | `.tmp/session/ebh-6-publication-reconcile/pytest-post-push.log` |
 
 ## Mandatory blockers
 
 - **OD-EBH6-01** OPEN — wave / `production delta` (roadmap §3.0.8)
 - **OD-EBH6-02**, **OD-EBH6-08** OPEN
 - **L9 / Protocol 03** — no pass record
-- Git — local HEAD behind operator **STAGE_BASELINE_SHA**
-- Qualification tree **uncommitted** — operator publication authorization required
+- Git — publication @ **PUBLICATION_SHA**; operator **STAGE_BASELINE_SHA** is parent of artifact commit
 
 ## Reconcile pass artifacts
 

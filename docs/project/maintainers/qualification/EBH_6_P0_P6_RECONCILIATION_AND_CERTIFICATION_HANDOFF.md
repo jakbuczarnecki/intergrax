@@ -2,12 +2,12 @@
 
 | Field | Value |
 | --- | --- |
-| **Outcome banner** | **EBH-6 — P0–P6 RECONCILED @ PRE-PUBLICATION HEAD** — **NOT READY FOR GIT PUBLICATION** (authorization + git alignment blockers) |
+| **Outcome banner** | **EBH-6 — P0–P6 RECONCILED @ PUBLICATION_SHA** — qualification artifacts **published**; L9 / OD gates remain **OPEN** |
 | **IMPLEMENTATION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
-| **TEST_EXECUTION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` (**PRE-PUBLICATION**) |
-| **STAGE_BASELINE_SHA (operator)** | `d3953f2dee5ca2ab56954e2bf64e4b4f5af828c6` (**origin/development**; local behind) |
-| **PUBLICATION_SHA** | **TBD** |
-| **Pytest** | **23 passed** in 1.79s — log: `.tmp/session/ebh-6-publication-reconcile/pytest.log` |
+| **TEST_EXECUTION_SHA** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` (post-publication pytest @ HEAD) |
+| **STAGE_BASELINE_SHA (operator)** | `d3953f2dee5ca2ab56954e2bf64e4b4f5af828c6` (**origin/development** parent of publication) |
+| **PUBLICATION_SHA** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
+| **Pytest** | **23 passed** @ TEST_EXECUTION_SHA — log: `.tmp/session/ebh-6-publication-reconcile/pytest-post-push.log` |
 
 ## P0–P6 phase map (engineering batch)
 

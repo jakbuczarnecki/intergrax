@@ -3,6 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Purpose** | Single current-HEAD rollup per VBN spec §2.7 |
+| **HEAD_SHA (git evidence)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 | **IMPLEMENTATION_SHA** | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` |
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **Disposition** | **READY FOR INDEPENDENT REVIEW** — not ARCH-FREEZE entry |
