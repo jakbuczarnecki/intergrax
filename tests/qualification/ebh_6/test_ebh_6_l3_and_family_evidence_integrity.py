@@ -11,12 +11,15 @@ from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
 from tests.qualification.ebh_6._family_catalog import EBH6_FAMILY_CATALOG
 from tests.qualification.ebh_6._family_l9_evidence import (
     FAMILY_L9_EVIDENCE,
+    FamilyL9EvidenceDisposition,
     assert_family_l9_bundles_complete,
+    assert_family_l9_reconciliation_complete,
     family_l9_bundle_by_id,
 )
 from tests.qualification.ebh_6._findings_register import FindingStatus, all_hardcoding_findings
 from tests.qualification.ebh_6._l3_reachability_evidence import (
     AjControlOutcome,
+    _gate_supports_class,
     all_l3_reachability_records,
     assert_l3_reachability_complete,
     l3_records_by_layer,
@@ -30,6 +33,7 @@ _CATALOG_ONLY_GATE = (
     "tests/qualification/ebh_6/test_ebh_6_architecture_family_matrix_integrity.py::"
     "test_ebh6_family_row_count_closed_world"
 )
+_FORBIDDEN_AJ = frozenset({"PASS"})
 
 
 def test_l3_records_have_entrypoint_and_call_chain() -> None:
@@ -47,12 +51,16 @@ def test_l3_samples_not_path_prefix_of_inventory() -> None:
         )
 
 
-def test_applicable_aj_has_evidence_ref_or_finding() -> None:
+def test_applicable_aj_not_auto_pass() -> None:
     for rec in all_l3_reachability_records():
         for ctrl in rec.aj_controls:
-            if ctrl.outcome == AjControlOutcome.NA:
-                continue
-            assert ctrl.evidence_ref.strip(), rec.mechanism_id
+            assert ctrl.outcome.value not in _FORBIDDEN_AJ, rec.mechanism_id
+            if ctrl.outcome == AjControlOutcome.PASS_CANDIDATE:
+                assert _gate_supports_class(ctrl.evidence_ref, ctrl.detection_class), (
+                    f"{rec.mechanism_id}/{ctrl.detection_class}"
+                )
+            if ctrl.outcome == AjControlOutcome.EVIDENCE_REQUIRED:
+                assert "nearest_gate=" in ctrl.evidence_ref or ctrl.evidence_ref.startswith("class-")
 
 
 def test_layer_register_not_false_resolved() -> None:
@@ -77,6 +85,19 @@ def test_family_gate_nodes_exist_and_are_tests() -> None:
         for node_id in bundle.gate_test_ids:
             path_part = node_id.split("::", 1)[0]
             assert (_REPO_ROOT / path_part).is_file(), node_id
+
+
+def test_family_l9_reconciliation_complete() -> None:
+    assert_family_l9_reconciliation_complete()
+
+
+def test_family_metadata_gates_not_pass_candidate() -> None:
+    for bundle in FAMILY_L9_EVIDENCE:
+        if bundle.l9_evidence_disposition == FamilyL9EvidenceDisposition.PASS_CANDIDATE:
+            for node in bundle.gate_test_ids:
+                assert "mandatory_docs" not in node
+                assert "findings_unclassified" not in node
+                assert "prohibited_unresolved" not in node
 
 
 def test_sys_inv_refs_present_per_layer_and_family() -> None:

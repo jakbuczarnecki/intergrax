@@ -16,9 +16,103 @@ _AJ: Final[tuple[str, ...]] = tuple("ABCDEFGHIJ")
 
 
 class AjControlOutcome(StrEnum):
-    PASS = "PASS"
+    PASS_CANDIDATE = "PASS_CANDIDATE"
+    EVIDENCE_REQUIRED = "EVIDENCE_REQUIRED"
     FINDING = "FINDING"
-    NA = "N/A"
+    NA_WITH_EVIDENCE = "N/A — WITH EVIDENCE"
+
+
+# Conservative gate→class hints — PASS_CANDIDATE only when ref matches (not merely applicable).
+_GATE_CLASS_SUBSTRINGS: Final[dict[str, tuple[str, ...]]] = {
+    "A": ("prohibited_unresolved", "vendor", "inventory_complete", "fail_open"),
+    "B": ("tier0_must_not", "production_bypass", "bypass", "hardcoding"),
+    "C": ("config_x", "implicit", "default_resolver"),
+    "D": ("duplicate", "registry_projection", "closed_world"),
+    "E": ("sqlite", "shadow_store", "persistence"),
+    "F": ("tracked_debt", "ratified", "q2-d2"),
+    "G": ("bounded_sink", "diagnostic", "observability"),
+    "H": (
+        "sanctioned",
+        "trace_x",
+        "reachability",
+        "lifecycle_architecture",
+        "hardening_3",
+        "parity",
+        "wiring",
+        "production_bypass",
+        "closed_world",
+    ),
+    "I": ("ebh5_exit_inventory", "reachability_gates", "install"),
+    "J": ("rpl_g", "replaceability", "nyq"),
+}
+
+
+def _gate_supports_class(gate_ref: str, detection_class: str) -> bool:
+    gate_l = gate_ref.lower()
+    hints = _GATE_CLASS_SUBSTRINGS.get(detection_class, ())
+    return any(h in gate_l for h in hints)
+
+
+def _aj_controls_for_mechanism(
+    layer: str,
+    mechanism_id: str,
+    primary_gate: str,
+    entrypoint: str,
+    finding_id: str | None,
+) -> tuple[AjControlResult, ...]:
+    rows: list[AjControlResult] = []
+    for aj in layer_aj_applicability(layer):
+        if not aj.applicable:
+            rows.append(
+                AjControlResult(
+                    aj.detection_class,
+                    AjControlOutcome.NA_WITH_EVIDENCE,
+                    f"N/A — WITH EVIDENCE: {aj.rationale}",
+                ),
+            )
+            continue
+
+        if finding_id == "EBH6-DEBT-Q2-D2" and aj.detection_class == "F":
+            rows.append(
+                AjControlResult(
+                    "F",
+                    AjControlOutcome.FINDING,
+                    f"{finding_id} — FRZ-TYP-03 tracked seam (RATIFIED register row)",
+                ),
+            )
+            continue
+
+        if finding_id == "EBH6-DEBT-BND-COMPAT-R3" and aj.detection_class == "H":
+            rows.append(
+                AjControlResult(
+                    "H",
+                    AjControlOutcome.FINDING,
+                    f"{finding_id} — lab-only reachability; production_effective=no",
+                ),
+            )
+            continue
+
+        if _gate_supports_class(primary_gate, aj.detection_class):
+            rows.append(
+                AjControlResult(
+                    aj.detection_class,
+                    AjControlOutcome.PASS_CANDIDATE,
+                    primary_gate,
+                ),
+            )
+        else:
+            rows.append(
+                AjControlResult(
+                    aj.detection_class,
+                    AjControlOutcome.EVIDENCE_REQUIRED,
+                    (
+                        f"class-{aj.detection_class}: mechanism={mechanism_id}; "
+                        f"entrypoint={entrypoint}; "
+                        f"nearest_gate={primary_gate} — no dedicated class gate @ HEAD"
+                    ),
+                ),
+            )
+    return tuple(rows)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,28 +137,6 @@ class L3ReachabilityRecord:
     existing_finding_id: str | None = None
 
 
-def _aj_controls_for_layer(layer: str, primary_evidence: str) -> tuple[AjControlResult, ...]:
-    rows: list[AjControlResult] = []
-    for aj in layer_aj_applicability(layer):
-        if aj.applicable:
-            rows.append(
-                AjControlResult(
-                    aj.detection_class,
-                    AjControlOutcome.PASS,
-                    primary_evidence,
-                ),
-            )
-        else:
-            rows.append(
-                AjControlResult(
-                    aj.detection_class,
-                    AjControlOutcome.NA,
-                    f"N/A: {aj.rationale}",
-                ),
-            )
-    return tuple(rows)
-
-
 def _m(
     mid: str,
     layer: str,
@@ -87,7 +159,7 @@ def _m(
         semantic_owner=owner,
         canonical_contract=contract,
         composition_owner=comp_owner,
-        aj_controls=_aj_controls_for_layer(layer, gate),
+        aj_controls=_aj_controls_for_mechanism(layer, mid, gate, entry, finding_id),
         production_effective=prod,
         production_effective_rationale=prod_rationale,
         existing_finding_id=finding_id,
@@ -749,6 +821,15 @@ def mechanism_ids_for_layer(layer: str) -> tuple[str, ...]:
     return tuple(r.mechanism_id for r in l3_records_by_layer(layer))
 
 
+def count_l3_aj_outcomes() -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for rec in all_l3_reachability_records():
+        for ctrl in rec.aj_controls:
+            key = ctrl.outcome.value
+            counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 def assert_l3_reachability_complete() -> None:
     assert len(all_l3_reachability_records()) >= 48
     for layer in EBH6_AUDIT_LAYERS:
@@ -763,5 +844,9 @@ def assert_l3_reachability_complete() -> None:
             assert len(rec.aj_controls) == 10, rec.mechanism_id
             for ctrl in rec.aj_controls:
                 assert ctrl.evidence_ref.strip(), rec.mechanism_id
-                if ctrl.outcome == AjControlOutcome.NA:
-                    assert ctrl.evidence_ref.startswith("N/A:"), rec.mechanism_id
+                if ctrl.outcome == AjControlOutcome.NA_WITH_EVIDENCE:
+                    assert ctrl.evidence_ref.startswith("N/A — WITH EVIDENCE:"), rec.mechanism_id
+                if ctrl.outcome == AjControlOutcome.PASS_CANDIDATE:
+                    assert _gate_supports_class(ctrl.evidence_ref, ctrl.detection_class), (
+                        f"{rec.mechanism_id}/{ctrl.detection_class}"
+                    )

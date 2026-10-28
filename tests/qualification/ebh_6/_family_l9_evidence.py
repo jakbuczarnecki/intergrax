@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from functools import lru_cache
 from typing import Final
 
@@ -13,6 +14,12 @@ from tests.qualification.ebh_6._family_catalog import ImplementerProposedDisposi
 
 def _nid(path: str, test_name: str) -> str:
     return f"{path}::{test_name}"
+
+
+class FamilyL9EvidenceDisposition(StrEnum):
+    PASS_CANDIDATE = "PASS_CANDIDATE"
+    SCOPED_CANDIDATE = "SCOPED CANDIDATE"
+    EVIDENCE_REQUIRED = "EVIDENCE REQUIRED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +33,10 @@ class FamilyL9EvidenceBundle:
     implementer_proposed_disposition: ImplementerProposedDisposition
     blocker_id: str | None
     scope_limitation: str
+    l9_evidence_disposition: FamilyL9EvidenceDisposition
+    gate_proves: str
+    family_scope_covered: str
+    reconciliation_blocker: str | None = None
 
 
 _EE_A1 = "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py"
@@ -38,9 +49,44 @@ _REL_CAP = "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_g
 _TEN = "tests/unit/runtime/security/test_tenant_scope.py"
 _W5_B2 = "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py"
 _BND = "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
+_EBH6_REG = "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py"
+_EBH6_MECH = "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py"
+
+
+def _b(
+    family_id: str,
+    frz: tuple[str, ...],
+    sys_inv: tuple[str, ...],
+    invariant: str,
+    gates: tuple[str, ...],
+    qual_doc: str,
+    impl: ImplementerProposedDisposition,
+    blocker: str | None,
+    scope_note: str,
+    disp: FamilyL9EvidenceDisposition,
+    proves: str,
+    covered: str,
+    recon: str | None = None,
+) -> FamilyL9EvidenceBundle:
+    return FamilyL9EvidenceBundle(
+        family_id,
+        frz,
+        sys_inv,
+        invariant,
+        gates,
+        qual_doc,
+        impl,
+        blocker,
+        scope_note,
+        disp,
+        proves,
+        covered,
+        recon,
+    )
+
 
 FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
-    FamilyL9EvidenceBundle(
+    _b(
         "BND",
         ("FRZ-BND-01", "FRZ-BND-03", "FRZ-BND-05"),
         ("SYS-INV-BND-01", "SYS-INV-BND-02"),
@@ -50,8 +96,11 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "Not global FRZ-BND PASS",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Static tier-0 import prohibition (intergrax/ must not import agents/applications).",
+        "Tier-boundary slice only — not full composition reachability census.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "OWN",
         ("FRZ-OWN-01", "FRZ-OWN-04", "FRZ-OWN-05"),
         ("SYS-INV-OWN-01",),
@@ -61,34 +110,39 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         "EBH6-BLK-L9-OWN-01",
         "Closed-world rescan — not whole-platform ownership closure",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Documented owner matrix parity vs EE final arch facts module.",
+        "Documented surfaces in EE final arch pack — not live duplicate-owner scan @ HEAD.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "CTR",
         ("FRZ-CTR-02", "FRZ-CTR-06"),
         ("SYS-INV-CTR-01", "SYS-INV-VBN-01"),
         "No unresolved PROHIBITED contract leakage in register scope.",
-        (
-            "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
-        ),
+        (_nid(_EBH6_REG, "test_ebh6_prohibited_unresolved_zero"),),
         "EBH-6 register + INT-CONFIG historical",
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "Historical INT-CONFIG scoped",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Register mechanical count: prohibited unresolved = 0 in frozen EBH-6 scope.",
+        "Findings register scope — not runtime contract leakage sweep.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "TYP",
         ("FRZ-TYP-01", "FRZ-TYP-03"),
         ("SYS-INV-TYP-01",),
         "Tracked typing debt ratified or remediated on public seams.",
-        (
-            "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
-        ),
+        (_nid(_EBH6_REG, "test_ebh6_tracked_debt_findings_ratified"),),
         "Q2-D2 ratified in findings register",
         ImplementerProposedDisposition.PASS_SCOPED,
         None,
         "Q2-D2 ADR — not global TYP PASS",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Register rows for Q2-D2 / BND-COMPAT-R3 are RATIFIED — not typing re-run.",
+        "Register disposition only — not public-seam typing re-audit.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "PLG",
         ("FRZ-PLG-01", "FRZ-PLG-04"),
         ("SYS-INV-PLG-01",),
@@ -98,21 +152,28 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "EBH-5 scoped",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "EBH-5 exit inventory completeness (qual mechanical gate).",
+        "Inventory completeness — not plugin SPI behavioral matrix @ HEAD.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "RPL",
         ("FRZ-RPL-01", "FRZ-RPL-04"),
         ("SYS-INV-RPL-01",),
         "RPL-G regression and CONFIG-X blockers empty @ HEAD.",
         (
-            "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+            "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::"
+            "test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
         ),
         "EBH_5_CROSS_LAYER_REPLACEABILITY_MATRIX — 51 NYQ documented",
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "51 NYQ — EBH-7 convergence",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "RPL-G CONFIG-X active blocker list empty @ HEAD.",
+        "RPL-G slice — 51 matrix rows remain NOT YET QUALIFIED.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "EXE",
         ("FRZ-EXE-*",),
         ("SYS-INV-EXE-01",),
@@ -122,8 +183,11 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         "EBH6-BLK-L9-EXE-01",
         "L3 execution mechanisms cross-ref in _l3_reachability_evidence.py",
+        FamilyL9EvidenceDisposition.PASS_CANDIDATE,
+        "EE-A1 P0 inventory reports zero production execution bypass paths.",
+        "EE-A1 certified surfaces — aligned with L3 execution mechanism samples.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "GOV",
         ("FRZ-GOV-*", "FRZ-EXE-*"),
         ("SYS-INV-GOV-01", "SYS-INV-GOV-02"),
@@ -136,19 +200,25 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         "EBH6-BLK-L9-GOV-01",
         "Subset replay — not full GOV-X2 re-run",
+        FamilyL9EvidenceDisposition.PASS_CANDIDATE,
+        "NPSC42 H1 freeze: execution hosts no policy engine; governance planes do not mint execution identity.",
+        "NPSC42 H1 frozen surface — not full GOV-X2 replay.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "STA",
         ("FRZ-STA-*",),
         ("SYS-INV-STA-01",),
         "SQLite annex 38 touchpoints classified @ HEAD.",
-        ("tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",),
+        (_nid(_EBH6_MECH, "test_ebh6_exit_sqlite_annex_accountability"),),
         "STATE-X historical + EBH-5 annex",
         ImplementerProposedDisposition.PASS_SCOPED,
         None,
         "STATE-X scoped",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "SQLite annex paths accountable vs EBH-5 touchpoint registry.",
+        "Annex accountability — not canonical store behavioral qualification.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "REC",
         ("FRZ-REC-*",),
         ("SYS-INV-REC-01",),
@@ -161,8 +231,11 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         "EBH6-BLK-L9-REC-01",
         "Drift replay — not DIST-SCALE-X full",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "No recovery god-object; decision durable recovery wiring has no production bypass.",
+        "Selected recovery gates — not full DIST-SCALE-X / NPSC5e replay.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "CMP",
         ("FRZ-CMP-*",),
         ("SYS-INV-CMP-01",),
@@ -172,21 +245,29 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.NA_WITH_EVIDENCE,
         None,
         "EVOL-X consumer impact out of scope",
+        FamilyL9EvidenceDisposition.EVIDENCE_REQUIRED,
+        "Historical COMPAT-X closure citation only — no HEAD pytest gate.",
+        "Policy unchanged claim — no runtime compatibility gate @ IMPLEMENTATION_SHA.",
+        "EBH6-FAM-CMP-01 — mandatory HEAD behavioral gate missing",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "CFG",
         ("FRZ-CFG-01", "FRZ-CFG-08"),
         ("SYS-INV-CFG-01",),
         "CONFIG-X 54 concerns reconciled; historical PASS preserved.",
         (
-            "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+            "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::"
+            "test_ebh6_config_x_all_concerns_mapped_at_head",
         ),
         "CONFIG-X @ fac9a43f historical",
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "FRZ-CFG PASS not rewritten",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "All CONFIG-X concerns mapped at HEAD (reconciliation gate).",
+        "Mapping completeness — not live configuration materialization audit.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "SEC",
         ("FRZ-SEC-*",),
         ("SYS-INV-SEC-01",),
@@ -196,8 +277,11 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         "EBH6-BLK-L9-SEC-01",
         "CTRL-X historical SHA evidence preserved separately",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Canonical security composition rejects external fail-open middleware.",
+        "CTRL-X R1 single composition scenario — not full SEC family.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "REL",
         ("FRZ-REL-*",),
         ("SYS-INV-REL-01",),
@@ -207,8 +291,11 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         "EBH6-BLK-L9-REL-01",
         "Selected guard replay",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Capacity contract surfaces do not mint execution identity.",
+        "EE-B1.2 capacity slice — not full reliability/backpressure matrix.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "CTL",
         ("FRZ-CTL-*",),
         ("SYS-INV-CTL-01",),
@@ -223,8 +310,11 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "Drift-only",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Fail-open middleware rejected before attach (CTRL-X R2).",
+        "Single middleware attach gate — not twelve-plane drift replay.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "OBS",
         ("FRZ-OBS-*",),
         ("SYS-INV-OBS-01",),
@@ -234,21 +324,25 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "TRACE-X global completeness not claimed",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Production composition creates bounded observability sink (non-authoritative export).",
+        "W5-B2 wiring sample — not global observability qualification.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "TRC",
         ("FRZ-TRC-*",),
         ("SYS-INV-TRC-01",),
         "Sanctioned composition roots registered for trace spine.",
-        (
-            "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
-        ),
+        (_nid(_EBH6_MECH, "test_ebh6_exit_sanctioned_composition_roots_non_empty"),),
         "TRACE-X P4 registry parity",
         ImplementerProposedDisposition.PASS,
         None,
         "Scoped TRC contribution",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Sanctioned production composition root registry non-empty @ HEAD.",
+        "Registry presence — not end-to-end trace spine behavioral proof.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "PRD",
         ("FRZ-PRD-*",),
         (),
@@ -258,19 +352,27 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.NA_WITH_EVIDENCE,
         None,
         "Live vendor qualification OPEN",
+        FamilyL9EvidenceDisposition.EVIDENCE_REQUIRED,
+        "Scope exclusion documented — no architecture bypass pytest @ HEAD.",
+        "PROD-Q live slice explicitly OUT OF SCOPE.",
+        "EBH6-FAM-PRD-01 — live PROD-Q gate deferred",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "REG",
         ("FRZ-REG-*",),
         (),
         "EBH-6 mechanical gates — not QUAL-X closure.",
-        ("tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_mandatory_docs_present",),
+        (_nid(_EBH6_MECH, "test_ebh6_exit_mandatory_docs_present"),),
         "QUAL-X remains OPEN",
         ImplementerProposedDisposition.PENDING_TO_REPLAY_PASS,
         None,
         "QUAL-X parent OPEN",
+        FamilyL9EvidenceDisposition.EVIDENCE_REQUIRED,
+        "Mandatory qualification doc files exist (metadata gate only).",
+        "Doc presence — not FRZ-REG behavioral regression inventory.",
+        "EBH6-FAM-REG-01 — QUAL-X / FRZ-REG behavioral gate OPEN",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "HRN",
         ("FRZ-HRN-*",),
         ("SYS-INV-HRN-01",),
@@ -280,8 +382,11 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS,
         "EBH6-BLK-L9-HRN-01",
         "W5/W6 subset only",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Published event reaches bounded sink — harness delivery non-authoritative path.",
+        "W5-B2 subset — not full harness non-authority matrix.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "TEN",
         ("FRZ-TEN-*",),
         ("SYS-INV-TEN-01",),
@@ -291,31 +396,41 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
         ImplementerProposedDisposition.REPLAY_PASS_SCOPED,
         "EBH6-BLK-L9-TEN-01",
         "Spot-check — not cross-subsystem TEN closure",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Tenant scope adversarial matrix on test_tenant_scope surfaces.",
+        "Security module spot-check — not global tenant propagation closure.",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "DOC",
         ("FRZ-DOC-*",),
         (),
         "Mandatory EBH-6 qualification docs present @ HEAD.",
-        ("tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_mandatory_docs_present",),
+        (_nid(_EBH6_MECH, "test_ebh6_exit_mandatory_docs_present"),),
         "EBH-6 dossier set",
         ImplementerProposedDisposition.PASS,
         None,
         "FRZ-DOC global OPEN until ARCH-FREEZE",
+        FamilyL9EvidenceDisposition.EVIDENCE_REQUIRED,
+        "Qualification markdown files exist (metadata gate).",
+        "Doc presence — not FRZ-DOC-01..06 content audit @ HEAD.",
+        "EBH6-FAM-DOC-01 — FRZ-DOC content gap analysis OPEN",
     ),
-    FamilyL9EvidenceBundle(
+    _b(
         "VBN",
         ("FRZ-CTR-02", "FRZ-RPL-01"),
         ("SYS-INV-VBN-01",),
         "Hardcoding register mechanical exit @ HEAD.",
         (
-            "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
-            "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+            _nid(_EBH6_REG, "test_ebh6_findings_unclassified_zero"),
+            _nid(_EBH6_REG, "test_ebh6_prohibited_unresolved_zero"),
         ),
         "CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT",
         ImplementerProposedDisposition.REPLAY_PASS,
         None,
         "Independent L9 still required",
+        FamilyL9EvidenceDisposition.SCOPED_CANDIDATE,
+        "Register unclassified=0 and prohibited unresolved=0 in frozen scope.",
+        "Register mechanical exit — not runtime vendor construction rescan.",
     ),
 )
 
@@ -323,6 +438,14 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
 @lru_cache(maxsize=1)
 def family_l9_bundle_by_id() -> dict[str, FamilyL9EvidenceBundle]:
     return {row.family_id: row for row in FAMILY_L9_EVIDENCE}
+
+
+def count_family_l9_dispositions() -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in FAMILY_L9_EVIDENCE:
+        key = row.l9_evidence_disposition.value
+        counts[key] = counts.get(key, 0) + 1
+    return counts
 
 
 def assert_family_l9_bundles_complete() -> None:
@@ -341,3 +464,18 @@ def assert_family_l9_bundles_complete() -> None:
         matches = [b for b in FAMILY_L9_EVIDENCE if b.blocker_id == bid]
         assert len(matches) == 1, bid
         assert matches[0].gate_test_ids, bid
+        assert matches[0].l9_evidence_disposition != FamilyL9EvidenceDisposition.EVIDENCE_REQUIRED, bid
+
+
+def assert_family_l9_reconciliation_complete() -> None:
+    assert_family_l9_bundles_complete()
+    for row in FAMILY_L9_EVIDENCE:
+        assert row.gate_proves.strip(), row.family_id
+        assert row.family_scope_covered.strip(), row.family_id
+        if row.l9_evidence_disposition == FamilyL9EvidenceDisposition.EVIDENCE_REQUIRED:
+            assert row.reconciliation_blocker, row.family_id
+        if not row.gate_test_ids:
+            assert row.l9_evidence_disposition == FamilyL9EvidenceDisposition.EVIDENCE_REQUIRED, row.family_id
+        for node in row.gate_test_ids:
+            if "mandatory_docs" in node or "findings_unclassified" in node:
+                assert row.l9_evidence_disposition != FamilyL9EvidenceDisposition.PASS_CANDIDATE, node
