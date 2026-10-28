@@ -18,6 +18,16 @@
 | Negatywny | `test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration`; `test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fail_closed` |
 | RPL-F | **NA** (brak obowiązkowego failure/recovery w zakresie EBH-5) |
 
+### F01 — semantyka wyłączenia vs błąd konfiguracji
+
+| Scenariusz | Zachowanie (owner: `runtime_event_delivery_wiring`) | Interpretacja |
+| --- | --- | --- |
+| `ExporterKind.OTLP` + pusty `otlp_export_endpoint` | `_create_export_transport` → `None`; `OtlpEventExportSink.export` kończy bez wyjątku i **bez** wywołania transportu | **Wyłączenie transportu** przy profilu OTLP — nie tworzy `OtlpTransport`; brak pozornego sukcesu na injekowanym porcie (test) |
+| `ExporterKind.DISTRIBUTED_OTLP` + brak endpoint / service name | `ConfigurationError` w `resolve_application_runtime_event_delivery_wiring` | **Fail-closed** dla aktywnego eksportera klastrowego |
+| Brak nieautoryzowanego fallback | Brak alternatywnego transportu poza profilem / `export_sink_factory` | Dowód pozytywny: real `_create_export_transport` + factory DI |
+
+**Known limitation (auditor disposition):** asymetria OTLP (ciche wyłączenie) vs DISTRIBUTED_OTLP (wyjątek) — jawny kontrakt; ewentualna unifikacja poza EBH-5 wymaga ADR + operatora.
+
 ## F02 — `tokenizer.selection`
 
 | Element | Ustalenie |

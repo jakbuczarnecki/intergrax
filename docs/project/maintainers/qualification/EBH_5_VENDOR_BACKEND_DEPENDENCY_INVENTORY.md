@@ -4,7 +4,7 @@
 | --- | --- |
 | **Artifact** | `VENDOR_BACKEND_DEPENDENCY_INVENTORY` |
 | **Producing stage** | EBH-5 |
-| **Evidence SHA (SSOT code)** | `5c9b66db632976ada039d406474530d7c6cb5f86` (baseline; refresh at closure commit) |
+| **Evidence SHA (SSOT code)** | Wave `83a376b3…`; handoff @ [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md) |
 | **Machine SSOT** | [`tests/qualification/ebh_5/_vendor_backend_inventory.py`](../../../tests/qualification/ebh_5/_vendor_backend_inventory.py) |
 | **Status** | **READY FOR INDEPENDENT AUDIT** — not parent CLOSED |
 

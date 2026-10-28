@@ -2,9 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **READY FOR INDEPENDENT STAGE CERTIFICATION (Protocol 03)** |
-| **Roadmap row** | EBH-5 → `[ ] READY FOR AUDIT` (implementation wave complete) |
-| **Parent CLOSED** | **Forbidden** until independent audit + operator publication |
+| **Disposition** | **DOSSIER COMPLETE — INDEPENDENT AUDIT PENDING (Protocol 03)** |
+| **Roadmap row** | EBH-5 → **`READY FOR AUDIT`** (not CLOSED) |
+| **Parent CLOSED** | **Forbidden** until OD-EBH5-07 AUDIT PASS + OD-EBH5-08 |
 
 ## Mechanical exit (roadmap §3.0.8) — implementation side
 
@@ -12,11 +12,12 @@
 | --- | --- |
 | Inventory complete, `unclassified=0` | **PASS** (gates) |
 | Matrix for `extensibility_promised=yes` | **PASS** |
-| Reachability evidence | **PASS** |
-| Behavioral proof per **QUALIFIED** row | **PASS** (5 rows — sanctioned composition L3 @ execution SHA) |
+| Reachability evidence | **PASS** (1 optional skip) |
+| Behavioral proof per **QUALIFIED** row | **PASS** (5 — composition L3 @ TEST_EXECUTION_SHA) |
 | Fixed substrates + SQLite annex | **PASS** |
 | RPL-G green | **PASS** |
-| Independent exact-SHA audit accepted | **OPEN** |
+| Independent exact-SHA audit accepted | **OPEN** (OD-EBH5-07) |
+| SAC frozen | **OPEN** (OD-EBH5-02) |
 
 ## Certification command bundle
 
@@ -28,5 +29,6 @@ uv run pytest tests/qualification/config_x/test_config_x_final_reconciliation_ga
 ## References
 
 - [EBH_5_PARENT_QUALIFICATION_DOSSIER.md](EBH_5_PARENT_QUALIFICATION_DOSSIER.md)
-- [EBH_5_IMPLEMENTATION_WAVE_RECONCILIATION.md](EBH_5_IMPLEMENTATION_WAVE_RECONCILIATION.md)
-- [EBH_5_PROTOCOL03_FINAL_CORRECTION.md](EBH_5_PROTOCOL03_FINAL_CORRECTION.md)
+- [EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md)
+- [EBH_5_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_5_L9_INDEPENDENT_AUDIT_HANDOFF.md)
+- [SAC_EBH_5_v1_PROPOSAL.md](SAC_EBH_5_v1_PROPOSAL.md)

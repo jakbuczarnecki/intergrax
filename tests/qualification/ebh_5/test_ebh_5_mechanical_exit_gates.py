@@ -38,6 +38,7 @@ _MANDATORY_QUAL_DOCS: tuple[str, ...] = (
     "docs/project/maintainers/qualification/EBH_5_SQLITE_ANNEX.md",
     "docs/project/maintainers/qualification/EBH_5_PARENT_QUALIFICATION_DOSSIER.md",
     "docs/project/maintainers/qualification/EBH_5_L9_INDEPENDENT_AUDIT_HANDOFF.md",
+    "docs/project/maintainers/qualification/EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md",
 )
 
 
@@ -78,5 +79,6 @@ def test_ebh5_exit_evidence_sha_recorded() -> None:
     sha = evidence_git_head_sha()
     assert len(sha) == 40
     dossier = (_REPO_ROOT / _MANDATORY_QUAL_DOCS[6]).read_text(encoding="utf-8")
-    assert "READY FOR INDEPENDENT" in dossier
+    assert "INDEPENDENT AUDIT PENDING" in dossier or "READY FOR INDEPENDENT" in dossier
     assert AUDIT_BASELINE_SHA in dossier or "83a376b3" in dossier
+    assert (_REPO_ROOT / _MANDATORY_QUAL_DOCS[8]).is_file()

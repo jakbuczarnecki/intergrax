@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Status** | Ratification records for EBH-5 — **not** global FRZ PASS |
-| **Evidence SHA** | `5c9b66db632976ada039d406474530d7c6cb5f86` |
+| **Evidence SHA** | Handoff @ [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md) |
 
 ## Decisions
 

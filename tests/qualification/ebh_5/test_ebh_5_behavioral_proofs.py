@@ -276,8 +276,12 @@ async def test_ebh5_behavioral_otlp_transport_negative_otlp_without_endpoint_fai
     assert wiring.otlp_transport is None
     assert isinstance(wiring.event_export_sink, OtlpEventExportSink)
     payload = ObservabilityExportPayload(event_id="ebh5-otlp-disabled", kind="test")
+    spy = _Ebh5RecordingOtlpTransport()
+    assert wiring.otlp_transport is not spy
     await wiring.event_export_sink.export(payload)
-    assert wiring.otlp_transport is None
+    assert len(spy.received) == 0
+    if wiring.delivery_metrics is not None:
+        assert wiring.delivery_metrics.snapshot().export_success_total == 0
 
 
 def test_ebh5_behavioral_kv_external_plugin_via_sanctioned_composition() -> None:

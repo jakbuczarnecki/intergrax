@@ -16,8 +16,13 @@ AUDIT_BASELINE_SHA: Final[str] = "83a376b3e1b312e2e4f88da548c99c328f3589f7"
 # Corrective publication SHA (Protocol 03 corrective batch).
 CORRECTIVE_PUBLICATION_SHA: Final[str] = "ffe0aae8d2b64a558a18226cc1435f0058ff561b"
 
-# Independent audit entry point for final F01/F02 correction wave.
-AUDITED_HEAD_SHA: Final[str] = CORRECTIVE_PUBLICATION_SHA
+# F01 OTLP composition refinement (no transport patch).
+F01_OTLP_COMPOSITION_SHA: Final[str] = "3e9460465d46a64f82022d37130891d940a810e2"
+
+
+def certification_handoff_sha() -> str:
+    """Independent auditor entry SHA — equals git HEAD when handoff bundle is published/consumed."""
+    return evidence_git_head_sha()
 
 
 @lru_cache(maxsize=1)

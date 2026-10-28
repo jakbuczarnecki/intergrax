@@ -7,6 +7,8 @@
 | **Corrective status** | **READY FOR INDEPENDENT RE-AUDIT** (post-commit publication SHA) |
 | **Parent CLOSED** | **NO** |
 
+See successor dossier: [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md).
+
 ## Corrective items (EBH5-A01..A05)
 
 | ID | Disposition |
