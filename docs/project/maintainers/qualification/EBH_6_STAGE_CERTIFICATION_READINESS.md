@@ -2,12 +2,12 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-6 — PROTOCOL 03 REJECTION REMEDIATED / READY FOR RE-AUDIT** — **not CLOSED** |
+| **Disposition** | **EBH-6 — PROTOCOL 03 FINAL EVIDENCE DISPOSITION / READY FOR RE-AUDIT** — **not CLOSED** |
 | **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** |
-| **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| **EXPECTED_START_HEAD** | `acbe1c92f1ccf84fc635eec43784973a08c2ac02` |
+| **IMPLEMENTATION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
@@ -19,7 +19,7 @@
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
 | Architecture-family matrix catalog | **PASS** (23 rows; L9 bundles + invariant gates for 8 blockers) |
-| EBH-6 qualification pytest | **PASS** — **52 passed** @ `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| EBH-6 qualification pytest | **PASS** — **54 passed** @ `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
 | Independent exact-SHA audit | **READY FOR RE-AUDIT (Protocol 03 — B-L9-5)** |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / P8)** |

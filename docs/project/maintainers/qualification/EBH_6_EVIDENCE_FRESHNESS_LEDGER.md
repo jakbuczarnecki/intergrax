@@ -2,20 +2,21 @@
 
 | Field | Value |
 | --- | --- |
-| **STAGE_BASELINE / EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **CERTIFICATION_HANDOFF_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **PUBLICATION_SHA (P03 remediation)** | `54a77fb83a8e12db0b277f19f64f91684d8f3240` |
+| **STAGE_BASELINE / EXPECTED_START_HEAD** | `acbe1c92f1ccf84fc635eec43784973a08c2ac02` |
+| **IMPLEMENTATION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **CERTIFICATION_HANDOFF_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **PUBLICATION_SHA (P03 final)** | *(this doc commit)* |
 
 ## SHA ladder
 
 | Label | SHA | Freshness |
 | --- | --- | --- |
-| L9 IMPLEMENTATION / TEST_EXECUTION / HANDOFF | `475c20289a1ef0420461a1ba748c792a10ea3e99` | **CURRENT** |
+| L9 IMPLEMENTATION / TEST_EXECUTION / HANDOFF | `f87a6dfc988bb720b6e7475e3cffe279d9290198` | **CURRENT** |
+| P03 remediation (prior) | `475c20289a1ef0420461a1ba748c792a10ea3e99` | **HISTORICAL** |
 | L9 wave (pre-P03 reject) | `bc25e27b14b7172ef79951765e76d19578d9beb3` | **HISTORICAL** |
 | L9 publication doc wave | `ce148559539583f4569d7a43c245e6c830e60a06` | **HISTORICAL** |
-| Operator **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` | **CURRENT** (execution start) |
+| Operator **EXPECTED_START_HEAD** | `acbe1c92f1ccf84fc635eec43784973a08c2ac02` | **CURRENT** (P03 final batch start) |
 | Plan doc anchor (historical note) | `d993f49ed3698b1decf399796a6e502b2221caaa` | **HISTORICAL** — superseded by wave-2 HEAD |
 | Pre-cert IMPLEMENTATION | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` | **HISTORICAL** |
 | EBH-6 publication tree (P0–P6) | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` | **HISTORICAL** |

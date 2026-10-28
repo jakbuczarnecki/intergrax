@@ -4,10 +4,10 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **EBH-6 — PROTOCOL 03 REJECTION REMEDIATED / READY FOR RE-AUDIT** |
-| **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
-| **CERTIFICATION_HANDOFF_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| **Disposition** | **EBH-6 — PROTOCOL 03 FINAL EVIDENCE DISPOSITION / READY FOR RE-AUDIT** |
+| **EXPECTED_START_HEAD** | `acbe1c92f1ccf84fc635eec43784973a08c2ac02` |
+| **CERTIFICATION_HANDOFF_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
 ## Commands @ CERTIFICATION_HANDOFF_SHA

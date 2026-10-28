@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **EBH-6 — PROTOCOL 03 REJECTION REMEDIATED / READY FOR RE-AUDIT** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
-| **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **CERTIFICATION_HANDOFF_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| **Status** | **EBH-6 — PROTOCOL 03 FINAL EVIDENCE DISPOSITION / READY FOR RE-AUDIT** — **not** `CLOSED — INDEPENDENTLY ACCEPTED` |
+| **IMPLEMENTATION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **CERTIFICATION_HANDOFF_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
 | **EXPECTED_START_HEAD** | `4736e4e4a00aff44afea9a28f91d188631ae43f1` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
@@ -14,7 +14,7 @@
 
 | Run | Result |
 | --- | --- |
-| Consolidated L4 bundle (P03 remediation) | **52 passed** — `.tmp/session/ebh-6-p03-remediation/pytest.log` |
+| Consolidated L4 bundle (P03 final disposition) | **54 passed** — `.tmp/session/ebh-6-p03-remediation/pytest-p03-final.log` |
 
 ## Mandatory blockers
 

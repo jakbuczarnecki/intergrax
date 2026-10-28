@@ -2,12 +2,23 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-6 — PROTOCOL 03 REJECTION REMEDIATED / READY FOR RE-AUDIT** |
+| **Disposition** | **EBH-6 — PROTOCOL 03 FINAL EVIDENCE DISPOSITION / READY FOR RE-AUDIT** |
 | **Rejection root cause** | Mechanical catalog completeness ≠ production-path invariant evidence (`paths[:3]`, template L3, catalog-only family gates) |
-| **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **PUBLICATION_SHA** | `54a77fb83a8e12db0b277f19f64f91684d8f3240` |
+| **IMPLEMENTATION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **TEST_EXECUTION_SHA** | `f87a6dfc988bb720b6e7475e3cffe279d9290198` |
+| **PUBLICATION_SHA** | *(doc commit following implementation)* |
+| **Prior remediation IMPLEMENTATION** | `475c20289a1ef0420461a1ba748c792a10ea3e99` — **HISTORICAL** |
 | **Historical L9 wave** | `bc25e27b14b7172ef79951765e76d19578d9beb3` / `ce148559539583f4569d7a43c245e6c830e60a06` — **HISTORICAL** |
+
+## Protocol 03 final evidence disposition (B-L9-5 follow-up)
+
+| Field | Value |
+| --- | --- |
+| **A–J outcomes** | Per-mechanism in `_l3_reachability_evidence.py` — no `applicable→PASS`; only `PASS_CANDIDATE` when gate substring matches class |
+| **Family reconciliation** | `l9_evidence_disposition`, `gate_proves`, `family_scope_covered`, `reconciliation_blocker` in `_family_l9_evidence.py` |
+| **Metadata gates** | Doc/register-only gates cannot be `PASS_CANDIDATE` (integrity test enforced) |
+
+Independent auditor fields unchanged (**23 × PENDING**).
 
 ## R1 — L3 reachability (16 layers)
 
@@ -38,7 +49,26 @@
 uv run pytest tests/qualification/ebh_6/ tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py -q
 ```
 
-Log: `.tmp/session/ebh-6-p03-remediation/pytest.log` — **52 passed**.
+Log: `.tmp/session/ebh-6-p03-remediation/pytest-p03-final.log` — **54 passed**.
+
+## A–J outcome census (@ IMPLEMENTATION_SHA)
+
+| Outcome | Count (480 control cells) |
+| --- | --- |
+| PASS_CANDIDATE | 45 |
+| EVIDENCE_REQUIRED | 352 |
+| FINDING | 2 |
+| N/A — WITH EVIDENCE | 81 |
+
+## Family disposition census (23)
+
+| Disposition | Count |
+| --- | --- |
+| PASS_CANDIDATE | 2 (EXE, GOV) |
+| SCOPED CANDIDATE | 17 |
+| EVIDENCE REQUIRED | 4 (CMP, PRD, REG, DOC) |
+
+Exact family blockers: **EBH6-FAM-CMP-01**, **EBH6-FAM-PRD-01**, **EBH6-FAM-REG-01**, **EBH6-FAM-DOC-01**.
 
 ## Explicit non-claims
 
