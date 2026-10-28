@@ -7,9 +7,9 @@
 | **Disposition** | **B3 COMPLETE — CANDIDATE P03 HANDOFF** (`EV_GROUPS=0`; 23×PENDING independent disposition unchanged) |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **B2 EXPECTED_START_HEAD** | `11b896f7a35007e14ba859211351ec144c7a083e` |
-| **IMPLEMENTATION_SHA** | `11b896f7a35007e14ba859211351ec144c7a083e` — refresh @ B5 publication |
-| **TEST_EXECUTION_SHA** | *(`.tmp/session/ebh-6-closure/l3-final.log`)* |
-| **CERTIFICATION_HANDOFF_SHA** | *(export via `_p03_handoff_export.py` @ B5 HEAD)* |
+| **IMPLEMENTATION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
+| **TEST_EXECUTION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
+| **CERTIFICATION_HANDOFF_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
 ## Commands @ TEST_EXECUTION_SHA (B3 L3 closure)

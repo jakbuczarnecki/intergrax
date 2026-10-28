@@ -18,7 +18,7 @@ CONFIG_X_HISTORICAL_PASS_SHA: Final[str] = "fac9a43f3b128fde63541d2b56ebd8f4a751
 EBH5_AUDIT_BASELINE_SHA: Final[str] = "83a376b3e1b312e2e4f88da548c99c328f3589f7"
 
 # Qualification artifact publication commit (P0–P6 tree); HEAD may advance for doc-only SHA ledger updates.
-EBH6_PUBLICATION_SHA: Final[str] = "50d3b7785c7e13dbc6708143e7484a2eeea5eaca"
+EBH6_PUBLICATION_SHA: Final[str] = "129eee82dff33fd4d815643387a10fa2d56058bf"
 
 
 @lru_cache(maxsize=1)

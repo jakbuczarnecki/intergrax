@@ -5,9 +5,9 @@
 | **Purpose** | Current-HEAD rollup per [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.7 |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **B2 EXPECTED_START_HEAD** | `11b896f7a35007e14ba859211351ec144c7a083e` |
-| **IMPLEMENTATION_SHA** | `11b896f7a35007e14ba859211351ec144c7a083e` — **B3 wave @ START_HEAD** |
-| **TEST_EXECUTION_SHA** | *(see `.tmp/session/ebh-6-closure/l3-final.log` @ post-commit HEAD)* |
-| **CERTIFICATION_HANDOFF_SHA** | *(post-commit HEAD — P03 handoff via `_p03_handoff_export.py`)* |
+| **IMPLEMENTATION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
+| **TEST_EXECUTION_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
+| **CERTIFICATION_HANDOFF_SHA** | `129eee82dff33fd4d815643387a10fa2d56058bf` |
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
 | **P03 integrity IMPLEMENTATION** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` — **HISTORICAL** |
