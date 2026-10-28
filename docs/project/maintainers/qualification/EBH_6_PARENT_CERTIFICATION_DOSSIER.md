@@ -4,10 +4,10 @@
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
 | **Status** | **EBH-6 — SEMANTIC AUDIT SUBMITTED / PARTIAL — EXACT BLOCKERS REMAIN** |
-| **IMPLEMENTATION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
-| **TEST_EXECUTION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
-| **CERTIFICATION_HANDOFF_SHA** | `d7b6442887941b6941a291b0efcf1271b9aee1de` |
-| **EXPECTED_START_HEAD** | `1858eafb84cfcc6c9197556bb24804e6bce864d8` |
+| **IMPLEMENTATION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
+| **TEST_EXECUTION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
+| **CERTIFICATION_HANDOFF_SHA** | *(publication commit)* |
+| **EXPECTED_START_HEAD** | `d9f6b2a1b6ce600e4f1df8ecafc9c4d2790d5c45` |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)

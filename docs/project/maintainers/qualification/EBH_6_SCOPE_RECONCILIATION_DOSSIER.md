@@ -4,10 +4,10 @@
 | --- | --- |
 | **Status** | **EBH-6 — P03 INTEGRITY CORRECTED / PARTIAL — EXACT BLOCKERS REMAIN** |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
-| **EXPECTED_START_HEAD** | `1858eafb84cfcc6c9197556bb24804e6bce864d8` |
-| **IMPLEMENTATION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
-| **TEST_EXECUTION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
-| **CERTIFICATION_HANDOFF_SHA** | `d7b6442887941b6941a291b0efcf1271b9aee1de` |
+| **EXPECTED_START_HEAD** | `d9f6b2a1b6ce600e4f1df8ecafc9c4d2790d5c45` |
+| **IMPLEMENTATION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
+| **TEST_EXECUTION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
+| **CERTIFICATION_HANDOFF_SHA** | *(publication commit)* |
 
 Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py), [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
 

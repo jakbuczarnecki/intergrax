@@ -2,12 +2,12 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-6 — P03 INTEGRITY CORRECTED / PARTIAL — EXACT BLOCKERS REMAIN** — **not CLOSED** |
+| **Disposition** | **EBH-6 — SEMANTIC AUDIT / PARTIAL — EXACT BLOCKERS REMAIN** — **not CLOSED** |
 | **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** |
-| **EXPECTED_START_HEAD** | `1858eafb84cfcc6c9197556bb24804e6bce864d8` |
-| **IMPLEMENTATION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
-| **TEST_EXECUTION_SHA** | `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
+| **EXPECTED_START_HEAD** | `d9f6b2a1b6ce600e4f1df8ecafc9c4d2790d5c45` |
+| **IMPLEMENTATION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
+| **TEST_EXECUTION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
@@ -20,7 +20,8 @@
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
 | Architecture-family matrix | **PASS** (23 rows; CMP/PRD/REG/DOC reconciled) |
-| EBH-6 qualification pytest | **PASS** — **57 passed** @ `bccaf6ed24ca443ddf8d8ad6f4463e709b0f7289` |
+| EBH-6 qualification pytest | **PASS** — **57 passed** @ `d051f5843d731d539a32eaaa9079f8f50aebace6` |
+| Semantic audit dossier | [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) |
 | Independent exact-SHA audit | **CANDIDATE — PARTIAL (342 A–J gaps @ HEAD)** |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / P8)** |
