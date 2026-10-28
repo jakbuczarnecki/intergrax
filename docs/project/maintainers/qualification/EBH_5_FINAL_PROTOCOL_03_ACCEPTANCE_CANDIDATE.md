@@ -1,22 +1,22 @@
-# EBH-5 — Final Protocol 03 acceptance candidate
+# EBH-5 ? Final Protocol 03 acceptance candidate
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-5 — FINAL RPL-F EVIDENCE COMPLETE / READY FOR INDEPENDENT CLOSURE AUDIT** |
+| **Disposition** | **EBH-5 ? FINAL RPL-F EVIDENCE COMPLETE / READY FOR INDEPENDENT CLOSURE AUDIT** |
 | **START_HEAD** | `ac64b8cc0e76b2a25adff3d2208a50389006ef05` |
 | **IMPLEMENTATION_SHA** | `c723934998e2a3baae7299b472995f9ba96bd8bb` |
 | **TEST_EXECUTION_SHA** | `c723934998e2a3baae7299b472995f9ba96bd8bb` |
 | **CERTIFICATION_HANDOFF_SHA** | `c723934998e2a3baae7299b472995f9ba96bd8bb` |
-| **PUBLICATION_SHA** | edc85da1fe67ad30d3eda5ad04033eb0bb0b2960 |
+| **PUBLICATION_SHA** | `7d5792eab95b423a03f6538033bd5cab1e667958` |
 
 ## Tests @ TEST_EXECUTION_SHA
 
 ```text
-67 passed, 1 skipped (reachability — graph integration module absent)
+67 passed, 1 skipped (reachability ? graph integration module absent)
 Log: .tmp/session/ebh5-rpl-f-final/pytest-ebh5.log
 ```
 
-## RPL-F — active provider failure (runtime)
+## RPL-F ? active provider failure (runtime)
 
 Evidence SHA for pytest nodes = **TEST_EXECUTION_SHA**. SSOT: `_rpl_f_evidence_registry.py`.
 
@@ -53,4 +53,4 @@ Evidence SHA for pytest nodes = **TEST_EXECUTION_SHA**. SSOT: `_rpl_f_evidence_r
 | OD-EBH5-07 Protocol 03 PASS | **OPEN** |
 | OD-EBH5-08 CLOSED publication | **OPEN** |
 
-**STOP** — no agent-issued AUDIT PASS or EBH-5 CLOSED.
+**STOP** ? no agent-issued AUDIT PASS or EBH-5 CLOSED.
