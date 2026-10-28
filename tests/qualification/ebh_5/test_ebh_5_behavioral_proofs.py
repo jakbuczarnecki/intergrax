@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -432,7 +433,7 @@ def test_ebh5_rpl_f_tokenizer_active_provider_tokenization_failure() -> None:
         manager.count_tokens("Intergrax RPL-F proof")
 
 
-def test_ebh5_rpl_f_relational_active_store_execute_failure(tmp_path: Path) -> None:
+def test_ebh5_rpl_f_relational_active_store_operational_failure_after_connect(tmp_path: Path) -> None:
     clear_catalog()
     register_sqlite_integration()
     profile = IntegrationProfile(
@@ -441,9 +442,26 @@ def test_ebh5_rpl_f_relational_active_store_execute_failure(tmp_path: Path) -> N
     )
     integration = resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)
     assert isinstance(integration, RelationalStoreIntegrationContract)
+    assert integration.provider_id == SQLITE_RELATIONAL_STORE_PROVIDER_ID
+
     integration.connect()
-    with pytest.raises(Exception):
-        integration.execute("NOT VALID SQL FOR RPL-F INJECTION")
+    integration.execute(
+        "CREATE TABLE IF NOT EXISTS ebh5_rpl_f_active (value INTEGER NOT NULL)",
+    )
+    integration.execute("INSERT INTO ebh5_rpl_f_active (value) VALUES (1)")
+    control_row = integration.fetch_all("SELECT value FROM ebh5_rpl_f_active")
+    assert control_row[0]["value"] == 1
+
+    client = integration.client
+    assert client is not None
+    live_connection = getattr(client, "_connection", None)
+    assert isinstance(live_connection, sqlite3.Connection)
+    live_connection.close()
+
+    with pytest.raises(sqlite3.ProgrammingError, match="closed database"):
+        integration.execute("INSERT INTO ebh5_rpl_f_active (value) VALUES (2)")
+
+    integration.close()
 
 
 class _Ebh5InjectedRealizationFailureStrategy(SQLiteRelationalStoreConfigurationRealizationStrategy):

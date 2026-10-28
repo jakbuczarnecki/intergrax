@@ -26,7 +26,7 @@ _RPL_F_ACTIVE_PROOF_NODES: Final[dict[str, tuple[str, ...]]] = {
     ),
     "tokenizer.selection": (f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_tokenizer_active_provider_tokenization_failure",),
     "persistence.relational_sqlite_lab": (
-        f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_relational_active_store_execute_failure",
+        f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_relational_active_store_operational_failure_after_connect",
     ),
     "int_config.configure_existing": (
         f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_int_config_active_strategy_realization_failure",
