@@ -12,7 +12,7 @@
 | OD-EBH5-05 | Accept DIST-SCALE historical vendor proofs @ scoped SHA | **RECOMMENDED** | message_bus L3 deferral |
 | OD-EBH5-06 | PROD-Q F02-14 isinstance debt disposition | **TRACKED DEBT** | FRZ-RPL-04 global only |
 | OD-EBH5-07 | Independent auditor + Protocol 03 | **CLOSED — INDEPENDENT AUDIT PASS (SCOPED)** @ **2026-10-28** — auditor ChatGPT; baseline `33ecf19cc020b112d9e586c87b49e819202f5d6d` — [`EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_5_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) | — |
-| OD-EBH5-08 | Roadmap §5 EBH-5 closure publication | **OPEN — READY FOR OPERATOR SIGNATURE** — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) | Parent **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
+| OD-EBH5-08 | Roadmap §5 EBH-5 closure publication | **APPROVED 2026-10-28 — FORMAL PARENT CLOSURE PUBLICATION (SCOPED)** — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) | Parent **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
 
 ## Operator approval record (2026-10-28)
 
@@ -20,6 +20,7 @@
 OPERATOR APPROVED — EBH-5 SAC FREEZE
 OPERATOR APPROVED — OD-EBH5-04 RUNTIME SQLITE FIXED SUBSTRATE (SCOPED)
 OPERATOR APPROVED — OD-EBH5-04 LAB ADAPTIVE SQLITE FIXED SUBSTRATE (LAB ONLY)
+OPERATOR APPROVED — EBH-5 FORMAL PARENT CLOSURE PUBLICATION (SCOPED)
 ```
 
 ## Independent audit record (2026-10-28)
@@ -30,4 +31,4 @@ OD-EBH5-07 — INDEPENDENT AUDIT PASS — SCOPED @ 33ecf19cc020b112d9e586c87b49e
 
 Recorded by publication batch on `development` — **OPERATOR_DECISIONS_PUBLICATION_SHA** `6c1eb84eadb30d5e7a8069ef0fbc6b605ac3c49d` in [`EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md`](EBH_5_CERTIFICATION_COMPLETION_RECONCILIATION.md).
 
-**STOP:** Agent must **not** self-approve **OD-EBH5-08** or publish parent **CLOSED** without canonical operator phrase in this register.
+**OD-EBH5-08:** explicit operator authorization received 2026-10-28; scope remains limited to the independent Protocol 03 PASS baseline. No global FRZ PASS.
