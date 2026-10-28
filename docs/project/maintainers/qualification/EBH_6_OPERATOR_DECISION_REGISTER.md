@@ -7,6 +7,7 @@
 | OD-EBH6-02 | Accept EBH-6 plan / scope (independent plan audit) | **APPROVED — 2026-10-28** — `OPERATOR APPROVED — EBH-6 L9 EVIDENCE EXECUTION (OD-EBH6-02)` — **does not** equal independent code acceptance or Protocol 03 PASS | Protocol 03 plan review **unblocked for B-L9-5** |
 | OD-EBH6-ADR-* | Finding `REQUIRES ARCHITECTURE DECISION` without ADR | **TRACKED** | P3 remediation blocked per finding |
 | OD-EBH6-08 | Formal EBH-6 closure publication | **OPEN** | P8 only after L9 PASS |
+| OD-EBH6-Q2D2 | Does ratified **EBH6-DEBT-Q2-D2** satisfy EBH-6 Protocol 03 with independent evidence? | **OPEN** | B6 — no silent ratified-only accept; semantic_core×F = **FINDING** @ B3 |
 
 ## Canonical wave-open phrase (not yet recorded)
 

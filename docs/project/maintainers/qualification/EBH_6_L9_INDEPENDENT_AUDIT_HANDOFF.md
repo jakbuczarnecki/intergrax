@@ -4,15 +4,26 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **B2 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 groups; P03 after B5) |
+| **Disposition** | **B3 COMPLETE — CANDIDATE P03 HANDOFF** (`EV_GROUPS=0`; 23×PENDING independent disposition unchanged) |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
-| **IMPLEMENTATION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
-| **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` |
-| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (refresh @ B5) |
+| **B2 EXPECTED_START_HEAD** | `11b896f7a35007e14ba859211351ec144c7a083e` |
+| **IMPLEMENTATION_SHA** | `11b896f7a35007e14ba859211351ec144c7a083e` — refresh @ B5 publication |
+| **TEST_EXECUTION_SHA** | *(`.tmp/session/ebh-6-closure/l3-final.log`)* |
+| **CERTIFICATION_HANDOFF_SHA** | *(export via `_p03_handoff_export.py` @ B5 HEAD)* |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
-## Commands @ TEST_EXECUTION_SHA (B2 L1+L2)
+## Commands @ TEST_EXECUTION_SHA (B3 L3 closure)
+
+```powershell
+git checkout development
+git rev-parse HEAD
+New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-closure
+uv run pytest tests/qualification/ebh_6/ tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py tests/qualification/ebh_5/test_ebh_5_reachability_gates.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-closure/l3-final.log
+```
+
+P03 export: `tests/qualification/ebh_6/_p03_handoff_export.py` (`p03_handoff_bundle()` — 133 groups, 23 families, 8 L9 BLK).
+
+## Commands @ TEST_EXECUTION_SHA (B2 L1+L2 — historical)
 
 ```powershell
 git checkout development

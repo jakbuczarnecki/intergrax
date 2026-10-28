@@ -41,10 +41,17 @@ def test_ebh6_scope_dossier_content_controls() -> None:
 
 def test_ebh6_scope_aj_groups_complete() -> None:
     assert_aj_group_reconciliation_complete()
-    from tests.qualification.ebh_6._l3_aj_group_reconciliation import summarize_aj_obligation_cells
+    from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
+        AjControlOutcome,
+        aj_group_by_layer_class,
+        count_evidence_required_groups,
+    )
 
-    counts = summarize_aj_obligation_cells()
-    assert counts.get("EVIDENCE_REQUIRED", 0) > 0
+    assert count_evidence_required_groups() == 0
+    groups = aj_group_by_layer_class()
+    ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
+    assert len(groups) == 133
+    assert ev_req == 0
 
 
 def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
@@ -89,4 +96,4 @@ def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
     ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
     assert applicable == 133
     assert len(groups) == 133
-    assert ev_req == 109
+    assert ev_req == 0

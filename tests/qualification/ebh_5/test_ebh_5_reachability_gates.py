@@ -54,8 +54,9 @@ def test_ebh5_reach_factory_module_is_sanctioned_composition_owner() -> None:
 
 
 def test_ebh5_reach_no_second_global_provider_registry_in_rag_graph() -> None:
-    rag_graph = _REPO_ROOT / "intergrax/rag/graph/integration_graph_store.py"
-    if not rag_graph.is_file():
-        pytest.skip("graph integration module absent")
-    text = rag_graph.read_text(encoding="utf-8")
+    rag_bootstrap = _REPO_ROOT / "intergrax/rag/graph/bootstrap/graph_store_bootstrap.py"
+    assert rag_bootstrap.is_file(), "T-RAG-01: graph_store_bootstrap.py is RAG adaptation SSOT"
+    text = rag_bootstrap.read_text(encoding="utf-8")
     assert "graph_store_backend" not in text
+    assert "backend_registry" not in text
+    assert "CypherRagGraphStore(integration_graph_store" in text

@@ -69,6 +69,18 @@ def test_ebh6_exit_mandatory_docs_present() -> None:
         assert (_REPO_ROOT / rel).is_file(), rel
 
 
+def test_ebh6_exit_p03_handoff_export_complete() -> None:
+    from tests.qualification.ebh_6._p03_handoff_export import p03_handoff_bundle
+
+    bundle = p03_handoff_bundle()
+    assert bundle["aj_group_count"] == 133
+    assert bundle["family_count"] == 23
+    assert bundle["l9_blocker_count"] == 8
+    assert bundle["layer_candidate_resolved_count"] == 16
+    assert bundle["independent_disposition_pending"] == 23
+    assert bundle["certification_handoff_sha"] == evidence_git_head_sha()
+
+
 def test_ebh6_exit_evidence_sha_recorded() -> None:
     assert_ebh5_audit_baseline_resolvable()
     sha = evidence_git_head_sha()

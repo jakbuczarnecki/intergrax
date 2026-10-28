@@ -48,7 +48,11 @@ def test_ebh6_layer_coverage_findings_complete() -> None:
     assert_l9_layer_evidence_complete()
     layer_rows = [row for row in all_hardcoding_findings() if row.finding_id.startswith("EBH6-LAYER-")]
     assert len(layer_rows) == 16
-    allowed = {FindingStatus.L9_EVIDENCE_SUBMITTED, FindingStatus.RATIFIED}
+    allowed = {
+        FindingStatus.L9_EVIDENCE_SUBMITTED,
+        FindingStatus.RATIFIED,
+        FindingStatus.CANDIDATE_RESOLVED,
+    }
     assert all(row.status in allowed for row in layer_rows)
     assert all(row.classification != HardcodingFindingClassification.DISCOVERY_REQUIRED for row in layer_rows)
     for row in layer_rows:

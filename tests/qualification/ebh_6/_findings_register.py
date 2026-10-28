@@ -64,6 +64,7 @@ class FindingStatus(StrEnum):
     RATIFIED = "RATIFIED"
     REPLAY_REOPENED = "REPLAY-REOPENED"
     L9_EVIDENCE_SUBMITTED = "L9_EVIDENCE_SUBMITTED"
+    CANDIDATE_RESOLVED = "CANDIDATE-RESOLVED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,6 +153,8 @@ def _layer_primary_detection_class(layer: str) -> HardcodingDetectionClass:
 def _layer_coverage_findings() -> tuple[HardcodingFindingRecord, ...]:
     head = evidence_git_head_sha()
     annex = layer_evidence_by_id()
+    from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome, aj_group_by_layer_class
+
     rows: list[HardcodingFindingRecord] = []
     for idx, layer in enumerate(EBH6_AUDIT_LAYERS, start=1):
         finding_id = f"EBH6-LAYER-{idx:02d}"
@@ -159,6 +162,17 @@ def _layer_coverage_findings() -> tuple[HardcodingFindingRecord, ...]:
         det = _layer_primary_detection_class(layer)
         path_count = len(evidence.closed_world_paths)
         mech_ids = mechanism_ids_for_layer(layer)
+        layer_reconciled = all(
+            aj_group_by_layer_class()[(layer, aj.detection_class)].outcome != AjControlOutcome.EVIDENCE_REQUIRED
+            for aj in evidence.aj_applicability
+            if aj.applicable
+        )
+        status = FindingStatus.CANDIDATE_RESOLVED if layer_reconciled else FindingStatus.L9_EVIDENCE_SUBMITTED
+        note_tail = (
+            "B3 layer controls reconciled — CANDIDATE-RESOLVED pending Protocol 03 acceptance."
+            if layer_reconciled
+            else "Implementer L3 pack submitted — not independent RESOLVED."
+        )
         rows.append(
             HardcodingFindingRecord(
                 finding_id=finding_id,
@@ -173,16 +187,24 @@ def _layer_coverage_findings() -> tuple[HardcodingFindingRecord, ...]:
                 concern_ids=evidence.sys_inv_refs[:2],
                 violated_invariant=f"Roadmap §3.0.8 layer `{layer}` — L3 evidence pack (implementer)",
                 remediation_class=RemediationClass.MERGE,
-                status=FindingStatus.L9_EVIDENCE_SUBMITTED,
+                status=status,
                 evidence_sha=head,
                 notes=(
-                    "Implementer L3 pack submitted — not independent RESOLVED; "
+                    f"{note_tail} "
                     "closed-world inventory + per-mechanism A–J controls; "
                     "auditor Protocol 03 re-audit required."
                 ),
             ),
         )
     return tuple(rows)
+
+
+def layer_register_status_for_layer(layer: str) -> FindingStatus:
+    rows = _layer_coverage_findings()
+    for row in rows:
+        if row.layer == layer:
+            return row.status
+    raise KeyError(layer)
 
 
 _TRACKED_DEBT: Final[tuple[HardcodingFindingRecord, ...]] = (

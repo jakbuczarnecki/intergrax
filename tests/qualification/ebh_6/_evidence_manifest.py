@@ -10,8 +10,8 @@ from typing import Final
 
 EBH6_EVIDENCE_SUITE: Final[str] = "tests/qualification/ebh_6/"
 
-# Operator planning anchor — not present in local object database until fetch.
-EXPECTED_START_HEAD: Final[str] = "83b0a26186b0c11430c916842d7d813554286921"
+# Operator planning anchor — EBH-6 wave START_HEAD @ approved execution.
+EXPECTED_START_HEAD: Final[str] = "11b896f7a35007e14ba859211351ec144c7a083e"
 
 EBH5_INDEPENDENT_AUDIT_SHA: Final[str] = "33ecf19cc020b112d9e586c87b49e819202f5d6d"
 CONFIG_X_HISTORICAL_PASS_SHA: Final[str] = "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb"

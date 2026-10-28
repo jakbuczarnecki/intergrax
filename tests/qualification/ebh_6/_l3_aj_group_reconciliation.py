@@ -208,10 +208,11 @@ _ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[st
         "Register disposition — not FRZ-TYP behavioral proof.",
     ),
     ("semantic_core", "F"): (
-        AjControlOutcome.PARTIAL_CANDIDATE,
-        "Register ratified Q2-D2 on nexus typing seam (see EBH6-DEBT-Q2-D2).",
-        (_REG_DEBT,),
-        "Single tracked debt — not core-wide typing closure.",
+        AjControlOutcome.FINDING,
+        "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam; "
+        "ratification ≠ independent acceptance (OD-EBH6-Q2D2 OPEN).",
+        (_REG_DEBT, _REGISTER_SSOT),
+        "Single tracked debt — Q2-D2 remains operator decision; not prod PASS.",
     ),
     ("application_services", "F"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
@@ -271,38 +272,55 @@ def _default_blocker(layer: str, detection_class: str) -> str:
     return f"EBH6-P03-AJ-{layer}-{detection_class}"
 
 
+def _merge_adjudication_table() -> dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]]:
+    from tests.qualification.ebh_6._aj_class_gate_scan import class_gate_adjudication, class_gate_node_id
+
+    table: dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]] = {}
+    for layer in EBH6_AUDIT_LAYERS:
+        for aj in layer_aj_applicability(layer):
+            if not aj.applicable:
+                continue
+            key = (layer, aj.detection_class)
+            if key in _ADJUDICATION:
+                outcome, proves, refs, scope = _ADJUDICATION[key]
+            else:
+                cg = class_gate_adjudication(layer, aj.detection_class)
+                outcome = AjControlOutcome(cg.outcome)
+                proves = cg.invariant_proves
+                refs = cg.evidence_refs
+                scope = cg.scope_limitation
+            gate = class_gate_node_id(layer, aj.detection_class)
+            if gate not in refs:
+                refs = (gate,) + refs
+            table[key] = (outcome, proves, refs, scope)
+    return table
+
+
+@lru_cache(maxsize=1)
+def _full_adjudication() -> dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]]:
+    return _merge_adjudication_table()
+
+
+def count_evidence_required_groups() -> int:
+    return sum(1 for o, _, _, _ in _full_adjudication().values() if o == AjControlOutcome.EVIDENCE_REQUIRED)
+
+
 def _adjudicate_layer_class(layer: str, detection_class: str) -> AjGroupReconciliation:
     owner = _LAYER_OWNERS[layer]
     key = (layer, detection_class)
-    if key in _ADJUDICATION:
-        outcome, proves, refs, scope = _ADJUDICATION[key]
-        return AjGroupReconciliation(
-            f"AJG-{layer}-{detection_class}",
-            layer,
-            detection_class,
-            owner,
-            f"Roadmap §3.0.8 class {detection_class} @ {layer}",
-            outcome,
-            refs,
-            proves,
-            scope,
-            None,
-        )
-    register_only = (_REG_PROHIBITED, _REG_UNCLASS, _REGISTER_SSOT)
+    outcome, proves, refs, scope = _full_adjudication()[key]
+    blocker = _default_blocker(layer, detection_class) if outcome == AjControlOutcome.EVIDENCE_REQUIRED else None
     return AjGroupReconciliation(
         f"AJG-{layer}-{detection_class}",
         layer,
         detection_class,
         owner,
         f"Roadmap §3.0.8 class {detection_class} @ {layer}",
-        AjControlOutcome.EVIDENCE_REQUIRED,
-        register_only,
-        (
-            "Register mechanical exit (unclassified=0, prohibited unresolved=0) "
-            f"does not prove class-{detection_class} behavioral invariant on production paths."
-        ),
-        "EBH-6 VBN slice — mandatory class-specific gate missing @ HEAD",
-        _default_blocker(layer, detection_class),
+        outcome,
+        refs,
+        proves,
+        scope,
+        blocker,
     )
 
 
