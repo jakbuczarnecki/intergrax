@@ -2,12 +2,12 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **EBH-6 B1 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 gap groups remain) |
+| **Status** | **EBH-6 B2 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 gap groups remain) |
 | **Closure plan authority** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ **PLAN_PUBLICATION_SHA** `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
-| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
-| **IMPLEMENTATION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
-| **TEST_EXECUTION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
+| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
+| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (B5 updates handoff) |
 
 Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), [`_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py), [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py), [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
@@ -22,8 +22,8 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 
 | Batch | Scope | Exit (summary) |
 | --- | --- | --- |
-| **B1** | T-NORM-01, T-SHA-01, T-DOC-01 | L9-A ↔ `_layer_evidence`; single SHA ladder — **done @ IMPLEMENTATION_SHA** |
-| **B2** | T-LAY-* | Verified closed-world inventory + L3 **per layer** — **not** automatic RESOLVED for 16 layers |
+| **B1** | T-NORM-01, T-SHA-01, T-DOC-01 | L9-A ↔ `_layer_evidence`; single SHA ladder — **done** |
+| **B2** | T-LAY-* (8 packages, 16 layers) | Verified closed-world inventory + L3 **per layer** — **done** (`test_ebh_6_b2_layer_closed_world_integrity.py`); **not** auto-RESOLVED |
 | **B3** | T-CLS-* | **All 133** applicable groups satisfy §3.B B3 gate; **`EV_GROUPS == 0` alone insufficient**; layer **CANDIDATE-RESOLVED** only after layer controls reconciled |
 | **B4–B7** | Families, publication, P03, OD-EBH6-08 | See closure plan §6 — **no B6** before B5 zero gap groups |
 
@@ -52,7 +52,20 @@ L3 obligation cells (480 mechanism rollup): see [EBH_6_CURRENT_HEAD_VENDOR_NEUTR
 
 ## 16 layers — register status
 
-All `EBH6-LAYER-*`: **`L9_EVIDENCE_SUBMITTED`** with ≥3 L3 mechanisms each — **not** independent RESOLVED (B2 inventory+L3; B6 acceptance only).
+All `EBH6-LAYER-*`: **`L9_EVIDENCE_SUBMITTED`** with ≥3 L3 mechanisms each (49 total annex rows incl. `L3-RAG-04` graph bootstrap) — **not** independent RESOLVED (B6 acceptance only).
+
+## B2 — T-LAY package outcomes (@ HEAD)
+
+| TASK-ID | Layers | Inventory SSOT | L3 gate |
+| --- | --- | --- | --- |
+| **T-LAY-CTR-SMC** | contracts, semantic_core | `discover_contracts_surface_paths`, `discover_semantic_core_paths` | hardening-3, EE-A1, L3-CTR/SMC-* |
+| **T-LAY-APP-CMP** | application_services, composition_roots | TRACE-X roots, wiring, composition hints | trace_x, L3-APP/CMP-* |
+| **T-LAY-GOV-EXE** | governance, execution | `discover_governance_execution_paths` | npsc42, EE-A1, L3-GOV/EXE-* |
+| **T-LAY-INT-STA** | integrations, state_persistence | bundles + sqlite annex | ebh5 reachability, L3-INT/STA-* |
+| **T-LAY-REC-OBS** | reliability_recovery, observability_diagnostics | `discover_resilience_observability_paths` | npsc5e, w5-b2, L3-REC/OBS-* |
+| **T-LAY-TRC-WRK** | events_traceability, background_workers | event spine + worker census | trace_x, ebh5, L3-TRC/BGI-* |
+| **T-LAY-AGD-RAG** | agent_distribution, rag_memory | agents + `graph_store_bootstrap.py` | lifecycle gate, L3-AGD/RAG-* |
+| **T-LAY-HST-TLC** | runtime_hosting, tools_skills_capabilities | hosting contracts bridge + tools/skills census | config_x, plugin gates, L3-HST/TLC-* |
 
 ## 23 families — implementer proposals
 
@@ -71,7 +84,7 @@ All `EBH6-LAYER-*`: **`L9_EVIDENCE_SUBMITTED`** with ≥3 L3 mechanisms each —
 | ID | Status |
 | --- | --- |
 | **109 × EVIDENCE_REQUIRED groups** | OPEN — B3 class gates |
-| **16 × layer rows** | OPEN — B2 inventory+L3; RESOLVED only B6 |
+| **16 × layer rows** | **B2 inventory+L3 verified** — `L9_EVIDENCE_SUBMITTED`; RESOLVED only B6 |
 | **OD-EBH6-01** | OPEN (no production wave) |
 | **OD-EBH6-08** | OPEN (parent closure) |
 | **L9 Protocol 03** | OPEN — **not** B1 scope |

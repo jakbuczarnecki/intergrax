@@ -4,14 +4,14 @@
 | --- | --- |
 | **Status** | **PARTIAL / EXACT BLOCKERS** — candidate handoff to **Protocol 03**; **not** EBH-6 CLOSED |
 | **Audit mode** | ECAP §2.C mechanism review on closed-world L3 inventory (not cell-certification) |
-| **EXPECTED_START_HEAD** | `d9f6b2a1b6ce600e4f1df8ecafc9c4d2790d5c45` |
-| **IMPLEMENTATION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
-| **TEST_EXECUTION_SHA** | `d051f5843d731d539a32eaaa9079f8f50aebace6` |
+| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
+| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
 | **CERTIFICATION_HANDOFF_SHA** | `9a731157bb833fbbab605191f0114aaa65c83292` |
 
 **Authorities (read @ audit):** Roadmap §3.0.8 / §5 · [PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) · [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) · [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) · `SYSTEM_INVARIANTS.md` · `INTERGRAX_ARCHITECTURE_PRINCIPLES.md` · [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md) · [EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md](EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md) · [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md).
 
-**SSOT (unchanged — not rebuilt):** [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) (48 mechanisms) · [`_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py) · [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
+**SSOT (unchanged — not rebuilt):** [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) (**49** mechanisms @ B2) · [`_closed_world_discovery.py`](../../../tests/qualification/ebh_6/_closed_world_discovery.py) (T-LAY census) · [`_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py) · [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
 
 **Implementer rule:** No independent Protocol 03 PASS · no OD-EBH6-08 · no agent AUDIT PASS.
 
@@ -23,7 +23,7 @@ This dossier records a **semantic review of production-effective mechanisms** in
 
 | Metric | @ HEAD (mechanical SSOT) |
 | --- | ---: |
-| L3 mechanisms inventoried | **48** (≥3 per roadmap layer) |
+| L3 mechanisms inventoried | **49** (≥3 per roadmap layer; **L3-RAG-04** graph bootstrap) |
 | A–J obligation **cells** (layer × class rollup) | **480** |
 | **PASS_CANDIDATE** | **3** |
 | **PARTIAL_CANDIDATE** | **52** |

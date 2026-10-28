@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **PARTIAL / EXACT BLOCKERS** — production code audit batch complete; **Protocol 03 OPEN** |
-| **EXPECTED_START_HEAD** | `f3e39db3f378e5779d5006f54223358237430695` |
-| **IMPLEMENTATION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
-| **TEST_EXECUTION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
+| **Status** | **EBH-6 B2 COMPLETE — PARTIAL / EXACT BLOCKERS** — closed-world + L3 per layer; **Protocol 03 OPEN** |
+| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
+| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` |
 
 **Companion:** [EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md](EBH_6_FINAL_SEMANTIC_AUDIT_DOSSIER.md) (mechanism inventory) · [EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md](EBH_6_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md).
@@ -19,7 +19,7 @@
 | Batch | Scope | Outcome |
 | --- | --- | --- |
 | **A** | IntegrationProfile, `registry/factory`, composition roots, hosting config, shadow/fallback | Code read + EBH-5 reachability gates; **5** A–J groups promoted to **PARTIAL** (not PASS) |
-| **B** | Execution, governance, persistence, recovery, contracts/typing, RAG, tools, agents, events/OBS/workers | Sampled production paths; **no new PROHIBITED**; tracked findings unchanged |
+| **B2** | T-LAY-* — 16-layer closed-world census + 49 L3 mechanisms | **`test_ebh_6_b2_layer_closed_world_integrity.py` PASS**; layers remain **L9_EVIDENCE_SUBMITTED** |
 | **C** | Reconcile 48 L3 / 16 layers / 114→**109** gap groups / 23 families / 8 L9 BLK | SSOT `_l3_aj_group_reconciliation.py` updated with code-backed `invariant_proves` only |
 
 ---
@@ -99,9 +99,9 @@ Promoted groups (code + existing test, **not** PASS):
 
 **Remaining 109 groups:** mandatory `EBH6-P03-AJ-{layer}-{class}` — **not auto-closed**.
 
-### 4.3 16 layers / 48 L3 records
+### 4.3 16 layers / 49 L3 records
 
-Unchanged inventory; outcomes derive from group table + mechanism FINDING rows (Q2-D2, BND-COMPAT-R3).
+B2 adds **`L3-RAG-04`** (`graph_store_bootstrap.py`) and corrects hosting L3 entrypoints to `runtime_config_bridge` / `environment_wiring` @ HEAD. Outcomes derive from group table + mechanism FINDING rows (Q2-D2, BND-COMPAT-R3).
 
 ### 4.4 23 families
 
@@ -146,15 +146,15 @@ Implementer bundles unchanged. **Independent disposition: 23 × PENDING.**
 ## 7. Verification
 
 ```powershell
-uv run pytest tests/qualification/ebh_6/ tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py tests/qualification/ebh_5/test_ebh_5_reachability_gates.py -q
+uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrity.py tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py tests/qualification/ebh_6/test_ebh_6_b2_layer_closed_world_integrity.py tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py -q
 ```
 
-Log: `.tmp/session/ebh-6-production-code-audit/pytest.log`
+Log: `.tmp/session/ebh-6-b2/pytest.log`
 
 ---
 
 ## 8. Terminal banner
 
-**`EBH-6 — PARTIAL / EXACT BLOCKERS`**
+**`EBH-6 B2 — PARTIAL / EXACT BLOCKERS`**
 
-Production code audit complete; **109** mandatory A–J evidence groups remain. Candidate handoff to **Independent Protocol 03** @ **CERTIFICATION_HANDOFF_SHA** — **not** closure.
+Closed-world inventory + L3 verified for **16** layers; **109** mandatory A–J evidence groups remain for **B3**. **STOP before B3** per closure plan.

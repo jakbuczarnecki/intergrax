@@ -4,13 +4,13 @@
 | --- | --- |
 | **Purpose** | Current-HEAD rollup per [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.7 |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
-| **IMPLEMENTATION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
-| **TEST_EXECUTION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
+| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
+| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
 | **P03 integrity IMPLEMENTATION** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` — **HISTORICAL** |
-| **Disposition** | **B1 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 gap groups) |
+| **Disposition** | **B2 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 gap groups) |
 
 ## Mandatory audit layers (roadmap §3.0.8)
 
@@ -18,7 +18,7 @@
 
 Register rows **`EBH6-LAYER-01..16`**: status **`L9_EVIDENCE_SUBMITTED`** (not independent RESOLVED).
 
-L3 per-mechanism annex: [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) (≥3 mechanisms/layer).
+L3 per-mechanism annex: [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) (**49** mechanisms — B2 graph bootstrap + hosting path correction).
 
 Grouped A–J adjudication: [`_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py) — **no unconditional PASS promotion (P03-01)**.
 

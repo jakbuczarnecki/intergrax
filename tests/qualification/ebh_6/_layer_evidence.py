@@ -272,7 +272,13 @@ def _layer_paths(layer: str) -> tuple[str, ...]:
         + _glob_paths("tests/qualification/trace_x"),
         "agent_distribution": _glob_paths("agents"),
         "rag_memory": _glob_paths("intergrax/rag") + _glob_paths("intergrax/memory"),
-        "runtime_hosting": _glob_paths("intergrax/runtime/hosting") + _glob_paths("intergrax/runtime/bootstrap"),
+        "runtime_hosting": _glob_paths("intergrax/runtime/hosting")
+        + _glob_paths("intergrax/contracts/runtime")
+        + (
+            "intergrax/applications/_shared/runtime_config_bridge.py",
+            "intergrax/applications/_shared/environment_wiring.py",
+            "intergrax/runtime/plugins/bootstrap.py",
+        ),
         "tools_skills_capabilities": _glob_paths("intergrax/tools"),
         "background_workers_infra_adapters": _glob_paths("intergrax", "*worker*")
         + _glob_paths("intergrax/integrations/providers", "*background*"),

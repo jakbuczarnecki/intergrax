@@ -654,12 +654,28 @@ _L3_MECHANISMS: Final[tuple[L3ReachabilityRecord, ...]] = (
         "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py",
     ),
     _m(
+        "L3-RAG-04",
+        "rag_memory",
+        "intergrax/rag/graph/bootstrap/graph_store_bootstrap.py",
+        (
+            "graph_store_bootstrap.py",
+            "intergrax/integrations/contracts/graph_store.py",
+            "IntegrationProfile graph store slug",
+        ),
+        "RAG graph bootstrap",
+        "GraphStore bootstrap — integration-owned materialization",
+        "Application RAG wiring + Integration factory",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete",
+        prod_rationale="Canonical bootstrap path @ HEAD — no shadow graph_store_backend module",
+    ),
+    _m(
         "L3-HST-01",
         "runtime_hosting",
-        "intergrax/runtime/bootstrap/context_bootstrap.py",
+        "intergrax/applications/_shared/runtime_config_bridge.py::materialize_runtime_config",
         (
-            "context_bootstrap.py",
+            "runtime_config_bridge.py",
             "intergrax/contracts/runtime/hosting_profile.py",
+            "intergrax/runtime/plugins/bootstrap.py",
         ),
         "Hosting bootstrap",
         "HostingProfile",
@@ -669,10 +685,10 @@ _L3_MECHANISMS: Final[tuple[L3ReachabilityRecord, ...]] = (
     _m(
         "L3-HST-02",
         "runtime_hosting",
-        "intergrax/runtime/bootstrap/context_bootstrap.py",
+        "intergrax/applications/_shared/environment_wiring.py",
         (
-            "context_bootstrap.py",
-            "CE orchestrator entry",
+            "environment_wiring.py",
+            "context_wiring / ContextCatalogBootstrapResult",
         ),
         "Context engineering hosting",
         "ContextEngineering contracts",
@@ -796,7 +812,7 @@ def count_l3_aj_outcomes() -> dict[str, int]:
 
 
 def assert_l3_reachability_complete() -> None:
-    assert len(all_l3_reachability_records()) >= 48
+    assert len(all_l3_reachability_records()) >= 49
     for layer in EBH6_AUDIT_LAYERS:
         records = l3_records_by_layer(layer)
         assert len(records) >= 3, layer

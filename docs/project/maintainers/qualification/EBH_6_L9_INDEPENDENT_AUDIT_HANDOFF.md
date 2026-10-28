@@ -4,24 +4,24 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **B1 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 groups; P03 after B5) |
+| **Disposition** | **B2 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 groups; P03 after B5) |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
-| **IMPLEMENTATION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
-| **TEST_EXECUTION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
+| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
+| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
 | **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (refresh @ B5) |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
-## Commands @ TEST_EXECUTION_SHA (B1 subset)
+## Commands @ TEST_EXECUTION_SHA (B2 L1+L2)
 
 ```powershell
 git checkout development
 git rev-parse HEAD
-New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-b1
-uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrity.py tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-b1/pytest.log
+New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-b2
+uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrity.py tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py tests/qualification/ebh_6/test_ebh_6_b2_layer_closed_world_integrity.py tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-b2/pytest.log
 ```
 
-## Handoff pack (B1 complete; B2–B5 before P03)
+## Handoff pack (B1–B2 complete; B3–B5 before P03)
 
 0. [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0`
 

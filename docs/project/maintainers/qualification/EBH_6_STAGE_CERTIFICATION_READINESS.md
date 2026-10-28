@@ -2,21 +2,22 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **EBH-6 B1 COMPLETE — PARTIAL / EXACT BLOCKERS** — **not CLOSED** |
+| **Disposition** | **EBH-6 B2 COMPLETE — PARTIAL / EXACT BLOCKERS** — **not CLOSED** |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ **PLAN_PUBLICATION_SHA** `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Roadmap row** | EBH-6 → VBN mechanical slice + L9 layer/family evidence |
 | **Parent CLOSED** | **Forbidden** until L9 PASS + **OD-EBH6-08** (B6–B7) |
-| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
-| **IMPLEMENTATION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
-| **TEST_EXECUTION_SHA** | `446dfa7263b6571a11bdd2a973e66e57892eacca` |
+| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` |
+| **IMPLEMENTATION_SHA** | *(set @ B2 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(set @ B2 qual commit)* |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
 | Criterion | Status |
 | --- | --- |
 | CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
-| Layer L9 attestation (16) | **L9_EVIDENCE_SUBMITTED** — B2 inventory+L3; **not** auto-RESOLVED |
-| A–J applicable pairs / gap groups @ B1 HEAD | **133** pairs / **109** `EVIDENCE_REQUIRED` groups |
+| Layer L9 attestation (16) | **L9_EVIDENCE_SUBMITTED** — **B2 inventory+L3 verified**; **not** auto-RESOLVED |
+| A–J applicable pairs / gap groups @ B2 HEAD | **133** pairs / **109** `EVIDENCE_REQUIRED` groups |
+| EBH-6 B2 pytest (L1+L2) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-b2/pytest.log` |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
