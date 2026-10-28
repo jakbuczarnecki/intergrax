@@ -2,7 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
+| **B1 IMPLEMENTATION_SHA** | *(set @ B1 qual commit)* |
+| **Historical IMPLEMENTATION (P03 remediation)** | `475c20289a1ef0420461a1ba748c792a10ea3e99` — **HISTORICAL** |
+| **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Mechanical SSOT** | [`tests/qualification/ebh_6/_findings_register.py`](../../../tests/qualification/ebh_6/_findings_register.py) |
 | **L9 layer annex** | [`tests/qualification/ebh_6/_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py) |
 | **L3 reachability annex** | [`tests/qualification/ebh_6/_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py) |

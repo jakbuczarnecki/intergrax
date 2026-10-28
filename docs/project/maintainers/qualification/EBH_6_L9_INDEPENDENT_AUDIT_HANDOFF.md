@@ -4,22 +4,26 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **EBH-6 — SCOPE RECONCILED / READY FOR FINAL INDEPENDENT AUDIT** |
-| **EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
-| **CERTIFICATION_HANDOFF_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
-| **TEST_EXECUTION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
+| **Disposition** | **B1 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 groups; P03 after B5) |
+| **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
+| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
+| **IMPLEMENTATION_SHA** | *(set @ B1 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(must equal IMPLEMENTATION_SHA @ B1 pytest)* |
+| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (refresh @ B5) |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
-## Commands @ CERTIFICATION_HANDOFF_SHA
+## Commands @ TEST_EXECUTION_SHA (B1 subset)
 
 ```powershell
 git checkout development
 git rev-parse HEAD
-New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-p03-remediation
-uv run pytest tests/qualification/ebh_6/ tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-p03-remediation/pytest.log
+New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-b1
+uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrity.py tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-b1/pytest.log
 ```
 
-## Handoff pack (B1–B5)
+## Handoff pack (B1 complete; B2–B5 before P03)
+
+0. [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0`
 
 1. [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md)
 2. [EBH_6_ENTERPRISE_SURFACE_INVENTORY.md](EBH_6_ENTERPRISE_SURFACE_INVENTORY.md) + `_closed_world_discovery.py`

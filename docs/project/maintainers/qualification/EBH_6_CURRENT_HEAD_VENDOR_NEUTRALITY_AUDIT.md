@@ -3,15 +3,14 @@
 | Field | Value |
 | --- | --- |
 | **Purpose** | Current-HEAD rollup per [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.7 |
-| **EXPECTED_START_HEAD (P03 integrity batch)** | `1858eafb84cfcc6c9197556bb24804e6bce864d8` |
-| **IMPLEMENTATION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
-| **TEST_EXECUTION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
-| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` |
+| **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
+| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
+| **IMPLEMENTATION_SHA** | *(set @ B1 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(must equal IMPLEMENTATION_SHA @ B1 pytest)* |
+| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
-| **PUBLICATION_SHA (P0–P6)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` — **HISTORICAL** |
-| **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` — preserved |
-| **EBH-5 independent audit** | `33ecf19cc020b112d9e586c87b49e819202f5d6d` — scoped PASS |
-| **Disposition** | **CANDIDATE FOR INDEPENDENT PROTOCOL 03** — implementer does **not** set audit PASS |
+| **P03 integrity IMPLEMENTATION** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` — **HISTORICAL** |
+| **Disposition** | **B1 COMPLETE — PARTIAL / EXACT BLOCKERS** (109 gap groups) |
 
 ## Mandatory audit layers (roadmap §3.0.8)
 

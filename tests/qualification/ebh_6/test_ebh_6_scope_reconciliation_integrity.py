@@ -45,3 +45,48 @@ def test_ebh6_scope_aj_groups_complete() -> None:
 
     counts = summarize_aj_obligation_cells()
     assert counts.get("EVIDENCE_REQUIRED", 0) > 0
+
+
+def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
+    """T-NORM-01 — L9-A table @ EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md vs _layer_evidence."""
+    from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
+    from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
+        AjControlOutcome,
+        aj_group_by_layer_class,
+    )
+    from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
+
+    l9a: dict[str, str] = {
+        "contracts": "YNNNNYNYNY",
+        "semantic_core": "YYYNNYNYYY",
+        "application_services": "YYYYNYNYYY",
+        "composition_roots": "YYYYNYNYYY",
+        "governance": "NNYYYYYYYN",
+        "execution": "YYYNNYYYYY",
+        "integrations": "YYYYYYYYYY",
+        "state_persistence": "YYYYYYNYYY",
+        "reliability_recovery": "YYYNYYYYYY",
+        "observability_diagnostics": "NNYYNYYYYY",
+        "events_traceability": "YYYYYYYYYY",
+        "agent_distribution": "YYYYNYNYYY",
+        "rag_memory": "YYYYYYYYYY",
+        "runtime_hosting": "YYYYNYYYYY",
+        "tools_skills_capabilities": "YYYYNYYYYY",
+        "background_workers_infra_adapters": "YYYYYYYYYY",
+    }
+    classes = "ABCDEFGHIJ"
+    applicable = 0
+    for layer in EBH6_AUDIT_LAYERS:
+        exp = l9a[layer]
+        assert len(exp) == len(classes)
+        got = layer_aj_applicability(layer)
+        for idx, letter in enumerate(classes):
+            want = exp[idx] == "Y"
+            assert got[idx].applicable is want, (layer, letter, want, got[idx].applicable)
+            if got[idx].applicable:
+                applicable += 1
+    groups = aj_group_by_layer_class()
+    ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
+    assert applicable == 133
+    assert len(groups) == 133
+    assert ev_req == 109

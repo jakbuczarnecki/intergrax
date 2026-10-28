@@ -3,11 +3,12 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **EBH-6 — PRODUCTION CODE AUDIT / PARTIAL — EXACT BLOCKERS** |
-| **IMPLEMENTATION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
-| **TEST_EXECUTION_SHA** | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` |
-| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` |
-| **EXPECTED_START_HEAD** | `f3e39db3f378e5779d5006f54223358237430695` |
+| **Status** | **EBH-6 B1 COMPLETE — PARTIAL / EXACT BLOCKERS** |
+| **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
+| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
+| **IMPLEMENTATION_SHA** | *(set @ B1 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(must equal IMPLEMENTATION_SHA @ B1 pytest)* |
+| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** |
 | **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)
@@ -33,6 +34,7 @@
 | Artifact | Location |
 | --- | --- |
 | L9 plan | [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) |
+| **Closure plan (B1–B7)** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c…` |
 | P03 remediation | [EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md](EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md) |
 | Scope reconciliation | [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md) |
 | A–J group SSOT | [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py) |

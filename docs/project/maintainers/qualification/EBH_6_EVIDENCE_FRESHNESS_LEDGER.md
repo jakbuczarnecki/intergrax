@@ -2,36 +2,45 @@
 
 | Field | Value |
 | --- | --- |
-| **STAGE_BASELINE / EXPECTED_START_HEAD** | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` |
-| **IMPLEMENTATION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
-| **TEST_EXECUTION_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
-| **CERTIFICATION_HANDOFF_SHA** | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` |
-| **PUBLICATION_SHA (scope reconciliation)** | *(this doc commit)* |
+| **B1 EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` |
+| **IMPLEMENTATION_SHA** | *(set @ B1 qual commit)* |
+| **TEST_EXECUTION_SHA** | *(must equal IMPLEMENTATION_SHA @ B1 pytest)* |
+| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` — **pre-B1** (unchanged until B5 publication) |
+| **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` — [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) |
 
-## SHA ladder
+## SHA ladder (CURRENT @ B1)
 
 | Label | SHA | Freshness |
 | --- | --- | --- |
-| L9 IMPLEMENTATION / TEST_EXECUTION / HANDOFF | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` | **CURRENT** |
-| P03 final disposition | `f87a6dfc988bb720b6e7475e3cffe279d9290198` | **HISTORICAL** |
-| P03 remediation (prior) | `475c20289a1ef0420461a1ba748c792a10ea3e99` | **HISTORICAL** |
-| L9 wave (pre-P03 reject) | `bc25e27b14b7172ef79951765e76d19578d9beb3` | **HISTORICAL** |
-| L9 publication doc wave | `ce148559539583f4569d7a43c245e6c830e60a06` | **HISTORICAL** |
-| Operator **EXPECTED_START_HEAD** | `acbe1c92f1ccf84fc635eec43784973a08c2ac02` | **CURRENT** (P03 final batch start) |
-| Plan doc anchor (historical note) | `d993f49ed3698b1decf399796a6e502b2221caaa` | **HISTORICAL** — superseded by wave-2 HEAD |
-| Pre-cert IMPLEMENTATION | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` | **HISTORICAL** |
-| EBH-6 publication tree (P0–P6) | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` | **HISTORICAL** |
-| PRE-PUBLICATION local batch | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` | **HISTORICAL — do not cite as HEAD** |
-| EBH-5 independent audit | `33ecf19cc020b112d9e586c87b49e819202f5d6d` | **HISTORICAL — scoped PASS** |
-| CONFIG-X closed-world PASS | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` | **HISTORICAL — preserved** |
-| CTRL-X independent audit | `318a4d835534ef5c48575f4649551c957dacd8ea` | **HISTORICAL — CLOSED** |
+| B1 **EXPECTED_START_HEAD** | `5b248716f1f10ad3029b6ac39a17ebbdc9c23d2a` | **CURRENT** |
+| B1 **IMPLEMENTATION_SHA** / **TEST_EXECUTION_SHA** | *(set @ B1 qual commit)* | **CURRENT** (monotonic with pytest) |
+| **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
+| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` | **pre-B1 handoff** — update @ B5 only |
+
+## HISTORICAL — do not cite as CURRENT
+
+| Label | SHA | Note |
+| --- | --- | --- |
+| P03 integrity IMPLEMENTATION | `1f3fb2ae3b8809dd59eb84f0a8d7d8f471aedbd9` | Superseded by B1 ladder |
+| L9 wave IMPLEMENTATION / HANDOFF | `0549a12ad53f5128783e38f79fa68ad0d40f00e1` | RC-05 drift — demoted |
+| Pre-cert IMPLEMENTATION | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` | Pre-cert anchor |
+| L9 plan operator anchor | `d993f49ed3698b1decf399796a6e502b2221caaa` | L9 doc wave |
+| P03 remediation IMPLEMENTATION | `475c20289a1ef0420461a1ba748c792a10ea3e99` | Register header historical |
+| P03 final disposition | `f87a6dfc988bb720b6e7475e3cffe279d9290198` | HISTORICAL |
+| Operator EXPECTED_START_HEAD (P03 integrity) | `f3e39db3f378e5779d5006f54223358237430695` | Superseded by B1 START_HEAD |
+| STAGE_BASELINE (scope wave) | `8e821c29646a2895b1b3f6e90440cde0b7ea7e05` | Superseded |
+| PRE-PUBLICATION local batch | `badb7a086d4d4d4b374535b8698efb06eb8fa6db` | **do not cite as HEAD** |
+| EBH-5 independent audit | `33ecf19cc020b112d9e586c87b49e819202f5d6d` | scoped PASS |
+| CONFIG-X closed-world PASS | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` | preserved |
+| CTRL-X independent audit | `318a4d835534ef5c48575f4649551c957dacd8ea` | CLOSED |
 
 ## Blockers recorded
 
 - **OD-EBH6-01** OPEN — implementation wave not operator-open
-- **OD-EBH6-02** **APPROVED 2026-10-28** — L9 evidence execution (not independent code acceptance)
-- **L9 Protocol 03** **READY FOR RE-AUDIT** @ `475c20289a1ef0420461a1ba748c792a10ea3e99` — prior B-L9-5 reject remediated (qual/docs)
+- **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution (corrected closure plan @ `0489054c…`)
+- **L9 Protocol 03** OPEN — **no B6** until B5 census **0** `EVIDENCE_REQUIRED` groups + B3 §3.B gate
+- **109** A–J gap groups @ B1 IMPLEMENTATION_SHA (133 applicable pairs — normative crosswalk)
 
-## Pytest log (L4)
+## Pytest log (B1)
 
-Consolidated bundle @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-p03-remediation/pytest.log`
+Consolidated subset @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-b1/pytest.log`
