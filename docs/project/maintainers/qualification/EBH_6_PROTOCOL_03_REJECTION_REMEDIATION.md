@@ -6,7 +6,7 @@
 | **Rejection root cause** | Mechanical catalog completeness ≠ production-path invariant evidence (`paths[:3]`, template L3, catalog-only family gates) |
 | **IMPLEMENTATION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
 | **TEST_EXECUTION_SHA** | `475c20289a1ef0420461a1ba748c792a10ea3e99` |
-| **PUBLICATION_SHA** | *(set on doc commit)* |
+| **PUBLICATION_SHA** | `54a77fb83a8e12db0b277f19f64f91684d8f3240` |
 | **Historical L9 wave** | `bc25e27b14b7172ef79951765e76d19578d9beb3` / `ce148559539583f4569d7a43c245e6c830e60a06` — **HISTORICAL** |
 
 ## R1 — L3 reachability (16 layers)
