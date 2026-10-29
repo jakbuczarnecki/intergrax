@@ -7,7 +7,9 @@
 | **IMPLEMENTATION_SHA** | `2ee22ae4b42d5e684f40d55056a6f9b84130b8ec` (Commit **A**) — [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
 | **EVIDENCE_PUBLICATION_SHA** | `f0214533b347f3dfbbd729d96ef860869148dc0f` (Commit **B**) — not manifest Commit **C** |
 | **TEST_EXECUTION_SHA** | `5c97fb679a3220ff7a156ca6ab7fd7fe8c5b5176` · publication replay log |
-| **WAVE1_IMPLEMENTATION_HEAD** | `2325460ff7f1f0290f95dae03145e30e20e0d991` · Wave 1 qual replay → `.tmp/proof/dup-x-wave-1/run.log` |
+| **WAVE1_PUBLICATION_START** | `2325460ff7f1f0290f95dae03145e30e20e0d991` · prep replay → `.tmp/proof/dup-x-wave-1/run.log` |
+| **WAVE1_IMPLEMENTATION_SHA** | `44759ed4db69a16fc07b837d9ed87d29a235163f` (Wave 1 Commit **A**) — [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
+| **WAVE1_EVIDENCE_PUBLICATION_SHA** | `3a2d47d2c66fe60a4443d9800678ae2681a7f688` (Wave 1 Commit **B**) — not Wave 1 manifest Commit **C** |
 | **Publication ladder SSOT** | [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
 | **ECAP** | ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL — parent B1–B6 handoff |
 
