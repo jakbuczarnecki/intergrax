@@ -74,19 +74,13 @@ _ACTIVE_BLOCKER_FORBIDDEN_MARKERS: Final[dict[str, tuple[str, ...]]] = {
         "_EVAL_SLUGS",
         "_sanctioned_slug_backend",
     ),
-    "intergrax/tokenizers/registry/tokenizer_registry.py": (
-        "next(iter(self._tokenizers",
-    ),
+    "intergrax/tokenizers/registry/tokenizer_registry.py": ("next(iter(self._tokenizers",),
     "intergrax/applications/_shared/harness_task_routes.py": (
         'tenant_id: str = "default"',
         'PREFIX_TENANT_ID", "default")',
     ),
-    "intergrax/applications/_shared/trace_explorer_routes.py": (
-        'tenant_id: str = "default"',
-    ),
-    "intergrax/multimedia/image_smart_loader.py": (
-        'tenant_id: str = "default"',
-    ),
+    "intergrax/applications/_shared/trace_explorer_routes.py": ('tenant_id: str = "default"',),
+    "intergrax/multimedia/image_smart_loader.py": ('tenant_id: str = "default"',),
     "intergrax/integrations/_shared/p3/configs.py": (
         'tenant_id: str = "default"',
         'PREFIX_TENANT_ID", "default")',
@@ -110,7 +104,17 @@ def _is_discovery_candidate(path: Path) -> bool:
 
 @lru_cache(maxsize=1)
 def discover_composition_root_paths() -> frozenset[str]:
-    paths: set[str] = set()
+    from tests.qualification.ebh_5._closed_world_discovery import (
+        COMPOSITION_ROOT_HINTS,
+    )
+    from tests.qualification.ebh_5._closed_world_discovery import (
+        discover_composition_root_paths as discover_ebh5_composition_root_paths,
+    )
+
+    paths: set[str] = set(discover_ebh5_composition_root_paths())
+    for hint in COMPOSITION_ROOT_HINTS:
+        if (_REPO_ROOT / hint).is_file():
+            paths.add(hint.replace("\\", "/"))
     for root in _DISCOVERY_ROOTS:
         if not root.is_dir():
             continue
