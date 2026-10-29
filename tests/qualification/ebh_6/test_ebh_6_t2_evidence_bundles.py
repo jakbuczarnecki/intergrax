@@ -47,4 +47,4 @@ def test_ebh6_t2_bundle_review_complete() -> None:
         if bundle_review_disposition(layer, cls) == ImplementerReview.INSUFFICIENT:
             assert groups[(layer, cls)].outcome == AjControlOutcome.EVIDENCE_REQUIRED
         elif (layer, cls) == ("semantic_core", "F"):
-            assert groups[(layer, cls)].outcome == AjControlOutcome.FINDING
+            assert groups[(layer, cls)].outcome == AjControlOutcome.PASS_CANDIDATE

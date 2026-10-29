@@ -78,7 +78,10 @@ _LIFECYCLE = (
     "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py"
     "::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
 )
-_B3_Q2D2 = "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py::test_ebh6_b3_q2d2_semantic_core_f_is_finding"
+_B3_Q2D2 = (
+    "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py"
+    "::test_ebh6_b3_q2d2_semantic_core_f_pending_independent_acceptance"
+)
 _CONTRACTS_TYPING_CSP = (
     "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
     "::test_ebh6_contracts_layer_frz_typ_surface_purity_passes"
@@ -296,12 +299,11 @@ def scan_class_e_shadow_store(layer: str) -> None:
 
 def scan_class_f_typing_seam(layer: str) -> None:
     if layer == "semantic_core":
+        from tests.qualification.ebh_6._q2d2_technical_qualification import assess_path_b_remediation
+
         reg = _REPO_ROOT / "tests/qualification/ebh_6/_findings_register.py"
         assert "EBH6-DEBT-Q2-D2" in _read_py(reg)
-        nexus = _REPO_ROOT / "intergrax/runtime/nexus/nexus_loop.py"
-        assert nexus.is_file()
-        text = _read_py(nexus)
-        assert "AuthoritativeDecisionExposure" in text or "TYPE_CHECKING" in text
+        assert assess_path_b_remediation().remediation_complete, "Q2-D2 Path B remediation incomplete @ HEAD"
         return
     if layer in ("contracts", "application_services"):
         if layer == "contracts":
@@ -459,6 +461,10 @@ def scanner_effective(layer: str, detection_class: str) -> bool:
 
 def _default_outcome(layer: str, detection_class: str) -> str:
     if (layer, detection_class) == ("semantic_core", "F"):
+        from tests.qualification.ebh_6._q2d2_technical_qualification import assess_path_b_remediation
+
+        if assess_path_b_remediation().remediation_complete:
+            return "PASS_CANDIDATE"
         return "FINDING"
     if (layer, detection_class) == ("execution", "B"):
         return "PASS_CANDIDATE"
@@ -474,10 +480,11 @@ def _default_outcome(layer: str, detection_class: str) -> str:
 
 def _default_proves(layer: str, detection_class: str) -> str:
     if (layer, detection_class) == ("semantic_core", "F"):
-        return (
-            "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam; ratification ≠ independent acceptance "
-            "(OD-EBH6-Q2D2 OPEN)."
-        )
+        from tests.qualification.ebh_6._q2d2_technical_qualification import assess_path_b_remediation
+
+        if assess_path_b_remediation().remediation_complete:
+            return "EBH6-DEBT-Q2-D2 — Path B FRZ-TYP-03 remediation @ HEAD; pending independent E01 / Protocol 03."
+        return "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam pending Path B or acceptance."
     from tests.qualification.ebh_6._t2_evidence_bundles import bundle_for_pair
 
     gate = class_gate_node_id(layer, detection_class)

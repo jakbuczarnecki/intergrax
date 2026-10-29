@@ -62,6 +62,10 @@ def _nid(path: str, test_name: str) -> str:
 _BND = "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
 _EBH6_MECH = "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py"
 _EBH6_REG = "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py"
+_Q2D2_REMEDIATION_NID = _nid(
+    "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py",
+    "test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+)
 _EBH6_CFG = "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py"
 _EBH6_FAM = "tests/qualification/ebh_6/test_ebh_6_architecture_family_matrix_integrity.py"
 _EBH5_MECH = "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py"
@@ -128,10 +132,10 @@ _EBH6_FAMILY_CATALOG_BASE: tuple[ArchitectureFamilyRecertRow, ...] = (
         ("intergrax/runtime/nexus/",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.CURRENT,
-        "Q2-D2 ratified debt disposition",
-        (_nid(_EBH6_REG, "test_ebh6_tracked_debt_findings_ratified"),),
+        "Path B remediated @ HEAD — E01/Protocol 03 independent acceptance pending",
+        (_nid(_EBH6_REG, "test_ebh6_tracked_debt_findings_ratified"), _Q2D2_REMEDIATION_NID),
         "P3-if-mandatory",
-        "Q2-D2 RATIFIED or remediated before closure",
+        "Q2-D2 Path B reconciled — pending independent acceptance",
         FamilyIndependentDisposition.PENDING,
         ImplementerProposedDisposition.PENDING,
     ),

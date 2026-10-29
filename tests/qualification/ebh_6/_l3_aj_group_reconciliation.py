@@ -30,6 +30,10 @@ _REG_UNCLASS = (
 _REG_DEBT = (
     "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified"
 )
+_Q2D2_REMEDIATION_GATE = (
+    "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py"
+    "::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed"
+)
 _BND_GATE = (
     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
     "::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
@@ -221,10 +225,9 @@ _ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[st
     ),
     ("semantic_core", "F"): (
         AjControlOutcome.FINDING,
-        "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam; "
-        "ratification ≠ independent acceptance (OD-EBH6-Q2D2 OPEN).",
+        "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — fallback when Path B remediation incomplete.",
         (_REG_DEBT, _REGISTER_SSOT),
-        "Single tracked debt — Q2-D2 remains operator decision; not prod PASS.",
+        "Registered debt — override to PASS_CANDIDATE when Path B reconciled @ HEAD.",
     ),
     ("application_services", "F"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
@@ -314,6 +317,18 @@ def _merge_adjudication_table() -> dict[tuple[str, str], tuple[AjControlOutcome,
             if gate not in refs:
                 refs = (gate,) + refs
             table[key] = (outcome, proves, refs, scope)
+    from tests.qualification.ebh_6._q2d2_technical_qualification import assess_path_b_remediation
+
+    scf = ("semantic_core", "F")
+    if assess_path_b_remediation().remediation_complete and scf in table:
+        _outcome, _proves, refs, _scope = table[scf]
+        merged_refs = tuple(dict.fromkeys((_Q2D2_REMEDIATION_GATE,) + refs))
+        table[scf] = (
+            AjControlOutcome.PASS_CANDIDATE,
+            "EBH6-DEBT-Q2-D2 — Path B FRZ-TYP-03 remediation @ HEAD; pending independent E01 / Protocol 03.",
+            merged_refs,
+            "Historical RATIFIED debt remediated — not auditor PASS.",
+        )
     return table
 
 

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from tests.qualification.ebh_6._evidence_manifest import evidence_git_head_sha
@@ -18,23 +19,25 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
 from tests.qualification.ebh_6._tier_audit import tier_census
 
 
-def _operator_q2d2_independent_audit_pending() -> bool:
-    from pathlib import Path
-
+def _p03_independent_acceptance_blockers() -> list[str]:
     from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome, aj_group_by_layer_class
 
+    blockers: list[str] = []
     reg = (
         Path(__file__).resolve().parents[3]
         / "docs/project/maintainers/qualification/EBH_6_OPERATOR_DECISION_REGISTER.md"
     )
     text = reg.read_text(encoding="utf-8")
-    row = text.split("| OD-EBH6-Q2D2 |", 1)[-1].split("\n", 1)[0]
-    if "OPEN" in row:
-        return True
-    if "APPROVED" in row and "Protocol 03 PASS" not in text:
-        return True
+    q2_row = text.split("| OD-EBH6-Q2D2 |", 1)[-1].split("\n", 1)[0]
+    if "OPEN" in q2_row and "APPROVED" not in q2_row:
+        blockers.append("OD-EBH6-Q2D2 OPEN")
     group = aj_group_by_layer_class()[("semantic_core", "F")]
-    return group.outcome == AjControlOutcome.FINDING
+    if group.outcome == AjControlOutcome.PASS_CANDIDATE:
+        blockers.append("semantic_core×F PASS_CANDIDATE — E01-PRE-01 / Protocol 03 pending")
+    elif group.outcome == AjControlOutcome.FINDING:
+        blockers.append("semantic_core×F FINDING unresolved")
+    blockers.append("EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN)")
+    return blockers
 
 
 def certification_banner_status() -> str:
@@ -43,8 +46,7 @@ def certification_banner_status() -> str:
     blockers: list[str] = []
     if t1:
         blockers.append(f"T1={t1}")
-    if _operator_q2d2_independent_audit_pending():
-        blockers.append("OD-EBH6-Q2D2 / semantic_core×F pending independent audit")
+    blockers.extend(_p03_independent_acceptance_blockers())
     from tests.qualification.ebh_6._findings_register import count_prohibited_unresolved
 
     if count_prohibited_unresolved():

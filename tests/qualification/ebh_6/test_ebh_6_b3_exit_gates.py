@@ -39,9 +39,9 @@ def test_ebh6_b3_all_applicable_groups_have_class_gate_ref() -> None:
         assert gate in group.evidence_refs, group.group_id
 
 
-def test_ebh6_b3_q2d2_semantic_core_f_is_finding() -> None:
+def test_ebh6_b3_q2d2_semantic_core_f_pending_independent_acceptance() -> None:
     group = aj_group_by_layer_class()[("semantic_core", "F")]
-    assert group.outcome == AjControlOutcome.FINDING, group.outcome
+    assert group.outcome == AjControlOutcome.PASS_CANDIDATE, group.outcome
     assert "Q2-D2" in group.invariant_proves or "EBH6-DEBT-Q2-D2" in group.invariant_proves
 
 

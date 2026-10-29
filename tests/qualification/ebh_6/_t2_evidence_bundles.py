@@ -265,9 +265,14 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.Q2D2_FINDING: EvidenceBundle(
         EvidenceBundleId.Q2D2_FINDING,
         "EBH6-DEBT-Q2-D2 / FRZ-TYP-03",
-        ("tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py::test_ebh6_b3_q2d2_semantic_core_f_is_finding",),
+        (
+            "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py"
+            "::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+            "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py"
+            "::test_ebh6_b3_q2d2_semantic_core_f_pending_independent_acceptance",
+        ),
         ImplementerReview.ACCEPTED,
-        "FINDING only — OD-EBH6-Q2D2 operator OPEN.",
+        "Path B remediated @ HEAD — PASS_CANDIDATE pending independent audit (not FINDING).",
     ),
     EvidenceBundleId.PLATFORM_FAIL_CLOSED: EvidenceBundle(
         EvidenceBundleId.PLATFORM_FAIL_CLOSED,

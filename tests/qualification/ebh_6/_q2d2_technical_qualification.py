@@ -1,10 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Q2-D2 technical Path A eligibility — ADR scope vs production seam (not operator OD)."""
+"""Q2-D2 — historical Path A eligibility vs executed Path B remediation (not operator OD)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Final
 
@@ -19,6 +19,10 @@ NEXUS_EXPOSURE_RESOLVER: Final[str] = "intergrax/runtime/nexus/orchestration/nex
 PATH_A_ELIGIBLE: Final[str] = "PATH A — ELIGIBLE FOR OPERATOR RATIFICATION"
 PATH_A_NOT_ELIGIBLE: Final[str] = "PATH A NOT ELIGIBLE"
 PATH_B_MANDATORY: Final[str] = "PATH B — MANDATORY REMEDIATION"
+PATH_B_REMEDIATED_PENDING: Final[str] = "PATH B — TECHNICALLY REMEDIATED / PENDING INDEPENDENT ACCEPTANCE"
+POST_PATH_B_RECON_EXIT: Final[str] = (
+    "Q2-D2 PATH B — TECHNICALLY REMEDIATED / RECONCILED / PENDING INDEPENDENT ACCEPTANCE"
+)
 
 PATH_B_PRODUCTION_SCOPE: Final[str] = (
     "OD-EBH6-01: narrow NexusLoop._resolve_authoritative_decision_exposure and TaskResult "
@@ -35,6 +39,30 @@ class Q2D2AdrAssessment:
     adr_covers_nexus_object_erasure_debt: bool
     resolver_returns_typed_exposure: bool
     nexus_loop_uses_object_erasure: bool
+    nexus_resolve_methods_typed: bool
+
+
+@dataclass(frozen=True, slots=True)
+class PathBRemediationAssessment:
+    adr: Q2D2AdrAssessment
+    registered_object_erasure_removed: bool
+
+    @property
+    def remediation_complete(self) -> bool:
+        return (
+            self.registered_object_erasure_removed
+            and self.adr.resolver_returns_typed_exposure
+            and self.adr.nexus_resolve_methods_typed
+            and not self.adr.nexus_loop_uses_object_erasure
+        )
+
+
+def _nexus_resolve_methods_typed(nexus_source: str) -> bool:
+    return (
+        "def _resolve_authoritative_decision_exposure(" in nexus_source
+        and "AuthoritativeDecisionExposure[object] | None" in nexus_source
+        and "def _resolve_authoritative_decision_exposure_for_build(" in nexus_source
+    )
 
 
 def assess_q2d2_adr_scope() -> Q2D2AdrAssessment:
@@ -61,10 +89,20 @@ def assess_q2d2_adr_scope() -> Q2D2AdrAssessment:
         adr_covers_nexus_object_erasure_debt=adr_accepts_erasure,
         resolver_returns_typed_exposure=resolver_typed,
         nexus_loop_uses_object_erasure=nexus_erasure,
+        nexus_resolve_methods_typed=_nexus_resolve_methods_typed(nexus),
     )
 
 
-def technical_q2d2_disposition(assessment: Q2D2AdrAssessment) -> str:
+def assess_path_b_remediation() -> PathBRemediationAssessment:
+    adr = assess_q2d2_adr_scope()
+    return PathBRemediationAssessment(
+        adr=adr,
+        registered_object_erasure_removed=adr.nexus_resolve_methods_typed and not adr.nexus_loop_uses_object_erasure,
+    )
+
+
+def technical_q2d2_path_a_eligibility(assessment: Q2D2AdrAssessment) -> str:
+    """Historical / counterfactual Path A fork — not post-remediation status."""
     if not assessment.adr_exists or not assessment.adr_covers_exposure_model:
         return PATH_A_NOT_ELIGIBLE
     if assessment.nexus_loop_uses_object_erasure and not assessment.adr_covers_nexus_object_erasure_debt:
@@ -72,6 +110,19 @@ def technical_q2d2_disposition(assessment: Q2D2AdrAssessment) -> str:
     if not assessment.resolver_returns_typed_exposure:
         return PATH_B_MANDATORY
     return PATH_A_ELIGIBLE
+
+
+def post_path_b_reconciliation_status() -> str:
+    rem = assess_path_b_remediation()
+    if rem.remediation_complete:
+        return PATH_B_REMEDIATED_PENDING
+    return PATH_B_MANDATORY
+
+
+def historical_path_a_not_eligible_when_nexus_erasure_present() -> str:
+    current = assess_q2d2_adr_scope()
+    historical = replace(current, nexus_loop_uses_object_erasure=True, nexus_resolve_methods_typed=False)
+    return technical_q2d2_path_a_eligibility(historical)
 
 
 def replay_q2d2_fail_closed_behavioral_gates() -> None:
