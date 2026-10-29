@@ -33,15 +33,7 @@ PASS applies to **DUP-X Cross-Architecture Duplicate & Bypass Certification** @ 
 | **Verdict** | *(PASS (SCOPED) / REJECT)* |
 | **Date** | *(auditor)* |
 | **Findings** | *(if REJECT)* |
-
-| Item | Auditor disposition |
-| --- | --- |
-| B1 Scope — 15 families · DUP-01..14 · CAND-01..15 | |
-| B2 SHA ladder vs `git rev-parse` | |
-| B3 Factory-first · deltas · harness projection | |
-| B4 COMPAT-R3 · tools_base | |
-| B5 `tests/qualification/dup_x/` replay @ baseline | |
-| **NPSC-4.2 exclusion** ([`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md)) | **ACCEPT / REJECT** |
+| **NPSC-4.2 exclusion** | **ACCEPT / REJECT** — [`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md) |
 
 ## Agent forbidden
 
