@@ -16,8 +16,8 @@
 | 2 | E01 worksheet + pre-cert | **PENDING** auditor |
 | 3 | E02 APP-TYP ratification | **PENDING** operator |
 | 4 | E03 OD-EBH6-Q2D2 | **OPEN** |
-| 5 | R7 L3 pytest log @ qual HEAD | `.tmp/session/ebh-6-final-remediation/pytest.log` (**225 passed**) |
-| 6 | P03 + pre-cert JSON export | `.tmp/session/ebh-6-final-remediation/p03-handoff.json`, `pre-cert-export.json` |
+| 5 | R7 L3 pytest log @ qual HEAD | `.tmp/session/ebh-6-r4-remediation/pytest.log` (**230 passed** @ R4 T2 gate repair) |
+| 6 | P03 + pre-cert JSON export | `.tmp/session/ebh-6-r4-remediation/pre-cert-export.json` (+ historical final-remediation artifacts) |
 
 ## Auditor checklist (B1–B6)
 

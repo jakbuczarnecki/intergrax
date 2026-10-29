@@ -7,9 +7,11 @@ from __future__ import annotations
 import pytest
 from tests.qualification.ebh_6._aj_class_gate_scan import iter_applicable_layer_class_pairs
 from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome, aj_group_by_layer_class
+from tests.qualification.ebh_6._pre_cert_evidence_export import pre_cert_export_metadata
 from tests.qualification.ebh_6._t2_evidence_bundles import (
     ImplementerReview,
     all_evidence_bundles,
+    bundle_has_non_register_behavioral_gate,
     bundle_review_disposition,
     mandatory_insufficient_pairs,
     pair_to_bundle_id_map,
@@ -33,6 +35,9 @@ def test_ebh6_t2_bundle_review_complete() -> None:
         assert bundle.implementer_review in ImplementerReview
         assert bundle.primary_behavioral_gates
         assert bundle.invariant_ref.strip()
+        assert bundle_has_non_register_behavioral_gate(bundle), bundle.bundle_id
+    meta = pre_cert_export_metadata()
+    assert "must not issue" in meta["independent_disposition"]
     insufficient = mandatory_insufficient_pairs()
     groups = aj_group_by_layer_class()
     for key in insufficient:

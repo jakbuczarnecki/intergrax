@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 from typing import Final
 
 from tests.qualification.ebh_6._aj_class_gate_scan import iter_applicable_layer_class_pairs
@@ -56,7 +57,35 @@ _EBH5_REACH_RAG = (
 _REG_PROHIBITED = (
     "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
 )
+_REG_UNCLASS = (
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+)
+_REG_DEBT = (
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified"
+)
+_EBH5_REACH_SLUG = (
+    "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed"
+)
+_CONTRACTS_TYPING_CSP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_contracts_layer_frz_typ_surface_purity_passes"
+)
+_CONTRACTS_TYPING_APP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_application_services_production_seam_typing_passes"
+)
+_EBH2I_CSP = "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
+_HARDENING3_BND = (
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
+    "::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
+)
 _VBN_MATRIX = "docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md"
+_REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
+
+_REGISTER_ONLY_GATE_MARKERS: Final[tuple[str, ...]] = (
+    "hardcoding_register_integrity",
+    "_findings_register.py",
+)
 
 
 class EvidenceBundleId(StrEnum):
@@ -108,9 +137,10 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.SANCTIONED_COMPOSITION: EvidenceBundle(
         EvidenceBundleId.SANCTIONED_COMPOSITION,
         "TRACE-X sanctioned composition sites",
-        (_SANCTIONED,),
+        (_SANCTIONED, _EBH5_REACH_FACTORY),
         ImplementerReview.ACCEPTED,
         "Registry presence — not per-root wiring replay @ HEAD.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.EXECUTION_BYPASS: EvidenceBundle(
         EvidenceBundleId.EXECUTION_BYPASS,
@@ -122,23 +152,26 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.NEXUS_REACHABILITY: EvidenceBundle(
         EvidenceBundleId.NEXUS_REACHABILITY,
         "L3 nexus call chains + sanctioned roots",
-        (_SANCTIONED,),
+        (_EE_A1, _SANCTIONED, _HARDENING3_BND),
         ImplementerReview.ACCEPTED,
         "Mechanism-level L3 index — primary_gate nodeids @ HEAD.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.GOVERNANCE_BOUNDARY: EvidenceBundle(
         EvidenceBundleId.GOVERNANCE_BOUNDARY,
         "NPSC42 governance non-execution identity",
-        (_GOV_H1, _REG_PROHIBITED),
+        (_GOV_H1,),
         ImplementerReview.ACCEPTED,
         "NPSC42 frozen subset — observability G uses non-authority scan elsewhere.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.PERSISTENCE_SQLITE: EvidenceBundle(
         EvidenceBundleId.PERSISTENCE_SQLITE,
         "SQLite annex accountability",
-        (_SQLITE, _REG_PROHIBITED),
+        (_SQLITE,),
         ImplementerReview.ACCEPTED,
         "Annex accountability — not all shadow-store class-E obligations.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.OBSERVABILITY_AUTHORITY: EvidenceBundle(
         EvidenceBundleId.OBSERVABILITY_AUTHORITY,
@@ -165,9 +198,10 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.RAG_BOOTSTRAP: EvidenceBundle(
         EvidenceBundleId.RAG_BOOTSTRAP,
         "T-RAG-01 graph bootstrap / no shadow registry",
-        (_EBH5_REACH_RAG, _REG_PROHIBITED),
+        (_EBH5_REACH_RAG,),
         ImplementerReview.ACCEPTED,
         "RAG graph bootstrap gates — not full memory plane qual.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.CONFIG_HOSTING: EvidenceBundle(
         EvidenceBundleId.CONFIG_HOSTING,
@@ -193,16 +227,18 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.PLATFORM_VENDOR_SCAN: EvidenceBundle(
         EvidenceBundleId.PLATFORM_VENDOR_SCAN,
         "Register prohibited/unclassified + layer closed-world scan",
-        (_REG_PROHIBITED, _EBH5_INV),
+        (_EBH5_REACH_FACTORY, _EBH5_REACH_SLUG, _EBH5_INV),
         ImplementerReview.ACCEPTED,
         "Inventory + static vendor scan — not live adapter audit.",
+        negative_test_ref=_REG_UNCLASS,
     ),
     EvidenceBundleId.REPLACEABILITY_J: EvidenceBundle(
         EvidenceBundleId.REPLACEABILITY_J,
         "RPL-G CONFIG-X blockers + VBN matrix",
-        (_RPLG, _VBN_MATRIX),
+        (_RPLG, _EBH5_INV),
         ImplementerReview.ACCEPTED,
         "RPL-G behavioral invoke + matrix cite — 51 NYQ rows remain deferred.",
+        negative_test_ref=_VBN_MATRIX,
     ),
     EvidenceBundleId.Q2D2_FINDING: EvidenceBundle(
         EvidenceBundleId.Q2D2_FINDING,
@@ -214,30 +250,34 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.PLATFORM_FAIL_CLOSED: EvidenceBundle(
         EvidenceBundleId.PLATFORM_FAIL_CLOSED,
         "Fail-closed materialization markers",
-        (_EBH5_REACH_FACTORY, _REG_PROHIBITED),
+        (_EBH5_REACH_SLUG, _EBH5_REACH_FACTORY, _SANCTIONED),
         ImplementerReview.ACCEPTED,
         "Static fail-closed markers — not shadow config paths platform-wide.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.PLATFORM_HARDCODING: EvidenceBundle(
         EvidenceBundleId.PLATFORM_HARDCODING,
         "Class-B literal scan + register",
-        (_REG_PROHIBITED,),
+        (_EE_A1,),
         ImplementerReview.ACCEPTED,
         "Sample literal scan — not exhaustive backend census.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.PLATFORM_TYPING_SCAN: EvidenceBundle(
         EvidenceBundleId.PLATFORM_TYPING_SCAN,
         "Protocol/TYPE_CHECKING seam scan",
-        (_REG_PROHIBITED,),
+        (_CONTRACTS_TYPING_CSP, _CONTRACTS_TYPING_APP, _EBH2I_CSP),
         ImplementerReview.ACCEPTED,
         "Static typing seam markers — not FRZ-TYP behavioral replay.",
+        negative_test_ref=_REG_DEBT,
     ),
     EvidenceBundleId.L3_REACHABILITY: EvidenceBundle(
         EvidenceBundleId.L3_REACHABILITY,
         "L3 mechanism primary_gate nodeids per layer",
-        (_SANCTIONED,),
+        (_SANCTIONED, _LIFECYCLE, _NPSC5E, _HARDENING3_BND),
         ImplementerReview.ACCEPTED,
         "Primary_gate pytest nodeids from `_l3_reachability_evidence` — not entrypoint filename heuristic.",
+        negative_test_ref=_REG_PROHIBITED,
     ),
 }
 
@@ -338,3 +378,32 @@ def bundle_review_census() -> dict[str, int]:
 def all_evidence_bundles() -> tuple[EvidenceBundle, ...]:
     used = set(pair_to_bundle_id_map().values())
     return tuple(_BUNDLE_CATALOG[bid] for bid in sorted(used, key=lambda x: x.value))
+
+
+def is_register_only_pytest_gate(node_id: str) -> bool:
+    if "::" not in node_id:
+        return False
+    return any(marker in node_id for marker in _REGISTER_ONLY_GATE_MARKERS)
+
+
+def pytest_primary_gates(bundle: EvidenceBundle) -> tuple[str, ...]:
+    return tuple(g for g in bundle.primary_behavioral_gates if "::" in g)
+
+
+def assert_resolvable_pytest_node_id(node_id: str) -> None:
+    if "::" not in node_id:
+        msg = f"not a pytest nodeid: {node_id!r}"
+        raise AssertionError(msg)
+    rel, func = node_id.split("::", 1)
+    path = _REPO_ROOT / rel
+    if not path.is_file():
+        msg = f"missing gate module: {node_id}"
+        raise AssertionError(msg)
+    text = path.read_text(encoding="utf-8")
+    if f"def {func}" not in text and f"async def {func}" not in text:
+        msg = f"missing gate test function: {node_id}"
+        raise AssertionError(msg)
+
+
+def bundle_has_non_register_behavioral_gate(bundle: EvidenceBundle) -> bool:
+    return any(not is_register_only_pytest_gate(g) for g in pytest_primary_gates(bundle))
