@@ -3,38 +3,60 @@
 | Field | Value |
 | --- | --- |
 | **Record type** | ECAP §2.B **B6** — Independent exact-SHA acceptance |
-| **Status** | **PENDING — NOT ISSUED** (template for external auditor) |
-| **Verdict** | *(auditor completes)* |
-| **INDEPENDENT_AUDIT_BASELINE_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
-| **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` — **40 passed** — `.tmp/proof/dup-x-parent-closure-l3/run.log` |
-| **EVIDENCE_PUBLICATION_SHA** (Block I **F**) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
-| **BLOCK_I_IMPLEMENTATION_SHA** (**E**) | `053040ef758f4cf94b2844a08abe5a56244b666b` |
-| **Auditor identity** | Independent auditor — Protocol DUP-X-03 B1–B6 |
-| **Date** | *(auditor)* |
+| **Status** | **ISSUED — PASS (SCOPED)** |
+| **Verdict** | **PASS (SCOPED)** — Protocol DUP-X-03 **B1–B6** |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **PRE_ACCEPTANCE_PUBLICATION_HEAD** | `1f782aaa9017b31b2e68a1490d186a1e3fa055cd` (doc-only delta after qual pin — reviewed) |
+| **ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` |
+| **Auditor identity** | **ChatGPT** — external evidence-based Protocol DUP-X-03 review (**not** Cursor Agent) |
+| **Publication** | Repository commit publishing this record — implementer-controlled docs only; provenance preserved above |
+| **Date** | **2026-10-29** |
+| **Evidence bundle** | `.tmp/proof/dup-x-b6-independent-evidence-bundle/` |
 
-## Scoped acceptance (explicit — to complete on PASS)
+## Scoped acceptance (explicit)
 
-PASS applies to **DUP-X Cross-Architecture Duplicate & Bypass Certification** @ pinned SHA only. **Not** global **FRZ PASS** · **not** **PROD-Q** · **not** **ARCH-FREEZE** · **not** automatic **ROADMAP-REPLAY-X** closure.
+PASS applies to **DUP-X Cross-Architecture Duplicate & Bypass Certification** @ **`INDEPENDENT_ACCEPTANCE_BASELINE_SHA`** only. **Not** global **FRZ PASS** · **not** **PROD-Q** · **not** **ARCH-FREEZE** · **not** automatic **ROADMAP-REPLAY-X** closure · **not** parent **`CLOSED`** without operator **OD-DUPX-08**.
 
-## B1–B5 disposition (auditor completes before B6 verdict)
+## B5 replay attestation (auditor disclosure)
+
+| Method | Disposition |
+| --- | --- |
+| Independent pytest re-execution @ baseline | **Not performed** by external auditor |
+| Log/evidence inspection | **Performed** — `dup_x-full.log` (**44 passed**), `l3-parent.log` (**24 passed**), `b4-negative-gates.log` (**4 passed**), NPSC allowlist log (**1 failed**, **10** modules) |
+| ECAP additional replay | **Formally not required** for this scoped PASS given inspected implementer bundle + SHA integrity @ baseline |
+
+## B1–B5 disposition
 
 | Block | Focus | Disposition | Notes |
 | --- | --- | --- | --- |
-| **B1** | Scope · 15 families · CAND-01..15 | | |
-| **B2** | SHA ladder @ `INDEPENDENT_AUDIT_BASELINE_SHA` | | C0-05 + manifest |
-| **B3** | Factory-first · deltas · Class D | | |
-| **B4** | COMPAT-R3 · tools_base | | |
-| **B5** | `uv run pytest tests/qualification/dup_x/ -q` | | Expect **40 passed** @ baseline |
+| **B1** | Scope · 15 families · CAND-01..15 | **PASS** | Closed-world inventory + class matrix |
+| **B2** | SHA ladder @ baseline | **PASS** | C0-04..07 · manifest; qual pin `a7d83925b…` |
+| **B3** | Factory-first · deltas · Class D | **PASS** | Responsibility delta dossiers + qual SSOT |
+| **B4** | COMPAT-R3 · NPSC ten-module · negative gates | **PASS (SCOPED)** | B4 negative **4 passed**; global NPSC allowlist **still FAIL** — see exclusion |
+| **B5** | Full `tests/qualification/dup_x/` | **PASS** | **44 passed** @ `QUALIFICATION_EXECUTION_SHA` (log-inspected) |
 
-## B6 verdict (auditor only)
+## B6 verdict
 
 | Field | Value |
 | --- | --- |
-| **Verdict** | *(PASS (SCOPED) / REJECT)* |
-| **Date** | *(auditor)* |
-| **Findings** | *(if REJECT)* |
-| **NPSC-4.2 exclusion** | **ACCEPT / REJECT** — [`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md) |
+| **Verdict** | **PASS (SCOPED)** |
+| **Date** | **2026-10-29** |
+| **Findings** | None blocking scoped acceptance |
+| **NPSC-4.2 exclusion** | **ACCEPT** for DUP-X only — [`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md); allowlist gate remains **FAIL**; no allowlist weakening |
 
-## Agent forbidden
+## Parent closure (operator only)
 
-Cursor/implementer must **not** set Status to ISSUED PASS or execute **OD-DUPX-08**.
+**OD-DUPX-08** remains **OPEN** until operator records:
+
+`OPERATOR APPROVED — DUP-X CLOSED (OD-DUPX-08)`
+
+Until then platform status:
+
+**`DUP-X — INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING`**
+
+## Forbidden interpretations
+
+- Cursor Agent is **not** the independent auditor for B6.
+- This record does **not** authorize **ROADMAP-REPLAY-X** entry.
+- **new global FRZ PASS = 0**

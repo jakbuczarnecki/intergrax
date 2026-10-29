@@ -45,7 +45,16 @@ NPSC drift is **architecture gate backlog** (stale `_ALLOWED_ORCHESTRATION_BACKE
 | **Not a DUP-X BLOCKER** | Parent closure mechanical gates **PASS**; COMPAT-R3 + CONFIG-X exit gates **PASS** |
 | **Track elsewhere** | NPSC-4.2 / EBH harness composition program — operator may refresh allowlist outside DUP-X |
 
-Cross-ref: [`DUP_X_FINDINGS_REGISTER.md`](DUP_X_FINDINGS_REGISTER.md) § NPSC-4.2 exclusion.
+Cross-ref: [`DUP_X_FINDINGS_REGISTER.md`](DUP_X_FINDINGS_REGISTER.md) § NPSC-4.2 exclusion · B4 boundary [`DUP_X_RESPONSIBILITY_DELTA_NPSC_ORCHESTRATION_BACKEND.md`](DUP_X_RESPONSIBILITY_DELTA_NPSC_ORCHESTRATION_BACKEND.md).
+
+## Architecture backlog (outside DUP-X parent closure)
+
+| Item | Owner | Status |
+| --- | --- | --- |
+| Refresh `_ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS` in [`test_npsc4_2_residual_compatibility_gate.py`](../../../tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py) | NPSC / harness composition program | **OPEN** — do **not** expand allowlist inside DUP-X without Class B evidence |
+| `test_npsc42_orchestration_backend_access_confined_to_allowlist` | NPSC suite | **Expected FAIL** @ ten-module surface until backlog closed |
+
+**DUP-X disposition:** **ACCEPT EXCLUSION** for B4/B6 scoped audit; **not** NPSC suite PASS.
 
 ## L3 narrative — representative modules (composition wiring only)
 

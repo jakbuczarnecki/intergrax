@@ -81,3 +81,42 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 | **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | Qual + evidence before manifest Commit **G** |
 
 **Status:** `DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6 — NOT CLOSED`
+
+## C0-06 B4 NPSC negative boundary (@ `6ccddd3c40a88377e39962a300984d3b81f5c220`)
+
+| Label | SHA | Role |
+| --- | --- | --- |
+| **B4_PUBLICATION_START** | `3feaee3d11d65d08a7860715e26bb38e763fcd40` | Pre-B4 publication HEAD |
+| **B4_IMPLEMENTATION_SHA** | `100ab6b52dfdc4b86423601100bcc738c45a3b0c` | B4 negative boundary qual gates |
+| **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Delta matrix + evidence record + NPSC cross-ref |
+| **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | **44 passed** — `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Full DUP-X qual + B4 evidence @ replay |
+| **B4_RECONCILIATION_SHA** | `a804a4319cbe644da757e196f9692c9d55070a67` | Protocol 03 final handoff |
+
+**Status:** `DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT — NOT CLOSED`
+
+## C0-07 Final closure Block A + B-01 replay (@ `a7d83925b375b5f08eb0f175ced2c17fa026bba9`)
+
+| Label | SHA | Role |
+| --- | --- | --- |
+| **FINAL_CLOSURE_START** | `f0928167aadc8f871dccadda039aa77b27f2f904` | Pre–final-closure HEAD |
+| **FINAL_CLOSURE_BLOCK_A_SHA** | `cdf269fc9186f47737ed747babc2f9d831b1e713` | Portable qual paths · operator/NPSC docs |
+| **FINAL_CLOSURE_QUAL_ADJUSTMENT_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | Dossier gate wording + **44 passed** replay |
+| **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | `.tmp/proof/dup-x-final-b6-replay/dup_x-full.log` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | External B6 replay pin |
+| **FINAL_CLOSURE_RECONCILIATION_SHA** | `f8d267cc5f516d7ed45978758225dcdb971ad9ff` | Handoff + C0-07 ladder |
+| **FINAL_CLOSURE_CURRENT_PUBLICATION_HEAD** | `fcc0930b9d4b627b80e6a0296984f41e1fc0589b` | SHA literal sync (post-reconciliation) |
+
+**Status:** `DUP-X — READY FOR EXTERNAL B6 — NOT CLOSED`
+
+## C0-08 Independent Protocol DUP-X-03 B6 (@ `a7d83925b375b5f08eb0f175ced2c17fa026bba9`)
+
+| Label | SHA / value | Role |
+| --- | --- | --- |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | Qual + evidence replay pin |
+| **PRE_ACCEPTANCE_PUBLICATION_HEAD** | `1f782aaa9017b31b2e68a1490d186a1e3fa055cd` | Doc-only commits after qual pin (reviewed) |
+| **B6 verdict** | **ISSUED — PASS (SCOPED)** | External auditor **ChatGPT** — not Cursor |
+| **ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` | See manifest |
+| **NPSC-4.2 exclusion** | **ACCEPT** (DUP-X scoped) | Allowlist gate **FAIL** unchanged |
+
+**Status:** `DUP-X — INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING`

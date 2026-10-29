@@ -132,11 +132,41 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 - **DUPX-GAP-*** **PASS @ Wave 1** (evidence) — parent stage still **NOT CLOSED** until OD-DUPX-08 + Protocol PASS.
 - Parent dossier: **NOT CLOSED** · no independent PASS · no global **FRZ-*** PASS claim.
 
+## B4 NPSC negative boundary (@ `6ccddd3c40a88377e39962a300984d3b81f5c220`)
+
+| Label | SHA | Role |
+| --- | --- | --- |
+| **B4_PUBLICATION_START** | `3feaee3d11d65d08a7860715e26bb38e763fcd40` | Pre-B4 HEAD |
+| **B4_IMPLEMENTATION_SHA** | `100ab6b52dfdc4b86423601100bcc738c45a3b0c` | B4 negative qual |
+| **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | B4 delta + evidence record |
+| **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | **44 passed** · `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Recommended auditor replay pin |
+| **B4_RECONCILIATION_SHA** | `a804a4319cbe644da757e196f9692c9d55070a67` | Protocol 03 final handoff |
+| **CURRENT_PUBLICATION_HEAD** | `e04052eac6bad86d02729eee0b5b83037a91ad8e` | Narrative head post-B4 |
+
 ## Operator verdict
 
-**DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6** — audit @ **INDEPENDENT_AUDIT_BASELINE_SHA** `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` · narrative **CURRENT_PUBLICATION_HEAD** `ffc724c4c2aa325231cd7ac54df5788f66cfc7f7`
+## Independent B6 acceptance (@ `a7d83925b375b5f08eb0f175ced2c17fa026bba9`)
 
-Qual + narrative on `development`; Block I **40 passed** @ `0e19bc28a…`; audit @ **INDEPENDENT_AUDIT_BASELINE_SHA** (qual HEAD before Commit **G** narrative).
+| Label | Value |
+| --- | --- |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **B6 status** | **ISSUED — PASS (SCOPED)** — auditor **ChatGPT** (external) |
+| **ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` |
+| **Parent status** | **INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING** |
+
+**Operator verdict (interim):** `DUP-X — INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING` — **not** global **FRZ PASS**
+
+## Final closure Block A (@ `a7d83925b375b5f08eb0f175ced2c17fa026bba9`)
+
+| Label | SHA |
+| --- | --- |
+| **FINAL_CLOSURE_START** | `f0928167aadc8f871dccadda039aa77b27f2f904` |
+| **FINAL_CLOSURE_BLOCK_A** | `cdf269fc9186f47737ed747babc2f9d831b1e713` |
+| **FINAL_CLOSURE_QUAL** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **FINAL_CLOSURE_RECONCILIATION_SHA** | `f8d267cc5f516d7ed45978758225dcdb971ad9ff` |
+| **FINAL_CLOSURE_CURRENT_PUBLICATION_HEAD** | `fcc0930b9d4b627b80e6a0296984f41e1fc0589b` |
+| **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` — `.tmp/proof/dup-x-final-b6-replay/dup_x-full.log` |
 
 ## Block I operator commit split (executed)
 
@@ -155,3 +185,16 @@ Qual + narrative on `development`; Block I **40 passed** @ `0e19bc28a…`; audit
 | Tests | **40 passed** |
 | Log | `.tmp/proof/dup-x-parent-closure-l3/run.log` |
 | **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
+
+## OD-DUPX-08 final operator closure (2026-10-29)
+
+| Field | Value |
+| --- | --- |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **B6_ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` |
+| **OPERATOR_APPROVAL** | `OPERATOR APPROVED — DUP-X CLOSED (OD-DUPX-08)` — 2026-10-29 |
+| **ROADMAP_CLOSURE_PUBLICATION_SHA** | `2b48bceafbdac09fdd0fae376dab02c10fc8f473` |
+| **FINAL_RECONCILIATION_SHA** | This manifest's subsequent Git commit; inspect Git history rather than self-reference |
+| **PARENT_STATUS** | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
+
+Scope: 44 DUP-X PASS and 24 parent L3 PASS in supplied implementer logs; B6 auditor inspected logs but did not independently rerun pytest; NPSC-4.2 allowlist FAIL expressly excluded from DUP-X scoped certification. Global FRZ PASS = 0. ROADMAP-REPLAY-X not started.
