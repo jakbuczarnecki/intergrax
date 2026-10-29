@@ -79,6 +79,14 @@ _LIFECYCLE = (
     "::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
 )
 _B3_Q2D2 = "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py::test_ebh6_b3_q2d2_semantic_core_f_is_finding"
+_CONTRACTS_TYPING_CSP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_contracts_layer_frz_typ_surface_purity_passes"
+)
+_CONTRACTS_TYPING_APP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_application_services_production_seam_typing_passes"
+)
 _RPLG_MATRIX = "docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md"
 
 _CLASS_REUSE: Final[dict[str, tuple[str, ...]]] = {
@@ -120,8 +128,8 @@ _LAYER_CLASS_EXTRA_REFS: Final[dict[tuple[str, str], tuple[str, ...]]] = {
     ("composition_roots", "H"): (_SANCTIONED,),
     ("semantic_core", "B"): (_EE_A1,),
     ("semantic_core", "H"): (_SANCTIONED,),
-    ("contracts", "F"): (_REG_DEBT,),
-    ("application_services", "F"): (_REG_DEBT,),
+    ("contracts", "F"): (_CONTRACTS_TYPING_CSP,),
+    ("application_services", "F"): (_CONTRACTS_TYPING_APP,),
 }
 
 _VENDOR_SDK_IMPORT_MARKERS: Final[tuple[str, ...]] = (
@@ -277,8 +285,10 @@ def scan_class_f_typing_seam(layer: str) -> None:
         assert "AuthoritativeDecisionExposure" in text or "TYPE_CHECKING" in text
         return
     if layer in ("contracts", "application_services"):
-        reg = _REPO_ROOT / "tests/qualification/ebh_6/_findings_register.py"
-        assert "EBH6-DEBT" in _read_py(reg) or "FRZ-TYP" in _read_py(reg)
+        if layer == "contracts":
+            _invoke_reuse_gate(_CONTRACTS_TYPING_CSP)
+        else:
+            _invoke_reuse_gate(_CONTRACTS_TYPING_APP)
         return
     files = _layer_py_files(layer)
     assert files, f"T-CLS-F: no python paths for {layer}"

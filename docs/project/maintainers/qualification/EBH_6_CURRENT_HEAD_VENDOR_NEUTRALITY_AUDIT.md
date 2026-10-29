@@ -13,7 +13,7 @@
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
 | **P03 integrity IMPLEMENTATION** | `1539c886ddd63f551b62352ad97b182569eb8444` — **HISTORICAL** |
-| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD T1=2)** |
+| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD T1=0)** |
 
 ## Mandatory audit layers (roadmap §3.0.8)
 

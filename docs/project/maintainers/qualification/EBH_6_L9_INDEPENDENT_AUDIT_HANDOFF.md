@@ -4,7 +4,7 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — **T1=2** honest; 23×PENDING independent disposition unchanged |
+| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — **T1=0**; 23×PENDING independent disposition unchanged |
 | **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
 | **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
 | **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-t2-repair/pytest.log` |

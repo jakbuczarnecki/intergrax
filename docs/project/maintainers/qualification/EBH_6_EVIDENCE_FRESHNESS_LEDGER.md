@@ -41,7 +41,7 @@
 
 - **OD-EBH6-01** OPEN — implementation wave not operator-open
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution (corrected closure plan @ `0489054c…`)
-- **L9 Protocol 03** OPEN — **T2-AUD honest census** (**T1=2**, **T2=129**, **T3=2**); **B6** after **0 mandatory INSUFFICIENT** + **OD-EBH6-Q2D2** + independent P03 PASS
+- **L9 Protocol 03** OPEN — **T2-AUD census** (**T1=0**, **T2=131**, **T3=2**); **B6** after **OD-EBH6-Q2D2** + independent P03 PASS
 - **2** A–J `EVIDENCE_REQUIRED` @ **CERTIFICATION_HANDOFF_SHA** (`contracts`×F, `application_services`×F — `_t2_evidence_bundles.py`)
 
 ## Pytest log (B5 cert handoff)

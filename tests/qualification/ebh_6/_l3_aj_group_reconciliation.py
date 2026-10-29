@@ -84,6 +84,15 @@ _LIFECYCLE = (
     "::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
 )
 _REGISTER_SSOT = "tests/qualification/ebh_6/_findings_register.py"
+_CONTRACTS_TYPING_CSP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_contracts_layer_frz_typ_surface_purity_passes"
+)
+_CONTRACTS_TYPING_APP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_application_services_production_seam_typing_passes"
+)
+_EBH2I_CSP = "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
 
 
 @dataclass(frozen=True, slots=True)
@@ -206,9 +215,9 @@ _ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[st
     ),
     ("contracts", "F"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
-        "Register: Q2-D2 / debt rows ratified — not contract typing re-audit.",
-        (_REG_DEBT,),
-        "Register disposition — not FRZ-TYP behavioral proof.",
+        "EBH-2I contract surface purity (CSP) on closed-world contracts layer @ HEAD.",
+        (_CONTRACTS_TYPING_CSP, _EBH2I_CSP),
+        "Tier-0/integrations contracts surface — not supplemental EBH-2I application contract modules.",
     ),
     ("semantic_core", "F"): (
         AjControlOutcome.FINDING,
@@ -219,9 +228,9 @@ _ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[st
     ),
     ("application_services", "F"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
-        "Register ratified debt disposition for tracked seams.",
-        (_REG_DEBT,),
-        "Register-only for class F on app _shared.",
+        "Direct Tier-3 wiring → _shared public seam FRZ-TYP gate with EBH6-DEBT-APP-TYP-* registry.",
+        (_CONTRACTS_TYPING_APP,),
+        "Direct wiring imports only — transitive _shared helpers excluded; 11 registered typing debt rows.",
     ),
     ("integrations", "B"): (
         AjControlOutcome.PARTIAL_CANDIDATE,

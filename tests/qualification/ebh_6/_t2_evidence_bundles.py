@@ -180,10 +180,15 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
         EvidenceBundleId.CONTRACTS_TYPING,
         "FRZ-TYP public contract seams",
         (
-            "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+            "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+            "::test_ebh6_contracts_layer_frz_typ_surface_purity_passes",
+            "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+            "::test_ebh6_application_services_production_seam_typing_passes",
+            "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
         ),
-        ImplementerReview.INSUFFICIENT,
-        "Register-only disposition — not FRZ-TYP behavioral proof (T2-AUD honest gap).",
+        ImplementerReview.ACCEPTED,
+        "EBH-2I CSP on closed-world contracts surface + direct Tier-3 wiring _shared "
+        "seam gate with EBH6-DEBT-APP-TYP-* registry (11 rows @ HEAD).",
     ),
     EvidenceBundleId.PLATFORM_VENDOR_SCAN: EvidenceBundle(
         EvidenceBundleId.PLATFORM_VENDOR_SCAN,

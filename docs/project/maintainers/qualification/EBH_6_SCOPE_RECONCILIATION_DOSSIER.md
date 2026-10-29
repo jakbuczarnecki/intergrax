@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — tier **T1=2** @ **CERTIFICATION_HANDOFF_SHA**; **not** Protocol 03 PASS |
+| **Status** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — tier **T1=0** @ **CERTIFICATION_HANDOFF_SHA**; **not** Protocol 03 PASS |
 | **Closure plan authority** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ **PLAN_PUBLICATION_SHA** `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
 | **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
@@ -20,8 +20,8 @@ Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](..
 
 | Tier | Groups @ B5 handoff | Outcome mapping |
 | --- | ---: | --- |
-| **T1** | **2** | `EVIDENCE_REQUIRED` (`contracts`×F, `application_services`×F) |
-| **T2** | **129** | `PARTIAL_CANDIDATE` (T2-AUD **ACCEPTED** bundles) |
+| **T1** | **0** | — |
+| **T2** | **131** | `PARTIAL_CANDIDATE` (T2-AUD **ACCEPTED** bundles) |
 | **T3** | **2** | `PASS_CANDIDATE` (`execution`×B) + `FINDING` (`semantic_core`×F / OD-EBH6-Q2D2 OPEN) |
 
 **133** applicable pairs · **49** L3 mechanism records · L3→A–J crosswalk: `l3_mechanism_to_aj_groups()` in `_tier_audit.py`.
@@ -36,15 +36,15 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 | --- | --- | --- |
 | **B1** | T-NORM-01, T-SHA-01, T-DOC-01 | L9-A ↔ `_layer_evidence`; single SHA ladder — **done** |
 | **B2** | T-LAY-* (8 packages, 16 layers) | Verified closed-world inventory + L3 **per layer** — **done** (`test_ebh_6_b2_layer_closed_world_integrity.py`); **not** auto-RESOLVED |
-| **B3** | T-CLS-* | **133** groups adjudicated; **2** `EVIDENCE_REQUIRED` (T2-AUD); class gates + reuse @ HEAD — **not** Protocol 03 PASS |
+| **B3** | T-CLS-* | **133** groups adjudicated; **0** `EVIDENCE_REQUIRED`; class gates + reuse @ HEAD — **not** Protocol 03 PASS |
 | **B4–B7** | Families, publication, P03, OD-EBH6-08 | See closure plan §6 — **no B6** before B5 zero gap groups |
 
 ## SCOPE-01 — A–J grouped reconciliation (@ IMPLEMENTATION_SHA)
 
 | Outcome (133 groups) | Count |
 | --- | ---: |
-| **EVIDENCE_REQUIRED** (mandatory gap @ HEAD) | **2** (T1 tier — `contracts_typing` bundle) |
-| **PARTIAL_CANDIDATE** | **129** (T2 tier) |
+| **EVIDENCE_REQUIRED** (mandatory gap @ HEAD) | **0** |
+| **PARTIAL_CANDIDATE** | **131** (T2 tier) |
 | **PASS_CANDIDATE** | 1 (`execution` × B — EE-A1) |
 | **FINDING** | 1 (`semantic_core` × F — Q2-D2) |
 

@@ -40,4 +40,4 @@ Pre-cert findings: [`EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md`](EBH_6_IND
 | **E3** | Independent auditor | **Protocol 03** ECAP B1–B6 |
 | **E4** | Operator | **OD-EBH6-08** — EBH-6 CLOSED on roadmap |
 
-Implementer T2 repair @ HEAD documents honest **T1=2**; **no** Protocol 03 PASS, **no** OD-EBH6-08, **no** agent AUDIT PASS.
+Implementer contracts_typing qualification @ HEAD documents **T1=0** on T2-AUD; **no** Protocol 03 PASS, **no** OD-EBH6-08, **no** agent AUDIT PASS.
