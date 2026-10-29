@@ -4,13 +4,35 @@
   "TEST_EXECUTION_SHA": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
   "aj_group_count": 133,
   "artifacts": {
+    "l9_nodeid_attestation": "l9-nodeid-attestation.json",
+    "l9_pytest_transcript": "l9-pytest-transcript.txt",
     "p03_handoff": "p03-handoff.json",
     "pre_cert_export": "pre-cert-export.json",
     "pytest_transcript": "pytest-transcript.txt"
   },
-  "certification_banner": "PARTIAL / EXACT BLOCKERS (semantic_core\u00d7F PASS_CANDIDATE \u2014 E01-PRE-01 / Protocol 03 pending; EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN); E02-AUD-01 PENDING (E02-OP-01 operator ratified \u2014 not auditor ACCEPT))",
+  "certification_banner": "PARTIAL / EXACT BLOCKERS (semantic_core×F PASS_CANDIDATE — E01-PRE-01 / Protocol 03 pending; EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN); E02-AUD-01 PENDING (E02-OP-01 operator ratified — not auditor ACCEPT))",
+  "executions": {
+    "ebh6_qualification_suite": {
+      "TEST_EXECUTION_SHA": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "artifact": "pytest-transcript.txt",
+      "pytest_suite": "tests/qualification/ebh_6/",
+      "result_summary": "272 passed (historical — do not overwrite)"
+    },
+    "l9_blocker_gates_b3_b4_b5": {
+      "TEST_EXECUTION_SHA": "0a2158673708722b1e92c816715e2ed81ac940c5",
+      "artifact": "l9-pytest-transcript.txt",
+      "attestation": "l9-nodeid-attestation.json",
+      "mandatory_unique_nodeids": 10,
+      "result_summary": "9 passed, 1 failed",
+      "failed_nodeids": [
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine"
+      ],
+      "invariant": "SYS-INV-GOV-01 / FRZ-GOV — execution must not import policy_engine (NPSC42 H1 freeze)",
+      "status": "BLOCKED"
+    }
+  },
   "family_count": 23,
-  "independent_acceptance": "PENDING \u2014 no Protocol 03 PASS record",
+  "independent_acceptance": "PENDING — no Protocol 03 PASS record",
   "l9_blocker_count": 8,
   "pytest_suite": "tests/qualification/ebh_6/"
 }

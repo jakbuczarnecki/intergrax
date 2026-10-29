@@ -1,0 +1,60 @@
+{
+  "TEST_EXECUTION_SHA": "0a2158673708722b1e92c816715e2ed81ac940c5",
+  "all_mandatory_pass": false,
+  "mandatory_nodeids": [
+    "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+    "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
+    "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity",
+    "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink",
+    "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented",
+    "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+    "tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass",
+    "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint",
+    "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open",
+    "tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix"
+  ],
+  "mandatory_unique_nodeid_count": 10,
+  "results": [
+    {
+      "nodeid": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
+      "status": "MISSING_OR_FAIL"
+    },
+    {
+      "nodeid": "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open",
+      "status": "PASS"
+    },
+    {
+      "nodeid": "tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix",
+      "status": "PASS"
+    }
+  ],
+  "transcript_artifact": "l9-pytest-transcript.txt"
+}

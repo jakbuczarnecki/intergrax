@@ -36,12 +36,17 @@ def main() -> int:
     sha = _git_sha()
     _OUT.mkdir(parents=True, exist_ok=True)
     handoff = p03_handoff_bundle()
+    prior_executions: dict[str, object] | None = None
+    manifest_path = _OUT / "MANIFEST.json"
+    if manifest_path.is_file():
+        prior = json.loads(manifest_path.read_text(encoding="utf-8"))
+        prior_executions = prior.get("executions")
     (_OUT / "p03-handoff.json").write_text(json.dumps(handoff, indent=2, sort_keys=True), encoding="utf-8")
     (_OUT / "pre-cert-export.json").write_text(
         json.dumps(pre_cert_export_dict(), indent=2, sort_keys=True),
         encoding="utf-8",
     )
-    manifest = {
+    manifest: dict[str, object] = {
         "TEST_EXECUTION_SHA": sha,
         "CERTIFICATION_HANDOFF_SUBSTANCE_SHA": EBH6_CERTIFICATION_HANDOFF_SHA,
         "EBH6_PUBLICATION_SHA": EBH6_PUBLICATION_SHA,
@@ -55,8 +60,21 @@ def main() -> int:
             "p03_handoff": "p03-handoff.json",
             "pre_cert_export": "pre-cert-export.json",
             "pytest_transcript": "pytest-transcript.txt",
+            "l9_pytest_transcript": "l9-pytest-transcript.txt",
+            "l9_nodeid_attestation": "l9-nodeid-attestation.json",
         },
     }
+    if prior_executions:
+        manifest["executions"] = prior_executions
+    else:
+        manifest["executions"] = {
+            "ebh6_qualification_suite": {
+                "TEST_EXECUTION_SHA": sha,
+                "artifact": "pytest-transcript.txt",
+                "pytest_suite": "tests/qualification/ebh_6/",
+                "result_summary": "see pytest-transcript.txt",
+            },
+        }
     (_OUT / "MANIFEST.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
     print(f"Wrote EBH-6 P03 independent replay bundle @ {sha} -> {_OUT}")
     return 0

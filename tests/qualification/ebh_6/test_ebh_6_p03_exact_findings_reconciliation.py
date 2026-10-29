@@ -18,7 +18,15 @@ _RECON = _REPO / "docs/project/maintainers/qualification/EBH_6_PROTOCOL_03_EXACT
 
 
 def test_ebh6_p03_committed_replay_bundle_present() -> None:
-    for name in ("MANIFEST.json", "p03-handoff.json", "pre-cert-export.json", "pytest-transcript.txt", "README.md"):
+    for name in (
+        "MANIFEST.json",
+        "p03-handoff.json",
+        "pre-cert-export.json",
+        "pytest-transcript.txt",
+        "l9-pytest-transcript.txt",
+        "l9-nodeid-attestation.json",
+        "README.md",
+    ):
         assert (_BUNDLE / name).is_file(), name
 
 
@@ -47,7 +55,9 @@ def test_ebh6_p03_exact_findings_reconciliation_doc_covers_findings() -> None:
 
 def test_ebh6_p03_manifest_sha_is_ancestor_of_head() -> None:
     manifest = json.loads((_BUNDLE / "MANIFEST.json").read_text(encoding="utf-8"))
-    recorded = manifest["TEST_EXECUTION_SHA"]
+    recorded = (
+        manifest.get("TEST_EXECUTION_SHA") or manifest["executions"]["ebh6_qualification_suite"]["TEST_EXECUTION_SHA"]
+    )
     head = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         check=True,
@@ -62,3 +72,25 @@ def test_ebh6_p03_manifest_sha_is_ancestor_of_head() -> None:
         cwd=_REPO,
     )
     assert result.returncode == 0, f"manifest SHA {recorded} must be ancestor of HEAD {head}"
+
+
+def test_ebh6_p03_l9_execution_attestation_covers_mandatory_nodeids() -> None:
+    from tests.qualification.ebh_6._l9_blocker_execution import mandatory_l9_gate_nodeids
+
+    att = json.loads((_BUNDLE / "l9-nodeid-attestation.json").read_text(encoding="utf-8"))
+    mandatory = mandatory_l9_gate_nodeids()
+    assert att["mandatory_unique_nodeid_count"] == len(mandatory) == 10
+    attested = {row["nodeid"]: row["status"] for row in att["results"]}
+    assert set(attested) == set(mandatory)
+
+
+def test_ebh6_p03_l9_execution_manifest_status_honest() -> None:
+    manifest = json.loads((_BUNDLE / "MANIFEST.json").read_text(encoding="utf-8"))
+    att = json.loads((_BUNDLE / "l9-nodeid-attestation.json").read_text(encoding="utf-8"))
+    l9 = manifest["executions"]["l9_blocker_gates_b3_b4_b5"]
+    assert l9["status"] in ("COMPLETE", "BLOCKED")
+    if att["all_mandatory_pass"]:
+        assert l9["status"] == "COMPLETE"
+    else:
+        assert l9["status"] == "BLOCKED"
+        assert att["all_mandatory_pass"] is False
