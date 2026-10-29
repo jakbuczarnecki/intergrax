@@ -33,11 +33,32 @@
 | EBH6-DEBT-APP-TYP-10 | `resolve_reasoning_task_metadata` | semantic_any | wiring | **A** | Metadata resolver return deferred | **PENDING** |
 | EBH6-DEBT-APP-TYP-11 | `attach_recovery_contract_to_task_metadata` | semantic_any | wiring | **A** | Task metadata attachment seam | **PENDING** |
 
-## Operator signature (E02-OP-01)
+## C2-01 — Technical verification summary
+
+| ID | Production reachability | Public boundary | Trust/authority | Pos gate | Neg gate | Proposal |
+| --- | --- | --- | --- | --- | --- | --- |
+| 01 | Tier-3 wiring imports | `_shared` wiring | Guardrail profile attach — not tenant auth | seam gate PASS | unregistered/stale debt tests | **A** |
+| 02 | Harness host wiring | harness-only resolver | Host topology port — lab/harness | seam gate PASS | same | **A** |
+| 03 | Scenario lab path | diagnostic builder | No deploy authority | seam gate PASS | same | **A** |
+| 04 | Production scenario wiring | `_shared` builder | **Special audit:** scenario prod runtime — monitor deploy adjacency | seam gate PASS | same | **A** (auditor may → **B**) |
+| 05 | Deploy certification wiring | `_shared` factory map | **Special audit:** deploy certification — authority-sensitive | seam gate PASS | same | **A** (auditor may → **B**) |
+| 06 | Digest helper on wiring | helper | Low authority | seam gate PASS | same | **A** |
+| 07 | FastAPI lifespan hook | hosting | Scheduler lifecycle — not execution identity | seam gate PASS | same | **A** |
+| 08 | Harness auth resolver | harness ASGI handle | Auth state — harness boundary | seam gate PASS | same | **A** |
+| 09 | Profile migration entry | wiring | Migration — not governance | seam gate PASS | same | **A** |
+| 10 | Reasoning metadata | wiring | Metadata resolver | seam gate PASS | same | **A** |
+| 11 | Recovery metadata attach | wiring | **Special audit:** recovery contract on task metadata | seam gate PASS | same | **A** |
+
+Positive: `test_ebh6_application_services_production_seam_typing_passes` · Negative: `test_ebh6_application_services_typing_negative_unregistered_debt_fails`, `test_ebh6_application_services_typing_negative_stale_debt_detected`, contracts typing negative gates.
+
+## C2-04 — Operator handoff (E02-OP-01 — proposed, NOT APPROVED)
 
 ```text
-OPERATOR RATIFIED — EBH-6 APP-TYP SCOPED DEBT (EBH6-DEBT-APP-TYP-01..11) — NOT RECORDED
+OPERATOR RATIFIED — EBH-6 APP-TYP SCOPED DEBT (EBH6-DEBT-APP-TYP-01..11 category A)
+Conditions: no new unregistered seams on scoped _shared surface; auditor E02-AUD-01 ACCEPT;
+items 04/05 escalated to B if deploy/admission authority impact rejected.
 ```
+
 
 ## DONE (E02)
 

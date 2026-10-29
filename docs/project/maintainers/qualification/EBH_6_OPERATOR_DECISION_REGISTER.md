@@ -26,7 +26,12 @@ OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN
 | EBH-5 parent | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** @ OD-EBH5-08 |
 | Agent closure | **Forbidden** — no OD-EBH6-08, no `EBH-6 — CLOSED` |
 
-## Closure artifacts (final wave)
+## Closure mandate artifacts (C0–C9)
+
+| Doc | Stage |
+| --- | --- |
+| [EBH_6_C0_BASELINE_AUDIT_RECORD.md](EBH_6_C0_BASELINE_AUDIT_RECORD.md) | C0 |
+| [EBH_6_TECHNICAL_PRE_CERT_EVIDENCE_DOSSIER.md](EBH_6_TECHNICAL_PRE_CERT_EVIDENCE_DOSSIER.md) | C1 |
 
 | Artifact | Purpose |
 | --- | --- |

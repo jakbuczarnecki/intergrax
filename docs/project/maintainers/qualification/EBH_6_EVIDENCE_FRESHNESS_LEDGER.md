@@ -13,7 +13,7 @@
 | Label | SHA | Freshness |
 | --- | --- | --- |
 | **CLOSURE_BASELINE_SHA** (contracts_typing) | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` | **CURRENT** implementer evidence anchor |
-| **FINAL_CLOSURE_WAVE** IMPLEMENTATION / TEST | `c852e7705f318b5d50a771596d97193f68a00e67` | **CURRENT** @ E09 (213 passed) |
+| **DEFINITIVE_CLOSURE (C9)** | @ commit after mandate execution | **CURRENT** TEST @ `.tmp/session/ebh-6-definitive-closure/pytest.log` (**217 passed**) |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
 | T2 repair handoff | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` | Superseded by contracts_typing baseline |
 
@@ -50,3 +50,4 @@
 | contracts_typing | `.tmp/session/ebh-6-contracts-typing/pytest.log` @ `202239f72…` |
 | T2 repair (historical) | `.tmp/session/ebh-6-t2-repair/pytest.log` |
 | **Final closure E09** | `.tmp/session/ebh-6-final-closure/pytest.log` @ **CERTIFICATION_HANDOFF_SHA** |
+| **Definitive closure C9** | `.tmp/session/ebh-6-definitive-closure/pytest.log` (**217 passed**) @ qual HEAD |
