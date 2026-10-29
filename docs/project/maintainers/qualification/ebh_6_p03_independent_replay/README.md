@@ -13,7 +13,9 @@ Auditor-accessible machine exports @ **`TEST_EXECUTION_SHA`** in [`MANIFEST.json
 | [`t2-primary-gates-gap-pytest-transcript.txt`](t2-primary-gates-gap-pytest-transcript.txt) | **11** missing T2 primary gates @ `executions.t2_primary_gates_gap` |
 | [`t2-primary-gates-attestation.json`](t2-primary-gates-attestation.json) | **25** unique T2 primary gates + **19** bundle rollup (gap + qual + L9 cross-ref) |
 
-**Triple execution** — see `executions` in [`MANIFEST.json`](MANIFEST.json): `ebh6_qualification_suite` + `l9_blocker_gates_b3_b4_b5` + `t2_primary_gates_gap`.
+**Triple execution (historical)** — `ebh6_qualification_suite` @ `e174b5b9` + `l9_blocker_gates_b3_b4_b5` + `t2_primary_gates_gap`.
+
+**Final B5 replay (authoritative for B6 handoff)** — `executions.final_b5_replay` @ single `TEST_EXECUTION_SHA`: [`final-b5-ebh6-pytest-transcript.txt`](final-b5-ebh6-pytest-transcript.txt) (275) + [`final-b5-l9-pytest-transcript.txt`](final-b5-l9-pytest-transcript.txt) (10) + [`final-b5-t2-pytest-transcript.txt`](final-b5-t2-pytest-transcript.txt) (11) → [`final-b5-replay-attestation.json`](final-b5-replay-attestation.json). Regenerate: `uv run python scripts/qualification/attest_ebh6_p03_final_b5_replay.py` after the three pytest batches on a clean HEAD.
 
 **Regenerate L9 execution** (UTF-8 transcript required):
 

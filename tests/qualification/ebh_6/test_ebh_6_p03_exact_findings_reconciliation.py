@@ -28,6 +28,10 @@ def test_ebh6_p03_committed_replay_bundle_present() -> None:
         "l9-nodeid-attestation.json",
         "t2-primary-gates-gap-pytest-transcript.txt",
         "t2-primary-gates-attestation.json",
+        "final-b5-ebh6-pytest-transcript.txt",
+        "final-b5-l9-pytest-transcript.txt",
+        "final-b5-t2-pytest-transcript.txt",
+        "final-b5-replay-attestation.json",
         "README.md",
     ):
         assert (_BUNDLE / name).is_file(), name
@@ -112,3 +116,29 @@ def test_ebh6_p03_t2_primary_gates_attestation_complete() -> None:
     for bundle in att["bundles"]:
         assert "PENDING" in bundle["independent_disposition"]
         assert bundle["all_gates_pass"] is True
+
+
+def test_ebh6_p03_final_b5_replay_attestation_complete() -> None:
+    att = json.loads((_BUNDLE / "final-b5-replay-attestation.json").read_text(encoding="utf-8"))
+    manifest = json.loads((_BUNDLE / "MANIFEST.json").read_text(encoding="utf-8"))
+    b5 = manifest["executions"]["final_b5_replay"]
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+        cwd=_REPO,
+    ).stdout.strip()
+    assert att["TEST_EXECUTION_SHA"] == b5["TEST_EXECUTION_SHA"]
+    assert att["all_unique_primary_gates_pass"] is True
+    assert att["l9_blocker_gates"]["all_mandatory_pass"] is True
+    assert att["t2_gap"]["all_mandatory_pass"] is True
+    assert att["ebh6_qualification"]["pytest_pass_count"] == 275
+    assert b5["status"] == "COMPLETE"
+    assert "PENDING" in str(att["independent_acceptance"])
+    if head != b5["TEST_EXECUTION_SHA"]:
+        result = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", b5["TEST_EXECUTION_SHA"], head],
+            cwd=_REPO,
+        )
+        assert result.returncode == 0

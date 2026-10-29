@@ -1,0 +1,22 @@
+# TEST_EXECUTION_SHA=f27bfaf2fa42eba1e114b30982d4682cf1578df7
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\52196-cdb24615\pytest-cache
+rootdir: D:\Projekty\intergrax
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, asyncio-0.23.8
+asyncio: mode=Mode.AUTO
+collecting ... collected 10 items
+
+tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass PASSED [ 10%]
+tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine PASSED [ 20%]
+tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity PASSED [ 30%]
+tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink PASSED [ 40%]
+tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented PASSED [ 50%]
+tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production PASSED [ 60%]
+tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass PASSED [ 70%]
+tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint PASSED [ 80%]
+tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open PASSED [ 90%]
+tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix PASSED [100%]
+
+============================= 10 passed in 9.85s ==============================

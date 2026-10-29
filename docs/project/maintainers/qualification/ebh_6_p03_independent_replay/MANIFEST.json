@@ -4,6 +4,10 @@
   "TEST_EXECUTION_SHA": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
   "aj_group_count": 133,
   "artifacts": {
+    "final_b5_ebh6_transcript": "final-b5-ebh6-pytest-transcript.txt",
+    "final_b5_l9_transcript": "final-b5-l9-pytest-transcript.txt",
+    "final_b5_replay_attestation": "final-b5-replay-attestation.json",
+    "final_b5_t2_transcript": "final-b5-t2-pytest-transcript.txt",
     "l9_fail_historical_transcript": "l9-pytest-transcript-fail-historical-653cdd93f.txt",
     "l9_nodeid_attestation": "l9-nodeid-attestation.json",
     "l9_pytest_transcript": "l9-pytest-transcript.txt",
@@ -15,6 +19,34 @@
   },
   "certification_banner": "PARTIAL / EXACT BLOCKERS (semantic_core×F PASS_CANDIDATE — E01-PRE-01 / Protocol 03 pending; EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN); E02-AUD-01 PENDING (E02-OP-01 operator ratified — not auditor ACCEPT))",
   "executions": {
+    "final_b5_replay": {
+      "TEST_EXECUTION_SHA": "f27bfaf2fa42eba1e114b30982d4682cf1578df7",
+      "attestation": "final-b5-replay-attestation.json",
+      "ebh6_qualification": {
+        "artifact": "final-b5-ebh6-pytest-transcript.txt",
+        "pytest_pass_count": 275,
+        "result_summary": "275 passed",
+        "status": "COMPLETE"
+      },
+      "l9_blocker_gates": {
+        "artifact": "final-b5-l9-pytest-transcript.txt",
+        "mandatory_nodeid_count": 10,
+        "result_summary": "10 passed (8 BLK families incl. GOV host gate)",
+        "status": "COMPLETE"
+      },
+      "t2_primary_gates_gap": {
+        "artifact": "final-b5-t2-pytest-transcript.txt",
+        "mandatory_nodeid_count": 11,
+        "result_summary": "11 passed",
+        "status": "COMPLETE"
+      },
+      "rollup": {
+        "bundles_all_gates_pass": 19,
+        "primary_gates_pass": "25/25",
+        "status": "COMPLETE"
+      },
+      "status": "COMPLETE"
+    },
     "ebh6_qualification_suite": {
       "TEST_EXECUTION_SHA": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
       "artifact": "pytest-transcript.txt",
