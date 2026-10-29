@@ -312,3 +312,11 @@ def findings_by_id() -> dict[str, DupXFindingRecord]:
 
 def candidates_by_id() -> dict[str, DupXCandidateRecord]:
     return {row.candidate_id: row for row in DUP_X_CANDIDATE_RECORDS}
+
+
+def assert_no_open_gaps() -> None:
+    assert count_open_gaps() == 0
+
+
+def assert_no_open_candidates() -> None:
+    assert count_open_candidates() == 0

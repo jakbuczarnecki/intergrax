@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.qualification.dup_x._closed_world_inventory import discover_application_host_factory_paths
 from tests.qualification.dup_x._findings_register import (
     DUP_X_CANDIDATE_RECORDS,
     DUP_X_FINDING_RECORDS,
@@ -16,6 +17,8 @@ from tests.qualification.dup_x._findings_register import (
     FindingKind,
     FindingSeverity,
     FindingStatus,
+    assert_no_open_candidates,
+    assert_no_open_gaps,
     count_open_candidates,
     count_open_gaps,
     findings_by_id,
@@ -67,6 +70,27 @@ def test_dup_x_parent_closure_wave1_delta_docs_committed() -> None:
 
 def test_dup_x_parent_closure_retained_parallel_dossiers_complete() -> None:
     assert not retained_parallel_without_dossier()
+    for row in DUP_X_CANDIDATE_RECORDS:
+        if not row.parallel_retained or not row.delta_dossier:
+            continue
+        rel = f"docs/project/maintainers/qualification/{row.delta_dossier}"
+        assert (_REPO_ROOT / rel).is_file(), rel
+
+
+def test_dup_x_tier3_host_count_matches_disposition_doc() -> None:
+    factories = discover_application_host_factory_paths()
+    assert len(factories) == 9
+    disposition = (
+        _REPO_ROOT / "docs/project/maintainers/qualification/DUP_X_TIER3_APPLICATION_HOST_DEDUPE_DISPOSITION.md"
+    ).read_text(encoding="utf-8")
+    for rel in sorted(factories):
+        app = rel.split("/")[1]
+        assert app in disposition, app
+
+
+def test_dup_x_parent_closure_assert_helpers() -> None:
+    assert_no_open_gaps()
+    assert_no_open_candidates()
 
 
 def test_dup_x_parent_closure_wave1_head_documented_in_operator_register() -> None:

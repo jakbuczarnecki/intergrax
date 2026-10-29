@@ -170,9 +170,18 @@ DUP_X_RESPONSIBILITY_FAMILIES: Final[tuple[ResponsibilityFamilyRow, ...]] = (
         "docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md",
         "applications/**",
         "applications/**/host/factory.py",
-        "unknown — L3 per app",
+        "production-effective — Tier-3 disposition doc (9 hosts)",
     ),
 )
+
+
+@lru_cache(maxsize=1)
+def discover_application_host_factory_paths() -> frozenset[str]:
+    paths: set[str] = set()
+    for path in (_REPO_ROOT / "applications").glob("*/host/factory.py"):
+        if path.is_file():
+            paths.add(path.relative_to(_REPO_ROOT).as_posix())
+    return frozenset(paths)
 
 
 _CLASS_COVERAGE_HINTS: Final[dict[str, tuple[str, ...]]] = {
@@ -338,6 +347,8 @@ def assert_dup_x_closed_world_integrity() -> None:
     assert len(discover_registry_class_census()) >= 5
     assert len(discover_resolver_class_census()) >= 5
     assert len(discover_dispatcher_symbol_census()) >= 1
+    host_factories = discover_application_host_factory_paths()
+    assert len(host_factories) >= 9, "Tier-3 host factory census"
     for rel in COMPOSITION_ROOT_HINTS:
         if (_REPO_ROOT / rel).is_file():
             assert rel in union, rel
