@@ -20,6 +20,9 @@ EBH5_AUDIT_BASELINE_SHA: Final[str] = "83a376b3e1b312e2e4f88da548c99c328f3589f7"
 # Qualification artifact publication commit (P0–P6 tree); HEAD may advance for doc-only SHA ledger updates.
 EBH6_PUBLICATION_SHA: Final[str] = "86d4d1a4c029be469b561a137f0fdedc2c8fd942"
 
+# Final enterprise closure wave — substance commit; doc-only descendants remain valid @ qual.
+EBH6_CERTIFICATION_HANDOFF_SHA: Final[str] = "c852e7705f318b5d50a771596d97193f68a00e67"
+
 
 @lru_cache(maxsize=1)
 def evidence_git_head_sha() -> str:
