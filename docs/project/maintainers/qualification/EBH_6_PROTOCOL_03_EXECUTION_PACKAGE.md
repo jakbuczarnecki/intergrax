@@ -17,7 +17,7 @@
 | 3 | E02 APP-TYP ratification | **E02-OP-01 OPERATOR RATIFIED 2026-10-29** — **E02-AUD-01 PENDING** |
 | 4 | E03 OD-EBH6-Q2D2 | **APPROVED — PATH B — 2026-10-29** (not Protocol 03 PASS) |
 | 5 | Consolidated EBH-6 qual replay | `.tmp/session/ebh-6-p03-final-execution/pytest.log` (**267 passed**) |
-| 6 | P03 handoff + pre-cert JSON | `.tmp/session/ebh-6-p03-final-execution/p03-handoff.json` · `pre-cert-export.json` · `execution-summary.json` |
+| 6 | P03 handoff + pre-cert JSON | [`ebh_6_p03_independent_replay/`](ebh_6_p03_independent_replay/) (repo-tracked) · reconciliation [`EBH_6_PROTOCOL_03_EXACT_FINDINGS_RECONCILIATION.md`](EBH_6_PROTOCOL_03_EXACT_FINDINGS_RECONCILIATION.md) |
 
 ## Auditor checklist (B1–B6)
 

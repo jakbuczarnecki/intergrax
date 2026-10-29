@@ -1,0 +1,16 @@
+{
+  "CERTIFICATION_HANDOFF_SUBSTANCE_SHA": "c852e7705f318b5d50a771596d97193f68a00e67",
+  "EBH6_PUBLICATION_SHA": "86d4d1a4c029be469b561a137f0fdedc2c8fd942",
+  "TEST_EXECUTION_SHA": "822c1b4d2adf417be89d237b9986f23587508800",
+  "aj_group_count": 133,
+  "artifacts": {
+    "p03_handoff": "p03-handoff.json",
+    "pre_cert_export": "pre-cert-export.json",
+    "pytest_transcript": "pytest-transcript.txt"
+  },
+  "certification_banner": "PARTIAL / EXACT BLOCKERS (semantic_core\u00d7F PASS_CANDIDATE \u2014 E01-PRE-01 / Protocol 03 pending; EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN); E02-AUD-01 PENDING (E02-OP-01 operator ratified \u2014 not auditor ACCEPT))",
+  "family_count": 23,
+  "independent_acceptance": "PENDING \u2014 no Protocol 03 PASS record",
+  "l9_blocker_count": 8,
+  "pytest_suite": "tests/qualification/ebh_6/"
+}
