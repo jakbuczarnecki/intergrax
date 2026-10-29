@@ -38,6 +38,8 @@ _MANDATORY_DUP_X_DOCS: tuple[str, ...] = (
     "docs/project/maintainers/qualification/DUP_X_CLASS_D_INTEGRATION_SELECTOR_CALLER_MATRIX.md",
     "docs/project/maintainers/qualification/DUP_X_TIER3_APPLICATION_HOST_DEDUPE_DISPOSITION.md",
     "docs/project/maintainers/qualification/DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md",
+    "docs/project/maintainers/qualification/DUP_X_RESPONSIBILITY_DELTA_NPSC_ORCHESTRATION_BACKEND.md",
+    "docs/project/maintainers/qualification/DUP_X_B4_NPSC_NEGATIVE_BOUNDARY_EVIDENCE_RECORD.md",
 )
 
 

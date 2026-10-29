@@ -5,10 +5,10 @@
 | **Record type** | ECAP §2.B **B6** — Independent exact-SHA acceptance |
 | **Status** | **PENDING — NOT ISSUED** (template for external auditor) |
 | **Verdict** | *(auditor completes)* |
-| **INDEPENDENT_AUDIT_BASELINE_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
-| **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` — **40 passed** — `.tmp/proof/dup-x-parent-closure-l3/run.log` |
-| **EVIDENCE_PUBLICATION_SHA** (Block I **F**) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
-| **BLOCK_I_IMPLEMENTATION_SHA** (**E**) | `053040ef758f4cf94b2844a08abe5a56244b666b` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
+| **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` — **44 passed** — `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
+| **B4_IMPLEMENTATION_SHA** | `100ab6b52dfdc4b86423601100bcc738c45a3b0c` |
+| **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
 | **Auditor identity** | Independent auditor — Protocol DUP-X-03 B1–B6 |
 | **Date** | *(auditor)* |
 
@@ -23,8 +23,8 @@ PASS applies to **DUP-X Cross-Architecture Duplicate & Bypass Certification** @ 
 | **B1** | Scope · 15 families · CAND-01..15 | | |
 | **B2** | SHA ladder @ `INDEPENDENT_AUDIT_BASELINE_SHA` | | C0-05 + manifest |
 | **B3** | Factory-first · deltas · Class D | | |
-| **B4** | COMPAT-R3 · tools_base | | |
-| **B5** | `uv run pytest tests/qualification/dup_x/ -q` | | Expect **40 passed** @ baseline |
+| **B4** | COMPAT-R3 · NPSC ten-module matrix · negative gates | | [`DUP_X_RESPONSIBILITY_DELTA_NPSC_ORCHESTRATION_BACKEND.md`](DUP_X_RESPONSIBILITY_DELTA_NPSC_ORCHESTRATION_BACKEND.md) · NPSC allowlist **FAIL** documented |
+| **B5** | `uv run pytest tests/qualification/dup_x/ -q` | | Expect **44 passed** @ `6ccddd3c40a88377e39962a300984d3b81f5c220` |
 
 ## B6 verdict (auditor only)
 

@@ -53,6 +53,6 @@ uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibilit
 
 ## FINAL STATUS
 
-**DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6 @ `ffc724c4c2aa325231cd7ac54df5788f66cfc7f7` — NOT CLOSED**
+**DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT @ `6ccddd3c40a88377e39962a300984d3b81f5c220` — NOT CLOSED**
 
 Agent **forbidden:** Protocol DUP-X-03 PASS · OD-DUPX-08 · roadmap §5 update.

@@ -81,3 +81,16 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 | **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | Qual + evidence before manifest Commit **G** |
 
 **Status:** `DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6 — NOT CLOSED`
+
+## C0-06 B4 NPSC negative boundary (@ `6ccddd3c40a88377e39962a300984d3b81f5c220`)
+
+| Label | SHA | Role |
+| --- | --- | --- |
+| **B4_PUBLICATION_START** | `3feaee3d11d65d08a7860715e26bb38e763fcd40` | Pre-B4 publication HEAD |
+| **B4_IMPLEMENTATION_SHA** | `100ab6b52dfdc4b86423601100bcc738c45a3b0c` | B4 negative boundary qual gates |
+| **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Delta matrix + evidence record + NPSC cross-ref |
+| **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | **44 passed** — `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Full DUP-X qual + B4 evidence @ replay |
+| **B4_RECONCILIATION_SHA** | *(Commit reconciliation — `git rev-parse HEAD` after protocol/manifest update)* | Final Protocol 03 handoff |
+
+**Status:** `DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT — NOT CLOSED`

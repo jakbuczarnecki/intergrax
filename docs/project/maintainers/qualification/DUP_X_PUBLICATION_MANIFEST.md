@@ -132,11 +132,20 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 - **DUPX-GAP-*** **PASS @ Wave 1** (evidence) — parent stage still **NOT CLOSED** until OD-DUPX-08 + Protocol PASS.
 - Parent dossier: **NOT CLOSED** · no independent PASS · no global **FRZ-*** PASS claim.
 
+## B4 NPSC negative boundary (@ `6ccddd3c40a88377e39962a300984d3b81f5c220`)
+
+| Label | SHA | Role |
+| --- | --- | --- |
+| **B4_PUBLICATION_START** | `3feaee3d11d65d08a7860715e26bb38e763fcd40` | Pre-B4 HEAD |
+| **B4_IMPLEMENTATION_SHA** | `100ab6b52dfdc4b86423601100bcc738c45a3b0c` | B4 negative qual |
+| **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | B4 delta + evidence record |
+| **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | **44 passed** · `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Recommended auditor replay pin |
+| **B4_RECONCILIATION_SHA** | *(reconciliation commit)* | Protocol 03 final handoff |
+
 ## Operator verdict
 
-**DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6** — audit @ **INDEPENDENT_AUDIT_BASELINE_SHA** `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` · narrative **CURRENT_PUBLICATION_HEAD** `ffc724c4c2aa325231cd7ac54df5788f66cfc7f7`
-
-Qual + narrative on `development`; Block I **40 passed** @ `0e19bc28a…`; audit @ **INDEPENDENT_AUDIT_BASELINE_SHA** (qual HEAD before Commit **G** narrative).
+**DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT** — replay @ **`6ccddd3c40a88377e39962a300984d3b81f5c220`**
 
 ## Block I operator commit split (executed)
 

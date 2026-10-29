@@ -3,10 +3,14 @@
 | Field | Value |
 | --- | --- |
 | **Record type** | Independent B4 — orchestration backend ten-module boundary |
-| **QUALIFICATION_BASELINE** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
-| **Evidence authoring HEAD** | `3feaee3d11d65d08a7860715e26bb38e763fcd40` (local `development` @ record time — **not committed** unless operator authorizes) |
+| **Publication status** | **PUBLISHED** — qual + evidence commits on `development` |
+| **B4_PUBLICATION_START** | `3feaee3d11d65d08a7860715e26bb38e763fcd40` |
+| **B4_IMPLEMENTATION_SHA** | `100ab6b52dfdc4b86423601100bcc738c45a3b0c` |
+| **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
+| **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
 | **Branch** | `development` |
-| **Production code delta** | **0** (default) — qual + docs only in this slice |
+| **Production code delta** | **0** |
 | **NPSC gate modified** | **No** |
 
 ## Artifacts
@@ -17,21 +21,21 @@
 | NPSC exclusion register | [`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md) |
 | Adversarial negative gates | `tests/qualification/dup_x/test_dup_x_b4_npsc_orchestration_backend_negative_boundary.py` |
 
-## Test execution (@ Evidence authoring HEAD)
+## Test execution (@ `QUALIFICATION_EXECUTION_SHA`)
 
-| Command | Result |
-| --- | --- |
-| `uv run pytest tests/qualification/dup_x/test_dup_x_b4_npsc_orchestration_backend_negative_boundary.py -q` | **4 passed** — `.tmp/session/dup-x-b4-npsc-negative-boundary/pytest.log` |
-| `uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py::test_npsc42_orchestration_backend_access_confined_to_allowlist -q` | **1 failed** (expected) — exactly **10** modules · allowlist unchanged |
-| `uv run pytest tests/qualification/dup_x/ -q` | **44 passed** @ evidence HEAD — `.tmp/session/dup-x-b4-npsc-negative-boundary/dup_x-full.log` |
+| Command | Exit | Result | Log |
+| --- | --- | --- | --- |
+| `uv run pytest tests/qualification/dup_x/test_dup_x_b4_npsc_orchestration_backend_negative_boundary.py -q` | **0** | **4 passed** | `.tmp/proof/dup-x-b4-publication/b4-negative-gates.log` |
+| `uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py::test_npsc42_orchestration_backend_access_confined_to_allowlist -q` | **1** | **1 failed** (expected) — **10** modules · allowlist unchanged | `.tmp/proof/dup-x-b4-publication/npsc-allowlist.log` |
+| `uv run pytest tests/qualification/dup_x/ -q` | **0** | **44 passed** | `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
 
 ## B4 disposition (implementer — not independent PASS)
 
 | Item | Disposition |
 | --- | --- |
-| **B4 PASS (DUP-X scoped)** | **READY** — negative boundary gates green; no production bypass found |
-| **NPSC-4.2 test PASS** | **Not claimed** — separate allowlist program |
-| **Remaining real blocker** | **None for DUP-X B4** · external B6 must accept NPSC exclusion + replay negative gates @ baseline SHA |
+| **B4 (DUP-X scoped)** | **PUBLISHED** — negative boundary gates green @ qual SHA |
+| **NPSC-4.2 suite PASS** | **Not claimed** — `test_npsc42_orchestration_backend_access_confined_to_allowlist` remains **FAIL** |
+| **Remaining formal gates** | External **B6 PASS** · **OD-DUPX-08** · roadmap §5 (not CLOSED) |
 
 ## Agent forbidden
 
