@@ -25,10 +25,10 @@
 | Label | SHA | Role |
 | --- | --- | --- |
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` | EBH-6 handoff baseline · DUP-X Wave A entry |
-| **IMPLEMENTATION_SHA (Wave A–D pack)** | **PENDING OPERATOR COMMIT** | See [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) · Commit A+B |
-| **EVIDENCE_PUBLICATION_SHA** | **PENDING OPERATOR COMMIT** | Manifest external record — **not** this doc’s commit alone |
-| **TEST_RUN_HEAD (@ WIP)** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` | pytest @ HEAD with uncommitted pack — log: `.tmp/proof/dup-x-wave-d/run.log` |
-| **Publication ladder SSOT** | [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) | Update SHA fields after operator Commit C + optional re-run |
+| **IMPLEMENTATION_SHA (Wave A–D pack)** | `2ee22ae4b42d5e684f40d55056a6f9b84130b8ec` | Commit **A** — qual SSOT + CONFIG-X discovery union |
+| **EVIDENCE_PUBLICATION_SHA** | `f0214533b347f3dfbbd729d96ef860869148dc0f` | Commit **B** — narrative pack (**not** manifest-only Commit C) |
+| **TEST_EXECUTION_SHA** | **PENDING POST-PUSH PYTEST** | See manifest · finalize in optional Commit **D** after `uv run pytest tests/qualification/dup_x/ -q` |
+| **Publication ladder SSOT** | [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) | External SHA ladder — dossier does not self-reference Commit C |
 
 ## C0-03 Canonical scope
 

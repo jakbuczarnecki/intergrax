@@ -4,9 +4,9 @@
 | --- | --- |
 | **Workstream** | DUP-X duplicate & bypass certification |
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` |
-| **IMPLEMENTATION_SHA** | **PENDING OPERATOR COMMIT** — [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
-| **EVIDENCE_PUBLICATION_SHA** | **PENDING OPERATOR COMMIT** — do not assign to dossier-only commit |
-| **TEST_RUN_HEAD (@ WIP)** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` · **26 passed** · `.tmp/proof/dup-x-wave-d/run.log` |
+| **IMPLEMENTATION_SHA** | `2ee22ae4b42d5e684f40d55056a6f9b84130b8ec` (Commit **A**) — [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
+| **EVIDENCE_PUBLICATION_SHA** | `f0214533b347f3dfbbd729d96ef860869148dc0f` (Commit **B**) — not manifest Commit **C** |
+| **TEST_EXECUTION_SHA** | **PENDING POST-PUSH PYTEST** · prep log `.tmp/proof/dup-x-wave-d/run.log` (26 @ WIP) — publication log TBD |
 | **Publication ladder SSOT** | [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
 | **ECAP** | ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL — parent B1–B6 handoff |
 
