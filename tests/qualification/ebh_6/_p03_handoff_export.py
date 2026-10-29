@@ -18,8 +18,10 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
 from tests.qualification.ebh_6._tier_audit import tier_census
 
 
-def _operator_q2d2_open() -> bool:
+def _operator_q2d2_independent_audit_pending() -> bool:
     from pathlib import Path
+
+    from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome, aj_group_by_layer_class
 
     reg = (
         Path(__file__).resolve().parents[3]
@@ -27,7 +29,12 @@ def _operator_q2d2_open() -> bool:
     )
     text = reg.read_text(encoding="utf-8")
     row = text.split("| OD-EBH6-Q2D2 |", 1)[-1].split("\n", 1)[0]
-    return "OPEN" in row
+    if "OPEN" in row:
+        return True
+    if "APPROVED" in row and "Protocol 03 PASS" not in text:
+        return True
+    group = aj_group_by_layer_class()[("semantic_core", "F")]
+    return group.outcome == AjControlOutcome.FINDING
 
 
 def certification_banner_status() -> str:
@@ -36,8 +43,8 @@ def certification_banner_status() -> str:
     blockers: list[str] = []
     if t1:
         blockers.append(f"T1={t1}")
-    if _operator_q2d2_open():
-        blockers.append("OD-EBH6-Q2D2 OPEN")
+    if _operator_q2d2_independent_audit_pending():
+        blockers.append("OD-EBH6-Q2D2 / semantic_core×F pending independent audit")
     from tests.qualification.ebh_6._findings_register import count_prohibited_unresolved
 
     if count_prohibited_unresolved():

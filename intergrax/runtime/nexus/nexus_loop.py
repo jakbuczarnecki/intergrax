@@ -4,12 +4,38 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
-from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
-from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
+)
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
+from intergrax.contracts.decision_authoritative_exposure import (
+    AuthoritativeDecisionExposure,
+)
+from intergrax.contracts.decision_exposure_selection import (
+    DecisionExposureSelectionHostBinding,
+)
+from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
+    TerminalExecutionDiagnosticPort,
+    TerminalExecutionDiagnosticRequest,
+)
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
+from intergrax.contracts.execution_continuation import ExecutionContinuationPort
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
@@ -20,6 +46,72 @@ from intergrax.contracts.execution_identity import (
     validate_attempt_id,
     validate_run_id,
 )
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.execution_terminal import (
+    ExecutionTerminalConflictError,
+    ExecutionTerminalError,
+)
+from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.orchestration_enums import MergeStrategy
+from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
+from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.adaptive.signal_collector import SignalCollector
+from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signal
+from intergrax.runtime.architecture.online_evaluation_models import (
+    OnlineEvaluationMode,
+    OnlineEvaluationObservation,
+)
+from intergrax.runtime.architecture.online_evaluation_registry import (
+    OnlineEvaluationRegistry,
+)
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.events.store import resolve_runtime_event_persistence
+from intergrax.runtime.execution.active_execution_budget import (
+    require_active_execution_budget,
+)
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    InMemoryAttemptLifecycleStore,
+)
+from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
+    validate_durable_attempt_lifecycle_for_composition,
+)
+from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
+from intergrax.runtime.execution.continuation.composition import (
+    wire_execution_engine_continuation_dependencies,
+)
+from intergrax.runtime.execution.continuation.durability_policy import (
+    validate_execution_continuation_for_composition,
+)
+from intergrax.runtime.execution.continuation.lifecycle_driver import (
+    ExecutionContinuationLifecycleDriver,
+)
+from intergrax.runtime.execution.continuation.service import (
+    ExecutionContinuationService,
+)
+from intergrax.runtime.execution.execution_terminal import (
+    ExecutionTerminalService,
+    wire_execution_terminal_store,
+)
+from intergrax.runtime.execution.execution_terminal.durability_policy import (
+    validate_durable_execution_terminal_for_composition,
+)
+from intergrax.runtime.execution.execution_terminal.persistence import (
+    TerminalCommitResolution,
+    reconcile_task_state_with_terminal_outcome,
+    terminal_outcome_from_task_state,
+    terminal_reason_for_task_state,
+    validate_terminal_run_id_consistency,
+)
+from intergrax.runtime.execution.suspended_operation.claim_lifecycle_wiring import (
+    claim_lifecycle_from_hitl_continuation,
+)
+from intergrax.runtime.execution.suspended_operation.resume_authority_transport import (
+    ExecutionSuspendedWorkResumeAuthorityTransport,
+    ProductionSuspendedWorkAuthorityTelemetry,
+)
 from intergrax.runtime.governance.active_execution_authority import (
     require_active_execution_authority,
 )
@@ -27,28 +119,57 @@ from intergrax.runtime.governance.governance_evidence_recorder import (
     GovernanceEvidenceRecorder,
 )
 from intergrax.runtime.governance.service import GovernanceService
-from intergrax.contracts.agent_execution_result import (
-    AgentExecutionResult,
-    AgentExecutionStatus,
+from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
+    NexusLifecycleHookCoordinator,
+    NexusLifecycleHookError,
+    publish_nexus_lifecycle_hook_failure,
 )
-from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.human.escalation import EscalationRouter
+from intergrax.runtime.human.hitl_hooks import (
+    HumanApprovalHookCoordinator,
+)
+from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
+from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
+from intergrax.runtime.long_running.notification import NotificationAdapter
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 from intergrax.runtime.nexus.agent_router import AgentRouter
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.context.context_manager import ContextManager
+from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.execution.graph_builder import plan_to_execution_graph
-from intergrax.contracts.child_execution_context_inheritance import (
-    ChildExecutionContextInheritancePort,
-)
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
+from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
+from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
+from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+)
+from intergrax.runtime.nexus.orchestration.lifecycle_bridge import (
+    finalize_persisting_trace,
+    resolve_nexus_lifecycle,
+)
+from intergrax.runtime.nexus.orchestration.long_running_bridge import (
+    maybe_checkpoint_long_running,
+    maybe_restore_long_running,
+)
+from intergrax.runtime.nexus.orchestration.planning_runner import NexusPlanningRunner
+from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
+from intergrax.runtime.nexus.orchestration.task_finisher import (
+    apply_runtime_events_metric_to_task_result,
+    build_nexus_task_result,
+)
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import (
     NexusTaskPlannerProtocol,
 )
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
-from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
-from intergrax.contracts.orchestration_enums import MergeStrategy
-from intergrax.runtime.architecture.online_evaluation_models import (
-    OnlineEvaluationMode,
-    OnlineEvaluationObservation,
-)
 from intergrax.runtime.nexus.response.final_response_composer import (
     FinalResponseComposer,
 )
@@ -58,149 +179,30 @@ from intergrax.runtime.nexus.retry.retry_engine import (
     RetryRecord,
 )
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
+from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.runtime.nexus.tracing.persistence_models import (
     RunTraceReader,
     RunTraceWriter,
 )
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.human.hitl_hooks import (
-    HumanApprovalHookCoordinator,
-)
-from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
-    NexusLifecycleHookCoordinator,
-    NexusLifecycleHookError,
-    publish_nexus_lifecycle_hook_failure,
-)
-from intergrax.runtime.human.escalation import EscalationRouter
-from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
-from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.long_running.persistence_contract import (
-    TaskCheckpointPersistence,
-)
-from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
-from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
-from intergrax.runtime.nexus.orchestration.long_running_bridge import (
-    maybe_checkpoint_long_running,
-    maybe_restore_long_running,
-)
-from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
-from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
-from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
-from intergrax.contracts.decision_exposure_selection import (
-    DecisionExposureSelectionHostBinding,
-)
-from intergrax.contracts.agent_execution_validation_engine import (
-    AgentExecutionValidationEnginePort,
-)
-from intergrax.runtime.execution.suspended_operation.claim_lifecycle_wiring import (
-    claim_lifecycle_from_hitl_continuation,
-)
-from intergrax.runtime.execution.suspended_operation.resume_authority_transport import (
-    ExecutionSuspendedWorkResumeAuthorityTransport,
-    ProductionSuspendedWorkAuthorityTelemetry,
-)
-from intergrax.runtime.nexus.orchestration.planning_runner import NexusPlanningRunner
-from intergrax.runtime.nexus.orchestration.lifecycle_bridge import (
-    finalize_persisting_trace,
-    resolve_nexus_lifecycle,
-)
-from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
-from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
-from intergrax.runtime.nexus.orchestration.task_finisher import (
-    apply_runtime_events_metric_to_task_result,
-    build_nexus_task_result,
-)
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
-from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.events.store import resolve_runtime_event_persistence
-from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
-from intergrax.runtime.task_memory.store import resolve_task_memory_persistence
-from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import (
     PersistingTaskTraceEmitter,
     TaskTraceEmitter,
 )
-from intergrax.runtime.nexus.uaep import UAEPExecutor
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
+from intergrax.runtime.task_memory.store import resolve_task_memory_persistence
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
-from intergrax.runtime.sandbox.manager import SandboxSessionManager
-from intergrax.runtime.adaptive.signal_collector import SignalCollector
-from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signal
-from intergrax.runtime.architecture.online_evaluation_registry import (
-    OnlineEvaluationRegistry,
-)
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.execution.active_execution_budget import (
-    require_active_execution_budget,
-)
-from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
-from intergrax.runtime.execution.attempt_lifecycle import (
-    AttemptLifecycleService,
-    InMemoryAttemptLifecycleStore,
-)
-from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
-    validate_durable_attempt_lifecycle_for_composition,
-)
-from intergrax.runtime.execution.execution_terminal import (
-    ExecutionTerminalService,
-    wire_execution_terminal_store,
-)
-from intergrax.runtime.execution.execution_terminal.durability_policy import (
-    validate_durable_execution_terminal_for_composition,
-)
-from intergrax.contracts.execution_terminal import (
-    ExecutionTerminalConflictError,
-    ExecutionTerminalError,
-    ExecutionTerminalPersistenceCapability,
-)
-from intergrax.runtime.execution.execution_terminal.persistence import (
-    TerminalCommitResolution,
-    reconcile_task_state_with_terminal_outcome,
-    terminal_outcome_from_task_state,
-    terminal_reason_for_task_state,
-    validate_terminal_run_id_consistency,
-)
-from intergrax.contracts.execution_continuation import ExecutionContinuationPort
-from intergrax.contracts.execution_continuation_state_store import (
-    ExecutionContinuationStateStore,
-)
-from intergrax.runtime.execution.continuation.composition import (
-    wire_execution_engine_continuation_dependencies,
-)
-from intergrax.runtime.execution.continuation.durability_policy import (
-    validate_execution_continuation_for_composition,
-)
-from intergrax.runtime.execution.continuation.service import (
-    ExecutionContinuationService,
-)
-from intergrax.runtime.execution.continuation.lifecycle_driver import (
-    ExecutionContinuationLifecycleDriver,
-)
-from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
-    InternalOrchestrationContinuation,
-)
-from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
-    TerminalExecutionDiagnosticPort,
-    TerminalExecutionDiagnosticRequest,
-)
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
-from intergrax.contracts.execution_bound_declarative_tool_invocation import (
-    ExecutionBoundDeclarativeToolInvoker,
-)
 
 if TYPE_CHECKING:
+    from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.runtime.decision_flow import DecisionFlowGate
-    from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedgerFactory,
@@ -228,39 +230,37 @@ class NexusLoop:
         max_delegation_depth: int | None = None,
         max_run_retries: int = 0,
         merge_strategy: MergeStrategy = MergeStrategy.CONCAT,
-        validation_engine: Optional[AgentExecutionValidationEnginePort] = None,
-        retry_engine: Optional[RetryEngine] = None,
-        graph_executor: Optional[GraphExecutor] = None,
-        context_manager: Optional[ContextManager] = None,
-        lifecycle: Optional[TaskLifecycle] = None,
-        trace_emitter: Optional[TaskTraceEmitter] = None,
-        trace_store: Optional[RunTraceWriter] = None,
-        event_bus: Optional[RuntimeEventBus] = None,
-        retry_policy: Optional[RetryPolicy] = None,
+        validation_engine: AgentExecutionValidationEnginePort | None = None,
+        retry_engine: RetryEngine | None = None,
+        graph_executor: GraphExecutor | None = None,
+        context_manager: ContextManager | None = None,
+        lifecycle: TaskLifecycle | None = None,
+        trace_emitter: TaskTraceEmitter | None = None,
+        trace_store: RunTraceWriter | None = None,
+        event_bus: RuntimeEventBus | None = None,
+        retry_policy: RetryPolicy | None = None,
         policy_engine: PolicyEngine | None = None,
-        interrupt_handler: Optional[ExecutionInterruptHandler] = None,
-        shadow_manager: Optional[ShadowWorkspaceManager] = None,
-        sandbox_manager: Optional[SandboxSessionManager] = None,
+        interrupt_handler: ExecutionInterruptHandler | None = None,
+        shadow_manager: ShadowWorkspaceManager | None = None,
+        sandbox_manager: SandboxSessionManager | None = None,
         human_decision_store: HumanDecisionPersistence | None = None,
-        escalation_router: Optional[EscalationRouter] = None,
-        checkpoint_store: Optional[TaskCheckpointPersistence] = None,
+        escalation_router: EscalationRouter | None = None,
+        checkpoint_store: TaskCheckpointPersistence | None = None,
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,
         declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
-        notification_adapter: Optional[NotificationAdapter] = None,
-        middleware: Optional[MiddlewarePipeline] = None,
+        notification_adapter: NotificationAdapter | None = None,
+        middleware: MiddlewarePipeline | None = None,
         production_mode: bool = False,
-        runtime_event_store: EvidencePersistencePort
-        | RuntimeEventPersistence
-        | None = None,
-        runtime_events_db_path: Optional[Path] = None,
-        task_memory_store: Optional[TaskMemoryPersistence] = None,
-        task_memory_db_path: Optional[Path] = None,
+        runtime_event_store: EvidencePersistencePort | RuntimeEventPersistence | None = None,
+        runtime_events_db_path: Path | None = None,
+        task_memory_store: TaskMemoryPersistence | None = None,
+        task_memory_db_path: Path | None = None,
         signal_collector: SignalCollector | None = None,
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
-        decision_flow_gate: Optional["DecisionFlowGate[AgentExecutionResult]"] = None,
+        decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None,
         emit_coordination_advisory: bool = False,
         allow_dynamic_replan: bool = False,
         denied_planner_model_ids: tuple[str, ...] = (),
@@ -268,18 +268,15 @@ class NexusLoop:
         governance_service: GovernanceService | None = None,
         governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
         terminal_diagnostic_trigger: TerminalExecutionDiagnosticPort | None = None,
-        authority_policy: "ExecutionAuthorityPolicy | None" = None,
-        budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
-        execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
+        authority_policy: ExecutionAuthorityPolicy | None = None,
+        budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
+        execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
         attempt_lifecycle: AttemptLifecycleService | None = None,
         execution_terminal: ExecutionTerminalService | None = None,
-        execution_lineage_persistence: "ExecutionLineagePersistence | None" = None,
+        execution_lineage_persistence: ExecutionLineagePersistence | None = None,
         execution_continuation: ExecutionContinuationPort | None = None,
-        continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver
-        | None = None,
-        execution_continuation_state_store: Optional[
-            ExecutionContinuationStateStore
-        ] = None,
+        continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
         disable_execution_continuation: bool = False,
         child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
     ) -> None:
@@ -292,9 +289,7 @@ class NexusLoop:
             db_path=task_memory_db_path,
             implementation=task_memory_store,
         )
-        self._event_bus = event_bus or RuntimeEventBus(
-            persistence=self._runtime_event_store
-        )
+        self._event_bus = event_bus or RuntimeEventBus(persistence=self._runtime_event_store)
         if event_bus is not None and self._runtime_event_store is not None:
             event_bus.attach_persistence(self._runtime_event_store)
         self._middleware = middleware or MiddlewarePipeline(
@@ -395,13 +390,12 @@ class NexusLoop:
         self._lifecycle = lifecycle
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
-        self._current_task: Optional[Task] = None
+        self._current_task: Task | None = None
         self._signal_collector = signal_collector
         self._evaluation_registry = evaluation_registry
         self._run_budget = run_budget
         self._execution_budget_ledger_factory = (
-            execution_budget_ledger_factory
-            or create_execution_budget_ledger_factory(run_budget)
+            execution_budget_ledger_factory or create_execution_budget_ledger_factory(run_budget)
         )
         self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
             InMemoryAttemptLifecycleStore(),
@@ -441,13 +435,8 @@ class NexusLoop:
         )
         if disable_execution_continuation:
             self._hitl_continuation: InternalOrchestrationContinuation | None = None
-            self._execution_continuation_state_store: (
-                ExecutionContinuationStateStore | None
-            ) = None
-        elif (
-            execution_continuation is not None
-            and continuation_lifecycle_driver is not None
-        ):
+            self._execution_continuation_state_store: ExecutionContinuationStateStore | None = None
+        elif execution_continuation is not None and continuation_lifecycle_driver is not None:
             self._hitl_continuation = InternalOrchestrationContinuation(
                 port=execution_continuation,
                 lifecycle_driver=continuation_lifecycle_driver,
@@ -459,10 +448,7 @@ class NexusLoop:
             ):
                 resolved_store = execution_continuation.store
             self._execution_continuation_state_store = resolved_store
-        elif (
-            execution_continuation is not None
-            or continuation_lifecycle_driver is not None
-        ):
+        elif execution_continuation is not None or continuation_lifecycle_driver is not None:
             raise ValueError(
                 "execution_continuation and continuation_lifecycle_driver must be wired together",
             )
@@ -480,12 +466,9 @@ class NexusLoop:
                 port=_continuation_deps.continuation,
                 lifecycle_driver=_continuation_deps.lifecycle_driver,
             )
-            self._execution_continuation_state_store = (
-                _continuation_deps.continuation_service.store
-            )
+            self._execution_continuation_state_store = _continuation_deps.continuation_service.store
         if not disable_execution_continuation and (
-            execution_continuation is not None
-            and continuation_lifecycle_driver is not None
+            execution_continuation is not None and continuation_lifecycle_driver is not None
         ):
             validate_execution_continuation_for_composition(
                 production_mode=production_mode,
@@ -523,12 +506,8 @@ class NexusLoop:
             decision_flow_gate=decision_flow_gate,
             hitl_continuation=self._hitl_continuation,
         )
-        self._suspended_work_resume_authority_transport = (
-            ExecutionSuspendedWorkResumeAuthorityTransport()
-        )
-        self._suspended_work_authority_telemetry = (
-            ProductionSuspendedWorkAuthorityTelemetry()
-        )
+        self._suspended_work_resume_authority_transport = ExecutionSuspendedWorkResumeAuthorityTransport()
+        self._suspended_work_authority_telemetry = ProductionSuspendedWorkAuthorityTelemetry()
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,
             human_hooks=self._human_hooks,
@@ -540,9 +519,7 @@ class NexusLoop:
             suspended_work_claim_lifecycle=claim_lifecycle_from_hitl_continuation(
                 self._hitl_continuation,
             ),
-            suspended_work_resume_authority_transport=(
-                self._suspended_work_resume_authority_transport
-            ),
+            suspended_work_resume_authority_transport=(self._suspended_work_resume_authority_transport),
             suspended_work_authority_telemetry=self._suspended_work_authority_telemetry,
         )
         self._planning_runner = NexusPlanningRunner(
@@ -639,7 +616,7 @@ class NexusLoop:
 
     def apply_decision_flow_gate(
         self,
-        gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
+        gate: DecisionFlowGate[AgentExecutionResult] | None,
         *,
         verify_uaep_step: bool = False,
         verify_graph_final: bool = True,
@@ -700,7 +677,7 @@ class NexusLoop:
     def _resolve_authoritative_decision_exposure(
         self,
         task: Task,
-    ) -> object | None:
+    ) -> AuthoritativeDecisionExposure[object] | None:
         from intergrax.runtime.nexus.orchestration.nexus_decision_exposure import (
             resolve_authoritative_decision_exposure_for_task,
         )
@@ -733,16 +710,16 @@ class NexusLoop:
 
     def peek_decision_flow_gate(
         self,
-    ) -> Optional["DecisionFlowGate[AgentExecutionResult]"]:
+    ) -> DecisionFlowGate[AgentExecutionResult] | None:
         """Return wired Decision flow gate when application decision wiring is active."""
         return self._graph_executor.peek_decision_flow_gate()
 
     @property
-    def trace_emitter(self) -> Optional[TaskTraceEmitter]:
+    def trace_emitter(self) -> TaskTraceEmitter | None:
         return self._trace_emitter
 
     @property
-    def trace_store(self) -> Optional[RunTraceWriter]:
+    def trace_store(self) -> RunTraceWriter | None:
         return self._trace_store
 
     @property
@@ -756,7 +733,7 @@ class NexusLoop:
         return self._runtime_event_store
 
     @property
-    def task_memory_store(self) -> Optional[TaskMemoryPersistence]:
+    def task_memory_store(self) -> TaskMemoryPersistence | None:
         return self._task_memory_store
 
     @property
@@ -784,7 +761,7 @@ class NexusLoop:
         return self._run_budget
 
     @property
-    def execution_budget_ledger_factory(self) -> "ExecutionBudgetLedgerFactory":
+    def execution_budget_ledger_factory(self) -> ExecutionBudgetLedgerFactory:
         return self._execution_budget_ledger_factory
 
     @property
@@ -792,7 +769,7 @@ class NexusLoop:
         return self._execution_terminal
 
     @property
-    def execution_lineage_persistence(self) -> "ExecutionLineagePersistence | None":
+    def execution_lineage_persistence(self) -> ExecutionLineagePersistence | None:
         return self._execution_lineage_persistence
 
     async def handle_task(
@@ -800,16 +777,12 @@ class NexusLoop:
         task: Task,
         *,
         run_id: RunId,
-        attempt_id: Optional[AttemptId] = None,
+        attempt_id: AttemptId | None = None,
     ) -> TaskResult:
         resolved_run_id = validate_run_id(run_id)
         active_execution_id = require_active_execution_id()
         active_run_id, active_attempt_id = require_active_execution_identity()
-        resolved_attempt_id = (
-            validate_attempt_id(attempt_id)
-            if attempt_id is not None
-            else active_attempt_id
-        )
+        resolved_attempt_id = validate_attempt_id(attempt_id) if attempt_id is not None else active_attempt_id
         if resolved_run_id != active_run_id:
             raise RuntimeError(
                 "active execution identity run_id mismatch with Nexus handle_task",
@@ -885,9 +858,7 @@ class NexusLoop:
             runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if planning.early_result is not None:
-            return self._with_authoritative_decision_exposure(
-                task, planning.early_result
-            )
+            return self._with_authoritative_decision_exposure(task, planning.early_result)
         plan = planning.plan
         if plan is None:
             raise RuntimeError("planning phase completed without plan or early result")
@@ -906,9 +877,7 @@ class NexusLoop:
             runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if phase.deferred_persisted_trace_finalize is not None:
-            self._pending_deferred_persisted_trace_finalize = (
-                phase.deferred_persisted_trace_finalize
-            )
+            self._pending_deferred_persisted_trace_finalize = phase.deferred_persisted_trace_finalize
         if phase.early_result is not None:
             return self._with_authoritative_decision_exposure(task, phase.early_result)
         assert phase.executions is not None
@@ -935,10 +904,10 @@ class NexusLoop:
         trace_emitter: TaskTraceEmitter,
         *,
         answer: str,
-        executions: List[AgentExecutionResult],
+        executions: list[AgentExecutionResult],
         validation: ValidationResult,
-        plan: Optional[NexusPlan],
-        retry_records: List[RetryRecord],
+        plan: NexusPlan | None,
+        retry_records: list[RetryRecord],
         graph_id: str,
         runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
@@ -1031,23 +1000,19 @@ class NexusLoop:
 
     def _maybe_record_multi_agent_evaluation(
         self,
-        executions: List[AgentExecutionResult],
+        executions: list[AgentExecutionResult],
         *,
         task_id: str,
     ) -> None:
         if self._evaluation_registry is None or len(executions) < 2:
             return
         active_run_id, _ = require_active_execution_identity()
-        passed = all(
-            item.status == AgentExecutionStatus.COMPLETED for item in executions
-        )
+        passed = all(item.status == AgentExecutionStatus.COMPLETED for item in executions)
         self._evaluation_registry.append(
             OnlineEvaluationObservation(
                 observation_id=f"obs_{task_id}_multi_agent",
                 run_id=active_run_id,
-                agent_id=",".join(
-                    item.agent_id for item in executions if item.agent_id
-                ),
+                agent_id=",".join(item.agent_id for item in executions if item.agent_id),
                 mode=OnlineEvaluationMode.SHADOW,
                 scenario_id="multi_agent_fan_in",
                 passed=passed,
@@ -1055,9 +1020,7 @@ class NexusLoop:
             )
         )
 
-    def _maybe_record_adaptive_outcome_signal(
-        self, task: Task, result: TaskResult
-    ) -> None:
+    def _maybe_record_adaptive_outcome_signal(self, task: Task, result: TaskResult) -> None:
         if self._signal_collector is None:
             return
         record_task_outcome_signal(
@@ -1071,7 +1034,7 @@ class NexusLoop:
     def _resolve_authoritative_decision_exposure_for_build(
         self,
         task: Task,
-    ) -> object | None:
+    ) -> AuthoritativeDecisionExposure[object] | None:
         return self._resolve_authoritative_decision_exposure(task)
 
     def _build_result(
@@ -1080,10 +1043,10 @@ class NexusLoop:
         trace_emitter: TaskTraceEmitter,
         *,
         answer: str,
-        executions: List[AgentExecutionResult],
+        executions: list[AgentExecutionResult],
         validation: ValidationResult,
-        plan: Optional[NexusPlan],
-        retry_records: List[RetryRecord],
+        plan: NexusPlan | None,
+        retry_records: list[RetryRecord],
         graph_id: str,
         runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
@@ -1123,9 +1086,9 @@ class NexusLoop:
         task: Task,
         *,
         progress_message: str,
-        plan: Optional[NexusPlan] = None,
-        graph: Optional[ExecutionGraph] = None,
-        last_execution: Optional[AgentExecutionResult] = None,
+        plan: NexusPlan | None = None,
+        graph: ExecutionGraph | None = None,
+        last_execution: AgentExecutionResult | None = None,
     ) -> None:
         run_id, attempt_id = self._execution_identity.require()
         await maybe_checkpoint_long_running(
@@ -1146,7 +1109,7 @@ class NexusLoop:
         self,
         event: object,
         *,
-        task: Optional[Task] = None,
+        task: Task | None = None,
     ) -> None:
         from intergrax.runtime.events.runtime_event import RuntimeEvent
 
@@ -1187,9 +1150,7 @@ class NexusLoop:
             closure_kind=closure_kind_for_terminal_outcome(outcome),
         )
 
-    def _commit_durable_terminal_authority(
-        self, task: Task
-    ) -> TerminalCommitResolution:
+    def _commit_durable_terminal_authority(self, task: Task) -> TerminalCommitResolution:
         """Persist terminal outcome and return canonical durable authority."""
         outcome = terminal_outcome_from_task_state(task.state)
         if outcome is None:
@@ -1207,9 +1168,7 @@ class NexusLoop:
                 reason=terminal_reason_for_task_state(task.state),
                 production_mode=self._production_mode,
             )
-            self._seal_execution_lineage_after_terminal(
-                task, run_id=run_id, outcome=record.outcome
-            )
+            self._seal_execution_lineage_after_terminal(task, run_id=run_id, outcome=record.outcome)
             return TerminalCommitResolution(
                 canonical_record=record,
                 should_publish_terminal_event=True,
@@ -1241,9 +1200,7 @@ class NexusLoop:
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
         await self._publish_terminal_runtime_event_with_active_identity(task)
 
-    async def publish_orchestration_root_terminal_runtime(
-        self, task: Task
-    ) -> RuntimeEvent:
+    async def publish_orchestration_root_terminal_runtime(self, task: Task) -> RuntimeEvent:
         """Publish terminal RuntimeEvent and diagnostics for root orchestration execution."""
         return await self._publish_terminal_runtime_event_with_active_identity(task)
 
@@ -1314,7 +1271,7 @@ class NexusLoop:
     async def _finalize_persisting_trace(
         self,
         trace_emitter: PersistingTaskTraceEmitter,
-        executions: List[AgentExecutionResult],
+        executions: list[AgentExecutionResult],
         *,
         task_id: str = "",
     ) -> None:

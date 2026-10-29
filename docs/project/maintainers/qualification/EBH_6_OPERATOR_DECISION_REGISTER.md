@@ -3,16 +3,17 @@
 | ID | Decision | Status | Blocks |
 | --- | --- | --- | --- |
 | OD-EBH5-08 | EBH-5 formal parent closure publication | **APPROVED — 2026-10-28** — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) | — (EBH-5 parent **CLOSED — SCOPED**) |
-| OD-EBH6-01 | Authorize EBH-6 implementation wave (`OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN`) | **OPEN** | **Blocker** for `production delta` and formal wave closure |
+| OD-EBH6-01 | Authorize EBH-6 implementation wave (`OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN`) | **APPROVED — 2026-10-29** — Q2-D2 Path B remediation scope only | Production delta **authorized** for EBH6-DEBT-Q2-D2 |
 | OD-EBH6-02 | Accept EBH-6 plan / scope (independent plan audit) | **APPROVED — 2026-10-28** — `OPERATOR APPROVED — EBH-6 L9 EVIDENCE EXECUTION (OD-EBH6-02)` — **does not** equal independent code acceptance or Protocol 03 PASS | Protocol 03 plan review **unblocked for B-L9-5** |
 | OD-EBH6-ADR-* | Finding `REQUIRES ARCHITECTURE DECISION` without ADR | **TRACKED** | P3 remediation blocked per finding |
 | OD-EBH6-08 | Formal EBH-6 closure publication | **OPEN** | P8 only after L9 PASS |
-| OD-EBH6-Q2D2 | Does ratified **EBH6-DEBT-Q2-D2** satisfy EBH-6 Protocol 03 with independent evidence? | **OPEN** | B6 — no silent ratified-only accept; semantic_core×F = **FINDING** @ B3 |
+| OD-EBH6-Q2D2 | **EBH6-DEBT-Q2-D2** — Path A vs Path B for Protocol 03 | **APPROVED — PATH B — 2026-10-29** — production typing remediation authorized; **does not** equal E01-PRE-01 / Protocol 03 PASS or EBH-6 CLOSED | Independent audit + semantic_core×F disposition until auditor accepts |
 
-## Canonical wave-open phrase (not yet recorded)
+## Canonical wave-open phrase (recorded 2026-10-29)
 
 ```text
-OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN
+OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN (OD-EBH6-01 — Q2-D2 Path B scope)
+OPERATOR APPROVED — OD-EBH6-Q2D2 PATH B
 ```
 
 ## Engineering batch record

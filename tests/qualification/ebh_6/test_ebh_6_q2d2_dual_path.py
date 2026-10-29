@@ -11,7 +11,7 @@ from tests.qualification.ebh_6._findings_register import all_hardcoding_findings
 from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome, aj_group_by_layer_class
 from tests.qualification.ebh_6._q2d2_technical_qualification import (
     AUTHORITATIVE_ADR_PATH,
-    PATH_A_NOT_ELIGIBLE,
+    PATH_A_ELIGIBLE,
     PATH_B_PRODUCTION_SCOPE,
     assess_q2d2_adr_scope,
     replay_q2d2_fail_closed_behavioral_gates,
@@ -40,12 +40,14 @@ def test_ebh6_q2d2_path_b_documented_no_prod_without_od01() -> None:
     assert PATH_B_PRODUCTION_SCOPE.startswith("OD-EBH6-01")
 
 
-def test_ebh6_q2d2_operator_decision_stays_open_without_verified_entry() -> None:
+def test_ebh6_q2d2_operator_path_b_approved_implementation_wave_open() -> None:
     text = _OD_REGISTER.read_text(encoding="utf-8")
     assert "OD-EBH6-Q2D2" in text
-    row = [line for line in text.splitlines() if "OD-EBH6-Q2D2" in line and line.startswith("|")][0]
-    assert "OPEN" in row
-    assert "APPROVED" not in row and "CLOSED" not in row
+    q2_row = [line for line in text.splitlines() if "OD-EBH6-Q2D2" in line and line.startswith("|")][0]
+    assert "PATH B" in q2_row or "APPROVED" in q2_row
+    assert "OD-EBH6-01" in text
+    od01_row = [line for line in text.splitlines() if "OD-EBH6-01" in line and line.startswith("|")][0]
+    assert "APPROVED" in od01_row or "WAVE OPEN" in od01_row
 
 
 def test_ebh6_q2d2_adr_authority_and_scope_recorded() -> None:
@@ -60,10 +62,10 @@ def test_ebh6_q2d2_production_exposure_fail_closed_behavior_replayed() -> None:
     replay_q2d2_fail_closed_behavioral_gates()
 
 
-def test_ebh6_q2d2_technical_disposition_from_adr_scope_not_markers() -> None:
-    """Independent E01 — Path A eligibility requires ADR coverage of nexus erasure seam."""
+def test_ebh6_q2d2_technical_disposition_after_path_b_nexus_typing_remediation() -> None:
+    """Post OD-EBH6-01 Q2-D2 — NexusLoop projection matches resolver (FRZ-TYP-03)."""
     assessment = assess_q2d2_adr_scope()
+    assert assessment.resolver_returns_typed_exposure
+    assert not assessment.nexus_loop_uses_object_erasure
     disposition = technical_q2d2_disposition(assessment)
-    assert assessment.nexus_loop_uses_object_erasure
-    assert not assessment.adr_covers_nexus_object_erasure_debt
-    assert disposition == PATH_A_NOT_ELIGIBLE
+    assert disposition == PATH_A_ELIGIBLE
