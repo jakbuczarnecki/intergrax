@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 from tests.qualification.ebh_6._aj_class_gate_scan import (
+    assert_no_forbidden_vendor_literals_in_text,
     assert_no_shadow_selector_markers,
     assert_no_vendor_sdk_imports_in_text,
     iter_applicable_layer_class_pairs,
@@ -33,3 +34,8 @@ def test_ebh6_aj_negative_class_d_shadow_selector() -> None:
     bad = "graph_store_backend = object()\n"
     with pytest.raises(AssertionError, match="shadow selector"):
         assert_no_shadow_selector_markers(bad, "fake/shadow.py")
+
+
+def test_ebh6_aj_negative_class_b_hardcoding_literal() -> None:
+    with pytest.raises(AssertionError, match="forbidden vendor literal"):
+        assert_no_forbidden_vendor_literals_in_text('x = "openai"\n', "fake/layer.py")

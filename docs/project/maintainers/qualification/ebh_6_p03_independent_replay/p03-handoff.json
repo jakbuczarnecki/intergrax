@@ -1,0 +1,2332 @@
+{
+  "aj_evidence_required_count": 0,
+  "aj_group_count": 133,
+  "aj_groups": [
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-agent_distribution-A",
+      "invariant_proves": "T-CLS-A @ `agent_distribution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-A]`).",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-B]",
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-agent_distribution-B",
+      "invariant_proves": "HARDENING-3 contracts/runtime boundary + agent_distribution lifecycle gate.",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Boundary/lifecycle subset \u2014 not all agents/ backend literals."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-agent_distribution-C",
+      "invariant_proves": "T-CLS-C @ `agent_distribution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-C]`).",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-agent_distribution-D",
+      "invariant_proves": "T-CLS-D @ `agent_distribution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-D]`).",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-agent_distribution-F",
+      "invariant_proves": "T-CLS-F @ `agent_distribution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-F]`).",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-H]",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-agent_distribution-H",
+      "invariant_proves": "Agent distribution L3 mechanisms + lifecycle architecture gate.",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Integration gate \u2014 not full tier-2 agent census."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-agent_distribution-I",
+      "invariant_proves": "T-CLS-I @ `agent_distribution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-I]`).",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-agent_distribution-J",
+      "invariant_proves": "T-CLS-J @ `agent_distribution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[agent_distribution-J]`).",
+      "layer": "agent_distribution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-application_services-A",
+      "invariant_proves": "T-CLS-A @ `application_services` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-A]`).",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-application_services-B",
+      "invariant_proves": "T-CLS-B @ `application_services` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-B]`).",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-application_services-C",
+      "invariant_proves": "T-CLS-C @ `application_services` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-C]`).",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-application_services-D",
+      "invariant_proves": "T-CLS-D @ `application_services` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-D]`).",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-F]",
+        "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes"
+      ],
+      "group_id": "AJG-application_services-F",
+      "invariant_proves": "Direct Tier-3 wiring \u2192 _shared public seam FRZ-TYP gate with EBH6-DEBT-APP-TYP-* registry.",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Direct wiring imports only \u2014 transitive _shared helpers excluded; 11 registered typing debt rows."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-application_services-H",
+      "invariant_proves": "T-CLS-H @ `application_services` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-H]`).",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-application_services-I",
+      "invariant_proves": "T-CLS-I @ `application_services` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-I]`).",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-application_services-J",
+      "invariant_proves": "T-CLS-J @ `application_services` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[application_services-J]`).",
+      "layer": "application_services",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-A",
+      "invariant_proves": "T-CLS-A @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-A]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-B",
+      "invariant_proves": "T-CLS-B @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-B]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-C",
+      "invariant_proves": "T-CLS-C @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-C]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-D",
+      "invariant_proves": "T-CLS-D @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-D]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "E",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-E]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-E",
+      "invariant_proves": "T-CLS-E @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-E]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-E mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-F",
+      "invariant_proves": "T-CLS-F @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-F]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-G",
+      "invariant_proves": "T-CLS-G @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-G]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-H",
+      "invariant_proves": "T-CLS-H @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-H]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-I",
+      "invariant_proves": "T-CLS-I @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-I]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-background_workers_infra_adapters-J",
+      "invariant_proves": "T-CLS-J @ `background_workers_infra_adapters` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[background_workers_infra_adapters-J]`).",
+      "layer": "background_workers_infra_adapters",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-composition_roots-A",
+      "invariant_proves": "T-CLS-A @ `composition_roots` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-A]`).",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-composition_roots-B",
+      "invariant_proves": "T-CLS-B @ `composition_roots` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-B]`).",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-composition_roots-C",
+      "invariant_proves": "EBH-5 reachability: integrations/registry/factory.py is sanctioned materialization owner (resolve_from_profile / resolve_slug).",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Integration factory root \u2014 not every TRACE-X composition site replayed."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-composition_roots-D",
+      "invariant_proves": "T-CLS-D @ `composition_roots` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-D]`).",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-composition_roots-F",
+      "invariant_proves": "T-CLS-F @ `composition_roots` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-F]`).",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-composition_roots-H",
+      "invariant_proves": "TRACE-X sanctioned production composition sites registered non-empty.",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Registry presence \u2014 not per-root wiring replay @ HEAD."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-composition_roots-I",
+      "invariant_proves": "T-CLS-I @ `composition_roots` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-I]`).",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-composition_roots-J",
+      "invariant_proves": "T-CLS-J @ `composition_roots` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[composition_roots-J]`).",
+      "layer": "composition_roots",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[contracts-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-contracts-A",
+      "invariant_proves": "T-CLS-A @ `contracts` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[contracts-A]`).",
+      "layer": "contracts",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[contracts-F]",
+        "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_contracts_layer_frz_typ_surface_purity_passes",
+        "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
+      ],
+      "group_id": "AJG-contracts-F",
+      "invariant_proves": "EBH-2I contract surface purity (CSP) on closed-world contracts layer @ HEAD.",
+      "layer": "contracts",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Tier-0/integrations contracts surface \u2014 not supplemental EBH-2I application contract modules."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[contracts-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-contracts-H",
+      "invariant_proves": "T-CLS-H @ `contracts` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[contracts-H]`).",
+      "layer": "contracts",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[contracts-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-contracts-J",
+      "invariant_proves": "T-CLS-J @ `contracts` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[contracts-J]`).",
+      "layer": "contracts",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-events_traceability-A",
+      "invariant_proves": "T-CLS-A @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-A]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-events_traceability-B",
+      "invariant_proves": "T-CLS-B @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-B]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-events_traceability-C",
+      "invariant_proves": "T-CLS-C @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-C]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-events_traceability-D",
+      "invariant_proves": "T-CLS-D @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-D]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "E",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-E]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-events_traceability-E",
+      "invariant_proves": "T-CLS-E @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-E]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-E mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-events_traceability-F",
+      "invariant_proves": "T-CLS-F @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-F]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-events_traceability-G",
+      "invariant_proves": "T-CLS-G @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-G]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-events_traceability-H",
+      "invariant_proves": "T-CLS-H @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-H]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-events_traceability-I",
+      "invariant_proves": "T-CLS-I @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-I]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-events_traceability-J",
+      "invariant_proves": "T-CLS-J @ `events_traceability` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[events_traceability-J]`).",
+      "layer": "events_traceability",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-execution-A",
+      "invariant_proves": "T-CLS-A @ `execution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-A]`).",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass"
+      ],
+      "group_id": "AJG-execution-B",
+      "invariant_proves": "EE-A1 P0 inventory: zero production execution bypass paths (static scan).",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PASS_CANDIDATE",
+      "scope_limitation": "EE-A1 certified surface \u2014 not whole-platform class-B census."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-execution-C",
+      "invariant_proves": "T-CLS-C @ `execution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-C]`).",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-execution-F",
+      "invariant_proves": "T-CLS-F @ `execution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-F]`).",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-execution-G",
+      "invariant_proves": "T-CLS-G @ `execution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-G]`).",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-H]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-execution-H",
+      "invariant_proves": "L3 execution entrypoints + EE-A1 bypass inventory on execution layer samples.",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Sample L3 mechanisms \u2014 not exhaustive reachability proof."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-execution-I",
+      "invariant_proves": "T-CLS-I @ `execution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-I]`).",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-execution-J",
+      "invariant_proves": "T-CLS-J @ `execution` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[execution-J]`).",
+      "layer": "execution",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-governance-C",
+      "invariant_proves": "T-CLS-C @ `governance` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-C]`).",
+      "layer": "governance",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-governance-D",
+      "invariant_proves": "T-CLS-D @ `governance` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-D]`).",
+      "layer": "governance",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "E",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-E]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-governance-E",
+      "invariant_proves": "T-CLS-E @ `governance` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-E]`).",
+      "layer": "governance",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-E mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-governance-F",
+      "invariant_proves": "T-CLS-F @ `governance` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-F]`).",
+      "layer": "governance",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-G]",
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-governance-G",
+      "invariant_proves": "T-CLS-G @ `governance` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-G]`).",
+      "layer": "governance",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-H]",
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity"
+      ],
+      "group_id": "AJG-governance-H",
+      "invariant_proves": "NPSC42 H1: governance planes do not mint execution identity.",
+      "layer": "governance",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "NPSC42 frozen subset \u2014 not full GOV-X2 replay."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-governance-I",
+      "invariant_proves": "T-CLS-I @ `governance` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[governance-I]`).",
+      "layer": "governance",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-A]",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-integrations-A",
+      "invariant_proves": "EBH-5 vendor inventory completeness (qual mechanical) on integration scope.",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Inventory completeness \u2014 not live adapter construction audit."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-B]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-integrations-B",
+      "invariant_proves": "Production code: registry factory enforces PlatformIntegrationContract + category match; no alternate materialization path in factory.py.",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Factory module only \u2014 not all integration bundles statically rescanned @ HEAD."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner"
+      ],
+      "group_id": "AJG-integrations-C",
+      "invariant_proves": "Production code: resolve() order explicit slug \u2192 profile \u2192 env \u2192 IntegrationConfigurationError (fail-closed).",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Single sanctioned factory \u2014 not shadow config paths platform-wide."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-integrations-D",
+      "invariant_proves": "T-CLS-D @ `integrations` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-D]`).",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "E",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-E]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-integrations-E",
+      "invariant_proves": "T-CLS-E @ `integrations` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-E]`).",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-E mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-integrations-F",
+      "invariant_proves": "T-CLS-F @ `integrations` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-F]`).",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-integrations-G",
+      "invariant_proves": "T-CLS-G @ `integrations` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-G]`).",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-H]",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-integrations-H",
+      "invariant_proves": "Integration bundle L3 call chains inventoried per mechanism records.",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "L3 annex index \u2014 not integration factory behavioral replay."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-I]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_env_slug_is_canonical_merge_not_shadow_registry",
+        "intergrax/applications/_shared/integration_runtime_bridge.py"
+      ],
+      "group_id": "AJG-integrations-I",
+      "invariant_proves": "Production code: IntegrationProfile + INTERGRAX_INTEGRATION_* env merge; application bridge attaches profile to RuntimeConfig without second selector.",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Config authority on integration slice \u2014 not all hosting/runtime_hosting class-I cells."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[integrations-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty"
+      ],
+      "group_id": "AJG-integrations-J",
+      "invariant_proves": "RPL-G: CONFIG-X active blocker list empty @ HEAD.",
+      "layer": "integrations",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "RPL-G slice \u2014 51 NYQ matrix rows remain deferred."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-observability_diagnostics-C",
+      "invariant_proves": "T-CLS-C @ `observability_diagnostics` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-C]`).",
+      "layer": "observability_diagnostics",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-observability_diagnostics-D",
+      "invariant_proves": "T-CLS-D @ `observability_diagnostics` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-D]`).",
+      "layer": "observability_diagnostics",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-observability_diagnostics-F",
+      "invariant_proves": "T-CLS-F @ `observability_diagnostics` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-F]`).",
+      "layer": "observability_diagnostics",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink"
+      ],
+      "group_id": "AJG-observability_diagnostics-G",
+      "invariant_proves": "W5-B2: production composition wires bounded observability sink.",
+      "layer": "observability_diagnostics",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Single wiring scenario \u2014 not global OBS qualification."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-observability_diagnostics-H",
+      "invariant_proves": "T-CLS-H @ `observability_diagnostics` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-H]`).",
+      "layer": "observability_diagnostics",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-observability_diagnostics-I",
+      "invariant_proves": "T-CLS-I @ `observability_diagnostics` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-I]`).",
+      "layer": "observability_diagnostics",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-observability_diagnostics-J",
+      "invariant_proves": "T-CLS-J @ `observability_diagnostics` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[observability_diagnostics-J]`).",
+      "layer": "observability_diagnostics",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-A]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-rag_memory-A",
+      "invariant_proves": "T-CLS-A @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-A]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-rag_memory-B",
+      "invariant_proves": "T-CLS-B @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-B]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-rag_memory-C",
+      "invariant_proves": "T-CLS-C @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-C]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-D]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-rag_memory-D",
+      "invariant_proves": "T-CLS-D @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-D]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "E",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-E]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-rag_memory-E",
+      "invariant_proves": "T-CLS-E @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-E]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-E mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-rag_memory-F",
+      "invariant_proves": "T-CLS-F @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-F]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-rag_memory-G",
+      "invariant_proves": "T-CLS-G @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-G]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-H]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-rag_memory-H",
+      "invariant_proves": "T-CLS-H @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-H]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-rag_memory-I",
+      "invariant_proves": "T-CLS-I @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-I]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-rag_memory-J",
+      "invariant_proves": "T-CLS-J @ `rag_memory` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[rag_memory-J]`).",
+      "layer": "rag_memory",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-reliability_recovery-A",
+      "invariant_proves": "T-CLS-A @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-A]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-reliability_recovery-B",
+      "invariant_proves": "T-CLS-B @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-B]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-reliability_recovery-C",
+      "invariant_proves": "T-CLS-C @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-C]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "E",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-E]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-reliability_recovery-E",
+      "invariant_proves": "T-CLS-E @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-E]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-E mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-reliability_recovery-F",
+      "invariant_proves": "T-CLS-F @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-F]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-reliability_recovery-G",
+      "invariant_proves": "T-CLS-G @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-G]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-H]",
+        "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production"
+      ],
+      "group_id": "AJG-reliability_recovery-H",
+      "invariant_proves": "L3 recovery mechanisms + NPSC5e no recovery god-object gate on production paths.",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Sample L3 recovery admission \u2014 not full reachability replay."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-reliability_recovery-I",
+      "invariant_proves": "T-CLS-I @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-I]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-reliability_recovery-J",
+      "invariant_proves": "T-CLS-J @ `reliability_recovery` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[reliability_recovery-J]`).",
+      "layer": "reliability_recovery",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-runtime_hosting-A",
+      "invariant_proves": "T-CLS-A @ `runtime_hosting` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-A]`).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-runtime_hosting-B",
+      "invariant_proves": "T-CLS-B @ `runtime_hosting` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-B]`).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-C]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head"
+      ],
+      "group_id": "AJG-runtime_hosting-C",
+      "invariant_proves": "CONFIG-X 54/54 concern mapping @ HEAD (structural reconciliation).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Mapping completeness \u2014 not host profile materialization audit."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-runtime_hosting-D",
+      "invariant_proves": "T-CLS-D @ `runtime_hosting` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-D]`).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-runtime_hosting-F",
+      "invariant_proves": "T-CLS-F @ `runtime_hosting` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-F]`).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-runtime_hosting-G",
+      "invariant_proves": "T-CLS-G @ `runtime_hosting` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-G]`).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-runtime_hosting-H",
+      "invariant_proves": "T-CLS-H @ `runtime_hosting` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-H]`).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-runtime_hosting-I",
+      "invariant_proves": "CONFIG-X mapping + EBH-5 inventory for hosting-related concerns.",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Reconciliation inventory \u2014 not install-time default proof."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-runtime_hosting-J",
+      "invariant_proves": "T-CLS-J @ `runtime_hosting` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[runtime_hosting-J]`).",
+      "layer": "runtime_hosting",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-semantic_core-A",
+      "invariant_proves": "T-CLS-A @ `semantic_core` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-A]`).",
+      "layer": "semantic_core",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass"
+      ],
+      "group_id": "AJG-semantic_core-B",
+      "invariant_proves": "EE-A1 bypass inventory intersecting nexus/core execution surfaces.",
+      "layer": "semantic_core",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Execution bypass scan \u2014 not all semantic_core vendor literals."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-semantic_core-C",
+      "invariant_proves": "T-CLS-C @ `semantic_core` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-C]`).",
+      "layer": "semantic_core",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/_findings_register.py"
+      ],
+      "group_id": "AJG-semantic_core-F",
+      "invariant_proves": "EBH6-DEBT-Q2-D2 \u2014 Path B FRZ-TYP-03 remediation @ HEAD; pending independent E01 / Protocol 03.",
+      "layer": "semantic_core",
+      "mandatory_blocker": null,
+      "outcome": "PASS_CANDIDATE",
+      "scope_limitation": "Historical RATIFIED debt remediated \u2014 not auditor PASS."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-semantic_core-H",
+      "invariant_proves": "L3 nexus/execution call chains + sanctioned roots registry present.",
+      "layer": "semantic_core",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Mechanism-level L3 index \u2014 not independent reachability re-run."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-semantic_core-I",
+      "invariant_proves": "T-CLS-I @ `semantic_core` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-I]`).",
+      "layer": "semantic_core",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-semantic_core-J",
+      "invariant_proves": "T-CLS-J @ `semantic_core` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[semantic_core-J]`).",
+      "layer": "semantic_core",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-state_persistence-A",
+      "invariant_proves": "T-CLS-A @ `state_persistence` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-A]`).",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-state_persistence-B",
+      "invariant_proves": "T-CLS-B @ `state_persistence` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-B]`).",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-state_persistence-C",
+      "invariant_proves": "T-CLS-C @ `state_persistence` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-C]`).",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-state_persistence-D",
+      "invariant_proves": "T-CLS-D @ `state_persistence` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-D]`).",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "E",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-E]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability"
+      ],
+      "group_id": "AJG-state_persistence-E",
+      "invariant_proves": "SQLite annex paths accountable vs EBH-5 touchpoint registry.",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Annex accountability \u2014 not all shadow-store class-E obligations."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-state_persistence-F",
+      "invariant_proves": "T-CLS-F @ `state_persistence` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-F]`).",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability"
+      ],
+      "group_id": "AJG-state_persistence-H",
+      "invariant_proves": "Persistence L3 chains + sqlite annex gate.",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Annex + samples \u2014 not canonical store behavioral qual."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-state_persistence-I",
+      "invariant_proves": "T-CLS-I @ `state_persistence` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-I]`).",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-state_persistence-J",
+      "invariant_proves": "T-CLS-J @ `state_persistence` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[state_persistence-J]`).",
+      "layer": "state_persistence",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "A",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-A]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-A",
+      "invariant_proves": "T-CLS-A @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-A]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-A mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "B",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-B]",
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-B",
+      "invariant_proves": "T-CLS-B @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-B]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-B mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "C",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-C]",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-C",
+      "invariant_proves": "T-CLS-C @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-C]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-C mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "D",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-D]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-D",
+      "invariant_proves": "T-CLS-D @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-D]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-D mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "F",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-F]",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-F",
+      "invariant_proves": "T-CLS-F @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-F]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-F mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "G",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-G]",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-G",
+      "invariant_proves": "T-CLS-G @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-G]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-G mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "H",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-H]",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-H",
+      "invariant_proves": "T-CLS-H @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-H]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-H mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "I",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-I]",
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-I",
+      "invariant_proves": "T-CLS-I @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-I]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-I mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    },
+    {
+      "detection_class": "J",
+      "evidence_refs": [
+        "tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-J]",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "group_id": "AJG-tools_skills_capabilities-J",
+      "invariant_proves": "T-CLS-J @ `tools_skills_capabilities` \u2014 T2 layer scan + reused qual gates (@ `tests/qualification/ebh_6/test_ebh_6_aj_class_gates.py::test_ebh6_aj_class_gate[tools_skills_capabilities-J]`).",
+      "layer": "tools_skills_capabilities",
+      "mandatory_blocker": null,
+      "outcome": "PARTIAL_CANDIDATE",
+      "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
+    }
+  ],
+  "certification_banner": "EBH-6 \u2014 CLOSED \u2014 INDEPENDENTLY ACCEPTED (SCOPED)",
+  "certification_handoff_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+  "families": [
+    {
+      "blocker_id": null,
+      "family_id": "BND",
+      "frz_family": "FRZ-BND-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-OWN-01",
+      "family_id": "OWN",
+      "frz_family": "FRZ-OWN-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "CTR",
+      "frz_family": "FRZ-CTR-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+        "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "TYP",
+      "frz_family": "FRZ-TYP-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+        "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py::test_b13_ambiguous_candidates_fail_closed",
+        "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes"
+      ],
+      "implementer_proposed": "PASS scoped (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "PLG",
+      "frz_family": "FRZ-PLG-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "RPL",
+      "frz_family": "FRZ-RPL-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-EXE-01",
+      "family_id": "EXE",
+      "frz_family": "FRZ-EXE-* / execution invariants",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "PASS_CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-GOV-01",
+      "family_id": "GOV",
+      "frz_family": "FRZ-GOV-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "PASS_CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "STA",
+      "frz_family": "FRZ-STA-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability"
+      ],
+      "implementer_proposed": "PASS scoped (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-REC-01",
+      "family_id": "REC",
+      "frz_family": "FRZ-REC-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+        "tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "CMP",
+      "frz_family": "FRZ-CMP-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_architecture_family_matrix_integrity.py::test_ebh6_family_row_count_closed_world"
+      ],
+      "implementer_proposed": "N/A \u2014 WITH EVIDENCE (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "CFG",
+      "frz_family": "FRZ-CFG-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-SEC-01",
+      "family_id": "SEC",
+      "frz_family": "FRZ-SEC-*",
+      "gate_test_ids": [
+        "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-REL-01",
+      "family_id": "REL",
+      "frz_family": "FRZ-REL-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "CTL",
+      "frz_family": "FRZ-CTL-*",
+      "gate_test_ids": [
+        "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_middleware_composition.py::test_r2_mw_05_fail_open_rejected_before_attach"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "OBS",
+      "frz_family": "FRZ-OBS-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "TRC",
+      "frz_family": "FRZ-TRC-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty"
+      ],
+      "implementer_proposed": "PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "PRD",
+      "frz_family": "FRZ-PRD-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_architecture_family_matrix_integrity.py::test_ebh6_family_row_count_closed_world"
+      ],
+      "implementer_proposed": "N/A \u2014 WITH EVIDENCE (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "REG",
+      "frz_family": "FRZ-REG-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_mandatory_docs_present",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_findings_register_complete",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+        "tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py::test_aj_evidence_required_honest_not_zero"
+      ],
+      "implementer_proposed": "PENDING\u2192REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-HRN-01",
+      "family_id": "HRN",
+      "frz_family": "FRZ-HRN-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": "EBH6-BLK-L9-TEN-01",
+      "family_id": "TEN",
+      "frz_family": "FRZ-TEN-*",
+      "gate_test_ids": [
+        "tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix"
+      ],
+      "implementer_proposed": "REPLAY PASS scoped (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "DOC",
+      "frz_family": "FRZ-DOC-*",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_mandatory_docs_present",
+        "tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrity.py::test_ebh6_scope_dossier_content_controls"
+      ],
+      "implementer_proposed": "PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    },
+    {
+      "blocker_id": null,
+      "family_id": "VBN",
+      "frz_family": "(VBN)",
+      "gate_test_ids": [
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
+        "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero"
+      ],
+      "implementer_proposed": "REPLAY PASS (proposed)",
+      "independent_disposition": "PENDING \u2014 L9 Protocol 03",
+      "l9_disposition": "SCOPED CANDIDATE"
+    }
+  ],
+  "family_count": 23,
+  "independent_disposition_pending": 23,
+  "l9_blocker_count": 8,
+  "l9_blocker_replay": {
+    "EBH6-BLK-L9-EXE-01": {
+      "family_id": "EXE",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass"
+      ],
+      "invariant_under_test": "Single ExecutionRuntime ownership \u2014 no shadow execution path on L3 samples.",
+      "scope_limitation": "L3 execution mechanisms cross-ref in _l3_reachability_evidence.py"
+    },
+    "EBH6-BLK-L9-GOV-01": {
+      "family_id": "GOV",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity"
+      ],
+      "invariant_under_test": "Governance does not execute effects; decision contracts fail-closed.",
+      "scope_limitation": "Subset replay \u2014 not full GOV-X2 re-run"
+    },
+    "EBH6-BLK-L9-HRN-01": {
+      "family_id": "HRN",
+      "gate_test_ids": [
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink"
+      ],
+      "invariant_under_test": "Harness W5 delivery stack non-authoritative for execution.",
+      "scope_limitation": "W5/W6 subset only"
+    },
+    "EBH6-BLK-L9-OWN-01": {
+      "family_id": "OWN",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented"
+      ],
+      "invariant_under_test": "Exactly-one semantic owner on inventoried runtime/contract surfaces.",
+      "scope_limitation": "Closed-world rescan \u2014 not whole-platform ownership closure"
+    },
+    "EBH6-BLK-L9-REC-01": {
+      "family_id": "REC",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+        "tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass"
+      ],
+      "invariant_under_test": "Recovery plane ownership \u2014 no alternate recovery executor on L3 paths.",
+      "scope_limitation": "Drift replay \u2014 not DIST-SCALE-X full"
+    },
+    "EBH6-BLK-L9-REL-01": {
+      "family_id": "REL",
+      "gate_test_ids": [
+        "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint"
+      ],
+      "invariant_under_test": "Capacity preview \u2260 execution owner (EE-B1.2).",
+      "scope_limitation": "Selected guard replay"
+    },
+    "EBH6-BLK-L9-SEC-01": {
+      "family_id": "SEC",
+      "gate_test_ids": [
+        "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open"
+      ],
+      "invariant_under_test": "Security composition fail-closed \u2014 external fail-open rejected @ HEAD.",
+      "scope_limitation": "CTRL-X historical SHA evidence preserved separately"
+    },
+    "EBH6-BLK-L9-TEN-01": {
+      "family_id": "TEN",
+      "gate_test_ids": [
+        "tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix"
+      ],
+      "invariant_under_test": "Tenant scope adversarial matrix on security boundary.",
+      "scope_limitation": "Spot-check \u2014 not cross-subsystem TEN closure"
+    }
+  },
+  "l9_blockers": {
+    "EBH6-BLK-L9-EXE-01": [
+      "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass"
+    ],
+    "EBH6-BLK-L9-GOV-01": [
+      "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
+      "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity"
+    ],
+    "EBH6-BLK-L9-HRN-01": [
+      "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink"
+    ],
+    "EBH6-BLK-L9-OWN-01": [
+      "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented"
+    ],
+    "EBH6-BLK-L9-REC-01": [
+      "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+      "tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass"
+    ],
+    "EBH6-BLK-L9-REL-01": [
+      "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint"
+    ],
+    "EBH6-BLK-L9-SEC-01": [
+      "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open"
+    ],
+    "EBH6-BLK-L9-TEN-01": [
+      "tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix"
+    ]
+  },
+  "layer_candidate_resolved_count": 16,
+  "layer_l9_evidence_submitted_count": 0,
+  "layers": [
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-01",
+      "layer": "contracts",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-02",
+      "layer": "semantic_core",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-03",
+      "layer": "application_services",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-04",
+      "layer": "composition_roots",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-05",
+      "layer": "governance",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-06",
+      "layer": "execution",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-07",
+      "layer": "integrations",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-08",
+      "layer": "state_persistence",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-09",
+      "layer": "reliability_recovery",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-10",
+      "layer": "observability_diagnostics",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-11",
+      "layer": "events_traceability",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-12",
+      "layer": "agent_distribution",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-13",
+      "layer": "rag_memory",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-14",
+      "layer": "runtime_hosting",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-15",
+      "layer": "tools_skills_capabilities",
+      "status": "CANDIDATE-RESOLVED"
+    },
+    {
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+      "finding_id": "EBH6-LAYER-16",
+      "layer": "background_workers_infra_adapters",
+      "status": "CANDIDATE-RESOLVED"
+    }
+  ],
+  "tier_census": {
+    "T1": 0,
+    "T2": 131,
+    "T3": 2
+  }
+}

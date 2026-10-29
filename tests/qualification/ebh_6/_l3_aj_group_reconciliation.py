@@ -30,6 +30,10 @@ _REG_UNCLASS = (
 _REG_DEBT = (
     "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified"
 )
+_Q2D2_REMEDIATION_GATE = (
+    "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py"
+    "::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed"
+)
 _BND_GATE = (
     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
     "::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
@@ -84,6 +88,15 @@ _LIFECYCLE = (
     "::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
 )
 _REGISTER_SSOT = "tests/qualification/ebh_6/_findings_register.py"
+_CONTRACTS_TYPING_CSP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_contracts_layer_frz_typ_surface_purity_passes"
+)
+_CONTRACTS_TYPING_APP = (
+    "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py"
+    "::test_ebh6_application_services_production_seam_typing_passes"
+)
+_EBH2I_CSP = "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
 
 
 @dataclass(frozen=True, slots=True)
@@ -206,22 +219,21 @@ _ADJUDICATION: Final[dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[st
     ),
     ("contracts", "F"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
-        "Register: Q2-D2 / debt rows ratified — not contract typing re-audit.",
-        (_REG_DEBT,),
-        "Register disposition — not FRZ-TYP behavioral proof.",
+        "EBH-2I contract surface purity (CSP) on closed-world contracts layer @ HEAD.",
+        (_CONTRACTS_TYPING_CSP, _EBH2I_CSP),
+        "Tier-0/integrations contracts surface — not supplemental EBH-2I application contract modules.",
     ),
     ("semantic_core", "F"): (
         AjControlOutcome.FINDING,
-        "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam; "
-        "ratification ≠ independent acceptance (OD-EBH6-Q2D2 OPEN).",
+        "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — fallback when Path B remediation incomplete.",
         (_REG_DEBT, _REGISTER_SSOT),
-        "Single tracked debt — Q2-D2 remains operator decision; not prod PASS.",
+        "Registered debt — override to PASS_CANDIDATE when Path B reconciled @ HEAD.",
     ),
     ("application_services", "F"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
-        "Register ratified debt disposition for tracked seams.",
-        (_REG_DEBT,),
-        "Register-only for class F on app _shared.",
+        "Direct Tier-3 wiring → _shared public seam FRZ-TYP gate with EBH6-DEBT-APP-TYP-* registry.",
+        (_CONTRACTS_TYPING_APP,),
+        "Direct wiring imports only — transitive _shared helpers excluded; 11 registered typing debt rows.",
     ),
     ("integrations", "B"): (
         AjControlOutcome.PARTIAL_CANDIDATE,
@@ -277,6 +289,7 @@ def _default_blocker(layer: str, detection_class: str) -> str:
 
 def _merge_adjudication_table() -> dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]]:
     from tests.qualification.ebh_6._aj_class_gate_scan import class_gate_adjudication, class_gate_node_id
+    from tests.qualification.ebh_6._t2_evidence_bundles import ImplementerReview, bundle_review_disposition
 
     table: dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]] = {}
     for layer in EBH6_AUDIT_LAYERS:
@@ -292,10 +305,30 @@ def _merge_adjudication_table() -> dict[tuple[str, str], tuple[AjControlOutcome,
                 proves = cg.invariant_proves
                 refs = cg.evidence_refs
                 scope = cg.scope_limitation
+            review = bundle_review_disposition(layer, aj.detection_class)
+            if review == ImplementerReview.INSUFFICIENT and outcome not in (
+                AjControlOutcome.FINDING,
+                AjControlOutcome.PASS_CANDIDATE,
+            ):
+                outcome = AjControlOutcome.EVIDENCE_REQUIRED
+                proves = f"T2-AUD bundle INSUFFICIENT — {proves}"
+                scope = f"T2 independent review gap — {scope}"
             gate = class_gate_node_id(layer, aj.detection_class)
             if gate not in refs:
                 refs = (gate,) + refs
             table[key] = (outcome, proves, refs, scope)
+    from tests.qualification.ebh_6._q2d2_technical_qualification import assess_path_b_remediation
+
+    scf = ("semantic_core", "F")
+    if assess_path_b_remediation().remediation_complete and scf in table:
+        _outcome, _proves, refs, _scope = table[scf]
+        merged_refs = tuple(dict.fromkeys((_Q2D2_REMEDIATION_GATE,) + refs))
+        table[scf] = (
+            AjControlOutcome.PASS_CANDIDATE,
+            "EBH6-DEBT-Q2-D2 — Path B FRZ-TYP-03 remediation @ HEAD; pending independent E01 / Protocol 03.",
+            merged_refs,
+            "Historical RATIFIED debt remediated — not auditor PASS.",
+        )
     return table
 
 

@@ -4,16 +4,15 @@
 | --- | --- |
 | **Purpose** | Current-HEAD rollup per [VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) §2.7 |
 | **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B2 EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` — **HISTORICAL** |
-| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
-| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
+| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **CERTIFICATION_HANDOFF_SHA** | @ final enterprise closure wave on `development` |
 | **Historical P03 handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **CONFIG-X historical PASS** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **Historical IMPLEMENTATION (pre-cert)** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` — **HISTORICAL** |
 | **P03 integrity IMPLEMENTATION** | `1539c886ddd63f551b62352ad97b182569eb8444` — **HISTORICAL** |
-| **Disposition** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** (`EV_GROUPS=0`; **OD-EBH6-Q2D2 OPEN** on `semantic_core` × F) |
+| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD T1=0)** |
 
 ## Mandatory audit layers (roadmap §3.0.8)
 
@@ -27,7 +26,7 @@ Grouped A–J adjudication: [`_l3_aj_group_reconciliation.py`](../../../tests/qu
 
 ## A–J obligation groups (@ IMPLEMENTATION_SHA)
 
-Mechanical census @ **B5 final evidence** (`tests/qualification/ebh_6/` — `.tmp/session/ebh-6-final-evidence/pytest.log`):
+Mechanical census @ **B5 cert handoff** (`tests/qualification/ebh_6/` — `.tmp/session/ebh-6-cert-handoff/pytest.log`):
 
 | Outcome | Groups (133 applicable pairs) |
 | --- | ---: |
@@ -83,7 +82,7 @@ SSOT: [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_e
 | **OD-EBH6-01** | OPEN |
 | **OD-EBH6-08** | OPEN |
 | **L9 Protocol 03** | Independent audit **PENDING** — candidate handoff only |
-| **EBH6-P03-AJ-* ** | Per (layer, class) `EVIDENCE_REQUIRED` groups — see group table |
+| **EBH6-P03-AJ-*** | **T1=0** @ B5 — tier contract `test_ebh6_protocol03_contract_tier_coverage` |
 | **8 × EBH6-BLK-L9-*** | Implementer gates submitted — auditor PENDING |
 | **51 NYQ** | Deferred EBH-7 |
 

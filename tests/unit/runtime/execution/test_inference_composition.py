@@ -9,14 +9,10 @@ import inspect
 from pathlib import Path
 
 import pytest
-
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernanceEvidencePersistencePort,
 )
 from intergrax.runtime.execution.inference_composition import build_governed_inference_executor
-from intergrax.runtime.governance.governance_evidence_composition import (
-    build_in_memory_governance_evidence_persistence,
-)
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 from testing_support.inference_governance_wiring import (
     build_test_inference_executor_without_evidence,
@@ -27,7 +23,7 @@ from tests.unit.runtime.execution.test_inference_executor import RiskAssessment,
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_COMPOSITION = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "inference_composition.py"
+_COMPOSITION = _REPO_ROOT / "intergrax" / "runtime" / "governance" / "governed_inference_composition.py"
 
 
 def test_build_governed_inference_executor_requires_persistence_port_signature() -> None:
@@ -38,9 +34,7 @@ def test_build_governed_inference_executor_requires_persistence_port_signature()
 
 
 def test_build_governed_inference_executor_no_optional_recorder_parameter() -> None:
-    assert "governance_evidence_recorder" not in inspect.signature(
-        build_governed_inference_executor
-    ).parameters
+    assert "governance_evidence_recorder" not in inspect.signature(build_governed_inference_executor).parameters
 
 
 def test_build_governed_inference_executor_ast_no_default_in_memory_store() -> None:
@@ -95,9 +89,7 @@ def test_governed_test_helper_requires_explicit_persistence() -> None:
 
 
 def test_default_test_persistence_is_explicit_test_choice_not_production_builder() -> None:
-    source = ( _REPO_ROOT / "testing_support" / "inference_governance_wiring.py").read_text(
-        encoding="utf-8-sig"
-    )
+    source = (_REPO_ROOT / "testing_support" / "inference_governance_wiring.py").read_text(encoding="utf-8-sig")
     assert "default_test_inference_evidence_persistence" in source
     assert "build_in_memory_governance_evidence_persistence" in source
     composition = _COMPOSITION.read_text(encoding="utf-8-sig")

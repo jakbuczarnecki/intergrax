@@ -2,21 +2,26 @@
 
 | Field | Value |
 | --- | --- |
-| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
-| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
+| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **CERTIFICATION_HANDOFF_SHA** | @ final enterprise closure wave — see ladder below |
 | **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` — [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) |
 
-## SHA ladder (CURRENT @ B2)
+## SHA ladder (CURRENT)
 
 | Label | SHA | Freshness |
 | --- | --- | --- |
-| B2 **EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` | **CURRENT** |
-| B2 **IMPLEMENTATION_SHA** / **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` | **CURRENT** after B2 ladder commit |
+| **CLOSURE_BASELINE_SHA** (contracts_typing) | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` | **CURRENT** implementer evidence anchor |
+| **FINAL_REMEDIATION (R1–R7)** | `b9ffa8d6e12208a3435b4cbc21ce5dda31746bc6` | Superseded by R4 T2 gate repair @ commit after `067cc2e2` |
+| **R4 T2 gate repair (EBH-6)** | `e7f1d0d77` | Superseded by E01/E02 audit findings resolution |
+| **E01/E02 audit findings resolution** | `9be365a1af83e650d0477e64b6d764ae1cfa1a1d` | Superseded by IA corrective batch |
+| **IA E01/E02 corrective (EBH-6)** | `887d5860a6fa39ba39d2b533cb39cf2562941ce3` | Superseded by Q2-D2 Path B production fix |
+| **Q2-D2 Path B (OD-EBH6-01)** | `ffc1d94859734d612d9261f6a150c1f6e92d617f` | Superseded by post–Path B qual reconciliation |
+| **Q2-D2 post–Path B reconciliation** | `80c53fc06d7e2a6adeb4698d521956b07d3aee43` | Superseded by E02-OP-01 ratification + P03 final replay |
+| **E02-OP-01 + P03 final execution replay** | `a405c73f64d67254fe9d5e1f89c8b5dd4310be98` | **CURRENT** — 267 passed @ `.tmp/session/ebh-6-p03-final-execution/pytest.log` |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
-| B1 **IMPLEMENTATION_SHA** (historical) | `446dfa7263b6571a11bdd2a973e66e57892eacca` | Superseded by B2 wave |
-| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` | **pre-B1 handoff** — update @ B5 only |
+| T2 repair handoff | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` | Superseded by contracts_typing baseline |
 
 ## HISTORICAL — do not cite as CURRENT
 
@@ -39,15 +44,23 @@
 
 ## Blockers recorded
 
-- **OD-EBH6-01** OPEN — implementation wave not operator-open
+- **OD-EBH6-01** **APPROVED 2026-10-29** — Q2-D2 Path B scope (not EBH-6 CLOSED)
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution (corrected closure plan @ `0489054c…`)
-- **L9 Protocol 03** OPEN — **B5 implementer handoff** (`EV_GROUPS=0`); **B6** after operator resolves **OD-EBH6-Q2D2** (semantic_core × F FINDING)
-- **0** A–J `EVIDENCE_REQUIRED` groups @ B5 IMPLEMENTATION_SHA (**133** applicable pairs — **131** PARTIAL_CANDIDATE, **1** PASS_CANDIDATE, **1** FINDING Q2-D2)
+- **OD-EBH6-Q2D2** **APPROVED — PATH B — 2026-10-29** — E01-PRE-01 / Protocol 03 still required
+- **E02-OP-01** **OPERATOR RATIFIED 2026-10-29** — **E02-AUD-01 ACCEPT (SCOPED) 2026-10-29**
+- **Final B5 replay** **COMPLETE** @ **`TEST_EXECUTION_SHA`** `f27bfaf2fa42eba1e114b30982d4682cf1578df7` · **EVIDENCE_PUBLICATION_SHA** `3c8e6122d48f61651494d17e3163cb036d757b4e` (275 + 10 + 11)
+- **Protocol 03 B6** **PASS (SCOPED)** · **E01-PRE-01 PASS (SCOPED)** · **OD-EBH6-08 CLOSED 2026-10-29** — banner **CLOSED (SCOPED)**
+- **L9 Protocol 03 / E10** — superseded by final B5 + B6 pass record (historical **PARTIAL** rows preserved above)
+- **T2-AUD @ qual HEAD** — **T1=0** insufficient pairs; **133** A–J groups (**131** PARTIAL_CANDIDATE, **2** PASS_CANDIDATE incl. `semantic_core×F`)
+- **contracts_typing** @ `202239f72…` — **ACCEPTED** (0× implementer INSUFFICIENT)
 
-## Pytest log (B5 final evidence)
+## Pytest logs
 
-Consolidated @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-final-evidence/pytest.log` (ebh_6 + ebh_5 reachability/rpl/mechanical reuse gates)
-
-## Pytest log (B2 — historical)
-
-Consolidated L1+L2 @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-b2/pytest.log`
+| Wave | Path |
+| --- | --- |
+| contracts_typing | `.tmp/session/ebh-6-contracts-typing/pytest.log` @ `202239f72…` |
+| T2 repair (historical) | `.tmp/session/ebh-6-t2-repair/pytest.log` |
+| **Final closure E09** | `.tmp/session/ebh-6-final-closure/pytest.log` @ **CERTIFICATION_HANDOFF_SHA** |
+| **Definitive closure C9** | `.tmp/session/ebh-6-definitive-closure/pytest.log` (217 passed) @ `8f7ac2c98…` |
+| **Final remediation R7** | `.tmp/session/ebh-6-final-remediation/pytest.log` (**225 passed**) @ qual HEAD |
+| **P03 final execution (E10 handoff)** | `.tmp/session/ebh-6-p03-final-execution/pytest.log` (**267 passed**) @ `a405c73f…` |

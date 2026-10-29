@@ -8,10 +8,10 @@ from contextvars import Token
 
 from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernanceEvidencePersistencePort,
 )
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.inference import InferenceExecutor
 from intergrax.runtime.execution.inference_composition import build_governed_inference_executor
 from intergrax.runtime.execution.inference_profile import InferenceProfileResolver
@@ -23,6 +23,9 @@ from intergrax.runtime.governance.active_execution_governance_identity import (
 )
 from intergrax.runtime.governance.governance_evidence_composition import (
     build_in_memory_governance_evidence_persistence,
+)
+from intergrax.runtime.governance.structured_inference_pre_model_composition import (
+    build_structured_inference_pre_model_gate,
 )
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
@@ -58,10 +61,11 @@ def build_test_inference_executor_without_evidence(
     profile_resolver: InferenceProfileResolver | None = None,
 ) -> InferenceExecutor[object]:
     """Test-only executor without Governance Evidence wiring (not production-qualified)."""
+    engine = policy_engine if policy_engine is not None else PolicyEngine()
     return InferenceExecutor(
         adapter,
         profile_resolver=profile_resolver,
-        policy_engine=policy_engine if policy_engine is not None else PolicyEngine(),
+        pre_model_gate=build_structured_inference_pre_model_gate(engine, None),
         governance_evidence_recorder=None,
     )
 

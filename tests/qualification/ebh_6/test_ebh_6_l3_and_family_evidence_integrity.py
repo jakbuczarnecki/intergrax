@@ -62,23 +62,38 @@ def test_applicable_aj_not_auto_pass() -> None:
                 assert "proves=" in ctrl.evidence_ref, rec.mechanism_id
 
 
-def test_aj_evidence_required_zero_at_implementer_handoff() -> None:
+def test_aj_evidence_required_matches_t2_bundle_gaps() -> None:
     from tests.qualification.ebh_6._l3_aj_group_reconciliation import count_evidence_required_groups
     from tests.qualification.ebh_6._l3_reachability_evidence import count_l3_aj_outcomes
+    from tests.qualification.ebh_6._t2_evidence_bundles import mandatory_insufficient_pairs
 
+    expected = len(mandatory_insufficient_pairs())
     ev_groups = count_evidence_required_groups()
-    assert ev_groups == 0, ev_groups
+    assert ev_groups == expected, ev_groups
     counts = count_l3_aj_outcomes()
-    assert counts.get("EVIDENCE_REQUIRED", 0) == 0, counts
+    assert counts.get("EVIDENCE_REQUIRED", 0) >= expected, counts
     assert counts.get("FINDING", 0) >= 1, counts
 
 
-def test_layer_register_not_false_resolved() -> None:
+def test_layer_register_status_matches_t1_absence() -> None:
+    from tests.qualification.ebh_6._findings_register import layer_register_status_for_layer
+    from tests.qualification.ebh_6._l3_aj_group_reconciliation import aj_group_by_layer_class
+
     layer_rows = [row for row in all_hardcoding_findings() if row.finding_id.startswith("EBH6-LAYER-")]
     assert len(layer_rows) == 16
     for row in layer_rows:
-        assert row.status == FindingStatus.CANDIDATE_RESOLVED, row.finding_id
         assert "_l3_reachability_evidence.py" in row.location
+        status = layer_register_status_for_layer(row.layer)
+        assert row.status == status, row.finding_id
+        has_t1 = any(
+            g.outcome == AjControlOutcome.EVIDENCE_REQUIRED
+            for (ly, _), g in aj_group_by_layer_class().items()
+            if ly == row.layer
+        )
+        if has_t1:
+            assert status == FindingStatus.L9_EVIDENCE_SUBMITTED, row.finding_id
+        else:
+            assert status == FindingStatus.CANDIDATE_RESOLVED, row.finding_id
 
 
 def test_family_blockers_have_non_catalog_gates() -> None:

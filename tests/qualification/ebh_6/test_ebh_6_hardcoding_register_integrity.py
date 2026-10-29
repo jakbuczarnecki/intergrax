@@ -71,7 +71,8 @@ def test_ebh6_tracked_debt_findings_ratified() -> None:
     by_id = findings_by_id()
     q2 = by_id["EBH6-DEBT-Q2-D2"]
     bnd = by_id["EBH6-DEBT-BND-COMPAT-R3"]
-    assert q2.status == FindingStatus.RATIFIED
+    assert q2.status == FindingStatus.CANDIDATE_RESOLVED
+    assert "Path B" in q2.notes or "remediated" in q2.notes.lower()
     assert bnd.status == FindingStatus.RATIFIED
     assert q2.classification != HardcodingFindingClassification.PROHIBITED_CORE
 

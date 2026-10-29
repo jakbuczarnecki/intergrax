@@ -2,12 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| **CURRENT_HEAD** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **EXPECTED_START_HEAD** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **TEST_EXECUTION_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` (pytest @ pre-cert reconcile) |
-| **PRE-CERT PUBLICATION_SHA** | `a7d133a91cebc4c7cd8c5f265587168f05df5ee4` |
-| **CERTIFICATION_HANDOFF_SHA** | `716efd6716a51dc933b85adfe78d6bd13b73bdbf` |
-| **Disposition** | **READY FOR INDEPENDENT AUDIT (CANDIDATE)** — **not CLOSED**; blockers remain |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
+| **CERTIFICATION_HANDOFF_SHA** | @ final enterprise closure wave (see ledger) |
+| **Disposition** | **PRE-CERT PACKAGE READY — INDEPENDENT VERDICT PENDING (E01-PRE-01)** — **not CLOSED** |
 
 Agent reconciliation batch for **EBH6-AUD-01..04**. Does **not** issue AUDIT PASS, **OD-EBH6-08**, or **EBH-6 CLOSED**.
 

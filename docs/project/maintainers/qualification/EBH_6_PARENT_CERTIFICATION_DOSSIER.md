@@ -3,25 +3,23 @@
 | Field | Value |
 | --- | --- |
 | **Stage** | EBH-6 — Final Architecture Recertification |
-| **Status** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** |
-| **Closure plan** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
-| **B5 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
-| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **PUBLICATION_SHA (P0–P6 historical)** | `50d3b7785c7e13dbc6708143e7484a2eeea5eaca` |
+| **Status** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN)** — implementer evidence complete; **not** independent P03 PASS |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
+| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **CERTIFICATION_HANDOFF_SHA** | `c852e7705f318b5d50a771596d97193f68a00e67` |
 
 ## Latest pytest (@ TEST_EXECUTION_SHA)
 
 | Run | Result |
 | --- | --- |
-| Consolidated L3 bundle (B5 final evidence) | **214+ passed** — `.tmp/session/ebh-6-final-evidence/pytest.log` |
+| Consolidated L3 (final closure E09) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-final-closure/pytest.log` |
 
 ## Mandatory blockers
 
 - **OD-EBH6-01** OPEN — wave / `production delta` (roadmap §3.0.8)
 - **OD-EBH6-08** OPEN — parent closure forbidden until L9 PASS
-- **L9 / Protocol 03** — **READY FOR RE-AUDIT** @ CERTIFICATION_HANDOFF_SHA (prior reject remediated — not PASS)
+- **L9 / Protocol 03** — **NOT EXECUTED** — execution package @ [EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md](EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md)
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution only
 
 ## L9 evidence (implementer)

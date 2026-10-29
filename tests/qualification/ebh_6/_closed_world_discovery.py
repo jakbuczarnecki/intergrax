@@ -92,6 +92,29 @@ def assert_ebh6_sqlite_annex_accountability() -> None:
     assert_closed_world_sqlite_accountability()
 
 
+def assert_ebh6_sanctioned_composition_paths_resolvable(
+    *,
+    qualification_extra_paths: frozenset[str] = frozenset(),
+) -> None:
+    """TRACE-X sanctioned sites and composition-root hints must exist on disk @ HEAD.
+
+    ``qualification_extra_paths`` — test-only injection (EBH-6 qual); not production config.
+    """
+    sanctioned = discover_sanctioned_production_composition_roots() | qualification_extra_paths
+    hints = discover_composition_root_paths() | qualification_extra_paths
+    assert sanctioned, "sanctioned production composition registry empty"
+    assert hints, "composition root hints must resolve"
+    missing = sorted(path for path in sanctioned | hints if not (_REPO_ROOT / path.replace("\\", "/")).is_file())
+    assert not missing, f"missing composition paths on disk: {missing}"
+    for path in discover_sanctioned_production_composition_roots():
+        rel = path.replace("\\", "/")
+        text = (_REPO_ROOT / rel).read_text(encoding="utf-8")
+        lowered = text.lower()
+        assert any(token in lowered for token in ("compose", "wiring", "router", "factory", "resolve_from_profile")), (
+            f"sanctioned root lacks composition marker: {rel}"
+        )
+
+
 # Batch B2 — T-LAY-* package → roadmap layer mapping (PL-02).
 T_LAY_PACKAGE_LAYERS: Final[dict[str, tuple[str, ...]]] = {
     "T-LAY-CTR-SMC": ("contracts", "semantic_core"),

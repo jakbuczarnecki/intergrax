@@ -1,0 +1,463 @@
+{
+  "TEST_EXECUTION_SHA": "f27bfaf2fa42eba1e114b30982d4682cf1578df7",
+  "aj_group_count": 133,
+  "all_unique_primary_gates_pass": true,
+  "bundle_count": 19,
+  "bundles": [
+    {
+      "all_gates_pass": true,
+      "bundle_id": "agent_lifecycle",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 2,
+      "primary_behavioral_gates": [
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "config_hosting",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 15,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "contracts_typing",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 2,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_contracts_layer_frz_typ_surface_purity_passes",
+        "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes",
+        "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "execution_bypass",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 3,
+      "primary_behavioral_gates": [
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "governance_boundary",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 10,
+      "primary_behavioral_gates": [
+        "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "integration_factory",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 7,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "l3_reachability",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 7,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments",
+        "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "nexus_reachability",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 1,
+      "primary_behavioral_gates": [
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "observability_authority",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 1,
+      "primary_behavioral_gates": [
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "persistence_sqlite",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 8,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_persistence_sqlite_closed_world_no_shadow_connects",
+        "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability",
+        "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "platform_fail_closed",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 12,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_platform_fail_closed_reach_gates",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_observability_fail_closed_without_role"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "platform_hardcoding",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 9,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_platform_hardcoding_invokes_class_b_scans"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "platform_typing_scan",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 13,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_contracts_layer_frz_typ_surface_purity_passes",
+        "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes",
+        "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "platform_vendor_scan",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 23,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "q2d2_finding",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 1,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+        "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py::test_ebh6_b3_q2d2_semantic_core_f_pending_independent_acceptance"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "rag_bootstrap",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 3,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "recovery_plane",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 1,
+      "primary_behavioral_gates": [
+        "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "replaceability_j",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 14,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete"
+      ]
+    },
+    {
+      "all_gates_pass": true,
+      "bundle_id": "sanctioned_composition",
+      "independent_disposition": "PENDING \u2014 independent auditor",
+      "pair_count": 1,
+      "primary_behavioral_gates": [
+        "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_sanctioned_composition_paths_resolvable_on_disk",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner"
+      ]
+    }
+  ],
+  "ebh6_qualification": {
+    "artifact": "final-b5-ebh6-pytest-transcript.txt",
+    "pytest_pass_count": 275,
+    "pytest_suite": "tests/qualification/ebh_6/",
+    "result_summary": "275 passed in 46.92s"
+  },
+  "independent_acceptance": "PENDING \u2014 auditor B6 only",
+  "l9_blocker_gates": {
+    "TEST_EXECUTION_SHA": "f27bfaf2fa42eba1e114b30982d4682cf1578df7",
+    "all_mandatory_pass": true,
+    "mandatory_nodeids": [
+      "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+      "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
+      "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity",
+      "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink",
+      "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented",
+      "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+      "tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass",
+      "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint",
+      "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open",
+      "tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix"
+    ],
+    "mandatory_unique_nodeid_count": 10,
+    "results": [
+      {
+        "nodeid": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test_ee_b1_2_capacity_contract_no_identity_mint",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py::test_r1_sec_01_canonical_composition_rejects_external_fail_open",
+        "status": "PASS"
+      },
+      {
+        "nodeid": "tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix",
+        "status": "PASS"
+      }
+    ],
+    "transcript_artifact": "final-b5-l9-pytest-transcript.txt"
+  },
+  "primary_gates": [
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_observability_fail_closed_without_role",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py::test_ebh6_b3_q2d2_semantic_core_f_pending_independent_acceptance",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py::test_ebh6_config_x_all_concerns_mapped_at_head",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_application_services_production_seam_typing_passes",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py::test_ebh6_contracts_layer_frz_typ_surface_purity_passes",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_persistence_sqlite_closed_world_no_shadow_connects",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_platform_fail_closed_reach_gates",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_platform_hardcoding_invokes_class_b_scans",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py::test_ebh6_e01_sanctioned_composition_paths_resolvable_on_disk",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sanctioned_composition_roots_non_empty",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py::test_ebh6_exit_sqlite_annex_accountability",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-ebh6-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py::test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-l9-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-l9-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-l9-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production",
+      "status": "PASS"
+    },
+    {
+      "evidence_artifacts": [
+        "final-b5-t2-pytest-transcript.txt"
+      ],
+      "nodeid": "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+      "status": "PASS"
+    }
+  ],
+  "t2_gap": {
+    "all_mandatory_pass": true,
+    "artifact": "final-b5-t2-pytest-transcript.txt",
+    "mandatory_nodeid_count": 11,
+    "mandatory_nodeids": [
+      "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments",
+      "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete",
+      "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+      "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+      "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+      "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+      "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability",
+      "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+      "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_observability_fail_closed_without_role",
+      "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph"
+    ]
+  },
+  "unique_primary_gate_count": 25
+}

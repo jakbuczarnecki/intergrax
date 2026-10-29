@@ -9,9 +9,10 @@ import asyncio
 from typing import Generic, TypeVar
 
 from intergrax.contracts.execution_identity import (
-    require_active_execution_identity,
     require_active_execution_id,
+    require_active_execution_identity,
 )
+from intergrax.contracts.structured_inference_pre_model_gate import StructuredInferencePreModelGate
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.inference_profile import (
@@ -21,21 +22,18 @@ from intergrax.runtime.execution.inference_profile import (
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
-from intergrax.runtime.policy.policy_engine import PolicyEngine
-from intergrax.runtime.policy.pre_model_policy_evaluation import (
-    enforce_pre_model_before_structured_inference,
-)
+from intergrax.runtime.policy.pre_model_policy_errors import PreModelPolicyConfigurationError
 
 OutputT = TypeVar("OutputT")
 
 
-class InferenceExecutor(Generic[OutputT]):
+class InferenceExecutor(Generic[OutputT]):  # noqa: UP046
     """Structured direct inference backend behind :class:`ExecutionBoundary`."""
 
     __slots__ = (
         "_default_adapter",
         "_profile_resolver",
-        "_policy_engine",
+        "_pre_model_gate",
         "_governance_evidence_recorder",
     )
 
@@ -44,12 +42,12 @@ class InferenceExecutor(Generic[OutputT]):
         adapter: LLMAdapter,
         *,
         profile_resolver: InferenceProfileResolver | None = None,
-        policy_engine: PolicyEngine | None = None,
+        pre_model_gate: StructuredInferencePreModelGate | None = None,
         governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     ) -> None:
         self._default_adapter = adapter
         self._profile_resolver = profile_resolver
-        self._policy_engine = policy_engine
+        self._pre_model_gate = pre_model_gate
         self._governance_evidence_recorder = governance_evidence_recorder
 
     def _select_adapter(
@@ -61,8 +59,7 @@ class InferenceExecutor(Generic[OutputT]):
             return self._default_adapter
         if self._profile_resolver is None:
             raise InferenceProfileResolutionError(
-                "explicit inference profile requested but no profile resolver "
-                f"is configured: {profile_id!r}",
+                f"explicit inference profile requested but no profile resolver is configured: {profile_id!r}",
             )
         return self._profile_resolver.resolve(profile_id)
 
@@ -86,9 +83,10 @@ class InferenceExecutor(Generic[OutputT]):
         if not adapter.supports_structured_output():
             raise RuntimeError("inference adapter does not support structured output")
 
-        enforce_pre_model_before_structured_inference(
-            self._policy_engine,
-            self._governance_evidence_recorder,
+        if self._pre_model_gate is None:
+            raise PreModelPolicyConfigurationError("pre_model policy engine required")
+
+        self._pre_model_gate(
             adapter=adapter,
             messages=request.input,
             inference_profile_id=request.inference_profile_id,

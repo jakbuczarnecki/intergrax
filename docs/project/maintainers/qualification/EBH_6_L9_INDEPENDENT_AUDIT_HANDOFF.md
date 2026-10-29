@@ -4,11 +4,11 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** (`EV_GROUPS=0`; 23×PENDING independent disposition unchanged) |
-| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
-| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — **T1=0**; 23×PENDING independent disposition unchanged |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
+| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** (final closure wave commit on `development`) |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-final-closure/pytest.log` |
+| **CERTIFICATION_HANDOFF_SHA** | @ final enterprise closure wave — see [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md) |
 | **Historical handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
@@ -21,7 +21,7 @@ New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-closure
 uv run pytest tests/qualification/ebh_6/ tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py tests/qualification/ebh_5/test_ebh_5_reachability_gates.py -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-closure/l3-final.log
 ```
 
-P03 export: `tests/qualification/ebh_6/_p03_handoff_export.py` (`p03_handoff_bundle()` — 133 groups, 23 families, 8 L9 BLK).
+P03 export: `tests/qualification/ebh_6/_p03_handoff_export.py` (`p03_handoff_bundle()` — 133 groups, 23 families, **8× L9 BLK replay** via `l9_blocker_replay` + `tier_census`).
 
 ## Commands @ TEST_EXECUTION_SHA (B2 L1+L2 — historical)
 
@@ -44,6 +44,12 @@ uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrit
 6. L4 log: `.tmp/session/ebh-6-p03-remediation/pytest.log`
 7. [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md)
 8. [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md)
+9. [EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md](EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md)
+10. [EBH_6_Q2D2_DECISION_DOSSIER.md](EBH_6_Q2D2_DECISION_DOSSIER.md)
+11. [EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md](EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md)
+12. [EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md](EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md)
+14. [EBH_6_C0_BASELINE_AUDIT_RECORD.md](EBH_6_C0_BASELINE_AUDIT_RECORD.md)
+15. [EBH_6_TECHNICAL_PRE_CERT_EVIDENCE_DOSSIER.md](EBH_6_TECHNICAL_PRE_CERT_EVIDENCE_DOSSIER.md)
 
 ## Mechanical exit §3.0.8 (verify)
 
@@ -54,7 +60,7 @@ uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrit
 | CONFIG-X mapped | 54/54 |
 | SQLite annex | 38 @ HEAD |
 | Family matrix | 23 rows; **independent 23 × PENDING** |
-| Layer L9 | **16 × L9_EVIDENCE_SUBMITTED** + `_l3_reachability_evidence.py` per-mechanism annex |
+| Layer L9 | **16 × CANDIDATE-RESOLVED** (code SSOT) + `_l3_reachability_evidence.py` annex — **RESOLVED** only via P03 |
 
 ## Limitations (explicit)
 

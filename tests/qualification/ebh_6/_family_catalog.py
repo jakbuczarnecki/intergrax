@@ -62,6 +62,10 @@ def _nid(path: str, test_name: str) -> str:
 _BND = "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
 _EBH6_MECH = "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py"
 _EBH6_REG = "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py"
+_Q2D2_REMEDIATION_NID = _nid(
+    "tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py",
+    "test_ebh6_q2d2_path_b_remediation_proves_registered_violation_removed",
+)
 _EBH6_CFG = "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py"
 _EBH6_FAM = "tests/qualification/ebh_6/test_ebh_6_architecture_family_matrix_integrity.py"
 _EBH5_MECH = "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py"
@@ -96,10 +100,19 @@ _EBH6_FAMILY_CATALOG_BASE: tuple[ArchitectureFamilyRecertRow, ...] = (
         ("intergrax/runtime/", "intergrax/contracts/"),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.CURRENT,
-        "EBH6-BLK-L9-OWN-01 — no ownership rescan",
-        (_nid(_EBH6_FAM, "test_ebh6_family_catalog_covers_applicable_themes"),),
+        "EBH6-BLK-L9-OWN-01 — EE final arch scoped replay (platform duplicate scan → DUP-X)",
+        (
+            _nid(
+                "tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py",
+                "test_ee_final_arch_owner_matrix_documented",
+            ),
+            _nid(
+                "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py",
+                "test_ee_a1_p0_inventory_reports_zero_production_bypass",
+            ),
+        ),
         "P1",
-        "No new duplicate semantic owner",
+        "FRZ-OWN scoped @ EE-FINAL-ARCH + EE-A1 — not DUP-X closed-world duplicate scan",
         FamilyIndependentDisposition.PENDING,
         ImplementerProposedDisposition.PENDING,
     ),
@@ -113,9 +126,16 @@ _EBH6_FAMILY_CATALOG_BASE: tuple[ArchitectureFamilyRecertRow, ...] = (
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.CURRENT,
         "",
-        (_nid(_EBH6_REG, "test_ebh6_no_prohibited_unresolved_in_scope"),),
+        (
+            _nid(_EBH6_REG, "test_ebh6_prohibited_unresolved_zero"),
+            _nid(_BND, "test_hardening_3_contracts_do_not_import_runtime_except_allowlist"),
+            _nid(
+                "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py",
+                "test_ebh_2i_contract_surface_purity_gate_passes",
+            ),
+        ),
         "P1",
-        "No contract leakage finding PROHIBITED unresolved",
+        "Register PROHIBITED=0 + tier import boundary + EBH-2I contract surface purity",
         FamilyIndependentDisposition.PENDING,
         ImplementerProposedDisposition.PENDING,
     ),
@@ -128,12 +148,22 @@ _EBH6_FAMILY_CATALOG_BASE: tuple[ArchitectureFamilyRecertRow, ...] = (
         ("intergrax/runtime/nexus/",),
         EBH5_INDEPENDENT_AUDIT_SHA[:12] + "…",
         FamilyEvidenceFreshness.CURRENT,
-        "Q2-D2 ratified debt disposition",
-        (_nid(_EBH6_REG, "test_ebh6_tracked_debt_findings_ratified"),),
+        "Path B remediated @ HEAD — E01/Protocol 03 independent acceptance pending",
+        (
+            _Q2D2_REMEDIATION_NID,
+            _nid(
+                "tests/unit/runtime/nexus/test_authoritative_decision_exposure_propagation.py",
+                "test_b13_ambiguous_candidates_fail_closed",
+            ),
+            _nid(
+                "tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py",
+                "test_ebh6_application_services_production_seam_typing_passes",
+            ),
+        ),
         "P3-if-mandatory",
-        "Q2-D2 RATIFIED or remediated before closure",
+        "Q2-D2 Path B FRZ-TYP-03 remediation + APP-TYP registry (E02-OP-01) — independent acceptance pending",
         FamilyIndependentDisposition.PENDING,
-        ImplementerProposedDisposition.PENDING,
+        ImplementerProposedDisposition.PASS_SCOPED,
     ),
     ArchitectureFamilyRecertRow(
         "PLG",

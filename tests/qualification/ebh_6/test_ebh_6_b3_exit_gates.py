@@ -21,11 +21,14 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
-def test_ebh6_b3_evidence_required_groups_zero_at_handoff() -> None:
+def test_ebh6_b3_evidence_required_matches_t2_bundle_gaps() -> None:
+    from tests.qualification.ebh_6._t2_evidence_bundles import mandatory_insufficient_pairs
+
     groups = aj_group_by_layer_class()
-    ev = [g for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED]
-    assert not ev, [g.group_id for g in ev]
-    assert count_evidence_required_groups() == 0
+    expected = mandatory_insufficient_pairs()
+    ev = {(g.layer, g.detection_class) for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED}
+    assert ev == expected, sorted(ev ^ expected)
+    assert count_evidence_required_groups() == len(expected)
 
 
 def test_ebh6_b3_all_applicable_groups_have_class_gate_ref() -> None:
@@ -36,9 +39,9 @@ def test_ebh6_b3_all_applicable_groups_have_class_gate_ref() -> None:
         assert gate in group.evidence_refs, group.group_id
 
 
-def test_ebh6_b3_q2d2_semantic_core_f_is_finding() -> None:
+def test_ebh6_b3_q2d2_semantic_core_f_pending_independent_acceptance() -> None:
     group = aj_group_by_layer_class()[("semantic_core", "F")]
-    assert group.outcome == AjControlOutcome.FINDING, group.outcome
+    assert group.outcome == AjControlOutcome.PASS_CANDIDATE, group.outcome
     assert "Q2-D2" in group.invariant_proves or "EBH6-DEBT-Q2-D2" in group.invariant_proves
 
 
@@ -53,7 +56,47 @@ def test_ebh6_b3_sixteen_layers_status_matches_group_outcomes() -> None:
     layer_rows = [row for row in all_hardcoding_findings() if row.finding_id.startswith("EBH6-LAYER-")]
     assert len(layer_rows) == 16
     for layer in EBH6_AUDIT_LAYERS:
-        assert layer_register_status_for_layer(layer) == FindingStatus.CANDIDATE_RESOLVED, layer
+        expected = layer_register_status_for_layer(layer)
+        row = next(r for r in layer_rows if r.layer == layer)
+        assert row.status == expected, layer
+        has_t1 = any(
+            g.outcome == AjControlOutcome.EVIDENCE_REQUIRED
+            for (ly, _), g in aj_group_by_layer_class().items()
+            if ly == layer
+        )
+        if has_t1:
+            assert expected == FindingStatus.L9_EVIDENCE_SUBMITTED, layer
+        else:
+            assert expected == FindingStatus.CANDIDATE_RESOLVED, layer
+
+
+def test_ebh6_protocol03_contract_tier_coverage() -> None:
+    from tests.qualification.ebh_6._t2_evidence_bundles import ImplementerReview, bundle_review_disposition
+    from tests.qualification.ebh_6._tier_audit import EvidenceTier, evidence_tier_for_pair, tier_census
+
+    groups = aj_group_by_layer_class()
+    census = tier_census()
+    assert len(groups) == 133
+    assert census[EvidenceTier.T1.value] == count_evidence_required_groups()
+    for (layer, cls), group in groups.items():
+        tier = evidence_tier_for_pair(layer, cls)
+        review = bundle_review_disposition(layer, cls)
+        if tier == EvidenceTier.T1:
+            assert review in (ImplementerReview.INSUFFICIENT, ImplementerReview.NA_WITH_EVIDENCE), group.group_id
+            assert group.outcome == AjControlOutcome.EVIDENCE_REQUIRED, group.group_id
+        elif tier == EvidenceTier.T2:
+            assert review == ImplementerReview.ACCEPTED, group.group_id
+            assert group.outcome == AjControlOutcome.PARTIAL_CANDIDATE, group.group_id
+            assert group.scope_limitation.strip()
+        else:
+            assert group.outcome in (
+                AjControlOutcome.PASS_CANDIDATE,
+                AjControlOutcome.FINDING,
+            ), group.group_id
+        if group.outcome == AjControlOutcome.FINDING:
+            assert any("register" in ref.lower() or "_findings_register" in ref for ref in group.evidence_refs), (
+                group.group_id
+            )
 
 
 def test_ebh6_b3_pair_count_matches_l9a() -> None:

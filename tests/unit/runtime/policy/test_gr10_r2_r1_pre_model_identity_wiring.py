@@ -4,12 +4,9 @@
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -19,10 +16,7 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.contracts.runtime_policy_context import PreModelPhase, PreModelPolicyContext
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.execution.inference import InferenceExecutor
-from intergrax.runtime.execution.request import ExecutionRequest
 from intergrax.runtime.governance.active_execution_governance_identity import (
     ActiveExecutionGovernanceIdentity,
     bind_active_execution_governance_identity,
@@ -44,6 +38,7 @@ from testing_support.inference_governance_wiring import (
     TEST_INFERENCE_PRINCIPAL_ID,
     TEST_INFERENCE_TENANT_ID,
     TEST_INFERENCE_WORKSPACE_ID,
+    build_test_inference_executor_without_evidence,
 )
 from tests.unit.runtime.execution.test_inference_executor import (
     RiskAssessment,
@@ -82,7 +77,7 @@ async def test_inference_pre_model_requires_active_governance_identity() -> None
         execution_id=mint_execution_id(),
     )
     try:
-        executor = InferenceExecutor(adapter, policy_engine=PolicyEngine())
+        executor = build_test_inference_executor_without_evidence(adapter, policy_engine=PolicyEngine())
         with pytest.raises(PreModelPolicyConfigurationError, match="governance identity"):
             await executor.execute(_risk_request())
     finally:
@@ -227,9 +222,7 @@ def test_orchestration_principal_helper_no_canonical_identity_fallback() -> None
 
 
 class _RecordingPreModelRuntime:
-    def evaluate_pre_llm(
-        self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
-    ):
+    def evaluate_pre_llm(self, *, tenant_id, principal_id, agent_id=None, message_count, context=None):
         self.last_principal = principal_id
         return PolicyDecision(
             action=PolicyAction.ALLOW,

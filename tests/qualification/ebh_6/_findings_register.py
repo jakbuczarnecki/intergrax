@@ -213,14 +213,20 @@ _TRACKED_DEBT: Final[tuple[HardcodingFindingRecord, ...]] = (
         layer="semantic_core",
         detection_class=HardcodingDetectionClass.F,
         classification=HardcodingFindingClassification.REQUIRES_ADR,
-        location="intergrax/runtime/nexus/nexus_loop.py (AuthoritativeDecisionExposure typing seam)",
+        location=(
+            "intergrax/runtime/nexus/nexus_loop.py + orchestration/nexus_decision_exposure.py "
+            "(AuthoritativeDecisionExposure publication path)"
+        ),
         production_effective=ProductionEffective.YES,
         concern_ids=("governance.decision_exposure",),
         violated_invariant="FRZ-TYP-03",
         remediation_class=RemediationClass.ADR,
-        status=FindingStatus.RATIFIED,
+        status=FindingStatus.CANDIDATE_RESOLVED,
         evidence_sha=evidence_git_head_sha(),
-        notes="Tracked typing debt — ratified for EBH-6 wave; EBH-7 may require remediation",
+        notes=(
+            "Historical EBH-6 wave RATIFIED → Path B remediated @ HEAD (NexusLoop typing aligned); "
+            "pending E01-PRE-01 / Protocol 03 independent acceptance — not EBH-6 CLOSED"
+        ),
     ),
     HardcodingFindingRecord(
         finding_id="EBH6-DEBT-BND-COMPAT-R3",

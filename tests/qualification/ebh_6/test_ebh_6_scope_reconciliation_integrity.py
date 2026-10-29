@@ -23,6 +23,9 @@ def test_ebh6_scope_dossier_content_controls() -> None:
     sha = evidence_git_head_sha()
     assert "IMPLEMENTATION_SHA" in text
     assert sha in text or "*(set @ qual commit)*" in text or "CERTIFICATION_HANDOFF_SHA" in text
+    assert "Evidence tier audit @ HEAD" in text
+    assert "_t2_evidence_bundles.py" in text or "T2-AUD" in text
+    assert "_tier_audit.py" in text
     assert "_l3_aj_group_reconciliation.py" in text
     assert "_family_l9_evidence.py" in text
     assert "CONFIG-X" in text
@@ -33,13 +36,16 @@ def test_ebh6_scope_dossier_content_controls() -> None:
     assert semantic.is_file()
     prod = _REPO / "docs/project/maintainers/qualification/EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md"
     assert prod.is_file()
-    assert "PARTIAL / EXACT BLOCKERS" in prod.read_text(encoding="utf-8")
+    prod_text = prod.read_text(encoding="utf-8")
+    assert "PARTIAL / EXACT BLOCKERS" in prod_text or "EBH-6 — CLOSED" in prod_text
     assert _ROADMAP.is_file()
     roadmap_head = _ROADMAP.read_text(encoding="utf-8")[:120000]
     assert "EBH" in roadmap_head and "3.0.8" in roadmap_head
 
 
 def test_ebh6_scope_aj_groups_complete() -> None:
+    from tests.qualification.ebh_6._t2_evidence_bundles import mandatory_insufficient_pairs
+
     assert_aj_group_reconciliation_complete()
     from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
         AjControlOutcome,
@@ -49,9 +55,16 @@ def test_ebh6_scope_aj_groups_complete() -> None:
 
     groups = aj_group_by_layer_class()
     ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
+    expected = len(mandatory_insufficient_pairs())
     assert len(groups) == 133
     assert ev_req == count_evidence_required_groups()
-    assert ev_req == 0
+    assert ev_req == expected
+
+
+def test_ebh6_tier_audit_optional_session_artifact() -> None:
+    from tests.qualification.ebh_6._tier_audit import write_optional_session_tier_audit
+
+    write_optional_session_tier_audit(".tmp/session/ebh-6-cert-handoff", evidence_git_head_sha())
 
 
 def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
@@ -93,9 +106,12 @@ def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:
             assert got[idx].applicable is want, (layer, letter, want, got[idx].applicable)
             if got[idx].applicable:
                 applicable += 1
+    from tests.qualification.ebh_6._t2_evidence_bundles import mandatory_insufficient_pairs
+
     groups = aj_group_by_layer_class()
     ev_req = sum(1 for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED)
+    expected = len(mandatory_insufficient_pairs())
     assert applicable == 133
     assert len(groups) == 133
     assert ev_req == count_evidence_required_groups()
-    assert ev_req == 0
+    assert ev_req == expected
