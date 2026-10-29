@@ -92,15 +92,21 @@ def assert_ebh6_sqlite_annex_accountability() -> None:
     assert_closed_world_sqlite_accountability()
 
 
-def assert_ebh6_sanctioned_composition_paths_resolvable() -> None:
-    """TRACE-X sanctioned sites and composition-root hints must exist on disk @ HEAD."""
-    sanctioned = discover_sanctioned_production_composition_roots()
-    hints = discover_composition_root_paths()
+def assert_ebh6_sanctioned_composition_paths_resolvable(
+    *,
+    qualification_extra_paths: frozenset[str] = frozenset(),
+) -> None:
+    """TRACE-X sanctioned sites and composition-root hints must exist on disk @ HEAD.
+
+    ``qualification_extra_paths`` — test-only injection (EBH-6 qual); not production config.
+    """
+    sanctioned = discover_sanctioned_production_composition_roots() | qualification_extra_paths
+    hints = discover_composition_root_paths() | qualification_extra_paths
     assert sanctioned, "sanctioned production composition registry empty"
     assert hints, "composition root hints must resolve"
     missing = sorted(path for path in sanctioned | hints if not (_REPO_ROOT / path.replace("\\", "/")).is_file())
     assert not missing, f"missing composition paths on disk: {missing}"
-    for path in sanctioned:
+    for path in discover_sanctioned_production_composition_roots():
         rel = path.replace("\\", "/")
         text = (_REPO_ROOT / rel).read_text(encoding="utf-8")
         lowered = text.lower()

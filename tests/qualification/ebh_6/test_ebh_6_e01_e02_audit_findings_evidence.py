@@ -59,10 +59,8 @@ def test_ebh6_e01_negative_class_b_hardcoding_literal() -> None:
 
 
 def test_ebh6_e01_negative_sanctioned_composition_missing_path() -> None:
-    from tests.qualification.ebh_6._closed_world_discovery import _REPO_ROOT
-
-    fake = "intergrax/__ebh6_fake_missing_composition_root__.py"
-    assert not (_REPO_ROOT / fake).is_file()
-    missing = [fake]
-    with pytest.raises(AssertionError, match="missing composition paths"):
-        assert not missing, f"missing composition paths on disk: {missing}"
+    fake = "intergrax/__ebh6_qualification_missing_composition_root__.py"
+    with pytest.raises(AssertionError, match="missing composition paths on disk"):
+        assert_ebh6_sanctioned_composition_paths_resolvable(
+            qualification_extra_paths=frozenset({fake}),
+        )

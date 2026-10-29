@@ -61,10 +61,11 @@
 
 | Field | Value |
 | --- | --- |
-| **Gate** | [`test_ebh_6_q2d2_dual_path.py`](../../../tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py) `test_ebh6_q2d2_technical_disposition_path_a_eligible_for_operator` |
-| **Technical result** | **`PATH A — ELIGIBLE FOR OPERATOR RATIFICATION`** |
+| **Gate** | [`test_ebh_6_q2d2_dual_path.py`](../../../tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py) `test_ebh6_q2d2_technical_disposition_from_adr_scope_not_markers` |
+| **Technical result** | **`PATH A NOT ELIGIBLE`** — P0-B-D1 ADR covers exposure model but **not** `NexusLoop._resolve_authoritative_decision_exposure -> object \| None` erasure @ HEAD |
+| **Behavioral replay** | `test_authoritative_decision_exposure_propagation` subset via [`_q2d2_technical_qualification.py`](../../../tests/qualification/ebh_6/_q2d2_technical_qualification.py) |
+| **Path B scope (prep only)** | Narrow nexus projection typing per FRZ-TYP-03 — **OD-EBH6-01** |
 | **Operator OD-EBH6-Q2D2** | **OPEN** — agent does not record APPROVED |
-| **Path B trigger** | Operator/auditor rejects ADR scope or ratification for production_effective YES seam |
 
 ## C3-01 — Path A audit (implementer analysis @ HEAD)
 
