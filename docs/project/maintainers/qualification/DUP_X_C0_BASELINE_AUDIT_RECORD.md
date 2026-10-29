@@ -67,4 +67,17 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 
 **Status:** `DUP-X — FINAL EVIDENCE RECONCILED @ CURRENT_PUBLICATION_HEAD — NOT CLOSED`
 
-**Remaining mandatory gates (not C0 failures):** OD-DUPX-02 · OD-DUPX-01 · Protocol DUP-X-03 independent **B6 PASS** · OD-DUPX-08.
+**Remaining mandatory gates (not C0 failures):** OD-DUPX-01 · Protocol DUP-X-03 independent **B6 PASS** · OD-DUPX-08. (**OD-DUPX-02 APPROVED — 2026-10-29**.)
+
+## C0-05 Block I parent-closure qual (@ `0e19bc28a6dc7700c633e9f2179974bb9238fbe6`)
+
+| Label | SHA | Role |
+| --- | --- | --- |
+| **BLOCK_I_START** | `5b607c698f17b4fb1ca678d0c6204131e2971834` | Pre-Block-I publication HEAD |
+| **BLOCK_I_IMPLEMENTATION_SHA** (**E**) | `053040ef758f4cf94b2844a08abe5a56244b666b` | Qual hardening |
+| **BLOCK_I_EVIDENCE_PUBLICATION_SHA** (**F**) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | Evidence + Protocol/OD templates |
+| **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | **40 passed** — `.tmp/proof/dup-x-parent-closure-l3/run.log` |
+| **BLOCK_I_RECONCILIATION_SHA** (**G**) | `6e0ccbf0c293964d239ef80813b8b38fa07746e1` | Manifest + C0-05 + protocol ladder |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | Qual + evidence before manifest Commit **G** |
+
+**Status:** `DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6 — NOT CLOSED`

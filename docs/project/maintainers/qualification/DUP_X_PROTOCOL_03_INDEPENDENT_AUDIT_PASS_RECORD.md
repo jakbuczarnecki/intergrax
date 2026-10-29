@@ -5,9 +5,10 @@
 | **Record type** | ECAP §2.B **B6** — Independent exact-SHA acceptance |
 | **Status** | **PENDING — NOT ISSUED** (template for external auditor) |
 | **Verdict** | *(auditor completes)* |
-| **INDEPENDENT_AUDIT_BASELINE_SHA** | *(set @ audit start — recommend HEAD after Block II Commit G)* |
-| **QUALIFICATION_EXECUTION_SHA** | *(B5 replay SHA — see manifest)* |
-| **EVIDENCE_PUBLICATION_SHA** | *(Block II evidence commits)* |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
+| **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` — **40 passed** — `.tmp/proof/dup-x-parent-closure-l3/run.log` |
+| **EVIDENCE_PUBLICATION_SHA** (Block I **F**) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
+| **BLOCK_I_IMPLEMENTATION_SHA** (**E**) | `053040ef758f4cf94b2844a08abe5a56244b666b` |
 | **Auditor identity** | Independent auditor — Protocol DUP-X-03 B1–B6 |
 | **Date** | *(auditor)* |
 

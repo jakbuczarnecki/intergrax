@@ -39,7 +39,8 @@
 | **WAVE1_EVIDENCE_PUBLICATION_SHA** | `3a2d47d2c66fe60a4443d9800678ae2681a7f688` | Wave 1 Commit **B** — `DUP_X_*.md` **except** this manifest |
 | **WAVE1_TEST_EXECUTION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | HEAD @ post-publish `uv run pytest tests/qualification/dup_x/ -q` |
 | **WAVE1_MANIFEST_PUBLICATION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | Wave 1 Commit **C** — ladder only; **not** WAVE1_EVIDENCE_PUBLICATION_SHA |
-| **CURRENT_PUBLICATION_HEAD** | `0159c2a18b39547bcd60823489c1a4bea1229b38` | Commit **D** · final evidence reconciliation |
+| **CURRENT_PUBLICATION_HEAD** | `0159c2a18b39547bcd60823489c1a4bea1229b38` | Commit **D** · Wave 1 final evidence (historical) |
+| **BLOCK_I_CURRENT_PUBLICATION_HEAD** | `6e0ccbf0c293964d239ef80813b8b38fa07746e1` | Commit **G** · Block I reconciliation (supersedes narrative HEAD) |
 
 **Historical (first publication @ AUDITED_HEAD `8245b747`):** rows in **Evidence chain (@ Commit C)** above — preserved unchanged.
 
@@ -133,6 +134,24 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 
 ## Operator verdict
 
-**DUP-X — FINAL EVIDENCE RECONCILED @ `0159c2a18b39547bcd60823489c1a4bea1229b38` — READY FOR INDEPENDENT PROTOCOL 03 B6**
+**DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6** — audit @ **INDEPENDENT_AUDIT_BASELINE_SHA** `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` · narrative **CURRENT_PUBLICATION_HEAD** `6e0ccbf0c293964d239ef80813b8b38fa07746e1`
 
-Qual + narrative on `development`; evidence SHAs A/B recorded; **TEST_EXECUTION_SHA** finalized after publication pytest.
+Qual + narrative on `development`; Block I **40 passed** @ `0e19bc28a…`; audit @ **INDEPENDENT_AUDIT_BASELINE_SHA** (qual HEAD before Commit **G** narrative).
+
+## Block I operator commit split (executed)
+
+| Commit | SHA | Paths |
+| --- | --- | --- |
+| **E** | `053040ef758f4cf94b2844a08abe5a56244b666b` | `tests/qualification/dup_x/**` |
+| **F** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | Block I evidence docs + PASS/OD templates |
+| **G** | `6e0ccbf0c293964d239ef80813b8b38fa07746e1` | Manifest + C0-05 + protocol/dossier ladder |
+
+## Validation (Block I L3 @ QUALIFICATION_EXECUTION_SHA)
+
+| Check | Result |
+| --- | --- |
+| Command | `uv run pytest tests/qualification/dup_x/ -q` |
+| Exit code | **0** |
+| Tests | **40 passed** |
+| Log | `.tmp/proof/dup-x-parent-closure-l3/run.log` |
+| **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
