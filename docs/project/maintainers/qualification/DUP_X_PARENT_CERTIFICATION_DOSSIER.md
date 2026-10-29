@@ -11,6 +11,7 @@
 | **WAVE1_IMPLEMENTATION_SHA** | `44759ed4db69a16fc07b837d9ed87d29a235163f` (Wave 1 Commit **A**) — [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
 | **WAVE1_EVIDENCE_PUBLICATION_SHA** | `3a2d47d2c66fe60a4443d9800678ae2681a7f688` (Wave 1 Commit **B**) — not Wave 1 manifest Commit **C** |
 | **WAVE1_TEST_EXECUTION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` · post-publish log |
+| **WAVE1_FINAL_EVIDENCE_RECONCILIATION_SHA** | `0159c2a18b39547bcd60823489c1a4bea1229b38` (Commit **D**) — **CURRENT_PUBLICATION_HEAD** |
 | **Publication ladder SSOT** | [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
 | **ECAP** | ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL — parent B1–B6 handoff |
 
@@ -25,8 +26,8 @@ Cross-tier duplicate/bypass census (DUP-01..14), responsibility families (15), E
 | A | Closed-world inventory + candidate classification |
 | B | Qual gates — class D env slug fence, COMPAT-R3 negative import test |
 | C | CONFIG-X ∪ EBH-5 hints; tools_base production import gate |
-| D | Mechanical exit gates + Protocol 03 package (**READY FOR INDEPENDENT REVIEW**) |
-| **Wave 1** | GAP closure evidence + parent closure mechanical gates (**NOT Protocol PASS**) |
+| D | Mechanical exit gates + Protocol 03 package (**FINAL EVIDENCE RECONCILED — not PASS**) |
+| **Wave 1** | GAP closure evidence + parent closure mechanical gates (**10/10 PASS** @ reconciliation HEAD) |
 
 ## Open items (not parent CLOSED)
 
@@ -45,11 +46,12 @@ git rev-parse HEAD
 New-Item -ItemType Directory -Force -Path .tmp/proof/dup-x-wave-d
 uv run pytest tests/qualification/dup_x/ -q 2>&1 | Tee-Object -FilePath .tmp/proof/dup-x-wave-d/run.log
 uv run pytest tests/qualification/ebh_6/test_ebh_6_b2_layer_closed_world_integrity.py -q
-# NPSC-4.2 @ HEAD may fail (allowlist drift) — optional; not counted as DUP-X L2 primary
+# NPSC-4.2 @ HEAD — excluded from DUP-X mandatory (see exclusion record)
+uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py -q
 ```
 
 ## FINAL STATUS
 
-**DUP-X — WAVE 1 IMPLEMENTATION COMPLETE — READY FOR INDEPENDENT REVIEW — NOT CLOSED**
+**DUP-X — FINAL EVIDENCE RECONCILED @ `0159c2a18b39547bcd60823489c1a4bea1229b38` — READY FOR INDEPENDENT PROTOCOL 03 B6 — NOT CLOSED**
 
 Agent **forbidden:** Protocol DUP-X-03 PASS · OD-DUPX-08 · roadmap §5 update.

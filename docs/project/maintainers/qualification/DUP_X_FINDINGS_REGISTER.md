@@ -52,5 +52,6 @@
 | **DUP-X mapping** | Architecture allowlist drift — **not** a DUP-01..14 invariant |
 | **DUP invariants** | Duplicate/bypass census + factory-first Class D + COMPAT-R3 fence remain L2 primary |
 | **Wave 1 action** | Document only — **no** NPSC allowlist change |
+| **Exclusion record** | [`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md) — 10 `_orchestration_backend` modules · **excluded from DUP-X mandatory** |
 
 **Agent forbidden:** forge Protocol 03 PASS · OD-DUPX-08 · declare DUP-X CLOSED.

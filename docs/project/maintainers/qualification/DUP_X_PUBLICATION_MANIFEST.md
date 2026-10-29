@@ -39,6 +39,7 @@
 | **WAVE1_EVIDENCE_PUBLICATION_SHA** | `3a2d47d2c66fe60a4443d9800678ae2681a7f688` | Wave 1 Commit **B** — `DUP_X_*.md` **except** this manifest |
 | **WAVE1_TEST_EXECUTION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | HEAD @ post-publish `uv run pytest tests/qualification/dup_x/ -q` |
 | **WAVE1_MANIFEST_PUBLICATION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | Wave 1 Commit **C** — ladder only; **not** WAVE1_EVIDENCE_PUBLICATION_SHA |
+| **CURRENT_PUBLICATION_HEAD** | `0159c2a18b39547bcd60823489c1a4bea1229b38` | Commit **D** · final evidence reconciliation |
 
 **Historical (first publication @ AUDITED_HEAD `8245b747`):** rows in **Evidence chain (@ Commit C)** above — preserved unchanged.
 
@@ -49,7 +50,33 @@
 | **A** | `44759ed4db69a16fc07b837d9ed87d29a235163f` | `tests/qualification/dup_x/**` |
 | **B** | `3a2d47d2c66fe60a4443d9800678ae2681a7f688` | All `DUP_X_*.md` **except** this manifest |
 | **C** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | This manifest + Wave 1 SHA ladder |
-| **D** (optional) | *(Commit D)* | **WAVE1_TEST_EXECUTION_SHA** attestation; **FINAL_PUBLICATION_HEAD** @ Commit D |
+| **D** (final evidence reconciliation) | `0159c2a18b39547bcd60823489c1a4bea1229b38` | Doc-only reconciliation · **CURRENT_PUBLICATION_HEAD** · **FINAL_PUBLICATION_HEAD** |
+
+## Validation (final evidence reconciliation @ CURRENT_PUBLICATION_HEAD)
+
+| Check | Result |
+| --- | --- |
+| **CURRENT_PUBLICATION_HEAD** | `0159c2a18b39547bcd60823489c1a4bea1229b38` |
+| Command | `uv run pytest tests/qualification/dup_x/ -q` |
+| Exit code | **0** |
+| Tests | **36 passed** |
+| Parent closure gates | **10 passed** — `test_dup_x_parent_closure_mechanical_gates.py` |
+| Log | `.tmp/proof/dup-x-03-final-evidence/run.log` |
+
+## Final evidence reconciliation commit (operator doc-only)
+
+**Purpose:** Single operator commit capturing DUP-X-03 final evidence reconciliation (no qual SSOT change in this slice).
+
+| Path | Action |
+| --- | --- |
+| `docs/project/maintainers/qualification/DUP_X_C0_BASELINE_AUDIT_RECORD.md` | C0-04 SHA ladder + reconciliation status |
+| `docs/project/maintainers/qualification/DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md` | B5 dual attestation · B1–B6 handoff table |
+| `docs/project/maintainers/qualification/DUP_X_PARENT_CERTIFICATION_DOSSIER.md` | Commit **D** · final status |
+| `docs/project/maintainers/qualification/DUP_X_PUBLICATION_MANIFEST.md` | This section + validation @ HEAD |
+| `docs/project/maintainers/qualification/DUP_X_CLOSURE_MATRIX.md` | Protocol row reconciliation note |
+| `docs/project/maintainers/qualification/DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md` | NPSC-4.2 ten-module exclusion record |
+
+**Excluded from this commit:** `tests/qualification/dup_x/**` (frozen @ Wave 1 Commit **A** `44759ed4…`); NPSC test allowlists; production code.
 
 ## Validation (publication @ TEST_EXECUTION_SHA)
 
@@ -100,12 +127,12 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 
 ## Publication boundaries (unchanged)
 
-- **NPSC-4.2** optional / not DUP-X L2 primary blocker — documented in [`DUP_X_FINDINGS_REGISTER.md`](DUP_X_FINDINGS_REGISTER.md) § NPSC-4.2 exclusion; no allowlist change in Wave 1.
+- **NPSC-4.2** optional / not DUP-X L2 primary blocker — [`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md); no allowlist change in Wave 1.
 - **DUPX-GAP-*** **PASS @ Wave 1** (evidence) — parent stage still **NOT CLOSED** until OD-DUPX-08 + Protocol PASS.
 - Parent dossier: **NOT CLOSED** · no independent PASS · no global **FRZ-*** PASS claim.
 
 ## Operator verdict
 
-**DUP-X — WAVE 1 IMPLEMENTATION COMPLETE — PUBLISHED / READY FOR INDEPENDENT PROTOCOL 03 AUDIT**
+**DUP-X — FINAL EVIDENCE RECONCILED @ `0159c2a18b39547bcd60823489c1a4bea1229b38` — READY FOR INDEPENDENT PROTOCOL 03 B6**
 
 Qual + narrative on `development`; evidence SHAs A/B recorded; **TEST_EXECUTION_SHA** finalized after publication pytest.
