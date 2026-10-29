@@ -2,17 +2,17 @@
 
 | Field | Value |
 | --- | --- |
-| **Status** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN)** — tier contract **T1=0** @ **CERTIFICATION_HANDOFF_SHA**; **not** Protocol 03 PASS |
+| **Status** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — tier **T1=2** @ **CERTIFICATION_HANDOFF_SHA**; **not** Protocol 03 PASS |
 | **Closure plan authority** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ **PLAN_PUBLICATION_SHA** `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
 | **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
 | **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** (mechanical: `_evidence_manifest.evidence_git_head_sha()`) |
-| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-cert-handoff/pytest.log` |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-t2-repair/pytest.log` |
 | **CERTIFICATION_HANDOFF_SHA** | @ B5 cert handoff commit on `development` |
 
 Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), [`_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py), [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py), [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
 
-**Normative crosswalk (T-NORM-01 @ B1):** L9-A matrix in [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) ↔ `_layer_evidence.layer_aj_applicability` — **133** applicable (layer × class) pairs; B5 class gates (`_aj_class_gate_scan.py`) + **T1/T2/T3 tier census** (`_tier_audit.py`) bind parametrized `test_ebh6_aj_class_gate` + reused qual gates to `_l3_aj_group_reconciliation.py` — **0 × `EVIDENCE_REQUIRED`** when **T1=0**.
+**Normative crosswalk (T-NORM-01 @ B1):** L9-A matrix in [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md) ↔ `_layer_evidence.layer_aj_applicability` — **133** applicable pairs; B5 class gates + **T2 bundle review** ([EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md](EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md), `_t2_evidence_bundles.py`) + tier census (`_tier_audit.py`) — **`EVIDENCE_REQUIRED` = T2-AUD INSUFFICIENT** (not false scanner T2).
 
 ## Evidence tier audit @ HEAD
 
@@ -20,8 +20,8 @@ Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](..
 
 | Tier | Groups @ B5 handoff | Outcome mapping |
 | --- | ---: | --- |
-| **T1** | **0** | `EVIDENCE_REQUIRED` |
-| **T2** | **131** | `PARTIAL_CANDIDATE` (reuse + effective layer-scoped scanner) |
+| **T1** | **2** | `EVIDENCE_REQUIRED` (`contracts`×F, `application_services`×F) |
+| **T2** | **129** | `PARTIAL_CANDIDATE` (T2-AUD **ACCEPTED** bundles) |
 | **T3** | **2** | `PASS_CANDIDATE` (`execution`×B) + `FINDING` (`semantic_core`×F / OD-EBH6-Q2D2 OPEN) |
 
 **133** applicable pairs · **49** L3 mechanism records · L3→A–J crosswalk: `l3_mechanism_to_aj_groups()` in `_tier_audit.py`.
@@ -36,15 +36,15 @@ Roadmap authority: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM
 | --- | --- | --- |
 | **B1** | T-NORM-01, T-SHA-01, T-DOC-01 | L9-A ↔ `_layer_evidence`; single SHA ladder — **done** |
 | **B2** | T-LAY-* (8 packages, 16 layers) | Verified closed-world inventory + L3 **per layer** — **done** (`test_ebh_6_b2_layer_closed_world_integrity.py`); **not** auto-RESOLVED |
-| **B3** | T-CLS-* | **133** groups adjudicated; **0** `EVIDENCE_REQUIRED`; class gates + reuse bundle @ B5 — **not** Protocol 03 PASS |
+| **B3** | T-CLS-* | **133** groups adjudicated; **2** `EVIDENCE_REQUIRED` (T2-AUD); class gates + reuse @ HEAD — **not** Protocol 03 PASS |
 | **B4–B7** | Families, publication, P03, OD-EBH6-08 | See closure plan §6 — **no B6** before B5 zero gap groups |
 
 ## SCOPE-01 — A–J grouped reconciliation (@ IMPLEMENTATION_SHA)
 
 | Outcome (133 groups) | Count |
 | --- | ---: |
-| **EVIDENCE_REQUIRED** (mandatory gap @ HEAD) | **0** (T1 tier) |
-| **PARTIAL_CANDIDATE** | **131** (T2 tier) |
+| **EVIDENCE_REQUIRED** (mandatory gap @ HEAD) | **2** (T1 tier — `contracts_typing` bundle) |
+| **PARTIAL_CANDIDATE** | **129** (T2 tier) |
 | **PASS_CANDIDATE** | 1 (`execution` × B — EE-A1) |
 | **FINDING** | 1 (`semantic_core` × F — Q2-D2) |
 
@@ -65,7 +65,7 @@ L3 obligation cells (480 mechanism rollup): see [EBH_6_CURRENT_HEAD_VENDOR_NEUTR
 
 ## 16 layers — register status
 
-All `EBH6-LAYER-*`: **`CANDIDATE-RESOLVED`** with ≥3 L3 mechanisms each (49 total annex rows incl. `L3-RAG-04` graph bootstrap) — **not** independent RESOLVED (B6 acceptance only).
+**14 × CANDIDATE-RESOLVED**, **2 × L9_EVIDENCE_SUBMITTED** (`contracts`, `application_services` — class F T2-AUD gap). ≥3 L3 mechanisms each (49 total annex rows) — **not** independent RESOLVED (B6 acceptance only).
 
 ## B2 — T-LAY package outcomes (@ HEAD)
 
@@ -96,7 +96,7 @@ All `EBH6-LAYER-*`: **`CANDIDATE-RESOLVED`** with ≥3 L3 mechanisms each (49 to
 
 | ID | Status |
 | --- | --- |
-| **109 × EVIDENCE_REQUIRED groups** | **CLOSED @ B5** — T1=0; tier contract via `test_ebh6_protocol03_contract_tier_coverage` |
+| **109 × EVIDENCE_REQUIRED groups** | **Superseded by T2-AUD** — honest **2×** mandatory @ HEAD (`contracts_typing`); see [EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md](EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md) |
 | **16 × layer rows** | **B2 inventory+L3 verified** — `L9_EVIDENCE_SUBMITTED`; RESOLVED only B6 |
 | **OD-EBH6-01** | OPEN (no production wave) |
 | **OD-EBH6-08** | OPEN (parent closure) |

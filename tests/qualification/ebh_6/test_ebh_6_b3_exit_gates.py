@@ -21,11 +21,14 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
-def test_ebh6_b3_evidence_required_groups_zero_at_handoff() -> None:
+def test_ebh6_b3_evidence_required_matches_t2_bundle_gaps() -> None:
+    from tests.qualification.ebh_6._t2_evidence_bundles import mandatory_insufficient_pairs
+
     groups = aj_group_by_layer_class()
-    ev = [g for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED]
-    assert not ev, [g.group_id for g in ev]
-    assert count_evidence_required_groups() == 0
+    expected = mandatory_insufficient_pairs()
+    ev = {(g.layer, g.detection_class) for g in groups.values() if g.outcome == AjControlOutcome.EVIDENCE_REQUIRED}
+    assert ev == expected, sorted(ev ^ expected)
+    assert count_evidence_required_groups() == len(expected)
 
 
 def test_ebh6_b3_all_applicable_groups_have_class_gate_ref() -> None:
@@ -68,7 +71,7 @@ def test_ebh6_b3_sixteen_layers_status_matches_group_outcomes() -> None:
 
 
 def test_ebh6_protocol03_contract_tier_coverage() -> None:
-    from tests.qualification.ebh_6._aj_class_gate_scan import scanner_effective
+    from tests.qualification.ebh_6._t2_evidence_bundles import ImplementerReview, bundle_review_disposition
     from tests.qualification.ebh_6._tier_audit import EvidenceTier, evidence_tier_for_pair, tier_census
 
     groups = aj_group_by_layer_class()
@@ -77,19 +80,19 @@ def test_ebh6_protocol03_contract_tier_coverage() -> None:
     assert census[EvidenceTier.T1.value] == count_evidence_required_groups()
     for (layer, cls), group in groups.items():
         tier = evidence_tier_for_pair(layer, cls)
+        review = bundle_review_disposition(layer, cls)
         if tier == EvidenceTier.T1:
+            assert review in (ImplementerReview.INSUFFICIENT, ImplementerReview.NA_WITH_EVIDENCE), group.group_id
             assert group.outcome == AjControlOutcome.EVIDENCE_REQUIRED, group.group_id
         elif tier == EvidenceTier.T2:
+            assert review == ImplementerReview.ACCEPTED, group.group_id
             assert group.outcome == AjControlOutcome.PARTIAL_CANDIDATE, group.group_id
-            assert scanner_effective(layer, cls), group.group_id
             assert group.scope_limitation.strip()
         else:
             assert group.outcome in (
                 AjControlOutcome.PASS_CANDIDATE,
                 AjControlOutcome.FINDING,
             ), group.group_id
-        if group.outcome == AjControlOutcome.PARTIAL_CANDIDATE:
-            assert scanner_effective(layer, cls), f"no-op PARTIAL: {group.group_id}"
         if group.outcome == AjControlOutcome.FINDING:
             assert any("register" in ref.lower() or "_findings_register" in ref for ref in group.evidence_refs), (
                 group.group_id

@@ -30,3 +30,14 @@ OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN
 **STOP:** Agent must **not** self-approve **OD-EBH6-01**, **OD-EBH6-08**, or issue **INDEPENDENT AUDIT PASS**.
 
 Pre-cert findings: [`EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md`](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md).
+
+## Stage closure sequence (E1–E4 — operator / auditor only)
+
+| Step | Owner | Action |
+| --- | --- | --- |
+| **E1** | Operator | Resolve **OD-EBH6-Q2D2** (evidence path A or remediation path B + **OD-EBH6-01**) |
+| **E2** | Implementer + auditor | Pre-cert **PASS** on T2 review @ SHA (**0 mandatory INSUFFICIENT**) |
+| **E3** | Independent auditor | **Protocol 03** ECAP B1–B6 |
+| **E4** | Operator | **OD-EBH6-08** — EBH-6 CLOSED on roadmap |
+
+Implementer T2 repair @ HEAD documents honest **T1=2**; **no** Protocol 03 PASS, **no** OD-EBH6-08, **no** agent AUDIT PASS.

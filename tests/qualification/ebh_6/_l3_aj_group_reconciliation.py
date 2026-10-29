@@ -277,6 +277,7 @@ def _default_blocker(layer: str, detection_class: str) -> str:
 
 def _merge_adjudication_table() -> dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]]:
     from tests.qualification.ebh_6._aj_class_gate_scan import class_gate_adjudication, class_gate_node_id
+    from tests.qualification.ebh_6._t2_evidence_bundles import ImplementerReview, bundle_review_disposition
 
     table: dict[tuple[str, str], tuple[AjControlOutcome, str, tuple[str, ...], str]] = {}
     for layer in EBH6_AUDIT_LAYERS:
@@ -292,6 +293,14 @@ def _merge_adjudication_table() -> dict[tuple[str, str], tuple[AjControlOutcome,
                 proves = cg.invariant_proves
                 refs = cg.evidence_refs
                 scope = cg.scope_limitation
+            review = bundle_review_disposition(layer, aj.detection_class)
+            if review == ImplementerReview.INSUFFICIENT and outcome not in (
+                AjControlOutcome.FINDING,
+                AjControlOutcome.PASS_CANDIDATE,
+            ):
+                outcome = AjControlOutcome.EVIDENCE_REQUIRED
+                proves = f"T2-AUD bundle INSUFFICIENT — {proves}"
+                scope = f"T2 independent review gap — {scope}"
             gate = class_gate_node_id(layer, aj.detection_class)
             if gate not in refs:
                 refs = (gate,) + refs

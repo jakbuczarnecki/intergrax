@@ -38,6 +38,7 @@ _MANDATORY_QUAL_DOCS: tuple[str, ...] = (
     "docs/project/maintainers/qualification/EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md",
     "docs/project/maintainers/qualification/EBH_6_STAGE_CERTIFICATION_READINESS.md",
     "docs/project/maintainers/qualification/EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md",
+    "docs/project/maintainers/qualification/EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md",
     "docs/project/maintainers/qualification/EBH_6_SCOPE_RECONCILIATION_DOSSIER.md",
     "docs/project/maintainers/qualification/EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md",
 )
@@ -71,16 +72,20 @@ def test_ebh6_exit_mandatory_docs_present() -> None:
 
 def test_ebh6_exit_p03_handoff_export_complete() -> None:
     from tests.qualification.ebh_6._p03_handoff_export import p03_handoff_bundle
+    from tests.qualification.ebh_6._t2_evidence_bundles import mandatory_insufficient_pairs
 
     bundle = p03_handoff_bundle()
+    insufficient = mandatory_insufficient_pairs()
     assert bundle["aj_group_count"] == 133
     assert bundle["family_count"] == 23
     assert bundle["l9_blocker_count"] == 8
-    assert bundle["aj_evidence_required_count"] == 0
+    assert bundle["aj_evidence_required_count"] == len(insufficient)
     assert "PARTIAL" in bundle["certification_banner"]
-    assert bundle["tier_census"]["T1"] == 0
-    assert bundle["layer_candidate_resolved_count"] == 16
-    assert bundle["layer_l9_evidence_submitted_count"] == 0
+    assert bundle["tier_census"]["T1"] == len(insufficient)
+    assert bundle["layer_candidate_resolved_count"] == 16 - len(
+        {layer for layer, _ in insufficient},
+    )
+    assert bundle["layer_l9_evidence_submitted_count"] == len({layer for layer, _ in insufficient})
     assert bundle["independent_disposition_pending"] == 23
     assert bundle["certification_handoff_sha"] == evidence_git_head_sha()
 

@@ -79,7 +79,7 @@ _LIFECYCLE = (
     "::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments"
 )
 _B3_Q2D2 = "tests/qualification/ebh_6/test_ebh_6_b3_exit_gates.py::test_ebh6_b3_q2d2_semantic_core_f_is_finding"
-_REGISTER_SSOT = "tests/qualification/ebh_6/_findings_register.py"
+_RPLG_MATRIX = "docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md"
 
 _CLASS_REUSE: Final[dict[str, tuple[str, ...]]] = {
     "A": (_REG_PROHIBITED, _REG_UNCLASS),
@@ -271,6 +271,10 @@ def scan_class_f_typing_seam(layer: str) -> None:
     if layer == "semantic_core":
         reg = _REPO_ROOT / "tests/qualification/ebh_6/_findings_register.py"
         assert "EBH6-DEBT-Q2-D2" in _read_py(reg)
+        nexus = _REPO_ROOT / "intergrax/runtime/nexus/nexus_loop.py"
+        assert nexus.is_file()
+        text = _read_py(nexus)
+        assert "AuthoritativeDecisionExposure" in text or "TYPE_CHECKING" in text
         return
     if layer in ("contracts", "application_services"):
         reg = _REPO_ROOT / "tests/qualification/ebh_6/_findings_register.py"
@@ -288,9 +292,7 @@ def scan_class_f_typing_seam(layer: str) -> None:
 
 def scan_class_g_obs_non_authority(layer: str) -> None:
     if layer == "observability_diagnostics":
-        sink = _REPO_ROOT / "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py"
-        assert sink.is_file()
-        assert "bounded" in _read_py(sink).lower() or "sink" in _read_py(sink).lower()
+        _invoke_reuse_gate(_W5_SINK)
         return
     files = _layer_py_files(layer)
     assert files, f"T-CLS-G: no python paths for {layer}"
@@ -323,16 +325,19 @@ def _l3_entrypoint_resolvable(layer: str, entrypoint: str, call_chain: tuple[str
 
 
 def scan_class_h_reachability(layer: str) -> None:
-    from tests.qualification.ebh_6._l3_reachability_evidence import l3_records_by_layer
+    from tests.qualification.ebh_6._l3_reachability_evidence import l3_records_by_layer, normalize_l3_primary_gate
 
     records = l3_records_by_layer(layer)
     assert len(records) >= 3, f"T-CLS-H: L3 mechanism count for {layer}"
-    annex_text = _read_py(_REPO_ROOT / "tests/qualification/ebh_6/_l3_reachability_evidence.py")
     for rec in records:
-        assert rec.mechanism_id in annex_text, rec.mechanism_id
-    resolved = sum(1 for rec in records if _l3_entrypoint_resolvable(layer, rec.entrypoint, rec.call_chain))
-    need = max(2, len(records) - 1)
-    assert resolved >= need, f"T-CLS-H: L3 entrypoints for {layer} ({resolved}/{need} resolvable)"
+        gate = normalize_l3_primary_gate(rec.primary_gate)
+        assert gate.strip(), rec.mechanism_id
+        if "::test_" in gate:
+            gate_path = _REPO_ROOT / gate.split("::", 1)[0]
+            assert gate_path.is_file(), gate
+        else:
+            rel = gate if gate.startswith(("tests/", "intergrax/", "agents/", "applications/")) else f"tests/{gate}"
+            assert (_REPO_ROOT / rel).is_file(), rec.primary_gate
     if layer in ("composition_roots", "semantic_core", "execution"):
         mech = _REPO_ROOT / "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py"
         assert "sanctioned_composition_roots" in _read_py(mech)
@@ -356,9 +361,9 @@ def scan_class_i_env_coupling(layer: str) -> None:
 
 
 def scan_class_j_replaceability(layer: str) -> None:
-    rpl = _REPO_ROOT / "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py"
-    assert rpl.is_file()
-    assert "config_x" in _read_py(rpl).lower() or "RPL" in _read_py(rpl)
+    _invoke_reuse_gate(_RPLG)
+    matrix = _REPO_ROOT / _RPLG_MATRIX
+    assert matrix.is_file(), _RPLG_MATRIX
     if layer == "integrations":
         factory = _REPO_ROOT / "intergrax/integrations/registry/factory.py"
         assert "PlatformIntegrationContract" in _read_py(factory)
@@ -417,10 +422,10 @@ def run_class_gate_scan(layer: str, detection_class: str) -> None:
 
 
 def scanner_effective(layer: str, detection_class: str) -> bool:
-    """Static applicability for tier census (T-AUD-01) — no closed-world load @ import."""
-    if detection_class in ("A", "B", "C", "D", "F", "G", "H", "I", "J", "E"):
-        return True
-    return False
+    """Bundle-review proxy — True only when T2-AUD disposition is ACCEPTED."""
+    from tests.qualification.ebh_6._t2_evidence_bundles import ImplementerReview, bundle_review_disposition
+
+    return bundle_review_disposition(layer, detection_class) == ImplementerReview.ACCEPTED
 
 
 def _default_outcome(layer: str, detection_class: str) -> str:
@@ -428,7 +433,12 @@ def _default_outcome(layer: str, detection_class: str) -> str:
         return "FINDING"
     if (layer, detection_class) == ("execution", "B"):
         return "PASS_CANDIDATE"
-    if scanner_effective(layer, detection_class):
+    from tests.qualification.ebh_6._t2_evidence_bundles import ImplementerReview, bundle_review_disposition
+
+    review = bundle_review_disposition(layer, detection_class)
+    if review == ImplementerReview.INSUFFICIENT:
+        return "EVIDENCE_REQUIRED"
+    if review == ImplementerReview.ACCEPTED:
         return "PARTIAL_CANDIDATE"
     return "EVIDENCE_REQUIRED"
 
@@ -439,9 +449,15 @@ def _default_proves(layer: str, detection_class: str) -> str:
             "EBH6-DEBT-Q2-D2 / FRZ-TYP-03 — tracked typing seam; ratification ≠ independent acceptance "
             "(OD-EBH6-Q2D2 OPEN)."
         )
+    from tests.qualification.ebh_6._t2_evidence_bundles import bundle_for_pair
+
     gate = class_gate_node_id(layer, detection_class)
     if not scanner_effective(layer, detection_class):
-        return f"T-CLS-{detection_class} @ `{layer}` — T1 mandatory gap (no effective layer-scoped scanner @ `{gate}`)."
+        bundle = bundle_for_pair(layer, detection_class)
+        return (
+            f"T2 bundle `{bundle.bundle_id.value}` review={bundle.implementer_review.value} — "
+            f"T1 mandatory gap (@ `{gate}`)."
+        )
     if (layer, detection_class) == ("execution", "B"):
         return "EE-A1 P0 inventory: zero production execution bypass paths (static scan)."
     return f"T-CLS-{detection_class} @ `{layer}` — T2 layer scan + reused qual gates (@ `{gate}`)."
@@ -460,7 +476,13 @@ def class_gate_adjudication(layer: str, detection_class: str) -> ClassGateAdjudi
     extra = _LAYER_CLASS_EXTRA_REFS.get((layer, detection_class), ())
     refs = (gate,) + extra + reuse
     if (layer, detection_class) == ("semantic_core", "F"):
-        refs = (gate, _B3_Q2D2, _REG_DEBT, _REGISTER_SSOT, "intergrax/runtime/nexus/nexus_loop.py")
+        refs = (
+            gate,
+            _B3_Q2D2,
+            _REG_DEBT,
+            "tests/qualification/ebh_6/_findings_register.py",
+            "intergrax/runtime/nexus/nexus_loop.py",
+        )
     outcome = _default_outcome(layer, detection_class)
     scope = _default_scope(detection_class)
     if outcome == "EVIDENCE_REQUIRED":

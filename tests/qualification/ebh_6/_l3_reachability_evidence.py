@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 from typing import Final
 
 from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
@@ -15,6 +16,8 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
     format_group_evidence_ref,
 )
 from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
+
+_REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,10 +99,23 @@ class L3ReachabilityRecord:
     semantic_owner: str
     canonical_contract: str
     composition_owner: str
+    primary_gate: str
     aj_controls: tuple[AjControlResult, ...]
     production_effective: bool
     production_effective_rationale: str
     existing_finding_id: str | None = None
+
+
+def normalize_l3_primary_gate(gate: str) -> str:
+    """Resolve annex gate strings to repo-relative paths or pytest nodeids."""
+    g = gate.strip().replace("\\", "/")
+    if g.startswith("test_") and "::" not in g:
+        return f"tests/qualification/trace_x/{g}" if "trace_x" in g or g.startswith("test_trace_x") else g
+    if "::test_" in g and not g.startswith("tests/"):
+        path_part = g.split("::", 1)[0]
+        if not path_part.startswith(("tests/", "intergrax/")):
+            return f"tests/qualification/trace_x/{path_part}" if "trace_x" in path_part else f"tests/{path_part}"
+    return g
 
 
 def _m(
@@ -124,6 +140,7 @@ def _m(
         semantic_owner=owner,
         canonical_contract=contract,
         composition_owner=comp_owner,
+        primary_gate=gate,
         aj_controls=_aj_controls_for_mechanism(layer, mid, gate, entry, finding_id),
         production_effective=prod,
         production_effective_rationale=prod_rationale,
@@ -822,6 +839,13 @@ def assert_l3_reachability_complete() -> None:
             assert rec.semantic_owner.strip()
             assert rec.canonical_contract.strip()
             assert rec.composition_owner.strip()
+            assert rec.primary_gate.strip(), rec.mechanism_id
+            norm = normalize_l3_primary_gate(rec.primary_gate)
+            if "::test_" in norm:
+                assert (_REPO_ROOT / norm.split("::", 1)[0]).is_file(), rec.mechanism_id
+            else:
+                rel = norm if norm.startswith(("tests/", "intergrax/")) else f"tests/{norm}"
+                assert (_REPO_ROOT / rel).is_file(), rec.mechanism_id
             assert len(rec.aj_controls) == 10, rec.mechanism_id
             for ctrl in rec.aj_controls:
                 assert ctrl.evidence_ref.strip(), rec.mechanism_id

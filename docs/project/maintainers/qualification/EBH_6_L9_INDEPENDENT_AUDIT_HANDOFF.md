@@ -4,10 +4,10 @@
 | --- | --- |
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
-| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN)** — **T1=0**; 23×PENDING independent disposition unchanged |
+| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — **T1=2** honest; 23×PENDING independent disposition unchanged |
 | **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
 | **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
-| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-cert-handoff/pytest.log` |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-t2-repair/pytest.log` |
 | **CERTIFICATION_HANDOFF_SHA** | @ B5 cert handoff on `development` |
 | **Historical handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
@@ -54,7 +54,7 @@ uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrit
 | CONFIG-X mapped | 54/54 |
 | SQLite annex | 38 @ HEAD |
 | Family matrix | 23 rows; **independent 23 × PENDING** |
-| Layer L9 | **16 × CANDIDATE-RESOLVED** @ B5 (T1=0 per layer) + `_l3_reachability_evidence.py` annex |
+| Layer L9 | **14 × CANDIDATE-RESOLVED**, **2 × L9_EVIDENCE_SUBMITTED** (T2-AUD class F) + `_l3_reachability_evidence.py` annex |
 
 ## Limitations (explicit)
 

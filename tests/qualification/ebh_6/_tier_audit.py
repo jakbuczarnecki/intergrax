@@ -9,13 +9,14 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import Final
 
-from tests.qualification.ebh_6._aj_class_gate_scan import (
-    class_gate_node_id,
-    iter_applicable_layer_class_pairs,
-    scanner_effective,
-)
+from tests.qualification.ebh_6._aj_class_gate_scan import class_gate_node_id, iter_applicable_layer_class_pairs
 from tests.qualification.ebh_6._closed_world_discovery import EBH6_AUDIT_LAYERS
 from tests.qualification.ebh_6._layer_evidence import layer_aj_applicability
+from tests.qualification.ebh_6._t2_evidence_bundles import (
+    ImplementerReview,
+    bundle_review_disposition,
+    resolve_bundle_id,
+)
 
 
 class EvidenceTier(StrEnum):
@@ -38,7 +39,8 @@ class TierAuditRow:
     detection_class: str
     tier: EvidenceTier
     outcome: str
-    scanner_effective: bool
+    bundle_id: str
+    bundle_review: str
     gate_node_id: str
     l3_mechanism_ids: tuple[str, ...]
 
@@ -47,7 +49,8 @@ def evidence_tier_for_pair(layer: str, detection_class: str) -> EvidenceTier:
     key = (layer, detection_class)
     if key in _T3_PAIRS:
         return EvidenceTier.T3
-    if scanner_effective(layer, detection_class):
+    review = bundle_review_disposition(layer, detection_class)
+    if review == ImplementerReview.ACCEPTED:
         return EvidenceTier.T2
     return EvidenceTier.T1
 
@@ -77,7 +80,8 @@ def tier_audit_rows() -> tuple[TierAuditRow, ...]:
                 cls,
                 tier,
                 group.outcome.value,
-                scanner_effective(layer, cls),
+                resolve_bundle_id(layer, cls).value,
+                bundle_review_disposition(layer, cls).value,
                 class_gate_node_id(layer, cls),
                 mechs.get(layer, ()),
             ),
@@ -120,7 +124,8 @@ def format_tier_audit_dossier_section(handoff_sha: str) -> str:
         "| Tier | Groups | Meaning |",
         "| --- | ---: | --- |",
         f"| **T1** (`EVIDENCE_REQUIRED`) | **{census['T1']}** | Mandatory gap — no T2/T3 proof |",
-        f"| **T2** (`PARTIAL_CANDIDATE`) | **{census['T2']}** | Reuse gate(s) + effective layer-scoped scanner |",
+        f"| **T2** (`PARTIAL_CANDIDATE`) | **{census['T2']}** | "
+        "T2 bundle review **ACCEPTED** + behavioral/arch gates |",
         f"| **T3** (`PASS_CANDIDATE` / `FINDING`) | **{census['T3']}** | Behavioral/arch gate or documented FINDING |",
         "",
         f"**133** applicable pairs · **{len(all_l3_reachability_records())}** L3 mechanism records · "
@@ -128,7 +133,7 @@ def format_tier_audit_dossier_section(handoff_sha: str) -> str:
         "",
     ]
     if t1_rows:
-        lines.append("### T1 blockers (must be 0 @ B5 handoff)")
+        lines.append("### T1 blockers (bundle review INSUFFICIENT or mandatory gap)")
         lines.append("")
         lines.append("| Layer | Class | Gate |")
         lines.append("| --- | --- | --- |")
@@ -139,7 +144,8 @@ def format_tier_audit_dossier_section(handoff_sha: str) -> str:
         lines.append("")
     else:
         lines.append(
-            "**T1 count @ HEAD:** 0 — tier contract satisfied for implementer handoff (B6 still requires P03).",
+            "**T1 count @ HEAD:** 0 — tier contract satisfied for implementer handoff "
+            "(Protocol 03 + OD-EBH6-Q2D2 still required).",
         )
         lines.append("")
     return "\n".join(lines)

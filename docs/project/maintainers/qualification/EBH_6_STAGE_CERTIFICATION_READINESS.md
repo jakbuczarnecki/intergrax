@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN)** — **T1=0** tier contract; **16× CANDIDATE-RESOLVED** layers @ B5 |
+| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD 2× INSUFFICIENT)** — **T1=2** honest tier; **14× CANDIDATE-RESOLVED** + **2× L9_EVIDENCE_SUBMITTED** layers |
 | **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
 | **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
 | **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-cert-handoff/pytest.log` |
@@ -13,14 +13,14 @@
 | --- | --- |
 | CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
 | Layer L9 attestation (16) | **CANDIDATE-RESOLVED** — B5 A–J controls reconciled; **not** independent RESOLVED |
-| A–J applicable pairs / gap groups @ B5 HEAD | **133** pairs / **0** `EVIDENCE_REQUIRED` groups |
-| EBH-6 B5 pytest (L3 consolidated) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-cert-handoff/pytest.log` |
+| A–J applicable pairs / gap groups @ HEAD | **133** pairs / **2** `EVIDENCE_REQUIRED` (`contracts`×F, `application_services`×F — T2-AUD) |
+| EBH-6 B5 pytest (L3 consolidated) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-t2-repair/pytest.log` |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
 | Architecture-family matrix | **PASS** (23 rows) |
 | EBH-6 B1 pytest subset | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-b1/pytest.log` |
-| Independent exact-SHA audit | **READY FOR B6** — implementer mandatory gaps **0**; **OD-EBH6-Q2D2** remains operator OPEN |
+| Independent exact-SHA audit | **NOT READY FOR B6** — T2 bundle review **2× INSUFFICIENT** + **OD-EBH6-Q2D2** remains operator OPEN |
 | Operator wave open | **OPEN (OD-EBH6-01)** |
 | Operator parent closure | **OPEN (OD-EBH6-08 / B7)** |
 | EBH-5 parent closure | **CLOSED** @ **OD-EBH5-08 APPROVED 2026-10-28** |
@@ -29,6 +29,7 @@
 ## References
 
 - [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md)
+- [EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md](EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md)
 - [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md)
 - [EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md](EBH_6_PROTOCOL_03_REJECTION_REMEDIATION.md)
 - [EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md](EBH_6_FINAL_L9_EVIDENCE_COMPLETION_PLAN.md)
