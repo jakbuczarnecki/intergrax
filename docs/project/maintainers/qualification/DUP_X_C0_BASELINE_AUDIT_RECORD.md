@@ -94,3 +94,16 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 | **B4_RECONCILIATION_SHA** | `a804a4319cbe644da757e196f9692c9d55070a67` | Protocol 03 final handoff |
 
 **Status:** `DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT — NOT CLOSED`
+
+## C0-07 Final closure Block A + B-01 replay (@ `a7d83925b375b5f08eb0f175ced2c17fa026bba9`)
+
+| Label | SHA | Role |
+| --- | --- | --- |
+| **FINAL_CLOSURE_START** | `f0928167aadc8f871dccadda039aa77b27f2f904` | Pre–final-closure HEAD |
+| **FINAL_CLOSURE_BLOCK_A_SHA** | `cdf269fc9186f47737ed747babc2f9d831b1e713` | Portable qual paths · operator/NPSC docs |
+| **FINAL_CLOSURE_QUAL_ADJUSTMENT_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | Dossier gate wording + **44 passed** replay |
+| **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | `.tmp/proof/dup-x-final-b6-replay/dup_x-full.log` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | External B6 replay pin |
+| **FINAL_CLOSURE_RECONCILIATION_SHA** | *(this reconciliation commit)* | Handoff + C0-07 ladder |
+
+**Status:** `DUP-X — READY FOR EXTERNAL B6 — NOT CLOSED`

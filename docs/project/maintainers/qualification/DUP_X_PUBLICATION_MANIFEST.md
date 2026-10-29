@@ -146,7 +146,16 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 
 ## Operator verdict
 
-**DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT** — replay @ **`6ccddd3c40a88377e39962a300984d3b81f5c220`**
+**DUP-X — READY FOR EXTERNAL B6** — replay @ **`a7d83925b375b5f08eb0f175ced2c17fa026bba9`**
+
+## Final closure Block A (@ `a7d83925b375b5f08eb0f175ced2c17fa026bba9`)
+
+| Label | SHA |
+| --- | --- |
+| **FINAL_CLOSURE_START** | `f0928167aadc8f871dccadda039aa77b27f2f904` |
+| **FINAL_CLOSURE_BLOCK_A** | `cdf269fc9186f47737ed747babc2f9d831b1e713` |
+| **FINAL_CLOSURE_QUAL** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` — `.tmp/proof/dup-x-final-b6-replay/dup_x-full.log` |
 
 ## Block I operator commit split (executed)
 

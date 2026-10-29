@@ -12,12 +12,22 @@
 | CONFIG-X 54/54 replay | CONFIG-X | EBH-6 reconciliation | `test_dup_x_exit_config_x_reconciled` | **PASS** | pending | OPEN |
 | DUP-14 qual SSOT | EBH-5 hints | `_config_x_discovery.py` | `test_dup_x_exit_composition_hints_normative_in_config_x` | **PASS** | pending | OPEN |
 | OD-DUPX-02 plan audit | Operator | Final parent closure master plan | — | **APPROVED — 2026-10-29** | operator | Block I–II authorized |
-| OD-DUPX-01 Wave B prod | Operator | — | — | **OPEN** | operator | BLOCKED |
-| Protocol DUP-X-03 | Independent auditor | `DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md` | `.tmp/proof/dup-x-b4-publication/` · baseline `6ccddd3c4…` | **B4 PUBLISHED — READY FOR FINAL B6** — **44 passed** | external | B6 **OPEN** · NPSC allowlist **FAIL** (known) |
-| OD-DUPX-08 closure | Operator | — | — | **OPEN** | operator | BLOCKED |
+| OD-DUPX-01 Wave B prod | Operator | — | — | **NOT TRIGGERED** | operator | OPEN |
+| Protocol DUP-X-03 | Independent auditor | `DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md` | `.tmp/proof/dup-x-final-b6-replay/` · pin `a7d83925b…` | **READY FOR EXTERNAL B6** — **44 passed** | external | B6 **OPEN** |
+| OD-DUPX-08 closure | Operator | PASS record | — | **OPEN** | operator | **BLOCKED until B6 PASS** |
 | DUPX-GAP-CLASS-D | Implementer | Gap register + caller matrix | class D gates + Wave 1 matrix | **PASS** | pending | OPEN |
 | DUPX-GAP-L3-TIER3-DEDUPE | Implementer | Tier-3 disposition doc | L3 per app + parent closure gates | **PASS** | pending | OPEN |
 
 **STATUS legend:** OPEN · IN_PROGRESS · PASS · N/A WITH EVIDENCE · BLOCKED · GAP
 
-**Global stage:** `DUP-X — NOT CLOSED` (roadmap §5 update forbidden until OD-DUPX-08)
+## STOP recovery (no replan)
+
+| STOP | Recovery |
+| --- | --- |
+| S-01 B6 REJECT B4/NPSC | OD-DUPX-01 · re-qual · re-B6 |
+| S-02 B6 REJECT scope | Inventory/delta fix · re-B6 |
+| S-03 Qual fail | Minimal fix · new QUAL SHA |
+| S-04 No OD-DUPX-08 | Stays NOT CLOSED |
+| S-05 Class C prod | OD-03..07 first |
+
+**Global stage:** `DUP-X — NOT CLOSED` (roadmap §5 only after OD-DUPX-08 post-B6)

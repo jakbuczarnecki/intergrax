@@ -7,8 +7,8 @@
 | **B4_PUBLICATION_START** | `3feaee3d11d65d08a7860715e26bb38e763fcd40` |
 | **B4_IMPLEMENTATION_SHA** | `100ab6b52dfdc4b86423601100bcc738c45a3b0c` |
 | **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
-| **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
-| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `6ccddd3c40a88377e39962a300984d3b81f5c220` |
+| **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 | **Branch** | `development` |
 | **Production code delta** | **0** |
 | **NPSC gate modified** | **No** |
@@ -27,7 +27,7 @@
 | --- | --- | --- | --- |
 | `uv run pytest tests/qualification/dup_x/test_dup_x_b4_npsc_orchestration_backend_negative_boundary.py -q` | **0** | **4 passed** | `.tmp/proof/dup-x-b4-publication/b4-negative-gates.log` |
 | `uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py::test_npsc42_orchestration_backend_access_confined_to_allowlist -q` | **1** | **1 failed** (expected) — **10** modules · allowlist unchanged | `.tmp/proof/dup-x-b4-publication/npsc-allowlist.log` |
-| `uv run pytest tests/qualification/dup_x/ -q` | **0** | **44 passed** | `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
+| `uv run pytest tests/qualification/dup_x/ -q` | **0** | **44 passed** | `.tmp/proof/dup-x-final-b6-replay/dup_x-full.log` |
 
 ## B4 disposition (implementer — not independent PASS)
 
