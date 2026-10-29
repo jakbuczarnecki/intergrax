@@ -8,7 +8,7 @@
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` |
 | **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
 | **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` — **40 passed** |
-| **CURRENT_PUBLICATION_HEAD** | `6e0ccbf0c293964d239ef80813b8b38fa07746e1` — Commit **G** |
+| **CURRENT_PUBLICATION_HEAD** | `ffc724c4c2aa325231cd7ac54df5788f66cfc7f7` — Commit **G** |
 
 ## Preconditions (@ handoff)
 

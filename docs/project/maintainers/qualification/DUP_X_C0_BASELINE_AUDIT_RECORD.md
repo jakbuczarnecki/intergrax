@@ -77,7 +77,7 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 | **BLOCK_I_IMPLEMENTATION_SHA** (**E**) | `053040ef758f4cf94b2844a08abe5a56244b666b` | Qual hardening |
 | **BLOCK_I_EVIDENCE_PUBLICATION_SHA** (**F**) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | Evidence + Protocol/OD templates |
 | **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | **40 passed** — `.tmp/proof/dup-x-parent-closure-l3/run.log` |
-| **BLOCK_I_RECONCILIATION_SHA** (**G**) | `6e0ccbf0c293964d239ef80813b8b38fa07746e1` | Manifest + C0-05 + protocol ladder |
+| **BLOCK_I_RECONCILIATION_SHA** (**G**) | `ffc724c4c2aa325231cd7ac54df5788f66cfc7f7` | Manifest + C0-05 + protocol ladder |
 | **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` | Qual + evidence before manifest Commit **G** |
 
 **Status:** `DUP-X — READY FOR INDEPENDENT PROTOCOL 03 B6 — NOT CLOSED`
