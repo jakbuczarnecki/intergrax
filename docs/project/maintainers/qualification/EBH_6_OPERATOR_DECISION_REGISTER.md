@@ -8,12 +8,14 @@
 | OD-EBH6-ADR-* | Finding `REQUIRES ARCHITECTURE DECISION` without ADR | **TRACKED** | P3 remediation blocked per finding |
 | OD-EBH6-08 | Formal EBH-6 closure publication | **OPEN** | P8 only after L9 PASS |
 | OD-EBH6-Q2D2 | **EBH6-DEBT-Q2-D2** — Path A vs Path B for Protocol 03 | **APPROVED — PATH B — 2026-10-29** — production typing remediation authorized; **does not** equal E01-PRE-01 / Protocol 03 PASS or EBH-6 CLOSED | Independent audit + semantic_core×F disposition until auditor accepts |
+| **E02-OP-01** | **EBH6-DEBT-APP-TYP-01..11** scoped typing debt (category A) | **OPERATOR RATIFIED — 2026-10-29** — scoped `_shared` seams only; **conditional on E02-AUD-01**; no new unregistered Any/object seams; no admission/auth/tenant/recovery waiver | **E02-AUD-01 PENDING** — auditor may escalate any item to **B** |
 
 ## Canonical wave-open phrase (recorded 2026-10-29)
 
 ```text
 OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN (OD-EBH6-01 — Q2-D2 Path B scope)
 OPERATOR APPROVED — OD-EBH6-Q2D2 PATH B
+OPERATOR RATIFIED — E02-OP-01 — EBH-6 APP-TYP SCOPED DEBT (EBH6-DEBT-APP-TYP-01..11)
 ```
 
 ## Engineering batch record

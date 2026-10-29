@@ -37,6 +37,7 @@ def _p03_independent_acceptance_blockers() -> list[str]:
     elif group.outcome == AjControlOutcome.FINDING:
         blockers.append("semantic_core×F FINDING unresolved")
     blockers.append("EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN)")
+    blockers.append("E02-AUD-01 PENDING (E02-OP-01 operator ratified — not auditor ACCEPT)")
     return blockers
 
 

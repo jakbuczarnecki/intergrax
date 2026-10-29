@@ -159,3 +159,16 @@ def test_ebh6_app_typ_agent_does_not_operator_ratify() -> None:
         _recommend(entry, ("registered_typing_seam",)) != "OPERATOR_APPROVED"
         for entry in APPLICATION_SERVICES_TYPING_DEBT
     )
+
+
+def test_ebh6_app_typ_e02_op01_operator_ratification_recorded() -> None:
+    reg = _REPO / "docs/project/maintainers/qualification/EBH_6_OPERATOR_DECISION_REGISTER.md"
+    text = reg.read_text(encoding="utf-8")
+    row = [line for line in text.splitlines() if "E02-OP-01" in line and line.startswith("|")][0]
+    assert "OPERATOR RATIFIED" in row or "RATIFIED" in row
+    assert "OPEN" not in row.split("|")[3] or "RATIFIED" in row
+    typ = (_REPO / "docs/project/maintainers/qualification/EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md").read_text(
+        encoding="utf-8",
+    )
+    assert "E02-OP-01 — OPERATOR RATIFIED" in typ or "OPERATOR RATIFIED — 2026-10-29" in typ
+    assert "E02-AUD-01 — PENDING" in typ

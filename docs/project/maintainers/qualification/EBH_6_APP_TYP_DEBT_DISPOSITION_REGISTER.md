@@ -4,7 +4,7 @@
 | --- | --- |
 | **SSOT** | [`_contracts_typing_qualification.py`](../../../tests/qualification/ebh_6/_contracts_typing_qualification.py) |
 | **Gate** | [`test_ebh_6_contracts_typing_qualification.py`](../../../tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py) |
-| **Operator ratification** | **E02-OP-01 — OPEN** |
+| **Operator ratification** | **E02-OP-01 — OPERATOR RATIFIED — 2026-10-29** (conditional on **E02-AUD-01**) |
 | **Independent acceptance** | **E02-AUD-01 — PENDING** |
 
 **Rule:** `no unregistered violations` ≠ zero typing concerns — **11 registered seams** remain on scoped `_shared` wiring surface.
@@ -79,15 +79,17 @@ Runtime fail-closed/admission for 04/05/11 not proven by typing gate alone — d
 
 Positive: `test_ebh6_application_services_production_seam_typing_passes` · Negative: `test_ebh6_application_services_typing_negative_unregistered_debt_fails`, `test_ebh6_application_services_typing_negative_stale_debt_detected`, contracts typing negative gates.
 
-## C2-04 — Operator handoff (E02-OP-01 — proposed, NOT APPROVED)
+## C2-04 — Operator ratification (E02-OP-01 — **RECORDED 2026-10-29**)
 
 ```text
-OPERATOR RATIFIED — EBH-6 APP-TYP SCOPED DEBT (EBH6-DEBT-APP-TYP-01..11 category A)
-Conditions: no new unregistered seams on scoped _shared surface; auditor E02-AUD-01 ACCEPT;
-items 04/05 escalated to B if deploy/admission authority impact rejected.
+OPERATOR RATIFIED — E02-OP-01 — EBH-6 APP-TYP SCOPED DEBT (EBH6-DEBT-APP-TYP-01..11 category A)
+Scope: registered symbols @ EBH-6 scoped _shared wiring surface only.
+Conditions: positive E02-AUD-01; no new unregistered seams; no admission/auth/tenant/recovery bypass.
+Does not equal Protocol 03 PASS or EBH-6 CLOSED.
+Items 04/05/11 remain auditor-sensitive — escalate to B on mandatory invariant breach.
 ```
 
 
-## DONE (E02)
+## DONE (E02 — operator)
 
-**11/11** documented with A/B/C path · operator ratification recorded · auditor **E02-AUD-01** ACCEPT or REJECT with enumerated **B** items.
+**11/11** documented · **E02-OP-01 OPERATOR RATIFIED** @ 2026-10-29 · **E02-AUD-01 PENDING** (not agent PASS).
