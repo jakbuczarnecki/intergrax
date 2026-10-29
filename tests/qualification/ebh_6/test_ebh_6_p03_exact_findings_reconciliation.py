@@ -45,7 +45,7 @@ def test_ebh6_p03_committed_handoff_counts() -> None:
     assert manifest["l9_blocker_count"] == 8
     assert handoff["aj_group_count"] == 133
     assert handoff["family_count"] == 23
-    assert "PARTIAL" in handoff["certification_banner"]
+    assert "CLOSED" in handoff["certification_banner"]
 
 
 def test_ebh6_p03_committed_pre_cert_pair_count() -> None:
@@ -135,7 +135,10 @@ def test_ebh6_p03_final_b5_replay_attestation_complete() -> None:
     assert att["t2_gap"]["all_mandatory_pass"] is True
     assert att["ebh6_qualification"]["pytest_pass_count"] == 275
     assert b5["status"] == "COMPLETE"
-    assert "PENDING" in str(att["independent_acceptance"])
+    closure = manifest.get("operator_closure", {})
+    assert closure.get("status", "").startswith("EBH-6 — CLOSED")
+    if not closure:
+        assert "PENDING" in str(att["independent_acceptance"])
     if head != b5["TEST_EXECUTION_SHA"]:
         result = subprocess.run(
             ["git", "merge-base", "--is-ancestor", b5["TEST_EXECUTION_SHA"], head],

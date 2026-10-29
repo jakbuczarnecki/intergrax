@@ -5,7 +5,7 @@
 | **SSOT** | [`_contracts_typing_qualification.py`](../../../tests/qualification/ebh_6/_contracts_typing_qualification.py) |
 | **Gate** | [`test_ebh_6_contracts_typing_qualification.py`](../../../tests/qualification/ebh_6/test_ebh_6_contracts_typing_qualification.py) |
 | **Operator ratification** | **E02-OP-01 — OPERATOR RATIFIED — 2026-10-29** (conditional on **E02-AUD-01**) |
-| **Independent acceptance** | **E02-AUD-01 — PENDING** |
+| **Independent acceptance** | **E02-AUD-01 — ACCEPT (SCOPED) — 2026-10-29** — [`EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md`](EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md) |
 
 **Rule:** `no unregistered violations` ≠ zero typing concerns — **11 registered seams** remain on scoped `_shared` wiring surface.
 
@@ -92,4 +92,4 @@ Items 04/05/11 remain auditor-sensitive — escalate to B on mandatory invariant
 
 ## DONE (E02 — operator)
 
-**11/11** documented · **E02-OP-01 OPERATOR RATIFIED** @ 2026-10-29 · **E02-AUD-01 PENDING** (not agent PASS).
+**11/11** documented · **E02-OP-01 OPERATOR RATIFIED** @ 2026-10-29 · **E02-AUD-01 ACCEPT (SCOPED)** @ 2026-10-29 @ `f27bfaf2f…`.

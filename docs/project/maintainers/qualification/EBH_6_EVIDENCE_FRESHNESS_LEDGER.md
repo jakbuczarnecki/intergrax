@@ -47,8 +47,10 @@
 - **OD-EBH6-01** **APPROVED 2026-10-29** — Q2-D2 Path B scope (not EBH-6 CLOSED)
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution (corrected closure plan @ `0489054c…`)
 - **OD-EBH6-Q2D2** **APPROVED — PATH B — 2026-10-29** — E01-PRE-01 / Protocol 03 still required
-- **E02-OP-01** **OPERATOR RATIFIED 2026-10-29** — **E02-AUD-01 PENDING**
-- **L9 Protocol 03 / E10** **NOT EXECUTED** — independent ECAP B1–B6 only; banner **PARTIAL** (see `p03-handoff.json`)
+- **E02-OP-01** **OPERATOR RATIFIED 2026-10-29** — **E02-AUD-01 ACCEPT (SCOPED) 2026-10-29**
+- **Final B5 replay** **COMPLETE** @ **`TEST_EXECUTION_SHA`** `f27bfaf2fa42eba1e114b30982d4682cf1578df7` · **EVIDENCE_PUBLICATION_SHA** `3c8e6122d48f61651494d17e3163cb036d757b4e` (275 + 10 + 11)
+- **Protocol 03 B6** **PASS (SCOPED)** · **E01-PRE-01 PASS (SCOPED)** · **OD-EBH6-08 CLOSED 2026-10-29** — banner **CLOSED (SCOPED)**
+- **L9 Protocol 03 / E10** — superseded by final B5 + B6 pass record (historical **PARTIAL** rows preserved above)
 - **T2-AUD @ qual HEAD** — **T1=0** insufficient pairs; **133** A–J groups (**131** PARTIAL_CANDIDATE, **2** PASS_CANDIDATE incl. `semantic_core×F`)
 - **contracts_typing** @ `202239f72…` — **ACCEPTED** (0× implementer INSUFFICIENT)
 

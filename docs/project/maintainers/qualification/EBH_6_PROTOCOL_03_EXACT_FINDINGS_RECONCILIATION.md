@@ -5,7 +5,7 @@
 | **Workstream** | Independent Protocol 03 findings P03-01..05 |
 | **TEST_EXECUTION_SHA** | Recorded in [`ebh_6_p03_independent_replay/MANIFEST.json`](ebh_6_p03_independent_replay/MANIFEST.json) |
 | **Machine bundle** | [`ebh_6_p03_independent_replay/`](ebh_6_p03_independent_replay/) (repo-tracked) |
-| **Agent status** | **NOT Protocol 03 PASS** · **NOT EBH-6 CLOSED** |
+| **Agent status** | **Protocol 03 PASS (SCOPED B6 recorded)** · **EBH-6 CLOSED (OD-EBH6-08)** — see pass + closure records |
 
 Canonical authorities (read-only): [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) · [PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) · [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) · [SYSTEM_INVARIANTS.md](../../technical/guides/SYSTEM_INVARIANTS.md) · [VBN](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md).
 
@@ -115,14 +115,14 @@ Integrity gates: `tests/qualification/ebh_6/test_ebh_6_p03_exact_findings_reconc
 
 | Gate | Status |
 | --- | --- |
-| **E01-PRE-01** | **PENDING** — pre-cert export `independent_disposition` not PASS |
+| **E01-PRE-01** | **PASS (SCOPED)** — [`EBH_6_E01_PRE_01_INDEPENDENT_ACCEPTANCE_RECORD.md`](EBH_6_E01_PRE_01_INDEPENDENT_ACCEPTANCE_RECORD.md) @ `f27bfaf2f…` |
 | **E02-OP-01** | **OPERATOR RATIFIED** (APP-TYP scoped debt) |
-| **E02-AUD-01** | **PENDING** — scoped typing acceptance only; not security waiver |
-| **B1–B5** | Implementer evidence @ manifest SHA — replay in bundle |
-| **B6** | **NOT EXECUTED** — no [`EBH_6_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_6_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) |
-| **OD-EBH6-08** | **OPEN** |
+| **E02-AUD-01** | **ACCEPT (SCOPED)** — [`EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md`](EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md) |
+| **B1–B5** | Independent replay @ `TEST_EXECUTION_SHA` — [`final-b5-replay-attestation.json`](ebh_6_p03_independent_replay/final-b5-replay-attestation.json) |
+| **B6** | **PASS (SCOPED)** — [`EBH_6_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_6_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) |
+| **OD-EBH6-08** | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** — [`EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md) |
 
-**Certification banner:** `PARTIAL / EXACT BLOCKERS` (see `p03-handoff.json`).
+**Certification banner:** `EBH-6 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)` (see `p03-handoff.json`).
 
 ---
 

@@ -6,7 +6,7 @@
 | OD-EBH6-01 | Authorize EBH-6 implementation wave (`OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN`) | **APPROVED — 2026-10-29** — Q2-D2 Path B remediation scope only | Production delta **authorized** for EBH6-DEBT-Q2-D2 |
 | OD-EBH6-02 | Accept EBH-6 plan / scope (independent plan audit) | **APPROVED — 2026-10-28** — `OPERATOR APPROVED — EBH-6 L9 EVIDENCE EXECUTION (OD-EBH6-02)` — **does not** equal independent code acceptance or Protocol 03 PASS | Protocol 03 plan review **unblocked for B-L9-5** |
 | OD-EBH6-ADR-* | Finding `REQUIRES ARCHITECTURE DECISION` without ADR | **TRACKED** | P3 remediation blocked per finding |
-| OD-EBH6-08 | Formal EBH-6 closure publication | **OPEN** | P8 only after L9 PASS |
+| OD-EBH6-08 | Formal EBH-6 closure publication | **APPROVED — 2026-10-29** — [`EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md) · **TEST_EXECUTION_SHA** `f27bfaf2f…` · **EVIDENCE_PUBLICATION_SHA** `3c8e6122d…` | EBH-6 parent **CLOSED — SCOPED** · **DUP-X** eligible |
 | OD-EBH6-Q2D2 | **EBH6-DEBT-Q2-D2** — Path A vs Path B for Protocol 03 | **APPROVED — PATH B — 2026-10-29** — production typing remediation authorized; **does not** equal E01-PRE-01 / Protocol 03 PASS or EBH-6 CLOSED | Independent audit + semantic_core×F disposition until auditor accepts |
 | **E02-OP-01** | **EBH6-DEBT-APP-TYP-01..11** scoped typing debt (category A) | **OPERATOR RATIFIED — 2026-10-29** — scoped `_shared` seams only; **conditional on E02-AUD-01**; no new unregistered Any/object seams; no admission/auth/tenant/recovery waiver | **E02-AUD-01 PENDING** — auditor may escalate any item to **B** |
 

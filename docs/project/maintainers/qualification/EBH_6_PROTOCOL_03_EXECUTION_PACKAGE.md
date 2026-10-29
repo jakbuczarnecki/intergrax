@@ -4,9 +4,9 @@
 | --- | --- |
 | **Workstream** | E10 — Independent Protocol 03 |
 | **ECAP** | [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) §2.B **B1–B6** |
-| **Execution status** | **NOT EXECUTED** — independent auditor only (implementer final replay **RECORDED 2026-10-29**) |
+| **Execution status** | **EXECUTED — PASS (SCOPED B1–B6)** @ **`TEST_EXECUTION_SHA`** `f27bfaf2fa42eba1e114b30982d4682cf1578df7` · **EVIDENCE_PUBLICATION_SHA** `3c8e6122d48f61651494d17e3163cb036d757b4e` |
 | **CERTIFICATION_HANDOFF_SUBSTANCE_SHA** | `c852e7705f318b5d50a771596d97193f68a00e67` (ancestor of qual HEAD) |
-| **TEST_EXECUTION_SHA** | `a405c73f64d67254fe9d5e1f89c8b5dd4310be98` — `.tmp/session/ebh-6-p03-final-execution/pytest.log` (**267 passed**) |
+| **TEST_EXECUTION_SHA (final B5)** | `f27bfaf2fa42eba1e114b30982d4682cf1578df7` — [`final-b5-ebh6-pytest-transcript.txt`](ebh_6_p03_independent_replay/final-b5-ebh6-pytest-transcript.txt) (**275 passed**) |
 
 ## Preconditions (implementer)
 

@@ -17,7 +17,7 @@
     "pre_cert_export": "pre-cert-export.json",
     "pytest_transcript": "pytest-transcript.txt"
   },
-  "certification_banner": "PARTIAL / EXACT BLOCKERS (semantic_core×F PASS_CANDIDATE — E01-PRE-01 / Protocol 03 pending; EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN); E02-AUD-01 PENDING (E02-OP-01 operator ratified — not auditor ACCEPT))",
+  "certification_banner": "EBH-6 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)",
   "executions": {
     "final_b5_replay": {
       "TEST_EXECUTION_SHA": "f27bfaf2fa42eba1e114b30982d4682cf1578df7",
@@ -87,7 +87,15 @@
     }
   },
   "family_count": 23,
-  "independent_acceptance": "PENDING — no Protocol 03 PASS record",
+  "independent_acceptance": "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED) — OD-EBH6-08 2026-10-29",
   "l9_blocker_count": 8,
+  "operator_closure": {
+    "EVIDENCE_PUBLICATION_SHA": "3c8e6122d48f61651494d17e3163cb036d757b4e",
+    "OD-EBH6-08": "APPROVED — 2026-10-29",
+    "TEST_EXECUTION_SHA": "f27bfaf2fa42eba1e114b30982d4682cf1578df7",
+    "next_mandatory_stage": "DUP-X",
+    "protocol_03_b6": "PASS (SCOPED)",
+    "status": "EBH-6 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)"
+  },
   "pytest_suite": "tests/qualification/ebh_6/"
 }

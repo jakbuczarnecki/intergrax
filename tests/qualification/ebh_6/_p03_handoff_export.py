@@ -18,8 +18,25 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
 )
 from tests.qualification.ebh_6._tier_audit import tier_census
 
+_CLOSURE_RECORD = (
+    Path(__file__).resolve().parents[3]
+    / "docs/project/maintainers/qualification/EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md"
+)
+
+
+def ebh6_independently_closed_scoped() -> bool:
+    if not _CLOSURE_RECORD.is_file():
+        return False
+    text = _CLOSURE_RECORD.read_text(encoding="utf-8")
+    return (
+        "OPERATOR APPROVED — EBH-6 CLOSED (OD-EBH6-08)" in text
+        and "**CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)**" in text
+    )
+
 
 def _p03_independent_acceptance_blockers() -> list[str]:
+    if ebh6_independently_closed_scoped():
+        return []
     from tests.qualification.ebh_6._l3_aj_group_reconciliation import AjControlOutcome, aj_group_by_layer_class
 
     blockers: list[str] = []
@@ -42,6 +59,8 @@ def _p03_independent_acceptance_blockers() -> list[str]:
 
 
 def certification_banner_status() -> str:
+    if ebh6_independently_closed_scoped():
+        return "EBH-6 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)"
     census = tier_census()
     t1 = census.get("T1", 0)
     blockers: list[str] = []

@@ -66,4 +66,4 @@ uv run python scripts/qualification/export_ebh6_p03_independent_replay_bundle.py
 
 Reconciliation narrative: [`EBH_6_PROTOCOL_03_EXACT_FINDINGS_RECONCILIATION.md`](../EBH_6_PROTOCOL_03_EXACT_FINDINGS_RECONCILIATION.md).
 
-**Agent forbidden:** Protocol 03 PASS · EBH-6 CLOSED · E02-AUD-01 ACCEPT.
+**Agent forbidden (pre-closure):** Protocol 03 PASS · EBH-6 CLOSED · E02-AUD-01 ACCEPT — **superseded by operator OD-EBH6-08 @ 2026-10-29** (records published in qualification tree).

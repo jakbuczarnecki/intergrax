@@ -81,7 +81,7 @@ def test_ebh6_exit_p03_handoff_export_complete() -> None:
     assert bundle["family_count"] == 23
     assert bundle["l9_blocker_count"] == 8
     assert bundle["aj_evidence_required_count"] == len(insufficient)
-    assert "PARTIAL" in bundle["certification_banner"]
+    assert "CLOSED" in bundle["certification_banner"]
     assert bundle["tier_census"]["T1"] == len(insufficient)
     assert bundle["layer_candidate_resolved_count"] == 16 - len(
         {layer for layer, _ in insufficient},

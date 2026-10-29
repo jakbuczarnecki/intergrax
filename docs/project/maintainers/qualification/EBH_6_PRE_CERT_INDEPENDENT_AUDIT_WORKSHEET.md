@@ -6,7 +6,7 @@
 | **Baseline SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
 | **Mechanical SSOT** | [`_t2_evidence_bundles.py`](../../../tests/qualification/ebh_6/_t2_evidence_bundles.py) · [`_tier_audit.py`](../../../tests/qualification/ebh_6/_tier_audit.py) |
 | **Implementer disposition** | T1=0 · T2=131 · T3=2 · 0× implementer INSUFFICIENT |
-| **Independent pre-cert verdict** | **PENDING** — auditor must record **E01-PRE-01** PASS or REJECT @ exact SHA |
+| **Independent pre-cert verdict** | **E01-PRE-01 — PASS (SCOPED) — 2026-10-29** — [`EBH_6_E01_PRE_01_INDEPENDENT_ACCEPTANCE_RECORD.md`](EBH_6_E01_PRE_01_INDEPENDENT_ACCEPTANCE_RECORD.md) @ `f27bfaf2f…` |
 
 **Rule:** **131 T2 rows are audit candidates**, not automatic PASS. Each bundle requires replay of behavioral gates + scope + negatives.
 

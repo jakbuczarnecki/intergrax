@@ -1857,8 +1857,8 @@
       "scope_limitation": "Class-J mechanical scan + reused qual gates only \u2014 not full platform behavioral qual (51 NYQ / DUP-X deferred where noted)."
     }
   ],
-  "certification_banner": "PARTIAL / EXACT BLOCKERS (semantic_core\u00d7F PASS_CANDIDATE \u2014 E01-PRE-01 / Protocol 03 pending; EBH-6 independent acceptance not recorded (OD-EBH6-08 OPEN); E02-AUD-01 PENDING (E02-OP-01 operator ratified \u2014 not auditor ACCEPT))",
-  "certification_handoff_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+  "certification_banner": "EBH-6 \u2014 CLOSED \u2014 INDEPENDENTLY ACCEPTED (SCOPED)",
+  "certification_handoff_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
   "families": [
     {
       "blocker_id": null,
@@ -2228,97 +2228,97 @@
   "layer_l9_evidence_submitted_count": 0,
   "layers": [
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-01",
       "layer": "contracts",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-02",
       "layer": "semantic_core",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-03",
       "layer": "application_services",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-04",
       "layer": "composition_roots",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-05",
       "layer": "governance",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-06",
       "layer": "execution",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-07",
       "layer": "integrations",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-08",
       "layer": "state_persistence",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-09",
       "layer": "reliability_recovery",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-10",
       "layer": "observability_diagnostics",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-11",
       "layer": "events_traceability",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-12",
       "layer": "agent_distribution",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-13",
       "layer": "rag_memory",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-14",
       "layer": "runtime_hosting",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-15",
       "layer": "tools_skills_capabilities",
       "status": "CANDIDATE-RESOLVED"
     },
     {
-      "evidence_sha": "e174b5b9c99ed094c10b0e1d65e2e93291838191",
+      "evidence_sha": "3c8e6122d48f61651494d17e3163cb036d757b4e",
       "finding_id": "EBH6-LAYER-16",
       "layer": "background_workers_infra_adapters",
       "status": "CANDIDATE-RESOLVED"

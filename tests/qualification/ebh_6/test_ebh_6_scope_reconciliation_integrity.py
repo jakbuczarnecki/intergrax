@@ -36,7 +36,8 @@ def test_ebh6_scope_dossier_content_controls() -> None:
     assert semantic.is_file()
     prod = _REPO / "docs/project/maintainers/qualification/EBH_6_FINAL_PRODUCTION_CODE_AUDIT_DOSSIER.md"
     assert prod.is_file()
-    assert "PARTIAL / EXACT BLOCKERS" in prod.read_text(encoding="utf-8")
+    prod_text = prod.read_text(encoding="utf-8")
+    assert "PARTIAL / EXACT BLOCKERS" in prod_text or "EBH-6 — CLOSED" in prod_text
     assert _ROADMAP.is_file()
     roadmap_head = _ROADMAP.read_text(encoding="utf-8")[:120000]
     assert "EBH" in roadmap_head and "3.0.8" in roadmap_head
