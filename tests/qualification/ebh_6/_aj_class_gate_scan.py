@@ -221,19 +221,38 @@ def scan_class_a_vendor_authorship(layer: str) -> None:
             assert "TYPE_CHECKING" in text or "Protocol" in text, rel
 
 
+_FORBIDDEN_VENDOR_LITERALS: Final[tuple[str, ...]] = (
+    '"openai"',
+    "'openai'",
+    '"gpt-4"',
+    '"claude"',
+    '"anthropic"',
+)
+
+
+def assert_no_forbidden_vendor_literals_in_text(text: str, rel: str) -> None:
+    for lit in _FORBIDDEN_VENDOR_LITERALS:
+        if lit in text:
+            msg = f"{rel}: forbidden vendor literal {lit}"
+            raise AssertionError(msg)
+
+
 def scan_class_b_hardcoding(layer: str) -> None:
     files = _layer_py_files(layer)
     assert files, f"T-CLS-B: no python paths for {layer}"
     if layer not in ("execution", "semantic_core", "agent_distribution"):
         return
-    forbidden_literals = ('"openai"', "'openai'", '"gpt-4"', '"claude"', '"anthropic"')
     for path in files:
         if "/providers/" in path.as_posix():
             continue
         text = _read_py(path)
-        for lit in forbidden_literals:
-            if lit in text and "test" not in path.parts:
-                assert "example" in text.lower() or "fixture" in path.name, f"{path}: {lit}"
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        if "test" in path.parts:
+            continue
+        try:
+            assert_no_forbidden_vendor_literals_in_text(text, rel)
+        except AssertionError:
+            assert "example" in text.lower() or "fixture" in path.name, f"{path}: vendor literal"
 
 
 def scan_class_c_fail_closed(layer: str) -> None:

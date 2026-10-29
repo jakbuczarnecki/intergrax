@@ -79,6 +79,28 @@ _HARDENING3_BND = (
     "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py"
     "::test_hardening_3_contracts_do_not_import_runtime_except_allowlist"
 )
+_E01_HARD_B = (
+    "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py"
+    "::test_ebh6_e01_platform_hardcoding_invokes_class_b_scans"
+)
+_E01_SQLITE = (
+    "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py"
+    "::test_ebh6_e01_persistence_sqlite_closed_world_no_shadow_connects"
+)
+_E01_CMP = (
+    "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py"
+    "::test_ebh6_e01_sanctioned_composition_paths_resolvable_on_disk"
+)
+_E01_FAIL = (
+    "tests/qualification/ebh_6/test_ebh_6_e01_e02_audit_findings_evidence.py"
+    "::test_ebh6_e01_platform_fail_closed_reach_gates"
+)
+_EBH5_SQLITE_PROOF = (
+    "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability"
+)
+_EBH5_REACH_OBS = (
+    "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_observability_fail_closed_without_role"
+)
 _VBN_MATRIX = "docs/project/maintainers/qualification/VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md"
 _REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 
@@ -137,9 +159,9 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.SANCTIONED_COMPOSITION: EvidenceBundle(
         EvidenceBundleId.SANCTIONED_COMPOSITION,
         "TRACE-X sanctioned composition sites",
-        (_SANCTIONED, _EBH5_REACH_FACTORY),
+        (_E01_CMP, _EBH5_REACH_FACTORY),
         ImplementerReview.ACCEPTED,
-        "Registry presence — not per-root wiring replay @ HEAD.",
+        "On-disk sanctioned roots + factory owner — not full wiring replay @ HEAD.",
         negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.EXECUTION_BYPASS: EvidenceBundle(
@@ -168,9 +190,9 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.PERSISTENCE_SQLITE: EvidenceBundle(
         EvidenceBundleId.PERSISTENCE_SQLITE,
         "SQLite annex accountability",
-        (_SQLITE,),
+        (_E01_SQLITE, _EBH5_SQLITE_PROOF, _SQLITE),
         ImplementerReview.ACCEPTED,
-        "Annex accountability — not all shadow-store class-E obligations.",
+        "Closed-world sqlite3.connect census + class-E shadow scan — not live store semantics.",
         negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.OBSERVABILITY_AUTHORITY: EvidenceBundle(
@@ -250,17 +272,17 @@ _BUNDLE_CATALOG: Final[dict[EvidenceBundleId, EvidenceBundle]] = {
     EvidenceBundleId.PLATFORM_FAIL_CLOSED: EvidenceBundle(
         EvidenceBundleId.PLATFORM_FAIL_CLOSED,
         "Fail-closed materialization markers",
-        (_EBH5_REACH_SLUG, _EBH5_REACH_FACTORY, _SANCTIONED),
+        (_E01_FAIL, _EBH5_REACH_SLUG, _EBH5_REACH_OBS),
         ImplementerReview.ACCEPTED,
-        "Static fail-closed markers — not shadow config paths platform-wide.",
+        "Reach fail-closed + applicable class-C scans — not every hosting profile path.",
         negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.PLATFORM_HARDCODING: EvidenceBundle(
         EvidenceBundleId.PLATFORM_HARDCODING,
         "Class-B literal scan + register",
-        (_EE_A1,),
+        (_E01_HARD_B,),
         ImplementerReview.ACCEPTED,
-        "Sample literal scan — not exhaustive backend census.",
+        "Closed-world class-B vendor literal scan on execution/semantic/agent layers.",
         negative_test_ref=_REG_PROHIBITED,
     ),
     EvidenceBundleId.PLATFORM_TYPING_SCAN: EvidenceBundle(
@@ -400,7 +422,8 @@ def assert_resolvable_pytest_node_id(node_id: str) -> None:
         msg = f"missing gate module: {node_id}"
         raise AssertionError(msg)
     text = path.read_text(encoding="utf-8")
-    if f"def {func}" not in text and f"async def {func}" not in text:
+    func_base = func.split("[", 1)[0]
+    if f"def {func_base}" not in text and f"async def {func_base}" not in text:
         msg = f"missing gate test function: {node_id}"
         raise AssertionError(msg)
 

@@ -57,6 +57,15 @@
 
 **Recommendation:** **PATH A — ACCEPT SCOPED DEBT** for EBH-6 **if** operator OD-EBH6-Q2D2 + auditor accept FINDING track; else **PATH B** + **OD-EBH6-01**.
 
+## E01/E02 — technical disposition (@ qual gate — not operator signature)
+
+| Field | Value |
+| --- | --- |
+| **Gate** | [`test_ebh_6_q2d2_dual_path.py`](../../../tests/qualification/ebh_6/test_ebh_6_q2d2_dual_path.py) `test_ebh6_q2d2_technical_disposition_path_a_eligible_for_operator` |
+| **Technical result** | **`PATH A — ELIGIBLE FOR OPERATOR RATIFICATION`** |
+| **Operator OD-EBH6-Q2D2** | **OPEN** — agent does not record APPROVED |
+| **Path B trigger** | Operator/auditor rejects ADR scope or ratification for production_effective YES seam |
+
 ## C3-01 — Path A audit (implementer analysis @ HEAD)
 
 | # | Question | Finding |

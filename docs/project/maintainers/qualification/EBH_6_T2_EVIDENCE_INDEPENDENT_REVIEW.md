@@ -24,11 +24,11 @@ Replaces the false **T2=131** census caused by `scanner_effective()` returning `
 | Bundle ID | Primary behavioral gates (nodeids) | Review | Scope |
 | --- | --- | --- | --- |
 | `integration_factory` | EBH-5 factory/reachability, RPL-G | ACCEPTED | Integration materialization slice |
-| `sanctioned_composition` | Sanctioned roots + EBH-5 factory reachability | ACCEPTED | TRACE-X registry |
+| `sanctioned_composition` | E01 on-disk TRACE-X roots + EBH-5 factory owner | ACCEPTED | Not full wiring replay |
 | `execution_bypass` | EE-A1 P0 inventory | ACCEPTED | Execution bypass |
 | `nexus_reachability` | EE-A1 + Hardening-3 + sanctioned roots | ACCEPTED | Nexus L3 index |
 | `governance_boundary` | NPSC42 H1 (register negative ref) | ACCEPTED | Governance non-execution |
-| `persistence_sqlite` | SQLite annex gate (register negative ref) | ACCEPTED | Annex accountability |
+| `persistence_sqlite` | E01 connect census + class-E scan + EBH-5 proof + annex gate | ACCEPTED | Not live store semantics |
 | `observability_authority` | **W5-B2 invoke** `test_production_composition_creates_bounded_sink` | ACCEPTED | Bounded sink wiring |
 | `recovery_plane` | NPSC5e | ACCEPTED | Recovery admission |
 | `agent_lifecycle` | Lifecycle architecture gate | ACCEPTED | Agent distribution |
@@ -38,8 +38,8 @@ Replaces the false **T2=131** census caused by `scanner_effective()` returning `
 | `platform_vendor_scan` | EBH-5 factory/slug fail-closed + inventory | ACCEPTED | Static A/D scan |
 | `replaceability_j` | **RPL-G invoke** + VBN matrix doc | ACCEPTED | Replaceability slice |
 | `q2d2_finding` | Q2-D2 B3 gate + register | ACCEPTED (FINDING outcome) | Operator OD-EBH6-Q2D2 |
-| `platform_fail_closed` | EBH-5 slug/factory fail-closed + sanctioned roots | ACCEPTED | Residual class-C |
-| `platform_hardcoding` | EE-A1 P0 bypass inventory | ACCEPTED | Residual class-B |
+| `platform_fail_closed` | E01 reach + class-C scans + EBH-5 slug/obs fail-closed | ACCEPTED | Residual class-C |
+| `platform_hardcoding` | E01 class-B vendor literal scan (execution/semantic/agent) | ACCEPTED | Residual class-B |
 | `platform_typing_scan` | FRZ-TYP CSP + app seam + EBH-2I CSP | ACCEPTED | Residual class-F |
 | `l3_reachability` | Sanctioned + lifecycle + NPSC5e + Hardening-3 | ACCEPTED | Class-H L3 slice |
 

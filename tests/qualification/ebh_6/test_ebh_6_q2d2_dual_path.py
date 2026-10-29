@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Final
 
 import pytest
 from tests.qualification.ebh_6._findings_register import all_hardcoding_findings
@@ -41,3 +42,21 @@ def test_ebh6_q2d2_operator_decision_stays_open_without_verified_entry() -> None
     row = [line for line in text.splitlines() if "OD-EBH6-Q2D2" in line and line.startswith("|")][0]
     assert "OPEN" in row
     assert "APPROVED" not in row and "CLOSED" not in row
+
+
+TECHNICAL_Q2D2_DISPOSITION: Final[str] = "PATH A — ELIGIBLE FOR OPERATOR RATIFICATION"
+
+
+def test_ebh6_q2d2_technical_disposition_path_a_eligible_for_operator() -> None:
+    """Technical basis only — does not record OD-EBH6-Q2D2 APPROVED."""
+    exposure = _REPO / "intergrax/runtime/nexus/orchestration/nexus_decision_exposure.py"
+    assert exposure.is_file()
+    text = exposure.read_text(encoding="utf-8")
+    assert "AuthoritativeDecisionExposure" in text
+    assert "object" in text
+    debt = next(r for r in all_hardcoding_findings() if r.finding_id == "EBH6-DEBT-Q2-D2")
+    assert debt.status.value == "RATIFIED"
+    assert debt.violated_invariant == "FRZ-TYP-03"
+    group = aj_group_by_layer_class()[("semantic_core", "F")]
+    assert group.outcome == AjControlOutcome.FINDING
+    assert TECHNICAL_Q2D2_DISPOSITION.startswith("PATH A")

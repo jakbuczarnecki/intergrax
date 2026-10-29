@@ -33,6 +33,8 @@
 | EBH6-DEBT-APP-TYP-10 | `resolve_reasoning_task_metadata` | semantic_any | wiring | **A** | Metadata resolver return deferred | **PENDING** |
 | EBH6-DEBT-APP-TYP-11 | `attach_recovery_contract_to_task_metadata` | semantic_any | wiring | **A** | Task metadata attachment seam | **PENDING** |
 
+**E01/E02 behavioral adjunct (04/05/11):** [`test_ebh_6_app_typ_e02_evidence_matrix.py`](../../../tests/qualification/ebh_6/test_ebh_6_app_typ_e02_evidence_matrix.py) — scenario production fail-closed/success · business-agent deploy · recovery attach.
+
 ## R1 — debt matching integrity (@ qual HEAD)
 
 | Control | Status |

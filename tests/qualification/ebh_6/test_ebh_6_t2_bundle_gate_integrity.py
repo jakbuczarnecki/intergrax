@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import Final
+
 import pytest
 from tests.qualification.ebh_6._t2_evidence_bundles import (
     EvidenceBundleId,
@@ -87,6 +89,24 @@ def test_ebh6_t2_accepted_review_not_independent_pass() -> None:
         assert bundle.implementer_review == ImplementerReview.ACCEPTED
         assert bundle.implementer_review.value != "PASS"
         assert bundle.implementer_review.value != "INDEPENDENT_PASS"
+
+
+_E01_AUDIT_GATES: Final[frozenset[EvidenceBundleId]] = frozenset(
+    {
+        EvidenceBundleId.PLATFORM_HARDCODING,
+        EvidenceBundleId.PERSISTENCE_SQLITE,
+        EvidenceBundleId.SANCTIONED_COMPOSITION,
+        EvidenceBundleId.PLATFORM_FAIL_CLOSED,
+    },
+)
+_E01_SUBSTR = "test_ebh_6_e01_e02_audit_findings_evidence.py"
+
+
+def test_ebh6_t2_e01_audit_finding_bundles_reference_behavioral_e01_gates() -> None:
+    for bundle in all_evidence_bundles():
+        if bundle.bundle_id not in _E01_AUDIT_GATES:
+            continue
+        assert any(_E01_SUBSTR in g for g in bundle.primary_behavioral_gates), bundle.bundle_id
 
 
 def test_ebh6_t2_pair_map_covers_133_bundles() -> None:
