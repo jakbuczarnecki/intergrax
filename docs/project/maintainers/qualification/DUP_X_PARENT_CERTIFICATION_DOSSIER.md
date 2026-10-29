@@ -1,0 +1,50 @@
+# DUP-X — Parent Certification Dossier
+
+| Field | Value |
+| --- | --- |
+| **Workstream** | DUP-X duplicate & bypass certification |
+| **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` |
+| **IMPLEMENTATION_SHA** | **PENDING OPERATOR COMMIT** — [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
+| **EVIDENCE_PUBLICATION_SHA** | **PENDING OPERATOR COMMIT** — do not assign to dossier-only commit |
+| **TEST_RUN_HEAD (@ WIP)** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` · **26 passed** · `.tmp/proof/dup-x-wave-d/run.log` |
+| **Publication ladder SSOT** | [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) |
+| **ECAP** | ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL — parent B1–B6 handoff |
+
+## Scope
+
+Cross-tier duplicate/bypass census (DUP-01..14), responsibility families (15), EBH-6 class D deferral, COMPAT-R3 lab fence, CONFIG-X qual SSOT (DUP-14).
+
+## Wave summary
+
+| Wave | Outcome |
+| --- | --- |
+| A | Closed-world inventory + candidate classification |
+| B | Qual gates — class D env slug fence, COMPAT-R3 negative import test |
+| C | CONFIG-X ∪ EBH-5 hints; tools_base production import gate |
+| D | Mechanical exit gates + Protocol 03 package (**READY FOR INDEPENDENT REVIEW**) |
+
+## Open items (not parent CLOSED)
+
+| Item | Status |
+| --- | --- |
+| DUPX-GAP-CLASS-D | OPEN |
+| DUPX-GAP-L3-TIER3-DEDUPE | OPEN |
+| DUPX-CAND-03 / CAND-09 / CAND-12 | OPEN disposition |
+| OD-DUPX-02 / OD-DUPX-01 / OD-DUPX-08 | OPEN |
+
+## Evidence commands
+
+```powershell
+git checkout development
+git rev-parse HEAD
+New-Item -ItemType Directory -Force -Path .tmp/proof/dup-x-wave-d
+uv run pytest tests/qualification/dup_x/ -q 2>&1 | Tee-Object -FilePath .tmp/proof/dup-x-wave-d/run.log
+uv run pytest tests/qualification/ebh_6/test_ebh_6_b2_layer_closed_world_integrity.py -q
+# NPSC-4.2 @ HEAD may fail (allowlist drift) — optional; not counted as DUP-X L2 primary
+```
+
+## FINAL STATUS
+
+**DUP-X — READY FOR INDEPENDENT REVIEW — NOT CLOSED**
+
+Agent **forbidden:** Protocol DUP-X-03 PASS · OD-DUPX-08 · roadmap §5 update.
