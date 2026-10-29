@@ -185,3 +185,16 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 | Tests | **40 passed** |
 | Log | `.tmp/proof/dup-x-parent-closure-l3/run.log` |
 | **QUALIFICATION_EXECUTION_SHA** | `0e19bc28a6dc7700c633e9f2179974bb9238fbe6` |
+
+## OD-DUPX-08 final operator closure (2026-10-29)
+
+| Field | Value |
+| --- | --- |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
+| **B6_ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` |
+| **OPERATOR_APPROVAL** | `OPERATOR APPROVED — DUP-X CLOSED (OD-DUPX-08)` — 2026-10-29 |
+| **ROADMAP_CLOSURE_PUBLICATION_SHA** | `2b48bceafbdac09fdd0fae376dab02c10fc8f473` |
+| **FINAL_RECONCILIATION_SHA** | This manifest's subsequent Git commit; inspect Git history rather than self-reference |
+| **PARENT_STATUS** | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
+
+Scope: 44 DUP-X PASS and 24 parent L3 PASS in supplied implementer logs; B6 auditor inspected logs but did not independently rerun pytest; NPSC-4.2 allowlist FAIL expressly excluded from DUP-X scoped certification. Global FRZ PASS = 0. ROADMAP-REPLAY-X not started.
