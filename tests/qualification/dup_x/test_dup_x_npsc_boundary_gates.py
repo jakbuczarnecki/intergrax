@@ -12,6 +12,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
+
+def _repo_path(rel: str) -> Path:
+    return _REPO_ROOT.joinpath(*rel.split("/"))
+
+
 _NPSC_EXCLUSION_TEN_MODULES: frozenset[str] = frozenset(
     {
         "intergrax/applications/_shared/harness_host_runtime.py",
@@ -41,7 +46,7 @@ _NPSC_ALLOWLIST: frozenset[str] = frozenset(
 def test_dup_x_npsc_exclusion_record_covers_ten_modules() -> None:
     """Each documented module must exist and reference orchestration backend wiring."""
     for rel in sorted(_NPSC_EXCLUSION_TEN_MODULES):
-        path = _REPO_ROOT / rel.replace("/", "\\")
+        path = _repo_path(rel)
         assert path.is_file(), rel
         assert "_orchestration_backend" in path.read_text(encoding="utf-8-sig")
         assert rel not in _NPSC_ALLOWLIST

@@ -30,6 +30,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
+
+def _repo_path(rel: str) -> Path:
+    return _REPO_ROOT.joinpath(*rel.split("/"))
+
+
 _ACCESS_SYMBOL = "orchestration_backend_for_execution_engine"
 _ACCESS_MODULE_SUFFIX = "intergrax.runtime.execution._orchestration_backend_access"
 
@@ -119,7 +124,7 @@ def test_b4_materialize_host_orchestration_backend_callers_allowlisted() -> None
 def test_b4_ten_modules_exclude_lab_bypass_and_shadow_slug_selection() -> None:
     """Prohibited within NPSC ten-module surface: COMPAT-R3 lab ingress or Class-D shadow reads."""
     for rel in sorted(_NPSC_EXCLUSION_TEN_MODULES):
-        path = _REPO_ROOT / rel.replace("/", "\\")
+        path = _repo_path(rel)
         text = path.read_text(encoding="utf-8")
         for marker in _FORBIDDEN_LAB_IMPORT_MARKERS:
             assert marker not in text, f"{rel}: lab marker {marker!r}"
