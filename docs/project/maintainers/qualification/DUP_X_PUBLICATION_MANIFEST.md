@@ -142,7 +142,7 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 | **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | **44 passed** · `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
 | **INDEPENDENT_AUDIT_BASELINE_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Recommended auditor replay pin |
 | **B4_RECONCILIATION_SHA** | `a804a4319cbe644da757e196f9692c9d55070a67` | Protocol 03 final handoff |
-| **CURRENT_PUBLICATION_HEAD** | `a804a4319cbe644da757e196f9692c9d55070a67` | Narrative head post-B4 |
+| **CURRENT_PUBLICATION_HEAD** | `e04052eac6bad86d02729eee0b5b83037a91ad8e` | Narrative head post-B4 |
 
 ## Operator verdict
 
