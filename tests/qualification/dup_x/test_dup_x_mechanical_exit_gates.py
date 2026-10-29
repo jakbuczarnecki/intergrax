@@ -11,10 +11,12 @@ from tests.qualification.dup_x._closed_world_inventory import assert_dup_x_close
 from tests.qualification.dup_x._findings_register import (
     DUP_X_AUDITED_HEAD,
     DUP_X_CANDIDATE_RECORDS,
+    FindingKind,
     count_open_bypass_unresolved,
     count_open_gaps,
     count_unresolved_duplicate_blockers,
     count_unresolved_shadow_authority,
+    findings_by_id,
     retained_parallel_without_dossier,
 )
 from tests.qualification.ebh_5._closed_world_discovery import COMPOSITION_ROOT_HINTS
@@ -50,9 +52,12 @@ def test_dup_x_section_13_measure_open_bypass() -> None:
 
 
 def test_dup_x_section_13_open_gaps_registered() -> None:
-    gaps = count_open_gaps()
-    assert gaps >= 1
-    assert gaps <= 5
+    """Gap rows remain in SSOT with stable IDs after Wave 1 closure (open count must be zero)."""
+    by_id = findings_by_id()
+    for gap_id in ("DUPX-GAP-CLASS-D", "DUPX-GAP-L3-TIER3-DEDUPE"):
+        assert gap_id in by_id
+        assert by_id[gap_id].kind is FindingKind.GAP
+    assert count_open_gaps() == 0
 
 
 def test_dup_x_section_13_retained_parallel_delta_proof() -> None:

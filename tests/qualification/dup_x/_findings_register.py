@@ -60,6 +60,9 @@ class DupXCandidateRecord:
 
 
 DUP_X_AUDITED_HEAD: Final[str] = "8245b7471379414dc24385d1e770ccb56a7b0e2d"
+DUP_X_WAVE1_IMPLEMENTATION_HEAD: Final[str] = "2325460ff7f1f0290f95dae03145e30e20e0d991"
+
+_UNKNOWN_REACHABILITY_MARKERS: Final[tuple[str, ...]] = ("unknown",)
 
 DUP_X_FINDING_RECORDS: Final[tuple[DupXFindingRecord, ...]] = (
     DupXFindingRecord(
@@ -67,26 +70,37 @@ DUP_X_FINDING_RECORDS: Final[tuple[DupXFindingRecord, ...]] = (
         severity=FindingSeverity.GAP,
         dup_classes=("DUP-10",),
         kind=FindingKind.GAP,
-        status=FindingStatus.OPEN,
-        source_paths=("intergrax/integrations/registry/factory.py",),
+        status=FindingStatus.PASS,
+        source_paths=(
+            "intergrax/integrations/registry/factory.py",
+            "intergrax/integrations/_shared/config.py",
+            "intergrax/integrations/execution_bound_integration_resolution.py",
+            "intergrax/integrations/existing_capability_configuration_facade.py",
+        ),
         symbols=("resolve_from_profile", "read_integration_slug_from_env"),
-        production_reachability="unknown — Wave B L3 census required",
-        canonical_owners=("intergrax/integrations/registry/factory.py",),
-        remediation="Wave B class D deep audit + OD-DUPX-01 before production delta",
-        notes="EBH-6 class D deferred; mechanical env-slug gate added @ Wave B",
+        production_reachability="production-effective — factory + config canonical; Wave 1 caller matrix",
+        canonical_owners=(
+            "intergrax/integrations/_shared/config.py",
+            "intergrax/integrations/registry/factory.py",
+        ),
+        remediation="Wave 1 audit closed — OD-DUPX-01 still OPEN for any prod delta",
+        notes="DUP_X_CLASS_D_INTEGRATION_SELECTOR_CALLER_MATRIX.md; CAND-03 RATIFIED CANONICAL",
     ),
     DupXFindingRecord(
         finding_id="DUPX-GAP-L3-TIER3-DEDUPE",
         severity=FindingSeverity.GAP,
         dup_classes=("DUP-02",),
         kind=FindingKind.GAP,
-        status=FindingStatus.OPEN,
+        status=FindingStatus.PASS,
         source_paths=("applications/",),
-        symbols=("dedupe_repository",),
-        production_reachability="unknown — per-app L3 required",
-        canonical_owners=("platform context/memory contracts",),
-        remediation="Inventory + operator disposition per Tier-3 app",
-        notes="CAND-12 classified OPEN pending L3",
+        symbols=("SlackEventDedupeRepository", "wire_slack_companion"),
+        production_reachability="LKW Slack product dedupe only — 8/9 hosts N/A",
+        canonical_owners=(
+            "applications/local_workspace_application/slack_companion/dedupe_repository.py",
+            "intergrax/context/policy/exact_dedup.py",
+        ),
+        remediation="Wave 1 per-app disposition — no platform duplicate",
+        notes="DUP_X_TIER3_APPLICATION_HOST_DEDUPE_DISPOSITION.md; CAND-12 N/A WITH EVIDENCE",
     ),
     DupXFindingRecord(
         finding_id="DUPX-F-COMPAT-R3-FENCE",
@@ -126,10 +140,10 @@ DUP_X_CANDIDATE_RECORDS: Final[tuple[DupXCandidateRecord, ...]] = (
     DupXCandidateRecord(
         candidate_id="DUPX-CAND-03",
         dup_classes=("DUP-10",),
-        status=FindingStatus.OPEN,
-        disposition="Class D selector audit — GAP tracked",
+        status=FindingStatus.RATIFIED,
+        disposition="CANONICAL — factory + config integration selector (Class D matrix)",
         parallel_retained=False,
-        delta_dossier=None,
+        delta_dossier="DUP_X_CLASS_D_INTEGRATION_SELECTOR_CALLER_MATRIX.md",
     ),
     DupXCandidateRecord(
         candidate_id="DUPX-CAND-04",
@@ -174,10 +188,10 @@ DUP_X_CANDIDATE_RECORDS: Final[tuple[DupXCandidateRecord, ...]] = (
     DupXCandidateRecord(
         candidate_id="DUPX-CAND-09",
         dup_classes=("DUP-10", "DUP-12"),
-        status=FindingStatus.OPEN,
-        disposition="Observability export routing — independent review",
+        status=FindingStatus.RATIFIED,
+        disposition="DISTINCT — integration catalog vs export operator_wiring",
         parallel_retained=False,
-        delta_dossier=None,
+        delta_dossier="DUP_X_RESPONSIBILITY_DELTA_observability_export_routing.md",
     ),
     DupXCandidateRecord(
         candidate_id="DUPX-CAND-10",
@@ -198,10 +212,10 @@ DUP_X_CANDIDATE_RECORDS: Final[tuple[DupXCandidateRecord, ...]] = (
     DupXCandidateRecord(
         candidate_id="DUPX-CAND-12",
         dup_classes=("DUP-02",),
-        status=FindingStatus.OPEN,
-        disposition="Tier-3 dedupe — L3 gap",
+        status=FindingStatus.N_A_WITH_EVIDENCE,
+        disposition="DISTINCT LKW Slack product dedupe — 8/9 Tier-3 hosts N/A",
         parallel_retained=False,
-        delta_dossier=None,
+        delta_dossier="DUP_X_TIER3_APPLICATION_HOST_DEDUPE_DISPOSITION.md",
     ),
     DupXCandidateRecord(
         candidate_id="DUPX-CAND-13",
@@ -250,8 +264,26 @@ def count_unresolved_shadow_authority() -> int:
     )
 
 
-def count_open_gaps() -> int:
-    return sum(1 for row in DUP_X_FINDING_RECORDS if row.status == FindingStatus.OPEN)
+def count_open_gaps(records: tuple[DupXFindingRecord, ...] | None = None) -> int:
+    rows = DUP_X_FINDING_RECORDS if records is None else records
+    return sum(1 for row in rows if row.status == FindingStatus.OPEN)
+
+
+def count_open_candidates(records: tuple[DupXCandidateRecord, ...] | None = None) -> int:
+    rows = DUP_X_CANDIDATE_RECORDS if records is None else records
+    return sum(1 for row in rows if row.status == FindingStatus.OPEN)
+
+
+def findings_with_unknown_reachability(
+    records: tuple[DupXFindingRecord, ...] | None = None,
+) -> tuple[str, ...]:
+    rows = DUP_X_FINDING_RECORDS if records is None else records
+    unknown: list[str] = []
+    for row in rows:
+        lowered = row.production_reachability.lower()
+        if any(marker in lowered for marker in _UNKNOWN_REACHABILITY_MARKERS):
+            unknown.append(row.finding_id)
+    return tuple(unknown)
 
 
 def count_open_bypass_unresolved() -> int:
