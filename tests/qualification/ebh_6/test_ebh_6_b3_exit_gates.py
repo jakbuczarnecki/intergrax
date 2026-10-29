@@ -53,7 +53,47 @@ def test_ebh6_b3_sixteen_layers_status_matches_group_outcomes() -> None:
     layer_rows = [row for row in all_hardcoding_findings() if row.finding_id.startswith("EBH6-LAYER-")]
     assert len(layer_rows) == 16
     for layer in EBH6_AUDIT_LAYERS:
-        assert layer_register_status_for_layer(layer) == FindingStatus.CANDIDATE_RESOLVED, layer
+        expected = layer_register_status_for_layer(layer)
+        row = next(r for r in layer_rows if r.layer == layer)
+        assert row.status == expected, layer
+        has_t1 = any(
+            g.outcome == AjControlOutcome.EVIDENCE_REQUIRED
+            for (ly, _), g in aj_group_by_layer_class().items()
+            if ly == layer
+        )
+        if has_t1:
+            assert expected == FindingStatus.L9_EVIDENCE_SUBMITTED, layer
+        else:
+            assert expected == FindingStatus.CANDIDATE_RESOLVED, layer
+
+
+def test_ebh6_protocol03_contract_tier_coverage() -> None:
+    from tests.qualification.ebh_6._aj_class_gate_scan import scanner_effective
+    from tests.qualification.ebh_6._tier_audit import EvidenceTier, evidence_tier_for_pair, tier_census
+
+    groups = aj_group_by_layer_class()
+    census = tier_census()
+    assert len(groups) == 133
+    assert census[EvidenceTier.T1.value] == count_evidence_required_groups()
+    for (layer, cls), group in groups.items():
+        tier = evidence_tier_for_pair(layer, cls)
+        if tier == EvidenceTier.T1:
+            assert group.outcome == AjControlOutcome.EVIDENCE_REQUIRED, group.group_id
+        elif tier == EvidenceTier.T2:
+            assert group.outcome == AjControlOutcome.PARTIAL_CANDIDATE, group.group_id
+            assert scanner_effective(layer, cls), group.group_id
+            assert group.scope_limitation.strip()
+        else:
+            assert group.outcome in (
+                AjControlOutcome.PASS_CANDIDATE,
+                AjControlOutcome.FINDING,
+            ), group.group_id
+        if group.outcome == AjControlOutcome.PARTIAL_CANDIDATE:
+            assert scanner_effective(layer, cls), f"no-op PARTIAL: {group.group_id}"
+        if group.outcome == AjControlOutcome.FINDING:
+            assert any("register" in ref.lower() or "_findings_register" in ref for ref in group.evidence_refs), (
+                group.group_id
+            )
 
 
 def test_ebh6_b3_pair_count_matches_l9a() -> None:

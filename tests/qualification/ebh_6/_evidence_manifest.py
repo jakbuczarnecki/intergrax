@@ -11,7 +11,7 @@ from typing import Final
 EBH6_EVIDENCE_SUITE: Final[str] = "tests/qualification/ebh_6/"
 
 # Operator planning anchor — EBH-6 wave START_HEAD @ approved execution.
-EXPECTED_START_HEAD: Final[str] = "56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b"
+EXPECTED_START_HEAD: Final[str] = "cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97"
 
 EBH5_INDEPENDENT_AUDIT_SHA: Final[str] = "33ecf19cc020b112d9e586c87b49e819202f5d6d"
 CONFIG_X_HISTORICAL_PASS_SHA: Final[str] = "fac9a43f3b128fde63541d2b56ebd8f4a751e8fb"

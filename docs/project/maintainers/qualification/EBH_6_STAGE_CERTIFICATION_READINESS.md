@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| **Disposition** | **READY FOR INDEPENDENT PROTOCOL 03 — IMPLEMENTER PARTIAL** (`EV_GROUPS=0`; **OD-EBH6-Q2D2 OPEN**) |
-| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
-| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN)** — **T1=0** tier contract; **16× CANDIDATE-RESOLVED** layers @ B5 |
+| **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
+| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-cert-handoff/pytest.log` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
@@ -14,7 +14,7 @@
 | CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
 | Layer L9 attestation (16) | **CANDIDATE-RESOLVED** — B5 A–J controls reconciled; **not** independent RESOLVED |
 | A–J applicable pairs / gap groups @ B5 HEAD | **133** pairs / **0** `EVIDENCE_REQUIRED` groups |
-| EBH-6 B5 pytest (L3 consolidated) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-final-evidence/pytest.log` |
+| EBH-6 B5 pytest (L3 consolidated) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-cert-handoff/pytest.log` |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |

@@ -15,6 +15,84 @@ from tests.qualification.ebh_6._l3_aj_group_reconciliation import (
     aj_group_by_layer_class,
     count_evidence_required_groups,
 )
+from tests.qualification.ebh_6._tier_audit import tier_census
+
+
+def _operator_q2d2_open() -> bool:
+    from pathlib import Path
+
+    reg = (
+        Path(__file__).resolve().parents[3]
+        / "docs/project/maintainers/qualification/EBH_6_OPERATOR_DECISION_REGISTER.md"
+    )
+    text = reg.read_text(encoding="utf-8")
+    row = text.split("| OD-EBH6-Q2D2 |", 1)[-1].split("\n", 1)[0]
+    return "OPEN" in row
+
+
+def certification_banner_status() -> str:
+    census = tier_census()
+    t1 = census.get("T1", 0)
+    blockers: list[str] = []
+    if t1:
+        blockers.append(f"T1={t1}")
+    if _operator_q2d2_open():
+        blockers.append("OD-EBH6-Q2D2 OPEN")
+    from tests.qualification.ebh_6._findings_register import count_prohibited_unresolved
+
+    if count_prohibited_unresolved():
+        blockers.append("prohibited unresolved")
+    if blockers:
+        return f"PARTIAL / EXACT BLOCKERS ({'; '.join(blockers)})"
+    return "READY FOR INDEPENDENT PROTOCOL 03"
+
+
+def export_l9_blocker_replay_bundle() -> dict[str, dict[str, object]]:
+    blockers = (
+        "EBH6-BLK-L9-OWN-01",
+        "EBH6-BLK-L9-EXE-01",
+        "EBH6-BLK-L9-GOV-01",
+        "EBH6-BLK-L9-REC-01",
+        "EBH6-BLK-L9-SEC-01",
+        "EBH6-BLK-L9-REL-01",
+        "EBH6-BLK-L9-HRN-01",
+        "EBH6-BLK-L9-TEN-01",
+    )
+    out: dict[str, dict[str, object]] = {}
+    for bundle in FAMILY_L9_EVIDENCE:
+        if bundle.blocker_id in blockers:
+            out[bundle.blocker_id] = {
+                "family_id": bundle.family_id,
+                "gate_test_ids": list(bundle.gate_test_ids),
+                "scope_limitation": bundle.scope_limitation,
+                "invariant_under_test": bundle.invariant_under_test,
+            }
+    return out
+
+
+def export_l9_blocker_replay_map() -> dict[str, tuple[str, ...]]:
+    legacy: dict[str, tuple[str, ...]] = {}
+    for bid, payload in export_l9_blocker_replay_bundle().items():
+        legacy[bid] = tuple(payload["gate_test_ids"])  # type: ignore[index]
+    return legacy
+
+
+def assert_family_gate_sync_complete() -> None:
+    """T-FAM-SYNC — catalog gate nodeids match L9 bundles with behavioral/arch tests."""
+    from pathlib import Path
+
+    from tests.qualification.ebh_6._family_catalog import EBH6_FAMILY_CATALOG
+
+    repo = Path(__file__).resolve().parents[3]
+    bundles = {b.family_id: b for b in FAMILY_L9_EVIDENCE}
+    assert len(EBH6_FAMILY_CATALOG) == 23
+    for row in EBH6_FAMILY_CATALOG:
+        bundle = bundles[row.family_id]
+        gates = bundle.gate_test_ids or row.gate_test_ids
+        assert gates, row.family_id
+        for node in gates:
+            assert "::test_" in node, node
+            assert (repo / node.split("::", 1)[0]).is_file(), node
 
 
 def export_aj_group_dispositions() -> tuple[dict[str, Any], ...]:
@@ -54,24 +132,6 @@ def export_family_dispositions() -> tuple[dict[str, Any], ...]:
     return tuple(rows)
 
 
-def export_l9_blocker_replay_map() -> dict[str, tuple[str, ...]]:
-    blockers = (
-        "EBH6-BLK-L9-OWN-01",
-        "EBH6-BLK-L9-EXE-01",
-        "EBH6-BLK-L9-GOV-01",
-        "EBH6-BLK-L9-REC-01",
-        "EBH6-BLK-L9-SEC-01",
-        "EBH6-BLK-L9-REL-01",
-        "EBH6-BLK-L9-HRN-01",
-        "EBH6-BLK-L9-TEN-01",
-    )
-    out: dict[str, tuple[str, ...]] = {}
-    for bundle in FAMILY_L9_EVIDENCE:
-        if bundle.blocker_id in blockers:
-            out[bundle.blocker_id] = bundle.gate_test_ids
-    return out
-
-
 def export_layer_register_snapshot() -> tuple[dict[str, Any], ...]:
     rows: list[dict[str, Any]] = []
     for row in all_hardcoding_findings():
@@ -90,8 +150,12 @@ def export_layer_register_snapshot() -> tuple[dict[str, Any], ...]:
 
 def p03_handoff_bundle() -> dict[str, Any]:
     sha = evidence_git_head_sha()
+    assert_family_gate_sync_complete()
+    census = tier_census()
     return {
         "certification_handoff_sha": sha,
+        "certification_banner": certification_banner_status(),
+        "tier_census": census,
         "aj_group_count": len(export_aj_group_dispositions()),
         "family_count": len(export_family_dispositions()),
         "l9_blocker_count": len(export_l9_blocker_replay_map()),
@@ -110,6 +174,7 @@ def p03_handoff_bundle() -> dict[str, Any]:
         "aj_groups": export_aj_group_dispositions(),
         "families": export_family_dispositions(),
         "l9_blockers": export_l9_blocker_replay_map(),
+        "l9_blocker_replay": export_l9_blocker_replay_bundle(),
         "layers": export_layer_register_snapshot(),
     }
 

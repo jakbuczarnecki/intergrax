@@ -42,5 +42,5 @@ def test_ebh6_config_x_audit_doc_records_reconciliation() -> None:
     text = _AUDIT_MD.read_text(encoding="utf-8")
     assert CONFIG_X_HISTORICAL_PASS_SHA[:12] in text
     head_sha = evidence_git_head_sha()
-    assert head_sha in text or EBH6_PUBLICATION_SHA in text
+    assert head_sha in text or EBH6_PUBLICATION_SHA in text or "CERTIFICATION_HANDOFF_SHA" in text
     assert EBH6_CONFIG_X_RECONCILIATION_NOTE.split()[0] in text

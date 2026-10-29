@@ -23,6 +23,8 @@ def test_ebh6_scope_dossier_content_controls() -> None:
     sha = evidence_git_head_sha()
     assert "IMPLEMENTATION_SHA" in text
     assert sha in text or "*(set @ qual commit)*" in text or "CERTIFICATION_HANDOFF_SHA" in text
+    assert "Evidence tier audit @ HEAD" in text
+    assert "_tier_audit.py" in text
     assert "_l3_aj_group_reconciliation.py" in text
     assert "_family_l9_evidence.py" in text
     assert "CONFIG-X" in text
@@ -52,6 +54,12 @@ def test_ebh6_scope_aj_groups_complete() -> None:
     assert len(groups) == 133
     assert ev_req == count_evidence_required_groups()
     assert ev_req == 0
+
+
+def test_ebh6_tier_audit_optional_session_artifact() -> None:
+    from tests.qualification.ebh_6._tier_audit import write_optional_session_tier_audit
+
+    write_optional_session_tier_audit(".tmp/session/ebh-6-cert-handoff", evidence_git_head_sha())
 
 
 def test_ebh6_l9a_matrix_parity_with_layer_evidence() -> None:

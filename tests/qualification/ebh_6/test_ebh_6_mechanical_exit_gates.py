@@ -77,6 +77,8 @@ def test_ebh6_exit_p03_handoff_export_complete() -> None:
     assert bundle["family_count"] == 23
     assert bundle["l9_blocker_count"] == 8
     assert bundle["aj_evidence_required_count"] == 0
+    assert "PARTIAL" in bundle["certification_banner"]
+    assert bundle["tier_census"]["T1"] == 0
     assert bundle["layer_candidate_resolved_count"] == 16
     assert bundle["layer_l9_evidence_submitted_count"] == 0
     assert bundle["independent_disposition_pending"] == 23

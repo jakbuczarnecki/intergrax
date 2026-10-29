@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| **P03 EXPECTED_START_HEAD** | `56dfa52dce6c253e1f2a99306b46bd6aa4a0b14b` |
-| **IMPLEMENTATION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **TEST_EXECUTION_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
-| **CERTIFICATION_HANDOFF_SHA** | `86d4d1a4c029be469b561a137f0fdedc2c8fd942` |
+| **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
+| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
+| **CERTIFICATION_HANDOFF_SHA** | @ B5 cert handoff on `development` |
 | **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` — [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) |
 
 ## SHA ladder (CURRENT @ B2)
@@ -41,12 +41,12 @@
 
 - **OD-EBH6-01** OPEN — implementation wave not operator-open
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution (corrected closure plan @ `0489054c…`)
-- **L9 Protocol 03** OPEN — **B5 implementer handoff** (`EV_GROUPS=0`); **B6** after operator resolves **OD-EBH6-Q2D2** (semantic_core × F FINDING)
-- **0** A–J `EVIDENCE_REQUIRED` groups @ B5 IMPLEMENTATION_SHA (**133** applicable pairs — **131** PARTIAL_CANDIDATE, **1** PASS_CANDIDATE, **1** FINDING Q2-D2)
+- **L9 Protocol 03** OPEN — **B5 implementer handoff** (**T1=0**, **T2=131**, **T3=2**); **B6** after **OD-EBH6-Q2D2** resolved + independent P03 PASS
+- **0** A–J `EVIDENCE_REQUIRED` @ **CERTIFICATION_HANDOFF_SHA** (**133** pairs — tier census `_tier_audit.py`)
 
-## Pytest log (B5 final evidence)
+## Pytest log (B5 cert handoff)
 
-Consolidated @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-final-evidence/pytest.log` (ebh_6 + ebh_5 reachability/rpl/mechanical reuse gates)
+Consolidated @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-cert-handoff/pytest.log`
 
 ## Pytest log (B2 — historical)
 
