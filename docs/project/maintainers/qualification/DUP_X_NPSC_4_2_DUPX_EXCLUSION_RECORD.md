@@ -45,7 +45,7 @@ NPSC drift is **architecture gate backlog** (stale `_ALLOWED_ORCHESTRATION_BACKE
 | **Not a DUP-X BLOCKER** | Parent closure mechanical gates **PASS**; COMPAT-R3 + CONFIG-X exit gates **PASS** |
 | **Track elsewhere** | NPSC-4.2 / EBH harness composition program — operator may refresh allowlist outside DUP-X |
 
-Cross-ref: [`DUP_X_FINDINGS_REGISTER.md`](DUP_X_FINDINGS_REGISTER.md) § NPSC-4.2 exclusion.
+Cross-ref: [`DUP_X_FINDINGS_REGISTER.md`](DUP_X_FINDINGS_REGISTER.md) § NPSC-4.2 exclusion · B4 boundary [`DUP_X_RESPONSIBILITY_DELTA_NPSC_ORCHESTRATION_BACKEND.md`](DUP_X_RESPONSIBILITY_DELTA_NPSC_ORCHESTRATION_BACKEND.md).
 
 ## L3 narrative — representative modules (composition wiring only)
 
