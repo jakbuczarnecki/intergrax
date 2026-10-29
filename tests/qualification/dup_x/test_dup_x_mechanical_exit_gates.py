@@ -104,11 +104,10 @@ def test_dup_x_exit_operator_gates_not_self_closed() -> None:
     reg = (_REPO_ROOT / "docs/project/maintainers/qualification/DUP_X_OPERATOR_DECISION_REGISTER.md").read_text(
         encoding="utf-8"
     )
-    assert "OD-DUPX-08" in reg and "OPEN" in reg
+    assert "OD-DUPX-08" in reg and "APPROVED" in reg
     assert "OD-DUPX-02" in reg
     assert "OD-DUPX-01" in reg
     dossier = (_REPO_ROOT / "docs/project/maintainers/qualification/DUP_X_PARENT_CERTIFICATION_DOSSIER.md").read_text(
         encoding="utf-8"
     )
-    assert "READY FOR" in dossier and "NOT CLOSED" in dossier
-    assert "CLOSED" not in dossier.split("FINAL STATUS")[-1] or "NOT CLOSED" in dossier
+    assert "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)" in dossier
