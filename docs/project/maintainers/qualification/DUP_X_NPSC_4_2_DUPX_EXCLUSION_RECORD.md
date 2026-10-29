@@ -46,3 +46,16 @@ NPSC drift is **architecture gate backlog** (stale `_ALLOWED_ORCHESTRATION_BACKE
 | **Track elsewhere** | NPSC-4.2 / EBH harness composition program — operator may refresh allowlist outside DUP-X |
 
 Cross-ref: [`DUP_X_FINDINGS_REGISTER.md`](DUP_X_FINDINGS_REGISTER.md) § NPSC-4.2 exclusion.
+
+## L3 narrative — representative modules (composition wiring only)
+
+Auditor spot-check: these modules reference `_orchestration_backend` for **sanctioned harness/EE composition wiring** — not Integration slug selection, not Governance bypass, not alternate execution ingress.
+
+| Module | Role | DUP-X relevance |
+| --- | --- | --- |
+| `harness_host_orchestration_wiring.py` | Wires orchestration backend into harness host graph via `_orchestration_backend_access` helpers | Composition bind only — TRACE-X sanctioned harness path |
+| `application_host_orchestration_composition.py` | Assembles application-hosted orchestration materialization | Delegates to platform execution composition — no shadow registry |
+| `harness_host_runtime.py` | Tier-3 shared harness host runtime surface | Uses backend accessor for hosted profile wiring — admission remains Governance-attached upstream |
+
+**Caller invariant:** provider/category selection remains `intergrax/integrations/registry/factory.py` + `_shared/config.py` (Class D matrix). **Independent B6:** auditor must accept or reject this exclusion explicitly (see Protocol 03 PASS record template).
+

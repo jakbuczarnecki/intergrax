@@ -11,7 +11,7 @@
 | Retained parallel delta proof | Delta dossiers | `DUP_X_RESPONSIBILITY_DELTA_*.md` | `test_dup_x_retained_parallel_delta_dossiers_present` | **PASS** | pending | OPEN |
 | CONFIG-X 54/54 replay | CONFIG-X | EBH-6 reconciliation | `test_dup_x_exit_config_x_reconciled` | **PASS** | pending | OPEN |
 | DUP-14 qual SSOT | EBH-5 hints | `_config_x_discovery.py` | `test_dup_x_exit_composition_hints_normative_in_config_x` | **PASS** | pending | OPEN |
-| OD-DUPX-02 plan audit | Operator | Master plan | — | **OPEN** | operator | BLOCKED |
+| OD-DUPX-02 plan audit | Operator | Final parent closure master plan | — | **APPROVED — 2026-10-29** | operator | Block I–II authorized |
 | OD-DUPX-01 Wave B prod | Operator | — | — | **OPEN** | operator | BLOCKED |
 | Protocol DUP-X-03 | Independent auditor | `DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md` | `.tmp/proof/dup-x-03-final-evidence/run.log` | **FINAL EVIDENCE RECONCILED — READY FOR B6** | external | BLOCKED |
 | OD-DUPX-08 closure | Operator | — | — | **OPEN** | operator | BLOCKED |

@@ -2,7 +2,7 @@
 
 | ID | Decision | Status | Blocks |
 | --- | --- | --- | --- |
-| **OD-DUPX-02** | Independent audit of DUP-X master plan | **OPEN** — plan published @ repo qual pack | Wave A production delta (doc/test only executed) |
+| **OD-DUPX-02** | Independent audit of **final parent closure** master plan | **APPROVED — 2026-10-29** — operator authorized Block I–II execution via plan implementation | Block I qual/doc hardening · Block II publication |
 | **OD-DUPX-01** | Authorize production remediation (Wave B+) | **OPEN** | Code changes beyond qual gates |
 | **OD-DUPX-03..07** | Class C architecture reopen (per finding) | **TRACKED** | Ownership / public contract changes |
 | **OD-DUPX-08** | Formal DUP-X closure + roadmap §5 ledger | **OPEN** | After Protocol DUP-X-03 PASS only |
