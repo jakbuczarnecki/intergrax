@@ -16,7 +16,8 @@
 | **FINAL_REMEDIATION (R1–R7)** | `b9ffa8d6e12208a3435b4cbc21ce5dda31746bc6` | Superseded by R4 T2 gate repair @ commit after `067cc2e2` |
 | **R4 T2 gate repair (EBH-6)** | `e7f1d0d77` | Superseded by E01/E02 audit findings resolution |
 | **E01/E02 audit findings resolution** | `9be365a1af83e650d0477e64b6d764ae1cfa1a1d` | Superseded by IA corrective batch |
-| **IA E01/E02 corrective (EBH-6)** | `887d5860a6fa39ba39d2b533cb39cf2562941ce3` | **CURRENT** — 265 passed @ `.tmp/session/ebh-6-ia-corrective/pytest.log` |
+| **IA E01/E02 corrective (EBH-6)** | `887d5860a6fa39ba39d2b533cb39cf2562941ce3` | Superseded by Q2-D2 Path B production fix |
+| **Q2-D2 Path B (OD-EBH6-01)** | `ffc1d94859734d612d9261f6a150c1f6e92d617f` | **CURRENT** — 265 passed @ `.tmp/session/ebh-6-q2d2-path-b/pytest.log` |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
 | T2 repair handoff | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` | Superseded by contracts_typing baseline |
 
