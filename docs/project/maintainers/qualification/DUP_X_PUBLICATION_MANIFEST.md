@@ -156,6 +156,7 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 | **FINAL_CLOSURE_BLOCK_A** | `cdf269fc9186f47737ed747babc2f9d831b1e713` |
 | **FINAL_CLOSURE_QUAL** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 | **FINAL_CLOSURE_RECONCILIATION_SHA** | `f8d267cc5f516d7ed45978758225dcdb971ad9ff` |
+| **FINAL_CLOSURE_CURRENT_PUBLICATION_HEAD** | `2071875dc1e73645938700b870729da58ea2d86b` |
 | **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` — `.tmp/proof/dup-x-final-b6-replay/dup_x-full.log` |
 
 ## Block I operator commit split (executed)
