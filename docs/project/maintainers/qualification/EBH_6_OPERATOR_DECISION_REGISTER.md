@@ -15,7 +15,30 @@
 OPERATOR APPROVED — EBH-6 IMPLEMENTATION WAVE OPEN
 ```
 
-## Engineering batch record (pre-cert reconcile)
+## Engineering batch record
+
+| Field | Value |
+| --- | --- |
+| Branch | `development` |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` (contracts_typing) |
+| **FINAL_CLOSURE_WAVE** | **CERTIFICATION_HANDOFF_SHA** — see ledger after E09 |
+| **T2 repair** | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` |
+| EBH-5 parent | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** @ OD-EBH5-08 |
+| Agent closure | **Forbidden** — no OD-EBH6-08, no `EBH-6 — CLOSED` |
+
+## Closure artifacts (final wave)
+
+| Artifact | Purpose |
+| --- | --- |
+| [EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md](EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md) | E01 |
+| [EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md](EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md) | E02 |
+| [EBH_6_Q2D2_DECISION_DOSSIER.md](EBH_6_Q2D2_DECISION_DOSSIER.md) | E03 |
+| [EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md](EBH_6_CONDITIONAL_REMEDIATION_REGISTER.md) | E04 |
+| [EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md](EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md) | E05–E08 |
+| [EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md](EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md) | E10 |
+| [EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md](EBH_6_OD_EBH6_08_CLOSURE_SIGNATURE_RECORD.md) | E11 |
+
+## Engineering batch record (historical — pre-cert reconcile)
 
 | Field | Value |
 | --- | --- |

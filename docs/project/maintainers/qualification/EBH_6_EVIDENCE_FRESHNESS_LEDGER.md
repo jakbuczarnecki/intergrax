@@ -2,21 +2,20 @@
 
 | Field | Value |
 | --- | --- |
-| **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
 | **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
 | **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
-| **CERTIFICATION_HANDOFF_SHA** | @ B5 cert handoff on `development` |
+| **CERTIFICATION_HANDOFF_SHA** | @ final enterprise closure wave — see ladder below |
 | **PLAN_PUBLICATION_SHA** | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` — [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) |
 
-## SHA ladder (CURRENT @ B2)
+## SHA ladder (CURRENT)
 
 | Label | SHA | Freshness |
 | --- | --- | --- |
-| B2 **EXPECTED_START_HEAD** | `83b0a26186b0c11430c916842d7d813554286921` | **CURRENT** |
-| B2 **IMPLEMENTATION_SHA** / **TEST_EXECUTION_SHA** | `8cf61e971a752428ea7eff04e36f1345af123319` | **CURRENT** after B2 ladder commit |
+| **CLOSURE_BASELINE_SHA** (contracts_typing) | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` | **CURRENT** implementer evidence anchor |
+| **FINAL_CLOSURE_WAVE** IMPLEMENTATION / TEST | **CERTIFICATION_HANDOFF_SHA** @ closure commit | **CURRENT** after E09 |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
-| B1 **IMPLEMENTATION_SHA** (historical) | `446dfa7263b6571a11bdd2a973e66e57892eacca` | Superseded by B2 wave |
-| **CERTIFICATION_HANDOFF_SHA** | `3f0a25439270b173c63989d2fd948c82a8cff6af` | **pre-B1 handoff** — update @ B5 only |
+| T2 repair handoff | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` | Superseded by contracts_typing baseline |
 
 ## HISTORICAL — do not cite as CURRENT
 
@@ -41,13 +40,13 @@
 
 - **OD-EBH6-01** OPEN — implementation wave not operator-open
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution (corrected closure plan @ `0489054c…`)
-- **L9 Protocol 03** OPEN — **T2-AUD census** (**T1=0**, **T2=131**, **T3=2**); **B6** after **OD-EBH6-Q2D2** + independent P03 PASS
-- **2** A–J `EVIDENCE_REQUIRED` @ **CERTIFICATION_HANDOFF_SHA** (`contracts`×F, `application_services`×F — `_t2_evidence_bundles.py`)
+- **L9 Protocol 03** OPEN — **T2-AUD** (**T1=0**, **T2=131**, **T3=2**); **OD-EBH6-Q2D2 OPEN**; E10 not executed
+- **contracts_typing** @ `202239f72…` — **ACCEPTED** (0× implementer INSUFFICIENT)
 
-## Pytest log (B5 cert handoff)
+## Pytest logs
 
-Consolidated @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-t2-repair/pytest.log`
-
-## Pytest log (B2 — historical)
-
-Consolidated L1+L2 @ **TEST_EXECUTION_SHA**: `.tmp/session/ebh-6-b2/pytest.log`
+| Wave | Path |
+| --- | --- |
+| contracts_typing | `.tmp/session/ebh-6-contracts-typing/pytest.log` @ `202239f72…` |
+| T2 repair (historical) | `.tmp/session/ebh-6-t2-repair/pytest.log` |
+| **Final closure E09** | `.tmp/session/ebh-6-final-closure/pytest.log` @ **CERTIFICATION_HANDOFF_SHA** |

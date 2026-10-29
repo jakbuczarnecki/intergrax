@@ -17,7 +17,7 @@
 | --- | --- |
 | `unclassified_findings` (inventory-style) | **0** |
 | In-scope `PROHIBITED-*` unresolved | **0** |
-| Layer A–J L9 attestation (16 layers) | **`L9_EVIDENCE_SUBMITTED`** @ `_l3_reachability_evidence.py` — independent Protocol 03 re-audit required |
+| Layer A–J L9 attestation (16 layers) | **`CANDIDATE-RESOLVED`** @ code SSOT — independent **RESOLVED** only via Protocol 03 |
 
 ## Finding population (closed-world)
 
@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | Tracked architecture debts | 2 | Q2-D2 (RATIFIED ADR track), BND-COMPAT-R3 (lab-only) |
 | VBN inventory replay | 1 | EBH-5 inventory @ HEAD |
-| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — **`L9_EVIDENCE_SUBMITTED`** + L3 mechanism annex |
+| Layer coverage (§3.0.8) | 16 | `EBH6-LAYER-01..16` — **`CANDIDATE-RESOLVED`** + L3 mechanism annex |
 | SQLite annex @ HEAD | 38 | `EBH6-SQLITE-*` — mapped from EBH-5 annex |
 | **Total** | **57** | Full rows in Python SSOT only |
 
@@ -33,7 +33,7 @@
 
 | finding_id | layer | status | evidence |
 | --- | --- | --- | --- |
-| EBH6-LAYER-01..16 | §3.0.8 layers | **L9_EVIDENCE_SUBMITTED** | `_l3_reachability_evidence.py` — entrypoint, call_chain, A–J per mechanism |
+| EBH6-LAYER-01..16 | §3.0.8 layers | **CANDIDATE-RESOLVED** | `_l3_reachability_evidence.py` — entrypoint, call_chain, A–J per mechanism |
 
 Spot-check samples **do not** prove global absence of violations — closed-world inventory + mechanical gates only.
 

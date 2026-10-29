@@ -5,10 +5,10 @@
 | **Parent** | EBH-6 — Final Architecture Recertification |
 | **Audit mode** | ECAP §2.B Parent Closure Audit (candidate) |
 | **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — **T1=0**; 23×PENDING independent disposition unchanged |
-| **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
-| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
-| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-t2-repair/pytest.log` |
-| **CERTIFICATION_HANDOFF_SHA** | @ B5 cert handoff on `development` |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
+| **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** (final closure wave commit on `development`) |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-final-closure/pytest.log` |
+| **CERTIFICATION_HANDOFF_SHA** | @ final enterprise closure wave — see [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md) |
 | **Historical handoff (EV=0 mask)** | `129eee82dff33fd4d815643387a10fa2d56058bf` — **HISTORICAL / REJECTED** |
 | **Wave containment** | `git merge-base --is-ancestor 33ecf19cc020b112d9e586c87b49e819202f5d6d HEAD` |
 
@@ -44,6 +44,11 @@ uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrit
 6. L4 log: `.tmp/session/ebh-6-p03-remediation/pytest.log`
 7. [EBH_6_EVIDENCE_FRESHNESS_LEDGER.md](EBH_6_EVIDENCE_FRESHNESS_LEDGER.md)
 8. [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md)
+9. [EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md](EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md)
+10. [EBH_6_Q2D2_DECISION_DOSSIER.md](EBH_6_Q2D2_DECISION_DOSSIER.md)
+11. [EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md](EBH_6_APP_TYP_DEBT_DISPOSITION_REGISTER.md)
+12. [EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md](EBH_6_INDEPENDENT_REPLAY_CHECKLIST.md)
+13. [EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md](EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md)
 
 ## Mechanical exit §3.0.8 (verify)
 
@@ -54,7 +59,7 @@ uv run pytest tests/qualification/ebh_6/test_ebh_6_scope_reconciliation_integrit
 | CONFIG-X mapped | 54/54 |
 | SQLite annex | 38 @ HEAD |
 | Family matrix | 23 rows; **independent 23 × PENDING** |
-| Layer L9 | **14 × CANDIDATE-RESOLVED**, **2 × L9_EVIDENCE_SUBMITTED** (T2-AUD class F) + `_l3_reachability_evidence.py` annex |
+| Layer L9 | **16 × CANDIDATE-RESOLVED** (code SSOT) + `_l3_reachability_evidence.py` annex — **RESOLVED** only via P03 |
 
 ## Limitations (explicit)
 

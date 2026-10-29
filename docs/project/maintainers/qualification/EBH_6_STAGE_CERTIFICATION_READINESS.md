@@ -3,9 +3,9 @@
 | Field | Value |
 | --- | --- |
 | **Disposition** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD 0× INSUFFICIENT)** — **T1=0**; **16× CANDIDATE-RESOLVED** layers @ B3 |
-| **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
+| **P03 EXPECTED_START_HEAD** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
 | **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** |
-| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-cert-handoff/pytest.log` |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-final-closure/pytest.log` |
 
 ## Mechanical exit (roadmap §3.0.8 VBN slice)
 
@@ -14,7 +14,7 @@
 | CORE_HARDCODING_FINDINGS_REGISTER complete (mechanical) | **PASS** (57 rows, unclassified=0) |
 | Layer L9 attestation (16) | **CANDIDATE-RESOLVED** — B5 A–J controls reconciled; **not** independent RESOLVED |
 | A–J applicable pairs / gap groups @ HEAD | **133** pairs / **0** `EVIDENCE_REQUIRED` (contracts_typing **ACCEPTED**) |
-| EBH-6 B5 pytest (L3 consolidated) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-t2-repair/pytest.log` |
+| EBH-6 B5 pytest (L3 consolidated) | @ **TEST_EXECUTION_SHA** — `.tmp/session/ebh-6-final-closure/pytest.log` |
 | Prohibited unresolved in frozen scope | **PASS** (0) |
 | CONFIG-X reconciliation @ HEAD | **PASS** (54/54) |
 | SQLite annex @ HEAD | **PASS** (38 paths) |
@@ -36,7 +36,8 @@
 - [EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md)
 - [EBH_6_PARENT_CERTIFICATION_DOSSIER.md](EBH_6_PARENT_CERTIFICATION_DOSSIER.md)
 - [EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md](EBH_6_L9_INDEPENDENT_AUDIT_HANDOFF.md)
-- [EBH_6_OPERATOR_DECISION_REGISTER.md](EBH_6_OPERATOR_DECISION_REGISTER.md)
+- [EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md](EBH_6_PROTOCOL_03_EXECUTION_PACKAGE.md)
+- [EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md](EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md)
 
 ## Explicit non-claims
 

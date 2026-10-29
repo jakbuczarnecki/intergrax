@@ -5,10 +5,10 @@
 | **Status** | **PARTIAL / EXACT BLOCKERS (OD-EBH6-Q2D2 OPEN; T2-AUD)** — tier **T1=0** @ **CERTIFICATION_HANDOFF_SHA**; **not** Protocol 03 PASS |
 | **Closure plan authority** | [EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md](EBH_6_FINAL_BLOCKER_CLOSURE_PLAN.md) @ **PLAN_PUBLICATION_SHA** `0489054c5f80ee392211fb33a39f2736fa2fdfa0` |
 | **Independent auditor disposition** | **23 × PENDING** — implementer must not set PASS |
-| **P03 EXPECTED_START_HEAD** | `cc76a4df1f401c8d7c374ec3b8d2bd7f21461b97` |
+| **CLOSURE_BASELINE_SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` |
 | **IMPLEMENTATION_SHA** | **CERTIFICATION_HANDOFF_SHA** (mechanical: `_evidence_manifest.evidence_git_head_sha()`) |
-| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-t2-repair/pytest.log` |
-| **CERTIFICATION_HANDOFF_SHA** | @ B5 cert handoff commit on `development` |
+| **TEST_EXECUTION_SHA** | **CERTIFICATION_HANDOFF_SHA** — `.tmp/session/ebh-6-final-closure/pytest.log` |
+| **CERTIFICATION_HANDOFF_SHA** | @ final enterprise closure wave on `development` |
 
 Mechanical SSOT: [`tests/qualification/ebh_6/_l3_aj_group_reconciliation.py`](../../../tests/qualification/ebh_6/_l3_aj_group_reconciliation.py), [`_layer_evidence.py`](../../../tests/qualification/ebh_6/_layer_evidence.py), [`_l3_reachability_evidence.py`](../../../tests/qualification/ebh_6/_l3_reachability_evidence.py), [`_family_l9_evidence.py`](../../../tests/qualification/ebh_6/_family_l9_evidence.py).
 
@@ -65,7 +65,7 @@ L3 obligation cells (480 mechanism rollup): see [EBH_6_CURRENT_HEAD_VENDOR_NEUTR
 
 ## 16 layers — register status
 
-**14 × CANDIDATE-RESOLVED**, **2 × L9_EVIDENCE_SUBMITTED** (`contracts`, `application_services` — class F T2-AUD gap). ≥3 L3 mechanisms each (49 total annex rows) — **not** independent RESOLVED (B6 acceptance only).
+**16 × CANDIDATE-RESOLVED** @ code SSOT (including `contracts`, `application_services` post `contracts_typing` **ACCEPTED**). ≥3 L3 mechanisms each (49 total annex rows) — **not** independent **RESOLVED** (B6 acceptance only).
 
 ## B2 — T-LAY package outcomes (@ HEAD)
 
@@ -97,7 +97,7 @@ L3 obligation cells (480 mechanism rollup): see [EBH_6_CURRENT_HEAD_VENDOR_NEUTR
 | ID | Status |
 | --- | --- |
 | **109 × EVIDENCE_REQUIRED groups** | **Superseded by T2-AUD** — honest **2×** mandatory @ HEAD (`contracts_typing`); see [EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md](EBH_6_T2_EVIDENCE_INDEPENDENT_REVIEW.md) |
-| **16 × layer rows** | **B2 inventory+L3 verified** — `L9_EVIDENCE_SUBMITTED`; RESOLVED only B6 |
+| **16 × layer rows** | **B2 inventory+L3 verified** — **CANDIDATE-RESOLVED**; **RESOLVED** only B6 |
 | **OD-EBH6-01** | OPEN (no production wave) |
 | **OD-EBH6-08** | OPEN (parent closure) |
 | **L9 Protocol 03** | OPEN — **not** B1 scope |

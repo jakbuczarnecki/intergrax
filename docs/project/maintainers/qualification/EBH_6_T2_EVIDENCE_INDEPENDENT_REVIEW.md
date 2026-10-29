@@ -62,6 +62,10 @@ Replaces the false **T2=131** census caused by `scanner_effective()` returning `
 | **E3** | Independent auditor | Protocol 03 ECAP B1–B6 |
 | **E4** | Operator | **OD-EBH6-08** — EBH-6 CLOSED |
 
+## Independent pre-cert (E01)
+
+Worksheet: [EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md](EBH_6_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md) — **PENDING** auditor **E01-PRE-01**.
+
 ## References
 
 - [EBH_6_SCOPE_RECONCILIATION_DOSSIER.md](EBH_6_SCOPE_RECONCILIATION_DOSSIER.md)
