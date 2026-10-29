@@ -16,7 +16,23 @@
 
 PASS applies to **DUP-X Cross-Architecture Duplicate & Bypass Certification** @ pinned SHA only. **Not** global **FRZ PASS** · **not** **PROD-Q** · **not** **ARCH-FREEZE** · **not** automatic **ROADMAP-REPLAY-X** closure.
 
-## B6 checklist (auditor)
+## B1–B5 disposition (auditor completes before B6 verdict)
+
+| Block | Focus | Disposition | Notes |
+| --- | --- | --- | --- |
+| **B1** | Scope · 15 families · CAND-01..15 | | |
+| **B2** | SHA ladder @ `INDEPENDENT_AUDIT_BASELINE_SHA` | | C0-05 + manifest |
+| **B3** | Factory-first · deltas · Class D | | |
+| **B4** | COMPAT-R3 · tools_base | | |
+| **B5** | `uv run pytest tests/qualification/dup_x/ -q` | | Expect **40 passed** @ baseline |
+
+## B6 verdict (auditor only)
+
+| Field | Value |
+| --- | --- |
+| **Verdict** | *(PASS (SCOPED) / REJECT)* |
+| **Date** | *(auditor)* |
+| **Findings** | *(if REJECT)* |
 
 | Item | Auditor disposition |
 | --- | --- |
