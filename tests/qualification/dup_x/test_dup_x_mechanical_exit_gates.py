@@ -110,5 +110,5 @@ def test_dup_x_exit_operator_gates_not_self_closed() -> None:
     dossier = (_REPO_ROOT / "docs/project/maintainers/qualification/DUP_X_PARENT_CERTIFICATION_DOSSIER.md").read_text(
         encoding="utf-8"
     )
-    assert "READY FOR INDEPENDENT" in dossier
+    assert "READY FOR" in dossier and "NOT CLOSED" in dossier
     assert "CLOSED" not in dossier.split("FINAL STATUS")[-1] or "NOT CLOSED" in dossier
