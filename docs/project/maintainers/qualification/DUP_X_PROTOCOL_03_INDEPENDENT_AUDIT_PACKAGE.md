@@ -8,7 +8,7 @@
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` |
 | **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 | **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` — **44 passed** |
-| **CURRENT_PUBLICATION_HEAD** | *(C0-07 reconciliation commit)* |
+| **CURRENT_PUBLICATION_HEAD** | `f8d267cc5f516d7ed45978758225dcdb971ad9ff` |
 
 ## Preconditions (@ handoff)
 
