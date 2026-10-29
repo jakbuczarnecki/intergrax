@@ -4,8 +4,9 @@
 | --- | --- |
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` |
 | **Mechanical SSOT** | `tests/qualification/dup_x/_closed_world_inventory.py` |
+| **WAVE1_IMPLEMENTATION_HEAD** | `2325460ff7f1f0290f95dae03145e30e20e0d991` |
 | **Families** | **15** |
-| **Status** | **INVENTORY FROZEN @ IMPLEMENTATION WORKTREE** — independent audit pending |
+| **Status** | **Wave 1 disposition recorded** — parent NOT CLOSED · OD-DUPX-02 OPEN |
 
 ## Discovery spine
 
@@ -33,7 +34,7 @@ CONFIG-X heuristic ∪ hints (DUP-14 qual SSOT)
 | RF-TEN-01 | Tenant / context | `intergrax/runtime/tenant/` | production-effective |
 | RF-LEG-01 | Legacy compat | `intergrax/tools/tools_base.py` | legacy-reachable |
 | RF-CMP-01 | Composition roots | hints + TRACE-X + wiring | production-effective |
-| RF-T3-01 | Tier-3 copies | `applications/**` | unknown — L3 per app |
+| RF-T3-01 | Tier-3 copies | `applications/**` | LKW Slack dedupe DISTINCT — see Tier-3 disposition |
 
 ## Mechanical census (@ HEAD)
 
@@ -49,4 +50,4 @@ CONFIG-X heuristic ∪ hints (DUP-14 qual SSOT)
 
 See [`DUP_X_FINDINGS_REGISTER.md`](DUP_X_FINDINGS_REGISTER.md) · [`DUP_X_CLASS_COVERAGE_MATRIX.md`](DUP_X_CLASS_COVERAGE_MATRIX.md).
 
-**Gap IDs:** `DUPX-GAP-CLASS-D` · `DUPX-GAP-L3-TIER3-DEDUPE`
+**Gap IDs:** `DUPX-GAP-CLASS-D` · `DUPX-GAP-L3-TIER3-DEDUPE` — **PASS @ Wave 1** (evidence docs; operator gates still OPEN)

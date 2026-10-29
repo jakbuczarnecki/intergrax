@@ -15,8 +15,8 @@
 | OD-DUPX-01 Wave B prod | Operator | — | — | **OPEN** | operator | BLOCKED |
 | Protocol DUP-X-03 | Independent auditor | `DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md` | Wave D pytest log | **READY FOR INDEPENDENT REVIEW** | external | BLOCKED |
 | OD-DUPX-08 closure | Operator | — | — | **OPEN** | operator | BLOCKED |
-| DUPX-GAP-CLASS-D | Implementer | Gap register | class D gates | **GAP** | pending | OPEN |
-| DUPX-GAP-L3-TIER3-DEDUPE | Implementer | Gap register | L3 per app | **GAP** | pending | OPEN |
+| DUPX-GAP-CLASS-D | Implementer | Gap register + caller matrix | class D gates + Wave 1 matrix | **PASS** | pending | OPEN |
+| DUPX-GAP-L3-TIER3-DEDUPE | Implementer | Tier-3 disposition doc | L3 per app + parent closure gates | **PASS** | pending | OPEN |
 
 **STATUS legend:** OPEN · IN_PROGRESS · PASS · N/A WITH EVIDENCE · BLOCKED · GAP
 

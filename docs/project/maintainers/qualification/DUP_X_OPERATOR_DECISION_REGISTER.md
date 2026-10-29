@@ -20,6 +20,8 @@ OPERATOR APPROVED — DUP-X IMPLEMENTATION WAVE OPEN (OD-DUPX-01)
 | --- | --- |
 | Branch | `development` |
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` |
+| **WAVE1_IMPLEMENTATION_HEAD** | `2325460ff7f1f0290f95dae03145e30e20e0d991` |
+| **Wave 1 execution** | **RECORDED** — GAP-CLASS-D + GAP-L3-TIER3 + CAND-03/09/12 disposition; qual gates only; **OD-DUPX-02 remains OPEN** |
 | EBH-6 parent | **CLOSED — SCOPED** @ OD-EBH6-08 |
 | Agent closure | **Forbidden** — no OD-DUPX-08 · no independent PASS |
 

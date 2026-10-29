@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | 1 | C0 git baseline | **RECORDED** — [`DUP_X_C0_BASELINE_AUDIT_RECORD.md`](DUP_X_C0_BASELINE_AUDIT_RECORD.md) |
 | 2 | Closed-world inventory | **RECORDED** — 15 families · 14 classes |
-| 3 | Findings + candidates | **RECORDED** — 2 gaps · 0 unresolved DUPLICATE/BLOCKER |
+| 3 | Findings + candidates | **RECORDED** — 0 open gaps @ Wave 1 · 0 unresolved DUPLICATE/BLOCKER |
 | 4 | Operator OD-DUPX-02 | **OPEN** |
 | 5 | Operator OD-DUPX-01 | **OPEN** |
 | 6 | Primary L2 pytest log | `.tmp/proof/dup-x-wave-d/run.log` — **`tests/qualification/dup_x/` → 26 passed** @ HEAD |
