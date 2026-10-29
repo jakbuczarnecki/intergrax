@@ -152,7 +152,7 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 | --- | --- |
 | **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 | **B6 status** | **ISSUED — PASS (SCOPED)** — auditor **ChatGPT** (external) |
-| **ACCEPTANCE_PUBLICATION_SHA** | *(commit publishing PASS record)* |
+| **ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` |
 | **Parent status** | **INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING** |
 
 **Operator verdict (interim):** `DUP-X — INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING` — **not** global **FRZ PASS**

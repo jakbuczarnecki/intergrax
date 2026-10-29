@@ -8,6 +8,7 @@
 | **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 | **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 | **PRE_ACCEPTANCE_PUBLICATION_HEAD** | `1f782aaa9017b31b2e68a1490d186a1e3fa055cd` (doc-only delta after qual pin — reviewed) |
+| **ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` |
 | **Auditor identity** | **ChatGPT** — external evidence-based Protocol DUP-X-03 review (**not** Cursor Agent) |
 | **Publication** | Repository commit publishing this record — implementer-controlled docs only; provenance preserved above |
 | **Date** | **2026-10-29** |

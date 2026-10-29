@@ -116,7 +116,7 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 | **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | Qual + evidence replay pin |
 | **PRE_ACCEPTANCE_PUBLICATION_HEAD** | `1f782aaa9017b31b2e68a1490d186a1e3fa055cd` | Doc-only commits after qual pin (reviewed) |
 | **B6 verdict** | **ISSUED — PASS (SCOPED)** | External auditor **ChatGPT** — not Cursor |
-| **ACCEPTANCE_PUBLICATION_SHA** | *(commit publishing PASS record)* | See manifest |
+| **ACCEPTANCE_PUBLICATION_SHA** | `e45026301c5b3c44daec47a901af3946e9fe7255` | See manifest |
 | **NPSC-4.2 exclusion** | **ACCEPT** (DUP-X scoped) | Allowlist gate **FAIL** unchanged |
 
 **Status:** `DUP-X — INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING`
