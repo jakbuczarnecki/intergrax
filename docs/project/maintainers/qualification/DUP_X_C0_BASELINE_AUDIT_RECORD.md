@@ -91,6 +91,6 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 | **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Delta matrix + evidence record + NPSC cross-ref |
 | **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | **44 passed** — `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
 | **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Full DUP-X qual + B4 evidence @ replay |
-| **B4_RECONCILIATION_SHA** | *(Commit reconciliation — `git rev-parse HEAD` after protocol/manifest update)* | Final Protocol 03 handoff |
+| **B4_RECONCILIATION_SHA** | `a804a4319cbe644da757e196f9692c9d55070a67` | Protocol 03 final handoff |
 
 **Status:** `DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT — NOT CLOSED`

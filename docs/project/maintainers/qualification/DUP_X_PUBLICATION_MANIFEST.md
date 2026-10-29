@@ -141,7 +141,8 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 | **B4_EVIDENCE_PUBLICATION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | B4 delta + evidence record |
 | **QUALIFICATION_EXECUTION_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | **44 passed** · `.tmp/proof/dup-x-b4-publication/dup_x-full.log` |
 | **INDEPENDENT_AUDIT_BASELINE_SHA** | `6ccddd3c40a88377e39962a300984d3b81f5c220` | Recommended auditor replay pin |
-| **B4_RECONCILIATION_SHA** | *(reconciliation commit)* | Protocol 03 final handoff |
+| **B4_RECONCILIATION_SHA** | `a804a4319cbe644da757e196f9692c9d55070a67` | Protocol 03 final handoff |
+| **CURRENT_PUBLICATION_HEAD** | `a804a4319cbe644da757e196f9692c9d55070a67` | Narrative head post-B4 |
 
 ## Operator verdict
 
