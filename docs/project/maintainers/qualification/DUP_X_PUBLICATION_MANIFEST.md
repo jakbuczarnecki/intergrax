@@ -37,8 +37,8 @@
 | **WAVE1_PUBLICATION_START** | `2325460ff7f1f0290f95dae03145e30e20e0d991` | `HEAD == origin/development` @ Wave 1 publication start |
 | **WAVE1_IMPLEMENTATION_SHA** | `44759ed4db69a16fc07b837d9ed87d29a235163f` | Wave 1 Commit **A** — `tests/qualification/dup_x/**` only |
 | **WAVE1_EVIDENCE_PUBLICATION_SHA** | `3a2d47d2c66fe60a4443d9800678ae2681a7f688` | Wave 1 Commit **B** — `DUP_X_*.md` **except** this manifest |
-| **WAVE1_TEST_EXECUTION_SHA** | *(pending publication pytest)* | HEAD @ post-publish `uv run pytest tests/qualification/dup_x/ -q` |
-| **WAVE1_MANIFEST_PUBLICATION_SHA** | *(this Commit C)* | Ladder only; **not** WAVE1_EVIDENCE_PUBLICATION_SHA |
+| **WAVE1_TEST_EXECUTION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | HEAD @ post-publish `uv run pytest tests/qualification/dup_x/ -q` |
+| **WAVE1_MANIFEST_PUBLICATION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | Wave 1 Commit **C** — ladder only; **not** WAVE1_EVIDENCE_PUBLICATION_SHA |
 
 **Historical (first publication @ AUDITED_HEAD `8245b747`):** rows in **Evidence chain (@ Commit C)** above — preserved unchanged.
 
@@ -48,8 +48,8 @@
 | --- | --- | --- |
 | **A** | `44759ed4db69a16fc07b837d9ed87d29a235163f` | `tests/qualification/dup_x/**` |
 | **B** | `3a2d47d2c66fe60a4443d9800678ae2681a7f688` | All `DUP_X_*.md` **except** this manifest |
-| **C** | *(this commit)* | This manifest + Wave 1 SHA ladder |
-| **D** (optional) | *(if needed)* | **WAVE1_TEST_EXECUTION_SHA** attestation after publication pytest |
+| **C** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` | This manifest + Wave 1 SHA ladder |
+| **D** (optional) | *(Commit D)* | **WAVE1_TEST_EXECUTION_SHA** attestation; **FINAL_PUBLICATION_HEAD** @ Commit D |
 
 ## Validation (publication @ TEST_EXECUTION_SHA)
 
@@ -91,10 +91,12 @@ Source: `tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py` — path
 | Check | Result |
 | --- | --- |
 | Command | `uv run pytest tests/qualification/dup_x/ -q` |
-| Exit code | *(pending)* |
-| Tests | *(pending — record from log)* |
+| Exit code | **0** |
+| Tests | **36 passed** |
+| Duration | ~76s (see log) |
 | Log | `.tmp/proof/dup-x-wave-1-post-publish/run.log` |
-| **WAVE1_TEST_EXECUTION_SHA** | *(pending)* |
+| **WAVE1_TEST_EXECUTION_SHA** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` |
+| **TEST_EXEC @ attestation** | `f188a496f969c99e66ca9d409cd29ddceeec8f0d` (Commit C HEAD — pytest replay) |
 
 ## Publication boundaries (unchanged)
 
