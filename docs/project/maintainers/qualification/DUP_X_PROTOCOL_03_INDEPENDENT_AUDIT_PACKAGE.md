@@ -4,11 +4,11 @@
 | --- | --- |
 | **Protocol** | DUP-X-03 (mirrors EBH-6 Protocol 03) |
 | **ECAP** | [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) **B1–B6** |
-| **Execution status** | **READY FOR EXTERNAL B6** — B-01 replay @ `a7d83925b…` · **not PASS** |
+| **Execution status** | **ISSUED — PASS (SCOPED)** @ `a7d83925b…` — parent **NOT CLOSED** until **OD-DUPX-08** |
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` |
 | **INDEPENDENT_AUDIT_BASELINE_SHA** (recommended) | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 | **QUALIFICATION_EXECUTION_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` — **44 passed** |
-| **CURRENT_PUBLICATION_HEAD** | `fcc0930b9d4b627b80e6a0296984f41e1fc0589b` |
+| **CURRENT_PUBLICATION_HEAD** | `1f782aaa9017b31b2e68a1490d186a1e3fa055cd` (pre–B6 PASS publication) |
 
 ## Preconditions (@ handoff)
 
@@ -41,7 +41,7 @@
 | **B3** | Factory-first · registry_v2 · harness projection · Class D matrix | **READY** |
 | **B4** | COMPAT-R3 · NPSC ten-module matrix · negative gates | **READY** — NPSC allowlist **FAIL** documented |
 | **B5** | Full `tests/qualification/dup_x/` replay | **READY** — **44 passed** @ pin |
-| **B6** | Independent PASS / REJECT | **OPEN** — auditor → PASS record |
+| **B6** | Independent PASS / REJECT | **ISSUED — PASS (SCOPED)** — [`DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) |
 
 ## Inputs bundle
 
@@ -64,13 +64,16 @@
 ## Handoff commands
 
 ```powershell
-git checkout development
-git merge-base --is-ancestor 8245b7471379414dc24385d1e770ccb56a7b0e2d HEAD
-git checkout a7d83925b375b5f08eb0f175ced2c17fa026bba9
+git switch development
+git merge-base --is-ancestor a7d83925b375b5f08eb0f175ced2c17fa026bba9 HEAD
+# Optional exact pin: git worktree add ../intergrax-dupx-a7d839 a7d83925b375b5f08eb0f175ced2c17fa026bba9
 New-Item -ItemType Directory -Force -Path .tmp/proof/dup-x-final-b6-replay
 uv run pytest tests/qualification/dup_x/test_dup_x_b4_npsc_orchestration_backend_negative_boundary.py -q 2>&1 | Tee-Object -FilePath .tmp/proof/dup-x-final-b6-replay/b4-negative-gates.log
+uv run pytest tests/qualification/dup_x/test_dup_x_parent_closure_mechanical_gates.py tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py -q 2>&1 | Tee-Object -FilePath .tmp/proof/dup-x-final-b6-replay/l3-parent.log
 uv run pytest tests/qualification/dup_x/ -q 2>&1 | Tee-Object -FilePath .tmp/proof/dup-x-final-b6-replay/dup_x-full.log
 uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py::test_npsc42_orchestration_backend_access_confined_to_allowlist -q 2>&1 | Tee-Object -FilePath .tmp/proof/dup-x-final-b6-replay/npsc-allowlist-expected-fail.log
 ```
 
-**Agent forbidden:** issue PASS record · OD-DUPX-08 · declare DUP-X CLOSED.
+**B6:** [`DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) — **ISSUED — PASS (SCOPED)** (external auditor **ChatGPT**).
+
+**Agent forbidden:** OD-DUPX-08 · declare DUP-X **CLOSED** · start **ROADMAP-REPLAY-X**.

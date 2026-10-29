@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Decision** | OD-DUPX-08 — Formal DUP-X parent closure + roadmap §5 |
-| **Status** | **BLOCKED** — requires Protocol DUP-X-03 **B6 PASS** first |
+| **Status** | **B6 PASS recorded** — **OPEN** for operator signature (**OD-DUPX-08** phrase required) |
 | **Operator signature** | *(pending)* |
 | **Protocol 03 PASS record** | [`DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) — must be **ISSUED — PASS (SCOPED)** |
 | **Target parent status** | `DUP-X — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)` |

@@ -108,3 +108,15 @@ Reconciliation replay (agent session): `tests/qualification/dup_x/` → **36 pas
 | **FINAL_CLOSURE_CURRENT_PUBLICATION_HEAD** | `fcc0930b9d4b627b80e6a0296984f41e1fc0589b` | SHA literal sync (post-reconciliation) |
 
 **Status:** `DUP-X — READY FOR EXTERNAL B6 — NOT CLOSED`
+
+## C0-08 Independent Protocol DUP-X-03 B6 (@ `a7d83925b375b5f08eb0f175ced2c17fa026bba9`)
+
+| Label | SHA / value | Role |
+| --- | --- | --- |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `a7d83925b375b5f08eb0f175ced2c17fa026bba9` | Qual + evidence replay pin |
+| **PRE_ACCEPTANCE_PUBLICATION_HEAD** | `1f782aaa9017b31b2e68a1490d186a1e3fa055cd` | Doc-only commits after qual pin (reviewed) |
+| **B6 verdict** | **ISSUED — PASS (SCOPED)** | External auditor **ChatGPT** — not Cursor |
+| **ACCEPTANCE_PUBLICATION_SHA** | *(commit publishing PASS record)* | See manifest |
+| **NPSC-4.2 exclusion** | **ACCEPT** (DUP-X scoped) | Allowlist gate **FAIL** unchanged |
+
+**Status:** `DUP-X — INDEPENDENTLY ACCEPTED / OPERATOR CLOSURE PENDING`

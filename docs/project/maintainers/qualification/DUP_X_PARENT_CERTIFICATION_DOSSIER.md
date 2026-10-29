@@ -53,6 +53,6 @@ uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibilit
 
 ## FINAL STATUS
 
-**DUP-X B4 — PUBLISHED / READY FOR FINAL INDEPENDENT B6 AUDIT @ `6ccddd3c40a88377e39962a300984d3b81f5c220` — NOT CLOSED**
+**Status:** `DUP-X — INDEPENDENTLY ACCEPTED (SCOPED) / OPERATOR CLOSURE PENDING` @ B6 PASS **2026-10-29** (ChatGPT · [`DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md)) · **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** `a7d83925b375b5f08eb0f175ced2c17fa026bba9` — **NOT CLOSED** until **OD-DUPX-08**
 
-Agent **forbidden:** Protocol DUP-X-03 PASS · OD-DUPX-08 · roadmap §5 update.
+Agent **forbidden:** OD-DUPX-08 · roadmap §5 **CLOSED** · **ROADMAP-REPLAY-X** entry.
