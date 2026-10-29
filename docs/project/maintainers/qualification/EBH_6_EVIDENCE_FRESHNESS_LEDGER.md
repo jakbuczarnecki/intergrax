@@ -13,7 +13,7 @@
 | Label | SHA | Freshness |
 | --- | --- | --- |
 | **CLOSURE_BASELINE_SHA** (contracts_typing) | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` | **CURRENT** implementer evidence anchor |
-| **DEFINITIVE_CLOSURE (C9)** | @ commit after mandate execution | **CURRENT** TEST @ `.tmp/session/ebh-6-definitive-closure/pytest.log` (**217 passed**) |
+| **DEFINITIVE_CLOSURE (C9)** | `8f7ac2c980c5b1db3c2c543d35ea53089634d450` | **CURRENT** — 217 passed @ `.tmp/session/ebh-6-definitive-closure/pytest.log` |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
 | T2 repair handoff | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` | Superseded by contracts_typing baseline |
 
