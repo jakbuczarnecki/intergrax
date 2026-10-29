@@ -27,7 +27,7 @@
 | **AUDITED_HEAD** | `8245b7471379414dc24385d1e770ccb56a7b0e2d` | EBH-6 handoff baseline · DUP-X Wave A entry |
 | **IMPLEMENTATION_SHA (Wave A–D pack)** | `2ee22ae4b42d5e684f40d55056a6f9b84130b8ec` | Commit **A** — qual SSOT + CONFIG-X discovery union |
 | **EVIDENCE_PUBLICATION_SHA** | `f0214533b347f3dfbbd729d96ef860869148dc0f` | Commit **B** — narrative pack (**not** manifest-only Commit C) |
-| **TEST_EXECUTION_SHA** | **PENDING POST-PUSH PYTEST** | See manifest · finalize in optional Commit **D** after `uv run pytest tests/qualification/dup_x/ -q` |
+| **TEST_EXECUTION_SHA** | `5c97fb679a3220ff7a156ca6ab7fd7fe8c5b5176` | `@` Commit C HEAD · **26 passed** · `.tmp/proof/dup-x-wave-d/run.log` |
 | **Publication ladder SSOT** | [`DUP_X_PUBLICATION_MANIFEST.md`](DUP_X_PUBLICATION_MANIFEST.md) | External SHA ladder — dossier does not self-reference Commit C |
 
 ## C0-03 Canonical scope
