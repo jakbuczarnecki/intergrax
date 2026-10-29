@@ -18,7 +18,8 @@
 | **E01/E02 audit findings resolution** | `9be365a1af83e650d0477e64b6d764ae1cfa1a1d` | Superseded by IA corrective batch |
 | **IA E01/E02 corrective (EBH-6)** | `887d5860a6fa39ba39d2b533cb39cf2562941ce3` | Superseded by Q2-D2 Path B production fix |
 | **Q2-D2 Path B (OD-EBH6-01)** | `ffc1d94859734d612d9261f6a150c1f6e92d617f` | Superseded by post–Path B qual reconciliation |
-| **Q2-D2 post–Path B reconciliation** | `80c53fc06d7e2a6adeb4698d521956b07d3aee43` | **CURRENT** — 278 passed @ `.tmp/session/ebh-6-q2d2-post-recon/pytest.log` |
+| **Q2-D2 post–Path B reconciliation** | `80c53fc06d7e2a6adeb4698d521956b07d3aee43` | Superseded by E02-OP-01 ratification + P03 final replay |
+| **E02-OP-01 + P03 final execution replay** | `a405c73f64d67254fe9d5e1f89c8b5dd4310be98` | **CURRENT** — 267 passed @ `.tmp/session/ebh-6-p03-final-execution/pytest.log` |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
 | T2 repair handoff | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` | Superseded by contracts_typing baseline |
 
@@ -43,9 +44,12 @@
 
 ## Blockers recorded
 
-- **OD-EBH6-01** OPEN — implementation wave not operator-open
+- **OD-EBH6-01** **APPROVED 2026-10-29** — Q2-D2 Path B scope (not EBH-6 CLOSED)
 - **OD-EBH6-02** **APPROVED 2026-10-28** — plan execution (corrected closure plan @ `0489054c…`)
-- **L9 Protocol 03** OPEN — **T2-AUD** (**T1=0**, **T2=131**, **T3=2**); **OD-EBH6-Q2D2 OPEN**; E10 not executed
+- **OD-EBH6-Q2D2** **APPROVED — PATH B — 2026-10-29** — E01-PRE-01 / Protocol 03 still required
+- **E02-OP-01** **OPERATOR RATIFIED 2026-10-29** — **E02-AUD-01 PENDING**
+- **L9 Protocol 03 / E10** **NOT EXECUTED** — independent ECAP B1–B6 only; banner **PARTIAL** (see `p03-handoff.json`)
+- **T2-AUD @ qual HEAD** — **T1=0** insufficient pairs; **133** A–J groups (**131** PARTIAL_CANDIDATE, **2** PASS_CANDIDATE incl. `semantic_core×F`)
 - **contracts_typing** @ `202239f72…` — **ACCEPTED** (0× implementer INSUFFICIENT)
 
 ## Pytest logs
@@ -57,3 +61,4 @@
 | **Final closure E09** | `.tmp/session/ebh-6-final-closure/pytest.log` @ **CERTIFICATION_HANDOFF_SHA** |
 | **Definitive closure C9** | `.tmp/session/ebh-6-definitive-closure/pytest.log` (217 passed) @ `8f7ac2c98…` |
 | **Final remediation R7** | `.tmp/session/ebh-6-final-remediation/pytest.log` (**225 passed**) @ qual HEAD |
+| **P03 final execution (E10 handoff)** | `.tmp/session/ebh-6-p03-final-execution/pytest.log` (**267 passed**) @ `a405c73f…` |
