@@ -5,7 +5,8 @@
 | **Workstream** | E10 — Independent Protocol 03 |
 | **ECAP** | [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) §2.B **B1–B6** |
 | **Execution status** | **NOT EXECUTED** — independent auditor only |
-| **Baseline implementer SHA** | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` (update to **TEST_EXECUTION_SHA** after E09) |
+| **CERTIFICATION_HANDOFF_SUBSTANCE_SHA** | `c852e7705f318b5d50a771596d97193f68a00e67` |
+| **TEST_EXECUTION_SHA** | @ **FINAL_REMEDIATION** commit — `.tmp/session/ebh-6-final-remediation/pytest.log` |
 
 ## Preconditions (implementer)
 
@@ -15,8 +16,8 @@
 | 2 | E01 worksheet + pre-cert | **PENDING** auditor |
 | 3 | E02 APP-TYP ratification | **PENDING** operator |
 | 4 | E03 OD-EBH6-Q2D2 | **OPEN** |
-| 5 | E09 L3 pytest log @ SHA | See `.tmp/session/ebh-6-final-closure/pytest.log` |
-| 6 | `p03_handoff_bundle()` export | `.tmp/session/ebh-6-final-closure/p03-handoff.json` |
+| 5 | R7 L3 pytest log @ qual HEAD | `.tmp/session/ebh-6-final-remediation/pytest.log` (**225 passed**) |
+| 6 | P03 + pre-cert JSON export | `.tmp/session/ebh-6-final-remediation/p03-handoff.json`, `pre-cert-export.json` |
 
 ## Auditor checklist (B1–B6)
 
@@ -35,8 +36,8 @@
 ```powershell
 git checkout development
 git rev-parse HEAD
-New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-final-closure
-uv run pytest tests/qualification/ebh_6/ -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-final-closure/pytest.log
+New-Item -ItemType Directory -Force -Path .tmp/session/ebh-6-final-remediation
+uv run pytest tests/qualification/ebh_6/ -q 2>&1 | Tee-Object -FilePath .tmp/session/ebh-6-final-remediation/pytest.log
 uv run python -c "from pathlib import Path; from tests.qualification.ebh_6._p03_handoff_export import p03_handoff_json; Path('.tmp/session/ebh-6-final-closure/p03-handoff.json').write_text(p03_handoff_json(), encoding='utf-8')"
 ```
 

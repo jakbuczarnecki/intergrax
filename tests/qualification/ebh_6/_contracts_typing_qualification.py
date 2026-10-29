@@ -264,8 +264,12 @@ def _debt_covers(
     violation: ApplicationServicesTypingViolation,
     entry: ApplicationServicesTypingDebtEntry,
 ) -> bool:
+    """Exact finding identity — rule_id must match (no cross-rule masking)."""
     return (
-        violation.source_path == entry.source_path and violation.line == entry.line and violation.symbol == entry.symbol
+        violation.source_path == entry.source_path
+        and violation.line == entry.line
+        and violation.symbol == entry.symbol
+        and violation.rule_id == entry.rule_id
     )
 
 
@@ -273,12 +277,16 @@ def _validate_debt_registry(
     debt: tuple[ApplicationServicesTypingDebtEntry, ...],
 ) -> tuple[str, ...]:
     errors: list[str] = []
-    seen: set[tuple[str, int, str]] = set()
+    seen_ids: set[str] = set()
+    seen_keys: set[tuple[str, int, str, str]] = set()
     for entry in debt:
-        key = (entry.source_path, entry.line, entry.symbol)
-        if key in seen:
-            errors.append(f"duplicate debt key: {entry.finding_id}")
-        seen.add(key)
+        if entry.finding_id in seen_ids:
+            errors.append(f"duplicate finding_id: {entry.finding_id}")
+        seen_ids.add(entry.finding_id)
+        key = (entry.source_path, entry.line, entry.symbol, entry.rule_id)
+        if key in seen_keys:
+            errors.append(f"duplicate debt identity key: {entry.finding_id}")
+        seen_keys.add(key)
         if not entry.finding_id.startswith("EBH6-DEBT-APP-TYP-"):
             errors.append(f"{entry.finding_id}: finding_id prefix")
     return tuple(errors)

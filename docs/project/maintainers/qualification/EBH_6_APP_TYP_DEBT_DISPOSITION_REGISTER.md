@@ -33,7 +33,33 @@
 | EBH6-DEBT-APP-TYP-10 | `resolve_reasoning_task_metadata` | semantic_any | wiring | **A** | Metadata resolver return deferred | **PENDING** |
 | EBH6-DEBT-APP-TYP-11 | `attach_recovery_contract_to_task_metadata` | semantic_any | wiring | **A** | Task metadata attachment seam | **PENDING** |
 
-## C2-01 — Technical verification summary
+## R1 — debt matching integrity (@ qual HEAD)
+
+| Control | Status |
+| --- | --- |
+| `_debt_covers` matches `source_path`, `line`, `symbol`, **`rule_id`** | **FIXED** |
+| Duplicate `finding_id` rejected | **gate** |
+| Wrong `rule_id` cannot mask violation | **negative test** |
+| 11 registry rows match live violations | **verified** (0 stale / 0 unregistered) |
+
+## R2 — per-debt qualification (agent recommendation — not operator A)
+
+| ID | Primary evidence | Typing-only risk | Recommendation |
+| --- | --- | --- | --- |
+| 01 | `_APP_SERVICES_GATE` + registry row | RuntimeConfig duck-type on wiring | **A — SCOPED ACCEPTANCE RECOMMENDED** |
+| 02 | same | Harness host port — harness boundary | **A** |
+| 03 | same | Lab scenario builder | **A** |
+| 04 | same | Prod scenario builder — **review deploy adjacency** | **A** (auditor may → **B**) |
+| 05 | same | Deploy certification factories — **authority-sensitive** | **A** (auditor may → **B**) |
+| 06 | same | Digest helper | **A** |
+| 07 | same | Scheduler lifespan hook | **A** |
+| 08 | same | Harness auth ASGI handle | **A** |
+| 09 | same | Profile migration entry | **A** |
+| 10 | same | Reasoning metadata resolver | **A** |
+| 11 | same | Recovery contract on metadata — **recovery semantics** | **A** (runtime validation separate from typing) |
+
+Runtime fail-closed/admission for 04/05/11 not proven by typing gate alone — documented as scoped debt, not invariant waiver.
+
 
 | ID | Production reachability | Public boundary | Trust/authority | Pos gate | Neg gate | Proposal |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -96,7 +96,54 @@ def pre_cert_export_metadata() -> dict[str, Any]:
         "pair_count": len(pre_cert_pair_rows()),
         "bundle_count": len(pre_cert_bundle_rows()),
         "independent_disposition": "PENDING — agent must not issue E01-PRE-01 PASS",
+        "implementer_outcome_note": "PARTIAL_CANDIDATE / ACCEPTED bundle review ≠ independent auditor PASS",
     }
+
+
+def _pair_row_dict(row: PreCertPairRow) -> dict[str, Any]:
+    return {
+        "layer": row.layer,
+        "detection_class": row.detection_class,
+        "tier": row.tier,
+        "implementer_outcome": row.implementer_outcome,
+        "bundle_id": row.bundle_id,
+        "bundle_review": row.bundle_review,
+        "invariant_ref": row.invariant_ref,
+        "gate_node_id": row.gate_node_id,
+        "primary_behavioral_gates": list(row.primary_behavioral_gates),
+        "scope_limitation": row.scope_limitation,
+        "negative_test_ref": row.negative_test_ref,
+        "group_evidence_refs": list(row.group_evidence_refs),
+        "independent_disposition": row.independent_disposition,
+    }
+
+
+def _bundle_row_dict(row: PreCertBundleRow) -> dict[str, Any]:
+    return {
+        "bundle_id": row.bundle_id,
+        "implementer_review": row.implementer_review,
+        "invariant_ref": row.invariant_ref,
+        "primary_behavioral_gates": list(row.primary_behavioral_gates),
+        "scope_limitation": row.scope_limitation,
+        "negative_test_ref": row.negative_test_ref,
+        "pair_count": row.pair_count,
+        "independent_disposition": row.independent_disposition,
+    }
+
+
+def pre_cert_export_dict() -> dict[str, Any]:
+    """Machine export — full nodeids (no truncation)."""
+    return {
+        "metadata": pre_cert_export_metadata(),
+        "pairs": [_pair_row_dict(row) for row in pre_cert_pair_rows()],
+        "bundles": [_bundle_row_dict(row) for row in pre_cert_bundle_rows()],
+    }
+
+
+def pre_cert_export_json() -> str:
+    import json
+
+    return json.dumps(pre_cert_export_dict(), indent=2, sort_keys=True)
 
 
 def format_pre_cert_pair_table_markdown(max_rows: int | None = None) -> str:

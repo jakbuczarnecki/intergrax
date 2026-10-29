@@ -84,6 +84,42 @@ def wire_application_services():
     assert any(v.rule_id == "missing_public_return_annotation" for v in violations)
 
 
+def test_ebh6_application_services_typing_negative_wrong_rule_id_not_covered_by_debt() -> None:
+    entry = APPLICATION_SERVICES_TYPING_DEBT[0]
+    wrong_rule_debt = (
+        ApplicationServicesTypingDebtEntry(
+            finding_id="EBH6-DEBT-APP-TYP-PROBE-RULE",
+            source_path=entry.source_path,
+            line=2,
+            rule_id="semantic_any_public_seam",
+            symbol=entry.symbol,
+            rationale="wrong rule_id must not mask generic_object violation",
+        ),
+    )
+    result = evaluate_application_services_production_seam_typing(
+        _REPO_ROOT,
+        debt_entries=wrong_rule_debt,
+    )
+    assert result.unregistered_violations
+    assert any(v.rule_id == "generic_object_public_seam" for v in result.unregistered_violations)
+
+
+def test_ebh6_application_services_typing_negative_duplicate_finding_id_rejected() -> None:
+    dup = (
+        APPLICATION_SERVICES_TYPING_DEBT[0],
+        ApplicationServicesTypingDebtEntry(
+            finding_id=APPLICATION_SERVICES_TYPING_DEBT[0].finding_id,
+            source_path="intergrax/applications/_shared/other.py",
+            line=1,
+            rule_id="generic_object_public_seam",
+            symbol="other",
+            rationale="duplicate id probe",
+        ),
+    )
+    result = evaluate_application_services_production_seam_typing(_REPO_ROOT, debt_entries=dup)
+    assert result.registry_validation_errors
+
+
 def test_ebh6_application_services_typing_negative_unregistered_debt_fails() -> None:
     result = evaluate_application_services_production_seam_typing(
         _REPO_ROOT,

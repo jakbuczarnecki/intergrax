@@ -44,6 +44,19 @@
 
 **Recommend Path B** if auditor rejects ratification-as-sufficient for **production_effective YES** + **REQUIRES ADR** classification without signed ADR acceptance artifact.
 
+## R3 — contract verification (@ HEAD)
+
+| Check | Finding |
+| --- | --- |
+| Surface | `resolve_authoritative_decision_exposure_for_task` → `AuthoritativeDecisionExposure[object]` in [`nexus_decision_exposure.py`](../../../intergrax/runtime/nexus/orchestration/nexus_decision_exposure.py) |
+| `object` erasure | **Yes** — parametric exposure erases candidate typing; selection still typed via `DecisionExposureSelectionHostBinding` + fail-closed errors |
+| Authority | Terminal states require `effective_attempt_id`; missing → `NexusDecisionExposureError` (not silent fallback) |
+| Publication | `ExposureUnevaluated` / selection failure paths explicit |
+| FRZ-TYP-03 | Strict typing **not met** — debt track only via ratification |
+| ADR | Operator must confirm ADR scope covers **current** exposure resolver @ HEAD |
+
+**Recommendation:** **PATH A — ACCEPT SCOPED DEBT** for EBH-6 **if** operator OD-EBH6-Q2D2 + auditor accept FINDING track; else **PATH B** + **OD-EBH6-01**.
+
 ## C3-01 — Path A audit (implementer analysis @ HEAD)
 
 | # | Question | Finding |
