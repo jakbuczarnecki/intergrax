@@ -194,8 +194,11 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
             ),
         ),
         "Host/Nexus composition wires store; semantic owner remains long-running checkpoint",
-        ("intergrax/runtime/long_running/store.py",),
-        ("SQLiteTaskCheckpointStore",),
+        (
+            "intergrax/runtime/long_running/store.py",
+            "intergrax/runtime/long_running/postgresql_task_checkpoint_store.py",
+        ),
+        ("SQLiteTaskCheckpointStore", "PostgreSQLTaskCheckpointStore"),
         (),
         ("LongRunningCoordinator", "NexusLoop checkpoint save path", "Scheduler resume writer"),
         (
@@ -212,7 +215,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         IdentityRole.PRESERVE_ON_RESTORE,
         ProjectionOrTruth.CANONICAL_TRUTH,
         StateFamilyP0Status.BASELINE_INVENTORIED,
-        _frz("FRZ-STA-01", "FRZ-STA-03", "FRZ-STA-05", "FRZ-STA-08", "FRZ-REC-01", "FRZ-REC-02", "FRZ-TEN-04", "FRZ-TEN-08"),
+        _frz(
+            "FRZ-STA-01",
+            "FRZ-STA-03",
+            "FRZ-STA-05",
+            "FRZ-STA-08",
+            "FRZ-REC-01",
+            "FRZ-REC-02",
+            "FRZ-TEN-04",
+            "FRZ-TEN-08",
+        ),
         BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
         TenantAuditDisposition.BLOCKED,
         "Schema columns + JSON validation on load; CAS; malformed checkpoint resume paths",
@@ -274,10 +286,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         (
             "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
             "intergrax/runtime/execution/in_memory_decision_checkpoint_persistence.py",
+            "intergrax/runtime/execution/postgresql_decision_checkpoint_persistence.py",
         ),
         (
             "SQLiteDecisionCheckpointPersistence",
             "InMemoryDecisionCheckpointPersistence",
+            "PostgreSQLDecisionCheckpointPersistence",
         ),
         (),
         ("Decision recovery orchestration", "Active decision checkpoint binding"),
@@ -782,12 +796,14 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         (
             "intergrax/runtime/execution/continuation/persistence.py",
             "intergrax/runtime/execution/continuation/durable_state_file.py",
+            "intergrax/runtime/execution/continuation/durable_serialized_seal_store.py",
         ),
         (
             "ExecutionContinuationStateStore",
             "InMemoryExecutionContinuationStateStore",
             "ExecutionContinuationDurableBacking",
             "ExecutionContinuationDurableStateFilePersistence",
+            "SerializedSealExecutionContinuationStateStore",
         ),
         (),
         ("ExecutionContinuationService", "Continuation progress gate"),
@@ -925,9 +941,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
     ),
 )
 
-CURRENT_STATE_X_FAMILY_IDS: Final[tuple[str, ...]] = tuple(
-    entry.family_id for entry in STATE_X_FAMILY_INVENTORY
-)
+CURRENT_STATE_X_FAMILY_IDS: Final[tuple[str, ...]] = tuple(entry.family_id for entry in STATE_X_FAMILY_INVENTORY)
 
 
 STATE_X_P0_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
