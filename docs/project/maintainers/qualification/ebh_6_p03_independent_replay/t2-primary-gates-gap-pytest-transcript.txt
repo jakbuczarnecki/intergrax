@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\15636-3a3d8ac9\pytest-cache
+rootdir: d:\Projekty\intergrax
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, asyncio-0.23.8
+asyncio: mode=Mode.AUTO
+collecting ... collected 11 items
+
+tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments PASSED [  9%]
+tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete PASSED [ 18%]
+tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes PASSED [ 27%]
+tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner PASSED [ 36%]
+tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty PASSED [ 45%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist PASSED [ 54%]
+tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink PASSED [ 63%]
+tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability PASSED [ 72%]
+tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed PASSED [ 81%]
+tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_observability_fail_closed_without_role PASSED [ 90%]
+tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph PASSED [100%]
+
+============================= 11 passed in 20.29s =============================

@@ -26,6 +26,8 @@ def test_ebh6_p03_committed_replay_bundle_present() -> None:
         "l9-pytest-transcript.txt",
         "l9-pytest-transcript-fail-historical-653cdd93f.txt",
         "l9-nodeid-attestation.json",
+        "t2-primary-gates-gap-pytest-transcript.txt",
+        "t2-primary-gates-attestation.json",
         "README.md",
     ):
         assert (_BUNDLE / name).is_file(), name
@@ -95,3 +97,18 @@ def test_ebh6_p03_l9_execution_manifest_status_honest() -> None:
     else:
         assert l9["status"] == "BLOCKED"
         assert att["all_mandatory_pass"] is False
+
+
+def test_ebh6_p03_t2_primary_gates_attestation_complete() -> None:
+    att = json.loads((_BUNDLE / "t2-primary-gates-attestation.json").read_text(encoding="utf-8"))
+    manifest = json.loads((_BUNDLE / "MANIFEST.json").read_text(encoding="utf-8"))
+    t2 = manifest["executions"]["t2_primary_gates_gap"]
+    assert att["unique_primary_gate_count"] == 25
+    assert att["bundle_count"] == 19
+    assert att["aj_group_count"] == 133
+    assert att["all_unique_primary_gates_pass"] is True
+    assert att["gap_execution"]["all_mandatory_pass"] is True
+    assert t2["status"] == "COMPLETE"
+    for bundle in att["bundles"]:
+        assert "PENDING" in bundle["independent_disposition"]
+        assert bundle["all_gates_pass"] is True

@@ -7,6 +7,8 @@
     "l9_fail_historical_transcript": "l9-pytest-transcript-fail-historical-653cdd93f.txt",
     "l9_nodeid_attestation": "l9-nodeid-attestation.json",
     "l9_pytest_transcript": "l9-pytest-transcript.txt",
+    "t2_primary_gates_attestation": "t2-primary-gates-attestation.json",
+    "t2_primary_gates_gap_transcript": "t2-primary-gates-gap-pytest-transcript.txt",
     "p03_handoff": "p03-handoff.json",
     "pre_cert_export": "pre-cert-export.json",
     "pytest_transcript": "pytest-transcript.txt"
@@ -28,6 +30,28 @@
       "mandatory_unique_nodeids": 10,
       "result_summary": "10 passed",
       "status": "COMPLETE"
+    },
+    "t2_primary_gates_gap": {
+      "TEST_EXECUTION_SHA": "593368eaf2bb8da6c22e96e86542d576dec5aab7",
+      "artifact": "t2-primary-gates-gap-pytest-transcript.txt",
+      "attestation": "t2-primary-gates-attestation.json",
+      "mandatory_nodeids": [
+        "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments",
+        "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete",
+        "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+        "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+        "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_observability_fail_closed_without_role",
+        "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph"
+      ],
+      "mandatory_nodeid_count": 11,
+      "result_summary": "11 passed @ HEAD; 25/25 T2 primary gates PASS (gap + qual @ e174b5b9 + L9 cross-ref)",
+      "status": "COMPLETE",
+      "unique_primary_gate_count": 25
     }
   },
   "family_count": 23,

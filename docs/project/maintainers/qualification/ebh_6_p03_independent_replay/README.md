@@ -10,8 +10,10 @@ Auditor-accessible machine exports @ **`TEST_EXECUTION_SHA`** in [`MANIFEST.json
 | [`l9-pytest-transcript.txt`](l9-pytest-transcript.txt) | Mandatory **8 L9 BLK** gate nodeids (10 unique tests) @ `executions.l9_blocker_gates_b3_b4_b5` |
 | [`l9-pytest-transcript-fail-historical-653cdd93f.txt`](l9-pytest-transcript-fail-historical-653cdd93f.txt) | **Historical** GOV gate FAIL before L9-01 remediation (do not delete) |
 | [`l9-nodeid-attestation.json`](l9-nodeid-attestation.json) | Per-nodeid PASS / MISSING_OR_FAIL vs transcript |
+| [`t2-primary-gates-gap-pytest-transcript.txt`](t2-primary-gates-gap-pytest-transcript.txt) | **11** missing T2 primary gates @ `executions.t2_primary_gates_gap` |
+| [`t2-primary-gates-attestation.json`](t2-primary-gates-attestation.json) | **25** unique T2 primary gates + **19** bundle rollup (gap + qual + L9 cross-ref) |
 
-**Dual execution** — see `executions` in [`MANIFEST.json`](MANIFEST.json): `ebh6_qualification_suite` + `l9_blocker_gates_b3_b4_b5`.
+**Triple execution** — see `executions` in [`MANIFEST.json`](MANIFEST.json): `ebh6_qualification_suite` + `l9_blocker_gates_b3_b4_b5` + `t2_primary_gates_gap`.
 
 **Regenerate L9 execution** (UTF-8 transcript required):
 
@@ -30,6 +32,26 @@ $nodes = @(
 )
 uv run pytest @nodes -v --tb=short 2>&1 | Out-File -FilePath docs/project/maintainers/qualification/ebh_6_p03_independent_replay/l9-pytest-transcript.txt -Encoding utf8
 uv run python scripts/qualification/attest_ebh6_p03_l9_execution.py
+```
+
+**Regenerate T2 primary gate gap batch + rollup** (UTF-8 gap transcript required):
+
+```powershell
+$gap = @(
+  "tests/integration/agent_distribution/test_canonical_agent_lifecycle_architecture_gate.py::test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments",
+  "tests/qualification/ebh_5/test_ebh_5_mechanical_exit_gates.py::test_ebh5_exit_inventory_complete",
+  "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+  "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_factory_module_is_sanctioned_composition_owner",
+  "tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py::test_ebh5_rpl_g_config_x_active_blockers_remain_empty",
+  "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+  "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+  "tests/qualification/ebh_5/test_ebh_5_proof_integrity_gates.py::test_ebh5_proof_sqlite_closed_world_accountability",
+  "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_integration_unknown_slug_fail_closed",
+  "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_observability_fail_closed_without_role",
+  "tests/qualification/ebh_5/test_ebh_5_reachability_gates.py::test_ebh5_reach_no_second_global_provider_registry_in_rag_graph"
+)
+uv run pytest @gap -v --tb=short 2>&1 | Out-File -FilePath docs/project/maintainers/qualification/ebh_6_p03_independent_replay/t2-primary-gates-gap-pytest-transcript.txt -Encoding utf8
+uv run python scripts/qualification/attest_ebh6_p03_t2_primary_gates.py
 ```
 
 **Regenerate full EBH-6 qual export** (does not re-run L9 batch):
