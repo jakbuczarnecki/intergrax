@@ -37,7 +37,7 @@ Cross-tier duplicate/bypass census (DUP-01..14), responsibility families (15), E
 | DUPX-GAP-CLASS-D | **PASS** @ Wave 1 evidence |
 | DUPX-GAP-L3-TIER3-DEDUPE | **PASS** @ Wave 1 evidence |
 | DUPX-CAND-03 / CAND-09 / CAND-12 | **Closed disposition** @ Wave 1 |
-| OD-DUPX-02 / OD-DUPX-01 / OD-DUPX-08 | **OPEN** |
+| OD-DUPX-02 **APPROVED**; OD-DUPX-01 **NOT TRIGGERED**; OD-DUPX-08 **APPROVED — 2026-10-29** |
 
 ## Evidence commands
 
@@ -53,6 +53,6 @@ uv run pytest tests/unit/runtime/architecture/test_npsc4_2_residual_compatibilit
 
 ## FINAL STATUS
 
-**Status:** `DUP-X — INDEPENDENTLY ACCEPTED (SCOPED) / OPERATOR CLOSURE PENDING` @ B6 PASS **2026-10-29** (ChatGPT · [`DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](DUP_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md)) · **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** `a7d83925b375b5f08eb0f175ced2c17fa026bba9` — **NOT CLOSED** until **OD-DUPX-08**
+**`DUP-X — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`** — Protocol DUP-X-03 B6 `ISSUED — PASS (SCOPED)` (ChatGPT independent evidence review, no auditor-run pytest); `INDEPENDENT_ACCEPTANCE_BASELINE_SHA` `a7d83925b375b5f08eb0f175ced2c17fa026bba9`; B6 acceptance publication `e45026301c5b3c44daec47a901af3946e9fe7255`; operator authorization `OPERATOR APPROVED — DUP-X CLOSED (OD-DUPX-08)` dated 2026-10-29.
 
-Agent **forbidden:** OD-DUPX-08 · roadmap §5 **CLOSED** · **ROADMAP-REPLAY-X** entry.
+Scope excludes global FRZ PASS and the known NPSC-4.2 allowlist failure; ROADMAP-REPLAY-X not started. Formal closure publication SHA is the actual Git commit produced by the operator-authorized publication workflow.
