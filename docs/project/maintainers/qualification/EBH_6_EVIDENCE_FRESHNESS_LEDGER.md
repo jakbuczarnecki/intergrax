@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | **CLOSURE_BASELINE_SHA** (contracts_typing) | `202239f726dd5e3fe23bf1a68cafa61c1eb9fca7` | **CURRENT** implementer evidence anchor |
 | **FINAL_REMEDIATION (R1–R7)** | `b9ffa8d6e12208a3435b4cbc21ce5dda31746bc6` | Superseded by R4 T2 gate repair @ commit after `067cc2e2` |
-| **R4 T2 gate repair (EBH-6)** | @ post-`067cc2e2` commit on `development` | **CURRENT** — 230 passed @ `.tmp/session/ebh-6-r4-remediation/pytest.log` |
+| **R4 T2 gate repair (EBH-6)** | `e7f1d0d77` | **CURRENT** — 230 passed @ `.tmp/session/ebh-6-r4-remediation/pytest.log` |
 | **PLAN_PUBLICATION_SHA** (corrected closure plan) | `0489054c5f80ee392211fb33a39f2736fa2fdfa0` | **CURRENT** |
 | T2 repair handoff | `33b77c7828fff9d2606b2f8cf434b8d9c24a2c86` | Superseded by contracts_typing baseline |
 
