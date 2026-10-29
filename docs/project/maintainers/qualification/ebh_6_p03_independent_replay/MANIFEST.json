@@ -20,7 +20,7 @@
       "result_summary": "272 passed (historical — do not overwrite)"
     },
     "l9_blocker_gates_b3_b4_b5": {
-      "TEST_EXECUTION_SHA": "653cdd93fa055fbd1a169498e6986ce52e337c74",
+      "TEST_EXECUTION_SHA": "6700ff756dfcbb69c26e88854110da802a0df037",
       "artifact": "l9-pytest-transcript.txt",
       "attestation": "l9-nodeid-attestation.json",
       "gov_l9_01_remediation": "StructuredInferencePreModelGate — PolicyEngine wired in governance composition only",
