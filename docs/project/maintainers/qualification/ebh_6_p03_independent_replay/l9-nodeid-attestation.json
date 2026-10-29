@@ -1,6 +1,6 @@
 {
-  "TEST_EXECUTION_SHA": "0a2158673708722b1e92c816715e2ed81ac940c5",
-  "all_mandatory_pass": false,
+  "TEST_EXECUTION_SHA": "653cdd93fa055fbd1a169498e6986ce52e337c74",
+  "all_mandatory_pass": true,
   "mandatory_nodeids": [
     "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass",
     "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
@@ -21,7 +21,7 @@
     },
     {
       "nodeid": "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine",
-      "status": "MISSING_OR_FAIL"
+      "status": "PASS"
     },
     {
       "nodeid": "tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity",

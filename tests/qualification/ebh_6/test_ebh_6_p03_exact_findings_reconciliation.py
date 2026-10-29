@@ -24,6 +24,7 @@ def test_ebh6_p03_committed_replay_bundle_present() -> None:
         "pre-cert-export.json",
         "pytest-transcript.txt",
         "l9-pytest-transcript.txt",
+        "l9-pytest-transcript-fail-historical-653cdd93f.txt",
         "l9-nodeid-attestation.json",
         "README.md",
     ):

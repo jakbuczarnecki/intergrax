@@ -8,6 +8,7 @@ Auditor-accessible machine exports @ **`TEST_EXECUTION_SHA`** in [`MANIFEST.json
 | [`pre-cert-export.json`](pre-cert-export.json) | 133 pair rows + 19 T2 bundle rows with full pytest nodeids |
 | [`pytest-transcript.txt`](pytest-transcript.txt) | Full `tests/qualification/ebh_6/` verbose transcript (**272 passed** — do not overwrite) |
 | [`l9-pytest-transcript.txt`](l9-pytest-transcript.txt) | Mandatory **8 L9 BLK** gate nodeids (10 unique tests) @ `executions.l9_blocker_gates_b3_b4_b5` |
+| [`l9-pytest-transcript-fail-historical-653cdd93f.txt`](l9-pytest-transcript-fail-historical-653cdd93f.txt) | **Historical** GOV gate FAIL before L9-01 remediation (do not delete) |
 | [`l9-nodeid-attestation.json`](l9-nodeid-attestation.json) | Per-nodeid PASS / MISSING_OR_FAIL vs transcript |
 
 **Dual execution** — see `executions` in [`MANIFEST.json`](MANIFEST.json): `ebh6_qualification_suite` + `l9_blocker_gates_b3_b4_b5`.

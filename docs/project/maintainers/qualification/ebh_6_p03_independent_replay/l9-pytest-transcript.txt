@@ -1,6 +1,6 @@
 ﻿============================= test session starts =============================
 platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
-cachedir: build\pytest\21492-6a82386e\pytest-cache
+cachedir: build\pytest\45012-3d30f28a\pytest-cache
 rootdir: D:\Projekty\intergrax
 configfile: pyproject.toml
 plugins: anyio-4.12.1, Intergrax-ai-0.1.0, asyncio-0.23.8
@@ -9,7 +9,7 @@ collecting ... collected 10 items
 
 tests/unit/runtime/architecture/test_ee_final_arch_owner_uniqueness.py::test_ee_final_arch_owner_matrix_documented PASSED [ 10%]
 tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py::test_ee_a1_p0_inventory_reports_zero_production_bypass PASSED [ 20%]
-tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine FAILED [ 30%]
+tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine PASSED [ 30%]
 tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_governance_planes_do_not_mint_execution_identity PASSED [ 40%]
 tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py::test_no_recovery_god_object_in_production PASSED [ 50%]
 tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py::test_decision_durable_recovery_has_no_production_bypass PASSED [ 60%]
@@ -18,23 +18,4 @@ tests/unit/runtime/architecture/test_ee_b1_2_capacity_architecture_gate.py::test
 tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_published_event_reaches_bounded_sink PASSED [ 90%]
 tests/unit/runtime/security/test_tenant_scope.py::test_tenant_scope_adversarial_matrix PASSED [100%]
 
-================================== FAILURES ===================================
-____________ test_npsc42_h1_execution_does_not_host_policy_engine _____________
-tests\unit\runtime\architecture\test_npsc42_h1_governance_boundary_freeze.py:168: in test_npsc42_h1_execution_does_not_host_policy_engine
-    assert violations == [], "execution must not own governance evaluation:\n" + "\n".join(
-E   AssertionError: execution must not own governance evaluation:
-E     intergrax/runtime/execution/inference.py:24: import from intergrax.runtime.policy.policy_engine
-E     intergrax/runtime/execution/inference_composition.py:26: import from intergrax.runtime.policy.policy_engine
-E   assert ['intergrax/r...olicy_engine'] == []
-E     
-E     Left contains 2 more items, first extra item: 'intergrax/runtime/execution/inference.py:24: import from intergrax.runtime.policy.policy_engine'
-E     
-E     Full diff:
-E     - []
-E     + [
-E     +     'intergrax/runtime/execution/inference.py:24: import from '...
-E     
-E     ...Full output truncated (4 lines hidden), use '-vv' to show
-=========================== short test summary info ===========================
-FAILED tests/unit/runtime/architecture/test_npsc42_h1_governance_boundary_freeze.py::test_npsc42_h1_execution_does_not_host_policy_engine
-========================= 1 failed, 9 passed in 8.03s =========================
+============================= 10 passed in 8.04s ==============================
