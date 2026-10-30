@@ -8,6 +8,7 @@
 | AUTHORIZED_BASELINE_SHA | OD-EBH7-01 entry @ operator approval | `81679e67225f42dfbc1c508516e19488b6fbf453` |
 | W1W2_RECON_SHA | Qualification-only correction | `9ecf8666a42320cd65ca9852b1fdbdd8bbfbf805` |
 | DISPOSITION_PIN_SHA | SSOT test_execution_evidence pin | `9ecf8666a42320cd65ca9852b1fdbdd8bbfbf805` |
+| EBH7_BATCH_AB_START_SHA | Full behavioral execution entry | `195046d46360cb720956cd306b72cda81d8cc3b4` |
 | CLOSURE_SHA | OD-EBH7-08 | *pending* |
 
 Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`.

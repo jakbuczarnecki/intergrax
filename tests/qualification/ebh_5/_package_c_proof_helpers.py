@@ -10,17 +10,19 @@ import pytest
 from intergrax.integrations._shared.config import read_integration_slug_from_env
 from intergrax.integrations.contracts.base import IntegrationCategory, UnknownIntegrationError
 from intergrax.integrations.examples.custom_memory_kv import CustomMemoryKvPlugin
-from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.integrations.registry.plugin_register import register_integration_plugin
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.tokenizers.bootstrap.tokenizer_bootstrap import create_default_tokenizer_engine
 from intergrax.tokenizers.providers.simple_tokenizer import SimpleTokenizer
 from intergrax.tokenizers.providers.tiktoken_tokenizer import TiktokenTokenizer
 from intergrax.tokenizers.registry.tokenizer_registry import TokenizerRegistry
 from intergrax.tokenizers.tokenizer_manager import TokenizerManager
+from tests.qualification.ebh_5._package_c_v2_proof_helpers import (
+    run_package_c_v2_relational_sqlite_duckdb_dual_slug,
+    run_package_c_v2_relational_unregistered_fail_closed,
+)
 
 
 def _integration_category_for_concern(concern_id: str) -> IntegrationCategory | None:
@@ -39,15 +41,7 @@ def run_package_c_integration_proof(concern_id: str, *, tmp_path: Path | None = 
     clear_catalog()
     if category is IntegrationCategory.RELATIONAL_STORE:
         assert tmp_path is not None
-        register_sqlite_integration()
-        profile = IntegrationProfile(
-            relational_store="sqlite",
-            options={"sqlite": {"data_dir": str(tmp_path)}},
-        )
-        integration = resolve_from_profile(profile, category)
-        assert isinstance(integration, RelationalStoreIntegrationContract)
-        integration.connect()
-        integration.close()
+        run_package_c_v2_relational_sqlite_duckdb_dual_slug(tmp_path)
         return
     if category is IntegrationCategory.KEY_VALUE_CACHE:
         register_integration_plugin(CustomMemoryKvPlugin)
@@ -64,6 +58,9 @@ def run_package_c_integration_proof(concern_id: str, *, tmp_path: Path | None = 
 def run_package_c_integration_negative_fail_closed(concern_id: str) -> None:
     category = _integration_category_for_concern(concern_id)
     assert category is not None
+    if category is IntegrationCategory.RELATIONAL_STORE:
+        run_package_c_v2_relational_unregistered_fail_closed()
+        return
     clear_catalog()
     profile = IntegrationProfile()
     with pytest.raises((UnknownIntegrationError, Exception)):

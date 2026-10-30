@@ -5,7 +5,7 @@
 | Source plan | Cursor plan `ebh-7_gap_closure_program` (qualification-corrected) — **do not edit plan file** |
 | Baseline | `development` @ gap-closure implementation wave |
 | SSOT disposition | `tests/qualification/ebh_7/_semantic_disposition_registry.py` |
-| OD-EBH7-01 | **OPEN** — operator signature required before claiming program entry |
+| OD-EBH7-01 | **APPROVED** @ `81679e672` — operator record [`EBH_7_OD_EBH7_01_ENTRY_READINESS_RECORD.md`](EBH_7_OD_EBH7_01_ENTRY_READINESS_RECORD.md) |
 
 ## W0 — operator gate
 

@@ -98,7 +98,10 @@ QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE: Final[dict[str, str]] = {
         "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_integration_observability_backend"
     ),
     "integration.relational_store": (
-        "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_integration_relational_store"
+        "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py"
+        "::test_ebh5_pkgc_v2_relational_sqlite_duckdb_dual_slug; "
+        "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py"
+        "::test_ebh5_pkgc_integration_relational_store"
     ),
     "integration.rerank_provider": (
         "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_integration_rerank_provider"
