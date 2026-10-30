@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from tests.qualification.ebh_7._certification_status import CertificationStatus, is_behavioral_certification
+from tests.qualification.ebh_7._certification_status import CertificationStatus
 from tests.qualification.ebh_7._constants import EBH7_CROSS_DOMAIN_COUNT
 from tests.qualification.ebh_7._gate_strength import GateStrength
 
@@ -172,9 +172,10 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         components="EBH-5",
         attack="sqlite bleed",
         expected="REJECT",
-        reuse="ebh_5 L2",
-        proof_module="tests.qualification.ebh_5.test_ebh_5_l2_integrity_gates",
-        proof_function="test_ebh5_q09_sqlite_touchpoints_fully_accounted",
+        reuse="ebh_5 behavioral",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_010_backend_persistence_sqlite_behavioral",
+        proof_needs_tmp_path=True,
     ),
     _xdm(
         11,
@@ -420,10 +421,13 @@ def assert_ebh7_cross_domain_registry_integrity() -> None:
 
 
 def cross_domain_pending_scenario_ids() -> tuple[str, ...]:
-    return tuple(
-        s.scenario_id for s in EBH7_CROSS_DOMAIN_SCENARIOS if not is_behavioral_certification(s.qualification_status)
-    )
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import cross_domain_open_ids_from_audit
+
+    return cross_domain_open_ids_from_audit()
 
 
 def cross_domain_qualified_scenarios() -> tuple[CrossDomainScenario, ...]:
-    return tuple(s for s in EBH7_CROSS_DOMAIN_SCENARIOS if is_behavioral_certification(s.qualification_status))
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import cross_domain_semantically_qualified_ids
+
+    allowed = cross_domain_semantically_qualified_ids()
+    return tuple(s for s in EBH7_CROSS_DOMAIN_SCENARIOS if s.scenario_id in allowed)

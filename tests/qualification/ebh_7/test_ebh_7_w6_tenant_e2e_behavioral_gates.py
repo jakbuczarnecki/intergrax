@@ -22,6 +22,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 def test_ebh7_w6_tenant_e2e_executes_registered_proof(scenario) -> None:
     assert scenario.proof_module is not None
     assert scenario.proof_function is not None
+    if scenario.scenario_id == "EBH7-TEN-E2E-11":
+        pytest.skip("governed_execution proof runs in tenant_platform_e2e module")
     if scenario.proof_needs_tmp_path:
         pytest.skip("proof requires tmp_path — run in dedicated fixture test")
     execute_proof(scenario.proof_module, scenario.proof_function)

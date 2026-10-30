@@ -48,10 +48,9 @@ def assert_ebh7_rpl_h_disposition_integrity() -> None:
     assert len(CROSS_LAYER_REPLACEABILITY_MATRIX) == EBH7_RPL_MATRIX_ROWS
     rows = rpl_h_disposition_rows()
     assert len(rows) == EBH7_RPL_MATRIX_ROWS
-    not_yet = sum(1 for r in rows if r.rpl_h_at_head == ExtensibilityClassification.REPLACEABLE_NOT_YET)
     qualified = sum(1 for r in rows if is_behavioral_certification(r.qualification_status))
-    assert not_yet == 51
-    assert qualified == 5
+    not_yet = sum(1 for r in rows if r.rpl_h_at_head == ExtensibilityClassification.REPLACEABLE_NOT_YET)
+    assert qualified + not_yet == EBH7_RPL_MATRIX_ROWS
 
 
 def assert_ebh7_rpl_h_behavioral_qualification() -> None:

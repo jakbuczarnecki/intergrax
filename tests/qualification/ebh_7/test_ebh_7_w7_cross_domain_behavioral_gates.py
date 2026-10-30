@@ -26,6 +26,14 @@ def test_ebh7_w7_cross_domain_executes_registered_proof(scenario) -> None:
     execute_proof(scenario.proof_module, scenario.proof_function)
 
 
+def test_ebh7_w7_cross_domain_xdm_010_sqlite_behavioral(tmp_path) -> None:
+    from tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs import (
+        test_ebh7_xdm_010_backend_persistence_sqlite_behavioral,
+    )
+
+    test_ebh7_xdm_010_backend_persistence_sqlite_behavioral(tmp_path)
+
+
 def test_ebh7_w7_all_mandatory_scenarios_qualified() -> None:
     pending = cross_domain_pending_scenario_ids()
     assert pending == [], f"OPEN cross-domain scenarios: {pending}"

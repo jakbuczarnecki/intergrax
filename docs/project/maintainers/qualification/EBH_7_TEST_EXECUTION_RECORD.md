@@ -2,11 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| Baseline audited SHA | `59d0fe5d7faf271926f8477de102e7f26b3e1caf` |
-| Corrective execution SHA | `cf788aec2` (development) |
+| Baseline audited SHA | `e2467a88ed042e2d97150568f9f6b25ba85cb6b1` |
+| Completion-wave execution | Working tree @ baseline + uncommitted completion-wave deltas |
 | Command | `uv run pytest tests/qualification/ebh_7/ -q` |
-| Result | **61 passed, 3 failed, 1 skipped** (expected OPEN behavioral gates) |
-| Log | `.tmp/session/ebh-7-corrective-wave/pytest.log` |
+| Result | **67 passed, 3 failed, 3 skipped** (expected OPEN behavioral gates) |
+| Log | `.tmp/session/ebh-7-behavioral-wave/pytest-ebh7-full.log` |
 
 ## Expected failures (honest OPEN gates)
 
@@ -14,7 +14,7 @@
 | --- | --- |
 | `test_ebh7_w5_rpl_h_behavioral_all_qualified` | 51× RPL-H NOT YET @ HEAD |
 | `test_ebh7_w6_tenant_e2e_all_mandatory_scenarios_qualified` | 12× tenant E2E without proof nodes |
-| `test_ebh7_w7_all_mandatory_scenarios_qualified` | 16× cross-domain without proof nodes |
+| `test_ebh7_w7_all_mandatory_scenarios_qualified` | 18× cross-domain OPEN per semantic audit |
 
 ## L1 / L2 / L3 interpretation
 

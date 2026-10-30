@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from tests.qualification.ebh_7._certification_status import CertificationStatus, is_behavioral_certification
+from tests.qualification.ebh_7._certification_status import CertificationStatus
 from tests.qualification.ebh_7._constants import EBH7_TENANT_E2E_COUNT
 from tests.qualification.ebh_7._gate_strength import GateStrength
 
@@ -110,8 +110,7 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="cross-tenant tool scope",
         expected="DENY",
         assertions="tool scope cannot cross tenants",
-        proof_module="tests.qualification.tenant_x.test_tenant_x_r2_fast",
-        proof_function="test_tx_r2_q05_adversarial_cross_tenant_credential_broker",
+        qualification_status=CertificationStatus.BLOCKED,
     ),
     _scenario(
         5,
@@ -170,7 +169,9 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         production_path="DIST→Exec",
         attack="cross redrive",
         expected="DENY",
-        assertions="TBD",
+        assertions="cross-tenant queue status/result fail-closed",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_10_distributed_queue_cross_tenant_fail_closed",
     ),
     _scenario(
         11,
@@ -178,7 +179,10 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         production_path="Trace→Evidence",
         attack="cross export",
         expected="REJECT",
-        assertions="TBD",
+        assertions="trace attribution rejects tenant mismatch",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_11_trace_attribution_cross_tenant_rejected",
+        proof_needs_tmp_path=False,
     ),
     _scenario(
         12,
@@ -194,7 +198,9 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         production_path="Plugin→Host",
         attack="B plugin in A host",
         expected="DENY",
-        assertions="TBD",
+        assertions="compat assess rejects cross-tenant evidence",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_13_plugin_compat_cross_tenant_rejected",
     ),
     _scenario(
         14,
@@ -254,7 +260,9 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         production_path="COMPAT→Tenant",
         attack="cross assess",
         expected="REJECT",
-        assertions="TBD",
+        assertions="compat service rejects cross-tenant evidence",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_20_compat_assess_cross_tenant_rejected",
     ),
     _scenario(
         21,
@@ -320,10 +328,13 @@ def assert_ebh7_tenant_e2e_registry_integrity() -> None:
 
 
 def tenant_e2e_pending_scenario_ids() -> tuple[str, ...]:
-    return tuple(
-        s.scenario_id for s in EBH7_TENANT_E2E_SCENARIOS if not is_behavioral_certification(s.qualification_status)
-    )
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import tenant_e2e_open_ids_from_audit
+
+    return tenant_e2e_open_ids_from_audit()
 
 
 def tenant_e2e_qualified_scenarios() -> tuple[TenantE2EScenario, ...]:
-    return tuple(s for s in EBH7_TENANT_E2E_SCENARIOS if is_behavioral_certification(s.qualification_status))
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import tenant_e2e_semantically_qualified_ids
+
+    allowed = tenant_e2e_semantically_qualified_ids()
+    return tuple(s for s in EBH7_TENANT_E2E_SCENARIOS if s.scenario_id in allowed)

@@ -7,7 +7,7 @@
 
 | Gate ID | Was | Now |
 | --- | --- | --- |
-| W6-ID-REGISTRY-ONLY | 26 IDs = E2E PASS | Structural registry + executed TENANT-X proofs; 11 scenarios OPEN |
+| W6-ID-REGISTRY-ONLY | 26 IDs = E2E PASS | Structural registry + executed TENANT-X proofs; 12 scenarios OPEN |
 | W6-TENANT-X-FINAL-READY | Single readiness test | Removed as E2E substitute |
 | W7-HASATTR-DUP-X | hasattr only | Execute proof callables; 17 XDM scenarios OPEN |
 | W5-RPL-ROW-COUNT | 56 rows = RPL PASS | 51 NOT YET remain QUALIFICATION_PENDING |
@@ -29,4 +29,5 @@ Registry/doc presence = **MATERIALIZED**, not **QUALIFIED**.
 - **OD-EBH7-08:** OPEN  
 - **Protocol 03 B6:** OPEN  
 - **51× RPL-H NOT YET** @ HEAD  
-- **12× tenant E2E** + **16× cross-domain** scenarios without current-HEAD proof nodes  
+- **12× tenant E2E OPEN** (semantic audit: 14 EXACT, 3 PARTIAL, 1 BLOCKED, 8 MISSING)  
+- **18× cross-domain OPEN** (16 EXACT; 16 MISSING + 1 STRUCTURAL + 1 PARTIAL) — reconciles prior 11/17 doc drift via `EBH_7_SEMANTIC_PROOF_BINDING_AUDIT.md`  
