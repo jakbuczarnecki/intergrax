@@ -47,7 +47,11 @@ def test_ebh7_ten_e2e_11_trace_attribution_cross_tenant_rejected(governed_execut
 
 
 def test_ebh7_ten_e2e_13_plugin_compat_cross_tenant_rejected() -> None:
-    test_r4_probe_g_cross_tenant_evidence()
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_plugin_host_compat_cross_tenant_activation_denied,
+    )
+
+    assert_plugin_host_compat_cross_tenant_activation_denied()
 
 
 def test_ebh7_ten_e2e_20_compat_assess_cross_tenant_rejected() -> None:
@@ -55,29 +59,27 @@ def test_ebh7_ten_e2e_20_compat_assess_cross_tenant_rejected() -> None:
 
 
 def test_ebh7_ten_e2e_03_gov_exec_cross_tenant_denied() -> None:
-    import asyncio
-
-    from tests.unit.mp4r7.test_enterprise_integration_qualification import (
-        test_mp4r7_cross_tenant_fail_closed,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_gov_exec_cross_tenant_projection_denied,
     )
 
-    asyncio.run(test_mp4r7_cross_tenant_fail_closed())
+    assert_gov_exec_cross_tenant_projection_denied()
 
 
 def test_ebh7_ten_e2e_04_exec_tool_tenant_boundary() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r1_fast import (
-        test_tx_r1_q12_adversarial_tool_scope_same_tenant,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_exec_tool_cross_tenant_invocation_denied,
     )
 
-    test_tx_r1_q12_adversarial_tool_scope_same_tenant()
+    assert_exec_tool_cross_tenant_invocation_denied()
 
 
 def test_ebh7_ten_e2e_05_config_provider_cross_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r2_fast import (
-        test_tx_r2_q05_adversarial_cross_tenant_credential_broker,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_config_provider_cross_tenant_rejected,
     )
 
-    test_tx_r2_q05_adversarial_cross_tenant_credential_broker()
+    assert_config_provider_cross_tenant_rejected()
 
 
 def test_ebh7_ten_e2e_12_skill_compose_cross_tenant() -> None:

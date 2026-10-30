@@ -70,11 +70,11 @@ def test_ebh7_xdm_017_failure_diagnostics_tenant_leak() -> None:
 
 
 def test_ebh7_xdm_018_plugin_tenant_activate_denied() -> None:
-    from tests.qualification.compat_x.test_compat_x_plugin_provider_r4_gates import (
-        test_r4_probe_g_cross_tenant_evidence,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_plugin_host_compat_cross_tenant_activation_denied,
     )
 
-    test_r4_probe_g_cross_tenant_evidence()
+    assert_plugin_host_compat_cross_tenant_activation_denied()
 
 
 def test_ebh7_xdm_019_recovery_gov_restore_denied() -> None:

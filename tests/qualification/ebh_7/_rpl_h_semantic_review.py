@@ -20,6 +20,12 @@ LEGACY_QUALIFIED: Final[frozenset[str]] = frozenset(
     }
 )
 
+PACKAGE_C_V2_QUALIFIED: Final[frozenset[str]] = frozenset(
+    {
+        "integration.relational_store",
+    }
+)
+
 
 class RplSemanticVerdict(StrEnum):
     QUALIFIED = "QUALIFIED"
@@ -46,7 +52,7 @@ def _risk_tier(concern_id: str) -> str:
 
 
 def _semantic_verdict_for(concern_id: str) -> RplSemanticVerdict:
-    if concern_id in LEGACY_QUALIFIED:
+    if concern_id in LEGACY_QUALIFIED or concern_id in PACKAGE_C_V2_QUALIFIED:
         return RplSemanticVerdict.QUALIFIED
     if concern_id.startswith("integration."):
         return RplSemanticVerdict.PARTIAL
