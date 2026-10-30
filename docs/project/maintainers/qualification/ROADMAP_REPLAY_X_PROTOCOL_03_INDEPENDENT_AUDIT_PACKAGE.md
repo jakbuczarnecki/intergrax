@@ -15,7 +15,7 @@
 | 1 | C0 roadmap drift | **PASS** — [`ROADMAP_REPLAY_X_C0_ROADMAP_DRIFT_AUDIT_RECORD.md`](ROADMAP_REPLAY_X_C0_ROADMAP_DRIFT_AUDIT_RECORD.md) |
 | 2 | FRZ 225 reconciliation | **RECORDED** |
 | 3 | §5 historical matrix | **RECORDED** — 232 rows @ HEAD |
-| 4 | Prod delta since DUP-X | **empty** |
+| 4 | Prod delta since DUP-X | **scoped (1 path)** — unscoped **empty**; see [`_prod_delta_disposition.py`](../../../../tests/qualification/roadmap_replay_x/_prod_delta_disposition.py) |
 | 5 | L1 mechanical gates | **PASS** (15) @ `22fbc0e` — `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/l1-roadmap_replay_x.log` |
 | 6 | Parent L2 | **PASS (SCOPED)** @ `TEST_EXECUTION_SHA` — manifest table + NPSC **EXPECTED_FAIL** |
 | 7 | L3 consolidated | **PASS** (480) — `l3-consolidated.log` |

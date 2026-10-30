@@ -2,7 +2,7 @@
 
 | Requirement | Historical evidence | HEAD prod Δ | FRZ impact | Validation | Blocker | Disposition |
 | --- | --- | --- | --- | --- | --- | --- |
-| Full program replay | §5 ledger 232 rows | empty since DUP-X | 225 FRZ preserved | L1/L2/L3 @ `22fbc0e` | none | **QUAL PASS (mechanical)** |
+| Full program replay | §5 ledger 232 rows | **scoped** 1 path; unscoped empty | 225 FRZ preserved | L1/L2/L3 @ `22fbc0e` | none | **QUAL PASS (mechanical)** |
 | Roadmap consistency | DUP-X CLOSED | docs synced | — | C0 + counters 0 | none | **PASS** |
 | Vendor neutrality | EBH-6 audit + VBN delta | none | NOT YET 51 OK | ebh_5/6 L2 PASS | none | **PASS (SCOPED)** |
 | NPSC-4.2 | 10 modules | none | allowlist FAIL scoped | `l2-npsc.log` exit 1 | none | **EXPECTED_FAIL (SCOPED)** |

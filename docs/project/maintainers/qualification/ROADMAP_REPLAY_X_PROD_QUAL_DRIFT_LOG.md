@@ -7,11 +7,14 @@
 
 ## Production delta (`intergrax/` · `agents/` · `applications/`)
 
-| Parent anchor | `git diff a7d83925..HEAD` | Reopen? |
+| Scope | `git diff a7d83925..HEAD` | Reopen? |
 | --- | --- | --- |
-| All mandatory parents (§5.1 matrix) | **empty** | **no** |
+| **Scoped (REPLAY-X L2 disposition)** | `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` — CTRL-X pyright callback typing + ruff format; admission/shutdown semantics unchanged · regression `tests/qualification/control_planes/ctrl_x/test_ctrl_x_typing_gates.py` · **L2 PASS** @ `TEST_EXECUTION_SHA` `22fbc0e` (`l2-ctrl_x.log`) | **no** (scoped attestation) |
+| **Unscoped** (mandatory §5 parent anchors) | **empty** | **no** |
 
-Mechanical gate: `test_replay_x_prod_delta_empty_since_dup_x`.
+**Distinction:** production delta **exists (scoped)** for one CTRL-X-adjacent path; **historical accepted evidence is NOT invalidated** for unrelated paths — `historical_evidence_invalidated_by_later_changes` remains **0** (@ `_closure_counters.py` + [`_prod_delta_disposition.py`](../../../../tests/qualification/roadmap_replay_x/_prod_delta_disposition.py)).
+
+Mechanical gate: `test_replay_x_prod_delta_empty_since_dup_x` asserts **unscoped** emptiness.
 
 ## Qualification delta (`tests/qualification/`)
 
@@ -25,6 +28,6 @@ Mechanical gate: `test_replay_x_prod_delta_empty_since_dup_x`.
 
 | Counter | Value | Notes |
 | --- | --- | --- |
-| reopened_historical_stages | 0 | no prod drift |
-| historical_evidence_invalidated | 0 | accepted §5 SHAs intact |
+| reopened_historical_stages | 0 | no **unscoped** prod drift |
+| historical_evidence_invalidated_by_later_changes | 0 | scoped path excluded; accepted §5 SHAs intact elsewhere |
 | unresolved_replay_blockers | 0 | no BLOCKER register rows |

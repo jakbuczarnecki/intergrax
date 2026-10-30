@@ -5,7 +5,9 @@
 | **START_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
 | **IMPLEMENTATION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
 | **TEST_EXECUTION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
-| **EVIDENCE_PUBLICATION_SHA** | **PENDING** — draft W4; **EVIDENCE_EXPORT_REQUIRED** for `.tmp` logs before publication |
+| **EVIDENCE_PUBLICATION_SHA (W4)** | `8515728649a280d435b04c23c8700fbd169495f5` |
+| **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | **local only @ session** — doc-only pass; not W4 commit |
+| **git HEAD @ PRE-B6 preflight** | `8515728649a280d435b04c23c8700fbd169495f5` |
 | **Environment** | Windows dev · `uv` · repo root `D:\Projekty\intergrax` |
 | **Proof directory** | `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` |
 
@@ -68,6 +70,8 @@ Mechanical via `tests/qualification/roadmap_replay_x/_closure_counters.py` — B
 | unclassified_replay_findings | 0 |
 | vendor_neutrality_replay_failures | 0 |
 
+**Production delta:** one **scoped** prod path since DUP-X (`dependency_attempt_execution_boundary.py`); **unscoped** empty → `historical_evidence_invalidated_by_later_changes` **0**; unrelated §5 accepted evidence **not** invalidated.
+
 ## Status
 
-**ROADMAP-REPLAY-X — QUALIFICATION PASS (mechanical L1+L2+L3 @ `TEST_EXECUTION_SHA`)** — **EVIDENCE PUBLICATION AUTHORIZATION REQUIRED** (commit W4 + export `.tmp` logs). **B6 / Operator OD / stage CLOSED — not asserted.**
+**ROADMAP-REPLAY-X — QUALIFICATION PASS (mechanical L1+L2+L3 @ `TEST_EXECUTION_SHA`)** @ W4 **`EVIDENCE_PUBLICATION_SHA` `8515728649a280d435b04c23c8700fbd169495f5`**. **PRE-B6 reconciliation** — doc + 13/13 log hash verify + archive (**local only @ session**). **B6 / Operator OD / parent CLOSED — not asserted.**

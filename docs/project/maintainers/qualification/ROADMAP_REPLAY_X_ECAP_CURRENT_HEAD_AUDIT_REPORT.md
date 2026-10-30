@@ -11,7 +11,7 @@
 
 ## C2 — Ownership / duplicate authority
 
-Prod Δ empty since DUP-X; DUP-X + EBH-6 SSOT reused; NPSC ten-module disposition recorded.
+**Scoped production delta exists** (1 path: `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` — CTRL-X typing/format; disposition @ `tests/qualification/roadmap_replay_x/_prod_delta_disposition.py`, regression `l2-ctrl_x.log` @ `TEST_EXECUTION_SHA`). **Unscoped** prod Δ since DUP-X **empty** — historical accepted evidence for unrelated paths **not** invalidated (`historical_evidence_invalidated_by_later_changes` **0**). DUP-X + EBH-6 SSOT reused; NPSC ten-module disposition recorded.
 
 ## C3 — VBN taxonomy (31 domains)
 
@@ -19,7 +19,7 @@ Seven replay artifacts @ normative schema (§2.1–2.7) + EBH-5/6 historical SHA
 
 ## C4 — Drift vs accepted baselines
 
-[`ROADMAP_REPLAY_X_PROD_QUAL_DRIFT_LOG.md`](ROADMAP_REPLAY_X_PROD_QUAL_DRIFT_LOG.md) — no parent reopen from prod.
+[`ROADMAP_REPLAY_X_PROD_QUAL_DRIFT_LOG.md`](ROADMAP_REPLAY_X_PROD_QUAL_DRIFT_LOG.md) — scoped prod path recorded; no parent reopen from **unscoped** drift.
 
 ## C5 — Qualification replay plan
 
@@ -34,7 +34,7 @@ Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` — **B6
 | reopened_historical_stages | 0 | §5 category A rows + reopen grep |
 | unresolved_replay_blockers | 0 | ECAP register |
 | roadmap_drift | 0 | `_roadmap_drift.py` |
-| historical_evidence_invalidated_by_later_changes | 0 | prod git diff since DUP-X |
+| historical_evidence_invalidated_by_later_changes | 0 | unscoped prod git diff since DUP-X (scoped path excluded) |
 | unclassified_replay_findings | 0 | all §5 rows carry rule_id |
 | vendor_neutrality_replay_failures | 0 | EBH-6 register PROHIBITED OPEN rows |
 

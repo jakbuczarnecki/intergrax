@@ -5,8 +5,9 @@
 | **AUDITED_HEAD (baseline)** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
 | **IMPLEMENTATION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
 | **TEST_EXECUTION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
-| **EVIDENCE_PUBLICATION_SHA** | **PENDING** — operator commit of W4 bundle |
-| **Proof logs** | `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` (**EVIDENCE_EXPORT_REQUIRED**) |
+| **EVIDENCE_PUBLICATION_SHA (W4)** | `8515728649a280d435b04c23c8700fbd169495f5` |
+| **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | **local only @ session** (doc reconciliation; uncommitted) |
+| **Proof logs** | `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` · PRE-B6 copy: `.tmp/proof/roadmap-replay-x-pre-b6-archive-8515728/` |
 
 ## Gate status
 
