@@ -71,14 +71,20 @@ def _status_for_source(source_id: str) -> tuple[CertificationStatus, Certificati
         evidence = scenario.proof_module or "OPEN — no current-HEAD proof node"
         if scenario.proof_function:
             evidence = f"{scenario.proof_module}::{scenario.proof_function}"
-        return materialized, scenario.qualification_status, evidence, scenario.expected_behavior
+        from tests.qualification.ebh_7._semantic_disposition_registry import qualification_status_from_disposition
+
+        q_status = qualification_status_from_disposition(scenario.scenario_id)
+        return materialized, q_status, evidence, scenario.expected_behavior
     if source_id.startswith("EBH7-XDM-"):
         n = int(source_id.removeprefix("EBH7-XDM-"))
         scenario = EBH7_CROSS_DOMAIN_SCENARIOS[n - 1]
         evidence = scenario.proof_module or "OPEN — no current-HEAD proof node"
         if scenario.proof_function:
             evidence = f"{scenario.proof_module}::{scenario.proof_function}"
-        return materialized, scenario.qualification_status, evidence, scenario.expected
+        from tests.qualification.ebh_7._semantic_disposition_registry import qualification_status_from_disposition
+
+        q_status = qualification_status_from_disposition(scenario.scenario_id)
+        return materialized, q_status, evidence, scenario.expected
     if source_id.startswith("EBH7-RPL-"):
         concern = source_id.removeprefix("EBH7-RPL-")
         row = next(r for r in replaceability_matrix_rows() if r.concern_id == concern)
@@ -187,13 +193,13 @@ def assert_ebh7_traceability_behavioral_integrity() -> None:
     pending = sum(1 for r in extended if r.qualification_status == CertificationStatus.QUALIFICATION_PENDING)
     assert qualified + pending <= len(extended)
     from tests.qualification.ebh_7._rpl_h_disposition import rpl_h_disposition_rows
-    from tests.qualification.ebh_7._semantic_proof_binding_audit import (
-        cross_domain_open_ids_from_audit,
-        tenant_e2e_open_ids_from_audit,
-    )
+    from tests.qualification.ebh_7._semantic_disposition_registry import assert_disposition_registry_complete
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import semantic_exact_counts
 
-    assert len(tenant_e2e_open_ids_from_audit()) == 0
-    assert len(cross_domain_open_ids_from_audit()) == 0
+    ten_exact, ten_open, xdm_exact, xdm_open = semantic_exact_counts()
+    assert ten_exact + ten_open == 26
+    assert xdm_exact + xdm_open == 34
+    assert_disposition_registry_complete()
     rpl_open = [r for r in rpl_h_disposition_rows() if not is_behavioral_certification(r.qualification_status)]
     assert rpl_open == [], f"RPL-H OPEN in traceability gate: {len(rpl_open)}"
     for row in extended:

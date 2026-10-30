@@ -10,7 +10,9 @@ import pytest
 from tests.qualification.ebh_7._rpl_h_disposition import (
     assert_ebh7_rpl_h_behavioral_qualification,
     assert_ebh7_rpl_h_disposition_integrity,
+    assert_ebh7_rpl_h_semantic_qualification_for_b6,
 )
+from tests.qualification.ebh_7._rpl_h_semantic_review import assert_ebh7_rpl_h_semantic_review_complete
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
@@ -43,3 +45,12 @@ def test_ebh7_w5_rpl_disposition_record_materialized() -> None:
 
 def test_ebh7_w5_rpl_h_behavioral_all_qualified() -> None:
     assert_ebh7_rpl_h_behavioral_qualification()
+
+
+def test_ebh7_w5_rpl_h_semantic_review_complete() -> None:
+    assert_ebh7_rpl_h_semantic_review_complete()
+
+
+@pytest.mark.xfail(reason="B6 blocked until RPL-H semantic QUALIFIED for all concerns", strict=False)
+def test_ebh7_b6_readiness_rpl_h_semantic_qualified() -> None:
+    assert_ebh7_rpl_h_semantic_qualification_for_b6()

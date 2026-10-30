@@ -34,6 +34,10 @@ def test_ebh7_w7_cross_domain_xdm_010_sqlite_behavioral(tmp_path) -> None:
     test_ebh7_xdm_010_backend_persistence_sqlite_behavioral(tmp_path)
 
 
-def test_ebh7_w7_all_mandatory_scenarios_qualified() -> None:
+def test_ebh7_w7_cross_domain_semantic_open_register() -> None:
     pending = cross_domain_pending_scenario_ids()
-    assert len(pending) == 0, f"OPEN cross-domain scenarios: {pending}"
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import cross_domain_semantically_qualified_ids
+
+    exact = cross_domain_semantically_qualified_ids()
+    assert len(pending) + len(exact) == 34
+    assert len(pending) == 18

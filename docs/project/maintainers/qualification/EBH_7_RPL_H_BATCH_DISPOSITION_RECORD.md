@@ -1,5 +1,9 @@
 # EBH-7 — RPL-H batch disposition record
 
+**Mechanical matrix @ HEAD:** 56/56 REPLACEABLE QUALIFIED (Package C + legacy five).
+
+**Semantic review (`_rpl_h_semantic_review.py`):** **5× QUALIFIED** (legacy behavioral), **51× PARTIAL** (Package C fail-closed / single-path — not full alternate-backend switch). B6 requires semantic QUALIFIED or explicit blocked finding per concern.
+
 | concern_id | rpl_h @ HEAD | EBH-7 disposition |
 | --- | --- | --- |
 | integration.relational_store | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |

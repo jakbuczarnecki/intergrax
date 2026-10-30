@@ -1,31 +1,43 @@
-# EBH-7 — Test execution record (closure wave)
+# EBH-7 — Test execution record
 
 | Field | Value |
 | --- | --- |
-| Prior corrective SHA | `8c9d19b835410bc9f5a36f8763c9222c9f1210f7` |
-| Closure wave execution | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
-| Command | `uv run pytest tests/qualification/ebh_7/ tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py -q` |
-| Result | **134 passed, 6 skipped, 0 failed** |
-| Log | `.tmp/session/ebh-7-closure/pytest-post-commit.log` |
+| Closure wave (superseded for semantic) | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
+| Semantic integrity correction | *publication commit SHA* |
+| Command | `uv run pytest tests/qualification/ebh_7/ -q` |
+| Result | **109 passed, 3 skipped, 2 xfailed** (B6 readiness gates) |
+| Log | `.tmp/session/ebh-7-semantic-correction/pytest-ebh7-full.log` |
 
-## L1 / L2 / L3
+## L1 / L2 / L3 (@ semantic correction)
 
 | Layer | Result |
 | --- | --- |
-| L1 | PASS — SSOT, NPSC, semantic audit integrity |
-| L2 | PASS — EBH-5 Package C + registered proof execution |
-| L3 | PASS — full `tests/qualification/ebh_7/` @ execution SHA |
+| L1 | PASS — disposition SSOT complete; MD sync gate; no auto-EXACT |
+| L2 | PASS — EXACT-scenario proof execution + Package C mechanical |
+| L3 | PASS — full `tests/qualification/ebh_7/` with documented XFAIL |
 
-## Final checklist (@ TEST_EXECUTION_SHA)
+## Semantic verdict (agent)
+
+**`EBH-7 — SEMANTIC PROOF INTEGRITY PARTIAL / EXACT BLOCKERS`**
+
+- TEN: **14 EXACT / 12 OPEN**
+- XDM: **16 EXACT / 18 OPEN**
+- RPL-H: **56 mechanical / 51 semantic PARTIAL**
+
+## FRZ impact (scoped — no status change)
+
+- **FRZ-TEN-***: ECAP C4/C5 counts revised downward; tenant E2E claims require disposition EXACT, not registry-only proof nodes.
+- **Global FRZ PASS**: not claimed.
+- **FRZ-PRD / live slice**: unchanged OPEN (PROD-Q delegated EVOL).
+
+## Full stage closure checklist
 
 | Check | Status |
 | --- | --- |
-| REPLAY-X ancestor @ HEAD | PASS |
-| `pytest tests/qualification/ebh_7/` + g06 | PASS (134 passed) |
-| RPL 56/56 QUALIFIED | PASS |
-| TEN 26/26 + XDM 34/34 EXACT | PASS |
+| Fail-closed semantic audit | PASS |
+| 60/60 EXACT_PROOF | **OPEN** (30/60) |
+| RPL semantic QUALIFIED 56/56 | **OPEN** |
 | OD-EBH7-01 | OPEN — operator |
-| OD-EBH7-08 | OPEN — operator |
 | Protocol 03 B6 | OPEN — independent auditor |
+| OD-EBH7-08 | OPEN — operator |
 | Roadmap EBH-7 CLOSED | **not claimed** |
-| Global FRZ / EVOL-X started | **not claimed** |

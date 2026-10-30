@@ -56,4 +56,16 @@ def assert_ebh7_rpl_h_disposition_integrity() -> None:
 def assert_ebh7_rpl_h_behavioral_qualification() -> None:
     rows = rpl_h_disposition_rows()
     pending = [r.concern_id for r in rows if not is_behavioral_certification(r.qualification_status)]
-    assert pending == [], f"RPL-H behavioral qualification OPEN for: {pending[:5]}... ({len(pending)} total)"
+    assert pending == [], f"RPL-H mechanical matrix OPEN for: {pending[:5]}... ({len(pending)} total)"
+
+
+def assert_ebh7_rpl_h_semantic_qualification_for_b6() -> None:
+    """B6 readiness — semantic replaceability, not Package C fail-closed alone."""
+    from tests.qualification.ebh_7._rpl_h_semantic_review import (
+        RplSemanticVerdict,
+        rpl_semantic_review_rows,
+    )
+
+    rows = rpl_semantic_review_rows()
+    not_qualified = [r.concern_id for r in rows if r.semantic_verdict is not RplSemanticVerdict.QUALIFIED]
+    assert not_qualified == [], f"RPL-H semantic OPEN: {not_qualified[:8]}... ({len(not_qualified)} total)"

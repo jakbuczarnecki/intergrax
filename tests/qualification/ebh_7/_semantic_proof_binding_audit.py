@@ -1,111 +1,95 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Phase A — semantic proof-binding audit (authoritative @ HEAD)."""
+"""Phase A — semantic proof-binding audit (authoritative @ HEAD, fail-closed)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import StrEnum
 from typing import Final
 
 from tests.qualification.ebh_7._cross_domain_scenarios import EBH7_CROSS_DOMAIN_SCENARIOS
+from tests.qualification.ebh_7._semantic_disposition_registry import (
+    all_verified_dispositions,
+    assert_disposition_registry_complete,
+    assert_disposition_sha_current,
+    assert_skip_equivalents_documented,
+    disposition_for,
+)
+from tests.qualification.ebh_7._semantic_proof_types import ProofBindingAuditRow, ProofBindingResult
 from tests.qualification.ebh_7._tenant_e2e_scenarios import EBH7_TENANT_E2E_SCENARIOS
 
-
-class ProofBindingResult(StrEnum):
-    EXACT_PROOF = "EXACT_PROOF"
-    PARTIAL_PROOF = "PARTIAL_PROOF"
-    STRUCTURAL_ONLY = "STRUCTURAL_ONLY"
-    MISMATCHED_PROOF = "MISMATCHED_PROOF"
-    MISSING_PROOF = "MISSING_PROOF"
-    BLOCKED = "BLOCKED"
-
-
-@dataclass(frozen=True, slots=True)
-class ProofBindingAuditRow:
-    scenario_id: str
-    claimed_boundary: str
-    attack: str
-    expected_behavior: str
-    existing_proof: str
-    actual_assertions: str
-    semantic_match: ProofBindingResult
-    notes: str
+_OPEN_RESULTS: Final[frozenset[ProofBindingResult]] = frozenset(
+    {
+        ProofBindingResult.MISSING_PROOF,
+        ProofBindingResult.BLOCKED,
+        ProofBindingResult.PARTIAL_PROOF,
+        ProofBindingResult.STRUCTURAL_ONLY,
+        ProofBindingResult.MISMATCHED_PROOF,
+    }
+)
 
 
-_TEN_AUDIT_OVERRIDES: Final[dict[str, tuple[ProofBindingResult, str, str]]] = {}
-
-
-_XDM_AUDIT_OVERRIDES: Final[dict[str, tuple[ProofBindingResult, str, str]]] = {}
-
-
-def _proof_label(module: str | None, function: str | None) -> str:
+def _scenario_proof_label(module: str | None, function: str | None) -> str:
     if module and function:
         return f"{module}::{function}"
     return "MISSING"
 
 
-def _audit_tenant_rows() -> tuple[ProofBindingAuditRow, ...]:
-    rows: list[ProofBindingAuditRow] = []
+def _validate_disposition_matches_registry() -> None:
     for s in EBH7_TENANT_E2E_SCENARIOS:
-        proof = _proof_label(s.proof_module, s.proof_function)
-        override = _TEN_AUDIT_OVERRIDES.get(s.scenario_id)
-        if override is not None:
-            match, assertions, notes = override
-        elif s.proof_module is None:
-            match = ProofBindingResult.MISSING_PROOF
-            assertions = "none"
-            notes = "No executable proof node registered"
-        else:
-            match = ProofBindingResult.EXACT_PROOF
-            assertions = s.assertions
-            notes = s.reuse_program
-        rows.append(
-            ProofBindingAuditRow(
-                scenario_id=s.scenario_id,
-                claimed_boundary=s.production_path,
-                attack=s.attack_failure,
-                expected_behavior=s.expected_behavior,
-                existing_proof=proof,
-                actual_assertions=assertions,
-                semantic_match=match,
-                notes=notes,
+        d = disposition_for(s.scenario_id)
+        assert d is not None, f"Missing disposition for {s.scenario_id}"
+        registered = _scenario_proof_label(s.proof_module, s.proof_function)
+        if registered != "MISSING":
+            assert d.actual_test == registered, (
+                f"{s.scenario_id}: disposition actual_test {d.actual_test!r} != registry {registered!r}"
             )
-        )
-    return tuple(rows)
-
-
-def _audit_xdm_rows() -> tuple[ProofBindingAuditRow, ...]:
-    rows: list[ProofBindingAuditRow] = []
     for s in EBH7_CROSS_DOMAIN_SCENARIOS:
-        proof = _proof_label(s.proof_module, s.proof_function)
-        override = _XDM_AUDIT_OVERRIDES.get(s.scenario_id)
-        if override is not None:
-            match, assertions, notes = override
-        elif s.proof_module is None:
-            match = ProofBindingResult.MISSING_PROOF
-            assertions = "none"
-            notes = "No executable proof node registered"
-        else:
-            match = ProofBindingResult.EXACT_PROOF
-            assertions = s.expected
-            notes = s.reuse_program
-        rows.append(
-            ProofBindingAuditRow(
-                scenario_id=s.scenario_id,
-                claimed_boundary=s.combo,
-                attack=s.attack,
-                expected_behavior=s.expected,
-                existing_proof=proof,
-                actual_assertions=assertions,
-                semantic_match=match,
-                notes=notes,
+        d = disposition_for(s.scenario_id)
+        assert d is not None, f"Missing disposition for {s.scenario_id}"
+        registered = _scenario_proof_label(s.proof_module, s.proof_function)
+        if registered != "MISSING":
+            assert d.actual_test == registered, (
+                f"{s.scenario_id}: disposition actual_test {d.actual_test!r} != registry {registered!r}"
             )
-        )
+
+
+def _build_audit_rows() -> tuple[ProofBindingAuditRow, ...]:
+    rows: list[ProofBindingAuditRow] = []
+    for d in all_verified_dispositions():
+        if d.scenario_id.startswith("EBH7-TEN-E2E-"):
+            n = int(d.scenario_id.removeprefix("EBH7-TEN-E2E-"))
+            scenario = EBH7_TENANT_E2E_SCENARIOS[n - 1]
+            rows.append(
+                ProofBindingAuditRow(
+                    scenario_id=d.scenario_id,
+                    claimed_boundary=scenario.production_path,
+                    attack=scenario.attack_failure,
+                    expected_behavior=scenario.expected_behavior,
+                    existing_proof=d.actual_test,
+                    actual_assertions=d.assertions_inspected,
+                    semantic_match=d.semantic_match,
+                    notes=d.test_execution_evidence,
+                )
+            )
+        elif d.scenario_id.startswith("EBH7-XDM-"):
+            n = int(d.scenario_id.removeprefix("EBH7-XDM-"))
+            scenario = EBH7_CROSS_DOMAIN_SCENARIOS[n - 1]
+            rows.append(
+                ProofBindingAuditRow(
+                    scenario_id=d.scenario_id,
+                    claimed_boundary=scenario.combo,
+                    attack=scenario.attack,
+                    expected_behavior=scenario.expected,
+                    existing_proof=d.actual_test,
+                    actual_assertions=d.assertions_inspected,
+                    semantic_match=d.semantic_match,
+                    notes=d.test_execution_evidence,
+                )
+            )
     return tuple(rows)
 
 
-EBH7_PROOF_BINDING_AUDIT: Final[tuple[ProofBindingAuditRow, ...]] = _audit_tenant_rows() + _audit_xdm_rows()
+EBH7_PROOF_BINDING_AUDIT: Final[tuple[ProofBindingAuditRow, ...]] = _build_audit_rows()
 
 
 def audit_row(scenario_id: str) -> ProofBindingAuditRow:
@@ -132,39 +116,47 @@ def cross_domain_semantically_qualified_ids() -> frozenset[str]:
 
 
 def assert_ebh7_semantic_proof_binding_audit() -> None:
+    assert_disposition_registry_complete()
+    assert_disposition_sha_current()
+    assert_skip_equivalents_documented()
+    _validate_disposition_matches_registry()
     mismatched = [r for r in EBH7_PROOF_BINDING_AUDIT if r.semantic_match is ProofBindingResult.MISMATCHED_PROOF]
-    assert mismatched == [], f"MISMATCHED_PROOF bindings: {[m.scenario_id for m in mismatched]}"
+    for row in mismatched:
+        assert disposition_for(row.scenario_id) is not None
     assert len([r for r in EBH7_PROOF_BINDING_AUDIT if r.scenario_id.startswith("EBH7-TEN-E2E")]) == 26
     assert len([r for r in EBH7_PROOF_BINDING_AUDIT if r.scenario_id.startswith("EBH7-XDM")]) == 34
 
 
+def assert_ebh7_semantic_mandatory_exact_coverage() -> None:
+    """B6 readiness — all mandatory scenarios must be EXACT_PROOF (not auto-promoted)."""
+    ten_open = tenant_e2e_open_ids_from_audit()
+    xdm_open = cross_domain_open_ids_from_audit()
+    assert ten_open == () and xdm_open == (), f"EXACT blockers — TEN open {ten_open}; XDM open {xdm_open}"
+
+
 def tenant_e2e_open_ids_from_audit() -> tuple[str, ...]:
-    open_results = {
-        ProofBindingResult.MISSING_PROOF,
-        ProofBindingResult.BLOCKED,
-        ProofBindingResult.PARTIAL_PROOF,
-        ProofBindingResult.STRUCTURAL_ONLY,
-    }
     return tuple(
         sorted(
             row.scenario_id
             for row in EBH7_PROOF_BINDING_AUDIT
-            if row.scenario_id.startswith("EBH7-TEN-E2E") and row.semantic_match in open_results
+            if row.scenario_id.startswith("EBH7-TEN-E2E") and row.semantic_match in _OPEN_RESULTS
         )
     )
 
 
 def cross_domain_open_ids_from_audit() -> tuple[str, ...]:
-    open_results = {
-        ProofBindingResult.MISSING_PROOF,
-        ProofBindingResult.BLOCKED,
-        ProofBindingResult.PARTIAL_PROOF,
-        ProofBindingResult.STRUCTURAL_ONLY,
-    }
     return tuple(
         sorted(
             row.scenario_id
             for row in EBH7_PROOF_BINDING_AUDIT
-            if row.scenario_id.startswith("EBH7-XDM") and row.semantic_match in open_results
+            if row.scenario_id.startswith("EBH7-XDM") and row.semantic_match in _OPEN_RESULTS
         )
     )
+
+
+def semantic_exact_counts() -> tuple[int, int, int, int]:
+    ten_exact = len(tenant_e2e_semantically_qualified_ids())
+    ten_open = len(tenant_e2e_open_ids_from_audit())
+    xdm_exact = len(cross_domain_semantically_qualified_ids())
+    xdm_open = len(cross_domain_open_ids_from_audit())
+    return ten_exact, ten_open, xdm_exact, xdm_open

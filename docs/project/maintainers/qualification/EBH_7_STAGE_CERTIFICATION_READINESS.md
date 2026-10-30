@@ -1,4 +1,4 @@
-# EBH-7 — Stage certification readiness (closure wave)
+# EBH-7 — Stage certification readiness (semantic correction)
 
 | Wave | Materialization | Behavioral qualification | Notes |
 | --- | --- | --- | --- |
@@ -7,15 +7,29 @@
 | W2 planning matrices | MATERIALIZED | INTEGRITY OK | |
 | W3 NPSC allowlist | MATERIALIZED | QUALIFIED | B4-aligned gate executes |
 | W4 gov/dup reuse | MATERIALIZED | QUALIFIED | Scoped DUP-X gates execute |
-| W5 VBN + RPL-H | MATERIALIZED | **QUALIFIED** | 56/56 @ matrix + Package C |
-| W6 tenant E2E | MATERIALIZED | **QUALIFIED** | 26/26 EXACT_PROOF |
-| W7 cross-domain | MATERIALIZED | **QUALIFIED** | 34/34 EXACT_PROOF |
-| W8 ECAP + L3 | MATERIALIZED | QUALIFIED | `tests/qualification/ebh_7/` green |
-| W9 dossier | MATERIALIZED | INTEGRITY OK | refresh @ publication SHA |
+| W5 VBN + RPL-H | MATERIALIZED | **MECHANICAL OK / SEMANTIC PARTIAL** | 56 matrix; 51 Package C PARTIAL semantic review |
+| W6 tenant E2E | MATERIALIZED | **14/26 EXACT** | 12 OPEN @ disposition SSOT |
+| W7 cross-domain | MATERIALIZED | **16/34 EXACT** | 18 OPEN |
+| W8 ECAP + L3 | MATERIALIZED | L3 green (2× B6 XFAIL) | fail-closed semantic gates |
+| W9 dossier | MATERIALIZED | refresh @ publication SHA | |
 | W10 Protocol 03 | MATERIALIZED | **OPEN** | B6 OPEN — independent only |
 | OD-EBH7-08 | — | **OPEN** | Not operator-approved |
-| Independent acceptance | — | **READY FOR AUDIT** | Pending B6 + OD-EBH7-08 |
 
-**Not claimed:** EBH-7 CLOSED, B6 PASS, global FRZ PASS, ARCH-FREEZE, production admission.
+**Program status:** `EBH-7 — SEMANTIC PROOF INTEGRITY PARTIAL / EXACT BLOCKERS` — **not** READY FOR B6 until 60/60 EXACT + RPL semantic QUALIFIED.
 
-**Program status:** Behavioral qualification complete @ HEAD — **READY FOR INDEPENDENT AUDIT** (B6 + OD-EBH7-08 remain operator/external).
+**Not claimed:** EBH-7 CLOSED, B6 PASS, global FRZ PASS, ARCH-FREEZE, OD-EBH7-01/08 APPROVED.
+
+## Full stage closure blockers (register)
+
+| ID | Status | Owner |
+| --- | --- | --- |
+| SEM-AUTO-EXACT | **CLOSED** (fail-closed restored) | Agent |
+| TEN/XDM EXACT 60/60 | **OPEN** (30/60) | Agent + arch |
+| RPL semantic QUALIFIED | **OPEN** (51 PARTIAL) | Vendor program |
+| OD-EBH7-01 | OPEN | Operator |
+| Protocol 03 B6 | OPEN | External auditor |
+| OD-EBH7-08 | OPEN | Operator |
+| Roadmap EBH-7 CLOSED | OPEN | Operator post-B6 |
+| PROD-Q live slice | OPEN (delegated EVOL) | Program |
+| Global NPSC allowlist FAIL | Retained | Program |
+| GAP-LOCAL-UNTRACKED | OPEN | Operator hygiene |
