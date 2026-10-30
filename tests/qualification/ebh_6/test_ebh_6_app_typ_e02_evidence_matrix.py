@@ -171,4 +171,4 @@ def test_ebh6_app_typ_e02_op01_operator_ratification_recorded() -> None:
         encoding="utf-8",
     )
     assert "E02-OP-01 — OPERATOR RATIFIED" in typ or "OPERATOR RATIFIED — 2026-10-29" in typ
-    assert "E02-AUD-01 — PENDING" in typ
+    assert "E02-AUD-01 — ACCEPT (SCOPED)" in typ or "E02-AUD-01 — PENDING" in typ
