@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Closure wave (superseded for semantic) | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
-| Semantic integrity correction | *publication commit SHA* |
+| Semantic integrity correction | `edebda9d5b2fbd99564d8def50f60fd0d6964a9b` |
 | Command | `uv run pytest tests/qualification/ebh_7/ -q` |
 | Result | **109 passed, 3 skipped, 2 xfailed** (B6 readiness gates) |
 | Log | `.tmp/session/ebh-7-semantic-correction/pytest-ebh7-full.log` |
