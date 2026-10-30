@@ -6,7 +6,7 @@
 | **IMPLEMENTATION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
 | **TEST_EXECUTION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
 | **EVIDENCE_PUBLICATION_SHA (W4)** | `8515728649a280d435b04c23c8700fbd169495f5` |
-| **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | **local only @ session** (doc reconciliation; uncommitted) |
+| **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | `31c462dc7c4c4ac03a10ed69254c8822b2322910` |
 | **Proof logs** | `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` · PRE-B6 copy: `.tmp/proof/roadmap-replay-x-pre-b6-archive-8515728/` |
 
 ## Gate status

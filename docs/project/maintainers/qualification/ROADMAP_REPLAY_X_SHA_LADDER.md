@@ -8,11 +8,11 @@
 | **W1 lineage** | `6fbc4a827c72e75f2c7a3374581a309a7b6beee8` (replay HEAD SSOT @ 91649e5 + STATE/TRACE remediations) |
 | **TEST_EXECUTION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
 | **EVIDENCE_PUBLICATION_SHA (W4 bundle)** | `8515728649a280d435b04c23c8700fbd169495f5` — committed W4 qualification narrative + dossier @ `git rev-parse HEAD` when pinned |
-| **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | **local only @ session** — doc-only PRE-B6 reconciliation (uncommitted); **not** the W4 evidence commit; operator assigns on publish |
+| **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | `31c462dc7c4c4ac03a10ed69254c8822b2322910` — doc-only PRE-B6 dossier reconciliation @ W4 base `8515728649a280d435b04c23c8700fbd169495f5` |
 | **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | **OPEN** (B6) |
 | **OPERATOR_DECISION_SHA** | **OPEN** |
 | **FINAL_PUBLICATION_SHA** | **OPEN** (W10) |
 
-**Preflight @ PRE-B6 session:** `git rev-parse HEAD` = `8515728649a280d435b04c23c8700fbd169495f5` (= **EVIDENCE_PUBLICATION_SHA**); `851572864…` is ancestor of HEAD (trivial equality @ pin).
+**Preflight @ PRE-B6 session:** W4 **`EVIDENCE_PUBLICATION_SHA`** `8515728649a280d435b04c23c8700fbd169495f5`; reconciliation published @ **`PRE_B6_RECONCILIATION_PUBLICATION_SHA`** `31c462dc7c4c4ac03a10ed69254c8822b2322910`; `851572864…` is ancestor of PRE-B6 commit.
 
 **Immutable qual logs (EVIDENCE_EXPORT_REQUIRED — not in Git):** `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` — SHA256 table in [`ROADMAP_REPLAY_X_QUALIFICATION_EVIDENCE_RECORD.md`](ROADMAP_REPLAY_X_QUALIFICATION_EVIDENCE_RECORD.md). Sanitized PRE-B6 archive: `.tmp/proof/roadmap-replay-x-pre-b6-archive-8515728/` + `MANIFEST.sha256`.
