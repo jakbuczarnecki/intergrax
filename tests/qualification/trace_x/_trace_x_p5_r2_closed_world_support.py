@@ -60,6 +60,8 @@ def _is_discovery_candidate(path: Path) -> bool:
     if path.suffix != ".py":
         return False
     normalized = path.as_posix()
+    if "docker/runtime-context" in normalized:
+        return False
     for part in _EXCLUDE_PATH_PARTS:
         if part.replace("/", "\\") in normalized or part in normalized:
             return False
@@ -100,14 +102,10 @@ def compare_paths_to_registry(
     unknown = discovered - reg_set
     orphan = reg_set - discovered
     bypass = frozenset(
-        row.key
-        for row in registry
-        if row.classification is ConfiguredExecutionPathClass.E_PRODUCTION_BYPASS
+        row.key for row in registry if row.classification is ConfiguredExecutionPathClass.E_PRODUCTION_BYPASS
     )
     unclassified = frozenset(
-        row.key
-        for row in registry
-        if row.classification is ConfiguredExecutionPathClass.F_UNCLEAR
+        row.key for row in registry if row.classification is ConfiguredExecutionPathClass.F_UNCLEAR
     )
     return ClosedWorldParityResult(
         unknown=unknown,

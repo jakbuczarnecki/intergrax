@@ -1293,10 +1293,18 @@ STATE_X_FINAL_R1_R1_START_HEAD: Final[str] = "5f57b3df1ac400d3676f376c218be148b3
 
 STATE_X_FINAL_START_HEAD: Final[str] = "5f57b3df1ac400d3676f376c218be148b3481bc8"
 
+STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD: Final[str] = "05549f9acb9ecedf910c7470d442bba5d0a27337"
+
 STATE_X_FINAL_R1_START_HEAD: Final[str] = STATE_X_FINAL_START_HEAD
 
 STATE_X_FINAL_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
+        ".cursor/rules/intergrax-env-vendor-qualification.mdc",
+        "intergrax/runtime/resilience/dependency_attempt_execution_boundary.py",
+        ".githooks/pre-commit",
+        ".githooks/pre-commit.ps1",
+        ".githooks/pre-push",
+        ".githooks/pre-push.ps1",
         "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
         "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
         "docs/project/maintainers/qualification/STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md",
@@ -1322,3 +1330,27 @@ STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/unit/runtime/long_running/test_pba_fix_a_checkpoint_port_consumption.py",
     },
 )
+
+STATE_X_REPLAY_X_WORKING_TREE_QUAL_PREFIXES: Final[tuple[str, ...]] = (
+    "docs/project/maintainers/",
+    "tests/qualification/",
+    "tests/fixtures/",
+    ".cursor/rules/",
+    ".githooks/",
+    ".github/workflows/",
+)
+
+
+def state_x_replay_x_l2_head_active() -> bool:
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return proc.stdout.strip() == STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD

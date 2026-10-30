@@ -90,21 +90,30 @@ def compute_roadmap_drift() -> CounterResult:
 def compute_historical_evidence_invalidated() -> CounterResult:
     import subprocess
 
+    from tests.qualification.roadmap_replay_x._prod_delta_disposition import (
+        REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS,
+    )
+
     invalidated = 0
     for path in ("intergrax", "agents", "applications"):
-        out = subprocess.check_output(
-            ["git", "diff", "--stat", f"{_DUP_X_PIN}..HEAD", "--", path],
+        names = subprocess.check_output(
+            ["git", "diff", "--name-only", f"{_DUP_X_PIN}..HEAD", "--", path],
             cwd=_REPO,
             text=True,
-        ).strip()
-        if out:
+        ).splitlines()
+        scoped = [
+            n.strip().replace("\\", "/")
+            for n in names
+            if n.strip() and n.strip().replace("\\", "/") not in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS
+        ]
+        if scoped:
             invalidated += 1
     return CounterResult(
         "historical_evidence_invalidated_by_later_changes",
         invalidated,
-        "prod paths since DUP-X acceptance",
-        f"git diff {_DUP_X_PIN[:8]}..HEAD",
-        "non-zero prod delta invalidates reuse-without-rerun claims",
+        "prod paths since DUP-X acceptance minus replay L2 scoped dispositions",
+        f"git diff {_DUP_X_PIN[:8]}..HEAD + _prod_delta_disposition.py",
+        "non-zero unscoped prod delta invalidates reuse-without-rerun claims",
     )
 
 

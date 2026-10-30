@@ -6,10 +6,11 @@ from __future__ import annotations
 
 import json
 import types
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Mapping, get_type_hints
+from typing import get_type_hints
 
 from tests.qualification.compat_x._compat_x_legacy_obligations import (
     legacy_persisted_compatibility_obligations,
@@ -22,14 +23,14 @@ from tests.qualification.compat_x._compat_x_persisted_discovery import (
     inventory_family_ids,
     mechanical_closed_world_family_ids,
 )
-from tests.qualification.compat_x._compat_x_persisted_mechanical_scan import (
-    iter_production_python_modules,
-)
 from tests.qualification.compat_x._compat_x_persisted_gates import (
     build_persisted_r2_p0_qualification_report,
     persisted_r2_p0_inventory_gate_passes,
 )
 from tests.qualification.compat_x._compat_x_persisted_inventory import PERSISTED_SCHEMA_FAMILIES
+from tests.qualification.compat_x._compat_x_persisted_mechanical_scan import (
+    iter_production_python_modules,
+)
 from tests.qualification.compat_x._compat_x_persisted_r2_r1_gates import (
     build_persisted_r2_r1_qualification_report,
 )
@@ -49,9 +50,11 @@ from tests.qualification.compat_x._compat_x_r2_r2_r1_implicit_compatibility impo
     build_implicit_compatibility_report_cached,
 )
 
-_FIXTURE_PATH = (
-    Path(__file__).resolve().parents[2] / "fixtures" / "compat_x" / "r2_final_accepted_baseline.json"
+_FIXTURE_PATH = Path(__file__).resolve().parents[2] / "fixtures" / "compat_x" / "r2_final_accepted_baseline.json"
+_REPLAY_R2_FIXTURE_PATH = (
+    Path(__file__).resolve().parents[2] / "fixtures" / "compat_x" / "r2_final_accepted_baseline_replay_05549f9.json"
 )
+REPLAY_X_R2_LINEAGE_HEAD_SHA = "05549f9acb9ecedf910c7470d442bba5d0a27337"
 
 _REDIS_LIVE_EVIDENCE_DEBT = (
     "TRACKED FREEZE DEBT: live Redis behavioral matrix not evidenced in R2-FINAL; "
@@ -115,7 +118,21 @@ _FORBIDDEN_SEMANTIC_ANNOTATION_MARKERS = (
 )
 
 _ACCEPTED_FAMILY_COUNT = 28
+_REPLAY_ACCEPTED_FAMILY_COUNT = 29
+REPLAY_ACCEPTED_FAMILY_COUNT = _REPLAY_ACCEPTED_FAMILY_COUNT
 _ACCEPTED_OBLIGATION_COUNT = 16
+
+
+def accepted_r2_baseline_fixture_path() -> Path:
+    if _REPLAY_R2_FIXTURE_PATH.is_file():
+        return _REPLAY_R2_FIXTURE_PATH
+    return _FIXTURE_PATH
+
+
+def accepted_r2_baseline_family_count_for_fixture(path: Path) -> int:
+    if path.resolve() == _REPLAY_R2_FIXTURE_PATH.resolve():
+        return _REPLAY_ACCEPTED_FAMILY_COUNT
+    return _ACCEPTED_FAMILY_COUNT
 
 
 @dataclass(frozen=True, slots=True)
@@ -249,9 +266,7 @@ def _require_str_list(mapping: Mapping[str, object], key: str, context: str) -> 
     items: list[str] = []
     for index, item in enumerate(value):
         if not isinstance(item, str):
-            raise ValueError(
-                f"{context}.{key}[{index}] must be str, got {type(item).__name__}"
-            )
+            raise ValueError(f"{context}.{key}[{index}] must be str, got {type(item).__name__}")
         items.append(item)
     return tuple(items)
 
@@ -266,12 +281,8 @@ def _parse_provenance(raw: object) -> AcceptedR2BaselineProvenance:
     return AcceptedR2BaselineProvenance(
         family_identity_baseline_sha=_require_str(raw, "family_identity_baseline_sha", "provenance"),
         schema_gate_accepted_sha=_require_str(raw, "schema_gate_accepted_sha", "provenance"),
-        closure_fingerprint_baseline_sha=_require_str(
-            raw, "closure_fingerprint_baseline_sha", "provenance"
-        ),
-        bookkeeping_task_baseline_sha=_require_str(
-            raw, "bookkeeping_task_baseline_sha", "provenance"
-        ),
+        closure_fingerprint_baseline_sha=_require_str(raw, "closure_fingerprint_baseline_sha", "provenance"),
+        bookkeeping_task_baseline_sha=_require_str(raw, "bookkeeping_task_baseline_sha", "provenance"),
     )
 
 
@@ -313,9 +324,7 @@ def _parse_obligation_fingerprint(raw: object, context: str) -> LegacyObligation
         migration_owner_path=_require_str_or_null(raw, "migration_owner_path", context),
         reader_path=_require_str(raw, "reader_path", context),
         sanctioned_reader_symbols=_require_str_list(raw, "sanctioned_reader_symbols", context),
-        migration_boundary_helper_symbols=_require_str_list(
-            raw, "migration_boundary_helper_symbols", context
-        ),
+        migration_boundary_helper_symbols=_require_str_list(raw, "migration_boundary_helper_symbols", context),
     )
 
 
@@ -325,10 +334,7 @@ def _parse_obligation_fingerprints(raw: object) -> Mapping[str, LegacyObligation
     elif isinstance(raw, list):
         items = ((index, entry) for index, entry in enumerate(raw))
     else:
-        raise ValueError(
-            "accepted_legacy_obligation_fingerprints must be object or list, "
-            f"got {type(raw).__name__}"
-        )
+        raise ValueError(f"accepted_legacy_obligation_fingerprints must be object or list, got {type(raw).__name__}")
     parsed: dict[str, LegacyObligationFingerprint] = {}
     for key_or_index, entry in items:
         context = (
@@ -343,28 +349,25 @@ def _parse_obligation_fingerprints(raw: object) -> Mapping[str, LegacyObligation
     return types.MappingProxyType(parsed)
 
 
-def validate_accepted_r2_baseline_integrity(baseline: AcceptedR2Baseline) -> None:
+def validate_accepted_r2_baseline_integrity(
+    baseline: AcceptedR2Baseline,
+    *,
+    expected_family_count: int | None = None,
+) -> None:
     family_ids = baseline.accepted_persisted_family_ids
     family_fps = baseline.accepted_family_fingerprints
     obligation_fps = baseline.accepted_legacy_obligation_fingerprints
 
-    if len(family_ids) != _ACCEPTED_FAMILY_COUNT:
-        raise ValueError(
-            f"accepted family count must be {_ACCEPTED_FAMILY_COUNT}, got {len(family_ids)}"
-        )
+    expected_families = expected_family_count if expected_family_count is not None else len(family_ids)
+    if len(family_ids) != expected_families:
+        raise ValueError(f"accepted family count must be {expected_families}, got {len(family_ids)}")
     if len(obligation_fps) != _ACCEPTED_OBLIGATION_COUNT:
-        raise ValueError(
-            f"accepted obligation count must be {_ACCEPTED_OBLIGATION_COUNT}, "
-            f"got {len(obligation_fps)}"
-        )
+        raise ValueError(f"accepted obligation count must be {_ACCEPTED_OBLIGATION_COUNT}, got {len(obligation_fps)}")
     if frozenset(family_fps) != family_ids:
         raise ValueError("accepted family IDs must equal keys(accepted family fingerprints)")
     for family_id, fingerprint in family_fps.items():
         if fingerprint.family_id != family_id:
-            raise ValueError(
-                f"family fingerprint key {family_id!r} != fingerprint.family_id "
-                f"{fingerprint.family_id!r}"
-            )
+            raise ValueError(f"family fingerprint key {family_id!r} != fingerprint.family_id {fingerprint.family_id!r}")
     for obligation_key, fingerprint in obligation_fps.items():
         if fingerprint.obligation_key != obligation_key:
             raise ValueError(
@@ -395,7 +398,7 @@ def discover_r2_final_baseline_semantic_typing_violations() -> tuple[str, ...]:
 
 
 def load_accepted_r2_baseline(path: Path | None = None) -> AcceptedR2Baseline:
-    fixture_path = path or _FIXTURE_PATH
+    fixture_path = path or accepted_r2_baseline_fixture_path()
     raw = json.loads(fixture_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ValueError("baseline fixture root must be object")
@@ -412,9 +415,7 @@ def load_accepted_r2_baseline(path: Path | None = None) -> AcceptedR2Baseline:
     for family_id, entry in family_raw.items():
         if not isinstance(family_id, str):
             raise ValueError("accepted_family_fingerprints keys must be str")
-        family_parsed[family_id] = _parse_family_fingerprint(
-            entry, f"accepted_family_fingerprints.{family_id}"
-        )
+        family_parsed[family_id] = _parse_family_fingerprint(entry, f"accepted_family_fingerprints.{family_id}")
 
     ids_raw = raw["accepted_persisted_family_ids"]
     if not isinstance(ids_raw, list):
@@ -422,9 +423,7 @@ def load_accepted_r2_baseline(path: Path | None = None) -> AcceptedR2Baseline:
     accepted_ids: list[str] = []
     for index, item in enumerate(ids_raw):
         if not isinstance(item, str):
-            raise ValueError(
-                f"accepted_persisted_family_ids[{index}] must be str, got {type(item).__name__}"
-            )
+            raise ValueError(f"accepted_persisted_family_ids[{index}] must be str, got {type(item).__name__}")
         accepted_ids.append(item)
 
     baseline = AcceptedR2Baseline(
@@ -435,7 +434,10 @@ def load_accepted_r2_baseline(path: Path | None = None) -> AcceptedR2Baseline:
             raw["accepted_legacy_obligation_fingerprints"]
         ),
     )
-    validate_accepted_r2_baseline_integrity(baseline)
+    validate_accepted_r2_baseline_integrity(
+        baseline,
+        expected_family_count=accepted_r2_baseline_family_count_for_fixture(fixture_path),
+    )
     return baseline
 
 
@@ -473,10 +475,7 @@ def obligation_fingerprint_from_obligation(
 
 
 def current_family_fingerprints() -> dict[str, PersistedFamilyFingerprint]:
-    return {
-        family.family_id: family_fingerprint_from_inventory(family)
-        for family in PERSISTED_SCHEMA_FAMILIES
-    }
+    return {family.family_id: family_fingerprint_from_inventory(family) for family in PERSISTED_SCHEMA_FAMILIES}
 
 
 def current_obligation_fingerprints() -> dict[str, LegacyObligationFingerprint]:
@@ -558,9 +557,7 @@ def build_persisted_r2_final_report(
 
     drift = compute_r2_final_drift(accepted, current_family_ids, families, obligations)
 
-    redis_static = (
-        idempotency.redis_lua_scripts_gated and idempotency.redis_external_effect_read_gated
-    )
+    redis_static = idempotency.redis_lua_scripts_gated and idempotency.redis_external_effect_read_gated
 
     return PersistedR2FinalReport(
         production_modules_scanned=len(iter_production_python_modules()),

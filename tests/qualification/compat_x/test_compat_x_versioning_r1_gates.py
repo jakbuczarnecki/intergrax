@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
 from tests.qualification.compat_x._compat_x_inventory import COMPAT_X_INVENTORY
 from tests.qualification.compat_x._compat_x_owner_discovery import COMPAT_X_OWNER_MATRIX
 from tests.qualification.compat_x._compat_x_registry_analysis import analyze_registry_overlap
@@ -13,6 +12,7 @@ from tests.qualification.compat_x._compat_x_types import EvolutionState, Exposur
 from tests.qualification.compat_x._compat_x_versioning_classification import (
     COMPAT_X_R1_CLASSIFICATIONS,
     classify_inventory_surface,
+    compute_version_identity_compliance,
 )
 from tests.qualification.compat_x._compat_x_versioning_gates import (
     build_r1_qualification_report,
@@ -24,7 +24,6 @@ from tests.qualification.compat_x._compat_x_versioning_gates import (
     synthetic_public_stable_explicit_version,
     synthetic_public_stable_missing_version,
 )
-from tests.qualification.compat_x._compat_x_versioning_classification import compute_version_identity_compliance
 from tests.qualification.compat_x._compat_x_versioning_policy import (
     COMPAT_X_CROSS_PLATFORM_POLICY_AUTHORITY,
     COMPAT_X_QUALIFICATION_ENFORCEMENT_ROOT,
@@ -36,8 +35,8 @@ from tests.qualification.compat_x._compat_x_versioning_policy import (
     VersionAuthorityDisposition,
     VersionFieldRole,
     VersionIdentityCompliance,
-    VersionObligation,
     VersionIdentityScheme,
+    VersionObligation,
     classify_version_field_role,
     cross_platform_policy_is_qualification_module,
     evaluate_change_classification,
@@ -63,7 +62,7 @@ def test_cx_r1_inventory_fully_classified() -> None:
     assert report.ambiguous_owner_count == 0
     assert report.duplicate_authority_count == 0
     assert report.registry_version_conflicts == 0
-    assert report.persisted_without_version_finding_count == 5
+    assert report.persisted_without_version_finding_count == 6
     assert report.version_policy_missing_evolution_count == 0
     assert report.shim_canonical_authority_count == 0
     assert report.qualification_as_semantic_policy_owner == 0
@@ -166,8 +165,7 @@ def test_cx_r1_r2_adversarial_m_proof_receipt_production_surface() -> None:
     proof_rows = [
         r
         for r in COMPAT_X_INVENTORY
-        if r.semantic_identity
-        == "class.field:intergrax/proofs/receipts/contracts.py:ProofReceipt:schema_version"
+        if r.semantic_identity == "class.field:intergrax/proofs/receipts/contracts.py:ProofReceipt:schema_version"
         and r.owner_module_path == "intergrax/proofs/receipts/contracts.py"
     ]
     assert proof_rows, "ProofReceipt.schema_version must appear in closed-world inventory"
@@ -203,11 +201,9 @@ def test_cx_r1_adversarial_a2_public_stable_explicit_version_passes() -> None:
 
 def test_cx_r1_adversarial_b_persisted_without_version_remains_blocker() -> None:
     blocked = [
-        row
-        for row in COMPAT_X_INVENTORY
-        if EvolutionState.PERSISTED_SCHEMA_WITHOUT_VERSION in row.evolution_states
+        row for row in COMPAT_X_INVENTORY if EvolutionState.PERSISTED_SCHEMA_WITHOUT_VERSION in row.evolution_states
     ]
-    assert len(blocked) == 5
+    assert len(blocked) == 6
     for row in blocked:
         clf = classify_inventory_surface(row)
         assert clf.version_obligation == VersionObligation.EXPLICIT_VERSION_REQUIRED
@@ -283,9 +279,7 @@ def test_cx_r1_adversarial_f_unknown_compatibility_impact_fails_closed() -> None
 
 def test_cx_r1_adversarial_g_entity_version_int_not_schema_version() -> None:
     assert classify_version_field_role("version") == VersionFieldRole.BUSINESS_ENTITY_REVISION
-    clf = classify_inventory_surface(
-        next(r for r in COMPAT_X_INVENTORY if r.surface_id.endswith(":platform_version"))
-    )
+    clf = classify_inventory_surface(next(r for r in COMPAT_X_INVENTORY if r.surface_id.endswith(":platform_version")))
     assert clf.version_field_role == VersionFieldRole.NON_SCHEMA_DOMAIN_VERSION
     assert clf.version_obligation == VersionObligation.NOT_APPLICABLE
 
@@ -362,8 +356,7 @@ def test_cx_r1_adversarial_p_plugin_surface_has_r1_obligation_deferred_r4() -> N
     plugin_rows = [
         r
         for r in COMPAT_X_INVENTORY
-        if ExposureFacet.PLUGIN_PROVIDER_CONTRACT in r.exposure_facets
-        and not r.surface_id.startswith("semantic.shim:")
+        if ExposureFacet.PLUGIN_PROVIDER_CONTRACT in r.exposure_facets and not r.surface_id.startswith("semantic.shim:")
     ]
     assert plugin_rows
     for row in plugin_rows:

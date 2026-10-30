@@ -5,8 +5,12 @@
 from __future__ import annotations
 
 import pytest
-
+from tests.qualification.compat_x._compat_x_persisted_classifier import classify_durable_candidate
+from tests.qualification.compat_x._compat_x_persisted_contract_authority import (
+    build_contract_authority_durability_evidence,
+)
 from tests.qualification.compat_x._compat_x_persisted_discovery import (
+    build_persisted_mechanical_discovery_report,
     mechanical_closed_world_family_ids,
     persisted_closed_world_parity_holds,
 )
@@ -19,17 +23,10 @@ from tests.qualification.compat_x._compat_x_persisted_historical_five import (
     historical_persisted_five_reconciliation,
 )
 from tests.qualification.compat_x._compat_x_persisted_inventory import PERSISTED_SCHEMA_FAMILIES
-from tests.qualification.compat_x._compat_x_persisted_remediation import persisted_r2_remediation_waves
-from tests.qualification.compat_x._compat_x_persisted_contract_authority import (
-    build_contract_authority_durability_evidence,
-)
-from tests.qualification.compat_x._compat_x_persisted_discovery import (
-    build_persisted_mechanical_discovery_report,
-)
-from tests.qualification.compat_x._compat_x_persisted_classifier import classify_durable_candidate
 from tests.qualification.compat_x._compat_x_persisted_mechanical_scan import (
     iter_production_python_modules,
 )
+from tests.qualification.compat_x._compat_x_persisted_remediation import persisted_r2_remediation_waves
 from tests.qualification.compat_x._compat_x_persisted_synthetic import (
     synthetic_cache_name_not_false_excluded,
     synthetic_document_store_unknown_fails,
@@ -45,11 +42,11 @@ from tests.qualification.compat_x._compat_x_persisted_synthetic import (
     synthetic_redis_unknown_family_fails_closed_world,
     synthetic_serialization_only_excluded,
     synthetic_service_false_positive_classification,
-    synthetic_unknown_sqlite_module_fails_closed_world,
     synthetic_unknown_sql_table_fails,
+    synthetic_unknown_sqlite_module_fails_closed_world,
 )
-from tests.qualification.compat_x._compat_x_persisted_types import DurableExclusionReason
 from tests.qualification.compat_x._compat_x_persisted_types import (
+    DurableExclusionReason,
     MigrationDisposition,
     PersistedVersionDisposition,
 )
@@ -72,7 +69,7 @@ def test_cx_r2_p0_r1_continuity() -> None:
     r1 = build_r1_qualification_report()
     assert r1.public_stable_noncompliant_version_identity_count == 0
     assert r1.unclassified_obligation_count == 0
-    assert r1.persisted_without_version_finding_count == 5
+    assert r1.persisted_without_version_finding_count == 6
 
 
 def test_cx_r2_p0_historical_five_reconciliation() -> None:
@@ -95,10 +92,7 @@ def test_cx_r2_p0_historical_five_reconciliation() -> None:
         by_class["DocumentStoreSuspendedExecutionOperationStore"].assessment
         == HistoricalFindingAssessment.REAL_DURABLE_BOUNDARY_STORE
     )
-    assert (
-        by_class["RuntimeEventPublisher"].assessment
-        == HistoricalFindingAssessment.FALSE_POSITIVE_PUBLISHER_PROTOCOL
-    )
+    assert by_class["RuntimeEventPublisher"].assessment == HistoricalFindingAssessment.FALSE_POSITIVE_PUBLISHER_PROTOCOL
 
 
 def test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world() -> None:
@@ -134,33 +128,25 @@ def test_cx_r2_p0_sqlite_contract_authority_gap() -> None:
 
 
 def test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present() -> None:
-    family = next(
-        f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "agent_distribution.runtime_revision"
-    )
+    family = next(f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "agent_distribution.runtime_revision")
     assert family.current_version == "runtime_revision.v1"
     assert family.writer_paths and family.reader_paths
 
 
 def test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged() -> None:
     missing = [
-        f
-        for f in PERSISTED_SCHEMA_FAMILIES
-        if f.version_disposition == PersistedVersionDisposition.MISSING_VERSION
+        f for f in PERSISTED_SCHEMA_FAMILIES if f.version_disposition == PersistedVersionDisposition.MISSING_VERSION
     ]
     assert missing == []
 
 
 def test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision() -> None:
-    family = next(
-        f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "agent_distribution.runtime_revision"
-    )
+    family = next(f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "agent_distribution.runtime_revision")
     assert family.migration_disposition == MigrationDisposition.CURRENT_ONLY_FAIL_CLOSED
 
 
 def test_cx_r2_p0_adversarial_e_explicit_migration_owner_autonomous_work() -> None:
-    family = next(
-        f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "autonomous_work.postgresql_container"
-    )
+    family = next(f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "autonomous_work.postgresql_container")
     assert family.migration_disposition == MigrationDisposition.EXPLICIT_MIGRATION
     assert family.migration_owner_path is not None
 
@@ -175,14 +161,8 @@ def test_cx_r2_p0_adversarial_g_no_duplicate_migration_authority() -> None:
 
 
 def test_cx_r2_p0_adversarial_h_container_not_payload_version() -> None:
-    container = next(
-        f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "agent_distribution.sqlite_container"
-    )
-    payload = next(
-        f
-        for f in PERSISTED_SCHEMA_FAMILIES
-        if f.family_id == "agent_distribution.agent_artifact_metadata"
-    )
+    container = next(f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "agent_distribution.sqlite_container")
+    payload = next(f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "agent_distribution.agent_artifact_metadata")
     assert container.version_disposition == PersistedVersionDisposition.STORE_CONTAINER_VERSION
     assert payload.version_disposition == PersistedVersionDisposition.EXPLICIT_PAYLOAD_VERSION
 
@@ -190,9 +170,7 @@ def test_cx_r2_p0_adversarial_h_container_not_payload_version() -> None:
 def test_cx_r2_p0_adversarial_i_envelope_inheritance() -> None:
     assert synthetic_envelope_inheritance_proven() is True
     inner = next(
-        f
-        for f in PERSISTED_SCHEMA_FAMILIES
-        if f.family_id == "runtime.suspended_execution_operation_descriptor"
+        f for f in PERSISTED_SCHEMA_FAMILIES if f.family_id == "runtime.suspended_execution_operation_descriptor"
     )
     assert inner.version_disposition == PersistedVersionDisposition.INHERITED_ENVELOPE_VERSION
 

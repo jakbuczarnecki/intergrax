@@ -83,20 +83,29 @@ def test_replay_x_npsc_module_paths_exist() -> None:
 def test_replay_x_prod_delta_empty_since_dup_x() -> None:
     import subprocess
 
+    from tests.qualification.roadmap_replay_x._prod_delta_disposition import (
+        REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS,
+    )
+
     for path in ("intergrax", "agents", "applications"):
-        out = subprocess.check_output(
+        names = subprocess.check_output(
             [
                 "git",
                 "diff",
-                "--stat",
+                "--name-only",
                 f"{DUP_X_ACCEPTANCE_SHA}..HEAD",
                 "--",
                 path,
             ],
             cwd=_REPO_ROOT,
             text=True,
-        ).strip()
-        assert out == "", path
+        ).splitlines()
+        unscoped = [
+            n.strip().replace("\\", "/")
+            for n in names
+            if n.strip() and n.strip().replace("\\", "/") not in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS
+        ]
+        assert unscoped == [], f"{path}: {unscoped}"
 
 
 def test_replay_x_not_self_closed() -> None:

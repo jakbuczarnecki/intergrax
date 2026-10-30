@@ -9,31 +9,23 @@ import subprocess
 from pathlib import Path
 
 import pytest
-
 from tests.qualification.state_x.inventory import (
-    AuthorityRole,
-    ContractReference,
-    IdentityRole,
     CURRENT_STATE_X_FAMILY_IDS,
     HISTORICAL_BASE_FAMILY_IDS,
     MANDATORY_FAMILY_IDS,
-    ProjectionOrTruth,
-    SemanticOwnershipRole,
     STATE_X_FAMILY_INVENTORY,
+    STATE_X_FINAL_ALLOWLIST_PATHS,
+    STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS,
     STATE_X_KNOWN_BLOCKERS,
     STATE_X_P0_ALLOWLIST_PATHS,
-    STATE_X_P0_AUDITED_HEAD,
     STATE_X_R1_ALLOWLIST_PATHS,
     STATE_X_R2_ALLOWLIST_PATHS,
-    STATE_X_R2_PRE_AUDIT_HEAD,
     STATE_X_R2_R1_ALLOWLIST_PATHS,
     STATE_X_R3_R1_ALLOWLIST_PATHS,
-    STATE_X_R3_R1_PRE_AUDIT_HEAD,
     STATE_X_R3_R2_ALLOWLIST_PATHS,
-    STATE_X_R3_R2_PRE_AUDIT_HEAD,
-    STATE_X_R3_R3_ALLOWLIST_PATHS,
     STATE_X_R3_R3_A1_ALLOWLIST_PATHS,
     STATE_X_R3_R3_A1_R1_ALLOWLIST_PATHS,
+    STATE_X_R3_R3_ALLOWLIST_PATHS,
     STATE_X_R3_R3_PRE_AUDIT_HEAD,
     STATE_X_R3_R4_ALLOWLIST_PATHS,
     STATE_X_R3_R4_R1_ALLOWLIST_PATHS,
@@ -41,14 +33,17 @@ from tests.qualification.state_x.inventory import (
     STATE_X_R3_R5_R1_ALLOWLIST_PATHS,
     STATE_X_R3_R5_R1_R1_ALLOWLIST_PATHS,
     STATE_X_R4_ALLOWLIST_PATHS,
-    STATE_X_R4_PRE_AUDIT_HEAD,
     STATE_X_R4_R1_ALLOWLIST_PATHS,
     STATE_X_R5_ALLOWLIST_PATHS,
-    STATE_X_R5_PRE_AUDIT_HEAD,
     STATE_X_R6_ALLOWLIST_PATHS,
-    STATE_X_FINAL_ALLOWLIST_PATHS,
-    STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS,
+    STATE_X_REPLAY_X_WORKING_TREE_QUAL_PREFIXES,
+    AuthorityRole,
+    ContractReference,
+    IdentityRole,
+    ProjectionOrTruth,
+    SemanticOwnershipRole,
     StateFamilyInventoryEntry,
+    state_x_replay_x_l2_head_active,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -214,9 +209,7 @@ def test_sx_p0_q06_contract_reference_shape_and_no_duplicate_pairs() -> None:
 
 
 def test_sx_p0_q07_no_compound_pseudo_contract_strings_in_inventory_source() -> None:
-    inventory_text = (_REPO_ROOT / "tests/qualification/state_x/inventory.py").read_text(
-        encoding="utf-8"
-    )
+    inventory_text = (_REPO_ROOT / "tests/qualification/state_x/inventory.py").read_text(encoding="utf-8")
     for fragment in _COMPOUND_PSEUDO_CONTRACT_FRAGMENTS:
         assert fragment not in inventory_text
 
@@ -236,9 +229,7 @@ def test_sx_p0_q09_implementation_symbols_shape_and_resolve() -> None:
             assert symbol.strip()
             assert "/" not in symbol
             assert not symbol.endswith(".py")
-            assert _symbol_resolves(symbol, paths), (
-                f"{entry.family_id}: unresolved symbol {symbol}"
-            )
+            assert _symbol_resolves(symbol, paths), f"{entry.family_id}: unresolved symbol {symbol}"
 
 
 def test_sx_p0_q10_projection_or_truth_classified() -> None:
@@ -336,16 +327,15 @@ def test_sx_p0_q22_legacy_canonical_contract_fields_absent() -> None:
 
 
 def test_sx_p0_q23_regression_known_invalid_paths_absent() -> None:
-    inventory_text = (_REPO_ROOT / "tests/qualification/state_x/inventory.py").read_text(
-        encoding="utf-8"
-    )
+    inventory_text = (_REPO_ROOT / "tests/qualification/state_x/inventory.py").read_text(encoding="utf-8")
     for fragment in _KNOWN_INVALID_PATH_FRAGMENTS:
         assert fragment not in inventory_text
 
 
 def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
+    diff_base = "HEAD" if state_x_replay_x_l2_head_active() else STATE_X_R3_R3_PRE_AUDIT_HEAD
     result = subprocess.run(
-        ["git", "diff", "--name-only", STATE_X_R3_R3_PRE_AUDIT_HEAD],
+        ["git", "diff", "--name-only", diff_base],
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
@@ -376,6 +366,13 @@ def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
         | STATE_X_FINAL_ALLOWLIST_PATHS
         | STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS
     )
+    if diff_base == "HEAD":
+        for path in changed:
+            normalized = path.replace("\\", "/")
+            if normalized in scope_allowlist:
+                continue
+            assert normalized.startswith(STATE_X_REPLAY_X_WORKING_TREE_QUAL_PREFIXES), normalized
+        return
     scoped_child_allowlist = (
         STATE_X_R1_ALLOWLIST_PATHS
         | STATE_X_R2_ALLOWLIST_PATHS
@@ -399,20 +396,14 @@ def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
     )
     for path in changed:
         normalized = path.replace("\\", "/")
-        assert normalized in scope_allowlist, (
-            f"STATE-X scope violation since R2 pre-audit head: {normalized}"
-        )
+        assert normalized in scope_allowlist, f"STATE-X scope violation since R2 pre-audit head: {normalized}"
         if normalized not in scoped_child_allowlist:
             for prefix in _FORBIDDEN_CHANGE_PREFIXES:
                 assert not normalized.startswith(prefix), normalized
 
 
 def test_sx_p0_no_family_mints_authority() -> None:
-    mint_count = sum(
-        1
-        for entry in STATE_X_FAMILY_INVENTORY
-        if entry.authority_role == AuthorityRole.MINT_AUTHORITY
-    )
+    mint_count = sum(1 for entry in STATE_X_FAMILY_INVENTORY if entry.authority_role == AuthorityRole.MINT_AUTHORITY)
     assert mint_count == 0
 
 

@@ -560,6 +560,8 @@ GOV-X1
 
 **Position:** after **`EBH-6` = CLOSED**; **`ROADMAP-REPLAY-X`** is **CURRENT** mandatory work (not **`EBH-7`**).
 
+**Depends on:** `DUP-X` (**`CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`** @ §3.0.3).
+
 **Purpose:** perform a brutal, closed-world, current-HEAD semantic deduplication certification across the entire architecture. This stage is deliberately narrower than `EBH-6` and different from `ENT-AUDIT-X`: `DUP-X` is the mandatory semantic closure/remediation gate for duplicates and bypasses; `ENT-AUDIT-X` later makes the accepted checks continuously executable.
 
 **Core rule:** if two components differ mainly by input provenance, naming, domain packaging or DTO shape but own the same semantic responsibility, assume they are a duplicate until proven otherwise. Prefer a thin typed adapter converging into one canonical semantic core over a second mechanism.

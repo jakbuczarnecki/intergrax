@@ -9,11 +9,11 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-
 from tests.qualification.compat_x._compat_x_persisted_r2_final import (
-    AcceptedR2Baseline,
+    _FIXTURE_PATH,
     EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE,
-    LegacyObligationFingerprint,
+    REPLAY_ACCEPTED_FAMILY_COUNT,
+    AcceptedR2Baseline,
     PersistedFamilyFingerprint,
     R2FinalDrift,
     build_persisted_r2_final_report,
@@ -34,7 +34,7 @@ def test_cx_r2_final_gate_passes_on_current_head() -> None:
     assert report.legacy_obligation_count == 16
     assert report.unclassified_candidates == 0
     assert report.mechanical_family_ids == report.inventory_family_ids
-    assert len(report.inventory_family_ids) == 28
+    assert len(report.inventory_family_ids) == REPLAY_ACCEPTED_FAMILY_COUNT
     assert not report.drift.family_additions
     assert not report.drift.family_removals
     assert not report.drift.family_fingerprint_drift
@@ -103,7 +103,7 @@ def test_cx_r2_final_probe_c_same_count_substitution_fails() -> None:
         canonical_payload_type=removed_fp.canonical_payload_type,
         owner_module_path=removed_fp.owner_module_path,
     )
-    assert len(families) == 28
+    assert len(families) == REPLAY_ACCEPTED_FAMILY_COUNT
     drift = compute_r2_final_drift(
         baseline,
         frozenset(families),
@@ -119,9 +119,7 @@ def test_cx_r2_final_probe_c_same_count_substitution_fails() -> None:
 def test_cx_r2_final_probe_d_version_owner_drift_fails() -> None:
     families = current_family_fingerprints()
     target = families["memory.user_profile"]
-    families["memory.user_profile"] = replace(
-        target, version_owner_path="intergrax/synthetic_version_owner.py"
-    )
+    families["memory.user_profile"] = replace(target, version_owner_path="intergrax/synthetic_version_owner.py")
     report = build_persisted_r2_final_report(family_fingerprints=families)
     assert "memory.user_profile" in report.drift.family_fingerprint_drift
     assert not persisted_r2_final_gate_passes(report)
@@ -130,9 +128,7 @@ def test_cx_r2_final_probe_d_version_owner_drift_fails() -> None:
 def test_cx_r2_final_probe_e_migration_owner_drift_fails() -> None:
     families = current_family_fingerprints()
     target = families["memory.user_profile"]
-    families["memory.user_profile"] = replace(
-        target, migration_owner_path="intergrax/synthetic_migration_owner.py"
-    )
+    families["memory.user_profile"] = replace(target, migration_owner_path="intergrax/synthetic_migration_owner.py")
     report = build_persisted_r2_final_report(family_fingerprints=families)
     assert not persisted_r2_final_gate_passes(report)
 
@@ -151,9 +147,7 @@ def test_cx_r2_final_probe_g_sanctioned_reader_drift_fails() -> None:
     obligations = current_obligation_fingerprints()
     key = "memory.user_profile::LEGACY_UNVERSIONED_PRE_V1"
     original = obligations[key]
-    obligations[key] = replace(
-        original, sanctioned_reader_symbols=("synthetic_reader",)
-    )
+    obligations[key] = replace(original, sanctioned_reader_symbols=("synthetic_reader",))
     report = build_persisted_r2_final_report(obligation_fingerprints=obligations)
     assert not persisted_r2_final_gate_passes(report)
 
@@ -175,10 +169,13 @@ def test_cx_r2_final_probe_h_constituent_gate_failure_injected() -> None:
 
 
 def test_cx_r2_final_baseline_fixture_matches_accepted_family_list() -> None:
-    baseline = load_accepted_r2_baseline()
-    assert len(baseline.accepted_persisted_family_ids) == 28
-    assert len(baseline.accepted_legacy_obligation_fingerprints) == 16
-    assert baseline.provenance == EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE
+    replay = load_accepted_r2_baseline()
+    assert len(replay.accepted_persisted_family_ids) == REPLAY_ACCEPTED_FAMILY_COUNT
+    historical = load_accepted_r2_baseline(_FIXTURE_PATH)
+    assert len(historical.accepted_persisted_family_ids) == 28
+    assert len(replay.accepted_legacy_obligation_fingerprints) == 16
+    assert historical.provenance == EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE
+    assert replay.provenance == EXPECTED_ACCEPTED_R2_BASELINE_PROVENANCE
     assert discover_r2_final_baseline_semantic_typing_violations() == ()
 
 
@@ -198,7 +195,9 @@ def test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed(
     tmp_path: Path,
 ) -> None:
     fixture = json.loads(
-        Path(__file__).resolve().parents[2]
+        Path(__file__)
+        .resolve()
+        .parents[2]
         .joinpath("fixtures", "compat_x", "r2_final_accepted_baseline.json")
         .read_text(encoding="utf-8")
     )

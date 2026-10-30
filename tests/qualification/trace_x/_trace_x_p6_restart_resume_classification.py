@@ -12,18 +12,17 @@ from tests.qualification.trace_x._trace_x_p6_types import (
 )
 
 _CLASSIFICATION_OVERRIDES: dict[str, RestartResumePathClass] = {
-    "applications/governed_contractor_application/host/offline_demo.py": (
-        RestartResumePathClass.E_TEST_LAB_REFERENCE
-    ),
-    "applications/governed_contractor_application/host/orchestrator.py": (
-        RestartResumePathClass.E_TEST_LAB_REFERENCE
-    ),
+    "applications/governed_contractor_application/host/offline_demo.py": (RestartResumePathClass.E_TEST_LAB_REFERENCE),
+    "applications/governed_contractor_application/host/orchestrator.py": (RestartResumePathClass.E_TEST_LAB_REFERENCE),
 }
 
 # Prefix families sharing one restart/resume semantic responsibility (most specific first).
 _PREFIX_CLASSIFICATION: tuple[tuple[str, RestartResumePathClass], ...] = (
     ("intergrax/runtime/execution/debug_lab_nexus_loop.py", RestartResumePathClass.E_TEST_LAB_REFERENCE),
-    ("applications/local_workspace_application/scripts/run-lkw-slack-ask-workflow-proof.py", RestartResumePathClass.E_TEST_LAB_REFERENCE),
+    (
+        "applications/local_workspace_application/scripts/run-lkw-slack-ask-workflow-proof.py",
+        RestartResumePathClass.E_TEST_LAB_REFERENCE,
+    ),
     ("applications/lab_application/", RestartResumePathClass.E_TEST_LAB_REFERENCE),
     ("applications/poc_template_application/", RestartResumePathClass.E_TEST_LAB_REFERENCE),
     ("intergrax/debug/", RestartResumePathClass.E_TEST_LAB_REFERENCE),
@@ -71,6 +70,7 @@ _PREFIX_CLASSIFICATION: tuple[tuple[str, RestartResumePathClass], ...] = (
     ("intergrax/background_tasks/", RestartResumePathClass.A_CANONICAL_RESUME),
     ("intergrax/runtime/notifications/templates/", RestartResumePathClass.A_CANONICAL_RESUME),
     ("intergrax/runtime/execution/budget/", RestartResumePathClass.A_CANONICAL_RESUME),
+    ("intergrax/skills/", RestartResumePathClass.A_CANONICAL_RESUME),
     ("intergrax/runtime/execution/", RestartResumePathClass.A_CANONICAL_RESUME),
     ("applications/governed_contractor_application/", RestartResumePathClass.A_CANONICAL_RESUME),
 )
@@ -132,9 +132,7 @@ def compare_restart_resume_registry(
         if row.classification is RestartResumePathClass.F_PRODUCTION_BYPASS
     )
     unclassified = frozenset(
-        (row.path, row.surface_id)
-        for row in registry
-        if row.classification is RestartResumePathClass.G_UNCLEAR
+        (row.path, row.surface_id) for row in registry if row.classification is RestartResumePathClass.G_UNCLEAR
     )
     ok = not unknown and not orphan and not bypass and not unclassified
     return RestartResumeParityResult(

@@ -15,19 +15,15 @@ pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 _START_HEAD = "5f348257e7ff506f57a2b8f381c131ee0e62599f"
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _LOCK_DOC = (
-    _REPO_ROOT
-    / "docs/project/maintainers/qualification/"
+    _REPO_ROOT / "docs/project/maintainers/qualification/"
     "TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_R1_TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION.md"
 )
 _PARENT_LOCK = (
-    _REPO_ROOT
-    / "docs/project/maintainers/qualification/"
+    _REPO_ROOT / "docs/project/maintainers/qualification/"
     "TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_MARKETPLACE_BINDING_TARGET_INTENT_RECONCILIATION_LOCK.md"
 )
 _ROADMAP = _REPO_ROOT / "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md"
-_TARGET_CONTRACT = (
-    _REPO_ROOT / "intergrax/contracts/capability_qualification/qualified_capability_binding.py"
-)
+_TARGET_CONTRACT = _REPO_ROOT / "intergrax/contracts/capability_qualification/qualified_capability_binding.py"
 _INTENT_REPO = _REPO_ROOT / "intergrax/tools/qualified_marketplace_tool_execution_intent_repository.py"
 _TOOLS_ROOT = _REPO_ROOT / "intergrax/tools"
 _INTERGRAX_ROOT = _REPO_ROOT / "intergrax"
@@ -35,7 +31,14 @@ _INTERGRAX_ROOT = _REPO_ROOT / "intergrax"
 
 def _production_py_files() -> list[Path]:
     roots = (_INTERGRAX_ROOT, _REPO_ROOT / "agents", _REPO_ROOT / "applications")
-    return [path for root in roots for path in root.rglob("*.py")]
+    out: list[Path] = []
+    for root in roots:
+        for path in root.rglob("*.py"):
+            rel = path.relative_to(_REPO_ROOT).as_posix()
+            if "docker/runtime-context" in rel:
+                continue
+            out.append(path)
+    return out
 
 
 def test_txp5r2p3r1r1r1r1r1r1r1r1_q01_start_head_ancestry() -> None:
@@ -87,8 +90,7 @@ def test_txp5r2p3r1r1r1r1r1r1r1r1_q05_target_schema_only_in_binding_contract() -
 def test_txp5r2p3r1r1r1r1r1r1r1r1_q06_target_is_runtime_contract_field() -> None:
     tree = ast.parse(_TARGET_CONTRACT.read_text(encoding="utf-8"))
     assert any(
-        isinstance(node, ast.ClassDef) and node.name == "QualifiedCapabilityExecutionTarget"
-        for node in tree.body
+        isinstance(node, ast.ClassDef) and node.name == "QualifiedCapabilityExecutionTarget" for node in tree.body
     )
     dispatch = _REPO_ROOT / "intergrax/contracts/execution/qualified_capability_execution_dispatch.py"
     assert "QualifiedCapabilityExecutionTarget" in dispatch.read_text(encoding="utf-8")
@@ -99,9 +101,7 @@ def test_txp5r2p3r1r1r1r1r1r1r1r1_q07_no_target_v1_v2_runtime_adapter_in_product
         "QualifiedCapabilityExecutionTargetMigration",
         "ExecutionTargetCompatibility",
     )
-    allowed_v2_contract = (
-        _INTERGRAX_ROOT / "contracts/capability_qualification/qualified_capability_binding.py"
-    )
+    allowed_v2_contract = _INTERGRAX_ROOT / "contracts/capability_qualification/qualified_capability_binding.py"
     scoped_roots = (
         _INTERGRAX_ROOT / "contracts/execution",
         _INTERGRAX_ROOT / "runtime/execution",

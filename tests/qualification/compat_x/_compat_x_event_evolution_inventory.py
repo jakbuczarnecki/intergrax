@@ -1,15 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
+# ruff: noqa: UP042
 
 """COMPAT-X-R3-P0 closed-world RuntimeEvent evolution inventory (qualification evidence only)."""
 
 from __future__ import annotations
 
 import ast
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Final, Iterable
+from typing import Final
 
 from intergrax.contracts.runtime_event import parse_runtime_event_payload
 from intergrax.contracts.runtime_event_type import RuntimeEventType
@@ -43,7 +45,10 @@ from intergrax.runtime.events.payloads.canonical import (
     TraceBridgePayloadV1,
     ValidationPayloadV1,
 )
-from intergrax.runtime.events.payloads.platform_families import DiagnosticSubsystemFailurePayloadV1
+from intergrax.runtime.events.payloads.platform_families import (
+    DiagnosticSubsystemFailurePayloadV1,
+    PlatformHookViolationPayloadV1,
+)
 from intergrax.runtime.events.payloads.spine_families import (
     BudgetSignalPayloadV1,
     CancellationLifecyclePayloadV1,
@@ -73,9 +78,7 @@ from intergrax.runtime.events.stores.validating_runtime_event_store import (
 from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY, validate_schema_version
 
 _QUALIFICATION_PREFIX: Final = "tests/qualification/compat_x/"
-_COMPAT_X_ARCH_POLICY: Final = (
-    "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md"
-)
+_COMPAT_X_ARCH_POLICY: Final = "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md"
 _RUNTIME_EVENT_CONTRACT: Final = "intergrax/contracts/runtime_event.py"
 _RUNTIME_SCHEMA_REGISTRY: Final = "intergrax/runtime/schema/registry.py"
 _PAYLOAD_REGISTRY: Final = "intergrax/runtime/events/payload_registry.py"
@@ -87,9 +90,7 @@ _PERSISTENCE_CONTRACT: Final = "intergrax/runtime/events/persistence_contract.py
 _VALIDATING_STORE: Final = "intergrax/runtime/events/stores/validating_runtime_event_store.py"
 _REPO_ROOT: Final = Path(__file__).resolve().parents[3]
 _PRODUCTION_SCAN_ROOTS: Final = ("intergrax", "applications")
-_PRODUCTION_SCAN_EXCLUDE: Final = frozenset(
-    {"tests", "testing_support", "docs", "scripts", "__pycache__"}
-)
+_PRODUCTION_SCAN_EXCLUDE: Final = frozenset({"tests", "testing_support", "docs", "scripts", "__pycache__"})
 
 
 class RuntimeEventWritePathDisposition(str, Enum):
@@ -281,6 +282,7 @@ class EventEvolutionR3P0Metrics:
 
 _PAYLOAD_CLASS_TO_FAMILY: dict[type[RuntimeEventPayload], str] = {
     DiagnosticSubsystemFailurePayloadV1: "platform_diagnostic_subsystem_failure",
+    PlatformHookViolationPayloadV1: "platform_hook_violation",
     DelegationGrantedPayloadV1: "delegation_granted",
     DecisionPayloadV1: "decision",
     ToolPayloadV1: "tool",
@@ -312,9 +314,7 @@ _PAYLOAD_CLASS_TO_FAMILY: dict[type[RuntimeEventPayload], str] = {
     HumanTimeoutPayloadV1: "human_timeout",
     PolicyDecisionSpinePayloadV1: "policy_decision_spine",
     BudgetSignalPayloadV1: "budget_signal",
-    IntegrationConfigurationProvenanceRequirementPayloadV1: (
-        "integration_configuration_provenance_requirement"
-    ),
+    IntegrationConfigurationProvenanceRequirementPayloadV1: ("integration_configuration_provenance_requirement"),
     GraphBackpressurePayloadV1: "graph_backpressure",
     GuardrailBlockedPayloadV1: "guardrail_blocked",
     TracePersistedPayloadV1: "trace_persisted",
@@ -585,10 +585,7 @@ def classify_runtime_event_append_call_site(
             RuntimeEventWritePathDisposition.NON_EVENT_APPEND,
             RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_WIRING_MULTI_REGION,
         )
-    if (
-        path.endswith("runtime/security/multi_region_audit_trail.py")
-        and callee_expr == "self._primary.append"
-    ):
+    if path.endswith("runtime/security/multi_region_audit_trail.py") and callee_expr == "self._primary.append":
         return RuntimeEventAppendCallSiteClassification(
             RuntimeEventWritePathDisposition.NON_EVENT_APPEND,
             RuntimeEventCallSiteClassificationEvidence.SECURITY_AUDIT_TRAIL_INNER_PRIMARY_DELEGATE,
@@ -675,9 +672,7 @@ def validate_production_persistence_call_site_classification(
     sites = tuple(call_sites or discover_runtime_event_persistence_call_sites())
     for site in sites:
         if site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED:
-            violations.append(
-                f"unclassified persistence append {site.module_path}:{site.lineno} {site.callee_expr}"
-            )
+            violations.append(f"unclassified persistence append {site.module_path}:{site.lineno} {site.callee_expr}")
     violations.extend(validate_non_event_append_positive_evidence(sites))
     violations.extend(validate_call_site_disposition_evidence_alignment(sites))
     return tuple(violations)
@@ -692,8 +687,7 @@ def validate_non_event_append_positive_evidence(
             continue
         if site.classification_evidence not in _NON_EVENT_APPEND_EVIDENCE:
             violations.append(
-                f"NON_EVENT_APPEND without positive evidence "
-                f"{site.module_path}:{site.lineno} {site.callee_expr}"
+                f"NON_EVENT_APPEND without positive evidence {site.module_path}:{site.lineno} {site.callee_expr}"
             )
     return tuple(violations)
 
@@ -708,14 +702,11 @@ def validate_call_site_disposition_evidence_alignment(
         if disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED:
             if evidence != RuntimeEventCallSiteClassificationEvidence.UNSPECIFIED:
                 violations.append(
-                    f"UNCLASSIFIED site must not carry positive evidence: "
-                    f"{site.module_path}:{site.lineno}"
+                    f"UNCLASSIFIED site must not carry positive evidence: {site.module_path}:{site.lineno}"
                 )
             continue
         if evidence == RuntimeEventCallSiteClassificationEvidence.UNSPECIFIED:
-            violations.append(
-                f"classified site missing evidence {site.module_path}:{site.lineno} {disposition.value}"
-            )
+            violations.append(f"classified site missing evidence {site.module_path}:{site.lineno} {disposition.value}")
             continue
         allowed: frozenset[RuntimeEventCallSiteClassificationEvidence]
         if disposition == RuntimeEventWritePathDisposition.NON_EVENT_APPEND:
@@ -730,8 +721,7 @@ def validate_call_site_disposition_evidence_alignment(
             continue
         if evidence not in allowed:
             violations.append(
-                f"evidence {evidence.value} incompatible with {disposition.value} "
-                f"at {site.module_path}:{site.lineno}"
+                f"evidence {evidence.value} incompatible with {disposition.value} at {site.module_path}:{site.lineno}"
             )
     return tuple(violations)
 
@@ -740,9 +730,7 @@ def count_unclassified_persistence_call_sites(
     call_sites: Iterable[RuntimeEventPersistenceCallSite] | None = None,
 ) -> int:
     sites = tuple(call_sites or discover_runtime_event_persistence_call_sites())
-    return sum(
-        1 for site in sites if site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED
-    )
+    return sum(1 for site in sites if site.disposition == RuntimeEventWritePathDisposition.UNCLASSIFIED)
 
 
 def count_non_event_append_without_evidence(
@@ -830,9 +818,7 @@ def validate_strict_write_policies_against_registry(
     for event_type, entry in policies:
         if entry.write_mode == PayloadWriteMode.STRICT_SPINE_SCHEMA and entry.schema_id:
             if entry.schema_id not in reg:
-                violations.append(
-                    f"strict policy {event_type.value} references unregistered {entry.schema_id!r}"
-                )
+                violations.append(f"strict policy {event_type.value} references unregistered {entry.schema_id!r}")
     return tuple(violations)
 
 
@@ -926,10 +912,7 @@ def compute_event_evolution_r3_p0_metrics(
     inventory: EventEvolutionInventory | None = None,
 ) -> EventEvolutionR3P0Metrics:
     inv = inventory or event_evolution_inventory()
-    preferred = set(EVENT_TYPE_PREFERRED_SCHEMA.values())
-    all_versions: list[EventPayloadVersionRecord] = [
-        v for family in inv.payload_families for v in family.versions
-    ]
+    all_versions: list[EventPayloadVersionRecord] = [v for family in inv.payload_families for v in family.versions]
     supported_read = sum(
         1
         for v in all_versions
@@ -940,9 +923,7 @@ def compute_event_evolution_r3_p0_metrics(
         )
     )
     current_write = sum(
-        1
-        for v in all_versions
-        if v.compatibility_disposition == EventCompatibilityDisposition.CURRENT_WRITE_AND_READ
+        1 for v in all_versions if v.compatibility_disposition == EventCompatibilityDisposition.CURRENT_WRITE_AND_READ
     )
     multi = sum(1 for f in inv.payload_families if len(f.versions) > 1)
     single = len(inv.payload_families) - multi
@@ -1073,9 +1054,7 @@ def validate_inventory_closed_world(inventory: EventEvolutionInventory | None = 
     for event_type, entry in iter_runtime_event_payload_policies():
         if entry.write_mode == PayloadWriteMode.STRICT_SPINE_SCHEMA and entry.schema_id:
             if entry.schema_id not in reg_ids:
-                violations.append(
-                    f"strict policy {event_type.value} references unregistered {entry.schema_id!r}"
-                )
+                violations.append(f"strict policy {event_type.value} references unregistered {entry.schema_id!r}")
 
     current_envelope = RUNTIME_SCHEMA_REGISTRY["runtime_event"]
     if not validate_schema_version("runtime_event", current_envelope):
@@ -1105,9 +1084,7 @@ def validate_inventory_closed_world(inventory: EventEvolutionInventory | None = 
         violations.append("qualification module listed as semantic version owner")
 
     violations.extend(validate_payload_version_inventory_consistency(inv))
-    violations.extend(
-        validate_production_persistence_call_site_classification(inv.production_persistence_call_sites)
-    )
+    violations.extend(validate_production_persistence_call_site_classification(inv.production_persistence_call_sites))
     violations.extend(validate_canonical_production_guard_chains())
     if count_canonical_production_raw_store_bypasses(inv.production_persistence_call_sites) != 0:
         violations.append("inventory persistence call sites include canonical production bypasses")
@@ -1117,6 +1094,7 @@ def validate_inventory_closed_world(inventory: EventEvolutionInventory | None = 
 
 def synthetic_inventory_missing_classification() -> tuple[str, ...]:
     """Probe A: orphan canonical class without family map."""
+
     class _SyntheticOrphan(RuntimeEventPayload):
         schema_id = "synthetic.orphan_probe.v1"
         schema_version = 1
@@ -1308,9 +1286,7 @@ def collect_event_evolution_r3_p0_gate_violations(
         violations.append("NON_EVENT_APPEND call sites without positive evidence")
     bypass_count = count_canonical_production_raw_store_bypasses(sites)
     if bypass_count != 0:
-        violations.append(
-            f"canonical production persistence bypass count {bypass_count} (expected 0)"
-        )
+        violations.append(f"canonical production persistence bypass count {bypass_count} (expected 0)")
     return tuple(violations)
 
 
@@ -1378,9 +1354,7 @@ def synthetic_probe_k_unknown_persistence_append_gate() -> tuple[str, ...]:
     passed, _ = event_evolution_r3_p0_gate_passes()
     if not passed:
         return ("probe K: production gate must pass before unknown injection",)
-    gate_with_unknown = collect_event_evolution_r3_p0_gate_violations(
-        extra_persistence_call_sites=(site,)
-    )
+    gate_with_unknown = collect_event_evolution_r3_p0_gate_violations(extra_persistence_call_sites=(site,))
     if not gate_with_unknown:
         return ("probe K: combined gate unexpectedly passed with unknown call site",)
     return ()
@@ -1390,9 +1364,7 @@ def synthetic_probe_l_misleading_audit_append() -> tuple[str, ...]:
     site = synthetic_misleading_audit_append_call_site()
     if site.disposition != RuntimeEventWritePathDisposition.UNCLASSIFIED:
         return (f"probe L: expected UNCLASSIFIED, got {site.disposition.value}",)
-    gate_violations = collect_event_evolution_r3_p0_gate_violations(
-        extra_persistence_call_sites=(site,)
-    )
+    gate_violations = collect_event_evolution_r3_p0_gate_violations(extra_persistence_call_sites=(site,))
     if not gate_violations:
         return ("probe L: gate unexpectedly passed with misleading audit append",)
     return ()
@@ -1414,9 +1386,7 @@ def synthetic_probe_m_raw_production_composition_bypass_gate() -> tuple[str, ...
     )
     if count_canonical_production_raw_store_bypasses((raw_site,)) != 1:
         return ("probe M: bypass counter did not detect synthetic production raw append",)
-    gate_violations = collect_event_evolution_r3_p0_gate_violations(
-        extra_persistence_call_sites=(raw_site,)
-    )
+    gate_violations = collect_event_evolution_r3_p0_gate_violations(extra_persistence_call_sites=(raw_site,))
     if not gate_violations:
         return ("probe M: combined gate passed with synthetic raw production append",)
     return ()
