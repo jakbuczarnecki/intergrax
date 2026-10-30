@@ -7,6 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+from tests.qualification.trace_x._trace_x_p5_discovery import (  # noqa: F401
+    discover_configuration_provenance_surfaces,
+    discover_policy_provenance_surfaces,
+    discover_profile_revision_surfaces,
+)
 from tests.qualification.trace_x._trace_x_p5_registry_types import (
     ClassifiedDiscoveryCandidate,
     ConfigurationProvenanceSurfaceKind,

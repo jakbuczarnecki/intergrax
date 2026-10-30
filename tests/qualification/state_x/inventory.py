@@ -1293,9 +1293,11 @@ STATE_X_FINAL_R1_R1_START_HEAD: Final[str] = "5f57b3df1ac400d3676f376c218be148b3
 
 STATE_X_FINAL_START_HEAD: Final[str] = "5f57b3df1ac400d3676f376c218be148b3481bc8"
 
-STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD: Final[str] = "05549f9acb9ecedf910c7470d442bba5d0a27337"
-
 STATE_X_FINAL_R1_START_HEAD: Final[str] = STATE_X_FINAL_START_HEAD
+
+from tests.qualification.roadmap_replay_x._prod_delta_disposition import (  # noqa: E402
+    REPLAY_X_L2_QUALIFICATION_HEAD as STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD,
+)
 
 STATE_X_FINAL_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
@@ -1341,6 +1343,19 @@ STATE_X_REPLAY_X_WORKING_TREE_QUAL_PREFIXES: Final[tuple[str, ...]] = (
 )
 
 
+def _git_is_ancestor(ancestor: str, descendant: str) -> bool:
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=root,
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
 def state_x_replay_x_l2_head_active() -> bool:
     import subprocess
     from pathlib import Path
@@ -1353,4 +1368,7 @@ def state_x_replay_x_l2_head_active() -> bool:
         capture_output=True,
         text=True,
     )
-    return proc.stdout.strip() == STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD
+    head = proc.stdout.strip()
+    if head == STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD:
+        return True
+    return _git_is_ancestor(STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD, head)
