@@ -5,7 +5,7 @@
 | **Protocol** | ROADMAP-REPLAY-X-03 (mirrors DUP-X / EBH-6) |
 | **ECAP** | [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) **B1–B6** |
 | **Execution status** | **ISSUED — READY FOR INDEPENDENT AUDIT** — **B6 OPEN** (auditor only) |
-| **AUDITED_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
+| **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
 | **Predecessor** | DUP-X @ `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 
 ## Preconditions
@@ -16,7 +16,7 @@
 | 2 | FRZ 225 reconciliation | **RECORDED** |
 | 3 | §5 historical matrix | **RECORDED** — 232 rows @ HEAD |
 | 4 | Prod delta since DUP-X | **scoped (1 path)** — unscoped **empty**; see [`_prod_delta_disposition.py`](../../../../tests/qualification/roadmap_replay_x/_prod_delta_disposition.py) |
-| 5 | L1 mechanical gates | **PASS** (15) @ `22fbc0e` — `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/l1-roadmap_replay_x.log` |
+| 5 | L1 mechanical gates | **PASS** (31) @ B6 R2 exec `5f54ba76` — `.tmp/proof/roadmap-replay-x-b6-r2-exec-5f54ba76/` · historical L2/L3 @ `22fbc0e` immutable |
 | 6 | Parent L2 | **PASS (SCOPED)** @ `TEST_EXECUTION_SHA` — manifest table + NPSC **EXPECTED_FAIL** |
 | 7 | L3 consolidated | **PASS** (480) — `l3-consolidated.log` |
 | 8 | Operator OD | **OPEN** — not agent-forged |

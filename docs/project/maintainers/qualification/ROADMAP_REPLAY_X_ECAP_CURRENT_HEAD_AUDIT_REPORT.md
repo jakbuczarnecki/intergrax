@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **AUDITED_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
+| **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
 | **Parent status** | **READY FOR INDEPENDENT AUDIT** — **NOT CLOSED** |
 
 ## C1 — Closed-world inventory
@@ -11,7 +11,7 @@
 
 ## C2 — Ownership / duplicate authority
 
-**Scoped production delta exists** (1 path: `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` — CTRL-X typing/format; disposition @ `tests/qualification/roadmap_replay_x/_prod_delta_disposition.py`, regression `l2-ctrl_x.log` @ `TEST_EXECUTION_SHA`). **Unscoped** prod Δ since DUP-X **empty** — historical accepted evidence for unrelated paths **not** invalidated (`historical_evidence_invalidated_by_later_changes` **0**). DUP-X + EBH-6 SSOT reused; NPSC ten-module disposition recorded.
+**Scoped production delta exists** (1 path: `intergrax/runtime/resilience/dependency_attempt_execution_boundary.py` — CTRL-X typing/format; disposition @ `_prod_delta_disposition.py` + `_scoped_regression_evidence.py`; regression test **`test_ctrl_x_semantic_boundary_pyright_zero_errors`** in L2 batch @ `22fbc0e` · `l2-ctrl_x.log`). **Unscoped** prod Δ since DUP-X **empty** — historical accepted evidence for unrelated paths **not** invalidated (`historical_evidence_invalidated_by_later_changes` **0**). DUP-X + EBH-6 SSOT reused; NPSC ten-module disposition recorded.
 
 ## C3 — VBN taxonomy (31 domains)
 
@@ -27,7 +27,7 @@ Seven replay artifacts @ normative schema (§2.1–2.7) + EBH-5/6 historical SHA
 
 ## Six counters (mechanical @ `TEST_EXECUTION_SHA`)
 
-Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` — **B6 must recompute**.
+Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` + B6 R2 bidirectional reconciliation (`_replay_bidirectional_reconciliation.py`) @ **`5f54ba76d68e9065256ac4597bc8e8d9e012b6d2`** worktree (L1 batch `.tmp/proof/roadmap-replay-x-b6-r2-exec-5f54ba76/`).
 
 | Counter | Value | Denominator / source |
 | --- | ---: | --- |

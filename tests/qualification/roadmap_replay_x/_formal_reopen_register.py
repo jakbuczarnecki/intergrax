@@ -85,7 +85,12 @@ def count_reopened_historical_stages(
     register: tuple[FormalReopenRecord, ...] | None = None,
     roadmap_text: str | None = None,
 ) -> int:
-    violations = formal_reopen_register_violations(register, roadmap_text)
+    from tests.qualification.roadmap_replay_x._replay_bidirectional_reconciliation import (
+        formal_reopen_bidirectional_violations,
+    )
+
+    violations = list(formal_reopen_register_violations(register, roadmap_text))
+    violations.extend(formal_reopen_bidirectional_violations(register, roadmap_text=roadmap_text))
     rows = FORMAL_REOPEN_REGISTER if register is None else register
     open_rows = sum(1 for row in rows if row.status == "OPEN")
     return open_rows + len(violations)

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **AUDITED_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
+| **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
 | **Prod baseline** | DUP-X acceptance `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 
 ## Production delta (`intergrax/` · `agents/` · `applications/`)

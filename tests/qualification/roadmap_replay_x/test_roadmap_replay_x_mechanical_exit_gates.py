@@ -142,6 +142,14 @@ def test_replay_x_closure_counters_computed() -> None:
     assert by_name["vendor_neutrality_replay_failures"].value == 0
 
 
+def test_replay_x_b6_r2_reconciliation_zero() -> None:
+    from tests.qualification.roadmap_replay_x._replay_bidirectional_reconciliation import (
+        replay_r2_reconciliation_violations,
+    )
+
+    assert replay_r2_reconciliation_violations() == ()
+
+
 def test_replay_x_vbn_seven_artifacts_present() -> None:
     from tests.qualification.roadmap_replay_x._vbn_replay_counter import REPLAY_VBN_ARTIFACT_REL_PATHS
 

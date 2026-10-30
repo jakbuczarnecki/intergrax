@@ -53,7 +53,12 @@ def replay_blocker_register_violations(
 def count_unresolved_replay_blockers(
     register: tuple[ReplayBlockerRecord, ...] | None = None,
 ) -> int:
-    violations = replay_blocker_register_violations(register)
+    from tests.qualification.roadmap_replay_x._replay_bidirectional_reconciliation import (
+        replay_blocker_bidirectional_violations,
+    )
+
+    violations = list(replay_blocker_register_violations(register))
+    violations.extend(replay_blocker_bidirectional_violations(register))
     if violations:
         return len(violations)
     rows = REPLAY_BLOCKER_REGISTER if register is None else register
