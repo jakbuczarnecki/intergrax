@@ -2,59 +2,59 @@
 
 | concern_id | rpl_h @ HEAD | EBH-7 disposition |
 | --- | --- | --- |
-| integration.relational_store | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.document_store | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
+| integration.relational_store | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.document_store | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
 | integration.key_value_cache | REPLACEABLE — QUALIFIED | QUALIFIED |
-| integration.message_bus | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.object_storage | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.vector_store | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.search_provider | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.notification_channel | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.conversation_channel | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.collaboration_suite | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.issue_tracker | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.wiki_knowledge | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.observability_backend | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.browser_automation | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.cloud_platform | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.secrets_store | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.graph_store | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.document_parser | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.rerank_provider | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.feature_flag | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.ci_cd | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.security_scanner | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.sandbox_host | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.identity_provider | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.speech_provider | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.workflow_orchestrator | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.vision_serving | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.ml_inference_host | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.model_serving_runtime | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.billing_meter | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.crm | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.llm_guardrail | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.managed_retrieval | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.embedding_provider | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| integration.external_work | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| llm.chat_completion | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| llm.embedding | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| llm.rerank | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| llm.fallback_policy | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| llm.model_routing_qualifier | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
+| integration.message_bus | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.object_storage | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.vector_store | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.search_provider | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.notification_channel | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.conversation_channel | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.collaboration_suite | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.issue_tracker | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.wiki_knowledge | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.observability_backend | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.browser_automation | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.cloud_platform | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.secrets_store | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.graph_store | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.document_parser | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.rerank_provider | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.feature_flag | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.ci_cd | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.security_scanner | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.sandbox_host | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.identity_provider | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.speech_provider | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.workflow_orchestrator | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.vision_serving | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.ml_inference_host | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.model_serving_runtime | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.billing_meter | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.crm | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.llm_guardrail | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.managed_retrieval | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.embedding_provider | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| integration.external_work | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| llm.chat_completion | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| llm.embedding | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| llm.rerank | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| llm.fallback_policy | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| llm.model_routing_qualifier | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
 | persistence.relational_sqlite_lab | REPLACEABLE — QUALIFIED | QUALIFIED |
 | int_config.configure_existing | REPLACEABLE — QUALIFIED | QUALIFIED |
-| execution.integration_bound_resolution | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
+| execution.integration_bound_resolution | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
 | observability.otlp_transport | REPLACEABLE — QUALIFIED | QUALIFIED |
-| plugin.integration_catalog | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| plugin.llm_adapter_registry | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| tool.marketplace_activation | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| agent.effective_profile | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| speech.provider | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| env.integration_slug | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| application.composition_root | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
+| plugin.integration_catalog | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| plugin.llm_adapter_registry | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| tool.marketplace_activation | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| agent.effective_profile | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| speech.provider | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| env.integration_slug | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| application.composition_root | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
 | tokenizer.selection | REPLACEABLE — QUALIFIED | QUALIFIED |
-| tool.observability_backend | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| distributed.sqlite_kv | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| memory.sqlite.conversational | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
-| prodq.colocated_runtime_adapter_isinstance | REPLACEABLE — NOT YET QUALIFIED | NOT_YET_RECORDED |
+| tool.observability_backend | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| distributed.sqlite_kv | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| memory.sqlite.conversational | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |
+| prodq.colocated_runtime_adapter_isinstance | REPLACEABLE — QUALIFIED | QUALIFIED @ `f913944ff` Package C |

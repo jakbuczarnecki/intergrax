@@ -13,3 +13,5 @@
 **RPL-H:** 56/56 REPLACEABLE QUALIFIED @ matrix (Package C + legacy five).
 
 **Planning baseline SHA:** `5df7018aa71f8107b07531c50507eada2cc76f86`
+
+**TEST_EXECUTION_SHA:** `f913944ff608c97a4a4145aae6c2bbd610004f64`

@@ -9,3 +9,5 @@
 | SHA ladder | `EBH_7_SHA_LADDER.md` |
 
 **PLANNING_SHA:** `5df7018aa71f8107b07531c50507eada2cc76f86`
+
+**TEST_EXECUTION_SHA:** `f913944ff608c97a4a4145aae6c2bbd610004f64` — dossier reconciliation @ behavioral closure wave (B6 / OD-EBH7-08 still OPEN).
