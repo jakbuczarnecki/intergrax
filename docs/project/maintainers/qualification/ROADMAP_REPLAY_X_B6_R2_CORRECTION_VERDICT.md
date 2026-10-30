@@ -4,8 +4,12 @@
 | --- | --- |
 | **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
 | **B6 IMPLEMENTATION_SHA** | `b7bf014ee03e32cd3510aa3a509eed6a25e750e2` |
-| **B6 R2 L1 execution** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` @ `.tmp/proof/roadmap-replay-x-b6-r2-exec-5f54ba76/` |
-| **Verdict** | **READY FOR RE-AUDIT** (mechanical R2 complete; **B6 / OD / parent CLOSED remain OPEN**) |
+| **B6_R2_CORRECTION_SHA** | `6abe074eacc4be957b90a57bece0e4d6d4d102f1` |
+| **B6_R2_TEST_EXECUTION_SHA** | `6abe074eacc4be957b90a57bece0e4d6d4d102f1` |
+| **B6 R2 L1 (preliminary @ AUDITED_HEAD)** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` — 31 passed @ `.tmp/proof/roadmap-replay-x-b6-r2-exec-5f54ba76/` |
+| **B6 R2 L1 (immutable @ correction SHA)** | **32 passed**, exit **0** — log SHA256 `3b3a7706f9d5d542315ffd4dbdafaa275c79de3201f6a7395b30eaf98315218c` @ `.tmp/proof/roadmap-replay-x-b6-r2-immutable-6abe074/` |
+| **Publication range** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` → `6abe074eacc4be957b90a57bece0e4d6d4d102f1` on `development` |
+| **Verdict** | **PUBLISHED — READY FOR INDEPENDENT RE-AUDIT** (**B6 / OD / parent CLOSED remain OPEN**) |
 
 ## R2 scope closure
 
@@ -14,7 +18,7 @@
 | R2-01 | Bidirectional blocker/reopen/ECAP-counter reconciliation in `_replay_bidirectional_reconciliation.py` + negative fixtures |
 | R2-02 | Independent discovery in `_replay_source_adapters.py`; ledger inventories reconciled both directions |
 | R2-03 | Scoped regression chain in `_scoped_regression_evidence.py` (named test, batch, SHA, log digest / approved ref) |
-| R2-04 | SHA ladder documents `b7bf014` vs `5f54ba76`; L1 batch **31 passed**, exit **0** |
+| R2-04 | SHA ladder documents `b7bf014` vs `5f54ba76`; immutable L1 **32 passed**, exit **0** @ `B6_R2_TEST_EXECUTION_SHA` |
 | R2-05 | ECAP / Protocol 03 / closure matrix / drift log AUDITED_HEAD aligned; gates stay OPEN |
 | R2-06 | This verdict — **not** operator B6 PASS |
 
@@ -35,19 +39,25 @@
 | unclassified_replay_findings | 0 |
 | vendor_neutrality_replay_failures | 0 |
 
-## SHA ladder proposal (PENDING commit)
+## Independent auditor brief
 
-| Field | Proposed value |
+| Check | Evidence |
 | --- | --- |
-| **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
-| **B6_R2_CORRECTION_SHA** | **PENDING** (uncommitted R2 delta on `development`) |
-| **B6_R2_L1_EXECUTION_SHA** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
-| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | **OPEN** |
+| Correction landed | `git log -1 6abe074eacc4be957b90a57bece0e4d6d4d102f1` — `fix(qual): ROADMAP-REPLAY-X B6 R2 evidence-grounded closure (R2-01..R2-06)` |
+| Diff scope | `git diff 5f54ba76d68e9065256ac4597bc8e8d9e012b6d2..6abe074eacc4be957b90a57bece0e4d6d4d102f1` — 19 paths (R2 modules, fixtures, mechanical tests, ECAP/Protocol03/closure/drift/ladder/verdict) |
+| L1 replay batch | `uv run pytest tests/qualification/roadmap_replay_x/ -q` @ **`B6_R2_TEST_EXECUTION_SHA`** → **32 passed**, exit **0** |
+| Log integrity | `.tmp/proof/roadmap-replay-x-b6-r2-immutable-6abe074/pytest.log` SHA256 `3b3a7706f9d5d542315ffd4dbdafaa275c79de3201f6a7395b30eaf98315218c` |
+| Historical SHAs | `22fbc0e`, `8515728649a280d435b04c23c8700fbd169495f5`, `b7bf014ee03e32cd3510aa3a509eed6a25e750e2` unchanged except new ladder fields |
+| Not claimed | Operator **B6 PASS**, **OD**, parent **CLOSED** |
 
-## Blockers
+## Remaining gates (OPEN)
+
+| Field | Status |
+| --- | --- |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | **OPEN** (B6) |
+| **OPERATOR_DECISION_SHA** | **OPEN** |
+| **FINAL_PUBLICATION_SHA** | **OPEN** (W10) |
 
 - External **B6 Protocol 03** auditor verdict not issued.
 - **Operator OD** not signed.
 - Parent **ROADMAP-REPLAY-X** must not self-close.
-
-**STOP:** no commit / push / B6 PASS / OD / CLOSED without explicit operator authorization.
