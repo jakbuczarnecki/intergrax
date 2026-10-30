@@ -4,9 +4,9 @@
 | --- | --- |
 | **START_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
 | **AUDITED_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
-| **IMPLEMENTATION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
+| **IMPLEMENTATION_SHA** | `b7bf014ee03e32cd3510aa3a509eed6a25e750e2` |
 | **W1 lineage** | `6fbc4a827c72e75f2c7a3374581a309a7b6beee8` (replay HEAD SSOT @ 91649e5 + STATE/TRACE remediations) |
-| **TEST_EXECUTION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
+| **TEST_EXECUTION_SHA** | `b7bf014ee03e32cd3510aa3a509eed6a25e750e2` |
 | **EVIDENCE_PUBLICATION_SHA (W4 bundle)** | `8515728649a280d435b04c23c8700fbd169495f5` — committed W4 qualification narrative + dossier @ `git rev-parse HEAD` when pinned |
 | **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | `31c462dc7c4c4ac03a10ed69254c8822b2322910` — doc-only PRE-B6 dossier reconciliation @ W4 base `8515728649a280d435b04c23c8700fbd169495f5` |
 | **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | **OPEN** (B6) |
