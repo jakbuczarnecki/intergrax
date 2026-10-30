@@ -25,9 +25,7 @@ _RETIRED_TOKENS = (
 )
 
 _TIER3_HOST_ROOTS = tuple(
-    path
-    for path in _APPLICATIONS_ROOT.glob("*/host")
-    if path.is_dir() and "docker" not in path.parts
+    path for path in _APPLICATIONS_ROOT.glob("*/host") if path.is_dir() and "docker" not in path.parts
 )
 
 _ALLOWED_RAW_NEXUS_IMPORTERS = frozenset(
@@ -66,9 +64,7 @@ def _python_files(root: Path) -> list[Path]:
     return [
         path
         for path in root.rglob("*.py")
-        if "__pycache__" not in path.parts
-        and "docker" not in path.parts
-        and "runtime-context" not in path.parts
+        if "__pycache__" not in path.parts and "docker" not in path.parts and "runtime-context" not in path.parts
     ]
 
 
@@ -129,9 +125,7 @@ def _tier3_factory_bootstrap_violations(path: Path) -> list[str]:
         if isinstance(func, ast.Attribute) and func.attr == "bootstrap_application_plugins":
             for keyword in node.keywords:
                 if keyword.arg == "nexus_loop":
-                    violations.append(
-                        f"{rel}: bootstrap_application_plugins(..., nexus_loop=...) forbidden"
-                    )
+                    violations.append(f"{rel}: bootstrap_application_plugins(..., nexus_loop=...) forbidden")
 
     if "from intergrax.runtime.nexus.nexus_loop import NexusLoop" in source:
         violations.append(f"{rel}: raw NexusLoop import forbidden")
@@ -208,9 +202,7 @@ def test_npsc42_ebh2f_r1_tier3_host_modules_forbid_raw_nexus_loop_import() -> No
                 encoding="utf-8-sig",
             ):
                 violations.append(_relative(path))
-    assert violations == [], (
-        "Tier-3 host modules must not import NexusLoop:\n" + "\n".join(violations)
-    )
+    assert violations == [], "Tier-3 host modules must not import NexusLoop:\n" + "\n".join(violations)
 
 
 @pytest.mark.gate
@@ -250,9 +242,7 @@ def test_npsc42_ebh2f_r1_r1_harness_wiring_has_no_weak_revision_admission_object
             continue
         for arg in node.args.args:
             if arg.arg == "revision_admission":
-                assert not _param_uses_object_annotation(arg), (
-                    f"{node.name} must not use object for revision_admission"
-                )
+                assert not _param_uses_object_annotation(arg), f"{node.name} must not use object for revision_admission"
     assert "EffectiveProfileRevisionAdmissionPort" in source
 
 
@@ -265,10 +255,10 @@ def test_npsc42_raw_nexus_imports_remain_composition_owner_allowlist() -> None:
             continue
         if "from intergrax.runtime.nexus.nexus_loop import NexusLoop" in path.read_text(encoding="utf-8-sig"):
             violations.append(rel)
-    assert violations == [], (
-        "unexpected NexusLoop imports in shared application wiring:\n" + "\n".join(violations)
-    )
+    assert violations == [], "unexpected NexusLoop imports in shared application wiring:\n" + "\n".join(violations)
 
+
+_EXECUTION_OWNER_PREFIX = "intergrax/runtime/execution/"
 
 _ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS = frozenset(
     {
@@ -279,13 +269,19 @@ _ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS = frozenset(
     }
 )
 
-
-def _source_references_orchestration_backend(path: Path) -> bool:
-    return "_orchestration_backend" in path.read_text(encoding="utf-8-sig")
+_ALLOWED_MATERIALIZE_HOST_ORCHESTRATION_BACKEND_CALLERS = frozenset(
+    {
+        "intergrax/runtime/execution/environment_orchestration_materialization.py",
+        "intergrax/runtime/execution/application_host_orchestration_composition.py",
+        "intergrax/runtime/execution/worker_host_task_execution_composition.py",
+        "intergrax/applications/_shared/harness_host_runtime.py",
+    }
+)
 
 
 @pytest.mark.gate
 def test_npsc42_orchestration_backend_access_confined_to_allowlist() -> None:
+    """Align with DUP-X B4: execution owner zone + sanctioned materialize callers only."""
     violations: list[str] = []
     scan_roots = (
         _REPO_ROOT / "intergrax",
@@ -297,14 +293,21 @@ def test_npsc42_orchestration_backend_access_confined_to_allowlist() -> None:
         for path in _python_files(root):
             if path.name.startswith("test_") or "/tests/" in _relative(path):
                 continue
-            if not _source_references_orchestration_backend(path):
-                continue
             rel = _relative(path)
-            if rel not in _ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS:
+            if rel.startswith(_EXECUTION_OWNER_PREFIX):
+                continue
+            text = path.read_text(encoding="utf-8-sig")
+            if "_orchestration_backend_access" in text or "orchestration_backend_for_execution_engine" in text:
+                if rel not in _ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS:
+                    violations.append(rel)
+                continue
+            if "materialize_host_orchestration_backend(" in text:
+                if rel not in _ALLOWED_MATERIALIZE_HOST_ORCHESTRATION_BACKEND_CALLERS:
+                    violations.append(rel)
+                continue
+            if "._orchestration_backend" in text and rel not in _ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS:
                 violations.append(rel)
-    assert violations == [], (
-        "unexpected production _orchestration_backend access:\n" + "\n".join(violations)
-    )
+    assert violations == [], "unexpected production _orchestration_backend access:\n" + "\n".join(violations)
 
 
 @pytest.mark.gate
