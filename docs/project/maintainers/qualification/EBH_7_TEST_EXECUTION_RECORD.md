@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Baseline audited SHA | `59d0fe5d7faf271926f8477de102e7f26b3e1caf` |
-| Corrective execution SHA | *recorded at commit* |
+| Corrective execution SHA | `cf788aec2` (development) |
 | Command | `uv run pytest tests/qualification/ebh_7/ -q` |
 | Result | **61 passed, 3 failed, 1 skipped** (expected OPEN behavioral gates) |
 | Log | `.tmp/session/ebh-7-corrective-wave/pytest.log` |
