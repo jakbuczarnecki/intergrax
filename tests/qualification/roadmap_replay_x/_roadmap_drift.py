@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Semantic roadmap consistency for ROADMAP-REPLAY-X C0."""
+"""Semantic roadmap consistency for ROADMAP-REPLAY-X C0 / W10 closure."""
 
 from __future__ import annotations
 
@@ -17,6 +17,8 @@ _FORBIDDEN_DRIFT_SUBSTRINGS: tuple[str, ...] = (
     "Parent NOT CLOSED until **OD-DUPX-08**",
     "ROADMAP-REPLAY-X has not started",
     "ROADMAP-REPLAY-X **not** started",
+    "READY FOR INDEPENDENT AUDIT** (implementation wave)",
+    "B6 **OPEN** — external Protocol 03",
 )
 
 
@@ -27,32 +29,33 @@ def roadmap_drift_violations() -> list[str]:
         if needle in text:
             hits.append(f"forbidden:{needle}")
 
-    # §3 stage table vs narrative: REPLAY-X must not claim CLOSED without independent B6.
-    table_match = re.search(
-        r"\| \*\*ROADMAP-REPLAY-X\*\* \|[^\n]+\| \*\*\[x\] CLOSED",
+    table_closed = re.search(
+        r"\| \*\*ROADMAP-REPLAY-X\*\* \|[^\n]+\| \*\*\[x\] CLOSED — INDEPENDENTLY ACCEPTED \(SCOPED\)\*\*",
         text,
     )
-    if table_match:
-        hits.append("§3_table:ROADMAP-REPLAY-X marked CLOSED in checkbox column")
+    if not table_closed:
+        hits.append("§3_table:ROADMAP-REPLAY-X not marked CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)")
 
-    if "**NOT CLOSED**" not in text and "ROADMAP-REPLAY-X" in text:
-        dossier = (
-            _REPO_ROOT / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PARENT_IMPLEMENTATION_DOSSIER.md"
-        )
-        if dossier.is_file() and "NOT CLOSED" not in dossier.read_text(encoding="utf-8"):
-            hits.append("qual:parent dossier missing NOT CLOSED")
+    dossier = _REPO_ROOT / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PARENT_IMPLEMENTATION_DOSSIER.md"
+    if dossier.is_file():
+        body = dossier.read_text(encoding="utf-8")
+        if "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)" not in body:
+            hits.append("qual:parent dossier missing CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)")
+        if "NOT CLOSED" in body or "B6 OPEN" in body:
+            hits.append("qual:parent dossier still asserts NOT CLOSED or B6 OPEN")
 
-    # §3 table REPLAY-X must indicate audit-ready / in progress, not blank FINAL only.
-    replay_row = re.search(r"\| \*\*ROADMAP-REPLAY-X\*\* \|[^\n]+\| \*\*\[ \]", text)
-    if not replay_row:
-        hits.append("§3_table:ROADMAP-REPLAY-X row missing or malformed")
+    reg = _REPO_ROOT / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_OPERATOR_DECISION_REGISTER.md"
+    if reg.is_file():
+        reg_text = reg.read_text(encoding="utf-8")
+        if "OD-REPLAYX-08" not in reg_text or "APPROVED" not in reg_text:
+            hits.append("qual:OD-REPLAYX-08 not APPROVED in operator register")
 
-    replay_section = re.search(
-        r"\| \*\*ROADMAP-REPLAY-X\*\* \|[^\n]+READY FOR INDEPENDENT AUDIT",
-        text,
+    pass_rec = (
+        _REPO_ROOT
+        / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md"
     )
-    if not replay_section:
-        hits.append("§3_table:ROADMAP-REPLAY-X missing READY FOR INDEPENDENT AUDIT wording")
+    if pass_rec.is_file() and "ISSUED — PASS (SCOPED)" not in pass_rec.read_text(encoding="utf-8"):
+        hits.append("qual:Protocol 03 pass record missing ISSUED — PASS (SCOPED)")
 
     return hits
 

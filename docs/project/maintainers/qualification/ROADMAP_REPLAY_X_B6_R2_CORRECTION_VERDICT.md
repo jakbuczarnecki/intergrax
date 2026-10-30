@@ -9,7 +9,7 @@
 | **B6 R2 L1 (preliminary @ AUDITED_HEAD)** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` — 31 passed @ `.tmp/proof/roadmap-replay-x-b6-r2-exec-5f54ba76/` |
 | **B6 R2 L1 (immutable @ correction SHA)** | **32 passed**, exit **0** — log SHA256 `3b3a7706f9d5d542315ffd4dbdafaa275c79de3201f6a7395b30eaf98315218c` @ `.tmp/proof/roadmap-replay-x-b6-r2-immutable-6abe074/` |
 | **Publication range** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` → `6abe074eacc4be957b90a57bece0e4d6d4d102f1` on `development` |
-| **Verdict** | **PUBLISHED — READY FOR INDEPENDENT RE-AUDIT** (**B6 / OD / parent CLOSED remain OPEN**) |
+| **Verdict** | **ISSUED — PASS (SCOPED)** — **B6 CLOSED**; parent **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** under **OD-REPLAYX-08** |
 
 ## R2 scope closure
 
@@ -20,7 +20,7 @@
 | R2-03 | Scoped regression chain in `_scoped_regression_evidence.py` (named test, batch, SHA, log digest / approved ref) |
 | R2-04 | SHA ladder documents `b7bf014` vs `5f54ba76`; immutable L1 **32 passed**, exit **0** @ `B6_R2_TEST_EXECUTION_SHA` |
 | R2-05 | ECAP / Protocol 03 / closure matrix / drift log AUDITED_HEAD aligned; gates stay OPEN |
-| R2-06 | This verdict — **not** operator B6 PASS |
+| R2-06 | This verdict — superseded by independent **B6 PASS (SCOPED)** + **OD-REPLAYX-08** |
 
 ## Scoped regression proof table
 
@@ -50,14 +50,14 @@
 | Historical SHAs | `22fbc0e`, `8515728649a280d435b04c23c8700fbd169495f5`, `b7bf014ee03e32cd3510aa3a509eed6a25e750e2` unchanged except new ladder fields |
 | Not claimed | Operator **B6 PASS**, **OD**, parent **CLOSED** |
 
-## Remaining gates (OPEN)
+## Remaining gates (closed @ W10)
 
 | Field | Status |
 | --- | --- |
-| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | **OPEN** (B6) |
-| **OPERATOR_DECISION_SHA** | **OPEN** |
-| **FINAL_PUBLICATION_SHA** | **OPEN** (W10) |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92` |
+| **OPERATOR_DECISION_SHA** | Recorded @ W10 publication commit |
+| **FINAL_PUBLICATION_SHA** | Recorded @ W10 publication / pin commit |
 
-- External **B6 Protocol 03** auditor verdict not issued.
-- **Operator OD** not signed.
-- Parent **ROADMAP-REPLAY-X** must not self-close.
+- External **B6 Protocol 03** — **ISSUED — PASS (SCOPED)** ([`ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md)).
+- **Operator OD-REPLAYX-08** — **APPROVED** 2026-10-30.
+- Parent **ROADMAP-REPLAY-X** — **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)**.

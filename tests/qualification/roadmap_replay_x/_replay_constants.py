@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 ROADMAP_REPLAY_X_AUDITED_HEAD = "5f54ba76d68e9065256ac4597bc8e8d9e012b6d2"
+ROADMAP_REPLAY_X_INDEPENDENT_ACCEPTANCE_BASELINE_SHA = "5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92"
 B6_IMPLEMENTATION_SHA = "b7bf014ee03e32cd3510aa3a509eed6a25e750e2"
 B6_LADDER_PUBLICATION_SHA = "5f54ba76d68e9065256ac4597bc8e8d9e012b6d2"
 HISTORICAL_L2_TEST_EXECUTION_SHA = "22fbc0e837e819fe2a068295df5f527612dcf307"
@@ -40,6 +41,9 @@ MANDATORY_QUAL_DOCS: tuple[str, ...] = (
     "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_C0_ROADMAP_DRIFT_AUDIT_RECORD.md",
     "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_CLOSURE_MATRIX.md",
     "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md",
+    "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md",
+    "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_OPERATOR_DECISION_REGISTER.md",
+    "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_OD_REPLAYX_08_CLOSURE_SIGNATURE_RECORD.md",
     "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_ECAP_CURRENT_HEAD_AUDIT_REPORT.md",
     "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_VBN_DELTA_RECONCILIATION.md",
     "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PARENT_IMPLEMENTATION_DOSSIER.md",

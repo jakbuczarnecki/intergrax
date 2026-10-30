@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
-| **Parent status** | **READY FOR INDEPENDENT AUDIT** — **NOT CLOSED** |
+| **Parent status** | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** @ **OD-REPLAYX-08** (2026-10-30) |
 
 ## C1 — Closed-world inventory
 
@@ -38,12 +38,12 @@ Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` + B6 R2 
 | unclassified_replay_findings | 0 | §5 rows + ECAP/VBN/arch/qual inventories (`_replay_finding_ledger.py`) |
 | vendor_neutrality_replay_failures | 0 | 7 VBN artifacts + `ebh_6/_findings_register.py` @ HEAD |
 
-## External gates (OPEN)
+## External gates (closed @ W10)
 
 | Gate | Status |
 | --- | --- |
-| B6 Protocol 03 | **OPEN** |
-| Operator OD | **OPEN** |
+| B6 Protocol 03 | **ISSUED — PASS (SCOPED)** |
+| Operator OD | **APPROVED — OD-REPLAYX-08** |
 | L2 parent replay @ TEST_EXECUTION_SHA | **PASS (SCOPED)** |
 | L3 ECAP bundle @ TEST_EXECUTION_SHA | **PASS** |
-| EBH-7 | **NOT ENTERED** |
+| EBH-7 | **NOT ENTERED** (eligible successor) |

@@ -4,8 +4,9 @@
 | --- | --- |
 | **Protocol** | ROADMAP-REPLAY-X-03 (mirrors DUP-X / EBH-6) |
 | **ECAP** | [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) **B1–B6** |
-| **Execution status** | **ISSUED — READY FOR INDEPENDENT AUDIT** — **B6 OPEN** (auditor only) |
-| **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
+| **Execution status** | **B6 CLOSED — PASS (SCOPED)** — operator **OD-REPLAYX-08** (2026-10-30) |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92` |
+| **B6_R2_CORRECTION_SHA** | `6abe074eacc4be957b90a57bece0e4d6d4d102f1` |
 | **Predecessor** | DUP-X @ `a7d83925b375b5f08eb0f175ced2c17fa026bba9` |
 
 ## Preconditions
@@ -19,7 +20,7 @@
 | 5 | L1 mechanical gates | **PASS** (31) @ B6 R2 exec `5f54ba76` — `.tmp/proof/roadmap-replay-x-b6-r2-exec-5f54ba76/` · historical L2/L3 @ `22fbc0e` immutable |
 | 6 | Parent L2 | **PASS (SCOPED)** @ `TEST_EXECUTION_SHA` — manifest table + NPSC **EXPECTED_FAIL** |
 | 7 | L3 consolidated | **PASS** (480) — `l3-consolidated.log` |
-| 8 | Operator OD | **OPEN** — not agent-forged |
+| 8 | Operator OD | **APPROVED** — **OD-REPLAYX-08** (2026-10-30) |
 
 ## Auditor checklist (B1–B6)
 

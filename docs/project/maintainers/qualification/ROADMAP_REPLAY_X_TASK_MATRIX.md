@@ -13,9 +13,9 @@
 | W6-MAN-01 / W6-QUAL-01 | W6 | **DONE** | manifest + `tests/qualification/roadmap_replay_x/` |
 | W8-L1-01 | W8 | **DONE** | pytest log under `.tmp/proof/roadmap-replay-x-*/` |
 | W9-P03-01 / W9-ECAP-RPT | W9 | **DONE** | Protocol 03 package + ECAP report |
-| W10-B6-01 | W10 | **OPEN** | Independent auditor only |
-| W10-OD-01 | W10 | **OPEN** | Operator decision — provisional token TBD |
-| W10-PUB-01 | W10 | **OPEN** | §3/§5 CLOSED SCOPED after B6+OD |
+| W10-B6-01 | W10 | **DONE** | Independent **PASS (SCOPED)** @ baseline `5a3a05347…` |
+| W10-OD-01 | W10 | **DONE** | **OD-REPLAYX-08** APPROVED 2026-10-30 |
+| W10-PUB-01 | W10 | **DONE** | §3/§5 **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
 
 ## FRZ PASS L2 subtasks
 

@@ -41,10 +41,11 @@ Remaining §5 category **A** parents: reuse prod-Δ-none + targeted qual per [`R
 
 (Full platform PROD-Q **438** — **OUT OF SCOPE** unless `prod_q` in diff.)
 
-## External (unchanged)
+## External (@ W10 closure)
 
 | Gate | Status |
 | --- | --- |
-| B6 Protocol 03 | **OPEN** (auditor) |
-| Operator OD | **OPEN** |
-| EBH-7 | **NOT ENTERED** |
+| B6 Protocol 03 | **ISSUED — PASS (SCOPED)** |
+| Operator OD | **APPROVED — OD-REPLAYX-08** |
+| Parent | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
+| EBH-7 | **NOT ENTERED** (eligible) |

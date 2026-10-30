@@ -12,9 +12,9 @@
 | **B6_R2_TEST_EXECUTION_SHA** | `6abe074eacc4be957b90a57bece0e4d6d4d102f1` — L1 **32 passed**, exit **0**; log SHA256 `3b3a7706f9d5d542315ffd4dbdafaa275c79de3201f6a7395b30eaf98315218c` @ `.tmp/proof/roadmap-replay-x-b6-r2-immutable-6abe074/` |
 | **EVIDENCE_PUBLICATION_SHA (W4 bundle)** | `8515728649a280d435b04c23c8700fbd169495f5` — committed W4 qualification narrative + dossier @ `git rev-parse HEAD` when pinned |
 | **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | `31c462dc7c4c4ac03a10ed69254c8822b2322910` — doc-only PRE-B6 dossier reconciliation @ W4 base `8515728649a280d435b04c23c8700fbd169495f5` |
-| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | **OPEN** (B6) |
-| **OPERATOR_DECISION_SHA** | **OPEN** |
-| **FINAL_PUBLICATION_SHA** | **OPEN** (W10) |
+| **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92` |
+| **OPERATOR_DECISION_SHA** | **PENDING_W10_PUBLICATION** |
+| **FINAL_PUBLICATION_SHA** | **PENDING_W10_PUBLICATION** |
 
 **Preflight @ PRE-B6 session:** W4 **`EVIDENCE_PUBLICATION_SHA`** `8515728649a280d435b04c23c8700fbd169495f5`; reconciliation published @ **`PRE_B6_RECONCILIATION_PUBLICATION_SHA`** `31c462dc7c4c4ac03a10ed69254c8822b2322910`; `851572864…` is ancestor of PRE-B6 commit.
 

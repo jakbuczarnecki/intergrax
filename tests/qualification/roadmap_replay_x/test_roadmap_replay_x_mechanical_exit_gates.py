@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""ROADMAP-REPLAY-X mechanical exit criteria — roadmap §3 ROADMAP-REPLAY-X (handoff, not CLOSED)."""
+"""ROADMAP-REPLAY-X mechanical exit criteria — roadmap §3 ROADMAP-REPLAY-X @ W10 closure."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from tests.qualification.roadmap_replay_x._replay_constants import (
     MANDATORY_QUAL_DOCS,
     NPSC_42_MODULE_PATHS,
     ROADMAP_REPLAY_X_AUDITED_HEAD,
+    ROADMAP_REPLAY_X_INDEPENDENT_ACCEPTANCE_BASELINE_SHA,
 )
 from tests.qualification.roadmap_replay_x._roadmap_drift import assert_roadmap_drift_zero
 
@@ -67,12 +68,13 @@ def test_replay_x_audited_head_in_sha_ladder() -> None:
     assert ROADMAP_REPLAY_X_AUDITED_HEAD in ladder
 
 
-def test_replay_x_dup_x_closed_in_roadmap() -> None:
+def test_replay_x_closed_in_roadmap() -> None:
     roadmap = (_REPO_ROOT / "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md").read_text(
         encoding="utf-8"
     )
-    assert DUP_X_ACCEPTANCE_SHA in roadmap
-    assert "ROADMAP-REPLAY-X" in roadmap and "READY FOR INDEPENDENT AUDIT" in roadmap
+    assert ROADMAP_REPLAY_X_INDEPENDENT_ACCEPTANCE_BASELINE_SHA in roadmap
+    assert "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)" in roadmap
+    assert "OD-REPLAYX-08" in roadmap
 
 
 def test_replay_x_npsc_module_paths_exist() -> None:
@@ -108,20 +110,28 @@ def test_replay_x_prod_delta_empty_since_dup_x() -> None:
         assert unscoped == [], f"{path}: {unscoped}"
 
 
-def test_replay_x_not_self_closed() -> None:
+def test_replay_x_operator_closure_recorded() -> None:
+    reg = (
+        _REPO_ROOT / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_OPERATOR_DECISION_REGISTER.md"
+    ).read_text(encoding="utf-8")
+    assert "OD-REPLAYX-08" in reg and "APPROVED" in reg
     dossier = (
         _REPO_ROOT / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PARENT_IMPLEMENTATION_DOSSIER.md"
     ).read_text(encoding="utf-8")
-    assert "READY FOR INDEPENDENT AUDIT" in dossier
-    assert "NOT CLOSED" in dossier or "B6 OPEN" in dossier
+    assert "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)" in dossier
+    pass_rec = (
+        _REPO_ROOT
+        / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md"
+    ).read_text(encoding="utf-8")
+    assert "ISSUED — PASS (SCOPED)" in pass_rec
 
 
-def test_replay_x_protocol_03_b6_open() -> None:
+def test_replay_x_protocol_03_b6_closed_scoped() -> None:
     pkg = (
         _REPO_ROOT / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PACKAGE.md"
     ).read_text(encoding="utf-8")
-    assert "B6" in pkg
-    assert "OPEN" in pkg or "NOT ISSUED" in pkg or "READY" in pkg
+    assert "PASS (SCOPED)" in pkg
+    assert "OD-REPLAYX-08" in pkg
 
 
 def test_replay_x_closure_counters_computed() -> None:

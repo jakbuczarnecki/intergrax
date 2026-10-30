@@ -8,12 +8,12 @@
 
 ## FINAL STATUS
 
-**READY FOR INDEPENDENT AUDIT** — parent **NOT CLOSED**.
+**CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** — operator **OD-REPLAYX-08** (2026-10-30) on independent Protocol 03 **B6 PASS (SCOPED)** @ **`INDEPENDENT_ACCEPTANCE_BASELINE_SHA`** `5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92`.
 
-- **B6 OPEN** — external Protocol 03 verdict required.  
-- **Operator OD OPEN** — provisional closure token TBD; Cursor must not forge operator signature.  
+- **B6** — **ISSUED — PASS (SCOPED)** — [`ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](ROADMAP_REPLAY_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) (auditor **ChatGPT**; **not** Cursor).  
+- **Operator** — **OD-REPLAYX-08 APPROVED** — [`ROADMAP_REPLAY_X_OD_REPLAYX_08_CLOSURE_SIGNATURE_RECORD.md`](ROADMAP_REPLAY_X_OD_REPLAYX_08_CLOSURE_SIGNATURE_RECORD.md).  
 - **Does not** promote global **FRZ-*** rows.  
-- **Does not** close **EBH-7**.
+- **Does not** close **EBH-7** (successor eligible only).
 
 ## Deliverables (this wave)
 

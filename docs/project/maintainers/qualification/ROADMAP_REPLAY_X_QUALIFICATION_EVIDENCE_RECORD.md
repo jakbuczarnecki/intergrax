@@ -74,4 +74,4 @@ Mechanical via `tests/qualification/roadmap_replay_x/_closure_counters.py` — B
 
 ## Status
 
-**ROADMAP-REPLAY-X — QUALIFICATION PASS (mechanical L1+L2+L3 @ `TEST_EXECUTION_SHA`)** @ W4 **`EVIDENCE_PUBLICATION_SHA` `8515728649a280d435b04c23c8700fbd169495f5`**. **PRE-B6 reconciliation** published @ **`PRE_B6_RECONCILIATION_PUBLICATION_SHA` `31c462dc7c4c4ac03a10ed69254c8822b2322910`** — doc + 13/13 log hash verify + archive (`.tmp/` only). **B6 / Operator OD / parent CLOSED — not asserted.**
+**ROADMAP-REPLAY-X — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** @ W10 — B6 **PASS (SCOPED)** + **OD-REPLAYX-08** (2026-10-30). Mechanical L1+L2+L3 @ `22fbc0e` preserved; B6 R2 L1 **32 passed** @ `6abe074e`. **new global FRZ PASS = 0**.
