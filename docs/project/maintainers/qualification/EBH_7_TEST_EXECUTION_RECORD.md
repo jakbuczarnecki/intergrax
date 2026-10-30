@@ -4,7 +4,7 @@
 | --- | --- |
 | Closure wave (superseded for semantic) | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
 | W1/W2 reconciliation | baseline `5df074fcb` → recon `9ecf8666a` |
-| Batch A/B (OD-EBH7-01 full execution) | start `195046d46` — ADR W1-PROD-DELTA + duckdb dep + RPL relational v2 |
+| Batch A/B (OD-EBH7-01 full execution) | start `195046d46` → impl `ab8f958ed` |
 | Command | `uv run pytest tests/qualification/ebh_7/ -q` |
 | Result | **118 passed, 4 skipped, 2 xfailed** (B6 gates; TEN-13 harness blocker) |
 | Log | `.tmp/session/ebh-7-full-behavioral/batch-ab/pytest-ebh7-full.log` |
