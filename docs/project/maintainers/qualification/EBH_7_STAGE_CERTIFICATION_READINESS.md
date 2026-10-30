@@ -2,7 +2,7 @@
 
 | Wave | Materialization | Behavioral qualification | Notes |
 | --- | --- | --- | --- |
-| W0 entry SSOT + docs | MATERIALIZED | INTEGRITY OK | OD-EBH7-01 OPEN |
+| W0 entry SSOT + docs | MATERIALIZED | INTEGRITY OK | OD-EBH7-01 **APPROVED** @ `81679e672` |
 | W1 mechanism registry 685 | MATERIALIZED | INTEGRITY OK | unclassified=0 |
 | W2 planning matrices | MATERIALIZED | INTEGRITY OK | |
 | W3 NPSC allowlist | MATERIALIZED | QUALIFIED | B4-aligned gate executes |
@@ -17,7 +17,7 @@
 
 **Program status:** `EBH-7 — SEMANTIC PROOF INTEGRITY PARTIAL / EXACT BLOCKERS` — **not** READY FOR B6 until 60/60 EXACT + RPL semantic QUALIFIED.
 
-**Not claimed:** EBH-7 CLOSED, B6 PASS, global FRZ PASS, ARCH-FREEZE, OD-EBH7-01/08 APPROVED.
+**Not claimed:** EBH-7 CLOSED, B6 PASS, global FRZ PASS, ARCH-FREEZE, EVOL-X entry, OD-EBH7-08 APPROVED.
 
 ## Full stage closure blockers (register)
 
@@ -26,9 +26,9 @@
 | SEM-AUTO-EXACT | **CLOSED** (fail-closed restored) | Agent |
 | TEN/XDM EXACT 60/60 | **OPEN** (30/60) | Agent + arch |
 | RPL semantic QUALIFIED | **OPEN** (51 PARTIAL) | Vendor program |
-| OD-EBH7-01 | OPEN | Operator |
+| OD-EBH7-01 | **APPROVED** @ `81679e672` | Operator |
+| OD-EBH7-08 | OPEN | Operator + B6 |
 | Protocol 03 B6 | OPEN | External auditor |
-| OD-EBH7-08 | OPEN | Operator |
 | Roadmap EBH-7 CLOSED | OPEN | Operator post-B6 |
 | PROD-Q live slice | OPEN (delegated EVOL) | Program |
 | Global NPSC allowlist FAIL | Retained | Program |
