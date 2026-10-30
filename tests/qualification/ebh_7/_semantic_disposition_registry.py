@@ -13,7 +13,7 @@ from tests.qualification.ebh_7._semantic_proof_types import (
     VerifiedSemanticDisposition,
 )
 
-EBH7_SEMANTIC_DISPOSITION_SHA: Final[str] = "edebda9d5b2fbd99564d8def50f60fd0d6964a9b"
+EBH7_SEMANTIC_DISPOSITION_SHA: Final[str] = "859631cce1ecabb4d02d8e445b967aa7cec4f321"
 
 _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
     VerifiedSemanticDisposition(
@@ -24,7 +24,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q09_adversarial_root_admission_missing_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q09_adversarial_root_admission_missing_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-02",
@@ -34,37 +34,37 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-03",
         required_invariant="DENY",
         production_boundaries="Gov→Exec",
         attack="tenant A auth with tenant B execution context",
-        actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_integrated_tenant_boundary_proofs::test_ebh7_integrated_ten_e2e_03_gov_exec_cross_tenant_denied",
-        assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions::assert_gov_exec_cross_tenant_projection_denied: GovernanceIdentityProjectionMismatchError on tenant-b projection @ active tenant-a identity",
-        semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; gap-closure W1 Gov→Exec projection",
+        actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_w1w2_qualification_reconciliation::test_ebh7_w1w2_ten03_governed_root_launch_admission_denies_before_intake",
+        assertions_inspected="PARTIAL: policy admission DENY via DefaultRootExecutionLauncher — does not prove tenant-A auth with tenant-B execution context on authority admission port",
+        semantic_match=ProofBindingResult.PARTIAL_PROOF,
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; W1/W2 qualification reconciliation",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-04",
         required_invariant="DENY",
         production_boundaries="Exec→Tool",
         attack="cross-tenant tool scope",
-        actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_integrated_tenant_boundary_proofs::test_ebh7_integrated_ten_e2e_04_exec_tool_cross_tenant_denied",
-        assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions::assert_exec_tool_cross_tenant_invocation_denied: ToolScopeViolationError before handler — RuntimeToolInvoker tenant_id mismatch",
-        semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; gap-closure W1 ST-01 invoker guard",
+        actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_w1w2_qualification_reconciliation::test_ebh7_w1w2_ten04_tool_runtime_invoke_reaches_invoker_tenant_guard",
+        assertions_inspected="PARTIAL: ToolRuntime.invoke entry + invoker tenant guard @ W1-PROD-DELTA-PENDING-OPERATOR-REVIEW — incomplete ToolAccessPolicy/admission chain; not annex EXACT",
+        semantic_match=ProofBindingResult.PARTIAL_PROOF,
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; W1/W2 qualification reconciliation",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-05",
         required_invariant="REJECT",
         production_boundaries="Config→Provider",
         attack="tenant A profile on tenant B backend",
-        actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_integrated_tenant_boundary_proofs::test_ebh7_integrated_ten_e2e_05_config_provider_cross_tenant",
-        assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions::assert_config_provider_cross_tenant_rejected: reference scoped integration effect rejects credential evidence tenant mismatch",
-        semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; gap-closure W1 Config→Provider scoped effect",
+        actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_w1w2_qualification_reconciliation::test_ebh7_w1w2_ten05_resolve_from_profile_sqlite_sanctioned",
+        assertions_inspected="PARTIAL: resolve_from_profile(RELATIONAL_STORE) sanctioned path only — missing cross-tenant profile/backend attack",
+        semantic_match=ProofBindingResult.PARTIAL_PROOF,
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; W1/W2 qualification reconciliation",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-06",
@@ -74,7 +74,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-07",
@@ -84,7 +84,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q07_adversarial_durable_load_cross_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q07_adversarial_durable_load_cross_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
         executed_equivalent_node_id="tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_scenario_07_durable_cross_tenant",
     ),
     VerifiedSemanticDisposition(
@@ -95,7 +95,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q07_adversarial_vector_scope_cross_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q07_adversarial_vector_scope_cross_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-09",
@@ -105,7 +105,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q08_adversarial_vendor_async_queue",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q08_adversarial_vendor_async_queue: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-10",
@@ -115,7 +115,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_10_distributed_queue_cross_tenant_fail_closed",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_10_distributed_queue_cross_tenant_fail_closed: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-11",
@@ -125,7 +125,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_11_trace_attribution_cross_tenant_rejected",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_11_trace_attribution_cross_tenant_rejected: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
         executed_equivalent_node_id="tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_11_trace_attribution_cross_tenant_rejected",
     ),
     VerifiedSemanticDisposition(
@@ -136,7 +136,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_12_skill_compose_cross_tenant",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_12_skill_compose_cross_tenant: does not establish invariant — DUP-X import boundary — not Skill→Gov→Exec cross-tenant",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-13",
@@ -144,9 +144,9 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         production_boundaries="Plugin→Host",
         attack="B plugin in A host",
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_13_plugin_compat_cross_tenant_rejected",
-        assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_13_plugin_compat_cross_tenant_rejected: does not establish invariant — COMPAT probe — not plugin host activation",
+        assertions_inspected="PARTIAL: COMPAT external assess cross-tenant — reconciliation test_ebh7_w1w2_ten13_plugin_host_cross_tenant_activation_blocker SKIPPED (host harness OPEN)",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-14",
@@ -156,7 +156,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_14_backend_switch_preserves_tenant",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_14_backend_switch_preserves_tenant: does not establish invariant — SQLite profile proof — not tenant preserve on backend switch",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-15",
@@ -166,7 +166,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q09_retry_resume_preserves_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q09_retry_resume_preserves_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-16",
@@ -176,7 +176,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q06_adversarial_missing_tenant_credential_scope",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q06_adversarial_missing_tenant_credential_scope: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-17",
@@ -186,7 +186,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_17_obs_tenant_isolate",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_17_obs_tenant_isolate: does not establish invariant — OTLP negative config — not Obs→Tenant metrics isolation",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-18",
@@ -196,7 +196,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_18_hitl_resume_tenant",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_18_hitl_resume_tenant: does not establish invariant — STATE retry/resume — not HITL resume boundary",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-19",
@@ -206,7 +206,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_19_child_exec_cross_tenant",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_19_child_exec_cross_tenant: does not establish invariant — Checkpoint recovery — not Parent→Child exec path",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-20",
@@ -216,7 +216,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_20_compat_assess_cross_tenant_rejected",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_20_compat_assess_cross_tenant_rejected: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-21",
@@ -226,7 +226,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_21_control_plane_cross_tenant",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_21_control_plane_cross_tenant: does not establish invariant — Root admission missing tenant — not control-plane cross-tenant",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-22",
@@ -236,7 +236,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_22_scheduler_tenant_drift",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_22_scheduler_tenant_drift: does not establish invariant — Async vendor queue — not scheduler drift",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-23",
@@ -246,7 +246,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_23_trace_replay_cross_tenant",
         assertions_inspected="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_23_trace_replay_cross_tenant: does not establish invariant — Retry/resume — not Trace→Replay cross-tenant",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-24",
@@ -256,7 +256,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q05_adversarial_context_llm_cross_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q05_adversarial_context_llm_cross_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-25",
@@ -266,7 +266,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q10_adversarial_functional_evidence_missing_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q10_adversarial_functional_evidence_missing_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-26",
@@ -276,7 +276,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q10_closure_derived_security_metrics",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q10_closure_derived_security_metrics: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-001",
@@ -286,7 +286,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-002",
@@ -296,7 +296,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-003",
@@ -306,7 +306,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-004",
@@ -316,7 +316,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q06_adversarial_missing_tenant_no_global_recovery",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q06_adversarial_missing_tenant_no_global_recovery: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-005",
@@ -326,7 +326,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q09_adversarial_functional_evidence_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q09_adversarial_functional_evidence_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-006",
@@ -336,7 +336,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q08_adversarial_vendor_async_queue",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r4_fast::test_tx_r4_q08_adversarial_vendor_async_queue: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-007",
@@ -346,7 +346,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_007_tool_skill_plugin_shadow_denied",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_007_tool_skill_plugin_shadow_denied: does not establish invariant — Tool scope + DUP import — not Tool×Skill×Plugin compose shadow",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-008",
@@ -356,7 +356,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_6.test_ebh_6_config_x_head_reconciliation::test_ebh6_config_x_all_concerns_mapped_at_head",
         assertions_inspected="tests.qualification.ebh_6.test_ebh_6_config_x_head_reconciliation::test_ebh6_config_x_all_concerns_mapped_at_head: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-009",
@@ -366,7 +366,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q06_adversarial_missing_tenant_credential_scope",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q06_adversarial_missing_tenant_credential_scope: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-010",
@@ -376,7 +376,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_010_backend_persistence_sqlite_behavioral",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_010_backend_persistence_sqlite_behavioral: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
         executed_equivalent_node_id="tests/qualification/ebh_7/test_ebh_7_w7_cross_domain_behavioral_gates.py::test_ebh7_w7_cross_domain_xdm_010_sqlite_behavioral",
     ),
     VerifiedSemanticDisposition(
@@ -387,7 +387,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q08_adversarial_partial_recovery_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q08_adversarial_partial_recovery_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-012",
@@ -397,7 +397,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_012_trace_replay_tenant_boundary",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_012_trace_replay_tenant_boundary: does not establish invariant — Retry/resume — not Trace×Replay lineage",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-013",
@@ -407,7 +407,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q09_retry_resume_preserves_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r3_fast::test_tx_r3_q09_retry_resume_preserves_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-014",
@@ -417,7 +417,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_014_cancel_external_effect_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_014_cancel_external_effect_tenant: does not establish invariant — Retry/resume — not Cancel×External effect",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-015",
@@ -427,7 +427,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_015_compat_historical_evidence_reject",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_015_compat_historical_evidence_reject: does not establish invariant — COMPAT probe — not historical SHA drift rejection",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-016",
@@ -437,7 +437,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_016_vbn_composition_factory_behavioral",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_016_vbn_composition_factory_behavioral: does not establish invariant — SQLite behavioral reuse — not VBN composition factory runtime",
         semantic_match=ProofBindingResult.STRUCTURAL_ONLY,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-017",
@@ -447,7 +447,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_017_failure_diagnostics_tenant_leak",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_017_failure_diagnostics_tenant_leak: does not establish invariant — Missing credential scope — weak diagnostics tenant-leak model",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-018",
@@ -455,9 +455,9 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         production_boundaries="Plugin x Tenant",
         attack="B in A",
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_018_plugin_tenant_activate_denied",
-        assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_018_plugin_tenant_activate_denied: does not establish invariant — COMPAT probe — not plugin host activation",
+        assertions_inspected="PARTIAL: shared TEN-13 — plugin host activation cross-tenant not demonstrated (COMPAT assess insufficient)",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-019",
@@ -467,7 +467,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_019_recovery_gov_restore_denied",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_019_recovery_gov_restore_denied: does not establish invariant — Checkpoint recovery — not Recovery×Gov restore auth",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-020",
@@ -477,7 +477,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary::test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone",
         assertions_inspected="tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary::test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-021",
@@ -487,7 +487,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q07_adversarial_vector_scope_cross_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r2_fast::test_tx_r2_q07_adversarial_vector_scope_cross_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-022",
@@ -497,7 +497,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_022_llm_tenant_gov_block",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_022_llm_tenant_gov_block: does not establish invariant — Runtime mismatch — not LLM×Tenant×Gov SDK block",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-023",
@@ -507,7 +507,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_023_worker_lease_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_023_worker_lease_tenant: does not establish invariant — Vendor async queue — not worker lease steal",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-024",
@@ -517,7 +517,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_024_retry_side_effect_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_024_retry_side_effect_tenant: does not establish invariant — Retry/resume — not Retry×SideEffect cross-tenant",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-025",
@@ -527,7 +527,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_025_hitl_trace_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_025_hitl_trace_tenant: does not establish invariant — LLM context cross-tenant — not HITL×Trace chain",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-026",
@@ -537,7 +537,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_026_config_compat_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_026_config_compat_tenant: does not establish invariant — COMPAT probe — not Config×Compat profile mismatch",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-027",
@@ -547,7 +547,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_027_agent_distribution_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_027_agent_distribution_tenant: does not establish invariant — DUP replay closed world — not agent distribution rogue register",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-028",
@@ -557,7 +557,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_028_nexus_agent_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_028_nexus_agent_tenant: does not establish invariant — DUP import boundary — not Nexus×Agent private loop",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-029",
@@ -567,7 +567,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_029_integration_external_di_boundary",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_029_integration_external_di_boundary: does not establish invariant — NPSC exclusion record — not INT-EXTCOMP DI bypass runtime",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-030",
@@ -577,7 +577,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_030_obs_evidence_tenant_isolate",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_030_obs_evidence_tenant_isolate: does not establish invariant — OTLP negative — not Obs×Evidence isolation",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-031",
@@ -587,7 +587,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_031_scale_backpressure_tenant",
         assertions_inspected="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs::test_ebh7_xdm_031_scale_backpressure_tenant: does not establish invariant — Queue fail-closed reuse — not scale×backpressure fairness",
         semantic_match=ProofBindingResult.PARTIAL_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-032",
@@ -597,7 +597,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q12_adversarial_tool_scope_same_tenant",
         assertions_inspected="tests.qualification.tenant_x.test_tenant_x_r1_fast::test_tx_r1_q12_adversarial_tool_scope_same_tenant: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-033",
@@ -607,7 +607,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.dup_x.test_dup_x_mechanical_exit_gates::test_dup_x_section_13_measure_open_bypass",
         assertions_inspected="tests.qualification.dup_x.test_dup_x_mechanical_exit_gates::test_dup_x_section_13_measure_open_bypass: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-034",
@@ -617,7 +617,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary::test_b4_materialize_host_orchestration_backend_callers_allowlisted",
         assertions_inspected="tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary::test_b4_materialize_host_orchestration_backend_callers_allowlisted: tenant boundary assertions match invariant (inspected @ HEAD)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=edebda9d5b2fbd99564d8def50f60fd0d6964a9b; semantic correction wave",
+        test_execution_evidence="SHA=859631cce1ecabb4d02d8e445b967aa7cec4f321; semantic correction wave",
     ),
 )
 

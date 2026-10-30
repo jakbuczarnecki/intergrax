@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Closure wave (superseded for semantic) | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
-| Semantic integrity correction | `edebda9d5b2fbd99564d8def50f60fd0d6964a9b` |
+| W1/W2 reconciliation | baseline `5df074fcb` → recon commit (pending pin) |
 | Command | `uv run pytest tests/qualification/ebh_7/ -q` |
-| Result | **109 passed, 3 skipped, 2 xfailed** (B6 readiness gates) |
-| Log | `.tmp/session/ebh-7-semantic-correction/pytest-ebh7-full.log` |
+| Result | **117 passed, 5 skipped, 2 xfailed** (B6 + duckdb optional + TEN-13 blocker skip) |
+| Log | `.tmp/session/ebh-7-gap-closure/w4/pytest-ebh7.log` (prior); recon @ commit |
 
 ## L1 / L2 / L3 (@ semantic correction)
 

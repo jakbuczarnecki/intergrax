@@ -20,11 +20,7 @@ LEGACY_QUALIFIED: Final[frozenset[str]] = frozenset(
     }
 )
 
-PACKAGE_C_V2_QUALIFIED: Final[frozenset[str]] = frozenset(
-    {
-        "integration.relational_store",
-    }
-)
+PACKAGE_C_V2_QUALIFIED: Final[frozenset[str]] = frozenset()
 
 
 class RplSemanticVerdict(StrEnum):

@@ -5,8 +5,8 @@
 - **PROD-Q** live integration slice — OPEN; not EBH-7 closure scope.
 - **Global FRZ PASS** — not claimed @ EBH-7 materialization.
 - **WL-7 4h** DIST-SCALE upgrade — deferred; 1h evidence reused only.
-- **RPL-H semantic @ gap-closure W2** — Package C v2 started (`integration.relational_store` dual-path); 50 concerns remain PARTIAL until lab plugin batches RPL-T2..T5.
-- **TEN semantic @ gap-closure W1** — 17/26 EXACT (ST-01..04 integrated); 9 OPEN pending W3 ST-05..08.
+- **RPL-H semantic:** `integration.relational_store` remains **PARTIAL** (sqlite/duckdb probe; duckdb optional dep skipped @ Windows CI profile).
+- **TEN semantic @ SSOT:** **14/26 EXACT**, **12 OPEN** after W1/W2 reconciliation (false EXACT demoted).
 - **B6 / OD-EBH7-08** — **OPEN** (external auditor + operator); Protocol 03 B3–B5 worksheets prepared, not signed.
 
 **Next mandatory stage after OD-EBH7-08:** EVOL-X (not started).
