@@ -9,7 +9,9 @@
 
 ## W1 production delta (frozen)
 
-**Status:** `W1-PROD-DELTA-PENDING-OPERATOR-REVIEW` @ `5df074fcb` — `RuntimeToolInvoker._require_current_attempt_authorization` rejects `invocation_context.tenant_id` ≠ `state.tenant_id`.
+| **Status:** `W1-PROD-DELTA-PENDING-OPERATOR-REVIEW` @ `5df074fcb` — `RuntimeToolInvoker._require_current_attempt_authorization` rejects `invocation_context.tenant_id` ≠ `state.tenant_id`.
+
+**Operator @ OD-EBH7-01 (2026-10-30):** **RETAIN — pending architectural reconciliation.** Historical introduction while OD-EBH7-01 was OPEN = authorization deviation (acknowledged, not retroactive approval). Targeted arch review + minimal canonical remediation **authorized**; no automatic revert; no duplicate tenant/governance authority.
 
 | Aspect | Assessment |
 | --- | --- |

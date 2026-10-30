@@ -37,7 +37,7 @@
 | Fail-closed semantic audit | PASS |
 | 60/60 EXACT_PROOF | **OPEN** (30/60) |
 | RPL semantic QUALIFIED 56/56 | **OPEN** |
-| OD-EBH7-01 | OPEN — operator |
+| OD-EBH7-01 | **APPROVED** @ `81679e672` — operator | B6 / OD-EBH7-08 remain **OPEN** |
 | Protocol 03 B6 | OPEN — independent auditor |
 | OD-EBH7-08 | OPEN — operator |
 | Roadmap EBH-7 CLOSED | **not claimed** |
