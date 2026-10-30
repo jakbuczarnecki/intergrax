@@ -142,6 +142,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="shadow tool",
         expected="DENY",
         reuse="skill_x",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_007_tool_skill_plugin_shadow_denied",
     ),
     _xdm(
         8,
@@ -196,6 +198,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="break lineage",
         expected="FAIL",
         reuse="trace_x",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_012_trace_replay_tenant_boundary",
     ),
     _xdm(
         13,
@@ -216,6 +220,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="late effect",
         expected="REJECT",
         reuse="tool_life",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_014_cancel_external_effect_tenant",
     ),
     _xdm(
         15,
@@ -225,6 +231,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="wrong evidence",
         expected="REJECT",
         reuse="compat_x",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_015_compat_historical_evidence_reject",
     ),
     _xdm(
         16,
@@ -234,8 +242,9 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="hardcoded slug",
         expected="REJECT",
         reuse="ebh_6 findings",
-        proof_module="tests.qualification.ebh_6.test_ebh_6_mechanical_exit_gates",
-        proof_function="test_ebh6_exit_findings_register_complete",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_016_vbn_composition_factory_behavioral",
+        proof_needs_tmp_path=True,
     ),
     _xdm(
         17,
@@ -245,6 +254,9 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="tenant leak",
         expected="REJECT",
         reuse="ctrl_x",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_017_failure_diagnostics_tenant_leak",
+        proof_needs_tmp_path=True,
     ),
     _xdm(
         18,
@@ -254,8 +266,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="B in A",
         expected="DENY",
         reuse="tenant_x R2",
-        proof_module="tests.qualification.tenant_x.test_tenant_x_r2_fast",
-        proof_function="test_tx_r2_q05_adversarial_cross_tenant_credential_broker",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_018_plugin_tenant_activate_denied",
     ),
     _xdm(
         19,
@@ -265,6 +277,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="restore w/o grant",
         expected="DENY",
         reuse="gov_x2",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_019_recovery_gov_restore_denied",
     ),
     _xdm(
         20,
@@ -296,6 +310,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="direct SDK",
         expected="DENY",
         reuse="sys_inv",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_022_llm_tenant_gov_block",
     ),
     _xdm(
         23,
@@ -305,6 +321,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="lease steal",
         expected="DENY",
         reuse="dist_scale",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_023_worker_lease_tenant",
     ),
     _xdm(
         24,
@@ -314,6 +332,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="cross retry",
         expected="DENY",
         reuse="tool_life",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_024_retry_side_effect_tenant",
     ),
     _xdm(
         25,
@@ -323,6 +343,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="scope break",
         expected="DENY",
         reuse="gov_x2",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_025_hitl_trace_tenant",
     ),
     _xdm(
         26,
@@ -332,6 +354,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="mismatch",
         expected="FAIL-CLOSED",
         reuse="compat_x",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_026_config_compat_tenant",
     ),
     _xdm(
         27,
@@ -341,6 +365,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="rogue register",
         expected="DENY",
         reuse="sys_inv",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_027_agent_distribution_tenant",
     ),
     _xdm(
         28,
@@ -350,6 +376,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="private loop",
         expected="DENY",
         reuse="sys_inv",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_028_nexus_agent_tenant",
     ),
     _xdm(
         29,
@@ -359,6 +387,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="DI bypass",
         expected="DENY",
         reuse="int_extcomp",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_029_integration_external_di_boundary",
     ),
     _xdm(
         30,
@@ -368,6 +398,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="diag authority",
         expected="ISOLATE",
         reuse="trace_x",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_030_obs_evidence_tenant_isolate",
     ),
     _xdm(
         31,
@@ -377,6 +409,8 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         attack="starvation",
         expected="BOUNDED",
         reuse="dist_scale",
+        proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
+        proof_function="test_ebh7_xdm_031_scale_backpressure_tenant",
     ),
     _xdm(
         32,

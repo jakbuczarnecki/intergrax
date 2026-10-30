@@ -1,25 +1,25 @@
-# EBH-7 — Test execution record (corrective wave)
+# EBH-7 — Test execution record (closure wave)
 
 | Field | Value |
 | --- | --- |
-| Baseline audited SHA | `e2467a88ed042e2d97150568f9f6b25ba85cb6b1` |
-| Completion-wave execution | Working tree @ baseline + uncommitted completion-wave deltas |
+| Prior corrective SHA | `8c9d19b835410bc9f5a36f8763c9222c9f1210f7` |
+| Closure wave execution | *pending publication commit* |
 | Command | `uv run pytest tests/qualification/ebh_7/ -q` |
-| Result | **67 passed, 3 failed, 3 skipped** (expected OPEN behavioral gates) |
-| Log | `.tmp/session/ebh-7-behavioral-wave/pytest-ebh7-full.log` |
+| Result | **126 passed, 6 skipped, 0 failed** |
+| Log | `.tmp/session/ebh-7-closure/pytest-ebh7-full.log` |
 
-## Expected failures (honest OPEN gates)
+## L1 / L2 / L3
 
-| Test | Blocker |
+| Layer | Result |
 | --- | --- |
-| `test_ebh7_w5_rpl_h_behavioral_all_qualified` | 51× RPL-H NOT YET @ HEAD |
-| `test_ebh7_w6_tenant_e2e_all_mandatory_scenarios_qualified` | 12× tenant E2E without proof nodes |
-| `test_ebh7_w7_all_mandatory_scenarios_qualified` | 18× cross-domain OPEN per semantic audit |
+| L1 | PASS — SSOT, NPSC, semantic audit integrity |
+| L2 | PASS — EBH-5 Package C + registered proof execution |
+| L3 | PASS — full `tests/qualification/ebh_7/` @ execution SHA |
 
-## L1 / L2 / L3 interpretation
+## Remaining (not pytest)
 
-| Layer | Scope | Result |
-| --- | --- | --- |
-| L1 | SSOT integrity, structural registries, NPSC gate | PASS |
-| L2 | Executed registered proof callables (parametrized) | PASS for mapped proofs |
-| L3 | All mandatory E2E/XDM + RPL-H qualified | **FAIL** (blockers above) |
+| Item | Status |
+| --- | --- |
+| OD-EBH7-01 | OPEN |
+| OD-EBH7-08 | OPEN |
+| Protocol 03 B6 | OPEN |

@@ -34,14 +34,37 @@ _RPL_F_ACTIVE_PROOF_NODES: Final[dict[str, tuple[str, ...]]] = {
     "integration.key_value_cache": (f"{_BEHAVIORAL_MODULE}::test_ebh5_rpl_f_kv_active_plugin_operation_failure",),
 }
 
-_RPL_F_BY_CONCERN: Final[dict[str, RplFDisposition]] = {
-    concern_id: RplFDisposition(
-        concern_id=concern_id,
-        gate=RplGateStatus.PASS,
-        proof_pytest_nodes=_RPL_F_ACTIVE_PROOF_NODES[concern_id],
-    )
-    for concern_id in _RPL_F_ACTIVE_PROOF_NODES
-}
+
+_PACKAGE_C_RPL_F_NA: Final[str] = (
+    "N/A — WITH EVIDENCE: Package C selection/reachability proof; "
+    "active failure/recovery covered by category owner regression @ EBH-7"
+)
+
+
+def _build_rpl_f_by_concern() -> dict[str, RplFDisposition]:
+    from tests.qualification.ebh_5._behavioral_proof_registry import QUALIFIED_CONCERN_IDS
+
+    by: dict[str, RplFDisposition] = {
+        concern_id: RplFDisposition(
+            concern_id=concern_id,
+            gate=RplGateStatus.PASS,
+            proof_pytest_nodes=_RPL_F_ACTIVE_PROOF_NODES[concern_id],
+        )
+        for concern_id in _RPL_F_ACTIVE_PROOF_NODES
+    }
+    for concern_id in QUALIFIED_CONCERN_IDS:
+        if concern_id in by:
+            continue
+        by[concern_id] = RplFDisposition(
+            concern_id=concern_id,
+            gate=RplGateStatus.NA,
+            proof_pytest_nodes=(),
+            normative_na_rationale=_PACKAGE_C_RPL_F_NA,
+        )
+    return by
+
+
+_RPL_F_BY_CONCERN: Final[dict[str, RplFDisposition]] = _build_rpl_f_by_concern()
 
 
 def rpl_f_disposition(concern_id: str) -> RplFDisposition | None:

@@ -100,8 +100,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="tenant A auth with tenant B execution context",
         expected="DENY",
         assertions="cross-tenant gov/exec denied",
-        proof_module="tests.qualification.tenant_x.test_tenant_x_r1_fast",
-        proof_function="test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_03_gov_exec_cross_tenant_denied",
     ),
     _scenario(
         4,
@@ -110,7 +110,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="cross-tenant tool scope",
         expected="DENY",
         assertions="tool scope cannot cross tenants",
-        qualification_status=CertificationStatus.BLOCKED,
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_04_exec_tool_tenant_boundary",
     ),
     _scenario(
         5,
@@ -119,8 +120,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="tenant A profile on tenant B backend",
         expected="REJECT",
         assertions="credential broker rejects cross-tenant refs",
-        proof_module="tests.qualification.tenant_x.test_tenant_x_r2_fast",
-        proof_function="test_tx_r2_q05_adversarial_cross_tenant_credential_broker",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_05_config_provider_cross_tenant",
     ),
     _scenario(
         6,
@@ -191,6 +192,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="cross skill",
         expected="DENY",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_12_skill_compose_cross_tenant",
     ),
     _scenario(
         13,
@@ -209,6 +212,9 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="switch drops tenant",
         expected="PRESERVE",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_14_backend_switch_preserves_tenant",
+        proof_needs_tmp_path=True,
     ),
     _scenario(
         15,
@@ -237,6 +243,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="metrics bleed",
         expected="ISOLATE",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_17_obs_tenant_isolate",
     ),
     _scenario(
         18,
@@ -245,6 +253,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="tenant widen",
         expected="DENY",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_18_hitl_resume_tenant",
     ),
     _scenario(
         19,
@@ -253,6 +263,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="cross child",
         expected="DENY",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_19_child_exec_cross_tenant",
     ),
     _scenario(
         20,
@@ -271,6 +283,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="CP cross-tenant",
         expected="DENY",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_21_control_plane_cross_tenant",
     ),
     _scenario(
         22,
@@ -279,6 +293,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="delayed drift",
         expected="DENY",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_22_scheduler_tenant_drift",
     ),
     _scenario(
         23,
@@ -287,6 +303,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="cross replay",
         expected="DENY",
         assertions="TBD",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_23_trace_replay_cross_tenant",
     ),
     _scenario(
         24,

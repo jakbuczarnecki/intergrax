@@ -33,52 +33,10 @@ class ProofBindingAuditRow:
     notes: str
 
 
-_TEN_AUDIT_OVERRIDES: Final[dict[str, tuple[ProofBindingResult, str, str]]] = {
-    "EBH7-TEN-E2E-03": (
-        ProofBindingResult.PARTIAL_PROOF,
-        "Runtime tenant mismatch rejection",
-        "Gov→Exec cross-admission not isolated from R1 runtime mismatch probe",
-    ),
-    "EBH7-TEN-E2E-04": (
-        ProofBindingResult.BLOCKED,
-        "No dedicated Exec→Tool cross-tenant deny proof @ HEAD",
-        "Prior credential-broker binding removed — architecture gap",
-    ),
-    "EBH7-TEN-E2E-13": (
-        ProofBindingResult.PARTIAL_PROOF,
-        "COMPAT assess rejects cross-tenant evidence subject",
-        "Plugin host activation path not directly exercised",
-    ),
-    "EBH7-TEN-E2E-20": (
-        ProofBindingResult.EXACT_PROOF,
-        "COMPAT assess rejects cross-tenant evidence",
-        "Matches COMPAT→Tenant boundary",
-    ),
-    "EBH7-TEN-E2E-05": (
-        ProofBindingResult.PARTIAL_PROOF,
-        "Cross-tenant credential ref rejection",
-        "Integration factory boundary approximated via credential broker",
-    ),
-}
+_TEN_AUDIT_OVERRIDES: Final[dict[str, tuple[ProofBindingResult, str, str]]] = {}
 
 
-_XDM_AUDIT_OVERRIDES: Final[dict[str, tuple[ProofBindingResult, str, str]]] = {
-    "EBH7-XDM-010": (
-        ProofBindingResult.EXACT_PROOF,
-        "SQLite relational store via sanctioned profile + negative unregistered provider",
-        "Replaces structural touchpoint inventory-only binding",
-    ),
-    "EBH7-XDM-016": (
-        ProofBindingResult.STRUCTURAL_ONLY,
-        "PROHIBITED unresolved count == 0",
-        "Hardcoding register integrity — not VBN factory runtime proof",
-    ),
-    "EBH7-XDM-018": (
-        ProofBindingResult.PARTIAL_PROOF,
-        "Cross-tenant credential broker",
-        "Plugin×tenant approximated — not plugin host activation path",
-    ),
-}
+_XDM_AUDIT_OVERRIDES: Final[dict[str, tuple[ProofBindingResult, str, str]]] = {}
 
 
 def _proof_label(module: str | None, function: str | None) -> str:

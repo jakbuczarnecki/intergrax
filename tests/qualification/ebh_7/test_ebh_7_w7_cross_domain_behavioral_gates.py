@@ -36,4 +36,4 @@ def test_ebh7_w7_cross_domain_xdm_010_sqlite_behavioral(tmp_path) -> None:
 
 def test_ebh7_w7_all_mandatory_scenarios_qualified() -> None:
     pending = cross_domain_pending_scenario_ids()
-    assert pending == [], f"OPEN cross-domain scenarios: {pending}"
+    assert len(pending) == 0, f"OPEN cross-domain scenarios: {pending}"

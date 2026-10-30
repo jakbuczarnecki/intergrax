@@ -186,7 +186,16 @@ def assert_ebh7_traceability_behavioral_integrity() -> None:
     qualified = sum(1 for r in extended if is_behavioral_certification(r.qualification_status))
     pending = sum(1 for r in extended if r.qualification_status == CertificationStatus.QUALIFICATION_PENDING)
     assert qualified + pending <= len(extended)
-    assert pending > 0, "corrective baseline expects OPEN qualifications until proofs complete"
+    from tests.qualification.ebh_7._rpl_h_disposition import rpl_h_disposition_rows
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import (
+        cross_domain_open_ids_from_audit,
+        tenant_e2e_open_ids_from_audit,
+    )
+
+    assert len(tenant_e2e_open_ids_from_audit()) == 0
+    assert len(cross_domain_open_ids_from_audit()) == 0
+    rpl_open = [r for r in rpl_h_disposition_rows() if not is_behavioral_certification(r.qualification_status)]
+    assert rpl_open == [], f"RPL-H OPEN in traceability gate: {len(rpl_open)}"
     for row in extended:
         assert row.evidence_ref.strip() != ""
         assert row.acceptance.strip() != ""

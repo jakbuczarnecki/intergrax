@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from functools import lru_cache
 from typing import Final
 
@@ -49,6 +50,8 @@ def _extensibility_from_config(row: ConfigConcernRecord) -> ExtensibilityPromise
 
 
 def _classification_from_config(row: ConfigConcernRecord) -> ExtensibilityClassification:
+    if row.concern_id in QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE:
+        return ExtensibilityClassification.REPLACEABLE_QUALIFIED
     if row.classification == ConfigClassification.H_REFERENCE_LAB_TEST_ONLY:
         return ExtensibilityClassification.INTERNAL
     if row.classification == ConfigClassification.F_ENVIRONMENT_DEPLOYMENT_CONSTANT:
@@ -95,12 +98,9 @@ def vendor_record_from_config_x(row: ConfigConcernRecord) -> VendorBackendConcer
     rpl_h = _classification_from_config(row)
     core_switch = CoreChangeToSwitch.CONFIG_ONLY if ext != ExtensibilityPromised.NO else CoreChangeToSwitch.ADAPTER_ONLY
     behavioral = (
-        "PENDING — EBH_5 Package C"
-        if rpl_h == ExtensibilityClassification.REPLACEABLE_NOT_YET
-        else QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE.get(
-            row.concern_id,
-            "PENDING — EBH_5 Package C",
-        )
+        QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[row.concern_id]
+        if row.concern_id in QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE
+        else ("PENDING — EBH_5 Package C" if rpl_h == ExtensibilityClassification.REPLACEABLE_NOT_YET else "N/A")
     )
     return VendorBackendConcernRecord(
         concern_id=row.concern_id,
@@ -134,7 +134,21 @@ def vendor_backend_concern_inventory() -> tuple[VendorBackendConcernRecord, ...]
     from_config = tuple(vendor_record_from_config_x(row) for row in CONFIG_X_CONCERN_INVENTORY)
     extra_ids = {r.concern_id for r in from_config}
     extras = tuple(r for r in RUNTIME_PLATFORM_CONCERNS if r.concern_id not in extra_ids)
-    return from_config + extras
+    merged = from_config + extras
+    return tuple(_overlay_qualified_behavioral(row) for row in merged)
+
+
+def _overlay_qualified_behavioral(row: VendorBackendConcernRecord) -> VendorBackendConcernRecord:
+    node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE.get(row.concern_id)
+    if node is None:
+        return row
+    return replace(
+        row,
+        extensibility_classification=ExtensibilityClassification.REPLACEABLE_QUALIFIED,
+        behavioral_qualification_evidence_id=node,
+        outstanding_debt="",
+        conclusion=ConcernConclusion.ACCEPTED,
+    )
 
 
 VENDOR_BACKEND_DEPENDENCY_INVENTORY: Final[tuple[VendorBackendConcernRecord, ...]] = vendor_backend_concern_inventory()

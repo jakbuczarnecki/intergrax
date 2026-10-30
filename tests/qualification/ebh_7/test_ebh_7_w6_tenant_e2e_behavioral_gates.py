@@ -37,4 +37,4 @@ def test_ebh7_w6_tenant_e2e_scenario_07_durable_cross_tenant(tmp_path) -> None:
 
 def test_ebh7_w6_tenant_e2e_all_mandatory_scenarios_qualified() -> None:
     pending = tenant_e2e_pending_scenario_ids()
-    assert pending == [], f"OPEN tenant E2E scenarios: {pending}"
+    assert len(pending) == 0, f"OPEN tenant E2E scenarios: {pending}"
