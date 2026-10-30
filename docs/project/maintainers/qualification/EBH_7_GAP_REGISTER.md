@@ -2,12 +2,12 @@
 
 | GAP_ID | Severity | Owner | Status | Wave |
 | --- | --- | --- | --- | --- |
-| GAP-TEN-UNK-05 | HIGH | Tenant platform | **CLOSED** — N/A with evidence @ W6 | W6 |
+| GAP-TEN-UNK-05 | HIGH | Tenant platform | **STRUCTURAL** — N/A with evidence (not E2E) | W6 |
 | GAP-TEN-SEM-854 | MEDIUM | Tenant platform | OWNED — non-critical heuristic | W1/W6 |
-| GAP-RPL-51 | HIGH | VBN | OWNED — 51 NOT YET recorded @ W5 | W5 |
+| GAP-RPL-51 | HIGH | VBN | **OPEN** — 51 NOT YET @ HEAD | W5 |
 | GAP-NPSC-10 | HIGH | Execution | **CLOSED** — gate aligned B4 @ W3 | W3 |
-| GAP-EBH7-TEN-E2E | HIGH | Platform | **CLOSED** — registry + reuse gates @ W6 | W6 |
-| GAP-EBH7-XDM | HIGH | Platform | **CLOSED** — registry + reuse gates @ W7 | W7 |
+| GAP-EBH7-TEN-E2E | HIGH | Platform | **OPEN** — 12/26 without proof nodes | W6 |
+| GAP-EBH7-XDM | HIGH | Platform | **OPEN** — 16/34 without proof nodes | W7 |
 | GAP-FRZ-IMPACT | MEDIUM | Program | OWNED — impact records only | W8 |
 | GAP-LOCAL-UNTRACKED | LOW | Operator | OPEN — local untracked dirs | W0 |
 | GAP-PROD-Q-LIVE | MEDIUM | PROD-Q | DELEGATED — out of EBH-7 closure | EVOL |

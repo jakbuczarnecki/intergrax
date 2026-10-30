@@ -9,8 +9,12 @@ from functools import lru_cache
 from pathlib import Path
 
 from tests.qualification.ebh_5._replaceability_matrix import replaceability_matrix_rows
+from tests.qualification.ebh_5._vendor_backend_types import ExtensibilityClassification
+from tests.qualification.ebh_7._certification_status import CertificationStatus, is_behavioral_certification
 from tests.qualification.ebh_7._constants import EBH7_REQUIREMENTS_TOTAL
+from tests.qualification.ebh_7._cross_domain_scenarios import EBH7_CROSS_DOMAIN_SCENARIOS
 from tests.qualification.ebh_7._task_register import EBH7_TASK_REGISTER
+from tests.qualification.ebh_7._tenant_e2e_scenarios import EBH7_TENANT_E2E_SCENARIOS
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -19,6 +23,99 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 class RequirementRow:
     source_id: str
     task_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ExtendedRequirementRow:
+    source_id: str
+    canonical_source_id: str
+    owner: str
+    task_id: str
+    evidence_ref: str
+    acceptance: str
+    materialization_status: CertificationStatus
+    qualification_status: CertificationStatus
+
+
+def _canonical_source_id(source_id: str) -> str:
+    if source_id.startswith("EBH7-FRZ-"):
+        return source_id.removeprefix("EBH7-")
+    if source_id.startswith("EBH7-SYS-"):
+        return f"SYS-INV-{source_id.removeprefix('EBH7-SYS-')}"
+    return source_id
+
+
+def _owner_for(source_id: str, task_id: str) -> str:
+    if source_id.startswith("EBH7-TEN-E2E"):
+        return "Tenant platform"
+    if source_id.startswith("EBH7-XDM"):
+        return "Platform cross-domain"
+    if source_id.startswith("EBH7-RPL"):
+        return "VBN / Integrations"
+    if source_id.startswith("EBH7-NPSC"):
+        return "Execution / NPSC"
+    if source_id.startswith("EBH7-FRZ"):
+        return "Program / FRZ"
+    if source_id.startswith("EBH7-VBN"):
+        return "VBN"
+    if task_id.startswith("TASK-EBH7-0"):
+        return "EBH-7 program"
+    return "Platform"
+
+
+def _status_for_source(source_id: str) -> tuple[CertificationStatus, CertificationStatus, str, str]:
+    materialized = CertificationStatus.MATERIALIZED
+    if source_id.startswith("EBH7-TEN-E2E-"):
+        n = int(source_id.removeprefix("EBH7-TEN-E2E-"))
+        scenario = EBH7_TENANT_E2E_SCENARIOS[n - 1]
+        evidence = scenario.proof_module or "OPEN — no current-HEAD proof node"
+        if scenario.proof_function:
+            evidence = f"{scenario.proof_module}::{scenario.proof_function}"
+        return materialized, scenario.qualification_status, evidence, scenario.expected_behavior
+    if source_id.startswith("EBH7-XDM-"):
+        n = int(source_id.removeprefix("EBH7-XDM-"))
+        scenario = EBH7_CROSS_DOMAIN_SCENARIOS[n - 1]
+        evidence = scenario.proof_module or "OPEN — no current-HEAD proof node"
+        if scenario.proof_function:
+            evidence = f"{scenario.proof_module}::{scenario.proof_function}"
+        return materialized, scenario.qualification_status, evidence, scenario.expected
+    if source_id.startswith("EBH7-RPL-"):
+        concern = source_id.removeprefix("EBH7-RPL-")
+        row = next(r for r in replaceability_matrix_rows() if r.concern_id == concern)
+        q = (
+            CertificationStatus.QUALIFIED
+            if row.rpl_h == ExtensibilityClassification.REPLACEABLE_QUALIFIED
+            else CertificationStatus.QUALIFICATION_PENDING
+        )
+        return materialized, q, "tests/qualification/ebh_5/_replaceability_matrix.py", row.rpl_h.value
+    if source_id.startswith("EBH7-NPSC-"):
+        return (
+            materialized,
+            CertificationStatus.QUALIFIED,
+            "test_npsc42_orchestration_backend_access_confined_to_allowlist",
+            "PASS",
+        )
+    return materialized, CertificationStatus.QUALIFICATION_PENDING, "TBD wave evidence", "OPEN"
+
+
+@lru_cache(maxsize=1)
+def extended_requirement_rows() -> tuple[ExtendedRequirementRow, ...]:
+    out: list[ExtendedRequirementRow] = []
+    for base in requirement_rows():
+        mat, qual, evidence, acceptance = _status_for_source(base.source_id)
+        out.append(
+            ExtendedRequirementRow(
+                source_id=base.source_id,
+                canonical_source_id=_canonical_source_id(base.source_id),
+                owner=_owner_for(base.source_id, base.task_id),
+                task_id=base.task_id,
+                evidence_ref=evidence,
+                acceptance=acceptance,
+                materialization_status=mat,
+                qualification_status=qual,
+            )
+        )
+    return tuple(out)
 
 
 @lru_cache(maxsize=1)
@@ -78,3 +175,23 @@ def assert_ebh7_traceability_integrity() -> None:
     assert len(rows) == EBH7_REQUIREMENTS_TOTAL
     sids = [r.source_id for r in rows]
     assert len(sids) == len(set(sids))
+    extended = extended_requirement_rows()
+    assert len(extended) == EBH7_REQUIREMENTS_TOTAL
+    assert {r.source_id for r in extended} == set(sids)
+
+
+def assert_ebh7_traceability_behavioral_integrity() -> None:
+    """Row count alone must not imply behavioral qualification."""
+    extended = extended_requirement_rows()
+    qualified = sum(1 for r in extended if is_behavioral_certification(r.qualification_status))
+    pending = sum(1 for r in extended if r.qualification_status == CertificationStatus.QUALIFICATION_PENDING)
+    assert qualified + pending <= len(extended)
+    assert pending > 0, "corrective baseline expects OPEN qualifications until proofs complete"
+    for row in extended:
+        assert row.evidence_ref.strip() != ""
+        assert row.acceptance.strip() != ""
+        assert row.owner.strip() != ""
+        if row.source_id.startswith("EBH7-TEN-E2E-") and row.qualification_status == CertificationStatus.QUALIFIED:
+            assert "::" in row.evidence_ref
+        if row.source_id.startswith("EBH7-RPL-") and row.qualification_status == CertificationStatus.QUALIFIED:
+            assert "REPLACEABLE" in row.acceptance.upper()

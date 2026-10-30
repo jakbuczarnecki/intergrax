@@ -1,13 +1,13 @@
 # EBH-7 — ECAP current HEAD audit report (C1–C5)
 
-| Counter | Value @ materialization |
-| --- | ---: |
-| ECAP-C1 unclassified mandatory mechanisms (685 SSOT) | 0 |
-| ECAP-C2 unauthorized bypass (dup_x scoped) | 0 @ replay subset |
-| ECAP-C3 NPSC global allowlist | PASS |
-| ECAP-C4 tenant E2E registry | 26 |
-| ECAP-C5 cross-domain registry | 34 |
+| Counter | Structural @ materialization | Behavioral qualification |
+| --- | --- | ---: |
+| ECAP-C1 unclassified mechanisms (685 SSOT) | 0 | INTEGRITY OK |
+| ECAP-C2 unauthorized bypass (dup_x subset) | replay counters @ prior stages | PARTIAL — not full platform replay |
+| ECAP-C3 NPSC global allowlist | gate executes PASS | QUALIFIED |
+| ECAP-C4 tenant E2E (26) | registry MATERIALIZED | **14 QUALIFIED / 12 OPEN** |
+| ECAP-C5 cross-domain (34) | registry MATERIALIZED | **18 QUALIFIED / 16 OPEN** |
 
-**Residual (not claimed closed):** 51× RPL-H NOT YET @ HEAD; OD-EBH7-08 OPEN; global FRZ PASS not claimed.
+**Explicit non-claims:** 51× RPL-H NOT YET; OD-EBH7-08 OPEN; B6 OPEN; global FRZ PASS not claimed.
 
-**Planning baseline SHA:** `5df7018aa71f8107b07531c50507eada2cc76f86`
+**Planning baseline SHA:** `5df7018aa71f8107b07531c50507eada2cc76f86` (IMPLEMENTATION_SHA updates after operator OD-EBH7-01).

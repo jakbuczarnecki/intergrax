@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""GAP-TEN-UNK-05 — five unknown_role tenant surfaces @ HEAD."""
+"""GAP-TEN-UNK-05 — structural disposition vs behavioral tenant E2E."""
 
 from __future__ import annotations
 
@@ -19,11 +19,12 @@ GAP_TEN_UNK_05_SURFACE_IDS: Final[frozenset[str]] = frozenset(
 )
 
 EBH7_UNKNOWN_ROLE_DISPOSITIONS: Final[dict[str, TenantUnknownRoleDisposition]] = {
-    surface_id: "N/A_WITH_EVIDENCE" for surface_id in sorted(GAP_TEN_UNK_05_SURFACE_IDS)
+    surface_id: "N/A_WITH_EVIDENCE — declarative credential DTO; propagation classified @ TENANT-X inventory"
+    for surface_id in sorted(GAP_TEN_UNK_05_SURFACE_IDS)
 }
 
 
-def assert_ebh7_gap_ten_unk_05_closed() -> None:
+def assert_ebh7_gap_ten_unk_05_structural() -> None:
     from tests.qualification.tenant_x._inventory import get_tenant_x_inventory
     from tests.qualification.tenant_x._types import TenantPropagationRole
 
@@ -32,4 +33,9 @@ def assert_ebh7_gap_ten_unk_05_closed() -> None:
     )
     assert unknown == GAP_TEN_UNK_05_SURFACE_IDS
     assert set(EBH7_UNKNOWN_ROLE_DISPOSITIONS) == GAP_TEN_UNK_05_SURFACE_IDS
-    assert all(v == "N/A_WITH_EVIDENCE" for v in EBH7_UNKNOWN_ROLE_DISPOSITIONS.values())
+
+
+def assert_ebh7_gap_ten_unk_05_not_e2e_substitute() -> None:
+    """N/A with evidence on non-critical DTO fields is not platform tenant E2E qualification."""
+    for surface_id, disposition in EBH7_UNKNOWN_ROLE_DISPOSITIONS.items():
+        assert "N/A_WITH_EVIDENCE" in disposition, surface_id
