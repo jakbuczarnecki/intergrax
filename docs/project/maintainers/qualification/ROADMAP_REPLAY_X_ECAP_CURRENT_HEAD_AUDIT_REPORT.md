@@ -31,12 +31,12 @@ Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` — **B6
 
 | Counter | Value | Denominator / source |
 | --- | ---: | --- |
-| reopened_historical_stages | 0 | §5 category A rows + reopen grep |
-| unresolved_replay_blockers | 0 | ECAP register |
+| reopened_historical_stages | 0 | §5 category A rows + `_formal_reopen_register.py` |
+| unresolved_replay_blockers | 0 | `_replay_blocker_register.py` |
 | roadmap_drift | 0 | `_roadmap_drift.py` |
-| historical_evidence_invalidated_by_later_changes | 0 | unscoped prod git diff since DUP-X (scoped path excluded) |
-| unclassified_replay_findings | 0 | all §5 rows carry rule_id |
-| vendor_neutrality_replay_failures | 0 | EBH-6 register PROHIBITED OPEN rows |
+| historical_evidence_invalidated_by_later_changes | 0 | unscoped prod git diff + scoped disposition validation |
+| unclassified_replay_findings | 0 | §5 rows + ECAP/VBN/arch/qual inventories (`_replay_finding_ledger.py`) |
+| vendor_neutrality_replay_failures | 0 | 7 VBN artifacts + `ebh_6/_findings_register.py` @ HEAD |
 
 ## External gates (OPEN)
 

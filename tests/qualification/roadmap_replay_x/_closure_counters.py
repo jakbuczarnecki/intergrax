@@ -7,12 +7,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from tests.qualification.roadmap_replay_x._formal_reopen_register import count_reopened_historical_stages
 from tests.qualification.roadmap_replay_x._ledger_classification import classify_ledger_row
+from tests.qualification.roadmap_replay_x._prod_delta_disposition import historical_evidence_invalidation_violations
+from tests.qualification.roadmap_replay_x._replay_blocker_register import (
+    REPLAY_BLOCKER_REGISTER,
+    count_unresolved_replay_blockers,
+)
+from tests.qualification.roadmap_replay_x._replay_finding_ledger import count_unclassified_replay_findings
 from tests.qualification.roadmap_replay_x._roadmap_drift import roadmap_drift_violations
+from tests.qualification.roadmap_replay_x._vbn_replay_counter import count_vendor_neutrality_replay_failures
 
 _REPO = Path(__file__).resolve().parents[3]
 _ROADMAP = _REPO / "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md"
-_DUP_X_PIN = "a7d83925b375b5f08eb0f175ced2c17fa026bba9"
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,32 +54,26 @@ def _parse_section5_rows() -> list[tuple[str, str, str]]:
 
 
 def compute_reopened_historical_stages() -> CounterResult:
-    """Denominator: mandatory parent anchors in category A; value = formal reopen records."""
     rows = _parse_section5_rows()
     a_count = sum(1 for s, sh, n in rows if classify_ledger_row(s, sh, n).category == "A")
-    # No signed reopen register exists @ handoff — count explicit REOPEN REQUIRED strings.
-    text = _ROADMAP.read_text(encoding="utf-8")
-    reopen = text.count("REOPEN REQUIRED")
+    reopen = count_reopened_historical_stages()
     return CounterResult(
         "reopened_historical_stages",
         reopen,
         f"mandatory_parent_ledger_rows={a_count}",
-        "roadmap §5 + reopen narrative grep",
-        "non-zero requires signed parent reopen + remediation",
+        "tests/qualification/roadmap_replay_x/_formal_reopen_register.py",
+        "non-zero formal OPEN reopen or §3 contradiction",
     )
 
 
 def compute_unresolved_replay_blockers() -> CounterResult:
-    reg = _REPO / "docs/project/maintainers/qualification/ROADMAP_REPLAY_X_ECAP_CURRENT_HEAD_AUDIT_REPORT.md"
-    blockers = 0
-    if reg.is_file() and "BLOCKER-class" in reg.read_text(encoding="utf-8"):
-        blockers = 0  # report states none; independent B6 must recompute
+    blockers = count_unresolved_replay_blockers()
     return CounterResult(
         "unresolved_replay_blockers",
         blockers,
-        "ECAP findings register",
-        str(reg.relative_to(_REPO)),
-        "increment on BLOCKER without closed TASK",
+        f"register_rows={len(REPLAY_BLOCKER_REGISTER)}",
+        "tests/qualification/roadmap_replay_x/_replay_blocker_register.py",
+        "increment on OPEN BLOCKER or register integrity failure",
     )
 
 
@@ -88,65 +89,36 @@ def compute_roadmap_drift() -> CounterResult:
 
 
 def compute_historical_evidence_invalidated() -> CounterResult:
-    import subprocess
-
-    from tests.qualification.roadmap_replay_x._prod_delta_disposition import (
-        REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS,
-    )
-
-    invalidated = 0
-    for path in ("intergrax", "agents", "applications"):
-        names = subprocess.check_output(
-            ["git", "diff", "--name-only", f"{_DUP_X_PIN}..HEAD", "--", path],
-            cwd=_REPO,
-            text=True,
-        ).splitlines()
-        scoped = [
-            n.strip().replace("\\", "/")
-            for n in names
-            if n.strip() and n.strip().replace("\\", "/") not in REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS
-        ]
-        if scoped:
-            invalidated += 1
+    violations = historical_evidence_invalidation_violations(_REPO)
     return CounterResult(
         "historical_evidence_invalidated_by_later_changes",
-        invalidated,
+        len(violations),
         "prod paths since DUP-X acceptance minus replay L2 scoped dispositions",
-        f"git diff {_DUP_X_PIN[:8]}..HEAD + _prod_delta_disposition.py",
-        "non-zero unscoped prod delta invalidates reuse-without-rerun claims",
+        "tests/qualification/roadmap_replay_x/_prod_delta_disposition.py",
+        "non-zero unscoped prod delta or invalid scoped disposition",
     )
 
 
 def compute_unclassified_replay_findings() -> CounterResult:
     rows = _parse_section5_rows()
-    from tests.qualification.roadmap_replay_x._ledger_classification import classify_ledger_row
-
-    unclassified = 0
-    for s, sh, n in rows:
-        c = classify_ledger_row(s, sh, n)
-        if c.rule_id == "RULE-UNKNOWN" or c.category == "?":
-            unclassified += 1
+    unclassified = count_unclassified_replay_findings()
     return CounterResult(
         "unclassified_replay_findings",
         unclassified,
-        f"§5 ledger rows={len(rows)} (each must have rule_id)",
-        "_ledger_classification",
-        "non-classified ledger row or ECAP finding without taxonomy",
+        f"§5 ledger rows={len(rows)} + ECAP/VBN/arch/qual inventories",
+        "tests/qualification/roadmap_replay_x/_replay_finding_ledger.py",
+        "inventory finding without ledger row or §5 RULE-UNKNOWN",
     )
 
 
 def compute_vendor_neutrality_replay_failures() -> CounterResult:
-    reg = _REPO / "docs/project/maintainers/qualification/EBH_6_CORE_HARDCODING_FINDINGS_REGISTER.md"
-    prohibited_open = 0
-    if reg.is_file():
-        text = reg.read_text(encoding="utf-8")
-        prohibited_open = len([ln for ln in text.splitlines() if "PROHIBITED" in ln and "OPEN" in ln])
+    failures = count_vendor_neutrality_replay_failures(_REPO)
     return CounterResult(
         "vendor_neutrality_replay_failures",
-        prohibited_open,
-        "EBH-6 findings register PROHIBITED OPEN rows",
-        str(reg.relative_to(_REPO)),
-        "non-zero unresolved PROHIBITED in replay scope",
+        failures,
+        "7 VBN artifacts + ebh_6/_findings_register.py @ HEAD",
+        "tests/qualification/roadmap_replay_x/_vbn_replay_counter.py",
+        "non-zero PROHIBITED unresolved or VBN artifact/register mismatch",
     )
 
 

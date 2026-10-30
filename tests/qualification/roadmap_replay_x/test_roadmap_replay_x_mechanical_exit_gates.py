@@ -126,24 +126,24 @@ def test_replay_x_protocol_03_b6_open() -> None:
 
 def test_replay_x_closure_counters_computed() -> None:
     from tests.qualification.roadmap_replay_x._closure_counters import all_counters
+    from tests.qualification.roadmap_replay_x._replay_blocker_register import (
+        replay_blocker_register_violations,
+    )
 
     counters = all_counters()
     assert len(counters) == 6
     by_name = {c.name: c for c in counters}
+    assert replay_blocker_register_violations() == ()
     assert by_name["roadmap_drift"].value == 0
     assert by_name["historical_evidence_invalidated_by_later_changes"].value == 0
     assert by_name["reopened_historical_stages"].value == 0
+    assert by_name["unresolved_replay_blockers"].value == 0
+    assert by_name["unclassified_replay_findings"].value == 0
+    assert by_name["vendor_neutrality_replay_failures"].value == 0
 
 
 def test_replay_x_vbn_seven_artifacts_present() -> None:
-    vbn = (
-        "ROADMAP_REPLAY_X_VENDOR_BACKEND_DEPENDENCY_INVENTORY.md",
-        "ROADMAP_REPLAY_X_CORE_HARDCODING_FINDINGS_REGISTER.md",
-        "ROADMAP_REPLAY_X_CROSS_LAYER_REPLACEABILITY_MATRIX.md",
-        "ROADMAP_REPLAY_X_ALLOWED_FIXED_SUBSTRATE_DECISIONS.md",
-        "ROADMAP_REPLAY_X_VENDOR_SELECTION_REACHABILITY_EVIDENCE.md",
-        "ROADMAP_REPLAY_X_ALTERNATIVE_BACKEND_BEHAVIORAL_PROOF.md",
-        "ROADMAP_REPLAY_X_CURRENT_HEAD_VENDOR_NEUTRALITY_AUDIT.md",
-    )
-    for name in vbn:
-        assert (_REPO_ROOT / "docs/project/maintainers/qualification" / name).is_file(), name
+    from tests.qualification.roadmap_replay_x._vbn_replay_counter import REPLAY_VBN_ARTIFACT_REL_PATHS
+
+    for rel in REPLAY_VBN_ARTIFACT_REL_PATHS:
+        assert (_REPO_ROOT / rel).is_file(), rel

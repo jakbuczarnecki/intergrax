@@ -30,4 +30,4 @@ Mechanical gate: `test_replay_x_prod_delta_empty_since_dup_x` asserts **unscoped
 | --- | --- | --- |
 | reopened_historical_stages | 0 | no **unscoped** prod drift |
 | historical_evidence_invalidated_by_later_changes | 0 | scoped path excluded; accepted §5 SHAs intact elsewhere |
-| unresolved_replay_blockers | 0 | no BLOCKER register rows |
+| unresolved_replay_blockers | 0 | `_replay_blocker_register.py` (empty register @ handoff) |
