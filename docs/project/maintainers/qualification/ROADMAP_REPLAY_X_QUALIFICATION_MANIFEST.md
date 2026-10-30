@@ -3,46 +3,47 @@
 | Field | Value |
 | --- | --- |
 | **AUDITED_HEAD (baseline)** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
-| **TEST_EXECUTION_SHA** | **PENDING** — set @ first pytest on **committed** publication tree |
-| **EVIDENCE_PUBLICATION_SHA** | **PENDING** — commit containing this manifest + SSOT |
+| **IMPLEMENTATION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
+| **TEST_EXECUTION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
+| **EVIDENCE_PUBLICATION_SHA** | **PENDING** — operator commit of W4 bundle |
+| **Proof logs** | `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` (**EVIDENCE_EXPORT_REQUIRED**) |
 
 ## Gate status
 
 | Gate | Status | Command |
 | --- | --- | --- |
-| **L1** integrity | **PRELIMINARY PASS** (dirty tree) | `uv run pytest tests/qualification/roadmap_replay_x/ -q` |
-| **L2** parent replay | **OPEN** | per table below @ `TEST_EXECUTION_SHA` |
-| **L3** ECAP bundle | **OPEN** | EBH-6 export pattern + consolidated qual @ `TEST_EXECUTION_SHA` |
+| **L1** integrity | **PASS** (15) | `uv run pytest tests/qualification/roadmap_replay_x/ -q` |
+| **L2** parent replay | **PASS (SCOPED)** | per table below @ `TEST_EXECUTION_SHA` |
+| **L3** ECAP bundle | **PASS** (480) | consolidated qual @ `TEST_EXECUTION_SHA` |
 
-## L2 — mandatory parents (@ future SHA)
+## L2 — mandatory parents (@ `TEST_EXECUTION_SHA`)
 
-| Parent | Path | Command |
-| --- | --- | --- |
-| DUP-X | `tests/qualification/dup_x/` | `uv run pytest tests/qualification/dup_x/ -q` |
-| CONFIG-X | `tests/qualification/config_x/` | `uv run pytest tests/qualification/config_x/ -q` |
-| COMPAT-X | `tests/qualification/compat_x/` | `uv run pytest tests/qualification/compat_x/ -q` |
-| TENANT-X | `tests/qualification/tenant_x/` | `uv run pytest tests/qualification/tenant_x/ -q` |
-| STATE-X | `tests/qualification/state_x/` | `uv run pytest tests/qualification/state_x/ -q` |
-| TRACE-X | `tests/qualification/trace_x/` | `uv run pytest tests/qualification/trace_x/ -q` |
-| GOV-X2 | `tests/qualification/governance/gov_x2/` | `uv run pytest tests/qualification/governance/gov_x2/ -q` |
-| CTRL-X | `tests/qualification/control_planes/ctrl_x/` | `uv run pytest tests/qualification/control_planes/ctrl_x/ -q` |
-| EBH-5 | `tests/qualification/ebh_5/` | `uv run pytest tests/qualification/ebh_5/ -q` |
-| EBH-6 | `tests/qualification/ebh_6/` | selective + export per dossier |
-| NPSC-4.2 | `tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py` | allowlist test (**expected FAIL**) |
+| Parent | Path | Exit | Result | Log |
+| --- | --- | ---: | --- | --- |
+| DUP-X | `tests/qualification/dup_x/` | 0 | 44 passed | `l2-dup_x.log` |
+| CONFIG-X | `tests/qualification/config_x/` | 0 | 77 passed | `l2-config_x.log` |
+| COMPAT-X | `tests/qualification/compat_x/` | 0 | 321 passed | `l2-compat_x.log` |
+| TENANT-X | `tests/qualification/tenant_x/` | 0 | 194 passed | `l2-tenant_x.log` |
+| STATE-X | `tests/qualification/state_x/` | 0 | 655 passed, 5 skipped | `l2-state_x.log` |
+| TRACE-X | `tests/qualification/trace_x/` | 0 | 723 passed, 2 skipped | `l2-trace_x.log` |
+| GOV-X2 | `tests/qualification/governance/gov_x2/` | 0 | 9 passed | `l2-gov_x2.log` |
+| CTRL-X | `tests/qualification/control_planes/ctrl_x/` | 0 | 76 passed | `l2-ctrl_x.log` |
+| EBH-5 | `tests/qualification/ebh_5/` | 0 | 68 passed | `l2-ebh_5.log` |
+| EBH-6 | `tests/qualification/ebh_6/` | 0 | 276 passed | `l2-ebh_6.log` |
+| NPSC-4.2 | `tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py` | 1 | **EXPECTED_FAIL** (allowlist) | `l2-npsc.log` |
 
 Remaining §5 category **A** parents: reuse prod-Δ-none + targeted qual per [`ROADMAP_REPLAY_X_HISTORICAL_STAGE_MATRIX.md`](ROADMAP_REPLAY_X_HISTORICAL_STAGE_MATRIX.md).
 
-## L3 — consolidated batch (OPEN)
+## L3 — consolidated batch (@ `TEST_EXECUTION_SHA`)
 
-Single invocation after L2 green @ `TEST_EXECUTION_SHA` (operator-approved resource budget):
-
-`uv run pytest tests/qualification/roadmap_replay_x/ tests/qualification/dup_x/ tests/qualification/config_x/ tests/qualification/ebh_5/ -q`
+`uv run pytest tests/qualification/roadmap_replay_x/ tests/qualification/ebh_6/ tests/qualification/dup_x/ tests/qualification/config_x/ tests/qualification/ebh_5/ -q` → **480 passed**, exit **0**, log `l3-consolidated.log`.
 
 (Full platform PROD-Q **438** — **OUT OF SCOPE** unless `prod_q` in diff.)
 
-## Preliminary evidence (dirty @ `a2ed11f`, not publication SHA)
+## External (unchanged)
 
-| Run | Result | Log |
-| --- | --- | --- |
-| L1 replay_x | 13 passed | `.tmp/proof/roadmap-replay-x-w8-l1/l1-roadmap-replay-x.log` |
-| L2 dup_x full | 44 passed | `.tmp/proof/roadmap-replay-x-w8-l1/l2-dup-x.log` |
+| Gate | Status |
+| --- | --- |
+| B6 Protocol 03 | **OPEN** (auditor) |
+| Operator OD | **OPEN** |
+| EBH-7 | **NOT ENTERED** |

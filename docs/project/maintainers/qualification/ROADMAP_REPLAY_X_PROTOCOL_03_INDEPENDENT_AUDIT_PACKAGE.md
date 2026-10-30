@@ -16,9 +16,10 @@
 | 2 | FRZ 225 reconciliation | **RECORDED** |
 | 3 | §5 historical matrix | **RECORDED** — 232 rows @ HEAD |
 | 4 | Prod delta since DUP-X | **empty** |
-| 5 | L1 mechanical gates | **pytest** — `.tmp/proof/roadmap-replay-x-*/l1-roadmap-replay-x.log` |
-| 6 | Parent L2 (DUP-X) | **mandatory** @ TEST_EXECUTION_SHA |
-| 7 | Operator OD | **OPEN** — not agent-forged |
+| 5 | L1 mechanical gates | **PASS** (15) @ `22fbc0e` — `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/l1-roadmap_replay_x.log` |
+| 6 | Parent L2 | **PASS (SCOPED)** @ `TEST_EXECUTION_SHA` — manifest table + NPSC **EXPECTED_FAIL** |
+| 7 | L3 consolidated | **PASS** (480) — `l3-consolidated.log` |
+| 8 | Operator OD | **OPEN** — not agent-forged |
 
 ## Auditor checklist (B1–B6)
 

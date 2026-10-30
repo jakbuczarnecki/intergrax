@@ -23,22 +23,20 @@ Seven replay artifacts @ normative schema (§2.1–2.7) + EBH-5/6 historical SHA
 
 ## C5 — Qualification replay plan
 
-[`ROADMAP_REPLAY_X_QUALIFICATION_MANIFEST.md`](ROADMAP_REPLAY_X_QUALIFICATION_MANIFEST.md) — **L2/L3 OPEN** until `TEST_EXECUTION_SHA` on committed tree.
+[`ROADMAP_REPLAY_X_QUALIFICATION_MANIFEST.md`](ROADMAP_REPLAY_X_QUALIFICATION_MANIFEST.md) — **L1/L2/L3 mechanical PASS** @ `TEST_EXECUTION_SHA` **`22fbc0e837e819fe2a068295df5f527612dcf307`** (logs `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/`, **EVIDENCE_EXPORT_REQUIRED**).
 
-## Six counters (mechanical @ dirty worktree)
+## Six counters (mechanical @ `TEST_EXECUTION_SHA`)
 
 Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` — **B6 must recompute**.
 
 | Counter | Value | Denominator / source |
 | --- | ---: | --- |
 | reopened_historical_stages | 0 | §5 category A rows + reopen grep |
-| unresolved_replay_blockers | 0 | ECAP register (implementer) |
+| unresolved_replay_blockers | 0 | ECAP register |
 | roadmap_drift | 0 | `_roadmap_drift.py` |
 | historical_evidence_invalidated_by_later_changes | 0 | prod git diff since DUP-X |
 | unclassified_replay_findings | 0 | all §5 rows carry rule_id |
-| vendor_neutrality_replay_failures | *PROHIBITED OPEN* | EBH-6 register scan |
-
-**Note:** `unclassified_replay_findings` uses category **I** ledger rows as proxy until ECAP findings register populated @ B6.
+| vendor_neutrality_replay_failures | 0 | EBH-6 register PROHIBITED OPEN rows |
 
 ## External gates (OPEN)
 
@@ -46,6 +44,6 @@ Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` — **B6
 | --- | --- |
 | B6 Protocol 03 | **OPEN** |
 | Operator OD | **OPEN** |
-| L2 parent replay @ TEST_EXECUTION_SHA | **OPEN** |
-| L3 ECAP bundle @ TEST_EXECUTION_SHA | **OPEN** |
+| L2 parent replay @ TEST_EXECUTION_SHA | **PASS (SCOPED)** |
+| L3 ECAP bundle @ TEST_EXECUTION_SHA | **PASS** |
 | EBH-7 | **NOT ENTERED** |

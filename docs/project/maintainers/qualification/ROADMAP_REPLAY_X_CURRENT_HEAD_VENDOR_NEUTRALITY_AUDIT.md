@@ -7,7 +7,7 @@
 | **CONFIG-X baseline** | `fac9a43f3b128fde63541d2b56ebd8f4a751e8fb` |
 | **AUDITED_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
 | **Prod delta** since DUP-X | **empty** |
-
+| **L2 attestation** | ebh_5 + ebh_6 @ `TEST_EXECUTION_SHA` `22fbc0e` — see [`ROADMAP_REPLAY_X_VBN_DELTA_RECONCILIATION.md`](ROADMAP_REPLAY_X_VBN_DELTA_RECONCILIATION.md) |
 ## Delta vs CONFIG-X historical PASS
 
 | Comparison | Result |

@@ -7,7 +7,7 @@
 | **Historical SSOT** | [`EBH_5_VENDOR_BACKEND_DEPENDENCY_INVENTORY.md`](EBH_5_VENDOR_BACKEND_DEPENDENCY_INVENTORY.md) @ **`33ecf19cc020b112d9e586c87b49e819202f5d6d`** |
 | **AUDITED_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
 | **Prod delta** since DUP-X | **empty** |
-
+| **L2 attestation** | `l2-ebh_5.log` @ `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` (**EVIDENCE_EXPORT_REQUIRED**) |
 ## Replay revalidation (@ AUDITED_HEAD)
 
 | Check | Result | Evidence |

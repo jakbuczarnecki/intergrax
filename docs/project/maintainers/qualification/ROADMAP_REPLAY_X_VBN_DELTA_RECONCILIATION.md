@@ -2,7 +2,8 @@
 
 | Field | Value |
 | --- | --- |
-| **AUDITED_HEAD** | `a2ed11f0e811446ae67fdfd57b4c4997c546e10f` |
+| **TEST_EXECUTION_SHA** | `22fbc0e837e819fe2a068295df5f527612dcf307` |
+| **Qual logs** | `.tmp/proof/roadmap-replay-x-immutable-6fbc4a8/` (**EVIDENCE_EXPORT_REQUIRED**) |
 | **Spec** | [`VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md`](VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md) |
 
 ## Seven artifacts @ HEAD (replay mapping)
