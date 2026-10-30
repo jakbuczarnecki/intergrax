@@ -14,7 +14,7 @@
 | **PRE_B6_RECONCILIATION_PUBLICATION_SHA** | `31c462dc7c4c4ac03a10ed69254c8822b2322910` — doc-only PRE-B6 dossier reconciliation @ W4 base `8515728649a280d435b04c23c8700fbd169495f5` |
 | **INDEPENDENT_ACCEPTANCE_BASELINE_SHA** | `5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92` |
 | **OPERATOR_DECISION_SHA** | `18572bee4f09630a43e5a747ed008d37ea951e17` — W10 closure publication |
-| **FINAL_PUBLICATION_SHA** | `a8c6dfe948face56459d19aefe9437405f46d70a` — W10 ladder final pin (GitHub `development` HEAD) |
+| **FINAL_PUBLICATION_SHA** | `1f9f8e57583c9055cdba6fad07e7c51e5d5cb831` — W10 publication chain tip @ `origin/development` |
 
 **Preflight @ PRE-B6 session:** W4 **`EVIDENCE_PUBLICATION_SHA`** `8515728649a280d435b04c23c8700fbd169495f5`; reconciliation published @ **`PRE_B6_RECONCILIATION_PUBLICATION_SHA`** `31c462dc7c4c4ac03a10ed69254c8822b2322910`; `851572864…` is ancestor of PRE-B6 commit.
 
