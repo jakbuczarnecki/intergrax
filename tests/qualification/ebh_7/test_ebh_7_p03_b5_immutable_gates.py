@@ -4,13 +4,17 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 from scripts.qualification.verify_ebh7_p03_immutable_evidence import (
+    _DIGESTS_REL,
+    _git_show,
     _path_allowed,
+    _resolve_replay_path,
+    _sha256_bytes,
     verify_executable_tree_identity,
     verify_immutable_digests_at_git_sha,
     verify_manifest_pins,
@@ -44,8 +48,13 @@ def test_b5_manifest_pins_match_frozen_roles() -> None:
 
 
 def test_b5_immutable_digests_fail_on_wrong_git_tree_sha() -> None:
-    with pytest.raises(AssertionError, match="Immutable digest mismatch|git show"):
-        verify_immutable_digests_at_git_sha(_TEST_SHA)
+    recorded = json.loads(_git_show(_REPLAY_SHA, _DIGESTS_REL))["sha256"]
+    mismatched = [
+        rel
+        for rel, expected in recorded.items()
+        if _sha256_bytes(_git_show(_TEST_SHA, _resolve_replay_path(rel))) != expected
+    ]
+    assert mismatched, "replay-head digests must reject the TEST_EXECUTION_SHA tree bytes"
 
 
 def test_b5_cli_all_pre_pytest_exit_zero() -> None:
