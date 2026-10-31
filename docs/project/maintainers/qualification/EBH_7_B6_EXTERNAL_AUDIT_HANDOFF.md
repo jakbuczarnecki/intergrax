@@ -6,18 +6,18 @@
 
 ```powershell
 git fetch origin development
-git checkout 72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9
+git checkout 83136ef7be70ff33d0a81b978c154ac8528930a2
 uv sync --frozen --extra dev-ci
 uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line
 ```
 
-After evidence publication @ HEAD, verify `git merge-base --is-ancestor 72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9 HEAD`.
+After evidence publication @ HEAD, verify `git merge-base --is-ancestor 83136ef7be70ff33d0a81b978c154ac8528930a2 HEAD`.
 
 ## SHA roles (Protocol 03)
 
 | Role | SHA |
 | --- | --- |
-| TEST_EXECUTION_SHA | `72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9` |
+| TEST_EXECUTION_SHA | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA (ancestor) | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA (lineage) | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | EVIDENCE_PUBLICATION_SHA | see [`MANIFEST.json`](ebh_7_p03_independent_replay/MANIFEST.json) |

@@ -1,7 +1,7 @@
 {
-  "TEST_EXECUTION_SHA": "72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9",
-  "TEST_EXECUTION_NOTE": "G01-G09 closure audit @ 72619e6; descends from B6 corrective 8afff322; log .tmp/session/ebh-7-closure-audit/l3-final.log",
-  "EVIDENCE_PUBLICATION_SHA": "23cb17b913a86403508931bf6816f4c5ad56ec3c",
+  "TEST_EXECUTION_SHA": "83136ef7be70ff33d0a81b978c154ac8528930a2",
+  "TEST_EXECUTION_NOTE": "B6 F07/F08/F09 proof-strength correction @ 83136ef7; L3 log .tmp/session/ebh-7-b6-f07-f09/l3-final.log",
+  "EVIDENCE_PUBLICATION_SHA": "83136ef7be70ff33d0a81b978c154ac8528930a2",
   "INDEPENDENT_ACCEPTANCE_BASELINE_SHA": "PENDING_B6_PASS",
   "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING_OD_EBH7_08",
   "EBH7_CLOSURE_IMPLEMENTATION_SHA": "d4937889fc0b07515649dbdddf602df2a4415489",
@@ -9,7 +9,7 @@
   "EBH7_CLOSURE_IMPLEMENTATION_NOTE": "Terminal operator-disposition closure before B6 corrective; ancestor of TEST_EXECUTION_SHA only",
   "EBH7_REMEDIATION_CONTINUATION_SHA": "cb3fcb3c93ff361a138d36136cba0c8d6a5b59bd",
   "EBH7_REMEDIATION_BASELINE_SHA": "11b724dd18ba1a7ed5f53a3999dc18af1068391d",
-  "certification_banner": "EBH-7 — READY FOR INDEPENDENT B6 (G01–G09 audit PASS)",
+  "certification_banner": "EBH-7 — READY FOR INDEPENDENT B6 (F07–F09 proof-strength correction)",
   "pytest_profile": {
     "command": "uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line",
     "environment": "ci — uv frozen, dev-ci extra",

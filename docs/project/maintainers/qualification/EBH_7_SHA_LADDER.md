@@ -21,7 +21,8 @@
 | EBH7_CLOSURE_IMPLEMENTATION_SHA | Terminal closure — 56/56 RPL @ operator dispositions | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | Independent B6 F01/F02 + INTERNAL/FIXED sweep | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
 | EBH7_CLOSURE_G01_G09_IMPLEMENTATION_SHA | Closure evidence audit SSOT + gates | `72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9` |
-| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9` |
+| EBH7_B6_PROOF_STRENGTH_CORRECTION_SHA | B6 F07/F08/F09 RPL-E/F + derived G07/G08 + G09 resolution | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
+| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
 | EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `23cb17b913a86403508931bf6816f4c5ad56ec3c` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
