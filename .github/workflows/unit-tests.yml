@@ -5,7 +5,7 @@
 #   pull_request, push (main, development) - smoke via scripts/ci/run_regression_gate_ci.py --profile smoke
 #   workflow_dispatch (full) - full gate + governance + closeout (manual; no scheduled nightly)
 #   workflow_dispatch (smoke) - same as PR (debug)
-#   workflow_dispatch (diagnostics_full) - one exact-SHA full tests/unit/runtime/diagnostics qualification
+#   workflow_dispatch (ebh7_p3_l3) - Protocol 03 L3 exact-SHA replay (TEST_EXECUTION tree + EVIDENCE MANIFEST profile)
 #
 # pull_request workflows use the file on the repository DEFAULT branch (main).
 # After changing this file on development, merge/sync to main or PR checks keep the old definition.
@@ -26,16 +26,25 @@ on:
   workflow_dispatch:
     inputs:
       profile:
-        description: "smoke (PR default), enterprise (smoke+governance), full (nightly parity), or diagnostics_full"
+        description: "smoke (PR default), enterprise (smoke+governance), full (nightly parity), diagnostics_full, or ebh7_p3_l3"
         type: choice
         options:
           - smoke
           - enterprise
           - full
           - diagnostics_full
+          - ebh7_p3_l3
         default: smoke
       qualification_sha:
         description: "40-char Git commit SHA (required when profile is diagnostics_full)"
+        type: string
+        required: false
+      ebh7_test_execution_sha:
+        description: "40-char TEST_EXECUTION_SHA for ebh7_p3_l3 (default EBH-7 frozen baseline)"
+        type: string
+        required: false
+      ebh7_evidence_publication_sha:
+        description: "40-char EVIDENCE_PUBLICATION_SHA for MANIFEST profile (ebh7_p3_l3)"
         type: string
         required: false
 
@@ -43,10 +52,13 @@ concurrency:
   group: >-
     ${{ github.event.inputs.profile == 'diagnostics_full'
         && format('diagnostics-full-qualification-{0}', github.event.inputs.qualification_sha)
+        || (github.event.inputs.profile == 'ebh7_p3_l3'
+        && format('ebh7-p03-l3-{0}-{1}', github.event.inputs.ebh7_test_execution_sha || '4eb7eb1a89f82215d5356aa7d000198e432777b0', github.event.inputs.ebh7_evidence_publication_sha || '96069c09c2ca5a7a3a9586db336716c9430ca1d7'))
         || format('regression-gate-{0}-{1}-{2}', github.event_name, github.ref, github.event.inputs.profile || 'smoke') }}
   cancel-in-progress: >-
     ${{ github.event_name == 'pull_request'
-        && github.event.inputs.profile != 'diagnostics_full' }}
+        && github.event.inputs.profile != 'diagnostics_full'
+        && github.event.inputs.profile != 'ebh7_p3_l3' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -670,3 +682,180 @@ jobs:
               exit 1
               ;;
           esac
+
+  ebh7-p03-l3-qualification:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.profile == 'ebh7_p3_l3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      EBH7_DEFAULT_TEST_EXECUTION_SHA: 4eb7eb1a89f82215d5356aa7d000198e432777b0
+      EBH7_DEFAULT_EVIDENCE_PUBLICATION_SHA: 96069c09c2ca5a7a3a9586db336716c9430ca1d7
+      EBH7_MANIFEST_PATH: docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json
+      TEST_EXECUTION_SHA: >-
+        ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || '4eb7eb1a89f82215d5356aa7d000198e432777b0' }}
+      EVIDENCE_PUBLICATION_SHA: >-
+        ${{ github.event.inputs.ebh7_evidence_publication_sha != '' && github.event.inputs.ebh7_evidence_publication_sha || '96069c09c2ca5a7a3a9586db336716c9430ca1d7' }}
+
+    steps:
+      - name: Validate EBH-7 SHA inputs (fail closed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for label in TEST_EXECUTION_SHA EVIDENCE_PUBLICATION_SHA; do
+            val="${!label}"
+            if ! [[ "${val}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              echo "FAIL: ${label} must be exactly 40 hex chars (got '${val}')"
+              exit 1
+            fi
+          done
+          echo "test_execution_sha=${TEST_EXECUTION_SHA}"
+          echo "evidence_publication_sha=${EVIDENCE_PUBLICATION_SHA}"
+
+      - name: Checkout exact TEST_EXECUTION_SHA
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TEST_EXECUTION_SHA }}
+          fetch-depth: 0
+
+      - name: Verify HEAD matches TEST_EXECUTION_SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${TEST_EXECUTION_SHA}^{commit}"
+          EXPECTED="$(echo "${TEST_EXECUTION_SHA}" | tr '[:upper:]' '[:lower:]')"
+          ACTUAL="$(git rev-parse HEAD)"
+          if [ "${ACTUAL}" != "${EXPECTED}" ]; then
+            echo "FAIL: HEAD (${ACTUAL}) != TEST_EXECUTION_SHA (${EXPECTED})"
+            exit 1
+          fi
+          git merge-base --is-ancestor "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}"
+
+      - name: Resolve L3 pytest command from EVIDENCE MANIFEST
+        id: manifest_profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
+          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}:${EBH7_MANIFEST_PATH}"
+          MANIFEST_TEST_SHA="$(git show "${EVIDENCE_PUBLICATION_SHA}:${EBH7_MANIFEST_PATH}" | python3 -c "import json,sys; print(json.load(sys.stdin)['TEST_EXECUTION_SHA'])")"
+          if [ "${MANIFEST_TEST_SHA}" != "${TEST_EXECUTION_SHA}" ]; then
+            echo "FAIL: MANIFEST TEST_EXECUTION_SHA (${MANIFEST_TEST_SHA}) != checkout (${TEST_EXECUTION_SHA})"
+            exit 1
+          fi
+          PYTEST_CMD="$(git show "${EVIDENCE_PUBLICATION_SHA}:${EBH7_MANIFEST_PATH}" | python3 -c "import json,sys; print(json.load(sys.stdin)['pytest_profile']['command'])")"
+          echo "${PYTEST_CMD}" | grep -q 'test_ebh_5_dual_slug_rpl_e_operational_gates.py' || {
+            echo "FAIL: MANIFEST profile must include F07 operational gates"
+            exit 1
+          fi
+          echo "${PYTEST_CMD}" | grep -q 'test_ebh_7_gate_finding_resolution' || true
+          echo "pytest_cmd=${PYTEST_CMD}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (frozen dev-ci)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
+      - name: Create EBH-7 L3 qualification metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/qualification/ebh7-l3
+          START_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          {
+            echo "protocol=EBH-7-P03-L3"
+            echo "test_execution_sha=${TEST_EXECUTION_SHA}"
+            echo "evidence_publication_sha=${EVIDENCE_PUBLICATION_SHA}"
+            echo "actual_head_sha=$(git rev-parse HEAD)"
+            echo "github_workflow_ref=${{ github.workflow_ref }}"
+            echo "github_workflow_sha=${{ github.workflow_sha }}"
+            echo "github_run_id=${{ github.run_id }}"
+            echo "github_run_attempt=${{ github.run_attempt }}"
+            echo "start_timestamp=${START_TS}"
+            echo "pytest_cmd=${{ steps.manifest_profile.outputs.pytest_cmd }}"
+            echo "qualification_status=STARTED"
+          } > build/qualification/ebh7-l3/meta.txt
+
+      - name: Protocol 03 L3 pytest (single invocation)
+        id: ebh7_l3_pytest
+        timeout-minutes: 35
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          set -o pipefail
+          ${{ steps.manifest_profile.outputs.pytest_cmd }} \
+            --junitxml=build/qualification/ebh7-l3/junit.xml \
+            2>&1 | tee build/qualification/ebh7-l3/pytest.log
+          PYTEST_EXIT=${PIPESTATUS[0]}
+          echo "${PYTEST_EXIT}" > build/qualification/ebh7-l3/pytest.exit
+          exit "${PYTEST_EXIT}"
+
+      - name: Finalize EBH-7 L3 metadata
+        if: always()
+        shell: bash
+        env:
+          PYTEST_STEP_OUTCOME: ${{ steps.ebh7_l3_pytest.outcome }}
+        run: |
+          set -euo pipefail
+          META="build/qualification/ebh7-l3/meta.txt"
+          END_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          PYTEST_EXIT_CODE="UNKNOWN"
+          if [ -f build/qualification/ebh7-l3/pytest.exit ]; then
+            PYTEST_EXIT_CODE="$(tr -d '[:space:]' < build/qualification/ebh7-l3/pytest.exit)"
+          fi
+          PASSED="unknown"
+          SKIPPED="unknown"
+          XFAILED="unknown"
+          if [ -f build/qualification/ebh7-l3/junit.xml ]; then
+            read -r PASSED SKIPPED XFAILED <<< "$(python3 -c "import xml.etree.ElementTree as ET; r=ET.parse('build/qualification/ebh7-l3/junit.xml').getroot(); print(r.get('tests','0'), sum(int(ts.get('skipped',0)) for ts in r.findall('testsuite')), sum(int(ts.get('failures',0))+int(ts.get('errors',0)) for ts in r.findall('testsuite')))")"
+          fi
+          F07_COUNT="$(grep -c 'test_ebh_5_dual_slug_rpl_e_operational_gates.py' build/qualification/ebh7-l3/pytest.log 2>/dev/null || echo 0)"
+          STATUS="INTERRUPTED"
+          QUALIFICATION_STATUS="ABORTED"
+          if [ "${PYTEST_EXIT_CODE}" = "0" ]; then
+            QUALIFICATION_STATUS="COMPLETED_PASS"
+            STATUS="COMPLETED"
+          elif [ "${PYTEST_EXIT_CODE}" != "UNKNOWN" ]; then
+            QUALIFICATION_STATUS="COMPLETED_FAIL"
+            STATUS="FAILED"
+          fi
+          {
+            cat "${META}"
+            echo "end_timestamp=${END_TS}"
+            echo "pytest_exit_code=${PYTEST_EXIT_CODE}"
+            echo "junit_tests=${PASSED}"
+            echo "junit_skipped=${SKIPPED}"
+            echo "f07_log_lines=${F07_COUNT}"
+            echo "qualification_status=${QUALIFICATION_STATUS}"
+            echo "status=${STATUS}"
+          } > "${META}.tmp"
+          mv "${META}.tmp" "${META}"
+
+      - name: Upload EBH-7 L3 qualification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ebh7-p03-l3-${{ env.TEST_EXECUTION_SHA }}
+          path: build/qualification/ebh7-l3/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: EBH-7 L3 pytest exit status
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f build/qualification/ebh7-l3/pytest.exit ]; then
+            exit "$(tr -d '[:space:]' < build/qualification/ebh7-l3/pytest.exit)"
+          fi
+          exit 1

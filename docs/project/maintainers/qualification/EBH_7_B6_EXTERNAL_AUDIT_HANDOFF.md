@@ -13,6 +13,21 @@ uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity
 
 After evidence publication @ HEAD, verify `git merge-base --is-ancestor 4eb7eb1a89f82215d5356aa7d000198e432777b0 HEAD`.
 
+## GitHub Actions — independent L3 replay (B5)
+
+Profile **`ebh7_p3_l3`** on workflow **`Regression gate`** (`unit-tests.yml`):
+
+```powershell
+gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3
+```
+
+- Checkout **`TEST_EXECUTION_SHA`** `4eb7eb1a…` (certified code).
+- Pytest command from **`MANIFEST.json`** at **`EVIDENCE_PUBLICATION_SHA`** `96069c09c…` (fail-closed pin match).
+- Artifacts: `ebh7-p03-l3-4eb7eb1a89f82215d5356aa7d000198e432777b0` (`meta.txt`, `pytest.log`, `junit.xml`).
+- Record: [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md).
+
+Push-triggered **`ci-smoke`** on `development` is **not** L3; recent **cancelled** runs (~10m) are smoke **timeout**, not L3 failure.
+
 ## SHA roles (Protocol 03)
 
 | Role | SHA |
@@ -20,7 +35,7 @@ After evidence publication @ HEAD, verify `git merge-base --is-ancestor 4eb7eb1a
 | TEST_EXECUTION_SHA | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA (ancestor) | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA (lineage) | `d4937889fc0b07515649dbdddf602df2a4415489` |
-| EVIDENCE_PUBLICATION_SHA | see [`MANIFEST.json`](ebh_7_p03_independent_replay/MANIFEST.json) |
+| EVIDENCE_PUBLICATION_SHA | `96069c09c2ca5a7a3a9586db336716c9430ca1d7` (MANIFEST profile authority) |
 
 ## Primary artifacts
 
