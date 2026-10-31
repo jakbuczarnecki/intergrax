@@ -751,7 +751,7 @@ jobs:
           echo "${PYTEST_CMD}" | grep -q 'test_ebh_5_dual_slug_rpl_e_operational_gates.py' || {
             echo "FAIL: MANIFEST profile must include F07 operational gates"
             exit 1
-          fi
+          }
           echo "${PYTEST_CMD}" | grep -q 'test_ebh_7_gate_finding_resolution' || true
           echo "pytest_cmd=${PYTEST_CMD}" >> "${GITHUB_OUTPUT}"
 
