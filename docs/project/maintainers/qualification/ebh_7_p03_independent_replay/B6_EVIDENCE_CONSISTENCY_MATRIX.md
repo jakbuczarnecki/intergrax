@@ -9,7 +9,7 @@
 | --- | --- |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA (pre-B6 terminal closure) | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
-| TEST_EXECUTION_SHA (= replay tree) | `4e46034de1d8842442ccfff00a87dd74ae78600d` |
+| TEST_EXECUTION_SHA (= replay tree) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | EVIDENCE_PUBLICATION_SHA | see `MANIFEST.json` |
 | Repository HEAD (doc pin chain) | see `ARTIFACT_DIGESTS.json` `HEAD` |
 
@@ -31,7 +31,7 @@
 | Skipped | **0** |
 | Xfailed | **0** |
 | Profile | `MANIFEST.json` → `pytest_profile.command` |
-| Log | `.tmp/session/ebh-7-b6-f07-f09/l3-final.log` |
+| Log | `.tmp/session/ebh-7-f07-probe-fix/l3-final.log` |
 
 ## INT2E / ECAP
 

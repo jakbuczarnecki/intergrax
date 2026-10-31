@@ -22,9 +22,9 @@
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | Independent B6 F01/F02 + INTERNAL/FIXED sweep | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
 | EBH7_CLOSURE_G01_G09_IMPLEMENTATION_SHA | Closure evidence audit SSOT + gates | `72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9` |
 | EBH7_B6_PROOF_STRENGTH_CORRECTION_SHA | B6 F07/F08/F09 RPL-E/F + derived G07/G08 + G09 resolution | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
-| EBH7_F07_F09_ENTERPRISE_CLOSURE_SHA | One-pass F07 matrix + L3-bound F09 + operational RPL-E | `4e46034de1d8842442ccfff00a87dd74ae78600d` |
-| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `4e46034de1d8842442ccfff00a87dd74ae78600d` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `b0a97ad16e8aa3d38152f1d9e10a4b076e95ec77` |
+| EBH7_F07_PROBE_FAILCLOSED_SHA | RPL-E operational probe fail-closed + adversarial gates | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
+| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `8d2a208eead778929159b042bce2a163a4adfe46` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
