@@ -693,11 +693,14 @@ jobs:
     env:
       EBH7_DEFAULT_TEST_EXECUTION_SHA: 4eb7eb1a89f82215d5356aa7d000198e432777b0
       EBH7_DEFAULT_EVIDENCE_PUBLICATION_SHA: 96069c09c2ca5a7a3a9586db336716c9430ca1d7
+      EBH7_DEFAULT_P03_REPLAY_HEAD_SHA: 1a73981e1fa818eb1494495c4f84f4b55b3f6bb6
       EBH7_MANIFEST_PATH: docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json
       TEST_EXECUTION_SHA: >-
         ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || '4eb7eb1a89f82215d5356aa7d000198e432777b0' }}
       EVIDENCE_PUBLICATION_SHA: >-
         ${{ github.event.inputs.ebh7_evidence_publication_sha != '' && github.event.inputs.ebh7_evidence_publication_sha || '96069c09c2ca5a7a3a9586db336716c9430ca1d7' }}
+      P03_REPLAY_HEAD_SHA: >-
+        ${{ github.event.inputs.ebh7_p03_replay_head_sha != '' && github.event.inputs.ebh7_p03_replay_head_sha || '1a73981e1fa818eb1494495c4f84f4b55b3f6bb6' }}
 
     steps:
       - name: Validate EBH-7 SHA inputs (fail closed)
@@ -724,22 +727,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git checkout "${EVIDENCE_PUBLICATION_SHA}"
-          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
+          git checkout "${P03_REPLAY_HEAD_SHA}"
+          git cat-file -e "${P03_REPLAY_HEAD_SHA}^{commit}"
           git cat-file -e "${TEST_EXECUTION_SHA}^{commit}"
-          EVIDENCE_HEAD="$(git rev-parse HEAD)"
-          if [ "${EVIDENCE_HEAD}" != "${EVIDENCE_PUBLICATION_SHA}" ]; then
-            echo "FAIL: HEAD (${EVIDENCE_HEAD}) != EVIDENCE_PUBLICATION_SHA"
+          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
+          REPLAY_HEAD="$(git rev-parse HEAD)"
+          if [ "${REPLAY_HEAD}" != "${P03_REPLAY_HEAD_SHA}" ]; then
+            echo "FAIL: HEAD (${REPLAY_HEAD}) != P03_REPLAY_HEAD_SHA"
             exit 1
           fi
-          git merge-base --is-ancestor "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}"
-          if ! git diff --quiet "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}" -- tests/qualification/; then
-            echo "FAIL: qualification tests differ between TEST_EXECUTION and EVIDENCE trees"
-            git diff --stat "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}" -- tests/qualification/
+          git merge-base --is-ancestor "${TEST_EXECUTION_SHA}" "${P03_REPLAY_HEAD_SHA}"
+          git merge-base --is-ancestor "${EVIDENCE_PUBLICATION_SHA}" "${P03_REPLAY_HEAD_SHA}"
+          if ! git diff --quiet "${TEST_EXECUTION_SHA}" "${P03_REPLAY_HEAD_SHA}" -- tests/qualification/; then
+            echo "FAIL: qualification tests differ between TEST_EXECUTION and replay HEAD"
+            git diff --stat "${TEST_EXECUTION_SHA}" "${P03_REPLAY_HEAD_SHA}" -- tests/qualification/
             exit 1
           fi
           echo "code_identity_test_execution_sha=${TEST_EXECUTION_SHA}"
-          echo "replay_head_sha=${EVIDENCE_HEAD}"
+          echo "replay_head_sha=${REPLAY_HEAD}"
 
       - name: Resolve L3 pytest command from EVIDENCE MANIFEST
         id: manifest_profile
@@ -748,12 +753,17 @@ jobs:
           set -euo pipefail
           git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
           git cat-file -e "${EVIDENCE_PUBLICATION_SHA}:${EBH7_MANIFEST_PATH}"
-          MANIFEST_TEST_SHA="$(git show "${EVIDENCE_PUBLICATION_SHA}:${EBH7_MANIFEST_PATH}" | python3 -c "import json,sys; print(json.load(sys.stdin)['TEST_EXECUTION_SHA'])")"
+          MANIFEST_TEST_SHA="$(python3 -c "import json; print(json.load(open('${EBH7_MANIFEST_PATH}'))['TEST_EXECUTION_SHA'])")"
           if [ "${MANIFEST_TEST_SHA}" != "${TEST_EXECUTION_SHA}" ]; then
-            echo "FAIL: MANIFEST TEST_EXECUTION_SHA (${MANIFEST_TEST_SHA}) != checkout (${TEST_EXECUTION_SHA})"
+            echo "FAIL: MANIFEST TEST_EXECUTION_SHA (${MANIFEST_TEST_SHA}) != ${TEST_EXECUTION_SHA}"
             exit 1
           fi
-          PYTEST_CMD="$(git show "${EVIDENCE_PUBLICATION_SHA}:${EBH7_MANIFEST_PATH}" | python3 -c "import json,sys; print(json.load(sys.stdin)['pytest_profile']['command'])")"
+          MANIFEST_EVIDENCE_SHA="$(python3 -c "import json; print(json.load(open('${EBH7_MANIFEST_PATH}'))['EVIDENCE_PUBLICATION_SHA'])")"
+          if [ "${MANIFEST_EVIDENCE_SHA}" != "${EVIDENCE_PUBLICATION_SHA}" ]; then
+            echo "FAIL: MANIFEST EVIDENCE_PUBLICATION_SHA (${MANIFEST_EVIDENCE_SHA}) != ${EVIDENCE_PUBLICATION_SHA}"
+            exit 1
+          fi
+          PYTEST_CMD="$(python3 -c "import json; print(json.load(open('${EBH7_MANIFEST_PATH}'))['pytest_profile']['command'])")"
           echo "${PYTEST_CMD}" | grep -q 'test_ebh_5_dual_slug_rpl_e_operational_gates.py' || {
             echo "FAIL: MANIFEST profile must include F07 operational gates"
             exit 1
@@ -783,7 +793,7 @@ jobs:
             echo "protocol=EBH-7-P03-L3"
             echo "test_execution_sha=${TEST_EXECUTION_SHA}"
             echo "evidence_publication_sha=${EVIDENCE_PUBLICATION_SHA}"
-            echo "replay_checkout_sha=${EVIDENCE_PUBLICATION_SHA}"
+            echo "replay_checkout_sha=${P03_REPLAY_HEAD_SHA}"
             echo "actual_head_sha=$(git rev-parse HEAD)"
             echo "github_workflow_ref=${{ github.workflow_ref }}"
             echo "github_workflow_sha=${{ github.workflow_sha }}"

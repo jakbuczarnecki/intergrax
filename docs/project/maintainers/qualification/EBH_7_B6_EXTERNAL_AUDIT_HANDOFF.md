@@ -21,9 +21,9 @@ Profile **`ebh7_p3_l3`** on workflow **`Regression gate`** (`unit-tests.yml`):
 gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3
 ```
 
-- Checkout **`EVIDENCE_PUBLICATION_SHA`** `96069c09c…` (P03 dossier + digest SSOT @ HEAD).
-- **`TEST_EXECUTION_SHA`** `4eb7eb1a…` — certified qualification code; `git diff TEST..EVIDENCE -- tests/qualification/` must be empty (verified in CI).
-- Pytest command from **`MANIFEST.json`** at replay HEAD.
+- Checkout **`P03 replay HEAD`** `1a73981e1…` (self-consistent MANIFEST/digest SSOT; descendant of `96069c09c`).
+- **`TEST_EXECUTION_SHA`** `4eb7eb1a…` — `git diff TEST..replay -- tests/qualification/` empty (CI gate).
+- **`EVIDENCE_PUBLICATION_SHA`** `96069c09c…` — role pinned in MANIFEST @ replay HEAD.
 - Artifacts: `ebh7-p03-l3-4eb7eb1a89f82215d5356aa7d000198e432777b0` (`meta.txt`, `pytest.log`, `junit.xml`).
 - Record: [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md).
 
