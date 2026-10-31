@@ -1,0 +1,59 @@
+# EBH-7 — B6 evidence consistency matrix (P03)
+
+**Generated for independent reconciliation @ HEAD ancestry of TEST_EXECUTION_SHA.**  
+**Authority:** executable gates cited below; this table is checked by `_ebh7_p03_evidence_integrity.py`.
+
+## SHA roles (Protocol 03)
+
+| Role | SHA |
+| --- | --- |
+| EBH7_CLOSURE_IMPLEMENTATION_SHA (pre-B6 terminal closure) | `d4937889fc0b07515649dbdddf602df2a4415489` |
+| EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
+| TEST_EXECUTION_SHA (= B6 corrective tree replayed) | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
+| EVIDENCE_PUBLICATION_SHA | see `MANIFEST.json` |
+| Repository HEAD (doc pin chain) | see `ARTIFACT_DIGESTS.json` `HEAD` |
+
+## Normative outcomes (effective)
+
+| Domain | Count | Gate / SSOT |
+| --- | --- | --- |
+| RPL-H QUALIFIED | **56 / 56**; B6-open **0** | `_rpl_h_normative_evidence.py`, `test_ebh7_batch_c_rpl_semantic_verdict_counts_recorded` |
+| TEN-E2E EXACT / OPEN | **26 EXACT / 0 OPEN** | `_semantic_disposition_registry.py`, `semantic_exact_counts()` |
+| XDM EXACT / OPEN | **34 EXACT / 0 OPEN** | `_semantic_proof_binding_audit.py`, `test_ebh7_semantic_exact_blocker_counts_registered` |
+| XDM COMPOSED_PROXY | **0** | `assert_ebh7_ten_xdm_evidence_ssot` |
+| PROHIBITED unresolved | **0** | `test_ebh6_prohibited_unresolved_zero` (L3 profile) |
+
+## L3 replay (@ TEST_EXECUTION_SHA)
+
+| Field | Value |
+| --- | --- |
+| Passed | **187** |
+| Skipped | **0** |
+| Xfailed | **0** |
+| Profile | `MANIFEST.json` → `pytest_profile.command` |
+| Log | `.tmp/session/ebh7-b6-evidence-reconcile/l3-final.log` |
+
+## INT2E / ECAP
+
+| Scope | Status |
+| --- | --- |
+| INT2E bundle regression | In L3 profile (`test_ebh_7_int2e_bundle_regression.py`) |
+| ECAP C1–C5 + mutation | `test_ebh_7_certification_ssot_gates.py`, `test_ebh_7_certification_mutation_fail_closed.py` |
+
+## B6 readiness
+
+| Claim | Status |
+| --- | --- |
+| Independent B6 PASS | **NOT ISSUED** (agent / repo non-claim) |
+| OD-EBH7-08 | **OPEN** |
+| Banner | `MANIFEST.json` → `certification_banner` |
+
+## Historical superseded (provenance only)
+
+| Item | Superseded state | Effective state |
+| --- | --- | --- |
+| TEN semantic | 14 EXACT / 12 OPEN @ W1W2 recon | 26 EXACT / 0 OPEN |
+| XDM semantic | 16 EXACT / 18 OPEN @ correction wave | 34 EXACT / 0 OPEN |
+| RPL Package C review | 51× PARTIAL agent inventory | 56× QUALIFIED normative |
+
+See [`EBH_7_INDEPENDENT_AUDIT_CORRECTIVE_FINDINGS.md`](../EBH_7_INDEPENDENT_AUDIT_CORRECTIVE_FINDINGS.md) § B6-F03 / F04.

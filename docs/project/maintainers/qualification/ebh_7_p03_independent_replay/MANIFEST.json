@@ -1,10 +1,12 @@
 {
   "TEST_EXECUTION_SHA": "8afff322cb2525f0106c2bbccf2d44f682d3e0df",
-  "TEST_EXECUTION_NOTE": "EBH-7 B6 corrective closeout — 56/56 RPL QUALIFIED; L3 187 passed; log .tmp/session/ebh7-b6-closeout/l3-pytest.log",
+  "TEST_EXECUTION_NOTE": "L3 replay executes on EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA (not pre-B6 closure alone). 56/56 RPL; 26/0 TEN; 34/0 XDM; log .tmp/session/ebh7-b6-evidence-reconcile/l3-final.log",
   "EVIDENCE_PUBLICATION_SHA": "a65656c4ac206b41a4011721d0dbb2b2dcd2734c",
   "INDEPENDENT_ACCEPTANCE_BASELINE_SHA": "PENDING_B6_PASS",
   "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING_OD_EBH7_08",
   "EBH7_CLOSURE_IMPLEMENTATION_SHA": "d4937889fc0b07515649dbdddf602df2a4415489",
+  "EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA": "8afff322cb2525f0106c2bbccf2d44f682d3e0df",
+  "EBH7_CLOSURE_IMPLEMENTATION_NOTE": "Terminal operator-disposition closure before B6 corrective; ancestor of TEST_EXECUTION_SHA only",
   "EBH7_REMEDIATION_CONTINUATION_SHA": "cb3fcb3c93ff361a138d36136cba0c8d6a5b59bd",
   "EBH7_REMEDIATION_BASELINE_SHA": "11b724dd18ba1a7ed5f53a3999dc18af1068391d",
   "certification_banner": "EBH-7 — B6 CORRECTIVE SUBMITTED (independent re-audit pending)",
@@ -31,7 +33,8 @@
     "one_pass_closure_matrix": "../EBH_7_ONE_PASS_CLOSURE_MATRIX.md",
     "independent_b6_dossier": "../EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md",
     "fixed_substrate_ratifications": "../EBH_7_FIXED_SUBSTRATE_RATIFICATIONS.md",
-    "artifact_digests": "ARTIFACT_DIGESTS.json"
+    "artifact_digests": "ARTIFACT_DIGESTS.json",
+    "b6_evidence_consistency_matrix": "B6_EVIDENCE_CONSISTENCY_MATRIX.md"
   },
   "explicit_non_claims": [
     "B6 PASS",

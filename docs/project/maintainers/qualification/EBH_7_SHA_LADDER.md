@@ -27,4 +27,6 @@
 
 **Deprecated alias:** `CLOSURE_SHA` must not denote implementation while B6/OD-08 are OPEN.
 
-Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`.
+**Protocol 03 rule:** `TEST_EXECUTION_SHA` equals `EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA`; `EBH7_CLOSURE_IMPLEMENTATION_SHA` is a strict git ancestor (pre-B6 terminal closure @ `d4937889`), not the replayed tree after B6 corrective.
+
+Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`; `tests/qualification/ebh_7/_ebh7_p03_evidence_integrity.py` pins SHA roles.
