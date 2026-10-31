@@ -8,6 +8,11 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
 
+from tests.qualification.ebh_5._dual_slug_rpl_ef_contract_evidence import (
+    canonical_rpl_e_guarantees,
+    dual_slug_rpl_ef_audit_errors,
+    dual_slug_rpl_ef_positive_negative_nodes,
+)
 from tests.qualification.ebh_5._proof_validation import pytest_test_function_exists
 from tests.qualification.ebh_5._rpl_f_evidence_registry import (
     _PACKAGE_C_RPL_F_NA,
@@ -15,6 +20,10 @@ from tests.qualification.ebh_5._rpl_f_evidence_registry import (
     rpl_f_validation_errors,
 )
 from tests.qualification.ebh_5._vendor_backend_types import RplGateStatus
+from tests.qualification.ebh_7._gate_finding_resolution import (
+    finding_resolution,
+    validate_finding_resolution,
+)
 from tests.qualification.ebh_7._gate_findings_register import EBH7_CORRECTIVE_GATE_FINDINGS
 from tests.qualification.ebh_7._rpl_h_normative_evidence import (
     all_normative_rpl_rows,
@@ -28,23 +37,9 @@ from tests.qualification.ebh_7._semantic_proof_types import ProofBindingResult
 
 _PKG_C_V2 = "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py"
 
-_RESOLVED_FINDING_IDS: Final[frozenset[str]] = frozenset(
-    {
-        "W6-ID-REGISTRY-ONLY",
-        "W6-TENANT-X-FINAL-READY",
-        "W7-HASATTR-DUP-X",
-        "W5-RPL-ROW-COUNT",
-        "W5-VBN-DOC-PRESENCE",
-        "TRACE-466-COUNT-ONLY",
-        "READINESS-TABLE-PASS",
-        "GAP-TEN-UNK-05-CLOSED",
-        "AUD-01-RPL-AUTO-QUALIFIED",
-        "B6-NORMATIVE-OPEN-ROWS",
-        "B6-F01-EXTERNAL-WORK-DUAL-INSTANCE",
-        "B6-F02-PRODQ-TEXT-PREFIX-NEGATIVE",
-        "B6-F03-TEN-XDM-DOC-CONFLICT",
-        "B6-F04-P03-TEST-CLOSURE-SHA",
-    }
+_ECAP_MUTATION_NODES: Final[tuple[str, ...]] = (
+    "tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_scope_residual_empty_when_not_approved",
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
 )
 
 
@@ -82,12 +77,16 @@ def _dual_slug_rpl_rows() -> tuple[ClosureAuditRow, ...]:
 
     rows: list[ClosureAuditRow] = []
     for entry in INTEGRATION_DUAL_SLUG_CATALOG:
-        pos = f"{_PKG_C_V2}::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence"
-        neg = f"{_PKG_C_V2}::test_ebh5_pkgc_v2_dual_slug_unregistered"
+        pos, neg = dual_slug_rpl_ef_positive_negative_nodes(entry)
         rpl_f = rpl_f_disposition(entry.concern_id)
         status = ClosureAuditStatus.PASS
-        notes = "RPL-C/D/E @ Package C v2; RPL-E includes unregistered fail-closed isolation"
-        if not _pytest_node_resolvable(pos) or not _pytest_node_resolvable(neg):
+        guarantees = canonical_rpl_e_guarantees(entry)
+        notes = guarantees[0][:100] if guarantees else "RPL-E obligations"
+        ef_errors = dual_slug_rpl_ef_audit_errors(entry)
+        if ef_errors:
+            status = ClosureAuditStatus.OPEN_FINDING
+            notes = ef_errors[0]
+        elif not _pytest_node_resolvable(pos) or not _pytest_node_resolvable(neg):
             status = ClosureAuditStatus.OPEN_FINDING
             notes = "Missing Package C v2 pytest node"
         elif rpl_f is None:
@@ -100,7 +99,7 @@ def _dual_slug_rpl_rows() -> tuple[ClosureAuditRow, ...]:
             status = ClosureAuditStatus.NA_WITH_EVIDENCE
             notes = rpl_f.normative_na_rationale[:120]
         evidence = (
-            f"CDE={pos}[{entry.concern_id}]; unreg={neg}[{entry.concern_id}]; "
+            f"RPL-E={'; '.join(guarantees[:2])}; CDE={pos}; unreg={neg}; "
             f"RPL-F={rpl_f.gate.value if rpl_f else 'MISSING'}"
         )
         rows.append(
@@ -214,45 +213,132 @@ def _int2e_row() -> ClosureAuditRow:
     )
 
 
+def _derive_ecap_gate_status() -> tuple[ClosureAuditStatus, str, str]:
+    errors: list[str] = []
+    try:
+        from tests.qualification.ebh_7._ebh7_certification_ssot import (
+            assert_ebh7_rpl_certification_ssot,
+            assert_ebh7_ten_xdm_evidence_ssot,
+        )
+
+        assert_ebh7_rpl_certification_ssot()
+        assert_ebh7_ten_xdm_evidence_ssot()
+    except AssertionError as exc:
+        errors.append(f"cert_ssot:{exc}")
+    try:
+        from tests.qualification.ebh_6._findings_register import count_prohibited_unresolved
+
+        prohibited = count_prohibited_unresolved()
+        if prohibited:
+            errors.append(f"prohibited_unresolved={prohibited}")
+    except Exception as exc:  # noqa: BLE001 — fail-closed on register faults
+        errors.append(f"prohibited_gate:{exc}")
+    for node in _ECAP_MUTATION_NODES:
+        if not _pytest_node_resolvable(node):
+            errors.append(f"missing_ecap_node:{node}")
+    if errors:
+        return (
+            ClosureAuditStatus.OPEN_FINDING,
+            "test_ebh_7_certification_ssot_gates.py; test_ebh6_prohibited_unresolved_zero",
+            "; ".join(errors[:4]),
+        )
+    return (
+        ClosureAuditStatus.PASS,
+        (
+            "assert_ebh7_rpl_certification_ssot + assert_ebh7_ten_xdm_evidence_ssot; "
+            "count_prohibited_unresolved()==0; mutation/prohibited pytest nodes resolvable"
+        ),
+        "ECAP C1–C5 derived @ HEAD — agent readiness only (not independent B6 acceptance)",
+    )
+
+
+def _derive_p03_gate_status() -> tuple[ClosureAuditStatus, str, str]:
+    errors: list[str] = []
+    try:
+        from tests.qualification.ebh_7._ebh7_p03_evidence_integrity import (
+            assert_ebh7_p03_artifact_digests_integrity,
+            assert_ebh7_p03_consistency_matrix_matches_ssot,
+            assert_ebh7_p03_manifest_role_integrity,
+            assert_ebh7_p03_replay_record_matches_implementation,
+            assert_ebh7_p03_semantic_outcomes_match_ssot,
+        )
+
+        assert_ebh7_p03_manifest_role_integrity()
+        assert_ebh7_p03_artifact_digests_integrity()
+        assert_ebh7_p03_replay_record_matches_implementation()
+        assert_ebh7_p03_semantic_outcomes_match_ssot()
+        assert_ebh7_p03_consistency_matrix_matches_ssot()
+    except AssertionError as exc:
+        errors.append(str(exc))
+    if errors:
+        return (
+            ClosureAuditStatus.OPEN_FINDING,
+            "ebh_7_p03_independent_replay/MANIFEST.json; _ebh7_p03_evidence_integrity.py",
+            errors[0][:200],
+        )
+    return (
+        ClosureAuditStatus.PASS,
+        "assert_ebh7_p03_* integrity bundle (excludes closure audit — replay vs acceptance separation)",
+        "Independent auditor must checkout TEST_EXECUTION_SHA and replay MANIFEST pytest_profile",
+    )
+
+
+def assert_ebh7_ecap_p03_derived_closure_gates() -> None:
+    ecap_status, _, ecap_notes = _derive_ecap_gate_status()
+    p03_status, _, p03_notes = _derive_p03_gate_status()
+    assert ecap_status is ClosureAuditStatus.PASS, ecap_notes
+    assert p03_status is ClosureAuditStatus.PASS, p03_notes
+
+
 def _ecap_row() -> ClosureAuditRow:
+    status, evidence, notes = _derive_ecap_gate_status()
     return ClosureAuditRow(
         gate_id="G07",
         subject="ECAP C1–C5 + PROHIBITED",
-        status=ClosureAuditStatus.PASS,
-        evidence=(
-            "test_ebh_7_certification_ssot_gates.py; "
-            "test_ebh_7_certification_mutation_fail_closed.py; "
-            "test_ebh6_prohibited_unresolved_zero"
-        ),
-        notes="Enterprise family matrix + executable checklist @ HEAD",
+        status=status,
+        evidence=evidence,
+        notes=notes,
     )
 
 
 def _p03_row() -> ClosureAuditRow:
+    status, evidence, notes = _derive_p03_gate_status()
     return ClosureAuditRow(
         gate_id="G08",
         subject="Protocol 03 replay + digests",
-        status=ClosureAuditStatus.PASS,
-        evidence="ebh_7_p03_independent_replay/MANIFEST.json; _ebh7_p03_evidence_integrity.py",
-        notes="Independent auditor must checkout TEST_EXECUTION_SHA and replay MANIFEST pytest_profile",
+        status=status,
+        evidence=evidence,
+        notes=notes,
     )
 
 
 def _findings_rows() -> tuple[ClosureAuditRow, ...]:
     rows: list[ClosureAuditRow] = []
     for finding in EBH7_CORRECTIVE_GATE_FINDINGS:
-        if finding.gate_id in _RESOLVED_FINDING_IDS:
-            status = ClosureAuditStatus.PASS
-            notes = "resolved"
-        else:
+        res = finding_resolution(finding.gate_id)
+        if res is None:
             status = ClosureAuditStatus.OPEN_FINDING
-            notes = "unmapped finding — add to _RESOLVED_FINDING_IDS or correct"
+            notes = "no resolution evidence — absence does not imply resolved"
+            evidence = finding.correction[:160]
+        elif finding.gate_id == "B6-F09-FINDING-RESOLUTION-EVIDENCE":
+            status = ClosureAuditStatus.PASS
+            notes = res.kind.value
+            evidence = res.evidence_ref
+        else:
+            err = validate_finding_resolution(res)
+            if err:
+                status = ClosureAuditStatus.OPEN_FINDING
+                notes = err[:160]
+            else:
+                status = ClosureAuditStatus.PASS
+                notes = f"{res.kind.value}: {res.notes[:80]}"
+            evidence = res.evidence_ref
         rows.append(
             ClosureAuditRow(
                 gate_id="G09",
                 subject=finding.gate_id,
                 status=status,
-                evidence=finding.correction[:160],
+                evidence=evidence,
                 notes=notes,
             )
         )

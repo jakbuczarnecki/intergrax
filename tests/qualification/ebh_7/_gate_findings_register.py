@@ -132,6 +132,30 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
             "closure SHA is ancestor only — _ebh7_p03_evidence_integrity.py"
         ),
     ),
+    GateFinding(
+        gate_id="B6-F07-RPL-EF-PROOF-STRENGTH",
+        prior_claim="Dual-slug RPL-E = distinct provider_id + unregistered reject",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.CONTRACT,
+        correction=(
+            "Contract-class typing, profile/provider identity, wrong-slug fail-closed, "
+            "relational execute(SELECT 1); per-category RPL-F N/A — _dual_slug_rpl_ef_contract_evidence.py"
+        ),
+    ),
+    GateFinding(
+        gate_id="B6-F08-ECAP-P03-DERIVED-GATES",
+        prior_claim="G07/G08 closure rows unconditional PASS",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.INTEGRITY,
+        correction="_derive_ecap_gate_status / _derive_p03_gate_status fail-closed @ certification + P03 SSOT",
+    ),
+    GateFinding(
+        gate_id="B6-F09-FINDING-RESOLUTION-EVIDENCE",
+        prior_claim="_RESOLVED_FINDING_IDS allowlist = G09 PASS",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.ACCEPTANCE,
+        correction="_gate_finding_resolution.py — pytest, assert hook, or documented supersession per finding",
+    ),
 )
 
 

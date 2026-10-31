@@ -11,6 +11,7 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError,
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.integrations.registry.profile import IntegrationProfile
+from tests.qualification.ebh_5._dual_slug_rpl_ef_contract_evidence import assert_dual_slug_rpl_e_contract_evidence
 from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import IntegrationDualSlugCatalogEntry
 from tests.qualification.ebh_5._package_c_v2_primitives import (
     exercise_connect_close_if_supported,
@@ -33,7 +34,7 @@ def _assert_rpl_d_lifecycle_parity(inst_a: object, inst_b: object) -> None:
 
 
 def _assert_rpl_e_failure_isolation(entry: IntegrationDualSlugCatalogEntry, *, tmp_path: Path | None) -> None:
-    """RPL-E — unregistered slug fail-closed; registered slug still resolves after negative attempt."""
+    """RPL-E — unregistered catalog fail-closed; registered slug still resolves after negative attempt."""
     clear_catalog()
     with pytest.raises((UnknownIntegrationError, IntegrationConfigurationError)):
         resolve_from_profile(IntegrationProfile(), entry.category)
@@ -43,7 +44,7 @@ def _assert_rpl_e_failure_isolation(entry: IntegrationDualSlugCatalogEntry, *, t
         profile_for_slug(category=entry.category, slug=entry.slug_a, tmp_path=tmp_path),
         entry.category,
     )
-    assert inst.provider_id
+    assert inst.provider_id.strip().lower() == entry.slug_a.strip().lower()
 
 
 def run_package_c_v2_dual_slug_rpl_cde_equivalence(
@@ -63,4 +64,5 @@ def run_package_c_v2_dual_slug_rpl_cde_equivalence(
     assert inst_a.provider_id and inst_b.provider_id
     assert inst_a.provider_id != inst_b.provider_id
     _assert_rpl_d_lifecycle_parity(inst_a, inst_b)
+    assert_dual_slug_rpl_e_contract_evidence(entry, inst_a, inst_b, tmp_path=tmp_path)
     _assert_rpl_e_failure_isolation(entry, tmp_path=tmp_path)
