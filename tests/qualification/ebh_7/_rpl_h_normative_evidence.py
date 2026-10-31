@@ -64,7 +64,7 @@ def _classify(concern_id: str) -> NormativeRplRow:
             task_id="EBH7-W2-RPL-BLOCKED",
             acceptance="OD-RPL-G2 fixed substrate OR second provider sandbox",
         )
-    from tests.qualification.ebh_5._factory_rpl_one_pass_proofs import (
+    from tests.qualification.ebh_5._factory_rpl_normative_nodes import (
         FACTORY_RPL_ONE_PASS_CONCERNS,
         factory_rpl_negative_node,
         factory_rpl_positive_node,

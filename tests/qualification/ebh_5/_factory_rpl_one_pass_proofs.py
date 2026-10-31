@@ -5,13 +5,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Final
 
 import pytest
 from intergrax.distributed.providers.sqlite_kv_store import SqliteDistributedKVStore
 from intergrax.integrations._shared.config import read_integration_slug_from_env
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
@@ -19,33 +18,6 @@ from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 from intergrax.tools.providers.observability.resolve import resolve_observability_backend
 from intergrax.tools.registry.wiring import ToolWiringContext
 from tests.qualification.ebh_5._qualification_llm_adapters import reset_and_register_qualification_llm_providers
-
-FACTORY_RPL_ONE_PASS_CONCERNS: Final[frozenset[str]] = frozenset(
-    {
-        "llm.chat_completion",
-        "llm.embedding",
-        "llm.rerank",
-        "llm.fallback_policy",
-        "llm.model_routing_qualifier",
-        "plugin.llm_adapter_registry",
-        "plugin.integration_catalog",
-        "env.integration_slug",
-        "distributed.sqlite_kv",
-        "execution.integration_bound_resolution",
-        "tool.observability_backend",
-        "speech.provider",
-    }
-)
-
-_ONE_PASS_TEST_MODULE: Final[str] = "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py"
-
-
-def factory_rpl_positive_node(concern_id: str) -> str:
-    return f"{_ONE_PASS_TEST_MODULE}::test_ebh5_factory_rpl_positive[{concern_id}]"
-
-
-def factory_rpl_negative_node(concern_id: str) -> str:
-    return f"{_ONE_PASS_TEST_MODULE}::test_ebh5_factory_rpl_negative[{concern_id}]"
 
 
 def _prove_llm_dual_adapter_selection() -> None:
