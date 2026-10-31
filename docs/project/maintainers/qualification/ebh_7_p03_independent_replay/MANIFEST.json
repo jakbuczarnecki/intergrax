@@ -1,7 +1,7 @@
 {
-  "TEST_EXECUTION_SHA": "83136ef7be70ff33d0a81b978c154ac8528930a2",
-  "TEST_EXECUTION_NOTE": "B6 F07/F08/F09 proof-strength correction @ 83136ef7; L3 log .tmp/session/ebh-7-b6-f07-f09/l3-final.log",
-  "EVIDENCE_PUBLICATION_SHA": "34bf540ab520755ec396bfa1b835f58f6beb4136",
+  "TEST_EXECUTION_SHA": "4e46034de1d8842442ccfff00a87dd74ae78600d",
+  "TEST_EXECUTION_NOTE": "F07/F09 enterprise one-pass closure @ 4e46034de; L3 .tmp/session/ebh-7-f07-f09-final/l3-final.log",
+  "EVIDENCE_PUBLICATION_SHA": "4e46034de1d8842442ccfff00a87dd74ae78600d",
   "INDEPENDENT_ACCEPTANCE_BASELINE_SHA": "PENDING_B6_PASS",
   "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING_OD_EBH7_08",
   "EBH7_CLOSURE_IMPLEMENTATION_SHA": "d4937889fc0b07515649dbdddf602df2a4415489",
@@ -9,7 +9,7 @@
   "EBH7_CLOSURE_IMPLEMENTATION_NOTE": "Terminal operator-disposition closure before B6 corrective; ancestor of TEST_EXECUTION_SHA only",
   "EBH7_REMEDIATION_CONTINUATION_SHA": "cb3fcb3c93ff361a138d36136cba0c8d6a5b59bd",
   "EBH7_REMEDIATION_BASELINE_SHA": "11b724dd18ba1a7ed5f53a3999dc18af1068391d",
-  "certification_banner": "EBH-7 — READY FOR INDEPENDENT B6 (F07–F09 proof-strength correction)",
+  "certification_banner": "EBH-7 — READY FOR FINAL INDEPENDENT B6 AUDIT (F07/F09 enterprise closure)",
   "pytest_profile": {
     "command": "uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line",
     "environment": "ci — uv frozen, dev-ci extra",
@@ -36,6 +36,7 @@
     "artifact_digests": "ARTIFACT_DIGESTS.json",
     "b6_evidence_consistency_matrix": "B6_EVIDENCE_CONSISTENCY_MATRIX.md",
     "closure_evidence_audit_matrix": "EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md",
+    "dual_slug_rpl_ef_matrix": "EBH_7_DUAL_SLUG_RPL_EF_MATRIX.md",
     "b6_external_handoff": "../EBH_7_B6_EXTERNAL_AUDIT_HANDOFF.md"
   },
   "explicit_non_claims": [

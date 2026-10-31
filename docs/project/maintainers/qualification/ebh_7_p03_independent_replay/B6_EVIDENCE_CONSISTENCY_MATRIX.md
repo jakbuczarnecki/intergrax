@@ -9,7 +9,7 @@
 | --- | --- |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA (pre-B6 terminal closure) | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
-| TEST_EXECUTION_SHA (= replay tree) | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
+| TEST_EXECUTION_SHA (= replay tree) | `4e46034de1d8842442ccfff00a87dd74ae78600d` |
 | EVIDENCE_PUBLICATION_SHA | see `MANIFEST.json` |
 | Repository HEAD (doc pin chain) | see `ARTIFACT_DIGESTS.json` `HEAD` |
 

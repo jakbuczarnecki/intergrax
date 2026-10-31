@@ -1,6 +1,6 @@
 # EBH-7 — Closure evidence audit matrix (G01–G09)
 
-**TEST_EXECUTION_SHA:** `83136ef7be70ff33d0a81b978c154ac8528930a2`
+**TEST_EXECUTION_SHA:** `4e46034de1d8842442ccfff00a87dd74ae78600d`
 
 **OPEN_FINDING count:** 0 (must be 0 before independent B6)
 
@@ -145,9 +145,9 @@
 | G09 | B6-F02-PRODQ-TEXT-PREFIX-NEGATIVE | PASS | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_internal_rpl_negative | CORRECTIVE_PYTEST: prove_prodq_colocated_adapter_internal_negative @ terminal... |
 | G09 | B6-F03-TEN-XDM-DOC-CONFLICT | PASS | tests.qualification.ebh_7._ebh7_certification_ssot:assert_ebh7_ten_xdm_evidence_ssot | CORRECTIVE_ASSERT: SSOT 26/0 TEN and 34/0 XDM @ registry + consistency matrix |
 | G09 | B6-F04-P03-TEST-CLOSURE-SHA | PASS | tests.qualification.ebh_7._ebh7_p03_evidence_integrity:assert_ebh7_p03_manifest_role_integrity | CORRECTIVE_ASSERT: TEST_EXECUTION_SHA descends from B6 corrective — not closu... |
-| G09 | B6-F07-RPL-EF-PROOF-STRENGTH | PASS | tests.qualification.ebh_5._dual_slug_rpl_ef_contract_evidence:dual_slug_rpl_ef_audit_errors | CORRECTIVE_ASSERT: 28 dual-slug RPL-E contract obligations + Package C v2 CDE... |
+| G09 | B6-F07-RPL-EF-PROOF-STRENGTH | PASS | tests.qualification.ebh_5._dual_slug_rpl_ef_matrix:assert_dual_slug_rpl_ef_matrix_complete | CORRECTIVE_ASSERT: 28-row F07 matrix + Package C v2 CDE operational surface |
 | G09 | B6-F08-ECAP-P03-DERIVED-GATES | PASS | tests.qualification.ebh_7._ebh7_closure_evidence_audit:assert_ebh7_ecap_p03_derived_closure_gates | CORRECTIVE_ASSERT: G07/G08 derive from certification + P03 integrity — not st... |
-| G09 | B6-F09-FINDING-RESOLUTION-EVIDENCE | PASS | tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_gate_findings_resolution_complete | CORRECTIVE_ASSERT |
+| G09 | B6-F09-FINDING-RESOLUTION-EVIDENCE | PASS | tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity | CORRECTIVE_ASSERT: Complete resolution map validated without recursive self-call |
 
 ## G10–G12 (outside agent closure)
 
