@@ -1,17 +1,22 @@
 {
-  "TEST_EXECUTION_SHA": "PENDING_POST_IMPLEMENTATION_REPLAY",
-  "TEST_EXECUTION_NOTE": "Set after green L3 replay on EBH7_CLOSURE_IMPLEMENTATION_SHA",
-  "EVIDENCE_PUBLICATION_SHA": "PENDING_EVIDENCE_PUBLICATION_COMMIT",
+  "TEST_EXECUTION_SHA": "6e4392fe87f9c914848e092e69f6cf2277124e0f",
+  "TEST_EXECUTION_NOTE": "L3 profile green @ IMPLEMENTATION_SHA — 129 passed, 1 xfail (B6 normative); log .tmp/session/ebh-7-closure-post-push/l3.log",
+  "EVIDENCE_PUBLICATION_SHA": "PENDING_THIS_COMMIT",
   "INDEPENDENT_ACCEPTANCE_BASELINE_SHA": "PENDING_B6_PASS",
   "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING_OD_EBH7_08",
-  "EBH7_CLOSURE_IMPLEMENTATION_SHA": "PENDING_THIS_COMMIT",
-  "EBH7_IMPLEMENTATION_SHA": "8bbda35dd1686b15bd6959b732ade3ba0f268632",
-  "EBH7_REMEDIATION_CONTINUATION_SHA": "3da23d6b9d92b512b0ded0440c5bd9dfc36ffb28",
+  "EBH7_CLOSURE_IMPLEMENTATION_SHA": "6e4392fe87f9c914848e092e69f6cf2277124e0f",
+  "EBH7_REMEDIATION_CONTINUATION_SHA": "cb3fcb3c93ff361a138d36136cba0c8d6a5b59bd",
+  "EBH7_REMEDIATION_BASELINE_SHA": "11b724dd18ba1a7ed5f53a3999dc18af1068391d",
   "certification_banner": "EBH-7 — CLOSURE PROGRAM — B6 OPEN",
   "pytest_profile": {
     "command": "uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line",
     "environment": "ci — uv frozen, dev-ci extra",
-    "replay_record": "L3_REPLAY_RECORD.md"
+    "replay_record": "L3_REPLAY_RECORD.md",
+    "last_replay": {
+      "passed": 129,
+      "xfailed": 1,
+      "xfail_node": "test_ebh7_remediation_rpl_normative_b6_readiness"
+    }
   },
   "artifacts": {
     "matrices_appendix": "../EBH_7_FINAL_AUDIT_MATRICES_APPENDIX.md",
