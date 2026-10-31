@@ -28,19 +28,26 @@ _ARTIFACTS = (
 )
 
 
-def _digest(path: Path) -> str:
+def _digest_git_path(git_path: str, head: str) -> str:
+    data = subprocess.check_output(["git", "show", f"{head}:{git_path}"], cwd=_REPO)
     h = hashlib.sha256()
-    h.update(path.read_bytes())
+    h.update(data)
     return h.hexdigest()
+
+
+def _artifact_git_path(rel: str) -> str:
+    rel_norm = rel.replace("\\", "/")
+    if rel_norm.startswith("../"):
+        return str((_REPLAY.parent / rel_norm[3:]).relative_to(_REPO)).replace("\\", "/")
+    return str((_REPLAY / rel_norm).relative_to(_REPO)).replace("\\", "/")
 
 
 def main() -> None:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=_REPO, text=True).strip()
     digests: dict[str, str] = {}
     for rel in _ARTIFACTS:
-        path = (_REPLAY / rel).resolve()
-        if path.is_file():
-            digests[rel.replace("\\", "/")] = _digest(path)
+        git_path = _artifact_git_path(rel)
+        digests[rel.replace("\\", "/")] = _digest_git_path(git_path, head)
     out = _REPLAY / "ARTIFACT_DIGESTS.json"
     payload = {"HEAD": head, "sha256": digests}
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

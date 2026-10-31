@@ -693,14 +693,13 @@ jobs:
     env:
       EBH7_DEFAULT_TEST_EXECUTION_SHA: 4eb7eb1a89f82215d5356aa7d000198e432777b0
       EBH7_DEFAULT_EVIDENCE_PUBLICATION_SHA: 96069c09c2ca5a7a3a9586db336716c9430ca1d7
-      EBH7_DEFAULT_P03_REPLAY_HEAD_SHA: 04cb7aeece321d875b5e8731a26ae89091709d6c
       EBH7_MANIFEST_PATH: docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json
       TEST_EXECUTION_SHA: >-
         ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || '4eb7eb1a89f82215d5356aa7d000198e432777b0' }}
       EVIDENCE_PUBLICATION_SHA: >-
         ${{ github.event.inputs.ebh7_evidence_publication_sha != '' && github.event.inputs.ebh7_evidence_publication_sha || '96069c09c2ca5a7a3a9586db336716c9430ca1d7' }}
       P03_REPLAY_HEAD_SHA: >-
-        ${{ github.event.inputs.ebh7_p03_replay_head_sha != '' && github.event.inputs.ebh7_p03_replay_head_sha || '04cb7aeece321d875b5e8731a26ae89091709d6c' }}
+        ${{ github.event.inputs.ebh7_p03_replay_head_sha != '' && github.event.inputs.ebh7_p03_replay_head_sha || github.sha }}
 
     steps:
       - name: Validate EBH-7 SHA inputs (fail closed)
@@ -717,58 +716,74 @@ jobs:
           echo "test_execution_sha=${TEST_EXECUTION_SHA}"
           echo "evidence_publication_sha=${EVIDENCE_PUBLICATION_SHA}"
 
-      - name: Fetch full history and checkout EVIDENCE replay tree
+      - name: Fetch full repository history
         uses: actions/checkout@v5
         with:
           ref: development
           fetch-depth: 0
 
-      - name: Verify replay tree and code identity (fail closed)
+      - name: Checkout P03 replay HEAD (executable + dossier on disk)
         shell: bash
         run: |
           set -euo pipefail
           git checkout "${P03_REPLAY_HEAD_SHA}"
           git cat-file -e "${P03_REPLAY_HEAD_SHA}^{commit}"
-          git cat-file -e "${TEST_EXECUTION_SHA}^{commit}"
-          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
-          REPLAY_HEAD="$(git rev-parse HEAD)"
-          if [ "${REPLAY_HEAD}" != "${P03_REPLAY_HEAD_SHA}" ]; then
-            echo "FAIL: HEAD (${REPLAY_HEAD}) != P03_REPLAY_HEAD_SHA"
-            exit 1
-          fi
-          git merge-base --is-ancestor "${TEST_EXECUTION_SHA}" "${P03_REPLAY_HEAD_SHA}"
-          git merge-base --is-ancestor "${EVIDENCE_PUBLICATION_SHA}" "${P03_REPLAY_HEAD_SHA}"
-          if ! git diff --quiet "${TEST_EXECUTION_SHA}" "${P03_REPLAY_HEAD_SHA}" -- tests/qualification/; then
-            echo "FAIL: qualification tests differ between TEST_EXECUTION and replay HEAD"
-            git diff --stat "${TEST_EXECUTION_SHA}" "${P03_REPLAY_HEAD_SHA}" -- tests/qualification/
-            exit 1
-          fi
-          echo "code_identity_test_execution_sha=${TEST_EXECUTION_SHA}"
-          echo "replay_head_sha=${REPLAY_HEAD}"
+          test "$(git rev-parse HEAD)" = "${P03_REPLAY_HEAD_SHA}"
 
-      - name: Resolve L3 pytest command from EVIDENCE MANIFEST
+      - name: Git status clean (fail closed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            exit 1
+          fi
+
+      - name: Immutable P03 digest verification (git objects @ replay HEAD)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/qualification/ebh7-l3
+          python3 scripts/qualification/verify_ebh7_p03_immutable_evidence.py \
+            --mode git-objects \
+            --git-tree-sha "${P03_REPLAY_HEAD_SHA}" \
+            --test-execution-sha "${TEST_EXECUTION_SHA}" \
+            --evidence-publication-sha "${EVIDENCE_PUBLICATION_SHA}" \
+            --replay-head-sha "${P03_REPLAY_HEAD_SHA}" \
+            --report build/qualification/ebh7-l3/immutable-git-objects.txt
+
+      - name: Executable tree identity (B5-F02)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/qualification/verify_ebh7_p03_immutable_evidence.py \
+            --mode identity \
+            --test-execution-sha "${TEST_EXECUTION_SHA}" \
+            --evidence-publication-sha "${EVIDENCE_PUBLICATION_SHA}" \
+            --replay-head-sha "${P03_REPLAY_HEAD_SHA}" \
+            --report build/qualification/ebh7-l3/executable-identity.txt
+
+      - name: Immutable MANIFEST pins + working-tree digests (B5-F01)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/qualification/verify_ebh7_p03_immutable_evidence.py \
+            --mode replay-disk \
+            --test-execution-sha "${TEST_EXECUTION_SHA}" \
+            --evidence-publication-sha "${EVIDENCE_PUBLICATION_SHA}" \
+            --replay-head-sha "${P03_REPLAY_HEAD_SHA}" \
+            --report build/qualification/ebh7-l3/immutable-pre-pytest.txt
+
+      - name: Resolve L3 pytest command from MANIFEST (read-only)
         id: manifest_profile
         shell: bash
         run: |
           set -euo pipefail
-          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
-          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}:${EBH7_MANIFEST_PATH}"
-          MANIFEST_TEST_SHA="$(python3 -c "import json; print(json.load(open('${EBH7_MANIFEST_PATH}'))['TEST_EXECUTION_SHA'])")"
-          if [ "${MANIFEST_TEST_SHA}" != "${TEST_EXECUTION_SHA}" ]; then
-            echo "FAIL: MANIFEST TEST_EXECUTION_SHA (${MANIFEST_TEST_SHA}) != ${TEST_EXECUTION_SHA}"
-            exit 1
-          fi
-          MANIFEST_EVIDENCE_SHA="$(python3 -c "import json; print(json.load(open('${EBH7_MANIFEST_PATH}'))['EVIDENCE_PUBLICATION_SHA'])")"
-          if [ "${MANIFEST_EVIDENCE_SHA}" != "${EVIDENCE_PUBLICATION_SHA}" ]; then
-            echo "FAIL: MANIFEST EVIDENCE_PUBLICATION_SHA (${MANIFEST_EVIDENCE_SHA}) != ${EVIDENCE_PUBLICATION_SHA}"
-            exit 1
-          fi
           PYTEST_CMD="$(python3 -c "import json; print(json.load(open('${EBH7_MANIFEST_PATH}'))['pytest_profile']['command'])")"
           echo "${PYTEST_CMD}" | grep -q 'test_ebh_5_dual_slug_rpl_e_operational_gates.py' || {
             echo "FAIL: MANIFEST profile must include F07 operational gates"
             exit 1
           }
-          echo "${PYTEST_CMD}" | grep -q 'test_ebh_7_gate_finding_resolution' || true
           echo "pytest_cmd=${PYTEST_CMD}" >> "${GITHUB_OUTPUT}"
 
       - name: Install uv
@@ -803,13 +818,6 @@ jobs:
             echo "pytest_cmd=${{ steps.manifest_profile.outputs.pytest_cmd }}"
             echo "qualification_status=STARTED"
           } > build/qualification/ebh7-l3/meta.txt
-
-      - name: Reconcile P03 digests on runner (pre-integrity gates)
-        run: |
-          uv run python scripts/qualification/render_ebh7_dual_slug_rpl_ef_matrix.py
-          uv run python scripts/qualification/render_ebh7_p03_artifact_digests.py
-          uv run python scripts/qualification/render_ebh7_closure_evidence_audit_matrix.py
-          uv run python scripts/qualification/render_ebh7_p03_artifact_digests.py
 
       - name: Protocol 03 L3 pytest (single invocation)
         id: ebh7_l3_pytest
