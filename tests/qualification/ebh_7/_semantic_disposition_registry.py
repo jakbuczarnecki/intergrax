@@ -13,7 +13,7 @@ from tests.qualification.ebh_7._semantic_proof_types import (
     VerifiedSemanticDisposition,
 )
 
-EBH7_SEMANTIC_DISPOSITION_SHA: Final[str] = "9ecf8666a42320cd65ca9852b1fdbdd8bbfbf805"
+EBH7_SEMANTIC_DISPOSITION_SHA: Final[str] = "54da93b1b3aa1756d10a44834fabb83938092063"
 
 _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
     VerifiedSemanticDisposition(
@@ -44,7 +44,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_03_gov_exec_cross_tenant_denied",
         assertions_inspected="validate_governance_identity_projection: ActiveExecutionGovernanceIdentity tenant-a vs runtime tenant-b → GovernanceIdentityProjectionMismatchError",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=BATCH-D-PENDING; Batch D D1 Gov→Exec projection",
+        test_execution_evidence="SHA=54da93b1b3aa1756d10a44834fabb83938092063; Batch D D1 Gov→Exec projection",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-04",
@@ -54,7 +54,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_04_exec_tool_tenant_boundary_tool_runtime",
         assertions_inspected="ToolRuntime.invoke → catalog dispatch → RuntimeToolInvoker tenant guard; ToolScopeViolationError before handler; invoker direct path in test_ebh7_ten_e2e_04_exec_tool_tenant_boundary",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=BATCH-D-PENDING; Batch D D1 Exec→Tool (ADR retain invoker seam)",
+        test_execution_evidence="SHA=54da93b1b3aa1756d10a44834fabb83938092063; Batch D D1 Exec→Tool (ADR retain invoker seam)",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-05",
@@ -64,7 +64,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_05_config_provider_cross_tenant",
         assertions_inspected="ReferenceScopedIntegrationAdaptation: credential tenant-a vs evidence tenant-b rejected (scoped integration factory path)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
-        test_execution_evidence="SHA=BATCH-D-PENDING; Batch D D1 Config→Provider",
+        test_execution_evidence="SHA=54da93b1b3aa1756d10a44834fabb83938092063; Batch D D1 Config→Provider",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-06",
