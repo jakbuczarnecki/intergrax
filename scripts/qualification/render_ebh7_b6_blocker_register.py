@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-_REPO = Path(__file__).resolve().parents[3]
+_REPO = Path(__file__).resolve().parents[2]
 _OUT = _REPO / "docs/project/maintainers/qualification/EBH_7_B6_BLOCKER_REGISTER.md"
 
 

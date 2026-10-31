@@ -1,6 +1,6 @@
 # EBH-7 — Final closure traceability
 
-**HEAD @ generation:** `6e4392fe87f9c914848e092e69f6cf2277124e0f`
+**HEAD @ generation:** `f8c54147bd42b3b8d9032b777358fa24c0a63b01`
 
 | Package | Requirement | Gate / test | SHA role |
 | --- | --- | --- | --- |
