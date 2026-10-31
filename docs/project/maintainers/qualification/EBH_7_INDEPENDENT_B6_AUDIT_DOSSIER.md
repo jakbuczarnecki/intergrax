@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Agent status** | B6 corrective closeout submitted — **awaiting independent re-audit** |
+| **Agent status** | G01–G09 closure audit PASS — **READY FOR INDEPENDENT B6** |
 | **Audited HEAD (prior)** | `d1bdcfa46e973cf9f3bb9ee14611036980951c91` |
 | **B6 PASS** | **NOT ISSUED** — external auditor only |
 | **OD-EBH7-08** | **OPEN** — after independent B6 PASS |
@@ -16,6 +16,8 @@
 | [`EBH_7_ECAP_EXECUTABLE_CHECKLIST.md`](EBH_7_ECAP_EXECUTABLE_CHECKLIST.md) | L3 + ECAP C1–C5 command |
 | [`EBH_7_FIXED_SUBSTRATE_RATIFICATIONS.md`](EBH_7_FIXED_SUBSTRATE_RATIFICATIONS.md) | OD-RPL-G2 ratifications |
 | ADR-EBH-7-INTERNAL-* | INTERNAL composition + PROD-Q gate |
+| [`EBH_7_B6_EXTERNAL_AUDIT_HANDOFF.md`](EBH_7_B6_EXTERNAL_AUDIT_HANDOFF.md) | External B6 replay + gates |
+| [`EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md`](ebh_7_p03_independent_replay/EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md) | G01–G09 SSOT |
 
 ## RPL @ terminal closure
 
@@ -28,7 +30,11 @@
 uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line
 ```
 
-Log: `.tmp/session/ebh7-b6-closeout/l3-pytest.log` @ B6 corrective TEST_EXECUTION_SHA (see MANIFEST).
+Log: `.tmp/session/ebh-7-closure-audit/l3-final.log` @ TEST_EXECUTION_SHA (see MANIFEST).
+
+Handoff: [`EBH_7_B6_EXTERNAL_AUDIT_HANDOFF.md`](../EBH_7_B6_EXTERNAL_AUDIT_HANDOFF.md).
+
+Closure audit: [`EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md`](ebh_7_p03_independent_replay/EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md).
 
 ## B6 corrective scope (agent)
 

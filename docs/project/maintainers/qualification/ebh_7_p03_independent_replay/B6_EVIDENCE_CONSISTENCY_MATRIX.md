@@ -9,7 +9,7 @@
 | --- | --- |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA (pre-B6 terminal closure) | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
-| TEST_EXECUTION_SHA (= B6 corrective tree replayed) | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
+| TEST_EXECUTION_SHA (= replay tree) | `72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9` |
 | EVIDENCE_PUBLICATION_SHA | see `MANIFEST.json` |
 | Repository HEAD (doc pin chain) | see `ARTIFACT_DIGESTS.json` `HEAD` |
 
@@ -31,7 +31,7 @@
 | Skipped | **0** |
 | Xfailed | **0** |
 | Profile | `MANIFEST.json` → `pytest_profile.command` |
-| Log | `.tmp/session/ebh7-b6-evidence-reconcile/l3-final.log` |
+| Log | `.tmp/session/ebh-7-closure-audit/l3-final.log` |
 
 ## INT2E / ECAP
 
@@ -40,13 +40,20 @@
 | INT2E bundle regression | In L3 profile (`test_ebh_7_int2e_bundle_regression.py`) |
 | ECAP C1–C5 + mutation | `test_ebh_7_certification_ssot_gates.py`, `test_ebh_7_certification_mutation_fail_closed.py` |
 
+## G01–G09 closure audit
+
+| Item | Status |
+| --- | --- |
+| Closure evidence matrix | [`EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md`](EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md) — **0 OPEN_FINDING** @ SSOT |
+| Gate | `test_ebh_7_closure_evidence_audit_gates.py` |
+
 ## B6 readiness
 
 | Claim | Status |
 | --- | --- |
 | Independent B6 PASS | **NOT ISSUED** (agent / repo non-claim) |
 | OD-EBH7-08 | **OPEN** |
-| Banner | `MANIFEST.json` → `certification_banner` |
+| Banner | `MANIFEST.json` → `certification_banner` (READY FOR INDEPENDENT B6) |
 
 ## Historical superseded (provenance only)
 

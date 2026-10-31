@@ -3,7 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Stage | EBH-7 |
-| Agent readiness | Remediation program materialized — **not** B6 PASS |
+| Agent readiness | G01–G09 closure audit @ SSOT — **READY FOR INDEPENDENT B6** (not B6 PASS) |
+| Handoff | [`EBH_7_B6_EXTERNAL_AUDIT_HANDOFF.md`](EBH_7_B6_EXTERNAL_AUDIT_HANDOFF.md) |
 | B6 | **OPEN** — external auditor |
 | OD-EBH7-08 | **OPEN** |
 

@@ -1,5 +1,7 @@
 # EBH-7 — Test execution record
 
+> **Superseded for closure readiness:** authoritative counts and G01–G09 traceability @ [`ebh_7_p03_independent_replay/EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md`](ebh_7_p03_independent_replay/EBH_7_CLOSURE_EVIDENCE_AUDIT_MATRIX.md) and [`L3_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/L3_REPLAY_RECORD.md). Rows below are **historical provenance only**.
+
 | Field | Value |
 | --- | --- |
 | Closure wave (superseded for semantic) | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
