@@ -148,6 +148,8 @@
 | G09 | B6-F07-RPL-EF-PROOF-STRENGTH | PASS | tests.qualification.ebh_5._dual_slug_rpl_ef_matrix:assert_dual_slug_rpl_ef_matrix_complete | CORRECTIVE_ASSERT: 28-row F07 matrix + Package C v2 CDE operational surface |
 | G09 | B6-F08-ECAP-P03-DERIVED-GATES | PASS | tests.qualification.ebh_7._ebh7_closure_evidence_audit:assert_ebh7_ecap_p03_derived_closure_gates | CORRECTIVE_ASSERT: G07/G08 derive from certification + P03 integrity — not st... |
 | G09 | B6-F09-FINDING-RESOLUTION-EVIDENCE | PASS | tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity | CORRECTIVE_ASSERT: Complete resolution map validated without recursive self-call |
+| G09 | B6-F10-ECAP-NORMATIVE-C1-C5 | PASS | tests.qualification.ebh_7._ebh7_f10_ecap_normative_matrix:assert_ebh7_f10_ecap_normative_ready | CORRECTIVE_ASSERT: READY FOR INDEPENDENT RE-AUDIT — not B6 PASS |
+| G09 | B6-F11-DOSSIER-STALE-REPLAY | PASS | tests/qualification/ebh_7/test_ebh_7_b6_f10_f11_corrective_gates.py::test_b6_f11_dossier_replay_p... | CORRECTIVE_PYTEST: MANIFEST profile + B5 run + TEST_EXECUTION_SHA in dossier |
 
 ## G10–G12 (outside agent closure)
 

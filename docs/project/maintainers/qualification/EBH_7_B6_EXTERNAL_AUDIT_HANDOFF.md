@@ -25,6 +25,7 @@ gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3
 - **`TEST_EXECUTION_SHA`** unchanged: `4eb7eb1a…` · executable identity = full-tree diff + allowlist (not `tests/qualification/` only).
 - **`EVIDENCE_PUBLICATION_SHA`** MANIFEST pin: `96069c09c…`.
 - Prior run **`41212701986`** superseded (reconcile-before-verify) — see [`EBH_7_B5_INTEGRITY_RECORD.md`](EBH_7_B5_INTEGRITY_RECORD.md).
+- **ECAP F10:** [`EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`](EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md) · §14 report · F10/F11 gates @ replay HEAD.
 - Record: [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md).
 
 Push-triggered **`ci-smoke`** on `development` is **not** L3; recent **cancelled** runs (~10m) are smoke **timeout**, not L3 failure.

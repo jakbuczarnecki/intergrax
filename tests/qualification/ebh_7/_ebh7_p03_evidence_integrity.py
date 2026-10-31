@@ -74,15 +74,28 @@ def assert_ebh7_p03_manifest_role_integrity() -> None:
     )
 
 
+def _resolve_replay_git_path(rel: str) -> str:
+    if rel.startswith("../"):
+        return str((_REPLAY.parent / rel[3:]).relative_to(_REPO)).replace("\\", "/")
+    return str((_REPLAY / rel).relative_to(_REPO)).replace("\\", "/")
+
+
+def _sha256_git_path(head: str, git_path: str) -> str:
+    data = subprocess.check_output(["git", "show", f"{head}:{git_path}"], cwd=_REPO)
+    h = hashlib.sha256()
+    h.update(data)
+    return h.hexdigest()
+
+
 def assert_ebh7_p03_artifact_digests_integrity() -> None:
     if not _DIGESTS.is_file():
         raise AssertionError("ARTIFACT_DIGESTS.json missing — run render_ebh7_p03_artifact_digests.py")
+    head = current_head_sha()
     payload = json.loads(_DIGESTS.read_text(encoding="utf-8"))
     recorded: dict[str, str] = payload.get("sha256", {})
     for rel, expected in recorded.items():
-        path = (_REPLAY / rel).resolve()
-        assert path.is_file(), f"Digest artifact missing: {rel}"
-        actual = _sha256_file(path)
+        git_path = _resolve_replay_git_path(rel)
+        actual = _sha256_git_path(head, git_path)
         assert actual == expected, f"Digest mismatch for {rel}"
 
 

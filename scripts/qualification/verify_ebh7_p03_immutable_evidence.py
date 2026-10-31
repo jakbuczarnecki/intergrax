@@ -25,6 +25,9 @@ _EXECUTABLE_IDENTITY_ALLOWLIST_PREFIXES: tuple[str, ...] = (
 _EXECUTABLE_IDENTITY_ALLOWLIST_EXACT: frozenset[str] = frozenset(
     {
         "tests/qualification/ebh_7/test_ebh_7_p03_b5_immutable_gates.py",
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_f11_corrective_gates.py",
+        "tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py",
+        "tests/qualification/ebh_7/_constants.py",
         "scripts/qualification/render_ebh7_p03_artifact_digests.py",
     }
 )

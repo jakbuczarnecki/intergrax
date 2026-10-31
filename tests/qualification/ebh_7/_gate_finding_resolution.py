@@ -135,6 +135,18 @@ _FINDING_RESOLUTIONS: Final[dict[str, FindingResolution]] = {
         "tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity",
         "Complete resolution map validated without recursive self-call",
     ),
+    "B6-F10-ECAP-NORMATIVE-C1-C5": FindingResolution(
+        "B6-F10-ECAP-NORMATIVE-C1-C5",
+        FindingResolutionKind.CORRECTIVE_ASSERT,
+        "tests.qualification.ebh_7._ebh7_f10_ecap_normative_matrix:assert_ebh7_f10_ecap_normative_ready",
+        "READY FOR INDEPENDENT RE-AUDIT — not B6 PASS",
+    ),
+    "B6-F11-DOSSIER-STALE-REPLAY": FindingResolution(
+        "B6-F11-DOSSIER-STALE-REPLAY",
+        FindingResolutionKind.CORRECTIVE_PYTEST,
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_f11_corrective_gates.py::test_b6_f11_dossier_replay_profile_current",
+        "MANIFEST profile + B5 run + TEST_EXECUTION_SHA in dossier",
+    ),
 }
 
 

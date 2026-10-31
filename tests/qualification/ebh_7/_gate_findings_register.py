@@ -156,6 +156,26 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
         required_strength=GateStrength.ACCEPTANCE,
         correction="_gate_finding_resolution.py — pytest, assert hook, or documented supersession per finding",
     ),
+    GateFinding(
+        gate_id="B6-F10-ECAP-NORMATIVE-C1-C5",
+        prior_claim="Checklist counters + PROHIBITED zero = full ECAP C1–C5",
+        actual_strength=GateStrength.INTEGRITY,
+        required_strength=GateStrength.ACCEPTANCE,
+        correction=(
+            "EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md + ECAP §14 report — "
+            "per-gate normative scope, execution SHA, drift, verdict"
+        ),
+    ),
+    GateFinding(
+        gate_id="B6-F11-DOSSIER-STALE-REPLAY",
+        prior_claim="Dossier replay profile and HEAD matched pre-B5 closure",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.INTEGRITY,
+        correction=(
+            "Sync dossier, traceability, checklist with MANIFEST + B5 GHA 41214574614; "
+            "preserve historical SHA provenance"
+        ),
+    ),
 )
 
 
