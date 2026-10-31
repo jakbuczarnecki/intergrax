@@ -693,14 +693,14 @@ jobs:
     env:
       EBH7_DEFAULT_TEST_EXECUTION_SHA: 4eb7eb1a89f82215d5356aa7d000198e432777b0
       EBH7_DEFAULT_EVIDENCE_PUBLICATION_SHA: 96069c09c2ca5a7a3a9586db336716c9430ca1d7
-      EBH7_DEFAULT_P03_REPLAY_HEAD_SHA: 1a73981e1fa818eb1494495c4f84f4b55b3f6bb6
+      EBH7_DEFAULT_P03_REPLAY_HEAD_SHA: 04cb7aeece321d875b5e8731a26ae89091709d6c
       EBH7_MANIFEST_PATH: docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json
       TEST_EXECUTION_SHA: >-
         ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || '4eb7eb1a89f82215d5356aa7d000198e432777b0' }}
       EVIDENCE_PUBLICATION_SHA: >-
         ${{ github.event.inputs.ebh7_evidence_publication_sha != '' && github.event.inputs.ebh7_evidence_publication_sha || '96069c09c2ca5a7a3a9586db336716c9430ca1d7' }}
       P03_REPLAY_HEAD_SHA: >-
-        ${{ github.event.inputs.ebh7_p03_replay_head_sha != '' && github.event.inputs.ebh7_p03_replay_head_sha || '1a73981e1fa818eb1494495c4f84f4b55b3f6bb6' }}
+        ${{ github.event.inputs.ebh7_p03_replay_head_sha != '' && github.event.inputs.ebh7_p03_replay_head_sha || '04cb7aeece321d875b5e8731a26ae89091709d6c' }}
 
     steps:
       - name: Validate EBH-7 SHA inputs (fail closed)
