@@ -24,7 +24,7 @@
 | EBH7_B6_PROOF_STRENGTH_CORRECTION_SHA | B6 F07/F08/F09 RPL-E/F + derived G07/G08 + G09 resolution | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
 | EBH7_F07_PROBE_FAILCLOSED_SHA | RPL-E operational probe fail-closed + adversarial gates | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | TEST_EXECUTION_SHA | L3 replay (195 nodes incl. F07 operational gates) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `58af29e54ffcff604e0b8b5e01bf66675dcb48c1` |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `96069c09c2ca5a7a3a9586db336716c9430ca1d7` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
