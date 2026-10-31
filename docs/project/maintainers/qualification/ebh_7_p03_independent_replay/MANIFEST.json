@@ -1,23 +1,23 @@
 {
-  "TEST_EXECUTION_SHA": "f8c54147bd42b3b8d9032b777358fa24c0a63b01",
-  "TEST_EXECUTION_NOTE": "B6 corrective @ f8c54147b — 250 passed / 8 skip / 1 xfail; ECAP profile 129 passed; log .tmp/session/ebh-7-b6-corrective/",
-  "EVIDENCE_PUBLICATION_SHA": "a129c86cbe5a0edd30532bf2f8c389a0446c2639",
+  "TEST_EXECUTION_SHA": "863e66ae776f0f682fec3829b2b80591256ef6de",
+  "TEST_EXECUTION_NOTE": "RPL-H convergence @ 863e66ae7 — 336 passed / 8 skip / 1 xfail; ECAP 157 passed; log .tmp/session/ebh-7-rpl-convergence/",
+  "EVIDENCE_PUBLICATION_SHA": "863e66ae776f0f682fec3829b2b80591256ef6de",
   "INDEPENDENT_ACCEPTANCE_BASELINE_SHA": "PENDING_B6_PASS",
   "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING_OD_EBH7_08",
-  "EBH7_CLOSURE_IMPLEMENTATION_SHA": "f8c54147bd42b3b8d9032b777358fa24c0a63b01",
+  "EBH7_CLOSURE_IMPLEMENTATION_SHA": "863e66ae776f0f682fec3829b2b80591256ef6de",
   "EBH7_REMEDIATION_CONTINUATION_SHA": "cb3fcb3c93ff361a138d36136cba0c8d6a5b59bd",
   "EBH7_REMEDIATION_BASELINE_SHA": "11b724dd18ba1a7ed5f53a3999dc18af1068391d",
-  "certification_banner": "EBH-7 — B6 CORRECTIVE — INDEPENDENT B6 NOT READY",
+  "certification_banner": "EBH-7 — RPL CONVERGENCE — EXACT OPERATOR/VENDOR BLOCKERS REMAIN",
   "pytest_profile": {
     "command": "uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line",
     "environment": "ci — uv frozen, dev-ci extra",
     "replay_record": "L3_REPLAY_RECORD.md",
     "last_replay": {
-      "passed": 250,
+      "passed": 336,
       "skipped": 8,
       "xfailed": 1,
       "xfail_node": "test_ebh7_remediation_rpl_normative_b6_readiness",
-      "ecap_profile_passed": 129
+      "ecap_profile_passed": 157
     }
   },
   "artifacts": {
@@ -27,6 +27,7 @@
     "closure_traceability": "../EBH_7_FINAL_CLOSURE_TRACEABILITY.md",
     "int2e_matrix": "../EBH_7_INT2E_BUNDLE_QUALIFICATION_MATRIX.md",
     "b6_blocker_register": "../EBH_7_B6_BLOCKER_REGISTER.md",
+    "rpl_final_convergence_matrix": "../EBH_7_RPL_FINAL_CONVERGENCE_DECISION_MATRIX.md",
     "artifact_digests": "ARTIFACT_DIGESTS.json"
   },
   "explicit_non_claims": [
