@@ -83,8 +83,15 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
         required_strength=GateStrength.BEHAVIORAL,
         correction="Normative RPL layer + appendix; factory/blocked/dual-slug demoted until OD or real proof",
     ),
+    GateFinding(
+        gate_id="B6-NORMATIVE-OPEN-ROWS",
+        prior_claim="L3 green = B6 ready",
+        actual_strength=GateStrength.INTEGRITY,
+        required_strength=GateStrength.ACCEPTANCE,
+        correction=("23 RPL rows (17 factory + 6 OD-blocked) remain normative gaps; see EBH_7_B6_CORRECTIVE_LOOP.md"),
+    ),
 )
 
 
 def assert_ebh7_corrective_findings_registered() -> None:
-    assert len(EBH7_CORRECTIVE_GATE_FINDINGS) >= 9
+    assert len(EBH7_CORRECTIVE_GATE_FINDINGS) >= 10

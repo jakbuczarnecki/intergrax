@@ -15,3 +15,5 @@
 | W8 | OD-EBH7-08 | **OPERATOR BLOCKED** | Signature record template OPEN |
 
 **Operator blocked:** OD-RPL-G2 (6 BLOCKED concerns), OD-EBH7-SCOPE-RESIDUAL, OD-EBH7-08, B6 PASS.
+
+**Closure program (Packages A–I):** SSOT gates, 0 XDM COMPOSED_PROXY, INT2E/family matrices, P03 digests — see [`EBH_7_FINAL_CLOSURE_TRACEABILITY.md`](EBH_7_FINAL_CLOSURE_TRACEABILITY.md).

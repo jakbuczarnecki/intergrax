@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Final
 
 from tests.qualification.ebh_5._behavioral_proof_registry import QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE
 from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import catalog_by_concern_id
@@ -41,14 +40,6 @@ class NormativeRplRow:
     acceptance: str
 
 
-_DUAL_SLUG_DEMONSTRATED: Final[frozenset[str]] = frozenset(
-    {
-        "integration.relational_store",
-        "persistence.relational_sqlite_lab",
-    }
-)
-
-
 def _classify(concern_id: str) -> NormativeRplRow:
     if concern_id in LEGACY_BEHAVIORAL_QUALIFIED:
         node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[concern_id]
@@ -79,24 +70,17 @@ def _classify(concern_id: str) -> NormativeRplRow:
         negative = (
             f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}::test_ebh5_pkgc_v2_dual_slug_unregistered[{entry.concern_id}]"
         )
-        status = (
-            RplVerifiedStatus.DEMONSTRATED
-            if concern_id in _DUAL_SLUG_DEMONSTRATED
-            else RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY
-        )
-        verdict = (
-            RplSemanticVerdict.QUALIFIED if status is RplVerifiedStatus.DEMONSTRATED else RplSemanticVerdict.PARTIAL
-        )
         return NormativeRplRow(
             concern_id=concern_id,
-            semantic_verdict=verdict,
-            verified_status=status,
+            semantic_verdict=RplSemanticVerdict.PARTIAL,
+            verified_status=RplVerifiedStatus.DEMONSTRATED,
             positive_test=positive,
             negative_test=negative,
-            defect="Registry dual-slug resolve only — RPL-C/D/E equivalence not proven"
-            if status is RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY
-            else "Sanctioned dual backend exercised",
-            task_id="EBH7-W2-RPL-DUAL",
+            defect=(
+                "Package C v2 dual-slug integration executed; "
+                "RPL-C/D/E operational equivalence not independently proven"
+            ),
+            task_id="EBH7-FC-C-DUAL",
             acceptance="Operational equivalence or ALLOWED_FIXED substrate @ OD-RPL-G2",
         )
     if concern_id in QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE:
@@ -147,8 +131,6 @@ def assert_ebh7_rpl_h_normative_evidence_integrity() -> None:
         if row.concern_id in BLOCKED_CONCERN_ROOT_CAUSE:
             assert row.semantic_verdict is RplSemanticVerdict.BLOCKED
         if row.verified_status is RplVerifiedStatus.FACTORY_ONLY:
-            assert row.semantic_verdict is RplSemanticVerdict.PARTIAL
-        if row.verified_status is RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY:
             assert row.semantic_verdict is RplSemanticVerdict.PARTIAL
         if row.positive_test == row.negative_test and row.semantic_verdict is RplSemanticVerdict.QUALIFIED:
             if row.concern_id not in LEGACY_BEHAVIORAL_QUALIFIED:

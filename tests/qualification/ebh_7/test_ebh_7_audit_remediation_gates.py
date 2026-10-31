@@ -38,6 +38,12 @@ def test_ebh7_remediation_program_artifacts_materialized() -> None:
     assert_ebh7_audit_remediation_program_materialized()
 
 
+def test_ebh7_remediation_certification_ssot_rpl_layer() -> None:
+    from tests.qualification.ebh_7._ebh7_certification_ssot import assert_ebh7_rpl_certification_ssot
+
+    assert_ebh7_rpl_certification_ssot()
+
+
 def test_ebh7_remediation_no_xfail_in_ebh7_suite_sources() -> None:
     for path in _EBH7_SUITE.rglob("test_*.py"):
         if path.name == "test_ebh_7_audit_remediation_gates.py":
