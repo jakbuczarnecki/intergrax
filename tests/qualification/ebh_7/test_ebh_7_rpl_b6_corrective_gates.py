@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
 def test_ebh7_b6_rpl_open_register_non_empty_until_qualified() -> None:
     open_ids = normative_rpl_b6_open_concern_ids()
-    assert len(open_ids) == 23
+    assert len(open_ids) == 11
 
 
 def test_ebh7_b6_mutation_demonstrated_partial_semantic_fails_integrity() -> None:

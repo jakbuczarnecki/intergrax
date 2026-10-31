@@ -45,7 +45,10 @@ LEGACY_BEHAVIORAL_QUALIFIED: Final[frozenset[str]] = frozenset(
 )
 
 BLOCKED_CONCERN_ROOT_CAUSE: Final[dict[str, str]] = {
-    "integration.external_work": "No providers/external_work category — cannot register alternate backend",
+    "integration.external_work": (
+        "IntegrationCategory.external_work exists; zero catalog providers — "
+        "dual provider requires sanctioned registration path (not mock registry)"
+    ),
     "integration.billing_meter": "Single catalog provider (stripe) — alternate vendor sandbox required",
     "integration.managed_retrieval": "Single catalog provider (openai) — alternate vendor sandbox required",
     "integration.ml_inference_host": "Single catalog provider (replicate) — alternate vendor sandbox required",

@@ -64,6 +64,23 @@ def _classify(concern_id: str) -> NormativeRplRow:
             task_id="EBH7-W2-RPL-BLOCKED",
             acceptance="OD-RPL-G2 fixed substrate OR second provider sandbox",
         )
+    from tests.qualification.ebh_5._factory_rpl_one_pass_proofs import (
+        FACTORY_RPL_ONE_PASS_CONCERNS,
+        factory_rpl_negative_node,
+        factory_rpl_positive_node,
+    )
+
+    if concern_id in FACTORY_RPL_ONE_PASS_CONCERNS:
+        return NormativeRplRow(
+            concern_id=concern_id,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.DEMONSTRATED,
+            positive_test=factory_rpl_positive_node(concern_id),
+            negative_test=factory_rpl_negative_node(concern_id),
+            defect="EBH-7 one-pass factory RPL — distinct pos/neg @ sanctioned contracts",
+            task_id="EBH7-ONE-PASS-FACTORY",
+            acceptance="Adapter/registry/env/distributed/tool behavioral equivalence",
+        )
     if concern_id in catalog_by_concern_id():
         entry = catalog_by_concern_id()[concern_id]
         positive = (
