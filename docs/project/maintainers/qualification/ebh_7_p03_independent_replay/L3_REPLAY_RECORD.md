@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| TEST_EXECUTION_SHA | `b48e3c429` (full SHA after evidence pin) |
+| TEST_EXECUTION_SHA | `b48e3c429db312a9b725d93c7d28abd09eea1dc6` |
 | Profile | ECAP L3 + `test_ebh_5_factory_rpl_one_pass.py` + full `tests/qualification/ebh_7/` |
 | Result | **368+ passed**, **8 skipped**, **1 xfailed** (B6 normative) |
 | ECAP consolidated | **181 passed** @ implementation SHA |
