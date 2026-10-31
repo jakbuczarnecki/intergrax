@@ -1,6 +1,6 @@
 # EBH-7 — Final audit matrices appendix (generated SSOT mirror)
 
-**Generated @ HEAD:** `fd3bc0104c9273f30262946afb16c15c04c8493a`
+**Generated @ HEAD:** `8afff322cb2525f0106c2bbccf2d44f682d3e0df`
 
 Regenerate: `uv run python scripts/qualification/render_ebh7_final_audit_matrices.py`
 
@@ -137,7 +137,7 @@ Regenerate: `uv run python scripts/qualification/render_ebh7_final_audit_matrice
 
 ## Production change regression matrix (gap-closure range)
 
-Range: `ad3e24a20d7d1b341f721ef2427b9c1f65506061`..HEAD · **35** paths
+Range: `ad3e24a20d7d1b341f721ef2427b9c1f65506061`..HEAD · **36** paths
 
 | PATH | REGRESSION_TASK |
 | --- | --- |
@@ -176,3 +176,4 @@ Range: `ad3e24a20d7d1b341f721ef2427b9c1f65506061`..HEAD · **35** paths
 | `intergrax/integrations/providers/vector_store/lancedb/bundle.py` | EBH7-W1-INT2E-BUNDLE |
 | `intergrax/integrations/providers/wiki_knowledge/confluence/bundle.py` | EBH7-W1-INT2E-BUNDLE |
 | `intergrax/integrations/providers/wiki_knowledge/notion/bundle.py` | EBH7-W1-INT2E-BUNDLE |
+| `intergrax/memory/stores/sqlite_conversational_memory_store.py` | EBH7-W1-PROD-DELTA |

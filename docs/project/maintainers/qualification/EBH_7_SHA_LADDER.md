@@ -19,8 +19,9 @@
 | EBH7_REMEDIATION_BASELINE_SHA | Independent audit remediation entry @ pushed HEAD | `11b724dd18ba1a7ed5f53a3999dc18af1068391d` |
 | EBH7_SEMANTIC_DISPOSITION_SHA | SSOT disposition pin | see `_semantic_disposition_registry.py` |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA | Terminal closure — 56/56 RPL @ operator dispositions | `d4937889fc0b07515649dbdddf602df2a4415489` |
-| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `d4937889fc0b07515649dbdddf602df2a4415489` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | 0e8a6b6703a1a309f95fe1f572fe4aecbbd62696 |
+| EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | Independent B6 F01/F02 + INTERNAL/FIXED sweep | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
+| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | *pending this evidence commit* |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 

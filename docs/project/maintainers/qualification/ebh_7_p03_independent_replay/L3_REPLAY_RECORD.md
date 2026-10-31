@@ -2,9 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| TEST_EXECUTION_SHA | `d4937889fc0b07515649dbdddf602df2a4415489` |
+| TEST_EXECUTION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
 | Profile | ECAP L3 + terminal RPL gates + full `tests/qualification/ebh_7/` |
-| Result | **187 passed**, **0 xfailed** (B6 normative readiness passes) |
-| Log | `.tmp/session/ebh-7-terminal/l3-at-d4937889.log` |
+| Result | **187 passed**, **0 xfailed** |
+| Log | `.tmp/session/ebh7-b6-closeout/l3-pytest.log` |
 
-**RPL:** 56/56 QUALIFIED · **0 B6 open**. See [`EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md`](../EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md).
+**RPL:** 56/56 QUALIFIED · **0 B6 open** · corrective B6-F01/F02 @ prior audit `d1bdcfa46`. See [`EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md`](../EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md).

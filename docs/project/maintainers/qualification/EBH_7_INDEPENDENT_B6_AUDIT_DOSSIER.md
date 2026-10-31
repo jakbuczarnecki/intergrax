@@ -2,7 +2,8 @@
 
 | Field | Value |
 | --- | --- |
-| **Agent status** | Technical prerequisites for independent B6 — **READY** |
+| **Agent status** | B6 corrective closeout submitted — **awaiting independent re-audit** |
+| **Audited HEAD (prior)** | `d1bdcfa46e973cf9f3bb9ee14611036980951c91` |
 | **B6 PASS** | **NOT ISSUED** — external auditor only |
 | **OD-EBH7-08** | **OPEN** — after independent B6 PASS |
 
@@ -27,7 +28,13 @@
 uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line
 ```
 
-Log: `.tmp/session/ebh-7-terminal/l3-full.log` @ implementation commit.
+Log: `.tmp/session/ebh7-b6-closeout/l3-pytest.log` @ B6 corrective TEST_EXECUTION_SHA (see MANIFEST).
+
+## B6 corrective scope (agent)
+
+- **B6-F01:** distinct external-work conforming implementations + composition selection.
+- **B6-F02:** PROD-Q INTERNAL negative via sanctioned production adapter gate (no file-prefix assertions).
+- **FIXED sweep:** SQLite conversational memory behavioral roundtrip + store contract repair.
 
 ## Explicit non-claims
 
