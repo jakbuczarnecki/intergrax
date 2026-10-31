@@ -23,6 +23,18 @@
 
 Provenance preserved in [`EBH_7_W1W2_QUALIFICATION_RECONCILIATION_RECORD.md`](EBH_7_W1W2_QUALIFICATION_RECONCILIATION_RECORD.md) and gap-closure records; **do not** treat OPEN counts in this section as current certification state.
 
+<a id="TENANT-X"></a>
+
+### W6-TENANT-X-FINAL-READY — historical supersession
+
+Single TENANT-X readiness test is **not** platform E2E. Effective proof map: `_semantic_disposition_registry.py` + gates cited under **Effective @ TEST_EXECUTION_SHA** above.
+
+<a id="readiness-reconcile"></a>
+
+### READINESS-TABLE-PASS — historical supersession
+
+Readiness tables distinguish materialization vs qualification columns; see B6-F03 effective layer and closure audit G04–G05 @ `TEST_EXECUTION_SHA`.
+
 ## B6-F04 — P03 TEST vs closure SHA (reconciled)
 
 | Role | SHA | Meaning |

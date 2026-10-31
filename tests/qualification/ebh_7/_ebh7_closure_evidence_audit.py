@@ -320,10 +320,6 @@ def _findings_rows() -> tuple[ClosureAuditRow, ...]:
             status = ClosureAuditStatus.OPEN_FINDING
             notes = "no resolution evidence — absence does not imply resolved"
             evidence = finding.correction[:160]
-        elif finding.gate_id == "B6-F09-FINDING-RESOLUTION-EVIDENCE":
-            status = ClosureAuditStatus.PASS
-            notes = res.kind.value
-            evidence = res.evidence_ref
         else:
             err = validate_finding_resolution(res)
             if err:

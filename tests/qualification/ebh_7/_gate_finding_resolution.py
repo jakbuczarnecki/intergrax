@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Final
 
 from tests.qualification.ebh_5._proof_validation import pytest_test_function_exists
+from tests.qualification.ebh_7._ebh7_l3_profile_coverage import l3_profile_covers_pytest_node
+from tests.qualification.ebh_7._ebh7_p03_evidence_integrity import _load_manifest
 from tests.qualification.ebh_7._gate_findings_register import EBH7_CORRECTIVE_GATE_FINDINGS
 
 _REPO = Path(__file__).resolve().parents[3]
@@ -118,8 +120,8 @@ _FINDING_RESOLUTIONS: Final[dict[str, FindingResolution]] = {
     "B6-F07-RPL-EF-PROOF-STRENGTH": FindingResolution(
         "B6-F07-RPL-EF-PROOF-STRENGTH",
         FindingResolutionKind.CORRECTIVE_ASSERT,
-        "tests.qualification.ebh_5._dual_slug_rpl_ef_contract_evidence:dual_slug_rpl_ef_audit_errors",
-        "28 dual-slug RPL-E contract obligations + Package C v2 CDE/unreg pytest",
+        "tests.qualification.ebh_5._dual_slug_rpl_ef_matrix:assert_dual_slug_rpl_ef_matrix_complete",
+        "28-row F07 matrix + Package C v2 CDE operational surface",
     ),
     "B6-F08-ECAP-P03-DERIVED-GATES": FindingResolution(
         "B6-F08-ECAP-P03-DERIVED-GATES",
@@ -130,8 +132,8 @@ _FINDING_RESOLUTIONS: Final[dict[str, FindingResolution]] = {
     "B6-F09-FINDING-RESOLUTION-EVIDENCE": FindingResolution(
         "B6-F09-FINDING-RESOLUTION-EVIDENCE",
         FindingResolutionKind.CORRECTIVE_ASSERT,
-        "tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_gate_findings_resolution_complete",
-        "Every finding bound to pytest, assert hook, or documented supersession",
+        "tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity",
+        "Complete resolution map validated without recursive self-call",
     ),
 }
 
@@ -171,10 +173,18 @@ def _run_corrective_assert(evidence_ref: str) -> None:
         raise AssertionError("; ".join(str(x) for x in result[:6]))
 
 
-def validate_finding_resolution(res: FindingResolution) -> str | None:
+def all_finding_resolutions() -> dict[str, FindingResolution]:
+    return dict(_FINDING_RESOLUTIONS)
+
+
+def validate_finding_resolution(res: FindingResolution, *, skip_gate_ids: frozenset[str] = frozenset()) -> str | None:
+    if res.gate_id in skip_gate_ids:
+        return None
     if res.kind is FindingResolutionKind.CORRECTIVE_PYTEST:
         if not _pytest_node_resolvable(res.evidence_ref):
             return f"{res.gate_id}: corrective pytest missing {res.evidence_ref}"
+        if not l3_profile_covers_pytest_node(res.evidence_ref):
+            return f"{res.gate_id}: corrective pytest not in L3 MANIFEST profile — {res.evidence_ref}"
         return None
     if res.kind is FindingResolutionKind.CORRECTIVE_ASSERT:
         try:
@@ -185,26 +195,42 @@ def validate_finding_resolution(res: FindingResolution) -> str | None:
             return f"{res.gate_id}: assert hook error — {exc}"
         return None
     if res.kind is FindingResolutionKind.HISTORICAL_SUPERSEDED:
-        doc_part = res.evidence_ref.split("@", 1)[0]
+        doc_part, _, anchor = res.evidence_ref.partition("@")
         path = _REPO / doc_part
         if not path.is_file():
             return f"{res.gate_id}: supersession doc missing {doc_part}"
         if not res.notes.strip():
             return f"{res.gate_id}: supersession requires notes"
+        text = path.read_text(encoding="utf-8")
+        if anchor and anchor not in text and f'id="{anchor}"' not in text:
+            return f"{res.gate_id}: supersession anchor {anchor!r} not found in {doc_part}"
+        test_sha = _load_manifest()["TEST_EXECUTION_SHA"]
+        if test_sha not in text and "Effective @ TEST_EXECUTION_SHA" not in text:
+            return f"{res.gate_id}: supersession doc must cite effective TEST_EXECUTION semantics"
         return None
     return f"{res.gate_id}: unknown resolution kind {res.kind}"
 
 
-def assert_ebh7_gate_findings_resolution_complete() -> None:
+def assert_ebh7_f09_resolution_registry_integrity() -> None:
+    """Meta gate — every finding mapped; validates all resolutions except non-recursive self."""
+    finding_ids = {f.gate_id for f in EBH7_CORRECTIVE_GATE_FINDINGS}
+    resolution_ids = set(_FINDING_RESOLUTIONS)
+    missing = sorted(finding_ids - resolution_ids)
+    extra = sorted(resolution_ids - finding_ids)
+    assert not missing, f"findings without resolution: {missing[:8]}"
+    assert not extra, f"resolution without finding: {extra[:8]}"
     errors: list[str] = []
-    for finding in EBH7_CORRECTIVE_GATE_FINDINGS:
-        res = finding_resolution(finding.gate_id)
-        if res is None:
-            errors.append(f"{finding.gate_id}: no resolution evidence — absence ≠ resolved")
-            continue
-        if finding.gate_id == "B6-F09-FINDING-RESOLUTION-EVIDENCE":
-            continue
-        err = validate_finding_resolution(res)
+    skip = frozenset({"B6-F09-FINDING-RESOLUTION-EVIDENCE"})
+    for gate_id in sorted(finding_ids):
+        res = _FINDING_RESOLUTIONS[gate_id]
+        err = validate_finding_resolution(res, skip_gate_ids=skip)
         if err:
             errors.append(err)
-    assert not errors, "; ".join(errors[:10]) + (f" (+{len(errors) - 10})" if len(errors) > 10 else "")
+    f09 = _FINDING_RESOLUTIONS["B6-F09-FINDING-RESOLUTION-EVIDENCE"]
+    if f09.kind is not FindingResolutionKind.CORRECTIVE_ASSERT:
+        errors.append("B6-F09: must be CORRECTIVE_ASSERT meta gate")
+    assert not errors, "; ".join(errors[:12]) + (f" (+{len(errors) - 12})" if len(errors) > 12 else "")
+
+
+def assert_ebh7_gate_findings_resolution_complete() -> None:
+    assert_ebh7_f09_resolution_registry_integrity()

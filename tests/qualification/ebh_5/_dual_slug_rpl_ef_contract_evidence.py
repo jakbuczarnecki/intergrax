@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Final
 
 import pytest
+from tests.qualification.ebh_5._dual_slug_rpl_e_operational import assert_rpl_e_category_operational_surface
 from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import IntegrationDualSlugCatalogEntry
 from tests.qualification.ebh_5._proof_validation import pytest_test_function_exists
 
@@ -98,6 +99,7 @@ def assert_dual_slug_rpl_e_contract_evidence(
     _assert_rpl_e_provider_identity(inst_a, inst_b, entry)
     if entry.category.value == "relational_store":
         _assert_rpl_e_relational_operational(inst_a, inst_b)
+    assert_rpl_e_category_operational_surface(entry, inst_a, inst_b)
     _assert_rpl_e_wrong_slug_fail_closed(entry, tmp_path=tmp_path)
 
 
