@@ -21,6 +21,8 @@ Gate verdicts in this report are **computed** by `tests/qualification/ebh_7/_ebh
 
 Canonical closed sets: 26 FRZ families (freeze checklist IDs), Tier-0..3 (`AGENTS.md`), DUP-01..14 + 15 DUP-X responsibility families + 12 normative C2 surfaces, roadmap §3.0.8 domains 1–31 + every inventory concern, every path changed since the accepted baseline.
 
+ECAP-C5 (this report) is evaluated against the block below and the F10 matrix by the read-only gate; its computed verdict is published only in the F10 matrix.
+
 <!-- F10-COMPUTED:BEGIN (generated — scripts/qualification/render_ebh7_f10_normative_matrix.py) -->
 **Computed from closed normative sets @ TEST_EXECUTION_SHA `74e2191dd4eaad544b2146f505fe691d459997b3`** (C5 verified by read-only gate; no hand-assigned verdicts).
 
