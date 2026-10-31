@@ -804,6 +804,13 @@ jobs:
             echo "qualification_status=STARTED"
           } > build/qualification/ebh7-l3/meta.txt
 
+      - name: Reconcile P03 digests on runner (pre-integrity gates)
+        run: |
+          uv run python scripts/qualification/render_ebh7_dual_slug_rpl_ef_matrix.py
+          uv run python scripts/qualification/render_ebh7_p03_artifact_digests.py
+          uv run python scripts/qualification/render_ebh7_closure_evidence_audit_matrix.py
+          uv run python scripts/qualification/render_ebh7_p03_artifact_digests.py
+
       - name: Protocol 03 L3 pytest (single invocation)
         id: ebh7_l3_pytest
         timeout-minutes: 35
