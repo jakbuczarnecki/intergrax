@@ -53,7 +53,7 @@ concurrency:
     ${{ github.event.inputs.profile == 'diagnostics_full'
         && format('diagnostics-full-qualification-{0}', github.event.inputs.qualification_sha)
         || (github.event.inputs.profile == 'ebh7_p3_l3'
-        && format('ebh7-p03-l3-{0}-{1}', github.event.inputs.ebh7_test_execution_sha || '496016c0cf6cc5cf1f9a29d885677605dd0415d3', github.event.inputs.ebh7_evidence_publication_sha || '06d46537f5f252dbb395e865a33ce6f2475bf7b1'))
+        && format('ebh7-p03-l3-{0}-{1}', github.event.inputs.ebh7_test_execution_sha || 'dc18e36d971c93c8f631fbc86f73149d1b81b4d7', github.event.inputs.ebh7_evidence_publication_sha || 'f30a90a14910afe8583081cab3b2e39480988c17'))
         || format('regression-gate-{0}-{1}-{2}', github.event_name, github.ref, github.event.inputs.profile || 'smoke') }}
   cancel-in-progress: >-
     ${{ github.event_name == 'pull_request'
@@ -691,13 +691,13 @@ jobs:
     timeout-minutes: 45
 
     env:
-      EBH7_DEFAULT_TEST_EXECUTION_SHA: 496016c0cf6cc5cf1f9a29d885677605dd0415d3
-      EBH7_DEFAULT_EVIDENCE_PUBLICATION_SHA: 06d46537f5f252dbb395e865a33ce6f2475bf7b1
+      EBH7_DEFAULT_TEST_EXECUTION_SHA: dc18e36d971c93c8f631fbc86f73149d1b81b4d7
+      EBH7_DEFAULT_EVIDENCE_PUBLICATION_SHA: f30a90a14910afe8583081cab3b2e39480988c17
       EBH7_MANIFEST_PATH: docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json
       TEST_EXECUTION_SHA: >-
-        ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || '496016c0cf6cc5cf1f9a29d885677605dd0415d3' }}
+        ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || 'dc18e36d971c93c8f631fbc86f73149d1b81b4d7' }}
       EVIDENCE_PUBLICATION_SHA: >-
-        ${{ github.event.inputs.ebh7_evidence_publication_sha != '' && github.event.inputs.ebh7_evidence_publication_sha || '06d46537f5f252dbb395e865a33ce6f2475bf7b1' }}
+        ${{ github.event.inputs.ebh7_evidence_publication_sha != '' && github.event.inputs.ebh7_evidence_publication_sha || 'f30a90a14910afe8583081cab3b2e39480988c17' }}
       P03_REPLAY_HEAD_SHA: >-
         ${{ github.event.inputs.ebh7_p03_replay_head_sha != '' && github.event.inputs.ebh7_p03_replay_head_sha || github.sha }}
 
