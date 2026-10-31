@@ -24,7 +24,7 @@
 | EBH7_B6_PROOF_STRENGTH_CORRECTION_SHA | B6 F07/F08/F09 RPL-E/F + derived G07/G08 + G09 resolution | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
 | EBH7_F07_F09_ENTERPRISE_CLOSURE_SHA | One-pass F07 matrix + L3-bound F09 + operational RPL-E | `4e46034de1d8842442ccfff00a87dd74ae78600d` |
 | TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `4e46034de1d8842442ccfff00a87dd74ae78600d` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `34bf540ab520755ec396bfa1b835f58f6beb4136` |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `b0a97ad16e8aa3d38152f1d9e10a4b076e95ec77` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
