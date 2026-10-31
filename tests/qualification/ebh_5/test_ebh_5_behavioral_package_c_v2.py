@@ -14,6 +14,7 @@ from tests.qualification.ebh_5._package_c_v2_proof_helpers import (
     run_package_c_v2_relational_unregistered_fail_closed,
     run_package_c_v2_unregistered_for_entry,
 )
+from tests.qualification.ebh_5._package_c_v2_rpl_cde import run_package_c_v2_dual_slug_rpl_cde_equivalence
 
 pytestmark = [pytest.mark.unit, pytest.mark.qualification]
 
@@ -48,3 +49,15 @@ def test_ebh5_pkgc_v2_dual_slug_unregistered(entry: object) -> None:
 
     assert isinstance(entry, IntegrationDualSlugCatalogEntry)
     run_package_c_v2_unregistered_for_entry(entry)
+
+
+@pytest.mark.parametrize(
+    "entry",
+    INTEGRATION_DUAL_SLUG_CATALOG,
+    ids=lambda e: e.concern_id,
+)
+def test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence(entry: object, tmp_path: Path) -> None:
+    from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import IntegrationDualSlugCatalogEntry
+
+    assert isinstance(entry, IntegrationDualSlugCatalogEntry)
+    run_package_c_v2_dual_slug_rpl_cde_equivalence(entry, tmp_path=tmp_path)

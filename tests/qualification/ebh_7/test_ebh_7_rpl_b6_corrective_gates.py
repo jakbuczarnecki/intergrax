@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
 def test_ebh7_b6_rpl_open_register_non_empty_until_qualified() -> None:
     open_ids = normative_rpl_b6_open_concern_ids()
-    assert len(open_ids) >= 45, f"Expected majority PARTIAL/BLOCKED open for B6, got {len(open_ids)}"
+    assert len(open_ids) == 23
 
 
 def test_ebh7_b6_mutation_demonstrated_partial_semantic_fails_integrity() -> None:
@@ -43,14 +43,16 @@ def test_ebh7_b6_mutation_demonstrated_partial_semantic_fails_integrity() -> Non
 
 
 def test_ebh7_b6_mutation_dual_slug_partial_cannot_pass_readiness(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import catalog_by_concern_id
     from tests.qualification.ebh_7 import _rpl_h_normative_evidence as norm_mod
 
     real_rows = norm_mod.all_normative_rpl_rows()
+    dual_ids = frozenset(catalog_by_concern_id())
 
     def all_dual_slug_cheat_rows() -> tuple[NormativeRplRow, ...]:
         patched: list[NormativeRplRow] = []
         for row in real_rows:
-            if row.verified_status is RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY:
+            if row.concern_id in dual_ids:
                 patched.append(
                     NormativeRplRow(
                         concern_id=row.concern_id,

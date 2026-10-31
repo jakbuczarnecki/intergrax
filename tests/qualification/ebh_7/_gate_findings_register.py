@@ -89,8 +89,8 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
         actual_strength=GateStrength.INTEGRITY,
         required_strength=GateStrength.ACCEPTANCE,
         correction=(
-            "51 RPL concerns semantic-not-QUALIFIED (6 BLOCKED, 28 dual-slug PARTIAL, 17 factory PARTIAL); "
-            "B6 gate fail-closed; EBH_7_B6_BLOCKER_REGISTER.md"
+            "23 RPL concerns remain (17 factory PARTIAL + 6 vendor BLOCKED); "
+            "28 dual-slug qualified via RPL-C/D/E; EBH_7_RPL_FINAL_CONVERGENCE_DECISION_MATRIX.md"
         ),
     ),
 )

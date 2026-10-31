@@ -70,24 +70,20 @@ def _legacy_evidence(concern_id: str) -> RplConcernSemanticEvidence:
 
 
 def _integration_dual_slug_evidence(entry_concern: str) -> RplConcernSemanticEvidence:
-    entry = catalog_by_concern_id()[entry_concern]
-    positive = f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}::test_ebh5_pkgc_v2_dual_slug_integration[{entry.concern_id}]"
-    negative = f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}::test_ebh5_pkgc_v2_dual_slug_unregistered[{entry.concern_id}]"
     from tests.qualification.ebh_7._rpl_h_normative_evidence import normative_rpl_row
 
-    verdict = normative_rpl_row(entry_concern).semantic_verdict
-    lifecycle = "Dual slug resolve_from_profile + unregistered fail-closed @ Package C v2"
-    notes = (
-        "EBH-7 gap-closure: sanctioned registry selection + alternate slug proven (vendor sandbox out of dev-ci scope)"
-    )
+    norm = normative_rpl_row(entry_concern)
+    entry = catalog_by_concern_id()[entry_concern]
+    lifecycle = "RPL-C/D/E @ Package C v2 — profile selection, lifecycle parity, fail-closed isolation"
+    notes = "Dual-slug catalog providers; live vendor Path B out of dev-ci scope"
     return RplConcernSemanticEvidence(
         concern_id=entry.concern_id,
-        verdict=verdict,
-        positive_test=positive,
-        negative_test=negative,
+        verdict=norm.semantic_verdict,
+        positive_test=norm.positive_test,
+        negative_test=norm.negative_test,
         production_selection_path="IntegrationProfile + resolve_from_profile",
         alternate_backends=f"{entry.slug_a} | {entry.slug_b}",
-        tenant_gov_assertions="N/A unless category contract enforces tenant scope in proof",
+        tenant_gov_assertions="Category contract tenant scope when enforced by provider",
         lifecycle=lifecycle,
         notes=notes,
     )

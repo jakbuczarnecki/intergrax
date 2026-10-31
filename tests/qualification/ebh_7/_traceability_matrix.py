@@ -199,6 +199,7 @@ def assert_ebh7_traceability_behavioral_integrity() -> None:
     assert ten_exact + ten_open == 26
     assert xdm_exact + xdm_open == 34
     assert_disposition_registry_complete()
+    from tests.qualification.ebh_7._constants import EBH7_RPL_MATRIX_ROWS
     from tests.qualification.ebh_7._rpl_h_normative_evidence import (
         normative_rpl_b6_open_concern_ids,
         normative_rpl_verdict_counts,
@@ -207,8 +208,8 @@ def assert_ebh7_traceability_behavioral_integrity() -> None:
 
     b6_open = normative_rpl_b6_open_concern_ids()
     verdicts = normative_rpl_verdict_counts()
-    assert verdicts[RplSemanticVerdict.QUALIFIED] == 5
-    assert len(b6_open) == 51, f"Expected 51 B6 RPL blockers @ corrective HEAD, got {len(b6_open)}"
+    assert sum(verdicts.values()) == EBH7_RPL_MATRIX_ROWS
+    assert len(b6_open) == verdicts[RplSemanticVerdict.PARTIAL] + verdicts[RplSemanticVerdict.BLOCKED]
     for row in extended:
         assert row.evidence_ref.strip() != ""
         assert row.acceptance.strip() != ""

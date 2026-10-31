@@ -66,22 +66,22 @@ def _classify(concern_id: str) -> NormativeRplRow:
         )
     if concern_id in catalog_by_concern_id():
         entry = catalog_by_concern_id()[concern_id]
-        positive = f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}::test_ebh5_pkgc_v2_dual_slug_integration[{entry.concern_id}]"
+        positive = (
+            f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}"
+            f"::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[{entry.concern_id}]"
+        )
         negative = (
             f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}::test_ebh5_pkgc_v2_dual_slug_unregistered[{entry.concern_id}]"
         )
         return NormativeRplRow(
             concern_id=concern_id,
-            semantic_verdict=RplSemanticVerdict.PARTIAL,
-            verified_status=RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.DEMONSTRATED,
             positive_test=positive,
             negative_test=negative,
-            defect=(
-                "Package C v2 dual-slug integration executed; "
-                "RPL-C/D/E operational equivalence not independently proven"
-            ),
-            task_id="EBH7-FC-C-DUAL",
-            acceptance="Operational equivalence or ALLOWED_FIXED substrate @ OD-RPL-G2",
+            defect="RPL-C/D/E equivalence @ Package C v2 dual-slug catalog",
+            task_id="EBH7-FC-C-RPL-CDE",
+            acceptance="Profile selection, lifecycle parity, fail-closed isolation",
         )
     if concern_id in QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE:
         node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[concern_id]
