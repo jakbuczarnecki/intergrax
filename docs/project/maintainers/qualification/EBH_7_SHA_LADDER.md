@@ -20,7 +20,7 @@
 | EBH7_SEMANTIC_DISPOSITION_SHA | SSOT disposition pin | see `_semantic_disposition_registry.py` |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA | Terminal closure — 56/56 RPL @ operator dispositions | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `d4937889fc0b07515649dbdddf602df2a4415489` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | *pending evidence commit* |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | 0e8a6b6703a1a309f95fe1f572fe4aecbbd62696 |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
