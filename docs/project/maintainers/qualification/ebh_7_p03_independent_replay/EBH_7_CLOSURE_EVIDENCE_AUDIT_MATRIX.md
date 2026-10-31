@@ -1,6 +1,6 @@
 # EBH-7 — Closure evidence audit matrix (G01–G09)
 
-**TEST_EXECUTION_SHA:** `496016c0cf6cc5cf1f9a29d885677605dd0415d3`
+**TEST_EXECUTION_SHA:** `dc18e36d971c93c8f631fbc86f73149d1b81b4d7`
 
 **OPEN_FINDING count:** 0 (must be 0 before independent B6)
 

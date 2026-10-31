@@ -30,14 +30,18 @@
 | EBH7_B6_F10_STATE_FIX_SHA | + SQLite memory load fix (F10-C4-STATE-REG-01) + shadowed-profile coverage | `a803191ad380dfe7faa9cee58f10186d6cbab273` |
 | EBH7_B6_F10_FINDINGS_REGISTER_SHA | + F10-derived findings registered with executable resolutions; first B6-F10 GHA replay `41227765200` (3 failed — clean-checkout defects) | `74e2191dd4eaad544b2146f505fe691d459997b3` |
 | EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA | + mechanism census over tracked tree (B6-F10-P03-DIRTY-TREE) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
-| TEST_EXECUTION_SHA | B6-F10 L3 replay (full `tests/qualification/ebh_7/` + F10 regression nodes) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
-| EVIDENCE_PUBLICATION_SHA | B6-F10 P03 dossier publication | `06d46537f5f252dbb395e865a33ce6f2475bf7b1` |
-| EBH7_B6_F10_GHA_REPLAY_HEAD_SHA | GHA L3 run `41231430749` checkout (581 passed / 0 failed; F10 attestation PASS) | `e6ff57b13848f70c964ab141cba5bd89b50e8315` |
+| EBH7_B6_F10_TEST_EXECUTION_SHA | B6-F10 L3 replay TEST (historical; run `41231430749`) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
+| EBH7_B6_F10_EVIDENCE_PUBLICATION_SHA | B6-F10 P03 dossier publication (historical) | `06d46537f5f252dbb395e865a33ce6f2475bf7b1` |
+| EBH7_B6_F10_GHA_REPLAY_HEAD_SHA | GHA L3 run `41231430749` checkout (historical: 581 passed / 9 skipped / 0 failed; F10 attestation PASS; `meta.txt` `junit_tests=0` metadata defect) | `e6ff57b13848f70c964ab141cba5bd89b50e8315` |
+| EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA | Strict JUnit metadata parser + per-node skip disposition register + L3 skip verification (tooling/tests only; no production semantics) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| TEST_EXECUTION_SHA | Final reconciliation L3 replay (full `tests/qualification/ebh_7/` + F10 regression nodes); equals `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA` | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| EVIDENCE_PUBLICATION_SHA | Final reconciliation P03 dossier publication (pinned in MANIFEST after the publication commit) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` *(provisional — superseded by the pin commit)* |
+| EBH7_B6_FINAL_GHA_REPLAY_HEAD_SHA | GHA L3 final reconciliation replay checkout | *pending run* |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
 **Deprecated alias:** `CLOSURE_SHA` must not denote implementation while B6/OD-08 are OPEN.
 
-**Protocol 03 rule:** `TEST_EXECUTION_SHA` equals `EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA`; `EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA` (`8afff322`), the B5 test execution (`4eb7eb1a`) and `EBH7_CLOSURE_IMPLEMENTATION_SHA` (`d4937889`) are strict git ancestors, not the replayed tree.
+**Protocol 03 rule:** `TEST_EXECUTION_SHA` equals `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA`; `EBH7_B6_F10_TEST_EXECUTION_SHA` (`496016c0`), `EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA` (`8afff322`), the B5 test execution (`4eb7eb1a`) and `EBH7_CLOSURE_IMPLEMENTATION_SHA` (`d4937889`) are strict git ancestors, not the replayed tree. The new TEST tree differs from `496016c0` only by qualification tooling/tests (`scripts/qualification/ebh7_junit_evidence.py`, `tests/qualification/ebh_7/_ebh7_skip_disposition_register.py`, `test_ebh_7_b6_junit_skip_disposition_gates.py`, `_semantic_disposition_registry.py` skip-equivalent bindings), the allowlisted constants/B5 gate files and `.github/workflows/unit-tests.yml`; no production code (`intergrax/`, `agents/`, `applications/`) changed.
 
 Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`; `tests/qualification/ebh_7/_ebh7_p03_evidence_integrity.py` pins SHA roles.

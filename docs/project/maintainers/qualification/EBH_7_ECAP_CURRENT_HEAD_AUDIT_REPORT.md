@@ -24,7 +24,7 @@ Canonical closed sets: 26 FRZ families (freeze checklist IDs), Tier-0..3 (`AGENT
 ECAP-C5 (this report) is evaluated against the block below and the F10 matrix by the read-only gate; its computed verdict is published only in the F10 matrix.
 
 <!-- F10-COMPUTED:BEGIN (generated — scripts/qualification/render_ebh7_f10_normative_matrix.py) -->
-**Computed from closed normative sets @ TEST_EXECUTION_SHA `496016c0cf6cc5cf1f9a29d885677605dd0415d3`** (C5 verified by read-only gate; no hand-assigned verdicts).
+**Computed from closed normative sets @ TEST_EXECUTION_SHA `dc18e36d971c93c8f631fbc86f73149d1b81b4d7`** (C5 verified by read-only gate; no hand-assigned verdicts).
 
 | ECAP gate | Computed verdict | Obligations | PASS | N/A WITH EVIDENCE | FAIL |
 | --- | --- | --- | --- | --- | --- |
@@ -68,7 +68,7 @@ Historical corrective findings F01–F09 and F11: unchanged (see `_gate_findings
 
 ## H. Impact on historical certification
 
-- B6-F10 code (qualification infrastructure + the F10-C4-STATE-REG-01 production fix) → new TEST_EXECUTION_SHA `496016c0cf6cc5cf1f9a29d885677605dd0415d3` (ladder) and new GitHub Actions replay; prior B5 run `41214574614` retained as historical B5 evidence only — it never executed the full `ebh_7` directory (F10-P03-PROFILE-SHADOW).
+- B6-F10 code (qualification infrastructure + the F10-C4-STATE-REG-01 production fix) → B6-F10 TEST_EXECUTION_SHA `496016c0cf6cc5cf1f9a29d885677605dd0415d3` (historical, ladder; GHA run `41231430749`); final evidence reconciliation (strict JUnit metadata + per-node skip dispositions; qualification tooling only, no production change) → current TEST_EXECUTION_SHA `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` and a new GitHub Actions replay; prior B5 run `41214574614` retained as historical B5 evidence only — it never executed the full `ebh_7` directory (F10-P03-PROFILE-SHADOW).
 
 ## I. Scenario readiness / architecture-change risk
 

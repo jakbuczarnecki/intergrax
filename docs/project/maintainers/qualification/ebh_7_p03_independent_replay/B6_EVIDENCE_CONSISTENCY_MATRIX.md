@@ -9,7 +9,8 @@
 | --- | --- |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA (pre-B6 terminal closure) | `d4937889fc0b07515649dbdddf602df2a4415489` |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
-| TEST_EXECUTION_SHA (= replay tree) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
+| TEST_EXECUTION_SHA (= replay tree) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| EBH7_B6_F10_TEST_EXECUTION_SHA (historical, run `41231430749`) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
 | EBH7_B5_TEST_EXECUTION_SHA (historical) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | EVIDENCE_PUBLICATION_SHA | see `MANIFEST.json` |
 | Repository HEAD (doc pin chain) | see `ARTIFACT_DIGESTS.json` `HEAD` |
@@ -26,7 +27,7 @@
 
 ## L3 replay (MANIFEST `pytest_profile.last_replay`)
 
-B6-F10 GitHub Actions run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
+Last recorded replay: B6-F10 GitHub Actions run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`, historical; JUnit 590 tests; superseded by the final reconciliation replay once recorded in `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`). Skipped tests: nine individual dispositions in [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
 
 | Field | Value |
 | --- | --- |

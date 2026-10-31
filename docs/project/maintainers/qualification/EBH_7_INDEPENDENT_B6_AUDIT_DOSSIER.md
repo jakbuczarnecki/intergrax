@@ -2,12 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| **Agent status** | B6-F10 rebuilt as computed certification (closed normative sets C1–C5) · **READY FOR INDEPENDENT B6 RE-AUDIT** — F10 execution attestation of GHA run 41231430749 clean |
+| **Agent status** | B6-F10 computed certification (closed normative sets C1–C5; F10 execution attestation of GHA run 41231430749 clean) · final evidence reconciliation (skipped-test dispositions, JUnit metadata, P03 records) in progress — final replay run recorded in [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
 | **Historical audited HEAD (superseded)** | see `EBH_7_SHA_LADDER.md` pre-B5 dossier generation |
-| **TEST_EXECUTION_SHA (certified L3 code)** | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
+| **TEST_EXECUTION_SHA (certified L3 code)** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (final reconciliation; = `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA`) |
+| **B6-F10 TEST_EXECUTION_SHA (historical)** | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
 | **B5 TEST_EXECUTION_SHA (historical)** | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | **B5 canonical GHA replay (historical)** | run `41214574614` @ checkout `210accb224aad276a472307c8fefe3798bd44f10` |
-| **B6-F10 GHA replay** | run `41231430749` @ checkout `e6ff57b13848f70c964ab141cba5bd89b50e8315` — 581 passed / 9 skipped / 0 failed; F10 attestation PASS (56 nodes) — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
+| **B6-F10 GHA replay (historical)** | run `41231430749` @ checkout `e6ff57b13848f70c964ab141cba5bd89b50e8315` — 581 passed / 9 skipped / 0 failed; F10 attestation PASS (56 nodes) — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
 | **B6 PASS** | **NOT ISSUED** — external auditor only |
 | **OD-EBH7-08** | **OPEN** — after independent B6 PASS |
 
