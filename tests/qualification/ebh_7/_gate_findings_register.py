@@ -113,6 +113,25 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
             "FakeInMemory adapter → StrictProductionServingLauncherError"
         ),
     ),
+    GateFinding(
+        gate_id="B6-F03-TEN-XDM-DOC-CONFLICT",
+        prior_claim="Corrective findings doc listed 12+18 OPEN as if current",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.INTEGRITY,
+        correction=(
+            "Historical superseded table + B6_EVIDENCE_CONSISTENCY_MATRIX; SSOT 26/0 TEN and 34/0 XDM @ registry"
+        ),
+    ),
+    GateFinding(
+        gate_id="B6-F04-P03-TEST-CLOSURE-SHA",
+        prior_claim="TEST_EXECUTION_SHA must equal EBH7_CLOSURE_IMPLEMENTATION_SHA",
+        actual_strength=GateStrength.INTEGRITY,
+        required_strength=GateStrength.INTEGRITY,
+        correction=(
+            "TEST_EXECUTION_SHA = EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA; "
+            "closure SHA is ancestor only — _ebh7_p03_evidence_integrity.py"
+        ),
+    ),
 )
 
 
