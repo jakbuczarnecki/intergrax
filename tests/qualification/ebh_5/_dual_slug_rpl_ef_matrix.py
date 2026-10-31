@@ -37,9 +37,7 @@ class DualSlugRplEfMatrixRow:
 
 
 def _row_for_entry(entry: IntegrationDualSlugCatalogEntry) -> DualSlugRplEfMatrixRow:
-    from intergrax.runtime.integrations.contract_metadata import contract_for_category
-
-    contract_cls = contract_for_category(entry.category.value)
+    contract_label = f"{entry.category.value} @ contract_for_category (Package C v2)"
     pos, neg = dual_slug_rpl_ef_positive_negative_nodes(entry)
     guarantees = canonical_rpl_e_guarantees(entry)
     rpl_f = rpl_f_disposition(entry.concern_id)
@@ -61,7 +59,7 @@ def _row_for_entry(entry: IntegrationDualSlugCatalogEntry) -> DualSlugRplEfMatri
         verdict = F07Verdict.BLOCKED
     return DualSlugRplEfMatrixRow(
         concern_id=entry.concern_id,
-        contract=contract_cls.__name__,
+        contract=contract_label,
         claimed_guarantee=guarantees[-1],
         rpl_e_proof=f"{pos}; {neg}; Package C v2 CDE + operational surface @ _dual_slug_rpl_e_operational.py",
         rpl_f_obligation="Active failure/recovery when replaceability claims operational fault semantics",
