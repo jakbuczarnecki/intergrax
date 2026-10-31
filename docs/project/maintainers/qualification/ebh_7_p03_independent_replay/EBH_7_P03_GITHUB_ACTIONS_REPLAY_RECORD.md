@@ -42,9 +42,12 @@ Optional: `-f ebh7_p03_replay_head_sha=<40-char>` for pinned replay audit.
 
 | Field | Value |
 | --- | --- |
-| **Run ID** | *(pending post-push dispatch)* |
-| **Workflow implementation SHA** | `3c745c2c0272ff17b8ac5c2975bde4369fea575d` |
-| **Replay checkout** | same as dispatch `github.sha` unless input override |
+| **Run ID** | `41214574614` |
+| **URL** | https://github.com/jakbuczarnecki/intergrax/actions/runs/41214574614 |
+| **Workflow / dispatch SHA** | `210accb224aad276a472307c8fefe3798bd44f10` |
+| **Replay checkout** | `210accb224aad276a472307c8fefe3798bd44f10` |
+| **Pytest** | MANIFEST L3 profile · **195 passed** · exit **0** |
+| **B5 gates** | Immutable git-objects + identity + replay-disk PASS (artifacts in run log) |
 
 ## Non-claims
 

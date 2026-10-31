@@ -20,7 +20,7 @@
 | --- | --- |
 | TEST_EXECUTION_SHA | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | EVIDENCE_PUBLICATION_SHA (MANIFEST pin) | `96069c09c2ca5a7a3a9586db336716c9430ca1d7` |
-| P03 replay / workflow implementation | `3c745c2c0272ff17b8ac5c2975bde4369fea575d` (default `github.sha` on dispatch) |
+| P03 replay / workflow implementation | `210accb224aad276a472307c8fefe3798bd44f10` (canonical GHA run `41214574614`) |
 
 ## L1 adversarial
 
