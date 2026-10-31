@@ -5,7 +5,7 @@
 | Closure wave (superseded for semantic) | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
 | W1/W2 reconciliation | baseline `5df074fcb` → recon `9ecf8666a` |
 | Batch A/B (OD-EBH7-01 full execution) | start `195046d46` → impl `ab8f958ed` |
-| Batch C RPL-H | start `da1c29162` — evidence-derived semantic registry + dual-slug catalog |
+| Batch C RPL-H | start `da1c29162` → impl `473462bae` |
 | Command | `uv run pytest tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_7/test_ebh_7_rpl_h_batch_c_semantic_evidence.py -q` |
 | Result | **31 passed** (Batch C gates @ HEAD) |
 | Log | `.tmp/session/ebh-7-batch-c/pytest-batch-c.log` |

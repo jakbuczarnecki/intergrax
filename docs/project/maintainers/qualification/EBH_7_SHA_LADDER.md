@@ -11,6 +11,7 @@
 | EBH7_BATCH_AB_START_SHA | Full behavioral execution entry | `195046d46360cb720956cd306b72cda81d8cc3b4` |
 | EBH7_BATCH_AB_IMPL_SHA | Batch A/B implementation + pytest evidence | `ab8f958ed8c1846e6a371a2bcba2884e18fe60bb` |
 | EBH7_BATCH_C_START_SHA | RPL-H Batch C entry | `da1c29162a7a58a7e56674777bcf9259fd3ded28` |
+| EBH7_BATCH_C_IMPL_SHA | RPL-H evidence registry + v2 dual-slug @ pytest | `473462bae2bc508dec1230817d107bf802f59b57` |
 | CLOSURE_SHA | OD-EBH7-08 | *pending* |
 
 Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`.
