@@ -73,7 +73,7 @@ def _classify(concern_id: str) -> NormativeRplRow:
         return NormativeRplRow(
             concern_id=concern_id,
             semantic_verdict=RplSemanticVerdict.PARTIAL,
-            verified_status=RplVerifiedStatus.DEMONSTRATED,
+            verified_status=RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY,
             positive_test=positive,
             negative_test=negative,
             defect=(
@@ -125,6 +125,20 @@ def normative_rpl_verdict_counts() -> dict[RplSemanticVerdict, int]:
     return counts
 
 
+def normative_rpl_b6_open_concern_ids() -> tuple[str, ...]:
+    """Concerns blocking B6 until QUALIFIED or formally scoped OD residual."""
+    from tests.qualification.ebh_7._ebh7_scope_residual_register import allowed_non_demonstrated_concern_ids
+
+    allowed = allowed_non_demonstrated_concern_ids()
+    return tuple(
+        sorted(
+            row.concern_id
+            for row in all_normative_rpl_rows()
+            if row.semantic_verdict is not RplSemanticVerdict.QUALIFIED and row.concern_id not in allowed
+        )
+    )
+
+
 def assert_ebh7_rpl_h_normative_evidence_integrity() -> None:
     """Fail-closed: normative layer must not regress to auto-QUALIFIED factory/blocked paths."""
     for row in all_normative_rpl_rows():
@@ -132,19 +146,18 @@ def assert_ebh7_rpl_h_normative_evidence_integrity() -> None:
             assert row.semantic_verdict is RplSemanticVerdict.BLOCKED
         if row.verified_status is RplVerifiedStatus.FACTORY_ONLY:
             assert row.semantic_verdict is RplSemanticVerdict.PARTIAL
+        if row.verified_status is RplVerifiedStatus.DEMONSTRATED:
+            assert row.semantic_verdict is RplSemanticVerdict.QUALIFIED, (
+                f"{row.concern_id}: DEMONSTRATED verified_status requires QUALIFIED semantic verdict"
+            )
+        if row.semantic_verdict is RplSemanticVerdict.PARTIAL and row.verified_status is RplVerifiedStatus.DEMONSTRATED:
+            raise AssertionError(f"{row.concern_id}: PARTIAL semantic cannot use DEMONSTRATED verified_status")
         if row.positive_test == row.negative_test and row.semantic_verdict is RplSemanticVerdict.QUALIFIED:
             if row.concern_id not in LEGACY_BEHAVIORAL_QUALIFIED:
                 raise AssertionError(f"{row.concern_id}: QUALIFIED with identical pos/neg nodes")
 
 
 def assert_ebh7_rpl_h_normative_for_b6_readiness() -> None:
-    """B6 readiness — all normative rows demonstrated or documented in scope-residual register."""
-    from tests.qualification.ebh_7._ebh7_scope_residual_register import allowed_non_demonstrated_concern_ids
-
-    allowed = allowed_non_demonstrated_concern_ids()
-    open_rows = [
-        row.concern_id
-        for row in all_normative_rpl_rows()
-        if row.verified_status is not RplVerifiedStatus.DEMONSTRATED and row.concern_id not in allowed
-    ]
-    assert open_rows == [], f"RPL normative gaps (need remediation or OD scope): {open_rows[:12]}... ({len(open_rows)})"
+    """B6 readiness — final RPL-H semantic disposition QUALIFIED or authorized scope residual only."""
+    open_rows = normative_rpl_b6_open_concern_ids()
+    assert open_rows == (), f"RPL B6 blockers (semantic not QUALIFIED): {open_rows[:12]}... ({len(open_rows)})"

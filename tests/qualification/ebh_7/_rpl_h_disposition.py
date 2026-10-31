@@ -25,15 +25,13 @@ class RplHDispositionRow:
 
 
 def rpl_h_disposition_rows() -> tuple[RplHDispositionRow, ...]:
-    from tests.qualification.ebh_7._rpl_h_normative_evidence import (
-        RplVerifiedStatus,
-        normative_rpl_row,
-    )
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import normative_rpl_row
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
 
     rows: list[RplHDispositionRow] = []
     for matrix_row in CROSS_LAYER_REPLACEABILITY_MATRIX:
         norm = normative_rpl_row(matrix_row.concern_id)
-        qualified = norm.verified_status is RplVerifiedStatus.DEMONSTRATED
+        qualified = norm.semantic_verdict is RplSemanticVerdict.QUALIFIED
         q_status = CertificationStatus.QUALIFIED if qualified else CertificationStatus.QUALIFICATION_PENDING
         rows.append(
             RplHDispositionRow(
@@ -43,7 +41,7 @@ def rpl_h_disposition_rows() -> tuple[RplHDispositionRow, ...]:
                 qualification_status=q_status,
                 existing_evidence=norm.positive_test if qualified else norm.defect,
                 missing_structural="PASS" if matrix_row.rpl_b.value == "PASS" else "RPL-B OPEN",
-                missing_behavioral="PASS" if norm.verified_status is RplVerifiedStatus.DEMONSTRATED else norm.defect,
+                missing_behavioral="PASS" if qualified else norm.defect,
                 remediation=norm.task_id if not qualified else "N/A",
             )
         )
@@ -51,23 +49,25 @@ def rpl_h_disposition_rows() -> tuple[RplHDispositionRow, ...]:
 
 
 def assert_ebh7_rpl_h_disposition_integrity() -> None:
-    from tests.qualification.ebh_7._rpl_h_normative_evidence import RplVerifiedStatus, all_normative_rpl_rows
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import all_normative_rpl_rows
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
 
     assert len(CROSS_LAYER_REPLACEABILITY_MATRIX) == EBH7_RPL_MATRIX_ROWS
     rows = rpl_h_disposition_rows()
     assert len(rows) == EBH7_RPL_MATRIX_ROWS
-    norm_demonstrated = sum(1 for r in all_normative_rpl_rows() if r.verified_status is RplVerifiedStatus.DEMONSTRATED)
+    norm_qualified = sum(1 for r in all_normative_rpl_rows() if r.semantic_verdict is RplSemanticVerdict.QUALIFIED)
     qualified = sum(1 for r in rows if is_behavioral_certification(r.qualification_status))
-    assert qualified == norm_demonstrated
+    assert qualified == norm_qualified
 
 
 def assert_ebh7_rpl_h_behavioral_qualification() -> None:
-    from tests.qualification.ebh_7._rpl_h_normative_evidence import RplVerifiedStatus, all_normative_rpl_rows
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import all_normative_rpl_rows
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
 
     rows = rpl_h_disposition_rows()
     for norm in all_normative_rpl_rows():
         disp = next(r for r in rows if r.concern_id == norm.concern_id)
-        if norm.verified_status is RplVerifiedStatus.DEMONSTRATED:
+        if norm.semantic_verdict is RplSemanticVerdict.QUALIFIED:
             assert is_behavioral_certification(disp.qualification_status), norm.concern_id
         else:
             assert not is_behavioral_certification(disp.qualification_status), norm.concern_id

@@ -25,7 +25,7 @@ def test_ebh7_mutation_scope_residual_poison_fails_b6(monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(reg, "OD_EBH7_SCOPE_RESIDUAL_APPROVED", True)
     monkeypatch.setattr(reg, "_SCOPE_RESIDUAL_CONCERN_IDS", frozenset({"integration.fake_concern"}))
-    with pytest.raises(AssertionError, match="RPL normative gaps"):
+    with pytest.raises(AssertionError, match="RPL B6 blockers"):
         assert_ebh7_rpl_h_normative_for_b6_readiness()
 
 

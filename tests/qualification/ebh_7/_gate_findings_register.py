@@ -88,7 +88,10 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
         prior_claim="L3 green = B6 ready",
         actual_strength=GateStrength.INTEGRITY,
         required_strength=GateStrength.ACCEPTANCE,
-        correction=("23 RPL rows (17 factory + 6 OD-blocked) remain normative gaps; see EBH_7_B6_CORRECTIVE_LOOP.md"),
+        correction=(
+            "51 RPL concerns semantic-not-QUALIFIED (6 BLOCKED, 28 dual-slug PARTIAL, 17 factory PARTIAL); "
+            "B6 gate fail-closed; EBH_7_B6_BLOCKER_REGISTER.md"
+        ),
     ),
 )
 
