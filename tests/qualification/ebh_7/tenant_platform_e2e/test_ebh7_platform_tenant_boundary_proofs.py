@@ -102,56 +102,56 @@ def test_ebh7_ten_e2e_12_skill_compose_cross_tenant() -> None:
 
 
 def test_ebh7_ten_e2e_14_backend_switch_preserves_tenant(tmp_path: Path) -> None:
-    from tests.qualification.ebh_5.test_ebh_5_behavioral_proofs import (
-        test_ebh5_behavioral_relational_store_sqlite_via_sanctioned_profile,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_backend_switch_preserves_tenant_binding,
     )
 
-    test_ebh5_behavioral_relational_store_sqlite_via_sanctioned_profile(tmp_path)
+    assert_backend_switch_preserves_tenant_binding(tmp_path)
 
 
 def test_ebh7_ten_e2e_17_obs_tenant_isolate() -> None:
-    from tests.qualification.ebh_5.test_ebh_5_behavioral_proofs import (
-        test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_obs_tenant_configuration_isolated,
     )
 
-    test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration()
+    assert_obs_tenant_configuration_isolated()
 
 
 def test_ebh7_ten_e2e_18_hitl_resume_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r3_fast import (
-        test_tx_r3_q09_retry_resume_preserves_tenant,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_hitl_resume_tenant_widen_denied,
     )
 
-    test_tx_r3_q09_retry_resume_preserves_tenant()
+    assert_hitl_resume_tenant_widen_denied()
 
 
 def test_ebh7_ten_e2e_19_child_exec_cross_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r3_fast import (
-        test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_parent_child_exec_cross_tenant_denied,
     )
 
-    test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant()
+    assert_parent_child_exec_cross_tenant_denied()
 
 
 def test_ebh7_ten_e2e_21_control_plane_cross_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r1_fast import (
-        test_tx_r1_q09_adversarial_root_admission_missing_tenant,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_control_plane_cross_tenant_mutation_denied,
     )
 
-    test_tx_r1_q09_adversarial_root_admission_missing_tenant()
+    assert_control_plane_cross_tenant_mutation_denied()
 
 
 def test_ebh7_ten_e2e_22_scheduler_tenant_drift() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r4_fast import (
-        test_tx_r4_q08_adversarial_vendor_async_queue,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_scheduler_worker_tenant_drift_denied,
     )
 
-    test_tx_r4_q08_adversarial_vendor_async_queue()
+    assert_scheduler_worker_tenant_drift_denied()
 
 
 def test_ebh7_ten_e2e_23_trace_replay_cross_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r3_fast import (
-        test_tx_r3_q09_retry_resume_preserves_tenant,
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_trace_replay_cross_tenant_denied,
     )
 
-    test_tx_r3_q09_retry_resume_preserves_tenant()
+    assert_trace_replay_cross_tenant_denied()

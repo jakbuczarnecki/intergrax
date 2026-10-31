@@ -34,10 +34,18 @@ def test_ebh7_w7_cross_domain_xdm_010_sqlite_behavioral(tmp_path) -> None:
     test_ebh7_xdm_010_backend_persistence_sqlite_behavioral(tmp_path)
 
 
+def test_ebh7_w7_cross_domain_xdm_029_integration_external_di_boundary(tmp_path) -> None:
+    from tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs import (
+        test_ebh7_xdm_029_integration_external_di_boundary,
+    )
+
+    test_ebh7_xdm_029_integration_external_di_boundary(tmp_path)
+
+
 def test_ebh7_w7_cross_domain_semantic_open_register() -> None:
     pending = cross_domain_pending_scenario_ids()
     from tests.qualification.ebh_7._semantic_proof_binding_audit import cross_domain_semantically_qualified_ids
 
     exact = cross_domain_semantically_qualified_ids()
     assert len(pending) + len(exact) == 34
-    assert len(pending) == 18
+    assert len(pending) == 1

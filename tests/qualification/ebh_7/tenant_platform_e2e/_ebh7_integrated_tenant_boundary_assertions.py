@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -142,6 +143,68 @@ def assert_exec_tool_cross_tenant_invocation_denied() -> None:
 
 def assert_config_provider_cross_tenant_rejected() -> None:
     assert_reference_executor_rejects_evidence_tenant_mismatch()
+
+
+def assert_backend_switch_preserves_tenant_binding(tmp_path: Path) -> None:
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_w1w2_reconciliation_probes import (
+        probe_relational_store_sqlite_duckdb_dual_slug,
+    )
+    from tests.unit.integrations.providers.relational_store.sqlite.test_configuration_realization import (
+        test_p2_16_same_config_distinct_tenant_binding_identity,
+    )
+
+    probe_relational_store_sqlite_duckdb_dual_slug(tmp_path)
+    test_p2_16_same_config_distinct_tenant_binding_identity()
+
+
+def assert_obs_tenant_configuration_isolated() -> None:
+    from tests.qualification.trace_x.test_trace_x_p5_p0_qualification_gates import (
+        test_txp5p0_q10_configuration_tenant_mismatch_fail_closed,
+        test_txp5p0_q11_profile_binding_tenant_mismatch_fail_closed,
+    )
+
+    test_txp5p0_q10_configuration_tenant_mismatch_fail_closed()
+    test_txp5p0_q11_profile_binding_tenant_mismatch_fail_closed()
+
+
+def assert_hitl_resume_tenant_widen_denied() -> None:
+    from tests.qualification.tenant_x._r3_adversarial import (
+        assert_partial_recovery_tenant_mismatch_rejects,
+    )
+
+    assert_partial_recovery_tenant_mismatch_rejects()
+
+
+def assert_parent_child_exec_cross_tenant_denied() -> None:
+    from tests.qualification.tenant_x._r4_adversarial import (
+        assert_background_transport_task_tenant_mismatch_rejects,
+    )
+
+    assert_background_transport_task_tenant_mismatch_rejects()
+
+
+def assert_control_plane_cross_tenant_mutation_denied() -> None:
+    from tests.qualification.config_x.test_config_x_adversarial_cx_gates import (
+        test_cx_g_cross_tenant_provider_config_rejected_by_realization_guards,
+    )
+
+    test_cx_g_cross_tenant_provider_config_rejected_by_realization_guards()
+
+
+def assert_scheduler_worker_tenant_drift_denied() -> None:
+    from tests.qualification.tenant_x._r4_adversarial import (
+        assert_vendor_worker_payload_job_tenant_mismatch_rejects,
+    )
+
+    assert_vendor_worker_payload_job_tenant_mismatch_rejects()
+
+
+def assert_trace_replay_cross_tenant_denied() -> None:
+    from tests.unit.applications.test_uca6c_marketplace_qualified_execution_composition import (
+        test_tenant_mismatch_blocks_materialization_pin_and_io,
+    )
+
+    test_tenant_mismatch_blocks_materialization_pin_and_io()
 
 
 def assert_plugin_host_compat_cross_tenant_activation_denied() -> None:

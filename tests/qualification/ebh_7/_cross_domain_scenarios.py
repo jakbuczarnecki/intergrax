@@ -389,6 +389,7 @@ EBH7_CROSS_DOMAIN_SCENARIOS: Final[tuple[CrossDomainScenario, ...]] = (
         reuse="int_extcomp",
         proof_module="tests.qualification.ebh_7.cross_domain_e2e.test_ebh7_cross_domain_platform_proofs",
         proof_function="test_ebh7_xdm_029_integration_external_di_boundary",
+        proof_needs_tmp_path=True,
     ),
     _xdm(
         30,

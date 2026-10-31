@@ -7,6 +7,28 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.qualification.ebh_7.cross_domain_e2e._ebh7_cross_domain_integrated_assertions import (
+    assert_xdm_agent_distribution_rogue_register_denied,
+    assert_xdm_cancel_external_effect_tenant_boundary,
+    assert_xdm_compat_historical_evidence_fail_closed,
+    assert_xdm_config_compat_tenant_fail_closed,
+    assert_xdm_failure_diagnostics_tenant_leak_denied,
+    assert_xdm_hitl_trace_tenant_scope_denied,
+    assert_xdm_integration_external_di_boundary,
+    assert_xdm_llm_tenant_gov_sdk_block,
+    assert_xdm_nexus_agent_private_loop_denied,
+    assert_xdm_obs_evidence_tenant_isolate,
+    assert_xdm_recovery_gov_restore_without_grant_denied,
+    assert_xdm_retry_side_effect_cross_tenant_denied,
+    assert_xdm_scale_backpressure_tenant_isolate,
+    assert_xdm_tool_skill_plugin_shadow_denied,
+    assert_xdm_trace_replay_tenant_lineage_fail_closed,
+    assert_xdm_vbn_composition_factory_dual_slug,
+    assert_xdm_worker_lease_tenant_denied,
+)
+from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+    assert_plugin_host_compat_cross_tenant_activation_denied,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
@@ -22,144 +44,72 @@ def test_ebh7_xdm_010_backend_persistence_sqlite_behavioral(tmp_path: Path) -> N
 
 
 def test_ebh7_xdm_007_tool_skill_plugin_shadow_denied() -> None:
-    from tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary import (
-        test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone,
-    )
-    from tests.qualification.tenant_x.test_tenant_x_r1_fast import (
-        test_tx_r1_q12_adversarial_tool_scope_same_tenant,
-    )
-
-    test_tx_r1_q12_adversarial_tool_scope_same_tenant()
-    test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone()
+    assert_xdm_tool_skill_plugin_shadow_denied()
 
 
 def test_ebh7_xdm_012_trace_replay_tenant_boundary() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r3_fast import (
-        test_tx_r3_q09_retry_resume_preserves_tenant,
-    )
-
-    test_tx_r3_q09_retry_resume_preserves_tenant()
+    assert_xdm_trace_replay_tenant_lineage_fail_closed()
 
 
 def test_ebh7_xdm_014_cancel_external_effect_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r3_fast import (
-        test_tx_r3_q09_retry_resume_preserves_tenant,
-    )
-
-    test_tx_r3_q09_retry_resume_preserves_tenant()
+    assert_xdm_cancel_external_effect_tenant_boundary()
 
 
 def test_ebh7_xdm_015_compat_historical_evidence_reject() -> None:
-    from tests.qualification.compat_x.test_compat_x_plugin_provider_r4_gates import (
-        test_r4_probe_g_cross_tenant_evidence,
-    )
-
-    test_r4_probe_g_cross_tenant_evidence()
+    assert_xdm_compat_historical_evidence_fail_closed()
 
 
 def test_ebh7_xdm_016_vbn_composition_factory_behavioral(tmp_path: Path) -> None:
-    test_ebh7_xdm_010_backend_persistence_sqlite_behavioral(tmp_path)
+    assert_xdm_vbn_composition_factory_dual_slug(tmp_path)
 
 
 def test_ebh7_xdm_017_failure_diagnostics_tenant_leak() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r2_fast import (
-        test_tx_r2_q06_adversarial_missing_tenant_credential_scope,
-    )
-
-    test_tx_r2_q06_adversarial_missing_tenant_credential_scope()
+    assert_xdm_failure_diagnostics_tenant_leak_denied()
 
 
 def test_ebh7_xdm_018_plugin_tenant_activate_denied() -> None:
-    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
-        assert_plugin_host_compat_cross_tenant_activation_denied,
-    )
-
     assert_plugin_host_compat_cross_tenant_activation_denied()
 
 
 def test_ebh7_xdm_019_recovery_gov_restore_denied() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r3_fast import (
-        test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant,
-    )
-
-    test_tx_r3_q05_adversarial_checkpoint_recovery_cross_tenant()
+    assert_xdm_recovery_gov_restore_without_grant_denied()
 
 
 def test_ebh7_xdm_022_llm_tenant_gov_block() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r1_fast import (
-        test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch,
-    )
-
-    test_tx_r1_q08_adversarial_runtime_request_tenant_mismatch()
+    assert_xdm_llm_tenant_gov_sdk_block()
 
 
 def test_ebh7_xdm_023_worker_lease_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r4_fast import (
-        test_tx_r4_q08_adversarial_vendor_async_queue,
-    )
-
-    test_tx_r4_q08_adversarial_vendor_async_queue()
+    assert_xdm_worker_lease_tenant_denied()
 
 
 def test_ebh7_xdm_024_retry_side_effect_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r3_fast import (
-        test_tx_r3_q09_retry_resume_preserves_tenant,
-    )
-
-    test_tx_r3_q09_retry_resume_preserves_tenant()
+    assert_xdm_retry_side_effect_cross_tenant_denied()
 
 
 def test_ebh7_xdm_025_hitl_trace_tenant() -> None:
-    from tests.qualification.tenant_x.test_tenant_x_r4_fast import (
-        test_tx_r4_q05_adversarial_context_llm_cross_tenant,
-    )
-
-    test_tx_r4_q05_adversarial_context_llm_cross_tenant()
+    assert_xdm_hitl_trace_tenant_scope_denied()
 
 
 def test_ebh7_xdm_026_config_compat_tenant() -> None:
-    from tests.qualification.compat_x.test_compat_x_plugin_provider_r4_gates import (
-        test_r4_probe_g_cross_tenant_evidence,
-    )
-
-    test_r4_probe_g_cross_tenant_evidence()
+    assert_xdm_config_compat_tenant_fail_closed()
 
 
 def test_ebh7_xdm_027_agent_distribution_tenant() -> None:
-    from tests.qualification.dup_x.test_dup_x_mechanical_exit_gates import (
-        test_dup_x_exit_closed_world_replay,
-    )
-
-    test_dup_x_exit_closed_world_replay()
+    assert_xdm_agent_distribution_rogue_register_denied()
 
 
 def test_ebh7_xdm_028_nexus_agent_tenant() -> None:
-    from tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary import (
-        test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone,
-    )
-
-    test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone()
+    assert_xdm_nexus_agent_private_loop_denied()
 
 
-def test_ebh7_xdm_029_integration_external_di_boundary() -> None:
-    from tests.qualification.dup_x.test_dup_x_npsc_boundary_gates import (
-        test_dup_x_npsc_exclusion_record_covers_ten_modules,
-    )
-
-    test_dup_x_npsc_exclusion_record_covers_ten_modules()
+def test_ebh7_xdm_029_integration_external_di_boundary(tmp_path: Path) -> None:
+    assert_xdm_integration_external_di_boundary(tmp_path)
 
 
 def test_ebh7_xdm_030_obs_evidence_tenant_isolate() -> None:
-    from tests.qualification.ebh_5.test_ebh_5_behavioral_proofs import (
-        test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration,
-    )
-
-    test_ebh5_behavioral_otlp_transport_negative_invalid_distributed_configuration()
+    assert_xdm_obs_evidence_tenant_isolate()
 
 
 def test_ebh7_xdm_031_scale_backpressure_tenant() -> None:
-    from tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs import (
-        test_ebh7_ten_e2e_10_distributed_queue_cross_tenant_fail_closed,
-    )
-
-    test_ebh7_ten_e2e_10_distributed_queue_cross_tenant_fail_closed()
+    assert_xdm_scale_backpressure_tenant_isolate()
