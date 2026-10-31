@@ -30,7 +30,7 @@ def canonical_rpl_e_guarantees(entry: IntegrationDualSlugCatalogEntry) -> tuple[
         )
     if entry.operational_lifecycle:
         return base + ("RPL-E: lifecycle hooks exercised on both backends @ Package C v2",)
-    return base + ("RPL-E: reachability + contract typing @ resolve — no live vendor credential path @ EBH-7",)
+    return base + ("RPL-E: platform metadata + symmetric contract surface @ Path B (no swallowed operational probe)",)
 
 
 def dual_slug_rpl_ef_positive_negative_nodes(entry: IntegrationDualSlugCatalogEntry) -> tuple[str, str]:
