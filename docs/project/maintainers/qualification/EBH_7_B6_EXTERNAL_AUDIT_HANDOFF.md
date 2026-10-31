@@ -21,10 +21,10 @@ Profile **`ebh7_p3_l3`** on workflow **`Regression gate`** (`unit-tests.yml`):
 gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3
 ```
 
-- Checkout **`P03 replay HEAD`** `04cb7aeec…` (MANIFEST/digest SSOT; `tests/qualification/` identical to `4eb7eb1a…`).
-- **Green CI run:** https://github.com/jakbuczarnecki/intergrax/actions/runs/41212701986 — **195 passed**, exit 0.
-- **`EVIDENCE_PUBLICATION_SHA`** `96069c09c…` — MANIFEST role @ replay HEAD.
-- Artifacts: `ebh7-p03-l3-4eb7eb1a89f82215d5356aa7d000198e432777b0` (`meta.txt`, `pytest.log`, `junit.xml`).
+- Default replay checkout: dispatch **`github.sha`** (B5 workflow @ `3c745c2c0…`; no pre-pytest digest reconcile).
+- **`TEST_EXECUTION_SHA`** unchanged: `4eb7eb1a…` · executable identity = full-tree diff + allowlist (not `tests/qualification/` only).
+- **`EVIDENCE_PUBLICATION_SHA`** MANIFEST pin: `96069c09c…`.
+- Prior run **`41212701986`** superseded (reconcile-before-verify) — see [`EBH_7_B5_INTEGRITY_RECORD.md`](EBH_7_B5_INTEGRITY_RECORD.md).
 - Record: [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md).
 
 Push-triggered **`ci-smoke`** on `development` is **not** L3; recent **cancelled** runs (~10m) are smoke **timeout**, not L3 failure.

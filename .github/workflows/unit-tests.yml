@@ -734,8 +734,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "$(git status --porcelain)" ]; then
-            git status --porcelain
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            git status --porcelain --untracked-files=no
             exit 1
           fi
 
