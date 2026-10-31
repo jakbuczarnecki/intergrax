@@ -64,3 +64,10 @@ def assert_ebh7_certification_ssot_bundle() -> None:
     assert_ebh7_rpl_certification_ssot()
     assert_ebh7_ten_xdm_evidence_ssot()
     assert_ebh7_p03_evidence_ssot()
+    from tests.qualification.ebh_7._ebh7_closure_audit_markdown_sync import (
+        assert_closure_audit_markdown_matches_ssot,
+    )
+    from tests.qualification.ebh_7._ebh7_closure_evidence_audit import assert_ebh7_closure_evidence_audit_ready
+
+    assert_ebh7_closure_evidence_audit_ready()
+    assert_closure_audit_markdown_matches_ssot()

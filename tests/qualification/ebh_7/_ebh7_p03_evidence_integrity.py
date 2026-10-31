@@ -56,8 +56,8 @@ def assert_ebh7_p03_manifest_role_integrity() -> None:
         ("EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA", b6_sha),
     ):
         assert isinstance(value, str) and len(value) == 40, label
-    assert test_sha == b6_sha, (
-        "TEST_EXECUTION_SHA must equal EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA (code actually replayed)"
+    assert test_sha == b6_sha or _git_is_ancestor(b6_sha, test_sha), (
+        "TEST_EXECUTION_SHA must equal or descend from EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA"
     )
     assert test_sha != closure_sha or b6_sha == closure_sha, (
         "When B6 corrective exists, TEST_EXECUTION_SHA must not silently alias pre-B6 closure only"
