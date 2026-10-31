@@ -92,11 +92,13 @@ def test_ebh7_ten_e2e_05_config_provider_cross_tenant() -> None:
 
 
 def test_ebh7_ten_e2e_12_skill_compose_cross_tenant() -> None:
-    from tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary import (
-        test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone,
+    from tests.unit.skills.test_skill_x_batch_e_integrated_authority_tenant_qualification import (
+        _pinning_backends,
+        test_ec8_cross_tenant_read_returns_none,
     )
 
-    test_b4_orchestration_backend_access_import_confined_to_execution_owner_zone()
+    for _name, store in _pinning_backends():
+        test_ec8_cross_tenant_read_returns_none(_name, store)
 
 
 def test_ebh7_ten_e2e_14_backend_switch_preserves_tenant(tmp_path: Path) -> None:

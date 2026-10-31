@@ -100,8 +100,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="tenant A auth with tenant B execution context",
         expected="DENY",
         assertions="cross-tenant gov/exec denied",
-        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_w1w2_qualification_reconciliation",
-        proof_function="test_ebh7_w1w2_ten03_governed_root_launch_admission_denies_before_intake",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_03_gov_exec_cross_tenant_denied",
     ),
     _scenario(
         4,
@@ -110,8 +110,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="cross-tenant tool scope",
         expected="DENY",
         assertions="tool scope cannot cross tenants",
-        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_w1w2_qualification_reconciliation",
-        proof_function="test_ebh7_w1w2_ten04_tool_runtime_invoke_reaches_invoker_tenant_guard",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_04_exec_tool_tenant_boundary_tool_runtime",
     ),
     _scenario(
         5,
@@ -120,8 +120,8 @@ EBH7_TENANT_E2E_SCENARIOS: Final[tuple[TenantE2EScenario, ...]] = (
         attack="tenant A profile on tenant B backend",
         expected="REJECT",
         assertions="credential broker rejects cross-tenant refs",
-        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_w1w2_qualification_reconciliation",
-        proof_function="test_ebh7_w1w2_ten05_resolve_from_profile_sqlite_sanctioned",
+        proof_module="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs",
+        proof_function="test_ebh7_ten_e2e_05_config_provider_cross_tenant",
     ),
     _scenario(
         6,

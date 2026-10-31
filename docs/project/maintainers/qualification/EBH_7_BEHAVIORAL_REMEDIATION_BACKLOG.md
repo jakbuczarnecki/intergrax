@@ -1,7 +1,7 @@
 # EBH-7 — Behavioral remediation backlog
 
 **Status:** Semantic fail-closed audit restored @ disposition SSOT.  
-**Semantic coverage:** TEN **14/26 EXACT**, **12 OPEN**; XDM **16/34 EXACT**, **18 OPEN**.  
+**Semantic coverage:** TEN **18/26 EXACT**, **8 OPEN**; XDM **16/34 EXACT**, **18 OPEN**.  
 **Mechanical pytest:** `tests/qualification/ebh_7/` green with **2× B6 readiness XFAIL** (EXACT 60/60, RPL semantic).
 
 ## Priority remediations

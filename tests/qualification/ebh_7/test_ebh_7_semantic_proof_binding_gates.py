@@ -39,5 +39,5 @@ def test_ebh7_b6_readiness_mandatory_exact_coverage() -> None:
 
 def test_ebh7_semantic_exact_blocker_counts_registered() -> None:
     ten_exact, ten_open, xdm_exact, xdm_open = semantic_exact_counts()
-    assert ten_exact == 14 and ten_open == 12
+    assert ten_exact == 18 and ten_open == 8
     assert xdm_exact == 16 and xdm_open == 18

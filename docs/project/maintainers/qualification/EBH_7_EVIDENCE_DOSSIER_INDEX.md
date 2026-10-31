@@ -6,7 +6,8 @@
 | Annex mirrors (plan-time) | `.cursor/plans/ebh-7-annexes/` |
 | Staged proof manifest | `.tmp/proof/ebh-7-materialization/MANIFEST.md` |
 | C0 baseline | `EBH_7_C0_BASELINE_AUDIT_RECORD.md` |
-| SHA ladder | `EBH_7_SHA_LADDER.md` |
+| Master completion execution | `EBH_7_MASTER_COMPLETION_EXECUTION_RECORD.md` |
+| Operator worksheets (A4) | `EBH_7_OPERATOR_DECISION_WORKSHEETS.md` |
 
 **PLANNING_SHA:** `5df7018aa71f8107b07531c50507eada2cc76f86`
 

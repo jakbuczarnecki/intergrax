@@ -23,8 +23,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 def test_ebh7_w6_tenant_e2e_executes_registered_proof(scenario) -> None:
     assert scenario.proof_module is not None
     assert scenario.proof_function is not None
-    if scenario.scenario_id == "EBH7-TEN-E2E-11":
-        pytest.skip("governed_execution proof runs in tenant_platform_e2e module")
+    if scenario.scenario_id in ("EBH7-TEN-E2E-04", "EBH7-TEN-E2E-11"):
+        pytest.skip("async/governed_execution proofs run in tenant_platform_e2e module")
     if scenario.proof_needs_tmp_path:
         pytest.skip("proof requires tmp_path — run in dedicated fixture test")
     execute_proof(scenario.proof_module, scenario.proof_function)
@@ -40,4 +40,4 @@ def test_ebh7_w6_tenant_e2e_semantic_open_register() -> None:
     open_ids = tenant_e2e_pending_scenario_ids()
     exact = tenant_e2e_semantically_qualified_ids()
     assert len(open_ids) + len(exact) == 26
-    assert len(open_ids) == 12
+    assert len(open_ids) == 8

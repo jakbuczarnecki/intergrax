@@ -54,7 +54,8 @@ BLOCKED_CONCERN_ROOT_CAUSE: Final[dict[str, str]] = {
     "integration.ml_inference_host": "Single catalog provider (replicate) — alternate vendor sandbox required",
     "integration.model_serving_runtime": "Single catalog provider (ollama) — alternate vendor sandbox required",
     "integration.vision_serving": "Single catalog provider (triton) — alternate vendor sandbox required",
-    "integration.document_store": _LEGACY_FACTORY_BLOCKER,
+    "integration.document_store": _LEGACY_FACTORY_BLOCKER
+    + " (catalog factory returns contract @ HEAD; dual-slug qual blocked on pymongo/cassandra deps)",
     "integration.object_storage": _LEGACY_FACTORY_BLOCKER,
     "integration.vector_store": "Dual slug requires chromadb @ dev-ci (vector-chroma extra) + contract factory path",
     "integration.graph_store": _LEGACY_FACTORY_BLOCKER,

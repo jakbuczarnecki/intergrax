@@ -47,3 +47,17 @@ Canonical authority for root execution remains `RootExecutionAuthorityAdmissionS
 - Code: `intergrax/runtime/nexus/tools/invoker.py` — `_require_current_attempt_authorization`.
 - Probes: `tests/qualification/ebh_7/tenant_platform_e2e/_ebh7_w1w2_reconciliation_probes.py`.
 - Verification: `uv run pytest tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py -q`.
+
+## Reconciliation addendum (EBH-7 master completion Wave A3)
+
+**Date:** 2026-10-31 · **Audit HEAD:** `8b7661af15641a6a22d4eaa9127a5372d9968bfd`
+
+| Question | Finding |
+| --- | --- |
+| Is the guard necessary defense in depth? | **Yes** — physical invoke remains a distinct seam from governance admission; mismatch on `ToolInvocationContext.tenant_id` vs runtime state must fail closed. |
+| Does it duplicate admission authority? | **No semantic ownership transfer** — guard does not mint permissions; it rejects inconsistent attempt context only. |
+| Parallel owner risk? | **Mitigated** — no second resolver service; single method on existing invoker. |
+| Further product change required? | **Optional** — TEN-04 EXACT requires ToolRuntime chain evidence (Batch D); guard retained regardless. |
+| Additional operator gate? | **OD-EBH7-INVOKER-RECON** optional sign-off before B5; not blocking authorized implementation. |
+
+**Adversarial entrypoint matrix (qualification):** `test_ebh7_ten_adversarial_semantic_a2.py` + `assert_exec_tool_cross_tenant_via_tool_runtime` cover invoker and ToolRuntime paths; other entrypoints must remain covered by TEN/XDM integrated proofs (Wave D).

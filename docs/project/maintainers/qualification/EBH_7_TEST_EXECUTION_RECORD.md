@@ -9,7 +9,10 @@
 | Batch D TEN/XDM | start `4c884dbc5` — D1 TEN-03/04/05 EXACT promotion |
 | Command | `uv run pytest tests/qualification/ebh_7/ -q` @ Batch C HEAD |
 | Result | **120 passed, 4 skipped, 2 xfailed** (B6 gates; TEN-13 harness skip) |
-| Log | `.tmp/session/ebh-7-batch-c/pytest-ebh7-full.log` (capture on next run) · Batch C subset: `.tmp/session/ebh-7-batch-c/pytest-batch-c.log` |
+| Master completion (agent @ START_HEAD `8b7661af`) | uncommitted working tree — pin on operator commit |
+| Command | `uv run pytest tests/qualification/ebh_7/ -q` |
+| Result | **132 passed, 5 skipped, 2 xfailed** (B6 gates; TEN-04/11 async skip) |
+| Log | `.tmp/session/ebh-7-master/l3/ebh7_full_r2.log` |
 
 ## L1 / L2 / L3 (@ semantic correction)
 

@@ -9,5 +9,6 @@
 | RPL-REL-SQLITE-DUCKDB | Sanctioned registry sqlite + duckdb qualification | **AUTHORIZED** | Contract compatibility + behavioral evidence required; no fake dual-instance sqlite |
 | OD-EBH7-08 | Program closure — B6 + evidence dossier | **OPEN** | Independent B6 — not granted by OD-EBH7-01 |
 | B6 | Protocol 03 independent audit | **OPEN** | Separate gate from OD-EBH7-01 |
+| — | Operator worksheets | [`EBH_7_OPERATOR_DECISION_WORKSHEETS.md`](EBH_7_OPERATOR_DECISION_WORKSHEETS.md) | OPEN decisions listed |
 
 Decisions are operator-owned. OD-EBH7-01 does **not** substitute B6 or OD-EBH7-08.
