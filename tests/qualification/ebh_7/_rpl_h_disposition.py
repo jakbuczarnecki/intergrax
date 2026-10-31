@@ -60,12 +60,14 @@ def assert_ebh7_rpl_h_behavioral_qualification() -> None:
 
 
 def assert_ebh7_rpl_h_semantic_qualification_for_b6() -> None:
-    """B6 readiness — semantic replaceability, not Package C fail-closed alone."""
-    from tests.qualification.ebh_7._rpl_h_semantic_review import (
-        RplSemanticVerdict,
-        rpl_semantic_review_rows,
+    """B6 readiness — agent semantic verdicts must match normative SSOT (fail-closed)."""
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import (
+        assert_ebh7_rpl_h_normative_evidence_integrity,
+        normative_rpl_verdict_counts,
     )
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import rpl_semantic_verdict_counts
 
-    rows = rpl_semantic_review_rows()
-    not_qualified = [r.concern_id for r in rows if r.semantic_verdict is not RplSemanticVerdict.QUALIFIED]
-    assert not_qualified == [], f"RPL-H semantic OPEN: {not_qualified[:8]}... ({len(not_qualified)} total)"
+    assert_ebh7_rpl_h_normative_evidence_integrity()
+    agent = rpl_semantic_verdict_counts()
+    norm = normative_rpl_verdict_counts()
+    assert agent == norm, f"Agent vs normative RPL mismatch: agent={agent} norm={norm}"

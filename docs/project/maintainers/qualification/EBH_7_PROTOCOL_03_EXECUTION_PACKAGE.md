@@ -2,13 +2,13 @@
 
 | Step | Status |
 | --- | --- |
-| B1 Evidence bundle assembly | READY @ CLOSURE_SHA |
-| B2 Independent reviewer worksheet | READY |
-| B3 Exact findings reconciliation | **READY** — disposition SSOT 60/60 EXACT @ HEAD |
-| B4 Remediation loop | **COMPLETE** (agent) — gap-closure + final closure waves |
-| B5 Re-audit | **READY** — L3 EBH-7 green; B6 readiness gates pass |
-| B6 Independent audit PASS | **OPEN** — operator/independent only |
+| B1 Evidence bundle assembly | **MATERIALIZED** — [`ebh_7_p03_independent_replay/MANIFEST.json`](ebh_7_p03_independent_replay/MANIFEST.json) |
+| B2 Independent reviewer worksheet | **READY** — [`EBH_7_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md`](EBH_7_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md) |
+| B3 Exact findings reconciliation | **READY** — appendix @ HEAD + corrective register AUD-01 |
+| B4 Remediation loop | **IN PROGRESS** — normative RPL + audit remediation program |
+| B5 Re-audit | **OPEN** — pending `TEST_EXECUTION_SHA` replay |
+| B6 Independent audit PASS | **OPEN** — external only |
 
-**Dossier artifacts:** SHA ladder, ECAP report, semantic audit MD, pytest log under `.tmp/session/ebh-7-gap-closure/final-closure-pytest.log`.
+**Tracked dossier:** matrices appendix, ECAP executable checklist, remediation master plan.
 
-Agent materialization does **not** substitute B6 PASS or OD-EBH7-08.
+Agent / remediation materialization **does not** substitute B6 PASS or OD-EBH7-08.

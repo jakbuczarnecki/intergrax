@@ -32,3 +32,15 @@ def test_ebh7_w11_od_08_not_self_approved() -> None:
     )
     assert "OD-EBH7-08" in text
     assert "OPEN" in text
+    closure = (_REPO / "docs/project/maintainers/qualification/EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md").read_text(
+        encoding="utf-8"
+    )
+    assert "not signed" in closure.lower() or "OPEN" in closure
+
+
+def test_ebh7_w11_remediation_artifacts_present() -> None:
+    from tests.qualification.ebh_7._ebh7_audit_remediation_exit import (
+        assert_ebh7_audit_remediation_artifacts_materialized,
+    )
+
+    assert_ebh7_audit_remediation_artifacts_materialized()

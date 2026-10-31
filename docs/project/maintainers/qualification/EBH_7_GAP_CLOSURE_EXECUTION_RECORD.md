@@ -17,7 +17,11 @@
 
 - **D2-PLUGINHOST:** `ContinuationAwareCatalogToolHost.invoke` cross-tenant → TEN-13, XDM-018 **EXACT**
 - **D-ASSERT-AUDIT:** XDM-025/030 disposition text aligned with integrated tests
-- **60/60 EXACT**; B6 readiness exact-coverage gate **pass**
+## Post-remediation baseline
+
+- Independent audit remediation program materialized @ `EBH7_REMEDIATION_BASELINE_SHA`
+- Normative RPL/TEN/XDM appendix generated from SSOT
+- **B6 PASS**, **OD-EBH7-08** — operator/external only
 
 ## GAP-C2 / GAP-B2 (semantic)
 

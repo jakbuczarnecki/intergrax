@@ -22,8 +22,11 @@ def test_ebh7_batch_c_rpl_semantic_evidence_covers_matrix() -> None:
 
 
 def test_ebh7_batch_c_rpl_semantic_verdict_counts_recorded() -> None:
-    counts = rpl_semantic_verdict_counts()
-    assert sum(counts.values()) == 56
-    assert counts[RplSemanticVerdict.QUALIFIED] == 56
-    assert counts[RplSemanticVerdict.BLOCKED] == 0
-    assert counts[RplSemanticVerdict.PARTIAL] == 0
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import normative_rpl_verdict_counts
+
+    agent = rpl_semantic_verdict_counts()
+    norm = normative_rpl_verdict_counts()
+    assert sum(agent.values()) == 56
+    assert agent == norm
+    assert agent[RplSemanticVerdict.BLOCKED] == 6
+    assert agent[RplSemanticVerdict.PARTIAL] >= 17

@@ -1,21 +1,19 @@
 # EBH-7 — ECAP current HEAD audit report (C1–C5)
 
-| Counter | Structural @ materialization | Behavioral qualification |
-| --- | --- | ---: |
-| ECAP-C1 unclassified mechanisms (685 SSOT) | 0 | INTEGRITY OK |
-| ECAP-C2 unauthorized bypass (dup_x subset) | scoped gates execute | **QUALIFIED** (W4 DUP-X subset @ HEAD) |
-| ECAP-C3 NPSC global allowlist | gate executes PASS | QUALIFIED (PROHIBITED unresolved **0** @ EBH-6 scope — revalidated @ final closure) |
-| ECAP-C4 tenant E2E (26) | registry MATERIALIZED | **26/26 EXACT_PROOF** |
-| ECAP-C5 cross-domain (34) | registry MATERIALIZED | **34/34 EXACT_PROOF** |
+**Remediation program @ HEAD:** normative RPL/TEN/XDM appendix — [`EBH_7_FINAL_AUDIT_MATRICES_APPENDIX.md`](EBH_7_FINAL_AUDIT_MATRICES_APPENDIX.md).
 
-**Semantic SSOT:** `tests/qualification/ebh_7/_semantic_disposition_registry.py` — no auto-EXACT from registered callable alone.
+| ECAP | Status @ remediation | Executable gate |
+| --- | --- | --- |
+| ECAP-C1 | CHECKLIST — mechanism registry | `test_ebh_7_mechanical_exit_gates.py` |
+| ECAP-C2 | CHECKLIST — dup subset scoped | `test_ebh_7_w4_gov_dup_gates.py` |
+| ECAP-C3 | **PROHIBITED unresolved 0** @ EBH-6 register scope | `test_ebh6_prohibited_unresolved_zero` |
+| ECAP-C4 | **Independent audit — TEN rows in appendix** | `test_ebh_7_audit_remediation_gates.py` |
+| ECAP-C5 | **Independent audit — XDM composed-proxy inventory** | appendix + W7 registry |
 
-**RPL-H @ HEAD:** **56 QUALIFIED · 0 PARTIAL · 0 BLOCKED** ([`_rpl_h_semantic_evidence.py`](../../../tests/qualification/ebh_7/_rpl_h_semantic_evidence.py)).
+**RPL-H @ HEAD (normative):** see appendix — **not** 56× demonstrated replaceability.
 
-**B6 readiness (agent):** `EBH-7 — READY FOR INDEPENDENT B6` (60/60 EXACT, RPL semantic green, L3 EBH-7 without B6 xfails).
+**Agent mechanical counters:** may show 60/60 EXACT — **B6 must use appendix + normative RPL**.
 
-**Explicit non-claims:** OD-EBH7-08 **OPEN**; B6 **OPEN** (external); global FRZ PASS not claimed; stage **not** CLOSED until operator OD-08.
+**B6 / OD-EBH7-08:** **OPEN**. **TEST_EXECUTION_SHA:** pending Wave 5 replay ([`EBH_7_SHA_LADDER.md`](EBH_7_SHA_LADDER.md)).
 
-**Disposition SHA:** see `EBH7_SEMANTIC_DISPOSITION_SHA` in disposition registry (updated @ final closure commit).
-
-**TEST_EXECUTION_SHA:** see `CLOSURE_SHA` in [`EBH_7_SHA_LADDER.md`](EBH_7_SHA_LADDER.md).
+**Non-claims:** EBH-7 CLOSED, B6 PASS, global FRZ PASS, EVOL-X entry.

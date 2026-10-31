@@ -76,8 +76,15 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
         required_strength=GateStrength.E2E,
         correction="Structural N/A evidence only; not platform E2E proof",
     ),
+    GateFinding(
+        gate_id="AUD-01-RPL-AUTO-QUALIFIED",
+        prior_claim="56/56 semantic QUALIFIED via registry membership",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.BEHAVIORAL,
+        correction="Normative RPL layer + appendix; factory/blocked/dual-slug demoted until OD or real proof",
+    ),
 )
 
 
 def assert_ebh7_corrective_findings_registered() -> None:
-    assert len(EBH7_CORRECTIVE_GATE_FINDINGS) >= 8
+    assert len(EBH7_CORRECTIVE_GATE_FINDINGS) >= 9

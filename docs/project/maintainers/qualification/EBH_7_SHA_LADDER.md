@@ -13,9 +13,16 @@
 | EBH7_BATCH_C_START_SHA | RPL-H Batch C entry | `da1c29162a7a58a7e56674777bcf9259fd3ded28` |
 | EBH7_BATCH_D_START_SHA | TEN/XDM Batch D entry | `4c884dbc509203ec301303388176275a6792bf45` |
 | EBH7_BATCH_D_IMPL_SHA | Batch D D1 TEN-03/04/05 EXACT | `54da93b1b3aa1756d10a44834fabb83938092063` |
-| EBH7_MASTER_WAVE_SHA | Master completion wave (SSOT sync, TEN-12, document_store contracts) | `ad3e24a20d7d1b341f721ef2427b9c1f65506061` |
+| EBH7_MASTER_WAVE_SHA | Master completion wave | `ad3e24a20d7d1b341f721ef2427b9c1f65506061` |
 | EBH7_GAP_CLOSURE_START_SHA | Gap-closure program entry | `ad3e24a20d7d1b341f721ef2427b9c1f65506061` |
-| EBH7_GAP_CLOSURE_FINAL_SHA | Final closure implementation | `8bbda35dd1686b15bd6959b732ade3ba0f268632` |
-| CLOSURE_SHA | OD-EBH7-08 dossier + TEST_EXECUTION_SHA | `8bbda35dd1686b15bd6959b732ade3ba0f268632` |
+| EBH7_GAP_CLOSURE_IMPLEMENTATION_SHA | Gap-closure final implementation | `8bbda35dd1686b15bd6959b732ade3ba0f268632` |
+| EBH7_REMEDIATION_BASELINE_SHA | Independent audit remediation entry @ pushed HEAD | `11b724dd18ba1a7ed5f53a3999dc18af1068391d` |
+| EBH7_SEMANTIC_DISPOSITION_SHA | SSOT disposition pin | see `_semantic_disposition_registry.py` |
+| TEST_EXECUTION_SHA | B5 L3 replay tree | *pending Wave 5* |
+| EVIDENCE_PUBLICATION_SHA | Tracked P03 bundle publication | *pending Wave 6* |
+| INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
+| FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
+
+**Deprecated alias:** `CLOSURE_SHA` must not denote implementation while B6/OD-08 are OPEN.
 
 Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`.
