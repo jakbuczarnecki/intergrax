@@ -4,19 +4,17 @@
 
 from __future__ import annotations
 
-import ast
 import inspect
 import subprocess
 from pathlib import Path
 
 import pytest
-
 from intergrax.runtime.execution.environment_host_task_execution import (
     build_environment_host_task_execution,
 )
+from tests.qualification.trace_x._trace_x_p4_registry_types import compare_discovered_to_registry
 from tests.qualification.trace_x._trace_x_p5_r1_child_discovery import (
     CanonicalConstructorUsageKind,
-    classify_canonical_constructor_usage,
     discover_canonical_constructor_rebinding_violations,
     discover_canonical_constructor_rebindings_in_source,
     discover_canonical_constructor_usage_records_in_source,
@@ -64,7 +62,6 @@ from tests.qualification.trace_x._trace_x_p5_r1_support import (
     reconstruction_profile_fallback_sentinels,
     reconstruction_runtime_import_violations,
 )
-from tests.qualification.trace_x._trace_x_p4_registry_types import compare_discovered_to_registry
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
@@ -766,10 +763,7 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 def f():
     factories = [ChildExecutionRunner]
 """
-    assert any(
-        "alias-escape" in v
-        for v in discover_canonical_constructor_rebindings_in_source(rel, source)
-    )
+    assert any("alias-escape" in v for v in discover_canonical_constructor_rebindings_in_source(rel, source))
 
 
 def test_txp5r1_q59_dict_escape_sentinel() -> None:
@@ -780,10 +774,7 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 def f():
     factories = {"child": ChildExecutionRunner}
 """
-    assert any(
-        "alias-escape" in v
-        for v in discover_canonical_constructor_rebindings_in_source(rel, source)
-    )
+    assert any("alias-escape" in v for v in discover_canonical_constructor_rebindings_in_source(rel, source))
 
 
 def test_txp5r1_q60_conditional_alias_sentinel() -> None:
@@ -1140,10 +1131,8 @@ def f():
 
 def test_txp5r1_q86_production_usage_inventory_zero_forbidden_unknown() -> None:
     records, surfaces = production_canonical_constructor_usage_inventory()
-    assert len(surfaces) == 4
-    forbidden = [
-        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
-    ]
+    assert len(surfaces) == 5
+    forbidden = [r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE]
     unknown = [r for r in records if r.kind == CanonicalConstructorUsageKind.UNKNOWN]
     assert not forbidden, forbidden
     assert not unknown, unknown
@@ -1354,9 +1343,7 @@ def f(
     pass
 """
     records = discover_canonical_constructor_usage_records_in_source(rel, source)
-    forbidden = [
-        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
-    ]
+    forbidden = [r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE]
     assert forbidden
     violations = discover_canonical_constructor_rebindings_in_source(rel, source)
     assert any("alias-escape" in v for v in violations)
@@ -1387,9 +1374,7 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 f = lambda ChildExecutionRunner=ChildExecutionRunner: ChildExecutionRunner()
 """
     records = discover_canonical_constructor_usage_records_in_source(rel, source)
-    forbidden = [
-        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
-    ]
+    forbidden = [r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE]
     assert forbidden
     discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
     assert not discovered
@@ -1426,10 +1411,8 @@ def f(
 
 def test_txp5r1_q108_production_usage_inventory_unchanged_q8() -> None:
     records, surfaces = production_canonical_constructor_usage_inventory()
-    assert len(surfaces) == 4
-    forbidden = [
-        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
-    ]
+    assert len(surfaces) == 5
+    forbidden = [r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE]
     unknown = [r for r in records if r.kind == CanonicalConstructorUsageKind.UNKNOWN]
     assert not forbidden, forbidden
     assert not unknown, unknown

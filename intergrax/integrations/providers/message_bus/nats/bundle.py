@@ -2,13 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 
 from intergrax.integrations._shared.p3.factories import create_nats_message_bus as _legacy_create_nats_message_bus
-
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.nats.integration import (
     NATS_MESSAGE_BUS_PROVIDER_ID,
+    NatsMessageBusClient,
     NatsMessageBusIntegration,
     NatsMessageBusIntegrationConfig,
-    NatsMessageBusClient,
 )
 
 __all__ = [
@@ -43,6 +42,8 @@ def create_nats_message_bus_integration(
 
 def create_nats_message_bus(**kwargs: object) -> NatsMessageBusIntegration:
     """Compatibility shim — constructs NatsMessageBusIntegration from legacy runtime."""
+    if not kwargs:
+        return create_nats_message_bus_integration(enabled=False)
     runtime = _legacy_create_nats_message_bus(**kwargs)
     if isinstance(runtime, NatsMessageBusIntegration):
         return runtime

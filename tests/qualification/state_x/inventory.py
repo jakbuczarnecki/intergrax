@@ -194,8 +194,11 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
             ),
         ),
         "Host/Nexus composition wires store; semantic owner remains long-running checkpoint",
-        ("intergrax/runtime/long_running/store.py",),
-        ("SQLiteTaskCheckpointStore",),
+        (
+            "intergrax/runtime/long_running/store.py",
+            "intergrax/runtime/long_running/postgresql_task_checkpoint_store.py",
+        ),
+        ("SQLiteTaskCheckpointStore", "PostgreSQLTaskCheckpointStore"),
         (),
         ("LongRunningCoordinator", "NexusLoop checkpoint save path", "Scheduler resume writer"),
         (
@@ -212,7 +215,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         IdentityRole.PRESERVE_ON_RESTORE,
         ProjectionOrTruth.CANONICAL_TRUTH,
         StateFamilyP0Status.BASELINE_INVENTORIED,
-        _frz("FRZ-STA-01", "FRZ-STA-03", "FRZ-STA-05", "FRZ-STA-08", "FRZ-REC-01", "FRZ-REC-02", "FRZ-TEN-04", "FRZ-TEN-08"),
+        _frz(
+            "FRZ-STA-01",
+            "FRZ-STA-03",
+            "FRZ-STA-05",
+            "FRZ-STA-08",
+            "FRZ-REC-01",
+            "FRZ-REC-02",
+            "FRZ-TEN-04",
+            "FRZ-TEN-08",
+        ),
         BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
         TenantAuditDisposition.BLOCKED,
         "Schema columns + JSON validation on load; CAS; malformed checkpoint resume paths",
@@ -274,10 +286,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         (
             "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
             "intergrax/runtime/execution/in_memory_decision_checkpoint_persistence.py",
+            "intergrax/runtime/execution/postgresql_decision_checkpoint_persistence.py",
         ),
         (
             "SQLiteDecisionCheckpointPersistence",
             "InMemoryDecisionCheckpointPersistence",
+            "PostgreSQLDecisionCheckpointPersistence",
         ),
         (),
         ("Decision recovery orchestration", "Active decision checkpoint binding"),
@@ -782,12 +796,14 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         (
             "intergrax/runtime/execution/continuation/persistence.py",
             "intergrax/runtime/execution/continuation/durable_state_file.py",
+            "intergrax/runtime/execution/continuation/durable_serialized_seal_store.py",
         ),
         (
             "ExecutionContinuationStateStore",
             "InMemoryExecutionContinuationStateStore",
             "ExecutionContinuationDurableBacking",
             "ExecutionContinuationDurableStateFilePersistence",
+            "SerializedSealExecutionContinuationStateStore",
         ),
         (),
         ("ExecutionContinuationService", "Continuation progress gate"),
@@ -925,9 +941,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
     ),
 )
 
-CURRENT_STATE_X_FAMILY_IDS: Final[tuple[str, ...]] = tuple(
-    entry.family_id for entry in STATE_X_FAMILY_INVENTORY
-)
+CURRENT_STATE_X_FAMILY_IDS: Final[tuple[str, ...]] = tuple(entry.family_id for entry in STATE_X_FAMILY_INVENTORY)
 
 
 STATE_X_P0_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
@@ -1281,8 +1295,18 @@ STATE_X_FINAL_START_HEAD: Final[str] = "5f57b3df1ac400d3676f376c218be148b3481bc8
 
 STATE_X_FINAL_R1_START_HEAD: Final[str] = STATE_X_FINAL_START_HEAD
 
+from tests.qualification.roadmap_replay_x._prod_delta_disposition import (  # noqa: E402
+    REPLAY_X_L2_QUALIFICATION_HEAD as STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD,
+)
+
 STATE_X_FINAL_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
+        ".cursor/rules/intergrax-env-vendor-qualification.mdc",
+        "intergrax/runtime/resilience/dependency_attempt_execution_boundary.py",
+        ".githooks/pre-commit",
+        ".githooks/pre-commit.ps1",
+        ".githooks/pre-push",
+        ".githooks/pre-push.ps1",
         "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
         "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
         "docs/project/maintainers/qualification/STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md",
@@ -1308,3 +1332,43 @@ STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/unit/runtime/long_running/test_pba_fix_a_checkpoint_port_consumption.py",
     },
 )
+
+STATE_X_REPLAY_X_WORKING_TREE_QUAL_PREFIXES: Final[tuple[str, ...]] = (
+    "docs/project/maintainers/",
+    "tests/qualification/",
+    "tests/fixtures/",
+    ".cursor/rules/",
+    ".githooks/",
+    ".github/workflows/",
+)
+
+
+def _git_is_ancestor(ancestor: str, descendant: str) -> bool:
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=root,
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def state_x_replay_x_l2_head_active() -> bool:
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    head = proc.stdout.strip()
+    if head == STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD:
+        return True
+    return _git_is_ancestor(STATE_X_REPLAY_X_L2_QUALIFICATION_HEAD, head)

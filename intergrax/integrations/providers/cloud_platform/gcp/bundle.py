@@ -11,12 +11,18 @@ Google credentials are opened only in ``opens.py``. Tier-3 code MUST use
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
-from intergrax.integrations.providers.cloud_platform.gcp.adapter import _GcpCloudPlatform
 from intergrax.integrations.providers.cloud_platform.gcp.config import GcpIntegrationConfig
+from intergrax.integrations.providers.cloud_platform.gcp.integration import (
+    GCP_CLOUD_PLATFORM_PROVIDER_ID,
+    GcpCloudPlatformClient,
+    GcpCloudPlatformIntegration,
+    GcpCloudPlatformIntegrationConfig,
+)
 from intergrax.integrations.providers.cloud_platform.gcp.opens import open_gcp_cloud_platform
 
 
@@ -32,10 +38,10 @@ def resolve_gcp_config(**overrides: object) -> GcpIntegrationConfig:
 
 def create_gcp_integration(
     *,
-    cloud_platform: Optional[CloudPlatform] = None,
-    credentials: Optional[object] = None,
+    cloud_platform: CloudPlatform | None = None,
+    credentials: object | None = None,
     resolved_project_id: str = "",
-    credential_factory: Optional[Callable[[], tuple[object, str]]] = None,
+    credential_factory: Callable[[], tuple[object, str]] | None = None,
     **config_overrides: object,
 ) -> GcpIntegrationBundle:
     config = resolve_gcp_config(**config_overrides)
@@ -50,43 +56,11 @@ def create_gcp_integration(
     return GcpIntegrationBundle(config=config, cloud_platform=platform)
 
 
-def create_gcp_cloud_platform(
-    *,
-    cloud_platform: Optional[CloudPlatform] = None,
-    credentials: Optional[object] = None,
-    resolved_project_id: str = "",
-    credential_factory: Optional[Callable[[], tuple[object, str]]] = None,
-    **config_overrides: object,
-) -> GcpCloudPlatformIntegration:
-    """Catalog factory for ``"gcp"`` / ``CLOUD_PLATFORM``."""
-    return create_gcp_integration(
-        cloud_platform=cloud_platform,
-        credentials=credentials,
-        resolved_project_id=resolved_project_id,
-        credential_factory=credential_factory,
-        **config_overrides,
-    ).cloud_platform
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.cloud_platform.gcp.integration import (
-    GCP_CLOUD_PLATFORM_PROVIDER_ID,
-    GcpCloudPlatformIntegration,
-    GcpCloudPlatformIntegrationConfig,
-    GcpCloudPlatformClient,
-)
-
-
 def create_gcp_cloud_platform_integration(
     *,
-    client: GcpCloudPlatformIntegrationClient | None = None,
+    client: GcpCloudPlatformClient | None = None,
     enabled: bool = False,
 ) -> GcpCloudPlatformIntegration:
-    """
-    Build a contract-based GCP cloud platform integration.
-
-    Compatibility shim — constructs Integration via from_store (create_gcp_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
     if enabled and client is None:
         raise IntegrationConfigurationError(
             "GCP cloud platform integration requires an injected client when enabled=True",
@@ -98,3 +72,29 @@ def create_gcp_cloud_platform_integration(
         display_name="GCP",
         config=GcpCloudPlatformIntegrationConfig(enabled=enabled),
     )
+
+
+def create_gcp_cloud_platform(
+    *,
+    cloud_platform: CloudPlatform | None = None,
+    credentials: object | None = None,
+    resolved_project_id: str = "",
+    credential_factory: Callable[[], tuple[object, str]] | None = None,
+    **config_overrides: object,
+) -> GcpCloudPlatformIntegration:
+    """Catalog factory for ``"gcp"`` / ``CLOUD_PLATFORM``."""
+    if (
+        cloud_platform is None
+        and credentials is None
+        and credential_factory is None
+        and resolved_project_id == ""
+        and not config_overrides
+    ):
+        return create_gcp_cloud_platform_integration(enabled=False)
+    return create_gcp_integration(
+        cloud_platform=cloud_platform,
+        credentials=credentials,
+        resolved_project_id=resolved_project_id,
+        credential_factory=credential_factory,
+        **config_overrides,
+    ).cloud_platform

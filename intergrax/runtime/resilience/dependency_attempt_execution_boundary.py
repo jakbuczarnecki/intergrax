@@ -266,9 +266,7 @@ class DependencyAttemptExecutionBoundary:
         self._lifecycle = _BoundaryLifecycle.OPEN
         self._next_token = 0
         self._attempts: dict[int, _AttemptRecord] = {}
-        self._pending_acquire_futures: set[ConcurrentFuture[DependencyConcurrencyPermit]] = (
-            set()
-        )
+        self._pending_acquire_futures: set[ConcurrentFuture[DependencyConcurrencyPermit]] = set()
         self._next_in_flight_acquire_seq = 0
         self._in_flight_acquire_handoffs: dict[int, _AcquirePermitHandoff] = {}
         self._in_flight_acquire_futures: dict[
@@ -291,9 +289,7 @@ class DependencyAttemptExecutionBoundary:
         )
         self._thread.start()
         if not self._loop_ready.wait(timeout=self._STARTUP_TIMEOUT_SECONDS):
-            raise RuntimeError(
-                "DependencyAttemptExecutionBoundary failed to start admission loop"
-            )
+            raise RuntimeError("DependencyAttemptExecutionBoundary failed to start admission loop")
 
     def acquire(
         self,
@@ -342,7 +338,9 @@ class DependencyAttemptExecutionBoundary:
             if self._lifecycle is not _BoundaryLifecycle.OPEN:
                 shutdown_snapshot = [(in_flight_seq, handoff)]
 
-        def _on_acquire_terminal(done_future: ConcurrentFuture[object]) -> None:
+        def _on_acquire_terminal(
+            done_future: ConcurrentFuture[DependencyConcurrencyPermit],
+        ) -> None:
             del done_future
             if not acquire_future.done():
                 return
@@ -362,19 +360,13 @@ class DependencyAttemptExecutionBoundary:
                 if exc is not None:
                     if isinstance(exc, _AcquireAbandonedBeforeDelivery):
                         return
-                    if (
-                        handoff.is_release_obligation_claimed()
-                        and not handoff.is_release_complete()
-                    ):
+                    if handoff.is_release_obligation_claimed() and not handoff.is_release_complete():
                         self._maybe_release_abandoned_acquire_permit(
                             acquire_future,
                             handoff,
                         )
                     return
-                if not (
-                    handoff.is_abandoned()
-                    or handoff.is_release_obligation_claimed()
-                ):
+                if not (handoff.is_abandoned() or handoff.is_release_obligation_claimed()):
                     return
                 self._maybe_release_abandoned_acquire_permit(acquire_future, handoff)
             finally:
@@ -418,9 +410,7 @@ class DependencyAttemptExecutionBoundary:
                 stored = handoff.take_stored_permit_for_release()
                 to_release = stored if stored is not None else permit
                 self._schedule_handoff_permit_release(to_release, handoff)
-            raise RuntimeError(
-                "invariant: acquire permit granted after abandon handoff"
-            )
+            raise RuntimeError("invariant: acquire permit granted after abandon handoff")
 
         with self._registry_lock:
             if self._lifecycle is _BoundaryLifecycle.OPEN:
@@ -436,9 +426,7 @@ class DependencyAttemptExecutionBoundary:
             raise DependencyAttemptReleaseInvariantError(
                 "dependency permit release failed after shutdown race"
             ) from exc
-        raise DependencyAttemptExecutionBoundaryClosedError(
-            "dependency attempt boundary is not accepting new attempts"
-        )
+        raise DependencyAttemptExecutionBoundaryClosedError("dependency attempt boundary is not accepting new attempts")
 
     def release_after_submit_failure(self, handle: DependencyAttemptHandle) -> None:
         """Release permit when pool submit failed after successful acquire."""
@@ -506,9 +494,7 @@ class DependencyAttemptExecutionBoundary:
                 return
             record.release_claimed = True
             if record.phase is _AttemptPhase.DETACHED:
-                raise RuntimeError(
-                    "invariant: complete attached called for detached attempt"
-                )
+                raise RuntimeError("invariant: complete attached called for detached attempt")
             self._detached_pending_release.discard(handle._token)
 
         self._release_attached(handle, record)
@@ -550,13 +536,9 @@ class DependencyAttemptExecutionBoundary:
             loop.call_soon_threadsafe(loop.stop)
             self._thread.join(timeout=self._STARTUP_TIMEOUT_SECONDS)
             if not self._loop_exited.wait(timeout=self._STARTUP_TIMEOUT_SECONDS):
-                raise RuntimeError(
-                    "DependencyAttemptExecutionBoundary admission loop did not exit"
-                )
+                raise RuntimeError("DependencyAttemptExecutionBoundary admission loop did not exit")
             if self._thread.is_alive():
-                raise RuntimeError(
-                    "DependencyAttemptExecutionBoundary admission thread did not stop"
-                )
+                raise RuntimeError("DependencyAttemptExecutionBoundary admission thread did not stop")
 
             with self._registry_lock:
                 self._lifecycle = _BoundaryLifecycle.CLOSED
@@ -653,9 +635,7 @@ class DependencyAttemptExecutionBoundary:
         try:
             release_future.result()
         except BaseException as exc:
-            raise DependencyAttemptReleaseInvariantError(
-                "dependency permit release failed on attached path"
-            ) from exc
+            raise DependencyAttemptReleaseInvariantError("dependency permit release failed on attached path") from exc
         finally:
             with self._registry_lock:
                 self._attempts.pop(handle._token, None)
@@ -760,10 +740,7 @@ class DependencyAttemptExecutionBoundary:
         wait: bool,
     ) -> None:
         release_future = self._schedule_permit_release(permit)
-        on_admission_loop = (
-            self._admission_thread is not None
-            and threading.current_thread() is self._admission_thread
-        )
+        on_admission_loop = self._admission_thread is not None and threading.current_thread() is self._admission_thread
         if on_admission_loop or not wait:
             with self._registry_lock:
                 self._pending_async_release_futures.add(release_future)
@@ -842,9 +819,7 @@ class DependencyAttemptExecutionBoundary:
                 if not self._in_flight_acquire_handoffs:
                     return
                 self._drain_condition.wait(timeout=0.05)
-        raise RuntimeError(
-            "DependencyAttemptExecutionBoundary in-flight acquires did not drain"
-        )
+        raise RuntimeError("DependencyAttemptExecutionBoundary in-flight acquires did not drain")
 
     def _wait_for_pending_async_releases(self) -> None:
         deadline = time.monotonic() + self._STARTUP_TIMEOUT_SECONDS
@@ -859,9 +834,7 @@ class DependencyAttemptExecutionBoundary:
                 except BaseException as exc:
                     self._record_lifecycle_failure(exc)
             time.sleep(0.01)
-        raise RuntimeError(
-            "DependencyAttemptExecutionBoundary pending async releases did not drain"
-        )
+        raise RuntimeError("DependencyAttemptExecutionBoundary pending async releases did not drain")
 
     def _wait_for_detached_releases(self) -> None:
         while True:
@@ -869,19 +842,14 @@ class DependencyAttemptExecutionBoundary:
                 if not self._attempts:
                     break
                 release_futures = [
-                    record.release_future
-                    for record in self._attempts.values()
-                    if record.release_future is not None
+                    record.release_future for record in self._attempts.values() if record.release_future is not None
                 ]
             for release_future in release_futures:
                 release_future.result()
             with self._registry_lock:
                 if not self._attempts:
                     break
-                if all(
-                    record.release_future is not None
-                    for record in self._attempts.values()
-                ):
+                if all(record.release_future is not None for record in self._attempts.values()):
                     continue
                 self._drain_condition.wait(timeout=0.05)
 

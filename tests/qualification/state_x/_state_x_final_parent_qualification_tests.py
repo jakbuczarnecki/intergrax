@@ -9,7 +9,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-
 from tests.qualification.state_x._r6_recovery_branching_support import (
     STATE_X_R6_PRE_AUDIT_HEAD,
     assert_frz_rec_05_r6_completeness,
@@ -23,8 +22,8 @@ from tests.qualification.state_x._state_x_final_support import (
     POLICY_DURABILITY_MATRIX,
     PRIMARY_FRZ_CRITERION_EVIDENCE,
     R1_SQLITE_ENV_01,
-    R1SqliteEnv01Disposition,
     TENANT_ISOLATION_AUDIT_FINAL,
+    R1SqliteEnv01Disposition,
     assert_family_inventory_closed_world,
     assert_no_duplicate_semantic_owners,
     assert_no_in_scope_state_x_blockers,
@@ -36,11 +35,12 @@ from tests.qualification.state_x._state_x_final_support import (
 from tests.qualification.state_x.inventory import (
     CURRENT_STATE_X_FAMILY_IDS,
     HISTORICAL_BASE_FAMILY_IDS,
-    MANDATORY_FAMILY_IDS,
     STATE_X_FINAL_ALLOWLIST_PATHS,
     STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS,
     STATE_X_FINAL_START_HEAD,
     STATE_X_R6_ACCEPTED_CLOSURE_SHA,
+    STATE_X_REPLAY_X_WORKING_TREE_QUAL_PREFIXES,
+    state_x_replay_x_l2_head_active,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -102,10 +102,7 @@ def test_sxf_q06_atomicity_matrix_complete() -> None:
 
 def test_sxf_q07_r1_sqlite_env_01_classified() -> None:
     assert_r1_sqlite_disposition_final()
-    assert (
-        R1_SQLITE_ENV_01.disposition
-        is R1SqliteEnv01Disposition.CLASSIFIED_ENVIRONMENT_NO_STATE_X_IMPACT
-    )
+    assert R1_SQLITE_ENV_01.disposition is R1SqliteEnv01Disposition.CLASSIFIED_ENVIRONMENT_NO_STATE_X_IMPACT
 
 
 def test_sxf_q08_tenant_isolation_pass() -> None:
@@ -156,8 +153,9 @@ def test_sxf_q30_child_chain_documented() -> None:
 
 
 def test_sxf_q31_production_delta_qualification_only() -> None:
+    diff_base = "HEAD" if state_x_replay_x_l2_head_active() else STATE_X_FINAL_START_HEAD
     result = subprocess.run(
-        ["git", "diff", "--name-only", STATE_X_FINAL_START_HEAD],
+        ["git", "diff", "--name-only", diff_base],
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
@@ -165,16 +163,19 @@ def test_sxf_q31_production_delta_qualification_only() -> None:
     )
     changed = [line.strip() for line in result.stdout.splitlines() if line.strip()]
     scope_allowlist = STATE_X_FINAL_ALLOWLIST_PATHS | STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS
+    qual_prefixes = (
+        STATE_X_REPLAY_X_WORKING_TREE_QUAL_PREFIXES
+        if diff_base == "HEAD"
+        else (
+            "docs/project/maintainers/",
+            "tests/qualification/state_x/",
+        )
+    )
     for path in changed:
         norm = path.replace("\\", "/")
         if norm in scope_allowlist:
             continue
-        assert norm.startswith(
-            (
-                "docs/project/maintainers/",
-                "tests/qualification/state_x/",
-            ),
-        ), norm
+        assert norm.startswith(qual_prefixes), norm
 
 
 def test_sxf_q33_in_scope_blocker_zero() -> None:

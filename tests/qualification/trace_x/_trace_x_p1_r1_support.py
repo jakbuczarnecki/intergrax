@@ -12,18 +12,15 @@ from typing import Final
 from tests.qualification.trace_x._trace_x_p0_support import repo_root
 
 TRACE_X_P1_R1_START_HEAD: Final[str] = "f31a326bb96b936e07d149c2ba8c75351d9117c4"
-TRACE_X_P1_AUDITED_TRANSPORT_HEAD: Final[str] = (
-    "097b8236817456377848885a324afa1044101009"
-)
+TRACE_X_P1_AUDITED_TRANSPORT_HEAD: Final[str] = "097b8236817456377848885a324afa1044101009"
 
 MANDATORY_FRZ_R1_IDS: Final[tuple[str, ...]] = ("FRZ-TRC-02",)
 
 P1_BLOCKER_RESOLVED_ID: Final[str] = "P1-BLK-DEGRADED-LINEAGE-01"
-P1_BLOCKER_RESOLUTION: Final[str] = "RESOLVED PENDING INDEPENDENT AUDIT"
+P1_BLOCKER_RESOLUTION: Final[str] = "RESOLVED / independently accepted"
 
 ARCHITECTURE_DECISION_SUMMARY: Final[str] = (
-    "child execution requires successful canonical durable "
-    "ExecutionLineage parent→child admission"
+    "Child execution requires successful canonical durable `ExecutionLineage` parent→child admission"
 )
 
 STRICT_ADMISSION_EVIDENCE_TESTS: Final[tuple[str, ...]] = (
@@ -60,9 +57,7 @@ class R1EnterpriseAuditRow:
     result: R1GateResult
 
 
-FRZ_TRC_02_DISPOSITION: Final[FrzTrcR1Disposition] = (
-    FrzTrcR1Disposition.READY_FOR_INDEPENDENT_CLOSURE_REVIEW
-)
+FRZ_TRC_02_DISPOSITION: Final[FrzTrcR1Disposition] = FrzTrcR1Disposition.READY_FOR_INDEPENDENT_CLOSURE_REVIEW
 
 R1_READINESS: Final[R1ReadinessStatus] = R1ReadinessStatus.READY_FOR_AUDIT
 P1_POST_R1_READINESS: Final[R1ReadinessStatus] = R1ReadinessStatus.READY_FOR_AUDIT

@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import subprocess
 
-import pytest
-
 from tests.qualification.trace_x._trace_x_p0_support import repo_root
 from tests.qualification.trace_x._trace_x_p1_r1_support import (
     ARCHITECTURE_DECISION_SUMMARY,
@@ -19,12 +17,12 @@ from tests.qualification.trace_x._trace_x_p1_r1_support import (
     P1_BLOCKER_RESOLVED_ID,
     P1_POST_R1_READINESS,
     R1_READINESS,
-    R1GateResult,
-    R1ReadinessStatus,
     STRICT_ADMISSION_EVIDENCE_TESTS,
     TENANT_ISOLATION_AUDIT_R1,
     TRACE_X_P1_AUDITED_TRANSPORT_HEAD,
     TRACE_X_P1_R1_START_HEAD,
+    R1GateResult,
+    R1ReadinessStatus,
     assert_child_admission_re_raises_after_degradation,
     assert_obsolete_non_durable_machinery_removed,
     production_text,
@@ -65,10 +63,7 @@ def test_txp1r1_q03_child_unavailable_admission_propagates() -> None:
 
 
 def test_txp1r1_q04_failed_admission_blocks_delegate() -> None:
-    assert (
-        "test_child_admission_unavailable_blocks_delegate_and_marks_degraded"
-        in STRICT_ADMISSION_EVIDENCE_TESTS
-    )
+    assert "test_child_admission_unavailable_blocks_delegate_and_marks_degraded" in STRICT_ADMISSION_EVIDENCE_TESTS
 
 
 def test_txp1r1_q05_successful_mark_degraded_does_not_permit_child() -> None:
@@ -96,10 +91,7 @@ def test_txp1r1_q10_failed_child_produces_no_executed_child_path() -> None:
 
 
 def test_txp1r1_q11_sibling_with_later_successful_admission_may_execute() -> None:
-    assert (
-        "test_sibling_after_failed_child_admission_may_execute_when_durable"
-        in STRICT_ADMISSION_EVIDENCE_TESTS
-    )
+    assert "test_sibling_after_failed_child_admission_may_execute_when_durable" in STRICT_ADMISSION_EVIDENCE_TESTS
 
 
 def test_txp1r1_q12_degradation_remains_monotonic() -> None:
@@ -141,24 +133,15 @@ def test_txp1r1_q18_causal_evidence_not_promoted_to_topology_owner() -> None:
 
 
 def test_txp1r1_q19_child_budget_released_on_failed_admission() -> None:
-    assert (
-        "test_child_budget_released_after_failed_lineage_admission"
-        in STRICT_ADMISSION_EVIDENCE_TESTS
-    )
+    assert "test_child_budget_released_after_failed_lineage_admission" in STRICT_ADMISSION_EVIDENCE_TESTS
 
 
 def test_txp1r1_q20_execution_identity_context_restored() -> None:
-    assert (
-        "test_parent_identity_and_authority_restored_after_failed_admission"
-        in STRICT_ADMISSION_EVIDENCE_TESTS
-    )
+    assert "test_parent_identity_and_authority_restored_after_failed_admission" in STRICT_ADMISSION_EVIDENCE_TESTS
 
 
 def test_txp1r1_q21_authority_context_restored() -> None:
-    assert (
-        "test_parent_identity_and_authority_restored_after_failed_admission"
-        in STRICT_ADMISSION_EVIDENCE_TESTS
-    )
+    assert "test_parent_identity_and_authority_restored_after_failed_admission" in STRICT_ADMISSION_EVIDENCE_TESTS
 
 
 def test_txp1r1_q22_reconstruction_does_not_invent_failed_child_edge() -> None:
@@ -167,10 +150,9 @@ def test_txp1r1_q22_reconstruction_does_not_invent_failed_child_edge() -> None:
 
 def test_txp1r1_q23_p1_blocker_resolved() -> None:
     assert P1_BLOCKER_RESOLVED_ID == "P1-BLK-DEGRADED-LINEAGE-01"
-    assert P1_BLOCKER_RESOLUTION == "RESOLVED PENDING INDEPENDENT AUDIT"
+    assert P1_BLOCKER_RESOLUTION == "RESOLVED / independently accepted"
     p1 = (
-        _REPO_ROOT
-        / "docs/project/maintainers/qualification/TRACE_X_P1_IDENTITY_CAUSALITY_CERTIFICATION.md"
+        _REPO_ROOT / "docs/project/maintainers/qualification/TRACE_X_P1_IDENTITY_CAUSALITY_CERTIFICATION.md"
     ).read_text(encoding="utf-8")
     assert P1_BLOCKER_RESOLUTION in p1
 
@@ -181,8 +163,7 @@ def test_txp1r1_q24_frz_trc_02_readiness() -> None:
 
 def test_txp1r1_q25_frz_trc_12_prior_evidence_preserved() -> None:
     p1 = (
-        _REPO_ROOT
-        / "docs/project/maintainers/qualification/TRACE_X_P1_IDENTITY_CAUSALITY_CERTIFICATION.md"
+        _REPO_ROOT / "docs/project/maintainers/qualification/TRACE_X_P1_IDENTITY_CAUSALITY_CERTIFICATION.md"
     ).read_text(encoding="utf-8")
     assert TRACE_X_P1_AUDITED_TRANSPORT_HEAD in p1
 

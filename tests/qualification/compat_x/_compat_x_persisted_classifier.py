@@ -45,15 +45,16 @@ _MODULE_FAMILY_ANCHOR: dict[str, str] = {
     "intergrax/distributed/providers/redis_kv_store.py": "distributed.kv_entry",
     "intergrax/runtime/tools/sqlite_idempotency_store.py": "runtime.tool_idempotency_ledger",
     "intergrax/distributed/providers/redis_idempotency_store.py": "runtime.tool_idempotency_ledger",
-    "intergrax/runtime/execution/continuation/durable_state_file.py": (
-        "runtime.execution_continuation_durable_state"
-    ),
-    "intergrax/runtime/execution/continuation/persistence.py": (
-        "runtime.execution_continuation_durable_state"
-    ),
+    "intergrax/runtime/execution/continuation/durable_state_file.py": ("runtime.execution_continuation_durable_state"),
+    "intergrax/runtime/execution/continuation/persistence.py": ("runtime.execution_continuation_durable_state"),
     "synthetic/qualification/compat_x_r2_redis_classified.py": "distributed.kv_entry",
     "synthetic/qualification/compat_x_r2_cache_false_exclude.py": "runtime.tool_idempotency_ledger",
     "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py": "runtime.decision_event_append",
+    "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py": "runtime.decision_checkpoint_durable",
+    "intergrax/runtime/execution/postgresql_decision_checkpoint_persistence.py": (
+        "runtime.decision_checkpoint_durable"
+    ),
+    "intergrax/agent_distribution/activation_domain_coordinator.py": "agent_distribution.sqlite_container",
     "intergrax/autonomous_work/postgresql_repository.py": "autonomous_work.postgresql_container",
     "intergrax/collaborative_work/sqlite_repository.py": "collaborative_work.sqlite_container",
 }
@@ -187,10 +188,7 @@ def agent_distribution_table_parity_holds() -> bool:
 
 def _family_for_candidate(candidate: DurableBoundaryCandidate) -> str | None:
     module = candidate.module_path.replace("\\", "/")
-    if (
-        "sqlite.table.schema" in candidate.candidate_id
-        and module.startswith("intergrax/collaborative_work/")
-    ):
+    if "sqlite.table.schema" in candidate.candidate_id and module.startswith("intergrax/collaborative_work/"):
         return "collaborative_work.sqlite_container"
     if candidate.storage_signal == DurableStorageSignal.SQLITE_PAYLOAD_TABLE:
         table = candidate.payload_symbol
@@ -230,9 +228,8 @@ def _family_for_candidate(candidate: DurableBoundaryCandidate) -> str | None:
         return "autonomous_work.postgresql_container"
     if module.startswith("intergrax/collaborative_work/"):
         return "collaborative_work.sqlite_container"
-    if (
-        candidate.storage_signal == DurableStorageSignal.SQLITE_PAYLOAD_TABLE
-        and module.startswith("intergrax/collaborative_work/")
+    if candidate.storage_signal == DurableStorageSignal.SQLITE_PAYLOAD_TABLE and module.startswith(
+        "intergrax/collaborative_work/"
     ):
         return "collaborative_work.sqlite_container"
     if module == "intergrax/runtime/long_running/store.py":
@@ -245,9 +242,7 @@ def _family_for_candidate(candidate: DurableBoundaryCandidate) -> str | None:
         if "scheduled_resumes" in evidence0 or "ScheduledResume" in evidence0:
             return "runtime.scheduled_resume"
         return "runtime.task_checkpoint"
-    if module == (
-        "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py"
-    ):
+    if module == ("intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py"):
         if candidate.payload_symbol == "SuspendedExecutionOperationDescriptor":
             return "runtime.suspended_execution_operation_descriptor"
         return "runtime.suspended_operation_backing_envelope"
@@ -262,6 +257,8 @@ def _family_for_candidate(candidate: DurableBoundaryCandidate) -> str | None:
             DurableStorageSignal.REDIS_READ,
             DurableStorageSignal.PICKLE_DURABLE_WIRE,
             DurableStorageSignal.FILE_WRITE,
+            DurableStorageSignal.POSTGRESQL_DML,
+            DurableStorageSignal.SQLITE_DML,
         ):
             return anchor
         return anchor
@@ -288,9 +285,7 @@ def _exclusion_for_candidate(
                 DurableExclusionReason.SQL_METADATA_NOT_SEMANTIC_PAYLOAD,
                 (f"table:{candidate.payload_symbol}",),
             )
-    if module.endswith("in_memory_stores.py") and "contract_authority" in (
-        candidate.function_name or ""
-    ).lower():
+    if module.endswith("in_memory_stores.py") and "contract_authority" in (candidate.function_name or "").lower():
         return (
             DurableExclusionReason.EPHEMERAL_IN_MEMORY_ONLY,
             ("in_memory contract authority slot",),
@@ -301,14 +296,17 @@ def _exclusion_for_candidate(
                 DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD,
                 (f"service_module:{marker}",),
             )
+    if module == "intergrax/applications/_shared/single_node_production_profile_v1.py":
+        return (
+            DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD,
+            ("sqlite_pragma_diagnostics_not_semantic_payload",),
+        )
     if candidate.class_name and candidate.class_name.endswith("Error"):
         return (
             DurableExclusionReason.EXCEPTION_NOT_PAYLOAD,
             (f"exception_class:{candidate.class_name}",),
         )
-    if candidate.class_name and any(
-        candidate.class_name.endswith(s) for s in _ORCHESTRATOR_CLASS_SUFFIXES
-    ):
+    if candidate.class_name and any(candidate.class_name.endswith(s) for s in _ORCHESTRATOR_CLASS_SUFFIXES):
         return (
             DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD,
             (f"class_suffix:{candidate.class_name}",),
@@ -359,17 +357,26 @@ def _exclusion_for_candidate(
         ("intergrax/runtime/execution/attempt_lifecycle/", DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD),
         ("intergrax/runtime/execution/lineage/", DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD),
         ("intergrax/runtime/execution/execution_terminal/", DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD),
-        ("intergrax/runtime/execution/document_store_execution_terminal", DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD),
+        (
+            "intergrax/runtime/execution/document_store_execution_terminal",
+            DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD,
+        ),
         ("intergrax/agent_distribution/runtime_context_staging.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/agent_distribution/materialization_adapters.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/applications/_shared/package_wiring.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/applications/_shared/registry_ops_wiring.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/runtime/execution/sqlite_decision_", DurableExclusionReason.ORCHESTRATOR_SERVICE_NOT_PAYLOAD),
         ("intergrax/applications/_shared/application_build_context.py", DurableExclusionReason.CACHE_NON_DURABLE),
-        ("intergrax/applications/_shared/sqlite_async_task_index.py", DurableExclusionReason.SQL_METADATA_NOT_SEMANTIC_PAYLOAD),
+        (
+            "intergrax/applications/_shared/sqlite_async_task_index.py",
+            DurableExclusionReason.SQL_METADATA_NOT_SEMANTIC_PAYLOAD,
+        ),
         ("intergrax/applications/_shared/docker_templates.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/applications/_shared/integrations/persistence.py", DurableExclusionReason.TRANSPORT_ONLY_ENCODING),
-        ("intergrax/applications/_shared/profile_resolution/persistence.py", DurableExclusionReason.TRANSPORT_ONLY_ENCODING),
+        (
+            "intergrax/applications/_shared/profile_resolution/persistence.py",
+            DurableExclusionReason.TRANSPORT_ONLY_ENCODING,
+        ),
         ("intergrax/distributed/providers/redis_execution_semaphore.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/distributed/providers/redis_rate_limiter.py", DurableExclusionReason.CACHE_NON_DURABLE),
         ("intergrax/queueing/", DurableExclusionReason.CACHE_NON_DURABLE),
@@ -448,6 +455,5 @@ def semantic_family_ids_from_classifications(
     return frozenset(
         c.family_id
         for c in classifications
-        if c.disposition == PersistedCandidateDisposition.PERSISTED_FAMILY_MEMBER
-        and c.family_id is not None
+        if c.disposition == PersistedCandidateDisposition.PERSISTED_FAMILY_MEMBER and c.family_id is not None
     )

@@ -5,15 +5,18 @@
 from __future__ import annotations
 
 import pytest
-
-from tests.qualification.compat_x._compat_x_deprecation_r5_shim_reconciliation import (
-    current_compat_shim_paths,
-    load_frozen_historical_shim_baseline,
-    production_shim_set_delta,
-    shim_reconciliation_gate_violations,
-)
 from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
-    DeprecationDisposition,
+    _SYNTHETIC_BENIGN_DELEGATING_MODULE,
+    _SYNTHETIC_COMPAT_UNKNOWN_MODULE,
+    _SYNTHETIC_EXECUTION_SHORTCUT_MODULE,
+    _SYNTHETIC_FAKE_PROVIDER_MODULE,
+    _SYNTHETIC_GENERIC_UNKNOWN_MODULE,
+    _SYNTHETIC_GOVERNANCE_SHORTCUT_MODULE,
+    _SYNTHETIC_INDEPENDENT_COMPAT_MODULE,
+    _SYNTHETIC_LEGACY_TRANSFORM_MODULE,
+    _SYNTHETIC_PROVIDER_COMPATIBILITY_MODULE,
+    _SYNTHETIC_TRANSLATION_ONLY_MODULE,
+    _UNKNOWN_DEPRECATED_PROBE_MODULE,
     SYNTHETIC_COMPAT_FOLDER_UNKNOWN_AUTHORITY_SOURCE,
     SYNTHETIC_DELEGATING_ALIAS_SOURCE,
     SYNTHETIC_DEPRECATED_IMPORT_STATE_SOURCE,
@@ -22,14 +25,13 @@ from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     SYNTHETIC_FAKE_PROVIDER_RETURN_SOURCE,
     SYNTHETIC_GENERIC_UNKNOWN_DEPRECATED_SOURCE,
     SYNTHETIC_GOVERNANCE_FROM_DEPRECATED_SOURCE,
-    SYNTHETIC_LEGACY_TRANSFORM_SOURCE,
     SYNTHETIC_HISTORICAL_READ_ONLY_SOURCE,
     SYNTHETIC_INDEPENDENT_COMPAT_LOGIC_SOURCE,
-    SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE,
-    SYNTHETIC_TRANSLATION_ONLY_WIRE_SOURCE,
+    SYNTHETIC_LEGACY_TRANSFORM_SOURCE,
     SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE,
     SYNTHETIC_PERMANENT_NO_REASON_SOURCE,
     SYNTHETIC_PERMANENT_WITH_REASON_SOURCE,
+    SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE,
     SYNTHETIC_PROVIDER_DELEGATE_SOURCE,
     SYNTHETIC_PROVIDER_INDEPENDENT_ADAPTER_SOURCE,
     SYNTHETIC_REMOVAL_FALLBACK_SOURCE,
@@ -37,18 +39,9 @@ from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     SYNTHETIC_SHIM_VERSION_OWNER_SOURCE,
     SYNTHETIC_TEMPORARY_NO_REMOVAL_SOURCE,
     SYNTHETIC_TEMPORARY_NO_REPLACEMENT_SOURCE,
+    SYNTHETIC_TRANSLATION_ONLY_WIRE_SOURCE,
     SYNTHETIC_UNKNOWN_DEPRECATED_HELPER_SOURCE,
-    _SYNTHETIC_BENIGN_DELEGATING_MODULE,
-    _SYNTHETIC_INDEPENDENT_COMPAT_MODULE,
-    _SYNTHETIC_PROVIDER_COMPATIBILITY_MODULE,
-    _SYNTHETIC_TRANSLATION_ONLY_MODULE,
-    _SYNTHETIC_COMPAT_UNKNOWN_MODULE,
-    _SYNTHETIC_EXECUTION_SHORTCUT_MODULE,
-    _SYNTHETIC_FAKE_PROVIDER_MODULE,
-    _SYNTHETIC_GENERIC_UNKNOWN_MODULE,
-    _SYNTHETIC_GOVERNANCE_SHORTCUT_MODULE,
-    _SYNTHETIC_LEGACY_TRANSFORM_MODULE,
-    _UNKNOWN_DEPRECATED_PROBE_MODULE,
+    DeprecationDisposition,
     classify_synthetic_module,
     classify_synthetic_unknown_deprecated_helper,
     collect_deprecation_r5_violations,
@@ -56,6 +49,13 @@ from tests.qualification.compat_x._compat_x_deprecation_r5_inventory import (
     deprecation_r5_metrics,
     disposition_counts,
     unclassified_candidates,
+)
+from tests.qualification.compat_x._compat_x_deprecation_r5_shim_reconciliation import (
+    current_compat_shim_paths,
+    load_frozen_historical_shim_baseline,
+    load_replay_x_accepted_shim_delta,
+    production_shim_set_delta,
+    shim_reconciliation_gate_violations,
 )
 from tests.qualification.compat_x._compat_x_owner_discovery import COMPAT_X_OWNER_MATRIX
 from tests.qualification.compat_x._compat_x_shim_authority import (
@@ -92,11 +92,13 @@ def test_r5_p0_closed_world_gate_passes_on_current_head() -> None:
     assert isinstance(shim_growth, dict)
     baseline = load_frozen_historical_shim_baseline()
     delta = production_shim_set_delta()
+    replay_delta = load_replay_x_accepted_shim_delta()
     assert shim_growth["historical_accepted_shim_count"] == baseline.count == 474
-    assert shim_growth["current_shim_count"] == metrics["shim_candidates"] == 476
-    assert shim_growth["shim_removed_paths"] == []
+    assert shim_growth["current_shim_count"] == metrics["shim_candidates"] == len(delta.current_paths)
+    assert shim_growth["shim_removed_paths"] == list(delta.removed_paths)
     assert shim_growth["shim_added_paths"] == list(delta.added_paths)
-    assert len(delta.added_paths) == 2
+    assert delta.removed_paths == replay_delta.removed_paths
+    assert delta.added_paths == replay_delta.added_paths
     assert inventory_shim_canonical_authority_violations() == ()
     shim = build_shim_authority_scope_reconciliation()
     assert shim.uninspected_compatibility_candidates == 0
@@ -128,9 +130,7 @@ def test_r5_probe_a_unknown_deprecated_helper() -> None:
 
 def test_r5_probe_b_parallel_deprecated_implementation() -> None:
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/synthetic/parallel_deprecated_impl.py", SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE),
-        )
+        extra_sources=(("intergrax/synthetic/parallel_deprecated_impl.py", SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE),)
     )
     assert any("PARALLEL_AUTHORITY" in v for v in violations)
 
@@ -143,9 +143,7 @@ def test_r5_probe_c_delegating_alias_passes() -> None:
     assert disposition != DeprecationDisposition.UNCLASSIFIED
     assert disposition != DeprecationDisposition.PARALLEL_AUTHORITY
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/synthetic/delegating_alias.py", SYNTHETIC_DELEGATING_ALIAS_SOURCE),
-        )
+        extra_sources=(("intergrax/synthetic/delegating_alias.py", SYNTHETIC_DELEGATING_ALIAS_SOURCE),)
     )
     assert not any("PARALLEL_AUTHORITY" in v for v in violations)
 
@@ -155,9 +153,7 @@ def test_r5_probe_d_deprecated_import_path_owns_state() -> None:
         extra_sources=(
             (
                 "intergrax/synthetic/deprecated_import_state.py",
-                SYNTHETIC_DEPRECATED_IMPORT_STATE_SOURCE.replace(
-                    "_STATE", "_STATE  # deprecated"
-                ),
+                SYNTHETIC_DEPRECATED_IMPORT_STATE_SOURCE.replace("_STATE", "_STATE  # deprecated"),
             ),
         )
     )
@@ -166,9 +162,7 @@ def test_r5_probe_d_deprecated_import_path_owns_state() -> None:
 
 def test_r5_probe_e_dual_truth_deprecated_field() -> None:
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/synthetic/dual_truth_field.py", SYNTHETIC_DUAL_TRUTH_FIELD_SOURCE),
-        )
+        extra_sources=(("intergrax/synthetic/dual_truth_field.py", SYNTHETIC_DUAL_TRUTH_FIELD_SOURCE),)
     )
     assert any("dual truth" in v for v in violations)
 
@@ -266,9 +260,7 @@ def test_r5_probe_m_deprecated_execution_authority() -> None:
 
 def test_r5_probe_n_retired_write_path() -> None:
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/synthetic/retired_writable.py", SYNTHETIC_RETIRED_WRITABLE_SOURCE),
-        )
+        extra_sources=(("intergrax/synthetic/retired_writable.py", SYNTHETIC_RETIRED_WRITABLE_SOURCE),)
     )
     assert any("retired write" in v for v in violations)
 
@@ -283,18 +275,14 @@ def test_r5_probe_o_historical_read_only_passes() -> None:
 
 def test_r5_probe_p_removal_fallback() -> None:
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/synthetic/removal_fallback.py", SYNTHETIC_REMOVAL_FALLBACK_SOURCE),
-        )
+        extra_sources=(("intergrax/synthetic/removal_fallback.py", SYNTHETIC_REMOVAL_FALLBACK_SOURCE),)
     )
     assert any("fallback" in v for v in violations)
 
 
 def test_r5_probe_q_shim_version_owner() -> None:
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/synthetic/shim_version_owner.py", SYNTHETIC_SHIM_VERSION_OWNER_SOURCE),
-        )
+        extra_sources=(("intergrax/synthetic/shim_version_owner.py", SYNTHETIC_SHIM_VERSION_OWNER_SOURCE),)
     )
     assert any("current version owner" in v for v in violations)
 
@@ -372,18 +360,14 @@ def test_r5_probe_w_production_execution_shortcut() -> None:
 
 def test_r5_probe_x_retired_writer() -> None:
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/applications/host/retired_writer.py", SYNTHETIC_RETIRED_WRITABLE_SOURCE),
-        )
+        extra_sources=(("intergrax/applications/host/retired_writer.py", SYNTHETIC_RETIRED_WRITABLE_SOURCE),)
     )
     assert any("retired write" in v for v in violations)
 
 
 def test_r5_probe_y_silent_legacy_fallback() -> None:
     violations = collect_deprecation_r5_violations(
-        extra_sources=(
-            ("intergrax/applications/host/removal_fallback.py", SYNTHETIC_REMOVAL_FALLBACK_SOURCE),
-        )
+        extra_sources=(("intergrax/applications/host/removal_fallback.py", SYNTHETIC_REMOVAL_FALLBACK_SOURCE),)
     )
     assert any("fallback" in v for v in violations)
 
@@ -401,7 +385,7 @@ def test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails() -> None:
     baseline = load_frozen_historical_shim_baseline()
     current = current_compat_shim_paths()
     removed_path = next(iter(sorted(baseline.paths)))
-    mutated = frozenset((p for p in current if p != removed_path)) | {
+    mutated = frozenset(p for p in current if p != removed_path) | {
         "intergrax/synthetic/unexpected_substitution_shim.py"
     }
     violations = shim_reconciliation_gate_violations(current_paths=mutated)

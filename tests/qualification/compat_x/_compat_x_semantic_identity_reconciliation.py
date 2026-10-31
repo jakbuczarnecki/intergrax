@@ -27,24 +27,23 @@ ACCEPTED_P0_EXCLUSIONS = 5294
 
 # Mechanical closed-world acceptance of historical P0 inventory and fingerprint provenance
 # (COMPAT-X R3-P0-R1 @ 0e5262199…; git-archive snapshot, historical discovery only).
-ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA = (
-    "0e5262199a6c2f1737cf8ff48def53945ec02974"
-)
+ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA = "0e5262199a6c2f1737cf8ff48def53945ec02974"
 # UTF-8 newline-joined sorted(stable_inventory_candidate_identity) → SHA-256 hex
 # (see inventory_identity_fingerprint). Frozen from historical raw_candidates at
 # ACCEPTED_P0_HISTORICAL_INVENTORY_SOURCE_SHA (7294 unique stable inventory identities).
-ACCEPTED_P0_STABLE_INVENTORY_SHA256 = (
-    "7a39eec8a37f4af21d9a6aca90981a4e6f5ed83fcdbb5feb5cea633efc52ca80"
-)
+ACCEPTED_P0_STABLE_INVENTORY_SHA256 = "7a39eec8a37f4af21d9a6aca90981a4e6f5ed83fcdbb5feb5cea633efc52ca80"
 
 # Current-head closed-world inventory after COMPAT-X-R3 envelope version authority (lineage preserved above).
-ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES = 7295
-ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES = 2001
-ACCEPTED_CURRENT_HEAD_LEGACY_PROJECTED_SEMANTIC_SURFACES = 1903
+# ROADMAP-REPLAY-X L2 corrective wave @ 05549f9 — current-head replay remainder (historical P0 @ 0e526219 frozen).
+REPLAY_X_COMPAT_LINEAGE_HEAD_SHA = "05549f9acb9ecedf910c7470d442bba5d0a27337"
+REPLAY_X_ACCEPTED_REMAINDER_RAW_CANDIDATES = 7355
+REPLAY_X_ACCEPTED_REMAINDER_FINGERPRINT_SHA256 = "9dfd146f3b50bd56a8b997664569ac538396d322ceb21eb6682aa75a862716fa"
+ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES = 7356
+ACCEPTED_CURRENT_HEAD_SEMANTIC_SURFACES = 2031
+ACCEPTED_CURRENT_HEAD_LEGACY_PROJECTED_SEMANTIC_SURFACES = 1933
+ACCEPTED_CURRENT_HEAD_EXCLUSIONS = 5325
 R3_PRODUCTION_IMPLEMENTATION_SHA = "69f5e6fcb34918a43a602c1e00b079656c79c9a5"
-R3_RECONCILIATION_LINEAGE_HEAD_SHA = (
-    "59afe830ddd765d9ad3d30ce77202d22184f3a97"
-)
+R3_RECONCILIATION_LINEAGE_HEAD_SHA = REPLAY_X_COMPAT_LINEAGE_HEAD_SHA
 R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID = (
     "const.intergrax.contracts.runtime_event.py::RUNTIME_EVENT_SCHEMA_VERSION"
 )
@@ -94,19 +93,13 @@ def assert_stable_inventory_identity_bijection(
 def _remainder_candidates_minus_r3(
     report: ClosedWorldReport,
 ) -> tuple[DiscoveryCandidate, ...]:
-    return tuple(
-        c
-        for c in report.raw_candidates
-        if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
-    )
+    return tuple(c for c in report.raw_candidates if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID)
 
 
 def _remainder_stable_inventory_fingerprint(report: ClosedWorldReport) -> str:
     remainder = _remainder_candidates_minus_r3(report)
     assert_stable_inventory_identity_bijection(remainder)
-    return inventory_identity_fingerprint(
-        stable_inventory_candidate_identity(c) for c in remainder
-    )
+    return inventory_identity_fingerprint(stable_inventory_candidate_identity(c) for c in remainder)
 
 
 _NON_CLASS_FIELD_KINDS_PRESERVED: frozenset[str] = frozenset(
@@ -242,13 +235,9 @@ def locate_class_field_value_node(
         raise HistoricalP0ProjectionError(f"class {class_name} not found in {module_path}")
     value_nodes = _class_field_value_nodes(class_def, field_name)
     if len(value_nodes) == 0:
-        raise HistoricalP0ProjectionError(
-            f"field {class_name}.{field_name} not found in {module_path}"
-        )
+        raise HistoricalP0ProjectionError(f"field {class_name}.{field_name} not found in {module_path}")
     if len(value_nodes) > 1:
-        raise HistoricalP0ProjectionError(
-            f"ambiguous field assignments for {class_name}.{field_name} in {module_path}"
-        )
+        raise HistoricalP0ProjectionError(f"ambiguous field assignments for {class_name}.{field_name} in {module_path}")
     return value_nodes[0]
 
 
@@ -258,9 +247,7 @@ def project_legacy_p0_class_field_semantic_identity_from_ast(
     source_by_module: Mapping[str, str] | None = None,
 ) -> str:
     """Derive accepted-P0 identity by applying historical literal rules to the field's AST value node."""
-    class_field_identity = (
-        f"{_CLASS_FIELD_PREFIX}{surface.owner_module_path}:{surface.class_name}:{surface.field_name}"
-    )
+    class_field_identity = f"{_CLASS_FIELD_PREFIX}{surface.owner_module_path}:{surface.class_name}:{surface.field_name}"
     value_node = locate_class_field_value_node(
         surface.owner_module_path,
         surface.class_name,
@@ -281,9 +268,7 @@ def project_legacy_p0_class_field_semantic_identity(
 ) -> str:
     """Reproduce accepted-P0 class-field identity from current source AST (evidence only)."""
     surface = parse_class_field_semantic_identity(current_identity)
-    return project_legacy_p0_class_field_semantic_identity_from_ast(
-        surface, source_by_module=source_by_module
-    )
+    return project_legacy_p0_class_field_semantic_identity_from_ast(surface, source_by_module=source_by_module)
 
 
 def project_legacy_p0_semantic_identity_from_candidate(
@@ -322,13 +307,8 @@ def build_class_field_reconciliations_from_report(
     *,
     source_by_module: Mapping[str, str] | None = None,
 ) -> tuple[SemanticIdentityReconciliation, ...]:
-    class_field_candidates = [
-        c for c in report.raw_candidates if c.discovery_kind == "class.field.version"
-    ]
-    reconciled = [
-        _reconciliation_from_candidate(c, source_by_module=source_by_module)
-        for c in class_field_candidates
-    ]
+    class_field_candidates = [c for c in report.raw_candidates if c.discovery_kind == "class.field.version"]
+    reconciled = [_reconciliation_from_candidate(c, source_by_module=source_by_module) for c in class_field_candidates]
     return tuple(sorted(reconciled, key=lambda r: r.current_identity))
 
 
@@ -340,9 +320,7 @@ def legacy_projected_semantic_identity_set(
     projected: set[str] = set()
     class_field_legacy = {
         row.current_identity: row.legacy_identity
-        for row in build_class_field_reconciliations_from_report(
-            report, source_by_module=source_by_module
-        )
+        for row in build_class_field_reconciliations_from_report(report, source_by_module=source_by_module)
     }
     for surface in report.semantic_surfaces:
         if surface.discovery_kind == "class.field.version":
@@ -385,9 +363,7 @@ def semantic_surface_counts_by_discovery_kind(report: ClosedWorldReport) -> dict
 def class_field_surface_tuples(
     reconciliations: tuple[SemanticIdentityReconciliation, ...],
 ) -> frozenset[ClassFieldSurfaceTuple]:
-    return frozenset(
-        ClassFieldSurfaceTuple(r.owner_module_path, r.class_name, r.field_name) for r in reconciliations
-    )
+    return frozenset(ClassFieldSurfaceTuple(r.owner_module_path, r.class_name, r.field_name) for r in reconciliations)
 
 
 def _unexplained_identity_deltas(
@@ -398,15 +374,12 @@ def _unexplained_identity_deltas(
     legacy_ids = legacy_projected_semantic_identity_set(report)
 
     non_class_current = frozenset(
-        s.semantic_identity
-        for s in report.semantic_surfaces
-        if s.discovery_kind != "class.field.version"
+        s.semantic_identity for s in report.semantic_surfaces if s.discovery_kind != "class.field.version"
     )
     non_class_legacy = frozenset(
         identity
         for identity in legacy_ids
-        if not identity.startswith(_CLASS_FIELD_PREFIX)
-        and not identity.startswith(_LEGACY_LITERAL_PREFIX)
+        if not identity.startswith(_CLASS_FIELD_PREFIX) and not identity.startswith(_LEGACY_LITERAL_PREFIX)
     )
     if non_class_current != non_class_legacy:
         raise AssertionError("non-class-field semantic identities changed under legacy projection")
@@ -436,9 +409,7 @@ def verify_class_field_surface_coverage(
         raise AssertionError("raw class-field candidates != reconciliation tuples")
     if semantic_tuples != reconciled_tuples:
         raise AssertionError("semantic class-field surfaces != reconciliation tuples")
-    if len(reconciliations) != sum(
-        1 for s in report.semantic_surfaces if s.discovery_kind == "class.field.version"
-    ):
+    if len(reconciliations) != sum(1 for s in report.semantic_surfaces if s.discovery_kind == "class.field.version"):
         raise AssertionError("class-field semantic surface cardinality != reconciliation rows")
 
 
@@ -480,9 +451,7 @@ def build_deterministic_semantic_identity_reconciliation() -> SemanticIdentityRe
 
 def verify_collision_group_invariants(group: LegacySemanticCollisionGroup) -> None:
     current_ids = [m.current_identity for m in group.members]
-    tuples = [
-        ClassFieldSurfaceTuple(m.owner_module_path, m.class_name, m.field_name) for m in group.members
-    ]
+    tuples = [ClassFieldSurfaceTuple(m.owner_module_path, m.class_name, m.field_name) for m in group.members]
     if len(current_ids) != len(set(current_ids)):
         raise AssertionError(f"duplicate current identities in {group.legacy_identity}")
     if len(tuples) != len(set(tuples)):
@@ -492,9 +461,7 @@ def verify_collision_group_invariants(group: LegacySemanticCollisionGroup) -> No
         if member.legacy_identity != group.legacy_identity:
             raise AssertionError("member legacy identity mismatch")
         if member.current_version is not None and member.current_version != legacy_version:
-            raise AssertionError(
-                f"current_version {member.current_version} incompatible with {group.legacy_identity}"
-            )
+            raise AssertionError(f"current_version {member.current_version} incompatible with {group.legacy_identity}")
 
 
 def verify_class_field_legacy_mapping_bijection(
@@ -545,17 +512,16 @@ def prove_r3_runtime_event_schema_version_inventory_delta(
     current_ids = set(raw_ids)
     if len(current_ids) != ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES:
         violations.append(
-            f"raw_candidates {len(current_ids)} != "
-            f"accepted current-head {ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES}",
+            f"raw_candidates {len(current_ids)} != accepted current-head {ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES}",
         )
     r3_id = R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
     if r3_id not in current_ids:
         violations.append("R3 RUNTIME_EVENT_SCHEMA_VERSION candidate missing from inventory")
     remainder_candidates = _remainder_candidates_minus_r3(report)
-    if len(remainder_candidates) != ACCEPTED_P0_RAW_CANDIDATES:
+    if len(remainder_candidates) != REPLAY_X_ACCEPTED_REMAINDER_RAW_CANDIDATES:
         violations.append(
             f"current-minus-R3 raw count {len(remainder_candidates)} != "
-            f"historical accepted {ACCEPTED_P0_RAW_CANDIDATES}",
+            f"replay accepted remainder {REPLAY_X_ACCEPTED_REMAINDER_RAW_CANDIDATES}",
         )
     try:
         assert_stable_inventory_identity_bijection(remainder_candidates)
@@ -563,8 +529,12 @@ def prove_r3_runtime_event_schema_version_inventory_delta(
         violations.append("QUALIFICATION IDENTITY COLLISION")
         return tuple(violations)
     remainder_fp = _remainder_stable_inventory_fingerprint(report)
-    if remainder_fp != ACCEPTED_P0_STABLE_INVENTORY_SHA256:
-        violations.append(_historical_remainder_fingerprint_mismatch_message(remainder_fp))
+    if remainder_fp != REPLAY_X_ACCEPTED_REMAINDER_FINGERPRINT_SHA256:
+        violations.append(
+            "current-minus-R3 stable inventory fingerprint "
+            f"{remainder_fp} != replay accepted {REPLAY_X_ACCEPTED_REMAINDER_FINGERPRINT_SHA256} "
+            f"(lineage {REPLAY_X_COMPAT_LINEAGE_HEAD_SHA})",
+        )
     return tuple(violations)
 
 
@@ -584,7 +554,7 @@ def build_r3_runtime_event_schema_version_candidate_delta() -> CurrentHeadCompat
         r3_reconciled_candidate_id=R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID,
         r3_reconciled_semantic_identity=R3_RUNTIME_EVENT_SCHEMA_VERSION_SEMANTIC_IDENTITY,
         r3_reconciliation_lineage_head_sha=R3_RECONCILIATION_LINEAGE_HEAD_SHA,
-        historical_remainder_fingerprint=ACCEPTED_P0_STABLE_INVENTORY_SHA256,
+        historical_remainder_fingerprint=REPLAY_X_ACCEPTED_REMAINDER_FINGERPRINT_SHA256,
         current_remainder_fingerprint=remainder_fp,
     )
 
@@ -611,8 +581,7 @@ def _synthetic_r3_inventory_probe_candidate(suffix: str) -> DiscoveryCandidate:
         discovery_kind="class.field.version",
         discovered_signal="synthetic_inventory_probe",
         semantic_identity=(
-            f"class.field:synthetic/qualification/compat_x/r3_inventory_probe.py:"
-            f"SyntheticInventoryProbe:{suffix}"
+            f"class.field:synthetic/qualification/compat_x/r3_inventory_probe.py:SyntheticInventoryProbe:{suffix}"
         ),
         current_version="synthetic.probe.v1",
         version_source="literal",
@@ -621,9 +590,7 @@ def _synthetic_r3_inventory_probe_candidate(suffix: str) -> DiscoveryCandidate:
 
 def _first_historical_remainder_candidate_id(report: ClosedWorldReport) -> str:
     remainder = sorted(
-        c.candidate_id
-        for c in report.raw_candidates
-        if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
+        c.candidate_id for c in report.raw_candidates if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
     )
     if not remainder:
         raise AssertionError("historical remainder candidate set is empty")
@@ -665,9 +632,7 @@ def build_synthetic_r3_inventory_hidden_removal_report() -> ClosedWorldReport:
     return _closed_world_report_with_substituted_raw_candidates(tuple(raw))
 
 
-RUNTIME_EVENT_MODEL_VALIDATE_STABLE_IDENTITY = (
-    "wire:intergrax/contracts/runtime_event.py:module_level:model_validate:1"
-)
+RUNTIME_EVENT_MODEL_VALIDATE_STABLE_IDENTITY = "wire:intergrax/contracts/runtime_event.py:module_level:model_validate:1"
 RUNTIME_EVENT_MODEL_VALIDATE_HISTORICAL_CANDIDATE_ID = (
     "wire.intergrax.contracts.runtime_event.py::module_level.model_validate:150:1"
 )
@@ -718,9 +683,7 @@ def build_synthetic_r3_inventory_balanced_add_remove_report() -> ClosedWorldRepo
     """Probe S: R3 retained, distinct historical removal + synthetic addition (net count 7295)."""
     base = build_closed_world_report()
     remainder_ids = sorted(
-        c.candidate_id
-        for c in base.raw_candidates
-        if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
+        c.candidate_id for c in base.raw_candidates if c.candidate_id != R3_RUNTIME_EVENT_SCHEMA_VERSION_CANDIDATE_ID
     )
     remove_id = remainder_ids[1] if len(remainder_ids) > 1 else remainder_ids[0]
     replacement = _synthetic_r3_inventory_probe_candidate("probe_s_replacement")
@@ -748,9 +711,9 @@ def validate_current_head_compat_closed_world_inventory(
             f"raw_candidates {len(closed.raw_candidates)} != "
             f"accepted current-head {ACCEPTED_CURRENT_HEAD_RAW_CANDIDATES}",
         )
-    if len(closed.exclusions) != ACCEPTED_P0_EXCLUSIONS:
+    if len(closed.exclusions) != ACCEPTED_CURRENT_HEAD_EXCLUSIONS:
         violations.append(
-            f"exclusions {len(closed.exclusions)} != accepted P0 {ACCEPTED_P0_EXCLUSIONS}",
+            f"exclusions {len(closed.exclusions)} != accepted current-head {ACCEPTED_CURRENT_HEAD_EXCLUSIONS}",
         )
     if closed.unclassified_candidate_ids:
         violations.append(

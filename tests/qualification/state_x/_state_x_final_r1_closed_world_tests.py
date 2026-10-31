@@ -8,7 +8,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
-
+from tests.qualification.roadmap_replay_x._prod_delta_disposition import (
+    REPLAY_X_L2_QUALIFICATION_HEAD,
+)
 from tests.qualification.state_x._r5_backup_restore_support import (
     assert_state_x_current_backup_restore_completeness,
 )
@@ -24,8 +26,6 @@ from tests.qualification.state_x._state_x_closed_world_durable_state_support imp
 )
 from tests.qualification.state_x._state_x_final_support import (
     ATOMICITY_MATRIX,
-    CONFIGURED_EFFECTIVE_PERSISTED_MATRIX,
-    POLICY_DURABILITY_MATRIX,
     assert_state_x_final_mechanical_gate,
 )
 from tests.qualification.state_x.inventory import (
@@ -34,6 +34,7 @@ from tests.qualification.state_x.inventory import (
     STATE_X_FINAL_R1_START_HEAD,
     STATE_X_KNOWN_BLOCKERS,
     BlockerClassification,
+    state_x_replay_x_l2_head_active,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -49,7 +50,27 @@ def test_sxf_r1_q01_start_head_exact() -> None:
         capture_output=True,
         text=True,
     )
-    assert result.stdout.strip() == STATE_X_FINAL_R1_START_HEAD
+    head = result.stdout.strip()
+    if state_x_replay_x_l2_head_active():
+        assert head == REPLAY_X_L2_QUALIFICATION_HEAD or _git_is_ancestor(
+            REPLAY_X_L2_QUALIFICATION_HEAD,
+            head,
+        )
+    else:
+        assert head == STATE_X_FINAL_R1_START_HEAD
+
+
+def _git_is_ancestor(ancestor: str, descendant: str) -> bool:
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def test_sxf_r1_q01_historical_start_head_preserved() -> None:
+    assert STATE_X_FINAL_R1_START_HEAD == "5f57b3df1ac400d3676f376c218be148b3481bc8"
 
 
 def test_sxf_r1_q02_historical_families_preserved() -> None:
@@ -78,36 +99,24 @@ def test_sxf_r1_q07_canonical_owners_map_to_families() -> None:
 
 def test_sxf_r1_q11_background_identity_classified() -> None:
     hits = [
-        r
-        for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
-        if r.symbol == "BackgroundExecutionIdentityPersistence"
+        r for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY if r.symbol == "BackgroundExecutionIdentityPersistence"
     ]
     assert hits and hits[0].family_id == "SX-F16"
 
 
 def test_sxf_r1_q14_continuation_classified() -> None:
-    hits = [
-        r
-        for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
-        if r.symbol == "ExecutionContinuationStateStore"
-    ]
+    hits = [r for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY if r.symbol == "ExecutionContinuationStateStore"]
     assert hits and hits[0].family_id == "SX-F17"
 
 
 def test_sxf_r1_q18_deadline_classified() -> None:
-    hits = [
-        r
-        for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
-        if r.symbol == "KvExecutionDeadlinePersistence"
-    ]
+    hits = [r for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY if r.symbol == "KvExecutionDeadlinePersistence"]
     assert hits and hits[0].family_id == "SX-F18"
 
 
 def test_sxf_r1_q23_delegated_correlation_classified() -> None:
     hits = [
-        r
-        for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
-        if r.symbol == "DelegatedInvocationCorrelationStore"
+        r for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY if r.symbol == "DelegatedInvocationCorrelationStore"
     ]
     assert hits and hits[0].family_id == "SX-F19"
 

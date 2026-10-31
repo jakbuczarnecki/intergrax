@@ -9,7 +9,6 @@ import re
 from pathlib import Path
 
 import pytest
-
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
@@ -23,7 +22,6 @@ from intergrax.contracts.execution_terminal import (
     ExecutionTerminalPersistenceCapability,
     ExecutionTerminalRecord,
 )
-from intergrax.contracts.structured_json_value import JsonObject
 from intergrax.runtime.execution.execution_terminal import (
     CheckpointStoreExecutionTerminalStore,
     ExecutionTerminalService,
@@ -54,9 +52,7 @@ from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongR
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _TENANT = "tenant-state-x-r1"
 _NEXUS_SOURCE = _REPO_ROOT / "intergrax/runtime/nexus/nexus_loop.py"
-_VALIDATION_SOURCE = (
-    _REPO_ROOT / "intergrax/runtime/long_running/checkpoint_resume_validation.py"
-)
+_VALIDATION_SOURCE = _REPO_ROOT / "intergrax/runtime/long_running/checkpoint_resume_validation.py"
 
 
 def _paused_checkpoint(
@@ -409,8 +405,9 @@ def test_r1_q21_nexus_composition_no_cast_or_probing() -> None:
     assert "type: ignore" not in source
     assert "SQLiteTaskCheckpointStore" not in source
     assert not re.search(r"\b(getattr|hasattr)\(", source)
-    assert "ExecutionTerminalPersistenceCapability" in source
+    assert "terminal_capability_from_task_checkpoint_store" in source
     assert "terminal_checkpoint_capability" in source
+    assert "validate_durable_execution_terminal_for_composition" in source
 
 
 def test_r1_q22_single_snapshot_parser_semantics() -> None:
@@ -440,8 +437,7 @@ def test_r1_blank_tenant_in_snapshot_reject_malformed() -> None:
     snap = dict(checkpoint.task_snapshot)
     snap["tenant_id"] = "   "
     assert (
-        _evaluate(checkpoint.model_copy(update={"task_snapshot": snap}))
-        is CheckpointResumeEligibility.REJECT_MALFORMED
+        _evaluate(checkpoint.model_copy(update={"task_snapshot": snap})) is CheckpointResumeEligibility.REJECT_MALFORMED
     )
 
 

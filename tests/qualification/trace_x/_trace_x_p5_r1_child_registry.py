@@ -73,6 +73,16 @@ CHILD_EXECUTION_RUNNER_SURFACE_REGISTRY: Final[tuple[RegisteredChildExecutionRun
         owner="Execution / delegated provider engine",
         rationale="P2.1 provider adoption child owner; does not establish effective-profile host context",
     ),
+    RegisteredChildExecutionRunnerSurface(
+        surface_key=(
+            "intergrax/runtime/execution/catalog_tool_child_work_port.py::CatalogToolChildExecutionWorkPort.__init__"
+        ),
+        classification=ChildExecutionRunnerSurfaceClassification.GENERIC_PRODUCTION,
+        profile_semantics="Profile-capable by explicit injection at composition root",
+        expected_inheritance_behavior="child_context_inheritance may be None for catalog tool child roots",
+        owner="Execution / catalog tool child work port",
+        rationale="Execution-bound catalog tool child path; generic child runner surface",
+    ),
 )
 
 
@@ -94,7 +104,9 @@ PROFILE_AWARE_WIRE_HOST_ROOT_REGISTRY: Final[tuple[RegisteredProfileAwareWireHos
             "intergrax/applications/_shared/scenario_runtime_baseline.py::build_scenario_runtime_from_environment"
         ),
         owner="Applications / scenario runtime baseline",
-        rationale="Canonical scenario host establishes effective-profile execution via wire_host_effective_profile_execution",
+        rationale=(
+            "Canonical scenario host establishes effective-profile execution via wire_host_effective_profile_execution"
+        ),
     ),
 )
 

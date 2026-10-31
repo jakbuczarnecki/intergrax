@@ -71,11 +71,11 @@ CONTEXT_SURFACE_REGISTRY: Final[tuple[RegisteredContextSurface, ...]] = (
     ),
     RegisteredContextSurface(
         path="intergrax/runtime/nexus/uaep/uaep_executor.py",
-        surface_kind="construct:context_assembly_payload_v2",
+        surface_kind="construct:context_assembly_payload_v4",
         classification=ContextSurfaceClassification.CANONICAL_UAEP_CONTEXT_EMITTER,
-        semantic_reason="UAEP legacy assembly path constructs ContextAssemblyPayloadV2 prior to emit",
+        semantic_reason="UAEP assembly path constructs ContextAssemblyPayloadV4 prior to emit",
         canonical_owner="UAEP executor",
-        canonical_contract="ContextAssemblyPayloadV2",
+        canonical_contract="ContextAssemblyPayloadV4",
         evidence_nodeid=_CONTEXT_E2E,
     ),
     RegisteredContextSurface(
@@ -91,7 +91,9 @@ CONTEXT_SURFACE_REGISTRY: Final[tuple[RegisteredContextSurface, ...]] = (
         path="intergrax/runtime/events/spine_payload_codec.py",
         surface_kind="construct:context_assembly_payload_v4",
         classification=ContextSurfaceClassification.PAYLOAD_CODEC_OR_DESERIALIZE,
-        semantic_reason="Spine payload codec reconstructs ContextAssemblyPayloadV4 from stored envelopes (not a producer)",
+        semantic_reason=(
+            "Spine payload codec reconstructs ContextAssemblyPayloadV4 from stored envelopes (not a producer)"
+        ),
         canonical_owner="RuntimeEvent payload codec",
         canonical_contract="spine_payload_codec",
         evidence_nodeid=_CONTEXT_GATE,
@@ -100,7 +102,9 @@ CONTEXT_SURFACE_REGISTRY: Final[tuple[RegisteredContextSurface, ...]] = (
         path="intergrax/runtime/events/spine_payload_codec.py",
         surface_kind="construct:context_assembly_payload_v2",
         classification=ContextSurfaceClassification.PAYLOAD_CODEC_OR_DESERIALIZE,
-        semantic_reason="Spine payload codec reconstructs ContextAssemblyPayloadV2 from stored envelopes (not a producer)",
+        semantic_reason=(
+            "Spine payload codec reconstructs ContextAssemblyPayloadV2 from stored envelopes (not a producer)"
+        ),
         canonical_owner="RuntimeEvent payload codec",
         canonical_contract="spine_payload_codec",
         evidence_nodeid=_CONTEXT_GATE,

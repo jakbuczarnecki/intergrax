@@ -1,18 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_dynamodb_document_store as _legacy_create_dynamodb_document_store
-
+from intergrax.integrations._shared.p2.factories import (
+    create_dynamodb_document_store as _legacy_create_dynamodb_document_store,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.providers.document_store.dynamodb.integration import (
     DYNAMODB_DOCUMENT_STORE_PROVIDER_ID,
-    DynamoDBDocumentStoreIntegration,
-    DynamoDBDocumentStoreIntegrationConfig,
     DynamoDBDocumentStoreClient,
+    DynamoDBDocumentStoreIntegration,
     DynamodbDocumentStoreIntegration,
-    DynamodbDocumentStoreIntegrationConfig,
-    DynamodbDocumentStoreClient,
+    DynamoDBDocumentStoreIntegrationConfig,
 )
 
 __all__ = [
@@ -45,11 +43,13 @@ def create_dynamodb_document_store_integration(
     )
 
 
-def create_dynamodb_document_store(**kwargs: object) -> DocumentStore:
-    """Compatibility shim — constructs DynamoDB DocumentStore from legacy runtime."""
+def create_dynamodb_document_store(**kwargs: object) -> DynamoDBDocumentStoreIntegration:
+    """Catalog factory for ``"dynamodb"`` / ``DOCUMENT_STORE``."""
+    if not kwargs:
+        return create_dynamodb_document_store_integration(enabled=False)
     runtime = _legacy_create_dynamodb_document_store(**kwargs)
     if isinstance(runtime, DynamoDBDocumentStoreIntegration):
-        return runtime.as_document_store()
+        return runtime
     if isinstance(runtime, DynamodbDocumentStoreIntegration):
-        return runtime.as_document_store()
-    return DynamoDBDocumentStoreIntegration.from_client(runtime).as_document_store()
+        return runtime
+    return DynamoDBDocumentStoreIntegration.from_client(runtime, enabled=True)

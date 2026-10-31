@@ -19,9 +19,9 @@ from tests.qualification.state_x._state_x_explicit_mechanism_classifications imp
 from tests.qualification.state_x.inventory import (
     CURRENT_STATE_X_FAMILY_IDS,
     HISTORICAL_BASE_FAMILY_IDS,
+    STATE_X_FAMILY_INVENTORY,
     ProjectionOrTruth,
     SemanticOwnershipRole,
-    STATE_X_FAMILY_INVENTORY,
     StateFamilyInventoryEntry,
 )
 
@@ -60,6 +60,7 @@ DISCOVERY_SCAN_ROOTS: Final[tuple[str, ...]] = (
 )
 
 _DISCOVERY_EXCLUDE_PREFIXES: Final[tuple[str, ...]] = (
+    "applications/governed_contractor_application/docker/runtime-context/",
     "applications/lab_application/docker/runtime-context/",
     "applications/local_workspace_application/docker/runtime-context/",
 )
@@ -152,14 +153,10 @@ def _inventory_symbol_family_map() -> dict[str, str]:
 _SYMBOL_FAMILY: Final[dict[str, str]] = _inventory_symbol_family_map()
 
 _CANONICAL_CONTRACT_SYMBOLS: Final[frozenset[str]] = frozenset(
-    cref.symbol
-    for entry in STATE_X_FAMILY_INVENTORY
-    for cref in entry.contract_references
+    cref.symbol for entry in STATE_X_FAMILY_INVENTORY for cref in entry.contract_references
 )
 
-_FAMILY_BY_ID: Final[dict[str, StateFamilyInventoryEntry]] = {
-    e.family_id: e for e in STATE_X_FAMILY_INVENTORY
-}
+_FAMILY_BY_ID: Final[dict[str, StateFamilyInventoryEntry]] = {e.family_id: e for e in STATE_X_FAMILY_INVENTORY}
 
 
 def _entry(family_id: str) -> StateFamilyInventoryEntry:
@@ -373,9 +370,7 @@ def classify_candidate(
         inv = _entry(fid)
         return _base_record_fields(
             candidate,
-            DurableStateClassification.NEW_CANONICAL_FAMILY
-            if is_new
-            else DurableStateClassification.CANONICAL_FAMILY,
+            DurableStateClassification.NEW_CANONICAL_FAMILY if is_new else DurableStateClassification.CANONICAL_FAMILY,
             fid,
             semantic_owner=inv.semantic_owner,
             composition_owner=inv.composition_owner,
@@ -495,8 +490,7 @@ def assert_no_anonymous_reference_implementations() -> None:
     hits = [
         r
         for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
-        if r.classification == DurableStateClassification.NON_DURABLE_REFERENCE_ONLY
-        and r.family_id is None
+        if r.classification == DurableStateClassification.NON_DURABLE_REFERENCE_ONLY and r.family_id is None
     ]
     assert not hits, f"anonymous reference stores: {[r.mechanism_id for r in hits[:10]]}"
 
@@ -581,9 +575,7 @@ def assert_current_family_registry_complete() -> None:
                 ProjectionOrTruth.DURABLE_COMPONENT_OF_CANONICAL_TRUTH,
             ):
                 key = entry.semantic_owner
-                assert key not in owners or owners[key] == entry.family_id, (
-                    f"duplicate semantic owner {key}"
-                )
+                assert key not in owners or owners[key] == entry.family_id, f"duplicate semantic owner {key}"
                 owners[key] = entry.family_id
 
 

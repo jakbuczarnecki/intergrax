@@ -1,0 +1,36 @@
+{
+  "freeze_label": "ROADMAP-REPLAY-X L2 @ 05549f9 — shim set delta vs 0612c2a7 historical baseline",
+  "baseline_source_sha": "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0",
+  "lineage_head_sha": "05549f9acb9ecedf910c7470d442bba5d0a27337",
+  "added_paths": [
+    "intergrax/agent_distribution/activation_domain_coordinator.py",
+    "intergrax/agent_distribution/colocated_venv_unit_runtime_binding.py",
+    "intergrax/agent_distribution/sqlite_payload_legacy.py",
+    "intergrax/agent_distribution/venv_bundle_colocated_runtime_deployment_adapter.py",
+    "intergrax/applications/_shared/colocated_serving_runtime_composition.py",
+    "intergrax/applications/_shared/colocated_unit_physical_execution_gate.py",
+    "intergrax/applications/_shared/production_lifecycle.py",
+    "intergrax/applications/_shared/production_process_lifecycle.py",
+    "intergrax/applications/_shared/strict_production_serving_launcher.py",
+    "intergrax/applications/_shared/venv_bundle_colocated_serving_unit_runtime_accessor.py",
+    "intergrax/contracts/governance/history_continuity.py",
+    "intergrax/contracts/governed_external_work_create_follow_on.py",
+    "intergrax/contracts/sanctioned_external_work_operation.py",
+    "intergrax/contracts/structured_inference_pre_model_gate.py",
+    "intergrax/runtime/external_operations/execution_recovery_worker_execution_revocation_supervision.py",
+    "intergrax/runtime/governance/continuity_providers/azure_sdk.py",
+    "intergrax/runtime/governance/continuity_providers/errors.py",
+    "intergrax/runtime/governance/continuity_providers/spanner_sdk.py",
+    "intergrax/runtime/governance/governed_inference_composition.py",
+    "intergrax/runtime/governance/local_history_continuity.py",
+    "intergrax/runtime/governance/structured_inference_pre_model_composition.py",
+    "intergrax/runtime/task_memory/sqlite_row_legacy.py",
+    "intergrax/tools/providers/http/idempotent_post_qual.py",
+    "intergrax/tools/providers/provider_resource_enforcement.py",
+    "intergrax/tools/providers/provider_transport_capabilities.py"
+  ],
+  "removed_paths": [
+    "intergrax/runtime/execution/inference_composition.py"
+  ],
+  "disposition": "Replay-head compat.shim closed-world delta vs frozen 0612c2a7 baseline; removed path superseded by governed_inference_composition."
+}

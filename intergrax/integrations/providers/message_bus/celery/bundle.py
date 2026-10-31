@@ -10,18 +10,25 @@ or ``profile.resolve(IntegrationCategory.MESSAGE_BUS)`` with ``"celery"``.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional, Tuple
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.providers.message_bus.celery.config import CeleryIntegrationConfig
+from intergrax.integrations.providers.message_bus.celery.integration import (
+    CELERY_MESSAGE_BUS_PROVIDER_ID,
+    CeleryMessageBusClient,
+    CeleryMessageBusIntegration,
+    CeleryMessageBusIntegrationConfig,
+)
 from intergrax.integrations.providers.message_bus.celery.opens import open_celery_app, open_celery_task_queue
-from intergrax.queueing.worker.registry import TaskExecutionRegistry
-from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
+from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
+from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -40,12 +47,30 @@ def resolve_celery_config(**overrides: object) -> CeleryIntegrationConfig:
     return CeleryIntegrationConfig.from_env(**overrides)
 
 
+def create_celery_message_bus_integration(
+    *,
+    client: CeleryMessageBusClient | None = None,
+    enabled: bool = False,
+) -> CeleryMessageBusIntegration:
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Celery message bus integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return CeleryMessageBusIntegration.from_client(client, enabled=enabled)
+    return CeleryMessageBusIntegration.for_provider(
+        provider_id=CELERY_MESSAGE_BUS_PROVIDER_ID,
+        display_name="Celery",
+        config=CeleryMessageBusIntegrationConfig(enabled=enabled),
+    )
+
+
 def create_celery_integration(
     *,
-    app: Optional[object] = None,
-    broker_url: Optional[str] = None,
-    backend_url: Optional[str] = None,
-    app_name: Optional[str] = None,
+    app: object | None = None,
+    broker_url: str | None = None,
+    backend_url: str | None = None,
+    app_name: str | None = None,
     task_always_eager: bool = False,
     **config_overrides: object,
 ) -> CeleryIntegrationBundle:
@@ -71,15 +96,17 @@ def create_celery_integration(
 
 def create_celery_message_bus(
     *,
-    app: Optional[object] = None,
-    broker_url: Optional[str] = None,
-    backend_url: Optional[str] = None,
-    app_name: Optional[str] = None,
+    app: object | None = None,
+    broker_url: str | None = None,
+    backend_url: str | None = None,
+    app_name: str | None = None,
     task_always_eager: bool = False,
     **config_overrides: object,
-) -> MessageBus:
+) -> CeleryMessageBusIntegration:
     """Catalog factory for ``"celery"`` / ``MESSAGE_BUS``."""
-    return create_celery_integration(
+    if app is None and broker_url is None and backend_url is None and not task_always_eager:
+        return create_celery_message_bus_integration(enabled=False)
+    bus = create_celery_integration(
         app=app,
         broker_url=broker_url,
         backend_url=backend_url,
@@ -87,22 +114,23 @@ def create_celery_message_bus(
         task_always_eager=task_always_eager,
         **config_overrides,
     ).message_bus
+    return CeleryMessageBusIntegration.from_client(bus, enabled=True)
 
 
 def create_celery_worker_app(
     *,
     registry: TaskExecutionRegistry,
-    broker_url: Optional[str] = None,
-    backend_url: Optional[str] = None,
-    app_name: Optional[str] = None,
-    idempotency_store: Optional[IdempotencyStore] = None,
-    retry_policy: Optional[RetryPolicy] = None,
-    lock_ttl_seconds: Optional[int] = None,
-    completed_ttl_seconds: Optional[int] = None,
-    rate_limiter: Optional[DistributedRateLimiter] = None,
-    rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
-    on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
-    on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
+    broker_url: str | None = None,
+    backend_url: str | None = None,
+    app_name: str | None = None,
+    idempotency_store: IdempotencyStore | None = None,
+    retry_policy: RetryPolicy | None = None,
+    lock_ttl_seconds: int | None = None,
+    completed_ttl_seconds: int | None = None,
+    rate_limiter: DistributedRateLimiter | None = None,
+    rate_limit_config: Callable[[str], tuple[int, float]] | None = None,
+    on_rate_limited: Callable[[RateLimitEvent], None] | None = None,
+    on_retry_scheduled: Callable[[RetryEvent], None] | None = None,
     causal_evidence_persistence: CausalEvidencePersistence,
     **config_overrides: object,
 ) -> object:
@@ -139,35 +167,3 @@ def create_nexus_celery_worker_app(**kwargs: object) -> object:
     from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app as _create
 
     return _create(**kwargs)
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.message_bus.celery.integration import (
-    CELERY_MESSAGE_BUS_PROVIDER_ID,
-    CeleryMessageBusIntegration,
-    CeleryMessageBusIntegrationConfig,
-    CeleryMessageBusClient,
-)
-
-
-def create_celery_message_bus_integration(
-    *,
-    client: CeleryMessageBusClient | None = None,
-    enabled: bool = False,
-) -> CeleryMessageBusIntegration:
-    """
-    Build a contract-based Celery message bus integration.
-
-    The legacy facade (create_celery_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
-    if enabled and client is None:
-        raise IntegrationConfigurationError(
-            "Celery message bus integration requires an injected client when enabled=True",
-        )
-    if client is not None:
-        return CeleryMessageBusIntegration.from_client(client, enabled=enabled)
-    return CeleryMessageBusIntegration.for_provider(
-        provider_id=CELERY_MESSAGE_BUS_PROVIDER_ID,
-        display_name="Celery",
-        config=CeleryMessageBusIntegrationConfig(enabled=enabled),
-    )

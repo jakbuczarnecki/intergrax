@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from tests.qualification.trace_x._trace_x_p5_discovery import (
+from tests.qualification.trace_x._trace_x_p5_discovery import (  # noqa: F401
     discover_configuration_provenance_surfaces,
     discover_policy_provenance_surfaces,
     discover_profile_revision_surfaces,
@@ -397,6 +397,24 @@ PROFILE_REVISION_SURFACE_REGISTRY: Final[tuple[RegisteredProfileRevisionSurface,
         "test_txp5p0_q03_profile_discovery_registry_parity",
     ),
     RegisteredProfileRevisionSurface(
+        "intergrax/skills/execution_pinning_persistence.py",
+        "DocumentStoreSkillExecutionPinningStore",
+        ProfileRevisionSurfaceKind.PERSISTENCE,
+        "Skill execution pinning (GR-5 continuation)",
+        "SkillExecutionPinningStore",
+        "durable document-store skill execution pinning",
+        "test_txp5p0_q03_profile_discovery_registry_parity",
+    ),
+    RegisteredProfileRevisionSurface(
+        "intergrax/skills/execution_pinning_persistence.py",
+        "KvSkillExecutionPinningStore",
+        ProfileRevisionSurfaceKind.PERSISTENCE,
+        "Skill execution pinning (GR-5 continuation)",
+        "SkillExecutionPinningStore",
+        "durable KV skill execution pinning",
+        "test_txp5p0_q03_profile_discovery_registry_parity",
+    ),
+    RegisteredProfileRevisionSurface(
         "intergrax/applications/_shared/profile_resolution/persistence.py",
         "KvEffectiveProfileExecutionPinningStore",
         ProfileRevisionSurfaceKind.PERSISTENCE,
@@ -470,9 +488,7 @@ PROFILE_REVISION_SURFACE_REGISTRY: Final[tuple[RegisteredProfileRevisionSurface,
     ),
 )
 
-CONFIGURATION_PROVENANCE_SURFACE_REGISTRY: Final[
-    tuple[RegisteredConfigurationProvenanceSurface, ...]
-] = (
+CONFIGURATION_PROVENANCE_SURFACE_REGISTRY: Final[tuple[RegisteredConfigurationProvenanceSurface, ...]] = (
     RegisteredConfigurationProvenanceSurface(
         "intergrax/integrations/contracts/existing_capability_configuration.py",
         "ConfiguredCapabilityBinding",

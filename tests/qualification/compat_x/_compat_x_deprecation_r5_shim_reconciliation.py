@@ -14,12 +14,10 @@ from typing import Final
 from tests.qualification.compat_x._compat_x_closed_world import build_closed_world_report
 
 _REPO_ROOT: Final = Path(__file__).resolve().parents[3]
-_HISTORICAL_SHIM_FIXTURE: Final = (
-    _REPO_ROOT / "tests/fixtures/compat_x/historical_shim_candidates_0612c2a7.json"
-)
-_ACCEPTED_R5_SHIM_DELTA_FIXTURE: Final = (
-    _REPO_ROOT / "tests/fixtures/compat_x/accepted_shim_delta_r5.json"
-)
+_HISTORICAL_SHIM_FIXTURE: Final = _REPO_ROOT / "tests/fixtures/compat_x/historical_shim_candidates_0612c2a7.json"
+_ACCEPTED_R5_SHIM_DELTA_FIXTURE: Final = _REPO_ROOT / "tests/fixtures/compat_x/accepted_shim_delta_r5.json"
+_REPLAY_X_SHIM_DELTA_FIXTURE: Final = _REPO_ROOT / "tests/fixtures/compat_x/accepted_shim_delta_replay_x_05549f9.json"
+REPLAY_X_SHIM_LINEAGE_HEAD_SHA: Final = "05549f9acb9ecedf910c7470d442bba5d0a27337"
 HISTORICAL_SHIM_ACCEPTED_EVIDENCE_SHA: Final = "0612c2a7a263b22a6b72ed5476e0bf0a52cdfea0"
 
 
@@ -85,21 +83,37 @@ def load_frozen_historical_shim_baseline() -> FrozenHistoricalShimBaseline:
 
 @lru_cache(maxsize=1)
 def load_accepted_shim_delta_r5() -> AcceptedShimDeltaR5:
-    raw = json.loads(_ACCEPTED_R5_SHIM_DELTA_FIXTURE.read_text(encoding="utf-8"))
+    return _load_shim_delta_fixture(_ACCEPTED_R5_SHIM_DELTA_FIXTURE)
+
+
+@lru_cache(maxsize=1)
+def load_replay_x_accepted_shim_delta() -> AcceptedShimDeltaR5:
+    return _load_shim_delta_fixture(_REPLAY_X_SHIM_DELTA_FIXTURE)
+
+
+def _load_shim_delta_fixture(path: Path) -> AcceptedShimDeltaR5:
+    raw = json.loads(path.read_text(encoding="utf-8"))
     baseline_sha = str(raw["baseline_source_sha"])
     if baseline_sha != HISTORICAL_SHIM_ACCEPTED_EVIDENCE_SHA:
-        raise AssertionError("accepted R5 shim delta: baseline_source_sha mismatch")
+        raise AssertionError("accepted shim delta: baseline_source_sha mismatch")
     added = tuple(sorted(str(p) for p in raw["added_paths"]))
     removed = tuple(sorted(str(p) for p in raw["removed_paths"]))
     if len(added) != len(set(added)):
-        raise AssertionError("accepted R5 shim delta: duplicate added paths")
+        raise AssertionError("accepted shim delta: duplicate added paths")
     if len(removed) != len(set(removed)):
-        raise AssertionError("accepted R5 shim delta: duplicate removed paths")
+        raise AssertionError("accepted shim delta: duplicate removed paths")
     return AcceptedShimDeltaR5(
         baseline_source_sha=baseline_sha,
         added_paths=added,
         removed_paths=removed,
     )
+
+
+def accepted_shim_delta_for_current_reconciliation() -> AcceptedShimDeltaR5:
+    """Historical R5 freeze unless replay fixture applies at current lineage head."""
+    if _REPLAY_X_SHIM_DELTA_FIXTURE.is_file():
+        return load_replay_x_accepted_shim_delta()
+    return load_accepted_shim_delta_r5()
 
 
 def shim_delta_accepted_r5_gate_violations(
@@ -109,7 +123,7 @@ def shim_delta_accepted_r5_gate_violations(
     accepted: AcceptedShimDeltaR5 | None = None,
 ) -> tuple[str, ...]:
     """Pure comparison: actual delta vs frozen R5 accepted delta (exact sets, not counts)."""
-    freeze = accepted if accepted is not None else load_accepted_shim_delta_r5()
+    freeze = accepted if accepted is not None else accepted_shim_delta_for_current_reconciliation()
     actual_added = tuple(sorted(added_paths))
     actual_removed = tuple(sorted(removed_paths))
     violations: list[str] = []
@@ -121,29 +135,19 @@ def shim_delta_accepted_r5_gate_violations(
                 + ("..." if len(actual_removed) > 8 else "")
             )
         else:
-            violations.append(
-                "shim reconciliation: shim delta removed paths mismatch vs accepted R5 freeze"
-            )
+            violations.append("shim reconciliation: shim delta removed paths mismatch vs accepted R5 freeze")
     if actual_added != freeze.added_paths:
         extra = tuple(sorted(set(actual_added) - set(freeze.added_paths)))
         if extra:
-            violations.append(
-                "shim reconciliation: unexpected added shim paths: " + ", ".join(extra)
-            )
+            violations.append("shim reconciliation: unexpected added shim paths: " + ", ".join(extra))
         else:
-            violations.append(
-                "shim reconciliation: shim delta added paths mismatch vs accepted R5 freeze"
-            )
+            violations.append("shim reconciliation: shim delta added paths mismatch vs accepted R5 freeze")
     return tuple(violations)
 
 
 def current_compat_shim_paths() -> frozenset[str]:
     closed = build_closed_world_report()
-    return frozenset(
-        c.path.replace("\\", "/")
-        for c in closed.raw_candidates
-        if c.discovery_kind == "compat.shim"
-    )
+    return frozenset(c.path.replace("\\", "/") for c in closed.raw_candidates if c.discovery_kind == "compat.shim")
 
 
 def compute_shim_set_delta(

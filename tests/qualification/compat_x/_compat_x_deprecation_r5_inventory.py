@@ -24,30 +24,27 @@ from tests.qualification.compat_x._compat_x_ast_signals import (
     parse_module,
 )
 from tests.qualification.compat_x._compat_x_closed_world import build_closed_world_report
+from tests.qualification.compat_x._compat_x_deprecation_r5_shim_reconciliation import (
+    load_frozen_historical_shim_baseline,
+    shim_growth_reconciliation_snapshot,
+    shim_reconciliation_gate_violations,
+)
 from tests.qualification.compat_x._compat_x_legacy_obligations import (
     legacy_persisted_compatibility_obligations,
 )
 from tests.qualification.compat_x._compat_x_plugin_provider_r4_inventory import (
     _build_discovery_source_universe,
-    _iter_production_python_sources,
     production_python_source_count,
 )
 from tests.qualification.compat_x._compat_x_shim_authority import (
     build_shim_authority_scope_reconciliation,
-)
-from tests.qualification.compat_x._compat_x_deprecation_r5_shim_reconciliation import (
-    load_frozen_historical_shim_baseline,
-    shim_growth_reconciliation_snapshot,
-    shim_reconciliation_gate_violations,
 )
 from tests.qualification.compat_x._compat_x_versioning_gates import (
     inventory_shim_canonical_authority_violations,
 )
 
 _REPO_ROOT: Final = Path(__file__).resolve().parents[3]
-_COMPAT_X_ARCH_POLICY: Final = (
-    "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md"
-)
+_COMPAT_X_ARCH_POLICY: Final = "docs/project/capabilities/architecture/COMPAT_X_CONTRACT_SCHEMA_EVOLUTION.md"
 _DEPRECATION_POLICY_SECTION: Final = "Deprecation / Removal Policy"
 _REPLACEMENT_NOT_APPLICABLE: Final = "NOT_APPLICABLE"
 _OBLIGATION_DOMAIN_OWNER: Final = "domain_owner_per_surface"
@@ -400,16 +397,10 @@ def _shim_obligations(
     if disposition == DeprecationDisposition.PARALLEL_AUTHORITY:
         return None, None, None
     if disposition == DeprecationDisposition.PERMANENT_TRANSLATION_BOUNDARY:
-        reason = (
-            "Shim authority inspection: translation-only boundary; "
-            "no independent canonical version authority"
-        )
+        reason = "Shim authority inspection: translation-only boundary; no independent canonical version authority"
         return None, None, reason
     if disposition == DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY:
-        reason = (
-            "Shim authority inspection: historical read compatibility; "
-            "current write delegated to canonical path"
-        )
+        reason = "Shim authority inspection: historical read compatibility; current write delegated to canonical path"
         return None, None, reason
     if disposition == DeprecationDisposition.BOUNDED_MIGRATION_ADAPTER:
         return (
@@ -500,6 +491,14 @@ _MODULE_BOUNDED_CLASSIFICATION: Final[
         "canonical context provider wiring",
         "migration_complete",
         None,
+    ),
+    "intergrax/runtime/tools/tool_operation_recovery.py": (
+        DeprecationDisposition.NON_DEPRECATION_USE,
+        DeprecationEvidenceKind.DOMAIN_BOUNDED_OVERRIDE,
+        "intergrax/runtime/external_operations/external_operation_ownership.py",
+        "reconcile_orphaned_running_operations",
+        None,
+        "TOOL-LIFE-X Batch C sanctioned recovery seam; module-level production surface",
     ),
     "intergrax/memory/user_profile_legacy_wire.py": (
         DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY,
@@ -831,9 +830,7 @@ def _classify_provider_package_init(module_path: str, source: str) -> Deprecatio
         return None
     delegates = any(marker in source for marker in _PROVIDER_DELEGATION_MARKERS)
     disposition = (
-        DeprecationDisposition.LEGACY_PROVIDER_DELEGATE
-        if delegates
-        else DeprecationDisposition.NON_DEPRECATION_USE
+        DeprecationDisposition.LEGACY_PROVIDER_DELEGATE if delegates else DeprecationDisposition.NON_DEPRECATION_USE
     )
     evidence = (
         DeprecationEvidenceKind.PROVIDER_FACTORY_DELEGATION
@@ -847,17 +844,11 @@ def _classify_provider_package_init(module_path: str, source: str) -> Deprecatio
         qualname="<module>",
         disposition=disposition,
         canonical_replacement=(
-            "canonical Integration class in provider package"
-            if delegates
-            else _REPLACEMENT_NOT_APPLICABLE
+            "canonical Integration class in provider package" if delegates else _REPLACEMENT_NOT_APPLICABLE
         ),
         semantic_owner="intergrax/integrations/registry/catalog.py",
         deprecation_owner=_default_deprecation_owner(),
-        removal_condition=(
-            "provider_factory_name_unused_or_major_release"
-            if delegates
-            else None
-        ),
+        removal_condition=("provider_factory_name_unused_or_major_release" if delegates else None),
         permanent_boundary_reason=None,
         evidence_kind=evidence,
     )
@@ -951,11 +942,7 @@ def _classify_provider_register_module(module_path: str, source: str) -> Depreca
     if "Integration" not in source and "register_integration" not in source:
         return None
     delegates = any(marker in source for marker in _PROVIDER_DELEGATION_MARKERS)
-    disposition = (
-        DeprecationDisposition.LEGACY_PROVIDER_DELEGATE
-        if delegates
-        else DeprecationDisposition.UNCLASSIFIED
-    )
+    disposition = DeprecationDisposition.LEGACY_PROVIDER_DELEGATE if delegates else DeprecationDisposition.UNCLASSIFIED
     return DeprecationCandidate(
         candidate_id=_stable_candidate_id(module_path, 1, "<module>", "provider_register"),
         module_path=module_path,
@@ -1126,8 +1113,7 @@ def _legacy_persisted_candidates() -> tuple[DeprecationCandidate, ...]:
                 deprecation_owner=_default_deprecation_owner(),
                 removal_condition=None,
                 permanent_boundary_reason=(
-                    f"Sanctioned historical read for {obligation.family_id}; "
-                    "current write uses versioned envelope"
+                    f"Sanctioned historical read for {obligation.family_id}; current write uses versioned envelope"
                 ),
                 evidence_kind=DeprecationEvidenceKind.LEGACY_PERSISTED_READER_OBLIGATION,
             )
@@ -1141,9 +1127,7 @@ def discover_deprecation_r5_candidates(
     exclude_production_modules: frozenset[str] = frozenset(),
 ) -> tuple[DeprecationCandidate, ...]:
     closed = build_closed_world_report()
-    shim_paths = frozenset(
-        c.path for c in closed.raw_candidates if c.discovery_kind == "compat.shim"
-    )
+    shim_paths = frozenset(c.path for c in closed.raw_candidates if c.discovery_kind == "compat.shim")
     extra_paths = frozenset(module_path.replace("\\", "/") for module_path, _ in extra_sources)
     sources = _build_discovery_source_universe(
         extra_sources=extra_sources,
@@ -1156,7 +1140,10 @@ def discover_deprecation_r5_candidates(
         if existing is None:
             by_id[candidate.candidate_id] = candidate
             return
-        if existing.disposition == DeprecationDisposition.UNCLASSIFIED and candidate.disposition != DeprecationDisposition.UNCLASSIFIED:
+        if (
+            existing.disposition == DeprecationDisposition.UNCLASSIFIED
+            and candidate.disposition != DeprecationDisposition.UNCLASSIFIED
+        ):
             by_id[candidate.candidate_id] = candidate
 
     for module_path, source in sources:
@@ -1166,11 +1153,7 @@ def discover_deprecation_r5_candidates(
         except SyntaxError:
             continue
         shim_module = path in shim_paths
-        in_universe = (
-            shim_module
-            or path in extra_paths
-            or _module_in_deprecation_universe(path, source, tree)
-        )
+        in_universe = shim_module or path in extra_paths or _module_in_deprecation_universe(path, source, tree)
         if not in_universe:
             continue
         put(_classify_module_candidate(path, source, shim_module=shim_module))
@@ -1252,11 +1235,7 @@ def _detect_parallel_deprecated_implementation(path: str, source: str) -> bool:
 
 
 def _detect_dual_truth_deprecated_field(source: str) -> bool:
-    return (
-        "self.legacy" in source
-        and "self.canonical" in source
-        and "effective" in source
-    )
+    return "self.legacy" in source and "self.canonical" in source and "effective" in source
 
 
 def _detect_silent_removal_fallback(source: str) -> bool:
@@ -1388,12 +1367,10 @@ def discover_deprecation_authority_violations(
             execution_authority_violations=totals.execution_authority_violations
             + counts.execution_authority_violations,
             retired_write_violations=totals.retired_write_violations + counts.retired_write_violations,
-            silent_fallback_violations=totals.silent_fallback_violations
-            + counts.silent_fallback_violations,
+            silent_fallback_violations=totals.silent_fallback_violations + counts.silent_fallback_violations,
             parallel_deprecated_implementation_violations=totals.parallel_deprecated_implementation_violations
             + counts.parallel_deprecated_implementation_violations,
-            dual_truth_field_violations=totals.dual_truth_field_violations
-            + counts.dual_truth_field_violations,
+            dual_truth_field_violations=totals.dual_truth_field_violations + counts.dual_truth_field_violations,
         )
     return tuple(messages), totals
 
@@ -1443,9 +1420,7 @@ def _compat_path_permanent_without_translation_violations(
         tree = parse_module(row.module_path, source)
         context = build_compatibility_candidate_context(row.module_path, source, tree)
         if not module_is_translation_only_compat_adapter(tree, context):
-            violations.append(
-                f"compat path permanent without translation evidence: {row.module_path}"
-            )
+            violations.append(f"compat path permanent without translation evidence: {row.module_path}")
     return tuple(violations)
 
 
@@ -1468,9 +1443,7 @@ def collect_deprecation_r5_violations(
         violations.append(f"UNCLASSIFIED count: {len(unclassified_candidates(records))}")
     shim_rec = build_shim_authority_scope_reconciliation()
     if shim_rec.uninspected_compatibility_candidates != 0:
-        violations.append(
-            f"shim uninspected: {shim_rec.uninspected_compatibility_candidates}"
-        )
+        violations.append(f"shim uninspected: {shim_rec.uninspected_compatibility_candidates}")
     if shim_rec.production_parallel_authority_count != 0:
         violations.append(f"shim PARALLEL_AUTHORITY: {shim_rec.production_parallel_authority_count}")
     shim_auth_violations = inventory_shim_canonical_authority_violations()
@@ -1501,25 +1474,16 @@ def deprecation_r5_metrics() -> dict[str, int | dict[str, int] | dict[str, objec
     historical = counts.get(DeprecationDisposition.HISTORICAL_READ_COMPATIBILITY.value, 0)
     missing_owner = sum(1 for r in records if not r.semantic_owner)
     missing_replacement = sum(
-        1
-        for r in records
-        if r.disposition in _TEMPORARY_DISPOSITIONS and not r.canonical_replacement
+        1 for r in records if r.disposition in _TEMPORARY_DISPOSITIONS and not r.canonical_replacement
     )
-    missing_removal = sum(
-        1
-        for r in records
-        if r.disposition in _TEMPORARY_DISPOSITIONS and not r.removal_condition
-    )
+    missing_removal = sum(1 for r in records if r.disposition in _TEMPORARY_DISPOSITIONS and not r.removal_condition)
     permanent_without = sum(
-        1
-        for r in records
-        if r.disposition in _PERMANENT_DISPOSITIONS and not r.permanent_boundary_reason
+        1 for r in records if r.disposition in _PERMANENT_DISPOSITIONS and not r.permanent_boundary_reason
     )
     placeholder_replacement = sum(
         1
         for r in records
-        if r.disposition in _TEMPORARY_DISPOSITIONS
-        and _is_placeholder_replacement(r.canonical_replacement)
+        if r.disposition in _TEMPORARY_DISPOSITIONS and _is_placeholder_replacement(r.canonical_replacement)
     )
     _, authority_counts = discover_deprecation_authority_violations()
     shim_growth = shim_growth_reconciliation()
@@ -1573,43 +1537,43 @@ def deprecated_surface(value: str) -> str:
     return value
 '''
 
-SYNTHETIC_COMPAT_FOLDER_UNKNOWN_AUTHORITY_SOURCE: Final[str] = '''
+SYNTHETIC_COMPAT_FOLDER_UNKNOWN_AUTHORITY_SOURCE: Final[str] = """
 def unknown_compat_surface(value: str) -> str:
     return value.upper()
-'''
+"""
 
-SYNTHETIC_FAKE_PROVIDER_RETURN_SOURCE: Final[str] = '''
+SYNTHETIC_FAKE_PROVIDER_RETURN_SOURCE: Final[str] = """
 class Integration:
     pass
 
 def register() -> Integration:
     return Integration()
-'''
+"""
 
-SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE: Final[str] = '''
+SYNTHETIC_PARALLEL_DEPRECATED_IMPL_SOURCE: Final[str] = """
 def canonical_api(value: str) -> str:
     return value.upper()
 
 def legacy_api(value: str) -> str:
     return value.lower()  # independent semantics
-'''
+"""
 
-SYNTHETIC_DELEGATING_ALIAS_SOURCE: Final[str] = '''
+SYNTHETIC_DELEGATING_ALIAS_SOURCE: Final[str] = """
 def canonical_api(value: str) -> str:
     return value
 
 def legacy_api(value: str) -> str:
     return canonical_api(value)
-'''
+"""
 
-SYNTHETIC_DEPRECATED_IMPORT_STATE_SOURCE: Final[str] = '''
+SYNTHETIC_DEPRECATED_IMPORT_STATE_SOURCE: Final[str] = """
 _STATE: dict[str, str] = {}
 
 def get_state() -> dict[str, str]:
     return _STATE
-'''
+"""
 
-SYNTHETIC_DUAL_TRUTH_FIELD_SOURCE: Final[str] = '''
+SYNTHETIC_DUAL_TRUTH_FIELD_SOURCE: Final[str] = """
 from dataclasses import dataclass
 
 @dataclass
@@ -1621,7 +1585,7 @@ class Payload:
         if self.legacy and self.canonical and self.legacy != self.canonical:
             return self.legacy
         return self.canonical or self.legacy or ""
-'''
+"""
 
 SYNTHETIC_TEMPORARY_NO_REPLACEMENT_SOURCE: Final[str] = '''
 def old_entry() -> None:
@@ -1644,33 +1608,33 @@ def from_external_format(data: dict) -> dict:
     return {"normalized": data}
 '''
 
-SYNTHETIC_PERMANENT_NO_REASON_SOURCE: Final[str] = '''
+SYNTHETIC_PERMANENT_NO_REASON_SOURCE: Final[str] = """
 def from_external_format(data: dict) -> dict:
     return {"normalized": data}
-'''
+"""
 
-SYNTHETIC_PROVIDER_DELEGATE_SOURCE: Final[str] = '''
+SYNTHETIC_PROVIDER_DELEGATE_SOURCE: Final[str] = """
 from intergrax.integrations.registry.catalog import register_integration, IntegrationEntry
 
 def register_legacy_factory(entry: IntegrationEntry) -> None:
     register_integration(entry)
-'''
+"""
 
-SYNTHETIC_PROVIDER_INDEPENDENT_ADAPTER_SOURCE: Final[str] = '''
+SYNTHETIC_PROVIDER_INDEPENDENT_ADAPTER_SOURCE: Final[str] = """
 class LegacyStandaloneAdapter:
     def connect(self) -> str:
         return "standalone"
-'''
+"""
 
-SYNTHETIC_GOVERNANCE_FROM_DEPRECATED_SOURCE: Final[str] = '''
+SYNTHETIC_GOVERNANCE_FROM_DEPRECATED_SOURCE: Final[str] = """
 def grant_from_legacy() -> None:
     grant_permission("execute")
-'''
+"""
 
-SYNTHETIC_EXECUTION_FROM_DEPRECATED_SOURCE: Final[str] = '''
+SYNTHETIC_EXECUTION_FROM_DEPRECATED_SOURCE: Final[str] = """
 def execute_from_legacy() -> None:
     run_tool("demo")
-'''
+"""
 
 SYNTHETIC_RETIRED_WRITABLE_SOURCE: Final[str] = '''
 def retired_write_path() -> None:
@@ -1678,69 +1642,55 @@ def retired_write_path() -> None:
     persist({"status": "active"})
 '''
 
-SYNTHETIC_HISTORICAL_READ_ONLY_SOURCE: Final[str] = '''
+SYNTHETIC_HISTORICAL_READ_ONLY_SOURCE: Final[str] = """
 def verify_historical_signature(blob: bytes) -> bool:
     return verify_old_key(blob)
 
 def sign_new(blob: bytes) -> bytes:
     raise RuntimeError("write disabled on historical path")
-'''
+"""
 
-SYNTHETIC_REMOVAL_FALLBACK_SOURCE: Final[str] = '''
+SYNTHETIC_REMOVAL_FALLBACK_SOURCE: Final[str] = """
 def resolve_provider(name: str) -> str:
     try:
         return select_canonical(name)
     except KeyError:
         return select_legacy_fallback(name)
-'''
+"""
 
-SYNTHETIC_SHIM_VERSION_OWNER_SOURCE: Final[str] = '''
+SYNTHETIC_SHIM_VERSION_OWNER_SOURCE: Final[str] = """
 SCHEMA_VERSION = "shim.authority.v9"
 
 class ShimEnvelope:
     schema_version: str = SCHEMA_VERSION
-'''
+"""
 
-_UNKNOWN_DEPRECATED_PROBE_MODULE: Final = (
-    "intergrax/applications/provider_bridge/unknown_deprecated_helper.py"
-)
-_SYNTHETIC_LEGACY_TRANSFORM_MODULE: Final = (
-    "intergrax/applications/migration_bridge/legacy_transform.py"
-)
-_SYNTHETIC_GENERIC_UNKNOWN_MODULE: Final = (
-    "intergrax/applications/migration_bridge/unknown_deprecated_surface.py"
-)
+_UNKNOWN_DEPRECATED_PROBE_MODULE: Final = "intergrax/applications/provider_bridge/unknown_deprecated_helper.py"
+_SYNTHETIC_LEGACY_TRANSFORM_MODULE: Final = "intergrax/applications/migration_bridge/legacy_transform.py"
+_SYNTHETIC_GENERIC_UNKNOWN_MODULE: Final = "intergrax/applications/migration_bridge/unknown_deprecated_surface.py"
 _SYNTHETIC_COMPAT_UNKNOWN_MODULE: Final = "intergrax/compat/synthetic/unknown_authority.py"
-_SYNTHETIC_FAKE_PROVIDER_MODULE: Final = (
-    "intergrax/integrations/providers/synthetic_fake/register.py"
-)
-_SYNTHETIC_GOVERNANCE_SHORTCUT_MODULE: Final = (
-    "intergrax/applications/host/governance_legacy_shortcut.py"
-)
-_SYNTHETIC_EXECUTION_SHORTCUT_MODULE: Final = (
-    "intergrax/applications/host/execution_legacy_shortcut.py"
-)
-_SYNTHETIC_BENIGN_DELEGATING_MODULE: Final = (
-    "intergrax/applications/host/benign_delegating_wrapper.py"
-)
+_SYNTHETIC_FAKE_PROVIDER_MODULE: Final = "intergrax/integrations/providers/synthetic_fake/register.py"
+_SYNTHETIC_GOVERNANCE_SHORTCUT_MODULE: Final = "intergrax/applications/host/governance_legacy_shortcut.py"
+_SYNTHETIC_EXECUTION_SHORTCUT_MODULE: Final = "intergrax/applications/host/execution_legacy_shortcut.py"
+_SYNTHETIC_BENIGN_DELEGATING_MODULE: Final = "intergrax/applications/host/benign_delegating_wrapper.py"
 _SYNTHETIC_PROVIDER_COMPATIBILITY_MODULE: Final = "intergrax/foo/provider_compatibility.py"
 _SYNTHETIC_INDEPENDENT_COMPAT_MODULE: Final = "intergrax/foo/independent_logic_compat.py"
 _SYNTHETIC_TRANSLATION_ONLY_MODULE: Final = "intergrax/compat/synthetic/from_external_wire.py"
 
-SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE: Final[str] = '''
+SYNTHETIC_PROVIDER_COMPATIBILITY_NO_SEMANTICS_SOURCE: Final[str] = """
 def helper(value: str) -> str:
     return value.upper()
-'''
+"""
 
-SYNTHETIC_INDEPENDENT_COMPAT_LOGIC_SOURCE: Final[str] = '''
+SYNTHETIC_INDEPENDENT_COMPAT_LOGIC_SOURCE: Final[str] = """
 def select_canonical_provider(name: str) -> str:
     return name.upper()
-'''
+"""
 
-SYNTHETIC_TRANSLATION_ONLY_WIRE_SOURCE: Final[str] = '''
+SYNTHETIC_TRANSLATION_ONLY_WIRE_SOURCE: Final[str] = """
 def from_external_wire(payload: dict) -> dict:
     return {"canonical": payload["wire"]}
-'''
+"""
 
 
 def classify_synthetic_unknown_deprecated_helper() -> DeprecationDisposition:

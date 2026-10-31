@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import pytest
-
-from tests.qualification.tenant_x._classifiers import uses_generic_safe_fallback
 from tests.qualification.tenant_x._authority_semantics import summarize_authority_mechanism_review
+from tests.qualification.tenant_x._classifiers import uses_generic_safe_fallback
 from tests.qualification.tenant_x._inventory import (
     build_closed_world_discovery_report,
     carrier_semantics_report,
@@ -16,11 +15,13 @@ from tests.qualification.tenant_x._inventory import (
     unknown_identity_source_count,
     unknown_propagation_role_count,
 )
-from tests.qualification.tenant_x._propagation import assess_propagation_edge_continuity, propagation_edge_count
-from tests.qualification.tenant_x._types import PropagationEdgeContinuityStatus, TenantCarrierFamily
 from tests.qualification.tenant_x._p0_matrix import build_p0_matrix
-from tests.qualification.tenant_x._propagation import validate_propagation_edges
-from tests.qualification.tenant_x._types import TenantBlockerClass
+from tests.qualification.tenant_x._propagation import (
+    assess_propagation_edge_continuity,
+    propagation_edge_count,
+    validate_propagation_edges,
+)
+from tests.qualification.tenant_x._types import PropagationEdgeContinuityStatus, TenantBlockerClass, TenantCarrierFamily
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
@@ -87,8 +88,14 @@ def test_tx_p0_r3_head_q01_validators_not_counted_as_mint_rewrite() -> None:
 
 
 def test_tx_p0_r3_head_q02_class_field_carrier_count_stable() -> None:
+    from tests.qualification.tenant_x._replay_x_carrier_reconciliation import (
+        TENANT_X_REPLAY_HEAD_CARRIER_TOTAL,
+        assert_replay_carrier_delta_classified,
+    )
+
     report = carrier_semantics_report()
-    assert report.class_field_carrier_total == 800
+    assert report.class_field_carrier_total == TENANT_X_REPLAY_HEAD_CARRIER_TOTAL
+    assert_replay_carrier_delta_classified()
 
 
 def test_tx_p0_r3_head_q03_propagation_edge_inventory_preserved() -> None:

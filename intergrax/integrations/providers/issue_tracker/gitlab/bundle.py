@@ -5,14 +5,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
-from intergrax.integrations.providers.issue_tracker.gitlab.adapter import _GitLabIssueTracker
 from intergrax.integrations.providers.issue_tracker.gitlab.client import GitLabRestClient
 from intergrax.integrations.providers.issue_tracker.gitlab.config import GitLabIntegrationConfig
-from intergrax.integrations.providers.issue_tracker.gitlab.opens import open_gitlab_issue_tracker, open_gitlab_rest_client
+from intergrax.integrations.providers.issue_tracker.gitlab.integration import (
+    GITLAB_ISSUE_TRACKER_PROVIDER_ID,
+    GitlabIssueTrackerClient,
+    GitlabIssueTrackerIntegration,
+    GitlabIssueTrackerIntegrationConfig,
+)
+from intergrax.integrations.providers.issue_tracker.gitlab.opens import (
+    open_gitlab_issue_tracker,
+    open_gitlab_rest_client,
+)
 
 
 @dataclass(frozen=True)
@@ -28,10 +38,10 @@ def resolve_gitlab_config(**overrides: object) -> GitLabIntegrationConfig:
 
 def create_gitlab_integration(
     *,
-    issue_tracker: Optional[IssueTracker] = None,
-    client: Optional[GitLabRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[GitLabIntegrationConfig], Any]] = None,
+    issue_tracker: IssueTracker | None = None,
+    client: GitLabRestClient | None = None,
+    http_client: Any | None = None,
+    http_client_factory: Callable[[GitLabIntegrationConfig], Any] | None = None,
     **config_overrides: object,
 ) -> GitLabIntegrationBundle:
     config = resolve_gitlab_config(**config_overrides)
@@ -41,34 +51,8 @@ def create_gitlab_integration(
         http_client_factory=http_client_factory,
     )
     tracker = open_gitlab_issue_tracker(config, implementation=issue_tracker, client=rest_client)
-    assert isinstance(tracker, GitLabIssueTracker)
+    assert isinstance(tracker, GitlabIssueTrackerIntegration)
     return GitLabIntegrationBundle(config=config, issue_tracker=tracker, rest_client=rest_client)
-
-
-def create_gitlab_issue_tracker(
-    *,
-    issue_tracker: Optional[IssueTracker] = None,
-    client: Optional[GitLabRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[GitLabIntegrationConfig], Any]] = None,
-    **config_overrides: object,
-) -> GitlabIssueTrackerIntegration:
-    """Catalog factory for ``"gitlab"`` / ``ISSUE_TRACKER``."""
-    return create_gitlab_integration(
-        issue_tracker=issue_tracker,
-        client=client,
-        http_client=http_client,
-        http_client_factory=http_client_factory,
-        **config_overrides,
-    ).issue_tracker
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.issue_tracker.gitlab.integration import (
-    GITLAB_ISSUE_TRACKER_PROVIDER_ID,
-    GitlabIssueTrackerIntegration,
-    GitlabIssueTrackerIntegrationConfig,
-    GitlabIssueTrackerClient,
-)
 
 
 def create_gitlab_issue_tracker_integration(
@@ -76,12 +60,6 @@ def create_gitlab_issue_tracker_integration(
     client: GitlabIssueTrackerClient | None = None,
     enabled: bool = False,
 ) -> GitlabIssueTrackerIntegration:
-    """
-    Build a contract-based Gitlab issue tracker integration.
-
-    Compatibility shim — constructs Integration via from_store (create_gitlab_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
     if enabled and client is None:
         raise IntegrationConfigurationError(
             "Gitlab issue tracker integration requires an injected client when enabled=True",
@@ -93,3 +71,29 @@ def create_gitlab_issue_tracker_integration(
         display_name="Gitlab",
         config=GitlabIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_gitlab_issue_tracker(
+    *,
+    issue_tracker: IssueTracker | None = None,
+    client: GitLabRestClient | None = None,
+    http_client: Any | None = None,
+    http_client_factory: Callable[[GitLabIntegrationConfig], Any] | None = None,
+    **config_overrides: object,
+) -> GitlabIssueTrackerIntegration:
+    """Catalog factory for ``"gitlab"`` / ``ISSUE_TRACKER``."""
+    if (
+        issue_tracker is None
+        and client is None
+        and http_client is None
+        and http_client_factory is None
+        and not config_overrides
+    ):
+        return create_gitlab_issue_tracker_integration(enabled=False)
+    return create_gitlab_integration(
+        issue_tracker=issue_tracker,
+        client=client,
+        http_client=http_client,
+        http_client_factory=http_client_factory,
+        **config_overrides,
+    ).issue_tracker

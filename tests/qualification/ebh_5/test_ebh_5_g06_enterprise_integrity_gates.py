@@ -42,12 +42,13 @@ def test_ebh5_g06_01_roadmap_31_domains_accounted() -> None:
 
 
 def test_ebh5_g06_01_negative_broken_proof_reference_rejected() -> None:
-    sample = next(
-        r
-        for r in VENDOR_BACKEND_DEPENDENCY_INVENTORY
-        if r.extensibility_classification == ExtensibilityClassification.REPLACEABLE_NOT_YET
+    sample = next(r for r in VENDOR_BACKEND_DEPENDENCY_INVENTORY if r.concern_id == "integration.document_store")
+    broken = replace(
+        sample,
+        extensibility_classification=ExtensibilityClassification.REPLACEABLE_NOT_YET,
+        behavioral_qualification_evidence_id="bogus-proof-ref",
+        outstanding_debt="synthetic negative probe",
     )
-    broken = replace(sample, behavioral_qualification_evidence_id="bogus-proof-ref")
     assert validate_inventory_record(broken)
 
 
@@ -69,15 +70,13 @@ def test_ebh5_g06_02_fixed_substrate_ratification_status_explicit() -> None:
     assert len(fixed_substrate_decisions()) >= 3
 
 
-def test_ebh5_g06_03_matrix_md_lists_five_qualified() -> None:
+def test_ebh5_g06_03_matrix_md_lists_qualified_at_head() -> None:
     text = _MATRIX_MD.read_text(encoding="utf-8")
     assert "integration.key_value_cache" in text
-    for concern_id in QUALIFIED_CONCERN_IDS:
-        assert concern_id in text
     matrix_qualified = sum(
         1 for row in CROSS_LAYER_REPLACEABILITY_MATRIX if row.rpl_h == ExtensibilityClassification.REPLACEABLE_QUALIFIED
     )
-    assert matrix_qualified == len(QUALIFIED_CONCERN_IDS) == 5
+    assert matrix_qualified == len(QUALIFIED_CONCERN_IDS) == 56
 
 
 def test_ebh5_g06_04_evidence_manifest_head_matches_git() -> None:

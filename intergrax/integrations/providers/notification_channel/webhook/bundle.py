@@ -11,9 +11,15 @@ All runtime wiring MUST use this module or
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.webhook.config import WebhookIntegrationConfig
+from intergrax.integrations.providers.notification_channel.webhook.integration import (
+    WEBHOOK_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    WebhookNotificationChannelClient,
+    WebhookNotificationChannelIntegration,
+    WebhookNotificationChannelIntegrationConfig,
+)
 from intergrax.integrations.providers.notification_channel.webhook.opens import open_webhook_notification_channel
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.delivery_contract import NotificationDelivery
@@ -34,10 +40,10 @@ def resolve_webhook_config(**overrides: object) -> WebhookIntegrationConfig:
 
 def create_webhook_integration(
     *,
-    webhook_url: Optional[str] = None,
-    notification_adapter: Optional[NotificationAdapter] = None,
-    delivery: Optional[NotificationDelivery] = None,
-    formatter: Optional[NotificationPayloadFormatter] = None,
+    webhook_url: str | None = None,
+    notification_adapter: NotificationAdapter | None = None,
+    delivery: NotificationDelivery | None = None,
+    formatter: NotificationPayloadFormatter | None = None,
     **config_overrides: object,
 ) -> WebhookIntegrationBundle:
     """Single entry point for generic HTTP webhook notifications."""
@@ -59,43 +65,11 @@ def create_webhook_integration(
     )
 
 
-def create_webhook_notification_channel(
-    *,
-    webhook_url: Optional[str] = None,
-    notification_adapter: Optional[NotificationAdapter] = None,
-    delivery: Optional[NotificationDelivery] = None,
-    formatter: Optional[NotificationPayloadFormatter] = None,
-    **config_overrides: object,
-) -> NotificationAdapter:
-    """Catalog factory for ``"webhook"`` / ``NOTIFICATION_CHANNEL``."""
-    return create_webhook_integration(
-        webhook_url=webhook_url,
-        notification_adapter=notification_adapter,
-        delivery=delivery,
-        formatter=formatter,
-        **config_overrides,
-    ).notification_channel
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.notification_channel.webhook.integration import (
-    WEBHOOK_NOTIFICATION_CHANNEL_PROVIDER_ID,
-    WebhookNotificationChannelIntegration,
-    WebhookNotificationChannelIntegrationConfig,
-    WebhookNotificationChannelClient,
-)
-
-
 def create_webhook_notification_channel_integration(
     *,
     client: WebhookNotificationChannelClient | None = None,
     enabled: bool = False,
 ) -> WebhookNotificationChannelIntegration:
-    """
-    Build a contract-based Webhook notification channel integration.
-
-    The legacy facade (create_webhook_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
     if enabled and client is None:
         raise IntegrationConfigurationError(
             "Webhook notification channel integration requires an injected client when enabled=True",
@@ -107,3 +81,30 @@ def create_webhook_notification_channel_integration(
         display_name="Webhook",
         config=WebhookNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_webhook_notification_channel(
+    *,
+    webhook_url: str | None = None,
+    notification_adapter: NotificationAdapter | None = None,
+    delivery: NotificationDelivery | None = None,
+    formatter: NotificationPayloadFormatter | None = None,
+    **config_overrides: object,
+) -> WebhookNotificationChannelIntegration:
+    """Catalog factory for ``"webhook"`` / ``NOTIFICATION_CHANNEL``."""
+    if (
+        webhook_url is None
+        and notification_adapter is None
+        and delivery is None
+        and formatter is None
+        and not config_overrides
+    ):
+        return create_webhook_notification_channel_integration(enabled=False)
+    adapter = create_webhook_integration(
+        webhook_url=webhook_url,
+        notification_adapter=notification_adapter,
+        delivery=delivery,
+        formatter=formatter,
+        **config_overrides,
+    ).notification_channel
+    return WebhookNotificationChannelIntegration.from_client(adapter, enabled=True)

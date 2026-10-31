@@ -1,14 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_firecrawl_browser_automation as _legacy_create_firecrawl_browser_automation
-
+from intergrax.integrations._shared.p3.factories import (
+    create_firecrawl_browser_automation as _legacy_create_firecrawl_browser_automation,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.browser_automation.firecrawl.integration import (
     FIRECRAWL_BROWSER_AUTOMATION_PROVIDER_ID,
+    FirecrawlBrowserAutomationClient,
     FirecrawlBrowserAutomationIntegration,
     FirecrawlBrowserAutomationIntegrationConfig,
-    FirecrawlBrowserAutomationClient,
 )
 
 __all__ = [
@@ -43,6 +44,8 @@ def create_firecrawl_browser_automation_integration(
 
 def create_firecrawl_browser_automation(**kwargs: object) -> FirecrawlBrowserAutomationIntegration:
     """Compatibility shim — constructs FirecrawlBrowserAutomationIntegration from legacy runtime."""
+    if not kwargs:
+        return create_firecrawl_browser_automation_integration(enabled=False)
     runtime = _legacy_create_firecrawl_browser_automation(**kwargs)
     if isinstance(runtime, FirecrawlBrowserAutomationIntegration):
         return runtime

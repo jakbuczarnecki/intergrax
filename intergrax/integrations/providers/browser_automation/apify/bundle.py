@@ -1,14 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_apify_browser_automation as _legacy_create_apify_browser_automation
-
+from intergrax.integrations._shared.p8.factories import (
+    create_apify_browser_automation as _legacy_create_apify_browser_automation,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.browser_automation.apify.integration import (
     APIFY_BROWSER_AUTOMATION_PROVIDER_ID,
+    ApifyBrowserAutomationClient,
     ApifyBrowserAutomationIntegration,
     ApifyBrowserAutomationIntegrationConfig,
-    ApifyBrowserAutomationClient,
 )
 
 __all__ = [
@@ -43,6 +44,8 @@ def create_apify_browser_automation_integration(
 
 def create_apify_browser_automation(**kwargs: object) -> ApifyBrowserAutomationIntegration:
     """Compatibility shim — constructs ApifyBrowserAutomationIntegration from legacy runtime."""
+    if not kwargs:
+        return create_apify_browser_automation_integration(enabled=False)
     runtime = _legacy_create_apify_browser_automation(**kwargs)
     if isinstance(runtime, ApifyBrowserAutomationIntegration):
         return runtime

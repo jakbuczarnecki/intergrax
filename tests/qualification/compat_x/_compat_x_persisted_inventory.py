@@ -22,8 +22,14 @@ from intergrax.agent_distribution.stores import (
     SCHEMA_AGENT_ARTIFACT_METADATA_V1,
     SCHEMA_APPLICATION_ENVIRONMENT_SERVING_RECORD_V1,
 )
+from intergrax.applications._shared.registry_projection_descriptor import (
+    SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
+)
 from intergrax.applications._shared.registry_snapshot_persistence import (
     SCHEMA_REGISTRY_SNAPSHOT_V1,
+)
+from intergrax.contracts.execution.suspended_operation.descriptor import (
+    SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1,
 )
 from intergrax.contracts.idempotency_store import SCHEMA_TOOL_IDEMPOTENCY_LEDGER_V1
 from intergrax.memory.conversational_memory_persistence import (
@@ -31,13 +37,6 @@ from intergrax.memory.conversational_memory_persistence import (
 )
 from intergrax.memory.user_profile_serialization import SCHEMA_USER_PROFILE_V1
 from intergrax.runtime.task_memory.models import SCHEMA_TASK_MEMORY_RECORD_V1
-from intergrax.applications._shared.registry_projection_descriptor import (
-    SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
-)
-from intergrax.contracts.execution.suspended_operation.descriptor import (
-    SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1,
-)
-
 from tests.qualification.compat_x._compat_x_persisted_types import (
     MigrationDisposition,
     PersistedSchemaFamily,
@@ -157,7 +156,11 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "intergrax/agent_distribution/stores.py",
             MigrationDisposition.EXPLICIT_LEGACY_READER,
             "intergrax/agent_distribution/sqlite_payload_legacy.py",
-            (_SQLITE_AD, "intergrax/agent_distribution/stores.py", "intergrax/agent_distribution/sqlite_payload_legacy.py"),
+            (
+                _SQLITE_AD,
+                "intergrax/agent_distribution/stores.py",
+                "intergrax/agent_distribution/sqlite_payload_legacy.py",
+            ),
             ("FRZ-CMP-03", "FRZ-CMP-06"),
         ),
         _family(
@@ -186,7 +189,11 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "intergrax/agent_distribution/runtime_materialization_record.py",
             MigrationDisposition.EXPLICIT_LEGACY_READER,
             "intergrax/agent_distribution/sqlite_payload_legacy.py",
-            (_SQLITE_AD, "intergrax/agent_distribution/runtime_materialization_record.py", "intergrax/agent_distribution/sqlite_payload_legacy.py"),
+            (
+                _SQLITE_AD,
+                "intergrax/agent_distribution/runtime_materialization_record.py",
+                "intergrax/agent_distribution/sqlite_payload_legacy.py",
+            ),
             ("FRZ-CMP-03", "FRZ-CMP-06"),
         ),
         _family(
@@ -215,7 +222,11 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "intergrax/agent_distribution/deployment.py",
             MigrationDisposition.EXPLICIT_LEGACY_READER,
             "intergrax/agent_distribution/sqlite_payload_legacy.py",
-            (_SQLITE_AD, "intergrax/agent_distribution/deployment.py", "intergrax/agent_distribution/sqlite_payload_legacy.py"),
+            (
+                _SQLITE_AD,
+                "intergrax/agent_distribution/deployment.py",
+                "intergrax/agent_distribution/sqlite_payload_legacy.py",
+            ),
             ("FRZ-CMP-03", "FRZ-CMP-06"),
         ),
         _family(
@@ -230,7 +241,11 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "intergrax/agent_distribution/stores.py",
             MigrationDisposition.EXPLICIT_LEGACY_READER,
             "intergrax/agent_distribution/sqlite_payload_legacy.py",
-            (_SQLITE_AD, "intergrax/agent_distribution/stores.py", "intergrax/agent_distribution/sqlite_payload_legacy.py"),
+            (
+                _SQLITE_AD,
+                "intergrax/agent_distribution/stores.py",
+                "intergrax/agent_distribution/sqlite_payload_legacy.py",
+            ),
             ("FRZ-CMP-03", "FRZ-CMP-06"),
         ),
         _family(
@@ -271,12 +286,8 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "runtime.suspended_operation_backing_envelope",
             "suspended_operation_backing.v1",
             "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
-            (
-                "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
-            ),
-            (
-                "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
-            ),
+            ("intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",),
+            ("intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",),
             PersistedStorageKind.DOCUMENT_STORE_PARTITION,
             PersistedVersionDisposition.EXPLICIT_PAYLOAD_VERSION,
             "suspended_operation_backing.v1",
@@ -294,12 +305,8 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "runtime.suspended_execution_operation_descriptor",
             "SuspendedExecutionOperationDescriptor",
             "intergrax/contracts/execution/suspended_operation/descriptor.py",
-            (
-                "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
-            ),
-            (
-                "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
-            ),
+            ("intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",),
+            ("intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",),
             PersistedStorageKind.DOCUMENT_STORE_PARTITION,
             PersistedVersionDisposition.INHERITED_ENVELOPE_VERSION,
             SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1,
@@ -318,12 +325,8 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "runtime.runtime_event",
             "RuntimeEvent",
             "intergrax/contracts/runtime_event.py",
-            (
-                "intergrax/runtime/events/stores/sqlite_runtime_event_store.py",
-            ),
-            (
-                "intergrax/runtime/events/stores/sqlite_runtime_event_store.py",
-            ),
+            ("intergrax/runtime/events/stores/sqlite_runtime_event_store.py",),
+            ("intergrax/runtime/events/stores/sqlite_runtime_event_store.py",),
             PersistedStorageKind.SQLITE_JSON_PAYLOAD,
             PersistedVersionDisposition.EXPLICIT_PAYLOAD_VERSION,
             "runtime_event.v2",
@@ -418,6 +421,31 @@ def persisted_schema_families() -> tuple[PersistedSchemaFamily, ...]:
             "intergrax/runtime/execution/sqlite_decision_event_append_persistence.py",
             ("intergrax/runtime/execution/sqlite_decision_event_append_persistence.py",),
             notes="Typed payload_type column + JSON payload wire; version identity owned by payload_type family.",
+        ),
+        _family(
+            "runtime.decision_checkpoint_durable",
+            "DecisionCheckpointState",
+            "intergrax/contracts/decision_checkpoint.py",
+            (
+                "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
+                "intergrax/runtime/execution/postgresql_decision_checkpoint_persistence.py",
+            ),
+            (
+                "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
+                "intergrax/runtime/execution/postgresql_decision_checkpoint_persistence.py",
+            ),
+            PersistedStorageKind.POSTGRESQL_ROW,
+            PersistedVersionDisposition.EXPLICIT_PAYLOAD_VERSION,
+            None,
+            "intergrax/runtime/execution/decision_durable_wire_codec.py",
+            MigrationDisposition.CURRENT_ONLY_FAIL_CLOSED,
+            "intergrax/runtime/execution/decision_checkpoint_persistence.py",
+            (
+                "intergrax/contracts/decision_checkpoint.py",
+                "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
+                "intergrax/runtime/execution/postgresql_decision_checkpoint_persistence.py",
+            ),
+            notes="Durable decision checkpoint blob keyed by finalization scope (SQLite/PG parity, DIST-SCALE-X P4-A).",
         ),
         _family(
             "memory.user_profile",
