@@ -27,6 +27,7 @@
 - **Mechanisms unchanged:** `scripts/qualification/verify_ebh7_p03_immutable_evidence.py` (immutable git-object digests before any use, full executable-tree identity + allowlist, MANIFEST pins, clean tracked tree, ancestry), `render_ebh7_p03_artifact_digests.py` and `attest_ebh7_f10_execution.py` are byte-identical to the B6-F10 certification tree `496016c0c`; no production code (`intergrax/`, `agents/`, `applications/`) changed.
 - **Executable identity:** new TEST `dc18e36d9` differs from `496016c0c` only by qualification tooling/tests (strict JUnit parser, skip disposition register and gates, skip-equivalent bindings), allowlisted constants/B5 gate files and the workflow — see `EBH_7_SHA_LADDER.md`. Replay diff `TEST..replay HEAD` must list documentation / `.github/` / allowlisted files only (fail-closed otherwise).
 - **Fail-closed on invalid MANIFEST / digest drift:** unchanged (`test_ebh_7_p03_b5_immutable_gates.py`).
+- **Verified in final run `41238620036`:** immutable git-object digests PASS, executable tree identity PASS (17 allowlisted paths), MANIFEST pins PASS, clean tracked tree PASS, F10 attestation PASS.
 - **Added fail-closed layer:** the workflow now also fails on unparsable/inconsistent `junit.xml` and on unregistered/stale skips or failing skip-evidence nodes (`junit-summary.exit` / `skip-disposition.exit`).
 ## L1 adversarial
 

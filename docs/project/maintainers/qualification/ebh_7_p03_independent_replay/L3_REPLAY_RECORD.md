@@ -9,7 +9,7 @@
 | EBH7_B5_TEST_EXECUTION_SHA (historical) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` — 195 passed; `tests/qualification/ebh_7/` shadowed (F10-P03-PROFILE-SHADOW) |
 | TEST_EXECUTION_SHA | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (= `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA`: strict JUnit metadata + skip disposition register; qualification tooling/tests only) |
 | Profile | MANIFEST `pytest_profile` — full `tests/qualification/ebh_7/` + F10 regression nodes (unchanged; new gates are picked up by the directory argument) |
-| Authoritative L3 replay | Final reconciliation GHA run — recorded in [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) (JUnit totals read from `junit.xml`, never hardcoded) |
+| **Authoritative L3 replay** | GHA run `41238620036` @ `73965c2eb3533dfb11ba5c57697316377f956bdd` (TEST `dc18e36d9`, EVIDENCE `f30a90a14`): JUnit **634** tests = **625 passed / 9 skipped / 0 failed / 0 errors / 0 xfailed**, exit 0; F10 attestation **PASS (56 nodes, 0 problems)**; skip disposition **PASS (9/9)**; strict JUnit metadata PASS — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
 | Skip dispositions | Nine individual `N/A — WITH EVIDENCE` records — [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md); verified against the real JUnit by the workflow (`skip-disposition.json`) |
 
 ## Historical provenance (do not cite as current)

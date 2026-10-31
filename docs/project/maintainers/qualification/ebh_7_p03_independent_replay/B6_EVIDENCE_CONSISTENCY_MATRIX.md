@@ -27,15 +27,17 @@
 
 ## L3 replay (MANIFEST `pytest_profile.last_replay`)
 
-Last recorded replay: B6-F10 GitHub Actions run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`, historical; JUnit 590 tests; superseded by the final reconciliation replay once recorded in `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`). Skipped tests: nine individual dispositions in [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
+Authoritative replay: final reconciliation GitHub Actions run `41238620036` @ `73965c2ea…` (TEST `dc18e36d9…`; JUnit 634 tests; recorded in `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`). Historical (superseded): B6-F10 run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`, JUnit 590 tests: 581 passed / 9 skipped). Skipped tests: nine individual dispositions in [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
 
 | Field | Value |
 | --- | --- |
-| Passed | **581** |
-| Skipped | **9** |
+| JUnit tests | **634** |
+| Passed | **625** |
+| Skipped | **9** (nine individual `ACCEPTED_NA` dispositions; 0 unregistered / 0 stale) |
+| Failed / errors | **0 / 0** |
 | Xfailed | **0** |
 | Profile | `MANIFEST.json` → `pytest_profile.command` |
-| Log | GHA run `41231430749` artifact `ebh7-p03-l3-496016c0cf6cc5cf1f9a29d885677605dd0415d3` (pytest.log, junit.xml, f10-attestation.json) |
+| Log | GHA run `41238620036` artifact `ebh7-p03-l3-dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (pytest.log, junit.xml, meta.txt, junit-summary.json, skip-disposition.json, f10-attestation.json) |
 
 ## INT2E / ECAP
 

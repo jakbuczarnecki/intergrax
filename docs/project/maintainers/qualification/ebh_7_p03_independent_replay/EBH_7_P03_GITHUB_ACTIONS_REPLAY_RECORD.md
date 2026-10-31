@@ -1,6 +1,6 @@
 # EBH-7 — Protocol 03 L3 GitHub Actions replay record
 
-**Status:** final B6 evidence reconciliation — workflow corrected (strict JUnit metadata + skip disposition verification); canonical final replay run is recorded in the *Final reconciliation run* section below once completed. Not a B6 PASS.
+**Status:** final B6 evidence reconciliation — workflow corrected (strict JUnit metadata + skip disposition verification); canonical final replay run `41238620036` completed successfully (see *Final reconciliation run*). Not a B6 PASS.
 
 ## Current roles
 
@@ -37,7 +37,35 @@ Optional: `-f ebh7_p03_replay_head_sha=<40-char>` for pinned replay audit.
 
 ## Final reconciliation run (current)
 
-*Pending — filled after the `workflow_dispatch` replay (run ID, URL, workflow/replay SHA, JUnit totals read from `junit.xml`, F10 attestation, skip disposition result, job conclusion).*
+| Field | Value |
+| --- | --- |
+| **Run ID** | `41238620036` |
+| **URL** | https://github.com/jakbuczarnecki/intergrax/actions/runs/41238620036 |
+| **Trigger** | `workflow_dispatch` · `profile=ebh7_p3_l3` (default SHA inputs = MANIFEST pins) |
+| **TEST_EXECUTION_SHA** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| **EVIDENCE_PUBLICATION_SHA** | `f30a90a14910afe8583081cab3b2e39480988c17` |
+| **Workflow SHA / replay checkout** | `73965c2eb3533dfb11ba5c57697316377f956bdd` (= `actual_head_sha`) |
+| **Executable tree identity** | PASS — `git diff --name-only TEST..replay` = 17 paths, all allowlisted (docs / `.github/` / B5 meta-gate files); no `intergrax/`, `agents/`, `applications/` change |
+| **Immutable digests** | git-objects @ replay HEAD PASS · MANIFEST pins PASS · working-tree digests PASS · clean tracked tree PASS |
+| **Pytest** | MANIFEST L3 profile (full `tests/qualification/ebh_7/`) · exit **0** · `625 passed, 9 skipped` |
+| **JUnit (`junit.xml`, root `<testsuites>`, 1 suite)** | **634** tests = **625 passed · 0 failed · 0 errors · 9 skipped · 0 xfailed** — values read from the file by the strict parser (`meta.txt`: `junit_parse=PASS junit_tests=634 junit_passed=625 junit_failed=0 junit_errors=0 junit_skipped=9 junit_xfailed=0 junit_f07_operational_gate_nodes=8`); cross-checked with an independent raw XML read |
+| **F10 execution attestation** | `f10_attestation=PASS nodes=56 problems=0` · C1–C5 PASS · disposition `EBH-7 — B6-F10 NORMATIVELY QUALIFIED / READY FOR INDEPENDENT B6 ACCEPTANCE` (computed; not B6 PASS) |
+| **Skip disposition** | `skip_disposition=PASS skipped=9 registered=9 problems=0` — 0 unregistered, 0 stale; every evidence node PASS in this JUnit — [`EBH_7_SKIP_DISPOSITION_REGISTER.md`](EBH_7_SKIP_DISPOSITION_REGISTER.md) |
+| **Job conclusion** | `ebh7-p03-l3-qualification` = success · run conclusion `success` |
+| **Artifact** | `ebh7-p03-l3-dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (retention 90 days) |
+
+Artifact SHA-256 (as downloaded):
+
+| File | SHA-256 |
+| --- | --- |
+| `junit.xml` | `15f1d0b891df996c5ef5c3866276ca9455e7f3ba1c22753249449b140bd8b158` |
+| `meta.txt` | `cdcf9ebb1339f2959a5b02375daa8a44771dd9df229e0630b0b8a9284f93dcb8` |
+| `junit-summary.json` | `e3538ae5c7bab895a17a45549a21e74cf89c44e22f4967ffde22ecec6092793e` |
+| `skip-disposition.json` | `b0ae4d507eef951b5b0c1e193ed39d251ee82cf1297869701ef5042e2f206d3f` |
+| `f10-attestation.json` | `8cbcdc47a050bd3451e7f4510f91555614ba5636ab833a17bc8036245e79c191` |
+| `pytest.log` | `9ca786012c00af406ba84d7f4a9cbb4b62a094a88006c77d70369e64e116c663` |
+
+Delta vs historical run `41231430749`: +44 tests (new gates `test_ebh_7_b6_junit_skip_disposition_gates.py`), same nine skips, `meta.txt` statistics now correct (`junit_tests=634`, previously `0`).
 
 ## Historical runs (provenance — not current)
 

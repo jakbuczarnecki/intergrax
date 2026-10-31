@@ -36,7 +36,7 @@
 | EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA | Strict JUnit metadata parser + per-node skip disposition register + L3 skip verification (tooling/tests only; no production semantics) | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
 | TEST_EXECUTION_SHA | Final reconciliation L3 replay (full `tests/qualification/ebh_7/` + F10 regression nodes); equals `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA` | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
 | EVIDENCE_PUBLICATION_SHA | Final reconciliation P03 dossier publication (SHA roles, P03 records, skip dispositions) | `f30a90a14910afe8583081cab3b2e39480988c17` |
-| EBH7_B6_FINAL_GHA_REPLAY_HEAD_SHA | GHA L3 final reconciliation replay checkout | *pending run* |
+| EBH7_B6_FINAL_GHA_REPLAY_HEAD_SHA | GHA L3 run `41238620036` checkout (634 tests: 625 passed / 9 skipped / 0 failed; F10 attestation PASS; skip disposition PASS; strict JUnit metadata PASS) | `73965c2eb3533dfb11ba5c57697316377f956bdd` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
