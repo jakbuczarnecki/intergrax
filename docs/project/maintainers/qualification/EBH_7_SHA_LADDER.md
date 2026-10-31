@@ -18,9 +18,9 @@
 | EBH7_GAP_CLOSURE_IMPLEMENTATION_SHA | Gap-closure final implementation | `8bbda35dd1686b15bd6959b732ade3ba0f268632` |
 | EBH7_REMEDIATION_BASELINE_SHA | Independent audit remediation entry @ pushed HEAD | `11b724dd18ba1a7ed5f53a3999dc18af1068391d` |
 | EBH7_SEMANTIC_DISPOSITION_SHA | SSOT disposition pin | see `_semantic_disposition_registry.py` |
-| EBH7_CLOSURE_IMPLEMENTATION_SHA | Packages A–I + B6 corrective + RPL convergence + one-pass | `b48e3c429db312a9b725d93c7d28abd09eea1dc6` |
-| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `b48e3c429db312a9b725d93c7d28abd09eea1dc6` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `184cab12fb3446037d0c4594714dbc0ec5d8094b` |
+| EBH7_CLOSURE_IMPLEMENTATION_SHA | Terminal closure — 56/56 RPL @ operator dispositions | `d4937889fc0b07515649dbdddf602df2a4415489` |
+| TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `d4937889fc0b07515649dbdddf602df2a4415489` |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | *pending evidence commit* |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 

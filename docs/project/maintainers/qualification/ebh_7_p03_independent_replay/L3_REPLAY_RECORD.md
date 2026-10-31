@@ -2,10 +2,9 @@
 
 | Field | Value |
 | --- | --- |
-| TEST_EXECUTION_SHA | `b48e3c429db312a9b725d93c7d28abd09eea1dc6` |
-| Profile | ECAP L3 + `test_ebh_5_factory_rpl_one_pass.py` + full `tests/qualification/ebh_7/` |
-| Result | **368+ passed**, **8 skipped**, **1 xfailed** (B6 normative) |
-| ECAP consolidated | **181 passed** @ implementation SHA |
-| Log | `.tmp/session/ebh-7-one-pass/` |
+| TEST_EXECUTION_SHA | `d4937889fc0b07515649dbdddf602df2a4415489` |
+| Profile | ECAP L3 + terminal RPL gates + full `tests/qualification/ebh_7/` |
+| Result | **187 passed**, **0 xfailed** (B6 normative readiness passes) |
+| Log | `.tmp/session/ebh-7-terminal/l3-at-d4937889.log` |
 
-**RPL:** 45/56 QUALIFIED · 5 PARTIAL · 6 BLOCKED · **11 B6 open**. See [`EBH_7_ONE_PASS_CLOSURE_MATRIX.md`](../EBH_7_ONE_PASS_CLOSURE_MATRIX.md).
+**RPL:** 56/56 QUALIFIED · **0 B6 open**. See [`EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md`](../EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md).

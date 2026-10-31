@@ -1,23 +1,23 @@
 {
-  "TEST_EXECUTION_SHA": "b48e3c429db312a9b725d93c7d28abd09eea1dc6",
-  "TEST_EXECUTION_NOTE": "EBH-7 one-pass @ b48e3c429 — factory RPL 12 qualified; 368+ ebh_7 L3; ECAP 181; log .tmp/session/ebh-7-one-pass/",
-  "EVIDENCE_PUBLICATION_SHA": "184cab12fb3446037d0c4594714dbc0ec5d8094b",
+  "TEST_EXECUTION_SHA": "d4937889fc0b07515649dbdddf602df2a4415489",
+  "TEST_EXECUTION_NOTE": "EBH-7 terminal closure @ d4937889 — 56/56 RPL QUALIFIED; L3 187 passed; log .tmp/session/ebh-7-terminal/",
+  "EVIDENCE_PUBLICATION_SHA": "PENDING_EVIDENCE_COMMIT",
   "INDEPENDENT_ACCEPTANCE_BASELINE_SHA": "PENDING_B6_PASS",
   "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING_OD_EBH7_08",
-  "EBH7_CLOSURE_IMPLEMENTATION_SHA": "b48e3c429db312a9b725d93c7d28abd09eea1dc6",
+  "EBH7_CLOSURE_IMPLEMENTATION_SHA": "d4937889fc0b07515649dbdddf602df2a4415489",
   "EBH7_REMEDIATION_CONTINUATION_SHA": "cb3fcb3c93ff361a138d36136cba0c8d6a5b59bd",
   "EBH7_REMEDIATION_BASELINE_SHA": "11b724dd18ba1a7ed5f53a3999dc18af1068391d",
-  "certification_banner": "EBH-7 — ONE-PASS TECHNICAL COMPLETE / EXTERNAL AUTH REQUIRED",
+  "certification_banner": "EBH-7 — READY FOR INDEPENDENT B6",
   "pytest_profile": {
     "command": "uv run pytest tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py tests/qualification/ebh_7/test_ebh_7_rpl_dual_slug_catalog_coverage.py tests/qualification/ebh_7/test_ebh_7_certification_ssot_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/ -q --tb=line",
     "environment": "ci — uv frozen, dev-ci extra",
     "replay_record": "L3_REPLAY_RECORD.md",
     "last_replay": {
-      "passed": 368,
-      "skipped": 8,
-      "xfailed": 1,
-      "xfail_node": "test_ebh7_remediation_rpl_normative_b6_readiness",
-      "ecap_profile_passed": 181
+      "passed": 187,
+      "skipped": 0,
+      "xfailed": 0,
+      "xfail_node": null,
+      "ecap_profile_passed": 187
     }
   },
   "artifacts": {
@@ -29,6 +29,8 @@
     "b6_blocker_register": "../EBH_7_B6_BLOCKER_REGISTER.md",
     "rpl_final_convergence_matrix": "../EBH_7_RPL_FINAL_CONVERGENCE_DECISION_MATRIX.md",
     "one_pass_closure_matrix": "../EBH_7_ONE_PASS_CLOSURE_MATRIX.md",
+    "independent_b6_dossier": "../EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md",
+    "fixed_substrate_ratifications": "../EBH_7_FIXED_SUBSTRATE_RATIFICATIONS.md",
     "artifact_digests": "ARTIFACT_DIGESTS.json"
   },
   "explicit_non_claims": [
