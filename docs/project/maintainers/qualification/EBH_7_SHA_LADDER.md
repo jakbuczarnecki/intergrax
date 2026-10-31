@@ -20,7 +20,7 @@
 | EBH7_SEMANTIC_DISPOSITION_SHA | SSOT disposition pin | see `_semantic_disposition_registry.py` |
 | EBH7_CLOSURE_IMPLEMENTATION_SHA | Packages A–I + B6 corrective + RPL convergence | `863e66ae776f0f682fec3829b2b80591256ef6de` |
 | TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `863e66ae776f0f682fec3829b2b80591256ef6de` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | *pending evidence commit* |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `acd3f61984e501b1f2cd84720910b364e306c6b0` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
