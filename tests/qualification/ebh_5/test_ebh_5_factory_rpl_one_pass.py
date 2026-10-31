@@ -7,8 +7,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.qualification.ebh_5._factory_rpl_normative_nodes import FACTORY_RPL_ONE_PASS_CONCERNS
 from tests.qualification.ebh_5._factory_rpl_one_pass_proofs import (
-    FACTORY_RPL_ONE_PASS_CONCERNS,
     run_factory_rpl_negative,
     run_factory_rpl_positive,
 )
