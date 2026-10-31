@@ -28,8 +28,24 @@ def test_ebh7_mutation_exact_requires_proof_node() -> None:
     assert "MISSING" not in row.assertions_inspected
 
 
-def test_ebh7_mutation_tampered_match_not_exact() -> None:
-    assert ProofBindingResult.PARTIAL_PROOF not in (
-        ProofBindingResult.EXACT_PROOF,
-        ProofBindingResult.MISSING_PROOF,
+def test_ebh7_mutation_tampered_audit_open_id_fails_mandatory_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tests.qualification.ebh_7 import _semantic_proof_binding_audit as audit_mod
+    from tests.qualification.ebh_7._semantic_proof_binding_audit import (
+        assert_ebh7_semantic_mandatory_exact_coverage,
     )
+    from tests.qualification.ebh_7._semantic_proof_types import ProofBindingAuditRow, ProofBindingResult
+
+    real_audit = audit_mod.EBH7_PROOF_BINDING_AUDIT
+    poison = ProofBindingAuditRow(
+        scenario_id="EBH7-TEN-E2E-99-MUT",
+        claimed_boundary="Synthetic",
+        attack="cross",
+        expected_behavior="DENY",
+        existing_proof="tests.fake::test_noop",
+        actual_assertions="none",
+        semantic_match=ProofBindingResult.PARTIAL_PROOF,
+        notes="SHA=mut;",
+    )
+    monkeypatch.setattr(audit_mod, "EBH7_PROOF_BINDING_AUDIT", real_audit + (poison,))
+    with pytest.raises(AssertionError, match="EXACT blockers"):
+        assert_ebh7_semantic_mandatory_exact_coverage()

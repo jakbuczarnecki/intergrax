@@ -10,3 +10,5 @@
 | OD-EBH7-08 | Parent closure | Sign / reject post-B6 | [`EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md) | **OPEN** |
 
 Do not assume approval. Agent prepares packages only.
+
+**Per-concern RPL table (50 rows):** [`EBH_7_RPL_OPERATOR_DECISION_PACKAGE.md`](EBH_7_RPL_OPERATOR_DECISION_PACKAGE.md)

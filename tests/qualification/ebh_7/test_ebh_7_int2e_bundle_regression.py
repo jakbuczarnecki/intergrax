@@ -59,5 +59,12 @@ def test_ebh7_int2e_sqlite_relational_resolve_from_profile(tmp_path: Path) -> No
     )
 
 
+def test_ebh7_int2e_unregistered_message_bus_fail_closed() -> None:
+    from intergrax.integrations.contracts.base import IntegrationCategory
+    from tests.qualification.ebh_5._package_c_v2_proof_helpers import assert_unregistered_fail_closed
+
+    assert_unregistered_fail_closed(category=IntegrationCategory.MESSAGE_BUS)
+
+
 def test_ebh7_int2e_bundle_regression_scope_non_empty() -> None:
     assert len(_changed_bundle_modules()) >= 30

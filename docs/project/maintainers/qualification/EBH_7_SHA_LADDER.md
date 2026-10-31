@@ -18,8 +18,8 @@
 | EBH7_GAP_CLOSURE_IMPLEMENTATION_SHA | Gap-closure final implementation | `8bbda35dd1686b15bd6959b732ade3ba0f268632` |
 | EBH7_REMEDIATION_BASELINE_SHA | Independent audit remediation entry @ pushed HEAD | `11b724dd18ba1a7ed5f53a3999dc18af1068391d` |
 | EBH7_SEMANTIC_DISPOSITION_SHA | SSOT disposition pin | see `_semantic_disposition_registry.py` |
-| TEST_EXECUTION_SHA | B5 L3 replay tree | *pending Wave 5* |
-| EVIDENCE_PUBLICATION_SHA | Tracked P03 bundle publication | *pending Wave 6* |
+| TEST_EXECUTION_SHA | Full ebh_7 replay | `6758b6e1bafd59900ff977d5dd7c397d51a7becd` (+ uncommitted continuation delta) |
+| EVIDENCE_PUBLICATION_SHA | Tracked P03 bundle publication | *OPEN — B5 partial; see continuation report* |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
