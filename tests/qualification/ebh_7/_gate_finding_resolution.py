@@ -159,6 +159,12 @@ _FINDING_RESOLUTIONS: Final[dict[str, FindingResolution]] = {
         "tests/qualification/ebh_7/test_ebh_7_b6_f10_certification_adversarial.py::test_f10_adv_directory_shadowed_by_member_file_is_not_execution",
         "Shadowed directory argument is not execution evidence",
     ),
+    "B6-F10-P03-DIRTY-TREE": FindingResolution(
+        "B6-F10-P03-DIRTY-TREE",
+        FindingResolutionKind.CORRECTIVE_PYTEST,
+        "tests/qualification/ebh_7/test_ebh_7_mechanism_gates.py::test_ebh7_w1_mechanism_registry_closed_world_count",
+        "Mechanism count over the tracked tree; identical on local and clean CI checkouts",
+    ),
     "B6-F10-CFG-ISO-01": FindingResolution(
         "B6-F10-CFG-ISO-01",
         FindingResolutionKind.CORRECTIVE_PYTEST,

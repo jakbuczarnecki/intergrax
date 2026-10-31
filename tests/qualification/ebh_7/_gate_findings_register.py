@@ -188,6 +188,16 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
         correction="Shadowing member files removed; coverage helper rejects directory shadowed by member files",
     ),
     GateFinding(
+        gate_id="B6-F10-P03-DIRTY-TREE",
+        prior_claim="EBH-7 W1 mechanism registry = 685 disjoint MECH IDs",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.INTEGRITY,
+        correction=(
+            "685 counted 447 composition paths from the gitignored docker/runtime-context copy; "
+            "wiring discovery excludes it — 238 on a clean checkout"
+        ),
+    ),
+    GateFinding(
         gate_id="B6-F10-CFG-ISO-01",
         prior_claim="CONFIG-X FRZ-CFG-07 gates are order-independent",
         actual_strength=GateStrength.STRUCTURAL,

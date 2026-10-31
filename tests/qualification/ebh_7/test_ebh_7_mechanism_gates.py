@@ -10,5 +10,5 @@ from tests.qualification.ebh_7._mechanism_registry import assert_ebh7_mechanism_
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
-def test_ebh7_w1_mechanism_registry_685() -> None:
+def test_ebh7_w1_mechanism_registry_closed_world_count() -> None:
     assert_ebh7_mechanism_registry_integrity()
