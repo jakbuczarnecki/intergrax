@@ -114,6 +114,15 @@ def test_f10_adv_missing_execution_attestation_fails() -> None:
     _assert_fails(replace(_base(), profile_argv=()), "C4-CLASS-vendor-backend", "not executed by MANIFEST")
 
 
+def test_f10_adv_directory_shadowed_by_member_file_is_not_execution() -> None:
+    argv = (
+        "tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py",
+        "tests/qualification/ebh_7/",
+    )
+    inputs = replace(_base(), profile_argv=argv)
+    _assert_fails(inputs, "C4-CLASS-state-recovery", "not executed by MANIFEST")
+
+
 def test_f10_adv_wrong_execution_sha_fails() -> None:
     inputs = replace(_base(), identity_violations=("intergrax/runtime/nexus/tools/invoker.py",))
     _assert_fails(inputs, "C3-PROHIBITED-ZERO", "executed tree differs from TEST_EXECUTION_SHA")

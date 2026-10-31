@@ -745,9 +745,9 @@ def _verdicts(results: list[QualificationResult], gates: Iterable[EcapGate]) -> 
     return tuple(verdicts)
 
 
-def _verdict_row(v: CoverageVerdict) -> str:
+def _verdict_row(v: CoverageVerdict, label_prefix: str = "") -> str:
     counts = f"{v.obligations} | {v.passed} | {v.not_applicable} | {len(v.failed)}"
-    return f"| {v.gate.value} | {v.verdict.value} | {counts} |"
+    return f"| {label_prefix}{v.gate.value} | {v.verdict.value} | {counts} |"
 
 
 def render_report_block(verdicts: tuple[CoverageVerdict, ...], test_execution_sha: str) -> str:
@@ -760,7 +760,7 @@ def render_report_block(verdicts: tuple[CoverageVerdict, ...], test_execution_sh
         "| --- | --- | --- | --- | --- | --- |",
     ]
     for v in verdicts:
-        lines.append(_verdict_row(v))
+        lines.append(_verdict_row(v, "ECAP-"))
     lines.append("")
     if blocked:
         lines.append("**C1–C4 computed disposition:** " + DISPOSITION_BLOCKED)

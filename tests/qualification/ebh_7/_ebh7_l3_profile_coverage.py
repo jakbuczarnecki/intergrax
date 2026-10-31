@@ -42,21 +42,22 @@ def argv_covers_pytest_node(node_id: str, argv: tuple[str, ...]) -> bool:
     else:
         return False
     rel_norm = rel_path.replace("\\", "/")
-    for arg in argv:
-        if arg.startswith("-"):
-            continue
-        arg_norm = arg.replace("\\", "/")
+    positional = [a.replace("\\", "/") for a in argv if not a.startswith("-")]
+    for arg_norm in positional:
         if "::" in arg_norm:
             file_part, arg_func = arg_norm.split("::", 1)
             if rel_norm == file_part and func_name is not None and arg_func.split("[", 1)[0] == func_name:
                 return True
             continue
-        if arg_norm.endswith("/"):
-            prefix = arg_norm.rstrip("/")
-            if rel_norm == prefix or rel_norm.startswith(prefix + "/"):
-                return True
-        elif rel_norm == arg_norm or rel_norm.startswith(arg_norm + "/"):
+        if rel_norm == arg_norm:
             return True
+        prefix = arg_norm.rstrip("/")
+        if rel_norm.startswith(prefix + "/"):
+            # pytest 8 de-duplicates a directory argument down to explicitly listed members inside it.
+            members = [other.split("::", 1)[0] for other in positional if other != arg_norm]
+            shadowed = any(member.startswith(prefix + "/") for member in members)
+            if not shadowed:
+                return True
     return False
 
 
