@@ -714,16 +714,17 @@ jobs:
           echo "test_execution_sha=${TEST_EXECUTION_SHA}"
           echo "evidence_publication_sha=${EVIDENCE_PUBLICATION_SHA}"
 
-      - name: Checkout exact TEST_EXECUTION_SHA
+      - name: Fetch full history and checkout exact TEST_EXECUTION_SHA
         uses: actions/checkout@v5
         with:
-          ref: ${{ env.TEST_EXECUTION_SHA }}
+          ref: development
           fetch-depth: 0
 
       - name: Verify HEAD matches TEST_EXECUTION_SHA
         shell: bash
         run: |
           set -euo pipefail
+          git checkout "${TEST_EXECUTION_SHA}"
           git cat-file -e "${TEST_EXECUTION_SHA}^{commit}"
           EXPECTED="$(echo "${TEST_EXECUTION_SHA}" | tr '[:upper:]' '[:lower:]')"
           ACTUAL="$(git rev-parse HEAD)"
@@ -731,6 +732,7 @@ jobs:
             echo "FAIL: HEAD (${ACTUAL}) != TEST_EXECUTION_SHA (${EXPECTED})"
             exit 1
           fi
+          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
           git merge-base --is-ancestor "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}"
 
       - name: Resolve L3 pytest command from EVIDENCE MANIFEST
@@ -808,6 +810,10 @@ jobs:
         run: |
           set -euo pipefail
           META="build/qualification/ebh7-l3/meta.txt"
+          mkdir -p build/qualification/ebh7-l3
+          if [ ! -f "${META}" ]; then
+            echo "qualification_status=ABORTED" > "${META}"
+          fi
           END_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           PYTEST_EXIT_CODE="UNKNOWN"
           if [ -f build/qualification/ebh7-l3/pytest.exit ]; then
@@ -838,7 +844,7 @@ jobs:
             echo "f07_log_lines=${F07_COUNT}"
             echo "qualification_status=${QUALIFICATION_STATUS}"
             echo "status=${STATUS}"
-          } > "${META}.tmp"
+          } | tee "${META}.tmp" > /dev/null
           mv "${META}.tmp" "${META}"
 
       - name: Upload EBH-7 L3 qualification artifacts
