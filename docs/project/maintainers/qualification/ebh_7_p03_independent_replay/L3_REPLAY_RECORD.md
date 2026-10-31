@@ -10,7 +10,8 @@
 | Local pre-publication run | Windows, replay HEAD `6558d396607bb3cc58c39c0a64435d23545ed0fe`: 575 passed / 8 skipped; 7 documentation-sync failures fixed in this publication; F10 JUnit attestation PASS (56 nodes, 0 problems) |
 | First B6-F10 GHA replay (superseded) | run `41227765200` @ `c1dc4f838d172d7624ecdec306854ab652f4a348` (TEST `74e2191dd`): 579 passed / 3 failed / 8 skipped; F10 attestation PASS — failures were clean-checkout defects (F10-P03-DIRTY-TREE) |
 | Log | `.tmp/session/ebh7-f10-cert/l2-profile-C.log` |
-| Authoritative replay | GitHub Actions — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
+| Final local pre-publication run | replay HEAD `e6ff57b13848f70c964ab141cba5bd89b50e8315`: 582 passed / 8 skipped / 0 failed; F10 attestation PASS |
+| **Authoritative replay** | GHA run `41231430749` @ `e6ff57b13848f70c964ab141cba5bd89b50e8315`: **581 passed / 9 skipped / 0 failed**; F10 attestation **PASS (56 nodes, 0 problems)** — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
 
 **Semantic @ replay tree:** RPL **56/56 QUALIFIED**; dual-slug **28/28**; TEN **26 EXACT / 0 OPEN**; XDM **34 EXACT / 0 OPEN**; G01–G09 **0 OPEN_FINDING**.
 

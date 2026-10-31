@@ -26,15 +26,15 @@
 
 ## L3 replay (MANIFEST `pytest_profile.last_replay`)
 
-Until the B6-F10 GitHub Actions replay is recorded, `last_replay` is the historical B5 run (`4eb7eb1a…`, `ebh_7` directory shadowed — F10-P03-PROFILE-SHADOW).
+B6-F10 GitHub Actions run `41231430749` @ `e6ff57b13…` (TEST `496016c0c…`). The historical B5 run (`4eb7eb1a…`, 195 passed) shadowed the `ebh_7` directory (F10-P03-PROFILE-SHADOW).
 
 | Field | Value |
 | --- | --- |
-| Passed | **195** |
-| Skipped | **0** |
+| Passed | **581** |
+| Skipped | **9** |
 | Xfailed | **0** |
 | Profile | `MANIFEST.json` → `pytest_profile.command` |
-| Log | `.tmp/session/ebh-7-final-cert/l3-final.log` |
+| Log | GHA run `41231430749` artifact `ebh7-p03-l3-496016c0cf6cc5cf1f9a29d885677605dd0415d3` (pytest.log, junit.xml, f10-attestation.json) |
 
 ## INT2E / ECAP
 
