@@ -1,44 +1,36 @@
 # EBH-7 — Protocol 03 L3 GitHub Actions replay record
 
-**Status:** populated after each `workflow_dispatch` profile `ebh7_p3_l3`. **Not** B6 PASS.
+**Status:** agent-run CI replay (not B6 PASS). **Not** independent auditor sign-off.
 
 ## Frozen certification baseline
 
 | Role | SHA |
 | --- | --- |
-| TEST_EXECUTION_SHA (code tree) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
-| EVIDENCE_PUBLICATION_SHA (MANIFEST profile) | `96069c09c2ca5a7a3a9586db336716c9430ca1d7` |
+| TEST_EXECUTION_SHA (qualification code identity) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
+| EVIDENCE_PUBLICATION_SHA (P03 replay checkout HEAD) | `96069c09c2ca5a7a3a9586db336716c9430ca1d7` |
 
-## Trigger (auditor / operator)
+**Rule:** CI checks out `EVIDENCE_PUBLICATION_SHA` and asserts `git diff TEST..EVIDENCE -- tests/qualification/` is empty.
+
+## Trigger
 
 ```powershell
 gh workflow run unit-tests.yml --ref development -f profile=ebh7_p3_l3
-# optional overrides (must match dossier unless corrective replay):
-#   -f ebh7_test_execution_sha=4eb7eb1a89f82215d5356aa7d000198e432777b0
-#   -f ebh7_evidence_publication_sha=96069c09c2ca5a7a3a9586db336716c9430ca1d7
 ```
 
-Workflow job: `ebh7-p03-l3-qualification` in [`.github/workflows/unit-tests.yml`](../../../../.github/workflows/unit-tests.yml).
+Job: `ebh7-p03-l3-qualification` · Workflow file @ `github.workflow_sha` on each run.
 
-- Checkout **exact** `TEST_EXECUTION_SHA`.
-- Resolve `pytest_profile.command` from `MANIFEST.json` at **EVIDENCE_PUBLICATION_SHA** (fail-closed if `TEST_EXECUTION_SHA` in manifest mismatches checkout).
-- `uv sync --frozen --extra dev-ci`; single pytest invocation; artifacts under `build/qualification/ebh7-l3/`.
+## Run history
 
-## Latest run
+| Run ID | URL | Result | pytest exit | tests (junit) | notes |
+| --- | --- | --- | --- | --- | --- |
+| 41211553184 | https://github.com/jakbuczarnecki/intergrax/actions/runs/41211553184 | FAIL | — | — | evidence SHA unreachable on shallow checkout (fixed) |
+| 41211640855 | https://github.com/jakbuczarnecki/intergrax/actions/runs/41211640855 | FAIL | — | — | bash `fi` typo in manifest gate (fixed) |
+| 41211744930 | https://github.com/jakbuczarnecki/intergrax/actions/runs/41211744930 | FAIL | 1 | 194+1 fail | digest SSOT @ TEST-only checkout (superseded by replay-tree fix) |
+| *latest green* | *see Actions* | *pending* | *pending* | *pending* | after replay @ EVIDENCE tree |
 
-| Field | Value |
-| --- | --- |
-| GitHub run URL | *pending first green run* |
-| `github.run_id` | *pending* |
-| `github.workflow_sha` | *pending* |
-| Checkout HEAD | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
-| Pytest exit | *pending* |
-| JUnit tests / skipped | *pending* |
-| Artifact name | `ebh7-p03-l3-4eb7eb1a89f82215d5356aa7d000198e432777b0` |
+## Push smoke (not L3)
 
-## Push smoke cancellations (context)
-
-`push` to `development` runs `ci-smoke` (not L3). Recent runs show **cancelled** after ~10m — `ci-smoke` `timeout-minutes: 10` vs long suite. L3 replay uses **manual** `ebh7_p3_l3` dispatch (separate concurrency group; not cancelled by PR smoke).
+`push` → `ci-smoke` often **cancelled** ~10m (`timeout-minutes: 10`). Unrelated to `ebh7_p3_l3` dispatch.
 
 ## Non-claims
 

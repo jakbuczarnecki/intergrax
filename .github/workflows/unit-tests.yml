@@ -714,26 +714,32 @@ jobs:
           echo "test_execution_sha=${TEST_EXECUTION_SHA}"
           echo "evidence_publication_sha=${EVIDENCE_PUBLICATION_SHA}"
 
-      - name: Fetch full history and checkout exact TEST_EXECUTION_SHA
+      - name: Fetch full history and checkout EVIDENCE replay tree
         uses: actions/checkout@v5
         with:
           ref: development
           fetch-depth: 0
 
-      - name: Verify HEAD matches TEST_EXECUTION_SHA
+      - name: Verify replay tree and code identity (fail closed)
         shell: bash
         run: |
           set -euo pipefail
-          git checkout "${TEST_EXECUTION_SHA}"
+          git checkout "${EVIDENCE_PUBLICATION_SHA}"
+          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
           git cat-file -e "${TEST_EXECUTION_SHA}^{commit}"
-          EXPECTED="$(echo "${TEST_EXECUTION_SHA}" | tr '[:upper:]' '[:lower:]')"
-          ACTUAL="$(git rev-parse HEAD)"
-          if [ "${ACTUAL}" != "${EXPECTED}" ]; then
-            echo "FAIL: HEAD (${ACTUAL}) != TEST_EXECUTION_SHA (${EXPECTED})"
+          EVIDENCE_HEAD="$(git rev-parse HEAD)"
+          if [ "${EVIDENCE_HEAD}" != "${EVIDENCE_PUBLICATION_SHA}" ]; then
+            echo "FAIL: HEAD (${EVIDENCE_HEAD}) != EVIDENCE_PUBLICATION_SHA"
             exit 1
           fi
-          git cat-file -e "${EVIDENCE_PUBLICATION_SHA}^{commit}"
           git merge-base --is-ancestor "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}"
+          if ! git diff --quiet "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}" -- tests/qualification/; then
+            echo "FAIL: qualification tests differ between TEST_EXECUTION and EVIDENCE trees"
+            git diff --stat "${TEST_EXECUTION_SHA}" "${EVIDENCE_PUBLICATION_SHA}" -- tests/qualification/
+            exit 1
+          fi
+          echo "code_identity_test_execution_sha=${TEST_EXECUTION_SHA}"
+          echo "replay_head_sha=${EVIDENCE_HEAD}"
 
       - name: Resolve L3 pytest command from EVIDENCE MANIFEST
         id: manifest_profile
@@ -777,6 +783,7 @@ jobs:
             echo "protocol=EBH-7-P03-L3"
             echo "test_execution_sha=${TEST_EXECUTION_SHA}"
             echo "evidence_publication_sha=${EVIDENCE_PUBLICATION_SHA}"
+            echo "replay_checkout_sha=${EVIDENCE_PUBLICATION_SHA}"
             echo "actual_head_sha=$(git rev-parse HEAD)"
             echo "github_workflow_ref=${{ github.workflow_ref }}"
             echo "github_workflow_sha=${{ github.workflow_sha }}"
