@@ -5,9 +5,10 @@
 | EBH7_CLOSURE_IMPLEMENTATION_SHA | `d4937889fc0b07515649dbdddf602df2a4415489` (pre-B6 terminal closure — lineage) |
 | EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA | `8afff322cb2525f0106c2bbccf2d44f682d3e0df` |
 | EBH7_B5_TEST_EXECUTION_SHA (historical) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` — 195 passed; `tests/qualification/ebh_7/` shadowed (F10-P03-PROFILE-SHADOW) |
-| TEST_EXECUTION_SHA | `74e2191dd4eaad544b2146f505fe691d459997b3` (B6-F10 computed certification + F10-derived fixes) |
+| TEST_EXECUTION_SHA | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` (B6-F10 computed certification + F10-derived fixes) |
 | Profile | MANIFEST `pytest_profile` — full `tests/qualification/ebh_7/` + F10 regression nodes |
 | Local pre-publication run | Windows, replay HEAD `6558d396607bb3cc58c39c0a64435d23545ed0fe`: 575 passed / 8 skipped; 7 documentation-sync failures fixed in this publication; F10 JUnit attestation PASS (56 nodes, 0 problems) |
+| First B6-F10 GHA replay (superseded) | run `41227765200` @ `c1dc4f838d172d7624ecdec306854ab652f4a348` (TEST `74e2191dd`): 579 passed / 3 failed / 8 skipped; F10 attestation PASS — failures were clean-checkout defects (F10-P03-DIRTY-TREE) |
 | Log | `.tmp/session/ebh7-f10-cert/l2-profile-C.log` |
 | Authoritative replay | GitHub Actions — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
 

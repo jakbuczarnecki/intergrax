@@ -28,8 +28,9 @@
 | EBH7_B6_F10_F11_CORRECTIVE_SHA | B6 F10 (declarative, rejected) + F11 corrective | `687ed0c19bb76411cacb1226016a3b24546b9189` |
 | EBH7_B6_F10_CERTIFICATION_START_SHA | Computed C1–C5 certification over closed obligation sets | `ec7500ee98706ec83ada3cbbae1996cba8ef0a0e` |
 | EBH7_B6_F10_STATE_FIX_SHA | + SQLite memory load fix (F10-C4-STATE-REG-01) + shadowed-profile coverage | `a803191ad380dfe7faa9cee58f10186d6cbab273` |
-| EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA | + F10-derived findings registered with executable resolutions | `74e2191dd4eaad544b2146f505fe691d459997b3` |
-| TEST_EXECUTION_SHA | B6-F10 L3 replay (full `tests/qualification/ebh_7/` + F10 regression nodes) | `74e2191dd4eaad544b2146f505fe691d459997b3` |
+| EBH7_B6_F10_FINDINGS_REGISTER_SHA | + F10-derived findings registered with executable resolutions; first B6-F10 GHA replay `41227765200` (3 failed — clean-checkout defects) | `74e2191dd4eaad544b2146f505fe691d459997b3` |
+| EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA | + mechanism census over tracked tree (B6-F10-P03-DIRTY-TREE) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
+| TEST_EXECUTION_SHA | B6-F10 L3 replay (full `tests/qualification/ebh_7/` + F10 regression nodes) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
 | EVIDENCE_PUBLICATION_SHA | B6-F10 P03 dossier publication | `69ebb14421aacda264044314d609e58b21635e21` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |

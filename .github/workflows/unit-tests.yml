@@ -53,7 +53,7 @@ concurrency:
     ${{ github.event.inputs.profile == 'diagnostics_full'
         && format('diagnostics-full-qualification-{0}', github.event.inputs.qualification_sha)
         || (github.event.inputs.profile == 'ebh7_p3_l3'
-        && format('ebh7-p03-l3-{0}-{1}', github.event.inputs.ebh7_test_execution_sha || '74e2191dd4eaad544b2146f505fe691d459997b3', github.event.inputs.ebh7_evidence_publication_sha || '69ebb14421aacda264044314d609e58b21635e21'))
+        && format('ebh7-p03-l3-{0}-{1}', github.event.inputs.ebh7_test_execution_sha || '496016c0cf6cc5cf1f9a29d885677605dd0415d3', github.event.inputs.ebh7_evidence_publication_sha || '69ebb14421aacda264044314d609e58b21635e21'))
         || format('regression-gate-{0}-{1}-{2}', github.event_name, github.ref, github.event.inputs.profile || 'smoke') }}
   cancel-in-progress: >-
     ${{ github.event_name == 'pull_request'
@@ -691,11 +691,11 @@ jobs:
     timeout-minutes: 45
 
     env:
-      EBH7_DEFAULT_TEST_EXECUTION_SHA: 74e2191dd4eaad544b2146f505fe691d459997b3
+      EBH7_DEFAULT_TEST_EXECUTION_SHA: 496016c0cf6cc5cf1f9a29d885677605dd0415d3
       EBH7_DEFAULT_EVIDENCE_PUBLICATION_SHA: 69ebb14421aacda264044314d609e58b21635e21
       EBH7_MANIFEST_PATH: docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json
       TEST_EXECUTION_SHA: >-
-        ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || '74e2191dd4eaad544b2146f505fe691d459997b3' }}
+        ${{ github.event.inputs.ebh7_test_execution_sha != '' && github.event.inputs.ebh7_test_execution_sha || '496016c0cf6cc5cf1f9a29d885677605dd0415d3' }}
       EVIDENCE_PUBLICATION_SHA: >-
         ${{ github.event.inputs.ebh7_evidence_publication_sha != '' && github.event.inputs.ebh7_evidence_publication_sha || '69ebb14421aacda264044314d609e58b21635e21' }}
       P03_REPLAY_HEAD_SHA: >-

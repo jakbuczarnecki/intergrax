@@ -4,7 +4,7 @@
 | --- | --- |
 | **Agent status** | B6-F10 rebuilt as computed certification (closed normative sets C1–C5) · **READY FOR INDEPENDENT B6 RE-AUDIT** only if the F10 execution attestation of the L3 replay is clean |
 | **Historical audited HEAD (superseded)** | see `EBH_7_SHA_LADDER.md` pre-B5 dossier generation |
-| **TEST_EXECUTION_SHA (certified L3 code)** | `74e2191dd4eaad544b2146f505fe691d459997b3` |
+| **TEST_EXECUTION_SHA (certified L3 code)** | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
 | **B5 TEST_EXECUTION_SHA (historical)** | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | **B5 canonical GHA replay (historical)** | run `41214574614` @ checkout `210accb224aad276a472307c8fefe3798bd44f10` |
 | **B6-F10 GHA replay** | see [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |

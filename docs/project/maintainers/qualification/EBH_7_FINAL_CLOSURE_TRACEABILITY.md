@@ -10,8 +10,8 @@
 | B | INT2E bundles | `test_ebh_7_int2e_bundle_regression.py` | TEST_EXECUTION |
 | C | RPL-H normative | `assert_ebh7_rpl_h_normative_for_b6_readiness` | B6 prep |
 | D | XDM integrated | `test_ebh_7_certification_ssot_gates` | TEST_EXECUTION |
-| E | ECAP C1–C5 | `test_b6_f10_normative_certification_computed` → `EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md` + §14 computed block | TEST_EXECUTION `74e2191dd4eaad544b2146f505fe691d459997b3` |
-| F | L3 consolidated | MANIFEST `pytest_profile` (full `tests/qualification/ebh_7/`) | `74e2191dd4eaad544b2146f505fe691d459997b3` |
+| E | ECAP C1–C5 | `test_b6_f10_normative_certification_computed` → `EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md` + §14 computed block | TEST_EXECUTION `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
+| F | L3 consolidated | MANIFEST `pytest_profile` (full `tests/qualification/ebh_7/`) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
 | G | P03 B1–B5 | `ebh_7_p03_independent_replay/MANIFEST.json` | EVIDENCE per MANIFEST |
 | H | B5 immutable replay (historical) | GHA `41214574614` @ `210accb22…` (TEST `4eb7eb1a…`) | B5 proof |
 | H2 | B6-F10 L3 replay + JUnit attestation | `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md` | B6-F10 proof |

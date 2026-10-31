@@ -1,8 +1,8 @@
 # EBH-7 — Closure evidence audit matrix (G01–G09)
 
-**TEST_EXECUTION_SHA:** `74e2191dd4eaad544b2146f505fe691d459997b3`
+**TEST_EXECUTION_SHA:** `496016c0cf6cc5cf1f9a29d885677605dd0415d3`
 
-**OPEN_FINDING count:** 0 (must be 0 before independent B6)
+**OPEN_FINDING count:** 4 (must be 0 before independent B6)
 
 **Authority:** `tests/qualification/ebh_7/_ebh7_closure_evidence_audit.py`
 
@@ -130,7 +130,7 @@
 | G05 | EBH7-XDM-034 | PASS | tests.qualification.dup_x.test_dup_x_b4_npsc_orchestration_backend_negative_boundary::test_b4_mat... | REJECT |
 | G06 | INT2E bundle regression | N/A_WITH_EVIDENCE | import_smoke_modules=33; tests/qualification/ebh_7/test_ebh_7_int2e_bundle_regression.py | Not full platform E2E — changed-bundle import + relational/message_bus resolv... |
 | G07 | ECAP C1–C5 + PROHIBITED | PASS | assert_ebh7_rpl_certification_ssot + assert_ebh7_ten_xdm_evidence_ssot; count_prohibited_unresolv... | ECAP C1–C5 derived @ HEAD — agent readiness only (not independent B6 acceptance) |
-| G08 | Protocol 03 replay + digests | PASS | assert_ebh7_p03_* integrity bundle (excludes closure audit — replay vs acceptance separation) | Independent auditor must checkout TEST_EXECUTION_SHA and replay MANIFEST pyte... |
+| G08 | Protocol 03 replay + digests | OPEN_FINDING | ebh_7_p03_independent_replay/MANIFEST.json; _ebh7_p03_evidence_integrity.py | Evidence publication must be at or after TEST_EXECUTION_SHA |
 | G09 | W6-ID-REGISTRY-ONLY | PASS | tests/qualification/ebh_7/test_ebh_7_semantic_proof_binding_gates.py::test_ebh7_semantic_exact_bl... | CORRECTIVE_PYTEST: TEN/XDM EXACT counts + disposition registry — not scenario... |
 | G09 | W6-TENANT-X-FINAL-READY | PASS | docs/project/maintainers/qualification/EBH_7_INDEPENDENT_AUDIT_CORRECTIVE_FINDINGS.md@TENANT-X | HISTORICAL_SUPERSEDED: Removed as platform E2E substitute; mapped proofs only... |
 | G09 | W7-HASATTR-DUP-X | PASS | tests/qualification/ebh_7/test_ebh_7_semantic_proof_binding_gates.py::test_ebh7_b6_readiness_mand... | CORRECTIVE_PYTEST: Executable proof bindings — not hasattr(dup_exit) |
@@ -144,14 +144,15 @@
 | G09 | B6-F01-EXTERNAL-WORK-DUAL-INSTANCE | PASS | tests.qualification.ebh_5._external_work_dual_provider_proof:prove_external_work_dual_profile_bin... | CORRECTIVE_ASSERT: Qual alpha/beta + IntegrationProfile selection + contract ops |
 | G09 | B6-F02-PRODQ-TEXT-PREFIX-NEGATIVE | PASS | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_internal_rpl_negative | CORRECTIVE_PYTEST: prove_prodq_colocated_adapter_internal_negative @ terminal... |
 | G09 | B6-F03-TEN-XDM-DOC-CONFLICT | PASS | tests.qualification.ebh_7._ebh7_certification_ssot:assert_ebh7_ten_xdm_evidence_ssot | CORRECTIVE_ASSERT: SSOT 26/0 TEN and 34/0 XDM @ registry + consistency matrix |
-| G09 | B6-F04-P03-TEST-CLOSURE-SHA | PASS | tests.qualification.ebh_7._ebh7_p03_evidence_integrity:assert_ebh7_p03_manifest_role_integrity | CORRECTIVE_ASSERT: TEST_EXECUTION_SHA descends from B6 corrective — not closu... |
+| G09 | B6-F04-P03-TEST-CLOSURE-SHA | OPEN_FINDING | tests.qualification.ebh_7._ebh7_p03_evidence_integrity:assert_ebh7_p03_manifest_role_integrity | B6-F04-P03-TEST-CLOSURE-SHA: assert hook failed — Evidence publication must b... |
 | G09 | B6-F07-RPL-EF-PROOF-STRENGTH | PASS | tests.qualification.ebh_5._dual_slug_rpl_ef_matrix:assert_dual_slug_rpl_ef_matrix_complete | CORRECTIVE_ASSERT: 28-row F07 matrix + Package C v2 CDE operational surface |
-| G09 | B6-F08-ECAP-P03-DERIVED-GATES | PASS | tests.qualification.ebh_7._ebh7_closure_evidence_audit:assert_ebh7_ecap_p03_derived_closure_gates | CORRECTIVE_ASSERT: G07/G08 derive from certification + P03 integrity — not st... |
-| G09 | B6-F09-FINDING-RESOLUTION-EVIDENCE | PASS | tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity | CORRECTIVE_ASSERT: Complete resolution map validated without recursive self-call |
+| G09 | B6-F08-ECAP-P03-DERIVED-GATES | OPEN_FINDING | tests.qualification.ebh_7._ebh7_closure_evidence_audit:assert_ebh7_ecap_p03_derived_closure_gates | B6-F08-ECAP-P03-DERIVED-GATES: assert hook failed — Evidence publication must... |
+| G09 | B6-F09-FINDING-RESOLUTION-EVIDENCE | OPEN_FINDING | tests.qualification.ebh_7._gate_finding_resolution:assert_ebh7_f09_resolution_registry_integrity | B6-F09-FINDING-RESOLUTION-EVIDENCE: assert hook failed — B6-F04-P03-TEST-CLOS... |
 | G09 | B6-F10-ECAP-NORMATIVE-C1-C5 | PASS | tests.qualification.ebh_7._ebh7_f10_ecap_normative_matrix:assert_ebh7_f10_ecap_normative_ready | CORRECTIVE_ASSERT: Computed C1–C5 verdict — READY FOR INDEPENDENT RE-AUDIT on... |
 | G09 | B6-F10-C1-STALE-GATE-REG | PASS | tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py::test_aj_evidence_requir... | CORRECTIVE_PYTEST: Renamed FRZ-REG successor gate executed in L3 profile |
 | G09 | B6-F10-C4-STATE-REG-01 | PASS | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_substrate_rpl_positive | CORRECTIVE_PYTEST: FIXED substrate round-trip incl. memory.sqlite.conversational |
 | G09 | B6-F10-P03-PROFILE-SHADOW | PASS | tests/qualification/ebh_7/test_ebh_7_b6_f10_certification_adversarial.py::test_f10_adv_directory_... | CORRECTIVE_PYTEST: Shadowed directory argument is not execution evidence |
+| G09 | B6-F10-P03-DIRTY-TREE | PASS | tests/qualification/ebh_7/test_ebh_7_mechanism_gates.py::test_ebh7_w1_mechanism_registry_closed_w... | CORRECTIVE_PYTEST: Mechanism count over the tracked tree; identical on local ... |
 | G09 | B6-F10-CFG-ISO-01 | PASS | tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_prod... | CORRECTIVE_PYTEST: Runs after CONFIG-X gates in the L3 profile order |
 | G09 | B6-F11-DOSSIER-STALE-REPLAY | PASS | tests/qualification/ebh_7/test_ebh_7_b6_f10_f11_corrective_gates.py::test_b6_f11_dossier_replay_p... | CORRECTIVE_PYTEST: MANIFEST profile + B5 run + TEST_EXECUTION_SHA in dossier |
 

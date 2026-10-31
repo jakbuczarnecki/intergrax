@@ -1,6 +1,6 @@
 {
-  "TEST_EXECUTION_SHA": "74e2191dd4eaad544b2146f505fe691d459997b3",
-  "TEST_EXECUTION_NOTE": "B6-F10 computed normative certification (closed obligation sets C1-C5) @ 74e2191dd; B5 test execution 4eb7eb1a preserved in SHA ladder",
+  "TEST_EXECUTION_SHA": "496016c0cf6cc5cf1f9a29d885677605dd0415d3",
+  "TEST_EXECUTION_NOTE": "B6-F10 computed normative certification (closed obligation sets C1-C5) @ 496016c0c; B5 test execution 4eb7eb1a preserved in SHA ladder",
   "EVIDENCE_PUBLICATION_SHA": "69ebb14421aacda264044314d609e58b21635e21",
   "INDEPENDENT_ACCEPTANCE_BASELINE_SHA": "PENDING_B6_PASS",
   "FORMAL_CLOSURE_PUBLICATION_SHA": "PENDING_OD_EBH7_08",
@@ -48,5 +48,5 @@
     "EVOL-X entry",
     "global FRZ PASS"
   ],
-  "EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA": "74e2191dd4eaad544b2146f505fe691d459997b3"
+  "EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA": "496016c0cf6cc5cf1f9a29d885677605dd0415d3"
 }

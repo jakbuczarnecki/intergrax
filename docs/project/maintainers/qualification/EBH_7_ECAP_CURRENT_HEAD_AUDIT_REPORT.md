@@ -24,7 +24,7 @@ Canonical closed sets: 26 FRZ families (freeze checklist IDs), Tier-0..3 (`AGENT
 ECAP-C5 (this report) is evaluated against the block below and the F10 matrix by the read-only gate; its computed verdict is published only in the F10 matrix.
 
 <!-- F10-COMPUTED:BEGIN (generated — scripts/qualification/render_ebh7_f10_normative_matrix.py) -->
-**Computed from closed normative sets @ TEST_EXECUTION_SHA `74e2191dd4eaad544b2146f505fe691d459997b3`** (C5 verified by read-only gate; no hand-assigned verdicts).
+**Computed from closed normative sets @ TEST_EXECUTION_SHA `496016c0cf6cc5cf1f9a29d885677605dd0415d3`** (C5 verified by read-only gate; no hand-assigned verdicts).
 
 | ECAP gate | Computed verdict | Obligations | PASS | N/A WITH EVIDENCE | FAIL |
 | --- | --- | --- | --- | --- | --- |
@@ -47,6 +47,7 @@ ECAP-C5 (this report) is evaluated against the block below and the F10 matrix by
 | F10-C1-STALE-GATE-REG | Stale family gate node | FRZ-REG (EBH-6 `_family_l9_evidence.py`) | Gate pointed to removed `test_aj_evidence_required_honest_not_zero`; rebound to its renamed successor `test_aj_evidence_required_matches_t2_bundle_gaps`; EBH-6 gate-node test now requires the function to exist (previously file-only) |
 | F10-C4-STATE-REG-01 | Production regression (state-recovery) | `intergrax/memory/stores/sqlite_conversational_memory_store.py` | `load_memory` called `typing.Literal` `MessageRole(...)` → `TypeError` on every reload (introduced by `8afff322`); fixed with closed-role validation @ `a803191ad`; C4 regression `test_ebh7_fixed_substrate_rpl_positive[memory.sqlite.conversational]` |
 | F10-P03-PROFILE-SHADOW | Replay coverage gap | MANIFEST `pytest_profile` | Four `ebh_7` files listed before `tests/qualification/ebh_7/` made pytest 8 collect only those four (195-node B5 runs); shadowing members removed; coverage helper no longer credits a shadowed directory (adversarial gate) |
+| F10-P03-DIRTY-TREE | Non-reproducible census | EBH-7 W1 mechanism registry; EBH-6 wiring discovery | Clean-checkout GHA run `41227765200` failed: 447 of the historical 685 MECH rows came from the gitignored `docker/runtime-context/` copy; discovery now excludes it (238 on local and CI). Local-only `.tmp/proof` staging check skips when absent |
 | F10-CFG-ISO-01 | Test isolation | CONFIG-X FRZ-CFG-07 gates | `clear_catalog()` without bootstrap reset broke later W5-B2 composition tests; fixture restores default integration catalog state |
 
 Historical corrective findings F01–F09 and F11: unchanged (see `_gate_findings_register.py`).
@@ -67,7 +68,7 @@ Historical corrective findings F01–F09 and F11: unchanged (see `_gate_findings
 
 ## H. Impact on historical certification
 
-- B6-F10 code (qualification infrastructure + the F10-C4-STATE-REG-01 production fix) → new TEST_EXECUTION_SHA `74e2191dd4eaad544b2146f505fe691d459997b3` (ladder) and new GitHub Actions replay; prior B5 run `41214574614` retained as historical B5 evidence only — it never executed the full `ebh_7` directory (F10-P03-PROFILE-SHADOW).
+- B6-F10 code (qualification infrastructure + the F10-C4-STATE-REG-01 production fix) → new TEST_EXECUTION_SHA `496016c0cf6cc5cf1f9a29d885677605dd0415d3` (ladder) and new GitHub Actions replay; prior B5 run `41214574614` retained as historical B5 evidence only — it never executed the full `ebh_7` directory (F10-P03-PROFILE-SHADOW).
 
 ## I. Scenario readiness / architecture-change risk
 
