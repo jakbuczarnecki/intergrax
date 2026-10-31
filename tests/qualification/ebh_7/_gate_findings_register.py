@@ -93,6 +93,26 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
             "28 dual-slug qualified via RPL-C/D/E; EBH_7_RPL_FINAL_CONVERGENCE_DECISION_MATRIX.md"
         ),
     ),
+    GateFinding(
+        gate_id="B6-F01-EXTERNAL-WORK-DUAL-INSTANCE",
+        prior_claim="Two InMemoryExternalWorkIntegration instances = replaceability",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.BEHAVIORAL,
+        correction=(
+            "QualExternalWorkAlpha/Beta integrations + IntegrationProfile selection; "
+            "contract ops, failure isolation, profile fail-closed"
+        ),
+    ),
+    GateFinding(
+        gate_id="B6-F02-PRODQ-TEXT-PREFIX-NEGATIVE",
+        prior_claim="factory.py startswith('prodq gate') = PROD-Q negative",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.BEHAVIORAL,
+        correction=(
+            "_internal_rpl_behavioral_proofs: VenvBundleColocated positive; "
+            "FakeInMemory adapter → StrictProductionServingLauncherError"
+        ),
+    ),
 )
 
 

@@ -69,10 +69,7 @@ class SQLiteConversationalMemoryStore(ConversationalMemoryStore):
         if not isinstance(raw, dict):
             raise ValueError("corrupt conversational memory payload")
         envelope = parse_conversational_memory_persisted(raw)
-        messages = [
-            ChatMessage(role=MessageRole(item.role), content=item.content)
-            for item in envelope.messages
-        ]
+        messages = [ChatMessage(role=MessageRole(item.role), content=item.content) for item in envelope.messages]
         limit = max_messages or envelope.max_messages
         memory = ConversationalMemory(session_id=session_id, max_messages=limit)
         for message in messages:
@@ -85,14 +82,15 @@ class SQLiteConversationalMemoryStore(ConversationalMemoryStore):
         tenant_id: str,
         memory: ConversationalMemory,
     ) -> None:
+        limit = memory._max_messages if memory._max_messages is not None else 100
         envelope = ConversationalMemoryPersistedPayload(
-            max_messages=memory.max_messages,
+            max_messages=limit,
             messages=tuple(
                 ConversationalMemoryMessageWire(
-                    role=message.role.value,
+                    role=str(message.role),
                     content=message.content,
                 )
-                for message in memory.messages
+                for message in memory.get_all()
             ),
         )
         payload = envelope.model_dump(mode="json")
