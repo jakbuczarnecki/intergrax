@@ -32,12 +32,11 @@ def test_ebh7_semantic_audit_markdown_matches_ssot() -> None:
     assert_semantic_audit_markdown_matches_ssot()
 
 
-@pytest.mark.xfail(reason="B6 blocked until 60/60 EXACT_PROOF", strict=False)
 def test_ebh7_b6_readiness_mandatory_exact_coverage() -> None:
     assert_ebh7_semantic_mandatory_exact_coverage()
 
 
 def test_ebh7_semantic_exact_blocker_counts_registered() -> None:
     ten_exact, ten_open, xdm_exact, xdm_open = semantic_exact_counts()
-    assert ten_exact == 25 and ten_open == 1
-    assert xdm_exact == 33 and xdm_open == 1
+    assert ten_exact == 26 and ten_open == 0
+    assert xdm_exact == 34 and xdm_open == 0

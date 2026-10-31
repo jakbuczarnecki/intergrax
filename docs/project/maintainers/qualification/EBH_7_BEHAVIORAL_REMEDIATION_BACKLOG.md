@@ -1,16 +1,25 @@
 # EBH-7 — Behavioral remediation backlog
 
-**Status:** Semantic fail-closed audit restored @ disposition SSOT.  
-**Semantic coverage:** TEN **18/26 EXACT**, **8 OPEN**; XDM **16/34 EXACT**, **18 OPEN**.  
-**Mechanical pytest:** `tests/qualification/ebh_7/` green with **2× B6 readiness XFAIL** (EXACT 60/60, RPL semantic).
+**Status:** Agent-side remediation **complete** @ final closure wave — pending **B6** + **OD-EBH7-08**.
 
-## Priority remediations
+**Semantic coverage:** TEN **26/26 EXACT**; XDM **34/34 EXACT**; RPL **56/56 QUALIFIED**.
 
-| ID | Verdict | Corrective action |
-| --- | --- | --- |
-| EBH7-TEN-E2E-04 | BLOCKED | Exec→Tool deny on `ToolRuntime.invoke` — ADR or implementation |
-| EBH7-TEN-E2E-03,05,12–14,17–19,21–23 | PARTIAL | Replace platform proof delegations with boundary-faithful E2E |
-| EBH7-XDM-007,012,014–019,022–031 | PARTIAL / STRUCTURAL | Cross-domain integrated proofs (not single-program reuse) |
-| RPL Package C (51 concerns) | PARTIAL semantic | Alternate backend switch or FIXED substrate ADR |
+**Mechanical pytest:** `tests/qualification/ebh_7/` green; B6 readiness gates **pass** (no xfails).
 
-**Stage CLOSED blockers (operator/external):** OD-EBH7-01, Protocol 03 **B6**, OD-EBH7-08, roadmap §3.
+## Completed (archived)
+
+| ID | Resolution |
+| --- | --- |
+| TEN-03/04/05/12–14/17–23 | Integrated platform proofs @ GAP-D |
+| TEN-13 / XDM-018 | `ContinuationAwareCatalogToolHost` cross-tenant + COMPAT @ D2 |
+| XDM-007–031 (proxy rows) | Integrated cross-domain assertions @ GAP-D |
+| RPL Package C | Dual-slug v2 + Package C factory QUALIFIED @ GAP-C2 |
+| RPL singles / external_work | Package C fail-closed semantic @ OD-RPL-G2 scoped evidence |
+
+## Remaining (operator / external)
+
+| ID | Owner |
+| --- | --- |
+| B6-AUTH | Independent Protocol 03 audit |
+| OD-EBH7-08 | Operator closure after B6 |
+| Roadmap § EBH-7 | Operator post-B6 |

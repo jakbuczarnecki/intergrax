@@ -24,5 +24,6 @@ def test_ebh7_batch_c_rpl_semantic_evidence_covers_matrix() -> None:
 def test_ebh7_batch_c_rpl_semantic_verdict_counts_recorded() -> None:
     counts = rpl_semantic_verdict_counts()
     assert sum(counts.values()) == 56
-    assert counts[RplSemanticVerdict.QUALIFIED] >= 6
-    assert counts[RplSemanticVerdict.BLOCKED] >= 6
+    assert counts[RplSemanticVerdict.QUALIFIED] == 56
+    assert counts[RplSemanticVerdict.BLOCKED] == 0
+    assert counts[RplSemanticVerdict.PARTIAL] == 0

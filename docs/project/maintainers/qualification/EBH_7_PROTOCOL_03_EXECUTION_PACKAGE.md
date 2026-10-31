@@ -2,11 +2,13 @@
 
 | Step | Status |
 | --- | --- |
-| B1 Evidence bundle assembly | READY |
+| B1 Evidence bundle assembly | READY @ CLOSURE_SHA |
 | B2 Independent reviewer worksheet | READY |
-| B3 Exact findings reconciliation | **IN PROGRESS** — Wave A doc sync; TEN-12 EXACT; INTEGRATIONS-2E document_store catalog contract |
-| B4 Remediation loop | **IN PROGRESS** — master completion waves A–D |
-| B5 Re-audit | **BLOCKED** — 60/60 EXACT + RPL semantic green required before B6 xfail removal |
+| B3 Exact findings reconciliation | **READY** — disposition SSOT 60/60 EXACT @ HEAD |
+| B4 Remediation loop | **COMPLETE** (agent) — gap-closure + final closure waves |
+| B5 Re-audit | **READY** — L3 EBH-7 green; B6 readiness gates pass |
 | B6 Independent audit PASS | **OPEN** — operator/independent only |
+
+**Dossier artifacts:** SHA ladder, ECAP report, semantic audit MD, pytest log under `.tmp/session/ebh-7-gap-closure/final-closure-pytest.log`.
 
 Agent materialization does **not** substitute B6 PASS or OD-EBH7-08.

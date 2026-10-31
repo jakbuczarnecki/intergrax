@@ -48,4 +48,4 @@ def test_ebh7_w7_cross_domain_semantic_open_register() -> None:
 
     exact = cross_domain_semantically_qualified_ids()
     assert len(pending) + len(exact) == 34
-    assert len(pending) == 1
+    assert len(pending) == 0

@@ -40,6 +40,9 @@
 - Protocol 03 B1–B5 dossier refreshed; **B6 OPEN**; **OD-EBH7-08 OPEN**
 - Cursor **does not** grant B6 or parent CLOSED
 
-## Explicit non-claims
+## Wave J — final closure (agent)
 
-EBH-7 CLOSED, B6 PASS, global FRZ PASS, ARCH-FREEZE, EVOL-X entry.
+- GAP-D D2 plugin host; **60/60 EXACT**; disposition + audit SSOT
+- GAP-C2 + GAP-B2 semantic: **56/56 RPL QUALIFIED**; B6 readiness xfails removed
+- ECAP + stage/gap docs @ CLOSURE_SHA; **B6 / OD-08 remain OPEN**
+

@@ -40,4 +40,4 @@ def test_ebh7_w6_tenant_e2e_semantic_open_register() -> None:
     open_ids = tenant_e2e_pending_scenario_ids()
     exact = tenant_e2e_semantically_qualified_ids()
     assert len(open_ids) + len(exact) == 26
-    assert len(open_ids) == 1
+    assert len(open_ids) == 0

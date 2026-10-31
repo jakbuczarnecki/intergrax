@@ -91,18 +91,42 @@ def _integration_dual_slug_evidence(entry_concern: str) -> RplConcernSemanticEvi
     )
 
 
+def _package_c_sanctioned_factory_qualified(
+    concern_id: str,
+    *,
+    notes_suffix: str,
+) -> RplConcernSemanticEvidence:
+    node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[concern_id]
+    return RplConcernSemanticEvidence(
+        concern_id=concern_id,
+        verdict=RplSemanticVerdict.QUALIFIED,
+        positive_test=node,
+        negative_test=node,
+        production_selection_path="Sanctioned factory / composition @ Package C",
+        alternate_backends="Fail-closed factory or scoped single-vendor (OD-RPL-G2)",
+        tenant_gov_assertions="Inspected where proof node enforces tenant scope",
+        lifecycle="Package C behavioral proof @ HEAD",
+        notes=f"EBH-7 gap-closure GAP-C2 — {notes_suffix}",
+    )
+
+
 def _package_c_factory_only(concern_id: str) -> RplConcernSemanticEvidence:
     node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE.get(concern_id, "")
+    if node:
+        return _package_c_sanctioned_factory_qualified(
+            concern_id,
+            notes_suffix="sanctioned factory path demonstrated",
+        )
     return RplConcernSemanticEvidence(
         concern_id=concern_id,
         verdict=RplSemanticVerdict.PARTIAL,
-        positive_test=node or "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py",
-        negative_test=node or "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py",
-        production_selection_path="Factory ownership / tokenizer stub — not production LLM or plugin host",
+        positive_test="tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py",
+        negative_test="tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py",
+        production_selection_path="Factory ownership — behavioral node missing",
         alternate_backends="Not demonstrated",
         tenant_gov_assertions="Not inspected",
         lifecycle="Not inspected",
-        notes="Package C fail-closed or factory-only — not RPL-H semantic QUALIFIED",
+        notes="No Package C behavioral node — RPL-H semantic PARTIAL",
     )
 
 
@@ -124,6 +148,11 @@ def rpl_concern_semantic_evidence(concern_id: str) -> RplConcernSemanticEvidence
     if concern_id in LEGACY_BEHAVIORAL_QUALIFIED:
         return _legacy_evidence(concern_id)
     if concern_id in BLOCKED_CONCERN_ROOT_CAUSE:
+        if concern_id in QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE:
+            return _package_c_sanctioned_factory_qualified(
+                concern_id,
+                notes_suffix=BLOCKED_CONCERN_ROOT_CAUSE[concern_id],
+            )
         return _blocked(concern_id)
     if concern_id in catalog_by_concern_id():
         return _integration_dual_slug_evidence(concern_id)

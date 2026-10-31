@@ -207,5 +207,76 @@ def assert_trace_replay_cross_tenant_denied() -> None:
     test_tenant_mismatch_blocks_materialization_pin_and_io()
 
 
+def assert_continuation_aware_catalog_tool_host_cross_tenant_denied() -> None:
+    from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+        ExecutionBoundCatalogToolInvokeRequest,
+    )
+    from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
+        ContinuationAwareCatalogToolHost,
+    )
+
+    registry = ToolRegistry()
+    tool_id = "ebh7.integrated.catalog_host"
+    registry.register(
+        tools_agent_make_contract(tool_id, _In, _Out),
+        _EchoHandler(),
+    )
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+    )
+    host = ContinuationAwareCatalogToolHost(tool_invoker=invoker)
+    run_id = canonical_run_id_for_tests("ebh7-ten-e2e-13")
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+        tool_invoker=invoker,
+    )
+    ctx = RuntimeContext(
+        config=config,
+        session_manager=build_in_memory_session_manager(),
+        prompt_registry=MagicMock(),
+        context_builder=MagicMock(),
+        rag_prompt_builder=MagicMock(),
+        websearch_executor=MagicMock(),
+        websearch_prompt_builder=MagicMock(),
+    )
+    request = RuntimeRequest(
+        agent_id="agent-ebh7",
+        user_id="user-ebh7",
+        session_id="session-ebh7",
+        tenant_id="tenant-ebh7-a",
+        message="catalog",
+        task_id="task_00000000000000000000000000000001",
+        run_id=run_id,
+    )
+    state = RuntimeState(
+        context=ctx,
+        request=request,
+        run_id=run_id,
+        session=ChatSession(
+            id="session-ebh7",
+            tenant_id="tenant-ebh7-a",
+            user_id="user-ebh7",
+        ),
+        tool_traces=[],
+    )
+    catalog_request = ExecutionBoundCatalogToolInvokeRequest(
+        tool_id=tool_id,
+        input=_In(),
+        tenant_id="tenant-ebh7-b",
+        task_id="task_00000000000000000000000000000001",
+        run_id=str(run_id),
+        agent_id="agent-ebh7",
+        step_id="step-ebh7-13",
+    )
+    with (
+        canonical_execution_identity_scope(run_id),
+        pytest.raises(ToolScopeViolationError),
+    ):
+        host.invoke(state=state, request=catalog_request, declarative_grant=None)
+
+
 def assert_plugin_host_compat_cross_tenant_activation_denied() -> None:
     test_r4_probe_g_cross_tenant_evidence()
+    assert_continuation_aware_catalog_tool_host_cross_tenant_denied()

@@ -222,8 +222,8 @@ def probe_relational_store_sqlite_duckdb_dual_slug(tmp_path: Path) -> None:
 
 
 def probe_plugin_host_activation_cross_tenant_open() -> None:
-    """Placeholder — canonical host activation cross-tenant test not yet implemented."""
-    pytest.skip(
-        "BLOCKER: continuation_aware_catalog_tool_host cross-tenant activation "
-        "requires dedicated qualification harness — not COMPAT assess",
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_continuation_aware_catalog_tool_host_cross_tenant_denied,
     )
+
+    assert_continuation_aware_catalog_tool_host_cross_tenant_denied()
