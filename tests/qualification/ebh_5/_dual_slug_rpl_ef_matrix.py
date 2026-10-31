@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from intergrax.runtime.integrations.contract_metadata import contract_for_category
 from tests.qualification.ebh_5._dual_slug_rpl_ef_contract_evidence import (
     canonical_rpl_e_guarantees,
     dual_slug_rpl_ef_positive_negative_nodes,
@@ -38,6 +37,8 @@ class DualSlugRplEfMatrixRow:
 
 
 def _row_for_entry(entry: IntegrationDualSlugCatalogEntry) -> DualSlugRplEfMatrixRow:
+    from intergrax.runtime.integrations.contract_metadata import contract_for_category
+
     contract_cls = contract_for_category(entry.category.value)
     pos, neg = dual_slug_rpl_ef_positive_negative_nodes(entry)
     guarantees = canonical_rpl_e_guarantees(entry)
