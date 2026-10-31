@@ -21,8 +21,27 @@ def test_ebh7_mutation_scope_residual_empty_when_not_approved() -> None:
 
 def test_ebh7_mutation_scope_residual_poison_fails_b6(monkeypatch: pytest.MonkeyPatch) -> None:
     from tests.qualification.ebh_7 import _ebh7_scope_residual_register as reg
+    from tests.qualification.ebh_7 import _rpl_h_normative_evidence as norm_mod
     from tests.qualification.ebh_7._rpl_h_normative_evidence import assert_ebh7_rpl_h_normative_for_b6_readiness
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
 
+    real_rows = norm_mod.all_normative_rpl_rows()
+    poisoned = tuple(
+        norm_mod.NormativeRplRow(
+            concern_id=real_rows[0].concern_id,
+            semantic_verdict=RplSemanticVerdict.PARTIAL,
+            verified_status=norm_mod.RplVerifiedStatus.FACTORY_ONLY,
+            positive_test=real_rows[0].positive_test,
+            negative_test=real_rows[0].negative_test,
+            defect="mutation partial",
+            task_id="MUT",
+            acceptance="fail",
+        )
+        if i == 0
+        else row
+        for i, row in enumerate(real_rows)
+    )
+    monkeypatch.setattr(norm_mod, "all_normative_rpl_rows", lambda: poisoned)
     monkeypatch.setattr(reg, "OD_EBH7_SCOPE_RESIDUAL_APPROVED", True)
     monkeypatch.setattr(reg, "_SCOPE_RESIDUAL_CONCERN_IDS", frozenset({"integration.fake_concern"}))
     with pytest.raises(AssertionError, match="RPL B6 blockers"):

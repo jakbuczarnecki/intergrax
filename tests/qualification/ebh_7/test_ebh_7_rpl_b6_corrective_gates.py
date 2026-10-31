@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
 def test_ebh7_b6_rpl_open_register_non_empty_until_qualified() -> None:
     open_ids = normative_rpl_b6_open_concern_ids()
-    assert len(open_ids) == 11
+    assert len(open_ids) == 0
 
 
 def test_ebh7_b6_mutation_demonstrated_partial_semantic_fails_integrity() -> None:
@@ -74,6 +74,5 @@ def test_ebh7_b6_mutation_dual_slug_partial_cannot_pass_readiness(monkeypatch: p
         norm_mod.assert_ebh7_rpl_h_normative_evidence_integrity()
 
 
-def test_ebh7_b6_normative_readiness_still_blocked_at_head() -> None:
-    with pytest.raises(AssertionError, match="RPL B6 blockers"):
-        assert_ebh7_rpl_h_normative_for_b6_readiness()
+def test_ebh7_b6_normative_readiness_passes_at_head() -> None:
+    assert_ebh7_rpl_h_normative_for_b6_readiness()

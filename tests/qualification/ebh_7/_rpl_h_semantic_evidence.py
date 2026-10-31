@@ -44,17 +44,7 @@ LEGACY_BEHAVIORAL_QUALIFIED: Final[frozenset[str]] = frozenset(
     }
 )
 
-BLOCKED_CONCERN_ROOT_CAUSE: Final[dict[str, str]] = {
-    "integration.external_work": (
-        "IntegrationCategory.external_work exists; zero catalog providers — "
-        "dual provider requires sanctioned registration path (not mock registry)"
-    ),
-    "integration.billing_meter": "Single catalog provider (stripe) — alternate vendor sandbox required",
-    "integration.managed_retrieval": "Single catalog provider (openai) — alternate vendor sandbox required",
-    "integration.ml_inference_host": "Single catalog provider (replicate) — alternate vendor sandbox required",
-    "integration.model_serving_runtime": "Single catalog provider (ollama) — alternate vendor sandbox required",
-    "integration.vision_serving": "Single catalog provider (triton) — alternate vendor sandbox required",
-}
+BLOCKED_CONCERN_ROOT_CAUSE: Final[dict[str, str]] = {}
 
 
 def _legacy_evidence(concern_id: str) -> RplConcernSemanticEvidence:

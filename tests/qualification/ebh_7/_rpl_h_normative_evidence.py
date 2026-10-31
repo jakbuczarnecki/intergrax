@@ -24,6 +24,8 @@ class RplVerifiedStatus(StrEnum):
     DUAL_SLUG_REGISTRY_ONLY = "DUAL_SLUG_REGISTRY_ONLY"
     COMPOSED_PROXY = "COMPOSED_PROXY"
     FIXED_SUBSTRATE_PENDING_OD = "FIXED_SUBSTRATE_PENDING_OD"
+    FIXED_SUBSTRATE_RATIFIED = "FIXED_SUBSTRATE_RATIFIED"
+    INTERNAL_RATIFIED = "INTERNAL_RATIFIED"
     PRODUCTION_GAP = "PRODUCTION_GAP"
     BLOCKED_ARCHITECTURE = "BLOCKED_ARCHITECTURE"
 
@@ -41,6 +43,15 @@ class NormativeRplRow:
 
 
 def _classify(concern_id: str) -> NormativeRplRow:
+    from tests.qualification.ebh_5._terminal_rpl_normative_nodes import (
+        FIXED_RPL_CONCERNS,
+        INTERNAL_RPL_CONCERNS,
+        fixed_rpl_negative_node,
+        fixed_rpl_positive_node,
+        internal_rpl_negative_node,
+        internal_rpl_positive_node,
+    )
+
     if concern_id in LEGACY_BEHAVIORAL_QUALIFIED:
         node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[concern_id]
         return NormativeRplRow(
@@ -52,6 +63,32 @@ def _classify(concern_id: str) -> NormativeRplRow:
             defect="Legacy EBH-5 behavioral — maintain mutation gates",
             task_id="EBH7-W2-RPL-LEGACY",
             acceptance="Distinct negative + RPL-F where applicable",
+        )
+    if concern_id in INTERNAL_RPL_CONCERNS:
+        pos = internal_rpl_positive_node(concern_id)
+        neg = internal_rpl_negative_node(concern_id)
+        return NormativeRplRow(
+            concern_id=concern_id,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.INTERNAL_RATIFIED,
+            positive_test=pos,
+            negative_test=neg,
+            defect="EBH-7 INTERNAL ratified @ operator ADR — extensibility not claimed",
+            task_id="EBH7-TERMINAL-INTERNAL",
+            acceptance="ADR + tier ownership gate; no alternate backend",
+        )
+    if concern_id in FIXED_RPL_CONCERNS:
+        pos = fixed_rpl_positive_node(concern_id)
+        neg = fixed_rpl_negative_node(concern_id)
+        return NormativeRplRow(
+            concern_id=concern_id,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.FIXED_SUBSTRATE_RATIFIED,
+            positive_test=pos,
+            negative_test=neg,
+            defect="EBH-7 FIXED substrate ratified @ OD-RPL-G2 — not vendor-equivalent",
+            task_id="EBH7-TERMINAL-FIXED",
+            acceptance="Fixed substrate decision record + fail-closed contract gate",
         )
     if concern_id in BLOCKED_CONCERN_ROOT_CAUSE:
         return NormativeRplRow(
@@ -163,6 +200,11 @@ def assert_ebh7_rpl_h_normative_evidence_integrity() -> None:
             assert row.semantic_verdict is RplSemanticVerdict.BLOCKED
         if row.verified_status is RplVerifiedStatus.FACTORY_ONLY:
             assert row.semantic_verdict is RplSemanticVerdict.PARTIAL
+        if row.verified_status in (
+            RplVerifiedStatus.INTERNAL_RATIFIED,
+            RplVerifiedStatus.FIXED_SUBSTRATE_RATIFIED,
+        ):
+            assert row.semantic_verdict is RplSemanticVerdict.QUALIFIED
         if row.verified_status is RplVerifiedStatus.DEMONSTRATED:
             assert row.semantic_verdict is RplSemanticVerdict.QUALIFIED, (
                 f"{row.concern_id}: DEMONSTRATED verified_status requires QUALIFIED semantic verdict"

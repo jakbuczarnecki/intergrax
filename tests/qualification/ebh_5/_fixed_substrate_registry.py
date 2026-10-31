@@ -92,6 +92,38 @@ _FIXED_SUBSTRATE_DECISIONS: Final[tuple[FixedSubstrateDecisionRecord, ...]] = (
         decision_status=FixedSubstrateDecisionStatus.RATIFIED,
         decision_evidence_sha="OD-EBH5-04-B @ 2026-10-28; GAP-01 @ ffe0aae8d2b64a558a18226cc1435f0058ff561b",
     ),
+    FixedSubstrateDecisionRecord(
+        substrate_id="ebh7-conversational-memory-sqlite-lab",
+        technology="SQLite conversational memory store (lab scope)",
+        scope_paths="intergrax/memory/stores/sqlite_conversational_memory_store.py",
+        canonical_contract="Conversational memory store port — sqlite lab substrate only",
+        ratification_authority="Operator 2026-10-31 — EBH-7 OD-RPL-G2 scoped conversational SQLite lab",
+        adr_ref="EBH_7_FIXED_SUBSTRATE_RATIFICATIONS.md; EBH_5_SQLITE_ANNEX scoped slice",
+        multi_instance_constraints="Lab/single-node conversational persistence — not full memory abstraction FIXED",
+        review_date="2026-10-31 — EBH-7 terminal closure",
+        inventory_concern_ids=("memory.sqlite.conversational",),
+        decision_status=FixedSubstrateDecisionStatus.RATIFIED,
+        decision_evidence_sha="fd3bc0104c9273f30262946afb16c15c04c8493a operator authorization",
+    ),
+    FixedSubstrateDecisionRecord(
+        substrate_id="ebh7-integration-single-slug-vendor-slice",
+        technology="Single catalog slug per integration category (Path B boundary)",
+        scope_paths="intergrax/integrations/providers/** — one production slug per EBH-7 blocked category",
+        canonical_contract="IntegrationProfile + resolve_from_profile — no in-repo fake second vendor",
+        ratification_authority="Operator 2026-10-31 — EBH-7 OD-RPL-G2 FIXED vendor slice",
+        adr_ref="EBH_7_FIXED_SUBSTRATE_RATIFICATIONS.md; VBN § Path B",
+        multi_instance_constraints="Not vendor-equivalent; live sandbox replay required for Path B evidence",
+        review_date="2026-10-31 — EBH-7 terminal closure",
+        inventory_concern_ids=(
+            "integration.billing_meter",
+            "integration.managed_retrieval",
+            "integration.ml_inference_host",
+            "integration.model_serving_runtime",
+            "integration.vision_serving",
+        ),
+        decision_status=FixedSubstrateDecisionStatus.RATIFIED,
+        decision_evidence_sha="fd3bc0104c9273f30262946afb16c15c04c8493a operator authorization",
+    ),
 )
 
 

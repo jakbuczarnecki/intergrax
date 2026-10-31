@@ -10,7 +10,7 @@ _L2: Final[tuple[str, ...]] = ("test_ebh_5_l2_integrity_gates",)
 
 QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE: Final[dict[str, str]] = {
     "agent.effective_profile": (
-        "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_agent_effective_profile"
+        "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_rpl_positive[agent.effective_profile]"
     ),
     "application.composition_root": (
         "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_application_composition_root"
@@ -167,7 +167,7 @@ QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE: Final[dict[str, str]] = {
         "tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_tokenizer_selection_via_bootstrap_composition"
     ),
     "tool.marketplace_activation": (
-        "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_tool_marketplace_activation"
+        "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_rpl_positive[tool.marketplace_activation]"
     ),
     "tool.observability_backend": (
         "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_tool_observability_backend"

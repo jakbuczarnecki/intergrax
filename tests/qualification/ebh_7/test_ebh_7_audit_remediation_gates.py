@@ -64,7 +64,6 @@ def test_ebh7_remediation_disposition_mutation_fails_if_exact_tampered() -> None
     assert tampered is not ProofBindingResult.EXACT_PROOF
 
 
-@pytest.mark.xfail(reason="B6 entry blocked until OD-EBH7-SCOPE-RESIDUAL or full RPL demonstration", strict=True)
 def test_ebh7_remediation_rpl_normative_b6_readiness() -> None:
     assert_ebh7_rpl_h_normative_for_b6_readiness()
 

@@ -20,6 +20,9 @@ FACTORY_RPL_ONE_PASS_CONCERNS: Final[frozenset[str]] = frozenset(
         "execution.integration_bound_resolution",
         "tool.observability_backend",
         "speech.provider",
+        "agent.effective_profile",
+        "tool.marketplace_activation",
+        "integration.external_work",
     }
 )
 

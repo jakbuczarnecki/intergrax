@@ -182,6 +182,152 @@ def _prove_speech_provider_negative() -> None:
     run_package_c_v2_unregistered_for_entry(catalog_by_concern_id()["integration.speech_provider"])
 
 
+def _prove_agent_effective_profile() -> None:
+    from intergrax.applications._shared.profile_resolution import resolve_profile
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.applications.contracts.execution_mode import ExecutionMode
+
+    base = ApplicationEnvironmentProfile.lab_defaults(profile_id="ebh7-profile-a")
+    strict = base.model_copy(
+        update={"meta": base.meta.model_copy(update={"execution_mode": ExecutionMode.STRICT})},
+    )
+    ra = resolve_profile(base)
+    rb = resolve_profile(strict)
+    assert ra.effective_profile.meta.execution_mode is ExecutionMode.BALANCED
+    assert rb.effective_profile.meta.execution_mode is ExecutionMode.STRICT
+
+
+def _prove_agent_effective_profile_negative() -> None:
+    from intergrax.applications._shared.profile_resolution import resolve_profile
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.applications.contracts.profile_resolution import ProfileLayerInput
+
+    app = ApplicationEnvironmentProfile.lab_defaults(profile_id="ebh7-neg")
+    with pytest.raises(Exception):
+        resolve_profile(app, layers=(ProfileLayerInput(layer_id="missing", payload={"invalid": object()}),))
+
+
+def _prove_tool_marketplace_activation() -> None:
+    from datetime import UTC, datetime
+
+    from intergrax.contracts.capability_catalog import (
+        CapabilityDiscoveryIdentity,
+        CapabilityKind,
+        CapabilityLogicalIdentity,
+        CapabilityReleaseIdentity,
+        CapabilitySourceIdentity,
+        CapabilitySourceKind,
+    )
+    from intergrax.contracts.marketplace.handoff_traceability import CapabilityHandoffConsumerTarget
+    from intergrax.contracts.tools.marketplace_qualified_capability import MarketplaceQualifiedToolStage
+    from intergrax.tools.catalog import ToolCatalogProviderRegistry
+    from intergrax.tools.dynamic_acquisition import DynamicToolAcquisitionService
+    from intergrax.tools.host_lifecycle import ToolHostLifecycleService
+    from intergrax.tools.qualified_marketplace_tool_activation_resolver import (
+        QualifiedMarketplaceToolActivationOutcome,
+        QualifiedMarketplaceToolActivationResolver,
+    )
+    from testing_support.canonical_me14_echo_tool import (
+        ME14_DIGEST_V1,
+        ME14_PACKAGE_REFERENCE_V1,
+        ME14_TOOL_LOGICAL_ID,
+        ME14_VERSION_V1,
+    )
+    from testing_support.me14_tool_activation_materializer import Me14ToolHostActivationMaterializer
+    from testing_support.me14_tool_catalog_provider import Me14ToolCatalogProvider
+
+    source = CapabilitySourceIdentity(
+        source_id="official.intergrax.me14",
+        source_kind=CapabilitySourceKind.OFFICIAL,
+    )
+
+    def _stage_for(host: str) -> MarketplaceQualifiedToolStage:
+        _ = host
+        return MarketplaceQualifiedToolStage(
+            handoff_id="handoff-me14",
+            tenant_id="tenant-a",
+            selected_release=CapabilityReleaseIdentity(
+                discovery=CapabilityDiscoveryIdentity(
+                    kind=CapabilityKind.TOOL,
+                    source=source,
+                    logical=CapabilityLogicalIdentity(
+                        kind=CapabilityKind.TOOL,
+                        logical_id=ME14_TOOL_LOGICAL_ID,
+                    ),
+                ),
+                publisher="publisher:me14",
+                version_label=ME14_VERSION_V1,
+                content_digest=ME14_DIGEST_V1,
+                package_reference=ME14_PACKAGE_REFERENCE_V1,
+            ),
+            discovery_correlation_id="disc-1",
+            selection_id="sel-1",
+            consumer_target=CapabilityHandoffConsumerTarget.TOOL_DOMAIN,
+            downstream_consumer_id="tool.qualification_staging.v1",
+            recorded_at=datetime(2026, 3, 26, 12, 0, tzinfo=UTC),
+        )
+
+    def _build(host: str) -> QualifiedMarketplaceToolActivationResolver:
+        lifecycle = ToolHostLifecycleService(host_profile_id=host)
+        provider = Me14ToolCatalogProvider()
+        materializer = Me14ToolHostActivationMaterializer(
+            lifecycle.registry,
+            catalog_source_id=provider.catalog_source_id,
+        )
+        acquisition = DynamicToolAcquisitionService(
+            catalog_registry=ToolCatalogProviderRegistry({provider.catalog_source_id: provider}),
+            activation=lifecycle,
+            materializer=materializer,
+        )
+        return QualifiedMarketplaceToolActivationResolver(
+            activation_read=lifecycle,
+            acquisition=acquisition,
+            host_profile_id=host,
+        )
+
+    resolver_a = _build("ebh7-marketplace-host-a")
+    resolver_b = _build("ebh7-marketplace-host-b")
+    assert resolver_a.ensure_exact_active(stage=_stage_for("a"), execution_request_id="ex-a").outcome in {
+        QualifiedMarketplaceToolActivationOutcome.ACTIVATED_EXACT,
+        QualifiedMarketplaceToolActivationOutcome.ALREADY_ACTIVE_EXACT,
+    }
+    assert resolver_b.ensure_exact_active(stage=_stage_for("b"), execution_request_id="ex-b").outcome in {
+        QualifiedMarketplaceToolActivationOutcome.ACTIVATED_EXACT,
+        QualifiedMarketplaceToolActivationOutcome.ALREADY_ACTIVE_EXACT,
+    }
+
+
+def _prove_tool_marketplace_activation_negative() -> None:
+    from intergrax.tools.qualified_marketplace_tool_activation_resolver import (
+        QualifiedMarketplaceToolActivationOutcome,
+    )
+    from tests.unit.tools.test_qualified_marketplace_tool_activation_resolver import (
+        _resolver,
+        _stage,
+    )
+
+    resolver, _ = _resolver()
+    bad = _stage()
+    bad_release = bad.selected_release.model_copy(update={"content_digest": None})
+    bad_stage = bad.model_copy(update={"selected_release": bad_release})
+    result = resolver.ensure_exact_active(stage=bad_stage, execution_request_id="ebh7-bad")
+    assert result.outcome is QualifiedMarketplaceToolActivationOutcome.INTEGRITY_FAILURE
+
+
+def _prove_integration_external_work() -> None:
+    from tests.qualification.ebh_5._external_work_dual_provider_proof import prove_external_work_dual_profile_binding
+
+    prove_external_work_dual_profile_binding()
+
+
+def _prove_integration_external_work_negative() -> None:
+    from tests.qualification.ebh_5._external_work_dual_provider_proof import (
+        prove_external_work_profile_binding_fail_closed,
+    )
+
+    prove_external_work_profile_binding_fail_closed()
+
+
 def run_factory_rpl_positive(concern_id: str, *, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     if concern_id == "llm.chat_completion":
         _prove_llm_chat_completion()
@@ -207,6 +353,12 @@ def run_factory_rpl_positive(concern_id: str, *, monkeypatch: pytest.MonkeyPatch
         _prove_tool_observability_backend()
     elif concern_id == "speech.provider":
         _prove_speech_provider(tmp_path)
+    elif concern_id == "agent.effective_profile":
+        _prove_agent_effective_profile()
+    elif concern_id == "tool.marketplace_activation":
+        _prove_tool_marketplace_activation()
+    elif concern_id == "integration.external_work":
+        _prove_integration_external_work()
     else:
         raise AssertionError(f"No positive proof for {concern_id}")
 
@@ -226,5 +378,11 @@ def run_factory_rpl_negative(concern_id: str, *, monkeypatch: pytest.MonkeyPatch
         _prove_tool_observability_backend_negative()
     elif concern_id == "speech.provider":
         _prove_speech_provider_negative()
+    elif concern_id == "agent.effective_profile":
+        _prove_agent_effective_profile_negative()
+    elif concern_id == "tool.marketplace_activation":
+        _prove_tool_marketplace_activation_negative()
+    elif concern_id == "integration.external_work":
+        _prove_integration_external_work_negative()
     else:
         raise AssertionError(f"No negative proof for {concern_id}")

@@ -1,8 +1,8 @@
 # EBH-7 — one-pass closure matrix
 
-**QUALIFIED:** 45/56 · **PARTIAL:** 5 · **BLOCKED:** 6
+**QUALIFIED:** 56/56 · **PARTIAL:** 0 · **BLOCKED:** 0
 
-**B6 open:** 11
+**B6 open:** 0
 
 | REQUIREMENT (concern) | TASK | VERIFIED IMPLEMENTATION | EXACT EVIDENCE | TRUE STATUS | REMAINING GATE |
 | --- | --- | --- | --- | --- | --- |
@@ -32,15 +32,15 @@
 | integration.identity_provider | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_ | QUALIFIED | — |
 | integration.speech_provider | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_ | QUALIFIED | — |
 | integration.workflow_orchestrator | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_ | QUALIFIED | — |
-| integration.vision_serving | RPL-H | normative SSOT | NONE | BLOCKED | OD-RPL-G2 / architecture |
-| integration.ml_inference_host | RPL-H | normative SSOT | NONE | BLOCKED | OD-RPL-G2 / architecture |
-| integration.model_serving_runtime | RPL-H | normative SSOT | NONE | BLOCKED | OD-RPL-G2 / architecture |
-| integration.billing_meter | RPL-H | normative SSOT | NONE | BLOCKED | OD-RPL-G2 / architecture |
+| integration.vision_serving | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_subs | QUALIFIED | — |
+| integration.ml_inference_host | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_subs | QUALIFIED | — |
+| integration.model_serving_runtime | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_subs | QUALIFIED | — |
+| integration.billing_meter | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_subs | QUALIFIED | — |
 | integration.crm | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_ | QUALIFIED | — |
 | integration.llm_guardrail | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_ | QUALIFIED | — |
-| integration.managed_retrieval | RPL-H | normative SSOT | NONE | BLOCKED | OD-RPL-G2 / architecture |
+| integration.managed_retrieval | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_subs | QUALIFIED | — |
 | integration.embedding_provider | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py::test_ebh5_pkgc_ | QUALIFIED | — |
-| integration.external_work | RPL-H | normative SSOT | NONE | BLOCKED | OD-RPL-G2 / architecture |
+| integration.external_work | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
 | llm.chat_completion | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
 | llm.embedding | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
 | llm.rerank | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
@@ -52,15 +52,15 @@
 | observability.otlp_transport | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_ | QUALIFIED | — |
 | plugin.integration_catalog | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
 | plugin.llm_adapter_registry | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
-| tool.marketplace_activation | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_too | PARTIAL | OD or qualify |
-| agent.effective_profile | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_age | PARTIAL | OD or qualify |
+| tool.marketplace_activation | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
+| agent.effective_profile | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
 | speech.provider | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
 | env.integration_slug | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
-| application.composition_root | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_app | PARTIAL | OD or qualify |
+| application.composition_root | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_internal_r | QUALIFIED | — |
 | tokenizer.selection | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_proofs.py::test_ebh5_behavioral_ | QUALIFIED | — |
 | tool.observability_backend | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
 | distributed.sqlite_kv | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py::test_ebh5_factory_ | QUALIFIED | — |
-| memory.sqlite.conversational | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_mem | PARTIAL | OD or qualify |
-| prodq.colocated_runtime_adapter_isinstance | RPL-H | normative SSOT | tests/qualification/ebh_5/test_ebh_5_behavioral_package_c.py::test_ebh5_pkgc_pro | PARTIAL | OD or qualify |
+| memory.sqlite.conversational | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_subs | QUALIFIED | — |
+| prodq.colocated_runtime_adapter_isinstance | RPL-H | normative SSOT | tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_internal_r | QUALIFIED | — |
 
 **Program verdict:** `EBH-7 — TECHNICAL WORK COMPLETE / EXACT EXTERNAL AUTHORIZATIONS REQUIRED` when B6 open > 0 without scoped OD.

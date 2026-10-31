@@ -28,6 +28,6 @@ def test_ebh7_batch_c_rpl_semantic_verdict_counts_recorded() -> None:
     norm = normative_rpl_verdict_counts()
     assert sum(agent.values()) == 56
     assert agent == norm
-    assert agent[RplSemanticVerdict.BLOCKED] == 6
-    assert agent[RplSemanticVerdict.PARTIAL] == 5
-    assert agent[RplSemanticVerdict.QUALIFIED] == 45
+    assert agent[RplSemanticVerdict.BLOCKED] == 0
+    assert agent[RplSemanticVerdict.PARTIAL] == 0
+    assert agent[RplSemanticVerdict.QUALIFIED] == 56

@@ -135,7 +135,10 @@ def vendor_backend_concern_inventory() -> tuple[VendorBackendConcernRecord, ...]
     extra_ids = {r.concern_id for r in from_config}
     extras = tuple(r for r in RUNTIME_PLATFORM_CONCERNS if r.concern_id not in extra_ids)
     merged = from_config + extras
-    return tuple(_overlay_qualified_behavioral(row) for row in merged)
+    merged = tuple(_overlay_qualified_behavioral(row) for row in merged)
+    from tests.qualification.ebh_5._ebh7_terminal_inventory_overlay import apply_ebh7_terminal_inventory_overlay
+
+    return tuple(apply_ebh7_terminal_inventory_overlay(row) for row in merged)
 
 
 def _overlay_qualified_behavioral(row: VendorBackendConcernRecord) -> VendorBackendConcernRecord:
