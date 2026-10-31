@@ -23,13 +23,19 @@
 | EBH7_CLOSURE_G01_G09_IMPLEMENTATION_SHA | Closure evidence audit SSOT + gates | `72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9` |
 | EBH7_B6_PROOF_STRENGTH_CORRECTION_SHA | B6 F07/F08/F09 RPL-E/F + derived G07/G08 + G09 resolution | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
 | EBH7_F07_PROBE_FAILCLOSED_SHA | RPL-E operational probe fail-closed + adversarial gates | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
-| TEST_EXECUTION_SHA | L3 replay (195 nodes incl. F07 operational gates) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `96069c09c2ca5a7a3a9586db336716c9430ca1d7` |
+| EBH7_B5_TEST_EXECUTION_SHA | B5 L3 replay (195 nodes; ebh_7 directory shadowed) — historical | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
+| EBH7_B5_EVIDENCE_PUBLICATION_SHA | B5 P03 dossier publication — historical | `96069c09c2ca5a7a3a9586db336716c9430ca1d7` |
+| EBH7_B6_F10_F11_CORRECTIVE_SHA | B6 F10 (declarative, rejected) + F11 corrective | `687ed0c19bb76411cacb1226016a3b24546b9189` |
+| EBH7_B6_F10_CERTIFICATION_START_SHA | Computed C1–C5 certification over closed obligation sets | `ec7500ee98706ec83ada3cbbae1996cba8ef0a0e` |
+| EBH7_B6_F10_STATE_FIX_SHA | + SQLite memory load fix (F10-C4-STATE-REG-01) + shadowed-profile coverage | `a803191ad380dfe7faa9cee58f10186d6cbab273` |
+| EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA | + F10-derived findings registered with executable resolutions | `74e2191dd4eaad544b2146f505fe691d459997b3` |
+| TEST_EXECUTION_SHA | B6-F10 L3 replay (full `tests/qualification/ebh_7/` + F10 regression nodes) | `74e2191dd4eaad544b2146f505fe691d459997b3` |
+| EVIDENCE_PUBLICATION_SHA | B6-F10 P03 dossier publication | see MANIFEST `EVIDENCE_PUBLICATION_SHA` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
 **Deprecated alias:** `CLOSURE_SHA` must not denote implementation while B6/OD-08 are OPEN.
 
-**Protocol 03 rule:** `TEST_EXECUTION_SHA` equals `EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA`; `EBH7_CLOSURE_IMPLEMENTATION_SHA` is a strict git ancestor (pre-B6 terminal closure @ `d4937889`), not the replayed tree after B6 corrective.
+**Protocol 03 rule:** `TEST_EXECUTION_SHA` equals `EBH7_B6_F10_CERTIFICATION_IMPLEMENTATION_SHA`; `EBH7_B6_CORRECTIVE_IMPLEMENTATION_SHA` (`8afff322`), the B5 test execution (`4eb7eb1a`) and `EBH7_CLOSURE_IMPLEMENTATION_SHA` (`d4937889`) are strict git ancestors, not the replayed tree.
 
 Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`; `tests/qualification/ebh_7/_ebh7_p03_evidence_integrity.py` pins SHA roles.

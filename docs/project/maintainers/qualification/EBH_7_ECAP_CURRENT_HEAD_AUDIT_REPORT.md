@@ -1,76 +1,82 @@
-# Enterprise Architecture Audit Report — EBH-7 B6 re-audit preparation
+# Enterprise Architecture Audit Report — EBH-7 B6-F10 certification correction
 
-**Platform scope banner:** This report covers the **Intergrax Agent OS / Harness AI** four-tier platform (`intergrax/` · `intergrax/runtime/` · `agents/` · `applications/`) at EBH-7 closure scope. It is **pre-audit agent output** for independent B6 re-review — **not** independent B6 PASS, **not** OD-EBH7-08, **not** global FRZ PASS.
+**Platform scope banner:** This report covers the **Intergrax Agent OS / Harness AI** four-tier platform (`intergrax/` · `intergrax/runtime/` · `agents/` · `applications/`) at EBH-7 closure scope. It is **pre-audit agent output** for independent B6 acceptance — **not** independent B6 PASS, **not** OD-EBH7-08, **not** global FRZ PASS.
 
-Normative ECAP proof bindings: [`EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`](EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md).
+Gate verdicts in this report are **computed** by `tests/qualification/ebh_7/_ebh7_f10_ecap_normative_matrix.py` from closed normative sets and inserted by `scripts/qualification/render_ebh7_f10_normative_matrix.py`. Obligation-level detail: [`EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md`](EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md).
 
 ## A. HEAD and baseline
 
-- **Audit SHA (dossier / F10 gates):** current `git rev-parse HEAD` @ publication
-- **TEST_EXECUTION_SHA (certified L3 code):** `4eb7eb1a89f82215d5356aa7d000198e432777b0`
-- **EVIDENCE_PUBLICATION_SHA (MANIFEST role):** `96069c09c2ca5a7a3a9586db336716c9430ca1d7`
-- **Accepted baseline (C4):** `81679e67225f42dfbc1c508516e19488b6fbf453` (AUTHORIZED_BASELINE_SHA)
-- **B5 canonical GHA replay:** run `41214574614` @ checkout `210accb224aad276a472307c8fefe3798bd44f10`
-- **Audit mode:** FULL-HEAD (EBH-7) with DELTA vs accepted baseline + TEST_EXECUTION_SHA
-- **Scope statement:** EBH-7 Protocol 03 independent replay dossier; F01–F09 retained; F10/F11 corrective wave
+- **TEST_EXECUTION_SHA (certified executable tree):** MANIFEST `TEST_EXECUTION_SHA` — see [`EBH_7_SHA_LADDER.md`](EBH_7_SHA_LADDER.md)
+- **Last independently accepted baseline (C4):** `5a3a05347aaea93a8e4086fc90bc08e6d5eeaf92` (ROADMAP-REPLAY-X B6 PASS)
+- **EBH-7 authorized entry baseline:** `81679e67225f42dfbc1c508516e19488b6fbf453`
+- **DUP-X historical acceptance (C2):** `a7d83925b375b5f08eb0f175ced2c17fa026bba9` + current delta census
+- **Audit mode:** FULL-HEAD closed-world obligations + DELTA vs accepted baseline
 
 ## B. Roadmap progress
 
-- **Current parent stage:** EBH-7 — B5 verified; B6 independent re-audit pending
-- **Applicable stages touched:** EBH-5/6 catalogs, DUP-X subset, ROADMAP-REPLAY-X parent closure (entry gate doc)
+- **Current parent stage:** EBH-7 — B6-F10 certification correction; independent B6 acceptance pending
+- **Downstream (not entered):** EVOL-X · ENT-AUDIT-X · ARCH-FREEZE · SCENARIO-READINESS-X
 
 ## C. Enterprise compliance coverage
 
-- **FRZ families in scope:** 26 themes via EBH-6 family catalog + EBH-7 enterprise family matrix (closed-world row count gate)
-- **Labels:** EXECUTION PROVEN @ TEST_EXECUTION_SHA for MANIFEST L3 profile; STATIC+EXECUTION for F10 matrix rows @ replay HEAD
+Canonical closed sets: 26 FRZ families (freeze checklist IDs), Tier-0..3 (`AGENTS.md`), DUP-01..14 + 15 DUP-X responsibility families + 12 normative C2 surfaces, roadmap §3.0.8 domains 1–31 + every inventory concern, every path changed since the accepted baseline.
 
-| ECAP | Gate | Primary executable evidence |
-| --- | --- | --- |
-| ECAP-C1 | Closed-world inventory Tier-0..3 + families | `test_ebh6_family_row_count_closed_world`; `test_ebh7_structural_exit_traceability_and_mechanisms`; `EBH_7_ENTERPRISE_FAMILY_COVERAGE_MATRIX.md` |
-| ECAP-C2 | Duplicate authority / cross-domain scan | `test_ebh_7_w4_gov_dup_gates.py` (DUP-X subset executed) |
-| ECAP-C3 | VBN taxonomy + discoveries | `test_ebh6_prohibited_unresolved_zero`; `test_ebh6_findings_unclassified_zero`; CONFIG-X reconciliation; INT2E bundles |
-| ECAP-C4 | Regression vs accepted baseline | `test_ebh6_config_x_head_reconciliation`; P03 manifest roles; B5 immutable GHA |
-| ECAP-C5 | This §14 report + platform banner | `EBH_7_ECAP_CURRENT_HEAD_AUDIT_REPORT.md` + F10 matrix |
+<!-- F10-COMPUTED:BEGIN (generated — scripts/qualification/render_ebh7_f10_normative_matrix.py) -->
+**Computed from closed normative sets @ TEST_EXECUTION_SHA `74e2191dd4eaad544b2146f505fe691d459997b3`** (C5 verified by read-only gate; no hand-assigned verdicts).
+
+| ECAP gate | Computed verdict | Obligations | PASS | N/A WITH EVIDENCE | FAIL |
+| --- | --- | --- | --- | --- | --- |
+| ECAP-C1 | PASS | 32 | 28 | 4 | 0 |
+| ECAP-C2 | PASS | 43 | 43 | 0 | 0 |
+| ECAP-C3 | PASS | 105 | 99 | 6 | 0 |
+| ECAP-C4 | PASS | 9 | 9 | 0 | 0 |
+
+**C1–C4 computed disposition:** all obligations PASS or N/A WITH EVIDENCE
+<!-- F10-COMPUTED:END -->
 
 ## D. Architecture findings
 
-| Finding ID | Class | FRZ/SYS-INV | Severity | Label |
-| --- | --- | --- | --- | --- |
-| B6-F10 | Evidence gap (remediated) | ECAP C1–C5 | BLOCKER→READY | Normative matrix + §14 report |
-| B6-F11 | Documentation drift (remediated) | AUD | BLOCKER→READY | Dossier/traceability sync |
+| Finding ID | Class | Scope | Disposition |
+| --- | --- | --- | --- |
+| B6-F10 | Evidence gap — declarative matrix | ECAP C1–C5 | Rebuilt as computed certification; verdict per block in §C |
+| F10-C3-REG-01 | Qualification regression (EBH-5 Q07) | `integration.relational_store`, `tool.marketplace_activation`, `agent.effective_profile` | EBH-7 registered composite / parametrized proof refs rejected by EBH-5 validator; validator now resolves every node and binds parameter to `concern_id` |
+| F10-C2-OWNER-DELTA | Stale DUP-X owner pointers | RF-EXE/BGW/GOV/RCV/STA/TEN/CMP/T3 | Current-HEAD owner delta bindings validated by path resolution / discovery census (DUP-X SSOT unchanged) |
+| F10-C1-TIER-EXC-01 | Ratified tier exception | `intergrax/cli/external_work.py` → Tier-3 demo fixture | Lazy CLI demo import ratified in AC1–AC6 architecture audit; scan fails on any other violation or stale exception |
+| F10-C1-STALE-GATE-REG | Stale family gate node | FRZ-REG (EBH-6 `_family_l9_evidence.py`) | Gate pointed to removed `test_aj_evidence_required_honest_not_zero`; rebound to its renamed successor `test_aj_evidence_required_matches_t2_bundle_gaps`; EBH-6 gate-node test now requires the function to exist (previously file-only) |
+| F10-C4-STATE-REG-01 | Production regression (state-recovery) | `intergrax/memory/stores/sqlite_conversational_memory_store.py` | `load_memory` called `typing.Literal` `MessageRole(...)` → `TypeError` on every reload (introduced by `8afff322`); fixed with closed-role validation @ `a803191ad`; C4 regression `test_ebh7_fixed_substrate_rpl_positive[memory.sqlite.conversational]` |
+| F10-P03-PROFILE-SHADOW | Replay coverage gap | MANIFEST `pytest_profile` | Four `ebh_7` files listed before `tests/qualification/ebh_7/` made pytest 8 collect only those four (195-node B5 runs); shadowing members removed; coverage helper no longer credits a shadowed directory (adversarial gate) |
+| F10-CFG-ISO-01 | Test isolation | CONFIG-X FRZ-CFG-07 gates | `clear_catalog()` without bootstrap reset broke later W5-B2 composition tests; fixture restores default integration catalog state |
 
-Historical corrective findings F01–F09: see `_gate_findings_register.py` — resolutions @ G09.
+Historical corrective findings F01–F09 and F11: unchanged (see `_gate_findings_register.py`).
 
 ## E. Vendor/backend dependency changes
 
-- **Inventory delta:** CONFIG-X 54/54 reconciled @ HEAD vs historical pass SHA (EBH-6 audit doc)
-- **PROHIBITED unresolved:** 0 @ EBH-6 register scope (`test_ebh6_prohibited_unresolved_zero`)
-- **Normative RPL:** appendix + convergence matrix — not 56× replaceability demo
+- C3 domain coverage is computed per roadmap domain (inventory concern or N/A WITH EVIDENCE); CONFIG-X 54/54 and PROHIBITED = 0 are separate obligations and do not substitute domain coverage.
+- Production vendor-backend paths changed since the accepted baseline are classified in C4 (`vendor-backend`) with bound regressions.
 
 ## F. Cross-layer ownership and authority
 
-- DUP-X L2 subset + NPSC boundary gates executed via W4 EBH-7 gates
-- Tier boundary: `test_hardening_3_layer_boundary_gate` (family matrix owner)
+- Tier import boundaries: AST scan of Tier-0/Tier-2 sources executed inside the F10 gate + hardening-3 boundary gate.
+- DUP-X: class/family/surface identity, counters and closed-world census re-executed @ executed HEAD.
 
 ## G. Runtime reliability and failure semantics
 
-- Scoped to qualification gates and SSOT registers — no new production semantic change @ TEST_EXECUTION_SHA for F10/F11 wave
+- Runtime-behavior / security-tenant / state-recovery changes since the accepted baseline are bound to invoker, tenant-scope, tenant E2E and fixed-substrate RPL regressions (C4).
 
 ## H. Impact on historical certification
 
-- Prior B5 run `41212701986` superseded (pre-verify digest reconcile)
-- TEST_EXECUTION_SHA unchanged; F10/F11 evidence @ replay HEAD (allowlisted qualification infra)
+- B6-F10 code (qualification infrastructure + the F10-C4-STATE-REG-01 production fix) → new TEST_EXECUTION_SHA `74e2191dd4eaad544b2146f505fe691d459997b3` (ladder) and new GitHub Actions replay; prior B5 run `41214574614` retained as historical B5 evidence only — it never executed the full `ebh_7` directory (F10-P03-PROFILE-SHADOW).
 
 ## I. Scenario readiness / architecture-change risk
 
-- SCENARIO-READINESS-X: not in scope for this corrective wave
+- SCENARIO-READINESS-X: downstream, not in scope.
 
 ## J. Blockers vs missing evidence
 
-- **Unresolved for independent B6:** external auditor must re-run Protocol 03 worksheet and issue PASS/FAIL
-- **Agent disposition:** F10/F11 **READY FOR INDEPENDENT B6 RE-AUDIT**
+- Exact missing obligations, if any, are listed in the computed block (§C) and in the F10 matrix — no hand-assigned READY.
+- Independent B6 acceptance remains with the external auditor.
 
 ## K. Closure verdict and next action
 
-- **Agent recommendation:** Independent B6 re-audit with MANIFEST L3 profile + F10 matrix + B5 GHA `41214574614`
+- **Agent disposition:** the computed disposition in §C (C1–C4) and the F10 matrix (C1–C5) — never overridden by text.
 - **Non-claims:** B6 PASS · OD-EBH7-08 · EBH-7 CLOSED · EVOL-X · global FRZ PASS
