@@ -11,7 +11,6 @@ import pytest
 from intergrax.distributed.providers.sqlite_kv_store import SqliteDistributedKVStore
 from intergrax.integrations._shared.config import read_integration_slug_from_env
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.factory import resolve_slug
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
@@ -174,6 +173,8 @@ def _prove_execution_integration_bound_resolution() -> None:
 
 
 def _prove_execution_integration_bound_negative() -> None:
+    from intergrax.integrations.registry.factory import resolve_slug
+
     with pytest.raises(Exception):
         resolve_slug(IntegrationCategory.VECTOR_STORE, profile=IntegrationProfile())
 
