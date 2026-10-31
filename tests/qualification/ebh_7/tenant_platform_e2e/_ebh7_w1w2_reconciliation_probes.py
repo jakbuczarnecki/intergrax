@@ -23,8 +23,11 @@ from intergrax.contracts.root_execution_launch import (
 from intergrax.contracts.root_execution_operation import RootExecutionOperation
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.contracts.tools.tool_invocation_wiring_resolution import ToolInvocationContext
-from intergrax.integrations.contracts.base import IntegrationCategory, UnknownIntegrationError
-from intergrax.integrations.providers.relational_store.duckdb.register import register_duckdb_integration
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationConfigurationError,
+    UnknownIntegrationError,
+)
 from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve_from_profile
@@ -206,35 +209,16 @@ def probe_resolve_from_profile_sqlite_sanctioned(tmp_path: Path) -> None:
 
 def probe_resolve_from_profile_unregistered_fail_closed() -> None:
     clear_catalog()
-    with pytest.raises((UnknownIntegrationError, Exception)):
+    with pytest.raises((UnknownIntegrationError, IntegrationConfigurationError)):
         resolve_from_profile(IntegrationProfile(), IntegrationCategory.RELATIONAL_STORE)
 
 
 def probe_relational_store_sqlite_duckdb_dual_slug(tmp_path: Path) -> None:
-    pytest.importorskip("duckdb")
-    clear_catalog()
-    register_sqlite_integration()
-    register_duckdb_integration()
-    sqlite_dir = tmp_path / "sqlite"
-    duck_dir = tmp_path / "duckdb"
-    sqlite_dir.mkdir()
-    duck_dir.mkdir()
-    sqlite_profile = IntegrationProfile(
-        relational_store="sqlite",
-        options={"sqlite": {"data_dir": str(sqlite_dir)}},
+    from tests.qualification.ebh_5._package_c_v2_proof_helpers import (
+        run_package_c_v2_relational_sqlite_duckdb_dual_slug,
     )
-    duck_profile = IntegrationProfile(
-        relational_store="duckdb",
-        options={"duckdb": {"data_dir": str(duck_dir)}},
-    )
-    sqlite_store = resolve_from_profile(sqlite_profile, IntegrationCategory.RELATIONAL_STORE)
-    duck_store = resolve_from_profile(duck_profile, IntegrationCategory.RELATIONAL_STORE)
-    assert isinstance(sqlite_store, RelationalStoreIntegrationContract)
-    assert isinstance(duck_store, RelationalStoreIntegrationContract)
-    sqlite_store.connect()
-    duck_store.connect()
-    sqlite_store.close()
-    duck_store.close()
+
+    run_package_c_v2_relational_sqlite_duckdb_dual_slug(tmp_path)
 
 
 def probe_plugin_host_activation_cross_tenant_open() -> None:

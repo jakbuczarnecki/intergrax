@@ -66,6 +66,14 @@ def assert_gov_exec_cross_tenant_projection_denied() -> None:
         validate_governance_identity_projection(identity, tenant_id="tenant-ebh7-b")
 
 
+async def assert_exec_tool_cross_tenant_via_tool_runtime() -> None:
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_w1w2_reconciliation_probes import (
+        probe_tool_runtime_invoke_chain_cross_tenant_denied,
+    )
+
+    await probe_tool_runtime_invoke_chain_cross_tenant_denied()
+
+
 def assert_exec_tool_cross_tenant_invocation_denied() -> None:
     registry = ToolRegistry()
     tool_id = "ebh7.integrated.echo"

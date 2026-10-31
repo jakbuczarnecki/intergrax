@@ -74,6 +74,15 @@ def test_ebh7_ten_e2e_04_exec_tool_tenant_boundary() -> None:
     assert_exec_tool_cross_tenant_invocation_denied()
 
 
+@pytest.mark.asyncio
+async def test_ebh7_ten_e2e_04_exec_tool_tenant_boundary_tool_runtime() -> None:
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
+        assert_exec_tool_cross_tenant_via_tool_runtime,
+    )
+
+    await assert_exec_tool_cross_tenant_via_tool_runtime()
+
+
 def test_ebh7_ten_e2e_05_config_provider_cross_tenant() -> None:
     from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_integrated_tenant_boundary_assertions import (
         assert_config_provider_cross_tenant_rejected,
