@@ -162,9 +162,37 @@ EBH7_CORRECTIVE_GATE_FINDINGS: Final[tuple[GateFinding, ...]] = (
         actual_strength=GateStrength.INTEGRITY,
         required_strength=GateStrength.ACCEPTANCE,
         correction=(
-            "EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md + ECAP §14 report — "
-            "per-gate normative scope, execution SHA, drift, verdict"
+            "Computed certification over closed obligation sets (_ebh7_f10_canonical_inputs.py + "
+            "_ebh7_f10_ecap_normative_matrix.py); matrix and §14 block generated, verified read-only"
         ),
+    ),
+    GateFinding(
+        gate_id="B6-F10-C1-STALE-GATE-REG",
+        prior_claim="FRZ-REG family gate node exists because its file exists",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.INTEGRITY,
+        correction="Gate rebound to renamed successor; C1 requires every family gate node to resolve and execute",
+    ),
+    GateFinding(
+        gate_id="B6-F10-C4-STATE-REG-01",
+        prior_claim="SQLite conversational memory round-trip repaired by B6 corrective",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.ACCEPTANCE,
+        correction="load_memory validates closed MessageRole set instead of calling typing.Literal",
+    ),
+    GateFinding(
+        gate_id="B6-F10-P03-PROFILE-SHADOW",
+        prior_claim="MANIFEST profile argument tests/qualification/ebh_7/ executes the whole directory",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.INTEGRITY,
+        correction="Shadowing member files removed; coverage helper rejects directory shadowed by member files",
+    ),
+    GateFinding(
+        gate_id="B6-F10-CFG-ISO-01",
+        prior_claim="CONFIG-X FRZ-CFG-07 gates are order-independent",
+        actual_strength=GateStrength.STRUCTURAL,
+        required_strength=GateStrength.INTEGRITY,
+        correction="Fixture restores default integration catalog and bootstrap state after clear_catalog()",
     ),
     GateFinding(
         gate_id="B6-F11-DOSSIER-STALE-REPLAY",

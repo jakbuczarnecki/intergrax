@@ -139,7 +139,31 @@ _FINDING_RESOLUTIONS: Final[dict[str, FindingResolution]] = {
         "B6-F10-ECAP-NORMATIVE-C1-C5",
         FindingResolutionKind.CORRECTIVE_ASSERT,
         "tests.qualification.ebh_7._ebh7_f10_ecap_normative_matrix:assert_ebh7_f10_ecap_normative_ready",
-        "READY FOR INDEPENDENT RE-AUDIT — not B6 PASS",
+        "Computed C1–C5 verdict — READY FOR INDEPENDENT RE-AUDIT only when computed; not B6 PASS",
+    ),
+    "B6-F10-C1-STALE-GATE-REG": FindingResolution(
+        "B6-F10-C1-STALE-GATE-REG",
+        FindingResolutionKind.CORRECTIVE_PYTEST,
+        "tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py::test_aj_evidence_required_matches_t2_bundle_gaps",
+        "Renamed FRZ-REG successor gate executed in L3 profile",
+    ),
+    "B6-F10-C4-STATE-REG-01": FindingResolution(
+        "B6-F10-C4-STATE-REG-01",
+        FindingResolutionKind.CORRECTIVE_PYTEST,
+        "tests/qualification/ebh_7/test_ebh_7_terminal_rpl_gates.py::test_ebh7_fixed_substrate_rpl_positive",
+        "FIXED substrate round-trip incl. memory.sqlite.conversational",
+    ),
+    "B6-F10-P03-PROFILE-SHADOW": FindingResolution(
+        "B6-F10-P03-PROFILE-SHADOW",
+        FindingResolutionKind.CORRECTIVE_PYTEST,
+        "tests/qualification/ebh_7/test_ebh_7_b6_f10_certification_adversarial.py::test_f10_adv_directory_shadowed_by_member_file_is_not_execution",
+        "Shadowed directory argument is not execution evidence",
+    ),
+    "B6-F10-CFG-ISO-01": FindingResolution(
+        "B6-F10-CFG-ISO-01",
+        FindingResolutionKind.CORRECTIVE_PYTEST,
+        "tests/unit/runtime/events/test_enterprise_scale_resilience_w5_b2_composition_wiring.py::test_production_composition_creates_bounded_sink",
+        "Runs after CONFIG-X gates in the L3 profile order",
     ),
     "B6-F11-DOSSIER-STALE-REPLAY": FindingResolution(
         "B6-F11-DOSSIER-STALE-REPLAY",
