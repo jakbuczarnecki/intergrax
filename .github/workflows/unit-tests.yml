@@ -784,6 +784,10 @@ jobs:
             echo "FAIL: MANIFEST profile must include F07 operational gates"
             exit 1
           }
+          echo "${PYTEST_CMD}" | grep -q 'test_dup_x_closed_world_integrity.py' || {
+            echo "FAIL: MANIFEST profile must include B6-F10 normative evidence nodes"
+            exit 1
+          }
           echo "pytest_cmd=${PYTEST_CMD}" >> "${GITHUB_OUTPUT}"
 
       - name: Install uv
@@ -833,6 +837,23 @@ jobs:
           PYTEST_EXIT=${PIPESTATUS[0]}
           echo "${PYTEST_EXIT}" > build/qualification/ebh7-l3/pytest.exit
           exit "${PYTEST_EXIT}"
+
+      - name: B6-F10 execution attestation (JUnit @ replay HEAD)
+        id: ebh7_f10_attest
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          uv run --frozen python scripts/qualification/attest_ebh7_f10_execution.py \
+            --junit build/qualification/ebh7-l3/junit.xml \
+            --test-execution-sha "${TEST_EXECUTION_SHA}" \
+            --replay-head-sha "${P03_REPLAY_HEAD_SHA}" \
+            --out build/qualification/ebh7-l3/f10-attestation.json \
+            2>&1 | tee build/qualification/ebh7-l3/f10-attestation.log
+          ATTEST_EXIT=${PIPESTATUS[0]}
+          echo "${ATTEST_EXIT}" > build/qualification/ebh7-l3/f10-attestation.exit
+          exit "${ATTEST_EXIT}"
 
       - name: Finalize EBH-7 L3 metadata
         if: always()
@@ -893,7 +914,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f build/qualification/ebh7-l3/pytest.exit ]; then
-            exit "$(tr -d '[:space:]' < build/qualification/ebh7-l3/pytest.exit)"
+          if [ ! -f build/qualification/ebh7-l3/pytest.exit ]; then
+            exit 1
           fi
-          exit 1
+          PYTEST_EXIT="$(tr -d '[:space:]' < build/qualification/ebh7-l3/pytest.exit)"
+          if [ "${PYTEST_EXIT}" != "0" ]; then
+            exit "${PYTEST_EXIT}"
+          fi
+          if [ "$(tr -d '[:space:]' < build/qualification/ebh7-l3/f10-attestation.exit 2>/dev/null || echo 1)" != "0" ]; then
+            echo "FAIL: B6-F10 execution attestation"
+            exit 1
+          fi

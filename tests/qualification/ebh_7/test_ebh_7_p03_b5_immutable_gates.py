@@ -15,10 +15,11 @@ from scripts.qualification.verify_ebh7_p03_immutable_evidence import (
     verify_immutable_digests_at_git_sha,
     verify_manifest_pins,
 )
+from tests.qualification.ebh_7._constants import EBH7_EVIDENCE_PUBLICATION_SHA, EBH7_TEST_EXECUTION_SHA
 
 _REPO = Path(__file__).resolve().parents[3]
-_TEST_SHA = "4eb7eb1a89f82215d5356aa7d000198e432777b0"
-_EVIDENCE_SHA = "96069c09c2ca5a7a3a9586db336716c9430ca1d7"
+_TEST_SHA = EBH7_TEST_EXECUTION_SHA
+_EVIDENCE_SHA = EBH7_EVIDENCE_PUBLICATION_SHA
 _REPLAY_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=_REPO, text=True).strip()
 
 

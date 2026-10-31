@@ -12,9 +12,11 @@ from tests.qualification.ebh_7._constants import (
     EBH7_B5_REPLAY_HEAD_SHA,
     EBH7_TEST_EXECUTION_SHA,
 )
+from tests.qualification.ebh_7._ebh7_f10_canonical_inputs import F10_MATRIX_REL, cached_canonical_f10_inputs
 from tests.qualification.ebh_7._ebh7_f10_ecap_normative_matrix import (
     assert_ebh7_f10_ecap_normative_ready,
-    sync_f10_matrix_markdown,
+    certify_f10_for_render,
+    render_f10_matrix_markdown,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
@@ -23,16 +25,16 @@ _REPO = Path(__file__).resolve().parents[3]
 _MANIFEST = _REPO / "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json"
 
 
-def test_b6_f10_ecap_normative_matrix_ready() -> None:
+def test_b6_f10_normative_certification_computed() -> None:
     assert_ebh7_f10_ecap_normative_ready()
 
 
-def test_b6_f10_matrix_markdown_synced() -> None:
-    sync_f10_matrix_markdown()
-    md = (_REPO / "docs/project/maintainers/qualification/EBH_7_B6_F10_ECAP_NORMATIVE_MATRIX.md").read_text(
-        encoding="utf-8"
+def test_b6_f10_matrix_markdown_matches_generated() -> None:
+    inputs = cached_canonical_f10_inputs()
+    expected = render_f10_matrix_markdown(certify_f10_for_render(inputs))
+    assert inputs.matrix_disk_text == expected, (
+        f"{F10_MATRIX_REL} is stale — run scripts/qualification/render_ebh7_f10_normative_matrix.py"
     )
-    assert "ECAP_GATE" in md and "C1" in md and "C5" in md
 
 
 def test_b6_f11_dossier_replay_profile_current() -> None:

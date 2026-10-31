@@ -28,19 +28,27 @@ def l3_profile_command_argv() -> tuple[str, ...]:
 
 def l3_profile_covers_pytest_node(node_id: str) -> bool:
     """True when the node's module is executed by MANIFEST pytest_profile (file or directory scope)."""
-    parsed = parse_pytest_node_id(node_id.split("[", 1)[0])
-    if parsed is None:
+    return argv_covers_pytest_node(node_id, l3_profile_command_argv())
+
+
+def argv_covers_pytest_node(node_id: str, argv: tuple[str, ...]) -> bool:
+    """True when ``node_id`` (``path.py::test`` or a whole ``path.py``) is collected by ``argv``."""
+    base = node_id.split("[", 1)[0]
+    parsed = parse_pytest_node_id(base)
+    if parsed is not None:
+        rel_path, func_name = parsed
+    elif base.endswith(".py") and "::" not in base:
+        rel_path, func_name = base, None
+    else:
         return False
-    rel_path, _ = parsed
     rel_norm = rel_path.replace("\\", "/")
-    argv = l3_profile_command_argv()
     for arg in argv:
         if arg.startswith("-"):
             continue
         arg_norm = arg.replace("\\", "/")
         if "::" in arg_norm:
-            file_part = arg_norm.split("::", 1)[0]
-            if rel_norm == file_part or rel_norm.startswith(file_part.rstrip("/") + "/"):
+            file_part, arg_func = arg_norm.split("::", 1)
+            if rel_norm == file_part and func_name is not None and arg_func.split("[", 1)[0] == func_name:
                 return True
             continue
         if arg_norm.endswith("/"):

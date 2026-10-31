@@ -56,18 +56,33 @@ def proof_must_live_in_ebh5_qualification_suite(node_id: str) -> bool:
     return rel_path.replace("\\", "/").startswith("tests/qualification/ebh_5/")
 
 
+def _validate_single_proof_node(concern_id: str, node_id: str) -> str | None:
+    base, sep, param = node_id.partition("[")
+    if sep:
+        if not param.endswith("]") or param[:-1] != concern_id:
+            return "parametrized proof node must be parametrized by its own concern_id"
+    if "@" in base and not parse_pytest_node_id(base):
+        return "historical narrative proof ref is not a resolvable pytest node"
+    if not parse_pytest_node_id(base):
+        return "behavioral_proof_ref is not a canonical pytest node id"
+    if not proof_must_live_in_ebh5_qualification_suite(base):
+        return "proof must live under tests/qualification/ebh_5/"
+    if not pytest_test_function_exists(base):
+        return "pytest node does not resolve to an existing test function"
+    return None
+
+
 def validate_behavioral_proof_node_for_concern(concern_id: str, behavioral_proof_ref: str) -> str | None:
-    """Return error message or None when valid."""
+    """Return error message or None when valid; ``;``-separated refs require every node to resolve."""
     if behavioral_proof_ref in ("", "PENDING", "PENDING — EBH_5 Package C"):
         return "behavioral_proof_ref is pending or empty"
-    if "@" in behavioral_proof_ref and not parse_pytest_node_id(behavioral_proof_ref):
-        return "historical narrative proof ref is not a resolvable pytest node"
-    if not parse_pytest_node_id(behavioral_proof_ref):
-        return "behavioral_proof_ref is not a canonical pytest node id"
-    if not proof_must_live_in_ebh5_qualification_suite(behavioral_proof_ref):
-        return "proof must live under tests/qualification/ebh_5/"
-    if not pytest_test_function_exists(behavioral_proof_ref):
-        return "pytest node does not resolve to an existing test function"
+    nodes = [part.strip() for part in behavioral_proof_ref.split(";")]
+    if any(not node for node in nodes):
+        return "behavioral_proof_ref contains an empty node"
+    for node in nodes:
+        err = _validate_single_proof_node(concern_id, node)
+        if err:
+            return err
     expected = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE.get(concern_id)
     if expected is None:
         return f"concern_id {concern_id!r} is not in QUALIFIED registry"
