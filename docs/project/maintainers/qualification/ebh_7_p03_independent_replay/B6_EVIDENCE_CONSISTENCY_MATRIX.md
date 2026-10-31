@@ -27,11 +27,11 @@
 
 | Field | Value |
 | --- | --- |
-| Passed | **187** |
+| Passed | **195** |
 | Skipped | **0** |
 | Xfailed | **0** |
 | Profile | `MANIFEST.json` → `pytest_profile.command` |
-| Log | `.tmp/session/ebh-7-f07-probe-fix/l3-final.log` |
+| Log | `.tmp/session/ebh-7-final-cert/l3-final.log` |
 
 ## INT2E / ECAP
 
