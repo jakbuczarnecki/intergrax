@@ -855,6 +855,27 @@ jobs:
           echo "${ATTEST_EXIT}" > build/qualification/ebh7-l3/f10-attestation.exit
           exit "${ATTEST_EXIT}"
 
+      - name: EBH-7 L3 JUnit summary + skip disposition (strict, fail-closed)
+        id: ebh7_junit_evidence
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          EVID=build/qualification/ebh7-l3
+          JEXIT=0
+          uv run --frozen python scripts/qualification/ebh7_junit_evidence.py summary --junit "${EVID}/junit.xml" \
+            --out "${EVID}/junit-summary.json" 2>&1 | tee "${EVID}/junit-summary.log"
+          echo "${PIPESTATUS[0]}" > "${EVID}/junit-summary.exit"
+          uv run --frozen python scripts/qualification/ebh7_junit_evidence.py skip-disposition --junit "${EVID}/junit.xml" \
+            --out "${EVID}/skip-disposition.json" 2>&1 | tee "${EVID}/skip-disposition.log"
+          echo "${PIPESTATUS[0]}" > "${EVID}/skip-disposition.exit"
+          if [ "$(tr -d '[:space:]' < "${EVID}/junit-summary.exit")" != "0" ] \
+            || [ "$(tr -d '[:space:]' < "${EVID}/skip-disposition.exit")" != "0" ]; then
+            JEXIT=1
+          fi
+          exit "${JEXIT}"
+
       - name: Finalize EBH-7 L3 metadata
         if: always()
         shell: bash
@@ -872,13 +893,11 @@ jobs:
           if [ -f build/qualification/ebh7-l3/pytest.exit ]; then
             PYTEST_EXIT_CODE="$(tr -d '[:space:]' < build/qualification/ebh7-l3/pytest.exit)"
           fi
-          PASSED="unknown"
-          SKIPPED="unknown"
-          XFAILED="unknown"
-          if [ -f build/qualification/ebh7-l3/junit.xml ]; then
-            read -r PASSED SKIPPED XFAILED <<< "$(python3 -c "import xml.etree.ElementTree as ET; r=ET.parse('build/qualification/ebh7-l3/junit.xml').getroot(); print(r.get('tests','0'), sum(int(ts.get('skipped',0)) for ts in r.findall('testsuite')), sum(int(ts.get('failures',0))+int(ts.get('errors',0)) for ts in r.findall('testsuite')))")"
-          fi
-          F07_COUNT="$(grep -c 'test_ebh_5_dual_slug_rpl_e_operational_gates.py' build/qualification/ebh7-l3/pytest.log 2>/dev/null || echo 0)"
+          # Strict JUnit statistics (root testsuite|testsuites; leaf suites counted once). Missing/invalid JUnit
+          # yields junit_parse=FAIL + "unknown" values — never zero statistics, never a silent success.
+          JUNIT_LINES="$(uv run --frozen python scripts/qualification/ebh7_junit_evidence.py meta-lines \
+            --summary build/qualification/ebh7-l3/junit-summary.json \
+            --skip-disposition build/qualification/ebh7-l3/skip-disposition.json)"
           STATUS="INTERRUPTED"
           QUALIFICATION_STATUS="ABORTED"
           if [ "${PYTEST_EXIT_CODE}" = "0" ]; then
@@ -888,13 +907,17 @@ jobs:
             QUALIFICATION_STATUS="COMPLETED_FAIL"
             STATUS="FAILED"
           fi
+          if ! printf '%s\n' "${JUNIT_LINES}" | grep -qx 'junit_evidence_status=PASS'; then
+            if [ "${QUALIFICATION_STATUS}" = "COMPLETED_PASS" ]; then
+              QUALIFICATION_STATUS="COMPLETED_FAIL"
+              STATUS="FAILED"
+            fi
+          fi
           {
             cat "${META}"
             echo "end_timestamp=${END_TS}"
             echo "pytest_exit_code=${PYTEST_EXIT_CODE}"
-            echo "junit_tests=${PASSED}"
-            echo "junit_skipped=${SKIPPED}"
-            echo "f07_log_lines=${F07_COUNT}"
+            printf '%s\n' "${JUNIT_LINES}"
             echo "qualification_status=${QUALIFICATION_STATUS}"
             echo "status=${STATUS}"
           } | tee "${META}.tmp" > /dev/null
@@ -923,5 +946,13 @@ jobs:
           fi
           if [ "$(tr -d '[:space:]' < build/qualification/ebh7-l3/f10-attestation.exit 2>/dev/null || echo 1)" != "0" ]; then
             echo "FAIL: B6-F10 execution attestation"
+            exit 1
+          fi
+          if [ "$(tr -d '[:space:]' < build/qualification/ebh7-l3/junit-summary.exit 2>/dev/null || echo 1)" != "0" ]; then
+            echo "FAIL: strict JUnit summary (missing/invalid/inconsistent junit.xml)"
+            exit 1
+          fi
+          if [ "$(tr -d '[:space:]' < build/qualification/ebh7-l3/skip-disposition.exit 2>/dev/null || echo 1)" != "0" ]; then
+            echo "FAIL: skipped-test disposition (unregistered/stale skip or evidence not PASS)"
             exit 1
           fi
