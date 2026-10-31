@@ -1,6 +1,6 @@
 # EBH-7 — Continuation execution final report
 
-**HEAD @ report:** see `git rev-parse HEAD` after continuation commit · **Start:** `679a4e28a5ea51ccda96ac31f8f616c99c06d859`
+**HEAD @ report:** `3da23d6b9d92b512b0ded0440c5bd9dfc36ffb28` · **Start:** `679a4e28a5ea51ccda96ac31f8f616c99c06d859`
 
 ## Verdict
 
