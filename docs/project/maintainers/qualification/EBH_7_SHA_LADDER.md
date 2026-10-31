@@ -23,7 +23,7 @@
 | EBH7_CLOSURE_G01_G09_IMPLEMENTATION_SHA | Closure evidence audit SSOT + gates | `72619e6c4a4b6cc8b4494f3c31b82dfedc1f0fe9` |
 | EBH7_B6_PROOF_STRENGTH_CORRECTION_SHA | B6 F07/F08/F09 RPL-E/F + derived G07/G08 + G09 resolution | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
 | TEST_EXECUTION_SHA | Full ebh_7 L3 replay | `83136ef7be70ff33d0a81b978c154ac8528930a2` |
-| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `23cb17b913a86403508931bf6816f4c5ad56ec3c` |
+| EVIDENCE_PUBLICATION_SHA | P03 dossier publication | `34bf540ab520755ec396bfa1b835f58f6beb4136` |
 | INDEPENDENT_ACCEPTANCE_BASELINE_SHA | B6 audited tree | *pending B6 PASS* |
 | FORMAL_CLOSURE_PUBLICATION_SHA | OD-EBH7-08 signed publication | *pending operator* |
 
