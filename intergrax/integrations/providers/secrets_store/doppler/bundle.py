@@ -1,14 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_doppler_secrets_store as _legacy_create_doppler_secrets_store
-
+from intergrax.integrations._shared.p5.factories import (
+    create_doppler_secrets_store as _legacy_create_doppler_secrets_store,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.secrets_store.doppler.integration import (
     DOPPLER_SECRETS_STORE_PROVIDER_ID,
+    DopplerSecretsStoreClient,
     DopplerSecretsStoreIntegration,
     DopplerSecretsStoreIntegrationConfig,
-    DopplerSecretsStoreClient,
 )
 
 __all__ = [
@@ -43,6 +44,8 @@ def create_doppler_secrets_store_integration(
 
 def create_doppler_secrets_store(**kwargs: object) -> DopplerSecretsStoreIntegration:
     """Compatibility shim — constructs DopplerSecretsStoreIntegration from legacy runtime."""
+    if not kwargs:
+        return create_doppler_secrets_store_integration(enabled=False)
     runtime = _legacy_create_doppler_secrets_store(**kwargs)
     if isinstance(runtime, DopplerSecretsStoreIntegration):
         return runtime

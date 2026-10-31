@@ -2,13 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 
 from intergrax.integrations._shared.p2.factories import create_sqs_message_bus as _legacy_create_sqs_message_bus
-
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.sqs.integration import (
     SQS_MESSAGE_BUS_PROVIDER_ID,
+    SqsMessageBusClient,
     SqsMessageBusIntegration,
     SqsMessageBusIntegrationConfig,
-    SqsMessageBusClient,
 )
 
 __all__ = [
@@ -43,6 +42,8 @@ def create_sqs_message_bus_integration(
 
 def create_sqs_message_bus(**kwargs: object) -> SqsMessageBusIntegration:
     """Compatibility shim — constructs SqsMessageBusIntegration from legacy runtime."""
+    if not kwargs:
+        return create_sqs_message_bus_integration(enabled=False)
     runtime = _legacy_create_sqs_message_bus(**kwargs)
     if isinstance(runtime, SqsMessageBusIntegration):
         return runtime

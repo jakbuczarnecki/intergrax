@@ -38,6 +38,8 @@ def run_package_c_v2_dual_slug_for_entry(
         assert tmp_path is not None
     if entry.slug_a == "duckdb" or entry.slug_b == "duckdb":
         require_python_module("duckdb", qualification_context=entry.concern_id)
+    if entry.slug_a == "mongodb" or entry.slug_b == "mongodb":
+        require_python_module("pymongo", qualification_context=entry.concern_id)
     if entry.slug_a == "chroma" or entry.slug_b == "chroma":
         require_python_module("chromadb", qualification_context=entry.concern_id)
     run_dual_slug_resolve_from_profile(

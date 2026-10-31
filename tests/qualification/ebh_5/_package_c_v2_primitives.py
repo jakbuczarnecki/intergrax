@@ -39,8 +39,20 @@ def assert_unregistered_fail_closed(*, category: IntegrationCategory) -> None:
 def register_catalog_slug(*, category: IntegrationCategory, slug: str) -> None:
     module_path = f"intergrax.integrations.providers.{category.value}.{slug}.register"
     module = importlib.import_module(module_path)
-    register_fn = getattr(module, f"register_{slug}_integration")
-    register_fn()
+    candidate_names = (
+        f"register_{slug}_integration",
+        f"register_{slug}_{category.value}_integration",
+        f"register_{slug}_embedding_provider_integration",
+        f"register_{slug}_{category.value.replace('_', '')}_integration",
+    )
+    for name in candidate_names:
+        register_fn = getattr(module, name, None)
+        if register_fn is not None:
+            register_fn()
+            return
+    raise AttributeError(
+        f"{module_path} has no register function (tried {', '.join(candidate_names)})",
+    )
 
 
 def profile_for_slug(
@@ -63,6 +75,9 @@ def profile_for_slug(
 
 
 def exercise_connect_close_if_supported(integration: object) -> None:
+    config = getattr(integration, "config", None)
+    if config is not None and getattr(config, "enabled", True) is False:
+        return
     connect = getattr(integration, "connect", None)
     close = getattr(integration, "close", None)
     if callable(connect):

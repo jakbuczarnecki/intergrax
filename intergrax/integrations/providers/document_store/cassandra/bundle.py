@@ -72,6 +72,8 @@ def create_cassandra_document_store(
     **config_overrides: object,
 ) -> CassandraDocumentStoreIntegration:
     """Catalog factory for ``"cassandra"`` / ``DOCUMENT_STORE``."""
+    if document_store is None and session is None and session_factory is None and not config_overrides:
+        return create_cassandra_document_store_integration(enabled=False)
     return create_cassandra_integration(
         document_store=document_store,
         session=session,

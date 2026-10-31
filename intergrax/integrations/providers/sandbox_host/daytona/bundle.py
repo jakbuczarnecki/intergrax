@@ -1,14 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_daytona_sandbox_host as _legacy_create_daytona_sandbox_host
-
+from intergrax.integrations._shared.p7.factories import (
+    create_daytona_sandbox_host as _legacy_create_daytona_sandbox_host,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.sandbox_host.daytona.integration import (
     DAYTONA_SANDBOX_HOST_PROVIDER_ID,
+    DaytonaSandboxHostClient,
     DaytonaSandboxHostIntegration,
     DaytonaSandboxHostIntegrationConfig,
-    DaytonaSandboxHostClient,
 )
 
 __all__ = [
@@ -43,6 +44,8 @@ def create_daytona_sandbox_host_integration(
 
 def create_daytona_sandbox_host(**kwargs: object) -> DaytonaSandboxHostIntegration:
     """Compatibility shim — constructs DaytonaSandboxHostIntegration from legacy runtime."""
+    if not kwargs:
+        return create_daytona_sandbox_host_integration(enabled=False)
     runtime = _legacy_create_daytona_sandbox_host(**kwargs)
     if isinstance(runtime, DaytonaSandboxHostIntegration):
         return runtime

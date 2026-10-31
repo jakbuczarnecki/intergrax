@@ -5,17 +5,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
 
 from intergrax.integrations._shared.p3.configs import VectorIntegrationConfig
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.providers.vector_store.inmemory.integration import (
     INMEMORY_VECTOR_STORE_PROVIDER_ID,
+    InmemoryVectorStoreClient,
     InmemoryVectorStoreIntegration,
     InmemoryVectorStoreIntegrationConfig,
-    InmemoryVectorStoreClient,
 )
 from intergrax.integrations.providers.vector_store.inmemory.opens import open_inmemory_vector_store
 
@@ -55,9 +55,9 @@ def create_inmemory_vector_store_integration(
 
 def create_inmemory_integration(
     *,
-    vector_store: Optional[VectorStore] = None,
-    store: Optional[object] = None,
-    store_factory: Optional[Callable[[], object]] = None,
+    vector_store: VectorStore | None = None,
+    store: object | None = None,
+    store_factory: Callable[[], object] | None = None,
     **config_overrides: object,
 ) -> InmemoryIntegrationBundle:
     config = resolve_inmemory_config(**config_overrides)
@@ -73,12 +73,14 @@ def create_inmemory_integration(
 
 def create_inmemory_vector_store(
     *,
-    vector_store: Optional[VectorStore] = None,
-    store: Optional[object] = None,
-    store_factory: Optional[Callable[[], object]] = None,
+    vector_store: VectorStore | None = None,
+    store: object | None = None,
+    store_factory: Callable[[], object] | None = None,
     **config_overrides: object,
 ) -> InmemoryVectorStoreIntegration:
     """Compatibility shim — constructs ``InmemoryVectorStoreIntegration`` via legacy catalog path."""
+    if vector_store is None and store is None and store_factory is None and not config_overrides:
+        return create_inmemory_vector_store_integration(enabled=False)
     return create_inmemory_integration(
         vector_store=vector_store,
         store=store,

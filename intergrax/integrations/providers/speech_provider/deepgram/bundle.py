@@ -1,14 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_deepgram_speech_provider as _legacy_create_deepgram_speech_provider
-
+from intergrax.integrations._shared.p7.factories import (
+    create_deepgram_speech_provider as _legacy_create_deepgram_speech_provider,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.speech_provider.deepgram.integration import (
     DEEPGRAM_SPEECH_PROVIDER_PROVIDER_ID,
+    DeepgramSpeechProviderClient,
     DeepgramSpeechProviderIntegration,
     DeepgramSpeechProviderIntegrationConfig,
-    DeepgramSpeechProviderClient,
 )
 
 __all__ = [
@@ -43,6 +44,8 @@ def create_deepgram_speech_provider_integration(
 
 def create_deepgram_speech_provider(**kwargs: object) -> DeepgramSpeechProviderIntegration:
     """Compatibility shim — constructs DeepgramSpeechProviderIntegration from legacy runtime."""
+    if not kwargs:
+        return create_deepgram_speech_provider_integration(enabled=False)
     runtime = _legacy_create_deepgram_speech_provider(**kwargs)
     if isinstance(runtime, DeepgramSpeechProviderIntegration):
         return runtime

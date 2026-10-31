@@ -1,14 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_infisical_secrets_store as _legacy_create_infisical_secrets_store
-
+from intergrax.integrations._shared.p7.factories import (
+    create_infisical_secrets_store as _legacy_create_infisical_secrets_store,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.secrets_store.infisical.integration import (
     INFISICAL_SECRETS_STORE_PROVIDER_ID,
+    InfisicalSecretsStoreClient,
     InfisicalSecretsStoreIntegration,
     InfisicalSecretsStoreIntegrationConfig,
-    InfisicalSecretsStoreClient,
 )
 
 __all__ = [
@@ -43,6 +44,8 @@ def create_infisical_secrets_store_integration(
 
 def create_infisical_secrets_store(**kwargs: object) -> InfisicalSecretsStoreIntegration:
     """Compatibility shim — constructs InfisicalSecretsStoreIntegration from legacy runtime."""
+    if not kwargs:
+        return create_infisical_secrets_store_integration(enabled=False)
     runtime = _legacy_create_infisical_secrets_store(**kwargs)
     if isinstance(runtime, InfisicalSecretsStoreIntegration):
         return runtime

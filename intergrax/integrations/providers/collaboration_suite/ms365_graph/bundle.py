@@ -11,8 +11,9 @@ HTTP clients are opened only in ``opens.py``. Tier-3 code MUST use
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
@@ -43,13 +44,13 @@ def resolve_ms365_graph_config(**overrides: object) -> Ms365GraphIntegrationConf
 
 def create_ms365_graph_integration(
     *,
-    collaboration_suite: Optional[CollaborationSuite] = None,
-    client: Optional[GraphRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
-    access_token: Optional[str] = None,
-    download_http_client: Optional[Any] = None,
-    download_http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
+    collaboration_suite: CollaborationSuite | None = None,
+    client: GraphRestClient | None = None,
+    http_client: Any | None = None,
+    http_client_factory: Callable[[Ms365GraphIntegrationConfig], Any] | None = None,
+    access_token: str | None = None,
+    download_http_client: Any | None = None,
+    download_http_client_factory: Callable[[Ms365GraphIntegrationConfig], Any] | None = None,
     **config_overrides: object,
 ) -> Ms365GraphIntegrationBundle:
     config = resolve_ms365_graph_config(**config_overrides)
@@ -80,41 +81,11 @@ def create_ms365_graph_integration(
     )
 
 
-def create_ms365_graph_collaboration_suite(
-    *,
-    collaboration_suite: Optional[CollaborationSuite] = None,
-    client: Optional[GraphRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
-    access_token: Optional[str] = None,
-    download_http_client: Optional[Any] = None,
-    download_http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
-    **config_overrides: object,
-) -> Ms365GraphCollaborationSuiteIntegration:
-    """Catalog factory for ``"ms365_graph"`` / ``COLLABORATION_SUITE``."""
-    return create_ms365_graph_integration(
-        collaboration_suite=collaboration_suite,
-        client=client,
-        http_client=http_client,
-        http_client_factory=http_client_factory,
-        access_token=access_token,
-        download_http_client=download_http_client,
-        download_http_client_factory=download_http_client_factory,
-        **config_overrides,
-    ).collaboration_suite
-
-
 def create_ms365_graph_collaboration_suite_integration(
     *,
     client: Ms365GraphCollaborationSuiteClient | None = None,
     enabled: bool = False,
 ) -> Ms365GraphCollaborationSuiteIntegration:
-    """
-    Build a contract-based Ms365 Graph collaboration suite integration.
-
-    Compatibility shim — constructs Integration via from_store (create_ms365_graph_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
     if enabled and client is None:
         raise IntegrationConfigurationError(
             "Ms365 Graph collaboration suite integration requires an injected client when enabled=True",
@@ -126,3 +97,38 @@ def create_ms365_graph_collaboration_suite_integration(
         display_name="Ms365 Graph",
         config=Ms365GraphCollaborationSuiteIntegrationConfig(enabled=enabled),
     )
+
+
+def create_ms365_graph_collaboration_suite(
+    *,
+    collaboration_suite: CollaborationSuite | None = None,
+    client: GraphRestClient | None = None,
+    http_client: Any | None = None,
+    http_client_factory: Callable[[Ms365GraphIntegrationConfig], Any] | None = None,
+    access_token: str | None = None,
+    download_http_client: Any | None = None,
+    download_http_client_factory: Callable[[Ms365GraphIntegrationConfig], Any] | None = None,
+    **config_overrides: object,
+) -> Ms365GraphCollaborationSuiteIntegration:
+    """Catalog factory for ``"ms365_graph"`` / ``COLLABORATION_SUITE``."""
+    if (
+        collaboration_suite is None
+        and client is None
+        and http_client is None
+        and http_client_factory is None
+        and access_token is None
+        and download_http_client is None
+        and download_http_client_factory is None
+        and not config_overrides
+    ):
+        return create_ms365_graph_collaboration_suite_integration(enabled=False)
+    return create_ms365_graph_integration(
+        collaboration_suite=collaboration_suite,
+        client=client,
+        http_client=http_client,
+        http_client_factory=http_client_factory,
+        access_token=access_token,
+        download_http_client=download_http_client,
+        download_http_client_factory=download_http_client_factory,
+        **config_overrides,
+    ).collaboration_suite

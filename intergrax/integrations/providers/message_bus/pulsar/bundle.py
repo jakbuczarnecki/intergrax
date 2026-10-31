@@ -2,13 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 
 from intergrax.integrations._shared.p7.factories import create_pulsar_message_bus as _legacy_create_pulsar_message_bus
-
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.pulsar.integration import (
     PULSAR_MESSAGE_BUS_PROVIDER_ID,
+    PulsarMessageBusClient,
     PulsarMessageBusIntegration,
     PulsarMessageBusIntegrationConfig,
-    PulsarMessageBusClient,
 )
 
 __all__ = [
@@ -43,6 +42,8 @@ def create_pulsar_message_bus_integration(
 
 def create_pulsar_message_bus(**kwargs: object) -> PulsarMessageBusIntegration:
     """Compatibility shim — constructs PulsarMessageBusIntegration from legacy runtime."""
+    if not kwargs:
+        return create_pulsar_message_bus_integration(enabled=False)
     runtime = _legacy_create_pulsar_message_bus(**kwargs)
     if isinstance(runtime, PulsarMessageBusIntegration):
         return runtime

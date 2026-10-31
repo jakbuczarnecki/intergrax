@@ -10,7 +10,7 @@
 | GAP-EBH7-XDM | HIGH | Platform | **OPEN** — 16/34 EXACT | W7 |
 | GAP-SEM-AUTO-EXACT | CRITICAL | Qualification | **CLOSED** — fail-closed disposition registry | W8 |
 | GAP-FRZ-IMPACT | MEDIUM | Program | OWNED — impact records only | W8 |
-| GAP-LOCAL-UNTRACKED | LOW | Operator | OPEN — local untracked dirs | W0 |
+| GAP-LOCAL-UNTRACKED | LOW | Operator | OPEN — exclude from commits: `exports/`, `platform_proofs/test_*`, `.cursor/plans/` (session hygiene @ gap-closure G0) | W0 |
 | GAP-PROD-Q-LIVE | MEDIUM | PROD-Q | DELEGATED — out of EBH-7 closure | EVOL |
 | GAP-WL7-4H | LOW | Operator | N/A — deferral verified | W8 |
 | GAP-LAYER-L9 | MEDIUM | Architecture | OWNED — EBH-6 reuse | W5/W7 |

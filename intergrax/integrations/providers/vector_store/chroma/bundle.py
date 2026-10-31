@@ -5,12 +5,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations.providers.vector_store.chroma.integration import ChromaVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.chroma.config import ChromaIntegrationConfig
+from intergrax.integrations.providers.vector_store.chroma.integration import (
+    CHROMA_VECTOR_STORE_PROVIDER_ID,
+    ChromaVectorStoreClient,
+    ChromaVectorStoreIntegration,
+    ChromaVectorStoreIntegrationConfig,
+)
 from intergrax.integrations.providers.vector_store.chroma.opens import open_chroma_vector_store
 
 
@@ -26,9 +32,9 @@ def resolve_chroma_config(**overrides: object) -> ChromaIntegrationConfig:
 
 def create_chroma_integration(
     *,
-    vector_store: Optional[VectorStore] = None,
-    store: Optional[object] = None,
-    store_factory: Optional[Callable[[], object]] = None,
+    vector_store: VectorStore | None = None,
+    store: object | None = None,
+    store_factory: Callable[[], object] | None = None,
     **config_overrides: object,
 ) -> ChromaIntegrationBundle:
     config = resolve_chroma_config(**config_overrides)
@@ -42,41 +48,11 @@ def create_chroma_integration(
     return ChromaIntegrationBundle(config=config, vector_store=store_impl)
 
 
-def create_chroma_vector_store(
-    *,
-    vector_store: Optional[VectorStore] = None,
-    store: Optional[object] = None,
-    store_factory: Optional[Callable[[], object]] = None,
-    **config_overrides: object,
-) -> ChromaVectorStoreIntegration:
-    """Catalog factory for ``"chroma"`` / ``VECTOR_STORE``."""
-    return create_chroma_integration(
-        vector_store=vector_store,
-        store=store,
-        store_factory=store_factory,
-        **config_overrides,
-    ).vector_store
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.vector_store.chroma.integration import (
-    CHROMA_VECTOR_STORE_PROVIDER_ID,
-    ChromaVectorStoreIntegration,
-    ChromaVectorStoreIntegrationConfig,
-    ChromaVectorStoreClient,
-)
-
-
 def create_chroma_vector_store_integration(
     *,
     client: ChromaVectorStoreClient | None = None,
     enabled: bool = False,
 ) -> ChromaVectorStoreIntegration:
-    """
-    Build a contract-based Chroma vector store integration.
-
-    Compatibility shim — constructs Integration via from_store (create_chroma_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
     if enabled and client is None:
         raise IntegrationConfigurationError(
             "Chroma vector store integration requires an injected client when enabled=True",
@@ -88,3 +64,21 @@ def create_chroma_vector_store_integration(
         display_name="Chroma",
         config=ChromaVectorStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_chroma_vector_store(
+    *,
+    vector_store: VectorStore | None = None,
+    store: object | None = None,
+    store_factory: Callable[[], object] | None = None,
+    **config_overrides: object,
+) -> ChromaVectorStoreIntegration:
+    """Catalog factory for ``"chroma"`` / ``VECTOR_STORE``."""
+    if vector_store is None and store is None and store_factory is None and not config_overrides:
+        return create_chroma_vector_store_integration(enabled=False)
+    return create_chroma_integration(
+        vector_store=vector_store,
+        store=store,
+        store_factory=store_factory,
+        **config_overrides,
+    ).vector_store

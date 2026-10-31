@@ -4,7 +4,8 @@
 | --- | --- |
 | Plan | `ebh-7_master_completion` (do not edit plan file) |
 | START_HEAD | `8b7661af15641a6a22d4eaa9127a5372d9968bfd` |
-| Working tree | implementation @ agent session (uncommitted until operator commit) |
+| Working tree | committed @ `ad3e24a20` (master wave); gap-closure continues in follow-on commits |
+| MASTER_WAVE_SHA | `ad3e24a20d7d1b341f721ef2427b9c1f65506061` |
 
 ## Wave A — baseline
 

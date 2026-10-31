@@ -11,13 +11,20 @@ HTTP clients are opened only in ``opens.py``. Tier-3 code MUST use
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
-from intergrax.integrations.providers.issue_tracker.jira.adapter import _JiraIssueTracker
 from intergrax.integrations.providers.issue_tracker.jira.client import JiraRestClient
 from intergrax.integrations.providers.issue_tracker.jira.config import JiraIntegrationConfig
+from intergrax.integrations.providers.issue_tracker.jira.integration import (
+    JIRA_ISSUE_TRACKER_PROVIDER_ID,
+    JiraIssueTrackerClient,
+    JiraIssueTrackerIntegration,
+    JiraIssueTrackerIntegrationConfig,
+)
 from intergrax.integrations.providers.issue_tracker.jira.opens import open_jira_issue_tracker, open_jira_rest_client
 
 
@@ -34,10 +41,10 @@ def resolve_jira_config(**overrides: object) -> JiraIntegrationConfig:
 
 def create_jira_integration(
     *,
-    issue_tracker: Optional[IssueTracker] = None,
-    client: Optional[JiraRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[JiraIntegrationConfig], Any]] = None,
+    issue_tracker: IssueTracker | None = None,
+    client: JiraRestClient | None = None,
+    http_client: Any | None = None,
+    http_client_factory: Callable[[JiraIntegrationConfig], Any] | None = None,
     **config_overrides: object,
 ) -> JiraIntegrationBundle:
     config = resolve_jira_config(**config_overrides)
@@ -51,43 +58,11 @@ def create_jira_integration(
     return JiraIntegrationBundle(config=config, issue_tracker=tracker, rest_client=rest_client)
 
 
-def create_jira_issue_tracker(
-    *,
-    issue_tracker: Optional[IssueTracker] = None,
-    client: Optional[JiraRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[JiraIntegrationConfig], Any]] = None,
-    **config_overrides: object,
-) -> JiraIssueTrackerIntegration:
-    """Catalog factory for ``"jira"`` / ``ISSUE_TRACKER``."""
-    return create_jira_integration(
-        issue_tracker=issue_tracker,
-        client=client,
-        http_client=http_client,
-        http_client_factory=http_client_factory,
-        **config_overrides,
-    ).issue_tracker
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.issue_tracker.jira.integration import (
-    JIRA_ISSUE_TRACKER_PROVIDER_ID,
-    JiraIssueTrackerIntegration,
-    JiraIssueTrackerIntegrationConfig,
-    JiraIssueTrackerClient,
-)
-
-
 def create_jira_issue_tracker_integration(
     *,
-    client: JiraIssueTrackerIntegrationClient | None = None,
+    client: JiraIssueTrackerClient | None = None,
     enabled: bool = False,
 ) -> JiraIssueTrackerIntegration:
-    """
-    Build a contract-based Jira issue tracker integration.
-
-    Compatibility shim — constructs Integration via from_store (create_jira_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
     if enabled and client is None:
         raise IntegrationConfigurationError(
             "Jira issue tracker integration requires an injected client when enabled=True",
@@ -99,3 +74,29 @@ def create_jira_issue_tracker_integration(
         display_name="Jira",
         config=JiraIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_jira_issue_tracker(
+    *,
+    issue_tracker: IssueTracker | None = None,
+    client: JiraRestClient | None = None,
+    http_client: Any | None = None,
+    http_client_factory: Callable[[JiraIntegrationConfig], Any] | None = None,
+    **config_overrides: object,
+) -> JiraIssueTrackerIntegration:
+    """Catalog factory for ``"jira"`` / ``ISSUE_TRACKER``."""
+    if (
+        issue_tracker is None
+        and client is None
+        and http_client is None
+        and http_client_factory is None
+        and not config_overrides
+    ):
+        return create_jira_issue_tracker_integration(enabled=False)
+    return create_jira_integration(
+        issue_tracker=issue_tracker,
+        client=client,
+        http_client=http_client,
+        http_client_factory=http_client_factory,
+        **config_overrides,
+    ).issue_tracker

@@ -1,14 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_elevenlabs_speech_provider as _legacy_create_elevenlabs_speech_provider
-
+from intergrax.integrations._shared.p7.factories import (
+    create_elevenlabs_speech_provider as _legacy_create_elevenlabs_speech_provider,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.speech_provider.elevenlabs.integration import (
     ELEVENLABS_SPEECH_PROVIDER_PROVIDER_ID,
+    ElevenlabsSpeechProviderClient,
     ElevenlabsSpeechProviderIntegration,
     ElevenlabsSpeechProviderIntegrationConfig,
-    ElevenlabsSpeechProviderClient,
 )
 
 __all__ = [
@@ -43,6 +44,8 @@ def create_elevenlabs_speech_provider_integration(
 
 def create_elevenlabs_speech_provider(**kwargs: object) -> ElevenlabsSpeechProviderIntegration:
     """Compatibility shim — constructs ElevenlabsSpeechProviderIntegration from legacy runtime."""
+    if not kwargs:
+        return create_elevenlabs_speech_provider_integration(enabled=False)
     runtime = _legacy_create_elevenlabs_speech_provider(**kwargs)
     if isinstance(runtime, ElevenlabsSpeechProviderIntegration):
         return runtime

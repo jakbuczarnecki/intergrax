@@ -11,12 +11,18 @@ this module or ``profile.resolve(IntegrationCategory.MESSAGE_BUS)``.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.providers.message_bus.rabbitmq.config import RabbitMQIntegrationConfig
+from intergrax.integrations.providers.message_bus.rabbitmq.integration import (
+    RABBITMQ_MESSAGE_BUS_PROVIDER_ID,
+    RabbitmqMessageBusClient,
+    RabbitmqMessageBusIntegration,
+    RabbitmqMessageBusIntegrationConfig,
+)
 from intergrax.integrations.providers.message_bus.rabbitmq.opens import (
     open_rabbitmq_consumer,
     open_rabbitmq_producer,
@@ -46,25 +52,41 @@ def resolve_rabbitmq_config(**overrides: object) -> RabbitMQIntegrationConfig:
     return RabbitMQIntegrationConfig.from_env(**overrides)
 
 
-def _require_kv_store(kv_store: Optional[DistributedKVStore]) -> DistributedKVStore:
+def _require_kv_store(kv_store: DistributedKVStore | None) -> DistributedKVStore:
     if kv_store is None:
-        raise ValueError(
-            "RabbitMQ integration requires ``kv_store`` (typically from redis integration)."
-        )
+        raise ValueError("RabbitMQ integration requires ``kv_store`` (typically from redis integration).")
     return kv_store
+
+
+def create_rabbitmq_message_bus_integration(
+    *,
+    client: RabbitmqMessageBusClient | None = None,
+    enabled: bool = False,
+) -> RabbitmqMessageBusIntegration:
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Rabbitmq message bus integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return RabbitmqMessageBusIntegration.from_client(client, enabled=enabled)
+    return RabbitmqMessageBusIntegration.for_provider(
+        provider_id=RABBITMQ_MESSAGE_BUS_PROVIDER_ID,
+        display_name="Rabbitmq",
+        config=RabbitmqMessageBusIntegrationConfig(enabled=enabled),
+    )
 
 
 def create_rabbitmq_integration(
     *,
-    kv_store: Optional[DistributedKVStore] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    virtual_host: Optional[str] = None,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    queue: Optional[str] = None,
-    producer: Optional[MessageProducer] = None,
-    consumer: Optional[MessageConsumer] = None,
+    kv_store: DistributedKVStore | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    virtual_host: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    queue: str | None = None,
+    producer: MessageProducer | None = None,
+    consumer: MessageConsumer | None = None,
     **config_overrides: object,
 ) -> RabbitMQIntegrationBundle:
     """Single entry point for RabbitMQ — message bus + producer + consumer."""
@@ -108,17 +130,19 @@ def create_rabbitmq_integration(
 
 def create_rabbitmq_message_bus(
     *,
-    kv_store: Optional[DistributedKVStore] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    virtual_host: Optional[str] = None,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    queue: Optional[str] = None,
-    producer: Optional[MessageProducer] = None,
+    kv_store: DistributedKVStore | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    virtual_host: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    queue: str | None = None,
+    producer: MessageProducer | None = None,
     **config_overrides: object,
-) -> MessageBus:
+) -> RabbitmqMessageBusIntegration:
     """Catalog factory for ``"rabbitmq"`` / ``MESSAGE_BUS``."""
+    if kv_store is None:
+        return create_rabbitmq_message_bus_integration(enabled=False)
     overrides: dict[str, object] = dict(config_overrides)
     if host is not None:
         overrides["host"] = host
@@ -136,26 +160,27 @@ def create_rabbitmq_message_bus(
     config = resolve_rabbitmq_config(**overrides)
     store = _require_kv_store(kv_store)
     resolved_producer = open_rabbitmq_producer(config, producer=producer)
-    return open_rabbitmq_task_queue(
+    bus = open_rabbitmq_task_queue(
         config,
         kv_store=store,
         queue=queue,
         producer=resolved_producer,
     )
+    return RabbitmqMessageBusIntegration.from_client(bus, enabled=True)
 
 
 def create_rabbitmq_worker(
     *,
     kv_store: DistributedKVStore,
     execution_registry: TaskExecutionRegistry,
-    idempotency_store: Optional[IdempotencyStore] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    virtual_host: Optional[str] = None,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    queue: Optional[str] = None,
-    consumer: Optional[MessageConsumer] = None,
+    idempotency_store: IdempotencyStore | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    virtual_host: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    queue: str | None = None,
+    consumer: MessageConsumer | None = None,
     poll_timeout_seconds: float = 1.0,
     causal_evidence_persistence: CausalEvidencePersistence,
     **config_overrides: object,
@@ -191,15 +216,15 @@ def build_rabbitmq_transport(
     *,
     kv_store: DistributedKVStore,
     execution_registry: TaskExecutionRegistry,
-    idempotency_store: Optional[IdempotencyStore] = None,
-    queue: Optional[str] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    virtual_host: Optional[str] = None,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    producer: Optional[MessageProducer] = None,
-    consumer: Optional[MessageConsumer] = None,
+    idempotency_store: IdempotencyStore | None = None,
+    queue: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    virtual_host: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    producer: MessageProducer | None = None,
+    consumer: MessageConsumer | None = None,
     causal_evidence_persistence: CausalEvidencePersistence,
     **config_overrides: object,
 ) -> object:
@@ -230,35 +255,3 @@ def build_rabbitmq_transport(
         causal_evidence_persistence=causal_evidence_persistence,
     )
     return TransportBundle(task_queue=bundle.message_bus, worker=worker)
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.message_bus.rabbitmq.integration import (
-    RABBITMQ_MESSAGE_BUS_PROVIDER_ID,
-    RabbitmqMessageBusIntegration,
-    RabbitmqMessageBusIntegrationConfig,
-    RabbitmqMessageBusClient,
-)
-
-
-def create_rabbitmq_message_bus_integration(
-    *,
-    client: RabbitmqMessageBusClient | None = None,
-    enabled: bool = False,
-) -> RabbitmqMessageBusIntegration:
-    """
-    Build a contract-based Rabbitmq message bus integration.
-
-    The legacy facade (create_rabbitmq_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
-    if enabled and client is None:
-        raise IntegrationConfigurationError(
-            "Rabbitmq message bus integration requires an injected client when enabled=True",
-        )
-    if client is not None:
-        return RabbitmqMessageBusIntegration.from_client(client, enabled=enabled)
-    return RabbitmqMessageBusIntegration.for_provider(
-        provider_id=RABBITMQ_MESSAGE_BUS_PROVIDER_ID,
-        display_name="Rabbitmq",
-        config=RabbitmqMessageBusIntegrationConfig(enabled=enabled),
-    )

@@ -45,6 +45,8 @@ def create_dynamodb_document_store_integration(
 
 def create_dynamodb_document_store(**kwargs: object) -> DynamoDBDocumentStoreIntegration:
     """Catalog factory for ``"dynamodb"`` / ``DOCUMENT_STORE``."""
+    if not kwargs:
+        return create_dynamodb_document_store_integration(enabled=False)
     runtime = _legacy_create_dynamodb_document_store(**kwargs)
     if isinstance(runtime, DynamoDBDocumentStoreIntegration):
         return runtime

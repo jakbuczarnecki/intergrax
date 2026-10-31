@@ -9,10 +9,7 @@ from enum import StrEnum
 from typing import Final
 
 from tests.qualification.ebh_5._behavioral_proof_registry import QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE
-from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import (
-    _LEGACY_FACTORY_BLOCKER,
-    catalog_by_concern_id,
-)
+from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import catalog_by_concern_id
 from tests.qualification.ebh_5._replaceability_matrix import CROSS_LAYER_REPLACEABILITY_MATRIX
 
 EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE: Final[str] = "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py"
@@ -54,22 +51,6 @@ BLOCKED_CONCERN_ROOT_CAUSE: Final[dict[str, str]] = {
     "integration.ml_inference_host": "Single catalog provider (replicate) — alternate vendor sandbox required",
     "integration.model_serving_runtime": "Single catalog provider (ollama) — alternate vendor sandbox required",
     "integration.vision_serving": "Single catalog provider (triton) — alternate vendor sandbox required",
-    "integration.document_store": _LEGACY_FACTORY_BLOCKER
-    + " (catalog factory returns contract @ HEAD; dual-slug qual blocked on pymongo/cassandra deps)",
-    "integration.object_storage": _LEGACY_FACTORY_BLOCKER,
-    "integration.vector_store": "Dual slug requires chromadb @ dev-ci (vector-chroma extra) + contract factory path",
-    "integration.graph_store": _LEGACY_FACTORY_BLOCKER,
-    "integration.message_bus": _LEGACY_FACTORY_BLOCKER,
-    "integration.notification_channel": _LEGACY_FACTORY_BLOCKER,
-    "integration.collaboration_suite": _LEGACY_FACTORY_BLOCKER,
-    "integration.issue_tracker": _LEGACY_FACTORY_BLOCKER,
-    "integration.wiki_knowledge": _LEGACY_FACTORY_BLOCKER,
-    "integration.browser_automation": _LEGACY_FACTORY_BLOCKER,
-    "integration.cloud_platform": _LEGACY_FACTORY_BLOCKER,
-    "integration.secrets_store": _LEGACY_FACTORY_BLOCKER,
-    "integration.sandbox_host": _LEGACY_FACTORY_BLOCKER,
-    "integration.speech_provider": _LEGACY_FACTORY_BLOCKER,
-    "integration.embedding_provider": _LEGACY_FACTORY_BLOCKER,
 }
 
 
