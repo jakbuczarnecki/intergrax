@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from tests.qualification.ebh_7._ebh7_audit_remediation_exit import assert_ebh7_audit_remediation_program_materialized
 from tests.qualification.ebh_7._ebh7_scenario_normative_audit import (
-    assert_ebh7_cross_domain_composed_proxy_inventory,
+    assert_ebh7_cross_domain_integrated_assertions_no_direct_test_calls,
     assert_ebh7_ten_xdm_normative_audit_complete,
 )
 from tests.qualification.ebh_7._rpl_h_normative_evidence import (
@@ -31,7 +31,7 @@ def test_ebh7_remediation_normative_rpl_integrity() -> None:
 
 def test_ebh7_remediation_ten_xdm_normative_inventory() -> None:
     assert_ebh7_ten_xdm_normative_audit_complete()
-    assert_ebh7_cross_domain_composed_proxy_inventory()
+    assert_ebh7_cross_domain_integrated_assertions_no_direct_test_calls()
 
 
 def test_ebh7_remediation_program_artifacts_materialized() -> None:

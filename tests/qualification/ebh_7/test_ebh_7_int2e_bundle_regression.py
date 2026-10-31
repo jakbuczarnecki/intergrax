@@ -47,5 +47,17 @@ def test_ebh7_int2e_bundle_imports(module_name: str) -> None:
     importlib.import_module(module_name)
 
 
+def test_ebh7_int2e_sqlite_relational_resolve_from_profile(tmp_path: Path) -> None:
+    from intergrax.integrations.contracts.base import IntegrationCategory
+    from tests.qualification.ebh_5._package_c_v2_primitives import run_dual_slug_resolve_from_profile
+
+    run_dual_slug_resolve_from_profile(
+        category=IntegrationCategory.RELATIONAL_STORE,
+        slug_a="sqlite",
+        slug_b="duckdb",
+        tmp_path=tmp_path,
+    )
+
+
 def test_ebh7_int2e_bundle_regression_scope_non_empty() -> None:
     assert len(_changed_bundle_modules()) >= 30

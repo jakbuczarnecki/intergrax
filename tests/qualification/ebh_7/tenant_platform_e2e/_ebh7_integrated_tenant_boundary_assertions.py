@@ -58,6 +58,12 @@ class _EchoHandler(ToolHandler[_In, _Out]):
 
 
 def assert_gov_exec_cross_tenant_projection_denied() -> None:
+    import asyncio
+
+    from tests.qualification.ebh_7.tenant_platform_e2e._ebh7_w1w2_reconciliation_probes import (
+        probe_governed_root_launch_denied_before_intake,
+    )
+
     identity = ActiveExecutionGovernanceIdentity(
         tenant_id="tenant-ebh7-a",
         workspace_id="workspace-ebh7",
@@ -65,6 +71,7 @@ def assert_gov_exec_cross_tenant_projection_denied() -> None:
     )
     with pytest.raises(GovernanceIdentityProjectionMismatchError, match="tenant"):
         validate_governance_identity_projection(identity, tenant_id="tenant-ebh7-b")
+    asyncio.run(probe_governed_root_launch_denied_before_intake())
 
 
 async def assert_exec_tool_cross_tenant_via_tool_runtime() -> None:

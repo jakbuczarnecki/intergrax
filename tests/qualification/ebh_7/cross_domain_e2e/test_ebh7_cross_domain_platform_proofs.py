@@ -34,13 +34,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 
 
 def test_ebh7_xdm_010_backend_persistence_sqlite_behavioral(tmp_path: Path) -> None:
-    from tests.qualification.ebh_5.test_ebh_5_behavioral_proofs import (
-        test_ebh5_behavioral_relational_store_negative_unregistered_provider_fail_closed,
-        test_ebh5_behavioral_relational_store_sqlite_via_sanctioned_profile,
+    from tests.qualification.ebh_7.cross_domain_e2e._ebh7_xdm_qualification_helpers import (
+        qualify_relational_store_sqlite_behavioral,
     )
 
-    test_ebh5_behavioral_relational_store_sqlite_via_sanctioned_profile(tmp_path)
-    test_ebh5_behavioral_relational_store_negative_unregistered_provider_fail_closed(tmp_path)
+    qualify_relational_store_sqlite_behavioral(tmp_path)
 
 
 def test_ebh7_xdm_007_tool_skill_plugin_shadow_denied() -> None:

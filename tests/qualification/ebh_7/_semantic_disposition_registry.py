@@ -42,7 +42,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         production_boundaries="Gov→Exec",
         attack="tenant A auth with tenant B execution context",
         actual_test="tests.qualification.ebh_7.tenant_platform_e2e.test_ebh7_platform_tenant_boundary_proofs::test_ebh7_ten_e2e_03_gov_exec_cross_tenant_denied",
-        assertions_inspected="validate_governance_identity_projection: ActiveExecutionGovernanceIdentity tenant-a vs runtime tenant-b → GovernanceIdentityProjectionMismatchError",
+        assertions_inspected="GovernanceIdentityProjectionMismatch + DefaultRootExecutionLauncher deny before intake (Gov→Exec @ final closure continuation)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
         test_execution_evidence="SHA=8bbda35dd1686b15bd6959b732ade3ba0f268632; Batch D D1 Gov→Exec projection",
     ),

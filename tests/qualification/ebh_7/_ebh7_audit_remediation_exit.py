@@ -10,8 +10,11 @@ from typing import Final
 _REPO = Path(__file__).resolve().parents[3]
 
 REMEDIATION_ARTIFACTS: Final[tuple[str, ...]] = (
-    "docs/project/maintainers/qualification/EBH_7_FINAL_AUDIT_MATRICES_APPENDIX.md",
     "docs/project/maintainers/qualification/EBH_7_FINAL_INDEPENDENT_AUDIT_REMEDIATION_MASTER_PLAN.md",
+    "docs/project/maintainers/qualification/EBH_7_FINAL_AUDIT_MATRICES_APPENDIX.md",
+    "docs/project/maintainers/qualification/EBH_7_REMEDIATION_EXECUTION_LEDGER.md",
+    "docs/project/maintainers/qualification/EBH_7_CONTINUATION_EXECUTION_FINAL_REPORT.md",
+    "docs/project/maintainers/qualification/EBH_7_OPERATOR_DECISION_PACKAGES_REMEDIATION.md",
     "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json",
     "docs/project/maintainers/qualification/EBH_7_PRE_CERT_INDEPENDENT_AUDIT_WORKSHEET.md",
     "docs/project/maintainers/qualification/EBH_7_ECAP_EXECUTABLE_CHECKLIST.md",
