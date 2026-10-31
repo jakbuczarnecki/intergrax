@@ -8,7 +8,11 @@ from pathlib import Path
 
 import pytest
 from intergrax.integrations._shared.config import read_integration_slug_from_env
-from intergrax.integrations.contracts.base import IntegrationCategory, UnknownIntegrationError
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationConfigurationError,
+    UnknownIntegrationError,
+)
 from intergrax.integrations.examples.custom_memory_kv import CustomMemoryKvPlugin
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve_from_profile
@@ -51,7 +55,7 @@ def run_package_c_integration_proof(concern_id: str, *, tmp_path: Path | None = 
         assert cache.get("tenant-a", "k") == b"v"
         return
     profile = IntegrationProfile()
-    with pytest.raises((UnknownIntegrationError, Exception)):
+    with pytest.raises((UnknownIntegrationError, IntegrationConfigurationError)):
         resolve_from_profile(profile, category)
 
 
@@ -63,7 +67,7 @@ def run_package_c_integration_negative_fail_closed(concern_id: str) -> None:
         return
     clear_catalog()
     profile = IntegrationProfile()
-    with pytest.raises((UnknownIntegrationError, Exception)):
+    with pytest.raises((UnknownIntegrationError, IntegrationConfigurationError)):
         resolve_from_profile(profile, category)
 
 

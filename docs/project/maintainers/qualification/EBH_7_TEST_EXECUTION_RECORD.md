@@ -5,9 +5,10 @@
 | Closure wave (superseded for semantic) | `f913944ff608c97a4a4145aae6c2bbd610004f64` |
 | W1/W2 reconciliation | baseline `5df074fcb` → recon `9ecf8666a` |
 | Batch A/B (OD-EBH7-01 full execution) | start `195046d46` → impl `ab8f958ed` |
-| Command | `uv run pytest tests/qualification/ebh_7/ -q` |
-| Result | **118 passed, 4 skipped, 2 xfailed** (B6 gates; TEN-13 harness blocker) |
-| Log | `.tmp/session/ebh-7-full-behavioral/batch-ab/pytest-ebh7-full.log` |
+| Batch C RPL-H | start `da1c29162` — evidence-derived semantic registry + dual-slug catalog |
+| Command | `uv run pytest tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py tests/qualification/ebh_7/test_ebh_7_rpl_h_batch_c_semantic_evidence.py -q` |
+| Result | **31 passed** (Batch C gates @ HEAD) |
+| Log | `.tmp/session/ebh-7-batch-c/pytest-batch-c.log` |
 
 ## L1 / L2 / L3 (@ semantic correction)
 
@@ -23,7 +24,7 @@
 
 - TEN: **14 EXACT / 12 OPEN**
 - XDM: **16 EXACT / 18 OPEN**
-- RPL-H: **56 mechanical / 6 semantic QUALIFIED, 50 PARTIAL** (`integration.relational_store` v2 @ sqlite+duckdb)
+- RPL-H semantic: **6 QUALIFIED / 29 PARTIAL / 21 BLOCKED** — SSOT `tests/qualification/ebh_7/_rpl_h_semantic_evidence.py` (no static allowlist promotion)
 
 ## FRZ impact (scoped — no status change)
 
@@ -37,7 +38,7 @@
 | --- | --- |
 | Fail-closed semantic audit | PASS |
 | 60/60 EXACT_PROOF | **OPEN** (30/60) |
-| RPL semantic QUALIFIED 56/56 | **OPEN** (6/56 QUALIFIED) |
+| RPL semantic QUALIFIED 56/56 | **OPEN** (6/56 QUALIFIED; 21 BLOCKED w/ root cause) |
 | OD-EBH7-01 | **APPROVED** @ `81679e672` — operator | B6 / OD-EBH7-08 remain **OPEN** |
 | Protocol 03 B6 | OPEN — independent auditor |
 | OD-EBH7-08 | OPEN — operator |

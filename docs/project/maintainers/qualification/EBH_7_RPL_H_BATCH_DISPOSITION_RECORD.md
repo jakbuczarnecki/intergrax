@@ -2,7 +2,9 @@
 
 **Mechanical matrix @ HEAD:** 56/56 REPLACEABLE QUALIFIED (Package C + legacy five).
 
-**Semantic review (`_rpl_h_semantic_review.py`):** **5× QUALIFIED** (legacy behavioral), **51× PARTIAL** (Package C fail-closed / single-path — not full alternate-backend switch). B6 requires semantic QUALIFIED or explicit blocked finding per concern.
+**Semantic review (Batch C @ `da1c29162` start):** evidence-derived via `_rpl_h_semantic_evidence.py` — **6 QUALIFIED**, **29 PARTIAL**, **21 BLOCKED** (legacy factory / single provider / missing category). Mechanical matrix rows below remain REPLACEABLE @ HEAD; semantic verdict overrides Package C mechanical-only claims.
+
+**Prior semantic review (`_rpl_h_semantic_review.py` before Batch C):** obsolete allowlist — superseded.
 
 | concern_id | rpl_h @ HEAD | EBH-7 disposition |
 | --- | --- | --- |

@@ -1,36 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Risk-based RPL-H Package C semantic review (mechanical matrix ≠ semantic proof)."""
+"""Risk-based RPL-H Package C semantic review — evidence-derived verdicts."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Final
 
 from tests.qualification.ebh_5._replaceability_matrix import CROSS_LAYER_REPLACEABILITY_MATRIX
-
-LEGACY_QUALIFIED: Final[frozenset[str]] = frozenset(
-    {
-        "integration.key_value_cache",
-        "persistence.relational_sqlite_lab",
-        "int_config.configure_existing",
-        "observability.otlp_transport",
-        "tokenizer.selection",
-    }
+from tests.qualification.ebh_7._rpl_h_semantic_evidence import (
+    RplSemanticVerdict,
+    all_rpl_concern_semantic_evidence,
+    rpl_concern_semantic_evidence,
 )
-
-PACKAGE_C_V2_QUALIFIED: Final[frozenset[str]] = frozenset(
-    {
-        "integration.relational_store",
-    }
-)
-
-
-class RplSemanticVerdict(StrEnum):
-    QUALIFIED = "QUALIFIED"
-    PARTIAL = "PARTIAL"
-    NOT_YET = "NOT_YET"
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,42 +26,24 @@ class RplSemanticReviewRow:
 
 
 def _risk_tier(concern_id: str) -> str:
-    if concern_id in LEGACY_QUALIFIED:
-        return "LEGACY"
     if concern_id.startswith(("integration.", "llm.", "execution.", "plugin.", "tool.", "agent.")):
         return "HIGH"
     return "LOW"
 
 
-def _semantic_verdict_for(concern_id: str) -> RplSemanticVerdict:
-    if concern_id in LEGACY_QUALIFIED or concern_id in PACKAGE_C_V2_QUALIFIED:
-        return RplSemanticVerdict.QUALIFIED
-    if concern_id.startswith("integration."):
-        return RplSemanticVerdict.PARTIAL
-    if concern_id.startswith(("llm.", "plugin.", "execution.")):
-        return RplSemanticVerdict.PARTIAL
-    return RplSemanticVerdict.PARTIAL
-
-
 def rpl_semantic_review_rows() -> tuple[RplSemanticReviewRow, ...]:
+    matrix_by_id = {row.concern_id: row for row in CROSS_LAYER_REPLACEABILITY_MATRIX}
     rows: list[RplSemanticReviewRow] = []
-    for matrix_row in CROSS_LAYER_REPLACEABILITY_MATRIX:
-        cid = matrix_row.concern_id
-        tier = _risk_tier(cid)
-        verdict = _semantic_verdict_for(cid)
-        evidence = matrix_row.behavioral_proof_ref or "Package C test_ebh5_pkgc_*"
-        if verdict is RplSemanticVerdict.PARTIAL:
-            notes = "Package C: fail-closed empty profile or single-path probe — not full alternate backend switch"
-        else:
-            notes = "Legacy EBH-5 behavioral proof — alternate path exercised"
+    for evidence in all_rpl_concern_semantic_evidence():
+        matrix_row = matrix_by_id[evidence.concern_id]
         rows.append(
             RplSemanticReviewRow(
-                concern_id=cid,
-                risk_tier=tier,
+                concern_id=evidence.concern_id,
+                risk_tier=_risk_tier(evidence.concern_id),
                 mechanical_rpl_h=matrix_row.rpl_h.value,
-                semantic_verdict=verdict,
-                evidence_inspected=evidence,
-                notes=notes,
+                semantic_verdict=evidence.verdict,
+                evidence_inspected=evidence.positive_test,
+                notes=evidence.notes,
             )
         )
     return tuple(rows)
@@ -88,14 +52,25 @@ def rpl_semantic_review_rows() -> tuple[RplSemanticReviewRow, ...]:
 def assert_ebh7_rpl_h_semantic_review_complete() -> None:
     rows = rpl_semantic_review_rows()
     assert len(rows) == len(CROSS_LAYER_REPLACEABILITY_MATRIX)
-    high = [r for r in rows if r.risk_tier == "HIGH"]
-    assert len(high) >= 30
     for row in rows:
         assert row.evidence_inspected.strip() != ""
         assert row.semantic_verdict in RplSemanticVerdict
+        ev = rpl_concern_semantic_evidence(row.concern_id)
+        assert ev.verdict is row.semantic_verdict
 
 
 def rpl_semantic_partial_concern_ids() -> tuple[str, ...]:
     return tuple(
         sorted(r.concern_id for r in rpl_semantic_review_rows() if r.semantic_verdict is RplSemanticVerdict.PARTIAL)
     )
+
+
+def rpl_semantic_blocked_concern_ids() -> tuple[str, ...]:
+    return tuple(
+        sorted(r.concern_id for r in rpl_semantic_review_rows() if r.semantic_verdict is RplSemanticVerdict.BLOCKED)
+    )
+
+
+# deprecated — see _rpl_h_semantic_evidence.LEGACY_BEHAVIORAL_QUALIFIED
+LEGACY_QUALIFIED: Final[frozenset[str]] = frozenset()
+PACKAGE_C_V2_QUALIFIED: Final[frozenset[str]] = frozenset()  # removed — no static allowlist

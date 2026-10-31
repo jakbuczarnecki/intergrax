@@ -1,49 +1,52 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""EBH-5 Package C v2 — sqlite/duckdb slug switch @ resolve_from_profile (qualification only)."""
+"""EBH-5 Package C v2 — dual-slug integration proofs (qualification integrity)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-from intergrax.integrations.contracts.base import IntegrationCategory, UnknownIntegrationError
-from intergrax.integrations.providers.relational_store.duckdb.register import register_duckdb_integration
-from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
-from intergrax.integrations.registry.catalog import clear_catalog
-from intergrax.integrations.registry.factory import resolve_from_profile
-from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
+from intergrax.integrations.contracts.base import IntegrationCategory
+from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import IntegrationDualSlugCatalogEntry
+from tests.qualification.ebh_5._package_c_v2_primitives import (
+    assert_unregistered_fail_closed,
+    require_python_module,
+    run_dual_slug_resolve_from_profile,
+)
 
 
 def run_package_c_v2_relational_sqlite_duckdb_dual_slug(tmp_path: Path) -> None:
-    pytest.importorskip("duckdb")
-    clear_catalog()
-    register_sqlite_integration()
-    register_duckdb_integration()
-    sqlite_dir = tmp_path / "sqlite"
-    duck_dir = tmp_path / "duckdb"
-    sqlite_dir.mkdir()
-    duck_dir.mkdir()
-    sqlite_profile = IntegrationProfile(
-        relational_store="sqlite",
-        options={"sqlite": {"data_dir": str(sqlite_dir)}},
+    require_python_module("duckdb", qualification_context="integration.relational_store")
+    run_dual_slug_resolve_from_profile(
+        category=IntegrationCategory.RELATIONAL_STORE,
+        slug_a="sqlite",
+        slug_b="duckdb",
+        tmp_path=tmp_path,
     )
-    duck_profile = IntegrationProfile(
-        relational_store="duckdb",
-        options={"duckdb": {"data_dir": str(duck_dir)}},
-    )
-    sqlite_store = resolve_from_profile(sqlite_profile, IntegrationCategory.RELATIONAL_STORE)
-    duck_store = resolve_from_profile(duck_profile, IntegrationCategory.RELATIONAL_STORE)
-    assert isinstance(sqlite_store, RelationalStoreIntegrationContract)
-    assert isinstance(duck_store, RelationalStoreIntegrationContract)
-    sqlite_store.connect()
-    duck_store.connect()
-    sqlite_store.close()
-    duck_store.close()
 
 
 def run_package_c_v2_relational_unregistered_fail_closed() -> None:
-    clear_catalog()
-    with pytest.raises((UnknownIntegrationError, Exception)):
-        resolve_from_profile(IntegrationProfile(), IntegrationCategory.RELATIONAL_STORE)
+    assert_unregistered_fail_closed(category=IntegrationCategory.RELATIONAL_STORE)
+
+
+def run_package_c_v2_dual_slug_for_entry(
+    entry: IntegrationDualSlugCatalogEntry,
+    *,
+    tmp_path: Path | None = None,
+) -> None:
+    if entry.category is IntegrationCategory.RELATIONAL_STORE:
+        assert tmp_path is not None
+    if entry.slug_a == "duckdb" or entry.slug_b == "duckdb":
+        require_python_module("duckdb", qualification_context=entry.concern_id)
+    if entry.slug_a == "chroma" or entry.slug_b == "chroma":
+        require_python_module("chromadb", qualification_context=entry.concern_id)
+    run_dual_slug_resolve_from_profile(
+        category=entry.category,
+        slug_a=entry.slug_a,
+        slug_b=entry.slug_b,
+        tmp_path=tmp_path,
+    )
+
+
+def run_package_c_v2_unregistered_for_entry(entry: IntegrationDualSlugCatalogEntry) -> None:
+    assert_unregistered_fail_closed(category=entry.category)
