@@ -6,12 +6,12 @@
 | START_HEAD | `ad3e24a20d7d1b341f721ef2427b9c1f65506061` |
 | GAP-B/C wave | `7aa9cfa18` — INT2E + Package C v2 |
 | GAP-D wave | `7e196458f` — integrated TEN/XDM |
-| Final closure wave | see `CLOSURE_SHA` in SHA ladder |
+| Final closure wave | `8bbda35dd` — D2 plugin host, 60/60 EXACT, RPL 56/56 |
 
 ## G0 — evidence hygiene
 
 - Operator: **GAP-LOCAL-UNTRACKED** — keep `exports/`, `platform_proofs/test_*`, `.cursor/plans/` out of commits
-- HEAD verify: `ad3e24a20`, `7e196458f`, `dae011089` ancestors of CLOSURE_SHA @ `development`
+- HEAD verify: `ad3e24a20`, `7e196458f`, `dae011089`, `8bbda35dd` ancestors of CLOSURE_SHA @ `development` (HEAD=`8bbda35dd1686b15bd6959b732ade3ba0f268632` after pin)
 
 ## GAP-D residual (final closure)
 

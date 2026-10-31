@@ -15,7 +15,7 @@
 | EBH7_BATCH_D_IMPL_SHA | Batch D D1 TEN-03/04/05 EXACT | `54da93b1b3aa1756d10a44834fabb83938092063` |
 | EBH7_MASTER_WAVE_SHA | Master completion wave (SSOT sync, TEN-12, document_store contracts) | `ad3e24a20d7d1b341f721ef2427b9c1f65506061` |
 | EBH7_GAP_CLOSURE_START_SHA | Gap-closure program entry | `ad3e24a20d7d1b341f721ef2427b9c1f65506061` |
-| EBH7_GAP_CLOSURE_FINAL_SHA | Final closure implementation | *set @ commit* |
-| CLOSURE_SHA | OD-EBH7-08 dossier + TEST_EXECUTION_SHA | *same as EBH7_GAP_CLOSURE_FINAL_SHA* |
+| EBH7_GAP_CLOSURE_FINAL_SHA | Final closure implementation | `8bbda35dd1686b15bd6959b732ade3ba0f268632` |
+| CLOSURE_SHA | OD-EBH7-08 dossier + TEST_EXECUTION_SHA | `8bbda35dd1686b15bd6959b732ade3ba0f268632` |
 
 Integrity: `tests/qualification/ebh_7/_semantic_disposition_registry.py` pins `EBH7_SEMANTIC_DISPOSITION_SHA`.
