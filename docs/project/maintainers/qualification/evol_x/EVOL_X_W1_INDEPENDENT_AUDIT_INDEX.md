@@ -1,8 +1,8 @@
 # EVOL-X W1 — Independent audit index (exact SHA)
 
-**Publication tip (verified):** `54e0de377644fe19156a2f8497efa6cd10d7fdd2` = `origin/development` @ 2026-11-01 verification.
+**Publication tip (verified @ `54e0de377`):** reviewer-confirmed W1 batch.
 
-**F-01/F-02/F-03 corrective batch:** may advance tip to **W1_AUDIT_REMEDIATION_SHA** (new commit); update this table when published.
+**Current local tip (F-batch, may be unpushed):** `e48cae037fc022da0a99da66314d17dd6abbe296` — see [EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md).
 
 ## W1 commit chain (deterministic)
 
@@ -12,6 +12,7 @@
 | W1_DOCUMENTATION_SHA | `9f9cc8b573d2629c140b3a58bf239e8a92d0b1d0` |
 | W1_LADDER_UPDATE_SHA | `cac5dfd91f8a98c1183e6864a93bc74ddc41b725` |
 | W1_RECONCILIATION_PUBLICATION_SHA | `54e0de377644fe19156a2f8497efa6cd10d7fdd2` |
+| W1_AUDIT_REMEDIATION_SHA | `e48cae037fc022da0a99da66314d17dd6abbe296` |
 
 Full ladder: [EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md)
 
