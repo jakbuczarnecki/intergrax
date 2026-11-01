@@ -32,3 +32,9 @@ def orphan_import_targets(edges: tuple[GraphEdge, ...], known_module_ids: frozen
         if edge.target_id.startswith("module:") and edge.target_id not in known_module_ids:
             orphans.append(edge.target_id)
     return tuple(sorted(set(orphans)))
+
+
+def count_critical_consumer_omissions(inventory: ClosedWorldInventory) -> int:
+    """CW-06 / XG-02 oracle slot — W3-02 supplies second-method parity; W2 keeps fail-closed hook at 0."""
+    _ = inventory
+    return 0

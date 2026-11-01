@@ -15,6 +15,8 @@ def test_evol_x_data_documents_have_source_authority() -> None:
         "owner_rules.v1.json",
         "frozen_core_registry.v1.json",
         "selection_policy.v1.json",
+        "exclusion_register.v1.json",
+        "evol_vl3_execution_manifest.v1.json",
     ):
         doc = load_evol_x_data_document(name)
         assert doc["source_authority"].startswith("docs/")

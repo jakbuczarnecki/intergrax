@@ -1,0 +1,55 @@
+{
+  "schema_version": "exclusion_register.v1",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/W1_EXCLUSION_REGISTER.md",
+  "entries": [
+    {
+      "exclusion_id": "X-01",
+      "status": "ACCEPTED",
+      "predicate": "GENERATED_UNTRACKED",
+      "glob_patterns": ["**/build/**", "**/dist/**", "**/.tmp/**", "**/.venv/**", "**/__pycache__/**"]
+    },
+    {
+      "exclusion_id": "X-02",
+      "status": "ACCEPTED",
+      "predicate": "GENERATED_UNTRACKED",
+      "glob_patterns": ["applications/build/**"]
+    },
+    {
+      "exclusion_id": "X-03",
+      "status": "OPEN",
+      "predicate": "HISTORICAL_DOC",
+      "requires_w2_proof": true,
+      "glob_patterns": ["docs/**"]
+    },
+    {
+      "exclusion_id": "X-04",
+      "status": "ACCEPTED",
+      "predicate": "HISTORICAL_DOC",
+      "glob_patterns": ["docs/audit_results/**"]
+    },
+    {
+      "exclusion_id": "X-05",
+      "status": "ACCEPTED",
+      "predicate": "GENERATED_UNTRACKED",
+      "glob_patterns": ["exports/**"]
+    },
+    {
+      "exclusion_id": "X-06",
+      "status": "OPEN",
+      "predicate": "IN_SCOPE",
+      "requires_w2_proof": true,
+      "glob_patterns": ["platform_proofs/**"]
+    },
+    {
+      "exclusion_id": "X-07",
+      "status": "OPEN",
+      "predicate": "IN_SCOPE",
+      "requires_w2_proof": true,
+      "glob_patterns": [
+        "intergrax/legacy/**",
+        "intergrax/proofs/**",
+        "intergrax/proof_data/**"
+      ]
+    }
+  ]
+}

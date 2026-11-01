@@ -3,6 +3,21 @@
   "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_OWNERSHIP_PLACEMENT_ADR_W1.md",
   "owners": [
     {
+      "owner_id": "EVOL-X-I",
+      "domain": "intergrax_platform",
+      "paths_prefix": ["intergrax/"]
+    },
+    {
+      "owner_id": "EVOL-X-A",
+      "domain": "agents_tier",
+      "paths_prefix": ["agents/"]
+    },
+    {
+      "owner_id": "EVOL-X-P",
+      "domain": "applications_tier",
+      "paths_prefix": ["applications/"]
+    },
+    {
       "owner_id": "EVOL-X-Q",
       "domain": "change_safety_qualification",
       "paths_prefix": ["testing_support/change_safety/", "tests/qualification/evol_x/"]

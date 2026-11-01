@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from testing_support.change_safety.assess.consumers import count_critical_consumer_omissions
 from testing_support.change_safety.discovery.closed_world import ClosedWorldInventory
 
 
@@ -22,10 +23,11 @@ def compute_graph_coverage(inventory: ClosedWorldInventory) -> GraphCoverageRepo
     covered = len(module_nodes & sources)
     total = len(module_nodes)
     ratio = covered / total if total else 0.0
+    omissions = count_critical_consumer_omissions(inventory)
     return GraphCoverageReport(
         schema_version="evol_graph_coverage.v1",
         module_nodes=total,
         modules_with_import_edges=covered,
         coverage_ratio=ratio,
-        critical_omissions=0,
+        critical_omissions=omissions,
     )
