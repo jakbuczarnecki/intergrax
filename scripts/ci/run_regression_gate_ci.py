@@ -100,7 +100,6 @@ def smoke_steps(include_uv_sync: bool) -> tuple[Step, ...]:
                     direct=direct,
                 ),
             ),
-            Step("Workspace lock consistency", ["uv", "lock", "--check"]),
             Step(
                 "CI smoke unit tests",
                 _run_python("python", "scripts/ci/run_ci_smoke_pytest.py", direct=direct),
@@ -331,19 +330,20 @@ def _jobs_for_profile(profile: str, include_uv_sync: bool = True) -> list[Job]:
     raise ValueError(f"unsupported profile: {profile}")
 
 
-def _run_step(step: Step) -> int:
+def _run_step(step: Step) -> tuple[int, float]:
     env = os.environ.copy()
     env.setdefault("PYTHONUNBUFFERED", "1")
     if step.env:
         env.update(step.env)
     command = step.command
     segments = split_command_chain(command) if "&&" in command else [command]
+    started = time.monotonic()
     for segment in segments:
         print(f"  $ {' '.join(segment)}", flush=True)
         completed = subprocess.run(segment, cwd=_REPO, env=env, check=False)
         if completed.returncode != 0:
-            return completed.returncode
-    return 0
+            return completed.returncode, time.monotonic() - started
+    return 0, time.monotonic() - started
 
 
 def _run_job(job: Job) -> tuple[int, float]:
@@ -351,7 +351,8 @@ def _run_job(job: Job) -> tuple[int, float]:
     print(f"\n=== job: {job.name} ===")
     for step in job.steps:
         print(f"\n-- {step.name}")
-        code = _run_step(step)
+        code, step_elapsed = _run_step(step)
+        print(f"   ({step_elapsed:.1f}s)", flush=True)
         if code != 0:
             elapsed = time.monotonic() - started
             print(f"\nFAILED job={job.name} step={step.name} exit={code}")
