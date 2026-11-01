@@ -9,7 +9,7 @@
 | **TEST_EXECUTION_SHA** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
 | **EVIDENCE_PUBLICATION_SHA** | `f30a90a14910afe8583081cab3b2e39480988c17` |
 | **B6_ACCEPTANCE_PUBLICATION_SHA** | `596f186aab2cf808f04495a1ed1d70c91e653d78` |
-| **FORMAL_CLOSURE_PUBLICATION_SHA** | *see roadmap §5 ledger — commit publishing this record* |
+| **FORMAL_CLOSURE_PUBLICATION_SHA** | `df498b7a86197bd66fb4ef4758c05b59e34f538a` |
 | **Roadmap target** | **EBH-7** → **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
 | **Next eligible stage** | **EVOL-X** (mandatory — not auto-entered) |
 | **Date** | **2026-11-01** |
