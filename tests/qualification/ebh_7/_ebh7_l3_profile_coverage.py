@@ -1,0 +1,64 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Protocol 03 L3 pytest_profile coverage — CORRECTIVE_PYTEST must be in replay scope."""
+
+from __future__ import annotations
+
+import json
+import shlex
+from pathlib import Path
+from typing import Final
+
+from tests.qualification.ebh_5._proof_validation import parse_pytest_node_id
+
+_REPO = Path(__file__).resolve().parents[3]
+_MANIFEST = _REPO / "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json"
+
+
+def l3_profile_command_argv() -> tuple[str, ...]:
+    manifest = json.loads(_MANIFEST.read_text(encoding="utf-8"))
+    cmd = manifest["pytest_profile"]["command"]
+    parts = shlex.split(cmd, posix=False)
+    if parts[:2] == ["uv", "run"] and parts[2] == "pytest":
+        return tuple(parts[3:])
+    if parts[0] == "pytest":
+        return tuple(parts[1:])
+    raise AssertionError(f"Unrecognized L3 profile command: {cmd!r}")
+
+
+def l3_profile_covers_pytest_node(node_id: str) -> bool:
+    """True when the node's module is executed by MANIFEST pytest_profile (file or directory scope)."""
+    return argv_covers_pytest_node(node_id, l3_profile_command_argv())
+
+
+def argv_covers_pytest_node(node_id: str, argv: tuple[str, ...]) -> bool:
+    """True when ``node_id`` (``path.py::test`` or a whole ``path.py``) is collected by ``argv``."""
+    base = node_id.split("[", 1)[0]
+    parsed = parse_pytest_node_id(base)
+    if parsed is not None:
+        rel_path, func_name = parsed
+    elif base.endswith(".py") and "::" not in base:
+        rel_path, func_name = base, None
+    else:
+        return False
+    rel_norm = rel_path.replace("\\", "/")
+    positional = [a.replace("\\", "/") for a in argv if not a.startswith("-")]
+    for arg_norm in positional:
+        if "::" in arg_norm:
+            file_part, arg_func = arg_norm.split("::", 1)
+            if rel_norm == file_part and func_name is not None and arg_func.split("[", 1)[0] == func_name:
+                return True
+            continue
+        if rel_norm == arg_norm:
+            return True
+        prefix = arg_norm.rstrip("/")
+        if rel_norm.startswith(prefix + "/"):
+            # pytest 8 de-duplicates a directory argument down to explicitly listed members inside it.
+            members = [other.split("::", 1)[0] for other in positional if other != arg_norm]
+            shadowed = any(member.startswith(prefix + "/") for member in members)
+            if not shadowed:
+                return True
+    return False
+
+
+L3_PROFILE_COMMAND: Final[str] = json.loads(_MANIFEST.read_text(encoding="utf-8"))["pytest_profile"]["command"]

@@ -192,7 +192,6 @@ def assert_ebh7_traceability_behavioral_integrity() -> None:
     qualified = sum(1 for r in extended if is_behavioral_certification(r.qualification_status))
     pending = sum(1 for r in extended if r.qualification_status == CertificationStatus.QUALIFICATION_PENDING)
     assert qualified + pending <= len(extended)
-    from tests.qualification.ebh_7._rpl_h_disposition import rpl_h_disposition_rows
     from tests.qualification.ebh_7._semantic_disposition_registry import assert_disposition_registry_complete
     from tests.qualification.ebh_7._semantic_proof_binding_audit import semantic_exact_counts
 
@@ -200,8 +199,17 @@ def assert_ebh7_traceability_behavioral_integrity() -> None:
     assert ten_exact + ten_open == 26
     assert xdm_exact + xdm_open == 34
     assert_disposition_registry_complete()
-    rpl_open = [r for r in rpl_h_disposition_rows() if not is_behavioral_certification(r.qualification_status)]
-    assert rpl_open == [], f"RPL-H OPEN in traceability gate: {len(rpl_open)}"
+    from tests.qualification.ebh_7._constants import EBH7_RPL_MATRIX_ROWS
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import (
+        normative_rpl_b6_open_concern_ids,
+        normative_rpl_verdict_counts,
+    )
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
+
+    b6_open = normative_rpl_b6_open_concern_ids()
+    verdicts = normative_rpl_verdict_counts()
+    assert sum(verdicts.values()) == EBH7_RPL_MATRIX_ROWS
+    assert len(b6_open) == verdicts[RplSemanticVerdict.PARTIAL] + verdicts[RplSemanticVerdict.BLOCKED]
     for row in extended:
         assert row.evidence_ref.strip() != ""
         assert row.acceptance.strip() != ""

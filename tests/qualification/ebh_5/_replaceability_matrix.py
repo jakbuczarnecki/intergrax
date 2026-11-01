@@ -65,6 +65,46 @@ def _not_yet_row(concern_id: str, *, gates: tuple[str, ...] = ("ebh5-matrix-inte
     )
 
 
+def _internal_row(concern_id: str) -> ReplaceabilityMatrixRow:
+    from tests.qualification.ebh_5._terminal_rpl_normative_nodes import internal_rpl_positive_node
+
+    proof = internal_rpl_positive_node(concern_id)
+    return ReplaceabilityMatrixRow(
+        concern_id=concern_id,
+        rpl_a=RplGateStatus.PASS,
+        rpl_b=RplGateStatus.NA,
+        rpl_c=RplGateStatus.NA,
+        rpl_d=RplGateStatus.NA,
+        rpl_e=RplGateStatus.NA,
+        rpl_f=RplGateStatus.NA,
+        rpl_g=RplGateStatus.PASS,
+        rpl_h=ExtensibilityClassification.INTERNAL,
+        alternate_implementation_ref="N/A — INTERNAL @ ADR-EBH-7",
+        behavioral_proof_ref=proof,
+        regression_gate_ids=("test_ebh_7_terminal_rpl_gates",),
+    )
+
+
+def _fixed_substrate_row(concern_id: str) -> ReplaceabilityMatrixRow:
+    from tests.qualification.ebh_5._terminal_rpl_normative_nodes import fixed_rpl_positive_node
+
+    proof = fixed_rpl_positive_node(concern_id)
+    return ReplaceabilityMatrixRow(
+        concern_id=concern_id,
+        rpl_a=RplGateStatus.PASS,
+        rpl_b=RplGateStatus.NA,
+        rpl_c=RplGateStatus.NA,
+        rpl_d=RplGateStatus.NA,
+        rpl_e=RplGateStatus.NA,
+        rpl_f=RplGateStatus.NA,
+        rpl_g=RplGateStatus.PASS,
+        rpl_h=ExtensibilityClassification.FIXED_SUBSTRATE,
+        alternate_implementation_ref="OD-RPL-G2 @ EBH_7_FIXED_SUBSTRATE_RATIFICATIONS",
+        behavioral_proof_ref=proof,
+        regression_gate_ids=("test_ebh_7_terminal_rpl_gates", "test_ebh_5_g06_enterprise_integrity_gates"),
+    )
+
+
 def _qualified_override(concern_id: str) -> ReplaceabilityMatrixRow:
     return _qualified_row(
         concern_id,
@@ -82,8 +122,18 @@ _QUALIFIED_OVERRIDES: dict[str, ReplaceabilityMatrixRow] = {
 
 @lru_cache(maxsize=1)
 def replaceability_matrix_rows() -> tuple[ReplaceabilityMatrixRow, ...]:
+    from tests.qualification.ebh_5._vendor_backend_types import ExtensibilityClassification as EC
+    from tests.qualification.ebh_7._ebh7_terminal_operator_authorization import terminal_extensibility_classification
+
     rows: list[ReplaceabilityMatrixRow] = []
     for concern in concerns_with_extensibility_yes():
+        term_h = terminal_extensibility_classification(concern.concern_id)
+        if term_h is EC.INTERNAL:
+            rows.append(_internal_row(concern.concern_id))
+            continue
+        if term_h is EC.FIXED_SUBSTRATE:
+            rows.append(_fixed_substrate_row(concern.concern_id))
+            continue
         if concern.concern_id in _QUALIFIED_OVERRIDES:
             rows.append(_QUALIFIED_OVERRIDES[concern.concern_id])
             continue

@@ -13,6 +13,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.qualification]
 _REPO = Path(__file__).resolve().parents[3]
 
 
+def test_ebh7_w10_p03_manifest_and_digests() -> None:
+    manifest = _REPO / "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/MANIFEST.json"
+    digests = _REPO / "docs/project/maintainers/qualification/ebh_7_p03_independent_replay/ARTIFACT_DIGESTS.json"
+    assert manifest.is_file()
+    assert digests.is_file()
+    assert "TEST_EXECUTION_SHA" in manifest.read_text(encoding="utf-8")
+
+
 def test_ebh7_w10_protocol_03_package_present() -> None:
     path = _REPO / "docs/project/maintainers/qualification/EBH_7_PROTOCOL_03_EXECUTION_PACKAGE.md"
     assert path.is_file()

@@ -55,6 +55,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         assertions_inspected="ToolRuntime.invoke → catalog dispatch → RuntimeToolInvoker tenant guard; ToolScopeViolationError before handler; invoker direct path in test_ebh7_ten_e2e_04_exec_tool_tenant_boundary",
         semantic_match=ProofBindingResult.EXACT_PROOF,
         test_execution_evidence="SHA=8bbda35dd1686b15bd6959b732ade3ba0f268632; Batch D D1 Exec→Tool (ADR retain invoker seam)",
+        executed_equivalent_node_id="tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_04_exec_tool_tenant_boundary_tool_runtime",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-05",
@@ -157,6 +158,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         assertions_inspected="sqlite/duckdb dual slug + distinct tenant binding on same configuration fingerprint (inspected @ gap-closure GAP-D)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
         test_execution_evidence="SHA=8bbda35dd1686b15bd6959b732ade3ba0f268632; lineage=9ecf8666a42320cd65ca9852b1fdbdd8bbfbf805; semantic correction wave",
+        executed_equivalent_node_id="tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_14_backend_switch_preserves_tenant",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-TEN-E2E-15",
@@ -438,6 +440,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         assertions_inspected="Package C v2 relational dual slug + unregistered fail-closed (VBN factory path) (inspected @ gap-closure GAP-D)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
         test_execution_evidence="SHA=8bbda35dd1686b15bd6959b732ade3ba0f268632; lineage=9ecf8666a42320cd65ca9852b1fdbdd8bbfbf805; semantic correction wave",
+        executed_equivalent_node_id="tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_016_vbn_composition_factory_behavioral",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-017",
@@ -448,6 +451,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         assertions_inspected="Trace P5 configuration/profile tenant mismatch fail-closed (inspected @ gap-closure GAP-D)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
         test_execution_evidence="SHA=8bbda35dd1686b15bd6959b732ade3ba0f268632; lineage=9ecf8666a42320cd65ca9852b1fdbdd8bbfbf805; semantic correction wave",
+        executed_equivalent_node_id="tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_017_failure_diagnostics_tenant_leak",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-018",
@@ -568,6 +572,7 @@ _DISPOSITIONS: Final[tuple[VerifiedSemanticDisposition, ...]] = (
         assertions_inspected="NPSC exclusion record + relational unregistered fail-closed (inspected @ gap-closure GAP-D)",
         semantic_match=ProofBindingResult.EXACT_PROOF,
         test_execution_evidence="SHA=8bbda35dd1686b15bd6959b732ade3ba0f268632; lineage=9ecf8666a42320cd65ca9852b1fdbdd8bbfbf805; semantic correction wave",
+        executed_equivalent_node_id="tests/qualification/ebh_7/test_ebh_7_w7_cross_domain_behavioral_gates.py::test_ebh7_w7_cross_domain_xdm_029_integration_external_di_boundary",
     ),
     VerifiedSemanticDisposition(
         scenario_id="EBH7-XDM-030",
@@ -652,9 +657,14 @@ def qualification_status_from_disposition(scenario_id: str) -> CertificationStat
 
 def assert_skip_equivalents_documented() -> None:
     skipped = {
+        "EBH7-TEN-E2E-04",
         "EBH7-TEN-E2E-07",
         "EBH7-TEN-E2E-11",
+        "EBH7-TEN-E2E-14",
         "EBH7-XDM-010",
+        "EBH7-XDM-016",
+        "EBH7-XDM-017",
+        "EBH7-XDM-029",
     }
     for sid in skipped:
         d = disposition_for(sid)

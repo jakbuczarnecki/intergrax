@@ -35,9 +35,7 @@ from testing_support.builder import (
     canonical_run_id_for_tests,
     tools_agent_make_contract,
 )
-from tests.qualification.compat_x.test_compat_x_plugin_provider_r4_gates import (
-    test_r4_probe_g_cross_tenant_evidence,
-)
+from tests.qualification.ebh_7._proof_execution import execute_proof
 from tests.qualification.tenant_x._r2_adversarial import (
     assert_reference_executor_rejects_evidence_tenant_mismatch,
 )
@@ -285,5 +283,8 @@ def assert_continuation_aware_catalog_tool_host_cross_tenant_denied() -> None:
 
 
 def assert_plugin_host_compat_cross_tenant_activation_denied() -> None:
-    test_r4_probe_g_cross_tenant_evidence()
+    execute_proof(
+        "tests.qualification.compat_x.test_compat_x_plugin_provider_r4_gates",
+        "test_r4_probe_g_cross_tenant_evidence",
+    )
     assert_continuation_aware_catalog_tool_host_cross_tenant_denied()

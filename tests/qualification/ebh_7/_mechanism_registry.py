@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""EBH-7 primary mechanism registry (685 disjoint MECH IDs)."""
+"""EBH-7 primary mechanism registry (238 disjoint MECH IDs over the tracked tree)."""
 
 from __future__ import annotations
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Final
 
 from tests.qualification.ebh_5._behavioral_proof_registry import QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE
 from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import catalog_by_concern_id
@@ -25,6 +24,8 @@ class RplVerifiedStatus(StrEnum):
     DUAL_SLUG_REGISTRY_ONLY = "DUAL_SLUG_REGISTRY_ONLY"
     COMPOSED_PROXY = "COMPOSED_PROXY"
     FIXED_SUBSTRATE_PENDING_OD = "FIXED_SUBSTRATE_PENDING_OD"
+    FIXED_SUBSTRATE_RATIFIED = "FIXED_SUBSTRATE_RATIFIED"
+    INTERNAL_RATIFIED = "INTERNAL_RATIFIED"
     PRODUCTION_GAP = "PRODUCTION_GAP"
     BLOCKED_ARCHITECTURE = "BLOCKED_ARCHITECTURE"
 
@@ -41,15 +42,16 @@ class NormativeRplRow:
     acceptance: str
 
 
-_DUAL_SLUG_DEMONSTRATED: Final[frozenset[str]] = frozenset(
-    {
-        "integration.relational_store",
-        "persistence.relational_sqlite_lab",
-    }
-)
-
-
 def _classify(concern_id: str) -> NormativeRplRow:
+    from tests.qualification.ebh_5._terminal_rpl_normative_nodes import (
+        FIXED_RPL_CONCERNS,
+        INTERNAL_RPL_CONCERNS,
+        fixed_rpl_negative_node,
+        fixed_rpl_positive_node,
+        internal_rpl_negative_node,
+        internal_rpl_positive_node,
+    )
+
     if concern_id in LEGACY_BEHAVIORAL_QUALIFIED:
         node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[concern_id]
         return NormativeRplRow(
@@ -62,6 +64,32 @@ def _classify(concern_id: str) -> NormativeRplRow:
             task_id="EBH7-W2-RPL-LEGACY",
             acceptance="Distinct negative + RPL-F where applicable",
         )
+    if concern_id in INTERNAL_RPL_CONCERNS:
+        pos = internal_rpl_positive_node(concern_id)
+        neg = internal_rpl_negative_node(concern_id)
+        return NormativeRplRow(
+            concern_id=concern_id,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.INTERNAL_RATIFIED,
+            positive_test=pos,
+            negative_test=neg,
+            defect="EBH-7 INTERNAL ratified @ operator ADR — extensibility not claimed",
+            task_id="EBH7-TERMINAL-INTERNAL",
+            acceptance="ADR + tier ownership gate; no alternate backend",
+        )
+    if concern_id in FIXED_RPL_CONCERNS:
+        pos = fixed_rpl_positive_node(concern_id)
+        neg = fixed_rpl_negative_node(concern_id)
+        return NormativeRplRow(
+            concern_id=concern_id,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.FIXED_SUBSTRATE_RATIFIED,
+            positive_test=pos,
+            negative_test=neg,
+            defect="EBH-7 FIXED substrate ratified @ OD-RPL-G2 — not vendor-equivalent",
+            task_id="EBH7-TERMINAL-FIXED",
+            acceptance="Fixed substrate decision record + fail-closed contract gate",
+        )
     if concern_id in BLOCKED_CONCERN_ROOT_CAUSE:
         return NormativeRplRow(
             concern_id=concern_id,
@@ -73,31 +101,41 @@ def _classify(concern_id: str) -> NormativeRplRow:
             task_id="EBH7-W2-RPL-BLOCKED",
             acceptance="OD-RPL-G2 fixed substrate OR second provider sandbox",
         )
+    from tests.qualification.ebh_5._factory_rpl_normative_nodes import (
+        FACTORY_RPL_ONE_PASS_CONCERNS,
+        factory_rpl_negative_node,
+        factory_rpl_positive_node,
+    )
+
+    if concern_id in FACTORY_RPL_ONE_PASS_CONCERNS:
+        return NormativeRplRow(
+            concern_id=concern_id,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.DEMONSTRATED,
+            positive_test=factory_rpl_positive_node(concern_id),
+            negative_test=factory_rpl_negative_node(concern_id),
+            defect="EBH-7 one-pass factory RPL — distinct pos/neg @ sanctioned contracts",
+            task_id="EBH7-ONE-PASS-FACTORY",
+            acceptance="Adapter/registry/env/distributed/tool behavioral equivalence",
+        )
     if concern_id in catalog_by_concern_id():
         entry = catalog_by_concern_id()[concern_id]
-        positive = f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}::test_ebh5_pkgc_v2_dual_slug_integration[{entry.concern_id}]"
+        positive = (
+            f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}"
+            f"::test_ebh5_pkgc_v2_dual_slug_rpl_cde_equivalence[{entry.concern_id}]"
+        )
         negative = (
             f"{EBH7_RPL_BATCH_C_EVIDENCE_TEST_NODE}::test_ebh5_pkgc_v2_dual_slug_unregistered[{entry.concern_id}]"
         )
-        status = (
-            RplVerifiedStatus.DEMONSTRATED
-            if concern_id in _DUAL_SLUG_DEMONSTRATED
-            else RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY
-        )
-        verdict = (
-            RplSemanticVerdict.QUALIFIED if status is RplVerifiedStatus.DEMONSTRATED else RplSemanticVerdict.PARTIAL
-        )
         return NormativeRplRow(
             concern_id=concern_id,
-            semantic_verdict=verdict,
-            verified_status=status,
+            semantic_verdict=RplSemanticVerdict.QUALIFIED,
+            verified_status=RplVerifiedStatus.DEMONSTRATED,
             positive_test=positive,
             negative_test=negative,
-            defect="Registry dual-slug resolve only — RPL-C/D/E equivalence not proven"
-            if status is RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY
-            else "Sanctioned dual backend exercised",
-            task_id="EBH7-W2-RPL-DUAL",
-            acceptance="Operational equivalence or ALLOWED_FIXED substrate @ OD-RPL-G2",
+            defect="RPL-C/D/E equivalence @ Package C v2 dual-slug catalog",
+            task_id="EBH7-FC-C-RPL-CDE",
+            acceptance="Profile selection, lifecycle parity, fail-closed isolation",
         )
     if concern_id in QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE:
         node = QUALIFIED_CONCERN_BEHAVIORAL_PROOF_NODE[concern_id]
@@ -141,6 +179,20 @@ def normative_rpl_verdict_counts() -> dict[RplSemanticVerdict, int]:
     return counts
 
 
+def normative_rpl_b6_open_concern_ids() -> tuple[str, ...]:
+    """Concerns blocking B6 until QUALIFIED or formally scoped OD residual."""
+    from tests.qualification.ebh_7._ebh7_scope_residual_register import allowed_non_demonstrated_concern_ids
+
+    allowed = allowed_non_demonstrated_concern_ids()
+    return tuple(
+        sorted(
+            row.concern_id
+            for row in all_normative_rpl_rows()
+            if row.semantic_verdict is not RplSemanticVerdict.QUALIFIED and row.concern_id not in allowed
+        )
+    )
+
+
 def assert_ebh7_rpl_h_normative_evidence_integrity() -> None:
     """Fail-closed: normative layer must not regress to auto-QUALIFIED factory/blocked paths."""
     for row in all_normative_rpl_rows():
@@ -148,21 +200,23 @@ def assert_ebh7_rpl_h_normative_evidence_integrity() -> None:
             assert row.semantic_verdict is RplSemanticVerdict.BLOCKED
         if row.verified_status is RplVerifiedStatus.FACTORY_ONLY:
             assert row.semantic_verdict is RplSemanticVerdict.PARTIAL
-        if row.verified_status is RplVerifiedStatus.DUAL_SLUG_REGISTRY_ONLY:
-            assert row.semantic_verdict is RplSemanticVerdict.PARTIAL
+        if row.verified_status in (
+            RplVerifiedStatus.INTERNAL_RATIFIED,
+            RplVerifiedStatus.FIXED_SUBSTRATE_RATIFIED,
+        ):
+            assert row.semantic_verdict is RplSemanticVerdict.QUALIFIED
+        if row.verified_status is RplVerifiedStatus.DEMONSTRATED:
+            assert row.semantic_verdict is RplSemanticVerdict.QUALIFIED, (
+                f"{row.concern_id}: DEMONSTRATED verified_status requires QUALIFIED semantic verdict"
+            )
+        if row.semantic_verdict is RplSemanticVerdict.PARTIAL and row.verified_status is RplVerifiedStatus.DEMONSTRATED:
+            raise AssertionError(f"{row.concern_id}: PARTIAL semantic cannot use DEMONSTRATED verified_status")
         if row.positive_test == row.negative_test and row.semantic_verdict is RplSemanticVerdict.QUALIFIED:
             if row.concern_id not in LEGACY_BEHAVIORAL_QUALIFIED:
                 raise AssertionError(f"{row.concern_id}: QUALIFIED with identical pos/neg nodes")
 
 
 def assert_ebh7_rpl_h_normative_for_b6_readiness() -> None:
-    """B6 readiness — all normative rows demonstrated or documented in scope-residual register."""
-    from tests.qualification.ebh_7._ebh7_scope_residual_register import allowed_non_demonstrated_concern_ids
-
-    allowed = allowed_non_demonstrated_concern_ids()
-    open_rows = [
-        row.concern_id
-        for row in all_normative_rpl_rows()
-        if row.verified_status is not RplVerifiedStatus.DEMONSTRATED and row.concern_id not in allowed
-    ]
-    assert open_rows == [], f"RPL normative gaps (need remediation or OD scope): {open_rows[:12]}... ({len(open_rows)})"
+    """B6 readiness — final RPL-H semantic disposition QUALIFIED or authorized scope residual only."""
+    open_rows = normative_rpl_b6_open_concern_ids()
+    assert open_rows == (), f"RPL B6 blockers (semantic not QUALIFIED): {open_rows[:12]}... ({len(open_rows)})"

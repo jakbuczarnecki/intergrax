@@ -28,8 +28,26 @@ def test_smoke_steps_with_sync_has_six_steps() -> None:
     assert len(smoke_steps(include_uv_sync=True)) == 6
 
 
+def test_smoke_steps_skip_sync_use_direct_python_not_nested_uv() -> None:
+    steps = smoke_steps(include_uv_sync=False)
+    for step in steps:
+        if step.name == "Workspace lock consistency":
+            assert step.command == ["uv", "lock", "--check"]
+            continue
+        assert step.command[0] == sys.executable
+        assert step.command[1] == "-u"
+        assert "uv" not in step.command
+
+
+def test_smoke_steps_with_sync_use_uv_run_for_python_scripts() -> None:
+    steps = smoke_steps(include_uv_sync=True)
+    pytest_step = next(s for s in steps if s.name == "CI smoke unit tests")
+    assert pytest_step.command[:3] == ["uv", "run", "--frozen"]
+    assert pytest_step.command[3] == "python"
+
+
 def test_fast_push_steps_have_no_pytest() -> None:
-    steps = fast_steps()
+    steps = fast_steps(direct=True)
     assert len(steps) == 5
     names = " ".join(step.name for step in steps)
     assert "smoke unit tests" not in names.lower()

@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
+import sys
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -35,7 +36,11 @@ def _uv_sync() -> Step:
     return Step("Install dependencies (CI minimal)", ["uv", "sync", "--extra", "dev-ci", "--frozen"])
 
 
-def _uv_run(*args: str, frozen: bool = True) -> list[str]:
+def _run_python(*args: str, direct: bool, frozen: bool = True) -> list[str]:
+    """Run a script under the active venv (direct) or via ``uv run`` (local sync workflows)."""
+    if direct:
+        rest = args[1:] if args and args[0] == "python" else args
+        return [sys.executable, "-u", *rest]
     command = ["uv", "run"]
     if frozen:
         command.append("--frozen")
@@ -43,31 +48,43 @@ def _uv_run(*args: str, frozen: bool = True) -> list[str]:
     return command
 
 
-def fast_steps() -> tuple[Step, ...]:
+def fast_steps(*, direct: bool) -> tuple[Step, ...]:
     """Pre-push default: instant gates only (full ci_smoke runs on GitHub Actions)."""
     return (
         Step(
             "Environment conformance (CI profile)",
-            _uv_run("python", "scripts/maintenance/check_environment_conformance.py", "--profile", "ci"),
+            _run_python(
+                "python",
+                "scripts/maintenance/check_environment_conformance.py",
+                "--profile",
+                "ci",
+                direct=direct,
+            ),
         ),
         Step("Workspace lock consistency", ["uv", "lock", "--check"]),
         Step(
             "Ruff on changed Python paths (push)",
-            _uv_run("python", "scripts/ci/run_ruff_changed_paths.py", "--mode", "push"),
+            _run_python("python", "scripts/ci/run_ruff_changed_paths.py", "--mode", "push", direct=direct),
         ),
         Step(
             "Tier boundary: agents reflection (smoke)",
-            _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py", "--smoke"),
+            _run_python(
+                "python",
+                "scripts/maintenance/check_harness_no_getattr.py",
+                "--smoke",
+                direct=direct,
+            ),
         ),
         Step(
             "Tier boundary: agents tier-3 imports",
-            _uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
+            _run_python("python", "scripts/maintenance/check_agents_no_tier3_imports.py", direct=direct),
         ),
     )
 
 
 def smoke_steps(include_uv_sync: bool) -> tuple[Step, ...]:
     """SSOT for Regression gate ci-smoke (unit-tests.yml + pre-push)."""
+    direct = not include_uv_sync
     steps: list[Step] = []
     if include_uv_sync:
         steps.append(_uv_sync())
@@ -75,17 +92,31 @@ def smoke_steps(include_uv_sync: bool) -> tuple[Step, ...]:
         [
             Step(
                 "Environment conformance (CI profile)",
-                _uv_run("python", "scripts/maintenance/check_environment_conformance.py", "--profile", "ci"),
+                _run_python(
+                    "python",
+                    "scripts/maintenance/check_environment_conformance.py",
+                    "--profile",
+                    "ci",
+                    direct=direct,
+                ),
             ),
             Step("Workspace lock consistency", ["uv", "lock", "--check"]),
-            Step("CI smoke unit tests", _uv_run("python", "scripts/ci/run_ci_smoke_pytest.py")),
+            Step(
+                "CI smoke unit tests",
+                _run_python("python", "scripts/ci/run_ci_smoke_pytest.py", direct=direct),
+            ),
             Step(
                 "Tier boundary: agents reflection (smoke)",
-                _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py", "--smoke"),
+                _run_python(
+                    "python",
+                    "scripts/maintenance/check_harness_no_getattr.py",
+                    "--smoke",
+                    direct=direct,
+                ),
             ),
             Step(
                 "Tier boundary: agents tier-3 imports",
-                _uv_run("python", "scripts/maintenance/check_agents_no_tier3_imports.py"),
+                _run_python("python", "scripts/maintenance/check_agents_no_tier3_imports.py", direct=direct),
             ),
         ]
     )
@@ -112,11 +143,11 @@ def _ci_smoke_job(include_uv_sync: bool = True) -> Job:
     return Job("ci-smoke", smoke_steps(include_uv_sync))
 
 
-def _fast_push_job() -> Job:
-    return Job("push-fast", fast_steps())
+def _fast_push_job(include_uv_sync: bool = True) -> Job:
+    return Job("push-fast", fast_steps(direct=not include_uv_sync))
 
 
-def enterprise_extra_steps() -> tuple[Step, ...]:
+def enterprise_extra_steps(*, direct: bool) -> tuple[Step, ...]:
     """QUAL-X-oriented governance scripts on top of smoke (local / dispatch)."""
     scripts = (
         "check_agents_vendor_imports.py",
@@ -127,19 +158,23 @@ def enterprise_extra_steps() -> tuple[Step, ...]:
     extra = tuple(
         Step(
             f"Enterprise governance: {script}",
-            _uv_run("python", f"scripts/{_SCRIPT_PATHS[script]}"),
+            _run_python("python", f"scripts/{_SCRIPT_PATHS[script]}", direct=direct),
         )
         for script in scripts
     )
     full_harness = Step(
         "Enterprise: harness getattr/setattr (full scan)",
-        _uv_run("python", "scripts/maintenance/check_harness_no_getattr.py"),
+        _run_python("python", "scripts/maintenance/check_harness_no_getattr.py", direct=direct),
     )
     return (*extra, full_harness)
 
 
 def _enterprise_job(include_uv_sync: bool = True) -> Job:
-    return Job("enterprise-gate", (*smoke_steps(include_uv_sync), *enterprise_extra_steps()))
+    direct = not include_uv_sync
+    return Job(
+        "enterprise-gate",
+        (*smoke_steps(include_uv_sync), *enterprise_extra_steps(direct=direct)),
+    )
 
 
 def _gate_tests_job() -> Job:
@@ -279,7 +314,7 @@ def _gate_closeout_job() -> Job:
 
 def _jobs_for_profile(profile: str, include_uv_sync: bool = True) -> list[Job]:
     if profile == "fast":
-        return [_fast_push_job()]
+        return [_fast_push_job(include_uv_sync)]
     if profile == "smoke":
         return [_ci_smoke_job(include_uv_sync)]
     if profile == "enterprise":

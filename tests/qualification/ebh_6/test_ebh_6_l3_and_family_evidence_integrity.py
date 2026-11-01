@@ -106,10 +106,13 @@ def test_family_blockers_have_non_catalog_gates() -> None:
 
 
 def test_family_gate_nodes_exist_and_are_tests() -> None:
+    from tests.qualification.ebh_5._proof_validation import pytest_test_function_exists
+
     for bundle in FAMILY_L9_EVIDENCE:
         for node_id in bundle.gate_test_ids:
             path_part = node_id.split("::", 1)[0]
             assert (_REPO_ROOT / path_part).is_file(), node_id
+            assert pytest_test_function_exists(node_id.split("[", 1)[0]), node_id
 
 
 def test_family_l9_reconciliation_complete() -> None:

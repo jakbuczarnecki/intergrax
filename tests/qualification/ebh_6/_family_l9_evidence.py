@@ -386,7 +386,7 @@ FAMILY_L9_EVIDENCE: Final[tuple[FamilyL9EvidenceBundle, ...]] = (
             _nid(_EBH6_MECH, "test_ebh6_exit_mandatory_docs_present"),
             _nid(_EBH6_MECH, "test_ebh6_exit_findings_register_complete"),
             _nid(_EBH6_REG, "test_ebh6_prohibited_unresolved_zero"),
-            "tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py::test_aj_evidence_required_honest_not_zero",
+            "tests/qualification/ebh_6/test_ebh_6_l3_and_family_evidence_integrity.py::test_aj_evidence_required_matches_t2_bundle_gaps",
         ),
         "QUAL-X remains OPEN — EBH-6 regression inventory @ HEAD",
         ImplementerProposedDisposition.PENDING_TO_REPLAY_PASS,

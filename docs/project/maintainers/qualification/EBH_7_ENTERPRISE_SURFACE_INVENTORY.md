@@ -1,6 +1,6 @@
 # EBH-7 — Enterprise surface inventory
 
-**MECHANISM_UNIQUE_COUNT:** 685 (pytest SSOT 	ests/qualification/ebh_7/_mechanism_registry.py).
+**MECHANISM_UNIQUE_COUNT:** 238 over the tracked tree (historical 685 included the gitignored `docker/runtime-context/` copy — B6-F10-P03-DIRTY-TREE) (pytest SSOT 	ests/qualification/ebh_7/_mechanism_registry.py).
 
 | Namespace | Count | SSOT |
 | --- | ---: | --- |

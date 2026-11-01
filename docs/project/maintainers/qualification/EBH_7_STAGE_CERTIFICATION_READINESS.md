@@ -1,15 +1,17 @@
-# EBH-7 — Stage certification readiness
+# EBH-7 — Stage certification readiness @ closure program
 
-| Wave | Materialization | Qualification @ normative audit | B6 |
+| Wave / package | Materialization | Qualification @ baseline | B6 / closure |
 | --- | --- | --- | --- |
-| W5 VBN + RPL-H | MATERIALIZED | Honest normative counts in appendix | OPEN |
-| W6 TEN E2E | MATERIALIZED | TEN-03 PROJECTION_ONLY + integrated rows | OPEN |
-| W7 XDM | MATERIALIZED | Composed-proxy rows flagged in appendix | OPEN |
-| W8 ECAP | MATERIALIZED | Executable checklist — not counter-only | OPEN |
-| W9 dossier | MATERIALIZED | P03 MANIFEST + worksheets | OPEN |
-| W10 Protocol 03 | MATERIALIZED | B1–B3; B5–B6 OPEN | OPEN |
-| OD-EBH7-08 | — | **OPEN** | Operator |
+| A SSOT | **IMPLEMENTED** | RPL disposition synced to normative | **CLOSED (SCOPED)** |
+| B INT2E | **IMPLEMENTED** | Bundle matrix + regression | **CLOSED (SCOPED)** |
+| C RPL-H | **IMPLEMENTED** | 56/56 QUALIFIED @ normative SSOT | **CLOSED (SCOPED)** |
+| D TEN/XDM | **IMPLEMENTED** | 0 COMPOSED_PROXY @ evidence SSOT | **CLOSED (SCOPED)** |
+| E ECAP families | **IMPLEMENTED** | Full EBH-6 catalog matrix | **CLOSED (SCOPED)** |
+| F L3 | **IMPLEMENTED** | Full suite profile documented | **CLOSED (SCOPED)** |
+| G P03 B1–B5 | **IMPLEMENTED** | MANIFEST + digests | **CLOSED (SCOPED)** |
+| H B6 | **INDEPENDENT** | Pass record @ `dc18e36d9…` | **PASS (SCOPED)** |
+| I OD-EBH7-08 | **OPERATOR** | Signature record | **APPROVED** |
 
-**Program status:** `EBH-7 — REMEDIATION PROGRAM MATERIALIZED — B6 OPEN`
+**Program status:** **`EBH-7 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`**
 
-**Not claimed:** EBH-7 CLOSED, B6 PASS, OD-EBH7-08 APPROVED, EVOL-X, global FRZ PASS.
+**Not claimed:** global FRZ PASS, PROD-Q parent CLOSED, EVOL-X CLOSED, ARCH-FREEZE.

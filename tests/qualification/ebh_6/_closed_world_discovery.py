@@ -61,8 +61,10 @@ def discover_sanctioned_production_composition_roots() -> frozenset[str]:
 def discover_application_wiring_paths() -> frozenset[str]:
     paths: set[str] = set()
     for path in (_REPO_ROOT / "applications").rglob("*_wiring.py"):
-        if path.is_file():
-            paths.add(path.relative_to(_REPO_ROOT).as_posix())
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        # Gitignored vendored copy of the source tree used as a docker build context.
+        if path.is_file() and "/docker/runtime-context/" not in rel:
+            paths.add(rel)
     return frozenset(paths)
 
 

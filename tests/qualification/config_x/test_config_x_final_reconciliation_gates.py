@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationConfigurationError,
@@ -16,7 +15,6 @@ from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.tokenizers.registry.tokenizer_registry import TokenizerRegistry
 from intergrax.tools.providers.observability.resolve import resolve_observability_backend
 from intergrax.tools.registry.wiring import ToolWiringContext
-
 from tests.qualification.config_x._config_x_activation_families import (
     discover_activation_bypass_findings,
 )
@@ -153,6 +151,19 @@ def test_frz_cfg_06_unconfigured_observability_and_tokenizer_not_effective() -> 
         registry.get(None)
 
 
+@pytest.fixture
+def _restore_default_integration_catalog():
+    from intergrax.core.catalog_bootstrap import reset_tier0_catalog_bootstrap_for_tests
+    from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
+    from intergrax.integrations.registry.catalog import clear_catalog
+
+    yield
+    clear_catalog()
+    reset_default_integrations_state()
+    reset_tier0_catalog_bootstrap_for_tests()
+
+
+@pytest.mark.usefixtures("_restore_default_integration_catalog")
 def test_frz_cfg_07_explicit_slug_precedence_over_profile_and_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -188,12 +199,10 @@ def test_frz_cfg_07_explicit_slug_precedence_over_profile_and_env(
         )
         == "config_x_sqlite"
     )
-    assert (
-        resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile)
-        == "config_x_sqlite"
-    )
+    assert resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile) == "config_x_sqlite"
 
 
+@pytest.mark.usefixtures("_restore_default_integration_catalog")
 def test_frz_cfg_07_ambient_env_cannot_override_explicit_profile(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -221,10 +230,7 @@ def test_frz_cfg_07_ambient_env_cannot_override_explicit_profile(
     )
     monkeypatch.setenv("INTERGRAX_INTEGRATION_RELATIONAL_STORE", "config_x_env_postgresql")
     profile = IntegrationProfile(relational_store="config_x_profile_sqlite")
-    assert (
-        resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile)
-        == "config_x_profile_sqlite"
-    )
+    assert resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile) == "config_x_profile_sqlite"
 
 
 def test_frz_cfg_08_regression_protects_current_closed_world_classification() -> None:

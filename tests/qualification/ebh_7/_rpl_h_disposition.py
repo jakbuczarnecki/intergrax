@@ -25,9 +25,13 @@ class RplHDispositionRow:
 
 
 def rpl_h_disposition_rows() -> tuple[RplHDispositionRow, ...]:
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import normative_rpl_row
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
+
     rows: list[RplHDispositionRow] = []
     for matrix_row in CROSS_LAYER_REPLACEABILITY_MATRIX:
-        qualified = matrix_row.rpl_h == ExtensibilityClassification.REPLACEABLE_QUALIFIED
+        norm = normative_rpl_row(matrix_row.concern_id)
+        qualified = norm.semantic_verdict is RplSemanticVerdict.QUALIFIED
         q_status = CertificationStatus.QUALIFIED if qualified else CertificationStatus.QUALIFICATION_PENDING
         rows.append(
             RplHDispositionRow(
@@ -35,28 +39,38 @@ def rpl_h_disposition_rows() -> tuple[RplHDispositionRow, ...]:
                 rpl_h_at_head=matrix_row.rpl_h,
                 materialization_status=CertificationStatus.MATERIALIZED,
                 qualification_status=q_status,
-                existing_evidence=(matrix_row.behavioral_proof_ref if qualified else "NONE qualified @ HEAD"),
+                existing_evidence=norm.positive_test if qualified else norm.defect,
                 missing_structural="PASS" if matrix_row.rpl_b.value == "PASS" else "RPL-B OPEN",
-                missing_behavioral="PASS" if matrix_row.rpl_e.value == "PASS" else "RPL-E OPEN",
-                remediation="QUALIFY per EBH-5 matrix" if not qualified else "N/A",
+                missing_behavioral="PASS" if qualified else norm.defect,
+                remediation=norm.task_id if not qualified else "N/A",
             )
         )
     return tuple(rows)
 
 
 def assert_ebh7_rpl_h_disposition_integrity() -> None:
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import all_normative_rpl_rows
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
+
     assert len(CROSS_LAYER_REPLACEABILITY_MATRIX) == EBH7_RPL_MATRIX_ROWS
     rows = rpl_h_disposition_rows()
     assert len(rows) == EBH7_RPL_MATRIX_ROWS
+    norm_qualified = sum(1 for r in all_normative_rpl_rows() if r.semantic_verdict is RplSemanticVerdict.QUALIFIED)
     qualified = sum(1 for r in rows if is_behavioral_certification(r.qualification_status))
-    not_yet = sum(1 for r in rows if r.rpl_h_at_head == ExtensibilityClassification.REPLACEABLE_NOT_YET)
-    assert qualified + not_yet == EBH7_RPL_MATRIX_ROWS
+    assert qualified == norm_qualified
 
 
 def assert_ebh7_rpl_h_behavioral_qualification() -> None:
+    from tests.qualification.ebh_7._rpl_h_normative_evidence import all_normative_rpl_rows
+    from tests.qualification.ebh_7._rpl_h_semantic_evidence import RplSemanticVerdict
+
     rows = rpl_h_disposition_rows()
-    pending = [r.concern_id for r in rows if not is_behavioral_certification(r.qualification_status)]
-    assert pending == [], f"RPL-H mechanical matrix OPEN for: {pending[:5]}... ({len(pending)} total)"
+    for norm in all_normative_rpl_rows():
+        disp = next(r for r in rows if r.concern_id == norm.concern_id)
+        if norm.semantic_verdict is RplSemanticVerdict.QUALIFIED:
+            assert is_behavioral_certification(disp.qualification_status), norm.concern_id
+        else:
+            assert not is_behavioral_certification(disp.qualification_status), norm.concern_id
 
 
 def assert_ebh7_rpl_h_semantic_qualification_for_b6() -> None:

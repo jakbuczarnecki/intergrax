@@ -41,6 +41,46 @@ _PACKAGE_C_RPL_F_NA: Final[str] = (
 )
 
 
+def normative_rpl_f_na_rationale(concern_id: str) -> str:
+    """Per-concern RPL-F N/A rationale (dual-slug integrations must not share one generic string)."""
+    from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import catalog_by_concern_id
+
+    entry = catalog_by_concern_id().get(concern_id)
+    if entry is not None:
+        cat = entry.category.value
+        if cat == "relational_store":
+            return (
+                "N/A — WITH EVIDENCE: relational_store active operational failure @ "
+                "persistence.relational_sqlite_lab RPL-F PASS; dual-slug proves selection/isolation only"
+            )
+        if entry.operational_lifecycle:
+            return (
+                f"N/A — WITH EVIDENCE: {cat} — connect/close parity @ Package C v2 RPL-D; "
+                "no active fault-injection port on this integration resolve surface"
+            )
+        return (
+            f"N/A — WITH EVIDENCE: {cat} — profile selection + unregistered fail-closed @ Package C v2; "
+            "active failure/recovery not claimed on catalog resolve-only path"
+        )
+    if concern_id == "integration.external_work":
+        return (
+            "N/A — WITH EVIDENCE: external_work replaceability @ dual-provider qualification proof; "
+            "operational failure semantics owned by contractor contract tests"
+        )
+    if concern_id == "integration.marketplace":
+        return (
+            "N/A — WITH EVIDENCE: marketplace catalog resolution @ factory one-pass; "
+            "no active backend fault surface on listing resolve path"
+        )
+    if concern_id.startswith("integration."):
+        suffix = concern_id.removeprefix("integration.")
+        return (
+            f"N/A — WITH EVIDENCE: {suffix} — sanctioned composition reachability; "
+            "RPL-F active failure not applicable without second live backend @ EBH-7 scope"
+        )
+    return _PACKAGE_C_RPL_F_NA
+
+
 def _build_rpl_f_by_concern() -> dict[str, RplFDisposition]:
     from tests.qualification.ebh_5._behavioral_proof_registry import QUALIFIED_CONCERN_IDS
 
@@ -59,7 +99,7 @@ def _build_rpl_f_by_concern() -> dict[str, RplFDisposition]:
             concern_id=concern_id,
             gate=RplGateStatus.NA,
             proof_pytest_nodes=(),
-            normative_na_rationale=_PACKAGE_C_RPL_F_NA,
+            normative_na_rationale=normative_rpl_f_na_rationale(concern_id),
         )
     return by
 
@@ -99,6 +139,10 @@ def rpl_f_validation_errors() -> tuple[str, ...]:
                 errors.append(f"{concern_id}: RPL-F NA requires normative N/A — WITH EVIDENCE rationale")
             if disp.proof_pytest_nodes:
                 errors.append(f"{concern_id}: RPL-F NA must not cite proof nodes")
+            from tests.qualification.ebh_5._package_c_v2_dual_slug_catalog import catalog_by_concern_id
+
+            if concern_id in catalog_by_concern_id() and disp.normative_na_rationale == _PACKAGE_C_RPL_F_NA:
+                errors.append(f"{concern_id}: dual-slug integration must use per-category RPL-F N/A rationale")
         else:
             errors.append(f"{concern_id}: RPL-F gate must be PASS or NA, got {disp.gate}")
     return tuple(errors)
