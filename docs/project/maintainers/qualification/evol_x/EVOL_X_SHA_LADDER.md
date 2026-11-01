@@ -8,7 +8,7 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 | PLAN_PUBLICATION_SHA | `b4fca4bc413a650b2e5a8dd8826669a9025864c5` | master plan v3 |
 | W7 baseline (blockers doc) | `4393692a2e7447797c5e26408811e4b335c642f5` | pre-W7 A–D remediation |
 | TEST_EXECUTION_SHA | `2b165516485154583a4118ba1ecb2e25549bb5d0` | E-CORR-M09H-ORACLE; VL3 288/288; M-09H cause identity gate; supersedes `dcd7ae6e264d435994c61162e0d41aba25f71283` |
-| EVIDENCE_TECH_PUBLICATION_SHA | *(pending evidence commit)* | Mode A `--technical` @ NEW_TES; M-09H NOT_MEASURED |
+| EVIDENCE_TECH_PUBLICATION_SHA | `434a31146af53d0e776b6c93b97ae7f2444b1f18` | Mode A `--technical` @ NEW_TES; M-09H NOT_MEASURED; supersedes `9f875fc62d1f6b2231b31c843ae0428a2d871031` |
 | EVIDENCE_FINAL_PUBLICATION_SHA | — | Batch E supplement + M-09H PASS |
 | B6_ACCEPTANCE_PUBLICATION_SHA | — | independent auditor |
 
