@@ -63,13 +63,15 @@ uv run python scripts/qualification/evol_x_p03_evidence.py verify-evidence-publi
 **When:** HEAD = TES; auditor-only (not implementer convenience replay as B6 substitute).
 
 ```powershell
-git checkout 6fec9ec387089dfcee1039089ba5ad901fab39d6
+git checkout dcd7ae6e264d435994c61162e0d41aba25f71283
 uv sync --extra dev-ci --frozen
 uv run pytest tests/qualification/evol_x -q --junitxml=.tmp/session/evol-x-b6/junit.xml
 uv run python scripts/qualification/evol_x_p03_evidence.py verify-test-execution `
-  --evidence-ref <NEW_TECH or EVIDENCE_FINAL SHA> `
+  --evidence-ref 9f875fc62d1f6b2231b31c843ae0428a2d871031 `
   --certification --replay-junit .tmp/session/evol-x-b6/junit.xml
 ```
+
+**Final disposition (after E2):** same checkout @ NEW_TES; `--evidence-ref` = **EVIDENCE_FINAL_PUBLICATION_SHA** (not NEW_TES).
 
 **Expected:** match `evol_junit_outcomes.v1.json` @ bundle (279 passed population @ NEW_TES; N-M09-17 anti-regression included).
 
