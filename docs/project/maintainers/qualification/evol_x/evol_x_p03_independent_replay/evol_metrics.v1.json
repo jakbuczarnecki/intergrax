@@ -16,7 +16,7 @@
       "note": "CW-06 pairs",
       "numerator": 11528,
       "passed": true,
-      "population_digest": "f2f39041f441eb45c5f258f0eb24057b47d1a773408fa52c12c5a2eef4e7c597",
+      "population_digest": "b494a44e64f4a374d45d15aafac698db5359296b6ba620248cfc87a672b4c5d9",
       "status": "MEASURED",
       "threshold": 0.9
     },
@@ -26,15 +26,15 @@
       "note": "",
       "numerator": 0,
       "passed": true,
-      "population_digest": "f2f39041f441eb45c5f258f0eb24057b47d1a773408fa52c12c5a2eef4e7c597",
+      "population_digest": "b494a44e64f4a374d45d15aafac698db5359296b6ba620248cfc87a672b4c5d9",
       "status": "MEASURED",
       "threshold": 0.0
     },
     {
-      "denominator": 1902,
+      "denominator": 2016,
       "metric_id": "EVOL-M-03",
       "note": "P-S arcs; O-X ast-closure oracle R*",
-      "numerator": 1902,
+      "numerator": 2016,
       "passed": true,
       "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
       "status": "MEASURED",
@@ -51,7 +51,7 @@
       "threshold": 1.0
     },
     {
-      "denominator": 1902,
+      "denominator": 2016,
       "metric_id": "EVOL-M-03E",
       "note": "",
       "numerator": 0,
@@ -61,10 +61,10 @@
       "threshold": 0.0
     },
     {
-      "denominator": 1902,
+      "denominator": 2016,
       "metric_id": "EVOL-M-03R",
       "note": "",
-      "numerator": 1902,
+      "numerator": 2016,
       "passed": true,
       "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
       "status": "MEASURED",
@@ -133,10 +133,10 @@
     {
       "denominator": 3,
       "metric_id": "EVOL-M-09T",
-      "note": "tool_seconds=3.05 (SLA<=120s); seeds=3 distinct paths",
+      "note": "tool_seconds=12.58 (SLA<=120s); seeds=3 distinct paths",
       "numerator": 3,
       "passed": true,
-      "population_digest": "f6c769e2e47ca7c56e969964beec23a36451887cb24abc1577bd1f3b83cbbd50",
+      "population_digest": "590a20ac02b2b69be2d0475edc61d233c625e262ff6809fdccc9e3e7a7607d11",
       "status": "MEASURED",
       "threshold": 1.0
     },
@@ -162,5 +162,5 @@
     }
   ],
   "schema_version": "evol_metrics.v1",
-  "source_commit_sha": "6fec9ec387089dfcee1039089ba5ad901fab39d6"
+  "source_commit_sha": "dcd7ae6e264d435994c61162e0d41aba25f71283"
 }

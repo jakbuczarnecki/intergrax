@@ -1,11 +1,11 @@
-# EVOL-X — CI qualification record (C-CI-01/02)
+﻿# EVOL-X — CI qualification record (C-CI-01/02)
 
 **Status:** **EXACT BLOCKER — main workflow dispatch pending operator (OD-EVOL-10)**
 
 | Field | Value |
 |-------|-------|
 | `workflow_def_sha_on_main` | *pending operator merge + dispatch* |
-| `test_execution_sha` | **`6fec9ec387089dfcee1039089ba5ad901fab39d6`** (ACTIVE_TEST_EXECUTION_SHA @ E-CORR-M09; supersedes `cb407403…`) — dispatch input must match exactly |
+| `test_execution_sha` | **`dcd7ae6e264d435994c61162e0d41aba25f71283`** (ACTIVE_TEST_EXECUTION_SHA @ M-09H P0 correction; supersedes `6fec9ec…`) — dispatch input must match exactly |
 | `github_run_id` | — |
 | `conclusion` | — |
 | `artifact_name` | `evol-x-p3-l3-<TES>` |
@@ -16,7 +16,7 @@
 ## Procedure (W6-04 exact-SHA)
 
 1. Operator merges `evol-x-p3-l3-qualification` job definition to **`main`**; records **WORKFLOW_DEF_SHA**.
-2. `workflow_dispatch` from **`main`** with input **`evol_test_execution_sha`** = **`6fec9ec387089dfcee1039089ba5ad901fab39d6`** (never empty; never `github.sha`).
+2. `workflow_dispatch` from **`main`** with input **`evol_test_execution_sha`** = **`dcd7ae6e264d435994c61162e0d41aba25f71283`** (never empty; never `github.sha`). **Supersedes** dispatch @ `6fec9ec387089dfcee1039089ba5ad901fab39d6`.
 3. Runner checks out `development` history, then `git checkout "${TEST_EXECUTION_SHA}"` with `rev-parse` assertion — **test tree = TES**.
 4. `uv sync --extra dev-ci --frozen`; `evol_x_vl3_manifest.py --check`; full `pytest tests/qualification/evol_x` → JUnit artifact.
 

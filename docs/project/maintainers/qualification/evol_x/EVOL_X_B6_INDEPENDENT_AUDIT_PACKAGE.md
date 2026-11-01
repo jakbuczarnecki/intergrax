@@ -1,4 +1,4 @@
-# EVOL-X — Independent B6 audit package (E3 PREP)
+﻿# EVOL-X — Independent B6 audit package (E3 PREP)
 
 **Disposition:** preparation only — **no B6 PASS**, **no FRZ promotion**, **no agent signature**.
 
@@ -8,13 +8,13 @@
 
 | Role | SHA |
 |------|-----|
-| TEST_EXECUTION_SHA (TES) | `6fec9ec387089dfcee1039089ba5ad901fab39d6` |
-| EVIDENCE_TECH_PUBLICATION_SHA | `43a44b492c77acdbaaf0ef632705915c9cc139f7` |
+| TEST_EXECUTION_SHA (TES) | `dcd7ae6e264d435994c61162e0d41aba25f71283` |
+| EVIDENCE_TECH_PUBLICATION_SHA | *see EVOL_X_SHA_LADDER.md after TECH commit* |
 | EVIDENCE_FINAL_PUBLICATION_SHA | *pending E2* |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *pending E3* |
 | DOC / prep tip @ session | `0231ff9a198dddb3fcc7bac1a5f1725c731ef1c7` |
 
-**Superseded (forbid in records):** TES `cb407403…`, TECH `20a3bc63…`.
+**Superseded (forbid in active records):** TES `6fec9ec…`, TECH `43a44b…`; historical TES `cb407403…`, TECH `20a3bc63…`.
 
 **Prerequisite:** Named **OD-EVOL-11** auditor (≠ implementer, ≠ Cursor agent) recorded in [EVOL_X_OPERATOR_DECISION_REGISTER_W1.md](./EVOL_X_OPERATOR_DECISION_REGISTER_W1.md) before W7-01 / B6 sign-off.
 
@@ -53,7 +53,7 @@ uv run python scripts/qualification/evol_x_p03_evidence.py verify-evidence-publi
 - Ancestor: TES ancestor of evidence HEAD.
 - `MANIFEST.test_execution_sha` = TES.
 - `ARTIFACT_DIGESTS.json` matches bytes @ HEAD.
-- Final: `evol_m09_human_drill.v1.json` + M-09H 3/3 MEASURED PASS + worksheet digest chain.
+- Final: `evol_m09_human_drill.v2.json` (schema v2, `measurement_policy_id` OD-EVOL-08-M1; dual SLA: tool ≤120 s/case, median attribution ≤900 s; runbook [EVOL_X_M09H_HUMAN_DRILL_RUNBOOK.md](./EVOL_X_M09H_HUMAN_DRILL_RUNBOOK.md)) + M-09H 3/3 MEASURED PASS + worksheet digest chain.
 - **STOP:** final Mode A @ TECH-only HEAD for closure claim.
 
 ---
@@ -67,11 +67,11 @@ git checkout 6fec9ec387089dfcee1039089ba5ad901fab39d6
 uv sync --extra dev-ci --frozen
 uv run pytest tests/qualification/evol_x -q --junitxml=.tmp/session/evol-x-b6/junit.xml
 uv run python scripts/qualification/evol_x_p03_evidence.py verify-test-execution `
-  --evidence-ref 6fec9ec387089dfcee1039089ba5ad901fab39d6 `
+  --evidence-ref <NEW_TECH or EVIDENCE_FINAL SHA> `
   --certification --replay-junit .tmp/session/evol-x-b6/junit.xml
 ```
 
-**Expected:** match `evol_junit_outcomes.v1.json` @ bundle (260 passed population @ TES).
+**Expected:** match `evol_junit_outcomes.v1.json` @ bundle (279 passed population @ NEW_TES; N-M09-17 anti-regression included).
 
 ---
 
@@ -98,7 +98,7 @@ Parallel gate — not substitute for Mode B.
 | Slot | Source |
 |------|--------|
 | WORKFLOW_DEF_SHA | `main` after workflow-only merge |
-| Dispatch TES | `6fec9ec…` input |
+| Dispatch TES | `dcd7ae6…` (NEW_TES) input; `6fec9ec…` dispatch INVALIDATED |
 | Run proof | [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) |
 | Procedure | [EVOL_X_CI_QUALIFICATION_PROCEDURE.md](./EVOL_X_CI_QUALIFICATION_PROCEDURE.md) |
 
