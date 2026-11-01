@@ -2,6 +2,8 @@
   "artifact_paths": [
     "evol_frz_evidence.v1.json",
     "evol_junit_outcomes.v1.json",
+    "evol_m09_automated_diagnostic_qualification.v1.json",
+    "evol_m09_drill_case_registry.v1.json",
     "evol_metrics.v1.json",
     "evol_test_execution_manifest.v1.json",
     "experiments/S1_negative.json",
@@ -21,17 +23,21 @@
     "experiments/S8_negative.json",
     "experiments/S8_positive.json",
     "inventory_binding.v1.json",
-    "m03_causal_audit.v1.json"
+    "m03_causal_audit.v1.json",
+    "m09_automated_diagnostic/C1.json",
+    "m09_automated_diagnostic/C2.json",
+    "m09_automated_diagnostic/C3.json"
   ],
+  "certification_profile": "AUTOMATION_FIRST_SCOPED",
   "dirty_tree": false,
   "executed_command": "uv run pytest tests/qualification/evol_x -q",
-  "implementation_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0",
-  "independent_replay_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0",
-  "parent_test_execution_tree": "621df29e30ad1669def03d75bb317f7fc233a6d3",
+  "implementation_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "independent_replay_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "parent_test_execution_tree": "3244d4ea9c9bfb388ffb614656c71f0b7eafd3ad",
   "plan_publication_sha": "b4fca4bc413a650b2e5a8dd8826669a9025864c5",
   "pytest_profile": "evol_x_p3_l3",
   "schema_version": "evol_p03_manifest.v1",
   "stage": "EVOL-X",
-  "test_execution_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0",
+  "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "uv_extra": "dev-ci"
 }

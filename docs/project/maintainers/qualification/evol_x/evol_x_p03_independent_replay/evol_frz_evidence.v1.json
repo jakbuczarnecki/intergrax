@@ -6,7 +6,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_02_graph_coverage.py::test_frz_evol_02_coverage_report_and_cw06_green",
@@ -14,7 +14,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_03_blast_radius.py::test_frz_evol_03_every_escape_on_real_inventory_has_a_witness",
@@ -22,7 +22,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_04_contract_consumers.py::test_frz_evol_04_no_orphan_consumers_on_real_inventory",
@@ -30,7 +30,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_05_workflow_evolution.py::test_frz_evol_05_matrix_total_and_no_unsafe_adoption",
@@ -38,7 +38,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_06_regression_selection.py::test_frz_evol_06_policy_is_scoped_and_forbids_empty_selection",
@@ -46,7 +46,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_07_deploy_rollback.py::test_frz_evol_07_s7_arms_pass",
@@ -54,7 +54,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "FRZ-EVOL-07 scoped PASS: qualification-layer assessor (DM-01..07) only; production ActivationService.rollback durable-state enforcement is NOT claimed (OD-EVOL-05b Option 1).",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_08_change_diagnostics.py::test_frz_evol_08_dossier_answers_all_questions_on_real_change",
@@ -62,7 +62,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "FRZ-EVOL-08: passive change dossier; continuous incident correlation remains ENT-AUDIT-X.",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_09_extensibility.py::test_frz_evol_09_core_edit_without_authorization_is_never_allowed",
@@ -70,7 +70,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     },
     {
       "behavioral_test": "tests/qualification/evol_x/frz/test_evol_x_frz_10_requalification.py::test_frz_evol_10_each_trigger_fires_independently_on_real_digests",
@@ -78,7 +78,7 @@
       "passed": true,
       "schema_version": "evol_frz_evidence.v1",
       "scope_footnote": "FRZ-EVOL-10: executable triggers T1..T9 + freshness counter; scenario-wave audit remains ENT-AUDIT-X.",
-      "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+      "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
     }
   ],
   "schema_version": "evol_frz_evidence_set.v1"

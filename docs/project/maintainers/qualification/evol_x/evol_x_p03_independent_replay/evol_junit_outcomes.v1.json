@@ -210,6 +210,7 @@
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-26b-PASS-mixed]": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_manifest_with_forbidden_self_field_is_rejected": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_missing_manifest_node_in_canonical_outcomes_is_rejected": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_automation_first_scoped_final_passes": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_requires_m09h_and_human_drill": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_valid_m09_bundle_passes": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_reversed_ancestry_is_rejected": "passed",
@@ -268,6 +269,7 @@
     "tests/qualification/evol_x/metrics/test_evol_x_m03_causal_audit.py::test_m03_causal_audit_tampered_oracle_expectation_fails": "passed",
     "tests/qualification/evol_x/metrics/test_evol_x_m03_causal_audit.py::test_m03_fault_injection_refuses_bypass": "passed",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_every_base_metric_is_covered_by_a_reading": "passed",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09a_is_not_measured_until_scoped_final": "passed",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09h_is_not_measured_until_human_drill": "passed",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09t_uses_three_distinct_seed_paths": "passed",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_make_reading_negative_cases": "passed",
@@ -290,5 +292,5 @@
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_thresholds_match_ratified_canonical_values": "passed"
   },
   "schema_version": "evol_junit_outcomes.v1",
-  "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+  "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
 }

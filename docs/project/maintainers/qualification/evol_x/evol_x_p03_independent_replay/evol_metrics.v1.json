@@ -16,7 +16,7 @@
       "note": "CW-06 pairs",
       "numerator": 11528,
       "passed": true,
-      "population_digest": "fb1acfa59ed8122d683a4b2d8cc2f5ffbfcf0af030df6df2cf9f7e9df414b028",
+      "population_digest": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
       "status": "MEASURED",
       "threshold": 0.9
     },
@@ -26,15 +26,15 @@
       "note": "",
       "numerator": 0,
       "passed": true,
-      "population_digest": "fb1acfa59ed8122d683a4b2d8cc2f5ffbfcf0af030df6df2cf9f7e9df414b028",
+      "population_digest": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
       "status": "MEASURED",
       "threshold": 0.0
     },
     {
-      "denominator": 2070,
+      "denominator": 2082,
       "metric_id": "EVOL-M-03",
       "note": "P-S arcs; O-X ast-closure oracle R*",
-      "numerator": 2070,
+      "numerator": 2082,
       "passed": true,
       "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
       "status": "MEASURED",
@@ -51,7 +51,7 @@
       "threshold": 1.0
     },
     {
-      "denominator": 2070,
+      "denominator": 2082,
       "metric_id": "EVOL-M-03E",
       "note": "",
       "numerator": 0,
@@ -61,10 +61,10 @@
       "threshold": 0.0
     },
     {
-      "denominator": 2070,
+      "denominator": 2082,
       "metric_id": "EVOL-M-03R",
       "note": "",
-      "numerator": 2070,
+      "numerator": 2082,
       "passed": true,
       "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
       "status": "MEASURED",
@@ -121,9 +121,19 @@
       "threshold": 1.0
     },
     {
+      "denominator": 3,
+      "metric_id": "EVOL-M-09A",
+      "note": "automation-first scoped diagnostic (OD-EVOL-13)",
+      "numerator": 3,
+      "passed": true,
+      "population_digest": "aa0224aa1a7d5a80b376545c2f9b756124d7eee898214e98881bb2902c1a4a28",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
       "denominator": 0,
       "metric_id": "EVOL-M-09H",
-      "note": "human operator attribution drill (W7 supplement); not automatable @ technical evidence",
+      "note": "human drill not performed; OD-EVOL-13 scoped automation",
       "numerator": 0,
       "passed": null,
       "population_digest": null,
@@ -133,10 +143,10 @@
     {
       "denominator": 3,
       "metric_id": "EVOL-M-09T",
-      "note": "tool_seconds=2.89 (SLA<=120s); seeds=3 distinct paths",
+      "note": "tool_seconds=4.16 (SLA<=120s); seeds=3 distinct paths",
       "numerator": 3,
       "passed": true,
-      "population_digest": "33f9e2229ac5ac790eae7dc26b05df21efe54e01e398f9382c4ccf2f25205dc5",
+      "population_digest": "b0711d0f23d6d3762fcc756e9dc022d34f12f16b13a776c73fae64912501ffd3",
       "status": "MEASURED",
       "threshold": 1.0
     },
@@ -162,5 +172,5 @@
     }
   ],
   "schema_version": "evol_metrics.v1",
-  "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
+  "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
 }
