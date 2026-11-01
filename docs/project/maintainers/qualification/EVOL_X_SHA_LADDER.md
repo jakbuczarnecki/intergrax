@@ -4,7 +4,7 @@
 
 | Check | Result |
 |-------|--------|
-| `git rev-parse origin/development` | **`cd258b23b…`** after plan publication push (verify post-push) |
+| `git rev-parse origin/development` | **`b4fca4bc4…`** @ plan publication (2026-11-01) |
 | W1 documentation chain | Unchanged through **W1_AUDIT_REMEDIATION_SHA** |
 | Plan v3 publication | Adds **PLAN_PUBLICATION_SHA** row below (same commit as `EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md`) |
 
@@ -30,7 +30,7 @@
 
 | Role | SHA | Notes |
 |------|-----|--------|
-| **PLAN_PUBLICATION_SHA** | `cd258b23b5ab7e19caec9208cc362c6f8a5dd98b` | Final completion master plan v3 + ladder (docs only). Resolve anytime: `git log -1 --format=%H -- docs/project/maintainers/qualification/EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md` |
+| **PLAN_PUBLICATION_SHA** | `b4fca4bc413a650b2e5a8dd8826669a9025864c5` | Final completion master plan v3 + ladder (docs only). Resolve anytime: `git log -1 --format=%H -- docs/project/maintainers/qualification/EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md` |
 
 **SHA lifecycle (no circular manifest self-hash):** `TEST_EXECUTION_SHA` is recorded **inside** evidence `MANIFEST.json`; `EVIDENCE_PUBLICATION_SHA` is **`git rev-parse HEAD`** on the evidence bundle checkout only. Require `merge-base --is-ancestor TEST_EXECUTION_SHA EVIDENCE_PUBLICATION_SHA`.
 
