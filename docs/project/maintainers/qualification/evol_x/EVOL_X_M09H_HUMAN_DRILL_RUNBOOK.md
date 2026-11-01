@@ -2,6 +2,7 @@
 
 **Policy:** `OD-EVOL-08-M1` (OPERATOR APPROVED, see [`EVOL_X_OPERATOR_DECISION_REGISTER_W1.md`](EVOL_X_OPERATOR_DECISION_REGISTER_W1.md)).  
 **Contract:** `evol_m09_human_drill.v2` — [`EVOL_X_EXPERIMENT_AND_METRIC_SPEC.md`](EVOL_X_EXPERIMENT_AND_METRIC_SPEC.md).  
+**Cause identity:** [`EVOL_X_M09H_CAUSE_IDENTITY.md`](./EVOL_X_M09H_CAUSE_IDENTITY.md).
 **Finding fixed:** `F-EVOLX-P0-M09H-ATTRIBUTION-SLA-FALSE-PASS` (v1 applied the 900 s median to tool time).
 
 **E2 preparation (packets, worksheet, rebind staging, adversarial):** [`e2_m09h_human_drill_prep/README.md`](./e2_m09h_human_drill_prep/README.md) — disposition `PENDING_HUMAN_EXECUTION` until genuine drill.

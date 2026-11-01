@@ -1,8 +1,8 @@
 # EVOL-X E2 — Operator execution runbook (M-09H human drill)
 
-> **BLOCKED @ cause preflight:** Human execution is **not authorized** until [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](./EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md) disposition is **PASS / HUMAN DRILL AUTHORIZED**. The steps below remain the prepared procedure after **E-CORR-M09H-ORACLE**.
+> **Human drill authorized** after E-CORR-M09H-ORACLE — cause identity: [EVOL_X_M09H_CAUSE_IDENTITY.md](../EVOL_X_M09H_CAUSE_IDENTITY.md). Preflight: [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](./EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md).
 
-**Policy:** OD-EVOL-08-M1 · **TES:** `dcd7ae6e264d435994c61162e0d41aba25f71283`
+**Policy:** OD-EVOL-08-M1 · **TES:** see active SHA ladder (NEW_TEST_EXECUTION_SHA after correction)
 
 ## Before the human session
 
@@ -58,6 +58,7 @@ from pathlib import Path
 from testing_support.change_safety.discovery.closed_world import build_closed_world_inventory
 from testing_support.change_safety.graph.impact import assess_path_change_impact
 from testing_support.change_safety.diagnostics.dossier import build_change_dossier
+from testing_support.change_safety.diagnostics.m09_cause_identity import describe_attribution_evidence
 
 tes = '$tes'
 seed = '$seed'
@@ -72,7 +73,6 @@ dossier = build_change_dossier(
     created_at_utc='1970-01-01T00:00:00+00:00',
 )
 elapsed = time.perf_counter() - t0
-direct = [n.model_dump(mode='json') for n in impact.affected if n.kind == 'DIRECT']
 payload = {
     'case_id': case_id,
     'test_execution_sha': tes,
@@ -80,6 +80,7 @@ payload = {
     'tool_seconds': round(elapsed, 3),
     'impact': impact.model_dump(mode='json'),
     'dossier': dossier.model_dump(mode='json'),
+    'attribution_evidence': describe_attribution_evidence(impact, seed),
 }
 Path('$out').write_text(json.dumps(payload, indent=2), encoding='utf-8')
 print(f'tool_seconds={elapsed:.3f} wrote $out')

@@ -30,6 +30,8 @@ from testing_support.change_safety.contracts.artifacts import (
     TestExecutionManifest,
 )
 from testing_support.change_safety.contracts.canonical_json import stable_digest_hex
+from testing_support.change_safety.diagnostics.m09_cause_identity import expected_cause_identities_for_seed
+from testing_support.change_safety.discovery.closed_world import build_closed_world_inventory
 from testing_support.change_safety.selection.ci_manifest import manifest_content_digest
 
 BUNDLE_REL = "docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay"
@@ -236,6 +238,23 @@ def _check_m09_human_drill(
             continue
         if sha256_hex(raw_path) != entry.input_digest:
             problems.append(f"M09 registry input_digest mismatch for {entry.case_id} @ test_execution_sha")
+    try:
+        inventory = build_closed_world_inventory(source_commit_sha=tes)
+    except (OSError, ValueError) as exc:
+        problems.append(f"M09 registry oracle: cannot build closed-world inventory @ TES: {exc}")
+        inventory = None
+    if inventory is not None:
+        for entry in registry.cases:
+            try:
+                derived = expected_cause_identities_for_seed(inventory, entry.changed_path)
+            except ValueError as exc:
+                problems.append(f"M09 registry oracle derivation failed for {entry.case_id}: {exc}")
+                continue
+            if tuple(entry.expected_cause_identities) != derived:
+                problems.append(
+                    f"M09 registry expected_cause_identities mismatch for {entry.case_id} "
+                    "(committed registry != diagnostic oracle)"
+                )
     tool_seconds: list[float] = []
     attribution_seconds: list[float] = []
     for result in drill.cases:

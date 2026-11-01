@@ -25,7 +25,7 @@ Operator attaches `.tmp/session/evol-x-e2-m09h/tool-output/C1.json` containing:
 
 ## Your task
 
-From the **complete packet** (this cover + JSON), determine the **attributed root-cause identity** for the seeded change: one or more lowercase hex SHA-256 strings (64 chars each) naming the cause you attribute.
+From the **complete packet** (cover + JSON), identify the **DIRECT** semantic-graph node for the seeded module (see `attribution_evidence` or `impact.affected`) and compute the cause identity per [`EVOL_X_M09H_CAUSE_IDENTITY.md`](../../EVOL_X_M09H_CAUSE_IDENTITY.md): `stable_digest_hex([kind, node_id])`.
 
 Record your answer on the sealed worksheet **before** any expected answer is shown.
 

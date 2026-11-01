@@ -544,6 +544,13 @@ _M09_NEGATIVES: tuple[tuple[str, Mutator, str], ...] = (
         lambda files: files[p03.M09_HUMAN_DRILL_NAME].update({"schema_version": "evol_m09_human_drill.v3"}),
         "schema_version must be exactly evol_m09_human_drill.v2",
     ),
+    (
+        "N-M09-29",
+        lambda files: files[p03.M09_DRILL_CASE_REGISTRY_NAME]["cases"][0]["expected_cause_identities"].__setitem__(
+            0, "0" * 64
+        ),
+        "expected_cause_identities mismatch",
+    ),
 )
 
 # PASS arms: the verifier must accept these (median math, equality boundary, outlier robustness).
