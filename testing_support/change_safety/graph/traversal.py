@@ -5,23 +5,15 @@ from __future__ import annotations
 from collections import deque
 
 from testing_support.change_safety.contracts.impact import AffectedNode
-from testing_support.change_safety.discovery.extractors import GraphEdge
-
-
-def _reverse_adjacency(edges: tuple[GraphEdge, ...]) -> dict[str, list[GraphEdge]]:
-    adj: dict[str, list[GraphEdge]] = {}
-    for edge in edges:
-        if edge.rel != "IMPORTS":
-            continue
-        adj.setdefault(edge.target_id, []).append(edge)
-    return adj
+from testing_support.change_safety.discovery.closed_world import ClosedWorldInventory
 
 
 def traverse_from_changed_modules(
-    edges: tuple[GraphEdge, ...],
+    inventory: ClosedWorldInventory,
     seed_module_ids: frozenset[str],
 ) -> dict[str, AffectedNode]:
-    adj = _reverse_adjacency(edges)
+    """Reverse traversal over all consumption RELs, then forward TESTED_BY to suites."""
+    adj = inventory.consumers_reverse
     affected: dict[str, AffectedNode] = {}
     queue: deque[tuple[str, tuple[str, ...]]] = deque()
     for seed in sorted(seed_module_ids):
@@ -29,8 +21,7 @@ def traverse_from_changed_modules(
         affected[seed] = AffectedNode(node_id=seed, kind="DIRECT", witness_path=(seed,))
     while queue:
         node_id, path = queue.popleft()
-        for edge in sorted(adj.get(node_id, []), key=lambda e: e.source_id):
-            consumer = edge.source_id
+        for consumer, rel in adj.get(node_id, ()):
             if consumer in affected:
                 continue
             witness = path + (consumer,)
@@ -38,7 +29,17 @@ def traverse_from_changed_modules(
                 node_id=consumer,
                 kind="TRANSITIVE",
                 witness_path=witness,
-                rule_id="REL-IMPORTS-REVERSE",
+                rule_id=f"REL-{rel}-REVERSE",
             )
             queue.append((consumer, witness))
+    for node_id in sorted(list(affected)):
+        node = affected[node_id]
+        for suite in inventory.tested_by.get(node_id, ()):
+            if suite not in affected:
+                affected[suite] = AffectedNode(
+                    node_id=suite,
+                    kind="TRANSITIVE",
+                    witness_path=node.witness_path + (suite,),
+                    rule_id="REL-TESTED_BY",
+                )
     return affected

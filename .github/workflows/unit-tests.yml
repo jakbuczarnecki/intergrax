@@ -985,6 +985,10 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Sync CI deps
         run: uv sync --extra dev-ci --frozen
+      - name: EVOL-X VL3 manifest integrity (W2-09, same node list as local)
+        run: |
+          set -euo pipefail
+          uv run python scripts/qualification/evol_x_vl3_manifest.py --check
       - name: EVOL-X qualification suite
         run: |
           set -euo pipefail

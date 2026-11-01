@@ -2,29 +2,27 @@
 
 import pytest
 from testing_support.change_safety.contracts.enums import ImpactStatus, SelectionStatus
-from testing_support.change_safety.discovery.closed_world import build_closed_world_inventory
+from testing_support.change_safety.discovery.closed_world import ClosedWorldInventory
 from testing_support.change_safety.graph.impact import assess_path_change_impact
-from testing_support.change_safety.intake.git_change_set import rev_parse_head
 from testing_support.change_safety.selection.selector import select_tests_for_impact
 from tests.qualification.evol_x.adapters.qual_x import QualXSuiteCatalogAdapter
 
 pytestmark = [pytest.mark.qualification, pytest.mark.unit]
 
 
-def test_evol_x_closed_world_inventory_digest_stable() -> None:
-    head = rev_parse_head()
-    inv_a = build_closed_world_inventory(source_commit_sha=head)
-    inv_b = build_closed_world_inventory(source_commit_sha=head)
-    assert inv_a.inventory_digest == inv_b.inventory_digest
-    assert len(inv_a.nodes) > 1000
-    assert len(inv_a.edges) > 1000
+def test_evol_x_closed_world_inventory_digest_stable(evol_inventory: ClosedWorldInventory, evol_head: str) -> None:
+    from testing_support.change_safety.discovery.closed_world import build_closed_world_inventory
+
+    again = build_closed_world_inventory(source_commit_sha=evol_head)
+    assert evol_inventory.inventory_digest == again.inventory_digest
+    assert len(evol_inventory.nodes) > 10000
+    assert len(evol_inventory.edges) > 50000
+    assert evol_inventory.source_tree_id
 
 
-def test_evol_x_impact_and_selection_smoke() -> None:
-    head = rev_parse_head()
-    inventory = build_closed_world_inventory(source_commit_sha=head)
+def test_evol_x_impact_and_selection_smoke(evol_inventory: ClosedWorldInventory) -> None:
     impact = assess_path_change_impact(
-        inventory,
+        evol_inventory,
         changed_paths=frozenset({"testing_support/change_safety/contracts/enums.py"}),
     )
     assert impact.status in {ImpactStatus.COMPLETE, ImpactStatus.PARTIAL}

@@ -15,19 +15,23 @@ class GraphCoverageReport:
     modules_with_import_edges: int
     coverage_ratio: float
     critical_omissions: int
+    import_ratio_internal: float = 0.0
 
 
 def compute_graph_coverage(inventory: ClosedWorldInventory) -> GraphCoverageReport:
-    module_nodes = {n.node_id for n in inventory.nodes if n.node_id.startswith("module:")}
-    sources = {e.source_id for e in inventory.edges if e.rel == "IMPORTS"}
+    module_nodes = set(inventory.module_ids)
+    sources = {e.source_id for e in inventory.edges if e.rel in {"IMPORTS", "CONSUMES_CONTRACT", "BINDS", "IMPLEMENTS"}}
     covered = len(module_nodes & sources)
     total = len(module_nodes)
     ratio = covered / total if total else 0.0
-    omissions = count_critical_consumer_omissions(inventory)
+    stats = dict(inventory.import_stats)
+    total_imports = stats.get("total_import_records", 0)
+    internal_ratio = stats.get("internal_import_records", 0) / total_imports if total_imports else 0.0
     return GraphCoverageReport(
         schema_version="evol_graph_coverage.v1",
         module_nodes=total,
         modules_with_import_edges=covered,
         coverage_ratio=ratio,
-        critical_omissions=omissions,
+        critical_omissions=count_critical_consumer_omissions(inventory),
+        import_ratio_internal=internal_ratio,
     )

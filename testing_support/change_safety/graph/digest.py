@@ -13,10 +13,11 @@ def semantic_graph_digest(
     nodes: tuple[GraphNode, ...],
     edges: tuple[GraphEdge, ...],
 ) -> str:
+    """Canonical semantic graph digest: node/edge content (incl. REL) bound to the inventory digest (XG-03)."""
     payload = {
         "schema_version": schema_version,
         "inventory_digest": inventory_digest,
-        "nodes": [n.__dict__ for n in nodes],
-        "edges": [e.__dict__ for e in edges],
+        "nodes": [[n.node_id, n.category] for n in nodes],
+        "edges": [[e.source_id, e.target_id, e.rel] for e in edges],
     }
     return stable_digest_hex(payload)

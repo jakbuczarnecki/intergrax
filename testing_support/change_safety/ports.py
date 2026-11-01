@@ -8,9 +8,13 @@ from typing import Protocol
 
 @dataclass(frozen=True)
 class ChangeSet:
+    """Git change set. ``paths`` = every touched path (old **and** new for renames); ``statuses`` = path -> A/M/D/R."""
+
     paths: frozenset[str]
     base_sha: str
     head_sha: str
+    statuses: tuple[tuple[str, str], ...] = ()
+    renames: tuple[tuple[str, str], ...] = ()
 
 
 class ChangeSetPort(Protocol):

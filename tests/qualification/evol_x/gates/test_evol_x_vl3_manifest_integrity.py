@@ -1,30 +1,41 @@
 # © Artur Czarnecki. All rights reserved.
 
-from pathlib import Path
-
 import pytest
-from testing_support.change_safety.data.loaders import load_evol_x_data_document
+from testing_support.change_safety.selection.ci_manifest import (
+    build_manifest_document,
+    collect_evol_x_node_ids,
+    load_pinned_manifest,
+    manifest_content_digest,
+    verify_manifest_integrity,
+)
 
 pytestmark = [pytest.mark.qualification, pytest.mark.unit]
 
-_REPO = Path(__file__).resolve().parents[4]
-_EVOL_X_ROOT = _REPO / "tests" / "qualification" / "evol_x"
-
 
 def test_evol_x_vl3_manifest_matches_collect_only() -> None:
-    manifest = load_evol_x_data_document("evol_vl3_execution_manifest.v1.json")
-    pinned = tuple(manifest["pytest_node_ids"])
+    manifest = load_pinned_manifest()
     assert manifest["profile"] == "evol_x_p3_l3"
-    assert manifest["test_execution_baseline_sha"] == "8848857741f4b04e5b476dca3c47f7d0a60bf672"
+    assert manifest["excluded_populations"] == ["DIM-B-PROD-Q-LIVE"]
+    collected = collect_evol_x_node_ids()
+    assert verify_manifest_integrity(manifest, collected) == []
 
-    import subprocess
 
-    proc = subprocess.run(
-        ["uv", "run", "pytest", str(_EVOL_X_ROOT), "--collect-only", "-q"],
-        cwd=_REPO,
-        capture_output=True,
-        text=True,
-        check=True,
+def test_evol_x_vl3_manifest_missing_node_detected() -> None:
+    manifest = build_manifest_document(("tests/a.py::t1", "tests/a.py::t2"))
+    problems = verify_manifest_integrity(manifest, ("tests/a.py::t1",))
+    assert any(p.startswith("missing_from_collect") for p in problems)
+
+
+def test_evol_x_vl3_manifest_unpinned_node_and_shrunk_manifest_detected() -> None:
+    manifest = build_manifest_document(("tests/a.py::t1",))
+    assert any(
+        p.startswith("unpinned_collected")
+        for p in verify_manifest_integrity(manifest, ("tests/a.py::t1", "tests/a.py::t2"))
     )
-    collected = tuple(line.strip() for line in proc.stdout.splitlines() if line.strip().startswith("tests/"))
-    assert collected == pinned
+    shrunk = {**manifest, "pytest_node_ids": []}
+    assert "manifest_content_digest mismatch" in verify_manifest_integrity(shrunk, ())
+
+
+def test_evol_x_vl3_manifest_digest_is_content_bound() -> None:
+    assert manifest_content_digest(["a"]) != manifest_content_digest(["b"])
+    assert manifest_content_digest(["a", "b"]) != manifest_content_digest(["b", "a"])

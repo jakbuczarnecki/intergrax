@@ -16,9 +16,10 @@
     },
     {
       "exclusion_id": "X-03",
-      "status": "OPEN",
+      "status": "ACCEPTED",
       "predicate": "HISTORICAL_DOC",
-      "requires_w2_proof": true,
+      "proof_gate": "CW-04",
+      "proof": "no classified module imports a docs/** path (k_to_x_edges == 0); W2-05 per OD-EVOL-09",
       "glob_patterns": ["docs/**"]
     },
     {
@@ -35,16 +36,18 @@
     },
     {
       "exclusion_id": "X-06",
-      "status": "OPEN",
+      "status": "IN_SCOPE_CLASSIFIED",
       "predicate": "IN_SCOPE",
-      "requires_w2_proof": true,
+      "proof_gate": "CW-04",
+      "proof": "platform_proofs/** is a discovery root; every tracked .py is a classified module (W2-05 per OD-EVOL-09)",
       "glob_patterns": ["platform_proofs/**"]
     },
     {
       "exclusion_id": "X-07",
-      "status": "OPEN",
+      "status": "IN_SCOPE_CLASSIFIED",
       "predicate": "IN_SCOPE",
-      "requires_w2_proof": true,
+      "proof_gate": "CW-04",
+      "proof": "intergrax/legacy|proofs|proof_data live under the intergrax/ root; every tracked .py is a classified module",
       "glob_patterns": [
         "intergrax/legacy/**",
         "intergrax/proofs/**",

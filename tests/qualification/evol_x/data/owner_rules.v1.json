@@ -18,6 +18,11 @@
       "paths_prefix": ["applications/"]
     },
     {
+      "owner_id": "EVOL-X-PP",
+      "domain": "platform_proofs_in_scope_x06",
+      "paths_prefix": ["platform_proofs/"]
+    },
+    {
       "owner_id": "EVOL-X-Q",
       "domain": "change_safety_qualification",
       "paths_prefix": ["testing_support/change_safety/", "tests/qualification/evol_x/"]

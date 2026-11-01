@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 
 from testing_support.change_safety.discovery.closed_world import ClosedWorldInventory
 from testing_support.change_safety.discovery.extractors import GraphEdge, GraphNode
@@ -18,7 +19,7 @@ class SemanticGraph:
     nodes: tuple[GraphNode, ...]
     edges: tuple[GraphEdge, ...]
 
-    @property
+    @cached_property
     def digest(self) -> str:
         return semantic_graph_digest(
             schema_version=self.schema_version,
@@ -26,6 +27,12 @@ class SemanticGraph:
             nodes=self.nodes,
             edges=self.edges,
         )
+
+    def rel_counts(self) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for edge in self.edges:
+            counts[edge.rel] = counts.get(edge.rel, 0) + 1
+        return dict(sorted(counts.items()))
 
 
 def build_semantic_graph(inventory: ClosedWorldInventory) -> SemanticGraph:
