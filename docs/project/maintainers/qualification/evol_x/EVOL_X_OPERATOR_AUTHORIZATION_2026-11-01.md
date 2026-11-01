@@ -41,3 +41,17 @@
 | **OD-EVOL-11** | W7-01 independent auditor (W0-08) |
 | **OD-EVOL-12** | W7-03 FRZ-08/10 checklist wording (Batch G — not authorized this package) |
 | **OD-EVOLX-08** | W7-04 parent closure (Batch G — not authorized this package) |
+
+## Addendum 2026-11-01 (operator message: "zatwierdzam wszystko - wykonaj caly plan")
+
+| ID | Disposition |
+|----|-------------|
+| **OD-EVOL-03** | APPROVED - M thresholds canonical, no lowering |
+| **OD-EVOL-07** | APPROVED - P-H promotion |
+| **OD-EVOL-08** | APPROVED - M-09 SLA |
+| **OD-EVOL-11** | APPROVED as appointment of an operator-named independent auditor; **name not supplied** - operator must record it (agent MUST NOT self-appoint) |
+| **OD-EVOL-05b** | unchanged: **Option 1**, no W4-04 |
+| **OD-EVOL-12**, **OD-EVOLX-08** | remain PENDING (W7-03/W7-04; require independent audit record) |
+
+**Batch G constraint:** no B6 PASS, no FRZ checklist PASS edits, no roadmap closure without an independent audit record.
+

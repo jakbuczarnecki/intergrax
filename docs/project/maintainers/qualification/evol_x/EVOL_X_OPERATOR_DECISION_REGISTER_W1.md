@@ -16,10 +16,10 @@
 | **OD-EVOL-09** | SIGNED / APPROVED | 2026-11-01 | X-01,02,04,05; X-03,06,07 proofs in W2 |
 | **OD-EVOL-10** | SIGNED / APPROVED | 2026-11-01 | Before W2-09 / W3-05 |
 | **N-04 (OD) / N4-A** | SIGNED / APPROVED | 2026-11-01 | Migration-doc semver only |
-| **OD-EVOL-03** | **PENDING** | — | W0-07 → W6-01 |
-| **OD-EVOL-07** | **PENDING** | — | W0-07 → P-H |
-| **OD-EVOL-08** | **PENDING** | — | W0-07 → M-09 SLA |
-| **OD-EVOL-11** | **PENDING** | — | W0-08 → W7-01 (Batch G not in 2026-11-01 scope) |
+| **OD-EVOL-03** | SIGNED / APPROVED | 2026-11-01 | W0-07: M thresholds ratified as canonical (no lowering) → W6-01 |
+| **OD-EVOL-07** | SIGNED / APPROVED | 2026-11-01 | W0-07: P-H historical-commit promotion ratified |
+| **OD-EVOL-08** | SIGNED / APPROVED | 2026-11-01 | W0-07: M-09 SLA ratified |
+| **OD-EVOL-11** | SIGNED / APPROVED (appointment authorized; **auditor identity NOT NAMED**) | 2026-11-01 | W0-08: operator-appointed independent auditor (must differ from implementer/agent). Operator message and auth package carry no name; **operator must record the auditor id in this row before W7-01**. Agent does not self-appoint. |
 | **OD-EVOL-12** | **PENDING** | — | W7-03 (Batch G not in 2026-11-01 scope) |
 | **OD-EVOLX-08** | **PENDING** | — | W7-04 (Batch G not in 2026-11-01 scope) |
 
@@ -39,4 +39,4 @@
 | **OD-EVOL-12** | «At W7 promote FRZ-EVOL-08/10 to PASS with scoped footnotes (Option A).» | FRZ shared owners | Leave OPEN to ENT-AUDIT-X | W7-05 checklist | Docs only | No | W7 (**PENDING**) |
 | **N-04 (OD)** | «Adopt **N4-A**: graph semver in migration docs only until optional N4-B approved.» | [EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md](EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md) | N4-B Class B field | W4 WM rows | N4-B only | **Yes** (wording) | W4 if N4-B |
 
-**OD-EVOL-11** (auditor appointment): **PENDING** — required before W7 independent B6; recommended before W6 evidence pack.
+**OD-EVOL-11** (auditor appointment): **APPROVED, identity not named** (see W0 table) — name required before W7 independent B6; recommended before W6 evidence pack.
