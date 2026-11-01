@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import statistics
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,9 +24,12 @@ from testing_support.change_safety.contracts.artifacts import (
     EvolMetricsArtifact,
     ExperimentVerdict,
     FrzEvidence,
+    M09DrillCaseRegistry,
+    M09HumanDrillArtifact,
     P03Manifest,
     TestExecutionManifest,
 )
+from testing_support.change_safety.contracts.canonical_json import stable_digest_hex
 from testing_support.change_safety.selection.ci_manifest import manifest_content_digest
 
 BUNDLE_REL = "docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay"
@@ -37,6 +42,11 @@ FRZ_NAME = "evol_frz_evidence.v1.json"
 INVENTORY_BINDING_NAME = "inventory_binding.v1.json"
 EXPERIMENTS_DIR = "experiments"
 M09_HUMAN_DRILL_NAME = "evol_m09_human_drill.v1.json"
+M09_DRILL_CASE_REGISTRY_NAME = "evol_m09_drill_case_registry.v1.json"
+M09_HUMAN_DRILL_WORKSHEET_NAME = "evol_m09_human_drill_worksheet.v1.json"
+M09_TOOL_SLA_SECONDS = 120.0
+M09_MEDIAN_SLA_SECONDS = 900.0
+M09_EXPECTED_CASE_IDS = ("C1", "C2", "C3")
 M03_CAUSAL_AUDIT_NAME = "m03_causal_audit.v1.json"
 METRIC_M09T = "EVOL-M-09T"
 METRIC_M09H = "EVOL-M-09H"
@@ -137,6 +147,128 @@ def _check_binding(name: str, sha: str, expected: str, problems: list[str]) -> N
         problems.append(f"stale source_commit_sha in {name}: {sha[:9]} != test_execution_sha {expected[:9]}")
 
 
+def m09h_population_digest(registry: M09DrillCaseRegistry) -> str:
+    payload: list[str] = []
+    for entry in registry.cases:
+        payload.append(entry.changed_path)
+        payload.append(entry.input_digest)
+        payload.extend(entry.expected_cause_identities)
+    return stable_digest_hex(payload)
+
+
+def _load_m09_registry(repo: Path, head: str, bundle_rel: str, problems: list[str]) -> M09DrillCaseRegistry | None:
+    rel = f"{bundle_rel}/{M09_DRILL_CASE_REGISTRY_NAME}"
+    raw = _load_json(repo, head, rel, problems)
+    if raw is None:
+        problems.append(f"final certification requires {M09_DRILL_CASE_REGISTRY_NAME} @ evidence HEAD")
+        return None
+    try:
+        return M09DrillCaseRegistry.model_validate(raw)
+    except ValidationError as exc:
+        problems.append(f"{M09_DRILL_CASE_REGISTRY_NAME} invalid: {exc.errors()[0]['msg']}")
+        return None
+
+
+def _parse_utc_timestamp(label: str, value: str, problems: list[str]) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        problems.append(f"M09 human drill {label} is not valid ISO-8601: {value!r}")
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed
+
+
+def _check_m09_human_drill(
+    repo: Path,
+    head: str,
+    bundle_rel: str,
+    tes: str,
+    drill_raw: Any,
+    metrics: EvolMetricsArtifact,
+    manifest: P03Manifest,
+    problems: list[str],
+) -> None:
+    registry = _load_m09_registry(repo, head, bundle_rel, problems)
+    if registry is None:
+        return
+    if registry.bound_test_execution_sha != tes:
+        problems.append(
+            "M09 drill registry bound_test_execution_sha "
+            f"{registry.bound_test_execution_sha[:9]} != test_execution_sha {tes[:9]}"
+        )
+    try:
+        drill = M09HumanDrillArtifact.model_validate(drill_raw)
+    except ValidationError as exc:
+        problems.append(f"{M09_HUMAN_DRILL_NAME} invalid: {exc.errors()[0]['msg']}")
+        return
+    _check_binding(M09_HUMAN_DRILL_NAME, drill.source_commit_sha, tes, problems)
+    if drill.test_execution_sha != tes:
+        problems.append(f"M09 human drill test_execution_sha {drill.test_execution_sha[:9]} != {tes[:9]}")
+    registry_bytes = show_bytes(repo, head, f"{bundle_rel}/{M09_DRILL_CASE_REGISTRY_NAME}")
+    if registry_bytes is not None and drill.registry_digest != sha256_hex(registry_bytes):
+        problems.append("M09 human drill registry_digest does not match committed registry bytes")
+    registry_by_id = {entry.case_id: entry for entry in registry.cases}
+    for entry in registry.cases:
+        raw_path = show_bytes(repo, tes, entry.changed_path)
+        if raw_path is None:
+            problems.append(f"M09 seed path missing @ test_execution_sha: {entry.changed_path}")
+            continue
+        if sha256_hex(raw_path) != entry.input_digest:
+            problems.append(f"M09 registry input_digest mismatch for {entry.case_id} @ test_execution_sha")
+    tool_seconds: list[float] = []
+    for result in drill.cases:
+        spec = registry_by_id.get(result.case_id)
+        if spec is None:
+            problems.append(f"M09 human drill unknown case_id: {result.case_id}")
+            continue
+        if not result.correct:
+            problems.append(f"M09 human drill case not marked correct: {result.case_id}")
+        if result.tool_seconds > M09_TOOL_SLA_SECONDS:
+            problems.append(
+                f"M09 human drill tool_seconds>{M09_TOOL_SLA_SECONDS:.0f}s for {result.case_id}: {result.tool_seconds}"
+            )
+        tool_seconds.append(result.tool_seconds)
+        expected = tuple(spec.expected_cause_identities)
+        if tuple(result.attributed_cause_identities) != expected:
+            problems.append(f"M09 human drill attributed causes mismatch for {result.case_id}")
+    if tool_seconds:
+        computed_median = statistics.median(tool_seconds)
+        if computed_median > M09_MEDIAN_SLA_SECONDS:
+            problems.append(f"M09 human drill median tool_seconds>{M09_MEDIAN_SLA_SECONDS:.0f}s: {computed_median}")
+        if round(drill.median_tool_seconds, 3) != round(computed_median, 3):
+            problems.append("M09 human drill median_tool_seconds disagrees with computed case median")
+    if not drill.adversarial_control_passed:
+        problems.append("M09 human drill adversarial_control_passed must be true")
+    started = _parse_utc_timestamp("drill_started_at_utc", drill.drill_started_at_utc, problems)
+    completed = _parse_utc_timestamp("drill_completed_at_utc", drill.drill_completed_at_utc, problems)
+    if started is not None and completed is not None and completed < started:
+        problems.append("M09 human drill drill_completed_at_utc precedes drill_started_at_utc")
+    if not drill.evaluator_id.strip() or not drill.evaluator_display_name.strip():
+        problems.append("M09 human drill evaluator fields must be non-empty")
+    if M09_HUMAN_DRILL_WORKSHEET_NAME in manifest.artifact_paths:
+        if drill.worksheet_digest is None:
+            problems.append(
+                f"M09 human drill worksheet_digest required when {M09_HUMAN_DRILL_WORKSHEET_NAME} is bundled"
+            )
+        else:
+            worksheet_bytes = show_bytes(repo, head, f"{bundle_rel}/{M09_HUMAN_DRILL_WORKSHEET_NAME}")
+            if worksheet_bytes is None:
+                problems.append(f"final certification missing {M09_HUMAN_DRILL_WORKSHEET_NAME} @ evidence HEAD")
+            elif drill.worksheet_digest != sha256_hex(worksheet_bytes):
+                problems.append("M09 human drill worksheet_digest mismatch")
+    m09h = next((r for r in metrics.readings if r.metric_id == METRIC_M09H), None)
+    if m09h is None:
+        problems.append(f"final certification requires {METRIC_M09H} reading in metrics artifact")
+        return
+    expected_population = m09h_population_digest(registry)
+    if m09h.numerator != 3 or m09h.denominator != 3 or m09h.status != "MEASURED" or m09h.passed is not True:
+        problems.append(f"final certification requires {METRIC_M09H} 3/3 MEASURED PASS")
+    if m09h.population_digest != expected_population:
+        problems.append(f"{METRIC_M09H} population_digest inconsistent with M09 drill registry")
+
+
 def _check_metrics_readings(metrics: EvolMetricsArtifact, problems: list[str], *, technical: bool) -> None:
     by_id = {r.metric_id: r for r in metrics.readings}
     composite = by_id.get(METRIC_M09_COMPOSITE)
@@ -191,6 +323,13 @@ def _check_artifact_payloads(
             problems.append(f"final certification requires {M09_HUMAN_DRILL_NAME} in MANIFEST artifact_paths")
         elif show_bytes(repo, head, drill_rel) is None:
             problems.append(f"final certification missing {M09_HUMAN_DRILL_NAME} @ evidence HEAD")
+        elif metrics_raw is not None:
+            metrics_for_drill = EvolMetricsArtifact.model_validate(metrics_raw)
+            drill_payload = _load_json(repo, head, drill_rel, problems)
+            if drill_payload is not None:
+                _check_m09_human_drill(
+                    repo, head, bundle_rel, tes, drill_payload, metrics_for_drill, manifest, problems
+                )
     if frz_raw is not None:
         rows = [FrzEvidence.model_validate(r) for r in frz_raw.get("rows", [])]
         if tuple(r.frz_id for r in rows) != EXPECTED_FRZ_IDS:
