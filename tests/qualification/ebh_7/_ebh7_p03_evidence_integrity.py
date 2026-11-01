@@ -72,6 +72,9 @@ def assert_ebh7_p03_manifest_role_integrity() -> None:
     assert _git_is_ancestor(test_sha, evidence_sha) or evidence_sha == test_sha, (
         "Evidence publication must be at or after TEST_EXECUTION_SHA"
     )
+    pub_sha = manifest.get("B6_ACCEPTANCE_PUBLICATION_SHA", "")
+    assert isinstance(pub_sha, str) and len(pub_sha) == 40, "B6_ACCEPTANCE_PUBLICATION_SHA must be pinned"
+    assert _git_is_ancestor(pub_sha, head), "B6 acceptance publication must be ancestor of HEAD"
     baseline = manifest.get("INDEPENDENT_ACCEPTANCE_BASELINE_SHA", "")
     assert isinstance(baseline, str) and len(baseline) == 40, "INDEPENDENT_ACCEPTANCE_BASELINE_SHA must be pinned"
     assert baseline == test_sha, "INDEPENDENT_ACCEPTANCE_BASELINE_SHA must equal TEST_EXECUTION_SHA for EBH-7 P03"

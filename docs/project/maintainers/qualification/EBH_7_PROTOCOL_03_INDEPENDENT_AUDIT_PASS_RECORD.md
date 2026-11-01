@@ -11,7 +11,7 @@
 | **EVIDENCE_PUBLICATION_SHA** | `f30a90a14910afe8583081cab3b2e39480988c17` |
 | **GHA_REPLAY_CHECKOUT_SHA** | `73965c2eb3533dfb11ba5c57697316377f956bdd` |
 | **PRE_CLOSURE_PUBLICATION_HEAD** | `8068c1cf0e2f0a71adc9c737a79ba275dcda61d0` |
-| **B6_ACCEPTANCE_PUBLICATION_SHA** | *see roadmap §5 ledger — commit publishing this record* |
+| **B6_ACCEPTANCE_PUBLICATION_SHA** | `596f186aab2cf808f04495a1ed1d70c91e653d78` |
 | **Auditor identity** | **ChatGPT** — independent review of GitHub-published evidence (**not** Cursor Agent) |
 | **Audit method** | Independent review of published dossier, SHA ladder, manifest/digest integrity, GHA L3 artifact inspection, and ECAP/F10 matrices — **not** a full independent pytest re-execution of the entire suite by the auditor |
 | **Date** | **2026-11-01** |
