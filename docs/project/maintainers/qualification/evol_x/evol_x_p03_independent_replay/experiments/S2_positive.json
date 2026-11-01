@@ -1,0 +1,8 @@
+{
+  "arm": "positive",
+  "detail": "consumers=['module:agents.fx_planner.plan', 'module:applications.app_a.billing', 'module:applications.app_b.ship', 'module:applications.app_c.hidden'] orphans=0 breaking=INCOMPATIBLE",
+  "passed": true,
+  "scenario_id": "S2",
+  "schema_version": "evol_experiment_verdict.v1",
+  "source_commit_sha": "283fb0f4829de9146700d926986bb874ed827805"
+}

@@ -1,0 +1,8 @@
+{
+  "arm": "positive",
+  "detail": "rewrite_set=[] extension=EXTENSION_ONLY",
+  "passed": true,
+  "scenario_id": "S4",
+  "schema_version": "evol_experiment_verdict.v1",
+  "source_commit_sha": "283fb0f4829de9146700d926986bb874ed827805"
+}

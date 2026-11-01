@@ -1,0 +1,8 @@
+{
+  "arm": "negative",
+  "detail": "hidden=['module:applications.app_c.hidden'] naive_missed=['module:applications.app_c.hidden']",
+  "passed": true,
+  "scenario_id": "S2",
+  "schema_version": "evol_experiment_verdict.v1",
+  "source_commit_sha": "283fb0f4829de9146700d926986bb874ed827805"
+}

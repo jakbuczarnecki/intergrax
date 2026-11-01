@@ -1,0 +1,17 @@
+{
+  "CW-08": {
+    "digest_a": "afe05982bf878a9537aa5cc2967b2a933f841d9bed6a82cc6d2a09867fce25b1",
+    "digest_b": "afe05982bf878a9537aa5cc2967b2a933f841d9bed6a82cc6d2a09867fce25b1",
+    "passed": true
+  },
+  "CW-10": {
+    "full": "afe05982bf878a9537aa5cc2967b2a933f841d9bed6a82cc6d2a09867fce25b1",
+    "incremental": "afe05982bf878a9537aa5cc2967b2a933f841d9bed6a82cc6d2a09867fce25b1",
+    "passed": true
+  },
+  "edge_count": 129143,
+  "inventory_digest": "afe05982bf878a9537aa5cc2967b2a933f841d9bed6a82cc6d2a09867fce25b1",
+  "node_count": 48995,
+  "schema_version": "evol_inventory_binding.v1",
+  "source_commit_sha": "283fb0f4829de9146700d926986bb874ed827805"
+}

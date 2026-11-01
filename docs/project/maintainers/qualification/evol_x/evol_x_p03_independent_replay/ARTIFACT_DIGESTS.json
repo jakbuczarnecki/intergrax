@@ -1,0 +1,26 @@
+{
+  "schema_version": "evol_artifact_digests.v1",
+  "digests": {
+    "evol_frz_evidence.v1.json": "9398af90cce900ca805a982e92a796397e15b800247ff1f18454c007e0209c18",
+    "evol_junit_outcomes.v1.json": "c3b7f6f428165a68a6f25d94ecc9a479bd395e3034ade8f9b1719559539ed99b",
+    "evol_metrics.v1.json": "c17f3c6ada0ebe9cf4d731a0e643178877fcc89f9a7e786078781450d9728eca",
+    "evol_test_execution_manifest.v1.json": "d174d8be10042b58b24408df5ddecff70aacd70e2279ccc5d8af88a311c8ba0e",
+    "experiments/S1_negative.json": "3451bfb9acf7770892da41b2dbd0722c80e1ab28437b32a43b66a4110eb2dbeb",
+    "experiments/S1_positive.json": "a4b6aa0e17559a2f2fc64be36c7240b9b082f78c074146c1d69a1c35ac79b20f",
+    "experiments/S2_negative.json": "e3a130a8bc4d28cf200b1e1e721d9a4d9c92de99f8b2d77771878ad0124efc49",
+    "experiments/S2_positive.json": "dacda8570fe410beda1bde255540f69248c33a844a5c3eb3af510d69953f3935",
+    "experiments/S3_negative.json": "7e61b926b94e8c0b323ebb6e9f6e165f868b126b96972cd2c6e4ec9e8ddb4aec",
+    "experiments/S3_positive.json": "fdead6ded9164ca64c7a39bb18daaa701f31c75163238827aea3d85ea32cc6d3",
+    "experiments/S4_negative.json": "93f51d44a3b04dce0c88bc0cfc7ebd6730a79088fbfc8eee5b5a126c3c6eb0de",
+    "experiments/S4_positive.json": "963a66882d81bf48691bd0dba56901c2bbf67e658c6a442aa395e915635b27c4",
+    "experiments/S5_negative.json": "75baa4fafdd45e25f07fa83e3a18a55f9d9265f3514b01921494b3bc8f946b04",
+    "experiments/S5_positive.json": "f66fe1ae0ab75dd4e87175eec5f3734959e9cd350dc5ac88a18ca7bc02546ac7",
+    "experiments/S6_negative.json": "dbcccab3462621deff920d1e4dc45162e750effc598ef1c27eeb8b23e1b7fbc5",
+    "experiments/S6_positive.json": "56ee686bf0cdde9fdd495b106eda7beafbf4ef399b4b74273526d2ae58e2370c",
+    "experiments/S7_negative.json": "10ba97761746eb8cb44a43a1791ea69792b7e076a6b338897874ef0d48d76a36",
+    "experiments/S7_positive.json": "63eb8077817d50f874deafe33ee5fdaf6920abfdc0f6a82cda238cfce71449c8",
+    "experiments/S8_negative.json": "ed8625543663f1c9937d34c6e858cec6137732bc02cf084a975b19a1cddb891b",
+    "experiments/S8_positive.json": "20c8a4e8ff8fbd85292ec0ce5a7fb56d0e205ea92771fd17f1f226b6d937887b",
+    "inventory_binding.v1.json": "eb8d016a98a522ed35c7093f2666dee600559feccd090154762a2f15df8b73c5"
+  }
+}
