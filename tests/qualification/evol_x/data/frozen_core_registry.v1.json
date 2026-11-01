@@ -1,11 +1,20 @@
 {
   "schema_version": "frozen_core_registry.v1",
-  "source_authority": "docs/project/maintainers/qualification/INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md",
+  "source_authority": "docs/project/maintainers/qualification/INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md (Frozen Surface Registry; path mapping defined in EVOL_X_WORKFLOW_DEPLOY_MATRICES_W4.md)",
   "surfaces": [
-    {
-      "surface_id": "intergrax/contracts/migrations/registry.py",
-      "change_class_default": "A",
-      "authorization_required": true
-    }
+    {"surface_id": "intergrax/contracts/migrations/registry.py", "path_prefix": "intergrax/contracts/migrations/registry.py", "governance_surface": "Persistence contract semantics", "change_class_default": "A", "authorization_required": true},
+    {"surface_id": "contracts", "path_prefix": "intergrax/contracts/", "governance_surface": "Persistence / tracing / reliability public contracts", "change_class_default": "C", "authorization_required": true},
+    {"surface_id": "decision_system", "path_prefix": "intergrax/decision_system/", "governance_surface": "Decision System core", "change_class_default": "C", "authorization_required": true},
+    {"surface_id": "governance", "path_prefix": "intergrax/runtime/governance/", "governance_surface": "Governance boundary / DecisionExecutionAuthorization", "change_class_default": "C", "authorization_required": true},
+    {"surface_id": "execution", "path_prefix": "intergrax/runtime/execution/", "governance_surface": "ExecutionRuntime / execution lifecycle ownership", "change_class_default": "C", "authorization_required": true},
+    {"surface_id": "enterprise_reliability", "path_prefix": "intergrax/runtime/enterprise_reliability/", "governance_surface": "Reliability contracts / retry ownership", "change_class_default": "C", "authorization_required": true},
+    {"surface_id": "persistence", "path_prefix": "intergrax/runtime/persistence/", "governance_surface": "Persistence contract semantics", "change_class_default": "C", "authorization_required": true},
+    {"surface_id": "nexus", "path_prefix": "intergrax/runtime/nexus/", "governance_surface": "Nexus ownership / composition invariants", "change_class_default": "C", "authorization_required": true},
+    {"surface_id": "agent_distribution", "path_prefix": "intergrax/agent_distribution/", "governance_surface": "Production composition / activation ownership", "change_class_default": "C", "authorization_required": true}
+  ],
+  "extension_points": [
+    {"extension_id": "application", "path_prefix": "applications/", "governance_surface": "Domain module / composition binding (Class A)"},
+    {"extension_id": "agent", "path_prefix": "agents/", "governance_surface": "Strategy / domain module (Class A)"},
+    {"extension_id": "qualification_harness", "path_prefix": "testing_support/", "governance_surface": "Qualification harness (A/B)"}
   ]
 }

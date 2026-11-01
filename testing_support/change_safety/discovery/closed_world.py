@@ -20,6 +20,7 @@ from testing_support.change_safety.discovery.extractors import (
     ExtractionContext,
     GraphEdge,
     GraphNode,
+    directory_files_with_blobs,
     extractor_manifest,
     facts_for_file,
     flush_fact_cache,
@@ -163,7 +164,9 @@ def build_closed_world_inventory(
     use_cache: bool = True,
     owner_rules: dict[str, Any] | None = None,
     exclusion_register: dict[str, Any] | None = None,
+    fixture_root: Path | None = None,
 ) -> ClosedWorldInventory:
+    """Build the inventory from git (default) or from a plain directory tree (``fixture_root``)."""
     owner_doc = owner_rules if owner_rules is not None else load_evol_x_data_document("owner_rules.v1.json")
     exclusion_doc = (
         exclusion_register
@@ -173,8 +176,13 @@ def build_closed_world_inventory(
     owners = tuple(owner_doc.get("owners", ()))
     exclusion_patterns = accepted_exclusion_patterns(tuple(exclusion_doc.get("entries", ())))
 
-    code_files = [t for t in git_ls_files_with_blobs(roots)]
-    test_files = list(git_ls_files_with_blobs((TEST_ROOT,))) if include_tests else []
+    if fixture_root is not None:
+        use_cache = False
+        code_files = list(directory_files_with_blobs(fixture_root, roots))
+        test_files = list(directory_files_with_blobs(fixture_root, (TEST_ROOT,))) if include_tests else []
+    else:
+        code_files = [t for t in git_ls_files_with_blobs(roots)]
+        test_files = list(git_ls_files_with_blobs((TEST_ROOT,))) if include_tests else []
     universe = tuple(t.path for t in code_files)
     classified_files = [t for t in code_files if not path_matches_patterns(t.path, exclusion_patterns)]
     excluded = tuple(t.path for t in code_files if path_matches_patterns(t.path, exclusion_patterns))
@@ -201,7 +209,7 @@ def build_closed_world_inventory(
 
     for is_test, files in ((False, classified_files), (True, test_files)):
         for tracked in files:
-            facts = facts_for_file(tracked, use_cache=use_cache)
+            facts = facts_for_file(tracked, use_cache=use_cache, repo_root=fixture_root)
             mid = module_id_for_path(tracked.path)
             if not is_test:
                 nodes[mid] = GraphNode(mid, "module", tracked.path)
@@ -260,7 +268,7 @@ def build_closed_world_inventory(
         schema_version="evol_closed_world_inventory.v1",
         ruleset_version=ruleset_version,
         source_commit_sha=source_commit_sha,
-        source_tree_id=_git_tree_id(source_commit_sha),
+        source_tree_id="" if fixture_root is not None else _git_tree_id(source_commit_sha),
         nodes=tuple(sorted(nodes.values(), key=lambda n: n.node_id)),
         edges=tuple(sorted(edges, key=lambda e: (e.source_id, e.target_id, e.rel))),
         universe_paths=universe,

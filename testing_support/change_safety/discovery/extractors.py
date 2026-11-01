@@ -340,13 +340,28 @@ def git_ls_files_with_blobs(prefixes: tuple[str, ...]) -> tuple[TrackedFile, ...
     return tuple(sorted(out, key=lambda t: t.path))
 
 
-def facts_for_file(tracked: TrackedFile, *, use_cache: bool) -> dict[str, Any]:
+def directory_files_with_blobs(root: Path, prefixes: tuple[str, ...]) -> tuple[TrackedFile, ...]:
+    """Enumerate ``*.py`` under ``root/<prefix>`` (fixture trees, not git); blob = content sha1."""
+    import hashlib
+
+    out: list[TrackedFile] = []
+    for prefix in prefixes:
+        base = root / prefix.rstrip("/")
+        if not base.is_dir():
+            continue
+        for file in sorted(base.rglob("*.py")):
+            rel = file.relative_to(root).as_posix()
+            out.append(TrackedFile(rel, hashlib.sha1(file.read_bytes(), usedforsecurity=False).hexdigest()))
+    return tuple(sorted(out, key=lambda t: t.path))
+
+
+def facts_for_file(tracked: TrackedFile, *, use_cache: bool, repo_root: Path | None = None) -> dict[str, Any]:
     cache = _load_cache() if use_cache else None
     key = tracked.blob_sha
     if cache is not None and key in cache:
         return cache[key]
     try:
-        source = (_REPO / tracked.path).read_text(encoding="utf-8-sig")
+        source = ((repo_root or _REPO) / tracked.path).read_text(encoding="utf-8-sig")
     except (OSError, UnicodeDecodeError):
         facts = scan_source("", filename=tracked.path)
         facts["syntax_error"] = True

@@ -1,8 +1,20 @@
 {
   "schema_version": "deployment_safety_matrix.v1",
-  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_DEPLOYMENT_SAFETY_MATRIX_W1.md",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_WORKFLOW_DEPLOY_MATRICES_W4.md",
+  "policy": "OD-EVOL-05a assessor scope DM-01..07; OD-EVOL-05b Option 1 (no production port); OD-EVOL-06 sidecar schema_snapshot@revision facts; fail-closed",
+  "inputs": ["operation", "evidence_present", "contract_compat", "persisted_schema_compatible", "durable_forward_only_applied", "inflight_pins", "drain_possible"],
+  "evaluation": "FIRST_MATCH_IN_ORDER",
   "rows": [
-    {"dm_id": "DM-02", "refusal": "PERSISTED_STATE_INCOMPATIBLE"},
-    {"dm_id": "DM-04", "refusal": "DURABLE_STATE_FORWARD_ONLY"}
+    {"dm_id": "DM-06", "variant": "no_evidence", "when": {"evidence_present": false}, "verdict": "REFUSE", "refusal": "INSUFFICIENT_EVIDENCE"},
+    {"dm_id": "DM-06", "variant": "unknown_contract", "when": {"contract_compat": "UNKNOWN"}, "verdict": "REFUSE", "refusal": "INSUFFICIENT_EVIDENCE"},
+    {"dm_id": "DM-04", "variant": "forward_only", "when": {"operation": "rollback", "durable_forward_only_applied": true}, "verdict": "REFUSE", "refusal": "DURABLE_STATE_FORWARD_ONLY"},
+    {"dm_id": "DM-02", "variant": "persisted_incompatible", "when": {"persisted_schema_compatible": false}, "verdict": "REFUSE", "refusal": "PERSISTED_STATE_INCOMPATIBLE"},
+    {"dm_id": "DM-05", "variant": "contract_incompatible", "when": {"contract_compat": "INCOMPATIBLE"}, "verdict": "REFUSE", "refusal": "CONTRACT_INCOMPATIBLE"},
+    {"dm_id": "DM-05", "variant": "rollback_needs_migration", "when": {"operation": "rollback", "contract_compat": "MIGRATION_REQUIRED"}, "verdict": "REFUSE", "refusal": "CONTRACT_INCOMPATIBLE"},
+    {"dm_id": "DM-03", "variant": "pins_no_drain", "when": {"inflight_pins": true, "drain_possible": false}, "verdict": "REFUSE", "refusal": "INFLIGHT_PINS"},
+    {"dm_id": "DM-03", "variant": "pins_drain", "when": {"inflight_pins": true, "drain_possible": true}, "verdict": "ELIGIBLE_WITH_DRAIN", "refusal": null},
+    {"dm_id": "DM-01", "variant": "rollback_clean", "when": {"operation": "rollback"}, "verdict": "ELIGIBLE", "refusal": null},
+    {"dm_id": "DM-07", "variant": "roll_forward", "when": {"operation": "roll_forward"}, "verdict": "ELIGIBLE", "refusal": null},
+    {"dm_id": "DM-07", "variant": "unmatched_fail_closed", "when": {}, "verdict": "REFUSE", "refusal": "INSUFFICIENT_EVIDENCE"}
   ]
 }

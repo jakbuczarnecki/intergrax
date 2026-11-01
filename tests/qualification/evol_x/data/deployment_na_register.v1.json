@@ -1,0 +1,10 @@
+{
+  "schema_version": "deployment_na_register.v1",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md (OD-EVOL-05c APPROVED 2026-11-01)",
+  "entries": [
+    {"na_id": "NA-01", "scope": "Production ActivationService.rollback durable-state enforcement", "disposition": "OUT_OF_SCOPE", "evidence": "OD-EVOL-05b Option 1: assessor-only, no production port (W4-04 not executed)"},
+    {"na_id": "NA-02", "scope": "Live PROD-Q provider/serving slice for rollback", "disposition": "OUT_OF_SCOPE", "evidence": "EVOL_X_N_VERIFICATION_REGISTER_W1.md N-06; PROD-Q stays OPEN"},
+    {"na_id": "NA-03", "scope": "DIST-SCALE-X parent physical provenance for deploy", "disposition": "OUT_OF_SCOPE", "evidence": "EVOL_X_N_VERIFICATION_REGISTER_W1.md N-10; parent DIST-SCALE-X OPEN"},
+    {"na_id": "NA-04", "scope": "Binary restart / multi-instance rolling behaviour of rollback", "disposition": "OUT_OF_SCOPE", "evidence": "EVOL_X_ENFORCEMENT_BOUNDARY_W1.md row 'Unsafe rollback (durable state)'; no runtime change in qualification layer"}
+  ]
+}

@@ -1,8 +1,15 @@
 {
   "schema_version": "requalification_triggers.v1",
-  "source_authority": "docs/project/maintainers/qualification/EVOL_X_MASTER_IMPLEMENTATION_AND_CERTIFICATION_PLAN.md",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_WORKFLOW_DEPLOY_MATRICES_W4.md (W4-07 trigger set T1..T9)",
   "triggers": [
-    {"trigger_id": "T-GRAPH-DIGEST", "stale_if": "graph_digest_mismatch"},
-    {"trigger_id": "T-INVENTORY-DIGEST", "stale_if": "inventory_digest_mismatch"}
+    {"trigger_id": "T1", "digest_key": "graph_digest", "stale_if": "graph_digest_mismatch"},
+    {"trigger_id": "T2", "digest_key": "inventory_digest", "stale_if": "inventory_digest_mismatch"},
+    {"trigger_id": "T3", "digest_key": "ruleset_version", "stale_if": "ruleset_version_changed"},
+    {"trigger_id": "T4", "digest_key": "extractor_digest", "stale_if": "extractor_manifest_changed"},
+    {"trigger_id": "T5", "digest_key": "selection_policy_digest", "stale_if": "selection_policy_or_exclusions_changed"},
+    {"trigger_id": "T6", "digest_key": "vl3_manifest_digest", "stale_if": "vl3_execution_manifest_changed"},
+    {"trigger_id": "T7", "digest_key": "owner_rules_digest", "stale_if": "owner_rules_changed"},
+    {"trigger_id": "T8", "digest_key": "exclusion_register_digest", "stale_if": "exclusion_register_changed"},
+    {"trigger_id": "T9", "digest_key": "frozen_core_registry_digest", "stale_if": "frozen_core_registry_changed"}
   ]
 }
