@@ -16,7 +16,7 @@
       "note": "CW-06 pairs",
       "numerator": 11528,
       "passed": true,
-      "population_digest": "afe05982bf878a9537aa5cc2967b2a933f841d9bed6a82cc6d2a09867fce25b1",
+      "population_digest": "318b37c622ace0fb3661d957f76bdfa9bc98f3f1042a53f0da115a205b0b19de",
       "status": "MEASURED",
       "threshold": 0.9
     },
@@ -26,15 +26,15 @@
       "note": "",
       "numerator": 0,
       "passed": true,
-      "population_digest": "afe05982bf878a9537aa5cc2967b2a933f841d9bed6a82cc6d2a09867fce25b1",
+      "population_digest": "318b37c622ace0fb3661d957f76bdfa9bc98f3f1042a53f0da115a205b0b19de",
       "status": "MEASURED",
       "threshold": 0.0
     },
     {
-      "denominator": 1686,
+      "denominator": 1800,
       "metric_id": "EVOL-M-03",
       "note": "P-S arcs; O-X ast-closure oracle R*",
-      "numerator": 1686,
+      "numerator": 1800,
       "passed": true,
       "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
       "status": "MEASURED",
@@ -51,7 +51,7 @@
       "threshold": 1.0
     },
     {
-      "denominator": 1686,
+      "denominator": 1800,
       "metric_id": "EVOL-M-03E",
       "note": "",
       "numerator": 0,
@@ -61,10 +61,10 @@
       "threshold": 0.0
     },
     {
-      "denominator": 1686,
+      "denominator": 1800,
       "metric_id": "EVOL-M-03R",
       "note": "",
-      "numerator": 1686,
+      "numerator": 1800,
       "passed": true,
       "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
       "status": "MEASURED",
@@ -121,12 +121,22 @@
       "threshold": 1.0
     },
     {
+      "denominator": 0,
+      "metric_id": "EVOL-M-09H",
+      "note": "human operator attribution drill (W7 supplement); not automatable @ technical evidence",
+      "numerator": 0,
+      "passed": null,
+      "population_digest": null,
+      "status": "NOT_MEASURED",
+      "threshold": 1.0
+    },
+    {
       "denominator": 3,
-      "metric_id": "EVOL-M-09",
-      "note": "tool_seconds=0.75 (SLA<=120s); operator attribution median<=15min is recorded by the independent B6 drill (W7), not by this tool reading",
+      "metric_id": "EVOL-M-09T",
+      "note": "tool_seconds=4.08 (SLA<=120s); seeds=3 distinct paths",
       "numerator": 3,
       "passed": true,
-      "population_digest": "f3e90decec8cb7d3fae1dd624390238815562d8d5793d93212f04569e99809c5",
+      "population_digest": "65294e13524a3be97a6dede128cd14b8ab9c8f523faf008bcfcac129ab6c2960",
       "status": "MEASURED",
       "threshold": 1.0
     },
@@ -152,5 +162,5 @@
     }
   ],
   "schema_version": "evol_metrics.v1",
-  "source_commit_sha": "283fb0f4829de9146700d926986bb874ed827805"
+  "source_commit_sha": "cb407403c686f464a17d8f97e1ba0177c15c5e3b"
 }

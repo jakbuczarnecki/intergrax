@@ -20,17 +20,18 @@
     "experiments/S7_positive.json",
     "experiments/S8_negative.json",
     "experiments/S8_positive.json",
-    "inventory_binding.v1.json"
+    "inventory_binding.v1.json",
+    "m03_causal_audit.v1.json"
   ],
   "dirty_tree": false,
   "executed_command": "uv run pytest tests/qualification/evol_x -q",
-  "implementation_sha": "283fb0f4829de9146700d926986bb874ed827805",
-  "independent_replay_sha": "283fb0f4829de9146700d926986bb874ed827805",
-  "parent_test_execution_tree": "dbe9bd405874a10623a7ffe8f62124c5a5087bf6",
+  "implementation_sha": "cb407403c686f464a17d8f97e1ba0177c15c5e3b",
+  "independent_replay_sha": "cb407403c686f464a17d8f97e1ba0177c15c5e3b",
+  "parent_test_execution_tree": "64d3968d7a3d67d894c71127a19e9fe99ffff99f",
   "plan_publication_sha": "b4fca4bc413a650b2e5a8dd8826669a9025864c5",
   "pytest_profile": "evol_x_p3_l3",
   "schema_version": "evol_p03_manifest.v1",
   "stage": "EVOL-X",
-  "test_execution_sha": "283fb0f4829de9146700d926986bb874ed827805",
+  "test_execution_sha": "cb407403c686f464a17d8f97e1ba0177c15c5e3b",
   "uv_extra": "dev-ci"
 }
