@@ -3,7 +3,7 @@
 | Role | Git SHA | Status | Notes |
 |------|---------|--------|-------|
 | **START_HEAD** / authorized baseline | `5a4e922ffacabef0ee24eb676e5c8705c20ef4a1` | VERIFIED | `development` = `origin/development` @ W1 entry |
-| **W1_DOCUMENTATION_SHA** | *(pending operator commit)* | PLANNED | This W1 doc batch; no production delta |
+| **W1_DOCUMENTATION_SHA** | `9f9cc8b573d2629c140b3a58bf239e8a92d0b1d0` | VERIFIED | W1 doc batch; ancestor of START_HEAD chain from `5a4e922…` |
 | **IMPLEMENTATION_SHA** | — | NOT STARTED | W2+ |
 | **TEST_EXECUTION_SHA** | — | NOT STARTED | W6 VL3 |
 | **EVIDENCE_PUBLICATION_SHA** | — | NOT STARTED | W6 dossier |
