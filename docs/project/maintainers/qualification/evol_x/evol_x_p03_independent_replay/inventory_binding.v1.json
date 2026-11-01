@@ -1,7 +1,7 @@
 {
   "CW-08": {
-    "digest_a": "b494a44e64f4a374d45d15aafac698db5359296b6ba620248cfc87a672b4c5d9",
-    "digest_b": "b494a44e64f4a374d45d15aafac698db5359296b6ba620248cfc87a672b4c5d9",
+    "digest_a": "fb1acfa59ed8122d683a4b2d8cc2f5ffbfcf0af030df6df2cf9f7e9df414b028",
+    "digest_b": "fb1acfa59ed8122d683a4b2d8cc2f5ffbfcf0af030df6df2cf9f7e9df414b028",
     "passed": true
   },
   "CW-09": {
@@ -14,13 +14,13 @@
     "qual_suites": 23
   },
   "CW-10": {
-    "full": "b494a44e64f4a374d45d15aafac698db5359296b6ba620248cfc87a672b4c5d9",
-    "incremental": "b494a44e64f4a374d45d15aafac698db5359296b6ba620248cfc87a672b4c5d9",
+    "full": "fb1acfa59ed8122d683a4b2d8cc2f5ffbfcf0af030df6df2cf9f7e9df414b028",
+    "incremental": "fb1acfa59ed8122d683a4b2d8cc2f5ffbfcf0af030df6df2cf9f7e9df414b028",
     "passed": true
   },
-  "edge_count": 129171,
-  "inventory_digest": "b494a44e64f4a374d45d15aafac698db5359296b6ba620248cfc87a672b4c5d9",
-  "node_count": 49013,
+  "edge_count": 129194,
+  "inventory_digest": "fb1acfa59ed8122d683a4b2d8cc2f5ffbfcf0af030df6df2cf9f7e9df414b028",
+  "node_count": 49022,
   "schema_version": "evol_inventory_binding.v1",
-  "source_commit_sha": "dcd7ae6e264d435994c61162e0d41aba25f71283"
+  "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
 }

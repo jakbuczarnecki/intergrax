@@ -7,8 +7,8 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 |------|-----|-------|
 | PLAN_PUBLICATION_SHA | `b4fca4bc413a650b2e5a8dd8826669a9025864c5` | master plan v3 |
 | W7 baseline (blockers doc) | `4393692a2e7447797c5e26408811e4b335c642f5` | pre-W7 A–D remediation |
-| TEST_EXECUTION_SHA | `dcd7ae6e264d435994c61162e0d41aba25f71283` | M-09H attribution SLA correction (OD-EVOL-08-M1); VL3 @ TES; supersedes `6fec9ec387089dfcee1039089ba5ad901fab39d6` |
-| EVIDENCE_TECH_PUBLICATION_SHA | `9f875fc62d1f6b2231b31c843ae0428a2d871031` | Mode A `--technical`; M-09H NOT_MEASURED; supersedes `43a44b492c77acdbaaf0ef632705915c9cc139f7` |
+| TEST_EXECUTION_SHA | `2b165516485154583a4118ba1ecb2e25549bb5d0` | E-CORR-M09H-ORACLE; VL3 288/288; M-09H cause identity gate; supersedes `dcd7ae6e264d435994c61162e0d41aba25f71283` |
+| EVIDENCE_TECH_PUBLICATION_SHA | *(pending evidence commit)* | Mode A `--technical` @ NEW_TES; M-09H NOT_MEASURED |
 | EVIDENCE_FINAL_PUBLICATION_SHA | — | Batch E supplement + M-09H PASS |
 | B6_ACCEPTANCE_PUBLICATION_SHA | — | independent auditor |
 
@@ -16,8 +16,8 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 
 | Role | SHA | Notes |
 |------|-----|-------|
-| TEST_EXECUTION_SHA | `6fec9ec387089dfcee1039089ba5ad901fab39d6` | one VL3 @ TES (260/260); pre M-09H SLA correction |
-| EVIDENCE_TECH_PUBLICATION_SHA | `43a44b492c77acdbaaf0ef632705915c9cc139f7` | Mode A `--technical` @ pre-correction TES |
+| TEST_EXECUTION_SHA | `dcd7ae6e264d435994c61162e0d41aba25f71283` | W6-04 run `41320511747`; superseded by `2b165516485154583a4118ba1ecb2e25549bb5d0` (E-CORR-M09H-ORACLE) |
+| EVIDENCE_TECH_PUBLICATION_SHA | `9f875fc62d1f6b2231b31c843ae0428a2d871031` | historical TECH @ `dcd7ae6e…` |
 | TEST_EXECUTION_SHA | `cb407403c686f464a17d8f97e1ba0177c15c5e3b` | W7 VL3 243/243 (pre E-CORR-M09) |
 | TEST_EXECUTION_SHA | `6fec9ec387089dfcee1039089ba5ad901fab39d6` | superseded by NEW_TES (F-EVOLX-P0-M09H-ATTRIBUTION-SLA-FALSE-PASS: v1 applied 900 s median to tool time); 260/260 historical |
 | EVIDENCE_TECH_PUBLICATION_SHA | `43a44b492c77acdbaaf0ef632705915c9cc139f7` | superseded by NEW_TECH; technical bundle @ `6fec9ec387089dfcee1039089ba5ad901fab39d6` |
@@ -31,4 +31,4 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 
 ## CI (W6-04)
 
-See [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) — **dispatch blocker OPEN**; any W6-04 dispatch @ `6fec9ec387089dfcee1039089ba5ad901fab39d6` is **INVALIDATED** (use NEW_TES).
+See [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) — **W6-04 @ `dcd7ae6e…` remains historical**; **NEW dispatch required** @ TEST_EXECUTION_SHA `2b165516485154583a4118ba1ecb2e25549bb5d0` after operator merge to `main`.

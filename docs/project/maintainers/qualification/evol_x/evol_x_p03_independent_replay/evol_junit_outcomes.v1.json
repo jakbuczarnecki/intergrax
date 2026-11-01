@@ -157,6 +157,14 @@
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_declared_shared_surface_is_not_an_escape": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_local_change_blast_stays_in_app_or_flags_escape": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_node_and_path_application_parsers": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_attribution_evidence_is_sufficient_to_compute_identity": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_committed_registry_expected_matches_oracle": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_impact_without_direct_module_fails": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C1]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C2]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C3]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_unknown_seed_path_fails_closed": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_wrong_node_kind_changes_digest": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_artifact_contracts_forbid_typing_any_and_authority_field_names": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_change_safety_has_no_parallel_suite_registry": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_contract_schema_authority_is_the_platform_registry_not_a_copy": "passed",
@@ -195,6 +203,7 @@
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-25c-policy-wrong]": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-27]": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-28]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-29]": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-18b-PASS-tool-boundary]": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-23-PASS-spike]": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-26-PASS-boundary]": "passed",
@@ -281,5 +290,5 @@
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_thresholds_match_ratified_canonical_values": "passed"
   },
   "schema_version": "evol_junit_outcomes.v1",
-  "source_commit_sha": "dcd7ae6e264d435994c61162e0d41aba25f71283"
+  "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
 }

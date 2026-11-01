@@ -32,4 +32,15 @@
 
 **Note:** run `headSha` is the main workflow-definition commit; the tested tree is TES (in `development` history, not an ancestor of `main`). Local session artifacts: `.tmp/session/evol-x-w6-04/` (gitignored).
 
+## Pending re-qualification (E-CORR-M09H-ORACLE)
+
+| Field | Value |
+|-------|-------|
+| `superseded_active_tes` | `dcd7ae6e264d435994c61162e0d41aba25f71283` (run `41320511747` remains **historical** evidence) |
+| `new_test_execution_sha` | **`2b165516485154583a4118ba1ecb2e25549bb5d0`** |
+| `local_vl3` | **288 passed** @ NEW_TES tree (2026-11-01 session `.tmp/session/evol-x-ecorr-m09h/`) |
+| `w6_04_status` | **PENDING operator dispatch** @ NEW_TES on `main` workflow (OD-EVOL-10) |
+
+Row above **does not** retroactively invalidate run `41320511747`; it records the SHA transition after qualified source change.
+
 See also: [EVOL_X_CI_QUALIFICATION_PROCEDURE.md](./EVOL_X_CI_QUALIFICATION_PROCEDURE.md)

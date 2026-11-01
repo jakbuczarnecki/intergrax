@@ -5,7 +5,7 @@
   "exclusions": [
     "tests/unit/agents/test_reference_harness_strict.py::RC-7_BASELINE_DEFECT"
   ],
-  "manifest_content_digest": "70bb42d3e9af4deeecf6920b6920fdc1c8d4eeb403978d6989a6760d0ff2e877",
+  "manifest_content_digest": "83e29ee4a18f2ebd0848ef1842a9fb7725c8ab3108703b909e4ad944cf577acc",
   "node_ids": [
     "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]",
     "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S2]",
@@ -164,6 +164,14 @@
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_local_change_blast_stays_in_app_or_flags_escape",
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_cross_app_consumer_is_flagged_as_escape",
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_declared_shared_surface_is_not_an_escape",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_committed_registry_expected_matches_oracle",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C1]",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C2]",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C3]",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_wrong_node_kind_changes_digest",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_unknown_seed_path_fails_closed",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_impact_without_direct_module_fails",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_attribution_evidence_is_sufficient_to_compute_identity",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_change_safety_has_no_parallel_suite_registry",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_t1_t2_are_derived_from_the_qual_x_catalog_not_copied",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_contract_schema_authority_is_the_platform_registry_not_a_copy",
@@ -212,6 +220,7 @@
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-25c-policy-wrong]",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-27]",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-28]",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-29]",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-23-PASS-spike]",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-26-PASS-boundary]",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_positive_cases[N-M09-26b-PASS-mixed]",
@@ -288,5 +297,5 @@
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09t_uses_three_distinct_seed_paths"
   ],
   "schema_version": "evol_test_execution_manifest.v1",
-  "source_commit_sha": "dcd7ae6e264d435994c61162e0d41aba25f71283"
+  "source_commit_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0"
 }

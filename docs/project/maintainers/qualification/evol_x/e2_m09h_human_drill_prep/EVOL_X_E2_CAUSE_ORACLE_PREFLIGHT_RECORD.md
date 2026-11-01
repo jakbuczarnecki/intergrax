@@ -1,7 +1,7 @@
 # EVOL-X E2 — Cause oracle preflight record
 
 **Finding:** `F-EVOLX-E2-CAUSE-PREFLIGHT`  
-**Disposition (post E-CORR-M09H-ORACLE @ implementation commit):** **`EVOL-X E2 CAUSE PREFLIGHT — PASS / HUMAN DRILL AUTHORIZED`**  
+**Disposition (post E-CORR-M09H-ORACLE):** **`EVOL-X E2 CAUSE PREFLIGHT — PASS / HUMAN DRILL AUTHORIZED`** @ TEST_EXECUTION_SHA `2b165516485154583a4118ba1ecb2e25549bb5d0`.  
 **Normative rule:** [`EVOL_X_M09H_CAUSE_IDENTITY.md`](../EVOL_X_M09H_CAUSE_IDENTITY.md)
 
 ## Historical BLOCKED audit (pre-correction)
