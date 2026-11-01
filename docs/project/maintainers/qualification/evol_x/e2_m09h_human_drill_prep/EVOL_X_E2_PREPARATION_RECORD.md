@@ -6,9 +6,9 @@
 |-------|--------|
 | START_HEAD | `a9b2ddbc56119d299ffa31745ee8f1463bc1de6c` |
 | PREPARATION_PUBLICATION_SHA | `39295eb24c59de8d4e03e378641360f8b121cfa8` |
-| Active TES | `dcd7ae6e264d435994c61162e0d41aba25f71283` |
-| Active TECH | `9f875fc62d1f6b2231b31c843ae0428a2d871031` |
-| W6-04 | QUALIFIED — run `41320511747` |
+| Active TES | `2b165516485154583a4118ba1ecb2e25549bb5d0` (prep table superseded by oracle rebind; see cause preflight) |
+| Active TECH | `1e175ff8f678d605aa841ae52362486a56ed006d` (P03 bundle `434a31146af53d0e776b6c93b97ae7f2444b1f18`) |
+| W6-04 | QUALIFIED — run **`41327408027`** (historical `41320511747` @ `dcd7ae6e…`) |
 
 ## Validation @ prep
 

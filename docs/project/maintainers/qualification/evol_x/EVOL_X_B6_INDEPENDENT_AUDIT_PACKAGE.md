@@ -100,8 +100,8 @@ Parallel gate — not substitute for Mode B.
 | Slot | Source |
 |------|--------|
 | WORKFLOW_DEF_SHA | `main` after workflow-only merge |
-| Dispatch TES | `dcd7ae6…` (NEW_TES) input; `6fec9ec…` dispatch INVALIDATED |
-| Run proof | [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) |
+| Dispatch TES | **`2b165516485154583a4118ba1ecb2e25549bb5d0`** (active); historical `dcd7ae6…` run `41320511747` |
+| Run proof | [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) — run **`41327408027`** |
 | Procedure | [EVOL_X_CI_QUALIFICATION_PROCEDURE.md](./EVOL_X_CI_QUALIFICATION_PROCEDURE.md) |
 
 Operator runbook (prep): `.tmp/session/evol-x-final-cert/w6-04-operator-runbook.md`
@@ -142,7 +142,7 @@ Operator runbook (prep): `.tmp/session/evol-x-final-cert/w6-04-operator-runbook.
 
 | ID | Blocks B6 / closure |
 |----|---------------------|
-| G-01 | W6-04 CI OPEN |
+| G-01 | ~~W6-04 CI OPEN~~ **CLOSED** — run `41327408027` @ TES `2b165516…` |
 | G-02 | OD-EVOL-11 name missing |
 | G-03 | M-09H drill |
 | G-04 | EVIDENCE_FINAL empty |

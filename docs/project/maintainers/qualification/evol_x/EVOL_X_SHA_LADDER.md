@@ -31,4 +31,4 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 
 ## CI (W6-04)
 
-See [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) — **W6-04 @ `dcd7ae6e…` remains historical**; **NEW dispatch required** @ TEST_EXECUTION_SHA `2b165516485154583a4118ba1ecb2e25549bb5d0` after operator merge to `main`.
+**QUALIFIED** — run `41327408027` @ TEST_EXECUTION_SHA `2b165516485154583a4118ba1ecb2e25549bb5d0` (288/288, VL3 288 node ids). Historical: run `41320511747` @ `dcd7ae6e…` (279 tests). See [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md).
