@@ -3,59 +3,59 @@
   "rows": [
     {
       "arc_id": "A1",
-      "independent_expected_count": 300,
-      "oracle_expected_count": 300,
+      "independent_expected_count": 317,
+      "oracle_expected_count": 317,
       "oracle_matches_independent": true,
       "passed": true,
-      "selected_count": 300,
+      "selected_count": 317,
       "selector_covers_oracle": true
     },
     {
       "arc_id": "A2",
-      "independent_expected_count": 300,
-      "oracle_expected_count": 300,
+      "independent_expected_count": 317,
+      "oracle_expected_count": 317,
       "oracle_matches_independent": true,
       "passed": true,
-      "selected_count": 300,
+      "selected_count": 317,
       "selector_covers_oracle": true
     },
     {
       "arc_id": "A3",
-      "independent_expected_count": 300,
-      "oracle_expected_count": 300,
+      "independent_expected_count": 317,
+      "oracle_expected_count": 317,
       "oracle_matches_independent": true,
       "passed": true,
-      "selected_count": 300,
+      "selected_count": 317,
       "selector_covers_oracle": true
     },
     {
       "arc_id": "A4",
-      "independent_expected_count": 300,
-      "oracle_expected_count": 300,
+      "independent_expected_count": 317,
+      "oracle_expected_count": 317,
       "oracle_matches_independent": true,
       "passed": true,
-      "selected_count": 300,
+      "selected_count": 317,
       "selector_covers_oracle": true
     },
     {
       "arc_id": "A5",
-      "independent_expected_count": 300,
-      "oracle_expected_count": 300,
+      "independent_expected_count": 317,
+      "oracle_expected_count": 317,
       "oracle_matches_independent": true,
       "passed": true,
-      "selected_count": 300,
+      "selected_count": 317,
       "selector_covers_oracle": true
     },
     {
       "arc_id": "A6",
-      "independent_expected_count": 300,
-      "oracle_expected_count": 300,
+      "independent_expected_count": 317,
+      "oracle_expected_count": 317,
       "oracle_matches_independent": true,
       "passed": true,
-      "selected_count": 300,
+      "selected_count": 317,
       "selector_covers_oracle": true
     }
   ],
   "schema_version": "m03_causal_audit.v1",
-  "source_commit_sha": "cb407403c686f464a17d8f97e1ba0177c15c5e3b"
+  "source_commit_sha": "6fec9ec387089dfcee1039089ba5ad901fab39d6"
 }

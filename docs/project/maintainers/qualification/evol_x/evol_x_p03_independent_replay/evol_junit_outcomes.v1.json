@@ -164,9 +164,26 @@
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_cli_exits_2_on_integrity_failure_and_0_on_success": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_composite_m09_pass_without_m09h_is_rejected": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_failing_metric_or_experiment_or_frz_is_rejected": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-01]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-02]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-03]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-04]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-05]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-06]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-07]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-08]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-09]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-10]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-11]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-12]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-13]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-14]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-15]": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-16]": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_manifest_with_forbidden_self_field_is_rejected": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_missing_manifest_node_in_canonical_outcomes_is_rejected": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_requires_m09h_and_human_drill": "passed",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_valid_m09_bundle_passes": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_reversed_ancestry_is_rejected": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_test_execution_sha_not_ancestor_of_evidence_head": "passed",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_b_certification_without_replay_is_rejected": "passed",
@@ -245,5 +262,5 @@
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_thresholds_match_ratified_canonical_values": "passed"
   },
   "schema_version": "evol_junit_outcomes.v1",
-  "source_commit_sha": "cb407403c686f464a17d8f97e1ba0177c15c5e3b"
+  "source_commit_sha": "6fec9ec387089dfcee1039089ba5ad901fab39d6"
 }
