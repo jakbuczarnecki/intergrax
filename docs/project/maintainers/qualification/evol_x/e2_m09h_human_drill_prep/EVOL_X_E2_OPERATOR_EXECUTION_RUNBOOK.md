@@ -1,5 +1,7 @@
 # EVOL-X E2 — Operator execution runbook (M-09H human drill)
 
+> **BLOCKED @ cause preflight:** Human execution is **not authorized** until [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](./EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md) disposition is **PASS / HUMAN DRILL AUTHORIZED**. The steps below remain the prepared procedure after **E-CORR-M09H-ORACLE**.
+
 **Policy:** OD-EVOL-08-M1 · **TES:** `dcd7ae6e264d435994c61162e0d41aba25f71283`
 
 ## Before the human session

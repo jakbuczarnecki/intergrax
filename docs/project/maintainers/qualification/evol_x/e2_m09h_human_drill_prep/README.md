@@ -1,6 +1,6 @@
 # EVOL-X E2 — M-09H human drill preparation (documentation only)
 
-**Disposition:** `PENDING_HUMAN_EXECUTION` — no completed drill, no FINAL certification, no B6 PASS.
+**Disposition:** `PENDING_HUMAN_EXECUTION` — no completed drill, no FINAL certification, no B6 PASS. **Cause preflight:** **BLOCKED** — [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](./EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md).
 
 **Active baselines (immutable for this prep):**
 

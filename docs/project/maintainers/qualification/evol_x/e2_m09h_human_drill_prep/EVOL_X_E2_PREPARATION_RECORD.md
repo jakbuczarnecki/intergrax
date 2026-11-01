@@ -27,7 +27,7 @@
 
 ## Open qualification note
 
-**F-EVOLX-E2-CAUSE-PREFLIGHT:** DIRECT-node digest formula from diagnostic tool output does not reproduce published `expected_cause_identities` @ TES. Operator must resolve before attesting human PASS (see oracle key). Does not block prep publication; blocks silent human PASS if unresolved.
+**F-EVOLX-E2-CAUSE-PREFLIGHT — CONFIRMED QUALIFICATION DEFECT** (see [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](./EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md)). Human M-09H drill **blocked** until oracle + documented derivation are corrected in an authorized implementation batch. Session log: `.tmp/session/evol-x-e2-m09h/preflight-cause-oracle.log`.
 
 ## Changed files (prep tree)
 
@@ -44,4 +44,4 @@ Follow [EVOL_X_E2_OPERATOR_EXECUTION_RUNBOOK.md](./EVOL_X_E2_OPERATOR_EXECUTION_
 | G-03 | M-09H drill not executed |
 | G-04 | EVIDENCE_FINAL empty |
 | G-02 | OD-EVOL-11 auditor name not recorded |
-| F-EVOLX-E2-CAUSE-PREFLIGHT | Cause attribution rule vs registry oracle |
+| F-EVOLX-E2-CAUSE-PREFLIGHT | **CONFIRMED QUALIFICATION DEFECT** — drill blocked |

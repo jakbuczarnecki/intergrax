@@ -18,12 +18,9 @@ For each case, `attributed_cause_identities` in `evol_m09_human_drill.v2.json` m
 
 ## Pre-flight operator warning (F-EVOLX-E2-CAUSE-PREFLIGHT)
 
-Independent replay tooling (`assess_path_change_impact` + `stable_digest_hex([kind, node_id])` over DIRECT nodes @ TES) **does not reproduce** the table hashes from emitted diagnostic JSON alone. Before human execution, operator must either:
+**Status @ audit `5333c13f1`:** **CONFIRMED QUALIFICATION DEFECT** — registry `expected_cause_identities` are not reproducible from the qualified diagnostic path @ TES; see [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](../EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md). **Do not run human M-09H** until **E-CORR-M09H-ORACLE** closes the defect.
 
-- obtain operator-signed confirmation that the attribution rule used in drill matches the frozen registry oracle, **or**
-- STOP and open a qualification defect (do not fabricate human PASS).
-
-Document pre-flight output under `.tmp/session/evol-x-e2-m09h/preflight-cause-oracle.log`.
+Mode A still compares submissions to the table below once drill is authorized after remediation.
 
 ## population_digest @ rebound registry
 
