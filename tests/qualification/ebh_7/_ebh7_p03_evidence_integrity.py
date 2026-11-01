@@ -72,6 +72,9 @@ def assert_ebh7_p03_manifest_role_integrity() -> None:
     assert _git_is_ancestor(test_sha, evidence_sha) or evidence_sha == test_sha, (
         "Evidence publication must be at or after TEST_EXECUTION_SHA"
     )
+    baseline = manifest.get("INDEPENDENT_ACCEPTANCE_BASELINE_SHA", "")
+    assert isinstance(baseline, str) and len(baseline) == 40, "INDEPENDENT_ACCEPTANCE_BASELINE_SHA must be pinned"
+    assert baseline == test_sha, "INDEPENDENT_ACCEPTANCE_BASELINE_SHA must equal TEST_EXECUTION_SHA for EBH-7 P03"
 
 
 def _resolve_replay_git_path(rel: str) -> str:
@@ -132,7 +135,13 @@ def assert_ebh7_p03_consistency_matrix_matches_ssot() -> None:
     test_sha = manifest["TEST_EXECUTION_SHA"]
     assert test_sha in text
     assert "26" in text and "34" in text and "56" in text
-    assert "NOT ISSUED" in text, "Matrix must not claim independent B6 PASS"
+    baseline = manifest["INDEPENDENT_ACCEPTANCE_BASELINE_SHA"]
+    pass_record = _REPO / "docs/project/maintainers/qualification/EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md"
+    pass_text = pass_record.read_text(encoding="utf-8")
+    assert "ISSUED — PASS (SCOPED)" in pass_text, "B6 pass record must be issued"
+    assert baseline in pass_text, "Pass record must cite INDEPENDENT_ACCEPTANCE_BASELINE_SHA"
+    assert "PASS (SCOPED)" in text, "Matrix must record independent B6 PASS (scoped)"
+    assert "NOT ISSUED" not in text, "Matrix must not retain pre-B6 NOT ISSUED banner"
     last = manifest["pytest_profile"]["last_replay"]
     passed = last["passed"]
     assert str(passed) in text, "Matrix must record L3 passed count from MANIFEST"

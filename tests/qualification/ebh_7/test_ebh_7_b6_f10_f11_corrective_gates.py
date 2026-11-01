@@ -47,7 +47,8 @@ def test_b6_f11_dossier_replay_profile_current() -> None:
     assert EBH7_B5_REPLAY_HEAD_SHA in dossier
     assert "test_ebh_5_dual_slug_rpl_e_operational_gates.py" in dossier
     assert "41212701986" not in dossier or "superseded" in dossier.lower()
-    assert "B6 PASS" not in dossier or "NOT ISSUED" in dossier
+    assert "ISSUED — PASS (SCOPED)" in dossier
+    assert "EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md" in dossier
     assert "d1bdcfa46e973cf9f3bb9ee14611036980951c91" not in dossier
     assert EBH7_TEST_EXECUTION_SHA in manifest
 
@@ -58,7 +59,7 @@ def test_b6_f11_traceability_effective_sha_roles() -> None:
     )
     assert EBH7_TEST_EXECUTION_SHA in text
     assert EBH7_B5_GHA_RUN_ID in text
-    assert "READY FOR INDEPENDENT B6 RE-AUDIT" in text
+    assert "EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md" in text
     assert "8afff322cb2525f0106c2bbccf2d44f682d3e0df" in text  # historical B6 corrective preserved
 
 

@@ -13,7 +13,8 @@
 | EBH7_B6_F10_TEST_EXECUTION_SHA (historical, run `41231430749`) | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
 | EBH7_B5_TEST_EXECUTION_SHA (historical) | `4eb7eb1a89f82215d5356aa7d000198e432777b0` |
 | EVIDENCE_PUBLICATION_SHA | see `MANIFEST.json` |
-| Repository HEAD (doc pin chain) | see `ARTIFACT_DIGESTS.json` `HEAD` |
+| INDEPENDENT_ACCEPTANCE_BASELINE_SHA | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
+| B6 acceptance publication | see pass record + `MANIFEST.json` → `B6_ACCEPTANCE_PUBLICATION_SHA` |
 
 ## Normative outcomes (effective)
 
@@ -57,9 +58,10 @@ Authoritative replay: final reconciliation GitHub Actions run `41238620036` @ `7
 
 | Claim | Status |
 | --- | --- |
-| Independent B6 PASS | **NOT ISSUED** (agent / repo non-claim) |
+| Independent B6 PASS | **ISSUED — PASS (SCOPED)** @ [`EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](../EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) (auditor **ChatGPT**, 2026-11-01) |
 | OD-EBH7-08 | **OPEN** |
-| Banner | `MANIFEST.json` → `certification_banner` (READY FOR INDEPENDENT B6) |
+| Parent EBH-7 | **OPEN** — operator closure required |
+| Banner | `MANIFEST.json` → `certification_banner` |
 
 ## Historical superseded (provenance only)
 

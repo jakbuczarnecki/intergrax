@@ -13,6 +13,6 @@
 | B6-F10-C4-STATE-REG-01 | SQLite conversational memory reload `TypeError` | Fixed @ `a803191ad`; regression in L3 profile |
 | B6-F10-P03-DIRTY-TREE | Mechanism census counted gitignored docker build context (685 → 238) | Discovery fixed; equal on local and clean CI |
 | B6-F10-P03-PROFILE-SHADOW | `ebh_7` directory not executed by prior L3 profile | Profile corrected; prior 195-node runs historical only |
-| B6-F11 | Final dossier / traceability sync | **READY FOR INDEPENDENT RE-AUDIT** — dossier + traceability + handoff |
+| B6-F11 | Final dossier / traceability sync | **PASS (SCOPED)** — aligned with independent B6 pass record |
 
-**Not approved:** B6 PASS, OD-RPL-G2, OD-EBH7-SCOPE-RESIDUAL, OD-EBH7-08.
+**Not approved:** OD-RPL-G2, OD-EBH7-SCOPE-RESIDUAL, OD-EBH7-08, EBH-7 parent CLOSED.
