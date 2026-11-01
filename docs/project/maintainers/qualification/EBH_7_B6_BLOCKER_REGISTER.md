@@ -15,4 +15,4 @@
 | B6-F10-P03-PROFILE-SHADOW | `ebh_7` directory not executed by prior L3 profile | Profile corrected; prior 195-node runs historical only |
 | B6-F11 | Final dossier / traceability sync | **PASS (SCOPED)** — aligned with independent B6 pass record |
 
-**Not approved:** OD-RPL-G2, OD-EBH7-SCOPE-RESIDUAL, OD-EBH7-08, EBH-7 parent CLOSED.
+**Not approved:** OD-RPL-G2, OD-EBH7-SCOPE-RESIDUAL (global); EVOL-X entry without EVOL-X closure.

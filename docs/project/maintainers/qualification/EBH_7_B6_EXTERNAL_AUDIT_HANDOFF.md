@@ -1,6 +1,6 @@
 # EBH-7 — External independent B6 audit handoff
 
-**Agent status:** G01–G09 **PASS** (0 OPEN_FINDING). Protocol 03 **B6 PASS (SCOPED)** @ baseline `dc18e36d9…` (record 2026-11-01, auditor **ChatGPT**). Final reconciliation replay: GHA run `41238620036` @ `73965c2eb3533dfb11ba5c57697316377f956bdd` — 634 tests / 625 passed / 9 skipped (all dispositioned) / 0 failed; F10 attestation PASS; strict JUnit metadata PASS. **Not** OD-EBH7-08 · **Not** parent CLOSED.
+**Agent status:** **`EBH-7 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`** @ OD-EBH7-08 (2026-11-01). B6 **PASS (SCOPED)** @ baseline `dc18e36d9…`. GHA run `41238620036` — 634 tests / 625 passed / 9 skipped / 0 failed.
 
 ## Checkout and replay
 

@@ -59,8 +59,8 @@ Authoritative replay: final reconciliation GitHub Actions run `41238620036` @ `7
 | Claim | Status |
 | --- | --- |
 | Independent B6 PASS | **ISSUED — PASS (SCOPED)** @ [`EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](../EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) (auditor **ChatGPT**, 2026-11-01) |
-| OD-EBH7-08 | **OPEN** |
-| Parent EBH-7 | **OPEN** — operator closure required |
+| OD-EBH7-08 | **APPROVED** (2026-11-01) |
+| Parent EBH-7 | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** |
 | Banner | `MANIFEST.json` → `certification_banner` |
 
 ## Historical superseded (provenance only)

@@ -49,11 +49,11 @@ def render_closure_evidence_audit_markdown() -> str:
             "",
             "| ID | Status |",
             "| --- | --- |",
-            "| G10 Protocol 03 B6 | OPEN — external auditor PASS/FAIL record |",
-            "| G11 OD-EBH7-08 | OPEN — operator signature |",
-            "| G12 Roadmap EBH-7 | IN PROGRESS until OD-08 |",
+            "| G10 Protocol 03 B6 | PASS (SCOPED) — independent pass record published |",
+            "| G11 OD-EBH7-08 | APPROVED — operator signature recorded |",
+            "| G12 Roadmap EBH-7 | CLOSED — INDEPENDENTLY ACCEPTED (SCOPED) |",
             "",
-            "**Non-claims:** B6 PASS, OD-EBH7-08 APPROVED, parent CLOSED, global FRZ PASS.",
+            "**Non-claims:** global FRZ PASS, EVOL-X CLOSED, PROD-Q parent CLOSED.",
             "",
         ]
     )

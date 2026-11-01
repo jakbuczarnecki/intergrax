@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Agent status** | Protocol 03 **B6 PASS (SCOPED)** published @ **`INDEPENDENT_ACCEPTANCE_BASELINE_SHA`** `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` — independent auditor **ChatGPT** (2026-11-01); **OD-EBH7-08 OPEN** |
+| **Agent status** | **`EBH-7 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`** @ OD-EBH7-08 (2026-11-01); B6 **PASS (SCOPED)** @ `dc18e36d9…` |
 | **Historical audited HEAD (superseded)** | see `EBH_7_SHA_LADDER.md` pre-B5 dossier generation |
 | **TEST_EXECUTION_SHA (certified L3 code)** | `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` (final reconciliation; = `EBH7_B6_FINAL_RECONCILIATION_IMPLEMENTATION_SHA`) |
 | **B6-F10 TEST_EXECUTION_SHA (historical)** | `496016c0cf6cc5cf1f9a29d885677605dd0415d3` |
@@ -11,7 +11,7 @@
 | **Final reconciliation GHA replay (authoritative)** | run `41238620036` @ checkout `73965c2eb3533dfb11ba5c57697316377f956bdd` — JUnit 634 tests: 625 passed / 9 skipped / 0 failed; F10 attestation PASS (56 nodes); skip disposition PASS (9/9); EVIDENCE `f30a90a14910afe8583081cab3b2e39480988c17` — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
 | **B6-F10 GHA replay (historical)** | run `41231430749` @ checkout `e6ff57b13848f70c964ab141cba5bd89b50e8315` — 581 passed / 9 skipped / 0 failed; F10 attestation PASS (56 nodes) — [`EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md) |
 | **B6 PASS** | **ISSUED — PASS (SCOPED)** — [`EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) |
-| **OD-EBH7-08** | **OPEN** — operator parent closure after B6 PASS |
+| **OD-EBH7-08** | **APPROVED** — [`EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md) |
 
 ## Evidence ladder
 

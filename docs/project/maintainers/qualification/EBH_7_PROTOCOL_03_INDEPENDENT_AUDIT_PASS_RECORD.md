@@ -97,17 +97,15 @@ Skip justifications: [`ebh_7_p03_independent_replay/EBH_7_SKIP_DISPOSITION_REGIS
 | B6 blocker register open items | **0** blocking |
 | Global FRZ promotion | **None** — **new global FRZ PASS = 0** |
 
-## Parent closure (operator only)
+## Parent closure (operator)
 
-**OD-EBH7-08** remains **OPEN** until operator records:
+**OD-EBH7-08** — **APPROVED** 2026-11-01 (`OPERATOR APPROVED — OD-EBH7-08`).
 
-`OPERATOR APPROVED — OD-EBH7-08`
+Platform status:
 
-Until then platform status:
+**`EBH-7 — CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)`**
 
-**`EBH-7 — B6 INDEPENDENTLY ACCEPTED (SCOPED) / OD-EBH7-08 OPEN / PARENT OPEN`**
-
-Cross-ref: [`EBH_7_OD_EBH7_08_CLOSURE_PROCEDURE.md`](EBH_7_OD_EBH7_08_CLOSURE_PROCEDURE.md) · [`EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md`](EBH_7_INDEPENDENT_B6_AUDIT_DOSSIER.md) · [`ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md`](ebh_7_p03_independent_replay/EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md).
+Record: [`EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md). **Next mandatory stage:** **EVOL-X** (eligible — not entered).
 
 ## Forbidden interpretations
 

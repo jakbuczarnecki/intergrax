@@ -943,7 +943,7 @@ def render_f10_matrix_markdown(cert: F10Certification) -> str:
         "",
         "C5-MATRIX-SYNC (disk == generated) is evaluated at test time and is not rendered (self-referential).",
         "",
-        "**Non-claims:** B6 PASS · OD-EBH7-08 · EBH-7 CLOSED · EVOL-X entry · global FRZ PASS.",
+        "**Non-claims:** global FRZ PASS · EVOL-X CLOSED · PROD-Q parent CLOSED.",
         "",
     ]
     return "\n".join(lines)

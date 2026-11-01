@@ -17,6 +17,6 @@
 | H2 | B6-F10 L3 replay + JUnit attestation (historical, run `41231430749` @ TEST `496016c0c…`) | `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md` | B6-F10 proof |
 | H3 | Final reconciliation: strict JUnit metadata + nine skip dispositions + final L3 replay | `EBH_7_SKIP_DISPOSITION_REGISTER.md` · `EBH_7_P03_GITHUB_ACTIONS_REPLAY_RECORD.md` | FINAL_RECONCILIATION proof |
 | I | B6 independent | [`EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`](EBH_7_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md) | **PASS (SCOPED)** @ `dc18e36d971c93c8f631fbc86f73149d1b81b4d7` |
-| J | OD-EBH7-08 | closure signature record | FORMAL_CLOSURE pending |
+| J | OD-EBH7-08 | [`EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md) | **APPROVED** @ FORMAL_CLOSURE publication |
 
-**Non-claims:** EBH-7 parent CLOSED · OD-EBH7-08 APPROVED · EVOL-X entry · global FRZ PASS.
+**Non-claims:** EVOL-X CLOSED · global FRZ PASS · PROD-Q parent CLOSED.

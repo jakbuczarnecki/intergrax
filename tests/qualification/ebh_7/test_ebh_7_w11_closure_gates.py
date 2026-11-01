@@ -26,16 +26,17 @@ def test_ebh7_w11_stage_readiness_present() -> None:
     assert path.is_file()
 
 
-def test_ebh7_w11_od_08_not_self_approved() -> None:
-    text = (_REPO / "docs/project/maintainers/qualification/EBH_7_OPERATOR_DECISION_REGISTER.md").read_text(
+def test_ebh7_w11_od_08_operator_closure_recorded() -> None:
+    register = (_REPO / "docs/project/maintainers/qualification/EBH_7_OPERATOR_DECISION_REGISTER.md").read_text(
         encoding="utf-8"
     )
-    assert "OD-EBH7-08" in text
-    assert "OPEN" in text
+    assert "OD-EBH7-08" in register
+    assert "**APPROVED**" in register
     closure = (_REPO / "docs/project/maintainers/qualification/EBH_7_OD_EBH7_08_CLOSURE_SIGNATURE_RECORD.md").read_text(
         encoding="utf-8"
     )
-    assert "not signed" in closure.lower() or "OPEN" in closure
+    assert "OPERATOR APPROVED — OD-EBH7-08" in closure
+    assert "CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)" in closure
 
 
 def test_ebh7_w11_remediation_artifacts_present() -> None:
