@@ -41,13 +41,9 @@ def _tes() -> str:
 
 def run_batch(*, bundle_dir: Path, tes: str | None = None) -> dict:
     tes = tes or _tes()
-    registry_path = _REPO / p03.BUNDLE_REL / p03.M09_DRILL_CASE_REGISTRY_NAME
+    registry_path = bundle_dir / p03.M09_DRILL_CASE_REGISTRY_NAME
     if not registry_path.is_file():
-        registry_path = (
-            _REPO
-            / "docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay"
-            / p03.M09_DRILL_CASE_REGISTRY_NAME
-        )
+        raise SystemExit(f"missing registry at {registry_path}")
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     if registry["bound_test_execution_sha"] != tes:
         registry["bound_test_execution_sha"] = tes

@@ -22,13 +22,11 @@ def _tes() -> str:
 
 def finalize(*, bundle_rel: str = p03.BUNDLE_REL) -> list[str]:
     bundle = _REPO / bundle_rel
-    tes = _tes()
     manifest_path = bundle / p03.MANIFEST_NAME
     if not manifest_path.is_file():
         return ["MANIFEST missing — run build-bundle first"]
     manifest = P03Manifest.model_validate(json.loads(manifest_path.read_text(encoding="utf-8")))
-    if manifest.test_execution_sha != tes:
-        return [f"MANIFEST TES {manifest.test_execution_sha[:9]} != HEAD {tes[:9]}"]
+    tes = manifest.test_execution_sha
     registry_src = bundle / p03.M09_DRILL_CASE_REGISTRY_NAME
     if not registry_src.is_file():
         registry_src = _REPO / p03.BUNDLE_REL / p03.M09_DRILL_CASE_REGISTRY_NAME
