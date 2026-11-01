@@ -64,6 +64,28 @@ def finalize(*, bundle_rel: str = p03.BUNDLE_REL) -> list[str]:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.run_batch(bundle_dir=bundle, tes=tes)
+    subprocess.run(["git", "add", "-A", str(bundle)], cwd=_REPO, check=True)
+    qual_path = bundle / p03.M09_AUTOMATED_QUALIFICATION_NAME
+    qual_doc = json.loads(qual_path.read_text(encoding="utf-8"))
+    reg_blob = subprocess.run(
+        ["git", "show", f":{bundle_rel}/{p03.M09_DRILL_CASE_REGISTRY_NAME}"],
+        cwd=_REPO,
+        check=True,
+        capture_output=True,
+    ).stdout
+    qual_doc["registry_digest"] = p03.sha256_hex(reg_blob)
+    for case in qual_doc["cases"]:
+        rel = case["diagnostic_output_relpath"]
+        diag_blob = subprocess.run(
+            ["git", "show", f":{bundle_rel}/{rel}"],
+            cwd=_REPO,
+            check=True,
+            capture_output=True,
+        ).stdout
+        case["diagnostic_output_digest"] = p03.sha256_hex(diag_blob)
+    body = json.dumps({k: v for k, v in qual_doc.items() if k != "artifact_digest"}, indent=2, sort_keys=True)
+    qual_doc["artifact_digest"] = p03.sha256_hex(body.encode("utf-8"))
+    qual_path.write_text(json.dumps(qual_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     registry = M09DrillCaseRegistry.model_validate(
         json.loads((bundle / p03.M09_DRILL_CASE_REGISTRY_NAME).read_text(encoding="utf-8"))
     )
@@ -102,7 +124,18 @@ def finalize(*, bundle_rel: str = p03.BUNDLE_REL) -> list[str]:
         paths.add(f"{p03.M09_AUTOMATED_DIAGNOSTIC_DIR}/{case_id}.json")
     paths.discard(p03.M09_HUMAN_DRILL_NAME)
     artifact_paths = tuple(sorted(paths))
-    p03.write_digests(bundle, artifact_paths)
+    subprocess.run(["git", "add", "-A", str(bundle)], cwd=_REPO, check=True)
+    digests = {}
+    for rel in artifact_paths:
+        blob = subprocess.run(
+            ["git", "show", f":{bundle_rel}/{rel}"],
+            cwd=_REPO,
+            check=True,
+            capture_output=True,
+        ).stdout
+        digests[rel] = p03.sha256_hex(blob)
+    digest_doc = {"schema_version": "evol_artifact_digests.v1", "digests": digests}
+    (bundle / p03.DIGESTS_NAME).write_text(json.dumps(digest_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     updated = manifest.model_dump()
     updated["certification_profile"] = p03.CERT_PROFILE_AUTOMATION_FIRST_SCOPED
     updated["artifact_paths"] = artifact_paths

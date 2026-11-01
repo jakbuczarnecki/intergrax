@@ -7,7 +7,7 @@
       "passed": true
     }
   ],
-  "artifact_digest": "c6ca9045bcfea8827a94d42a3ca66d6ddfaa5f11533580f36194476e83296aa7",
+  "artifact_digest": "63ca497c97ebacd6c4e20934d8329491455962710baf01b4de4038d676ed1923",
   "cases": [
     {
       "case_id": "C1",
@@ -15,14 +15,14 @@
       "derived_cause_identities": [
         "3fc41379bf4835887ef1758cc1aedf2f966e2280cb58f9b14da09bbfa48b091d"
       ],
-      "diagnostic_output_digest": "67f79420314edb5fed1a7ba935f80c664fb2e4e257e30275e1d12c05d0d42e11",
+      "diagnostic_output_digest": "f52bee267f38d108ec8916cf5deed989e202cb4fd9b88fd3e6a613e557c8dde8",
       "diagnostic_output_relpath": "m09_automated_diagnostic/C1.json",
       "direct_node_id": "module:intergrax.contracts.execution_identity",
       "direct_node_kind": "DIRECT",
       "input_digest": "91f6d5308145ee4757b09502e76673dfef4651cb9da3ec02419fd281b87b6db3",
       "registry_agreement": true,
       "seed_changed_path": "intergrax/contracts/execution_identity.py",
-      "tool_seconds": 1.030309,
+      "tool_seconds": 0.939201,
       "tool_sla_met": true
     },
     {
@@ -31,14 +31,14 @@
       "derived_cause_identities": [
         "f1decda53e2306a25418e70ed30046d491f36639e30cb0bfb52be7db1d61f83e"
       ],
-      "diagnostic_output_digest": "38adeebfcab593d6f06f59b200f46eb27d45b4757e951a41bc0d442cd930ae93",
+      "diagnostic_output_digest": "68f1fec09e3847047c36f056a4decb1baf5550c89be96399e275c540160b2c2b",
       "diagnostic_output_relpath": "m09_automated_diagnostic/C2.json",
       "direct_node_id": "module:testing_support.change_safety.graph.impact",
       "direct_node_kind": "DIRECT",
       "input_digest": "dda029e107db5ef691c1a94284d0b609e860115e5f65bb2b5a5e8295ae1dcaf6",
       "registry_agreement": true,
       "seed_changed_path": "testing_support/change_safety/graph/impact.py",
-      "tool_seconds": 0.513833,
+      "tool_seconds": 0.489401,
       "tool_sla_met": true
     },
     {
@@ -47,33 +47,33 @@
       "derived_cause_identities": [
         "82364099afe3fa41f42a9f0860ce54bebf4c53ec9f740f04859277ac6069ca55"
       ],
-      "diagnostic_output_digest": "2cc8096869d35b3f09c27a2d15f0dc7258b06b2c92b2c6182df0a337c1648c63",
+      "diagnostic_output_digest": "65c1618812a5996707c8afd0cd249dd1f1d278ef5b968c7fa9ad2c1516d4059c",
       "diagnostic_output_relpath": "m09_automated_diagnostic/C3.json",
       "direct_node_id": "module:testing_support.change_safety.contracts.enums",
       "direct_node_kind": "DIRECT",
       "input_digest": "1feef84e94866e940f6c0453fc82c9da04d798926dd9025d2d8c86be7fc58a50",
       "registry_agreement": true,
       "seed_changed_path": "testing_support/change_safety/contracts/enums.py",
-      "tool_seconds": 0.431626,
+      "tool_seconds": 0.490115,
       "tool_sla_met": true
     }
   ],
   "certification_disposition": "AUTOMATED_SCOPED_PASS",
-  "execution_finished_at_utc": "2026-11-01T18:00:03.821984+00:00",
-  "execution_started_at_utc": "2026-11-01T18:00:00.665769+00:00",
+  "execution_finished_at_utc": "2026-11-01T18:00:36.841393+00:00",
+  "execution_started_at_utc": "2026-11-01T18:00:33.655029+00:00",
   "human_m09h_measured": false,
   "measurement_mode": "AUTOMATED_DIAGNOSTIC",
   "operator_decision_id": "OD-EVOL-13",
   "qualification_policy_id": "OD-EVOL-13",
-  "registry_digest": "468696898db636a857bc315fe7bb41fb2519e636a49e59241563a7808a84b8ae",
+  "registry_digest": "6ed12931798dcb402b2d2db307b7ed901f060a4f58a3e1554feaf058399ce385",
   "registry_path": "docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/evol_m09_drill_case_registry.v1.json",
-  "run_id": "3fc6fc422ab74c27a98853bc9eb15215",
+  "run_id": "57749d7ae16a4936bf1b68d642361a53",
   "schema_version": "evol_m09_automated_diagnostic_qualification.v1",
   "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "summary": {
     "automated_adversarial_controls_passed": true,
     "cases_passed": true,
-    "median_tool_seconds": 0.513833
+    "median_tool_seconds": 0.490115
   },
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
 }
