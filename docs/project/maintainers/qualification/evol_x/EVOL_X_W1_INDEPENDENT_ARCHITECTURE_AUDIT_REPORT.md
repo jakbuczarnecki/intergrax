@@ -1,35 +1,25 @@
 # EVOL-X W1 — Independent architecture audit report
 
-**Date:** 2026-11-01 (reconciliation pass)  
-**LOCAL_HEAD:** `cac5dfd91f8a98c1183e6864a93bc74ddc41b725`  
-**START_HEAD:** `5a4e922ffacabef0ee24eb676e5c8705c20ef4a1`  
-**origin/development:** `5a4e922…` (**ahead 2** locally)  
-**Production code changed:** **None**
+**Publication SHA (reviewer-confirmed):** `54e0de377644fe19156a2f8497efa6cd10d7fdd2`  
+**origin/development:** matches publication SHA  
+**Production delta:** none  
 
 ## W1 commit chain
 
-| SHA | Subject |
-|-----|---------|
-| `9f9cc8b573d2629c140b3a58bf239e8a92d0b1d0` | docs(EVOL-X): publish W1 architecture freeze and qualification annexes |
-| `cac5dfd91f8a98c1183e6864a93bc74ddc41b725` | docs(EVOL-X): record W1_DOCUMENTATION_SHA on ladder |
+See [EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) and [EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md](EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md).
 
-**Changed files (18 + 4 reconciliation):** see [EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md](EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md).
+## F-batch remediation (this corrective pass)
 
-**Working tree:** clean for tracked files; untracked: `.cursor/plans/`, `exports/`, `platform_proofs/test_*` (not W1 evidence).
+| Finding | Resolution doc |
+|---------|----------------|
+| F-01 N-18 arithmetic / 32 modules | [EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md](EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md) |
+| F-02 SHA roles | [EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md), audit index |
+| F-03 S7 vs production FRZ-07 | [EVOL_X_ENFORCEMENT_BOUNDARY_W1.md](EVOL_X_ENFORCEMENT_BOUNDARY_W1.md) |
 
-## Reconciliation summary
+## AF / W2
 
-- **N-18:** 7 unique root causes, 32 modules — [EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md](EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md)  
-- **N-04:** N4-A document-only graph semver — [EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md](EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md)  
-- **AF:** [EVOL_X_AF_GATE_MATRIX_W1.md](EVOL_X_AF_GATE_MATRIX_W1.md) — AF-6/AF-8 pending  
-- **OD:** [EVOL_X_OPERATOR_DECISION_REGISTER_W1.md](EVOL_X_OPERATOR_DECISION_REGISTER_W1.md)
+[EVOL_X_W1_INDEPENDENT_REVIEW_WORKSHEET.md](EVOL_X_W1_INDEPENDENT_REVIEW_WORKSHEET.md) — AF-6/AF-8 **PENDING**. W2 **not authorized**.
 
-## W2 entry verdict
+## Attestation
 
-**BLOCKED** until: (1) operator signs AF-6 decisions; (2) AF-8 independent architecture audit or waiver; (3) **authorized git push** for remote auditability.
-
-**Not authorized:** W2 implementation.
-
-## Implementer attestation
-
-This report is **not** independent acceptance (ECAP E9).
+Not independent acceptance.

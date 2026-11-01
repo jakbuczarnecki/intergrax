@@ -21,5 +21,5 @@
 | **N-15** | `RuntimeRevision` ↔ git commit | **VERIFIED (no direct field)** | Revision carries `materialization_artifact_digest` etc.; **no** `git_commit_sha` on `RuntimeRevision` — dossier Q5 uses artifact digest + external mapping table (W4-06) |
 | **N-16** | Cross-OS digest determinism | **SPEC + W2 gate** | W1: canonical JSON LF policy in master plan §9.6; proof in W2-06 CW-08 on CI ubuntu |
 | **N-17** | `reconcile_manifest_integrity()` | **VERIFIED** | Returns `()` on HEAD — executed W1 |
-| **N-18** | Full gate unit health | **CLASSIFIED (7 root causes)** | 32 modules; see [EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md](EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md); repro @ START_HEAD (no test diff in W1); **not** W1 regression → **OD-EVOL-10** |
+| **N-18** | Full gate unit health | **CLASSIFIED — 32 modules** | [EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md](EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md): 8 RC kinds; baseline **INF-TREE** (no START_HEAD checkout replay); **not** W1 regression → **OD-EVOL-10** |
 | **N-04** | Graph spec version | **RECONCILED** | See [EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md](EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md) — spec inconsistency; not live runtime defect; **N4-A** proposed |

@@ -13,6 +13,16 @@ For each safety class, EVOL-X **must not** introduce parallel release/governance
 
 **S3 conclusion:** Current implementation **does** reject unsafe pin/checkpoint/stale-definition cases via existing profile-resolution enforcement. **Does not** adopt new workflow definitions in-flight — absence of executor = **EXPLICITLY_UNSUPPORTED** (not silent pass).
 
-**S7 conclusion:** Current `ActivationService.rollback` **does not** enforce durable-state compatibility. Enforcement today is **qualification assessor + harness**; **production precondition port** is a **sanctioned optional delta** (OD-EVOL-05b Option 2) — **STOP production change until operator approves**.
+**S7 conclusion (FRZ-EVOL-07 — F-03):**
 
-**Parallel authority prohibition:** No new `approve`/`authorize`/`execute` fields on assessment DTOs; AD/ActivationService remain sole mutators.
+| Layer | What it proves | What it does **not** prove |
+|-------|----------------|----------------------------|
+| **S7 controlled assessor PASS** (qualification) | Harness + `deployment_safety` returns correct **read-only** verdicts (e.g. DM-04 REFUSE) on scripted durable-state scenarios | **Production** `ActivationService.rollback` will refuse unsafe rollback |
+| **Existing production AD rollback** | Artifact revalidation, serving pointer, SUPERSEDED prior, instance readiness | Durable schema forward-only compatibility, in-flight pin safety vs demoted revision |
+| **OD-EVOL-05b Option 2 port (`default off`)** | *If approved and implemented in W4* — optional **mandatory** precondition wired into **existing** AD rollback path | **Not** a second deployment authority; **default off = no new mandatory production enforcement** until composition explicitly enables port |
+
+**FRZ-EVOL-07 scoped acceptance (checklist wording):** At EVOL-X closure, PASS may cite **qualification evidence**: S7 arms + assessor + typed `DeploySafetyAssessment` + explicit unsafe-refusal cases — **without** claiming live PROD-Q or mandatory runtime rollback hardening. Checklist: rollback not safe from “binary restart alone”; durable state + contract compatibility required — satisfied at **qualification** layer first.
+
+**Mandatory runtime enforcement (out of scope W1 / this batch):** Requires separate operator authorization **OD-EVOL-05b Option 2**, domain plan row, implementation in W4-04, production composition flag **on**, and regression proof — still **no** parallel executor or governance path.
+
+**Parallel authority prohibition:** Unchanged — assessment DTOs remain non-mutating; AD remains sole rollback mutator.

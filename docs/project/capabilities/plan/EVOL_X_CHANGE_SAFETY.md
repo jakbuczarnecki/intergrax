@@ -29,4 +29,17 @@ When W2 starts, add rows to owning domain plans:
 
 ## Entry gate for W2
 
-See [EVOL_X_W2_PREREQUISITES.md](../../maintainers/qualification/evol_x/EVOL_X_W2_PREREQUISITES.md).
+See checklist below. **W2 is not auto-authorized** after publication @ `54e0de377`.
+
+## Blockers (reconciled)
+
+| Blocker | Status |
+|---------|--------|
+| Remote publication @ `54e0de377` | **Resolved** (reviewer confirmed) |
+| AF-6 operator signatures | **Open** |
+| AF-8 independent architecture audit | **Open** |
+| OD-EVOL-10 CONSERVATIVE_FULL manifest | **Open** |
+| N-18 | Classified — not W1 regression; see N-18 annex |
+| N-04 | N4-A proposed — operator disposition |
+
+Full checklist: [EVOL_X_W2_PREREQUISITES.md](../../maintainers/qualification/evol_x/EVOL_X_W2_PREREQUISITES.md).

@@ -1,5 +1,11 @@
 # EVOL-X W2 — Execution prerequisites
 
+**W2 entry verdict: BLOCKED** until AF-6, AF-8, and signed ODs below.
+
+## Publication (reconciled)
+
+Remote @ `54e0de377644fe19156a2f8497efa6cd10d7fdd2` — **satisfied** (reviewer confirmed). F-batch may add **W1_AUDIT_REMEDIATION_SHA**.
+
 ## Mandatory operator decisions (signed)
 
 - [ ] **OD-EVOLX-01** — stage entry
