@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|--------|
 | START_HEAD | `a9b2ddbc56119d299ffa31745ee8f1463bc1de6c` |
-| PREPARATION_PUBLICATION_SHA | *(filled @ git commit)* |
+| PREPARATION_PUBLICATION_SHA | `39295eb24c59de8d4e03e378641360f8b121cfa8` |
 | Active TES | `dcd7ae6e264d435994c61162e0d41aba25f71283` |
 | Active TECH | `9f875fc62d1f6b2231b31c843ae0428a2d871031` |
 | W6-04 | QUALIFIED — run `41320511747` |
