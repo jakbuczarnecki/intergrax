@@ -1,0 +1,22 @@
+{
+  "schema_version": "evol_conservative_exclusions.v1",
+  "source_authority": "docs/project/maintainers/qualification/EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md#II-C",
+  "policy": "EVOL_CONSERVATIVE_FULL",
+  "excluded_populations": ["DIM-B-PROD-Q-LIVE"],
+  "exclusions": [
+    {
+      "module_or_node": "tests/unit/agents/test_reference_harness_strict.py",
+      "reason": "RC-7_BASELINE_DEFECT",
+      "scope": "OUTSIDE_EVOL_VL3",
+      "tracked_owner": "platform_harness",
+      "authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md; OD-EVOL-10"
+    },
+    {
+      "module_or_node": "tests/qualification/prod_q/test_prod_q_r1_r7_q_c_dim8_cross_tenant_integrated_gate.py",
+      "reason": "DIM-B-PROD-Q-LIVE_EXCLUDED_FROM_DIMENSION_A",
+      "scope": "OUTSIDE_EVOL_POPULATION_A",
+      "tracked_owner": "PROD-Q-R1-R7-Q",
+      "authority": "QUAL-X-P5-DIM-B-PROD-Q-LIVE-EXCLUDED; OD-EVOL-10"
+    }
+  ]
+}

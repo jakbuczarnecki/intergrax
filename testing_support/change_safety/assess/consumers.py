@@ -123,6 +123,21 @@ def critical_consumer_closure(inventory: ClosedWorldInventory) -> ConsumerClosur
     )
 
 
+def consumers_of_targets(inventory: ClosedWorldInventory, targets: frozenset[str]) -> frozenset[str]:
+    """Direct consumers of ``targets`` over all consumption RELs (graph method)."""
+    out: set[str] = set()
+    for target in targets:
+        out.update(src for src, _rel in inventory.consumers_reverse.get(target, ()))
+    return frozenset(out)
+
+
+def hidden_consumers_of_targets(inventory: ClosedWorldInventory, targets: frozenset[str]) -> tuple[str, ...]:
+    """W3-02: text-method consumers of ``targets`` missing from the graph consumer set (orphans; must be 0)."""
+    graph_consumers = consumers_of_targets(inventory, targets)
+    hidden = [src for src, tgt in critical_text_pairs(inventory) if tgt in targets and src not in graph_consumers]
+    return tuple(sorted(set(hidden)))
+
+
 def count_critical_consumer_omissions(inventory: ClosedWorldInventory) -> int:
     """XG-02 real oracle (replaces hard-coded 0)."""
     return critical_consumer_closure(inventory).orphan_count

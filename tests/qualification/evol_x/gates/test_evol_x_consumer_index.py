@@ -30,3 +30,21 @@ def test_evol_x_orphan_import_targets_detects_dangling() -> None:
 
     edges = (GraphEdge("module:a", "module:missing", "IMPORTS"),)
     assert orphan_import_targets(edges, frozenset({"module:a"})) == ("module:missing",)
+
+
+def test_evol_x_w3_02_hidden_consumer_detected_and_orphans_zero_on_head(evol_inventory: ClosedWorldInventory) -> None:
+    from testing_support.change_safety.assess.consumers import (
+        consumers_of_targets,
+        critical_text_pairs,
+        hidden_consumers_of_targets,
+    )
+
+    pairs = critical_text_pairs(evol_inventory)
+    targets = frozenset(t for _s, t in pairs)
+    assert hidden_consumers_of_targets(evol_inventory, targets) == ()  # orphan == 0
+    src, tgt = pairs[0]
+    assert src in consumers_of_targets(evol_inventory, frozenset({tgt}))
+    pruned = evol_inventory.with_edges(
+        tuple(e for e in evol_inventory.edges if not (e.source_id == src and e.target_id == tgt))
+    )
+    assert src in hidden_consumers_of_targets(pruned, frozenset({tgt}))  # orphan > 0 arm
