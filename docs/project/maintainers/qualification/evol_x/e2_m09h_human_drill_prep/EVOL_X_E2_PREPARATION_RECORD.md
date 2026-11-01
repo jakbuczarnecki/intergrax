@@ -1,0 +1,47 @@
+# EVOL-X E2 — Human drill preparation record
+
+**Disposition:** PREP PUBLISHED — `PENDING_HUMAN_EXECUTION` (no human measurements in repo)
+
+| Field | Value |
+|-------|--------|
+| START_HEAD | `a9b2ddbc56119d299ffa31745ee8f1463bc1de6c` |
+| PREPARATION_PUBLICATION_SHA | *(filled @ git commit)* |
+| Active TES | `dcd7ae6e264d435994c61162e0d41aba25f71283` |
+| Active TECH | `9f875fc62d1f6b2231b31c843ae0428a2d871031` |
+| W6-04 | QUALIFIED — run `41320511747` |
+
+## Validation @ prep
+
+| Check | Outcome |
+|-------|---------|
+| TES/TECH ancestor of START_HEAD | PASS |
+| Mode A `--technical` @ START_HEAD | PASS |
+| `M09DrillCaseRegistry` TECH + staging | PASS |
+| C1–C3 `input_digest` @ TES | PASS |
+| Staging `registry_digest` | `ee610d5a20083c3d3b4cd91131d42f07e969e6970ce89910fd4529af07e41d45` |
+| Staging `population_digest` | `7a2c9a3617f5512741e8032ecfb40ef34356dd041ddc219293203486df779212` |
+| TECH `registry_digest` | `e941fd5c75b04f70c3cd99cc41f00f4857c80f4b489932689035ebfdce23c056` |
+| Evaluator packets lack oracle hex | PASS (grep) |
+| `evol_m09_human_drill.v2.template.json` fails strict model | PASS |
+| VL3 279-test rerun | NOT RUN (prep-only; risk-based) |
+
+## Open qualification note
+
+**F-EVOLX-E2-CAUSE-PREFLIGHT:** DIRECT-node digest formula from diagnostic tool output does not reproduce published `expected_cause_identities` @ TES. Operator must resolve before attesting human PASS (see oracle key). Does not block prep publication; blocks silent human PASS if unresolved.
+
+## Changed files (prep tree)
+
+See git commit list: `docs/project/maintainers/qualification/evol_x/e2_m09h_human_drill_prep/**` + runbook cross-link.
+
+## Next human action
+
+Follow [EVOL_X_E2_OPERATOR_EXECUTION_RUNBOOK.md](./EVOL_X_E2_OPERATOR_EXECUTION_RUNBOOK.md).
+
+## E2 / B6 blockers after prep
+
+| ID | Blocker |
+|----|---------|
+| G-03 | M-09H drill not executed |
+| G-04 | EVIDENCE_FINAL empty |
+| G-02 | OD-EVOL-11 auditor name not recorded |
+| F-EVOLX-E2-CAUSE-PREFLIGHT | Cause attribution rule vs registry oracle |

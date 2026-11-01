@@ -4,6 +4,8 @@
 **Contract:** `evol_m09_human_drill.v2` — [`EVOL_X_EXPERIMENT_AND_METRIC_SPEC.md`](EVOL_X_EXPERIMENT_AND_METRIC_SPEC.md).  
 **Finding fixed:** `F-EVOLX-P0-M09H-ATTRIBUTION-SLA-FALSE-PASS` (v1 applied the 900 s median to tool time).
 
+**E2 preparation (packets, worksheet, rebind staging, adversarial):** [`e2_m09h_human_drill_prep/README.md`](./e2_m09h_human_drill_prep/README.md) — disposition `PENDING_HUMAN_EXECUTION` until genuine drill.
+
 ## Who / when
 
 - Performed **only by the human evaluator** (independent of the implementer/agent; OD-EVOL-11). No agent-produced, synthetic or demo timings are permitted anywhere.
