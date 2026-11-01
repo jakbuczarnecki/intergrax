@@ -10,7 +10,7 @@
   "exclusions": [
     "tests/unit/agents/test_reference_harness_strict.py::RC-7_BASELINE_DEFECT"
   ],
-  "manifest_content_digest": "83e29ee4a18f2ebd0848ef1842a9fb7725c8ab3108703b909e4ad944cf577acc",
+  "manifest_content_digest": "6b9cecee4aec3a619d405c3ebd895eb9de09aff9bca7ec40a4d2df2de3c8ff60",
   "pytest_node_ids": [
     "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]",
     "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S2]",
