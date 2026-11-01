@@ -1,0 +1,45 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "O-D",
+  "contract_module": "module:intergrax.contracts.fx_orders",
+  "declared_consumers": [
+    "module:agents.fx_planner.plan",
+    "module:applications.app_a.billing",
+    "module:applications.app_b.ship",
+    "module:applications.app_c.hidden"
+  ],
+  "hidden_consumers": [
+    "module:applications.app_c.hidden"
+  ],
+  "schema_before": {
+    "properties": {
+      "order_id": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "integer"
+      }
+    }
+  },
+  "schema_after_breaking": {
+    "properties": {
+      "order_id": {
+        "type": "string"
+      }
+    }
+  },
+  "schema_after_additive": {
+    "properties": {
+      "order_id": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "integer"
+      },
+      "note": {
+        "type": "string",
+        "default": ""
+      }
+    }
+  }
+}

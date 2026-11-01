@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from testing_support.change_safety.data.loaders import load_evol_x_data_document
+from testing_support.change_safety.discovery.closed_world import ClosedWorldInventory
 
 _CLASS_RANK = {"A": 1, "B": 2, "C": 3}
 
@@ -111,3 +112,16 @@ def assess_extension_safety(
 
 def assess_frozen_core_touch(*, changed_paths: frozenset[str]) -> bool:
     return bool(classify_frozen_core_touches(changed_paths))
+
+
+def swap_rewrite_set(
+    inventory: ClosedWorldInventory,
+    *,
+    provider_module: str,
+    composition_modules: frozenset[str],
+) -> tuple[str, ...]:
+    """S4/W3-03: consumers of ``provider_module`` that are NOT composition roots => consumer rewrite required."""
+    from testing_support.change_safety.assess.consumers import consumers_of_targets
+
+    consumers = consumers_of_targets(inventory, frozenset({provider_module}))
+    return tuple(sorted(c for c in consumers - composition_modules if c.startswith("module:")))

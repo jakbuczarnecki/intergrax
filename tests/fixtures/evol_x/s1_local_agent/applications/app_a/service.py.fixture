@@ -1,0 +1,3 @@
+from agents.fx_local_agent.core import plan
+
+VALUE = plan()

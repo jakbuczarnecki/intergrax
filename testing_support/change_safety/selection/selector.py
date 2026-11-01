@@ -145,7 +145,9 @@ def select_tests(inputs: SelectionInputs) -> SelectionDecision:
         return _refuse(inputs, impact, "DIGEST_MISMATCH", "impact INTEGRITY_FAILURE")
     required = frozenset(
         n
-        for n in (inputs.mandatory_node_ids | inputs.pop_a_node_ids | inputs.evol_manifest_node_ids)
+        for n in (
+            inputs.mandatory_node_ids | inputs.pop_a_node_ids | inputs.evol_manifest_node_ids | inputs.adjacent_node_ids
+        )
         if not (inputs.exclusions and inputs.exclusions.excludes(n))
     )
     if inputs.collectable_node_ids is not None:

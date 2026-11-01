@@ -119,7 +119,9 @@ def test_evol_x_decision_id_is_deterministic_digest_not_uuid(self_impact) -> Non
 
 def test_evol_x_uncollectable_required_node_refuses_integrity(self_impact) -> None:  # noqa: ANN001
     inputs = build_selection_inputs(self_impact)
-    all_required = inputs.mandatory_node_ids | inputs.pop_a_node_ids | inputs.evol_manifest_node_ids
+    all_required = (
+        inputs.mandatory_node_ids | inputs.pop_a_node_ids | inputs.evol_manifest_node_ids | inputs.adjacent_node_ids
+    )
     ok = select_tests(replace(inputs, collectable_node_ids=all_required))
     assert ok.status is SelectionStatus.SELECTED
     missing_one = sorted(all_required)[0]
@@ -131,7 +133,9 @@ def test_evol_x_rc7_excluded_node_does_not_block_collect_integrity(self_impact) 
     inputs = build_selection_inputs(self_impact)
     rc7 = "tests/unit/agents/test_reference_harness_strict.py::test_x"
     with_rc7 = replace(inputs, evol_manifest_node_ids=inputs.evol_manifest_node_ids | {rc7})
-    required = inputs.mandatory_node_ids | inputs.pop_a_node_ids | inputs.evol_manifest_node_ids
+    required = (
+        inputs.mandatory_node_ids | inputs.pop_a_node_ids | inputs.evol_manifest_node_ids | inputs.adjacent_node_ids
+    )
     decision = select_tests(replace(with_rc7, collectable_node_ids=required))
     assert decision.status is SelectionStatus.SELECTED  # RC-7 excluded (OD-EVOL-10), not required collectable
     assert rc7 not in {n.node_id for n in decision.selected}

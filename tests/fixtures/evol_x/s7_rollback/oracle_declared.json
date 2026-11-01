@@ -1,0 +1,94 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "DM",
+  "rows": [
+    {
+      "id": "clean_rollback",
+      "facts": {
+        "operation": "rollback"
+      },
+      "expected_matrix_id": "DM-01",
+      "expected_verdict": "ELIGIBLE",
+      "expected_refusal": null
+    },
+    {
+      "id": "persisted_unreadable",
+      "facts": {
+        "operation": "rollback",
+        "persisted_schema_compatible": false
+      },
+      "expected_matrix_id": "DM-02",
+      "expected_verdict": "REFUSE",
+      "expected_refusal": "PERSISTED_STATE_INCOMPATIBLE"
+    },
+    {
+      "id": "pins_drain",
+      "facts": {
+        "operation": "rollback",
+        "inflight_pins": true
+      },
+      "expected_matrix_id": "DM-03",
+      "expected_verdict": "ELIGIBLE_WITH_DRAIN",
+      "expected_refusal": null
+    },
+    {
+      "id": "durable_forward_only",
+      "facts": {
+        "operation": "rollback",
+        "durable_forward_only_applied": true
+      },
+      "expected_matrix_id": "DM-04",
+      "expected_verdict": "REFUSE",
+      "expected_refusal": "DURABLE_STATE_FORWARD_ONLY"
+    },
+    {
+      "id": "contract_incompatible",
+      "facts": {
+        "operation": "rollback",
+        "contract_compat": "INCOMPATIBLE"
+      },
+      "expected_matrix_id": "DM-05",
+      "expected_verdict": "REFUSE",
+      "expected_refusal": "CONTRACT_INCOMPATIBLE"
+    },
+    {
+      "id": "no_evidence",
+      "facts": {
+        "operation": "rollback",
+        "evidence_present": false
+      },
+      "expected_matrix_id": "DM-06",
+      "expected_verdict": "REFUSE",
+      "expected_refusal": "INSUFFICIENT_EVIDENCE"
+    },
+    {
+      "id": "roll_forward",
+      "facts": {
+        "operation": "roll_forward"
+      },
+      "expected_matrix_id": "DM-07",
+      "expected_verdict": "ELIGIBLE",
+      "expected_refusal": null
+    }
+  ],
+  "snapshot_manifest": {
+    "schema_version": "schema_snapshot_manifest.v1",
+    "revisions": {
+      "rev-1": {
+        "stores": {
+          "orders": {
+            "version": 1
+          }
+        }
+      },
+      "rev-2": {
+        "stores": {
+          "orders": {
+            "version": 2,
+            "forward_only": true
+          }
+        }
+      }
+    }
+  }
+}

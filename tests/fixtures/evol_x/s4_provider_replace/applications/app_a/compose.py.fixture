@@ -1,0 +1,3 @@
+from agents.fx_providers.provider_b import B
+
+PROVIDER = B()

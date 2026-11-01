@@ -1,0 +1,8 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "constructed",
+  "fault_classes": 8,
+  "changed_paths": [
+    "testing_support/change_safety/graph/impact.py"
+  ]
+}

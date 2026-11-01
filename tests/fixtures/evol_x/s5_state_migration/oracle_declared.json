@@ -1,0 +1,38 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "COMPAT",
+  "schema_before": {
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "total": {
+        "type": "integer"
+      }
+    }
+  },
+  "schema_after_breaking": {
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "total": {
+        "type": "string"
+      }
+    }
+  },
+  "schema_after_additive": {
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "total": {
+        "type": "integer"
+      },
+      "tag": {
+        "type": "string",
+        "default": ""
+      }
+    }
+  }
+}

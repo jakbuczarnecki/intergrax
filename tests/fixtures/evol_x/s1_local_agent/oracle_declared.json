@@ -1,0 +1,27 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "O-F",
+  "scenarios": {
+    "local": {
+      "changed": [
+        "agents/fx_local_agent/core.py"
+      ],
+      "expected_blast_apps": [
+        "app_a"
+      ],
+      "expected_escapes": []
+    },
+    "escape": {
+      "changed": [
+        "applications/app_a/helpers.py"
+      ],
+      "expected_blast_apps": [
+        "app_a",
+        "app_b"
+      ],
+      "expected_escapes": [
+        "module:applications.app_b.escape"
+      ]
+    }
+  }
+}

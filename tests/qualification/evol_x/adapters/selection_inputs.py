@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from testing_support.change_safety.contracts.impact import ImpactAssessmentResult
+from testing_support.change_safety.data.loaders import load_evol_x_data_document
 from testing_support.change_safety.selection.ci_manifest import load_pinned_manifest
 from testing_support.change_safety.selection.policy import load_conservative_exclusions
 from testing_support.change_safety.selection.selector import SelectionInputs
@@ -21,6 +22,7 @@ def build_selection_inputs(impact: ImpactAssessmentResult | None, **overrides: o
         mandatory_node_ids=catalog.mandatory_min_node_ids(),
         pop_a_node_ids=catalog.pop_a_collectable_node_ids(),
         evol_manifest_node_ids=frozenset(load_pinned_manifest()["pytest_node_ids"]),
+        adjacent_node_ids=frozenset(load_evol_x_data_document("evol_adjacent_regression_nodes.v1.json")["node_ids"]),
         exclusions=load_conservative_exclusions(),
     )
     return replace(base, **overrides) if overrides else base  # type: ignore[arg-type]

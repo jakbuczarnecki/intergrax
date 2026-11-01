@@ -1,0 +1,53 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "WM",
+  "rows": [
+    {
+      "id": "inflight_adopt_no_pin",
+      "change": {
+        "has_inflight": true,
+        "adopt_in_place": true,
+        "pin_evidence": false
+      },
+      "expected_matrix_id": "WM-05",
+      "expected_decision": "EXPLICITLY_UNSUPPORTED"
+    },
+    {
+      "id": "inflight_adopt_changed_definition",
+      "change": {
+        "has_inflight": true,
+        "adopt_in_place": true
+      },
+      "expected_matrix_id": "WM-07",
+      "expected_decision": "EXPLICITLY_UNSUPPORTED"
+    },
+    {
+      "id": "inflight_adopt_graph_spec_bump",
+      "change": {
+        "has_inflight": true,
+        "adopt_in_place": true,
+        "graph_spec_bumped": true
+      },
+      "expected_matrix_id": "WM-06",
+      "expected_decision": "EXPLICITLY_UNSUPPORTED"
+    },
+    {
+      "id": "side_by_side_pinned",
+      "change": {
+        "has_inflight": true,
+        "adopt_in_place": false
+      },
+      "expected_matrix_id": "WM-09",
+      "expected_decision": "VERSIONED_DEPLOY"
+    },
+    {
+      "id": "at_rest_with_migration",
+      "change": {
+        "has_inflight": false,
+        "migration_declared": true
+      },
+      "expected_matrix_id": "WM-11",
+      "expected_decision": "MIGRATE"
+    }
+  ]
+}
