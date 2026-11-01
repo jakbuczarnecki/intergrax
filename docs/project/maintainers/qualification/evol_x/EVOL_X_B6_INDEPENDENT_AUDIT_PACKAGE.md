@@ -2,94 +2,126 @@
 
 **Disposition:** preparation only — **no B6 PASS**, **no FRZ promotion**, **no agent signature**.
 
-**Authority:** [EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md](../EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md) Part V–VII; [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](../ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) B6; closure plan E3 / §7.5–7.6.
+**Authority:** [EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md](../EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md) Part V–VII; [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](../ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) B6; [EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md](./EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md) (OD-EVOL-13).
 
 ## Active SHA ladder (closure chain)
 
 | Role | SHA |
 |------|-----|
-| TEST_EXECUTION_SHA (TES) | `dcd7ae6e264d435994c61162e0d41aba25f71283` |
-| EVIDENCE_TECH_PUBLICATION_SHA | `9f875fc62d1f6b2231b31c843ae0428a2d871031` |
-| EVIDENCE_FINAL_PUBLICATION_SHA | *pending E2* |
-| B6_ACCEPTANCE_PUBLICATION_SHA | *pending E3* |
-| DOC / prep tip @ session | `0231ff9a198dddb3fcc7bac1a5f1725c731ef1c7` |
+| TEST_EXECUTION_SHA (TES) | `3c4a641b3e48a13f437e830a0562e2a80b03aabb` |
+| EVIDENCE_TECH_PUBLICATION_SHA (historical) | `1e175ff8f678d605aa841ae52362486a56ed006d` @ TES `2b165516…` — **not** active FINAL |
+| EVIDENCE_FINAL_PUBLICATION_SHA | `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` — **AUTOMATION_FIRST_SCOPED** (OD-EVOL-13) |
+| B6_ACCEPTANCE_PUBLICATION_SHA | *pending independent auditor* |
+| DOC / prep tip @ session | `22bf04b85a9fd4775ac2dd765f297bbf54df4e90` (B6 reconciliation baseline) |
 
-**Superseded (forbid in active records):** TES `6fec9ec…`, TECH `43a44b…`; historical TES `cb407403…`, TECH `20a3bc63…`.
+**Superseded (forbid in active records):** TES `2b165516…`, `dcd7ae6e…`, `6fec9ec…`; TECH `9f875fc…`, `43a44b…`; human-only FINAL expectations without profile selection.
 
-**Prerequisite:** Named **OD-EVOL-11** auditor (≠ implementer, ≠ Cursor agent) recorded in [EVOL_X_OPERATOR_DECISION_REGISTER_W1.md](./EVOL_X_OPERATOR_DECISION_REGISTER_W1.md) before W7-01 / B6 sign-off.
+**Prerequisite:** Named **OD-EVOL-11** auditor (≠ implementer, ≠ Cursor agent) in [EVOL_X_OPERATOR_DECISION_REGISTER_W1.md](./EVOL_X_OPERATOR_DECISION_REGISTER_W1.md) before B6 sign-off.
+
+---
+
+## Certification profiles (mandatory distinction)
+
+P03 **does not** expose a `--certification-profile` CLI flag. Profile is selected by **bundle contents** + **`MANIFEST.certification_profile`** + **Mode A disposition** (`--technical` vs default final).
+
+| Profile | Operator basis | Mode A @ evidence HEAD | M-09H | M-09A / drill artifact |
+|---------|----------------|------------------------|-------|-------------------------|
+| **HUMAN_FULL** | OD-EVOL-08-M1 | `verify-evidence-publish` (no `--technical`) on bundle with **`certification_profile` absent or `HUMAN_FULL`** | **3/3 MEASURED PASS** | `evol_m09_human_drill.v2.json` + worksheet |
+| **AUTOMATION_FIRST_SCOPED** | OD-EVOL-13 | `verify-evidence-publish` (no `--technical`) on bundle with **`certification_profile=AUTOMATION_FIRST_SCOPED`** | **NOT_MEASURED** (required) | `evol_m09_automated_diagnostic_qualification.v1.json` + `m09_automated_diagnostic/C*.json`; **EVOL-M-09A 3/3 MEASURED PASS** |
+
+**Active EVOL-X scoped closure path:** **AUTOMATION_FIRST_SCOPED** @ FINAL `bbf3e33bc…`. **HUMAN_FULL** remains valid for auditors reviewing a future human drill bundle; it is **not** the active published FINAL.
 
 ---
 
 ## Certification matrix reference
 
-Embedded **102×ID** matrix: EVOL-X Final Closure plan §5 (5-A … 5-J). Agent E0 notes:
+Embedded **102×ID** matrix: EVOL-X Final Closure plan §5 (5-A … 5-J).
 
-- **M-03R / M-03C / M-03E** — osobne suplementy w macierzy (wiersz zbiorczy M-03R/C/E); w B6 review nie scalać z **M-03** precision bez jawnego odwołania do `m03_causal_audit.v1.json` i testów `test_evol_x_m03_causal_audit.py`.
-- **M-09T** vs **M-09H** — M-09T MEASURED @ TECH ≠ human attribution; final wymaga M-09H.
+- **M-09T** vs **M-09H** vs **M-09A** — M-09T MEASURED @ TECH ≠ human attribution; **M-09H** applies only to **HUMAN_FULL**; **M-09A** applies only to **AUTOMATION_FIRST_SCOPED** (machine diagnostic, OD-EVOL-13).
+- **M-03R / M-03C / M-03E** — separate supplements; do not merge with **M-03** without `m03_causal_audit.v1.json`.
 
-Deliverable B6: reconcile Part VII rows → PASS (SCOPED) or **EXACT BLOCKERS** list with evidence SHA citations.
+Deliverable B6: reconcile Part VII rows → PASS (SCOPED) or **EXACT BLOCKERS** with evidence SHA citations.
 
 ---
 
-## Mode A — evidence integrity (final disposition)
+## Mode A — evidence integrity
 
-**When:** @ **EVIDENCE_FINAL_PUBLICATION_SHA** (after E2), clean checkout.
+**Supported CLI:** `verify-evidence-publish` with optional **`--technical`** only.
+
+### AUTOMATION_FIRST_SCOPED (active FINAL)
+
+**When:** @ **EVIDENCE_FINAL_PUBLICATION_SHA** `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` (or descendant doc-only commit whose **committed** P03 bundle bytes are unchanged — prefer exact FINAL SHA for audit).
 
 ```powershell
 cd <repo>
-git checkout <EVIDENCE_FINAL_SHA>
+git checkout bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1
 uv sync --extra dev-ci --frozen
 uv run python scripts/qualification/evol_x_p03_evidence.py verify-evidence-publish
 ```
 
-**Technical disposition (already valid @ TECH lineage, not closure):**
+**Expected (auditor G-05):**
+
+- TES `3c4a641b3…` ancestor of evidence HEAD (not equal — publication commit ≠ TES).
+- `MANIFEST.test_execution_sha` = TES; `MANIFEST.certification_profile` = `AUTOMATION_FIRST_SCOPED`.
+- `evol_m09_automated_diagnostic_qualification.v1.json` (`qualification_policy_id=OD-EVOL-13`); **no** `evol_m09_human_drill.v2.json` in `artifact_paths`.
+- `EVOL-M-09A` 3/3 MEASURED PASS; **`EVOL-M-09H` NOT_MEASURED**.
+- Tool SLA ≤120 s/case via automated qualification cases (not human `attribution_seconds`).
+
+**STOP:** claiming **M-09H HUMAN PASS** or human median ≤900 s from this bundle.
+
+### HUMAN_FULL (historical / alternate path — not active FINAL)
 
 ```powershell
+git checkout <EVIDENCE_FINAL_SHA_WITH_HUMAN_FULL_MANIFEST>
+uv run python scripts/qualification/evol_x_p03_evidence.py verify-evidence-publish
+```
+
+Requires genuine `evol_m09_human_drill.v2.json`, worksheet digest, M-09H 3/3 MEASURED (OD-EVOL-08-M1).
+
+### Technical disposition (TECH lineage only — not scoped FINAL closure)
+
+```powershell
+git checkout 1e175ff8f678d605aa841ae52362486a56ed006d
 uv run python scripts/qualification/evol_x_p03_evidence.py verify-evidence-publish --technical
 ```
 
-**Auditor checks (G-05):**
-
-- Ancestor: TES ancestor of evidence HEAD.
-- `MANIFEST.test_execution_sha` = TES.
-- `ARTIFACT_DIGESTS.json` matches bytes @ HEAD.
-- Final: `evol_m09_human_drill.v2.json` (schema v2, `measurement_policy_id` OD-EVOL-08-M1; dual SLA: tool ≤120 s/case, median attribution ≤900 s; runbook [EVOL_X_M09H_HUMAN_DRILL_RUNBOOK.md](./EVOL_X_M09H_HUMAN_DRILL_RUNBOOK.md)) + M-09H 3/3 MEASURED PASS + worksheet digest chain.
-- **STOP:** final Mode A @ TECH-only HEAD for closure claim.
+**STOP:** `--technical` @ **AUTOMATION_FIRST_SCOPED FINAL** HEAD for closure (M-09A MEASURED fails technical rule).
 
 ---
 
 ## Mode B — independent replay @ TES (G-06)
 
-**When:** HEAD = TES; auditor-only (not implementer convenience replay as B6 substitute).
+**When:** `HEAD` = **TES**; auditor-only replay (not implementer substitute for semantic review).
+
+**Supported CLI:** `verify-test-execution --evidence-ref <git-ref> [--replay-junit path] [--certification]`
+
+### AUTOMATION_FIRST_SCOPED (active)
 
 ```powershell
-git checkout dcd7ae6e264d435994c61162e0d41aba25f71283
+git checkout 3c4a641b3e48a13f437e830a0562e2a80b03aabb
 uv sync --extra dev-ci --frozen
+New-Item -ItemType Directory -Force -Path .tmp/session/evol-x-b6 | Out-Null
 uv run pytest tests/qualification/evol_x -q --junitxml=.tmp/session/evol-x-b6/junit.xml
 uv run python scripts/qualification/evol_x_p03_evidence.py verify-test-execution `
-  --evidence-ref 9f875fc62d1f6b2231b31c843ae0428a2d871031 `
+  --evidence-ref bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1 `
   --certification --replay-junit .tmp/session/evol-x-b6/junit.xml
 ```
 
-**Final disposition (after E2):** same checkout @ NEW_TES; `--evidence-ref` = **EVIDENCE_FINAL_PUBLICATION_SHA** (not NEW_TES).
+**Critical:** `--evidence-ref` = **FINAL publication SHA** (bundle + manifest @ that commit), **not** TES and **not** historical TECH `1e175ff8…`.
 
-**Expected:** match `evol_junit_outcomes.v1.json` @ bundle (279 passed population @ NEW_TES; N-M09-17 anti-regression included).
+**Expected:** **290** manifest node ids; archived outcomes @ FINAL match replay; exit 0.
+
+### HUMAN_FULL (when auditing human FINAL bundle)
+
+Same TES checkout; `--evidence-ref` = that bundle's **EVIDENCE_FINAL_PUBLICATION_SHA** (human drill artifacts present).
 
 ---
 
 ## FRZ-EVOL-07 — W7-03 checklist (Part X, G-08)
 
-**Not sufficient alone:** S7± green, M-08 @ TECH, OD-EVOL-05b Option 1.
+Unchanged: five-step audit; **Outcome A/B** required; **OD-EVOL-05b Option 1** — no production W4-04 rollback port claims.
 
-**Mandatory five-step audit** (named auditor) — document **Outcome A** or **Outcome B** in B6 worksheet:
-
-1. **Checklist wording** — [PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md](../PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) FRZ-EVOL-07 @ L275: czy scoped qual-layer PASS jest normatywnie uzasadniony **bez** live PROD-Q enforcement?
-2. **Part X bundle** — S7+ **and** S7− (DM-04 REFUSE); DM-01..07; `evol_frz_evidence.v1` footnote qual-only; forbidden claims absent.
-3. **Enforcement boundary** — [EVOL_X_ENFORCEMENT_BOUNDARY_W1.md](./EVOL_X_ENFORCEMENT_BOUNDARY_W1.md): B6 text **must not** claim production `ActivationService.rollback` refuses DM-04 in operator envs.
-4. **W4-04** — confirm **not implemented** (Option 1); production rollback hardening claims → STOP.
-5. **Decision record** — Outcome A (scoped PASS text for B6 only) or Outcome B (OPEN + operator path).
-
-**FRZ-EVOL-07 checklist column → PASS** only in **E4** after Outcome A + operator authorization — **never** E3 alone.
+**FRZ-EVOL-07 → PASS** only in **E4** after Outcome A + operator authorization — never E3 alone.
 
 ---
 
@@ -99,12 +131,13 @@ Parallel gate — not substitute for Mode B.
 
 | Slot | Source |
 |------|--------|
-| WORKFLOW_DEF_SHA | `main` after workflow-only merge |
-| Dispatch TES | **`2b165516485154583a4118ba1ecb2e25549bb5d0`** (active); historical `dcd7ae6…` run `41320511747` |
-| Run proof | [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) — run **`41327408027`** |
+| WORKFLOW_DEF_SHA | `main` — see [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) |
+| Active dispatch TES | **`3c4a641b3e48a13f437e830a0562e2a80b03aabb`** |
+| Run proof | [EVOL_X_CI_QUALIFICATION_RECORD.md](./EVOL_X_CI_QUALIFICATION_RECORD.md) — **active run** (post-reconciliation) |
+| Historical | run `41327408027` @ TES `2b165516…` (288 nodes) — **superseded for active TES** |
 | Procedure | [EVOL_X_CI_QUALIFICATION_PROCEDURE.md](./EVOL_X_CI_QUALIFICATION_PROCEDURE.md) |
 
-Operator runbook (prep): `.tmp/session/evol-x-final-cert/w6-04-operator-runbook.md`
+**Operator authorization:** OD-EVOL-10 (+ OD-EVOL-13 for scoped FINAL semantics).
 
 ---
 
@@ -116,14 +149,15 @@ Operator runbook (prep): `.tmp/session/evol-x-final-cert/w6-04-operator-runbook.
 **Minimum sections:**
 
 1. **Publication SHA** — `B6_ACCEPTANCE_PUBLICATION_SHA`
-2. **Evidence refs** — TES, EVIDENCE_FINAL (or documented chain), `independent_replay_sha` = TES
-3. **Mode A** — command, exit status, evidence HEAD
-4. **Mode B** — JUnit replay match statement
-5. **Semantic review (G-14)** — M-02/M-03, CW-09/10, S− arms — scoped findings
-6. **W7-03 FRZ-07** — Outcome A or B (verbatim)
-7. **CI** — C-CI-01 row or EXACT BLOCKER if G-01 open
-8. **Disposition** — `PASS (SCOPED)` **or** `EXACT BLOCKERS` (numbered)
-9. **Signatures** — named independent auditor only
+2. **Profile** — `AUTOMATION_FIRST_SCOPED` **or** `HUMAN_FULL`
+3. **Evidence refs** — TES, EVIDENCE_FINAL, `independent_replay_sha` = TES
+4. **Mode A** — command, exit status, evidence HEAD, profile observed in MANIFEST
+5. **Mode B** — `--evidence-ref` FINAL SHA; JUnit replay match (**290** nodes @ current TES)
+6. **Semantic review (G-14)** — M-09A cause identity / adversarial controls (scoped); **M-09H NOT_MEASURED** attestation
+7. **W7-03 FRZ-07** — Outcome A or B
+8. **CI** — C-CI-01 row @ TES `3c4a641b3…` or EXACT BLOCKER
+9. **Disposition** — `INDEPENDENTLY ACCEPTED — AUTOMATION-FIRST SCOPED` **or** `EXACT BLOCKERS`
+10. **Signatures** — named independent auditor only
 
 ---
 
@@ -132,40 +166,39 @@ Operator runbook (prep): `.tmp/session/evol-x-final-cert/w6-04-operator-runbook.
 | Finding ID | Severity | Norm / Gate | Evidence SHA | Disposition | Operator action |
 |------------|----------|-------------|--------------|-------------|-----------------|
 | F-001 | | | | OPEN / SCOPED PASS / N/A | |
-| … | | | | | |
 
-**Agent row forbidden:** any line stating «B6 PASS by agent» or FRZ promotion.
+**Agent row forbidden:** «B6 PASS by agent» or FRZ promotion.
 
 ---
 
-## G-xx blockers @ prep time (execution)
+## G-xx blockers @ reconciliation time
 
 | ID | Blocks B6 / closure |
 |----|---------------------|
-| G-01 | ~~W6-04 CI OPEN~~ **CLOSED** — run `41327408027` @ TES `2b165516…` |
+| G-01 | ~~W6-04 CI OPEN~~ **CLOSED** — run **`41337077334`** @ TES **`3c4a641b3…`** (290 nodes) |
 | G-02 | OD-EVOL-11 name missing |
-| G-03 | M-09H drill |
-| G-04 | EVIDENCE_FINAL empty |
-| G-05 | Mode A final not @ FINAL |
-| G-06 | Mode B not independent |
+| G-03 | **HUMAN_FULL only:** M-09H drill — **N/A for AUTOMATION_FIRST_SCOPED** (M-09H must stay NOT_MEASURED) |
+| G-04 | ~~EVIDENCE_FINAL empty~~ **CLOSED** @ `bbf3e33bc…` (scoped) |
+| G-05 | Mode A final @ FINAL with correct profile |
+| G-06 | Mode B independent @ TES + `--evidence-ref` FINAL |
 | G-07 | No B6 record |
 | G-08 | W7-03 not decided |
-| G-09–G-10 | OD-12 / FRZ rows |
-| G-13 | SHA chain incomplete |
+| G-09–G-10 | OD-EVOL-12 / OD-EVOLX-08 pending |
+| G-13 | SHA chain — active TES/FINAL/CI recorded |
 
 ---
 
 ## E4 sequence (auditor read-only until B6 DONE)
 
-1. B6 published  
-2. OD-EVOL-12  
-3. FRZ-EVOL-01..10 (FRZ-07 only if W7-03 Outcome A)  
-4. OD-EVOLX-08  
-5. Roadmap §5 + FORMAL_CLOSURE_SHA  
-6. ENT-AUDIT-X handoff non-template  
+1. B6 published (`INDEPENDENTLY ACCEPTED — AUTOMATION-FIRST SCOPED` or blockers)
+2. OD-EVOL-12
+3. FRZ-EVOL-01..10 (FRZ-07 only if W7-03 Outcome A)
+4. OD-EVOLX-08
+5. Roadmap §5 + FORMAL_CLOSURE_SHA
+6. ENT-AUDIT-X handoff
 
 **Agent:** E4 **BLOCKED** until B6.
 
 ---
 
-*Prepared by Cursor agent session EVOL-X Final Certification E3 PREP — not an independent audit.*
+*Prepared for independent audit — implementing agent does not sign B6.*
