@@ -1,0 +1,8 @@
+{
+  "schema_version": "deployment_safety_matrix.v1",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_DEPLOYMENT_SAFETY_MATRIX_W1.md",
+  "rows": [
+    {"dm_id": "DM-02", "refusal": "PERSISTED_STATE_INCOMPATIBLE"},
+    {"dm_id": "DM-04", "refusal": "DURABLE_STATE_FORWARD_ONLY"}
+  ]
+}

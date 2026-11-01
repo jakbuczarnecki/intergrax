@@ -26,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       profile:
-        description: "smoke (PR default), enterprise (smoke+governance), full (nightly parity), diagnostics_full, or ebh7_p3_l3"
+        description: "smoke (PR default), enterprise (smoke+governance), full (nightly parity), diagnostics_full, ebh7_p3_l3, or evol_x_p3_l3"
         type: choice
         options:
           - smoke
@@ -34,6 +34,7 @@ on:
           - full
           - diagnostics_full
           - ebh7_p3_l3
+          - evol_x_p3_l3
         default: smoke
       qualification_sha:
         description: "40-char Git commit SHA (required when profile is diagnostics_full)"
@@ -45,6 +46,10 @@ on:
         required: false
       ebh7_evidence_publication_sha:
         description: "40-char EVIDENCE_PUBLICATION_SHA for MANIFEST profile (ebh7_p3_l3)"
+        type: string
+        required: false
+      evol_test_execution_sha:
+        description: "40-char TEST_EXECUTION_SHA for evol_x_p3_l3"
         type: string
         required: false
 
@@ -956,3 +961,38 @@ jobs:
             echo "FAIL: skipped-test disposition (unregistered/stale skip or evidence not PASS)"
             exit 1
           fi
+
+  evol-x-p3-l3-qualification:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.profile == 'evol_x_p3_l3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TEST_EXECUTION_SHA: >-
+        ${{ github.event.inputs.evol_test_execution_sha != '' && github.event.inputs.evol_test_execution_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: development
+          fetch-depth: 0
+      - name: Checkout TEST_EXECUTION_SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout "${TEST_EXECUTION_SHA}"
+          test "$(git rev-parse HEAD)" = "${TEST_EXECUTION_SHA}"
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync CI deps
+        run: uv sync --extra dev-ci --frozen
+      - name: EVOL-X qualification suite
+        run: |
+          set -euo pipefail
+          mkdir -p build/qualification/evol-x-l3
+          uv run pytest tests/qualification/evol_x -q --junitxml=build/qualification/evol-x-l3/junit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evol-x-p3-l3-${{ env.TEST_EXECUTION_SHA }}
+          path: build/qualification/evol-x-l3/
+          retention-days: 90

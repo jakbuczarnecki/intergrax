@@ -1,0 +1,8 @@
+{
+  "schema_version": "workflow_evolution_matrix.v1",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_WORKFLOW_EVOLUTION_MATRIX_W1.md",
+  "rows": [
+    {"wm_id": "WM-05", "decision": "EXPLICITLY_UNSUPPORTED", "reason": "in-flight adopt without pin evidence"},
+    {"wm_id": "WM-07", "decision": "EXPLICITLY_UNSUPPORTED", "reason": "stale definition fingerprint"}
+  ]
+}

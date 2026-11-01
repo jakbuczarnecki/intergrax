@@ -1,0 +1,11 @@
+{
+  "schema_version": "frozen_core_registry.v1",
+  "source_authority": "docs/project/maintainers/qualification/INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md",
+  "surfaces": [
+    {
+      "surface_id": "intergrax/contracts/migrations/registry.py",
+      "change_class_default": "A",
+      "authorization_required": true
+    }
+  ]
+}

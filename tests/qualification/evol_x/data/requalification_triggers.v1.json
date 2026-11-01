@@ -1,0 +1,8 @@
+{
+  "schema_version": "requalification_triggers.v1",
+  "source_authority": "docs/project/maintainers/qualification/EVOL_X_MASTER_IMPLEMENTATION_AND_CERTIFICATION_PLAN.md",
+  "triggers": [
+    {"trigger_id": "T-GRAPH-DIGEST", "stale_if": "graph_digest_mismatch"},
+    {"trigger_id": "T-INVENTORY-DIGEST", "stale_if": "inventory_digest_mismatch"}
+  ]
+}
