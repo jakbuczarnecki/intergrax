@@ -10,7 +10,7 @@
   "exclusions": [
     "tests/unit/agents/test_reference_harness_strict.py::RC-7_BASELINE_DEFECT"
   ],
-  "manifest_content_digest": "2a9ef7dc7dcf9d0a376b5ba57999e1470458edb15101f7fbb2638e64753bac94",
+  "manifest_content_digest": "83e29ee4a18f2ebd0848ef1842a9fb7725c8ab3108703b909e4ad944cf577acc",
   "pytest_node_ids": [
     "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]",
     "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S2]",
@@ -170,9 +170,9 @@
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_cross_app_consumer_is_flagged_as_escape",
     "tests/qualification/evol_x/gates/test_evol_x_isolation.py::test_declared_shared_surface_is_not_an_escape",
     "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_committed_registry_expected_matches_oracle",
-    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C1-intergrax/contracts/execution_identity.py]",
-    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C2-testing_support/change_safety/graph/impact.py]",
-    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C3-testing_support/change_safety/contracts/enums.py]",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C1]",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C2]",
+    "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_seed_cause_identity_matrix[C3]",
     "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_wrong_node_kind_changes_digest",
     "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_unknown_seed_path_fails_closed",
     "tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py::test_impact_without_direct_module_fails",
