@@ -91,6 +91,15 @@ def _files(tes: str) -> dict[str, Any]:
                     "passed": None,
                     "population_digest": None,
                 },
+                {
+                    "metric_id": "EVOL-M-09A",
+                    "numerator": 0,
+                    "denominator": 0,
+                    "status": "NOT_MEASURED",
+                    "threshold": 1.0,
+                    "passed": None,
+                    "population_digest": None,
+                },
             ],
         },
         p03.FRZ_NAME: {
@@ -166,6 +175,75 @@ def _m09_drill_doc(tes: str, registry: M09DrillCaseRegistry, registry_digest: st
     }
 
 
+def _apply_final_m09a(files: dict[str, Any], repo: Path, tes: str) -> None:
+    registry_raw = _m09_registry_doc(tes)
+    registry = M09DrillCaseRegistry.model_validate(registry_raw)
+    registry_text = json.dumps(registry_raw, indent=2)
+    registry_digest = p03.sha256_hex(registry_text.encode("utf-8"))
+    files[p03.M09_DRILL_CASE_REGISTRY_NAME] = registry_raw
+    population = p03.m09h_population_digest(registry)
+    case_rows = []
+    for entry in registry.cases:
+        rel = f"{p03.M09_AUTOMATED_DIAGNOSTIC_DIR}/{entry.case_id}.json"
+        diag = {"case_id": entry.case_id, "seed": entry.changed_path}
+        digest = p03.sha256_hex(json.dumps(diag, indent=2).encode("utf-8"))
+        files[rel] = diag
+        case_rows.append(
+            {
+                "case_id": entry.case_id,
+                "seed_changed_path": entry.changed_path,
+                "input_digest": entry.input_digest,
+                "tool_seconds": 1.0,
+                "tool_sla_met": True,
+                "direct_node_id": "module:x",
+                "direct_node_kind": "DIRECT",
+                "derived_cause_identities": list(entry.expected_cause_identities),
+                "cause_identity_digest": entry.expected_cause_identities[0],
+                "registry_agreement": True,
+                "diagnostic_output_digest": digest,
+                "diagnostic_output_relpath": rel,
+            }
+        )
+    qual = {
+        "schema_version": p03.M09_AUTOMATED_QUALIFICATION_SCHEMA,
+        "measurement_mode": "AUTOMATED_DIAGNOSTIC",
+        "qualification_policy_id": p03.M09_AUTOMATION_POLICY_ID,
+        "operator_decision_id": p03.M09_AUTOMATION_POLICY_ID,
+        "source_commit_sha": tes,
+        "test_execution_sha": tes,
+        "registry_path": p03.M09_DRILL_CASE_REGISTRY_NAME,
+        "registry_digest": registry_digest,
+        "run_id": "a" * 32,
+        "execution_started_at_utc": "2026-11-01T10:00:00+00:00",
+        "execution_finished_at_utc": "2026-11-01T10:00:05+00:00",
+        "cases": case_rows,
+        "summary": {
+            "cases_passed": True,
+            "median_tool_seconds": 1.0,
+            "automated_adversarial_controls_passed": True,
+        },
+        "adversarial_controls": [{"control_id": "AC-AUTO-01", "passed": True, "detail": "ok", "automated_only": True}],
+        "certification_disposition": "AUTOMATED_SCOPED_PASS",
+        "human_m09h_measured": False,
+    }
+    files[p03.M09_AUTOMATED_QUALIFICATION_NAME] = qual
+    for reading in files[p03.METRICS_NAME]["readings"]:
+        if reading["metric_id"] == p03.METRIC_M09A:
+            reading.update(
+                {
+                    "numerator": 3,
+                    "denominator": 3,
+                    "status": "MEASURED",
+                    "passed": True,
+                    "population_digest": population,
+                }
+            )
+        if reading["metric_id"] == p03.METRIC_M09H:
+            reading.update(
+                {"numerator": 0, "denominator": 0, "status": "NOT_MEASURED", "passed": None, "population_digest": None}
+            )
+
+
 def _apply_final_m09(files: dict[str, Any], _repo: Path, tes: str) -> None:
     registry_raw = _m09_registry_doc(tes)
     registry = M09DrillCaseRegistry.model_validate(registry_raw)
@@ -197,11 +275,14 @@ def _write_bundle(
     manifest_extra: dict[str, Any] | None,
     tamper: bool,
     final: bool,
+    final_automation: bool = False,
 ) -> None:
     bundle = repo / p03.BUNDLE_REL
     files = _files(tes)
     if final:
         _apply_final_m09(files, repo, tes)
+    if final_automation:
+        _apply_final_m09a(files, repo, tes)
     if mutate:
         mutate(files)
     for rel, payload in files.items():
@@ -224,6 +305,7 @@ def _write_bundle(
         uv_extra="dev-ci",
         executed_command="uv run pytest tests/qualification/evol_x -q",
         artifact_paths=artifact_paths,
+        certification_profile=p03.CERT_PROFILE_AUTOMATION_FIRST_SCOPED if final_automation else None,
     ).model_dump()
     manifest.update(manifest_extra or {})
     (bundle / p03.MANIFEST_NAME).write_text(json.dumps(manifest, indent=2), encoding="utf-8", newline="\n")
@@ -237,6 +319,7 @@ def _make_repo(
     tamper: bool = False,
     tes_override: str | None = None,
     final: bool = False,
+    final_automation: bool = False,
 ) -> Repo:
     _git(tmp_path, "init", "-q")
     (tmp_path / "README.md").write_text("plan", encoding="utf-8")
@@ -244,7 +327,7 @@ def _make_repo(
     _git(tmp_path, "commit", "-q", "-m", "plan")
     plan = _git(tmp_path, "rev-parse", "HEAD")
     (tmp_path / "code.py").write_text("x = 1\n", encoding="utf-8")
-    if final:
+    if final or final_automation:
         _seed_m09_paths(tmp_path)
     _git(tmp_path, "add", "-A")
     _git(tmp_path, "commit", "-q", "-m", "implementation")
@@ -260,6 +343,7 @@ def _make_repo(
         manifest_extra=manifest_extra,
         tamper=tamper,
         final=final,
+        final_automation=final_automation,
     )
     _git(tmp_path, "add", "-A")
     _git(tmp_path, "commit", "-q", "-m", "evidence")
@@ -358,6 +442,11 @@ def test_mode_a_final_requires_m09h_and_human_drill(tmp_path: Path) -> None:
 
 def test_mode_a_final_valid_m09_bundle_passes(tmp_path: Path) -> None:
     repo = _make_repo(tmp_path, final=True)
+    assert p03.verify_mode_a(repo.path) == []
+
+
+def test_mode_a_automation_first_scoped_final_passes(tmp_path: Path) -> None:
+    repo = _make_repo(tmp_path, final_automation=True)
     assert p03.verify_mode_a(repo.path) == []
 
 

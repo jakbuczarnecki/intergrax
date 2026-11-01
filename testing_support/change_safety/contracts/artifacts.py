@@ -82,6 +82,7 @@ class P03Manifest(_Strict):
     dirty_tree: Literal[False] = False
     parent_test_execution_tree: str | None = None
     artifact_paths: tuple[str, ...] = ()
+    certification_profile: Literal["HUMAN_FULL", "AUTOMATION_FIRST_SCOPED"] | None = None
 
     @model_validator(mode="after")
     def _check_shas(self) -> P03Manifest:
@@ -173,4 +174,74 @@ class M09HumanDrillArtifact(_Strict):
         for name in ("source_commit_sha", "test_execution_sha"):
             if len(getattr(self, name)) != _SHA_LEN:
                 raise ValueError(f"{name} must be a 40-char git sha")
+        return self
+
+
+class M09AutomatedQualificationCase(_Strict):
+    case_id: Literal["C1", "C2", "C3"]
+    seed_changed_path: str
+    input_digest: str = Field(min_length=64, max_length=64)
+    tool_seconds: float
+    tool_sla_met: bool
+    direct_node_id: str
+    direct_node_kind: str
+    derived_cause_identities: tuple[str, ...]
+    cause_identity_digest: str = Field(min_length=64, max_length=64)
+    registry_agreement: bool
+    diagnostic_output_digest: str = Field(min_length=64, max_length=64)
+    diagnostic_output_relpath: str
+
+    @field_validator("tool_seconds")
+    @classmethod
+    def _check_tool_seconds(cls, value: float) -> float:
+        return _finite_nonnegative("tool_seconds", value)
+
+
+class M09AutomatedAdversarialControl(_Strict):
+    control_id: str
+    passed: bool | None
+    detail: str
+    automated_only: bool
+
+
+class M09AutomatedQualificationSummary(_Strict):
+    cases_passed: bool
+    median_tool_seconds: float
+    automated_adversarial_controls_passed: bool
+
+
+class M09AutomatedDiagnosticQualification(_Strict):
+    schema_version: Literal["evol_m09_automated_diagnostic_qualification.v1"]
+    measurement_mode: Literal["AUTOMATED_DIAGNOSTIC"]
+    qualification_policy_id: Literal["OD-EVOL-13"]
+    operator_decision_id: Literal["OD-EVOL-13"]
+    source_commit_sha: str
+    test_execution_sha: str
+    registry_path: str
+    registry_digest: str = Field(min_length=64, max_length=64)
+    run_id: str = Field(min_length=8)
+    execution_started_at_utc: str
+    execution_finished_at_utc: str
+    cases: tuple[M09AutomatedQualificationCase, ...]
+    summary: M09AutomatedQualificationSummary
+    adversarial_controls: tuple[M09AutomatedAdversarialControl, ...]
+    certification_disposition: Literal["AUTOMATED_SCOPED_PASS", "AUTOMATED_SCOPED_FAIL"]
+    human_m09h_measured: Literal[False] = False
+    artifact_digest: str | None = Field(default=None, min_length=64, max_length=64)
+
+    @model_validator(mode="after")
+    def _check_cases(self) -> M09AutomatedDiagnosticQualification:
+        if len(self.cases) != 3:
+            raise ValueError("automated M-09A qualification requires exactly 3 cases")
+        if [c.case_id for c in self.cases] != ["C1", "C2", "C3"]:
+            raise ValueError("automated M-09A cases must be ordered C1, C2, C3")
+        for name in ("source_commit_sha", "test_execution_sha"):
+            if len(getattr(self, name)) != _SHA_LEN:
+                raise ValueError(f"{name} must be a 40-char git sha")
+        if self.certification_disposition != "AUTOMATED_SCOPED_PASS":
+            raise ValueError("bundled automated qualification must disposition AUTOMATED_SCOPED_PASS")
+        if not self.summary.cases_passed:
+            raise ValueError("summary.cases_passed must be true")
+        if not self.summary.automated_adversarial_controls_passed:
+            raise ValueError("summary.automated_adversarial_controls_passed must be true")
         return self

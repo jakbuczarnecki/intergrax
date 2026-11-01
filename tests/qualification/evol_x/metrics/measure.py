@@ -339,6 +339,19 @@ def measure_m09(inventory: ClosedWorldInventory, head: str) -> tuple[MetricReadi
     return m09t, m09h
 
 
+def measure_m09a_not_measured() -> MetricReading:
+    return MetricReading(
+        "EVOL-M-09A",
+        0,
+        0,
+        MetricStatus.NOT_MEASURED,
+        METRIC_SPECS["EVOL-M-09A"].threshold,
+        None,
+        None,
+        "automation-first scoped diagnostic (OD-EVOL-13); NOT_MEASURED until FINAL scoped bundle",
+    )
+
+
 def measure_m11(inventory: ClosedWorldInventory, head: str) -> MetricReading:
     actual = compute_actual_digests(inventory)
     baseline = build_baseline_manifest(accepted_at_sha=head, digests=actual)
@@ -362,6 +375,7 @@ def collect_all(inventory: ClosedWorldInventory, head: str) -> tuple[MetricReadi
     m02, m02c = measure_m02(inventory)
     m04, m05 = measure_m04_m05(inventory)
     m09t, m09h = measure_m09(inventory, head)
+    m09a = measure_m09a_not_measured()
     readings = (
         measure_m01(inventory, head),
         m02,
@@ -374,6 +388,7 @@ def collect_all(inventory: ClosedWorldInventory, head: str) -> tuple[MetricReadi
         measure_m08(),
         m09t,
         m09h,
+        m09a,
         measure_m10(),
         measure_m11(inventory, head),
     )

@@ -193,6 +193,7 @@
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_failing_metric_or_experiment_or_frz_is_rejected",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_b_certification_without_replay_is_rejected",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_requires_m09h_and_human_drill",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_automation_first_scoped_final_passes",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_valid_m09_bundle_passes",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-01]",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_m09_human_drill_negative_cases[N-M09-02]",
@@ -298,6 +299,7 @@
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-11]",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_populations_are_not_stubs",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_make_reading_negative_cases",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09a_is_not_measured_until_scoped_final",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09h_is_not_measured_until_human_drill",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09t_uses_three_distinct_seed_paths"
   ]

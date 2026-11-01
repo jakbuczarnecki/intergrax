@@ -58,6 +58,12 @@ METRIC_SPECS: dict[str, MetricSpec] = {
             1.0,
             "operator attribution drill (human); NOT_MEASURED until W7 supplement",
         ),
+        MetricSpec(
+            "EVOL-M-09A",
+            ThresholdKind.RATIO_MIN,
+            1.0,
+            "automation-first scoped C1-C3 diagnostic qualification (OD-EVOL-13); NOT_MEASURED until FINAL scoped",
+        ),
         MetricSpec("EVOL-M-10", ThresholdKind.COUNT_MAX, 0, "unauthorized platform-core edits undetected (S8)"),
         MetricSpec("EVOL-M-11", ThresholdKind.RATIO_MIN, 1.0, "requalification triggers executable (T1..T9)"),
     )

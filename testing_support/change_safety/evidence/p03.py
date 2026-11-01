@@ -24,6 +24,7 @@ from testing_support.change_safety.contracts.artifacts import (
     EvolMetricsArtifact,
     ExperimentVerdict,
     FrzEvidence,
+    M09AutomatedDiagnosticQualification,
     M09DrillCaseRegistry,
     M09HumanDrillArtifact,
     P03Manifest,
@@ -48,6 +49,12 @@ M09_HUMAN_DRILL_SCHEMA_VERSION = "evol_m09_human_drill.v2"
 M09_MEASUREMENT_POLICY_ID = "OD-EVOL-08-M1"
 M09_DRILL_CASE_REGISTRY_NAME = "evol_m09_drill_case_registry.v1.json"
 M09_HUMAN_DRILL_WORKSHEET_NAME = "evol_m09_human_drill_worksheet.v1.json"
+M09_AUTOMATED_QUALIFICATION_NAME = "evol_m09_automated_diagnostic_qualification.v1.json"
+M09_AUTOMATED_QUALIFICATION_SCHEMA = "evol_m09_automated_diagnostic_qualification.v1"
+M09_AUTOMATED_DIAGNOSTIC_DIR = "m09_automated_diagnostic"
+M09_AUTOMATION_POLICY_ID = "OD-EVOL-13"
+CERT_PROFILE_HUMAN_FULL = "HUMAN_FULL"
+CERT_PROFILE_AUTOMATION_FIRST_SCOPED = "AUTOMATION_FIRST_SCOPED"
 # OD-EVOL-08-M1: tool runtime and human attribution clock are separate measurements with separate SLAs.
 M09_TOOL_PER_CASE_SLA_SECONDS = 120.0
 M09_ATTRIBUTION_MEDIAN_SLA_SECONDS = 900.0
@@ -55,6 +62,7 @@ M09_EXPECTED_CASE_IDS = ("C1", "C2", "C3")
 M03_CAUSAL_AUDIT_NAME = "m03_causal_audit.v1.json"
 METRIC_M09T = "EVOL-M-09T"
 METRIC_M09H = "EVOL-M-09H"
+METRIC_M09A = "EVOL-M-09A"
 METRIC_M09_COMPOSITE = "EVOL-M-09"
 CW09_DISPOSITION_ENV = "EVOL_CW09_DISPOSITION_ID"
 FORBIDDEN_MANIFEST_FIELDS = (
@@ -159,6 +167,12 @@ def m09h_population_digest(registry: M09DrillCaseRegistry) -> str:
         payload.append(entry.input_digest)
         payload.extend(entry.expected_cause_identities)
     return stable_digest_hex(payload)
+
+
+def _resolve_certification_profile(manifest: P03Manifest, *, technical: bool) -> str | None:
+    if technical:
+        return None
+    return manifest.certification_profile or CERT_PROFILE_HUMAN_FULL
 
 
 def _load_m09_registry(repo: Path, head: str, bundle_rel: str, problems: list[str]) -> M09DrillCaseRegistry | None:
@@ -319,22 +333,134 @@ def _check_m09_human_drill(
         problems.append(f"{METRIC_M09H} population_digest inconsistent with M09 drill registry")
 
 
-def _check_metrics_readings(metrics: EvolMetricsArtifact, problems: list[str], *, technical: bool) -> None:
+def _check_m09_automated_qualification(
+    repo: Path,
+    head: str,
+    bundle_rel: str,
+    tes: str,
+    qual_raw: Any,
+    metrics: EvolMetricsArtifact,
+    manifest: P03Manifest,
+    problems: list[str],
+) -> None:
+    registry = _load_m09_registry(repo, head, bundle_rel, problems)
+    if registry is None:
+        return
+    if manifest.certification_profile != CERT_PROFILE_AUTOMATION_FIRST_SCOPED:
+        problems.append(
+            f"automated M-09A bundle requires MANIFEST certification_profile={CERT_PROFILE_AUTOMATION_FIRST_SCOPED!r}"
+        )
+    if M09_HUMAN_DRILL_NAME in manifest.artifact_paths:
+        problems.append(f"automation-first scoped bundle must not include {M09_HUMAN_DRILL_NAME}")
+    if M09_AUTOMATED_QUALIFICATION_NAME not in manifest.artifact_paths:
+        problems.append(f"automation-first scoped bundle requires {M09_AUTOMATED_QUALIFICATION_NAME}")
+    try:
+        qual = M09AutomatedDiagnosticQualification.model_validate(qual_raw)
+    except ValidationError as exc:
+        problems.append(f"{M09_AUTOMATED_QUALIFICATION_NAME} invalid: {exc.errors()[0]['msg']}")
+        return
+    if qual.qualification_policy_id != M09_AUTOMATION_POLICY_ID:
+        problems.append(f"automated qualification policy must be {M09_AUTOMATION_POLICY_ID}")
+    _check_binding(M09_AUTOMATED_QUALIFICATION_NAME, qual.source_commit_sha, tes, problems)
+    if qual.test_execution_sha != tes:
+        problems.append(f"automated qualification test_execution_sha {qual.test_execution_sha[:9]} != {tes[:9]}")
+    registry_bytes = show_bytes(repo, head, f"{bundle_rel}/{M09_DRILL_CASE_REGISTRY_NAME}")
+    if registry_bytes is not None and qual.registry_digest != sha256_hex(registry_bytes):
+        problems.append("automated qualification registry_digest mismatch")
+    if registry.bound_test_execution_sha != tes:
+        problems.append("M09 registry bound_test_execution_sha != test_execution_sha")
+    registry_by_id = {entry.case_id: entry for entry in registry.cases}
+    try:
+        inventory = build_closed_world_inventory(source_commit_sha=tes)
+    except (OSError, ValueError) as exc:
+        problems.append(f"M09 automated oracle: cannot build inventory @ TES: {exc}")
+        inventory = None
+    for entry in registry.cases:
+        raw_path = show_bytes(repo, tes, entry.changed_path)
+        if raw_path is None:
+            problems.append(f"M09 seed path missing @ TES: {entry.changed_path}")
+        elif sha256_hex(raw_path) != entry.input_digest:
+            problems.append(f"M09 registry input_digest mismatch for {entry.case_id}")
+        if inventory is not None:
+            try:
+                derived = expected_cause_identities_for_seed(inventory, entry.changed_path)
+            except ValueError as exc:
+                problems.append(f"M09 oracle derivation failed for {entry.case_id}: {exc}")
+            else:
+                if tuple(entry.expected_cause_identities) != derived:
+                    problems.append(f"M09 registry oracle mismatch for {entry.case_id}")
+    for case in qual.cases:
+        spec = registry_by_id.get(case.case_id)
+        if spec is None:
+            problems.append(f"automated qualification unknown case_id: {case.case_id}")
+            continue
+        if not case.registry_agreement:
+            problems.append(f"automated qualification registry_agreement false for {case.case_id}")
+        if case.tool_seconds > M09_TOOL_PER_CASE_SLA_SECONDS or not case.tool_sla_met:
+            problems.append(f"automated qualification tool SLA failed for {case.case_id}")
+        if tuple(case.derived_cause_identities) != tuple(spec.expected_cause_identities):
+            problems.append(f"automated qualification cause mismatch for {case.case_id}")
+        diag_bytes = show_bytes(repo, head, f"{bundle_rel}/{case.diagnostic_output_relpath}")
+        if diag_bytes is None:
+            problems.append(f"automated diagnostic output missing: {case.diagnostic_output_relpath}")
+        elif sha256_hex(diag_bytes) != case.diagnostic_output_digest:
+            problems.append(f"automated diagnostic digest mismatch for {case.case_id}")
+    for ctrl in qual.adversarial_controls:
+        if ctrl.automated_only and ctrl.passed is not True:
+            problems.append(f"automated adversarial control not passed: {ctrl.control_id}")
+    if qual.human_m09h_measured is not False:
+        problems.append("automated qualification human_m09h_measured must be false")
+    m09h = next((r for r in metrics.readings if r.metric_id == METRIC_M09H), None)
+    if m09h is None or m09h.status != "NOT_MEASURED" or m09h.passed is not None:
+        problems.append(f"automation-first scoped bundle requires {METRIC_M09H} NOT_MEASURED")
+    m09a = next((r for r in metrics.readings if r.metric_id == METRIC_M09A), None)
+    if m09a is None:
+        problems.append(f"automation-first scoped bundle requires {METRIC_M09A} reading")
+        return
+    expected_population = m09h_population_digest(registry)
+    if m09a.numerator != 3 or m09a.denominator != 3 or m09a.status != "MEASURED" or m09a.passed is not True:
+        problems.append(f"automation-first scoped bundle requires {METRIC_M09A} 3/3 MEASURED PASS")
+    if m09a.population_digest != expected_population:
+        problems.append(f"{METRIC_M09A} population_digest inconsistent with M09 drill registry")
+
+
+def _check_metrics_readings(
+    metrics: EvolMetricsArtifact, problems: list[str], *, technical: bool, profile: str | None
+) -> None:
     by_id = {r.metric_id: r for r in metrics.readings}
     composite = by_id.get(METRIC_M09_COMPOSITE)
     if composite is not None and composite.passed is True:
         problems.append(f"composite {METRIC_M09_COMPOSITE} must not pass without independent {METRIC_M09H} PASS")
     m09h = by_id.get(METRIC_M09H)
+    m09a = by_id.get(METRIC_M09A)
     if technical:
         if m09h is not None and m09h.status == "MEASURED" and m09h.passed is True:
             problems.append(f"technical evidence must not claim {METRIC_M09H} PASS (human drill pending)")
+        if m09a is not None and m09a.status == "MEASURED" and m09a.passed is True:
+            problems.append(f"technical evidence must not claim {METRIC_M09A} PASS (scoped FINAL pending)")
+    elif profile == CERT_PROFILE_AUTOMATION_FIRST_SCOPED:
+        if m09h is None or m09h.status != "NOT_MEASURED" or m09h.passed is not None:
+            problems.append(f"automation-first scoped certification requires {METRIC_M09H} NOT_MEASURED")
+        if m09a is None or m09a.status != "MEASURED" or m09a.passed is not True:
+            problems.append(f"automation-first scoped certification requires {METRIC_M09A} MEASURED PASS")
     elif m09h is None or m09h.status != "MEASURED" or m09h.passed is not True:
         problems.append(f"final certification requires {METRIC_M09H} MEASURED and PASS")
     for r in metrics.readings:
-        if r.metric_id == METRIC_M09H and technical and r.status == "NOT_MEASURED":
-            continue
         if r.metric_id == METRIC_M09_COMPOSITE:
             continue
+        if r.metric_id == METRIC_M09H:
+            if technical and r.status == "NOT_MEASURED":
+                continue
+            if profile == CERT_PROFILE_AUTOMATION_FIRST_SCOPED:
+                continue
+            continue
+        if r.metric_id == METRIC_M09A:
+            if technical and r.status == "NOT_MEASURED":
+                continue
+            if profile == CERT_PROFILE_HUMAN_FULL and r.status == "NOT_MEASURED":
+                continue
+            if profile == CERT_PROFILE_AUTOMATION_FIRST_SCOPED:
+                continue
         if r.status != "MEASURED" or r.passed is not True:
             problems.append(f"metric not passing: {r.metric_id}")
 
@@ -343,6 +469,7 @@ def _check_artifact_payloads(
     repo: Path, head: str, bundle_rel: str, manifest: P03Manifest, problems: list[str], *, technical: bool
 ) -> None:
     tes = manifest.test_execution_sha
+    profile = _resolve_certification_profile(manifest, technical=technical)
 
     def load(name: str) -> Any | None:
         return _load_json(repo, head, f"{bundle_rel}/{name}", problems)
@@ -366,8 +493,8 @@ def _check_artifact_payloads(
     if metrics_raw is not None:
         metrics = EvolMetricsArtifact.model_validate(metrics_raw)
         _check_binding(METRICS_NAME, metrics.source_commit_sha, tes, problems)
-        _check_metrics_readings(metrics, problems, technical=technical)
-    if not technical:
+        _check_metrics_readings(metrics, problems, technical=technical, profile=profile)
+    if not technical and profile == CERT_PROFILE_HUMAN_FULL:
         drill_rel = f"{bundle_rel}/{M09_HUMAN_DRILL_NAME}"
         if M09_HUMAN_DRILL_NAME not in manifest.artifact_paths:
             problems.append(f"final certification requires {M09_HUMAN_DRILL_NAME} in MANIFEST artifact_paths")
@@ -379,6 +506,23 @@ def _check_artifact_payloads(
             if drill_payload is not None:
                 _check_m09_human_drill(
                     repo, head, bundle_rel, tes, drill_payload, metrics_for_drill, manifest, problems
+                )
+    if not technical and profile == CERT_PROFILE_AUTOMATION_FIRST_SCOPED:
+        qual_rel = f"{bundle_rel}/{M09_AUTOMATED_QUALIFICATION_NAME}"
+        if show_bytes(repo, head, qual_rel) is None:
+            problems.append(f"automation-first scoped certification missing {M09_AUTOMATED_QUALIFICATION_NAME}")
+        elif metrics_raw is not None:
+            qual_payload = _load_json(repo, head, qual_rel, problems)
+            if qual_payload is not None:
+                _check_m09_automated_qualification(
+                    repo,
+                    head,
+                    bundle_rel,
+                    tes,
+                    qual_payload,
+                    EvolMetricsArtifact.model_validate(metrics_raw),
+                    manifest,
+                    problems,
                 )
     if frz_raw is not None:
         rows = [FrzEvidence.model_validate(r) for r in frz_raw.get("rows", [])]

@@ -43,7 +43,7 @@ def test_every_base_metric_is_covered_by_a_reading(readings) -> None:  # noqa: A
     assert set(METRIC_SPECS) <= set(readings)
 
 
-@pytest.mark.parametrize("metric_id", sorted(mid for mid in METRIC_SPECS if mid != "EVOL-M-09H"))
+@pytest.mark.parametrize("metric_id", sorted(mid for mid in METRIC_SPECS if mid not in ("EVOL-M-09H", "EVOL-M-09A")))
 def test_metric_is_measured_on_a_real_population_and_meets_threshold(metric_id: str, readings) -> None:  # noqa: ANN001
     reading = readings[metric_id]
     assert reading.status is MetricStatus.MEASURED, f"{metric_id} NOT_MEASURED"
@@ -71,6 +71,12 @@ def test_m09h_is_not_measured_until_human_drill(readings) -> None:  # noqa: ANN0
     m09h = readings["EVOL-M-09H"]
     assert m09h.status is MetricStatus.NOT_MEASURED
     assert m09h.passed is None
+
+
+def test_m09a_is_not_measured_until_scoped_final(readings) -> None:  # noqa: ANN001
+    m09a = readings["EVOL-M-09A"]
+    assert m09a.status is MetricStatus.NOT_MEASURED
+    assert m09a.passed is None
 
 
 def test_m09t_uses_three_distinct_seed_paths(readings) -> None:  # noqa: ANN001
