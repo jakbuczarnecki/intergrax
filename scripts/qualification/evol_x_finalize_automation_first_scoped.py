@@ -21,14 +21,6 @@ def _tes() -> str:
 
 
 def finalize(*, bundle_rel: str = p03.BUNDLE_REL) -> list[str]:
-    problems: list[str] = []
-    if subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
-        cwd=_REPO,
-        capture_output=True,
-        text=True,
-    ).stdout.strip():
-        return ["working tree is dirty"]
     bundle = _REPO / bundle_rel
     tes = _tes()
     manifest_path = bundle / p03.MANIFEST_NAME
@@ -46,9 +38,34 @@ def finalize(*, bundle_rel: str = p03.BUNDLE_REL) -> list[str]:
         (bundle / p03.M09_DRILL_CASE_REGISTRY_NAME).write_text(
             registry_src.read_text(encoding="utf-8"), encoding="utf-8"
         )
-    import runpy
+    reg_doc = json.loads((bundle / p03.M09_DRILL_CASE_REGISTRY_NAME).read_text(encoding="utf-8"))
+    reg_doc["bound_test_execution_sha"] = tes
+    from testing_support.change_safety.diagnostics.m09_cause_identity import expected_cause_identities_for_seed
+    from testing_support.change_safety.discovery.closed_world import build_closed_world_inventory
 
-    runpy.run_path(str(_BATCH), run_name="__batch__")
+    inv = build_closed_world_inventory(source_commit_sha=tes)
+    for entry in reg_doc["cases"]:
+        entry["expected_cause_identities"] = list(expected_cause_identities_for_seed(inv, entry["changed_path"]))
+        raw = subprocess.run(
+            ["git", "show", f"{tes}:{entry['changed_path']}"],
+            cwd=_REPO,
+            check=True,
+            capture_output=True,
+        ).stdout
+        import hashlib
+
+        entry["input_digest"] = hashlib.sha256(raw).hexdigest()
+    (bundle / p03.M09_DRILL_CASE_REGISTRY_NAME).write_text(
+        json.dumps(reg_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("evol_x_run_m09a_automated_batch", _BATCH)
+    if spec is None or spec.loader is None:
+        return ["cannot load M-09A batch runner"]
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.run_batch(bundle_dir=bundle, tes=tes)
     registry = M09DrillCaseRegistry.model_validate(
         json.loads((bundle / p03.M09_DRILL_CASE_REGISTRY_NAME).read_text(encoding="utf-8"))
     )

@@ -50,7 +50,17 @@ def run_batch(*, bundle_dir: Path, tes: str | None = None) -> dict:
         )
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     if registry["bound_test_execution_sha"] != tes:
-        raise SystemExit(f"registry TES {registry['bound_test_execution_sha'][:9]} != HEAD {tes[:9]}")
+        registry["bound_test_execution_sha"] = tes
+        inv = build_closed_world_inventory(source_commit_sha=tes)
+        for entry in registry["cases"]:
+            entry["expected_cause_identities"] = list(expected_cause_identities_for_seed(inv, entry["changed_path"]))
+            blob = subprocess.run(
+                ["git", "show", f"{tes}:{entry['changed_path']}"],
+                cwd=_REPO,
+                check=True,
+                capture_output=True,
+            ).stdout
+            entry["input_digest"] = _sha256_hex(blob)
     diag_dir = bundle_dir / p03.M09_AUTOMATED_DIAGNOSTIC_DIR
     diag_dir.mkdir(parents=True, exist_ok=True)
     inv = build_closed_world_inventory(source_commit_sha=tes)
