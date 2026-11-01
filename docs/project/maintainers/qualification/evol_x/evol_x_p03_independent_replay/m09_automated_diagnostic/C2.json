@@ -282,5 +282,5 @@
   },
   "seed_changed_path": "testing_support/change_safety/graph/impact.py",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
-  "tool_seconds": 0.524875
+  "tool_seconds": 0.513833
 }

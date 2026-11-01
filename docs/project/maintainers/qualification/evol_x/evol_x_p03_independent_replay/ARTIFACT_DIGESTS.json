@@ -1,11 +1,10 @@
 {
-  "schema_version": "evol_artifact_digests.v1",
   "digests": {
     "evol_frz_evidence.v1.json": "73488ecc49e53a98293964a8293b70d5631e7729f9279a779a8c823327a85e84",
     "evol_junit_outcomes.v1.json": "0cedc45b474a35451ab43c155e819027c45c9e92cf4b2f4352dd4afc63d8539f",
-    "evol_m09_automated_diagnostic_qualification.v1.json": "162d7874c3566e149eed0db26fce77d9c34bd5e67bcfa058f5f70a1e48e87316",
-    "evol_m09_drill_case_registry.v1.json": "468696898db636a857bc315fe7bb41fb2519e636a49e59241563a7808a84b8ae",
-    "evol_metrics.v1.json": "deb9d2354fddc729d93fce2dd53c1b5f33021485f805b4f22792a4a025c54abf",
+    "evol_m09_automated_diagnostic_qualification.v1.json": "e83ca536f0b9f8c29620d002c092f918b8dc61c57852fbfc3a5936e632e6ef22",
+    "evol_m09_drill_case_registry.v1.json": "6ed12931798dcb402b2d2db307b7ed901f060a4f58a3e1554feaf058399ce385",
+    "evol_metrics.v1.json": "12cc1e3216ee078680c928e759b88e8c57ac307aa8acd63d0e9a385a88d93daf",
     "evol_test_execution_manifest.v1.json": "d83d17dd9ad2515d07db980a404533f9e09b17d0c183bbc29ab87fe6411bede2",
     "experiments/S1_negative.json": "5a2dfa7771ae3f9e211ee670057139edaf7041adb26db9af87415f1ed983b5cf",
     "experiments/S1_positive.json": "aafc1c5bb35dee823b135562221d624caa05694ba7fa2f1d1ec63cf701fbd736",
@@ -25,8 +24,9 @@
     "experiments/S8_positive.json": "7c448f710840b98db7a6650a9fe7997959c824235097a99b0631de190929a0a5",
     "inventory_binding.v1.json": "ecf20224c6c48d1c8c17f72d5e2617f9ec0e7047b66e5dab920e8c41c644fb69",
     "m03_causal_audit.v1.json": "ff7ee19a23e04f5272eb01e59c845cf90f5ada11d6ca9c1a38aa4ea12b48fb6f",
-    "m09_automated_diagnostic/C1.json": "0134b4bfe911b3b2f8c242e2e45fcca52e0d6495668b5cfe1d4ce1ca6fd66803",
-    "m09_automated_diagnostic/C2.json": "c5e792156e8008098a559c5655873fac7518e3b7efe3024137c9fe2b2a8f54be",
-    "m09_automated_diagnostic/C3.json": "32f6dc38d3c3912e171e598b4a64de517a04c947b8b8c48dbd6afd3d16e0f7e5"
-  }
+    "m09_automated_diagnostic/C1.json": "0d58ae0f85af7d8272a9bb82b4b662e5421e8fd60aae5795a2722006183a528d",
+    "m09_automated_diagnostic/C2.json": "40fca9c6f4426f844ad0081c8fcb66f6905aff31d093d4ea6e950b60840035e9",
+    "m09_automated_diagnostic/C3.json": "7f0a29dd79d9626521b9839df03f65b5b07240622f7ddb11864cfd36e268d306"
+  },
+  "schema_version": "evol_artifact_digests.v1"
 }
