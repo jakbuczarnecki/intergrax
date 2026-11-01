@@ -15,3 +15,5 @@
 **Predecessor evidence (unchanged):** EBH-7 B6 / evidence per `EBH_7_SHA_LADDER.md`.
 
 **Operator entry:** `OD-EVOLX-01` — **PENDING** (not self-approved in W1).
+
+**Publication:** Local commits `9f9cc8b57`, `cac5dfd91` — **not on `origin/development`** until authorized `git push origin development`.

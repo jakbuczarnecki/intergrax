@@ -1,62 +1,35 @@
 # EVOL-X W1 — Independent architecture audit report
 
-**Date:** 2026-11-01  
-**HEAD verified:** `5a4e922ffacabef0ee24eb676e5c8705c20ef4a1` (`development` = `origin/development`)  
-**Production code changed:** **None**  
-**Self-certification:** **None**
+**Date:** 2026-11-01 (reconciliation pass)  
+**LOCAL_HEAD:** `cac5dfd91f8a98c1183e6864a93bc74ddc41b725`  
+**START_HEAD:** `5a4e922ffacabef0ee24eb676e5c8705c20ef4a1`  
+**origin/development:** `5a4e922…` (**ahead 2** locally)  
+**Production code changed:** **None**
 
-## Scope executed
+## W1 commit chain
 
-All W1 tasks W1-01..W1-08 per master plan v2; investigations A–E; deliverables 1–11 (commit SHA recorded after operator-authorized commit).
+| SHA | Subject |
+|-----|---------|
+| `9f9cc8b573d2629c140b3a58bf239e8a92d0b1d0` | docs(EVOL-X): publish W1 architecture freeze and qualification annexes |
+| `cac5dfd91f8a98c1183e6864a93bc74ddc41b725` | docs(EVOL-X): record W1_DOCUMENTATION_SHA on ladder |
 
-## Changed files (documentation only)
+**Changed files (18 + 4 reconciliation):** see [EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md](EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md).
 
-```text
-docs/project/maintainers/qualification/EVOL_X_SHA_LADDER.md
-docs/project/maintainers/qualification/EVOL_X_MASTER_IMPLEMENTATION_AND_CERTIFICATION_PLAN.md
-docs/project/maintainers/qualification/evol_x/*.md (W1 annex set)
-docs/project/capabilities/architecture/EVOL_X_CHANGE_SAFETY.md
-docs/project/capabilities/plan/EVOL_X_CHANGE_SAFETY.md
-```
+**Working tree:** clean for tracked files; untracked: `.cursor/plans/`, `exports/`, `platform_proofs/test_*` (not W1 evidence).
 
-Session evidence (gitignored): `.tmp/session/evol-x-w1/pytest-collect-*.log`, baseline counts.
+## Reconciliation summary
 
-## Key verified facts
+- **N-18:** 7 unique root causes, 32 modules — [EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md](EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md)  
+- **N-04:** N4-A document-only graph semver — [EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md](EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md)  
+- **AF:** [EVOL_X_AF_GATE_MATRIX_W1.md](EVOL_X_AF_GATE_MATRIX_W1.md) — AF-6/AF-8 pending  
+- **OD:** [EVOL_X_OPERATOR_DECISION_REGISTER_W1.md](EVOL_X_OPERATOR_DECISION_REGISTER_W1.md)
 
-- FRZ-EVOL-01..10 **OPEN** @ checklist L269–278.
-- QUAL-X P5 `reconcile_manifest_integrity()` → **0 errors** @ HEAD.
-- QUAL-X collect-only → **85** tests.
-- `ActivationService.rollback` — no durable-state check (N-03).
-- `ApplicationGraphSpec` — no version field; `GraphSpecMigration` references versions (N-04).
-- S3 unsafe in-flight adoption — **blocked by existing pin/checkpoint enforcement**; not by migration executor.
-- S7 unsafe rollback with forward-only durable state — **not blocked in production today**; requires assessor + optional OD-EVOL-05b port.
+## W2 entry verdict
 
-## AF gate summary
+**BLOCKED** until: (1) operator signs AF-6 decisions; (2) AF-8 independent architecture audit or waiver; (3) **authorized git push** for remote auditability.
 
-| Gate | Status |
-|------|--------|
-| AF-1,2,3,5,7 | Pass (ADR pending sign-off) |
-| AF-4 | Partial (N-18, N-02) |
-| AF-6 | Pending operator |
-| AF-8 | Pending independent audit |
+**Not authorized:** W2 implementation.
 
-## Outstanding decisions (not self-approved)
+## Implementer attestation
 
-OD-EVOL-01, 02, 05, 06, 09, 10, 12; OD-EVOLX-01; OD-EVOL-11 (auditor).
-
-## W2 authorization
-
-**Not granted** by this report — see `EVOL_X_W2_PREREQUISITES.md`.
-
-## Verdict line
-
-**EVOL-X W1 — PARTIAL / EXACT BLOCKERS**
-
-Exact blockers for full W1 “green”:
-
-1. **AF-8** — independent architecture audit not yet performed.  
-2. **AF-6** — operator decisions unsigned.  
-3. **N-18** — 32 collection errors on local gate marker collect (CONSERVATIVE_FULL definition blocked until OD-EVOL-10).  
-4. **Commit/push** — documentation batch requires operator commit authorization if not yet committed (see git status).
-
-Substantive architecture freeze **complete** for independent review; W2 must not start until prerequisites satisfied.
+This report is **not** independent acceptance (ECAP E9).

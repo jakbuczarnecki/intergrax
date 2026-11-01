@@ -1,14 +1,14 @@
-# EVOL-X W1 — AF architecture-freeze gate matrix
+# EVOL-X W1 — AF architecture-freeze gate matrix (reconciled)
 
-| Gate | Criterion | W1 evidence | Status |
-|------|-----------|-------------|--------|
-| **AF-1** | Normative parity 10/10/8/11 | `EVOL_X_NORMATIVE_REQUIREMENTS_MATRIX.md` | **PASS** |
-| **AF-2** | Ownership conflicts = 0 | Component table in capabilities architecture doc | **PASS** (pending operator ADR sign-off) |
-| **AF-3** | Each component one zone + 10-question screen | `EVOL_X_CHANGE_SAFETY.md` | **PASS** |
-| **AF-4** | N-01..18 closed or exact blocker | `EVOL_X_N_VERIFICATION_REGISTER_W1.md` | **PARTIAL** — N-18 collect blocker; N-02 partial |
-| **AF-5** | Contract spec no Any/dict | `EVOL_X_CONTRACT_SPEC.md` | **PASS** (draft) |
-| **AF-6** | OD packs prepared | `EVOL_X_OPERATOR_DECISION_PACK_W1.md` | **PENDING operator** |
-| **AF-7** | Baseline numbers published | `W1_DISCOVERY_BASELINE.md` | **PASS** |
-| **AF-8** | Independent plan/architecture audit | — | **PENDING** external reviewer |
+| Gate | Required evidence | Document § | Outcome | Missing | Block? | Owner |
+|------|-------------------|------------|---------|---------|--------|-------|
+| **AF-1** | 10/10/8/11 norm rows | [EVOL_X_NORMATIVE_REQUIREMENTS_MATRIX.md](EVOL_X_NORMATIVE_REQUIREMENTS_MATRIX.md) | **PASS** | — | No | EVOL-X |
+| **AF-2** | Ownership 0 conflicts | [EVOL_X_CHANGE_SAFETY.md](../../../capabilities/architecture/EVOL_X_CHANGE_SAFETY.md) | **PASS** (draft) | Operator ADR sign-off | Non-blocking | Operator |
+| **AF-3** | Zone + 10-Q screen | Same | **PASS** | — | No | EVOL-X |
+| **AF-4** | N-01..18 closed or blocker | [EVOL_X_N_VERIFICATION_REGISTER_W1.md](EVOL_X_N_VERIFICATION_REGISTER_W1.md), [EVOL_X_N18_…](EVOL_X_N18_COLLECTION_CLASSIFICATION_W1.md), [EVOL_X_N04_…](EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md) | **PASS with recorded blockers** | N-18 → OD-EVOL-10; N-02 partial | **Non-blocking for W2 code**; blocks naive CONSERVATIVE_FULL | Operator (OD-10) |
+| **AF-5** | Contract spec | [EVOL_X_CONTRACT_SPEC.md](EVOL_X_CONTRACT_SPEC.md) | **PASS** (draft) | — | No | EVOL-X |
+| **AF-6** | Signed ODs | [EVOL_X_OPERATOR_DECISION_REGISTER_W1.md](EVOL_X_OPERATOR_DECISION_REGISTER_W1.md) | **FAIL (pending)** | All signatures | **Yes — W2 entry** | Operator |
+| **AF-7** | Baseline numbers | [W1_DISCOVERY_BASELINE.md](W1_DISCOVERY_BASELINE.md) | **PASS** | — | No | EVOL-X |
+| **AF-8** | Independent architecture audit | External worksheet | **FAIL (pending)** | Reviewer + PASS record | **Yes — W2 entry** (or waiver) | Operator |
 
-**W2 entry:** AF-6 operator signatures on OD-EVOL-01, -02, -05, -06, -10 minimum; AF-8 audit complete or operator waiver documented.
+**AF-6 and AF-8 are not PASS** without signatures / independent audit.
