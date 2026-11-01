@@ -66,7 +66,25 @@ def _files(tes: str) -> dict[str, Any]:
             "schema_version": "evol_metrics.v1",
             "source_commit_sha": tes,
             "readings": [
-                {"metric_id": "EVOL-M-01", "numerator": 40, "denominator": 40, "status": "MEASURED", "passed": True}
+                {"metric_id": "EVOL-M-01", "numerator": 40, "denominator": 40, "status": "MEASURED", "passed": True},
+                {
+                    "metric_id": "EVOL-M-09T",
+                    "numerator": 3,
+                    "denominator": 3,
+                    "status": "MEASURED",
+                    "threshold": 1.0,
+                    "passed": True,
+                    "population_digest": "d",
+                },
+                {
+                    "metric_id": "EVOL-M-09H",
+                    "numerator": 0,
+                    "denominator": 0,
+                    "status": "NOT_MEASURED",
+                    "threshold": 1.0,
+                    "passed": None,
+                    "population_digest": None,
+                },
             ],
         },
         p03.FRZ_NAME: {
@@ -153,10 +171,10 @@ def _make_repo(
 def test_valid_bundle_passes_mode_a_and_mode_b(tmp_path: Path) -> None:
     repo = _make_repo(tmp_path)
     assert repo.evidence != repo.tes
-    assert p03.verify_mode_a(repo.path) == []
+    assert p03.verify_mode_a(repo.path, technical=True) == []
     _git(repo.path, "checkout", "-q", repo.tes)
     replay = dict.fromkeys(_NODES, "passed")
-    assert p03.verify_mode_b(repo.path, evidence_ref=repo.evidence, replay_outcomes=replay) == []
+    assert p03.verify_mode_b(repo.path, evidence_ref=repo.evidence, replay_outcomes=replay, certification=True) == []
 
 
 def test_mode_b_head_differs_from_manifest_test_execution_sha(tmp_path: Path) -> None:
@@ -228,11 +246,46 @@ def test_failing_metric_or_experiment_or_frz_is_rejected(tmp_path: Path) -> None
     assert "experiment arm not passed" in joined
 
 
+def test_mode_b_certification_without_replay_is_rejected(tmp_path: Path) -> None:
+    repo = _make_repo(tmp_path)
+    _git(repo.path, "checkout", "-q", repo.tes)
+    problems = p03.verify_mode_b(repo.path, evidence_ref=repo.evidence, certification=True)
+    assert any("certification Mode B requires replay" in p for p in problems)
+
+
+def test_mode_a_final_requires_m09h_and_human_drill(tmp_path: Path) -> None:
+    repo = _make_repo(tmp_path)
+    assert any("EVOL-M-09H" in p for p in p03.verify_mode_a(repo.path))
+
+
+def test_composite_m09_pass_without_m09h_is_rejected(tmp_path: Path) -> None:
+    def add_composite(files: dict[str, Any]) -> None:
+        files[p03.METRICS_NAME]["readings"].append(
+            {
+                "metric_id": "EVOL-M-09",
+                "numerator": 1,
+                "denominator": 1,
+                "status": "MEASURED",
+                "passed": True,
+            }
+        )
+
+    repo = _make_repo(tmp_path, mutate=add_composite)
+    assert any("composite EVOL-M-09" in p for p in p03.verify_mode_a(repo.path, technical=True))
+
+
 def test_cli_exits_2_on_integrity_failure_and_0_on_success(tmp_path: Path) -> None:
     good = _make_repo(tmp_path / "good") if (tmp_path / "good").mkdir() is None else None
     assert good is not None
     ok = subprocess.run(
-        [sys.executable, str(_SCRIPT), "--repo", str(good.path), "verify-evidence-publish"],
+        [
+            sys.executable,
+            str(_SCRIPT),
+            "--repo",
+            str(good.path),
+            "verify-evidence-publish",
+            "--technical",
+        ],
         capture_output=True,
         text=True,
         check=False,

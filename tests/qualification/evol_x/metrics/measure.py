@@ -31,7 +31,7 @@ from testing_support.change_safety.discovery.closed_world import (
 from testing_support.change_safety.discovery.extractors import module_id_for_path, suite_id_for_path
 from testing_support.change_safety.graph.impact import assess_path_change_impact
 from testing_support.change_safety.intake.git_change_set import GitChangeSetPort
-from testing_support.change_safety.metrics.runner import MetricReading, make_reading
+from testing_support.change_safety.metrics.runner import METRIC_SPECS, MetricReading, MetricStatus, make_reading
 from testing_support.change_safety.selection.oracle import (
     FAULT_INJECTION_MATRIX,
     SelectionFaultClass,
@@ -47,6 +47,11 @@ _CODE_ROOTS = ("intergrax/", "agents/", "applications/", "platform_proofs/", "te
 _SCOPE_ROOTS = (*_CODE_ROOTS, "tests/")
 DRILL_SLA_SECONDS = 120.0
 DRILL_SEEDS = 3
+M09_SEED_CHANGED_PATHS: tuple[str, ...] = (
+    "intergrax/contracts/execution_identity.py",
+    "testing_support/change_safety/graph/impact.py",
+    "testing_support/change_safety/contracts/enums.py",
+)
 
 
 def _git(*args: str) -> str:
@@ -289,33 +294,49 @@ def measure_m10() -> MetricReading:
     )
 
 
-# ----------------------------------------------------------------------------------------------- M-09, M-11
-def measure_m09(inventory: ClosedWorldInventory, head: str) -> MetricReading:
-    changed = frozenset({"intergrax/contracts/execution_identity.py"})
+# ----------------------------------------------------------------------------------------------- M-09T / M-09H, M-11
+def measure_m09(inventory: ClosedWorldInventory, head: str) -> tuple[MetricReading, MetricReading]:
+    """EVOL-M-09T: three distinct changed_paths (seeds); EVOL-M-09H: human drill (NOT_MEASURED @ technical bundle)."""
     started = time.monotonic()
-    digests = []
-    for _ in range(DRILL_SEEDS):
-        impact = assess_path_change_impact(inventory, changed_paths=changed)
-        dossier = build_change_dossier(
-            graph_digest=impact.graph_digest,
-            inventory_digest=inventory.inventory_digest,
-            impact=impact,
-            created_at_utc="1970-01-01T00:00:00+00:00",
-        )
-        digests.append(dossier.content_digest)
+    path_digests: list[str] = []
+    ok_paths = 0
+    for path in M09_SEED_CHANGED_PATHS:
+        changed = frozenset({path})
+        digests: list[str] = []
+        for _ in range(DRILL_SEEDS):
+            impact = assess_path_change_impact(inventory, changed_paths=changed)
+            dossier = build_change_dossier(
+                graph_digest=impact.graph_digest,
+                inventory_digest=inventory.inventory_digest,
+                impact=impact,
+                created_at_utc="1970-01-01T00:00:00+00:00",
+            )
+            digests.append(dossier.content_digest)
+        path_digests.extend(digests)
+        ok_paths += int(len(set(digests)) == 1)
     elapsed = time.monotonic() - started
-    matches = sum(1 for d in digests if d == digests[0])
-    return make_reading(
-        "EVOL-M-09",
-        matches,
-        DRILL_SEEDS,
-        population_digest=digests[0],
+    m09t = make_reading(
+        "EVOL-M-09T",
+        ok_paths,
+        len(M09_SEED_CHANGED_PATHS),
+        population_digest=stable_digest_hex(list(M09_SEED_CHANGED_PATHS) + path_digests),
         note=(
-            f"tool_seconds={elapsed:.2f} (SLA<={DRILL_SLA_SECONDS:.0f}s); operator attribution median<=15min "
-            "is recorded by the independent B6 drill (W7), not by this tool reading"
+            f"tool_seconds={elapsed:.2f} (SLA<={DRILL_SLA_SECONDS:.0f}s); "
+            f"seeds={len(M09_SEED_CHANGED_PATHS)} distinct paths"
         ),
         extra_condition=elapsed <= DRILL_SLA_SECONDS,
     )
+    m09h = MetricReading(
+        "EVOL-M-09H",
+        0,
+        0,
+        MetricStatus.NOT_MEASURED,
+        METRIC_SPECS["EVOL-M-09H"].threshold,
+        None,
+        None,
+        "human operator attribution drill (W7 supplement); not automatable @ technical evidence",
+    )
+    return m09t, m09h
 
 
 def measure_m11(inventory: ClosedWorldInventory, head: str) -> MetricReading:
@@ -340,6 +361,7 @@ def measure_m11(inventory: ClosedWorldInventory, head: str) -> MetricReading:
 def collect_all(inventory: ClosedWorldInventory, head: str) -> tuple[MetricReading, ...]:
     m02, m02c = measure_m02(inventory)
     m04, m05 = measure_m04_m05(inventory)
+    m09t, m09h = measure_m09(inventory, head)
     readings = (
         measure_m01(inventory, head),
         m02,
@@ -350,7 +372,8 @@ def collect_all(inventory: ClosedWorldInventory, head: str) -> tuple[MetricReadi
         measure_m06(),
         measure_m07(),
         measure_m08(),
-        measure_m09(inventory, head),
+        m09t,
+        m09h,
         measure_m10(),
         measure_m11(inventory, head),
     )

@@ -66,7 +66,7 @@ def _dump(path: Path, payload: object) -> None:
 
 def build_bundle(repo: Path, junit_xml: Path, out_dir: Path, plan_sha: str) -> list[str]:
     from testing_support.change_safety.discovery.closed_world import build_closed_world_inventory
-    from testing_support.change_safety.discovery.closed_world_gates import run_cw08, run_cw10
+    from testing_support.change_safety.discovery.closed_world_gates import run_cw08, run_cw09, run_cw10
     from testing_support.change_safety.discovery.extractors import reset_fact_cache
     from testing_support.change_safety.selection.ci_manifest import load_pinned_manifest, manifest_content_digest
     from tests.qualification.evol_x._constants import (
@@ -75,6 +75,7 @@ def build_bundle(repo: Path, junit_xml: Path, out_dir: Path, plan_sha: str) -> l
         FRZ_EVOL_10_SCOPE_FOOTNOTE,
     )
     from tests.qualification.evol_x.experiments.arms import run_all
+    from tests.qualification.evol_x.metrics.m03_causal_audit import build_m03_causal_audit
     from tests.qualification.evol_x.metrics.measure import collect_all
 
     problems: list[str] = []
@@ -95,8 +96,23 @@ def build_bundle(repo: Path, junit_xml: Path, out_dir: Path, plan_sha: str) -> l
     reset_fact_cache()
     incremental = build_closed_world_inventory(source_commit_sha=tes, use_cache=True)
     cw08, cw10 = run_cw08(cold_a, cold_b), run_cw10(cold_a, incremental)
-    if not (cw08.passed and cw10.passed):
-        return [f"dual cold build gates failed: CW-08={cw08.passed} CW-10={cw10.passed}"]
+    import os
+
+    cw09_disposition = os.environ.get(p03.CW09_DISPOSITION_ENV, "CW09-DUP-EBH7-W7-DISPOSITION-2026-11-01")
+
+    from intergrax.contracts.migrations.registry import CONTRACT_SCHEMA_REGISTRY
+    from tests.qualification.evol_x.adapters.qual_x import QualXSuiteCatalogAdapter
+
+    qual_paths = frozenset(n.split("::", 1)[0] for n in QualXSuiteCatalogAdapter().collectable_node_ids())
+    compat_paths = frozenset(e.module_path.replace(".", "/") + ".py" for e in CONTRACT_SCHEMA_REGISTRY)
+    cw09 = run_cw09(
+        cold_a,
+        qual_suite_paths=qual_paths,
+        compat_module_paths=compat_paths,
+        disposition_id=cw09_disposition,
+    )
+    if not (cw08.passed and cw10.passed and cw09.passed):
+        return [f"dual cold build gates failed: CW-08={cw08.passed} CW-10={cw10.passed} CW-09={cw09.passed}"]
 
     _dump(out_dir / p03.JUNIT_NAME, EvolJunitOutcomes(source_commit_sha=tes, outcomes=outcomes).model_dump())
     tem = TestExecutionManifest(
@@ -116,9 +132,12 @@ def build_bundle(repo: Path, junit_xml: Path, out_dir: Path, plan_sha: str) -> l
             "node_count": len(cold_a.nodes),
             "edge_count": len(cold_a.edges),
             "CW-08": {"passed": cw08.passed, **cw08.metrics},
+            "CW-09": {"passed": cw09.passed, **cw09.metrics},
             "CW-10": {"passed": cw10.passed, **cw10.metrics},
         },
     )
+    causal = build_m03_causal_audit(cold_a, tes)
+    _dump(out_dir / p03.M03_CAUSAL_AUDIT_NAME, causal)
     readings = collect_all(cold_a, tes)
     metrics = EvolMetricsArtifact(
         source_commit_sha=tes,
@@ -169,6 +188,7 @@ def build_bundle(repo: Path, junit_xml: Path, out_dir: Path, plan_sha: str) -> l
                 p03.TEST_EXECUTION_MANIFEST_NAME,
                 p03.INVENTORY_BINDING_NAME,
                 p03.METRICS_NAME,
+                p03.M03_CAUSAL_AUDIT_NAME,
                 p03.FRZ_NAME,
             ]
             + experiment_paths
@@ -206,10 +226,20 @@ def main(argv: list[str] | None = None) -> int:
     build = sub.add_parser("build-bundle")
     build.add_argument("--junit-xml", type=Path, required=True)
     build.add_argument("--plan-sha", default=None)
-    sub.add_parser("verify-evidence-publish")
+    verify = sub.add_parser("verify-evidence-publish")
+    verify.add_argument(
+        "--technical",
+        action="store_true",
+        help="technical disposition: allow EVOL-M-09H NOT_MEASURED (no full certification PASS)",
+    )
     mode_b = sub.add_parser("verify-test-execution")
     mode_b.add_argument("--evidence-ref", required=True)
     mode_b.add_argument("--replay-junit", type=Path, default=None)
+    mode_b.add_argument(
+        "--certification",
+        action="store_true",
+        help="strict certification Mode B: requires --replay-junit and full manifest node replay",
+    )
     args = parser.parse_args(argv)
     repo: Path = args.repo
     try:
@@ -218,11 +248,20 @@ def main(argv: list[str] | None = None) -> int:
             problems = build_bundle(repo, args.junit_xml, repo / args.bundle_rel, plan_sha)
             return _report(problems, "BUNDLE_WRITTEN", {"bundle": args.bundle_rel})
         if args.command == "verify-evidence-publish":
-            problems = p03.verify_mode_a(repo, bundle_rel=args.bundle_rel)
-            return _report(problems, "EVIDENCE_INTEGRITY_OK", {"mode": "A", "evidence_head": p03.head_sha(repo)})
+            problems = p03.verify_mode_a(repo, bundle_rel=args.bundle_rel, technical=args.technical)
+            disposition = "technical" if args.technical else "final"
+            return _report(
+                problems,
+                "EVIDENCE_INTEGRITY_OK",
+                {"mode": "A", "disposition": disposition, "evidence_head": p03.head_sha(repo)},
+            )
         replay = outcomes_from_junit(args.replay_junit, repo) if args.replay_junit else None
         problems = p03.verify_mode_b(
-            repo, evidence_ref=args.evidence_ref, bundle_rel=args.bundle_rel, replay_outcomes=replay
+            repo,
+            evidence_ref=args.evidence_ref,
+            bundle_rel=args.bundle_rel,
+            replay_outcomes=replay,
+            certification=args.certification,
         )
         return _report(problems, "EVIDENCE_INTEGRITY_OK", {"mode": "B", "test_execution_sha": p03.head_sha(repo)})
     except (OSError, subprocess.CalledProcessError, ValueError) as exc:

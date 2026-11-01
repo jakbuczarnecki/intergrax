@@ -2,7 +2,7 @@
 
 """W2-05/W2-06: CW-01..CW-10 on HEAD + mutation probes (CW-07) + dual/incremental builds (CW-08/10)."""
 
-from __future__ import annotations
+from pathlib import Path
 
 import pytest
 from intergrax.contracts.migrations.registry import CONTRACT_SCHEMA_REGISTRY
@@ -90,6 +90,9 @@ def test_evol_x_cw08_cw10_dual_and_incremental_build_subset() -> None:
     kwargs = {"source_commit_sha": "subset", "roots": _SUBSET_ROOTS, "include_tests": False}
     cold_a = build_closed_world_inventory(use_cache=False, **kwargs)
     cold_b = build_closed_world_inventory(use_cache=False, **kwargs)
+    from testing_support.change_safety.discovery.extractors import reset_fact_cache
+
+    reset_fact_cache()
     incremental = build_closed_world_inventory(use_cache=True, **kwargs)
     assert run_cw08(cold_a, cold_b).passed
     assert run_cw10(cold_a, incremental).passed
@@ -98,20 +101,53 @@ def test_evol_x_cw08_cw10_dual_and_incremental_build_subset() -> None:
     assert not run_cw10(cold_a, tampered).passed
 
 
+def test_evol_x_cw10_stale_fact_cache_after_content_mutation(tmp_path: Path) -> None:
+    """B-CW10-01: incremental snapshot taken before a content mutation must not match post-mutation full rebuild."""
+    from testing_support.change_safety.discovery.extractors import reset_fact_cache
+
+    root = tmp_path / "tree"
+    pkg = root / "agents" / "demo"
+    pkg.mkdir(parents=True)
+    module = pkg / "sample.py"
+    module.write_text("VALUE = 1\n", encoding="utf-8")
+    reset_fact_cache()
+    kwargs = {"source_commit_sha": "mutation", "roots": ("agents/",), "include_tests": False, "fixture_root": root}
+    build_closed_world_inventory(use_cache=False, **kwargs)
+    incremental_before_mutation = build_closed_world_inventory(use_cache=True, **kwargs)
+    module.write_text("import json\nVALUE = 2\n", encoding="utf-8")
+    (pkg / "consumer.py").write_text("from agents.demo import sample\n", encoding="utf-8")
+    full_after_mutation = build_closed_world_inventory(use_cache=False, **kwargs)
+    assert not run_cw10(full_after_mutation, incremental_before_mutation).passed
+
+
 def test_evol_x_cw08_cw10_fail_closed_when_not_supplied(evol_inventory: ClosedWorldInventory) -> None:
     assert not run_cw08(evol_inventory, None).passed
     assert not run_cw10(evol_inventory, None).passed
 
 
 def test_evol_x_cw09_qual_compat_parity(evol_inventory: ClosedWorldInventory) -> None:
-    check = run_cw09(evol_inventory, qual_suite_paths=_qual_suite_paths(), compat_module_paths=_compat_module_paths())
+    disposition = "CW09-DUP-EBH7-W7-DISPOSITION-2026-11-01"
+    check = run_cw09(
+        evol_inventory,
+        qual_suite_paths=_qual_suite_paths(),
+        compat_module_paths=_compat_module_paths(),
+        disposition_id=disposition,
+    )
     assert check.passed, check.detail
+    assert check.metrics.get("disposition_id") == disposition
     bad = run_cw09(
         evol_inventory,
         qual_suite_paths=_qual_suite_paths() | {"tests/qualification/qual_x/test_not_there.py"},
         compat_module_paths=_compat_module_paths(),
+        disposition_id=disposition,
     )
     assert not bad.passed
+    assert not run_cw09(
+        evol_inventory,
+        qual_suite_paths=_qual_suite_paths(),
+        compat_module_paths=_compat_module_paths(),
+        disposition_id=None,
+    ).passed
 
 
 def test_evol_x_full_cw_report_has_ten_gates_and_fails_closed(
@@ -126,6 +162,7 @@ def test_evol_x_full_cw_report_has_ten_gates_and_fails_closed(
         collected_node_ids=_manifest_ids(),
         qual_suite_paths=_qual_suite_paths(),
         compat_module_paths=_compat_module_paths(),
+        disposition_id="CW09-DUP-EBH7-W7-DISPOSITION-2026-11-01",
         cw07_report=run_cw07(probe_inputs),
     )
     ids = [c.gate_id for c in report.checks]

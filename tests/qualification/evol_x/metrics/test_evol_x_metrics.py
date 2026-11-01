@@ -4,7 +4,6 @@
 
 import pytest
 from testing_support.change_safety.metrics.runner import (
-    BASE_METRIC_IDS,
     METRIC_SPECS,
     MetricStatus,
     ThresholdKind,
@@ -23,6 +22,7 @@ _CANONICAL = {
     "EVOL-M-06": (ThresholdKind.COUNT_MAX, 0),
     "EVOL-M-07": (ThresholdKind.RATIO_MIN, 1.0),
     "EVOL-M-08": (ThresholdKind.RATIO_MIN, 1.0),
+    "EVOL-M-09T": (ThresholdKind.RATIO_MIN, 1.0),
     "EVOL-M-10": (ThresholdKind.COUNT_MAX, 0),
     "EVOL-M-11": (ThresholdKind.RATIO_MIN, 1.0),
 }
@@ -40,11 +40,10 @@ def test_thresholds_match_ratified_canonical_values() -> None:
 
 
 def test_every_base_metric_is_covered_by_a_reading(readings) -> None:  # noqa: ANN001
-    covered = {mid.split("-")[0] + "-" + mid.split("-")[1] + "-" + mid.split("-")[2][:2] for mid in readings}
-    assert set(BASE_METRIC_IDS) <= covered
+    assert set(METRIC_SPECS) <= set(readings)
 
 
-@pytest.mark.parametrize("metric_id", sorted(METRIC_SPECS))
+@pytest.mark.parametrize("metric_id", sorted(mid for mid in METRIC_SPECS if mid != "EVOL-M-09H"))
 def test_metric_is_measured_on_a_real_population_and_meets_threshold(metric_id: str, readings) -> None:  # noqa: ANN001
     reading = readings[metric_id]
     assert reading.status is MetricStatus.MEASURED, f"{metric_id} NOT_MEASURED"
@@ -65,4 +64,16 @@ def test_make_reading_negative_cases() -> None:
     assert make_reading("EVOL-M-01", 94, 100, population_digest="d").passed is False  # 94% < 95%: no lowering
     assert make_reading("EVOL-M-01", 95, 100, population_digest="d").passed is True
     assert make_reading("EVOL-M-06", 1, 5, population_digest="d").passed is False
-    assert make_reading("EVOL-M-09", 3, 3, population_digest="d", extra_condition=False).passed is False
+    assert make_reading("EVOL-M-09T", 3, 3, population_digest="d", extra_condition=False).passed is False
+
+
+def test_m09h_is_not_measured_until_human_drill(readings) -> None:  # noqa: ANN001
+    m09h = readings["EVOL-M-09H"]
+    assert m09h.status is MetricStatus.NOT_MEASURED
+    assert m09h.passed is None
+
+
+def test_m09t_uses_three_distinct_seed_paths(readings) -> None:  # noqa: ANN001
+    m09t = readings["EVOL-M-09T"]
+    assert m09t.denominator == 3
+    assert m09t.passed

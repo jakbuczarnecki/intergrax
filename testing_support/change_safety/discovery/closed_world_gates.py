@@ -205,6 +205,7 @@ def run_cw09(
     *,
     qual_suite_paths: frozenset[str] | None,
     compat_module_paths: frozenset[str] | None,
+    disposition_id: str | None = None,
 ) -> ClosedWorldGateCheck:
     if qual_suite_paths is None or compat_module_paths is None:
         return ClosedWorldGateCheck(
@@ -214,19 +215,30 @@ def run_cw09(
     modules = _module_paths(inventory)
     qual_missing = sorted(p for p in qual_suite_paths if p not in tests)
     compat_missing = sorted(p for p in compat_module_paths if p not in modules)
-    passed = not qual_missing and not compat_missing
+    mechanical_ok = not qual_missing and not compat_missing
+    dup_placeholder = "NOT_MACHINE_READABLE"
+    disposition_ok = bool(disposition_id) if mechanical_ok else True
+    passed = mechanical_ok and disposition_ok
+    detail = (
+        "parity vs QUAL-X / COMPAT-X inventories; DUP/EBH-7 disposition recorded"
+        if passed
+        else (
+            f"qual_missing={len(qual_missing)} compat_missing={len(compat_missing)}"
+            if not mechanical_ok
+            else "CW-09 DUP/EBH-7 placeholder requires disposition_id (C-CW09-02)"
+        )
+    )
     return ClosedWorldGateCheck(
         "CW-09",
         passed,
-        "parity vs QUAL-X / COMPAT-X inventories (DUP/EBH-7: no machine inventory — see register)"
-        if passed
-        else f"qual_missing={len(qual_missing)} compat_missing={len(compat_missing)}",
+        detail,
         {
             "qual_suites": len(qual_suite_paths),
             "qual_missing": len(qual_missing),
             "compat_modules": len(compat_module_paths),
             "compat_missing": len(compat_missing),
-            "dup_ebh7_inventory": "NOT_MACHINE_READABLE",
+            "dup_ebh7_inventory": dup_placeholder,
+            "disposition_id": disposition_id or "",
         },
     )
 
@@ -253,6 +265,7 @@ def run_closed_world_gates(
     incremental_build: ClosedWorldInventory | None = None,
     qual_suite_paths: frozenset[str] | None = None,
     compat_module_paths: frozenset[str] | None = None,
+    disposition_id: str | None = None,
     include_cw07: bool = False,
     cw07_report: ClosedWorldGateCheck | None = None,
 ) -> ClosedWorldGateReport:
@@ -269,7 +282,12 @@ def run_closed_world_gates(
     checks.extend(
         [
             run_cw08(inventory, second_build),
-            run_cw09(inventory, qual_suite_paths=qual_suite_paths, compat_module_paths=compat_module_paths),
+            run_cw09(
+                inventory,
+                qual_suite_paths=qual_suite_paths,
+                compat_module_paths=compat_module_paths,
+                disposition_id=disposition_id,
+            ),
             run_cw10(inventory, incremental_build),
         ]
     )

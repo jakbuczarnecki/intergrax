@@ -51,3 +51,5 @@
 **Prior stage:** EBH-7 — see `EBH_7_SHA_LADDER.md`.
 
 **Execution authority:** [`EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md`](EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md)
+
+**W7 SSOT ladder (roles TECH/FINAL/B6):** [`evol_x/EVOL_X_SHA_LADDER.md`](evol_x/EVOL_X_SHA_LADDER.md)

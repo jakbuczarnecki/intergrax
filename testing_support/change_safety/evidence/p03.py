@@ -36,6 +36,12 @@ METRICS_NAME = "evol_metrics.v1.json"
 FRZ_NAME = "evol_frz_evidence.v1.json"
 INVENTORY_BINDING_NAME = "inventory_binding.v1.json"
 EXPERIMENTS_DIR = "experiments"
+M09_HUMAN_DRILL_NAME = "evol_m09_human_drill.v1.json"
+M03_CAUSAL_AUDIT_NAME = "m03_causal_audit.v1.json"
+METRIC_M09T = "EVOL-M-09T"
+METRIC_M09H = "EVOL-M-09H"
+METRIC_M09_COMPOSITE = "EVOL-M-09"
+CW09_DISPOSITION_ENV = "EVOL_CW09_DISPOSITION_ID"
 FORBIDDEN_MANIFEST_FIELDS = (
     "evidence_publication_sha",
     "evidence_head",
@@ -131,8 +137,28 @@ def _check_binding(name: str, sha: str, expected: str, problems: list[str]) -> N
         problems.append(f"stale source_commit_sha in {name}: {sha[:9]} != test_execution_sha {expected[:9]}")
 
 
+def _check_metrics_readings(metrics: EvolMetricsArtifact, problems: list[str], *, technical: bool) -> None:
+    by_id = {r.metric_id: r for r in metrics.readings}
+    composite = by_id.get(METRIC_M09_COMPOSITE)
+    if composite is not None and composite.passed is True:
+        problems.append(f"composite {METRIC_M09_COMPOSITE} must not pass without independent {METRIC_M09H} PASS")
+    m09h = by_id.get(METRIC_M09H)
+    if technical:
+        if m09h is not None and m09h.status == "MEASURED" and m09h.passed is True:
+            problems.append(f"technical evidence must not claim {METRIC_M09H} PASS (human drill pending)")
+    elif m09h is None or m09h.status != "MEASURED" or m09h.passed is not True:
+        problems.append(f"final certification requires {METRIC_M09H} MEASURED and PASS")
+    for r in metrics.readings:
+        if r.metric_id == METRIC_M09H and technical and r.status == "NOT_MEASURED":
+            continue
+        if r.metric_id == METRIC_M09_COMPOSITE:
+            continue
+        if r.status != "MEASURED" or r.passed is not True:
+            problems.append(f"metric not passing: {r.metric_id}")
+
+
 def _check_artifact_payloads(
-    repo: Path, head: str, bundle_rel: str, manifest: P03Manifest, problems: list[str]
+    repo: Path, head: str, bundle_rel: str, manifest: P03Manifest, problems: list[str], *, technical: bool
 ) -> None:
     tes = manifest.test_execution_sha
 
@@ -158,11 +184,13 @@ def _check_artifact_payloads(
     if metrics_raw is not None:
         metrics = EvolMetricsArtifact.model_validate(metrics_raw)
         _check_binding(METRICS_NAME, metrics.source_commit_sha, tes, problems)
-        problems += [
-            f"metric not passing: {r.metric_id}"
-            for r in metrics.readings
-            if r.status != "MEASURED" or r.passed is not True
-        ]
+        _check_metrics_readings(metrics, problems, technical=technical)
+    if not technical:
+        drill_rel = f"{bundle_rel}/{M09_HUMAN_DRILL_NAME}"
+        if M09_HUMAN_DRILL_NAME not in manifest.artifact_paths:
+            problems.append(f"final certification requires {M09_HUMAN_DRILL_NAME} in MANIFEST artifact_paths")
+        elif show_bytes(repo, head, drill_rel) is None:
+            problems.append(f"final certification missing {M09_HUMAN_DRILL_NAME} @ evidence HEAD")
     if frz_raw is not None:
         rows = [FrzEvidence.model_validate(r) for r in frz_raw.get("rows", [])]
         if tuple(r.frz_id for r in rows) != EXPECTED_FRZ_IDS:
@@ -191,7 +219,7 @@ def _check_experiments(repo: Path, head: str, bundle_rel: str, manifest: P03Mani
             problems.append(f"experiment arm not passed: {rel}")
 
 
-def verify_mode_a(repo: Path, *, bundle_rel: str = BUNDLE_REL) -> list[str]:
+def verify_mode_a(repo: Path, *, bundle_rel: str = BUNDLE_REL, technical: bool = False) -> list[str]:
     """Mode A (verify-evidence-publish): ``HEAD`` is the evidence publication commit."""
     problems: list[str] = []
     head = head_sha(repo)
@@ -213,7 +241,7 @@ def verify_mode_a(repo: Path, *, bundle_rel: str = BUNDLE_REL) -> list[str]:
                 problems.append(f"artifact missing @ evidence HEAD: {rel}")
             elif digests.get(rel) != sha256_hex(raw):
                 problems.append(f"tampered ARTIFACT_DIGESTS entry: {rel}")
-    _check_artifact_payloads(repo, head, bundle_rel, manifest, problems)
+    _check_artifact_payloads(repo, head, bundle_rel, manifest, problems, technical=technical)
     return problems
 
 
@@ -223,6 +251,7 @@ def verify_mode_b(
     evidence_ref: str,
     bundle_rel: str = BUNDLE_REL,
     replay_outcomes: dict[str, str] | None = None,
+    certification: bool = False,
 ) -> list[str]:
     """Mode B (verify-test-execution): ``HEAD`` must equal the manifest ``test_execution_sha``."""
     problems: list[str] = []
@@ -233,10 +262,22 @@ def verify_mode_b(
     if head != manifest.test_execution_sha:
         problems.append(f"HEAD {head[:9]} != MANIFEST test_execution_sha {manifest.test_execution_sha[:9]}")
         return problems
-    if replay_outcomes is not None:
-        junit_raw = _load_json(repo, evidence_ref, f"{bundle_rel}/{JUNIT_NAME}", problems)
-        if junit_raw is not None:
-            problems += compare_outcomes(dict(EvolJunitOutcomes.model_validate(junit_raw).outcomes), replay_outcomes)
+    if certification and replay_outcomes is None:
+        problems.append("certification Mode B requires replay_outcomes (--replay-junit)")
+        return problems
+    junit_raw = _load_json(repo, evidence_ref, f"{bundle_rel}/{JUNIT_NAME}", problems)
+    tem_raw = _load_json(repo, evidence_ref, f"{bundle_rel}/{TEST_EXECUTION_MANIFEST_NAME}", problems)
+    if replay_outcomes is not None and junit_raw is not None:
+        archived = dict(EvolJunitOutcomes.model_validate(junit_raw).outcomes)
+        problems += compare_outcomes(archived, replay_outcomes)
+    if certification and tem_raw is not None and replay_outcomes is not None:
+        tem = TestExecutionManifest.model_validate(tem_raw)
+        problems += [f"missing manifest node in replay: {n}" for n in tem.node_ids if n not in replay_outcomes]
+        problems += [
+            f"non-passed replay outcome: {n}={replay_outcomes[n]}"
+            for n in tem.node_ids
+            if replay_outcomes.get(n) != "passed"
+        ]
     return problems
 
 

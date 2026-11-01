@@ -10,8 +10,17 @@
   "exclusions": [
     "tests/unit/agents/test_reference_harness_strict.py::RC-7_BASELINE_DEFECT"
   ],
-  "manifest_content_digest": "a231edaa6b545dd9e28e6762063509eb2a2f535309a0abbe41e6ece2e331940b",
+  "manifest_content_digest": "971cb390e39e6e197686e04250ecdf97a43bddf260ffa35b3291b27f524b5259",
   "pytest_node_ids": [
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S2]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S3]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S4]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S5]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S6]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S7]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S8]",
+    "tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_s2_meta_tamper_positive_expectation_fails",
     "tests/qualification/evol_x/experiments/test_evol_x_exp_s1_local_agent.py::test_evol_x_exp_s1_positive_arm",
     "tests/qualification/evol_x/experiments/test_evol_x_exp_s1_local_agent.py::test_evol_x_exp_s1_negative_arm",
     "tests/qualification/evol_x/experiments/test_evol_x_exp_s2_shared_contract.py::test_evol_x_exp_s2_positive_arm",
@@ -71,6 +80,7 @@
     "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py::test_evol_x_cw05_fails_closed_without_collect",
     "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py::test_evol_x_cw07_mutation_probes_all_flip",
     "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py::test_evol_x_cw08_cw10_dual_and_incremental_build_subset",
+    "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py::test_evol_x_cw10_stale_fact_cache_after_content_mutation",
     "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py::test_evol_x_cw08_cw10_fail_closed_when_not_supplied",
     "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py::test_evol_x_cw09_qual_compat_parity",
     "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py::test_evol_x_full_cw_report_has_ten_gates_and_fails_closed",
@@ -173,6 +183,9 @@
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_stale_source_commit_sha_in_inventory_is_rejected",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_tampered_artifact_digest_entry_is_rejected",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_failing_metric_or_experiment_or_frz_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_b_certification_without_replay_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_final_requires_m09h_and_human_drill",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_composite_m09_pass_without_m09h_is_rejected",
     "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_cli_exits_2_on_integrity_failure_and_0_on_success",
     "tests/qualification/evol_x/gates/test_evol_x_production_import_boundaries.py::test_intergrax_production_tree_does_not_import_tests_or_testing_support",
     "tests/qualification/evol_x/gates/test_evol_x_selection.py::test_evol_x_t1_t2_node_ids_are_collectable_w3_04",
@@ -217,6 +230,10 @@
     "tests/qualification/evol_x/gates/test_evol_x_workflow_matrix.py::test_representative_rows[change9-WM-03-MIGRATE]",
     "tests/qualification/evol_x/gates/test_evol_x_workflow_matrix.py::test_backward_compatible_entry_point_matches_matrix",
     "tests/qualification/evol_x/gates/test_evol_x_workflow_matrix.py::test_negative_matrix_tampering_is_detected",
+    "tests/qualification/evol_x/metrics/test_evol_x_m02_adversarial.py::test_m02_graph_text_gap_hidden_consumer_not_orphan",
+    "tests/qualification/evol_x/metrics/test_evol_x_m03_causal_audit.py::test_m03_fault_injection_refuses_bypass",
+    "tests/qualification/evol_x/metrics/test_evol_x_m03_causal_audit.py::test_m03_causal_audit_passes_on_head",
+    "tests/qualification/evol_x/metrics/test_evol_x_m03_causal_audit.py::test_m03_causal_audit_tampered_oracle_expectation_fails",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_thresholds_match_ratified_canonical_values",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_every_base_metric_is_covered_by_a_reading",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-01]",
@@ -231,10 +248,12 @@
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-06]",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-07]",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-08]",
-    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-09]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-09T]",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-10]",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-11]",
     "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_populations_are_not_stubs",
-    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_make_reading_negative_cases"
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_make_reading_negative_cases",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09h_is_not_measured_until_human_drill",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_m09t_uses_three_distinct_seed_paths"
   ]
 }

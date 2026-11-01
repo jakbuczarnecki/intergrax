@@ -46,7 +46,18 @@ METRIC_SPECS: dict[str, MetricSpec] = {
         MetricSpec("EVOL-M-06", ThresholdKind.COUNT_MAX, 0, "undetected cross-application escapes"),
         MetricSpec("EVOL-M-07", ThresholdKind.RATIO_MIN, 1.0, "incompatible contract/schema arms detected (S2,S5)"),
         MetricSpec("EVOL-M-08", ThresholdKind.RATIO_MIN, 1.0, "qualified rollback or explicit refusal (S7)"),
-        MetricSpec("EVOL-M-09", ThresholdKind.RATIO_MIN, 1.0, "dossier drill: tool SLA <=120s and seed determinism"),
+        MetricSpec(
+            "EVOL-M-09T",
+            ThresholdKind.RATIO_MIN,
+            1.0,
+            "dossier drill tool: determinism on 3 seed paths, SLA <=120s",
+        ),
+        MetricSpec(
+            "EVOL-M-09H",
+            ThresholdKind.RATIO_MIN,
+            1.0,
+            "operator attribution drill (human); NOT_MEASURED until W7 supplement",
+        ),
         MetricSpec("EVOL-M-10", ThresholdKind.COUNT_MAX, 0, "unauthorized platform-core edits undetected (S8)"),
         MetricSpec("EVOL-M-11", ThresholdKind.RATIO_MIN, 1.0, "requalification triggers executable (T1..T9)"),
     )
