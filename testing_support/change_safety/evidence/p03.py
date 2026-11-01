@@ -41,11 +41,14 @@ METRICS_NAME = "evol_metrics.v1.json"
 FRZ_NAME = "evol_frz_evidence.v1.json"
 INVENTORY_BINDING_NAME = "inventory_binding.v1.json"
 EXPERIMENTS_DIR = "experiments"
-M09_HUMAN_DRILL_NAME = "evol_m09_human_drill.v1.json"
+M09_HUMAN_DRILL_NAME = "evol_m09_human_drill.v2.json"
+M09_HUMAN_DRILL_SCHEMA_VERSION = "evol_m09_human_drill.v2"
+M09_MEASUREMENT_POLICY_ID = "OD-EVOL-08-M1"
 M09_DRILL_CASE_REGISTRY_NAME = "evol_m09_drill_case_registry.v1.json"
 M09_HUMAN_DRILL_WORKSHEET_NAME = "evol_m09_human_drill_worksheet.v1.json"
-M09_TOOL_SLA_SECONDS = 120.0
-M09_MEDIAN_SLA_SECONDS = 900.0
+# OD-EVOL-08-M1: tool runtime and human attribution clock are separate measurements with separate SLAs.
+M09_TOOL_PER_CASE_SLA_SECONDS = 120.0
+M09_ATTRIBUTION_MEDIAN_SLA_SECONDS = 900.0
 M09_EXPECTED_CASE_IDS = ("C1", "C2", "C3")
 M03_CAUSAL_AUDIT_NAME = "m03_causal_audit.v1.json"
 METRIC_M09T = "EVOL-M-09T"
@@ -180,6 +183,9 @@ def _parse_utc_timestamp(label: str, value: str, problems: list[str]) -> datetim
     return parsed
 
 
+# Attestation boundary: Mode A verifies schema, bindings, arithmetic and SLA thresholds of the *submitted* human
+# drill artifact. It cannot prove that a human performed the drill or that the clock was honestly measured
+# (OD-EVOL-08-M1 clock start/stop); that attestation belongs to the independent B6 audit, never to the verifier.
 def _check_m09_human_drill(
     repo: Path,
     head: str,
@@ -192,6 +198,19 @@ def _check_m09_human_drill(
 ) -> None:
     registry = _load_m09_registry(repo, head, bundle_rel, problems)
     if registry is None:
+        return
+    # Strict v2 contract first: v1 / unknown schema and missing/other policy id fail closed (no v1 fallback).
+    raw_schema = drill_raw.get("schema_version") if isinstance(drill_raw, dict) else None
+    if raw_schema != M09_HUMAN_DRILL_SCHEMA_VERSION:
+        problems.append(
+            f"M09 human drill schema_version must be exactly {M09_HUMAN_DRILL_SCHEMA_VERSION}: {raw_schema!r}"
+        )
+        return
+    raw_policy = drill_raw.get("measurement_policy_id")
+    if raw_policy != M09_MEASUREMENT_POLICY_ID:
+        problems.append(
+            f"M09 human drill measurement_policy_id must be exactly {M09_MEASUREMENT_POLICY_ID}: {raw_policy!r}"
+        )
         return
     if registry.bound_test_execution_sha != tes:
         problems.append(
@@ -218,6 +237,7 @@ def _check_m09_human_drill(
         if sha256_hex(raw_path) != entry.input_digest:
             problems.append(f"M09 registry input_digest mismatch for {entry.case_id} @ test_execution_sha")
     tool_seconds: list[float] = []
+    attribution_seconds: list[float] = []
     for result in drill.cases:
         spec = registry_by_id.get(result.case_id)
         if spec is None:
@@ -225,20 +245,31 @@ def _check_m09_human_drill(
             continue
         if not result.correct:
             problems.append(f"M09 human drill case not marked correct: {result.case_id}")
-        if result.tool_seconds > M09_TOOL_SLA_SECONDS:
+        if result.tool_seconds > M09_TOOL_PER_CASE_SLA_SECONDS:
             problems.append(
-                f"M09 human drill tool_seconds>{M09_TOOL_SLA_SECONDS:.0f}s for {result.case_id}: {result.tool_seconds}"
+                f"M09 human drill tool_seconds>{M09_TOOL_PER_CASE_SLA_SECONDS:.0f}s for "
+                f"{result.case_id}: {result.tool_seconds}"
             )
         tool_seconds.append(result.tool_seconds)
+        attribution_seconds.append(result.attribution_seconds)
         expected = tuple(spec.expected_cause_identities)
         if tuple(result.attributed_cause_identities) != expected:
             problems.append(f"M09 human drill attributed causes mismatch for {result.case_id}")
+    # Tool timing: per-case SLA only (no median SLA). The median is checked for consistency only.
     if tool_seconds:
-        computed_median = statistics.median(tool_seconds)
-        if computed_median > M09_MEDIAN_SLA_SECONDS:
-            problems.append(f"M09 human drill median tool_seconds>{M09_MEDIAN_SLA_SECONDS:.0f}s: {computed_median}")
-        if round(drill.median_tool_seconds, 3) != round(computed_median, 3):
+        computed_tool_median = statistics.median(tool_seconds)
+        if round(drill.median_tool_seconds, 3) != round(computed_tool_median, 3):
             problems.append("M09 human drill median_tool_seconds disagrees with computed case median")
+    # Human attribution clock: SLA applies to the median (strict ">" fails; equality allowed).
+    if attribution_seconds:
+        computed_attribution_median = statistics.median(attribution_seconds)
+        if computed_attribution_median > M09_ATTRIBUTION_MEDIAN_SLA_SECONDS:
+            problems.append(
+                f"M09 human drill median attribution_seconds>{M09_ATTRIBUTION_MEDIAN_SLA_SECONDS:.0f}s: "
+                f"{computed_attribution_median}"
+            )
+        if round(drill.median_attribution_seconds, 3) != round(computed_attribution_median, 3):
+            problems.append("M09 human drill median_attribution_seconds disagrees with computed case median")
     if not drill.adversarial_control_passed:
         problems.append("M09 human drill adversarial_control_passed must be true")
     started = _parse_utc_timestamp("drill_started_at_utc", drill.drill_started_at_utc, problems)

@@ -137,23 +137,27 @@ def _m09_registry_doc(tes: str) -> dict[str, Any]:
 
 def _m09_drill_doc(tes: str, registry: M09DrillCaseRegistry, registry_digest: str) -> dict[str, Any]:
     tool_seconds = (45.0, 60.0, 55.0)
+    attribution_seconds = (600.0, 700.0, 650.0)
     cases = []
-    for entry, seconds in zip(registry.cases, tool_seconds, strict=True):
+    for entry, tool, attribution in zip(registry.cases, tool_seconds, attribution_seconds, strict=True):
         cases.append(
             {
                 "case_id": entry.case_id,
                 "correct": True,
-                "tool_seconds": seconds,
+                "tool_seconds": tool,
+                "attribution_seconds": attribution,
                 "attributed_cause_identities": list(entry.expected_cause_identities),
             }
         )
     return {
-        "schema_version": "evol_m09_human_drill.v1",
+        "schema_version": "evol_m09_human_drill.v2",
+        "measurement_policy_id": "OD-EVOL-08-M1",
         "source_commit_sha": tes,
         "test_execution_sha": tes,
         "registry_digest": registry_digest,
         "cases": cases,
         "median_tool_seconds": statistics.median(tool_seconds),
+        "median_attribution_seconds": statistics.median(attribution_seconds),
         "adversarial_control_passed": True,
         "drill_started_at_utc": "2026-11-01T10:00:00+00:00",
         "drill_completed_at_utc": "2026-11-01T10:15:00+00:00",
@@ -357,6 +361,36 @@ def test_mode_a_final_valid_m09_bundle_passes(tmp_path: Path) -> None:
     assert p03.verify_mode_a(repo.path) == []
 
 
+def _timings(tool: tuple[float, float, float], attribution: tuple[float, float, float]) -> Mutator:
+    """Set per-case tool/attribution seconds and keep both declared medians consistent with the cases."""
+
+    def mutate(files: dict[str, Any]) -> None:
+        drill = files[p03.M09_HUMAN_DRILL_NAME]
+        for case, tool_s, attribution_s in zip(drill["cases"], tool, attribution, strict=True):
+            case["tool_seconds"] = tool_s
+            case["attribution_seconds"] = attribution_s
+        drill["median_tool_seconds"] = statistics.median(tool)
+        drill["median_attribution_seconds"] = statistics.median(attribution)
+
+    return mutate
+
+
+def _swap_tool_and_attribution(files: dict[str, Any]) -> None:
+    for case in files[p03.M09_HUMAN_DRILL_NAME]["cases"]:
+        case["tool_seconds"], case["attribution_seconds"] = case["attribution_seconds"], case["tool_seconds"]
+
+
+def _forged_m09h_pass_with_failing_attribution(files: dict[str, Any]) -> None:
+    _timings((45.0, 60.0, 55.0), (1000.0, 1000.0, 1000.0))(files)
+    reading = next(r for r in files[p03.METRICS_NAME]["readings"] if r["metric_id"] == "EVOL-M-09H")
+    assert reading["status"] == "MEASURED" and reading["passed"] is True  # forged PASS row stays in place
+
+
+def _worksheet_with_wrong_digest(files: dict[str, Any]) -> None:
+    files[p03.M09_HUMAN_DRILL_WORKSHEET_NAME] = {"schema_version": "evol_m09_human_drill_worksheet.v1"}
+    files[p03.M09_HUMAN_DRILL_NAME]["worksheet_digest"] = "0" * 64
+
+
 _M09_NEGATIVES: tuple[tuple[str, Mutator, str], ...] = (
     (
         "N-M09-01",
@@ -447,6 +481,77 @@ _M09_NEGATIVES: tuple[tuple[str, Mutator, str], ...] = (
         lambda files: files[p03.M09_HUMAN_DRILL_NAME]["cases"][0].update({"attributed_cause_identities": ["0" * 64]}),
         "attributed causes mismatch",
     ),
+    (
+        "N-M09-17",
+        _timings((4.0, 5.0, 6.0), (1200.0, 1500.0, 1800.0)),
+        "median attribution_seconds>900",
+    ),
+    ("N-M09-18", _timings((121.0, 5.0, 6.0), (600.0, 700.0, 650.0)), "tool_seconds>120"),
+    (
+        "N-M09-19",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME]["cases"][1].pop("attribution_seconds"),
+        "invalid",
+    ),
+    (
+        "N-M09-20-negative",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME]["cases"][0].update({"attribution_seconds": -1.0}),
+        "finite and >= 0",
+    ),
+    (
+        "N-M09-20-nan",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME]["cases"][0].update({"attribution_seconds": float("nan")}),
+        "finite and >= 0",
+    ),
+    (
+        "N-M09-20-inf",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME]["cases"][0].update({"attribution_seconds": float("inf")}),
+        "finite and >= 0",
+    ),
+    ("N-M09-21-swap", _swap_tool_and_attribution, "tool_seconds>120"),
+    (
+        "N-M09-22",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME].update({"median_attribution_seconds": 100.0}),
+        "median_attribution_seconds disagrees",
+    ),
+    ("N-M09-23-FAIL", _timings((45.0, 60.0, 55.0), (900.0, 901.0, 902.0)), "median attribution_seconds>900"),
+    (
+        "N-M09-24",
+        _forged_m09h_pass_with_failing_attribution,
+        "median attribution_seconds>900",
+    ),
+    (
+        "N-M09-25",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME].update({"schema_version": "evol_m09_human_drill.v1"}),
+        "schema_version must be exactly evol_m09_human_drill.v2",
+    ),
+    (
+        "N-M09-25b-policy-missing",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME].pop("measurement_policy_id"),
+        "measurement_policy_id must be exactly OD-EVOL-08-M1",
+    ),
+    (
+        "N-M09-25c-policy-wrong",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME].update({"measurement_policy_id": "OD-EVOL-08"}),
+        "measurement_policy_id must be exactly OD-EVOL-08-M1",
+    ),
+    (
+        "N-M09-27",
+        _worksheet_with_wrong_digest,
+        "worksheet_digest mismatch",
+    ),
+    (
+        "N-M09-28",
+        lambda files: files[p03.M09_HUMAN_DRILL_NAME].update({"schema_version": "evol_m09_human_drill.v3"}),
+        "schema_version must be exactly evol_m09_human_drill.v2",
+    ),
+)
+
+# PASS arms: the verifier must accept these (median math, equality boundary, outlier robustness).
+_M09_POSITIVES: tuple[tuple[str, Mutator], ...] = (
+    ("N-M09-23-PASS-spike", _timings((45.0, 60.0, 55.0), (100.0, 100.0, 1200.0))),
+    ("N-M09-26-PASS-boundary", _timings((45.0, 60.0, 55.0), (900.0, 900.0, 900.0))),
+    ("N-M09-26b-PASS-mixed", _timings((45.0, 60.0, 55.0), (600.0, 900.0, 800.0))),
+    ("N-M09-18b-PASS-tool-boundary", _timings((120.0, 120.0, 120.0), (600.0, 700.0, 650.0))),
 )
 
 
@@ -456,6 +561,13 @@ def test_m09_human_drill_negative_cases(tmp_path: Path, case_id: str, mutate: Mu
     repo = _make_repo(tmp_path, final=True, mutate=mutate)
     joined = " | ".join(p03.verify_mode_a(repo.path))
     assert needle in joined
+
+
+@pytest.mark.parametrize(("case_id", "mutate"), _M09_POSITIVES, ids=[case for case, _ in _M09_POSITIVES])
+def test_m09_human_drill_positive_cases(tmp_path: Path, case_id: str, mutate: Mutator) -> None:
+    _ = case_id
+    repo = _make_repo(tmp_path, final=True, mutate=mutate)
+    assert p03.verify_mode_a(repo.path) == []
 
 
 def test_composite_m09_pass_without_m09h_is_rejected(tmp_path: Path) -> None:

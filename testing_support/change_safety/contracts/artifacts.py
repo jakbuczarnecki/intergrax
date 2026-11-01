@@ -4,9 +4,10 @@
 
 from __future__ import annotations
 
+import math
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 _SHA_LEN = 40
 
@@ -121,26 +122,47 @@ class M09DrillCaseRegistry(_Strict):
         return self
 
 
+def _finite_nonnegative(name: str, value: float) -> float:
+    if not math.isfinite(value) or value < 0.0:
+        raise ValueError(f"{name} must be finite and >= 0")
+    return value
+
+
 class M09HumanDrillCaseResult(_Strict):
+    """Per-case v2 result. ``tool_seconds`` (tool runtime) and ``attribution_seconds`` (human clock) are separate."""
+
     case_id: Literal["C1", "C2", "C3"]
     correct: bool
-    tool_seconds: float = Field(ge=0.0)
+    tool_seconds: float
+    attribution_seconds: float
     attributed_cause_identities: tuple[str, ...]
+
+    @field_validator("tool_seconds", "attribution_seconds")
+    @classmethod
+    def _check_seconds(cls, value: float, info: ValidationInfo) -> float:
+        return _finite_nonnegative(str(info.field_name), value)
 
 
 class M09HumanDrillArtifact(_Strict):
-    schema_version: str = "evol_m09_human_drill.v1"
+    schema_version: Literal["evol_m09_human_drill.v2"]
+    measurement_policy_id: Literal["OD-EVOL-08-M1"]
     source_commit_sha: str
     test_execution_sha: str
     registry_digest: str = Field(min_length=64, max_length=64)
     cases: tuple[M09HumanDrillCaseResult, ...]
-    median_tool_seconds: float = Field(ge=0.0)
+    median_tool_seconds: float
+    median_attribution_seconds: float
     adversarial_control_passed: bool
     drill_started_at_utc: str
     drill_completed_at_utc: str
     evaluator_id: str = Field(min_length=1)
     evaluator_display_name: str = Field(min_length=1)
     worksheet_digest: str | None = None
+
+    @field_validator("median_tool_seconds", "median_attribution_seconds")
+    @classmethod
+    def _check_medians(cls, value: float, info: ValidationInfo) -> float:
+        return _finite_nonnegative(str(info.field_name), value)
 
     @model_validator(mode="after")
     def _check_cases(self) -> M09HumanDrillArtifact:

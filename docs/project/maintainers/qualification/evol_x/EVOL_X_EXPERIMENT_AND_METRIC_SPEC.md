@@ -26,7 +26,13 @@ Fixtures **not created in W1** — paths and oracle IDs frozen here for W5.
 ## Metrics (formulas frozen)
 
 - **M-03P** = |Sel ∩ R| / |Sel|; **M-03R** = |Sel ∩ R*| / |R*|; **M-03C** mandatory coverage; **M-03E** escape count.
-- **M-09 SLA proposal:** median operator attribution ≤15 min; tool ≤120 s; 100% seed match — **OD-EVOL-08**.
+- **M-09 SLA (ratified OD-EVOL-08; measurement policy OD-EVOL-08-M1):** median operator attribution ≤15 min; tool ≤120 s; 100% seed match.
+- **M-09H dual SLA (OD-EVOL-08-M1, drill contract `evol_m09_human_drill.v2`):**
+  - `tool_seconds` — qualified tool runtime, measured **separately**; SLA **≤ 120 s per case** (no median SLA).
+  - `attribution_seconds` — human clock from receipt of the **complete diagnostic packet** to **submission of the diagnosis, before** the expected answer is shown; SLA **median over C1..C3 ≤ 900 s** (equality allowed; strict `>` fails).
+  - The 900 s threshold MUST NOT be applied to `tool_seconds` / `median_tool_seconds`.
+  - Artifact fields: `schema_version` (exact `evol_m09_human_drill.v2`), `measurement_policy_id` (exact `OD-EVOL-08-M1`), per case `tool_seconds` + `attribution_seconds`, `median_tool_seconds`, `median_attribution_seconds`; all seconds finite and ≥ 0. v1 artifacts are rejected (no default, no fallback).
+  - Mode A verifies schema, bindings and arithmetic only; it does not attest that a human ran the drill (B6 audit scope). Runbook: [`EVOL_X_M09H_HUMAN_DRILL_RUNBOOK.md`](EVOL_X_M09H_HUMAN_DRILL_RUNBOOK.md).
 
 ## Populations
 
