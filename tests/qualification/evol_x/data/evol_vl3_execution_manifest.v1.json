@@ -10,7 +10,7 @@
   "exclusions": [
     "tests/unit/agents/test_reference_harness_strict.py::RC-7_BASELINE_DEFECT"
   ],
-  "manifest_content_digest": "6e38557a1aa6cfeaa8c63868a1a109f97a1102aa0ad9cc04a9e1107ba3e54055",
+  "manifest_content_digest": "a231edaa6b545dd9e28e6762063509eb2a2f535309a0abbe41e6ece2e331940b",
   "pytest_node_ids": [
     "tests/qualification/evol_x/experiments/test_evol_x_exp_s1_local_agent.py::test_evol_x_exp_s1_positive_arm",
     "tests/qualification/evol_x/experiments/test_evol_x_exp_s1_local_agent.py::test_evol_x_exp_s1_negative_arm",
@@ -163,6 +163,17 @@
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_t1_t2_are_derived_from_the_qual_x_catalog_not_copied",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_contract_schema_authority_is_the_platform_registry_not_a_copy",
     "tests/qualification/evol_x/gates/test_evol_x_no_duplicate_authority.py::test_artifact_contracts_forbid_typing_any_and_authority_field_names",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_valid_bundle_passes_mode_a_and_mode_b",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_b_head_differs_from_manifest_test_execution_sha",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_test_execution_sha_not_ancestor_of_evidence_head",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_mode_a_reversed_ancestry_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_manifest_with_forbidden_self_field_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_swapped_canonical_junit_outcome_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_missing_manifest_node_in_canonical_outcomes_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_stale_source_commit_sha_in_inventory_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_tampered_artifact_digest_entry_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_failing_metric_or_experiment_or_frz_is_rejected",
+    "tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_cli_exits_2_on_integrity_failure_and_0_on_success",
     "tests/qualification/evol_x/gates/test_evol_x_production_import_boundaries.py::test_intergrax_production_tree_does_not_import_tests_or_testing_support",
     "tests/qualification/evol_x/gates/test_evol_x_selection.py::test_evol_x_t1_t2_node_ids_are_collectable_w3_04",
     "tests/qualification/evol_x/gates/test_evol_x_selection.py::test_evol_x_t_missing_collect_detected_w3_04",
@@ -206,7 +217,24 @@
     "tests/qualification/evol_x/gates/test_evol_x_workflow_matrix.py::test_representative_rows[change9-WM-03-MIGRATE]",
     "tests/qualification/evol_x/gates/test_evol_x_workflow_matrix.py::test_backward_compatible_entry_point_matches_matrix",
     "tests/qualification/evol_x/gates/test_evol_x_workflow_matrix.py::test_negative_matrix_tampering_is_detected",
-    "tests/qualification/evol_x/metrics/test_evol_x_m01_smoke.py::test_evol_m01_complete_classification_on_known_path",
-    "tests/qualification/evol_x/metrics/test_evol_x_metrics_runner.py::test_evol_x_metrics_runner_emits_m01_m11"
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_thresholds_match_ratified_canonical_values",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_every_base_metric_is_covered_by_a_reading",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-01]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-02]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-02C]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-03]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-03C]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-03E]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-03R]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-04]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-05]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-06]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-07]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-08]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-09]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-10]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_metric_is_measured_on_a_real_population_and_meets_threshold[EVOL-M-11]",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_populations_are_not_stubs",
+    "tests/qualification/evol_x/metrics/test_evol_x_metrics.py::test_make_reading_negative_cases"
   ]
 }

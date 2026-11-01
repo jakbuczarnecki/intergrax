@@ -1,0 +1,13 @@
+{
+  "schema_version": "evol_metric_populations.v1",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_EXPERIMENT_AND_METRIC_SPEC.md (P-S, P-H; OD-EVOL-07 promotes P-H)",
+  "p_h_window": {"anchor_sha": "bb4d1dec1f5894af671e1b8f0bb6759893b39711", "in_scope_commits": 40, "max_scan_commits": 400, "description": "last N non-merge commits touching in-scope .py paths, ending at the pinned anchor_sha (immutable population)"},
+  "p_s_arcs": [
+    {"arc_id": "A1", "oracle": "O-X", "changed_paths": ["testing_support/change_safety/contracts/enums.py"]},
+    {"arc_id": "A2", "oracle": "O-X", "changed_paths": ["testing_support/change_safety/graph/impact.py"]},
+    {"arc_id": "A3", "oracle": "O-X", "changed_paths": ["testing_support/change_safety/selection/policy.py"]},
+    {"arc_id": "A4", "oracle": "O-X", "changed_paths": ["testing_support/change_safety/assess/consumers.py"]},
+    {"arc_id": "A5", "oracle": "O-X", "changed_paths": ["testing_support/change_safety/discovery/extractors.py"]},
+    {"arc_id": "A6", "oracle": "O-X", "changed_paths": ["testing_support/change_safety/assess/workflow_evolution.py", "testing_support/change_safety/assess/deployment_safety.py"]}
+  ]
+}

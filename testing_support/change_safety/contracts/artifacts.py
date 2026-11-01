@@ -39,6 +39,7 @@ class MetricReadingArtifact(_Strict):
     threshold: float | None = None
     passed: bool | None = None
     population_digest: str | None = None
+    note: str = ""
 
 
 class EvolMetricsArtifact(_Strict):
