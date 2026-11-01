@@ -1,6 +1,6 @@
 # EVOL-X E2 — Human drill preparation record
 
-**Disposition:** PREP PUBLISHED — `PENDING_HUMAN_EXECUTION` (no human measurements in repo)
+**Disposition:** PREP PUBLISHED — `PENDING_HUMAN_EXECUTION` (no human measurements in repo). **Supplement:** [EVOL_X_E2_AUTOMATED_QUALIFICATION_RECORD.md](./EVOL_X_E2_AUTOMATED_QUALIFICATION_RECORD.md) (`AUTOMATED_DIAGNOSTIC` only).
 
 | Field | Value |
 |-------|--------|
@@ -27,7 +27,7 @@
 
 ## Open qualification note
 
-**F-EVOLX-E2-CAUSE-PREFLIGHT — CONFIRMED QUALIFICATION DEFECT** (see [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](./EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md)). Human M-09H drill **blocked** until oracle + documented derivation are corrected in an authorized implementation batch. Session log: `.tmp/session/evol-x-e2-m09h/preflight-cause-oracle.log`.
+Cause preflight: **PASS / HUMAN DRILL AUTHORIZED** @ TES `2b165516…` — [EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md](./EVOL_X_E2_CAUSE_ORACLE_PREFLIGHT_RECORD.md). Automated diagnostic batch (2026-11-01) does **not** satisfy human M-09H.
 
 ## Changed files (prep tree)
 
@@ -41,7 +41,6 @@ Follow [EVOL_X_E2_OPERATOR_EXECUTION_RUNBOOK.md](./EVOL_X_E2_OPERATOR_EXECUTION_
 
 | ID | Blocker |
 |----|---------|
-| G-03 | M-09H drill not executed |
+| G-03 | M-09H **human** drill not executed (automated diagnostic PASS is separate) |
 | G-04 | EVIDENCE_FINAL empty |
 | G-02 | OD-EVOL-11 auditor name not recorded |
-| F-EVOLX-E2-CAUSE-PREFLIGHT | **CONFIRMED QUALIFICATION DEFECT** — drill blocked |
