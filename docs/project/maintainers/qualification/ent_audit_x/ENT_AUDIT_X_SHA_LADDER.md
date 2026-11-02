@@ -11,8 +11,8 @@
 | PLAN_PUBLICATION_SHA | `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e` | First publication: master plan + annexes (8 files) |
 | PLAN_RECONCILIATION_SHA | `1656cb8659c0b5c8cac422f861856a59401f7ca1` | P-11/P-12/P-13 documentation corrections only |
 | IMPLEMENTATION_SHA | `86832319b08b3837cfb4ae9c90919389f202cc37` | Tier-0 runner + manifest + CLI + qual L1/L2 |
-| FINAL_PLAN_PUBLICATION_SHA | *pending commit on development* | W0–W5 agent wave; set to merge commit SHA when landed |
-| TEST_EXECUTION_SHA | *unset* | Clean-checkout pytest for L3 / FREEZE |
+| FINAL_PLAN_PUBLICATION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | W0–W6 B6 readiness wave landed on `development` |
+| TEST_EXECUTION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — log `.tmp/session/ent-audit-x-build/pytest.log` |
 | EVIDENCE_CANDIDATE_SHA | *unset* | Pre–independent-audit bundle |
 | EVIDENCE_PUBLICATION_SHA | *unset* | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |
