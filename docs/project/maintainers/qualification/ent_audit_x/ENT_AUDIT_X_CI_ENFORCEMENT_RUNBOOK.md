@@ -6,7 +6,8 @@
 
 | Check | Workflow |
 | --- | --- |
-| Enterprise audit FAST | `enterprise-audit.yml` job `ent-audit-fast` |
+| Enterprise audit FAST (real) | `enterprise-audit.yml` job `ent-audit-fast` — pytest L1/L2/L3 + CLI FAST without `--dry-run` |
+| Enterprise audit nightly | `enterprise-audit-nightly.yml` — qual suite + **FULL/FREEZE real** (dry-run **not** qualification) |
 | Unit regression (existing) | `unit-tests.yml` |
 
 ## Operator steps

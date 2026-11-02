@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +15,15 @@ from intergrax.platform.enterprise_audit.contracts import (
     AuditSeverity,
     DriftStatus,
 )
+
+_SEVERITY_RANK = {
+    AuditSeverity.INFO: 0,
+    AuditSeverity.TRACKED_DEBT: 1,
+    AuditSeverity.WARNING: 2,
+    AuditSeverity.ENVIRONMENT: 3,
+    AuditSeverity.ERROR: 4,
+    AuditSeverity.BLOCKER: 5,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +55,23 @@ def save_baseline(path: Path, baseline: EnterpriseAuditBaseline) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _message_fingerprint(message: str) -> str:
+    return hashlib.sha256(message.encode("utf-8")).hexdigest()[:16]
+
+
+def _regressed(baseline_row: dict, finding: AuditFinding) -> bool:
+    old_sev = AuditSeverity(str(baseline_row.get("severity", AuditSeverity.INFO)))
+    if _SEVERITY_RANK.get(finding.severity, 0) > _SEVERITY_RANK.get(old_sev, 0):
+        return True
+    old_fp = str(baseline_row.get("message_fingerprint", ""))
+    if old_fp and old_fp != _message_fingerprint(finding.message):
+        return True
+    old_schema = int(baseline_row.get("schema_version", 1))
+    if finding.check_id and old_schema > 0:
+        pass
+    return False
+
+
 def apply_drift(
     findings: tuple[AuditFinding, ...],
     baseline: EnterpriseAuditBaseline | None,
@@ -56,7 +83,8 @@ def apply_drift(
     current_ids = {f.finding_id for f in findings}
     for finding in findings:
         if finding.finding_id in baseline.findings:
-            drift = DriftStatus.UNCHANGED
+            row = baseline.findings[finding.finding_id]
+            drift = DriftStatus.REGRESSED if _regressed(row, finding) else DriftStatus.UNCHANGED
         else:
             drift = DriftStatus.NEW
         updated.append(
@@ -84,3 +112,15 @@ def apply_drift(
             )
         )
     return tuple(updated)
+
+
+def findings_to_baseline_rows(findings: tuple[AuditFinding, ...]) -> dict[str, dict]:
+    rows: dict[str, dict] = {}
+    for finding in findings:
+        rows[finding.finding_id] = {
+            "check_id": finding.check_id,
+            "severity": finding.severity.value,
+            "message_fingerprint": _message_fingerprint(finding.message),
+            "schema_version": 1,
+        }
+    return rows

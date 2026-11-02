@@ -24,7 +24,7 @@ def test_runner_dry_run_writes_reports(tmp_path: Path) -> None:
 
     repo = Path(__file__).resolve().parents[4]
     out = tmp_path / "out"
-    runner = EnterpriseAuditRunner(repo, dry_run=True, max_workers=1)
+    runner = EnterpriseAuditRunner(repo, dry_run=True)
     report, manifest, exit_code = runner.run(AuditMode.FAST, output_dir=out)
     assert (out / "enterprise_audit_report.json").is_file()
     assert manifest.checks_planned >= 1

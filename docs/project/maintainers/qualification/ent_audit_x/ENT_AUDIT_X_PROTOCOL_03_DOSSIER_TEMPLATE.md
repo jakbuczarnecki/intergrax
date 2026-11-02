@@ -18,4 +18,4 @@
 - [ ] FRZ-AUD matrix reconciliation
 - [ ] Adversarial suite results
 
-**Status:** template only — independent audit not executed @ current HEAD.
+**Status:** dossier inputs prepared @ W6 — evidence path `.tmp/proof/ent-audit-x/<suite-run-id>/`; **independent audit not signed** @ current HEAD.

@@ -70,6 +70,8 @@ class ManifestCheck:
     category: AuditCategory = AuditCategory.ARCHITECTURE
     pg_id: str = ""
     depends_on: frozenset[str] = frozenset()
+    fast_mandatory: bool = False
+    schema_version: int = 1
 
 
 @dataclass(frozen=True, slots=True)

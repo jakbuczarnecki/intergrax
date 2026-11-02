@@ -9,7 +9,9 @@ import argparse
 import sys
 from pathlib import Path
 
+from intergrax.platform.enterprise_audit.changed_since import select_checks_for_changed_since
 from intergrax.platform.enterprise_audit.contracts import AuditMode
+from intergrax.platform.enterprise_audit.manifest import load_default_manifest
 from intergrax.platform.enterprise_audit.runner import EnterpriseAuditRunner
 
 
@@ -37,7 +39,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Report output directory",
     )
     parser.add_argument("--dry-run", action="store_true", help="Plan checks without executing gates")
-    parser.add_argument("--max-workers", type=int, default=2)
     parser.add_argument(
         "--check-id",
         action="append",
@@ -46,37 +47,53 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--since-sha",
-        help="For CHANGED-SINCE: baseline git SHA (uses all EVOL-mapped checks when set)",
+        help="For CHANGED-SINCE: baseline git SHA (required)",
+    )
+    parser.add_argument(
+        "--bootstrap-baseline",
+        action="store_true",
+        help="FREEZE: write candidate ENTERPRISE_AUDIT_BASELINE.json after clean run",
+    )
+    parser.add_argument(
+        "--evidence-bundle",
+        action="store_true",
+        help="Write evidence_manifest.v1.json under output-dir",
     )
     args = parser.parse_args(argv)
     mode = _parse_mode(args.mode)
+    root = _repo_root()
+    checks = load_default_manifest()
     changed: frozenset[str] | None = None
     if mode is AuditMode.CHANGED_SINCE:
-        changed = frozenset(
-            cid
-            for cid in (
-                "ENT-A-EVOL-01",
-                "ENT-A-EVOL-02",
-                "ENT-A-EVOL-03",
-                "ENT-A-INV-01",
-                "ENT-A-INV-02",
-                "ENT-A-INV-03",
-                "ENT-A-REG-02",
-            )
-        )
+        if not args.since_sha:
+            print("CHANGED-SINCE requires --since-sha", file=sys.stderr)
+            return int(EnterpriseAuditExitCode_from_internal())
+        try:
+            changed = select_checks_for_changed_since(checks, repo_root=root, since_sha=args.since_sha)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return int(EnterpriseAuditExitCode_from_internal())
     check_filter = frozenset(args.check_ids) if args.check_ids else None
     runner = EnterpriseAuditRunner(
-        _repo_root(),
-        max_workers=args.max_workers,
+        root,
         dry_run=args.dry_run,
+        require_clean_repo=mode is AuditMode.FREEZE,
     )
     _, _, exit_code = runner.run(
         mode,
         output_dir=args.output_dir,
         changed_check_ids=changed,
         check_ids_filter=check_filter,
+        bootstrap_baseline=args.bootstrap_baseline,
+        write_evidence_bundle=args.evidence_bundle,
     )
     return int(exit_code)
+
+
+def EnterpriseAuditExitCode_from_internal() -> int:
+    from intergrax.platform.enterprise_audit.contracts import EnterpriseAuditExitCode
+
+    return EnterpriseAuditExitCode.INTERNAL
 
 
 if __name__ == "__main__":

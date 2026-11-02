@@ -7,6 +7,6 @@
 - OD-ENT-00 EVOL predecessor CLOSED; OD-ENT-08 stage closure recorded
 - OD-ENT-02 branch protection live
 
-**Handoff artifacts:** L3 logs, `enterprise_audit_report.json` @ freeze SHA, updated [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md) (`IMPLEMENTATION_SHA`, `TEST_EXECUTION_SHA`, `INDEPENDENT_AUDIT_SHA`).
+**Handoff artifacts:** L3 logs @ `TEST_EXECUTION_SHA`, `enterprise_audit_report.json`, evidence bundle under `.tmp/proof/ent-audit-x/<run-id>/`, updated [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md).
 
-**Status @ product implementation wave:** handoff **NOT READY** — independent audit pending.
+**Status @ W6 dossier prep:** Implementation wave landed; **READY FOR INDEPENDENT B6** pending operator Protocol 03 — **not signed** by agent.

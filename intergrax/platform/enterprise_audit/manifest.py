@@ -33,6 +33,8 @@ def _parse_check(raw: dict) -> ManifestCheck:
         category=AuditCategory(raw.get("category", "architecture")),
         pg_id=str(raw.get("pg_id", "")),
         depends_on=frozenset(raw.get("depends_on", ())),
+        fast_mandatory=bool(raw.get("fast_mandatory", False)),
+        schema_version=int(raw.get("schema_version", 1)),
     )
 
 

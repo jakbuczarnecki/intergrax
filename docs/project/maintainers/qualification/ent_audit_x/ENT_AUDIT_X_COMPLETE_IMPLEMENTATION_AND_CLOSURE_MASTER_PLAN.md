@@ -6,6 +6,8 @@
 **Disposition:** **MASTER PLAN CORRECTED / PUBLISHED / READY FOR FINAL INDEPENDENT ACCEPTANCE**  
 **Stage status @ HEAD:** IMPLEMENTATION IN PROGRESS — Tier-0 runner + manifest + CLI + qual L1/L2; FRZ-AUD-01..10 OPEN; Protocol 03 B6 pending.
 
+> **SSOT update (W0–W6):** Execution authority is [ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md](./ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md). Legacy completion/certification plans are historical only.
+
 **Normative authorities @ PLAN_BASELINE_SHA (blob SHA):**
 
 | Document | Blob SHA @ PLAN_BASELINE_SHA |
@@ -33,7 +35,7 @@
 
 **TO-BE:** Tier-0 modular **Enterprise Audit System** — `EnterpriseAuditRunner` orchestrating allowlisted **AuditCheck** adapters (pytest/script, read-only by default), emitting versioned **AuditReport** + **AuditExecutionManifest**, comparing **ACCEPTED_BASELINE_SHA** via **AuditDriftEngine**, exposed through CLI and CI modes FAST/FULL/FREEZE/CHANGED-SINCE with exit codes 0–3.
 
-**AS-IS:** ~411 scattered `test_*gate*.py` files and 33 qualification directories **EXIST_AND_QUALIFIED** per prior stages at **scoped SHAs**; **no** unified runner (**MISSING**). ECAP-P2 applies: historical CLOSED ≠ current-HEAD PASS.
+**AS-IS:** ~411 scattered `test_*gate*.py` files and 33 qualification directories **EXIST_AND_QUALIFIED** per prior stages at **scoped SHAs**; unified runner **EXISTS** @ `intergrax/platform/enterprise_audit/` (see final master plan). ECAP-P2 applies: historical CLOSED ≠ current-HEAD PASS.
 
 **Forbidden:** Second governance, execution authority, semantic registry, contract authority, provider selector, qualification authority, or parallel roadmap.
 
@@ -49,8 +51,8 @@
 | Qualification SSOTs | `tests/qualification/{ebh_5,ebh_6,ebh_7,evol_x,dup_x,roadmap_replay_x,tenant_x,config_x,gov_x2,state_x,...}` | EXISTS_AND_QUALIFIED scoped |
 | CI regression profiles | [scripts/ci/run_regression_gate_ci.py](../../../scripts/ci/run_regression_gate_ci.py) | EXISTS_PARTIAL |
 | Script gates | [scripts/gates/](../../../scripts/gates/) (15 modules) | EXISTS_PARTIAL |
-| Enterprise audit product | `intergrax/platform/enterprise_audit/` | **MISSING** |
-| ENT qual suite | `tests/qualification/ent_audit_x/` | **MISSING** |
+| Enterprise audit product | `intergrax/platform/enterprise_audit/` | **EXISTS** (scaffold @ IMPLEMENTATION_SHA) |
+| ENT qual suite | `tests/qualification/ent_audit_x/` | **EXISTS** (L1/L2/L3 expanding) |
 | FRZ-AUD criteria | checklist rows | **OPEN** |
 | GitHub branch protection | `development` | **MISSING** (gh API 404 verified) |
 
@@ -98,7 +100,7 @@ AuditFinding[] → AuditDriftEngine → AuditReportBuilder
 
 ## F. Implementation WBS
 
-[ANNEX_H_WBS.md](./ANNEX_H_WBS.md) — **128** atomic tasks, **13** batches (B0–B12). Batches derived from dependencies (not fixed 14).
+[ANNEX_H_WBS.md](./ANNEX_H_WBS.md) — **273** atomic tasks, **13** batches (B0–B12). Batches derived from dependencies (not fixed 14).
 
 ---
 

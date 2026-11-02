@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "evidence_manifest.v1",
+  "type": "object",
+  "required": ["schema_version", "run_id", "qualification_sha", "artifacts"],
+  "properties": {
+    "schema_version": { "type": "integer" },
+    "run_id": { "type": "string" },
+    "qualification_sha": { "type": "string" },
+    "artifacts": { "type": "array" }
+  }
+}

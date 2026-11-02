@@ -24,7 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: L1/L2 qualification
-        run: uv run pytest tests/qualification/ent_audit_x/unit tests/qualification/ent_audit_x/integration -q
-      - name: Enterprise audit CLI (dry-run)
+      - name: L1/L2/L3 qualification
+        run: uv run pytest tests/qualification/ent_audit_x/unit tests/qualification/ent_audit_x/integration tests/qualification/ent_audit_x/l3 -q
+      - name: Enterprise audit CLI (FAST real execution)
+        run: uv run python scripts/enterprise_audit/run_enterprise_audit.py --mode FAST --output-dir .tmp/proof/ent-audit-x/ci-fast
+      - name: Enterprise audit CLI (dry-run smoke)
         run: uv run python scripts/enterprise_audit/run_enterprise_audit.py --mode ${{ inputs.mode || 'FAST' }} --dry-run --output-dir .tmp/proof/ent-audit-x/ci-dry-run

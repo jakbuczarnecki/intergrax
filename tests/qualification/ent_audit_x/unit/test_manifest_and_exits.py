@@ -12,11 +12,11 @@ def test_manifest_has_eighty_five_checks() -> None:
     assert len(checks) == 85
 
 
-def test_fast_mode_skips_internal_pending() -> None:
+def test_fast_mode_skips_nothing_when_all_executable() -> None:
     checks = load_default_manifest()
     fast = checks_for_mode(checks, AuditMode.FAST)
     assert all(c.entrypoint_kind != "internal_pending" for c in fast)
-    assert len(fast) < len(checks)
+    assert len(fast) == len(checks)
 
 
 def test_exit_code_clean_when_no_findings() -> None:

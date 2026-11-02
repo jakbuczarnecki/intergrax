@@ -54,6 +54,8 @@ def write_reports(
     report: AuditReport,
     manifest: AuditExecutionManifest,
     outcomes: tuple[CheckRunOutcome, ...],
+    *,
+    extra_artifacts: dict | None = None,
 ) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     json_path = output_dir / "enterprise_audit_report.json"
@@ -66,6 +68,10 @@ def write_reports(
         json.dumps([asdict(o) for o in outcomes], indent=2) + "\n",
         encoding="utf-8",
     )
+    if extra_artifacts:
+        for name, data in extra_artifacts.items():
+            path = output_dir / name
+            path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return json_path, md_path
 
 

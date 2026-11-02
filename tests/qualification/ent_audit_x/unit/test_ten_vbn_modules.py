@@ -17,6 +17,10 @@ def test_ten_and_vbn_module_ids_present_in_manifest() -> None:
         assert vbn in ids
 
 
-def test_vbn_rollup_reports_thirty_one_domains() -> None:
-    rollup = vbn_domain_rollup(())
-    assert rollup["domains_total"] == 31
+def test_vbn_rollup_uses_domain_report_when_present() -> None:
+    report = {
+        "domains_total": 31,
+        "domains": [{"status": "QUALIFIED"} for _ in range(31)],
+    }
+    rollup = vbn_domain_rollup((), domain_report=report)
+    assert rollup["domains_accounted"] == 31

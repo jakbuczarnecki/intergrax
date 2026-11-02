@@ -49,6 +49,25 @@ def compute_exit_code(
     return EnterpriseAuditExitCode.CLEAN
 
 
+def fast_floor_incomplete(
+    mode: AuditMode,
+    all_checks: tuple,
+    outcomes: tuple[CheckRunOutcome, ...],
+) -> bool:
+    if mode is not AuditMode.FAST:
+        return False
+    mandatory_ids = {c.check_id for c in all_checks if getattr(c, "fast_mandatory", False)}
+    executed_ids = {o.check_id for o in outcomes if o.executed}
+    missing = mandatory_ids - executed_ids
+    if missing:
+        return True
+    for outcome in outcomes:
+        if outcome.check_id in mandatory_ids and outcome.findings:
+            if any(f.severity is AuditSeverity.TRACKED_DEBT for f in outcome.findings):
+                return True
+    return False
+
+
 def default_limitations(mode: AuditMode) -> tuple[str, ...]:
     base = (
         "Path B: FRZ-PRD live qualification dimension remains OPEN — see QUALIFICATION_LIMITATIONS.",

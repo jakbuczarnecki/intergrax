@@ -26,6 +26,24 @@ def _finding_from_failure(check: ManifestCheck, message: str) -> AuditFinding:
     )
 
 
+def skip_prerequisite(check: ManifestCheck) -> CheckRunOutcome:
+    finding = AuditFinding(
+        finding_id=f"{check.check_id}:SKIPPED_PREREQ",
+        check_id=check.check_id,
+        severity=AuditSeverity.ERROR,
+        category=AuditCategory.INTERNAL,
+        message="Skipped due to failed prerequisite",
+        source_path=check.entrypoint,
+    )
+    return CheckRunOutcome(
+        check_id=check.check_id,
+        executed=False,
+        skipped=True,
+        skip_reason="skipped_prerequisite",
+        findings=(finding,),
+    )
+
+
 def execute_manifest_check(
     check: ManifestCheck,
     sandbox: CheckExecutionSandbox,
