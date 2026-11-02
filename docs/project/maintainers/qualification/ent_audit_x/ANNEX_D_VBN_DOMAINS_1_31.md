@@ -1,6 +1,7 @@
 # ANNEX D — VBN roadmap domains 1–31
 
-**START_HEAD:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
+**PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
+**PLAN_PUBLICATION_SHA:** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
 **Inventory replay @ HEAD:** 69 concerns in `vendor_backend_concern_inventory()`; gate `test_ebh5_g06_01_roadmap_31_domains_accounted` (EBH-5).
 
 | Dom | Domain | Production-effective surface | Provider/backend | Owner | Existing evidence @ HEAD | Current-HEAD gap | RPL | Required ENT check | Test / nodeid | Closure |

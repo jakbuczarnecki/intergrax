@@ -1,6 +1,6 @@
 # ANNEX F — Exact AS-IS gap register
 
-**START_HEAD:** `8a41d32043b89e555d7c18e052cf7022b8c94681`
+**START_HEAD / PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
 
 ## Separate counts (not merged)
 
@@ -9,7 +9,7 @@
 | GAP-C missing components | 14 |
 | GAP-P partial mechanisms | 9 |
 | Mandatory check definitions (Annex C) | 85 |
-| GAP-COV coverage deficiencies (no ENT adapter @ HEAD) | 85 |
+| GAP-COV coverage deficiencies (no ENT adapter @ PLAN_BASELINE) | 85 |
 | GAP-D documentation gaps | 8 |
 | GAP-B formal blockers | 6 |
 | GAP-O external/operator dependencies | 9 |

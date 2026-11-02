@@ -1,7 +1,17 @@
 # ANNEX G — Primary gate registry (ENT orchestration)
 
-**START_HEAD:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
-**Corpus size:** 411 files matching `test_*gate*.py` under `tests/` @ HEAD (mechanical count).
+**PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
+**PLAN_PUBLICATION_SHA:** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
+**Corpus size:** 411 files matching `test_*gate*.py` under `tests/` @ PLAN_BASELINE_SHA (mechanical count).
+
+## Historical vs executable
+
+| Tier | Scope | Count | Runner policy |
+| --- | --- | ---: | --- |
+| **Historical corpus** | All `test_*gate*.py` under `tests/` | 411 | Indexed phase-2 (ENT-T-0303); excluded from FAST default |
+| **Executable primary** | PG-001..PG-020 below | 20 | Phase-1 manifest; allowlisted nodeids only |
+
+See [ANNEX_G2_CONTROL_GATE_MAPPING.md](./ANNEX_G2_CONTROL_GATE_MAPPING.md) for **85/85** check-level mapping (adapter + qual WBS).
 
 ## Adapter qualification rules
 

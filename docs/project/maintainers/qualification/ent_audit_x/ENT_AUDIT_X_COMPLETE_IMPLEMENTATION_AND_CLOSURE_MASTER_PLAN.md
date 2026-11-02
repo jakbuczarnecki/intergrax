@@ -1,13 +1,14 @@
 # ENT-AUDIT-X — Complete implementation and closure master plan
 
 **Schema:** execution SSOT for stage ENT-AUDIT-X @ `development`  
-**PLAN_PUBLICATION_SHA / START_HEAD:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
-**Disposition:** **COMPLETE MASTER PLAN — INDEPENDENT REVIEW READY** (planning remediation wave)  
+**PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
+**PLAN_PUBLICATION_SHA:** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
+**Disposition:** **MASTER PLAN CORRECTED / PUBLISHED / READY FOR FINAL INDEPENDENT ACCEPTANCE**  
 **Stage status @ HEAD:** OPEN — no product runner; FRZ-AUD-01..10 OPEN  
 
-**Normative authorities @ HEAD (blob SHA):**
+**Normative authorities @ PLAN_BASELINE_SHA (blob SHA):**
 
-| Document | Blob SHA @ START_HEAD |
+| Document | Blob SHA @ PLAN_BASELINE_SHA |
 | --- | --- |
 | [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) | `f53d67c57abd33a680bb1ccecb9daf9497f4a463` |
 | [PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md](../PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) | `3cd1a17231b35edad455b6e327a7f8f68d5e4ab7` |
@@ -22,8 +23,8 @@
 | D | [ANNEX_D_VBN_DOMAINS_1_31.md](./ANNEX_D_VBN_DOMAINS_1_31.md) |
 | B | [ANNEX_B_FRZ_AUD_CLOSURE_MATRIX.md](./ANNEX_B_FRZ_AUD_CLOSURE_MATRIX.md) |
 | F | [ANNEX_F_GAP_REGISTER.md](./ANNEX_F_GAP_REGISTER.md) |
-| G | [ANNEX_G_GATE_REGISTRY.md](./ANNEX_G_GATE_REGISTRY.md) |
-| H | [ANNEX_H_WBS.md](./ANNEX_H_WBS.md) — 128 tasks / 13 batches |
+| G | [ANNEX_G_GATE_REGISTRY.md](./ANNEX_G_GATE_REGISTRY.md) + [ANNEX_G2_CONTROL_GATE_MAPPING.md](./ANNEX_G2_CONTROL_GATE_MAPPING.md) |
+| H | [ANNEX_H_WBS.md](./ANNEX_H_WBS.md) — **273** tasks / 13 batches |
 | SHA | [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md) |
 
 ---
@@ -325,6 +326,6 @@ No hypothetical waiver is treated as approved.
 | 12 | Duplicate semantic authorities | **0** |
 | 13 | Unknown mandatory closure steps | **0** (§O + B12) |
 
-**Verdict:** **ENT-AUDIT-X — COMPLETE MASTER PLAN — INDEPENDENT REVIEW READY**
+**Verdict:** **ENT-AUDIT-X — MASTER PLAN CORRECTED / PUBLISHED / READY FOR FINAL INDEPENDENT ACCEPTANCE**
 
-**Implementation:** **NOT AUTHORIZED** until independent plan acceptance.
+**Implementation:** **NOT AUTHORIZED** until final independent plan acceptance. P-11/P-12/P-13 addressed in PLAN_RECONCILIATION_SHA commit.
