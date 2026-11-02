@@ -1,6 +1,7 @@
 {
   "schema_version": "evol_x_auto_b6_governance_status.v1",
   "operator_decision_id": "OD-EVOL-14",
+  "operator_wave_execution_decision_id": "OD-EVOL-15",
   "operator_decision_status": "OPERATOR_APPROVED_DIRECTION",
   "ecap_amendment_id": "ECAP-P4-EVOL-SCOPE-AUTO-B6",
   "ecap_amendment_version": "2026-11-02.1-pending",

@@ -134,7 +134,7 @@ def _formal_authority_readiness(register_text: str, governance: Mapping[str, Any
     }
 
 
-def _verify_mode_a_in_worktree(final_wt: Path) -> tuple[int, str, str, dict[str, object]]:
+def _verify_mode_a_in_worktree(final_wt: Path, *, orchestrator_repo: Path) -> tuple[int, str, str, dict[str, object]]:
     """Run P03 Mode A using worktree sources (normative @ evidence SHA)."""
     env = _subprocess_env()
     env["PYTHONPATH"] = str(final_wt)
@@ -150,7 +150,7 @@ def _verify_mode_a_in_worktree(final_wt: Path) -> tuple[int, str, str, dict[str,
         "'evidence_head': p03.head_sha(Path('.'))}))\n"
     )
     proc = subprocess.run(
-        ["uv", "run", "python", "-c", code],
+        ["uv", "run", "--directory", str(orchestrator_repo), "python", "-c", code],
         cwd=final_wt,
         text=True,
         capture_output=True,
@@ -354,7 +354,7 @@ def run_verification(
         if not m09a.is_file():
             raise ValueError(f"worktree @ {evidence_final[:12]} missing {m09a.name} — checkout incomplete")
         cmd_a = ["uv", "run", "python", "-c", "mode_a_in_worktree"]
-        rc_a, out_a, err_a, payload_a = _verify_mode_a_in_worktree(final_wt)
+        rc_a, out_a, err_a, payload_a = _verify_mode_a_in_worktree(final_wt, orchestrator_repo=repo)
         logs.append(
             StepLog(
                 step="mode_a_verify_evidence_publish",

@@ -60,7 +60,9 @@ A second Cursor worktree or subagent is not that boundary. Deployment status: **
 
 The previous Mode A step checked `git show` before `uv sync` and before the P03 module was required to exist on disk, then imported it with the parent interpreter. The verifier now syncs the FINAL worktree first, waits until the evidence blob and `p03.py` are present on disk, and runs Mode A through `uv run` in that worktree. Windows `--basetemp` outside the nested worktree is unchanged (`build/pytest-b6-independent-replay`).
 
-Confirmation (`--skip-mode-b`, session `.tmp/session/evol-x-auto-b6-mode-a/`, not a publication): Mode A **PASS** (exit 0). Technical verdict **INCOMPLETE** because Mode B was not repeated. Authority **PENDING_REQUIRED_APPROVALS**. Attestation **ABSENT**. Formal eligibility **NOT_ELIGIBLE**. Acceptance SHA null. The qualified population and TES are unchanged, so Mode B was not re-run.
+Confirmation (`--skip-mode-b`, session `.tmp/session/evol-x-auto-b6-full-wave-v2/`, not a publication): Mode A **PASS** (exit 0). Technical verdict **INCOMPLETE** because Mode B was not repeated. Authority **PENDING_REQUIRED_APPROVALS**. Attestation **ABSENT**. Formal eligibility **NOT_ELIGIBLE**. Acceptance SHA null. The qualified population and TES are unchanged, so Mode B was not re-run.
+
+**OD-EVOL-15 wave:** see [EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md](./EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md). Verifier fix: Mode A subprocess uses `uv run --directory <orchestrator repo>` with FINAL worktree `PYTHONPATH`.
 
 ## Qualification
 
