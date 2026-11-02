@@ -2,6 +2,8 @@
 
 **Disposition:** preparation only — **no B6 PASS**, **no FRZ promotion**, **no agent signature**.
 
+**Durable E3 technical evidence (orchestrator publication):** [b6_technical_qualification/](./b6_technical_qualification/) — consolidated dossier, A1–A4 reports, G-xx matrix, unsigned Protocol 03 **draft** (`EVOL_X_PROTOCOL_03_INDEPENDENT_AUDIT_RECORD_DRAFT.md`). Formal B6 remains **PENDING** until OD-EVOL-11 auditor signs.
+
 **Authority:** [EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md](../EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md) Part V–VII; [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](../ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) B6; [EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md](./EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md) (OD-EVOL-13).
 
 ## Active SHA ladder (closure chain)
