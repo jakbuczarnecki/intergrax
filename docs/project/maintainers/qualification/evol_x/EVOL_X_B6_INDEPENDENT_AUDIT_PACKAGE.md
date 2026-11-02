@@ -2,6 +2,8 @@
 
 **Disposition:** preparation only — **no B6 PASS**, **no FRZ promotion**, **no agent signature**.
 
+**OD-EVOL-14 (2026-11-02):** automation-first B6 direction is approved; ECAP activation stays `PENDING_REQUIRED_APPROVALS`. Current record: [b6_technical_qualification/EVOL_X_AUTO_B6_IMPLEMENTATION_AND_QUALIFICATION_REPORT.md](./b6_technical_qualification/EVOL_X_AUTO_B6_IMPLEMENTATION_AND_QUALIFICATION_REPORT.md). `B6_ACCEPTANCE_PUBLICATION_SHA` remains unset.
+
 **Durable E3 technical evidence (orchestrator publication):** [b6_technical_qualification/](./b6_technical_qualification/) — consolidated dossier, A1–A4 reports, G-xx matrix, unsigned Protocol 03 **draft** (`EVOL_X_PROTOCOL_03_INDEPENDENT_AUDIT_RECORD_DRAFT.md`). Formal B6 remains **PENDING** until OD-EVOL-11 auditor signs.
 
 **W7-01 consolidated review package (appointment + acceptance checklist):** [EVOL_X_W7_01_FORMAL_INDEPENDENT_B6_ACCEPTANCE_PACKAGE.md](./EVOL_X_W7_01_FORMAL_INDEPENDENT_B6_ACCEPTANCE_PACKAGE.md)

@@ -21,6 +21,7 @@
 | **OD-EVOL-08** | SIGNED / APPROVED | 2026-11-01 | W0-07: M-09 SLA ratified |
 | **OD-EVOL-08-M1** | **OPERATOR APPROVED** | 2026-11-01 | M-09H measurement policy (human attribution clock). Supplements OD-EVOL-08; thresholds unchanged. See decision text below. |
 | **OD-EVOL-13** | **OPERATOR APPROVED** | 2026-11-01 | Automation-first **scoped** EVOL-X acceptance (`EVOL-M-09A`, `AUTOMATION_FIRST_SCOPED` FINAL). **M-09H human remains NOT_MEASURED.** See [EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md](./EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md). |
+| **OD-EVOL-14** | **OPERATOR APPROVED — DIRECTION AND IMPLEMENTATION ONLY** | 2026-11-02 | Automation-first organizational B6 **direction** for EVOL-X `AUTOMATION_FIRST_SCOPED` only. Does **not** put `ECAP-P4-EVOL-SCOPE-AUTO-B6` in force, name an auditor, authorize self-approval, promote `FRZ-*`, or declare EVOL-X CLOSED. Activation remains `PENDING_REQUIRED_APPROVALS`. See the decision section below. |
 | **OD-EVOL-11** | SIGNED / APPROVED (appointment authorized; **auditor identity NOT NAMED**) | 2026-11-01 | W0-08: operator-appointed independent auditor (must differ from implementer/agent). Operator message and auth package carry no name; **operator must record the auditor id in this row before W7-01**. Agent does not self-appoint. |
 | **OD-EVOL-12** | **PENDING** | — | W7-03 (Batch G not in 2026-11-01 scope) |
 | **OD-EVOLX-08** | **PENDING** | — | W7-04 (Batch G not in 2026-11-01 scope) |
@@ -41,6 +42,27 @@
 | **OD-EVOL-12** | «At W7 promote FRZ-EVOL-08/10 to PASS with scoped footnotes (Option A).» | FRZ shared owners | Leave OPEN to ENT-AUDIT-X | W7-05 checklist | Docs only | No | W7 (**PENDING**) |
 | **OD-EVOL-08-M1** | «**EVOL-M-09H measurement policy (OPERATOR APPROVED).** (1) **`attribution_seconds`** is the human clock: it starts when the evaluator receives the **complete diagnostic packet** for the case and stops when the evaluator **submits the diagnosis, before** the expected/canonical answer is shown. (2) **`tool_seconds`** (qualified dossier/drill tool runtime on the seed path, as EVOL-M-09T) is measured **separately** and is **not** part of `attribution_seconds`. (3) **Thresholds unchanged:** `tool_seconds` ≤ **120 s per case**; **median `attribution_seconds` ≤ 900 s** (equality allowed). The 900 s median MUST NOT be applied to tool timing. (4) Drill artifact: `schema_version` exactly `evol_m09_human_drill.v2`, `measurement_policy_id` exactly `OD-EVOL-08-M1`; v1 is rejected fail-closed. (5) Human measurements are produced only by the human evaluator (no agent/synthetic timings); Mode A verifies arithmetic and bindings, not the human attestation.» | Finding `F-EVOLX-P0-M09H-ATTRIBUTION-SLA-FALSE-PASS`: v1 applied 900 s to tool median | Keep v1 (rejected: false PASS) | Drill v2 schema, Mode A dual SLA, N-M09-17..28 | Yes (Q tooling: `artifacts.py`, `p03.py`, tests) | No | M-09H FINAL evidence |
 | **OD-EVOL-13** | «**OPERATOR APPROVED — EVOL-X AUTOMATION-FIRST SCOPED ACCEPTANCE** — see [EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md](./EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md).» | Distinct **EVOL-M-09A** + P03 profile `AUTOMATION_FIRST_SCOPED`; **M-09H NOT_MEASURED** | Human-only FINAL (still valid under **HUMAN_FULL**) | Scoped FINAL verifier + evidence | Yes | No | Scoped FINAL + independent B6 |
+| **OD-EVOL-14** | «**OPERATOR APPROVED — DIRECTION AND IMPLEMENTATION ONLY.** Approve the EVOL-X-only automation-first B6 direction under `AUTOMATION_FIRST_SCOPED`: separate evidence producer from acceptance authority; require security review, independent key custody, and a signed machine attestation; forbid implementer self-approval, unrelated `FRZ-*` promotion, and automatic EVOL-X CLOSED. Normative ECAP activation stays `PENDING_REQUIRED_APPROVALS` until maintainer publication, security review, and independent custody exist. `B6_ACCEPTANCE_PUBLICATION_SHA` stays unset.» | ECAP-§1.6 / ECAP-P4; amendment `2026-11-02.1-pending` | Human OD-EVOL-11 sign-off (still required while the amendment is not in force) | Attestation contract + verifier gates | Yes (Q tooling only) | No | Does not satisfy W7-01..W7-06 |
 | **N-04 (OD)** | «Adopt **N4-A**: graph semver in migration docs only until optional N4-B approved.» | [EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md](EVOL_X_N04_GRAPH_VERSION_RECONCILIATION_W1.md) | N4-B Class B field | W4 WM rows | N4-B only | **Yes** (wording) | W4 if N4-B |
 
-**OD-EVOL-11** (auditor appointment): **APPROVED, identity not named** (see W0 table) — name required before W7 independent B6; recommended before W6 evidence pack.
+**OD-EVOL-11** (auditor appointment): **APPROVED, identity not named** (see W0 table) — name required before W7 independent B6; recommended before W6 evidence pack. OD-EVOL-14 does not fill this identity.
+
+## OD-EVOL-14 — automated B6 direction (2026-11-02)
+
+**Status:** OPERATOR APPROVED — DIRECTION AND IMPLEMENTATION ONLY.  
+**Normative ECAP effect:** none. Amendment activation `PENDING_REQUIRED_APPROVALS`.
+
+Recorded constraints:
+
+- Scope is EVOL-X `AUTOMATION_FIRST_SCOPED` only.
+- Evidence producer and acceptance authority must be separated.
+- Security review is required before normative activation.
+- Signing keys require independent custody. Keys minted in an implementer workspace are `NON_PRODUCTION_TEST_ONLY` and cannot authorize formal B6.
+- Formal acceptance requires a signed machine attestation under the versioned contract.
+- The implementer must not self-approve.
+- Unrelated `FRZ-*` criteria must not be promoted. FRZ-EVOL-07 stays OPEN.
+- EVOL-X CLOSED is not automatic. OD-EVOL-12 and OD-EVOLX-08 remain PENDING.
+- `B6_ACCEPTANCE_PUBLICATION_SHA` remains unset.
+
+Machine status: [EVOL_X_AUTO_B6_GOVERNANCE_STATUS.json](./EVOL_X_AUTO_B6_GOVERNANCE_STATUS.json).  
+Amendment: [EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT.md](./EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT.md).

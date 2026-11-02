@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""EVOL-X B6 independent *technical* verification (read-only, separate worktrees).
+"""EVOL-X B6 verification (technical replay + authority + attestation).
 
-Produces automation qualification output and a formal-authority readiness result.
-Does **not** sign B6, name an auditor, or publish ``B6_ACCEPTANCE_PUBLICATION_SHA``.
+Mechanical replay uses separate git worktrees @ FINAL (Mode A) and TES (Mode B).
+Organizational acceptance is a separate field. A technical PASS does not make
+formal acceptance eligible. This tool does not sign B6 and does not publish
+``B6_ACCEPTANCE_PUBLICATION_SHA``.
 
-Mechanical independence: separate git worktrees @ FINAL (Mode A) and TES (Mode B).
-Organizational independence: still requires OD-EVOL-11 named human/eligible auditor per ECAP.
+Test credentials (``NON_PRODUCTION_TEST_ONLY``) cannot authorize formal B6.
+ECAP-P4-EVOL-SCOPE-AUTO-B6 stays inactive until its governance record says
+``IN_FORCE``.
 """
 
 from __future__ import annotations
@@ -22,9 +25,16 @@ import subprocess
 import sys
 import time
 import uuid
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+
+from scripts.qualification.evol_x_b6_attestation import (
+    default_governance_path as _default_governance_path,
+)
+from scripts.qualification.evol_x_b6_attestation import evaluate_acceptance, load_governance
 
 _REPO = Path(__file__).resolve().parents[2]
 _P03 = _REPO / "scripts" / "qualification" / "evol_x_p03_evidence.py"
@@ -80,18 +90,41 @@ def _parse_od11_register(text: str) -> tuple[bool, str]:
     if _OD11_NAMED.search(text):
         return True, "auditor_id present in register"
     if _OD11_UNNAMED.search(text):
-        return False, "OD-EVOL-11 appointment approved but auditor identity not named (G-02)"
+        return (
+            False,
+            "OD-EVOL-11 appointment approved but auditor identity not named (G-02); "
+            "OD-EVOL-14 does not supply this identity",
+        )
     return False, "OD-EVOL-11 row not found or ambiguous"
 
 
-def _formal_authority_readiness(register_text: str) -> dict[str, object]:
+def _formal_authority_readiness(register_text: str, governance: Mapping[str, Any]) -> dict[str, object]:
     named, note = _parse_od11_register(register_text)
+    activation = governance.get("ecap_amendment_activation")
+    effect = governance.get("normative_effect")
+    approvals = governance.get("required_approvals_present")
+    approvals_map = approvals if isinstance(approvals, dict) else {}
+    amendment_in_force = activation == "IN_FORCE" and effect == "IN_FORCE"
+    custody_ready = (
+        approvals_map.get("independent_key_custody") is True
+        and governance.get("independent_attestation_environment") is True
+    )
     gates: list[FormalAuthorityGate] = [
         FormalAuthorityGate("G-02", "PASS" if named else "BLOCKED", None if named else note),
         FormalAuthorityGate("G-07", "BLOCKED", "no signed Protocol 03 PASS record / no B6_ACCEPTANCE_PUBLICATION_SHA"),
         FormalAuthorityGate("G-08", "BLOCKED", "W7-03 FRZ-EVOL-07 Outcome A/B not operator-adjudicated"),
         FormalAuthorityGate("G-09", "BLOCKED", "OD-EVOL-12 PENDING"),
         FormalAuthorityGate("G-10", "BLOCKED", "OD-EVOLX-08 PENDING"),
+        FormalAuthorityGate(
+            "G-14",
+            "PASS" if amendment_in_force else "BLOCKED",
+            None if amendment_in_force else "ECAP-P4-EVOL-SCOPE-AUTO-B6 activation is not IN_FORCE",
+        ),
+        FormalAuthorityGate(
+            "G-15",
+            "PASS" if custody_ready else "BLOCKED",
+            None if custody_ready else "independent key custody is not provisioned",
+        ),
     ]
     eligible = named and all(g.status == "PASS" for g in gates)
     return {
@@ -117,7 +150,7 @@ def _verify_mode_a_in_worktree(final_wt: Path) -> tuple[int, str, str, dict[str,
         "'evidence_head': p03.head_sha(Path('.'))}))\n"
     )
     proc = subprocess.run(
-        [sys.executable, "-c", code],
+        ["uv", "run", "python", "-c", code],
         cwd=final_wt,
         text=True,
         capture_output=True,
@@ -175,9 +208,10 @@ def _wait_git_blob(repo: Path, ref: str, rel: str, *, timeout_s: float = 180.0) 
             cwd=repo,
             capture_output=True,
         )
-        if proc.returncode == 0:
+        target = repo / rel
+        if proc.returncode == 0 and target.is_file() and target.stat().st_size > 0:
             return
-        time.sleep(1.0)
+        time.sleep(0.25)
     raise ValueError(f"timeout waiting for git blob @ {ref[:12]}: {rel}")
 
 
@@ -200,6 +234,80 @@ def _json_line(stdout: str) -> dict[str, object]:
     raise ValueError(f"no JSON payload in stdout: {stdout[:500]!r}")
 
 
+def decision_fields_from_run(
+    *,
+    mode_a_ok: bool,
+    mode_b_ok: bool,
+    skip_mode_b: bool,
+    exit_code: int,
+    governance: Mapping[str, Any],
+    attestation: Mapping[str, Any] | None,
+    trust_root: Mapping[str, Any] | None,
+    replay_ledger: set[str] | None,
+    now: datetime,
+    expected_tool_digest: str | None,
+) -> dict[str, Any]:
+    """Separate technical, authority, attestation, and formal eligibility.
+
+    Always leaves acceptance publication unset. Formal eligibility is not a
+    technical PASS and is not a published B6 record.
+    """
+    if mode_a_ok and mode_b_ok and not skip_mode_b and exit_code == 0:
+        technical = "PASS"
+    elif skip_mode_b and mode_a_ok and exit_code == 0:
+        technical = "INCOMPLETE"
+    else:
+        technical = "FAIL"
+    mode_a = "PASS" if mode_a_ok else "FAIL"
+    mode_b = "SKIPPED" if skip_mode_b else ("PASS" if mode_b_ok else "FAIL")
+    fields = evaluate_acceptance(
+        technical_verdict=technical,
+        mode_a=mode_a,
+        mode_b=mode_b,
+        governance=governance,
+        attestation=attestation,
+        trust_root=trust_root,
+        observed={"mode_a": mode_a, "mode_b": mode_b},
+        expected_tool_digest=expected_tool_digest,
+        replay_ledger=replay_ledger,
+        now=now,
+    )
+    fields["b6_acceptance_publication_sha"] = None
+    fields["evol_x_closed"] = False
+    return fields
+
+
+def _load_object(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must be a JSON object")
+    return data
+
+
+def _load_replay_ledger(path: Path | None) -> set[str] | None:
+    if path is None:
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, list) or any(not isinstance(item, str) for item in data):
+        raise ValueError("replay ledger must be a JSON array of strings")
+    return set(data)
+
+
+def _fail_closed_governance() -> dict[str, Any]:
+    return {
+        "schema_version": "unreadable",
+        "operator_decision_id": "UNREADABLE",
+        "ecap_amendment_id": "",
+        "ecap_amendment_version": "",
+        "ecap_amendment_activation": "PENDING_REQUIRED_APPROVALS",
+        "normative_effect": "NOT_IN_FORCE",
+        "test_execution_sha": "",
+        "evidence_final_publication_sha": "",
+        "required_approvals_present": {},
+        "independent_attestation_environment": False,
+    }
+
+
 def run_verification(
     *,
     repo: Path,
@@ -208,6 +316,12 @@ def run_verification(
     session_root: Path,
     skip_mode_b: bool,
     adversarial_invalid_ref: bool,
+    attestation: Mapping[str, Any] | None = None,
+    trust_root: Mapping[str, Any] | None = None,
+    governance: Mapping[str, Any] | None = None,
+    replay_ledger: set[str] | None = None,
+    now: datetime | None = None,
+    expected_tool_digest: str | None = None,
 ) -> tuple[dict[str, object], list[StepLog], int]:
     logs: list[StepLog] = []
     exit_code = 0
@@ -229,17 +343,18 @@ def run_verification(
     try:
         final_wt = _worktree_add(repo, wt_base, evidence_final)
         worktrees.append(final_wt)
+        _run(["uv", "sync", "--extra", "dev-ci", "--frozen"], cwd=final_wt, capture=False)
         bundle_m09 = (
             "docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/"
             "evol_m09_automated_diagnostic_qualification.v1.json"
         )
         _wait_git_blob(final_wt, "HEAD", bundle_m09)
+        _wait_git_blob(final_wt, "HEAD", "testing_support/change_safety/evidence/p03.py")
         m09a = final_wt / bundle_m09
         if not m09a.is_file():
             raise ValueError(f"worktree @ {evidence_final[:12]} missing {m09a.name} — checkout incomplete")
-        cmd_a = [sys.executable, "-c", "mode_a_in_worktree"]
+        cmd_a = ["uv", "run", "python", "-c", "mode_a_in_worktree"]
         rc_a, out_a, err_a, payload_a = _verify_mode_a_in_worktree(final_wt)
-        _run(["uv", "sync", "--extra", "dev-ci", "--frozen"], cwd=final_wt, capture=False)
         logs.append(
             StepLog(
                 step="mode_a_verify_evidence_publish",
@@ -361,26 +476,58 @@ def run_verification(
                 exit_code = 2
 
         register_text = _REGISTER.read_text(encoding="utf-8")
+        if governance is None:
+            try:
+                governance = load_governance(_default_governance_path(repo))
+            except (OSError, json.JSONDecodeError, ValueError):
+                governance = _fail_closed_governance()
+        evaluated_at = now or datetime.now(UTC)
+        tool_digest = expected_tool_digest if expected_tool_digest is not None else _sha256_file(Path(__file__))
+        decisions = decision_fields_from_run(
+            mode_a_ok=mode_a_ok,
+            mode_b_ok=mode_b_ok,
+            skip_mode_b=skip_mode_b,
+            exit_code=exit_code,
+            governance=governance,
+            attestation=attestation,
+            trust_root=trust_root,
+            replay_ledger=replay_ledger,
+            now=evaluated_at,
+            expected_tool_digest=tool_digest,
+        )
+        technical_verdict = decisions["technical_verification"]["verdict"]
+        if technical_verdict == "PASS":
+            disposition = "AUTOMATION_TECHNICAL_VERIFICATION_PASS"
+        elif technical_verdict == "INCOMPLETE":
+            disposition = "AUTOMATION_TECHNICAL_VERIFICATION_INCOMPLETE"
+        else:
+            disposition = "AUTOMATION_TECHNICAL_VERIFICATION_FAIL"
         report = {
-            "schema_version": "evol_x_b6_independent_verification.v1",
-            "generated_at_utc": datetime.now(UTC).isoformat(),
-            "disposition": (
-                "AUTOMATION_TECHNICAL_VERIFICATION_PASS"
-                if mode_a_ok and mode_b_ok and exit_code == 0
-                else "AUTOMATION_TECHNICAL_VERIFICATION_FAIL"
-            ),
+            "schema_version": "evol_x_b6_independent_verification.v2",
+            "generated_at_utc": evaluated_at.isoformat(),
+            "disposition": disposition,
+            "technical_verification": decisions["technical_verification"],
+            "authority_verification": decisions["authority_verification"],
+            "attestation_verification": decisions["attestation_verification"],
+            "formal_acceptance_eligibility": decisions["formal_acceptance_eligibility"],
+            "formal_acceptance_blockers": decisions["formal_acceptance_blockers"],
+            "b6_acceptance_publication_sha": None,
+            "evol_x_closed": False,
             "exact_sha_matrix": sha_matrix,
             "automation_qualification": {
                 "mode_a": "PASS" if mode_a_ok else "FAIL",
                 "mode_b": "SKIPPED" if skip_mode_b else ("PASS" if mode_b_ok else "FAIL"),
                 "profile": "AUTOMATION_FIRST_SCOPED",
             },
-            "formal_authority_readiness": _formal_authority_readiness(register_text),
+            "formal_authority_readiness": _formal_authority_readiness(register_text, governance),
             "adversarial_controls": adversarial,
             "audit_log": [asdict(x) for x in logs],
             "provenance": {
                 "tool": "scripts/qualification/evol_x_b6_independent_verification.py",
+                "tool_version": "2",
+                "tool_digest": tool_digest,
                 "ecap_p4": "implementer/agent output is not independent organizational B6 acceptance",
+                "credential_policy": "NON_PRODUCTION_TEST_ONLY signatures cannot authorize formal B6",
             },
         }
         return report, logs, exit_code
@@ -419,12 +566,23 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Run fail-closed control: --evidence-ref TES (must fail)",
     )
+    parser.add_argument("--attestation", type=Path, default=None, help="Signed attestation JSON to evaluate")
+    parser.add_argument("--trust-root", type=Path, default=None, help="Trust-root JSON (public keys only)")
+    parser.add_argument(
+        "--replay-ledger",
+        type=Path,
+        default=None,
+        help="Read-only JSON array of replay bindings. This tool does not append it.",
+    )
     args = parser.parse_args(argv)
     session_root: Path = args.session_root
     session_root.mkdir(parents=True, exist_ok=True)
     report_path = args.report_json or (session_root / "independent_verification_report.json")
 
     try:
+        attestation = _load_object(args.attestation) if args.attestation else None
+        trust_root = _load_object(args.trust_root) if args.trust_root else None
+        replay_ledger = _load_replay_ledger(args.replay_ledger)
         report, _, code = run_verification(
             repo=args.repo,
             tes=args.tes,
@@ -432,13 +590,27 @@ def main(argv: list[str] | None = None) -> int:
             session_root=session_root,
             skip_mode_b=args.skip_mode_b,
             adversarial_invalid_ref=args.adversarial_invalid_ref,
+            attestation=attestation,
+            trust_root=trust_root,
+            replay_ledger=replay_ledger,
         )
     except (OSError, subprocess.CalledProcessError, ValueError) as exc:
         sys.stderr.write(f"verification error: {exc}\n")
         return 1
 
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    sys.stdout.write(json.dumps({"status": report["disposition"], "report": str(report_path)}) + "\n")
+    technical = report["technical_verification"]
+    authority = report["authority_verification"]
+    attestation_result = report["attestation_verification"]
+    summary = {
+        "technical_verification": technical["verdict"],
+        "authority_verification": authority["verdict"],
+        "attestation_verification": attestation_result["verdict"],
+        "formal_acceptance_eligibility": report["formal_acceptance_eligibility"],
+        "b6_acceptance_publication_sha": None,
+        "report": str(report_path),
+    }
+    sys.stdout.write(json.dumps(summary) + "\n")
     return code
 
 

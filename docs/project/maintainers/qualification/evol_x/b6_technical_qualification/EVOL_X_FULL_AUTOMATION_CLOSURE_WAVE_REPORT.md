@@ -1,5 +1,7 @@
 # EVOL-X — Full automation closure wave report
 
+> **Later status:** OD-EVOL-14 (2026-11-02) approves automated-B6 **direction** only. Activation remains `PENDING_REQUIRED_APPROVALS`. Current record: [EVOL_X_AUTO_B6_IMPLEMENTATION_AND_QUALIFICATION_REPORT.md](./EVOL_X_AUTO_B6_IMPLEMENTATION_AND_QUALIFICATION_REPORT.md). This file stays the historical wave record.
+
 **Wave:** EVOL-X FULL AUTOMATION CLOSURE PATH · **2026-11-02**  
 **Git orchestrator HEAD:** `21850d2c1fcb5b22f4b382cca3c01db33d631f9f` (= `origin/development`)  
 **Disposition:** **Mechanical automation ceiling reached — formal B6 / EVOL-X CLOSED blocked by authority**

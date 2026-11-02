@@ -147,6 +147,8 @@ Conflicts with ratified domain semantics: **STOP — ARCHITECTURE DECISION REQUI
 | **B5** | Execution evidence bundle at exact SHA. |
 | **B6** | Independent exact-SHA acceptance recorded in roadmap §5 ledger. |
 
+**EVOL-X scoped automation (not in force):** amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` version `2026-11-02.1-pending` is operator-direction-approved as **OD-EVOL-14** and remains activation **`PENDING_REQUIRED_APPROVALS`** / effect **`NOT_IN_FORCE`**. Until activation is `IN_FORCE`, this B6 row stays the controlling acceptance rule. The implementer commit that records the amendment does not activate it. See [evol_x/EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT.md](evol_x/EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT.md).
+
 ### ECAP-§2.C Full Platform Current-HEAD Audit
 
 **Trigger:** `EBH-7`, `ENT-AUDIT-X` FULL/FREEZE modes, `ARCH-FREEZE` admission, `ROADMAP-REPLAY-X`.
