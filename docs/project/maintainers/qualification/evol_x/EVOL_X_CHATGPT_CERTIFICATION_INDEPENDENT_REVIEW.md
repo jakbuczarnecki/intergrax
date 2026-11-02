@@ -10,7 +10,7 @@
 | **Repository** | `jakbuczarnecki/intergrax` |
 | **Branch** | `development` |
 | **Review START SHA** | `878e7c784a5aaabde1a9c9917370e1ac306b6024` |
-| **Review END SHA** | `859cfe55414344a058d37c9d4aeac0f6aac738b7` |
+| **Review END SHA** | `15087b4c54626b9b44ef0788f0d2406a155383c6` |
 | **Expected audit baseline** | `878e7c784a5aaabde1a9c9917370e1ac306b6024` — **HEAD matched**; `merge-base --is-ancestor` **PASS** |
 | **Qualified TES** | `3c4a641b3e48a13f437e830a0562e2a80b03aabb` — **contained in HEAD** |
 | **EVIDENCE_FINAL_PUBLICATION_SHA** | `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` — **object exists** |
@@ -257,8 +257,8 @@ ChatGPT-themed conclusions on **formal ineligibility** and **W7/FRZ blockers** a
 | Field | Value |
 |-------|--------|
 | **Document** | This file |
-| **Publication commit** | `859cfe55414344a058d37c9d4aeac0f6aac738b7` |
-| **Pushed** | `development` *(pending push after SHA pin commit)* |
+| **Publication commit** | `15087b4c54626b9b44ef0788f0d2406a155383c6` |
+| **Pushed** | `development` @ `15087b4c5` |
 
 ---
 
