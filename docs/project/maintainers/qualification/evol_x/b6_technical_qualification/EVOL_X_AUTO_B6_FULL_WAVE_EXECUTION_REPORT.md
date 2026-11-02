@@ -1,10 +1,25 @@
 # EVOL-X AUTO-B6 — full wave execution report (OD-EVOL-15)
 
-**Disposition:** **`EVOL-X AUTO-B6 — TECHNICAL AND AUTHORITY PREPARATION COMPLETE / EXACT EXTERNAL BLOCKERS`**
+**Disposition:** **`EVOL-X AUTO-B6 — TECHNICAL QUALIFICATION MAXIMUM / FORMAL B6 PENDING EXTERNAL AUTHORITIES`**
 
 **Not claimed:** ECAP `IN_FORCE`, independent security **signature**, production attestation, `B6_ACCEPTANCE_PUBLICATION_SHA`, FRZ promotion, OD-EVOL-12 / OD-EVOLX-08, EVOL-X CLOSED.
 
-## 1. Git lineage
+## AUTO-B6 final technical qualification wave (2026-11-02)
+
+| Role | SHA |
+|------|-----|
+| START HEAD | `c1db8283594f05ba7f59e32059f7c5a9f4b06143` |
+| END HEAD | *(set @ commit closing this wave)* |
+| Attestation contract tests | **29 passed** @ START HEAD |
+| Mode A @ FINAL | **PASS** (orchestrator session `.tmp/session/b6-v3/`) |
+| Mode B @ TES (290 VL3) | **PASS** (same session; JUnit + P03 replay) |
+| Orchestrator `technical_verification` | **PASS** (exit 0) |
+| Independent attestor package | [EVOL_X_AUTO_B6_INDEPENDENT_ATTESTOR_DEPLOYMENT_PACKAGE.md](./EVOL_X_AUTO_B6_INDEPENDENT_ATTESTOR_DEPLOYMENT_PACKAGE.md) |
+| Read-only evaluator | `scripts/qualification/evol_x_b6_evaluate_signed_attestation.py` |
+
+Authority remains **`PENDING_REQUIRED_APPROVALS`**; attestation **`ABSENT`**; formal eligibility **`NOT_ELIGIBLE`**; `B6_ACCEPTANCE_PUBLICATION_SHA` **unset**.
+
+## 1. Git lineage (prior OD-EVOL-15 closure commit)
 
 | Role | SHA |
 |------|-----|
@@ -70,17 +85,17 @@ Dossier: [../EVOL_X_AUTO_B6_INDEPENDENT_ATTESTATION_DEPLOYMENT_DOSSIER.md](../EV
 |------------|----------|-------------|
 | EVOL-X VL3 (290 nodes) | `tests/qualification/evol_x/` | **Unchanged** @ TES `3c4a641b…`; CI `41337077334` remains authoritative |
 | Attestation + adversarial contract | `tests/unit/qualification/test_evol_x_b6_attestation_contract.py` | **29 passed** @ END HEAD |
-| Mode B replay | Orchestrator | **Not re-run** (TES/FINAL/290 population unchanged; prior qualified replay + CI) |
-| Mode A @ FINAL | Orchestrator | **PASS** after verifier fix (`uv run --directory <repo>` for P03 in nested worktree) |
+| Mode B replay | Orchestrator @ TES | **PASS** (290/290 JUnit + P03; session `.tmp/session/b6-v3/`) |
+| Mode A @ FINAL | Orchestrator | **PASS** (`uv run --directory <repo>` for P03 in nested worktree) |
 
 ## 9. Mode A/B and CI
 
 | Check | Result |
 |-------|--------|
-| Mode A @ `bbf3e33…` | **PASS** (orchestrated; profile `AUTOMATION_FIRST_SCOPED`) |
-| Mode B @ `3c4a641b…` | **Skipped this session** (no new TES; prior qualification + CI `41337077334`) |
+| Mode A @ `bbf3e33…` | **PASS** |
+| Mode B @ `3c4a641b…` | **PASS** (orchestrated replay; 290 tests) |
 | Adversarial invalid `--evidence-ref` | **PASS** (fail-closed) |
-| Technical verdict (skip Mode B) | **INCOMPLETE** (expected) |
+| Technical verdict (orchestrator) | **PASS** |
 | Formal eligibility | **NOT_ELIGIBLE** |
 
 ## 10. Formal attestation evidence
@@ -128,3 +143,5 @@ Organizational B6 acceptance requires separation of evidence producer, independe
 ## Implementation note (this wave)
 
 Fixed Mode A orchestration in `evol_x_b6_independent_verification.py`: P03 Mode A now runs via `uv run --directory <orchestrator repo>` with `PYTHONPATH` pointed at the FINAL worktree, avoiding nested-worktree interpreter/git mismatch on Windows.
+
+Mode B JUnit output now uses an **absolute** `--junitxml` path under the orchestrator session root (nested TES worktree cwd previously broke relative `.tmp/session/...` paths on Windows). Mode B P03 replay outcomes are written to a session JSON file instead of embedding the 290-node map in a Windows subprocess command line (WinError 206).

@@ -39,6 +39,8 @@ The verifier process must not be the key custodian. No production private key is
 
 Until those steps exist, formal B6 stays **PENDING** and test credentials stay unclassified for acceptance.
 
+Deployable templates and read-only evaluator entry points: [b6_technical_qualification/EVOL_X_AUTO_B6_INDEPENDENT_ATTESTOR_DEPLOYMENT_PACKAGE.md](./b6_technical_qualification/EVOL_X_AUTO_B6_INDEPENDENT_ATTESTOR_DEPLOYMENT_PACKAGE.md).
+
 ## Explicit non-claims
 
 - Governance file `independent_attestation_environment` is **false**.

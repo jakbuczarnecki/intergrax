@@ -21,13 +21,13 @@
 
 ## Automated adversarial coverage (implementer workspace)
 
-Executed: `tests/unit/qualification/test_evol_x_b6_attestation_contract.py` — **29 passed** @ wave END HEAD.
+Executed: `tests/unit/qualification/test_evol_x_b6_attestation_contract.py` — **29 passed** @ `c1db8283594f05ba7f59e32059f7c5a9f4b06143` (AUTO-B6 final qualification wave).
 
 Categories include: unauthorized signer, forged signature, revoked key, wrong trust root, implementer custody, policy version mismatch, wrong TES/FINAL, stale window, replay, altered Mode A/B, CI binding, false M-09H PASS, FRZ promotion, unsigned record, test credential formal claim.
 
 ## Verifier session (orchestrated)
 
-Session root: `.tmp/session/evol-x-auto-b6-full-wave-v2/` (gitignored). Mode A **PASS**; adversarial invalid ref **PASS**; authority **PENDING_REQUIRED_APPROVALS**; formal eligibility **NOT_ELIGIBLE**.
+Session root (gitignored): `.tmp/session/b6-v3/` — full orchestrator **PASS** (Mode A + Mode B 290/290 + adversarial); authority **PENDING_REQUIRED_APPROVALS**; attestation **ABSENT**; formal **NOT_ELIGIBLE**.
 
 ## Required independent act
 

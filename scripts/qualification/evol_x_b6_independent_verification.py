@@ -166,18 +166,14 @@ def _verify_mode_b_in_worktree(
     tes_wt: Path,
     *,
     evidence_final: str,
-    junit: Path,
+    replay_file: Path,
 ) -> tuple[int, str, str, dict[str, object]]:
-    from scripts.qualification.evol_x_p03_evidence import outcomes_from_junit
-
-    env = _subprocess_env()
-    env["PYTHONPATH"] = str(tes_wt)
-    replay = outcomes_from_junit(junit, tes_wt)
+    replay_file = replay_file.resolve()
     code = (
         "from pathlib import Path\n"
         "from testing_support.change_safety.evidence import p03\n"
         "import json, sys\n"
-        f"replay = {replay!r}\n"
+        f"replay = json.loads(Path({str(replay_file)!r}).read_text(encoding='utf-8'))\n"
         f"problems = p03.verify_mode_b(Path('.'), evidence_ref={evidence_final!r}, "
         "replay_outcomes=replay, certification=True)\n"
         "if problems:\n"
@@ -191,7 +187,7 @@ def _verify_mode_b_in_worktree(
         cwd=tes_wt,
         text=True,
         capture_output=True,
-        env=env,
+        env=_subprocess_env() | {"PYTHONPATH": str(tes_wt)},
     )
     payload: dict[str, object] = {}
     if proc.returncode == 0:
@@ -389,7 +385,8 @@ def run_verification(
                     stderr=proc_vl3.stderr,
                 )
             )
-            junit = session_root / "mode_b_junit.xml"
+            junit = (session_root / "mode_b_junit.xml").resolve()
+            session_root.mkdir(parents=True, exist_ok=True)
             pytest_cmd = [
                 "uv",
                 "run",
@@ -418,9 +415,14 @@ def run_verification(
                 exit_code = 2
                 mode_b_ok = False
             else:
+                from scripts.qualification.evol_x_p03_evidence import outcomes_from_junit
+
+                replay = outcomes_from_junit(junit, tes_wt)
+                replay_file = (session_root / "mode_b_replay_outcomes.json").resolve()
+                replay_file.write_text(json.dumps(replay, sort_keys=True), encoding="utf-8")
                 cmd_b = [sys.executable, "-c", "mode_b_in_worktree"]
                 rc_b, out_b, err_b, payload_b = _verify_mode_b_in_worktree(
-                    tes_wt, evidence_final=evidence_final, junit=junit
+                    tes_wt, evidence_final=evidence_final, replay_file=replay_file
                 )
                 logs.append(
                     StepLog(

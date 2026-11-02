@@ -58,11 +58,11 @@ A second Cursor worktree or subagent is not that boundary. Deployment status: **
 
 ## Mode A orchestration
 
-The previous Mode A step checked `git show` before `uv sync` and before the P03 module was required to exist on disk, then imported it with the parent interpreter. The verifier now syncs the FINAL worktree first, waits until the evidence blob and `p03.py` are present on disk, and runs Mode A through `uv run` in that worktree. Windows `--basetemp` outside the nested worktree is unchanged (`build/pytest-b6-independent-replay`).
+The previous Mode A step checked `git show` before `uv sync` and before the P03 module was required to exist on disk, then imported it with the parent interpreter. The verifier now syncs the FINAL worktree first, waits until the evidence blob and `p03.py` are present on disk, and runs Mode A through `uv run` in that worktree. Windows `--basetemp` outside the nested worktree is unchanged (`build/pytest-b6-independent-replay`). Mode B writes JUnit to an absolute path under the orchestrator `--session-root` so pytest in the TES worktree does not drop reports under a missing relative `.tmp/...` path. Mode B writes JUnit to an absolute path under the orchestrator `--session-root` so pytest in the TES worktree does not drop reports under a missing relative `.tmp/...` path.
 
-Confirmation (`--skip-mode-b`, session `.tmp/session/evol-x-auto-b6-full-wave-v2/`, not a publication): Mode A **PASS** (exit 0). Technical verdict **INCOMPLETE** because Mode B was not repeated. Authority **PENDING_REQUIRED_APPROVALS**. Attestation **ABSENT**. Formal eligibility **NOT_ELIGIBLE**. Acceptance SHA null. The qualified population and TES are unchanged, so Mode B was not re-run.
+**AUTO-B6 final wave (2026-11-02):** orchestrator session `.tmp/session/b6-v3/` — Mode A **PASS**, Mode B **PASS** (290/290), adversarial **PASS**, `technical_verification` **PASS**; authority **PENDING_REQUIRED_APPROVALS**; formal **NOT_ELIGIBLE**.
 
-**OD-EVOL-15 wave:** see [EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md](./EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md). Verifier fix: Mode A subprocess uses `uv run --directory <orchestrator repo>` with FINAL worktree `PYTHONPATH`.
+**OD-EVOL-15 wave:** see [EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md](./EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md). Verifier: Mode A via `uv run --directory <orchestrator repo>`; Mode B absolute JUnit path + replay outcomes JSON (Windows WinError 206 fix).
 
 ## Qualification
 
@@ -84,7 +84,7 @@ Not executed. OD-EVOL-14 does not sign OD-EVOL-12 or OD-EVOLX-08.
 
 1. Security review signed by a reviewer who is not the implementer.
 2. ECAP maintainer publication setting `ECAP-P4-EVOL-SCOPE-AUTO-B6` to `IN_FORCE` (not this commit).
-3. Provision the independent attestor, trust root, replay ledger, and immutable log described in the deployment dossier.
+3. Provision the independent attestor, trust root, replay ledger, and immutable log described in the deployment dossier and [EVOL_X_AUTO_B6_INDEPENDENT_ATTESTOR_DEPLOYMENT_PACKAGE.md](./EVOL_X_AUTO_B6_INDEPENDENT_ATTESTOR_DEPLOYMENT_PACKAGE.md).
 4. That attestor produces a `PRODUCTION_INDEPENDENT` attestation at the pinned TES and FINAL. Publish the real `B6_ACCEPTANCE_PUBLICATION_SHA` only from that record.
 5. Operator adjudicates FRZ-EVOL-07 Outcome A/B and signs **OD-EVOL-12** (W7-03).
 6. Operator signs **OD-EVOLX-08** (W7-04).
