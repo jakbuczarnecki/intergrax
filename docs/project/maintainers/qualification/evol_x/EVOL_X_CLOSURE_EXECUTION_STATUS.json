@@ -1,22 +1,28 @@
 {
   "schema_version": "evol_x_closure_execution_status.v1",
-  "execution_start_head": "4d835482aa6fb64f6e203a0c2cb4c8963b195b6c",
+  "execution_start_head": "9379422c5e557dec345e153e4cd359c57fc72dce",
+  "execution_end_head": "9379422c5e557dec345e153e4cd359c57fc72dce",
+  "path_a_proposed_decision_id": "OD-EVOL-17",
+  "path_a_proposed_decision_status": "PROPOSED_NOT_SIGNED",
   "path_b_operator_decision_id": "OD-EVOL-16",
   "certification_mechanism": "PATH_B_SELECTED",
-  "wave_disposition": "PATH_B_TECHNICAL_COMPLETE_FORMAL_AUTHORITY_PENDING",
+  "certification_mechanism_note": "Governance JSON unchanged until OD-EVOL-17 operator-signed; closure execution follows Path A preparation per LOCAL-B6 record.",
+  "wave_disposition": "PATH_A_PREPARATION_COMPLETE_FORMAL_B6_PENDING",
   "parent_evol_x_status": "OPEN",
   "certification_profile": "AUTOMATION_FIRST_SCOPED",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "evidence_final_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
+  "qualified_ci_run_id": "41337077334",
   "b6_acceptance_publication_sha": null,
   "formal_closure_publication_sha": null,
+  "w7_06_handoff_publication_sha": null,
   "batches": {
-    "batch_0_plan_docs": { "status": "COMPLETE", "notes": "Master plan + 6 attachments published in repo" },
-    "batch_1_external_trust": { "status": "BLOCKED_EXTERNAL_AUTHORITY", "blockers": ["MISSING_ECAP_MAINTAINER_PUBLICATION", "MISSING_SECURITY_REVIEW", "MISSING_INDEPENDENT_KEY_CUSTODY", "ATTESTATION_ENVIRONMENT_NOT_PROVISIONED", "POLICY_NOT_IN_FORCE"] },
-    "batch_2_formal_b6": { "status": "IMPLEMENTER_COMPLETE_FORMAL_BLOCKED", "technical_replay": "29/29 contract PASS; Mode A+B PASS @ .tmp/session/evol-x-path-b-final-acceptance/independent_verification_report.json" },
-    "batch_3_w7_frz_od": { "status": "PACKAGES_READY_UNSIGNED", "record": "EVOL_X_BATCH3_EXECUTION_RECORD.md" },
-    "batch_4_w7_publish": { "status": "PACK_READY_PREFLIGHT_BLOCKED", "preflight_script": "scripts/qualification/evol_x_closure_publication_preflight.py", "record": "EVOL_X_BATCH4_EXECUTION_RECORD.md" },
-    "batch_5_ent_handoff": { "status": "PREPARED", "handoff_doc": "EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md", "record": "EVOL_X_BATCH5_EXECUTION_RECORD.md" },
-    "w7_02_corrective": { "status": "NOT_APPLICABLE" }
+    "batch_0_plan_docs": { "status": "COMPLETE", "notes": "Master plan + attachments" },
+    "batch_1_path_a_eligibility": { "status": "COMPLETE", "record": "EVOL_X_LOCAL_B6_FINAL_CLOSURE_EXECUTION_RECORD.md", "blockers": ["OD-EVOL-11_AUDITOR_ID_NOT_RECORDED"] },
+    "batch_2_local_evidence": { "status": "COMPLETE", "mode_a_replay": "PASS @ FINAL worktree 2026-11-02", "mode_b_replay": "PASS @ path-b session (not re-run)", "dossier": "EVOL_X_B6_FINAL_AUDIT_DOSSIER_FOR_INDEPENDENT_SIGNATURE.md" },
+    "batch_3_protocol_03": { "status": "BLOCKED_EXTERNAL_AUTHORITY", "blockers": ["MISSING_SIGNED_PASS_RECORD", "MISSING_NAMED_AUDITOR"] },
+    "batch_4_w7_frz_od": { "status": "PACKAGES_READY_UNSIGNED", "record": "EVOL_X_BATCH3_EXECUTION_RECORD.md" },
+    "batch_5_final_closure": { "status": "BLOCKED", "preflight": "FAIL", "record": "EVOL_X_LOCAL_B6_FINAL_CLOSURE_EXECUTION_RECORD.md" },
+    "auto_b6_infrastructure": { "status": "EXPLICITLY_DEFERRED", "ecap_p4_normative_effect": "NOT_IN_FORCE" }
   }
 }
