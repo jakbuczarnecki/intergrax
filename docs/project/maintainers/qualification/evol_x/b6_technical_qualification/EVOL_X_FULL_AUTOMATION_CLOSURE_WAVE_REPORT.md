@@ -44,9 +44,7 @@ No new TES/FINAL/CI. No `B6_ACCEPTANCE_PUBLICATION_SHA`. No FRZ promotion.
 uv run python scripts/qualification/evol_x_b6_independent_verification.py --adversarial-invalid-ref
 ```
 
-**Session outputs:** `.tmp/session/evol-x-full-automation-closure/independent_verification_report.json`, `run-v3.log`, `mode_b_junit.xml`
-
-**Prior durable E3 evidence (unchanged):** [EVOL_X_B6_TECHNICAL_AUDIT_DOSSIER.md](./EVOL_X_B6_TECHNICAL_AUDIT_DOSSIER.md) · TES `3c4a641b…` · FINAL `bbf3e33b…` · CI `41337077334`
+**Session replay (2026-11-02 @ orchestrator `d5b5759d7`):** Mode B **PASS** (290 pytest, ~728s) + adversarial invalid `--evidence-ref` **fail-closed PASS**; Mode A orchestrator step **intermittent** — canonical Mode A record remains [EVOL_X_B6_MODE_A_PROVENANCE.md](./EVOL_X_B6_MODE_A_PROVENANCE.md). Re-run after script fixes on `development`.
 
 ## Phase E — E4 integrated package (prepared, not executed)
 

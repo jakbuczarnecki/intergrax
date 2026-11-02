@@ -23,7 +23,7 @@ import sys
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -101,6 +101,71 @@ def _formal_authority_readiness(register_text: str) -> dict[str, object]:
     }
 
 
+def _verify_mode_a_in_worktree(final_wt: Path) -> tuple[int, str, str, dict[str, object]]:
+    """Run P03 Mode A using worktree sources (normative @ evidence SHA)."""
+    env = _subprocess_env()
+    env["PYTHONPATH"] = str(final_wt)
+    code = (
+        "from pathlib import Path\n"
+        "from testing_support.change_safety.evidence import p03\n"
+        "problems = p03.verify_mode_a(Path('.'))\n"
+        "import json, sys\n"
+        "if problems:\n"
+        "    sys.stderr.write('\\n'.join(f'EVIDENCE_INTEGRITY_FAIL: {p}' for p in problems) + '\\n')\n"
+        "    sys.exit(2)\n"
+        "print(json.dumps({'status': 'EVIDENCE_INTEGRITY_OK', 'mode': 'A', "
+        "'evidence_head': p03.head_sha(Path('.'))}))\n"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=final_wt,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    payload: dict[str, object] = {}
+    if proc.returncode == 0:
+        payload = _json_line(proc.stdout)
+    return proc.returncode, proc.stdout, proc.stderr, payload
+
+
+def _verify_mode_b_in_worktree(
+    tes_wt: Path,
+    *,
+    evidence_final: str,
+    junit: Path,
+) -> tuple[int, str, str, dict[str, object]]:
+    from scripts.qualification.evol_x_p03_evidence import outcomes_from_junit
+
+    env = _subprocess_env()
+    env["PYTHONPATH"] = str(tes_wt)
+    replay = outcomes_from_junit(junit, tes_wt)
+    code = (
+        "from pathlib import Path\n"
+        "from testing_support.change_safety.evidence import p03\n"
+        "import json, sys\n"
+        f"replay = {replay!r}\n"
+        f"problems = p03.verify_mode_b(Path('.'), evidence_ref={evidence_final!r}, "
+        "replay_outcomes=replay, certification=True)\n"
+        "if problems:\n"
+        "    sys.stderr.write('\\n'.join(f'EVIDENCE_INTEGRITY_FAIL: {p}' for p in problems) + '\\n')\n"
+        "    sys.exit(2)\n"
+        "print(json.dumps({'status': 'EVIDENCE_INTEGRITY_OK', 'mode': 'B', "
+        "'test_execution_sha': p03.head_sha(Path('.'))}))\n"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=tes_wt,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    payload: dict[str, object] = {}
+    if proc.returncode == 0:
+        payload = _json_line(proc.stdout)
+    return proc.returncode, proc.stdout, proc.stderr, payload
+
+
 def _wait_git_blob(repo: Path, ref: str, rel: str, *, timeout_s: float = 180.0) -> None:
     """Worktree checkout can lag; verifier uses ``git show``, not working-tree stat alone."""
     deadline = time.monotonic() + timeout_s
@@ -169,27 +234,26 @@ def run_verification(
             "evol_m09_automated_diagnostic_qualification.v1.json"
         )
         _wait_git_blob(final_wt, "HEAD", bundle_m09)
-        _run(["uv", "sync", "--extra", "dev-ci", "--frozen"], cwd=final_wt, capture=False)
         m09a = final_wt / bundle_m09
         if not m09a.is_file():
             raise ValueError(f"worktree @ {evidence_final[:12]} missing {m09a.name} — checkout incomplete")
-        p03_rel = "scripts/qualification/evol_x_p03_evidence.py"
-        cmd_a = ["uv", "run", "python", p03_rel, "verify-evidence-publish"]
-        proc_a = subprocess.run(cmd_a, cwd=final_wt, text=True, capture_output=True, env=_subprocess_env())
+        cmd_a = [sys.executable, "-c", "mode_a_in_worktree"]
+        rc_a, out_a, err_a, payload_a = _verify_mode_a_in_worktree(final_wt)
+        _run(["uv", "sync", "--extra", "dev-ci", "--frozen"], cwd=final_wt, capture=False)
         logs.append(
             StepLog(
                 step="mode_a_verify_evidence_publish",
                 command=cmd_a,
                 cwd=str(final_wt),
-                exit_code=proc_a.returncode,
-                stdout=proc_a.stdout,
-                stderr=proc_a.stderr,
+                exit_code=rc_a,
+                stdout=out_a,
+                stderr=err_a,
+                payload=payload_a,
             )
         )
-        mode_a_ok = proc_a.returncode == 0
-        if mode_a_ok:
-            logs[-1].payload = _json_line(proc_a.stdout)
-        else:
+        mode_a_ok = rc_a == 0
+
+        if not mode_a_ok:
             exit_code = 2
 
         mode_b_ok = skip_mode_b
@@ -239,33 +303,23 @@ def run_verification(
                 exit_code = 2
                 mode_b_ok = False
             else:
-                cmd_b = [
-                    "uv",
-                    "run",
-                    "python",
-                    p03_rel,
-                    "verify-test-execution",
-                    "--evidence-ref",
-                    evidence_final,
-                    "--certification",
-                    "--replay-junit",
-                    str(junit.resolve()),
-                ]
-                proc_b = subprocess.run(cmd_b, cwd=tes_wt, text=True, capture_output=True, env=_env)
+                cmd_b = [sys.executable, "-c", "mode_b_in_worktree"]
+                rc_b, out_b, err_b, payload_b = _verify_mode_b_in_worktree(
+                    tes_wt, evidence_final=evidence_final, junit=junit
+                )
                 logs.append(
                     StepLog(
                         step="mode_b_verify_test_execution",
                         command=cmd_b,
                         cwd=str(tes_wt),
-                        exit_code=proc_b.returncode,
-                        stdout=proc_b.stdout,
-                        stderr=proc_b.stderr,
+                        exit_code=rc_b,
+                        stdout=out_b,
+                        stderr=err_b,
+                        payload=payload_b,
                     )
                 )
-                mode_b_ok = proc_b.returncode == 0
-                if mode_b_ok:
-                    logs[-1].payload = _json_line(proc_b.stdout)
-                else:
+                mode_b_ok = rc_b == 0
+                if not mode_b_ok:
                     exit_code = 2
 
         adversarial: dict[str, object] | None = None
@@ -309,7 +363,7 @@ def run_verification(
         register_text = _REGISTER.read_text(encoding="utf-8")
         report = {
             "schema_version": "evol_x_b6_independent_verification.v1",
-            "generated_at_utc": datetime.now(datetime.UTC).isoformat(),
+            "generated_at_utc": datetime.now(UTC).isoformat(),
             "disposition": (
                 "AUTOMATION_TECHNICAL_VERIFICATION_PASS"
                 if mode_a_ok and mode_b_ok and exit_code == 0
