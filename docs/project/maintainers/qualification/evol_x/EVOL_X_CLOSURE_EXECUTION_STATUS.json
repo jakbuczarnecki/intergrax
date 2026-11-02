@@ -1,7 +1,7 @@
 {
   "schema_version": "evol_x_closure_execution_status.v1",
   "execution_start_head": "9379422c5e557dec345e153e4cd359c57fc72dce",
-  "execution_end_head": "9379422c5e557dec345e153e4cd359c57fc72dce",
+  "execution_end_head": "aa5eec61b359543c48c2790e8c353cf06230b3ce",
   "path_a_proposed_decision_id": "OD-EVOL-17",
   "path_a_proposed_decision_status": "PROPOSED_NOT_SIGNED",
   "path_b_operator_decision_id": "OD-EVOL-16",

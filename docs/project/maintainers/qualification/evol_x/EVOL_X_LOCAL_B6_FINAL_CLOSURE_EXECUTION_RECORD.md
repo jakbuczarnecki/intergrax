@@ -4,7 +4,7 @@
 **Repository:** `jakbuczarnecki/intergrax` · **Branch:** `development`  
 **REFERENCE_HEAD:** `9379422c5e557dec345e153e4cd359c57fc72dce`  
 **START_HEAD:** `9379422c5e557dec345e153e4cd359c57fc72dce`  
-**END_HEAD:** `9379422c5e557dec345e153e4cd359c57fc72dce` *(doc publication commit pending)*
+**END_HEAD:** `aa5eec61b359543c48c2790e8c353cf06230b3ce`
 
 **Disposition:** **PATH A PREPARATION COMPLETE / FORMAL B6 PENDING / EVOL-X OPEN**
 
