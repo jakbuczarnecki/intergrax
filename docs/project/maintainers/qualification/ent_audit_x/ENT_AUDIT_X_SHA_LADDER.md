@@ -10,7 +10,7 @@
 | PLAN_BASELINE_SHA | `8a41d32043b89e555d7c18e052cf7022b8c94681` | Last commit before ENT plan publication wave |
 | PLAN_PUBLICATION_SHA | `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e` | First publication: master plan + annexes (8 files) |
 | PLAN_RECONCILIATION_SHA | `1656cb8659c0b5c8cac422f861856a59401f7ca1` | P-11/P-12/P-13 documentation corrections only |
-| IMPLEMENTATION_SHA | *pending — first commit containing `intergrax/platform/enterprise_audit/`* | Product runner + qual suite |
+| IMPLEMENTATION_SHA | `86832319b` | Tier-0 runner + manifest + CLI + qual L1/L2 |
 | TEST_EXECUTION_SHA | *unset* | Clean-checkout pytest for L3 / FREEZE |
 | EVIDENCE_CANDIDATE_SHA | *unset* | Pre–independent-audit bundle |
 | EVIDENCE_PUBLICATION_SHA | *unset* | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
