@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | PLAN_BASELINE_SHA | `8a41d32043b89e555d7c18e052cf7022b8c94681` | Last commit before ENT plan publication wave |
 | PLAN_PUBLICATION_SHA | `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e` | First publication: master plan + annexes (8 files) |
-| PLAN_RECONCILIATION_SHA | 3e5101705757983dd5e7a8c52148e727692c70eb | P-11/P-12/P-13 documentation corrections only |
+| PLAN_RECONCILIATION_SHA | `1656cb8659c0b5c8cac422f861856a59401f7ca1` | P-11/P-12/P-13 documentation corrections only |
 | IMPLEMENTATION_SHA | *unset* | First merged ENT product code |
 | TEST_EXECUTION_SHA | *unset* | Clean-checkout pytest for L3 / FREEZE |
 | EVIDENCE_CANDIDATE_SHA | *unset* | Pre–independent-audit bundle |
