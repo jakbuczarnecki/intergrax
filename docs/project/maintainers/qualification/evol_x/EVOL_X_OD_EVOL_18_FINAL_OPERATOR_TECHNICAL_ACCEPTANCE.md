@@ -8,7 +8,7 @@
 
 **Repository:** `jakbuczarnecki/intergrax` · **Branch:** `development`  
 **Publication base HEAD (pre-commit):** `b872169f17b440ec17e878ec3a27d95946b5819a`  
-**OD-EVOL-18 publication SHA:** *recorded in* [EVOL_X_CLOSURE_EXECUTION_STATUS.json](./EVOL_X_CLOSURE_EXECUTION_STATUS.json) (`od_evol_18_publication_sha`)
+**OD-EVOL-18 publication SHA:** `a91b8fb653d87b4788b81beb40b4142bcaf91ef6`
 
 ---
 

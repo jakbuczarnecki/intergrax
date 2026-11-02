@@ -11,7 +11,7 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 | EVIDENCE_TECH_PUBLICATION_SHA | `1e175ff8f678d605aa841ae52362486a56ed006d` | Mode A `--technical`; P03 bundle @ `2b165516…`; M-09H NOT_MEASURED (historical TECH) |
 | EVIDENCE_FINAL_PUBLICATION_SHA | `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` | **AUTOMATION_FIRST_SCOPED** FINAL; M-09A MEASURED; M-09H NOT_MEASURED; OD-EVOL-13 |
 | OD_EVOL_17_PUBLICATION_SHA | `7ab634dcf33bf4954a942b29bd573c9931617fb8` | OPERATOR APPROVED — LOCAL PATH A. Not a B6 acceptance SHA. |
-| OD_EVOL_18_PUBLICATION_SHA | — | **OD-EVOL-18** final operator technical acceptance. Not B6, not closure, not W7-06 pin. |
+| OD_EVOL_18_PUBLICATION_SHA | `a91b8fb653d87b4788b81beb40b4142bcaf91ef6` | **OD-EVOL-18** final operator technical acceptance. Not B6, not closure, not W7-06 pin. |
 | B6_ACCEPTANCE_PUBLICATION_SHA | — | **PENDING.** OD-EVOL-17 selects local ECAP-§2.B Path A. Amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` stays `NOT_IN_FORCE`. OD-EVOL-11 `auditor_id` is not recorded. No Protocol 03 PASS. |
 
 ## Superseded (historical)
