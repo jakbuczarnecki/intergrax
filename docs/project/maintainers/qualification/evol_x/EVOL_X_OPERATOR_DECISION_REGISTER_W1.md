@@ -23,6 +23,7 @@
 | **OD-EVOL-13** | **OPERATOR APPROVED** | 2026-11-01 | Automation-first **scoped** EVOL-X acceptance (`EVOL-M-09A`, `AUTOMATION_FIRST_SCOPED` FINAL). **M-09H human remains NOT_MEASURED.** See [EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md](./EVOL_X_AUTOMATION_FIRST_SCOPED_ACCEPTANCE_POLICY.md). |
 | **OD-EVOL-14** | **OPERATOR APPROVED — DIRECTION AND IMPLEMENTATION ONLY** | 2026-11-02 | Automation-first organizational B6 **direction** for EVOL-X `AUTOMATION_FIRST_SCOPED` only. Does **not** put `ECAP-P4-EVOL-SCOPE-AUTO-B6` in force, name an auditor, authorize self-approval, promote `FRZ-*`, or declare EVOL-X CLOSED. Activation remains `PENDING_REQUIRED_APPROVALS`. See the decision section below. |
 | **OD-EVOL-15** | **OPERATOR APPROVED — FULL AUTO-B6 EXECUTION WITHIN OPERATOR AUTHORITY** | 2026-11-02 | Authorizes completing every remaining **implementer/operator** action on the AUTO-B6 path (technical qualification replay, ECAP amendment **preparation**, independent attestation **deployment specification**, adversarial automation, Mode A/B orchestration, E4 **preparation**). Does **not** authorize ECAP maintainer publication, independent security **signature**, external key custody, formal B6 PASS, `B6_ACCEPTANCE_PUBLICATION_SHA`, FRZ promotion, OD-EVOL-12/OD-EVOLX-08 signing, or EVOL-X CLOSED. Supplements OD-EVOL-14. |
+| **OD-EVOL-16** | **OPERATOR APPROVED — PATH_B_SELECTED** | 2026-11-02 | Selects **Path B** (ECAP-P4 AUTO-B6 + external independent attestor) as the certification mechanism for EVOL-X formal B6. Authorizes implementer/operator preparation and technical replay only. Does **not** activate ECAP (`normative_effect` stays `NOT_IN_FORCE`), provision KMS/HSM, impersonate maintainer/security reviewer/attestor, or declare EVOL-X CLOSED. Recorded in governance as `certification_mechanism: PATH_B_SELECTED`. |
 | **OD-EVOL-11** | SIGNED / APPROVED (appointment authorized; **auditor identity NOT NAMED**) | 2026-11-01 | W0-08: operator-appointed independent auditor (must differ from implementer/agent). Operator message and auth package carry no name; **operator must record the auditor id in this row before W7-01**. Agent does not self-appoint. |
 | **OD-EVOL-12** | **PENDING** | — | W7-03 (Batch G not in 2026-11-01 scope) |
 | **OD-EVOLX-08** | **PENDING** | — | W7-04 (Batch G not in 2026-11-01 scope) |
@@ -79,3 +80,12 @@ Authorized in this wave: technical verifier replay, attestation unit tests, Mode
 Not authorized and not performed: ECAP maintainer publication, independent security signature, production attestation signing, `EVOL_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md`, FRZ-EVOL promotions, OD-EVOL-12 / OD-EVOLX-08 signing, EVOL-X CLOSED.
 
 Consolidated report: [b6_technical_qualification/EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md](./b6_technical_qualification/EVOL_X_AUTO_B6_FULL_WAVE_EXECUTION_REPORT.md).
+
+## OD-EVOL-16 — Path B certification mechanism (2026-11-02)
+
+**Status:** OPERATOR APPROVED — **PATH_B_SELECTED**.  
+**Normative ECAP effect:** none (`NOT_IN_FORCE` unchanged). **B6 acceptance SHA:** unset. **EVOL-X parent:** OPEN.
+
+Path B is the chosen formal B6 route: maintainer publication of `ECAP-P4-EVOL-SCOPE-AUTO-B6`, signed independent security review, production key custody + trust root, external attestor runtime, signed attestation, evaluator `ELIGIBLE`, then W7-01 Protocol 03 PASS publication. This decision does not substitute any external act.
+
+Consolidated Path B acceptance execution: [EVOL_X_PATH_B_FINAL_ACCEPTANCE_EXECUTION_RECORD.md](./EVOL_X_PATH_B_FINAL_ACCEPTANCE_EXECUTION_RECORD.md).

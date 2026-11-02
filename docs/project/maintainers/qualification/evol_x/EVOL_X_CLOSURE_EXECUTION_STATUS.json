@@ -1,6 +1,9 @@
 {
   "schema_version": "evol_x_closure_execution_status.v1",
-  "execution_start_head": "9c893139e89ed885e8f30e66c14b3cc363a8ac15",
+  "execution_start_head": "4d835482aa6fb64f6e203a0c2cb4c8963b195b6c",
+  "path_b_operator_decision_id": "OD-EVOL-16",
+  "certification_mechanism": "PATH_B_SELECTED",
+  "wave_disposition": "PATH_B_TECHNICAL_COMPLETE_FORMAL_AUTHORITY_PENDING",
   "parent_evol_x_status": "OPEN",
   "certification_profile": "AUTOMATION_FIRST_SCOPED",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
@@ -10,7 +13,7 @@
   "batches": {
     "batch_0_plan_docs": { "status": "COMPLETE", "notes": "Master plan + 6 attachments published in repo" },
     "batch_1_external_trust": { "status": "BLOCKED_EXTERNAL_AUTHORITY", "blockers": ["MISSING_ECAP_MAINTAINER_PUBLICATION", "MISSING_SECURITY_REVIEW", "MISSING_INDEPENDENT_KEY_CUSTODY", "ATTESTATION_ENVIRONMENT_NOT_PROVISIONED", "POLICY_NOT_IN_FORCE"] },
-    "batch_2_formal_b6": { "status": "IMPLEMENTER_COMPLETE_FORMAL_BLOCKED", "technical_replay": "29/29 contract PASS; orchestrator Mode A session @ .tmp/session/evol-x-closure-batch2/" },
+    "batch_2_formal_b6": { "status": "IMPLEMENTER_COMPLETE_FORMAL_BLOCKED", "technical_replay": "29/29 contract PASS; Mode A+B PASS @ .tmp/session/evol-x-path-b-final-acceptance/independent_verification_report.json" },
     "batch_3_w7_frz_od": { "status": "PACKAGES_READY_UNSIGNED", "record": "EVOL_X_BATCH3_EXECUTION_RECORD.md" },
     "batch_4_w7_publish": { "status": "PACK_READY_PREFLIGHT_BLOCKED", "preflight_script": "scripts/qualification/evol_x_closure_publication_preflight.py", "record": "EVOL_X_BATCH4_EXECUTION_RECORD.md" },
     "batch_5_ent_handoff": { "status": "PREPARED", "handoff_doc": "EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md", "record": "EVOL_X_BATCH5_EXECUTION_RECORD.md" },

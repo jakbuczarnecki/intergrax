@@ -8,6 +8,8 @@
   "ecap_amendment_activation": "PENDING_REQUIRED_APPROVALS",
   "normative_effect": "NOT_IN_FORCE",
   "certification_profile": "AUTOMATION_FIRST_SCOPED",
+  "certification_mechanism": "PATH_B_SELECTED",
+  "certification_path_decision_id": "OD-EVOL-16",
   "scope": "EVOL-X only",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "evidence_final_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",

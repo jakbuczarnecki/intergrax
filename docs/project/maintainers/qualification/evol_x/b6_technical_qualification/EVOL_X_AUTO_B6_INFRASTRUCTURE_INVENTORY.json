@@ -4,7 +4,7 @@
   "wave_id": "W7-01-INDEPENDENT-AUTO-B6-ATTESTOR",
   "repository": "jakbuczarnecki/intergrax",
   "branch": "development",
-  "orchestrator_head": "da897149ab0c298e66fd81565c2bbdac05966d48",
+  "orchestrator_head": "4d835482aa6fb64f6e203a0c2cb4c8963b195b6c",
   "discovery_method": "gh CLI + local workspace (no secret values retrieved)",
   "selected_topology": "IN_REPO_REFERENCE_TOOLS__EXTERNAL_ATTESTOR_REQUIRED",
   "topology_independence": "INSUFFICIENT_UNTIL_EXTERNAL_PROVISIONING",
