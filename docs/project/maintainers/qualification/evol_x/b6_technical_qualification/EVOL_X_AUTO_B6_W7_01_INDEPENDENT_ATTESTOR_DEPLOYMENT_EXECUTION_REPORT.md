@@ -7,7 +7,7 @@
 | Role | SHA |
 |------|-----|
 | START HEAD | `da897149ab0c298e66fd81565c2bbdac05966d48` |
-| END HEAD | *(set at publication commit for this report)* |
+| END HEAD | `69c871a0f3f2f50a044ece8d953f004ad4ced75c` |
 | TEST_EXECUTION_SHA | `3c4a641b3e48a13f437e830a0562e2a80b03aabb` (unchanged) |
 | EVIDENCE_FINAL_PUBLICATION_SHA | `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` (unchanged) |
 | Qualified CI | `41337077334` — 290/290 (not re-dispatched) |
