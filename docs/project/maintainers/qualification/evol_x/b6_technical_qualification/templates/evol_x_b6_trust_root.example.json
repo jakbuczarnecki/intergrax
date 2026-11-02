@@ -1,0 +1,15 @@
+{
+  "schema_version": "evol_x_b6_trust_root.v1",
+  "trust_root_id": "REPLACE-WITH-PUBLISHED-TRUST-ROOT-ID",
+  "custody_domain": "INDEPENDENT_EXTERNAL",
+  "keys": [
+    {
+      "key_id": "REPLACE-WITH-KEY-ID",
+      "public_key_b64": "REPLACE-WITH-BASE64-ED25519-PUBLIC-KEY-32-BYTES",
+      "status": "ACTIVE",
+      "credential_class": "PRODUCTION_INDEPENDENT",
+      "attestor_identity": "REPLACE-WITH-NAMED-INDEPENDENT-ATTESTOR",
+      "controlled_by_implementer": false
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"status": "EVIDENCE_INTEGRITY_OK", "mode": "A", "disposition": "final", "evidence_head": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1"}

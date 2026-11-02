@@ -1,0 +1,286 @@
+{
+  "attribution_evidence": {
+    "attributed_node_id": "module:testing_support.change_safety.graph.impact",
+    "attributed_node_kind": "DIRECT",
+    "identity_rule": "stable_digest_hex([kind, node_id])",
+    "schema_version": "evol_m09_cause_identity.v1",
+    "seed_changed_path": "testing_support/change_safety/graph/impact.py"
+  },
+  "case_id": "C2",
+  "dossier": {
+    "content_digest": "fcd7ef2f14a5e713743bbfffbf5c67406d16cb84644367f40cfe2f60b31c7e7a",
+    "created_at_utc": "1970-01-01T00:00:00+00:00",
+    "evidence_refs": [
+      "impact:14504afd1057b44205d5398790950acb80c5b3c693a07224345adcb0740e10f6"
+    ],
+    "graph_digest": "14504afd1057b44205d5398790950acb80c5b3c693a07224345adcb0740e10f6",
+    "inventory_digest": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+    "schema_version": "evol_change_dossier.v1",
+    "sections": [
+      {
+        "answer": "NOT_ASSESSED",
+        "evidence_refs": [],
+        "question": "What changed?",
+        "question_id": "Q1"
+      },
+      {
+        "answer": "status=COMPLETE; DIRECT=1, TRANSITIVE=22",
+        "evidence_refs": [
+          "impact:14504afd1057b44205d5398790950acb80c5b3c693a07224345adcb0740e10f6"
+        ],
+        "question": "What is affected (blast radius)?",
+        "question_id": "Q2"
+      },
+      {
+        "answer": "NOT_ASSESSED",
+        "evidence_refs": [],
+        "question": "Which tests were selected and why?",
+        "question_id": "Q3"
+      },
+      {
+        "answer": "NOT_ASSESSED",
+        "evidence_refs": [],
+        "question": "Is the change compatible and within extension boundaries?",
+        "question_id": "Q4"
+      },
+      {
+        "answer": "NOT_ASSESSED",
+        "evidence_refs": [],
+        "question": "Is the change safe to evolve / deploy?",
+        "question_id": "Q5"
+      },
+      {
+        "answer": "NOT_ASSESSED",
+        "evidence_refs": [],
+        "question": "Is this evidence fresh?",
+        "question_id": "Q6"
+      }
+    ],
+    "stale": false,
+    "stale_triggers": []
+  },
+  "impact": {
+    "affected": [
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "module:testing_support.change_safety.diagnostics.m09_cause_identity",
+        "rule_id": "REL-IMPORTS-REVERSE",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "module:testing_support.change_safety.diagnostics.m09_cause_identity"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "module:testing_support.change_safety.evidence.p03",
+        "rule_id": "REL-IMPORTS-REVERSE",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "module:testing_support.change_safety.diagnostics.m09_cause_identity",
+          "module:testing_support.change_safety.evidence.p03"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "module:testing_support.change_safety.graph",
+        "rule_id": "REL-IMPORTS-REVERSE",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "module:testing_support.change_safety.graph"
+        ]
+      },
+      {
+        "kind": "DIRECT",
+        "node_id": "module:testing_support.change_safety.graph.impact",
+        "rule_id": null,
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "module:testing_support.change_safety.workflow",
+        "rule_id": "REL-IMPORTS-REVERSE",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "module:testing_support.change_safety.workflow"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/experiments/arms/s1.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/experiments/arms/s1.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/experiments/arms/s6.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/experiments/arms/s6.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/frz/test_evol_x_frz_01_semantic_impact.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/frz/test_evol_x_frz_01_semantic_impact.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/frz/test_evol_x_frz_03_blast_radius.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/frz/test_evol_x_frz_03_blast_radius.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/frz/test_evol_x_frz_08_change_diagnostics.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/frz/test_evol_x_frz_08_change_diagnostics.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_adjacent_stage_regression.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_adjacent_stage_regression.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_change_workflow.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "module:testing_support.change_safety.workflow",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_change_workflow.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_closed_world_smoke.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_closed_world_smoke.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_dossier_triggers.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_dossier_triggers.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_intake_and_impact.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_intake_and_impact.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_isolation.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_isolation.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "module:testing_support.change_safety.diagnostics.m09_cause_identity",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_m09_cause_identity.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "module:testing_support.change_safety.diagnostics.m09_cause_identity",
+          "module:testing_support.change_safety.evidence.p03",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_selection.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_selection.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/gates/test_evol_x_selection_fault_injection.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/gates/test_evol_x_selection_fault_injection.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/metrics/m03_causal_audit.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/metrics/m03_causal_audit.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/metrics/measure.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/metrics/measure.py"
+        ]
+      },
+      {
+        "kind": "TRANSITIVE",
+        "node_id": "suite:tests/qualification/evol_x/metrics/test_evol_x_m03_causal_audit.py",
+        "rule_id": "REL-TESTED_BY",
+        "witness_path": [
+          "module:testing_support.change_safety.graph.impact",
+          "suite:tests/qualification/evol_x/metrics/test_evol_x_m03_causal_audit.py"
+        ]
+      }
+    ],
+    "graph_digest": "14504afd1057b44205d5398790950acb80c5b3c693a07224345adcb0740e10f6",
+    "inventory_digest": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+    "ruleset_version": "ruleset.v1",
+    "schema_version": "evol_impact_report.v1",
+    "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+    "status": "COMPLETE"
+  },
+  "seed_changed_path": "testing_support/change_safety/graph/impact.py",
+  "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "tool_seconds": 0.489401
+}

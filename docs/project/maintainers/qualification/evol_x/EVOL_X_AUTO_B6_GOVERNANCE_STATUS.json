@@ -1,0 +1,32 @@
+{
+  "schema_version": "evol_x_auto_b6_governance_status.v1",
+  "operator_decision_id": "OD-EVOL-14",
+  "operator_wave_execution_decision_id": "OD-EVOL-15",
+  "operator_decision_status": "OPERATOR_APPROVED_DIRECTION",
+  "ecap_amendment_id": "ECAP-P4-EVOL-SCOPE-AUTO-B6",
+  "ecap_amendment_version": "2026-11-02.1-pending",
+  "ecap_amendment_activation": "PENDING_REQUIRED_APPROVALS",
+  "normative_effect": "NOT_IN_FORCE",
+  "certification_profile": "AUTOMATION_FIRST_SCOPED",
+  "certification_mechanism": "PATH_A_SELECTED",
+  "certification_path_decision_id": "OD-EVOL-17",
+  "operator_final_technical_acceptance_decision_id": "OD-EVOL-18",
+  "evol_x_technical_work_complete": true,
+  "auto_b6_executive_scope": "EXCLUDED",
+  "prior_certification_mechanism": "PATH_B_SELECTED",
+  "prior_certification_path_decision_id": "OD-EVOL-16",
+  "scope": "EVOL-X only",
+  "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "evidence_final_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
+  "qualified_ci_run_id": "41337077334",
+  "required_approvals_present": {
+    "operator_direction": true,
+    "ecap_maintainer_publication": false,
+    "security_review": false,
+    "independent_key_custody": false
+  },
+  "independent_attestation_environment": false,
+  "b6_acceptance_publication_sha": null,
+  "evol_x_closed": false,
+  "credential_class_authorized_for_formal_b6": null
+}

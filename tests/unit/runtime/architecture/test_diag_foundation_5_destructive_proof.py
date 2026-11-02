@@ -4,13 +4,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.auditability_health_wiring import (
     assert_host_auditability_health_valid,
     project_host_auditability_health_facts_from_runtime,
@@ -50,9 +49,9 @@ from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import 
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
     invoke_terminal_execution_diagnostics,
 )
-from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from tests.unit.applications.scenario_runtime_test_support import (
     MinimalProductionScenarioTestConfig,
@@ -60,9 +59,80 @@ from tests.unit.applications.scenario_runtime_test_support import (
     echo_agent_registry,
 )
 
+from echo.echo_agent import EchoAgent
+
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TENANT = "df5-destructive"
+
+
+@pytest.fixture(autouse=True)
+def _df5_close_host_owned_runtime_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[None, None, None]:
+    """Release dependency-admission threads so pytest and CI smoke can exit cleanly."""
+    from intergrax.applications._shared import declarative_tool_wiring as declarative_tool_wiring_module
+    from intergrax.applications._shared import harness_host_runtime as harness_host_runtime_module
+    from intergrax.applications._shared.declarative_tool_wiring import (
+        close_declarative_catalog_tool_invoker,
+    )
+    from intergrax.applications._shared.harness_host_runtime import (
+        HarnessHostRuntime,
+        close_harness_host_runtime,
+    )
+
+    opened_runtimes: list[HarnessHostRuntime] = []
+    opened_invokers: list[object] = []
+
+    original_build = harness_host_runtime_module.build_harness_host_runtime
+
+    def _tracking_build(*args: object, **kwargs: object) -> HarnessHostRuntime:
+        runtime = original_build(*args, **kwargs)
+        opened_runtimes.append(runtime)
+        return runtime
+
+    original_declarative = declarative_tool_wiring_module.build_declarative_invoker_for_application_host
+
+    def _tracking_declarative(*args: object, **kwargs: object) -> object:
+        invoker = original_declarative(*args, **kwargs)
+        opened_invokers.append(invoker)
+        return invoker
+
+    monkeypatch.setattr(
+        harness_host_runtime_module,
+        "build_harness_host_runtime",
+        _tracking_build,
+    )
+    monkeypatch.setattr(
+        "tests.unit.runtime.architecture.test_diag_foundation_5_destructive_proof.build_harness_host_runtime",
+        _tracking_build,
+    )
+    monkeypatch.setattr(
+        declarative_tool_wiring_module,
+        "build_declarative_invoker_for_application_host",
+        _tracking_declarative,
+    )
+
+    import intergrax.applications._shared.scenario_runtime_baseline as scenario_runtime_baseline
+
+    monkeypatch.setattr(
+        scenario_runtime_baseline,
+        "build_declarative_invoker_for_application_host",
+        _tracking_declarative,
+    )
+
+    import scripts.maintenance.check_harness_observability_wiring as observability_gate
+
+    monkeypatch.setattr(observability_gate, "build_harness_host_runtime", _tracking_build)
+
+    yield
+
+    for invoker in reversed(opened_invokers):
+        close_declarative_catalog_tool_invoker(invoker)
+    for runtime in reversed(opened_runtimes):
+        close_harness_host_runtime(runtime)
+
+
 _OBSERVED_AT = datetime(2026, 8, 29, 12, 0, 0, tzinfo=UTC)
 
 

@@ -1,0 +1,6 @@
+from intergrax.contracts.fx_port import Port
+
+
+class B(Port):
+    def call(self) -> int:
+        return 2

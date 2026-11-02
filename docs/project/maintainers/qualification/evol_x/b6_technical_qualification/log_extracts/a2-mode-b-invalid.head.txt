@@ -1,0 +1,5 @@
+uv : EVIDENCE_INTEGRITY_FAIL: outcome swapped for tests/qualification/evol_x/gates/test_evol_x_p03_integrity.py::test_c
+li_exits_2_on_integrity_failure_and_0_on_success: archived=passed replay=failure
+At line:1 char:601
++ ... ytest.log"; uv run python scripts/qualification/evol_x_p03_evidence.p ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

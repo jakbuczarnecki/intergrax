@@ -1,0 +1,24 @@
+{
+  "schema_version": "workflow_evolution_matrix.v1",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_WORKFLOW_DEPLOY_MATRICES_W4.md",
+  "policy": "OD-EVOL-02(i): in-flight definition change EXPLICITLY_UNSUPPORTED; at-rest MIGRATE; side-by-side VERSIONED_DEPLOY with pins; fail-closed default",
+  "inputs": ["has_inflight", "adopt_in_place", "pin_evidence", "fingerprint_changed", "graph_spec_bumped", "migration_declared", "superseded_readable"],
+  "evaluation": "FIRST_MATCH_IN_ORDER",
+  "rows": [
+    {"wm_id": "WM-01", "when": {"has_inflight": false, "fingerprint_changed": false}, "decision": "SAFE_IN_PLACE", "reason": "no running execution and definition fingerprint unchanged"},
+    {"wm_id": "WM-02", "when": {"superseded_readable": false}, "decision": "REJECT", "reason": "superseded revision not readable (N-02 retention assumption broken)"},
+    {"wm_id": "WM-03", "when": {"has_inflight": false, "graph_spec_bumped": true, "migration_declared": true}, "decision": "MIGRATE", "reason": "at-rest graph_spec bump with declared GraphSpecMigration (N-04 N4-A)"},
+    {"wm_id": "WM-04", "when": {"has_inflight": false, "graph_spec_bumped": true, "migration_declared": false}, "decision": "REJECT", "reason": "graph_spec bump without declared migration"},
+    {"wm_id": "WM-05", "when": {"has_inflight": true, "adopt_in_place": true, "pin_evidence": false}, "decision": "EXPLICITLY_UNSUPPORTED", "reason": "in-flight adopt without pin evidence"},
+    {"wm_id": "WM-06", "when": {"has_inflight": true, "adopt_in_place": true, "graph_spec_bumped": true}, "decision": "EXPLICITLY_UNSUPPORTED", "reason": "in-flight GraphSpecMigration has no executor (N-04)"},
+    {"wm_id": "WM-07", "when": {"has_inflight": true, "adopt_in_place": true, "fingerprint_changed": true}, "decision": "EXPLICITLY_UNSUPPORTED", "reason": "stale definition fingerprint"},
+    {"wm_id": "WM-08", "when": {"has_inflight": true, "adopt_in_place": true}, "decision": "EXPLICITLY_UNSUPPORTED", "reason": "in-flight definition change (no in-flight migration executor)"},
+    {"wm_id": "WM-14", "when": {"has_inflight": true, "adopt_in_place": false, "fingerprint_changed": false}, "decision": "SAFE_IN_PLACE", "reason": "running executions unaffected: definition fingerprint unchanged"},
+    {"wm_id": "WM-09", "when": {"has_inflight": true, "adopt_in_place": false, "pin_evidence": true}, "decision": "VERSIONED_DEPLOY", "reason": "new revision side-by-side; running executions remain pinned"},
+    {"wm_id": "WM-10", "when": {"has_inflight": true, "adopt_in_place": false, "pin_evidence": false}, "decision": "REJECT", "reason": "cannot guarantee pin for running executions"},
+    {"wm_id": "WM-11", "when": {"has_inflight": false, "fingerprint_changed": true, "migration_declared": true}, "decision": "MIGRATE", "reason": "at-rest definition change with declared migration"},
+    {"wm_id": "WM-12", "when": {"has_inflight": false, "fingerprint_changed": true, "migration_declared": false, "pin_evidence": true}, "decision": "VERSIONED_DEPLOY", "reason": "at-rest change published as new pinned revision"},
+    {"wm_id": "WM-13", "when": {"has_inflight": false, "fingerprint_changed": true, "migration_declared": false, "pin_evidence": false}, "decision": "REJECT", "reason": "at-rest change without migration or pin evidence"},
+    {"wm_id": "WM-15", "when": {}, "decision": "REJECT", "reason": "no matrix row matched (fail-closed)"}
+  ]
+}

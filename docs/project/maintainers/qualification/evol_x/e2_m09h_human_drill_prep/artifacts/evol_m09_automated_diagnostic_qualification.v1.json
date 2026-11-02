@@ -1,0 +1,158 @@
+{
+  "adversarial_controls": [
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-01-determinism",
+      "detail": "digest=f1decda53e2306a25418e70ed30046d491f36639e30cb0bfb52be7db1d61f83e",
+      "passed": true
+    },
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-02-wrong-cause-digest",
+      "detail": "synthetic wrong digest differs from oracle",
+      "passed": true
+    },
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-03-wrong-direct-node-kind",
+      "detail": "TRANSITIVE kind digest mismatch",
+      "passed": true
+    },
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-04-unknown-seed",
+      "detail": "M09 seed 'intergrax/no/such/module.py': expected exactly one DIRECT node 'module:intergrax.no.such.module', found 0 (impact status=PARTIAL)",
+      "passed": true
+    },
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-05-oracle-mismatch",
+      "detail": "detected registry/oracle disagreement",
+      "passed": true
+    },
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-06-honeytokens-not-in-registry",
+      "detail": "honeytoken_count=3",
+      "passed": true
+    },
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-07-wrong-tes-inventory",
+      "detail": "good=fb1acfa59ed8122d\u2026 wrong=f0006e6715c5e8a0\u2026",
+      "passed": true
+    },
+    {
+      "automated_only": true,
+      "control_id": "AC-AUTO-08-tampered-node-id",
+      "detail": "tampered node_id digest rejected vs oracle",
+      "passed": true
+    },
+    {
+      "automated_only": false,
+      "control_id": "AC-M09H-01a-registry-blindness",
+      "detail": "NOT_AUTOMATED \u2014 requires signed human evaluator attestation",
+      "passed": null
+    },
+    {
+      "automated_only": false,
+      "control_id": "AC-M09H-01b-honeytoken-resistance",
+      "detail": "NOT_AUTOMATED \u2014 requires post-seal human confirmation",
+      "passed": null
+    },
+    {
+      "automated_only": false,
+      "control_id": "AC-M09H-01c-sealed-timing-integrity",
+      "detail": "NOT_AUTOMATED \u2014 requires human worksheet UTC timestamps",
+      "passed": null
+    }
+  ],
+  "artifact_digest": "67707abfc2651f5e378b8fe4019844beb00dba612385c114e8b3a82f45f5cc77",
+  "cases": [
+    {
+      "case_id": "C1",
+      "cause_identity_digest": "3fc41379bf4835887ef1758cc1aedf2f966e2280cb58f9b14da09bbfa48b091d",
+      "derived_cause_identities": [
+        "3fc41379bf4835887ef1758cc1aedf2f966e2280cb58f9b14da09bbfa48b091d"
+      ],
+      "diagnostic_output_digest": "b136c7a290080b47c737bee7be02ba23a34bbd73a11f39fd5e163812e690236e",
+      "diagnostic_output_relpath": "docs/project/maintainers/qualification/evol_x/e2_m09h_human_drill_prep/artifacts/automated_qualification/cd51347d65424b75aaf5693bee6da05d/C1.json",
+      "direct_node_id": "module:intergrax.contracts.execution_identity",
+      "direct_node_kind": "DIRECT",
+      "execution_finished_at_utc": "2026-11-01T17:08:56.354469+00:00",
+      "execution_started_at_utc": "2026-11-01T17:08:53.758664+00:00",
+      "input_digest": "91f6d5308145ee4757b09502e76673dfef4651cb9da3ec02419fd281b87b6db3",
+      "registry_agreement": true,
+      "seed_changed_path": "intergrax/contracts/execution_identity.py",
+      "tool_seconds": 0.505337,
+      "tool_sla_met": true
+    },
+    {
+      "case_id": "C2",
+      "cause_identity_digest": "f1decda53e2306a25418e70ed30046d491f36639e30cb0bfb52be7db1d61f83e",
+      "derived_cause_identities": [
+        "f1decda53e2306a25418e70ed30046d491f36639e30cb0bfb52be7db1d61f83e"
+      ],
+      "diagnostic_output_digest": "9110a12241cbfbd742a7bc2c9bb3cf5ef0e8d2d839461f106a42f103714aeda6",
+      "diagnostic_output_relpath": "docs/project/maintainers/qualification/evol_x/e2_m09h_human_drill_prep/artifacts/automated_qualification/cd51347d65424b75aaf5693bee6da05d/C2.json",
+      "direct_node_id": "module:testing_support.change_safety.graph.impact",
+      "direct_node_kind": "DIRECT",
+      "execution_finished_at_utc": "2026-11-01T17:08:58.797306+00:00",
+      "execution_started_at_utc": "2026-11-01T17:08:56.367784+00:00",
+      "input_digest": "dda029e107db5ef691c1a94284d0b609e860115e5f65bb2b5a5e8295ae1dcaf6",
+      "registry_agreement": true,
+      "seed_changed_path": "testing_support/change_safety/graph/impact.py",
+      "tool_seconds": 0.521018,
+      "tool_sla_met": true
+    },
+    {
+      "case_id": "C3",
+      "cause_identity_digest": "82364099afe3fa41f42a9f0860ce54bebf4c53ec9f740f04859277ac6069ca55",
+      "derived_cause_identities": [
+        "82364099afe3fa41f42a9f0860ce54bebf4c53ec9f740f04859277ac6069ca55"
+      ],
+      "diagnostic_output_digest": "307f24c8c0dfc2c9a4a56efdd781feb7319270d3b1704ea82f3a8e6b07d731c3",
+      "diagnostic_output_relpath": "docs/project/maintainers/qualification/evol_x/e2_m09h_human_drill_prep/artifacts/automated_qualification/cd51347d65424b75aaf5693bee6da05d/C3.json",
+      "direct_node_id": "module:testing_support.change_safety.contracts.enums",
+      "direct_node_kind": "DIRECT",
+      "execution_finished_at_utc": "2026-11-01T17:09:01.226731+00:00",
+      "execution_started_at_utc": "2026-11-01T17:08:58.812927+00:00",
+      "input_digest": "1feef84e94866e940f6c0453fc82c9da04d798926dd9025d2d8c86be7fc58a50",
+      "registry_agreement": true,
+      "seed_changed_path": "testing_support/change_safety/contracts/enums.py",
+      "tool_seconds": 0.65643,
+      "tool_sla_met": true
+    }
+  ],
+  "evidence_publication_head_sha": "54e908f3e632af7d96b93a7a4ed993a9b92a4b72",
+  "evidence_technical_publication_sha": "1e175ff8f678d605aa841ae52362486a56ed006d",
+  "execution_agent": "cursor-agent-batch-e2-automated",
+  "execution_finished_at_utc": "2026-11-01T17:09:06.840180+00:00",
+  "execution_started_at_utc": "2026-11-01T17:08:53.758664+00:00",
+  "git_branch": "development",
+  "human_attribution_policy_note": "This artifact records machine tool timing and derived cause identity only. It MUST NOT populate attribution_seconds or evol_m09_human_drill.v2 human fields.",
+  "known_limitations": [
+    "Does not satisfy OD-EVOL-08-M1 human attribution_seconds requirement.",
+    "Does not satisfy AC-M09H-01a/b/c human attestation requirements.",
+    "Does not update evol_metrics.v1.json EVOL-M-09H to MEASURED.",
+    "Does not publish EVIDENCE_FINAL or close EVOL-X parent."
+  ],
+  "measurement_mode": "AUTOMATED_DIAGNOSTIC",
+  "measurement_policy_id": "OD-EVOL-08-M1",
+  "outcome": "AUTOMATED_DIAGNOSTIC_QUALIFICATION_PASS",
+  "registry_digest": "a09ab1896aa046fafbc98de9ad7c1db56edfe73d31edd43b9b546b0d5a8f9b68",
+  "registry_path": "docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/evol_m09_drill_case_registry.v1.json",
+  "repository": "jakbuczarnecki/intergrax",
+  "run_id": "cd51347d65424b75aaf5693bee6da05d",
+  "schema_version": "evol_m09_automated_diagnostic_qualification.v1",
+  "summary": {
+    "automated_adversarial_controls_passed": true,
+    "cases_passed": true,
+    "median_tool_seconds": 0.521018
+  },
+  "test_execution_sha": "2b165516485154583a4118ba1ecb2e25549bb5d0",
+  "w6_04_ci_qualification": {
+    "tests_passed": 288,
+    "workflow_run_id": "41327408027"
+  }
+}

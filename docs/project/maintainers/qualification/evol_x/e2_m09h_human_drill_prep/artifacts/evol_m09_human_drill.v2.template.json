@@ -1,0 +1,39 @@
+{
+  "schema_version": "evol_m09_human_drill.v2",
+  "measurement_policy_id": "OD-EVOL-08-M1",
+  "source_commit_sha": "PENDING_HUMAN_EXECUTION",
+  "test_execution_sha": "dcd7ae6e264d435994c61162e0d41aba25f71283",
+  "registry_digest": "PENDING_HUMAN_EXECUTION",
+  "cases": [
+    {
+      "case_id": "C1",
+      "correct": false,
+      "tool_seconds": -1,
+      "attribution_seconds": -1,
+      "attributed_cause_identities": ["PENDING_HUMAN_EXECUTION"]
+    },
+    {
+      "case_id": "C2",
+      "correct": false,
+      "tool_seconds": -1,
+      "attribution_seconds": -1,
+      "attributed_cause_identities": ["PENDING_HUMAN_EXECUTION"]
+    },
+    {
+      "case_id": "C3",
+      "correct": false,
+      "tool_seconds": -1,
+      "attribution_seconds": -1,
+      "attributed_cause_identities": ["PENDING_HUMAN_EXECUTION"]
+    }
+  ],
+  "median_tool_seconds": -1,
+  "median_attribution_seconds": -1,
+  "adversarial_control_passed": false,
+  "drill_started_at_utc": "PENDING_HUMAN_EXECUTION",
+  "drill_completed_at_utc": "PENDING_HUMAN_EXECUTION",
+  "evaluator_id": "PENDING_HUMAN_EXECUTION",
+  "evaluator_display_name": "PENDING_HUMAN_EXECUTION",
+  "worksheet_digest": null,
+  "_disposition": "PREPARATION_TEMPLATE_ONLY — do not publish; negative timings fail Mode A by design"
+}

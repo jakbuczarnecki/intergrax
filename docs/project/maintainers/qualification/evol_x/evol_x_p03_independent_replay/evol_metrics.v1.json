@@ -1,0 +1,176 @@
+{
+  "readings": [
+    {
+      "denominator": 40,
+      "metric_id": "EVOL-M-01",
+      "note": "P-H last 40 in-scope commits",
+      "numerator": 40,
+      "passed": true,
+      "population_digest": "cb223c1218f05b0e72829e457119c5c5b738abada97bfc06732c4c441c104093",
+      "status": "MEASURED",
+      "threshold": 0.95
+    },
+    {
+      "denominator": 11528,
+      "metric_id": "EVOL-M-02",
+      "note": "CW-06 pairs",
+      "numerator": 11528,
+      "passed": true,
+      "population_digest": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+      "status": "MEASURED",
+      "threshold": 0.9
+    },
+    {
+      "denominator": 11528,
+      "metric_id": "EVOL-M-02C",
+      "note": "",
+      "numerator": 0,
+      "passed": true,
+      "population_digest": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+      "status": "MEASURED",
+      "threshold": 0.0
+    },
+    {
+      "denominator": 2082,
+      "metric_id": "EVOL-M-03",
+      "note": "P-S arcs; O-X ast-closure oracle R*",
+      "numerator": 2082,
+      "passed": true,
+      "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
+      "status": "MEASURED",
+      "threshold": 0.98
+    },
+    {
+      "denominator": 342,
+      "metric_id": "EVOL-M-03C",
+      "note": "",
+      "numerator": 342,
+      "passed": true,
+      "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 2082,
+      "metric_id": "EVOL-M-03E",
+      "note": "",
+      "numerator": 0,
+      "passed": true,
+      "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
+      "status": "MEASURED",
+      "threshold": 0.0
+    },
+    {
+      "denominator": 2082,
+      "metric_id": "EVOL-M-03R",
+      "note": "",
+      "numerator": 2082,
+      "passed": true,
+      "population_digest": "185edcd4c39b48785dafba17f04e5ca33aeb6f58dbd4f106e5f3b89a8b12dbd1",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 8,
+      "metric_id": "EVOL-M-04",
+      "note": "8 fault classes",
+      "numerator": 8,
+      "passed": true,
+      "population_digest": "a3b3669683f45cb2e7c6c8bcabcde78826d60c4fbeabcd09d3263f42aeeb4973",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 2,
+      "metric_id": "EVOL-M-05",
+      "note": "S6 positive+negative arms",
+      "numerator": 2,
+      "passed": true,
+      "population_digest": "a3b3669683f45cb2e7c6c8bcabcde78826d60c4fbeabcd09d3263f42aeeb4973",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 1,
+      "metric_id": "EVOL-M-06",
+      "note": "S1 O-F",
+      "numerator": 0,
+      "passed": true,
+      "population_digest": "eeeaee37da15db51e2e8e8b2d83759e33a9152328eddf3c6733df5724d8da63d",
+      "status": "MEASURED",
+      "threshold": 0.0
+    },
+    {
+      "denominator": 4,
+      "metric_id": "EVOL-M-07",
+      "note": "S2+S5",
+      "numerator": 4,
+      "passed": true,
+      "population_digest": "387db7deca4be2584d244c0e102d118f54d9e5d3ae39a5a85ced38c95ef549a2",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 2,
+      "metric_id": "EVOL-M-08",
+      "note": "S7 DM matrix 7 rows + DM-04 snapshots",
+      "numerator": 2,
+      "passed": true,
+      "population_digest": "155132fccb30461f07e7251f70824a228f7f275f25f149df6435899729f507f7",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 3,
+      "metric_id": "EVOL-M-09A",
+      "note": "automation-first scoped diagnostic (OD-EVOL-13)",
+      "numerator": 3,
+      "passed": true,
+      "population_digest": "aa0224aa1a7d5a80b376545c2f9b756124d7eee898214e98881bb2902c1a4a28",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 0,
+      "metric_id": "EVOL-M-09H",
+      "note": "human drill not performed; OD-EVOL-13 scoped automation",
+      "numerator": 0,
+      "passed": null,
+      "population_digest": null,
+      "status": "NOT_MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 3,
+      "metric_id": "EVOL-M-09T",
+      "note": "tool_seconds=4.16 (SLA<=120s); seeds=3 distinct paths",
+      "numerator": 3,
+      "passed": true,
+      "population_digest": "b0711d0f23d6d3762fcc756e9dc022d34f12f16b13a776c73fae64912501ffd3",
+      "status": "MEASURED",
+      "threshold": 1.0
+    },
+    {
+      "denominator": 2,
+      "metric_id": "EVOL-M-10",
+      "note": "",
+      "numerator": 0,
+      "passed": true,
+      "population_digest": "f5844e13160db42727990fa4659e71b7f36d93ea683a556cd38ad31ac642b962",
+      "status": "MEASURED",
+      "threshold": 0.0
+    },
+    {
+      "denominator": 9,
+      "metric_id": "EVOL-M-11",
+      "note": "each trigger fires on its own digest flip; baseline fresh",
+      "numerator": 9,
+      "passed": true,
+      "population_digest": "7f80d2c4873202f0faa6fcb1d53b67d64237c577362af1e67993d6c0e0ad48a5",
+      "status": "MEASURED",
+      "threshold": 1.0
+    }
+  ],
+  "schema_version": "evol_metrics.v1",
+  "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
+}

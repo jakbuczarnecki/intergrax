@@ -1,0 +1,10 @@
+{
+  "schema_version": "selection_policy.v1",
+  "source_authority": "docs/project/maintainers/qualification/evol_x/EVOL_X_CONTRACT_SPEC.md",
+  "rules": [
+    {"rule_id": "R1-SURFACE", "description": "Map impacted surface to catalog nodes"},
+    {"rule_id": "R2-MANDATORY", "description": "Always include QUAL-X P5 mandatory nodes"},
+    {"rule_id": "R7-CONSERVATIVE", "description": "Unknown impact → conservative full selection"}
+  ],
+  "forbid_empty_selection": true
+}

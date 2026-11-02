@@ -1,0 +1,60 @@
+{
+  "schema_version": "evol_m09_human_drill_worksheet.v1",
+  "disposition": "PENDING_HUMAN_EXECUTION",
+  "measurement_policy_id": "OD-EVOL-08-M1",
+  "source_commit_sha": "PENDING_HUMAN_EXECUTION",
+  "test_execution_sha": "dcd7ae6e264d435994c61162e0d41aba25f71283",
+  "registry_digest": "PENDING_HUMAN_EXECUTION",
+  "registry_rebind_note": "Use bytes of rebound registry @ EVIDENCE_FINAL HEAD (see rebind_staging.json procedure)",
+  "evaluator_id": "PENDING_HUMAN_EXECUTION",
+  "evaluator_display_name": "PENDING_HUMAN_EXECUTION",
+  "drill_started_at_utc": "PENDING_HUMAN_EXECUTION",
+  "drill_completed_at_utc": "PENDING_HUMAN_EXECUTION",
+  "cases": [
+    {
+      "case_id": "C1",
+      "tool_started_at_utc": "PENDING_HUMAN_EXECUTION",
+      "tool_completed_at_utc": "PENDING_HUMAN_EXECUTION",
+      "tool_seconds": "PENDING_HUMAN_EXECUTION",
+      "packet_received_at_utc": "PENDING_HUMAN_EXECUTION",
+      "diagnosis_submitted_at_utc": "PENDING_HUMAN_EXECUTION",
+      "attribution_seconds": "PENDING_HUMAN_EXECUTION",
+      "submitted_cause_identities": ["PENDING_HUMAN_EXECUTION"],
+      "correctness_disposition": "PENDING_HUMAN_EXECUTION",
+      "evidence_refs": ["PENDING_HUMAN_EXECUTION"]
+    },
+    {
+      "case_id": "C2",
+      "tool_started_at_utc": "PENDING_HUMAN_EXECUTION",
+      "tool_completed_at_utc": "PENDING_HUMAN_EXECUTION",
+      "tool_seconds": "PENDING_HUMAN_EXECUTION",
+      "packet_received_at_utc": "PENDING_HUMAN_EXECUTION",
+      "diagnosis_submitted_at_utc": "PENDING_HUMAN_EXECUTION",
+      "attribution_seconds": "PENDING_HUMAN_EXECUTION",
+      "submitted_cause_identities": ["PENDING_HUMAN_EXECUTION"],
+      "correctness_disposition": "PENDING_HUMAN_EXECUTION",
+      "evidence_refs": ["PENDING_HUMAN_EXECUTION"]
+    },
+    {
+      "case_id": "C3",
+      "tool_started_at_utc": "PENDING_HUMAN_EXECUTION",
+      "tool_completed_at_utc": "PENDING_HUMAN_EXECUTION",
+      "tool_seconds": "PENDING_HUMAN_EXECUTION",
+      "packet_received_at_utc": "PENDING_HUMAN_EXECUTION",
+      "diagnosis_submitted_at_utc": "PENDING_HUMAN_EXECUTION",
+      "attribution_seconds": "PENDING_HUMAN_EXECUTION",
+      "submitted_cause_identities": ["PENDING_HUMAN_EXECUTION"],
+      "correctness_disposition": "PENDING_HUMAN_EXECUTION",
+      "evidence_refs": ["PENDING_HUMAN_EXECUTION"]
+    }
+  ],
+  "adversarial_control": {
+    "procedure_id": "AC-M09H-01",
+    "outcome": "PENDING_HUMAN_EXECUTION",
+    "operator_witness": "PENDING_HUMAN_EXECUTION",
+    "evaluator_attestation": "PENDING_HUMAN_EXECUTION"
+  },
+  "median_tool_seconds": "PENDING_HUMAN_EXECUTION",
+  "median_attribution_seconds": "PENDING_HUMAN_EXECUTION",
+  "worksheet_digest_placeholder": "Compute SHA-256 over committed worksheet bytes after genuine fill; copy into evol_m09_human_drill.v2.json worksheet_digest"
+}

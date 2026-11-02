@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "rows": [
+    {
+      "arc_id": "A1",
+      "independent_expected_count": 347,
+      "oracle_expected_count": 347,
+      "oracle_matches_independent": true,
+      "passed": true,
+      "selected_count": 347,
+      "selector_covers_oracle": true
+    },
+    {
+      "arc_id": "A2",
+      "independent_expected_count": 347,
+      "oracle_expected_count": 347,
+      "oracle_matches_independent": true,
+      "passed": true,
+      "selected_count": 347,
+      "selector_covers_oracle": true
+    },
+    {
+      "arc_id": "A3",
+      "independent_expected_count": 347,
+      "oracle_expected_count": 347,
+      "oracle_matches_independent": true,
+      "passed": true,
+      "selected_count": 347,
+      "selector_covers_oracle": true
+    },
+    {
+      "arc_id": "A4",
+      "independent_expected_count": 347,
+      "oracle_expected_count": 347,
+      "oracle_matches_independent": true,
+      "passed": true,
+      "selected_count": 347,
+      "selector_covers_oracle": true
+    },
+    {
+      "arc_id": "A5",
+      "independent_expected_count": 347,
+      "oracle_expected_count": 347,
+      "oracle_matches_independent": true,
+      "passed": true,
+      "selected_count": 347,
+      "selector_covers_oracle": true
+    },
+    {
+      "arc_id": "A6",
+      "independent_expected_count": 347,
+      "oracle_expected_count": 347,
+      "oracle_matches_independent": true,
+      "passed": true,
+      "selected_count": 347,
+      "selector_covers_oracle": true
+    }
+  ],
+  "schema_version": "m03_causal_audit.v1",
+  "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
+}

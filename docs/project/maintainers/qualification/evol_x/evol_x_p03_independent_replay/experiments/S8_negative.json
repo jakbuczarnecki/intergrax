@@ -1,0 +1,8 @@
+{
+  "arm": "negative",
+  "detail": "core_edit=CORE_TOUCH_UNAUTHORIZED unauthorized_surfaces=1",
+  "passed": true,
+  "scenario_id": "S8",
+  "schema_version": "evol_experiment_verdict.v1",
+  "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
+}

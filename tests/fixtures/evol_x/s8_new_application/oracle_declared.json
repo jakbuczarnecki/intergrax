@@ -1,0 +1,15 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "frozen_core",
+  "scaffold_changes": [
+    "applications/fx_new_app/__init__.py",
+    "applications/fx_new_app/main.py",
+    "applications/fx_new_app/config.json",
+    "tests/unit/applications/test_fx_new_app.py"
+  ],
+  "core_edit_changes": [
+    "applications/fx_new_app/main.py",
+    "intergrax/runtime/execution/engine.py"
+  ],
+  "expected_core_surface": "execution"
+}

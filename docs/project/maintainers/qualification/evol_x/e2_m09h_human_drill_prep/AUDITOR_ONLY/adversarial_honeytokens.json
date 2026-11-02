@@ -1,0 +1,10 @@
+{
+  "schema_version": "evol_m09_adversarial_honeytokens.v1",
+  "disclaimer": "DECOY ONLY — not in canonical registry; for AC-M09H-01b after sealed submissions",
+  "fake_registry_excerpt_label": "DO NOT USE — operator trap sheet",
+  "honeytoken_cause_identities": [
+    "0000000000000000000000000000000000000000000000000000000000000001",
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+  ]
+}

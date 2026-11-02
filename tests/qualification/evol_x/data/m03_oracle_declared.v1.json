@@ -1,0 +1,12 @@
+{
+  "schema_version": "m03_oracle_declared.v1",
+  "source_authority": "B-M03-02 independent O-F causal oracle (null expected_consumers = bind to independent closure @ TES)",
+  "arcs": [
+    {"arc_id": "A1", "expected_consumers": null},
+    {"arc_id": "A2", "expected_consumers": null},
+    {"arc_id": "A3", "expected_consumers": null},
+    {"arc_id": "A4", "expected_consumers": null},
+    {"arc_id": "A5", "expected_consumers": null},
+    {"arc_id": "A6", "expected_consumers": null}
+  ]
+}

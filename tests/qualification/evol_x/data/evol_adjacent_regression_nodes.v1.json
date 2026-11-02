@@ -1,0 +1,14 @@
+{
+  "schema_version": "evol_adjacent_regression_nodes.v1",
+  "source_authority": "docs/project/maintainers/qualification/EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md (Part II Adj, W5-07)",
+  "adjacent_stage": "COMPAT-X (policy PASS preserved; EVOL-X owns change-time consumer closure)",
+  "node_ids": [
+    "tests/qualification/compat_x/test_compat_x_inventory_gates.py::test_cx_p0_r1_q01_closed_world_parity",
+    "tests/qualification/compat_x/test_compat_x_inventory_gates.py::test_cx_p0_r1_q02_inventory_matches_semantic_discovery",
+    "tests/qualification/compat_x/test_compat_x_inventory_gates.py::test_cx_p0_r1_q03_inventory_unique_ids_and_semantic_identity",
+    "tests/qualification/compat_x/test_compat_x_inventory_gates.py::test_cx_p0_r1_q05_no_parallel_authority_in_production_inventory",
+    "tests/qualification/compat_x/test_compat_x_inventory_gates.py::test_cx_p0_r1_adversarial_10_registry_version_conflict_gate",
+    "tests/qualification/compat_x/test_compat_x_versioning_r1_gates.py::test_cx_r1_inventory_fully_classified",
+    "tests/qualification/compat_x/test_compat_x_versioning_r1_gates.py::test_cx_r1_frz_cmp_02_pass_candidate_scope"
+  ]
+}

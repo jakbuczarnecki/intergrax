@@ -1,0 +1,67 @@
+{
+  "schema_version": "evol_x_auto_b6_infrastructure_inventory.v1",
+  "inventory_date_utc": "2026-11-02",
+  "wave_id": "W7-01-INDEPENDENT-AUTO-B6-ATTESTOR",
+  "repository": "jakbuczarnecki/intergrax",
+  "branch": "development",
+  "orchestrator_head": "4d835482aa6fb64f6e203a0c2cb4c8963b195b6c",
+  "discovery_method": "gh CLI + local workspace (no secret values retrieved)",
+  "selected_topology": "IN_REPO_REFERENCE_TOOLS__EXTERNAL_ATTESTOR_REQUIRED",
+  "topology_independence": "INSUFFICIENT_UNTIL_EXTERNAL_PROVISIONING",
+  "candidates": [
+    {
+      "id": "github_hosted_actions_same_repo_admin",
+      "classification": "AVAILABLE_BUT_NOT_INDEPENDENT",
+      "evidence": {
+        "self_hosted_runners": 0,
+        "actions_enabled": true,
+        "caller_repo_permissions": ["admin", "maintain", "push"],
+        "github_environments": []
+      },
+      "independence_controls": {
+        "implementer_can_modify_workflow_policy": true,
+        "implementer_can_read_or_replace_signing_key": true,
+        "implementer_can_rewrite_replay_ledger_in_repo": true,
+        "implementer_can_authorize_formal_acceptance_via_commit": false,
+        "verifier_blocks_self_authorization": true
+      }
+    },
+    {
+      "id": "cursor_agent_or_second_worktree",
+      "classification": "UNAVAILABLE_FOR_INDEPENDENT_ATTESTOR",
+      "note": "ECAP + dossier: not an acceptable independent attestation environment"
+    },
+    {
+      "id": "external_kms_hsm_attestor_service",
+      "classification": "REQUIRES_PROVISIONING",
+      "note": "No production trust root, custodian, or replay ledger observed"
+    },
+    {
+      "id": "local_windows_dev_workstation",
+      "classification": "AVAILABLE_BUT_NOT_INDEPENDENT",
+      "note": "Orchestrator for technical replay only; session logs under .tmp/ are not an audit ledger"
+    }
+  ],
+  "github_secrets_metadata": {
+    "count_observed": 1,
+    "names": ["REPO_METADATA_TOKEN"],
+    "b6_signing_or_trust_root_secrets": false
+  },
+  "in_repo_deployed_components": [
+    "scripts/qualification/evol_x_b6_independent_verification.py",
+    "scripts/qualification/evol_x_b6_attestation.py",
+    "scripts/qualification/evol_x_b6_evaluate_signed_attestation.py",
+    "docs/project/maintainers/qualification/evol_x/EVOL_X_AUTO_B6_GOVERNANCE_STATUS.json",
+    "docs/project/maintainers/qualification/evol_x/b6_technical_qualification/templates/evol_x_b6_trust_root.example.json",
+    "docs/project/maintainers/qualification/evol_x/b6_technical_qualification/templates/evol_x_b6_replay_ledger.example.json"
+  ],
+  "external_provisioning_required": [
+    "independent_attestor_principal",
+    "production_ed25519_key_custody_outside_repo",
+    "published_trust_root_custody_domain_independent_external",
+    "append_only_replay_ledger",
+    "immutable_verification_log",
+    "ecap_maintainer_publication_in_force",
+    "signed_independent_security_review"
+  ]
+}

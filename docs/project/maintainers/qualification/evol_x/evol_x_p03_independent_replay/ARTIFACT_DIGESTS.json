@@ -1,0 +1,32 @@
+{
+  "digests": {
+    "evol_frz_evidence.v1.json": "73488ecc49e53a98293964a8293b70d5631e7729f9279a779a8c823327a85e84",
+    "evol_junit_outcomes.v1.json": "0cedc45b474a35451ab43c155e819027c45c9e92cf4b2f4352dd4afc63d8539f",
+    "evol_m09_automated_diagnostic_qualification.v1.json": "e1c884c9bad25ff2a8f5734c48d18f927e02dab8033855d47f96b441eca8b55b",
+    "evol_m09_drill_case_registry.v1.json": "6ed12931798dcb402b2d2db307b7ed901f060a4f58a3e1554feaf058399ce385",
+    "evol_metrics.v1.json": "12cc1e3216ee078680c928e759b88e8c57ac307aa8acd63d0e9a385a88d93daf",
+    "evol_test_execution_manifest.v1.json": "d83d17dd9ad2515d07db980a404533f9e09b17d0c183bbc29ab87fe6411bede2",
+    "experiments/S1_negative.json": "5a2dfa7771ae3f9e211ee670057139edaf7041adb26db9af87415f1ed983b5cf",
+    "experiments/S1_positive.json": "aafc1c5bb35dee823b135562221d624caa05694ba7fa2f1d1ec63cf701fbd736",
+    "experiments/S2_negative.json": "2984fe4361069b4dee053fc4ada4e58ba8e1da40302610a36966cd1aa24e952c",
+    "experiments/S2_positive.json": "401569afd415aca5d58a40a53a0b241a9a21312383cf85605f0d4e304ccfd431",
+    "experiments/S3_negative.json": "4cfa6cf6a4bb5e8558eada134765b865db8a61070f1291cea839ccdbbf47fc02",
+    "experiments/S3_positive.json": "92060d8896e7ec0322eafc9c5708b66bf42baa69afd6cc3d4d710f39f2befe06",
+    "experiments/S4_negative.json": "b722a33c41ae3392b95d1779746057ece3677586889d02eb4d8def17b5ebdf62",
+    "experiments/S4_positive.json": "22b178e8bda0068a9813396c7b3d38d2dd31774635f96459ac359ccae541c893",
+    "experiments/S5_negative.json": "aff57a2718fe9af2edbc92c2adc62af49dcb64e388c38e516223379c0a29cd47",
+    "experiments/S5_positive.json": "faa9bad159144df83861cca5816aee7837b5f3d3c0cd98eaa5911a758736afbb",
+    "experiments/S6_negative.json": "ebe510efbb4fb2666c3e5280ae0a3bf2e46e5a5341b749f7cffd4a1f219b3730",
+    "experiments/S6_positive.json": "ef30141744fa7165edac3b2164cbaa94d8ddbc5bf99c5d268353f890a2ed139e",
+    "experiments/S7_negative.json": "fb1745288db4a36d54d0034e3daad5387d95fc7485efb6a68b133a798da3343f",
+    "experiments/S7_positive.json": "56a60485b824a79a25bb4e6198374f25ec3ee253dbcf181a637080015e7db823",
+    "experiments/S8_negative.json": "7c66afa1574c46d2e81fcea06ba79821424d80e5f917b396dcb379e93d4e79bf",
+    "experiments/S8_positive.json": "7c448f710840b98db7a6650a9fe7997959c824235097a99b0631de190929a0a5",
+    "inventory_binding.v1.json": "ecf20224c6c48d1c8c17f72d5e2617f9ec0e7047b66e5dab920e8c41c644fb69",
+    "m03_causal_audit.v1.json": "ff7ee19a23e04f5272eb01e59c845cf90f5ada11d6ca9c1a38aa4ea12b48fb6f",
+    "m09_automated_diagnostic/C1.json": "f52bee267f38d108ec8916cf5deed989e202cb4fd9b88fd3e6a613e557c8dde8",
+    "m09_automated_diagnostic/C2.json": "68f1fec09e3847047c36f056a4decb1baf5550c89be96399e275c540160b2c2b",
+    "m09_automated_diagnostic/C3.json": "65c1618812a5996707c8afd0cd249dd1f1d278ef5b968c7fa9ad2c1516d4059c"
+  },
+  "schema_version": "evol_artifact_digests.v1"
+}

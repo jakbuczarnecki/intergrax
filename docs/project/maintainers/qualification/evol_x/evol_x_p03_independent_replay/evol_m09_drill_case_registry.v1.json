@@ -1,0 +1,30 @@
+{
+  "bound_test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "cases": [
+    {
+      "case_id": "C1",
+      "changed_path": "intergrax/contracts/execution_identity.py",
+      "expected_cause_identities": [
+        "3fc41379bf4835887ef1758cc1aedf2f966e2280cb58f9b14da09bbfa48b091d"
+      ],
+      "input_digest": "91f6d5308145ee4757b09502e76673dfef4651cb9da3ec02419fd281b87b6db3"
+    },
+    {
+      "case_id": "C2",
+      "changed_path": "testing_support/change_safety/graph/impact.py",
+      "expected_cause_identities": [
+        "f1decda53e2306a25418e70ed30046d491f36639e30cb0bfb52be7db1d61f83e"
+      ],
+      "input_digest": "dda029e107db5ef691c1a94284d0b609e860115e5f65bb2b5a5e8295ae1dcaf6"
+    },
+    {
+      "case_id": "C3",
+      "changed_path": "testing_support/change_safety/contracts/enums.py",
+      "expected_cause_identities": [
+        "82364099afe3fa41f42a9f0860ce54bebf4c53ec9f740f04859277ac6069ca55"
+      ],
+      "input_digest": "1feef84e94866e940f6c0453fc82c9da04d798926dd9025d2d8c86be7fc58a50"
+    }
+  ],
+  "schema_version": "evol_m09_drill_case_registry.v1"
+}

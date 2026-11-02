@@ -1,0 +1,26 @@
+{
+  "CW-08": {
+    "digest_a": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+    "digest_b": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+    "passed": true
+  },
+  "CW-09": {
+    "compat_missing": 0,
+    "compat_modules": 6,
+    "disposition_id": "CW09-DUP-EBH7-W7-DISPOSITION-2026-11-01",
+    "dup_ebh7_inventory": "NOT_MACHINE_READABLE",
+    "passed": true,
+    "qual_missing": 0,
+    "qual_suites": 23
+  },
+  "CW-10": {
+    "full": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+    "incremental": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+    "passed": true
+  },
+  "edge_count": 129201,
+  "inventory_digest": "4d85068861e7c91b9a7ccfb5ff618638f12b705ce14ba7b4c5e715a6284ca999",
+  "node_count": 49029,
+  "schema_version": "evol_inventory_binding.v1",
+  "source_commit_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb"
+}

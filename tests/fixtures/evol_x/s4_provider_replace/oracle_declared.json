@@ -1,0 +1,21 @@
+{
+  "schema_version": "evol_oracle_declared.v1",
+  "oracle": "O-F",
+  "composition_modules": [
+    "module:applications.app_a.compose"
+  ],
+  "swap_target_clean": {
+    "provider": "module:agents.fx_providers.provider_b",
+    "expected_rewrite_set": []
+  },
+  "swap_target_coupled": {
+    "provider": "module:agents.fx_providers.provider_a",
+    "expected_rewrite_set": [
+      "module:applications.app_a.use_concrete"
+    ]
+  },
+  "swap_change_paths": [
+    "agents/fx_providers/provider_b.py",
+    "applications/app_a/compose.py"
+  ]
+}

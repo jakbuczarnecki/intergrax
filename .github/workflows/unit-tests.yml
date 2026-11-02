@@ -86,7 +86,7 @@ jobs:
         github.event.inputs.profile == 'smoke'
       )
     runs-on: ubuntu-latest
-    # checkout + uv sync + conformance + ~1900 ci_smoke tests (~50s); cache miss needs headroom
+    # checkout + uv sync (~5s warm) + smoke gate (~60s pytest + scripts); was 10m when DF5 leaked threads
     timeout-minutes: 10
 
     steps:

@@ -1,0 +1,2 @@
+def plan() -> int:
+    return 1
