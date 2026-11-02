@@ -49,7 +49,7 @@ on:
         type: string
         required: false
       evol_test_execution_sha:
-        description: "40-char TEST_EXECUTION_SHA for evol_x_p3_l3"
+        description: "Exact 40-char TEST_EXECUTION_SHA for evol_x_p3_l3 (mandatory for this profile)"
         type: string
         required: false
 
@@ -961,7 +961,6 @@ jobs:
             echo "FAIL: skipped-test disposition (unregistered/stale skip or evidence not PASS)"
             exit 1
           fi
-
   evol-x-p3-l3-qualification:
     if: >-
       github.event_name == 'workflow_dispatch' &&
@@ -970,7 +969,7 @@ jobs:
     timeout-minutes: 45
     env:
       TEST_EXECUTION_SHA: >-
-        ${{ github.event.inputs.evol_test_execution_sha != '' && github.event.inputs.evol_test_execution_sha || github.sha }}
+        ${{ github.event.inputs.evol_test_execution_sha }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -980,6 +979,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          [[ "${TEST_EXECUTION_SHA}" =~ ^[0-9a-f]{40}$ ]] || { echo "Missing or invalid exact TEST_EXECUTION_SHA"; exit 1; }
+          git cat-file -e "${TEST_EXECUTION_SHA}^{commit}"
           git checkout "${TEST_EXECUTION_SHA}"
           test "$(git rev-parse HEAD)" = "${TEST_EXECUTION_SHA}"
       - uses: astral-sh/setup-uv@v5
