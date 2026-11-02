@@ -6,6 +6,7 @@
 
 **Session:** isolated Cursor agent session on `development`.  
 **START_HEAD / review base:** `a20acf4d5fc23887fc3e331bdd5bd03cdb9f48f1`  
+**OD-EVOL-17 publication SHA:** `7ab634dcf33bf4954a942b29bd573c9931617fb8`  
 **Repository:** `jakbuczarnecki/intergrax`
 
 ---
