@@ -9,7 +9,7 @@
 | Role | SHA |
 |------|-----|
 | START HEAD (wave) | `eef50d532a1f7ee52b17358712108786a543e991` |
-| END HEAD | *this publication commit* (descendant of START) |
+| END HEAD | `88971400d1e0c79e69ef5bf7a0eb2a4332844f1f` |
 | TEST_EXECUTION_SHA | `3c4a641b3e48a13f437e830a0562e2a80b03aabb` (unchanged) |
 | EVIDENCE_FINAL_PUBLICATION_SHA | `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` (unchanged) |
 | Qualified CI | `41337077334` — 290 passed (unchanged; not re-dispatched) |
