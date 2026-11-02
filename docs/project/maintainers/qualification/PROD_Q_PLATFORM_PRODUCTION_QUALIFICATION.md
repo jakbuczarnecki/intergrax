@@ -396,3 +396,8 @@ uv run pytest tests/qualification/prod_q/ -p no:xdist -q
 Pyright: **0 errors** on `tests/qualification/prod_q/_p0_*.py`.
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+
+## 2026-11-02 — Operator scoped closure (production-live qualification deferred)
+
+**Operator disposition:** `CLOSED BY OPERATOR — SCOPED / LIVE QUALIFICATION DEFERRED` under [operator closure decision](PROD_Q_OPERATOR_SCOPE_CLOSURE_2026_11_02.md). This closes the current operator-managed technical scope only. Previously accepted P0/P2/P3 and other qualified scoped packages remain accepted with their exact limitations. PROD-Q-P1, PROD-Q-R1/R1-R7-Q mandatory remainder, DIM6 and DIM17 remain **OPEN / NOT QUALIFIED**. Production use of unqualified live integrations remains blocked; no FRZ status is promoted. See the canonical roadmap for the distinct administrative closure and production qualification states.
