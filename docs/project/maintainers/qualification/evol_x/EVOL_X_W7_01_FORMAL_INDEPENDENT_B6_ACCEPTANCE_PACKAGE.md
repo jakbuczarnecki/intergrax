@@ -4,7 +4,7 @@
 > **Not:** formal B6 PASS · not `B6_ACCEPTANCE_PUBLICATION_SHA` · not EVOL-X CLOSED · not FRZ promotion
 
 **Git START HEAD (W7-01):** `3071882670965990457a982e7293240999edf5ed`  
-**Git END HEAD (W7-01 publication):** `004c3a8d75fe0852eb2f403de5112b416bc56d09`  
+**Git END HEAD (W7-01 publication):** `dcb47b55739bc21d66a434b74d158da9c11c559d`  
 **Branch:** `development`  
 **Technical qualification (E3, separate track):** `B6 TECHNICAL QUALIFICATION — PASS (AUTOMATION_FIRST_SCOPED)` — see [b6_technical_qualification/](./b6_technical_qualification/)
 
