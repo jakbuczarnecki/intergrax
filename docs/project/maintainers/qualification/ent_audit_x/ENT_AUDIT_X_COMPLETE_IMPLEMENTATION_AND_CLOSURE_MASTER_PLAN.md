@@ -4,7 +4,7 @@
 **PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
 **PLAN_PUBLICATION_SHA:** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
 **Disposition:** **MASTER PLAN CORRECTED / PUBLISHED / READY FOR FINAL INDEPENDENT ACCEPTANCE**  
-**Stage status @ HEAD:** OPEN — no product runner; FRZ-AUD-01..10 OPEN  
+**Stage status @ HEAD:** IMPLEMENTATION IN PROGRESS — Tier-0 runner + manifest + CLI + qual L1/L2; FRZ-AUD-01..10 OPEN; Protocol 03 B6 pending.
 
 **Normative authorities @ PLAN_BASELINE_SHA (blob SHA):**
 

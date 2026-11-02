@@ -1,0 +1,1251 @@
+{
+  "version": 1,
+  "checks": [
+    {
+      "check_id": "ENT-A-BND-01",
+      "pg_id": "PG-010",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-BND-02",
+      "pg_id": "PG-010",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_unallowlisted_runtime_import_detected_in_isolated_tree",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-BND-03",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "python_script",
+      "entrypoint": "scripts/maintenance/check_agents_no_tier3_imports.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-OWN-01",
+      "pg_id": "PG-003b",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-OWN-02",
+      "pg_id": "PG-003b",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-OWN-03",
+      "pg_id": "PG-003b",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-CTR-01",
+      "pg_id": "PG-011",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-CTR-02",
+      "pg_id": "PG-011",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-CTR-03",
+      "pg_id": "PG-011",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-TYP-01",
+      "pg_id": "PG-011b",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-TYP-02",
+      "pg_id": "PG-011",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-TYP-03",
+      "pg_id": "PG-011",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-DUP-01",
+      "pg_id": "PG-005",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-DUP-02",
+      "pg_id": "PG-005",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-DUP-03",
+      "pg_id": "PG-005",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-PLG-01",
+      "pg_id": "PG-016",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-PLG-02",
+      "pg_id": "PG-016",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-PLG-03",
+      "pg_id": "PG-016",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-VBN-01",
+      "pg_id": "PG-003",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py::test_ebh5_g06_01_roadmap_31_domains_accounted",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-VBN-02",
+      "pg_id": "PG-004",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-VBN-03",
+      "pg_id": "PG-007",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/config_x/test_config_x_final_reconciliation_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-GOV-01",
+      "pg_id": "PG-014",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/gov_x2/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-GOV-02",
+      "pg_id": "PG-014",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/gov_x2/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-GOV-03",
+      "pg_id": "PG-014",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/gov_x2/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-EXE-01",
+      "pg_id": "PG-012",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-EXE-02",
+      "pg_id": "PG-012",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-EXE-03",
+      "pg_id": "PG-012",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-OBS-01",
+      "pg_id": "PG-h01",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/harness_01/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-OBS-02",
+      "pg_id": "PG-h01",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/harness_01/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-OBS-03",
+      "pg_id": "PG-h01",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/harness_01/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-STA-01",
+      "pg_id": "PG-015",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/state_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-STA-02",
+      "pg_id": "PG-015",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/state_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-STA-03",
+      "pg_id": "PG-015",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/state_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-SEC-01",
+      "pg_id": "PG-001b",
+      "entrypoint_kind": "python_script",
+      "entrypoint": "scripts/maintenance/check_immutable_security_audit_trail.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-SEC-02",
+      "pg_id": "PG-001b",
+      "entrypoint_kind": "python_script",
+      "entrypoint": "scripts/maintenance/check_immutable_security_audit_trail.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-SEC-03",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "TO_IMPLEMENT_ENT_REPORT_REDACTION",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REL-01",
+      "pg_id": "PG-h01",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/harness_01/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REL-02",
+      "pg_id": "PG-h01",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/harness_01/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REL-03",
+      "pg_id": "PG-h01",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/harness_01/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REC-01",
+      "pg_id": "PG-015",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/state_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REC-02",
+      "pg_id": "PG-015",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/state_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REC-03",
+      "pg_id": "PG-015",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/state_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-PRD-01",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "python_script",
+      "entrypoint": "scripts/gates/check_application_production_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-PRD-02",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "python_script",
+      "entrypoint": "scripts/gates/check_application_production_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-PRD-03",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "TO_IMPLEMENT_LIMITATIONS_FLAG",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-CMP-01",
+      "pg_id": "PG-019",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/compat_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-CMP-02",
+      "pg_id": "PG-019",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/compat_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-CMP-03",
+      "pg_id": "PG-019",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/compat_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REG-01",
+      "pg_id": "PG-006b",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REG-02",
+      "pg_id": "PG-020",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-REG-03",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "python_script",
+      "entrypoint": "scripts/gates/check_application_production_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-DOC-01",
+      "pg_id": "PG-006",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-DOC-02",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "TO_IMPLEMENT_MANIFEST_DIFF",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-DOC-03",
+      "pg_id": "PG-006b",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-TEN-01",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_final_current_head.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-TEN-02",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r1_current_head.py::test_tx_r1_head_q01_inventory_reconciles_twenty_two_mechanisms",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-TEN-03",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "TO_IMPLEMENT_TEN_SCHEDULER",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-EVOL-01",
+      "pg_id": "PG-008",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/evol_x/gates/test_evol_x_selection.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-EVOL-02",
+      "pg_id": "PG-008",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "TO_IMPLEMENT_EVOL_FAULT",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-EVOL-03",
+      "pg_id": "PG-020",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-INV-01",
+      "pg_id": "PG-020",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-INV-02",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "TO_IMPLEMENT_COVERAGE_AUDIT",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "ENT-A-INV-03",
+      "pg_id": "PG-001",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "TO_IMPLEMENT_FALSE_PASS",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "architecture"
+    },
+    {
+      "check_id": "TEN-IDENTITY",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r1_current_head.py::test_tx_r1_head_q01_inventory_reconciles_twenty_two_mechanisms",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-PROPAGATION",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_p0_current_head.py::test_tx_p0_head_q03_propagation_edges_reference_known_sources",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-AUTHORITY",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q07_adversarial_background_identity",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-STATE",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q05_adversarial_context_llm_cross_tenant",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-PROVIDER",
+      "pg_id": "PG-intcfg",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/existing_capability_configuration/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-CONFIG",
+      "pg_id": "PG-007",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/config_x/test_config_x_final_reconciliation_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-CREDENTIALS",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r2_current_head.py::test_tx_r2_head_q01_qualification_closure_on_current_head",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-EVIDENCE",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q09_adversarial_functional_evidence_tenant",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-TRACE",
+      "pg_id": "PG-trace",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/trace_x/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-RECOVERY",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q08_adversarial_vendor_async_queue",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-ASYNC",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q06_adversarial_context_view_request_mismatch",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-CROSS-TENANT",
+      "pg_id": "PG-014",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/gov_x2/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "TEN-FAIL-CLOSED",
+      "pg_id": "PG-009",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/tenant_x/test_tenant_x_r4_fast.py::test_tx_r4_q12_fail_closed_unknown_synthetic_context_caller",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "tenant"
+    },
+    {
+      "check_id": "VBN-INVENTORY-DRIFT",
+      "pg_id": "PG-003",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py::test_ebh5_g06_01_roadmap_31_domains_accounted",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-CORE-HARDCODING",
+      "pg_id": "PG-004",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-SHADOW-SELECTION",
+      "pg_id": "PG-007",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/config_x/test_config_x_final_reconciliation_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-SILENT-FALLBACK",
+      "pg_id": "PG-004b",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-CONTRACT-LEAKAGE",
+      "pg_id": "PG-011",
+      "entrypoint_kind": "pytest_nodeid",
+      "entrypoint": "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py::test_ebh_2i_contract_surface_purity_gate_passes",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-SQLITE-EFFECTIVE",
+      "pg_id": "PG-015b",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_l2_integrity_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-OBS-OPS-COUPLING",
+      "pg_id": "PG-h01",
+      "entrypoint_kind": "internal_pending",
+      "entrypoint": "tests/qualification/harness_01/ (allowlisted \u2014 TO_ENUMERATE)",
+      "mutating": false,
+      "modes": [
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-REPLACEABILITY-MATRIX",
+      "pg_id": "PG-017",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_dual_slug_rpl_e_operational_gates.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    },
+    {
+      "check_id": "VBN-REACHABILITY",
+      "pg_id": "PG-018",
+      "entrypoint_kind": "pytest_file",
+      "entrypoint": "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py",
+      "mutating": false,
+      "modes": [
+        "FAST",
+        "FULL",
+        "FREEZE",
+        "CHANGED-SINCE"
+      ],
+      "severity_default": "ERROR",
+      "category": "vbn"
+    }
+  ]
+}

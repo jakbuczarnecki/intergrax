@@ -1,0 +1,30 @@
+name: Enterprise audit (ENT-AUDIT-X)
+
+on:
+  pull_request:
+    paths:
+      - "intergrax/platform/enterprise_audit/**"
+      - "scripts/enterprise_audit/**"
+      - "tests/qualification/ent_audit_x/**"
+      - "docs/project/maintainers/qualification/ent_audit_x/**"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Audit mode
+        required: false
+        default: FAST
+        type: choice
+        options:
+          - FAST
+          - FULL
+
+jobs:
+  ent-audit-fast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: L1/L2 qualification
+        run: uv run pytest tests/qualification/ent_audit_x/unit tests/qualification/ent_audit_x/integration -q
+      - name: Enterprise audit CLI (dry-run)
+        run: uv run python scripts/enterprise_audit/run_enterprise_audit.py --mode ${{ inputs.mode || 'FAST' }} --dry-run --output-dir .tmp/proof/ent-audit-x/ci-dry-run
