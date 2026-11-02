@@ -9,7 +9,7 @@
 | Role | SHA |
 |------|-----|
 | START HEAD | `c1db8283594f05ba7f59e32059f7c5a9f4b06143` |
-| END HEAD | *(set @ commit closing this wave)* |
+| END HEAD | `67a608ea7e9465b29648577d8ff3f125f9986a59` |
 | Attestation contract tests | **29 passed** @ START HEAD |
 | Mode A @ FINAL | **PASS** (orchestrator session `.tmp/session/b6-v3/`) |
 | Mode B @ TES (290 VL3) | **PASS** (same session; JUnit + P03 replay) |
