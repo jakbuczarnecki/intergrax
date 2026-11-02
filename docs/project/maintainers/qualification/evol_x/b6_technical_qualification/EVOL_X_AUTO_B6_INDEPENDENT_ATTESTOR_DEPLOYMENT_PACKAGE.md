@@ -71,6 +71,10 @@ Amendment [EVOL_X_PROPOSED_ECAP_AUTOMATED_B6_ORGANIZATIONAL_ACCEPTANCE_AMENDMENT
 
 Unsigned technical evidence: [EVOL_X_AUTO_B6_SECURITY_REVIEW_TECHNICAL_EVIDENCE_UNSIGNED.md](./EVOL_X_AUTO_B6_SECURITY_REVIEW_TECHNICAL_EVIDENCE_UNSIGNED.md). A signed organizational review is still **ABSENT**.
 
+## W7-01 deployment wave
+
+Infrastructure inventory and orchestrator execution report (external authority still pending): [EVOL_X_AUTO_B6_W7_01_INDEPENDENT_ATTESTOR_DEPLOYMENT_EXECUTION_REPORT.md](./EVOL_X_AUTO_B6_W7_01_INDEPENDENT_ATTESTOR_DEPLOYMENT_EXECUTION_REPORT.md).
+
 ## Explicit non-claims
 
 - No production attestation environment is provisioned in this repository.
