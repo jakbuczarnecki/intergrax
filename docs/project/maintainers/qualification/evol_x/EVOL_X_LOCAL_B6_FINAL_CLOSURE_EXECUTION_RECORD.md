@@ -8,6 +8,8 @@
 
 **Disposition:** **PATH A PREPARATION COMPLETE / FORMAL B6 PENDING / EVOL-X OPEN**
 
+Later isolated session (base `a20acf4d…`): **OD-EVOL-17 OPERATOR APPROVED — LOCAL PATH A**. Protocol 03 remains unsigned. Review: [EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md](./EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md).
+
 ---
 
 ## Batch 1 — Path A eligibility
@@ -17,7 +19,7 @@
 | Local Path A without Auto-B6 **IN_FORCE**? | **YES** — ECAP-§2.B **B6** + human independent exact-SHA acceptance; amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` remains **`NOT_IN_FORCE`** (deferred). |
 | Cursor session as independent auditor? | **NO** — ECAP-P4 / W0-08; organizational independence required. |
 | Qualified independent auditor available? | **NO** — OD-EVOL-11 approved but **`auditor_id` NOT RECORDED** (G-02). |
-| OD-EVOL-17 | **PROPOSED** — transition Path B → Path A; **not operator-signed** in register (see below). |
+| OD-EVOL-17 | **OPERATOR APPROVED — LOCAL PATH A** (later session; does not name the auditor). |
 
 **Auditor appointment record:** [EVOL_X_OD_EVOL_11_INDEPENDENT_AUDITOR_APPOINTMENT_RECORD.md](./EVOL_X_OD_EVOL_11_INDEPENDENT_AUDITOR_APPOINTMENT_RECORD.md)
 
@@ -60,7 +62,7 @@ Session (non-SSOT): `.tmp/session/evol-x-local-b6-final/independent_verification
 | OD-EVOL-12 | **PENDING** |
 | OD-EVOLX-08 | **PENDING** |
 | OD-EVOL-16 | **preserved** (Path B selection historical) |
-| OD-EVOL-17 | **PROPOSED** (supersedes closure *mechanism* intent only when signed) |
+| OD-EVOL-17 | **OPERATOR APPROVED — LOCAL PATH A** |
 
 ---
 
@@ -79,7 +81,7 @@ Session (non-SSOT): `.tmp/session/evol-x-local-b6-final/independent_verification
 
 ## External blockers (exact)
 
-1. Operator signs **OD-EVOL-17** (Path A mechanism) and records **OD-EVOL-11** `auditor_id`.
+1. Operator records **OD-EVOL-11** `auditor_id` (OD-EVOL-17 is approved; it does not name the auditor).
 2. Named independent auditor signs **Protocol 03 PASS** → `B6_ACCEPTANCE_PUBLICATION_SHA`.
 3. **OD-EVOL-12**, W7-03 FRZ promotions, **OD-EVOLX-08**, W7-05 atomic publication.
 
