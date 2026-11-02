@@ -19,6 +19,10 @@ uv run python scripts/qualification/evol_x_p03_evidence.py verify-evidence-publi
 | Result line | `{"status": "EVIDENCE_INTEGRITY_OK", "mode": "A", "disposition": "final", "evidence_head": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1"}` |
 | Exit code | 0 (implicit with OK status in session) |
 
+## Orchestrator re-verify (post-publication)
+
+Worktree `.tmp/session/evol-x-b6-verify-final` @ FINAL `bbf3e33b…`: same command → `EVIDENCE_INTEGRITY_OK`, exit **0** (2026-11-02; aligns with session log).
+
 ## Observed bundle facts @ FINAL
 
 - `certification_profile`: `AUTOMATION_FIRST_SCOPED`
