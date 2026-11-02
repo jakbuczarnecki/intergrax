@@ -58,4 +58,4 @@ Parent **EVOL-X: OPEN**. No FRZ promotion. No `EVOL-X CLOSED`.
 
 Durable evidence root: `docs/project/maintainers/qualification/evol_x/b6_technical_qualification/` (this tree). Session dossier `.tmp/session/evol-x-b6-multi/` remains supplementary.
 
-**Git END HEAD (publication):** `f2ee2c25e` (evidence tree @ `8fbcb0509`; dossier SHA pointer fix)
+**Git END HEAD (W7-01 orchestration):** `3071882670965990457a982e7293240999edf5ed` — [EVOL_X_W7_01_FORMAL_INDEPENDENT_B6_ACCEPTANCE_PACKAGE.md](../EVOL_X_W7_01_FORMAL_INDEPENDENT_B6_ACCEPTANCE_PACKAGE.md)

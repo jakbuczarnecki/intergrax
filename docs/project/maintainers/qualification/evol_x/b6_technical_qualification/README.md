@@ -34,3 +34,5 @@ Cursor multi-agent technical review **≠** OD-EVOL-11 independent organizationa
 **Session-primary logs (gitignored):** `.tmp/session/evol-x-b6-multi/logs/` — cited by hash in provenance records; not sole durable evidence.
 
 **Normative package:** [EVOL_X_B6_INDEPENDENT_AUDIT_PACKAGE.md](../EVOL_X_B6_INDEPENDENT_AUDIT_PACKAGE.md)
+
+**W7-01 formal acceptance (unsigned until OD-EVOL-11 signs):** [EVOL_X_W7_01_FORMAL_INDEPENDENT_B6_ACCEPTANCE_PACKAGE.md](../EVOL_X_W7_01_FORMAL_INDEPENDENT_B6_ACCEPTANCE_PACKAGE.md)
