@@ -60,3 +60,10 @@ applications/local_workspace_application/docker/lkw-platform-proof-startup.log
 /.application-hosting-proof*.log
 /.background-task-proof*.log
 /.persistence*.log
+
+# ENT-AUDIT-X qualification housekeeping (untracked local artifacts)
+.cursor/plans/ebh-7-annexes/
+exports/ROADMAP_REPLAY_X_B6_R2_FINAL_AUDIT.zip
+platform_proofs/test_domain/fake_publish/
+platform_proofs/test_artifact_verify/
+platform_proofs/test_evidence_verify/

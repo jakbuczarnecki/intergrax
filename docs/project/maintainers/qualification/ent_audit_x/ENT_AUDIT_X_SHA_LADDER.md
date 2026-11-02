@@ -3,15 +3,16 @@
 **PLAN_BASELINE_SHA (pre-plan HEAD):** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
 **PLAN_PUBLICATION_SHA (initial master plan):** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
 **Branch:** `development`  
-**Authority:** [ENT_AUDIT_X_COMPLETE_IMPLEMENTATION_AND_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_COMPLETE_IMPLEMENTATION_AND_CLOSURE_MASTER_PLAN.md)
+**Authority:** [ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md](./ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md) (execution SSOT); legacy completion plan retained for gap tables.
 
 | Role | SHA | Notes |
 | --- | --- | --- |
 | PLAN_BASELINE_SHA | `8a41d32043b89e555d7c18e052cf7022b8c94681` | Last commit before ENT plan publication wave |
 | PLAN_PUBLICATION_SHA | `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e` | First publication: master plan + annexes (8 files) |
 | PLAN_RECONCILIATION_SHA | `1656cb8659c0b5c8cac422f861856a59401f7ca1` | P-11/P-12/P-13 documentation corrections only |
-| IMPLEMENTATION_SHA | *unset* | First merged ENT product code |
-| TEST_EXECUTION_SHA | *unset* | Clean-checkout pytest for L3 / FREEZE |
+| IMPLEMENTATION_SHA | `86832319b08b3837cfb4ae9c90919389f202cc37` | Tier-0 runner + manifest + CLI + qual L1/L2 |
+| FINAL_PLAN_PUBLICATION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | W0–W6 B6 readiness wave landed on `development` |
+| TEST_EXECUTION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — log `.tmp/session/ent-audit-x-build/pytest.log` |
 | EVIDENCE_CANDIDATE_SHA | *unset* | Pre–independent-audit bundle |
 | EVIDENCE_PUBLICATION_SHA | *unset* | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |

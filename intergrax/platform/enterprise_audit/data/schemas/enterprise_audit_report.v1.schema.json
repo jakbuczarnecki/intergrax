@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "enterprise_audit_report.v1",
+  "type": "object",
+  "required": ["status", "exit_code", "audit_mode", "execution_manifest", "findings"],
+  "properties": {
+    "status": { "type": "string" },
+    "exit_code": { "type": "integer" },
+    "audit_mode": { "type": "string" },
+    "current_sha": { "type": "string" },
+    "execution_manifest": { "type": "object" },
+    "findings": { "type": "array" }
+  }
+}

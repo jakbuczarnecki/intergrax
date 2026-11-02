@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vbn_domains.v1",
+  "type": "object",
+  "required": ["schema_version", "domains_total", "domains"],
+  "properties": {
+    "schema_version": { "type": "integer" },
+    "qualification_sha": { "type": "string" },
+    "domains_total": { "type": "integer" },
+    "domains": { "type": "array" },
+    "limitations": { "type": "array" }
+  }
+}

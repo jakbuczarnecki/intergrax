@@ -1,0 +1,42 @@
+name: Enterprise audit nightly (ENT-AUDIT-X)
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Audit mode
+        required: true
+        default: FULL
+        type: choice
+        options:
+          - FULL
+          - FREEZE
+
+jobs:
+  ent-audit-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Qualification suite
+        run: uv run pytest tests/qualification/ent_audit_x -q
+      - name: Enterprise audit run (${{ github.event.inputs.mode || 'FULL' }} real)
+        run: |
+          MODE="${{ github.event.inputs.mode || 'FULL' }}"
+          OUT=".tmp/proof/ent-audit-x/nightly-${MODE}"
+          EXTRA=""
+          if [ "$MODE" = "FREEZE" ]; then
+            EXTRA="--bootstrap-baseline --evidence-bundle"
+          fi
+          uv run python scripts/enterprise_audit/run_enterprise_audit.py \
+            --mode "$MODE" \
+            --output-dir "$OUT" \
+            $EXTRA
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ent-audit-nightly-${{ github.event.inputs.mode || 'FULL' }}
+          path: .tmp/proof/ent-audit-x/
