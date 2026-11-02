@@ -3,7 +3,7 @@
 **Authority:** [EVOL_X_COMPLETE_CLOSURE_AND_CERTIFICATION_MASTER_PLAN.md](./EVOL_X_COMPLETE_CLOSURE_AND_CERTIFICATION_MASTER_PLAN.md) (execution SSOT). Normative requirements: [EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md](../EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md).
 
 **Execution START_HEAD:** `9c893139e89ed885e8f30e66c14b3cc363a8ac15`  
-**Disposition (parent EVOL-X):** **OPEN** — formal closure not published.
+**Disposition (parent EVOL-X):** **`TECHNICAL WORK COMPLETE / OPERATOR ACCEPTED / FORMAL INDEPENDENT CERTIFICATION PENDING`** (OD-EVOL-18) — **not** CLOSED; formal closure not published.
 
 ---
 

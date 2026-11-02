@@ -1,7 +1,8 @@
 # EVOL-X → ENT-AUDIT-X handoff record
 
 **Schema:** intake record for **ENT-AUDIT-X** (no ENT implementation in this wave)  
-**Status:** **PREPARED — FINALIZE @ descendant of `FORMAL_CLOSURE_PUBLICATION_SHA`**  
+**Status:** **OPERATOR ACCEPTED — PREPARED INTAKE PACKAGE / W7-06 FORMAL PIN PENDING**  
+**Operator acceptance:** **OD-EVOL-18** (2026-11-02) — technical handoff to ENT-AUDIT-X authorized; not independent B6 certification.  
 **Authority:** Master plan v3 W7-06 · D10 digest reconciliation
 
 ---
@@ -15,8 +16,9 @@
 | Certification profile accepted | `AUTOMATION_FIRST_SCOPED` |
 | EVOL-X closure SHA | *TBD — `FORMAL_CLOSURE_PUBLICATION_SHA`* |
 | B6 acceptance SHA | *TBD — `B6_ACCEPTANCE_PUBLICATION_SHA`* |
+| Operator technical acceptance | **OD-EVOL-18** — see [EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md](./EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md) |
 
-Until closure SHAs exist, this record is **PREPARED** for intake drafting only.
+ENT-AUDIT-X may begin **intake drafting** against pinned TES/FINAL/CI and this record. **W7-06** formal handoff pin remains blocked until W7-05 publishes `FORMAL_CLOSURE_PUBLICATION_SHA`.
 
 ---
 

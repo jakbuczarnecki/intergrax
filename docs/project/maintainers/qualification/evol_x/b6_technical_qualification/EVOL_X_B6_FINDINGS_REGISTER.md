@@ -21,4 +21,4 @@
 
 ## Consolidator disposition
 
-No unsupported technical PASS claims remain for G-01, G-04, G-05, G-06 (v2), G-13, scoped G-03/G-14. Formal blockers F-003..F-007 remain.
+No unsupported technical PASS claims remain for G-01, G-04, G-05, G-06 (v2), G-13, scoped G-03/G-14. Formal blockers F-003..F-007 remain. **OD-EVOL-18** records operator acceptance of technical work and prepared ENT intake; it does **not** close F-003..F-007.

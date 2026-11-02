@@ -2,7 +2,7 @@
 
 **E3 rule:** Prepare only — **do not execute E4 closure** in this wave.
 
-**OD-EVOL-14 (2026-11-02)** approves automated B6 direction and implementation only. It does **not** sign OD-EVOL-12, OD-EVOLX-08, W7-03, W7-04, W7-05, or W7-06. Those gates stay unexecuted.
+**OD-EVOL-18 (2026-11-02):** Operator accepted end of EVOL-X technical work and authorized ENT-AUDIT-X intake of prepared artifacts. W7-03..06 **formal** gates remain unexecuted until independent B6 and operator closure decisions.
 
 ## W7-03 — FRZ promotion + OD-EVOL-12
 

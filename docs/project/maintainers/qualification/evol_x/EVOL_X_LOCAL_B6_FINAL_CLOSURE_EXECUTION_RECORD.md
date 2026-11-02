@@ -6,9 +6,9 @@
 **START_HEAD:** `9379422c5e557dec345e153e4cd359c57fc72dce`  
 **END_HEAD:** `aa5eec61b359543c48c2790e8c353cf06230b3ce`
 
-**Disposition:** **PATH A PREPARATION COMPLETE / FORMAL B6 PENDING / EVOL-X OPEN**
+**Disposition:** **`EVOL-X — TECHNICAL WORK COMPLETE / OPERATOR ACCEPTED / FORMAL INDEPENDENT CERTIFICATION PENDING`** (OD-EVOL-18)
 
-Later isolated session (base `a20acf4d…`): **OD-EVOL-17 OPERATOR APPROVED — LOCAL PATH A**. Protocol 03 remains unsigned. Review: [EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md](./EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md).
+Later isolated session (base `a20acf4d…`): **OD-EVOL-17 OPERATOR APPROVED — LOCAL PATH A**. **OD-EVOL-18** ends implementer technical work and authorizes ENT intake of prepared handoff. Protocol 03 remains unsigned. Review: [EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md](./EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md). Acceptance: [EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md](./EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md).
 
 ---
 
@@ -72,10 +72,11 @@ Session (non-SSOT): `.tmp/session/evol-x-local-b6-final/independent_verification
 |------|--------|
 | W7-05 preflight | **FAIL** (missing B6 PASS, OD-EVOL-11 name, OD-EVOL-12/EVOLX-08) |
 | `FORMAL_CLOSURE_PUBLICATION_SHA` | **unset** |
-| EVOL-X status | **OPEN** |
-| ENT-AUDIT-X W7-06 handoff SHA | **unset** (handoff doc prepared only) |
+| EVOL-X status | **TECHNICAL WORK COMPLETE / OPERATOR ACCEPTED** (not CLOSED) |
+| ENT-AUDIT-X intake | **OPERATOR ACCEPTED — prepared package** ([handoff record](./EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md)) |
+| ENT-AUDIT-X W7-06 handoff SHA | **unset** (formal pin pending W7-05) |
 
-**Auto-B6 infrastructure:** explicitly **deferred** · Path B **not deployed** · ECAP-P4 amendment **NOT_IN_FORCE**.
+**Auto-B6 infrastructure:** **excluded from executive scope** (OD-EVOL-18) · Path B **not deployed** · ECAP-P4 amendment **NOT_IN_FORCE**.
 
 ---
 

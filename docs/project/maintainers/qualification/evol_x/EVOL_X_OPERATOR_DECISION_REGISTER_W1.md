@@ -25,6 +25,7 @@
 | **OD-EVOL-15** | **OPERATOR APPROVED — FULL AUTO-B6 EXECUTION WITHIN OPERATOR AUTHORITY** | 2026-11-02 | Authorizes completing every remaining **implementer/operator** action on the AUTO-B6 path (technical qualification replay, ECAP amendment **preparation**, independent attestation **deployment specification**, adversarial automation, Mode A/B orchestration, E4 **preparation**). Does **not** authorize ECAP maintainer publication, independent security **signature**, external key custody, formal B6 PASS, `B6_ACCEPTANCE_PUBLICATION_SHA`, FRZ promotion, OD-EVOL-12/OD-EVOLX-08 signing, or EVOL-X CLOSED. Supplements OD-EVOL-14. |
 | **OD-EVOL-16** | **OPERATOR APPROVED — PATH_B_SELECTED** | 2026-11-02 | Selects **Path B** (ECAP-P4 AUTO-B6 + external independent attestor) as the certification mechanism for EVOL-X formal B6. Authorizes implementer/operator preparation and technical replay only. Does **not** activate ECAP (`normative_effect` stays `NOT_IN_FORCE`), provision KMS/HSM, impersonate maintainer/security reviewer/attestor, or declare EVOL-X CLOSED. **Historical** — superseded for closure execution on 2026-11-02 by signed **OD-EVOL-17**. Path B text preserved. |
 | **OD-EVOL-17** | **OPERATOR APPROVED — LOCAL PATH A** | 2026-11-02 | Operator-authenticated in the isolated local-closure session. Active closure mechanism is ECAP-§2.B human Protocol 03 under `AUTOMATION_FIRST_SCOPED` (TES `3c4a641b…`, FINAL `bbf3e33b…`, CI `41337077334`). Does **not** name `auditor_id`, publish B6 PASS, promote FRZ, sign OD-EVOL-12/OD-EVOLX-08, or declare EVOL-X CLOSED. Auto-B6 infrastructure **deferred**. Amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` stays **`NOT_IN_FORCE`**. |
+| **OD-EVOL-18** | **OPERATOR APPROVED — FINAL TECHNICAL ACCEPTANCE** | 2026-11-02 | Ends EVOL-X implementer/operator **technical work**; accepts pinned TES/FINAL/CI and scoped limits (`M-09H NOT_MEASURED`); authorizes ENT-AUDIT-X intake of the **prepared** handoff package. Status: **`EVOL-X — TECHNICAL WORK COMPLETE / OPERATOR ACCEPTED / FORMAL INDEPENDENT CERTIFICATION PENDING`**. Does **not** sign Protocol 03, set B6/closure SHAs, promote FRZ, change ECAP, or declare EVOL-X CLOSED. Auto-B6 infrastructure **excluded from executive scope**. See [EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md](./EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md). |
 | **OD-EVOL-11** | SIGNED / APPROVED (appointment authorized; **auditor identity NOT NAMED**) | 2026-11-01 | W0-08: operator-appointed independent auditor (must differ from implementer/agent). Operator message and auth package carry no name; **operator must record the auditor id in this row before W7-01**. Agent does not self-appoint. Appointment record: [EVOL_X_OD_EVOL_11_INDEPENDENT_AUDITOR_APPOINTMENT_RECORD.md](./EVOL_X_OD_EVOL_11_INDEPENDENT_AUDITOR_APPOINTMENT_RECORD.md). |
 | **OD-EVOL-12** | **PENDING** | — | W7-03 (Batch G not in 2026-11-01 scope) |
 | **OD-EVOLX-08** | **PENDING** | — | W7-04 (Batch G not in 2026-11-01 scope) |
@@ -102,3 +103,16 @@ Consolidated Path B acceptance execution: [EVOL_X_PATH_B_FINAL_ACCEPTANCE_EXECUT
 
 Independent technical review (not a Protocol 03 signature): [EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md](./EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md).  
 Preparation record: [EVOL_X_LOCAL_B6_FINAL_CLOSURE_EXECUTION_RECORD.md](./EVOL_X_LOCAL_B6_FINAL_CLOSURE_EXECUTION_RECORD.md).
+
+## OD-EVOL-18 — final operator technical acceptance (2026-11-02)
+
+**Status:** **OPERATOR APPROVED — FINAL TECHNICAL ACCEPTANCE**.  
+**Parent EVOL-X label:** **`EVOL-X — TECHNICAL WORK COMPLETE / OPERATOR ACCEPTED / FORMAL INDEPENDENT CERTIFICATION PENDING`**.  
+**Normative ECAP / FRZ effect:** none. **`B6_ACCEPTANCE_PUBLICATION_SHA`:** unset. **`evol_x_closed`:** false.
+
+**Decision text:**
+
+«**OPERATOR APPROVED — EVOL-X FINAL TECHNICAL ACCEPTANCE.** Accept final implementation, qualification, and audit results under `AUTOMATION_FIRST_SCOPED`; accept pinned TES `3c4a641b…`, FINAL `bbf3e33b…`, CI `41337077334`, and **`M-09H NOT_MEASURED`**. Confirm Path A per **OD-EVOL-17**. End further EVOL-X implementer/operator technical work. Exclude deferred Auto-B6 infrastructure from executive scope. Authorize publication and transfer of the prepared ENT-AUDIT-X intake package. **Does not** constitute independent auditor certification, Protocol 03 PASS, OD-EVOL-12/OD-EVOLX-08, FRZ promotion, or EVOL-X CLOSED.»
+
+Publication: [EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md](./EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md).  
+Machine tracker: [EVOL_X_CLOSURE_EXECUTION_STATUS.json](./EVOL_X_CLOSURE_EXECUTION_STATUS.json).

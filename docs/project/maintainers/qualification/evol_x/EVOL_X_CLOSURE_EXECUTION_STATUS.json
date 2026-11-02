@@ -5,12 +5,17 @@
   "path_a_decision_id": "OD-EVOL-17",
   "od_evol_17_publication_sha": "7ab634dcf33bf4954a942b29bd573c9931617fb8",
   "path_a_decision_status": "OPERATOR_APPROVED_LOCAL_PATH_A",
+  "operator_final_acceptance_decision_id": "OD-EVOL-18",
+  "od_evol_18_publication_sha": null,
   "path_b_operator_decision_id": "OD-EVOL-16",
   "path_b_disposition": "HISTORICAL",
   "certification_mechanism": "PATH_A_SELECTED",
-  "certification_mechanism_note": "OD-EVOL-17 approved. ECAP-P4 amendment remains NOT_IN_FORCE. Formal B6 pending named OD-EVOL-11 auditor.",
-  "wave_disposition": "OD_EVOL_17_APPROVED_FORMAL_B6_PENDING",
-  "parent_evol_x_status": "OPEN",
+  "certification_mechanism_note": "OD-EVOL-17 Path A. OD-EVOL-18 ends implementer technical work; formal B6 pending named OD-EVOL-11 auditor. ECAP-P4 amendment NOT_IN_FORCE.",
+  "wave_disposition": "OD_EVOL_18_TECHNICAL_WORK_COMPLETE_OPERATOR_ACCEPTED",
+  "parent_evol_x_status": "TECHNICAL_WORK_COMPLETE_OPERATOR_ACCEPTED",
+  "parent_evol_x_status_label": "EVOL-X — TECHNICAL WORK COMPLETE / OPERATOR ACCEPTED / FORMAL INDEPENDENT CERTIFICATION PENDING",
+  "formal_independent_certification": "PENDING",
+  "implementer_technical_work": "COMPLETE",
   "certification_profile": "AUTOMATION_FIRST_SCOPED",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
   "evidence_final_publication_sha": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
@@ -18,6 +23,7 @@
   "b6_acceptance_publication_sha": null,
   "formal_closure_publication_sha": null,
   "w7_06_handoff_publication_sha": null,
+  "ent_audit_x_intake": "OPERATOR_ACCEPTED_PREPARED_PACKAGE",
   "independent_technical_review": "EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md",
   "protocol_03": "PENDING",
   "batches": {
@@ -27,7 +33,8 @@
     "batch_3_protocol_03": { "status": "BLOCKED_EXTERNAL_AUTHORITY", "blockers": ["MISSING_SIGNED_PASS_RECORD", "MISSING_NAMED_AUDITOR"] },
     "batch_4_w7_frz_od": { "status": "NOT_STARTED_PENDING_B6", "reason": "W7-03 requires formal B6" },
     "batch_5_final_closure": { "status": "BLOCKED", "preflight": "FAIL_EXPECTED", "record": "EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md" },
+    "batch_5_ent_handoff": { "status": "OPERATOR_ACCEPTED_PREPARED", "record": "EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md", "formal_w7_06_pin": "PENDING_W7_05" },
     "w7_02": { "status": "NOT_APPLICABLE", "reason": "no technical failure of pinned TES/FINAL/CI evidence" },
-    "auto_b6_infrastructure": { "status": "EXPLICITLY_DEFERRED", "ecap_p4_normative_effect": "NOT_IN_FORCE" }
+    "auto_b6_infrastructure": { "status": "EXCLUDED_FROM_EXECUTIVE_SCOPE", "ecap_p4_normative_effect": "NOT_IN_FORCE" }
   }
 }
