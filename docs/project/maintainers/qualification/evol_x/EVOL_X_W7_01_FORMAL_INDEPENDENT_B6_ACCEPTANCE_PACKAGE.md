@@ -3,7 +3,8 @@
 > **Disposition:** `EVOL-X W7-01 — ACCEPTANCE PACKAGE COMPLETE / FORMAL AUDITOR GATE PENDING`  
 > **Not:** formal B6 PASS · not `B6_ACCEPTANCE_PUBLICATION_SHA` · not EVOL-X CLOSED · not FRZ promotion
 
-**Git execution HEAD (W7-01 orchestration):** `3071882670965990457a982e7293240999edf5ed`  
+**Git START HEAD (W7-01):** `3071882670965990457a982e7293240999edf5ed`  
+**Git END HEAD (W7-01 publication):** `004c3a8d75fe0852eb2f403de5112b416bc56d09`  
 **Branch:** `development`  
 **Technical qualification (E3, separate track):** `B6 TECHNICAL QUALIFICATION — PASS (AUTOMATION_FIRST_SCOPED)` — see [b6_technical_qualification/](./b6_technical_qualification/)
 
