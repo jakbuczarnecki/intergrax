@@ -1,17 +1,17 @@
 # ENT-AUDIT-X — Protocol 03 independent audit dossier (draft)
 
-**Status:** TECHNICAL PARTIAL — **no PASS declared by agent** (see master plan disposition)
+**Status:** TECHNICAL PARTIAL — **no B6 PASS / no OD approved / no FRZ CLOSED** (agent-prepared handoff only)
 
 | Field | Value |
 | --- | --- |
 | Execution SSOT | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) |
-| Audited IMPLEMENTATION_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` |
-| Plan mechanical validator | `scripts/enterprise_audit/validate_post_implementation_master_plan.py` (exit 0 required before B6 dossier fill) |
-| TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` |
-| Qual wave report (local) | `.tmp/session/ent-audit-x-certifying-final/qual_wave_report.json` |
-| B5 handoff tree (tracked) | [b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/](./b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/) |
-| EVIDENCE_CANDIDATE_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` |
-| EVIDENCE_PUBLICATION_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` |
+| Audited IMPLEMENTATION_SHA (closure start) | `45240b2d4b108bb813b8d7683f10d6e56121b3c4` |
+| **TEST_EXECUTION_SHA (current qual)** | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
+| Historical TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived B5 only) |
+| Qual wave report | [qualification_at_87203c1b…/qual_wave_report.json](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/qual_wave_report.json) (`status=PASS`, L3 85/85 + FREEZE candidate) |
+| B5 handoff tree (current) | [qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) |
+| B5 handoff tree (historical) | [qualification_at_b8bb88c9…/](./b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/) |
+| EVIDENCE_PUBLICATION_SHA | *pin on R7 publication commit — see SHA ladder append* |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor — agent does not sign* |
 | ACCEPTED_BASELINE_SHA | *operator OD-ENT-01 after B6* |
 
