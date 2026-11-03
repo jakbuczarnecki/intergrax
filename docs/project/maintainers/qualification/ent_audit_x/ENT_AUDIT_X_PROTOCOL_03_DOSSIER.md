@@ -5,13 +5,13 @@
 | Field | Value |
 | --- | --- |
 | Execution SSOT | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) |
-| Audited IMPLEMENTATION_SHA | `60bf2f43b3d5c33b9864574c5296e1dd864fc7a5` |
+| Audited IMPLEMENTATION_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` |
 | Plan mechanical validator | `scripts/enterprise_audit/validate_post_implementation_master_plan.py` (exit 0 required before B6 dossier fill) |
 | TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` |
 | Qual wave report (local) | `.tmp/session/ent-audit-x-certifying-final/qual_wave_report.json` |
 | B5 handoff tree (tracked) | [b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/](./b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/) |
-| EVIDENCE_CANDIDATE_SHA | *same commit as EVIDENCE_PUBLICATION_SHA after B5 publish* |
-| EVIDENCE_PUBLICATION_SHA | *pinned in [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md) on B5 commit* |
+| EVIDENCE_CANDIDATE_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` |
+| EVIDENCE_PUBLICATION_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor — agent does not sign* |
 | ACCEPTED_BASELINE_SHA | *operator OD-ENT-01 after B6* |
 

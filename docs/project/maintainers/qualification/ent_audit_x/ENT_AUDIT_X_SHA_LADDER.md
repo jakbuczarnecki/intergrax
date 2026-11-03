@@ -24,10 +24,11 @@
 | IMPLEMENTATION_SHA (wave 2 provenance + semantic acceptance) | `e0f64ed7fd57180efc9b93798a3595b9578497af` | Parent of audited baseline |
 | POST_IMPLEMENTATION_SSOT_REPAIR_PUBLICATION_SHA | `8efac05b4ca18a31a754cf003851f5bf24725f76` | Matrix E + DAG + validator repair @ audited baseline |
 | IMPLEMENTATION_SHA (Wave F FREEZE hardening + per-run jailed baseline) | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | qual_wave certifying replay gate; ancestor of evidence work |
+| IMPLEMENTATION_SHA (Wave G B5 evidence + mechanical readiness) | `894b0e1aff071d19636d23bea406b95dcffc79e1` | b6_independent_handoff @ TES; readiness proofs |
 | TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | Wave F **CERTIFYING PASS** @ `.tmp/session/ent-audit-x-certifying-final/qual_wave_report.json` |
 | TEST_EXECUTION_SHA (historical — not current @ d4974efc) | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — **do not** substitute for re-qual @ audited baseline |
-| EVIDENCE_CANDIDATE_SHA | *unset* | Pre–independent-audit bundle |
-| EVIDENCE_PUBLICATION_SHA | *unset* | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
+| EVIDENCE_CANDIDATE_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` | B5 handoff tree + mechanical readiness proofs |
+| EVIDENCE_PUBLICATION_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
