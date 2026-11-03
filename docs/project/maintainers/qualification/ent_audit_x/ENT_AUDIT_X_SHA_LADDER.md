@@ -24,7 +24,7 @@
 | IMPLEMENTATION_SHA (wave 2 provenance + semantic acceptance) | `e0f64ed7fd57180efc9b93798a3595b9578497af` | Parent of audited baseline |
 | POST_IMPLEMENTATION_SSOT_REPAIR_PUBLICATION_SHA | `8efac05b4ca18a31a754cf003851f5bf24725f76` | Matrix E + DAG + validator repair @ audited baseline |
 | IMPLEMENTATION_SHA (Wave F FREEZE hardening + per-run jailed baseline) | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | qual_wave certifying replay gate; ancestor of evidence work |
-| IMPLEMENTATION_SHA (Wave G B5 evidence + mechanical readiness) | `894b0e1aff071d19636d23bea406b95dcffc79e1` | b6_independent_handoff @ TES; readiness proofs |
+| IMPLEMENTATION_SHA (C075-S2 WBS reconcile + mechanical layers) | `8ae58734d117acf23223ddce0138f6e451941d34` | Matrix C/E/GAP-RC sync @ TES; strict CI/WBS mechanical gates |
 | TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | Wave F **CERTIFYING PASS** @ `.tmp/session/ent-audit-x-certifying-final/qual_wave_report.json` |
 | TEST_EXECUTION_SHA (historical — not current @ d4974efc) | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — **do not** substitute for re-qual @ audited baseline |
 | EVIDENCE_CANDIDATE_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` | B5 handoff tree + mechanical readiness proofs |
