@@ -50,3 +50,27 @@ def validate_evidence_manifest(path: Path) -> tuple[str, ...]:
 def validate_vbn_domains(path: Path) -> tuple[str, ...]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     return validate_against_schema(payload, _load_schema("vbn_domains.v1.schema.json"))
+
+
+def verify_closed_evidence_bundle(output_dir: Path) -> tuple[str, ...]:
+    from intergrax.platform.enterprise_audit.evidence import (
+        list_bundle_files,
+        load_evidence_artifact_catalog,
+        verify_evidence_manifest,
+    )
+
+    errors: list[str] = []
+    catalog = load_evidence_artifact_catalog()
+    required = catalog.get("required_artifacts", [])
+    for name in required:
+        if not (output_dir / name).is_file():
+            errors.append(f"missing required artifact: {name}")
+    if not verify_evidence_manifest(output_dir):
+        errors.append("evidence manifest digest mismatch or missing")
+    allowed = set(required) | set(catalog.get("optional_artifacts", []))
+    allowed.add("evidence_manifest.v1.json")
+    present = list_bundle_files(output_dir) | {"evidence_manifest.v1.json"}
+    extra = present - allowed
+    if extra:
+        errors.append(f"unexpected artifacts in closed bundle: {', '.join(sorted(extra))}")
+    return tuple(errors)

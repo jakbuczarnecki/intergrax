@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict
 from pathlib import Path
 
@@ -33,6 +34,7 @@ def build_report_json(report: AuditReport, manifest: AuditExecutionManifest) -> 
         "audit_mode": report.audit_mode.value,
         "current_sha": report.current_sha,
         "baseline_sha": report.baseline_sha,
+        "certifying_run": report.certifying_run,
         "limitations": list(report.limitations),
         "coverage_matrix_summary": report.coverage_matrix_summary,
         "findings": [_finding_dict(f) for f in report.findings],
@@ -45,6 +47,7 @@ def build_report_json(report: AuditReport, manifest: AuditExecutionManifest) -> 
             "checks_executed": manifest.checks_executed,
             "checks_skipped": manifest.checks_skipped,
             "coverage_label": manifest.coverage_label,
+            "certifying_run": manifest.certifying_run,
         },
     }
 
@@ -61,18 +64,24 @@ def write_reports(
     json_path = output_dir / "enterprise_audit_report.json"
     md_path = output_dir / "enterprise_audit_report.md"
     payload = build_report_json(report, manifest)
-    json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    md_path.write_text(render_markdown(report, manifest), encoding="utf-8")
+    md_body = render_markdown(report, manifest)
     detail_path = output_dir / "enterprise_audit_outcomes.json"
-    detail_path.write_text(
-        json.dumps([asdict(o) for o in outcomes], indent=2) + "\n",
-        encoding="utf-8",
-    )
+    detail_body = json.dumps([asdict(o) for o in outcomes], indent=2) + "\n"
+    _atomic_write(json_path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    _atomic_write(md_path, md_body)
+    _atomic_write(detail_path, detail_body)
     if extra_artifacts:
         for name, data in extra_artifacts.items():
             path = output_dir / name
-            path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            _atomic_write(path, json.dumps(data, indent=2, sort_keys=True) + "\n")
     return json_path, md_path
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def render_markdown(report: AuditReport, manifest: AuditExecutionManifest) -> str:

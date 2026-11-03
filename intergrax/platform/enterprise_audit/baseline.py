@@ -1,12 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Baseline load/store for enterprise audit drift."""
+"""Baseline load/store for enterprise audit drift (candidate vs accepted FSM)."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 from intergrax.platform.enterprise_audit.contracts import (
@@ -25,15 +26,50 @@ _SEVERITY_RANK = {
     AuditSeverity.BLOCKER: 5,
 }
 
+ACCEPTED_BASELINE_FILENAME = "ENTERPRISE_AUDIT_BASELINE.json"
+CANDIDATE_BASELINE_FILENAME = "CANDIDATE_ENTERPRISE_AUDIT_BASELINE.json"
+OD_ENT_01_DECISION_ID = "OD-ENT-01"
+
+
+class BaselinePhase(StrEnum):
+    NO_ACCEPTED = "NO_ACCEPTED"
+    CANDIDATE_ONLY = "CANDIDATE_ONLY"
+    ACCEPTED_ACTIVE = "ACCEPTED_ACTIVE"
+
 
 @dataclass(frozen=True, slots=True)
 class EnterpriseAuditBaseline:
     accepted_baseline_sha: str
     findings: dict[str, dict]
+    schema_version: int = 1
 
 
 def baseline_path(default_dir: Path) -> Path:
-    return default_dir / "ENTERPRISE_AUDIT_BASELINE.json"
+    return default_dir / ACCEPTED_BASELINE_FILENAME
+
+
+def candidate_baseline_path(default_dir: Path) -> Path:
+    return default_dir / CANDIDATE_BASELINE_FILENAME
+
+
+def assert_baseline_dir_jailed(baseline_dir: Path, repo_root: Path) -> Path:
+    resolved = baseline_dir.resolve()
+    qual_root = (repo_root / "tests" / "qualification" / "ent_audit_x").resolve()
+    try:
+        resolved.relative_to(qual_root)
+    except ValueError as exc:
+        raise ValueError("baseline_dir must stay under tests/qualification/ent_audit_x") from exc
+    return resolved
+
+
+def resolve_baseline_phase(baseline_dir: Path) -> BaselinePhase:
+    accepted = baseline_path(baseline_dir)
+    candidate = candidate_baseline_path(baseline_dir)
+    if accepted.is_file():
+        return BaselinePhase.ACCEPTED_ACTIVE
+    if candidate.is_file():
+        return BaselinePhase.CANDIDATE_ONLY
+    return BaselinePhase.NO_ACCEPTED
 
 
 def load_baseline(path: Path) -> EnterpriseAuditBaseline | None:
@@ -43,16 +79,101 @@ def load_baseline(path: Path) -> EnterpriseAuditBaseline | None:
     return EnterpriseAuditBaseline(
         accepted_baseline_sha=str(raw["accepted_baseline_sha"]),
         findings={k: v for k, v in raw.get("findings", {}).items()},
+        schema_version=int(raw.get("schema_version", 1)),
+    )
+
+
+def load_candidate_baseline(path: Path) -> EnterpriseAuditBaseline | None:
+    if not path.is_file():
+        return None
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    return EnterpriseAuditBaseline(
+        accepted_baseline_sha=str(raw.get("candidate_baseline_sha", raw.get("accepted_baseline_sha", ""))),
+        findings={k: v for k, v in raw.get("findings", {}).items()},
+        schema_version=int(raw.get("schema_version", 1)),
     )
 
 
 def save_baseline(path: Path, baseline: EnterpriseAuditBaseline) -> None:
+    """Write accepted baseline — operator promotion path only."""
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
+        "schema_version": baseline.schema_version,
         "accepted_baseline_sha": baseline.accepted_baseline_sha,
         "findings": baseline.findings,
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def save_candidate_baseline(path: Path, baseline: EnterpriseAuditBaseline) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": baseline.schema_version,
+        "candidate_baseline_sha": baseline.accepted_baseline_sha,
+        "findings": baseline.findings,
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def save_accepted_baseline_requires_operator(*, od_record_path: Path) -> None:
+    """Fail closed when promotion attempted without operator OD-ENT-01 record."""
+    verify_operator_decision_record(od_record_path)
+
+
+def verify_operator_decision_record(path: Path) -> dict:
+    if not path.is_file():
+        raise ValueError("OD-ENT-01 operator decision record missing")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    decision_id = str(raw.get("decision_id", ""))
+    if decision_id != OD_ENT_01_DECISION_ID:
+        raise ValueError(f"expected decision_id {OD_ENT_01_DECISION_ID}")
+    origin = str(raw.get("record_origin", "")).lower()
+    if origin in {"agent", "cursor", "automation"}:
+        raise ValueError("agent-origin OD-ENT-01 records cannot authorize promotion")
+    if raw.get("operator_origin") is not True:
+        raise ValueError("operator_origin must be true for OD-ENT-01 promotion")
+    for key in (
+        "b6_acceptance_sha",
+        "evidence_publication_sha",
+        "test_execution_sha",
+        "accepted_baseline_sha",
+    ):
+        value = raw.get(key)
+        if not isinstance(value, str) or len(value) != 40:
+            raise ValueError(f"missing or invalid ladder pin: {key}")
+    return raw
+
+
+def promote_accepted_baseline(
+    baseline_dir: Path,
+    *,
+    od_record_path: Path,
+    verify_closed_bundle_dir: Path | None = None,
+) -> Path:
+    """Promote candidate findings fingerprint to accepted baseline (operator boundary)."""
+    from intergrax.platform.enterprise_audit.validators import verify_closed_evidence_bundle
+
+    record = verify_operator_decision_record(od_record_path)
+    candidate = load_candidate_baseline(candidate_baseline_path(baseline_dir))
+    if candidate is None:
+        raise ValueError("candidate baseline missing; run certifying FREEZE bootstrap first")
+    if verify_closed_bundle_dir is not None:
+        errors = verify_closed_evidence_bundle(verify_closed_bundle_dir)
+        if errors:
+            raise ValueError("; ".join(errors))
+    accepted_sha = str(record["accepted_baseline_sha"])
+    if candidate.accepted_baseline_sha != accepted_sha:
+        raise ValueError("candidate_baseline_sha does not match OD-ENT-01 accepted_baseline_sha pin")
+    out = baseline_path(baseline_dir)
+    save_baseline(
+        out,
+        EnterpriseAuditBaseline(
+            accepted_baseline_sha=accepted_sha,
+            findings=dict(candidate.findings),
+            schema_version=candidate.schema_version,
+        ),
+    )
+    return out
 
 
 def _message_fingerprint(message: str) -> str:
@@ -67,8 +188,9 @@ def _regressed(baseline_row: dict, finding: AuditFinding) -> bool:
     if old_fp and old_fp != _message_fingerprint(finding.message):
         return True
     old_schema = int(baseline_row.get("schema_version", 1))
-    if finding.check_id and old_schema > 0:
-        pass
+    current_schema = 1
+    if old_schema < current_schema:
+        return True
     return False
 
 
@@ -80,7 +202,6 @@ def apply_drift(
         return findings
     updated: list[AuditFinding] = []
     baseline_ids = set(baseline.findings)
-    current_ids = {f.finding_id for f in findings}
     for finding in findings:
         if finding.finding_id in baseline.findings:
             row = baseline.findings[finding.finding_id]
@@ -99,7 +220,7 @@ def apply_drift(
                 drift=drift,
             )
         )
-    for resolved_id in baseline_ids - current_ids:
+    for resolved_id in baseline_ids - {f.finding_id for f in findings}:
         old = baseline.findings[resolved_id]
         updated.append(
             AuditFinding(

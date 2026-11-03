@@ -8,6 +8,8 @@ import hashlib
 import json
 from pathlib import Path
 
+_CATALOG_PATH = Path(__file__).resolve().parent / "data" / "evidence_artifact_catalog.v1.json"
+
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -19,7 +21,19 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def build_evidence_manifest(output_dir: Path, *, run_id: str, qualification_sha: str) -> Path:
+def load_evidence_artifact_catalog() -> dict:
+    return json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
+
+
+def build_evidence_manifest(
+    output_dir: Path,
+    *,
+    run_id: str,
+    qualification_sha: str,
+    certifying_run: bool = True,
+) -> Path:
+    if not certifying_run:
+        raise ValueError("evidence bundle publication requires certifying_run=true")
     artifacts: list[dict[str, str]] = []
     for path in sorted(output_dir.rglob("*")):
         if not path.is_file():
@@ -32,6 +46,7 @@ def build_evidence_manifest(output_dir: Path, *, run_id: str, qualification_sha:
         "schema_version": 1,
         "run_id": run_id,
         "qualification_sha": qualification_sha,
+        "certifying_run": True,
         "artifacts": artifacts,
     }
     out = output_dir / "evidence_manifest.v1.json"
@@ -51,3 +66,13 @@ def verify_evidence_manifest(output_dir: Path) -> bool:
         if sha256_file(path) != item["sha256"]:
             return False
     return True
+
+
+def list_bundle_files(output_dir: Path) -> set[str]:
+    files: set[str] = set()
+    for path in output_dir.rglob("*"):
+        if path.is_file():
+            rel = path.relative_to(output_dir).as_posix()
+            if rel != "evidence_manifest.v1.json":
+                files.add(rel)
+    return files

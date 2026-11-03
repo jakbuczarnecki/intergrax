@@ -19,7 +19,11 @@ def compute_coverage_label(
     planned: int,
     outcomes: tuple[CheckRunOutcome, ...],
     findings: tuple[AuditFinding, ...],
+    certifying_run: bool = True,
+    filtered: bool = False,
 ) -> str:
+    if certifying_run and filtered and mode is not AuditMode.CHANGED_SINCE:
+        return "PARTIAL"
     executed = sum(1 for o in outcomes if o.executed)
     skipped = sum(1 for o in outcomes if o.skipped)
     blocking = any(f.severity in {AuditSeverity.BLOCKER, AuditSeverity.ERROR} for f in findings)

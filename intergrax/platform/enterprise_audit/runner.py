@@ -9,10 +9,12 @@ from pathlib import Path
 from intergrax.platform.enterprise_audit.baseline import (
     EnterpriseAuditBaseline,
     apply_drift,
+    assert_baseline_dir_jailed,
     baseline_path,
+    candidate_baseline_path,
     findings_to_baseline_rows,
     load_baseline,
-    save_baseline,
+    save_candidate_baseline,
 )
 from intergrax.platform.enterprise_audit.checks.executor import execute_manifest_check, skip_prerequisite
 from intergrax.platform.enterprise_audit.contracts import (
@@ -37,12 +39,14 @@ from intergrax.platform.enterprise_audit.modes import (
     default_limitations,
     fast_floor_incomplete,
 )
-from intergrax.platform.enterprise_audit.repo_identity import read_repo_identity
+from intergrax.platform.enterprise_audit.repo_identity import assert_git_ancestor, read_repo_identity
 from intergrax.platform.enterprise_audit.report import write_reports
 from intergrax.platform.enterprise_audit.sandbox import CheckExecutionSandbox
 from intergrax.platform.enterprise_audit.schedule import topological_order
 from intergrax.platform.enterprise_audit.tenant import enrich_tenant_findings
 from intergrax.platform.enterprise_audit.vbn import enrich_vbn_findings, load_vbn_domain_report, vbn_domain_rollup
+
+_VBN_DOMAIN_TOTAL = 31
 
 
 class EnterpriseAuditRunner:
@@ -72,41 +76,60 @@ class EnterpriseAuditRunner:
         check_ids_filter: frozenset[str] | None = None,
         bootstrap_baseline: bool = False,
         write_evidence_bundle: bool = False,
+        certifying_run: bool = True,
     ) -> tuple[AuditReport, AuditExecutionManifest, EnterpriseAuditExitCode]:
         identity = read_repo_identity(self._repo_root)
         if self._require_clean_repo and identity.dirty:
             raise RuntimeError("dirty working tree not allowed for this audit mode")
 
-        baseline_file = baseline_path(baseline_dir or self._default_baseline_dir())
+        if certifying_run and check_ids_filter:
+            return self._blocked_report(
+                mode,
+                identity,
+                output_dir,
+                finding_id="CERTIFYING:CHECK_FILTER_FORBIDDEN",
+                message="certifying runs forbid --check-id; use --non-certifying for diagnostic filters",
+                certifying_run=certifying_run,
+            )
+
+        baseline_root = assert_baseline_dir_jailed(
+            baseline_dir or self._default_baseline_dir(),
+            self._repo_root,
+        )
+        baseline_file = baseline_path(baseline_root)
+        candidate_file = candidate_baseline_path(baseline_root)
         baseline = load_baseline(baseline_file)
+
         if mode is AuditMode.FREEZE and baseline is None and not bootstrap_baseline:
-            report = AuditReport(
-                status=AggregateAuditStatus.BLOCKED,
-                exit_code=EnterpriseAuditExitCode.VIOLATION,
-                audit_mode=mode,
-                current_sha=identity.head_sha,
-                baseline_sha=None,
-                findings=(
-                    AuditFinding(
-                        finding_id="FREEZE:NO_BASELINE",
-                        check_id="SYS-INV",
-                        severity=AuditSeverity.BLOCKER,
-                        category=AuditCategory.INTERNAL,
-                        message="FREEZE requires baseline or --bootstrap-baseline",
-                    ),
-                ),
+            return self._blocked_report(
+                mode,
+                identity,
+                output_dir,
+                finding_id="FREEZE:NO_BASELINE",
+                message="FREEZE requires accepted baseline or certifying --bootstrap-candidate",
+                certifying_run=certifying_run,
             )
-            manifest = AuditExecutionManifest(
-                audit_mode=mode,
-                qualification_sha=identity.head_sha,
-                audit_execution_sha=identity.head_sha,
-                repo_remote=identity.remote_url,
-                branch=identity.branch,
-            )
-            write_reports(output_dir, report, manifest, ())
-            return report, manifest, EnterpriseAuditExitCode.VIOLATION
+
+        if mode is AuditMode.FREEZE and baseline is not None and certifying_run:
+            try:
+                assert_git_ancestor(
+                    self._repo_root,
+                    ancestor_sha=baseline.accepted_baseline_sha,
+                    descendant_sha=identity.head_sha,
+                )
+            except ValueError as exc:
+                return self._blocked_report(
+                    mode,
+                    identity,
+                    output_dir,
+                    finding_id="FREEZE:BASELINE_ANCESTRY",
+                    message=str(exc),
+                    certifying_run=certifying_run,
+                    baseline_sha=baseline.accepted_baseline_sha,
+                )
 
         planned_all = checks_for_mode(self._checks, mode, changed_check_ids=changed_check_ids)
+        filtered = bool(check_ids_filter)
         if check_ids_filter:
             needed = set(check_ids_filter)
             by_id = {c.check_id: c for c in self._checks}
@@ -122,31 +145,15 @@ class EnterpriseAuditRunner:
                         stack.append(dep)
             planned_all = tuple(c for c in planned_all if c.check_id in needed)
         if mode is AuditMode.CHANGED_SINCE and not planned_all:
-            report = AuditReport(
-                status=AggregateAuditStatus.BLOCKED,
-                exit_code=EnterpriseAuditExitCode.VIOLATION,
-                audit_mode=mode,
-                current_sha=identity.head_sha,
+            return self._blocked_report(
+                mode,
+                identity,
+                output_dir,
+                finding_id="CHANGED-SINCE:EMPTY",
+                message="CHANGED-SINCE selection empty",
+                certifying_run=certifying_run,
                 baseline_sha=baseline.accepted_baseline_sha if baseline else None,
-                findings=(
-                    AuditFinding(
-                        finding_id="CHANGED-SINCE:EMPTY",
-                        check_id="SYS-INV",
-                        severity=AuditSeverity.BLOCKER,
-                        category=AuditCategory.INTERNAL,
-                        message="CHANGED-SINCE selection empty",
-                    ),
-                ),
             )
-            manifest = AuditExecutionManifest(
-                audit_mode=mode,
-                qualification_sha=identity.head_sha,
-                audit_execution_sha=identity.head_sha,
-                repo_remote=identity.remote_url,
-                branch=identity.branch,
-            )
-            write_reports(output_dir, report, manifest, ())
-            return report, manifest, EnterpriseAuditExitCode.VIOLATION
 
         ordered = topological_order(planned_all)
         sandbox = CheckExecutionSandbox(self._repo_root)
@@ -166,16 +173,13 @@ class EnterpriseAuditRunner:
                     )
                 )
         else:
-            outcome_by_id: dict[str, CheckRunOutcome] = {}
             for check in ordered:
                 if check.depends_on & failed_prereqs:
                     outcome = skip_prerequisite(check)
                     outcomes.append(outcome)
-                    outcome_by_id[check.check_id] = outcome
                     continue
                 outcome = execute_manifest_check(check, sandbox, mode=mode)
                 outcomes.append(outcome)
-                outcome_by_id[check.check_id] = outcome
                 if _prerequisite_failed(outcome):
                     failed_prereqs.add(check.check_id)
 
@@ -197,6 +201,25 @@ class EnterpriseAuditRunner:
         baseline_sha = baseline.accepted_baseline_sha if baseline else None
         drifted = apply_drift(findings_tuple, baseline)
 
+        if (
+            certifying_run
+            and not self._dry_run
+            and mode in {AuditMode.FULL, AuditMode.FREEZE}
+            and rollup.get("domains_accounted", 0) < _VBN_DOMAIN_TOTAL
+        ):
+            drifted = drifted + (
+                AuditFinding(
+                    finding_id="VBN:DOMAIN_COVERAGE_GAP",
+                    check_id="VBN-ROLLUP",
+                    severity=AuditSeverity.BLOCKER,
+                    category=AuditCategory.VBN,
+                    message=(
+                        f"VBN domain coverage fail-closed: "
+                        f"{rollup.get('domains_accounted', 0)}/{_VBN_DOMAIN_TOTAL} accounted"
+                    ),
+                ),
+            )
+
         floor_incomplete = False if self._dry_run else fast_floor_incomplete(mode, self._checks, outcomes_tuple)
         incomplete = floor_incomplete or (
             mode in {AuditMode.FULL, AuditMode.FREEZE}
@@ -212,6 +235,8 @@ class EnterpriseAuditRunner:
             planned=len(ordered),
             outcomes=outcomes_tuple,
             findings=drifted,
+            certifying_run=certifying_run,
+            filtered=filtered,
         )
 
         manifest = AuditExecutionManifest(
@@ -224,6 +249,7 @@ class EnterpriseAuditRunner:
             checks_executed=sum(1 for o in outcomes_tuple if o.executed),
             checks_skipped=sum(1 for o in outcomes_tuple if o.skipped),
             coverage_label=coverage_label,
+            certifying_run=certifying_run,
             outcomes=outcomes_tuple,
         )
 
@@ -236,6 +262,7 @@ class EnterpriseAuditRunner:
             findings=drifted,
             limitations=default_limitations(mode),
             coverage_matrix_summary=coverage_summary,
+            certifying_run=certifying_run,
         )
 
         write_reports(
@@ -250,8 +277,8 @@ class EnterpriseAuditRunner:
         )
 
         if bootstrap_baseline and mode is AuditMode.FREEZE and exit_code is EnterpriseAuditExitCode.CLEAN:
-            save_baseline(
-                baseline_file,
+            save_candidate_baseline(
+                candidate_file,
                 EnterpriseAuditBaseline(
                     accepted_baseline_sha=identity.head_sha,
                     findings=findings_to_baseline_rows(drifted),
@@ -259,9 +286,53 @@ class EnterpriseAuditRunner:
             )
 
         if write_evidence_bundle:
-            build_evidence_manifest(output_dir, run_id=output_dir.name, qualification_sha=identity.head_sha)
+            build_evidence_manifest(
+                output_dir,
+                run_id=output_dir.name,
+                qualification_sha=identity.head_sha,
+                certifying_run=certifying_run,
+            )
 
         return report, manifest, exit_code
+
+    def _blocked_report(
+        self,
+        mode: AuditMode,
+        identity,
+        output_dir: Path,
+        *,
+        finding_id: str,
+        message: str,
+        certifying_run: bool,
+        baseline_sha: str | None = None,
+    ) -> tuple[AuditReport, AuditExecutionManifest, EnterpriseAuditExitCode]:
+        report = AuditReport(
+            status=AggregateAuditStatus.BLOCKED,
+            exit_code=EnterpriseAuditExitCode.VIOLATION,
+            audit_mode=mode,
+            current_sha=identity.head_sha,
+            baseline_sha=baseline_sha,
+            certifying_run=certifying_run,
+            findings=(
+                AuditFinding(
+                    finding_id=finding_id,
+                    check_id="SYS-INV",
+                    severity=AuditSeverity.BLOCKER,
+                    category=AuditCategory.INTERNAL,
+                    message=message,
+                ),
+            ),
+        )
+        manifest = AuditExecutionManifest(
+            audit_mode=mode,
+            qualification_sha=identity.head_sha,
+            audit_execution_sha=identity.head_sha,
+            repo_remote=identity.remote_url,
+            branch=identity.branch,
+            certifying_run=certifying_run,
+        )
+        write_reports(output_dir, report, manifest, ())
+        return report, manifest, EnterpriseAuditExitCode.VIOLATION
 
     def _default_baseline_dir(self) -> Path:
         return self._repo_root / "tests" / "qualification" / "ent_audit_x"

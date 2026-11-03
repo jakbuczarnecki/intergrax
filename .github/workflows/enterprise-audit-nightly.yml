@@ -28,7 +28,7 @@ jobs:
           OUT=".tmp/proof/ent-audit-x/nightly-${MODE}"
           EXTRA=""
           if [ "$MODE" = "FREEZE" ]; then
-            EXTRA="--bootstrap-baseline --evidence-bundle"
+            EXTRA="--bootstrap-candidate --evidence-bundle"
           fi
           uv run python scripts/enterprise_audit/run_enterprise_audit.py \
             --mode "$MODE" \

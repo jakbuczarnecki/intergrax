@@ -1,6 +1,7 @@
 # ANNEX F — Exact AS-IS gap register
 
 **START_HEAD / PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
+**Corrective reconciliation @ ENT-AUDIT-X wave:** see [ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md](./ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md) — GAP-FND/SQ closures tracked via ENT-T-C001..C064; GAP-C rows remain historical AS-IS inventory until operator B6 (GAP-B).
 
 ## Separate counts (not merged)
 
