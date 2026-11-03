@@ -59,7 +59,7 @@ CI_BLOCKED: frozenset[str] = frozenset({"C045", "C046", "C047", "C059", "C060", 
 # Post-TES changes to readiness scripts — not re-run @ TES.
 POST_TES_DELTA: frozenset[str] = frozenset({"C054", "C066"})
 
-NOT_STARTED: frozenset[str] = frozenset({"C069"})
+NOT_STARTED: frozenset[str] = frozenset()
 
 IMPLEMENTED_PARTIAL_DEFAULT: frozenset[str] = frozenset(
     {
@@ -90,6 +90,7 @@ IMPLEMENTED_PARTIAL_DEFAULT: frozenset[str] = frozenset(
         "C056",
         "C064",
         "C068",
+        "C069",
         "C072",
         "C073",
         "C075",
@@ -227,7 +228,7 @@ GAP_RC_STATUS: dict[str, str] = {
     "GAP-RC-GIT-ANCESTRY": "PARTIAL",
     "GAP-RC-RESOLVED-BLOCK": "CLOSED",
     "GAP-RC-DRIFT-SCHEMA": "PARTIAL",
-    "GAP-RC-JSON-SCHEMA": "OPEN",
+    "GAP-RC-JSON-SCHEMA": "CLOSED",
     "GAP-RC-ATOMIC-PUB": "PARTIAL",
     "GAP-RC-SANDBOX": "OPEN",
     "GAP-RC-REDACTION": "PARTIAL",
@@ -266,5 +267,6 @@ GAP_RC_EVIDENCE: dict[str, str] = {
     "GAP-RC-CI-PROFILE": "enterprise-audit.yml identity",
     "GAP-RC-SHA-LADDER": f"ENT_AUDIT_X_SHA_LADDER.md `{EVID}`",
     "GAP-RC-EVIDENCE-TRUST": f"{B5_L3}/evidence_manifest.v1.json",
+    "GAP-RC-JSON-SCHEMA": "test_validators_all_artifacts.py + validate_b5_handoff_bundle @ HEAD",
     "GAP-RC-OD-TRUST": "operator_records/ — no production OD @ HEAD",
 }

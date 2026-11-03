@@ -1,67 +1,127 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Lightweight structural validators for ENT-AUDIT-X report artifacts."""
+"""JSON Schema validators for ENT-AUDIT-X report and evidence artifacts (C069)."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
+
+from jsonschema import Draft202012Validator
 
 _SCHEMA_DIR = Path(__file__).resolve().parent / "data" / "schemas"
 
+_ARTIFACT_SCHEMA_FILES: dict[str, str] = {
+    "enterprise_audit_report.json": "enterprise_audit_report.v1.schema.json",
+    "enterprise_audit_outcomes.json": "enterprise_audit_outcomes.v1.schema.json",
+    "frz_coverage.v1.json": "frz_coverage.v1.schema.json",
+    "evidence_manifest.v1.json": "evidence_manifest.v1.schema.json",
+    "vbn_domains.v1.json": "vbn_domains.v1.schema.json",
+}
+
 _BLOCKING_SEVERITIES = frozenset({"BLOCKER", "ERROR"})
+_MD_REPORT_HEADER = "# Enterprise audit report"
 
 
-def _load_schema(name: str) -> dict:
+def _load_schema(name: str) -> dict[str, Any]:
     return json.loads((_SCHEMA_DIR / name).read_text(encoding="utf-8"))
 
 
-def validate_against_schema(payload: dict, schema: dict) -> tuple[str, ...]:
+def _validator_for_schema(schema: dict[str, Any]) -> Draft202012Validator:
+    return Draft202012Validator(schema)
+
+
+def validate_against_schema(payload: dict[str, Any], schema: dict[str, Any]) -> tuple[str, ...]:
+    """Validate a JSON object against a schema (fail-closed, including additionalProperties)."""
+    validator = _validator_for_schema(schema)
     errors: list[str] = []
-    required = schema.get("required", [])
-    for key in required:
-        if key not in payload:
-            errors.append(f"missing required key: {key}")
-    props = schema.get("properties", {})
-    allowed = set(props.keys()) | set(required)
-    if schema.get("additionalProperties") is False:
-        for key in payload:
-            if key not in allowed:
-                errors.append(f"unexpected property: {key}")
-    for key, spec in props.items():
-        if key not in payload:
-            continue
-        expected = spec.get("type")
-        value = payload[key]
-        if expected == "string" and not isinstance(value, str):
-            errors.append(f"{key}: expected string")
-        elif expected == "integer" and not isinstance(value, int):
-            errors.append(f"{key}: expected integer")
-        elif expected == "array" and not isinstance(value, list):
-            errors.append(f"{key}: expected array")
-        elif expected == "object" and not isinstance(value, dict):
-            errors.append(f"{key}: expected object")
+    for err in sorted(validator.iter_errors(payload), key=lambda e: list(e.path)):
+        loc = ".".join(str(p) for p in err.path) or "<root>"
+        errors.append(f"{loc}: {err.message}")
     return tuple(errors)
 
 
+def _load_json(path: Path) -> tuple[Any | None, tuple[str, ...]]:
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return None, (f"{path.name}: read failed: {exc}",)
+    try:
+        return json.loads(raw), ()
+    except json.JSONDecodeError as exc:
+        return None, (f"{path.name}: invalid JSON: {exc}",)
+
+
+def validate_json_artifact(path: Path, *, schema_file: str) -> tuple[str, ...]:
+    payload, load_errors = _load_json(path)
+    if load_errors:
+        return load_errors
+    schema = _load_schema(schema_file)
+    prefix = path.name
+    return tuple(f"{prefix}: {msg}" for msg in validate_against_schema(payload, schema))
+
+
+def validate_markdown_report(path: Path) -> tuple[str, ...]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return (f"{path.name}: read failed: {exc}",)
+    if not text.strip():
+        return (f"{path.name}: empty markdown report",)
+    if not text.startswith(_MD_REPORT_HEADER):
+        return (f"{path.name}: missing required report header",)
+    return ()
+
+
+def schema_file_for_artifact(name: str) -> str | None:
+    return _ARTIFACT_SCHEMA_FILES.get(name)
+
+
+def validate_named_artifact(output_dir: Path, artifact_name: str) -> tuple[str, ...]:
+    path = output_dir / artifact_name
+    if not path.is_file():
+        return (f"missing artifact: {artifact_name}",)
+    if artifact_name == "enterprise_audit_report.md":
+        return validate_markdown_report(path)
+    schema_file = schema_file_for_artifact(artifact_name)
+    if schema_file is None:
+        return (f"no schema registered for artifact: {artifact_name}",)
+    return validate_json_artifact(path, schema_file=schema_file)
+
+
 def validate_report_json(path: Path) -> tuple[str, ...]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return validate_against_schema(payload, _load_schema("enterprise_audit_report.v1.schema.json"))
+    return validate_json_artifact(path, schema_file="enterprise_audit_report.v1.schema.json")
 
 
 def validate_evidence_manifest(path: Path) -> tuple[str, ...]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return validate_against_schema(payload, _load_schema("evidence_manifest.v1.schema.json"))
+    return validate_json_artifact(path, schema_file="evidence_manifest.v1.schema.json")
 
 
 def validate_vbn_domains(path: Path) -> tuple[str, ...]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return validate_against_schema(payload, _load_schema("vbn_domains.v1.schema.json"))
+    return validate_json_artifact(path, schema_file="vbn_domains.v1.schema.json")
+
+
+def validate_outcomes(path: Path) -> tuple[str, ...]:
+    payload, load_errors = _load_json(path)
+    if load_errors:
+        return load_errors
+    schema = _load_schema("enterprise_audit_outcomes.v1.schema.json")
+    validator = _validator_for_schema(schema)
+    sorted_errors = sorted(validator.iter_errors(payload), key=lambda e: list(e.path))
+    errors = [f"{path.name}: {err.message}" for err in sorted_errors]
+    return tuple(errors)
+
+
+def validate_frz_coverage(path: Path) -> tuple[str, ...]:
+    return validate_json_artifact(path, schema_file="frz_coverage.v1.schema.json")
 
 
 def validate_report_semantic_consistency(path: Path) -> tuple[str, ...]:
     """Detect status/exit_code tampering (ADV-31 / C044)."""
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload, load_errors = _load_json(path)
+    if load_errors:
+        return load_errors
     errors = list(validate_report_json(path))
     status = str(payload.get("status", ""))
     exit_code = payload.get("exit_code")
@@ -76,18 +136,42 @@ def validate_report_semantic_consistency(path: Path) -> tuple[str, ...]:
     return tuple(errors)
 
 
-def validate_all_artifacts_in_dir(output_dir: Path) -> tuple[str, ...]:
+def validate_catalog_artifacts(output_dir: Path, artifact_names: tuple[str, ...]) -> tuple[str, ...]:
     errors: list[str] = []
+    for name in artifact_names:
+        errors.extend(validate_named_artifact(output_dir, name))
+    return tuple(errors)
+
+
+def validate_all_artifacts_in_dir(output_dir: Path) -> tuple[str, ...]:
+    from intergrax.platform.enterprise_audit.evidence import load_evidence_artifact_catalog
+
+    catalog = load_evidence_artifact_catalog()
+    required = tuple(catalog.get("required_artifacts", []))
+    optional = tuple(catalog.get("optional_artifacts", []))
+    errors: list[str] = []
+    for name in required:
+        errors.extend(validate_named_artifact(output_dir, name))
+    for name in optional:
+        path = output_dir / name
+        if path.is_file():
+            errors.extend(validate_named_artifact(output_dir, name))
     report = output_dir / "enterprise_audit_report.json"
     if report.is_file():
-        errors.extend(validate_report_json(report))
         errors.extend(validate_report_semantic_consistency(report))
-    manifest = output_dir / "evidence_manifest.v1.json"
-    if manifest.is_file():
-        errors.extend(validate_evidence_manifest(manifest))
-    vbn = output_dir / "vbn_domains.v1.json"
-    if vbn.is_file():
-        errors.extend(validate_vbn_domains(vbn))
+    return tuple(errors)
+
+
+def validate_b5_handoff_bundle(bundle_dir: Path) -> tuple[str, ...]:
+    """Validate all known JSON artifacts under a published L3 bundle directory."""
+    errors: list[str] = []
+    for name, schema_file in _ARTIFACT_SCHEMA_FILES.items():
+        path = bundle_dir / name
+        if path.is_file():
+            errors.extend(validate_json_artifact(path, schema_file=schema_file))
+    md = bundle_dir / "enterprise_audit_report.md"
+    if md.is_file():
+        errors.extend(validate_markdown_report(md))
     return tuple(errors)
 
 
@@ -101,10 +185,6 @@ def verify_closed_evidence_bundle(output_dir: Path) -> tuple[str, ...]:
     errors: list[str] = []
     if not output_dir.is_dir():
         return ("output_dir missing",)
-    try:
-        output_dir.resolve().relative_to(output_dir.resolve())
-    except ValueError:
-        errors.append("output_dir must be a normalized directory path")
     catalog = load_evidence_artifact_catalog()
     required = catalog.get("required_artifacts", [])
     for name in required:
@@ -116,8 +196,13 @@ def verify_closed_evidence_bundle(output_dir: Path) -> tuple[str, ...]:
             errors.append(f"missing required artifact: {name}")
         elif target.is_symlink():
             errors.append(f"symlink not allowed in closed bundle: {name}")
+        else:
+            errors.extend(validate_named_artifact(output_dir, name))
     if not verify_evidence_manifest(output_dir):
         errors.append("evidence manifest digest mismatch or missing")
+    manifest = output_dir / "evidence_manifest.v1.json"
+    if manifest.is_file():
+        errors.extend(validate_evidence_manifest(manifest))
     allowed = set(required) | set(catalog.get("optional_artifacts", []))
     allowed.add("evidence_manifest.v1.json")
     try:
@@ -128,4 +213,10 @@ def verify_closed_evidence_bundle(output_dir: Path) -> tuple[str, ...]:
     extra = present - allowed
     if extra:
         errors.append(f"unexpected artifacts in closed bundle: {', '.join(sorted(extra))}")
+    for name in catalog.get("optional_artifacts", []):
+        if name in present:
+            errors.extend(validate_named_artifact(output_dir, name))
+    report = output_dir / "enterprise_audit_report.json"
+    if report.is_file():
+        errors.extend(validate_report_semantic_consistency(report))
     return tuple(errors)

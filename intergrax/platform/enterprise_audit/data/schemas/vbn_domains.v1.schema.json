@@ -3,11 +3,42 @@
   "title": "vbn_domains.v1",
   "type": "object",
   "required": ["schema_version", "domains_total", "domains"],
+  "additionalProperties": false,
   "properties": {
     "schema_version": { "type": "integer" },
     "qualification_sha": { "type": "string" },
+    "check_manifest_digest": { "type": "string" },
+    "run_id": { "type": "string" },
+    "honest_disclaimer": { "type": "string" },
     "domains_total": { "type": "integer" },
-    "domains": { "type": "array" },
-    "limitations": { "type": "array" }
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "domain_id",
+          "domain_key",
+          "status",
+          "rpl_class",
+          "coverage_note",
+          "inventory_error_count",
+          "test_nodeid"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "domain_id": { "type": "string" },
+          "domain_key": { "type": "string" },
+          "status": { "type": "string" },
+          "rpl_class": { "type": "string" },
+          "coverage_note": { "type": "string" },
+          "inventory_error_count": { "type": "integer" },
+          "test_nodeid": { "type": "string" }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
   }
 }

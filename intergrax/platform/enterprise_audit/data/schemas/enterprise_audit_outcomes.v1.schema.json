@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "enterprise_audit_outcomes.v1",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "check_id",
+      "executed",
+      "skipped",
+      "skip_reason",
+      "exit_code",
+      "duration_ms",
+      "findings",
+      "stdout_tail",
+      "stderr_tail"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "check_id": { "type": "string" },
+      "executed": { "type": "boolean" },
+      "skipped": { "type": "boolean" },
+      "skip_reason": { "type": "string" },
+      "exit_code": { "type": "integer" },
+      "duration_ms": { "type": "integer" },
+      "findings": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/finding" }
+      },
+      "stdout_tail": { "type": "string" },
+      "stderr_tail": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["finding_id", "check_id", "severity", "category", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": { "type": "string" },
+        "check_id": { "type": "string" },
+        "severity": { "type": "string" },
+        "category": { "type": "string" },
+        "message": { "type": "string" },
+        "source_path": { "type": "string" },
+        "frz_mapping": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "drift": { "type": "string" }
+      }
+    }
+  }
+}

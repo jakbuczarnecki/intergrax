@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "frz_coverage.v1",
+  "type": "object",
+  "required": ["schema_version", "row_count", "rows"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer" },
+    "row_count": { "type": "integer" },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "pg_id", "frz_aud", "frz_mapping", "executable"],
+        "additionalProperties": false,
+        "properties": {
+          "check_id": { "type": "string" },
+          "pg_id": { "type": "string" },
+          "frz_aud": { "type": "string" },
+          "frz_mapping": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "executable": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
