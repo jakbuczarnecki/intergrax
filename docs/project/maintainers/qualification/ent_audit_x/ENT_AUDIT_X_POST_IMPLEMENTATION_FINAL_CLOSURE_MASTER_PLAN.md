@@ -8,7 +8,7 @@
 **Historical IMPLEMENTATION_SHA (prior closure wave):** `1fa5347a56c569fa62ac2c777ff3947d11e906b4`  
 **Branch:** `development` · **Repo:** `jakbuczarnecki/intergrax`
 
-**PLAN_PUBLICATION_SHA:** resolve @ publication HEAD — `git rev-list -1 HEAD -- docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md`
+**PLAN_PUBLICATION_SHA:** `f7243601dbeec93bf26d258c05f545bb1704c7eb`
 
 **R0 closure commit @ HEAD:** `34e03425b2322f415a99a7cfd290fe0982bf6970` — 13 files (OD verify, dry-run, evidence eligibility, readiness fail-closed, qual tests, master plan reconciliation).
 
