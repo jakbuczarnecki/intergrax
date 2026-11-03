@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture(scope="session")
+def repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    for item in items:
+        path = str(item.path).replace("\\", "/")
+        if "/ent_audit_x/unit/" in path:
+            item.add_marker(pytest.mark.ent_l1)
+        elif "/ent_audit_x/integration/" in path:
+            if "test_semantic_gate_execution.py" in path:
+                if item.name == "test_semantic_gate_bnd_03_script_executes":
+                    # Legacy smoke; not part of the 85/85 certifying matrix (C033).
+                    item.add_marker(pytest.mark.ent_l2)
+                else:
+                    item.add_marker(pytest.mark.ent_semantic_matrix)
+            elif any(m.name == "ent_launcher" for m in item.iter_markers()):
+                # C063 launcher suite — qualified via -m ent_launcher, not L2 gate.
+                continue
+            else:
+                item.add_marker(pytest.mark.ent_l2)
+        elif "/ent_audit_x/l3/" in path:
+            item.add_marker(pytest.mark.ent_l3_heavy)
+        elif "/ent_audit_x/acceptance/" in path:
+            item.add_marker(pytest.mark.ent_semantic_gate)

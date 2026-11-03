@@ -16,6 +16,7 @@ def test_acceptance_ent_a_bnd_01_runner_subprocess_oracle(tmp_path: Path) -> Non
         AuditMode.FAST,
         output_dir=tmp_path / "oracle-bnd01",
         check_ids_filter=frozenset({"ENT-A-BND-01"}),
+        certifying_run=False,
     )
     assert outcome_manifest.checks_planned == 1
     assert outcome_manifest.checks_executed == 1
@@ -39,6 +40,7 @@ def test_cli_single_check_subprocess(tmp_path: Path) -> None:
             str(script),
             "--mode",
             "FAST",
+            "--non-certifying",
             "--check-id",
             "ENT-A-BND-01",
             "--output-dir",

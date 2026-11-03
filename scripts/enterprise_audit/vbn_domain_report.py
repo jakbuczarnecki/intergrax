@@ -9,6 +9,7 @@ import argparse
 import json
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 
@@ -68,13 +69,18 @@ def _domain_rows(repo_root: Path) -> tuple[list[dict], list[str]]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--run-id", default="", help="Optional stable run id for provenance")
     args = parser.parse_args()
     root = _repo_root()
     sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    from intergrax.platform.enterprise_audit.digests import manifest_digest
+
     domains, limitations = _domain_rows(root)
     payload = {
         "schema_version": 1,
+        "run_id": args.run_id or uuid.uuid4().hex,
         "qualification_sha": sha,
+        "check_manifest_digest": manifest_digest(),
         "domains_total": 31,
         "domains": domains,
         "limitations": limitations,

@@ -26,14 +26,10 @@ jobs:
         run: |
           MODE="${{ github.event.inputs.mode || 'FULL' }}"
           OUT=".tmp/proof/ent-audit-x/nightly-${MODE}"
-          EXTRA=""
-          if [ "$MODE" = "FREEZE" ]; then
-            EXTRA="--bootstrap-baseline --evidence-bundle"
-          fi
           uv run python scripts/enterprise_audit/run_enterprise_audit.py \
             --mode "$MODE" \
-            --output-dir "$OUT" \
-            $EXTRA
+            --output-dir "$OUT"
+          # Operator-only: FREEZE bootstrap / evidence bundle (C007) — not on scheduled nightly.
       - name: Upload audit artifacts
         if: always()
         uses: actions/upload-artifact@v4

@@ -16,5 +16,6 @@ def test_full_mode_exit_not_clean_when_check_skipped(tmp_path: Path) -> None:
         AuditMode.FULL,
         output_dir=tmp_path / "partial",
         check_ids_filter=only_one,
+        certifying_run=False,
     )
     assert code is not EnterpriseAuditExitCode.CLEAN

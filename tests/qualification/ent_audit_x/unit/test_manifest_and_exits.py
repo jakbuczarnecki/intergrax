@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from intergrax.platform.enterprise_audit.contracts import AuditMode, EnterpriseAuditExitCode
+from intergrax.platform.enterprise_audit.contracts import (
+    AuditCategory,
+    AuditFinding,
+    AuditMode,
+    AuditSeverity,
+    DriftStatus,
+    EnterpriseAuditExitCode,
+)
 from intergrax.platform.enterprise_audit.manifest import checks_for_mode, load_default_manifest
 from intergrax.platform.enterprise_audit.modes import aggregate_status, compute_exit_code
 
@@ -23,6 +30,19 @@ def test_exit_code_clean_when_no_findings() -> None:
     status = aggregate_status((), incomplete=False, internal_error=False)
     code = compute_exit_code(status, ())
     assert code is EnterpriseAuditExitCode.CLEAN
+
+
+def test_resolved_drift_does_not_block_aggregate() -> None:
+    resolved_blocker = AuditFinding(
+        finding_id="OLD:1",
+        check_id="ENT-A-BND-01",
+        severity=AuditSeverity.BLOCKER,
+        category=AuditCategory.ARCHITECTURE,
+        message="Resolved since baseline",
+        drift=DriftStatus.RESOLVED,
+    )
+    status = aggregate_status((resolved_blocker,), incomplete=False, internal_error=False)
+    assert status.value == "PASS"
 
 
 def test_manifest_json_matches_annex_g2_row_count() -> None:

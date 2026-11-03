@@ -10,6 +10,7 @@ from intergrax.platform.enterprise_audit.contracts import (
     AuditMode,
     AuditSeverity,
     CheckRunOutcome,
+    DriftStatus,
     EnterpriseAuditExitCode,
 )
 
@@ -24,12 +25,13 @@ def aggregate_status(
         return AggregateAuditStatus.INTERNAL_FAILURE
     if incomplete:
         return AggregateAuditStatus.INCOMPLETE if not findings else AggregateAuditStatus.PARTIAL
-    severities = {f.severity for f in findings}
+    active = tuple(f for f in findings if f.drift is not DriftStatus.RESOLVED)
+    severities = {f.severity for f in active}
     if AuditSeverity.BLOCKER in severities or AuditSeverity.ERROR in severities:
         return AggregateAuditStatus.BLOCKED
     if AuditSeverity.ENVIRONMENT in severities:
         return AggregateAuditStatus.ENVIRONMENT_FAILURE
-    if findings:
+    if active:
         return AggregateAuditStatus.PARTIAL
     return AggregateAuditStatus.PASS
 

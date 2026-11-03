@@ -17,6 +17,20 @@ class RepoIdentity:
     dirty: bool
 
 
+def assert_git_ancestor(repo_root: Path, *, ancestor_sha: str, descendant_sha: str | None = None) -> None:
+    root = repo_root.resolve()
+    descendant = descendant_sha or _git(root, "rev-parse", "HEAD")
+    completed = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor_sha, descendant],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise ValueError(f"{ancestor_sha} is not an ancestor of {descendant}")
+
+
 def read_repo_identity(repo_root: Path) -> RepoIdentity:
     root = repo_root.resolve()
     head = _git(root, "rev-parse", "HEAD")

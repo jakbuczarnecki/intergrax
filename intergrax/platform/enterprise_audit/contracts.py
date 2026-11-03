@@ -111,6 +111,9 @@ class AuditExecutionManifest:
     checks_executed: int = 0
     checks_skipped: int = 0
     coverage_label: str = "PARTIAL"
+    certifying_run: bool = True
+    run_status: Literal["completed", "interrupted"] = "completed"
+    check_manifest_digest: str = ""
     outcomes: tuple[CheckRunOutcome, ...] = ()
 
 
@@ -124,3 +127,4 @@ class AuditReport:
     findings: tuple[AuditFinding, ...] = ()
     limitations: tuple[str, ...] = field(default_factory=tuple)
     coverage_matrix_summary: dict[str, int] = field(default_factory=dict)
+    certifying_run: bool = True

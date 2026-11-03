@@ -16,6 +16,7 @@ def test_l3_real_fast_executes_mandatory_floor(tmp_path: Path) -> None:
         AuditMode.FAST,
         output_dir=tmp_path / "l3-fast-real",
         check_ids_filter=frozenset({"ENT-A-BND-01"}),
+        certifying_run=False,
     )
     assert manifest.checks_executed == 1
     assert code.value in {0, 1, 2, 3}
@@ -36,6 +37,7 @@ def test_l3_real_full_single_check_subprocess(tmp_path: Path) -> None:
         AuditMode.FULL,
         output_dir=tmp_path / "l3-full-one",
         check_ids_filter=frozenset({"ENT-A-BND-01"}),
+        certifying_run=False,
     )
     assert manifest.checks_executed == 1
 
@@ -47,6 +49,7 @@ def test_l3_freeze_requires_baseline_or_bootstrap(tmp_path: Path) -> None:
         AuditMode.FREEZE,
         output_dir=tmp_path / "l3-freeze",
         bootstrap_baseline=True,
+        certifying_run=False,
     )
     assert code.value in {0, 2}
 
@@ -59,19 +62,20 @@ def test_l3_freeze_real_single_check(tmp_path: Path) -> None:
         output_dir=tmp_path / "l3-freeze-one",
         check_ids_filter=frozenset({"ENT-A-BND-01"}),
         bootstrap_baseline=True,
+        certifying_run=False,
     )
     assert manifest.checks_executed == 1
     assert code.value in {0, 1, 2, 3}
 
 
 def test_l3_evidence_manifest_roundtrip(tmp_path: Path) -> None:
-    from intergrax.platform.enterprise_audit.evidence import verify_evidence_manifest
+    import pytest
 
     root = Path(__file__).resolve().parents[4]
     out = tmp_path / "bundle"
     runner = EnterpriseAuditRunner(root, dry_run=True)
-    runner.run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
-    assert verify_evidence_manifest(out)
+    with pytest.raises(ValueError, match="certifying_run"):
+        runner.run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
 
 
 def test_l3_vbn_31_domains_replay_honest(tmp_path: Path) -> None:

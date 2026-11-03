@@ -4,11 +4,12 @@
 """Tier-3 application production gate checks (APP-PROD-1..9 · APP-OPS-1..4 · APP-CON-7 · APP-EVOL-2..7)."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import ast
 import sys
 from pathlib import Path
+
+from intergrax.utils import attribute_access
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 APPLICATIONS_ROOT = REPO_ROOT / "applications"
@@ -20,11 +21,12 @@ _CI_DIR = REPO_ROOT / "scripts" / "ci"
 if str(_CI_DIR) not in sys.path:
     sys.path.insert(0, str(_CI_DIR))
 from intergrax.applications._shared.application_runtime_graph import list_application_projects  # noqa: E402
-from script_paths import resolve_script  # noqa: E402
 
 REQUIRED_FACTORY_MARKERS = (
     "build_harness_host_runtime",
+    "build_local_workspace_harness_host_runtime",
 )
+
 
 def _nexus_loop_call_lines(source: str) -> list[int]:
     """Return 1-based line numbers of direct ``NexusLoop(...)`` AST calls."""
@@ -68,9 +70,7 @@ def check_no_ad_hoc_nexus_in_factories(
             violations.append(f"{rel}: must call build_harness_host_runtime")
         call_lines = _nexus_loop_call_lines(text)
         if call_lines:
-            violations.append(
-                f"{rel}: direct NexusLoop() at line(s) {call_lines} — use build_harness_host_runtime"
-            )
+            violations.append(f"{rel}: direct NexusLoop() at line(s) {call_lines} — use build_harness_host_runtime")
     return violations
 
 
@@ -125,11 +125,11 @@ def check_application_ownership() -> list[str]:
 
 
 def check_capability_graph_strict_deploy() -> list[str]:
-    from intergrax.applications._shared.strict_product_manifest_ci_gates import (
-        check_strict_product_capability_graph,
-    )
     from intergrax.applications._shared.product_manifest_registry import (
         iter_strict_product_manifests,
+    )
+    from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+        check_strict_product_capability_graph,
     )
 
     violations: list[str] = []
@@ -157,10 +157,10 @@ def check_application_recovery_contract() -> list[str]:
 
 
 def check_agent_certification_roster() -> list[str]:
+    from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests
     from intergrax.applications._shared.strict_product_manifest_ci_gates import (
         check_strict_product_agent_certification,
     )
-    from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests
 
     violations: list[str] = []
     for product_id, manifest in iter_strict_product_manifests():
@@ -203,8 +203,7 @@ def check_capability_alias_registry() -> list[str]:
                     param
                     for param in signature.parameters.values()
                     if param.default is inspect.Parameter.empty
-                    and param.kind
-                    in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                    and param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
                 ]
                 if required:
                     continue

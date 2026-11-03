@@ -3,7 +3,7 @@
 **PLAN_BASELINE_SHA (pre-plan HEAD):** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
 **PLAN_PUBLICATION_SHA (initial master plan):** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
 **Branch:** `development`  
-**Authority:** [ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md](./ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md) (execution SSOT); legacy completion plan retained for gap tables.
+**Authority:** [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) (execution SSOT).
 
 | Role | SHA | Notes |
 | --- | --- | --- |
@@ -12,7 +12,18 @@
 | PLAN_RECONCILIATION_SHA | `1656cb8659c0b5c8cac422f861856a59401f7ca1` | P-11/P-12/P-13 documentation corrections only |
 | IMPLEMENTATION_SHA | `86832319b08b3837cfb4ae9c90919389f202cc37` | Tier-0 runner + manifest + CLI + qual L1/L2 |
 | FINAL_PLAN_PUBLICATION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | W0–W6 B6 readiness wave landed on `development` |
-| TEST_EXECUTION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — log `.tmp/session/ent-audit-x-build/pytest.log` |
+| IMPLEMENTATION_SHA (ENT-AUDIT-X closure baseline) | `1fa5347a56c569fa62ac2c777ff3947d11e906b4` | Audited HEAD @ post-implementation closure master plan |
+| IMPLEMENTATION_SHA (R0 trust wave) | `34e03425b2322f415a99a7cfd290fe0982bf6970` | OD verify, dry-run, evidence eligibility, readiness fail-closed, qual tests |
+| POST_IMPLEMENTATION_FINAL_CLOSURE_PLAN_PUBLICATION_SHA | `f7243601dbeec93bf26d258c05f545bb1704c7eb` | Initial post-implementation closure SSOT |
+| POST_IMPLEMENTATION_FINAL_CLOSURE_PLAN_PUBLICATION_SHA (87e185dd) | `87e185dd3bcce45f107149b4b3691c3ede614c8a` | Prior SSOT publish @ audited baseline |
+| CURRENT_DOCUMENTATION_HEAD (pre SSOT repair commit) | `c6d600df56f3fedb85bcdce12ba508ea8274ccd4` | Doc pin only; no production delta after 87e185dd |
+| IMPLEMENTATION_SHA (audited baseline @ current-HEAD SSOT) | `d4974efc255bf6ff6ca96e00fb084293ea685d66` | Wave 2 + ladder pin; **code baseline for Matrix C** |
+| IMPLEMENTATION_SHA (pre-qual matrix marker + PRE_QUAL_PASS) | `90f6dfdb3e382fd5bfcf9a5df6a916bc8dcea23e` | BND-03 smoke excluded from ent_semantic_matrix; qual_wave PRE_QUAL_PASS |
+| IMPLEMENTATION_SHA (C063 launchers + readiness hooks) | `530cae6e87e9b3ef8ab315324812077489c64eb9` | ent_launcher matrix, BAT/SH non-certifying FAST, quickstart |
+| IMPLEMENTATION_SHA (R0 one-pass trust wave) | `4f87e5bb20fd8691033a8f9704d205dad18c48c6` | Evidence/VBN/baseline/launchers + qual harness (agent one-pass partial) |
+| IMPLEMENTATION_SHA (wave 2 provenance + semantic acceptance) | `e0f64ed7fd57180efc9b93798a3595b9578497af` | Parent of audited baseline |
+| POST_IMPLEMENTATION_SSOT_REPAIR_PUBLICATION_SHA | `8efac05b4ca18a31a754cf003851f5bf24725f76` | Matrix E + DAG + validator repair @ audited baseline |
+| TEST_EXECUTION_SHA (historical — not current @ d4974efc) | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — **do not** substitute for re-qual @ audited baseline |
 | EVIDENCE_CANDIDATE_SHA | *unset* | Pre–independent-audit bundle |
 | EVIDENCE_PUBLICATION_SHA | *unset* | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |

@@ -62,6 +62,8 @@ applications/local_workspace_application/docker/lkw-platform-proof-startup.log
 /.persistence*.log
 
 # ENT-AUDIT-X qualification housekeeping (untracked local artifacts)
+tests/qualification/ent_audit_x/baselines/qual_wave_runs/
+tests/qualification/ent_audit_x/baselines/qual_wave_freeze_candidate/
 .cursor/plans/ebh-7-annexes/
 exports/ROADMAP_REPLAY_X_B6_R2_FINAL_AUDIT.zip
 platform_proofs/test_domain/fake_publish/
