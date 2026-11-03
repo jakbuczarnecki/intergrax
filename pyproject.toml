@@ -418,6 +418,7 @@ markers = [
   "ent_l2: ENT-AUDIT-X L2 integration qualification.",
   "ent_semantic_gate: ENT-AUDIT-X semantic acceptance (85 CheckID gates; ENT_AUDIT_X_SEMANTIC=1).",
   "ent_semantic_matrix: ENT-AUDIT-X gate matrix parametrize (ENT_AUDIT_X_GATE_MATRIX=1).",
+  "ent_launcher: ENT-AUDIT-X audit.bat/audit.sh/CLI launcher acceptance (C063).",
   "ent_l3_heavy: ENT-AUDIT-X L3 certifying FULL/FREEZE harness.",
   "obs_diag_conformance: OBS-DIAG-CONFORMANCE evidence → reconstruction → diagnostics qualification.",
   "obs_diag_freeze: OBS-DIAG-FREEZE-1 frozen boundary change-control guard (fast checks).",

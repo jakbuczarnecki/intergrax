@@ -36,6 +36,12 @@ if [[ "${MODE}" == "CHANGED-SINCE" ]]; then
   fi
   uv run python "${REPO_ROOT}/scripts/enterprise_audit/run_enterprise_audit.py" \
     --mode CHANGED-SINCE --since-sha "${SINCE}" --output-dir "${OUT}"
+elif [[ "${MODE}" == "FAST" ]]; then
+  uv run python "${REPO_ROOT}/scripts/enterprise_audit/run_enterprise_audit.py" \
+    --mode FAST --non-certifying --output-dir "${OUT}"
+elif [[ "${MODE}" == "FULL" ]]; then
+  uv run python "${REPO_ROOT}/scripts/enterprise_audit/run_enterprise_audit.py" \
+    --mode FULL --output-dir "${OUT}" --evidence-bundle
 else
   uv run python "${REPO_ROOT}/scripts/enterprise_audit/run_enterprise_audit.py" \
     --mode "${MODE}" --output-dir "${OUT}"

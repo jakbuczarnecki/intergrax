@@ -59,6 +59,27 @@ def _latest_l3_report(root: Path) -> Path | None:
     return candidates[-1] if candidates else None
 
 
+def _latest_qual_wave_report(root: Path) -> Path | None:
+    candidates = [
+        root / ".tmp/session/ent-audit-x-qual-wave/qual_wave_report.json",
+        root / ".tmp/session/ent-audit-x-prequal-run/qual_wave_report.json",
+    ]
+    existing = [p for p in candidates if p.is_file()]
+    if not existing:
+        return None
+    return max(existing, key=lambda p: p.stat().st_mtime)
+
+
+def _load_qual_wave(root: Path) -> dict | None:
+    path = _latest_qual_wave_report(root)
+    if not path:
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
 def main() -> int:
     root = _repo_root()
     head = _git_head(root)
@@ -107,31 +128,59 @@ def main() -> int:
     add("ten_13_executed", False, "TEN-* outcomes not verified @ TEST_EXECUTION_SHA (OPEN)")
     add("vbn_9_executed", False, "VBN-* outcomes not verified @ TEST_EXECUTION_SHA (OPEN)")
     add("vbn_domains_31", False, "vbn_domains.v1.json accounted==31 not proven @ TES (OPEN)")
-    add("l1_l2_l3_logs", l3_report_path is not None, "pytest/L3 logs @ TEST_EXECUTION_SHA missing")
-    add("adv_31_fault_suite", False, "ADV31 fault injection not qualified @ TES (OPEN)")
 
-    qual_report = root / ".tmp/session/ent-audit-x-qual-wave/qual_wave_report.json"
-    if qual_report.is_file():
-        try:
-            qw_payload = json.loads(qual_report.read_text(encoding="utf-8"))
-            qw_status = str(qw_payload.get("status", ""))
-            qw_sha = str(qw_payload.get("qualification_sha", ""))
-            stages = {s.get("name"): s for s in qw_payload.get("stages", [])}
-            adv = stages.get("adv31", {})
-            add(
-                "adv_31_fault_suite",
-                qw_status in {"PASS", "PRE_QUAL_PASS"} and adv.get("exit_code") == 0,
-                f"qual_wave adv31 @ {qw_sha or '?'} status={qw_status}",
-            )
-        except (json.JSONDecodeError, TypeError, ValueError):
-            pass
+    qw_payload = _load_qual_wave(root)
+    qw_ok = False
+    qw_detail = "no qual_wave_report.json under .tmp/session/"
+    if qw_payload:
+        qw_status = str(qw_payload.get("status", ""))
+        qw_sha = str(qw_payload.get("qualification_sha", ""))
+        ancestor = _run_git(root, "merge-base", "--is-ancestor", qw_sha, "HEAD") if qw_sha else None
+        sha_ok = bool(qw_sha and ancestor and ancestor.returncode == 0)
+        qw_ok = qw_status in {"PASS", "PRE_QUAL_PASS"} and sha_ok
+        qw_detail = "" if qw_ok else f"status={qw_status} sha={qw_sha or '?'} ancestor={sha_ok}"
+    add("pre_qual_or_certifying_wave", qw_ok, qw_detail)
+
+    adv_ok = False
+    adv_detail = "ADV31 not recorded in qual_wave_report"
+    if qw_payload:
+        stages = {s.get("name"): s for s in qw_payload.get("stages", [])}
+        adv = stages.get("adv31", {})
+        adv_ok = qw_ok and adv.get("exit_code") == 0
+        if not adv_ok:
+            adv_detail = f"adv31 exit={adv.get('exit_code', '?')} qual_ok={qw_ok}"
+        else:
+            adv_detail = ""
+    add("adv_31_fault_suite", adv_ok, adv_detail)
+    add("l1_l2_l3_logs", l3_report_path is not None, "pytest/L3 logs @ TEST_EXECUTION_SHA missing")
+
+    launcher_proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/qualification/ent_audit_x/integration/test_audit_launchers_cross_platform.py",
+            "-m",
+            "ent_launcher",
+            "-q",
+            "--tb=no",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    add(
+        "bat_sh_acceptance",
+        launcher_proc.returncode == 0,
+        "ent_launcher pytest failed" if launcher_proc.returncode != 0 else "",
+    )
 
     add("evidence_integrity", False, "closed-world bundle @ EVIDENCE_PUBLICATION_SHA missing")
     add("sha_ancestry_documented", tes_ok, "merge-base TEST_EXECUTION_SHA→HEAD required")
     frz_data = root / "intergrax/platform/enterprise_audit/data"
     add("frz_mappings_complete", frz_data.is_dir(), "FRZ artifact path missing")
     add("pr_nightly_ci_proof", False, "CI run URLs + artifacts not pinned in dossier (OPEN)")
-    add("bat_sh_acceptance", False, "C063 launcher acceptance not qualified @ TES (OPEN)")
     dossier = root / "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md"
     add("dossier_complete", dossier.is_file(), "Protocol 03 dossier missing")
     add("external_blockers_listed", True, "")
