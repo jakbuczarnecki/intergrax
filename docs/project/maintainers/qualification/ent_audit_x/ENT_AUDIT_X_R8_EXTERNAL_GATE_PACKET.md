@@ -7,7 +7,7 @@
 | Role | SHA |
 | --- | --- |
 | TEST_EXECUTION_SHA | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
-| EVIDENCE_PUBLICATION_SHA | See latest append in [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md) |
+| EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` |
 | B5 bundle | [b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) |
 
 ## Required operator sequence (ECAP PL-08)

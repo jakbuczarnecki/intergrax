@@ -28,8 +28,8 @@
 | TEST_EXECUTION_SHA (historical) | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | Wave F certifying — **superseded** by R6 row below |
 | TEST_EXECUTION_SHA (final closure R6 @ HEAD) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` | Certifying qual_wave PASS @ `.tmp/session/ent-audit-x-r6-certifying/` + B5 handoff `qualification_at_87203c1b…` |
 | TEST_EXECUTION_SHA (historical — not current @ d4974efc) | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — **do not** substitute for re-qual @ audited baseline |
-| EVIDENCE_CANDIDATE_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` | B5 handoff tree + mechanical readiness proofs |
-| EVIDENCE_PUBLICATION_SHA | `894b0e1aff071d19636d23bea406b95dcffc79e1` | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
+| EVIDENCE_PUBLICATION_SHA (historical) | `894b0e1aff071d19636d23bea406b95dcffc79e1` | B5 @ `b8bb88c9…` — archived |
+| EVIDENCE_PUBLICATION_SHA (final closure R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | B5 handoff `qualification_at_87203c1b…` |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |

@@ -12,7 +12,7 @@
 
 **Historical TEST_EXECUTION_SHA (not current qualification):** `0cee41a88274a53d14bb3558752d55bdde0d0b01` — log @ older wave; **do not** treat as proof @ `d4974efc255bf6ff6ca96e00fb084293ea685d66`.
 
-**TEST_EXECUTION_SHA:** `87203c1b6ce9786dce0523cca29b556106b6bc8d` (final closure R6 certifying PASS). **Historical TEST_EXECUTION_SHA:** `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived). **EVIDENCE_PUBLICATION_SHA:** see SHA ladder append for R7 B5 commit.
+**TEST_EXECUTION_SHA:** `87203c1b6ce9786dce0523cca29b556106b6bc8d` (final closure R6 certifying PASS). **Historical TEST_EXECUTION_SHA:** `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived). **EVIDENCE_PUBLICATION_SHA:** `d18f01f2291328a073dcbdfbe05489faf98013b7` (R7 B5 @ NEW_TES).
 
 **Mode:** execution SSOT — no B6 PASS / FRZ CLOSED / ARCH-FREEZE / ENT stage CLOSED / OD APPROVED by agent.
 

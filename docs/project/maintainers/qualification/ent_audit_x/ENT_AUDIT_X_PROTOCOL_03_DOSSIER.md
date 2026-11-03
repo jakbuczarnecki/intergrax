@@ -11,7 +11,7 @@
 | Qual wave report | [qualification_at_87203c1b…/qual_wave_report.json](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/qual_wave_report.json) (`status=PASS`, L3 85/85 + FREEZE candidate) |
 | B5 handoff tree (current) | [qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) |
 | B5 handoff tree (historical) | [qualification_at_b8bb88c9…/](./b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/) |
-| EVIDENCE_PUBLICATION_SHA | *pin on R7 publication commit — see SHA ladder append* |
+| EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor — agent does not sign* |
 | ACCEPTED_BASELINE_SHA | *operator OD-ENT-01 after B6* |
 
