@@ -61,6 +61,11 @@ def build_impact_map_from_manifest(checks: tuple[ManifestCheck, ...]) -> dict[st
 
     platform_rules: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("intergrax/platform/enterprise_audit/changed_since.py", ("C024", "C025", "C029", "C072")),
+        ("intergrax/platform/enterprise_audit/impact_map.py", ("C024", "C029", "C072")),
+        (
+            "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            ("C024", "C029"),
+        ),
         ("intergrax/platform/enterprise_audit/sandbox.py", ("C014", "C015", "C016", "C017")),
         ("intergrax/platform/enterprise_audit/report.py", ("C013",)),
         ("intergrax/platform/enterprise_audit/baseline.py", ("C022", "C023", "C028", "C026")),
