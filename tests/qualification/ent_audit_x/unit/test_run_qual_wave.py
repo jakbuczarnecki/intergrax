@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -203,3 +204,103 @@ def test_orchestrator_certifying_rejects_before_stages(tmp_path: Path, monkeypat
     )
     assert proc.returncode == 1
     assert "TEST_EXECUTION_SHA" in proc.stderr or "working tree not clean" in proc.stderr or "HEAD" in proc.stderr
+
+
+def test_validate_freeze_baseline_outside_jail() -> None:
+    root = _root()
+    outside = root / ".tmp" / "not-jailed-baseline"
+    ok, msg = qw.validate_qual_wave_freeze_baseline_dir(root, outside, expected_sha="a" * 40)
+    assert not ok
+    assert "ent_audit_x" in msg
+
+
+def test_validate_freeze_baseline_stale_candidate(tmp_path: Path) -> None:
+    from intergrax.platform.enterprise_audit.baseline import (
+        EnterpriseAuditBaseline,
+        save_candidate_baseline,
+    )
+
+    root = tmp_path / "repo"
+    baseline_dir = root / "tests/qualification/ent_audit_x/baselines/qual_wave_runs/run-a"
+    baseline_dir.mkdir(parents=True)
+    save_candidate_baseline(
+        qw.candidate_baseline_path(baseline_dir),
+        EnterpriseAuditBaseline(accepted_baseline_sha="b" * 40, findings={}),
+    )
+    ok, msg = qw.validate_qual_wave_freeze_baseline_dir(root, baseline_dir, expected_sha="a" * 40)
+    assert not ok
+    assert "stale candidate" in msg
+
+
+def test_validate_freeze_baseline_collision_same_sha(tmp_path: Path) -> None:
+    from intergrax.platform.enterprise_audit.baseline import (
+        EnterpriseAuditBaseline,
+        save_candidate_baseline,
+    )
+
+    sha = "c" * 40
+    root = tmp_path / "repo"
+    baseline_dir = root / "tests/qualification/ent_audit_x/baselines/qual_wave_runs/run-b"
+    baseline_dir.mkdir(parents=True)
+    save_candidate_baseline(
+        qw.candidate_baseline_path(baseline_dir),
+        EnterpriseAuditBaseline(accepted_baseline_sha=sha, findings={}),
+    )
+    ok, msg = qw.validate_qual_wave_freeze_baseline_dir(root, baseline_dir, expected_sha=sha)
+    assert not ok
+    assert "collision" in msg
+
+
+def test_run_first_freeze_candidate_surfaces_runner_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    jailed = root / "tests/qualification/ent_audit_x/baselines/qual_wave_runs/wave-x"
+    monkeypatch.setattr(qw, "qual_wave_freeze_baseline_dir", lambda _root, _wave: jailed)
+    monkeypatch.setattr(qw, "git_head", lambda _r: "d" * 40)
+
+    class _BoomRunner:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def run(self, *args, **kwargs):
+            raise RuntimeError("simulated FREEZE failure")
+
+    monkeypatch.setattr(qw, "EnterpriseAuditRunner", _BoomRunner)
+    wave = tmp_path / "wave-artifacts"
+    wave.mkdir()
+    code, detail = qw.run_first_freeze_candidate(root, wave)
+    assert code == 1
+    assert "FREEZE exception" in detail
+    assert not qw.candidate_baseline_path(jailed).is_file()
+
+
+def test_orchestrator_writes_fail_report_on_unhandled_exception(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _root()
+    log_dir = tmp_path / "qual-log"
+    sha = qw.git_head(root)
+    monkeypatch.setenv("TEST_EXECUTION_SHA", sha)
+    import scripts.enterprise_audit.run_qual_wave as rqw
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("orchestrator boom")
+
+    monkeypatch.setattr(rqw.qw, "run_qualification_wave", _boom)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run_qual_wave.py",
+            "--profile",
+            "certifying",
+            "--log-dir",
+            str(log_dir),
+        ],
+    )
+    assert rqw.main() == 1
+    report_path = log_dir / "qual_wave_report.json"
+    assert report_path.is_file()
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["status"] == "FAIL"
+    assert "orchestrator boom" in payload["error"]

@@ -99,13 +99,26 @@ def main() -> int:
     pinned = os.environ.get("TEST_EXECUTION_SHA")
     l3_out = args.l3_output or (args.log_dir / "l3-cli-full")
     wave_out = args.wave_output or (args.log_dir / "wave-artifacts")
-    report = qw.run_qualification_wave(
-        root,
-        profile=args.profile,
-        pinned_sha=pinned,
-        l3_output=l3_out,
-        wave_output=wave_out,
-    )
+    certifying = args.profile == "certifying"
+    report: qw.QualWaveReport | None = None
+    try:
+        report = qw.run_qualification_wave(
+            root,
+            profile=args.profile,
+            pinned_sha=pinned,
+            l3_output=l3_out,
+            wave_output=wave_out,
+        )
+    except Exception as exc:
+        report = qw.QualWaveReport(
+            profile=args.profile,
+            qualification_sha=qw.git_head(root),
+            pinned_sha=pinned,
+            clean_tree=qw.git_clean(root),
+            certifying=certifying,
+            status="FAIL",
+            error=f"qual_wave orchestrator exception: {exc}",
+        )
     qw.write_report(report, args.log_dir)
     if report.status not in ("PASS", "PRE_QUAL_PASS"):
         print(report.error, file=sys.stderr)

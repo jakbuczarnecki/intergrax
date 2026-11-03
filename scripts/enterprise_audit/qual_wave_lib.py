@@ -16,7 +16,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from intergrax.platform.enterprise_audit.baseline import candidate_baseline_path
+from intergrax.platform.enterprise_audit.baseline import (
+    assert_baseline_dir_jailed,
+    baseline_path,
+    candidate_baseline_path,
+    load_candidate_baseline,
+)
 from intergrax.platform.enterprise_audit.contracts import AuditMode, EnterpriseAuditExitCode
 from intergrax.platform.enterprise_audit.manifest import load_default_manifest
 from intergrax.platform.enterprise_audit.runner import EnterpriseAuditRunner
@@ -236,30 +241,91 @@ def validate_full_artifacts(output_dir: Path, expected_sha: str) -> tuple[bool, 
     return True, "FULL 85/85 + evidence integrity validated"
 
 
-def run_first_freeze_candidate(root: Path, wave_output: Path) -> tuple[int, str]:
-    # Baseline writes must stay under tests/qualification/ent_audit_x (assert_baseline_dir_jailed).
-    baseline_dir = root / "tests/qualification/ent_audit_x/baselines/qual_wave_freeze_candidate"
-    out_dir = wave_output / "freeze-candidate-run"
-    baseline_dir.mkdir(parents=True, exist_ok=True)
-    runner = EnterpriseAuditRunner(root, dry_run=False, require_clean_repo=True)
-    _, manifest, code = runner.run(
-        AuditMode.FREEZE,
-        output_dir=out_dir,
-        baseline_dir=baseline_dir,
-        bootstrap_baseline=True,
-        certifying_run=True,
-    )
-    if code is not EnterpriseAuditExitCode.CLEAN:
-        return int(code), f"FREEZE candidate exit {code}"
-    if manifest.checks_executed != 85 or manifest.checks_skipped != 0:
-        return 1, f"FREEZE candidate {manifest.checks_executed}/85 skipped={manifest.checks_skipped}"
+_QUAL_WAVE_RUNS_REL = Path("tests/qualification/ent_audit_x/baselines/qual_wave_runs")
+
+
+def qual_wave_freeze_baseline_dir(root: Path, wave_output: Path) -> Path:
+    """Per-run jailed baseline workspace (wave_output name scopes isolation)."""
+    run_key = wave_output.resolve().name or "default"
+    safe = re.sub(r"[^\w\-.]+", "_", run_key).strip("._")
+    if not safe:
+        safe = "default"
+    return root / _QUAL_WAVE_RUNS_REL / safe[:80]
+
+
+def _qual_wave_runs_root(root: Path) -> Path:
+    return (root / _QUAL_WAVE_RUNS_REL).resolve()
+
+
+def validate_qual_wave_freeze_baseline_dir(
+    root: Path,
+    baseline_dir: Path,
+    *,
+    expected_sha: str,
+) -> tuple[bool, str]:
+    try:
+        assert_baseline_dir_jailed(baseline_dir, root)
+    except ValueError as exc:
+        return False, str(exc)
+    if baseline_path(baseline_dir).is_file():
+        return False, "accepted baseline must not exist for first candidate gate"
+    cand_path = candidate_baseline_path(baseline_dir)
+    if cand_path.is_file():
+        loaded = load_candidate_baseline(cand_path)
+        if loaded is None:
+            return False, "corrupt candidate baseline"
+        if loaded.accepted_baseline_sha != expected_sha:
+            return False, (f"stale candidate baseline: {loaded.accepted_baseline_sha} != HEAD {expected_sha}")
+        return False, "candidate baseline collision for this qual_wave run (reset run dir)"
+    return True, ""
+
+
+def cleanup_qual_wave_freeze_scratch(root: Path, baseline_dir: Path, *, keep_candidate: bool) -> None:
+    """Remove ephemeral qual_wave FREEZE files; never touch accepted baselines or operator records."""
+    try:
+        baseline_dir.resolve().relative_to(_qual_wave_runs_root(root))
+    except ValueError:
+        return
+    if baseline_path(baseline_dir).is_file():
+        return
     cand = candidate_baseline_path(baseline_dir)
-    if not cand.is_file():
-        return 1, "candidate baseline file missing"
-    accepted = baseline_dir / "accepted_baseline.v1.json"
-    if accepted.is_file():
-        return 1, "accepted baseline must not exist for first candidate gate"
-    return 0, str(cand.name)
+    if cand.is_file() and not keep_candidate:
+        cand.unlink()
+
+
+def run_first_freeze_candidate(root: Path, wave_output: Path) -> tuple[int, str]:
+    head = git_head(root)
+    baseline_dir = qual_wave_freeze_baseline_dir(root, wave_output)
+    ok, msg = validate_qual_wave_freeze_baseline_dir(root, baseline_dir, expected_sha=head)
+    if not ok:
+        return 1, msg
+    baseline_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = wave_output / "freeze-candidate-run"
+    keep_candidate = False
+    try:
+        runner = EnterpriseAuditRunner(root, dry_run=False, require_clean_repo=True)
+        _, manifest, code = runner.run(
+            AuditMode.FREEZE,
+            output_dir=out_dir,
+            baseline_dir=baseline_dir,
+            bootstrap_baseline=True,
+            certifying_run=True,
+        )
+        if code is not EnterpriseAuditExitCode.CLEAN:
+            return int(code), f"FREEZE candidate exit {code}"
+        if manifest.checks_executed != 85 or manifest.checks_skipped != 0:
+            return 1, f"FREEZE candidate {manifest.checks_executed}/85 skipped={manifest.checks_skipped}"
+        cand = candidate_baseline_path(baseline_dir)
+        if not cand.is_file():
+            return 1, "candidate baseline file missing"
+        if baseline_path(baseline_dir).is_file():
+            return 1, "accepted baseline must not exist for first candidate gate"
+        keep_candidate = True
+        return 0, str(cand.name)
+    except Exception as exc:
+        return 1, f"FREEZE exception: {exc}"
+    finally:
+        cleanup_qual_wave_freeze_scratch(root, baseline_dir, keep_candidate=keep_candidate)
 
 
 def _glob_paths(root: Path, pattern: str) -> list[str]:
@@ -436,7 +502,10 @@ def run_qualification_wave(
             return report
 
         started = time.perf_counter()
-        code, detail = run_first_freeze_candidate(root, wave_output)
+        try:
+            code, detail = run_first_freeze_candidate(root, wave_output)
+        except Exception as exc:
+            code, detail = 1, f"FREEZE exception: {exc}"
         dur = int((time.perf_counter() - started) * 1000)
         report.stages.append(
             StageResult(name="first_freeze_candidate", exit_code=code, duration_ms=dur, detail=detail),
