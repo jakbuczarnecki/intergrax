@@ -18,6 +18,9 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         elif "/ent_audit_x/integration/" in path:
             if "test_semantic_gate_execution.py" not in path:
                 item.add_marker(pytest.mark.ent_l2)
+            elif item.name == "test_semantic_gate_bnd_03_script_executes":
+                # Legacy smoke; not part of the 85/85 certifying matrix (C033).
+                item.add_marker(pytest.mark.ent_l2)
             else:
                 item.add_marker(pytest.mark.ent_semantic_matrix)
         elif "/ent_audit_x/l3/" in path:
