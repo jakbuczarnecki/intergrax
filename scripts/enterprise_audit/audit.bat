@@ -7,17 +7,24 @@ if errorlevel 1 (
   echo uv not found on PATH 1>&2
   exit /b 3
 )
-set "MODE=FAST"
+set "MODE="
 set "SINCE="
-if /I "%~1"=="fast" set "MODE=FAST"
-if /I "%~1"=="full" set "MODE=FULL"
-if /I "%~1"=="freeze" set "MODE=FREEZE"
+if "%~1"=="" goto usage_error
+if /I "%~1"=="fast" set "MODE=FAST" & goto mode_ok
+if /I "%~1"=="full" set "MODE=FULL" & goto mode_ok
+if /I "%~1"=="freeze" set "MODE=FREEZE" & goto mode_ok
 if /I "%~1"=="changed" (
   set "MODE=CHANGED-SINCE"
   set "SINCE=%~2"
+  goto mode_ok
 )
+:usage_error
+echo Usage: audit.bat fast^|full^|freeze^|changed ^<since-sha^> 1>&2
+exit /b 1
+:mode_ok
 for /f "delims=" %%S in ('git -C "%REPO_ROOT%" rev-parse HEAD') do set "SHA=%%S"
-set "OUT=%REPO_ROOT%\.tmp\proof\ent-audit-x\local-%SHA%-%RANDOM%"
+for /f "delims=" %%U in ('powershell -NoProfile -Command "[guid]::NewGuid().ToString('n')"') do set "RUN_ID=%%U"
+set "OUT=%REPO_ROOT%\.tmp\proof\ent-audit-x\local-%SHA%-%RUN_ID%"
 if /I "%MODE%"=="CHANGED-SINCE" (
   if "%SINCE%"=="" (
     echo CHANGED-SINCE requires since SHA 1>&2

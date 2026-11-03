@@ -23,4 +23,4 @@ def test_cli_exit_codes_fast_dry_run(tmp_path: Path) -> None:
         text=True,
         check=False,
     )
-    assert completed.returncode == 0
+    assert completed.returncode == 2

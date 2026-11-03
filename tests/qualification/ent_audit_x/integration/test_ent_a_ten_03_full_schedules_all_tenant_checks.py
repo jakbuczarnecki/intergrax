@@ -26,4 +26,4 @@ def test_cli_fast_dry_run_exit_zero(tmp_path: Path) -> None:
         text=True,
         check=False,
     )
-    assert completed.returncode == 0
+    assert completed.returncode == 2

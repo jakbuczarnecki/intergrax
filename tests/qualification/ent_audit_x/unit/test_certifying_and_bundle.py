@@ -9,6 +9,7 @@ from intergrax.platform.enterprise_audit.contracts import AuditMode
 from intergrax.platform.enterprise_audit.evidence import build_evidence_manifest
 from intergrax.platform.enterprise_audit.runner import EnterpriseAuditRunner
 from intergrax.platform.enterprise_audit.validators import verify_closed_evidence_bundle
+from tests.qualification.ent_audit_x._manifest_fixtures import sample_full_execution_manifest
 
 
 def test_cli_check_id_requires_non_certifying(tmp_path: Path) -> None:
@@ -94,4 +95,10 @@ def test_adv29_evidence_refused_when_non_certifying(tmp_path: Path) -> None:
     out.mkdir()
     (out / "enterprise_audit_report.json").write_text("{}", encoding="utf-8")
     with pytest.raises(ValueError, match="certifying_run"):
-        build_evidence_manifest(out, run_id="x", qualification_sha="a" * 40, certifying_run=False)
+        build_evidence_manifest(
+            out,
+            run_id="x",
+            qualification_sha="a" * 40,
+            certifying_run=False,
+            execution_manifest=sample_full_execution_manifest(),
+        )

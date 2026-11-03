@@ -32,11 +32,18 @@ def test_adv08_freeze_without_baseline_blocked(tmp_path) -> None:
 
 def test_adv12_tampered_evidence_fails(tmp_path) -> None:
     from intergrax.platform.enterprise_audit.evidence import build_evidence_manifest
+    from tests.qualification.ent_audit_x._manifest_fixtures import sample_full_execution_manifest
 
     out = tmp_path / "ev"
     out.mkdir()
     (out / "artifact.txt").write_text("ok", encoding="utf-8")
-    build_evidence_manifest(out, run_id="r1", qualification_sha="abc")
+    sha = "a" * 40
+    build_evidence_manifest(
+        out,
+        run_id="r1",
+        qualification_sha=sha,
+        execution_manifest=sample_full_execution_manifest(qualification_sha=sha),
+    )
     (out / "artifact.txt").write_text("bad", encoding="utf-8")
     assert verify_evidence_manifest(out) is False
 
@@ -147,10 +154,17 @@ def test_adv15_evidence_manifest_schema_version(tmp_path) -> None:
     import json
 
     from intergrax.platform.enterprise_audit.evidence import build_evidence_manifest
+    from tests.qualification.ent_audit_x._manifest_fixtures import sample_full_execution_manifest
 
     out = tmp_path / "adv15_ev"
     out.mkdir()
-    build_evidence_manifest(out, run_id="adv15", qualification_sha="deadbeef")
+    sha = "d" * 40
+    build_evidence_manifest(
+        out,
+        run_id="adv15",
+        qualification_sha=sha,
+        execution_manifest=sample_full_execution_manifest(qualification_sha=sha),
+    )
     raw = json.loads((out / "evidence_manifest.v1.json").read_text(encoding="utf-8"))
     assert raw["schema_version"] == 1
 
@@ -266,8 +280,12 @@ def test_adv29_write_evidence_bundle_flag(tmp_path) -> None:
 
     root = Path(__file__).resolve().parents[4]
     out = tmp_path / "adv29"
-    EnterpriseAuditRunner(root, dry_run=True).run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
-    assert (out / "evidence_manifest.v1.json").is_file()
+    with pytest.raises(ValueError, match="certifying_run"):
+        EnterpriseAuditRunner(root, dry_run=True).run(
+            AuditMode.FAST,
+            output_dir=out,
+            write_evidence_bundle=True,
+        )
 
 
 def test_adv30_l3_suite_present() -> None:

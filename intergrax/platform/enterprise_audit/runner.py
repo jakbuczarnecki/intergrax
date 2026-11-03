@@ -160,7 +160,7 @@ class EnterpriseAuditRunner:
         ordered = topological_order(planned_all)
         sandbox = CheckExecutionSandbox(self._repo_root)
         output_dir.mkdir(parents=True, exist_ok=True)
-        domain_report = load_vbn_domain_report(self._repo_root, output_dir)
+        domain_report = load_vbn_domain_report(self._repo_root, output_dir, expected_sha=identity.head_sha)
         outcomes: list[CheckRunOutcome] = []
         failed_prereqs: set[str] = set()
 

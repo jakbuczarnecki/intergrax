@@ -135,3 +135,24 @@ def test_promotion_requires_operator_records_path(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[4]
     with pytest.raises(ValueError, match="operator_records"):
         promote_accepted_baseline(tmp_path, od_record_path=od, repo_root=root)
+
+
+def test_promotion_requires_closed_evidence_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sha = "f" * 40
+    save_candidate_baseline(
+        candidate_baseline_path(tmp_path),
+        EnterpriseAuditBaseline(accepted_baseline_sha=sha, findings={}),
+    )
+    root = Path(__file__).resolve().parents[4]
+    od = tmp_path / "od-under-test.json"
+    od.write_text("{}", encoding="utf-8")
+
+    def _stub_verify(*_args, **_kwargs):
+        return {"accepted_baseline_sha": sha, "test_execution_sha": "c" * 40}
+
+    monkeypatch.setattr(
+        "intergrax.platform.enterprise_audit.baseline.verify_operator_decision_record",
+        _stub_verify,
+    )
+    with pytest.raises(ValueError, match="verify_closed_bundle_dir"):
+        promote_accepted_baseline(tmp_path, od_record_path=od, repo_root=root)

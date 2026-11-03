@@ -48,14 +48,13 @@ def build_evidence_manifest(
     run_id: str,
     qualification_sha: str,
     certifying_run: bool = True,
-    execution_manifest: AuditExecutionManifest | None = None,
+    execution_manifest: AuditExecutionManifest,
 ) -> Path:
     if not certifying_run:
         raise ValueError("evidence bundle publication requires certifying_run=true")
-    if execution_manifest is not None:
-        _assert_execution_manifest_allows_publication(execution_manifest)
-        if execution_manifest.qualification_sha != qualification_sha:
-            raise ValueError("qualification_sha mismatch between bundle builder and execution manifest")
+    _assert_execution_manifest_allows_publication(execution_manifest)
+    if execution_manifest.qualification_sha != qualification_sha:
+        raise ValueError("qualification_sha mismatch between bundle builder and execution manifest")
     artifacts: list[dict[str, str]] = []
     for path in sorted(output_dir.rglob("*")):
         if not path.is_file():

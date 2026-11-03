@@ -155,7 +155,8 @@ def main(argv: list[str] | None = None) -> int:
     promote_parser.add_argument(
         "--evidence-dir",
         type=Path,
-        help="Optional closed evidence bundle directory (C042 integration gate)",
+        required=True,
+        help="Closed evidence bundle directory (required for promotion)",
     )
 
     # Back-compat: no subcommand → run

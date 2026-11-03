@@ -255,16 +255,17 @@ def promote_accepted_baseline(
     candidate = load_candidate_baseline(candidate_baseline_path(baseline_dir))
     if candidate is None:
         raise ValueError("candidate baseline missing; run certifying FREEZE bootstrap first")
-    if verify_closed_bundle_dir is not None:
-        errors = verify_closed_evidence_bundle(verify_closed_bundle_dir)
-        if errors:
-            raise ValueError("; ".join(errors))
-        manifest_path = verify_closed_bundle_dir / "evidence_manifest.v1.json"
-        if manifest_path.is_file():
-            bundle_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            bundle_sha = str(bundle_manifest.get("qualification_sha", ""))
-            if bundle_sha != record["test_execution_sha"]:
-                raise ValueError("test_execution_sha must equal bundle manifest qualification_sha")
+    if verify_closed_bundle_dir is None:
+        raise ValueError("verify_closed_bundle_dir required for OD-ENT-01 promotion (closed evidence bundle)")
+    errors = verify_closed_evidence_bundle(verify_closed_bundle_dir)
+    if errors:
+        raise ValueError("; ".join(errors))
+    manifest_path = verify_closed_bundle_dir / "evidence_manifest.v1.json"
+    if manifest_path.is_file():
+        bundle_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        bundle_sha = str(bundle_manifest.get("qualification_sha", ""))
+        if bundle_sha != record["test_execution_sha"]:
+            raise ValueError("test_execution_sha must equal bundle manifest qualification_sha")
     accepted_sha = str(record["accepted_baseline_sha"])
     if candidate.accepted_baseline_sha != accepted_sha:
         raise ValueError("candidate_baseline_sha does not match OD-ENT-01 accepted_baseline_sha pin")
