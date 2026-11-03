@@ -1,0 +1,356 @@
+{
+  "path_prefix_to_check_ids": {
+    "intergrax/platform/enterprise_audit/baseline.py": [
+      "C022",
+      "C023",
+      "C026",
+      "C028"
+    ],
+    "intergrax/platform/enterprise_audit/changed_since.py": [
+      "C024",
+      "C025",
+      "C029",
+      "C072"
+    ],
+    "intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json": [
+      "C019",
+      "C021",
+      "C030"
+    ],
+    "intergrax/platform/enterprise_audit/evidence.py": [
+      "C006",
+      "C049",
+      "C068",
+      "C073"
+    ],
+    "intergrax/platform/enterprise_audit/modes.py": [
+      "C011",
+      "C067",
+      "C071"
+    ],
+    "intergrax/platform/enterprise_audit/report.py": [
+      "C013"
+    ],
+    "intergrax/platform/enterprise_audit/runner.py": [
+      "C002",
+      "C004",
+      "C009"
+    ],
+    "intergrax/platform/enterprise_audit/sandbox.py": [
+      "C014",
+      "C015",
+      "C016",
+      "C017"
+    ],
+    "intergrax/platform/enterprise_audit/validators.py": [
+      "C026",
+      "C027",
+      "C069"
+    ],
+    "scripts/enterprise_audit": [
+      "ENT-A-DOC-02"
+    ],
+    "scripts/enterprise_audit/build_impact_map.py": [
+      "C024",
+      "C029"
+    ],
+    "scripts/enterprise_audit/check_manifest_annex_c_alignment.py": [
+      "ENT-A-DOC-02"
+    ],
+    "scripts/enterprise_audit/run_qual_wave.py": [
+      "C051",
+      "C074"
+    ],
+    "scripts/gates": [
+      "ENT-A-PRD-01",
+      "ENT-A-PRD-02",
+      "ENT-A-REG-03"
+    ],
+    "scripts/gates/check_application_production_gates.py": [
+      "ENT-A-PRD-01",
+      "ENT-A-PRD-02",
+      "ENT-A-REG-03"
+    ],
+    "scripts/maintenance": [
+      "ENT-A-BND-03",
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02"
+    ],
+    "scripts/maintenance/check_agents_no_tier3_imports.py": [
+      "ENT-A-BND-03"
+    ],
+    "scripts/maintenance/check_immutable_security_audit_trail.py": [
+      "ENT-A-SEC-01",
+      "ENT-A-SEC-02"
+    ],
+    "tests/qualification/compat_x": [
+      "ENT-A-CMP-01",
+      "ENT-A-CMP-02",
+      "ENT-A-CMP-03"
+    ],
+    "tests/qualification/compat_x/test_compat_x_inventory_gates.py": [
+      "ENT-A-CMP-01",
+      "ENT-A-CMP-03"
+    ],
+    "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py": [
+      "ENT-A-CMP-02"
+    ],
+    "tests/qualification/config_x": [
+      "ENT-A-VBN-03",
+      "TEN-CONFIG",
+      "VBN-SHADOW-SELECTION"
+    ],
+    "tests/qualification/config_x/test_config_x_final_reconciliation_gates.py": [
+      "ENT-A-VBN-03",
+      "TEN-CONFIG",
+      "VBN-SHADOW-SELECTION"
+    ],
+    "tests/qualification/dup_x": [
+      "ENT-A-DUP-01",
+      "ENT-A-DUP-02",
+      "ENT-A-DUP-03"
+    ],
+    "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py": [
+      "ENT-A-DUP-01",
+      "ENT-A-DUP-02",
+      "ENT-A-DUP-03"
+    ],
+    "tests/qualification/ebh_5": [
+      "ENT-A-PLG-01",
+      "ENT-A-PLG-02",
+      "ENT-A-PLG-03",
+      "ENT-A-VBN-01",
+      "VBN-INVENTORY-DRIFT",
+      "VBN-REACHABILITY",
+      "VBN-REPLACEABILITY-MATRIX",
+      "VBN-SQLITE-EFFECTIVE"
+    ],
+    "tests/qualification/ebh_5/test_ebh_5_behavioral_package_c_v2.py": [
+      "VBN-REACHABILITY"
+    ],
+    "tests/qualification/ebh_5/test_ebh_5_dual_slug_rpl_e_operational_gates.py": [
+      "VBN-REPLACEABILITY-MATRIX"
+    ],
+    "tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pass.py": [
+      "ENT-A-PLG-01",
+      "ENT-A-PLG-02",
+      "ENT-A-PLG-03"
+    ],
+    "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py": [
+      "ENT-A-VBN-01",
+      "VBN-INVENTORY-DRIFT"
+    ],
+    "tests/qualification/ebh_5/test_ebh_5_l2_integrity_gates.py": [
+      "VBN-SQLITE-EFFECTIVE"
+    ],
+    "tests/qualification/ebh_6": [
+      "ENT-A-VBN-02",
+      "VBN-CORE-HARDCODING",
+      "VBN-SILENT-FALLBACK"
+    ],
+    "tests/qualification/ebh_6/test_ebh_6_config_x_head_reconciliation.py": [
+      "VBN-SILENT-FALLBACK"
+    ],
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py": [
+      "ENT-A-VBN-02",
+      "VBN-CORE-HARDCODING"
+    ],
+    "tests/qualification/ent_audit_x/integration": [
+      "ENT-A-INV-03",
+      "ENT-A-TEN-03"
+    ],
+    "tests/qualification/ent_audit_x/integration/test_ent_a_ten_03_full_schedules_all_tenant_checks.py": [
+      "ENT-A-TEN-03"
+    ],
+    "tests/qualification/ent_audit_x/integration/test_ent_audit_cannot_exit_clean_with_skipped_mandatory.py": [
+      "ENT-A-INV-03"
+    ],
+    "tests/qualification/ent_audit_x/unit": [
+      "ENT-A-INV-02",
+      "ENT-A-PRD-03",
+      "ENT-A-SEC-03"
+    ],
+    "tests/qualification/ent_audit_x/unit/test_enterprise_audit_report_redaction.py": [
+      "ENT-A-SEC-03"
+    ],
+    "tests/qualification/ent_audit_x/unit/test_frz_coverage_matrix_complete.py": [
+      "ENT-A-INV-02"
+    ],
+    "tests/qualification/ent_audit_x/unit/test_report_includes_prod_q_dimension_b_limitation.py": [
+      "ENT-A-PRD-03"
+    ],
+    "tests/qualification/evol_x/gates": [
+      "ENT-A-EVOL-01",
+      "ENT-A-EVOL-02",
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
+    "tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py": [
+      "ENT-A-EVOL-03",
+      "ENT-A-INV-01",
+      "ENT-A-REG-02"
+    ],
+    "tests/qualification/evol_x/gates/test_evol_x_selection.py": [
+      "ENT-A-EVOL-01"
+    ],
+    "tests/qualification/evol_x/gates/test_evol_x_selection_fault_injection.py": [
+      "ENT-A-EVOL-02"
+    ],
+    "tests/qualification/existing_capability_configuration": [
+      "TEN-PROVIDER"
+    ],
+    "tests/qualification/existing_capability_configuration/test_configuration_realization_certification.py": [
+      "TEN-PROVIDER"
+    ],
+    "tests/qualification/governance/gov_x2": [
+      "ENT-A-GOV-01",
+      "ENT-A-GOV-02",
+      "ENT-A-GOV-03"
+    ],
+    "tests/qualification/governance/gov_x2/test_gov_x2_proof_replay_gates.py": [
+      "ENT-A-GOV-03"
+    ],
+    "tests/qualification/governance/gov_x2/test_gov_x2_qualification_batch.py": [
+      "ENT-A-GOV-01",
+      "ENT-A-GOV-02"
+    ],
+    "tests/qualification/harness_01": [
+      "ENT-A-REL-02",
+      "ENT-A-REL-03"
+    ],
+    "tests/qualification/harness_01/test_harness_01_gates.py": [
+      "ENT-A-REL-02",
+      "ENT-A-REL-03"
+    ],
+    "tests/qualification/roadmap_replay_x": [
+      "ENT-A-DOC-01",
+      "ENT-A-DOC-03",
+      "ENT-A-REG-01"
+    ],
+    "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py": [
+      "ENT-A-DOC-01",
+      "ENT-A-DOC-03",
+      "ENT-A-REG-01"
+    ],
+    "tests/qualification/state_x": [
+      "ENT-A-REC-01",
+      "ENT-A-REC-02",
+      "ENT-A-REC-03",
+      "ENT-A-STA-01",
+      "ENT-A-STA-02",
+      "ENT-A-STA-03"
+    ],
+    "tests/qualification/state_x/test_state_x_p0_baseline.py": [
+      "ENT-A-REC-01",
+      "ENT-A-STA-01",
+      "ENT-A-STA-02"
+    ],
+    "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py": [
+      "ENT-A-REC-02",
+      "ENT-A-REC-03",
+      "ENT-A-STA-03"
+    ],
+    "tests/qualification/tenant_x": [
+      "ENT-A-TEN-01",
+      "ENT-A-TEN-02",
+      "TEN-ASYNC",
+      "TEN-AUTHORITY",
+      "TEN-CREDENTIALS",
+      "TEN-CROSS-TENANT",
+      "TEN-EVIDENCE",
+      "TEN-FAIL-CLOSED",
+      "TEN-IDENTITY",
+      "TEN-PROPAGATION",
+      "TEN-RECOVERY",
+      "TEN-STATE"
+    ],
+    "tests/qualification/tenant_x/test_tenant_x_final_current_head.py": [
+      "ENT-A-TEN-01"
+    ],
+    "tests/qualification/tenant_x/test_tenant_x_p0_current_head.py": [
+      "TEN-PROPAGATION"
+    ],
+    "tests/qualification/tenant_x/test_tenant_x_r1_current_head.py": [
+      "ENT-A-TEN-02",
+      "TEN-IDENTITY"
+    ],
+    "tests/qualification/tenant_x/test_tenant_x_r2_current_head.py": [
+      "TEN-CREDENTIALS"
+    ],
+    "tests/qualification/tenant_x/test_tenant_x_r4_fast.py": [
+      "TEN-ASYNC",
+      "TEN-AUTHORITY",
+      "TEN-CROSS-TENANT",
+      "TEN-EVIDENCE",
+      "TEN-FAIL-CLOSED",
+      "TEN-RECOVERY",
+      "TEN-STATE"
+    ],
+    "tests/qualification/trace_x": [
+      "ENT-A-OBS-03",
+      "TEN-TRACE"
+    ],
+    "tests/qualification/trace_x/test_trace_x_p4_r1_recorder_tenant.py": [
+      "ENT-A-OBS-03",
+      "TEN-TRACE"
+    ],
+    "tests/unit/architecture": [
+      "ENT-A-CTR-01",
+      "ENT-A-CTR-02",
+      "ENT-A-CTR-03",
+      "ENT-A-OWN-01",
+      "ENT-A-OWN-02",
+      "ENT-A-OWN-03",
+      "ENT-A-TYP-01",
+      "ENT-A-TYP-02",
+      "ENT-A-TYP-03",
+      "VBN-CONTRACT-LEAKAGE"
+    ],
+    "tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py": [
+      "ENT-A-TYP-01"
+    ],
+    "tests/unit/architecture/test_ebh_2i_final_rescan_gate.py": [
+      "ENT-A-CTR-01",
+      "ENT-A-CTR-02",
+      "ENT-A-CTR-03",
+      "ENT-A-TYP-02",
+      "ENT-A-TYP-03",
+      "VBN-CONTRACT-LEAKAGE"
+    ],
+    "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py": [
+      "ENT-A-OWN-01",
+      "ENT-A-OWN-02",
+      "ENT-A-OWN-03"
+    ],
+    "tests/unit/runtime/architecture": [
+      "ENT-A-BND-01",
+      "ENT-A-BND-02",
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-EXE-03",
+      "ENT-A-OBS-01",
+      "ENT-A-OBS-02",
+      "ENT-A-REL-01",
+      "VBN-OBS-OPS-COUPLING"
+    ],
+    "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py": [
+      "ENT-A-EXE-01",
+      "ENT-A-EXE-02",
+      "ENT-A-EXE-03"
+    ],
+    "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py": [
+      "ENT-A-BND-01",
+      "ENT-A-BND-02"
+    ],
+    "tests/unit/runtime/architecture/test_harness_w4_r1_production_tool_boundedness_gate.py": [
+      "ENT-A-REL-01"
+    ],
+    "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": [
+      "ENT-A-OBS-01",
+      "ENT-A-OBS-02",
+      "VBN-OBS-OPS-COUPLING"
+    ]
+  },
+  "schema_version": 1
+}
