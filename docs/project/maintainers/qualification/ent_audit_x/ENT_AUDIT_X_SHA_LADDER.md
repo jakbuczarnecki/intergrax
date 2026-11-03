@@ -19,6 +19,7 @@
 | CURRENT_DOCUMENTATION_HEAD (pre SSOT repair commit) | `c6d600df56f3fedb85bcdce12ba508ea8274ccd4` | Doc pin only; no production delta after 87e185dd |
 | IMPLEMENTATION_SHA (audited baseline @ current-HEAD SSOT) | `d4974efc255bf6ff6ca96e00fb084293ea685d66` | Wave 2 + ladder pin; **code baseline for Matrix C** |
 | IMPLEMENTATION_SHA (pre-qual matrix marker + PRE_QUAL_PASS) | `90f6dfdb3e382fd5bfcf9a5df6a916bc8dcea23e` | BND-03 smoke excluded from ent_semantic_matrix; qual_wave PRE_QUAL_PASS |
+| IMPLEMENTATION_SHA (C063 launchers + readiness hooks) | `530cae6e87e9b3ef8ab315324812077489c64eb9` | ent_launcher matrix, BAT/SH non-certifying FAST, quickstart |
 | IMPLEMENTATION_SHA (R0 one-pass trust wave) | `4f87e5bb20fd8691033a8f9704d205dad18c48c6` | Evidence/VBN/baseline/launchers + qual harness (agent one-pass partial) |
 | IMPLEMENTATION_SHA (wave 2 provenance + semantic acceptance) | `e0f64ed7fd57180efc9b93798a3595b9578497af` | Parent of audited baseline |
 | POST_IMPLEMENTATION_SSOT_REPAIR_PUBLICATION_SHA | `8efac05b4ca18a31a754cf003851f5bf24725f76` | Matrix E + DAG + validator repair @ audited baseline |
