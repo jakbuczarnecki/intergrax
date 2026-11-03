@@ -54,16 +54,17 @@ def test_certifying_fails_when_l3_cli_nonzero(tmp_path: Path, monkeypatch: pytes
     assert "L3 CLI" in report.error
 
 
-def test_certifying_fails_on_dirty_tree(tmp_path: Path) -> None:
+def test_certifying_fails_on_dirty_tree_mocked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sha = "c" * 40
+    monkeypatch.setattr(qw, "git_head", lambda _r: sha)
+    monkeypatch.setattr(qw, "git_clean", lambda _r: False)
     report = qw.run_qualification_wave(
         _root(),
         profile="certifying",
-        pinned_sha="c" * 40,
+        pinned_sha=sha,
         l3_output=tmp_path / "l3",
         wave_output=tmp_path / "wave",
     )
-    if qw.git_clean(_root()):
-        pytest.skip("tree clean — dirty-tree negative requires local changes")
     assert report.error == "working tree not clean (clean checkout required)"
 
 

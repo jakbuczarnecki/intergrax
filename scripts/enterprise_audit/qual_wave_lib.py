@@ -320,7 +320,7 @@ def run_qualification_wave(
             lambda: pytest_runner(
                 root,
                 marker="ent_l1",
-                paths=["tests/qualification/ent_audit_x"],
+                paths=["tests/qualification/ent_audit_x/unit"],
             )[:2],
         ),
         (
