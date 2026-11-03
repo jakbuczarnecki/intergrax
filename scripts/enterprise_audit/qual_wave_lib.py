@@ -237,7 +237,8 @@ def validate_full_artifacts(output_dir: Path, expected_sha: str) -> tuple[bool, 
 
 
 def run_first_freeze_candidate(root: Path, wave_output: Path) -> tuple[int, str]:
-    baseline_dir = wave_output / "freeze-baseline"
+    # Baseline writes must stay under tests/qualification/ent_audit_x (assert_baseline_dir_jailed).
+    baseline_dir = root / "tests/qualification/ent_audit_x/baselines/qual_wave_freeze_candidate"
     out_dir = wave_output / "freeze-candidate-run"
     baseline_dir.mkdir(parents=True, exist_ok=True)
     runner = EnterpriseAuditRunner(root, dry_run=False, require_clean_repo=True)
