@@ -3,6 +3,8 @@ name: Enterprise audit (ENT-AUDIT-X)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [development]
     paths:
       - "intergrax/platform/**"
       - "scripts/enterprise_audit/**"
@@ -32,25 +34,50 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
+      - name: Sync dev-ci qualification dependencies
+        run: uv sync --frozen --extra dev-ci
       - name: L1/L2/L3 qualification
         run: uv run pytest tests/qualification/ent_audit_x/unit tests/qualification/ent_audit_x/integration tests/qualification/ent_audit_x/l3 -q
-      - name: Enterprise audit CLI (FAST certifying)
+      - name: Enterprise audit CLI (FAST non-certifying real)
         run: |
-          OUT=".tmp/proof/ent-audit-x/pr-${{ github.event.pull_request.number || 'manual' }}-${{ github.event.pull_request.head.sha || github.sha }}"
-          uv run python scripts/enterprise_audit/run_enterprise_audit.py --mode FAST --output-dir "$OUT"
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          OUT=".tmp/proof/ent-audit-x/pr-${{ github.event.pull_request.number || 'manual' }}-${SHA}"
+          uv run python scripts/enterprise_audit/run_enterprise_audit.py run \
+            --mode FAST \
+            --non-certifying \
+            --output-dir "$OUT"
       - name: Job summary
         if: always()
         run: |
-          OUT=".tmp/proof/ent-audit-x/pr-${{ github.event.pull_request.number || 'manual' }}-${{ github.event.pull_request.head.sha || github.sha }}"
-          echo "## Enterprise audit FAST" >> "$GITHUB_STEP_SUMMARY"
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          OUT=".tmp/proof/ent-audit-x/pr-${{ github.event.pull_request.number || 'manual' }}-${SHA}"
+          echo "## Enterprise audit FAST (non-certifying)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- head SHA: \`${SHA}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- artifact dir: \`$OUT\`" >> "$GITHUB_STEP_SUMMARY"
           if [ -f "$OUT/enterprise_audit_report.json" ]; then
             echo "- report: present" >> "$GITHUB_STEP_SUMMARY"
           fi
+          echo "- note: certifying FULL/FREEZE only on nightly / manual qual wave" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload PR audit artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ent-audit-pr-${{ github.event.pull_request.number || github.run_id }}
           path: .tmp/proof/ent-audit-x/
+
+  ent-audit-pr-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync dev-ci qualification dependencies
+        run: uv sync --frozen --extra dev-ci
+      - name: Path-independent PR gate (no skip on docs-only diffs)
+        run: uv run pytest tests/qualification/ent_audit_x/unit/test_mechanical_readiness.py tests/qualification/ent_audit_x/unit/test_task_id_registry.py -q

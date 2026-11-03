@@ -1,23 +1,25 @@
 # ENT-AUDIT-X — Protocol 03 independent audit dossier (draft)
 
-**Status:** READY FOR INDEPENDENT B6 MECHANICAL REVIEW — **no PASS declared by agent**
+**Status:** TECHNICAL PARTIAL — **no B6 PASS / no OD approved / no FRZ CLOSED** (agent-prepared handoff only)
 
 | Field | Value |
 | --- | --- |
 | Execution SSOT | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) |
-| Audited IMPLEMENTATION_SHA | `d4974efc255bf6ff6ca96e00fb084293ea685d66` |
-| Plan mechanical validator | `scripts/enterprise_audit/validate_post_implementation_master_plan.py` (exit 0 required before B6 dossier fill) |
-| TEST_EXECUTION_SHA | *operator pins at qual replay — not historical `0cee41a8`* |
-| EVIDENCE_CANDIDATE_SHA | *unset until L3 green bundle* |
-| EVIDENCE_PUBLICATION_SHA | *unset* |
-| B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor* |
+| Audited IMPLEMENTATION_SHA (closure start) | `45240b2d4b108bb813b8d7683f10d6e56121b3c4` |
+| **TEST_EXECUTION_SHA (current qual)** | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
+| Historical TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived B5 only) |
+| Qual wave report | [qualification_at_87203c1b…/qual_wave_report.json](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/qual_wave_report.json) (`status=PASS`, L3 85/85 + FREEZE candidate) |
+| B5 handoff tree (current) | [qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) |
+| B5 handoff tree (historical) | [qualification_at_b8bb88c9…/](./b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/) |
+| EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` |
+| B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor — agent does not sign* |
 | ACCEPTED_BASELINE_SHA | *operator OD-ENT-01 after B6* |
 
 ## Scope
 
 - Tier-0 package `intergrax/platform/enterprise_audit/`
 - CLI `scripts/enterprise_audit/run_enterprise_audit.py`
-- Qualification tree `tests/qualification/ent_audit_x/` (164+ tests)
+- Qualification tree `tests/qualification/ent_audit_x/` (collect-only reconciled @ TES)
 - Workflows `.github/workflows/enterprise-audit*.yml`
 
 ## Evidence pointers
@@ -27,9 +29,38 @@
 - Gap register: [ANNEX_F_GAP_REGISTER.md](./ANNEX_F_GAP_REGISTER.md)
 - CI runbook: [ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md](./ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md)
 
-## Mechanical preflight
+## CI qualification runs
 
-Run:
+Pinned GitHub Actions evidence (honest conclusions — **not** claimed green until post-fix re-run):
+
+| workflow | run_id | head_sha | conclusion | artifact | url |
+| --- | --- | --- | --- | --- | --- |
+| enterprise-audit.yml | 41647490846 | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | failure | ent-audit-pr-383 (warn: empty — pytest failed before CLI) | https://github.com/jakbuczarnecki/intergrax/actions/runs/41647490846 |
+| enterprise-audit-nightly.yml | 41618283515 | `5a1bed2fd464a006725d9bd076dd2149dfa75790` | failure | nightly bundle (see run log) | https://github.com/jakbuczarnecki/intergrax/actions/runs/41618283515 |
+
+**PR failure root cause @ TES:** shallow checkout — `test_changed_since_git.py` requires `HEAD~1` (fixed in workflow `fetch-depth: 0` @ post-TES commit). **Re-run required** after push for OD-ENT-02 enforceability evidence.
+
+## Certifying qualification @ TEST_EXECUTION_SHA
+
+| Stage | Evidence |
+| --- | --- |
+| L1/L2/L3 + semantic 85/85 + ADV31 | `qual_wave_report.json` status `PASS`, `qualification_sha=b8bb88c9…` |
+| Certifying FULL 85/85 | `b6_independent_handoff/.../l3-cli-full/enterprise_audit_report.json` → `checks_executed=85`, `coverage_label=FULL` |
+| VBN D01–D31 | `vbn_domains.v1.json` → `domains_accounted=31` @ TES digest pin |
+| FRZ map | `frz_coverage.v1.json` → `row_count=85` |
+
+## External blockers (GAP-B)
+
+| GAP-B-ID | Owner | Status | Notes |
+| --- | --- | --- | --- |
+| BLK-EVOL-B6 | Operator / EVOL auditor | OPEN | EVOL Protocol 03 B6 still pending |
+| BLK-EVOL-FRZ | Operator | OPEN | FRZ-EVOL after EVOL B6 |
+| BLK-EVOL-HANDOFF | Operator | OPEN | W7-06 handoff pin |
+| BLK-CI-ENFORCE | OD-ENT-02 + GitHub admin | OPEN | Branch protection 404; workflows exist |
+| BLK-ROADMAP-ENT-DEP | OD-ENT-00 | OPEN | EVOL-X formal closure decision |
+| BLK-ENT-B6 | Independent Protocol 03 | OPEN | Awaiting B5 + external audit |
+
+## Mechanical preflight
 
 ```bash
 uv run python scripts/enterprise_audit/mechanical_readiness_check.py
@@ -39,4 +70,4 @@ uv run python scripts/enterprise_audit/mechanical_readiness_check.py
 
 - Baseline **promotion** requires operator OD-ENT-01 record (`promote-baseline` CLI).
 - Agent/bootstrap may write **candidate** baseline only.
-- Independent B6 issues PASS/FAIL; this dossier does not substitute external attestation.
+- Independent B6 issues PASS/FAIL; this dossier does **not** substitute external attestation (**no pass declared by agent**).

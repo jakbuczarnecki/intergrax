@@ -6,12 +6,14 @@ from __future__ import annotations
 
 from intergrax.platform.enterprise_audit.contracts import (
     AggregateAuditStatus,
+    AuditCategory,
     AuditFinding,
     AuditMode,
     AuditSeverity,
     CheckRunOutcome,
     DriftStatus,
     EnterpriseAuditExitCode,
+    ManifestCheck,
 )
 
 
@@ -68,6 +70,43 @@ def fast_floor_incomplete(
             if any(f.severity is AuditSeverity.TRACKED_DEBT for f in outcome.findings):
                 return True
     return False
+
+
+def relax_findings_for_non_certifying_fast(
+    mode: AuditMode,
+    *,
+    certifying_run: bool,
+    findings: tuple[AuditFinding, ...],
+    checks_by_id: dict[str, ManifestCheck],
+) -> tuple[AuditFinding, ...]:
+    """PR/diagnostic FAST: gate failures are tracked debt unless fast_mandatory (C045/C007)."""
+    if certifying_run or mode is not AuditMode.FAST:
+        return findings
+    mandatory = {cid for cid, c in checks_by_id.items() if c.fast_mandatory}
+    relaxed: list[AuditFinding] = []
+    for finding in findings:
+        if finding.check_id not in mandatory and finding.severity in {
+            AuditSeverity.ERROR,
+            AuditSeverity.BLOCKER,
+        }:
+            if finding.category is AuditCategory.INTERNAL and finding.severity is AuditSeverity.BLOCKER:
+                relaxed.append(finding)
+                continue
+            relaxed.append(
+                AuditFinding(
+                    finding_id=finding.finding_id,
+                    check_id=finding.check_id,
+                    severity=AuditSeverity.TRACKED_DEBT,
+                    category=finding.category,
+                    message=finding.message,
+                    source_path=finding.source_path,
+                    frz_mapping=finding.frz_mapping,
+                    drift=finding.drift,
+                )
+            )
+            continue
+        relaxed.append(finding)
+    return tuple(relaxed)
 
 
 def default_limitations(mode: AuditMode) -> tuple[str, ...]:

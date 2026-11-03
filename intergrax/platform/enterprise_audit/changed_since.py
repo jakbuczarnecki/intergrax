@@ -8,6 +8,12 @@ import subprocess
 from pathlib import Path
 
 from intergrax.platform.enterprise_audit.contracts import ManifestCheck
+from intergrax.platform.enterprise_audit.impact_map import (
+    load_default_impact_map,
+    selected_check_ids_from_impact,
+    unmapped_fail_closed_paths,
+)
+from intergrax.platform.enterprise_audit.repo_identity import assert_git_ancestor
 
 
 def git_changed_files(repo_root: Path, since_sha: str) -> frozenset[str]:
@@ -100,11 +106,25 @@ def select_checks_for_changed_since(
     repo_root: Path,
     since_sha: str,
 ) -> frozenset[str]:
+    assert_git_ancestor(repo_root, ancestor_sha=since_sha)
     changed = git_changed_files(repo_root, since_sha)
     unmapped = unmapped_evol_changed_paths(checks, changed)
     if unmapped:
         raise ValueError("CHANGED-SINCE fail-closed: unmapped evol_x paths: " + ", ".join(sorted(unmapped)[:8]))
+    impact_prefixes = load_default_impact_map()
+    entrypoint_covered = frozenset(
+        path for path in changed if any(_check_touched(check, frozenset({path})) for check in checks)
+    )
+    platform_unmapped = unmapped_fail_closed_paths(
+        changed,
+        prefixes=impact_prefixes,
+        entrypoint_covered=entrypoint_covered,
+    )
+    if platform_unmapped:
+        sample = ", ".join(sorted(platform_unmapped)[:8])
+        raise ValueError(f"CHANGED-SINCE fail-closed: unmapped platform paths: {sample}")
     selected: set[str] = set(invariant_floor(checks))
+    selected.update(selected_check_ids_from_impact(changed, prefixes=impact_prefixes))
     for check in checks:
         if _check_touched(check, changed):
             selected.add(check.check_id)

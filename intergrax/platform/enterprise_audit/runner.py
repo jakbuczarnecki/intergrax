@@ -26,6 +26,7 @@ from intergrax.platform.enterprise_audit.contracts import (
     AuditReport,
     AuditSeverity,
     CheckRunOutcome,
+    DriftStatus,
     EnterpriseAuditExitCode,
     ManifestCheck,
 )
@@ -38,6 +39,7 @@ from intergrax.platform.enterprise_audit.modes import (
     compute_exit_code,
     default_limitations,
     fast_floor_incomplete,
+    relax_findings_for_non_certifying_fast,
 )
 from intergrax.platform.enterprise_audit.repo_identity import assert_git_ancestor, read_repo_identity
 from intergrax.platform.enterprise_audit.report import write_reports
@@ -208,6 +210,13 @@ class EnterpriseAuditRunner:
         baseline_sha = baseline.accepted_baseline_sha if baseline else None
         checks_by_id = {c.check_id: c for c in self._checks}
         drifted = apply_drift(findings_tuple, baseline, checks_by_id=checks_by_id)
+        if not effective_certifying and mode is AuditMode.FAST:
+            drifted = relax_findings_for_non_certifying_fast(
+                mode,
+                certifying_run=effective_certifying,
+                findings=drifted,
+                checks_by_id=checks_by_id,
+            )
         if baseline is not None and mode in {AuditMode.FULL, AuditMode.FREEZE} and effective_certifying:
             from intergrax.platform.enterprise_audit.baseline import assert_baseline_manifest_digest_current
 
@@ -254,6 +263,15 @@ class EnterpriseAuditRunner:
         internal_error = any(f.severity.value == "BLOCKER" and f.category.value == "internal" for f in drifted)
         status = aggregate_status(drifted, incomplete=incomplete, internal_error=internal_error)
         exit_code = compute_exit_code(status, outcomes_tuple)
+        if (
+            not effective_certifying
+            and mode is AuditMode.FAST
+            and status is AggregateAuditStatus.PARTIAL
+            and drifted
+            and all(f.severity is AuditSeverity.TRACKED_DEBT for f in drifted if f.drift is not DriftStatus.RESOLVED)
+        ):
+            status = AggregateAuditStatus.PASS
+            exit_code = EnterpriseAuditExitCode.CLEAN
 
         coverage_label = compute_coverage_label(
             mode,

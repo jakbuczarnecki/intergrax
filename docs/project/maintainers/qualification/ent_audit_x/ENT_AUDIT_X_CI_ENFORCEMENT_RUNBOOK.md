@@ -6,7 +6,8 @@
 
 | Check | Workflow |
 | --- | --- |
-| Enterprise audit FAST (real) | `enterprise-audit.yml` job `ent-audit-fast` — pytest L1/L2/L3 + CLI FAST without `--dry-run` |
+| Enterprise audit FAST (real) | `enterprise-audit.yml` job `ent-audit-fast` — pytest L1/L2/L3 + CLI FAST **non-certifying** (real execution; not certifying evidence) |
+| Enterprise audit PR gate | `enterprise-audit.yml` job `ent-audit-pr-gate` — path-independent smoke (docs-only PRs cannot skip) |
 | Enterprise audit nightly | `enterprise-audit-nightly.yml` — qual suite + **FULL/FREEZE real** (dry-run **not** qualification) |
 | Unit regression (existing) | `unit-tests.yml` |
 

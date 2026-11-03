@@ -63,20 +63,34 @@ def write_reports(
     extra_artifacts: dict | None = None,
 ) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    json_path = output_dir / "enterprise_audit_report.json"
-    md_path = output_dir / "enterprise_audit_report.md"
-    payload = build_report_json(report, manifest)
-    md_body = render_markdown(report, manifest)
-    detail_path = output_dir / "enterprise_audit_outcomes.json"
-    detail_body = json.dumps([asdict(o) for o in outcomes], indent=2) + "\n"
-    _atomic_write(json_path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    _atomic_write(md_path, md_body)
-    _atomic_write(detail_path, detail_body)
-    if extra_artifacts:
-        for name, data in extra_artifacts.items():
-            path = output_dir / name
-            _atomic_write(path, json.dumps(data, indent=2, sort_keys=True) + "\n")
-    return json_path, md_path
+    staging = output_dir / f".publish-staging-{os.getpid()}"
+    if staging.exists():
+        raise FileExistsError(f"report staging collision: {staging}")
+    staging.mkdir(parents=True, exist_ok=True)
+    try:
+        json_path = staging / "enterprise_audit_report.json"
+        md_path = staging / "enterprise_audit_report.md"
+        payload = build_report_json(report, manifest)
+        md_body = render_markdown(report, manifest)
+        detail_path = staging / "enterprise_audit_outcomes.json"
+        json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        md_path.write_text(md_body, encoding="utf-8")
+        detail_path.write_text(json.dumps([asdict(o) for o in outcomes], indent=2) + "\n", encoding="utf-8")
+        if extra_artifacts:
+            for name, data in extra_artifacts.items():
+                path = staging / name
+                path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        final_json = output_dir / "enterprise_audit_report.json"
+        final_md = output_dir / "enterprise_audit_report.md"
+        for src in staging.iterdir():
+            dest = output_dir / src.name
+            os.replace(src, dest)
+        return final_json, final_md
+    finally:
+        if staging.is_dir():
+            for leftover in staging.iterdir():
+                leftover.unlink(missing_ok=True)
+            staging.rmdir()
 
 
 def _atomic_write(path: Path, content: str) -> None:

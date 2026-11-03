@@ -1,0 +1,290 @@
+{
+  "check_manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
+  "domains": [
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D01",
+      "domain_key": "1-relational-persistence",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D02",
+      "domain_key": "2-nosql-document",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D03",
+      "domain_key": "3-key-value",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "N/A \u2014 WITH EVIDENCE: No standalone roadmap domain-4 IntegrationCategory; production KV/cache selection is concern integration.key_value_cache (domain KEY_VALUE), not a duplicate cache catalog row.",
+      "domain_id": "D04",
+      "domain_key": "4-cache-distributed",
+      "inventory_error_count": 0,
+      "rpl_class": "N/A_WITH_EVIDENCE",
+      "status": "NA_WITH_EVIDENCE",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D05",
+      "domain_key": "5-vector-database",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D06",
+      "domain_key": "6-graph-database",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D07",
+      "domain_key": "7-object-blob",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D08",
+      "domain_key": "8-event-streaming",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D09",
+      "domain_key": "9-queues-workers",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "N/A \u2014 WITH EVIDENCE: Coordination is runtime/distributed contracts and composition wiring \u2014 no separate vendor/backend catalog concern in EBH-5 closed-world inventory.",
+      "domain_id": "D10",
+      "domain_key": "10-distributed-coordination",
+      "inventory_error_count": 0,
+      "rpl_class": "N/A_WITH_EVIDENCE",
+      "status": "NA_WITH_EVIDENCE",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D11",
+      "domain_key": "11-transaction-idempotency",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D12",
+      "domain_key": "12-checkpoints-execution-state",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D13",
+      "domain_key": "13-agent-memory",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D14",
+      "domain_key": "14-rag-retrieval",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D15",
+      "domain_key": "15-llm-embedding",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D16",
+      "domain_key": "16-agent-runtimes",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D17",
+      "domain_key": "17-hosting-substrate",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D18",
+      "domain_key": "18-external-integrations-mcp",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "N/A \u2014 WITH EVIDENCE: Logging sinks are wired via observability/event delivery profile \u2014 not an isolated IntegrationCategory row in CONFIG-X inventory.",
+      "domain_id": "D19",
+      "domain_key": "19-logging",
+      "inventory_error_count": 0,
+      "rpl_class": "N/A_WITH_EVIDENCE",
+      "status": "NA_WITH_EVIDENCE",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "N/A \u2014 WITH EVIDENCE: Metrics export uses observability profile (OTLP/diagnostics backends) \u2014 no isolated metrics-vendor concern in EBH-5 inventory.",
+      "domain_id": "D20",
+      "domain_key": "20-metrics",
+      "inventory_error_count": 0,
+      "rpl_class": "N/A_WITH_EVIDENCE",
+      "status": "NA_WITH_EVIDENCE",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D21",
+      "domain_key": "21-tracing",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D22",
+      "domain_key": "22-diagnostics",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D23",
+      "domain_key": "23-alerting",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D24",
+      "domain_key": "24-audit-evidence",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D25",
+      "domain_key": "25-secrets",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D26",
+      "domain_key": "26-auth-identity",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D27",
+      "domain_key": "27-config-profile",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "N/A \u2014 WITH EVIDENCE: HTTP client surfaces map to EXTERNAL_MCP / integration adapter concerns \u2014 roadmap domain 28 is not duplicated as its own inventory category.",
+      "domain_id": "D28",
+      "domain_key": "28-network-http",
+      "inventory_error_count": 0,
+      "rpl_class": "N/A_WITH_EVIDENCE",
+      "status": "NA_WITH_EVIDENCE",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D29",
+      "domain_key": "29-telemetry-otlp",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "N/A \u2014 WITH EVIDENCE: Bounded scan: no production-effective eval-analytics vendor selection module in intergrax/applications composition roots; deferred to EVOL-X / ENT-AUDIT-X \u2014 not asserted as absent platform-wide beyond scanned paths.",
+      "domain_id": "D30",
+      "domain_key": "30-evaluation-analytics",
+      "inventory_error_count": 0,
+      "rpl_class": "N/A_WITH_EVIDENCE",
+      "status": "NA_WITH_EVIDENCE",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    },
+    {
+      "coverage_note": "COVERED",
+      "domain_id": "D31",
+      "domain_key": "31-discovered",
+      "inventory_error_count": 0,
+      "rpl_class": "QUALIFIED",
+      "status": "QUALIFIED",
+      "test_nodeid": "tests/qualification/ebh_5/test_ebh_5_g06_enterprise_integrity_gates.py"
+    }
+  ],
+  "domains_total": 31,
+  "honest_disclaimer": "Rows derive from EBH-5 inventory @ HEAD; ENT FREEZE must replay g06 @ audit execution SHA.",
+  "limitations": [],
+  "qualification_sha": "b8bb88c9db1060153ec0a6a29bbb79ba16e00078",
+  "run_id": "87c52dbf9f0e40e9b50ab483e2eecca5",
+  "schema_version": 1
+}

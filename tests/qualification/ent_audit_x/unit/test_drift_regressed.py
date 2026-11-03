@@ -6,6 +6,7 @@ from intergrax.platform.enterprise_audit.contracts import (
     AuditFinding,
     AuditSeverity,
     DriftStatus,
+    ManifestCheck,
 )
 
 
@@ -28,6 +29,35 @@ def test_drift_regressed_severity() -> None:
         message="worse",
     )
     drifted = apply_drift((finding,), baseline)
+    assert drifted[0].drift is DriftStatus.REGRESSED
+
+
+def test_drift_regressed_on_schema_bump() -> None:
+    baseline = EnterpriseAuditBaseline(
+        accepted_baseline_sha="abc",
+        findings={
+            "X:1": {
+                "check_id": "ENT-A-BND-01",
+                "severity": AuditSeverity.WARNING.value,
+                "message_fingerprint": "deadbeefdeadbeef",
+                "check_schema_version": 1,
+            }
+        },
+    )
+    check = ManifestCheck(
+        check_id="ENT-A-BND-01",
+        entrypoint_kind="pytest_nodeid",
+        entrypoint="tests/unit/x.py::test_x",
+        schema_version=2,
+    )
+    finding = AuditFinding(
+        finding_id="X:1",
+        check_id="ENT-A-BND-01",
+        severity=AuditSeverity.WARNING,
+        category=AuditCategory.ARCHITECTURE,
+        message="same",
+    )
+    drifted = apply_drift((finding,), baseline, checks_by_id={check.check_id: check})
     assert drifted[0].drift is DriftStatus.REGRESSED
 
 

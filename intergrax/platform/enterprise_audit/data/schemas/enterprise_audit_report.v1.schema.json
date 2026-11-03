@@ -3,12 +3,77 @@
   "title": "enterprise_audit_report.v1",
   "type": "object",
   "required": ["status", "exit_code", "audit_mode", "execution_manifest", "findings"],
+  "additionalProperties": false,
   "properties": {
     "status": { "type": "string" },
     "exit_code": { "type": "integer" },
     "audit_mode": { "type": "string" },
     "current_sha": { "type": "string" },
-    "execution_manifest": { "type": "object" },
-    "findings": { "type": "array" }
+    "baseline_sha": { "type": ["string", "null"] },
+    "certifying_run": { "type": "boolean" },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "coverage_matrix_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "checks_planned": { "type": "integer" },
+        "findings_total": { "type": "integer" },
+        "manifest_digest": { "type": "string" },
+        "vbn_domains_accounted": { "type": "integer" }
+      }
+    },
+    "execution_manifest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "audit_mode",
+        "qualification_sha",
+        "audit_execution_sha",
+        "checks_planned",
+        "checks_executed",
+        "checks_skipped",
+        "coverage_label",
+        "certifying_run",
+        "run_status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "type": "integer" },
+        "audit_mode": { "type": "string" },
+        "qualification_sha": { "type": "string" },
+        "audit_execution_sha": { "type": "string" },
+        "checks_planned": { "type": "integer" },
+        "checks_executed": { "type": "integer" },
+        "checks_skipped": { "type": "integer" },
+        "coverage_label": { "type": "string" },
+        "certifying_run": { "type": "boolean" },
+        "run_status": { "type": "string" },
+        "check_manifest_digest": { "type": "string" }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "check_id", "severity", "category", "message"],
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": { "type": "string" },
+          "check_id": { "type": "string" },
+          "severity": { "type": "string" },
+          "category": { "type": "string" },
+          "message": { "type": "string" },
+          "source_path": { "type": "string" },
+          "frz_mapping": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "drift": { "type": "string" }
+        }
+      }
+    }
   }
 }

@@ -2,11 +2,42 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "evidence_manifest.v1",
   "type": "object",
-  "required": ["schema_version", "run_id", "qualification_sha", "artifacts"],
+  "required": [
+    "schema_version",
+    "run_id",
+    "qualification_sha",
+    "audit_execution_sha",
+    "certifying_run",
+    "artifacts"
+  ],
+  "additionalProperties": false,
   "properties": {
     "schema_version": { "type": "integer" },
     "run_id": { "type": "string" },
     "qualification_sha": { "type": "string" },
-    "artifacts": { "type": "array" }
+    "audit_execution_sha": { "type": "string" },
+    "certifying_run": { "type": "boolean" },
+    "check_manifest_digest": { "type": "string" },
+    "environment_fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "python_version": { "type": "string" },
+        "platform": { "type": "string" },
+        "implementation": { "type": "string" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
   }
 }
