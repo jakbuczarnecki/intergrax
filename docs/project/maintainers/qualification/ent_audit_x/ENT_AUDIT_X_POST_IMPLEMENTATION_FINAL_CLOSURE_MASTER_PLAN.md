@@ -5,7 +5,7 @@
 **Mode:** PLAN SSOT (implementation wave follows this document; no B6 PASS / FRZ CLOSED / ARCH-FREEZE declared here)
 
 **CURRENT HEAD / audited implementation baseline:** `34e03425b2322f415a99a7cfd290fe0982bf6970`  
-**Historical IMPLEMENTATION_SHA (prior closure wave):** `1fa5347a56c569fa62ac2c777ff3947d11e906b4`  
+**Agent one-pass IMPLEMENTATION_SHA:** `4f87e5bb20fd8691033a8f9704d205dad18c48c6` (partial — see [handoff B6](./ENT_AUDIT_X_ONE_PASS_AGENT_HANDOFF_B6.md))  
 **Branch:** `development` · **Repo:** `jakbuczarnecki/intergrax`
 
 **PLAN_PUBLICATION_SHA:** `f7243601dbeec93bf26d258c05f545bb1704c7eb`
