@@ -510,5 +510,5 @@ Runtime qualification @ TEST_EXECUTION_SHA: OPEN (not publication gate).
 | C075 | Doc pass | this doc, Annex F/H, ladder, dossier | C041,C048,C055 | `link lint` | `stale pin` | SSOT match HEAD |
 
 ---
-*Execution SSOT @ audited HEAD `d4974efc255bf6ff6ca96e00fb084293ea685d66`.*
+*Execution SSOT @ TEST_EXECUTION_SHA `b8bb88c9db1060153ec0a6a29bbb79ba16e00078`; documentation HEAD `60bf2f43b3d5c33b9864574c5296e1dd864fc7a5`.*
 

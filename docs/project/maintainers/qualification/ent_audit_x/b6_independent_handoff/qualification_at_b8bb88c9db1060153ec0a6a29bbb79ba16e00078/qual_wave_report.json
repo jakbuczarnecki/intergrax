@@ -1,0 +1,89 @@
+{
+  "certifying": true,
+  "clean_tree": true,
+  "error": "",
+  "interruption_class": "",
+  "pinned_sha": "b8bb88c9db1060153ec0a6a29bbb79ba16e00078",
+  "profile": "certifying",
+  "qualification_sha": "b8bb88c9db1060153ec0a6a29bbb79ba16e00078",
+  "stages": [
+    {
+      "detail": "passed=90",
+      "duration_ms": 29962,
+      "exit_code": 0,
+      "name": "l1",
+      "skipped": false
+    },
+    {
+      "detail": "passed=42",
+      "duration_ms": 17693,
+      "exit_code": 0,
+      "name": "l2",
+      "skipped": false
+    },
+    {
+      "detail": "passed=63",
+      "duration_ms": 1358840,
+      "exit_code": 0,
+      "name": "semantic_acceptance",
+      "skipped": false
+    },
+    {
+      "detail": "passed=85",
+      "duration_ms": 1049992,
+      "exit_code": 0,
+      "name": "semantic_matrix",
+      "skipped": false
+    },
+    {
+      "detail": "passed=33",
+      "duration_ms": 11933,
+      "exit_code": 0,
+      "name": "adv31",
+      "skipped": false
+    },
+    {
+      "detail": "passed=13",
+      "duration_ms": 150380,
+      "exit_code": 0,
+      "name": "ten13",
+      "skipped": false
+    },
+    {
+      "detail": "passed=9",
+      "duration_ms": 77045,
+      "exit_code": 0,
+      "name": "vbn9",
+      "skipped": false
+    },
+    {
+      "detail": "passed=2",
+      "duration_ms": 3433,
+      "exit_code": 0,
+      "name": "d31",
+      "skipped": false
+    },
+    {
+      "detail": "cli_full exit=0 ms=1033137",
+      "duration_ms": 1033138,
+      "exit_code": 0,
+      "name": "l3_cli_full",
+      "skipped": false
+    },
+    {
+      "detail": "FULL 85/85 + evidence integrity validated",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "l3_validate",
+      "skipped": false
+    },
+    {
+      "detail": "CANDIDATE_ENTERPRISE_AUDIT_BASELINE.json",
+      "duration_ms": 2427860,
+      "exit_code": 0,
+      "name": "first_freeze_candidate",
+      "skipped": false
+    }
+  ],
+  "status": "PASS"
+}
