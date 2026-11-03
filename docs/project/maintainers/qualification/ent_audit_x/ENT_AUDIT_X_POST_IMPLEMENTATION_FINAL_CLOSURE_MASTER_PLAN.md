@@ -8,6 +8,8 @@
 
 **Prior PLAN_PUBLICATION_SHA:** `87e185dd3bcce45f107149b4b3691c3ede614c8a`
 
+**POST_IMPLEMENTATION_SSOT_REPAIR_PUBLICATION_SHA:** `8efac05b4ca18a31a754cf003851f5bf24725f76`
+
 **Historical TEST_EXECUTION_SHA (not current qualification):** `0cee41a88274a53d14bb3558752d55bdde0d0b01` — log @ older wave; **do not** treat as proof @ `d4974efc255bf6ff6ca96e00fb084293ea685d66`.
 
 **Current runtime qualification:** OPEN — pin new **TEST_EXECUTION_SHA** only after certifying FULL/L3 @ implementation baseline.
