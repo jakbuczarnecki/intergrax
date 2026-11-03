@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-TES = "b8bb88c9db1060153ec0a6a29bbb79ba16e00078"
+TES = "87203c1b6ce9786dce0523cca29b556106b6bc8d"
 EVID = "894b0e1aff071d19636d23bea406b95dcffc79e1"
 EVID_SHORT = EVID[:12]
 HANDOFF = f"b6_independent_handoff/qualification_at_{TES}"
@@ -57,7 +57,7 @@ OPERATOR_OR_EXTERNAL: frozenset[str] = frozenset({"C001", "C002", "C003", "C042"
 CI_BLOCKED: frozenset[str] = frozenset({"C045", "C046", "C047", "C059", "C060", "C061", "C063", "C070", "C007"})
 
 # Post-TES changes to readiness scripts — not re-run @ TES.
-POST_TES_DELTA: frozenset[str] = frozenset({"C054", "C066"})
+POST_TES_DELTA: frozenset[str] = frozenset()
 
 NOT_STARTED: frozenset[str] = frozenset()
 
@@ -266,4 +266,9 @@ GAP_RC_EVIDENCE: dict[str, str] = {
     "GAP-RC-JSON-SCHEMA": "test_validators_all_artifacts.py + validate_b5_handoff_bundle @ HEAD",
     "GAP-RC-PR-PATH-SKIP": "enterprise-audit.yml ent-audit-pr-gate @ HEAD",
     "GAP-RC-OD-TRUST": "operator_records/ — no production OD @ HEAD",
+    "GAP-RC-CHANGED-IMPACT": f"changed_since_impact_map.v1.json + test_changed_since_impact_map @ `{TES}`",
+    "GAP-RC-GIT-ANCESTRY": f"select_checks_for_changed_since ancestry + repo_identity @ `{TES}`",
+    "GAP-RC-DRIFT-SCHEMA": f"test_drift_regressed_on_schema_bump @ `{TES}`",
+    "GAP-RC-ATOMIC-PUB": f"report.write_reports staging publish @ `{TES}`",
+    "GAP-RC-SANDBOX": f"test_sandbox_isolation @ `{TES}`",
 }
