@@ -82,6 +82,8 @@ class EnterpriseAuditRunner:
         if self._require_clean_repo and identity.dirty:
             raise RuntimeError("dirty working tree not allowed for this audit mode")
 
+        effective_certifying = certifying_run and not self._dry_run
+
         if certifying_run and check_ids_filter:
             return self._blocked_report(
                 mode,
@@ -202,8 +204,7 @@ class EnterpriseAuditRunner:
         drifted = apply_drift(findings_tuple, baseline)
 
         if (
-            certifying_run
-            and not self._dry_run
+            effective_certifying
             and mode in {AuditMode.FULL, AuditMode.FREEZE}
             and rollup.get("domains_accounted", 0) < _VBN_DOMAIN_TOTAL
         ):
@@ -221,9 +222,13 @@ class EnterpriseAuditRunner:
             )
 
         floor_incomplete = False if self._dry_run else fast_floor_incomplete(mode, self._checks, outcomes_tuple)
-        incomplete = floor_incomplete or (
-            mode in {AuditMode.FULL, AuditMode.FREEZE}
-            and (any(o.skipped for o in outcomes_tuple) or len(ordered) < len(self._checks))
+        incomplete = (
+            self._dry_run
+            or floor_incomplete
+            or (
+                mode in {AuditMode.FULL, AuditMode.FREEZE}
+                and (any(o.skipped for o in outcomes_tuple) or len(ordered) < len(self._checks))
+            )
         )
         internal_error = any(f.severity.value == "BLOCKER" and f.category.value == "internal" for f in drifted)
         status = aggregate_status(drifted, incomplete=incomplete, internal_error=internal_error)
@@ -235,7 +240,7 @@ class EnterpriseAuditRunner:
             planned=len(ordered),
             outcomes=outcomes_tuple,
             findings=drifted,
-            certifying_run=certifying_run,
+            certifying_run=effective_certifying,
             filtered=filtered,
         )
 
@@ -249,7 +254,7 @@ class EnterpriseAuditRunner:
             checks_executed=sum(1 for o in outcomes_tuple if o.executed),
             checks_skipped=sum(1 for o in outcomes_tuple if o.skipped),
             coverage_label=coverage_label,
-            certifying_run=certifying_run,
+            certifying_run=effective_certifying,
             outcomes=outcomes_tuple,
         )
 
@@ -260,9 +265,10 @@ class EnterpriseAuditRunner:
             current_sha=identity.head_sha,
             baseline_sha=baseline_sha,
             findings=drifted,
-            limitations=default_limitations(mode),
+            limitations=default_limitations(mode)
+            + (("dry_run: non-certifying; checks not executed.",) if self._dry_run else ()),
             coverage_matrix_summary=coverage_summary,
-            certifying_run=certifying_run,
+            certifying_run=effective_certifying,
         )
 
         write_reports(
@@ -290,7 +296,8 @@ class EnterpriseAuditRunner:
                 output_dir,
                 run_id=output_dir.name,
                 qualification_sha=identity.head_sha,
-                certifying_run=certifying_run,
+                certifying_run=effective_certifying,
+                execution_manifest=manifest,
             )
 
         return report, manifest, exit_code

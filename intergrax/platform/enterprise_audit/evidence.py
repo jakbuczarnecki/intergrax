@@ -8,6 +8,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from intergrax.platform.enterprise_audit.contracts import AuditExecutionManifest, AuditMode
+
 _CATALOG_PATH = Path(__file__).resolve().parent / "data" / "evidence_artifact_catalog.v1.json"
 
 
@@ -25,15 +27,35 @@ def load_evidence_artifact_catalog() -> dict:
     return json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
 
 
+def _assert_execution_manifest_allows_publication(manifest: AuditExecutionManifest) -> None:
+    if not manifest.certifying_run:
+        raise ValueError("evidence bundle publication requires certifying_run=true on execution manifest")
+    if manifest.checks_executed != manifest.checks_planned:
+        raise ValueError(
+            "evidence bundle requires checks_executed==checks_planned "
+            f"({manifest.checks_executed}!={manifest.checks_planned})"
+        )
+    if manifest.audit_mode in {AuditMode.FULL, AuditMode.FREEZE} and manifest.coverage_label != "FULL":
+        raise ValueError(
+            f"evidence bundle requires coverage_label FULL for {manifest.audit_mode.value}, "
+            f"got {manifest.coverage_label}"
+        )
+
+
 def build_evidence_manifest(
     output_dir: Path,
     *,
     run_id: str,
     qualification_sha: str,
     certifying_run: bool = True,
+    execution_manifest: AuditExecutionManifest | None = None,
 ) -> Path:
     if not certifying_run:
         raise ValueError("evidence bundle publication requires certifying_run=true")
+    if execution_manifest is not None:
+        _assert_execution_manifest_allows_publication(execution_manifest)
+        if execution_manifest.qualification_sha != qualification_sha:
+            raise ValueError("qualification_sha mismatch between bundle builder and execution manifest")
     artifacts: list[dict[str, str]] = []
     for path in sorted(output_dir.rglob("*")):
         if not path.is_file():

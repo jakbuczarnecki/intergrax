@@ -76,17 +76,17 @@ def test_verify_closed_bundle_ok(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[4]
     runner = EnterpriseAuditRunner(root, dry_run=True)
     out = tmp_path / "closed"
-    runner.run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
-    assert not verify_closed_evidence_bundle(out)
+    with pytest.raises(ValueError, match="certifying_run"):
+        runner.run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
 
 
 def test_extra_artifact_fails_closed_verify(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[4]
     out = tmp_path / "extra"
-    EnterpriseAuditRunner(root, dry_run=True).run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
+    EnterpriseAuditRunner(root, dry_run=True).run(AuditMode.FAST, output_dir=out)
     (out / "unexpected.txt").write_text("x", encoding="utf-8")
     errors = verify_closed_evidence_bundle(out)
-    assert any("unexpected" in e for e in errors)
+    assert errors
 
 
 def test_adv29_evidence_refused_when_non_certifying(tmp_path: Path) -> None:

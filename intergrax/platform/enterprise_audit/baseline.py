@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -29,6 +30,16 @@ _SEVERITY_RANK = {
 ACCEPTED_BASELINE_FILENAME = "ENTERPRISE_AUDIT_BASELINE.json"
 CANDIDATE_BASELINE_FILENAME = "CANDIDATE_ENTERPRISE_AUDIT_BASELINE.json"
 OD_ENT_01_DECISION_ID = "OD-ENT-01"
+_SHA40 = re.compile(r"^[0-9a-f]{40}$")
+_LADDER_REL = Path("docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_SHA_LADDER.md")
+_DOSSIER_REL = Path("docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md")
+_OPERATOR_RECORDS_REL = Path("docs/project/maintainers/qualification/ent_audit_x/operator_records")
+_LADDER_ROLE_KEYS = (
+    "TEST_EXECUTION_SHA",
+    "EVIDENCE_PUBLICATION_SHA",
+    "B6_ACCEPTANCE_PUBLICATION_SHA",
+    "ACCEPTED_BASELINE_SHA",
+)
 
 
 class BaselinePhase(StrEnum):
@@ -117,10 +128,52 @@ def save_candidate_baseline(path: Path, baseline: EnterpriseAuditBaseline) -> No
 
 def save_accepted_baseline_requires_operator(*, od_record_path: Path) -> None:
     """Fail closed when promotion attempted without operator OD-ENT-01 record."""
-    verify_operator_decision_record(od_record_path)
+    verify_operator_decision_record(od_record_path, for_promotion=False)
 
 
-def verify_operator_decision_record(path: Path) -> dict:
+def parse_sha_ladder_table(ladder_path: Path) -> dict[str, str | None]:
+    """Parse ENT_AUDIT_X_SHA_LADDER.md role rows; unset/* → None."""
+    if not ladder_path.is_file():
+        raise ValueError("ENT_AUDIT_X_SHA_LADDER.md missing")
+    roles: dict[str, str | None] = {}
+    for line in ladder_path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        role = cells[0].strip()
+        if role not in _LADDER_ROLE_KEYS:
+            continue
+        sha_cell = cells[1].strip().strip("`")
+        if sha_cell.lower().startswith("unset") or sha_cell.startswith("*"):
+            roles[role] = None
+        elif _SHA40.match(sha_cell):
+            roles[role] = sha_cell
+        else:
+            roles[role] = None
+    return roles
+
+
+def _require_sha40(value: object, *, field: str) -> str:
+    if not isinstance(value, str) or not _SHA40.match(value):
+        raise ValueError(f"missing or invalid ladder pin: {field}")
+    return value
+
+
+def _dossier_lists_shas(dossier_path: Path, *shas: str) -> bool:
+    if not dossier_path.is_file():
+        return False
+    text = dossier_path.read_text(encoding="utf-8")
+    return all(sha in text for sha in shas)
+
+
+def verify_operator_decision_record(
+    path: Path,
+    *,
+    for_promotion: bool = False,
+    repo_root: Path | None = None,
+) -> dict:
     if not path.is_file():
         raise ValueError("OD-ENT-01 operator decision record missing")
     raw = json.loads(path.read_text(encoding="utf-8"))
@@ -132,16 +185,59 @@ def verify_operator_decision_record(path: Path) -> dict:
         raise ValueError("agent-origin OD-ENT-01 records cannot authorize promotion")
     if raw.get("operator_origin") is not True:
         raise ValueError("operator_origin must be true for OD-ENT-01 promotion")
-    for key in (
-        "b6_acceptance_sha",
-        "evidence_publication_sha",
-        "test_execution_sha",
-        "accepted_baseline_sha",
-    ):
-        value = raw.get(key)
-        if not isinstance(value, str) or len(value) != 40:
-            raise ValueError(f"missing or invalid ladder pin: {key}")
-    return raw
+    pins = {
+        key: _require_sha40(raw.get(key), field=key)
+        for key in (
+            "b6_acceptance_sha",
+            "evidence_publication_sha",
+            "test_execution_sha",
+            "accepted_baseline_sha",
+        )
+    }
+    if not for_promotion:
+        return {**raw, **pins}
+
+    if repo_root is None:
+        raise ValueError("repo_root required for promotion verification")
+
+    resolved = path.resolve()
+    operator_root = (repo_root / _OPERATOR_RECORDS_REL).resolve()
+    try:
+        resolved.relative_to(operator_root)
+    except ValueError as exc:
+        raise ValueError("OD-ENT-01 record must live under operator_records/") from exc
+
+    ladder = parse_sha_ladder_table(repo_root / _LADDER_REL)
+    tes = pins["test_execution_sha"]
+    evid = pins["evidence_publication_sha"]
+    b6 = pins["b6_acceptance_sha"]
+    accepted = pins["accepted_baseline_sha"]
+
+    ladder_b6 = ladder.get("B6_ACCEPTANCE_PUBLICATION_SHA")
+    ladder_evid = ladder.get("EVIDENCE_PUBLICATION_SHA")
+    ladder_tes = ladder.get("TEST_EXECUTION_SHA")
+    ladder_accepted = ladder.get("ACCEPTED_BASELINE_SHA")
+
+    if ladder_b6 is None:
+        raise ValueError("B6_ACCEPTANCE_PUBLICATION_SHA unset in ladder; promotion blocked")
+    if b6 != ladder_b6:
+        raise ValueError("b6_acceptance_sha does not match SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA")
+    if ladder_evid is not None and evid != ladder_evid:
+        raise ValueError("evidence_publication_sha does not match SHA ladder EVIDENCE_PUBLICATION_SHA")
+    if ladder_tes is not None and tes != ladder_tes:
+        raise ValueError("test_execution_sha does not match SHA ladder TEST_EXECUTION_SHA")
+    if ladder_accepted is not None and accepted != ladder_accepted:
+        raise ValueError("accepted_baseline_sha does not match SHA ladder ACCEPTED_BASELINE_SHA")
+
+    from intergrax.platform.enterprise_audit.repo_identity import assert_git_ancestor
+
+    assert_git_ancestor(repo_root, ancestor_sha=tes)
+
+    dossier = repo_root / _DOSSIER_REL
+    if not _dossier_lists_shas(dossier, tes, evid, b6):
+        raise ValueError("Protocol 03 dossier must list test_execution, evidence, and b6 SHAs")
+
+    return {**raw, **pins}
 
 
 def promote_accepted_baseline(
@@ -149,11 +245,13 @@ def promote_accepted_baseline(
     *,
     od_record_path: Path,
     verify_closed_bundle_dir: Path | None = None,
+    repo_root: Path | None = None,
 ) -> Path:
     """Promote candidate findings fingerprint to accepted baseline (operator boundary)."""
     from intergrax.platform.enterprise_audit.validators import verify_closed_evidence_bundle
 
-    record = verify_operator_decision_record(od_record_path)
+    root = repo_root or Path.cwd()
+    record = verify_operator_decision_record(od_record_path, for_promotion=True, repo_root=root)
     candidate = load_candidate_baseline(candidate_baseline_path(baseline_dir))
     if candidate is None:
         raise ValueError("candidate baseline missing; run certifying FREEZE bootstrap first")
@@ -161,6 +259,12 @@ def promote_accepted_baseline(
         errors = verify_closed_evidence_bundle(verify_closed_bundle_dir)
         if errors:
             raise ValueError("; ".join(errors))
+        manifest_path = verify_closed_bundle_dir / "evidence_manifest.v1.json"
+        if manifest_path.is_file():
+            bundle_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            bundle_sha = str(bundle_manifest.get("qualification_sha", ""))
+            if bundle_sha != record["test_execution_sha"]:
+                raise ValueError("test_execution_sha must equal bundle manifest qualification_sha")
     accepted_sha = str(record["accepted_baseline_sha"])
     if candidate.accepted_baseline_sha != accepted_sha:
         raise ValueError("candidate_baseline_sha does not match OD-ENT-01 accepted_baseline_sha pin")

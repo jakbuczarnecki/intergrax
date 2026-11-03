@@ -11,19 +11,12 @@ from intergrax.platform.enterprise_audit.baseline import (
     EnterpriseAuditBaseline,
     baseline_path,
     candidate_baseline_path,
-    findings_to_baseline_rows,
     promote_accepted_baseline,
     resolve_baseline_phase,
     save_candidate_baseline,
     verify_operator_decision_record,
 )
-from intergrax.platform.enterprise_audit.contracts import (
-    AuditCategory,
-    AuditFinding,
-    AuditMode,
-    AuditSeverity,
-    EnterpriseAuditExitCode,
-)
+from intergrax.platform.enterprise_audit.contracts import AuditMode, EnterpriseAuditExitCode
 from intergrax.platform.enterprise_audit.runner import EnterpriseAuditRunner
 
 
@@ -87,14 +80,24 @@ def test_bootstrap_never_writes_accepted(tmp_path: Path) -> None:
         shutil.rmtree(qual.parent, ignore_errors=True)
 
 
-def test_report_certifying_run_default_true(tmp_path: Path) -> None:
+def test_report_certifying_run_false_on_dry_run(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[4]
     report, manifest, _ = EnterpriseAuditRunner(root, dry_run=True).run(
         AuditMode.FAST,
         output_dir=tmp_path / "cert",
     )
-    assert report.certifying_run is True
-    assert manifest.certifying_run is True
+    assert report.certifying_run is False
+    assert manifest.certifying_run is False
+
+
+def test_dry_run_exit_incomplete(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[4]
+    report, _, exit_code = EnterpriseAuditRunner(root, dry_run=True).run(
+        AuditMode.FAST,
+        output_dir=tmp_path / "dry",
+    )
+    assert exit_code is EnterpriseAuditExitCode.INCOMPLETE
+    assert report.status.value in {"INCOMPLETE", "PARTIAL"}
 
 
 def test_certifying_mode_rejects_check_id_filter(tmp_path: Path) -> None:
@@ -108,23 +111,13 @@ def test_certifying_mode_rejects_check_id_filter(tmp_path: Path) -> None:
     assert code is EnterpriseAuditExitCode.VIOLATION
 
 
-def test_operator_fixture_promote_success(tmp_path: Path) -> None:
+def test_promotion_requires_operator_records_path(tmp_path: Path) -> None:
     sha = "f" * 40
-    finding = AuditFinding(
-        finding_id="X:1",
-        check_id="ENT-A-BND-01",
-        severity=AuditSeverity.WARNING,
-        category=AuditCategory.ARCHITECTURE,
-        message="baseline row",
-    )
     save_candidate_baseline(
         candidate_baseline_path(tmp_path),
-        EnterpriseAuditBaseline(
-            accepted_baseline_sha=sha,
-            findings=findings_to_baseline_rows((finding,)),
-        ),
+        EnterpriseAuditBaseline(accepted_baseline_sha=sha, findings={}),
     )
-    od = tmp_path / "operator_od_ent_01.json"
+    od = tmp_path / "od.json"
     od.write_text(
         json.dumps(
             {
@@ -139,6 +132,6 @@ def test_operator_fixture_promote_success(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    out = promote_accepted_baseline(tmp_path, od_record_path=od)
-    assert out.is_file()
-    assert resolve_baseline_phase(tmp_path) is BaselinePhase.ACCEPTED_ACTIVE
+    root = Path(__file__).resolve().parents[4]
+    with pytest.raises(ValueError, match="operator_records"):
+        promote_accepted_baseline(tmp_path, od_record_path=od, repo_root=root)
