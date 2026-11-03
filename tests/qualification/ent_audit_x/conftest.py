@@ -17,7 +17,9 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
             item.add_marker(pytest.mark.ent_l1)
         elif "/ent_audit_x/integration/" in path:
             item.add_marker(pytest.mark.ent_l2)
+            if "test_semantic_gate_execution.py" in path:
+                item.add_marker(pytest.mark.ent_semantic_matrix)
         elif "/ent_audit_x/l3/" in path:
             item.add_marker(pytest.mark.ent_l3_heavy)
         elif "/ent_audit_x/acceptance/" in path:
-            item.add_marker(pytest.mark.ent_l2)
+            item.add_marker(pytest.mark.ent_semantic_gate)
