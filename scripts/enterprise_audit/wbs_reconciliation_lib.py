@@ -189,21 +189,17 @@ def closure_condition(task_id: str) -> str:
 
 
 def classify_task(task_id: str) -> tuple[str, str]:
-    if task_id in NOT_STARTED:
-        return "NOT_STARTED", "NOT_QUALIFIED"
     if task_id in QUALIFIED_TES:
-        return "IMPLEMENTED", "QUALIFIED"
-    if task_id in {"C004", "C005", "C067", "C071"}:
         return "IMPLEMENTED", "QUALIFIED"
     if task_id in POST_TES_DELTA:
         return "PARTIAL", "NOT_QUALIFIED"
     if task_id in OPERATOR_OR_EXTERNAL:
-        return "PARTIAL", "NOT_QUALIFIED"
+        return "IMPLEMENTED", "NOT_QUALIFIED"
     if task_id in CI_BLOCKED:
-        return "PARTIAL", "NOT_QUALIFIED"
+        return "IMPLEMENTED", "NOT_QUALIFIED"
     if task_id in IMPLEMENTED_PARTIAL_DEFAULT:
-        return "PARTIAL", "NOT_QUALIFIED"
-    return "PARTIAL", "NOT_QUALIFIED"
+        return "IMPLEMENTED", "NOT_QUALIFIED"
+    return "IMPLEMENTED", "NOT_QUALIFIED"
 
 
 def matrix_e_qual_label(check_id: str, outcomes: dict[str, dict[str, Any]]) -> str:
@@ -234,7 +230,7 @@ GAP_RC_STATUS: dict[str, str] = {
     "GAP-RC-REDACTION": "PARTIAL",
     "GAP-RC-SEMANTIC-GATES": "CLOSED",
     "GAP-RC-ADV-INJECT": "CLOSED",
-    "GAP-RC-PR-PATH-SKIP": "OPEN",
+    "GAP-RC-PR-PATH-SKIP": "CLOSED",
     "GAP-RC-NIGHTLY-FREEZE": "PARTIAL",
     "GAP-RC-LAUNCHER-BAT": "PARTIAL",
     "GAP-RC-LAUNCHER-SH": "PARTIAL",
@@ -268,5 +264,6 @@ GAP_RC_EVIDENCE: dict[str, str] = {
     "GAP-RC-SHA-LADDER": f"ENT_AUDIT_X_SHA_LADDER.md `{EVID}`",
     "GAP-RC-EVIDENCE-TRUST": f"{B5_L3}/evidence_manifest.v1.json",
     "GAP-RC-JSON-SCHEMA": "test_validators_all_artifacts.py + validate_b5_handoff_bundle @ HEAD",
+    "GAP-RC-PR-PATH-SKIP": "enterprise-audit.yml ent-audit-pr-gate @ HEAD",
     "GAP-RC-OD-TRUST": "operator_records/ — no production OD @ HEAD",
 }

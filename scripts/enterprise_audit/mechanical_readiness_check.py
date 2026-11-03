@@ -227,6 +227,16 @@ def _verify_ci_workflow_green(root: Path, workflow_file: str, head: str) -> tupl
     return False, f"no workflow run for {workflow_file} @ HEAD {head[:12]}"
 
 
+def _wbs_technical_partial_gate(root: Path) -> tuple[bool, str]:
+    sys.path.insert(0, str(root / "scripts/enterprise_audit"))
+    from wbs_reconciliation_lib import classify_task  # noqa: PLC0415
+
+    partial = [f"C{i:03d}" for i in range(1, 76) if classify_task(f"C{i:03d}")[0] == "PARTIAL"]
+    if partial:
+        return False, f"mandatory technical PARTIAL remain: {', '.join(partial)}"
+    return True, ""
+
+
 def _run_ssot_validator(root: Path) -> tuple[bool, str]:
     script = root / "scripts/enterprise_audit/validate_post_implementation_master_plan.py"
     proc = subprocess.run([sys.executable, str(script)], cwd=root, capture_output=True, text=True, check=False)
@@ -468,6 +478,8 @@ def main() -> int:
     add("dossier_complete", dossier_ok, dossier_detail)
     ssot_ok, ssot_detail = _run_ssot_validator(root)
     add("wbs_ssot_validator_pass", ssot_ok, ssot_detail)
+    wbs_partial_ok, wbs_partial_detail = _wbs_technical_partial_gate(root)
+    add("wbs_no_unjustified_technical_partial", wbs_partial_ok, wbs_partial_detail)
     qual_current_ok, qual_current_detail = _qualification_current_after_tes(root, tes_pin, head)
     add("qualification_current_post_tes", qual_current_ok, qual_current_detail)
     add("external_blockers_listed", True, "")
@@ -488,7 +500,7 @@ def main() -> int:
     )
     integrity_layer = evidence_ok and frz_ok
     ci_layer = ci_ok
-    wbs_layer = ssot_ok and dossier_ok
+    wbs_layer = ssot_ok and dossier_ok and wbs_partial_ok
     qual_layer = qual_current_ok
 
     ready = machine_layer and integrity_layer and ci_layer and wbs_layer and qual_layer
