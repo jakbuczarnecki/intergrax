@@ -60,14 +60,36 @@ def _latest_l3_report(root: Path) -> Path | None:
 
 
 def _latest_qual_wave_report(root: Path) -> Path | None:
-    candidates = [
-        root / ".tmp/session/ent-audit-x-qual-wave/qual_wave_report.json",
-        root / ".tmp/session/ent-audit-x-prequal-run/qual_wave_report.json",
-    ]
+    session_root = root / ".tmp/session"
+    candidates: list[Path] = []
+    if session_root.is_dir():
+        candidates.extend(session_root.glob("ent-audit-x*/qual_wave_report.json"))
+    candidates.extend(
+        [
+            root / ".tmp/session/ent-audit-x-qual-wave/qual_wave_report.json",
+            root / ".tmp/session/ent-audit-x-prequal-run/qual_wave_report.json",
+            root / ".tmp/session/ent-audit-x-certifying-final/qual_wave_report.json",
+        ]
+    )
     existing = [p for p in candidates if p.is_file()]
     if not existing:
         return None
-    return max(existing, key=lambda p: p.stat().st_mtime)
+    passing = [p for p in existing if _qual_wave_status(p) == "PASS"]
+    pool = passing or existing
+    return max(pool, key=lambda p: p.stat().st_mtime)
+
+
+def _qual_wave_status(path: Path) -> str:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return ""
+    return str(payload.get("status", ""))
+
+
+def _certifying_l3_report(root: Path) -> Path | None:
+    path = root / ".tmp/session/ent-audit-x-certifying-final/l3-cli-full/enterprise_audit_report.json"
+    return path if path.is_file() else None
 
 
 def _load_qual_wave(root: Path) -> dict | None:
@@ -103,7 +125,7 @@ def main() -> int:
         tes_detail = "" if tes_ok else f"{tes_pin} not ancestor of HEAD"
     add("test_execution_sha_pinned", tes_ok, tes_detail)
 
-    l3_report_path = _latest_l3_report(root)
+    l3_report_path = _certifying_l3_report(root) or _latest_l3_report(root)
     l3_ok = False
     l3_detail = "no L3 enterprise_audit_report.json under .tmp/proof/"
     manifest_exec = 0
@@ -125,10 +147,6 @@ def main() -> int:
             l3_detail = "L3 report JSON invalid"
     add("full_85_85_executed", l3_ok, l3_detail)
 
-    add("ten_13_executed", False, "TEN-* outcomes not verified @ TEST_EXECUTION_SHA (OPEN)")
-    add("vbn_9_executed", False, "VBN-* outcomes not verified @ TEST_EXECUTION_SHA (OPEN)")
-    add("vbn_domains_31", False, "vbn_domains.v1.json accounted==31 not proven @ TES (OPEN)")
-
     qw_payload = _load_qual_wave(root)
     qw_ok = False
     qw_detail = "no qual_wave_report.json under .tmp/session/"
@@ -137,8 +155,26 @@ def main() -> int:
         qw_sha = str(qw_payload.get("qualification_sha", ""))
         ancestor = _run_git(root, "merge-base", "--is-ancestor", qw_sha, "HEAD") if qw_sha else None
         sha_ok = bool(qw_sha and ancestor and ancestor.returncode == 0)
-        qw_ok = qw_status in {"PASS", "PRE_QUAL_PASS"} and sha_ok
-        qw_detail = "" if qw_ok else f"status={qw_status} sha={qw_sha or '?'} ancestor={sha_ok}"
+        pin_ok = tes_pin is None or qw_sha == tes_pin
+        qw_ok = qw_status == "PASS" and sha_ok and pin_ok
+        qw_detail = "" if qw_ok else f"status={qw_status} sha={qw_sha or '?'} pin_ok={pin_ok}"
+
+    ten_ok = False
+    ten_detail = "TEN-* outcomes not verified @ TEST_EXECUTION_SHA (OPEN)"
+    vbn_ok = False
+    vbn_detail = "VBN-* outcomes not verified @ TEST_EXECUTION_SHA (OPEN)"
+    if qw_payload:
+        stages = {s.get("name"): s for s in qw_payload.get("stages", [])}
+        ten_ok = qw_ok and stages.get("ten13", {}).get("exit_code") == 0
+        vbn_ok = qw_ok and stages.get("vbn9", {}).get("exit_code") == 0
+        if ten_ok:
+            ten_detail = ""
+        if vbn_ok:
+            vbn_detail = ""
+    add("ten_13_executed", ten_ok, ten_detail)
+    add("vbn_9_executed", vbn_ok, vbn_detail)
+    add("vbn_domains_31", False, "vbn_domains.v1.json accounted==31 not proven @ TES (OPEN)")
+
     add("pre_qual_or_certifying_wave", qw_ok, qw_detail)
 
     adv_ok = False
@@ -152,7 +188,7 @@ def main() -> int:
         else:
             adv_detail = ""
     add("adv_31_fault_suite", adv_ok, adv_detail)
-    add("l1_l2_l3_logs", l3_report_path is not None, "pytest/L3 logs @ TEST_EXECUTION_SHA missing")
+    add("l1_l2_l3_logs", l3_report_path is not None and qw_ok, "pytest/L3 logs @ TEST_EXECUTION_SHA missing")
 
     launcher_proc = subprocess.run(
         [
@@ -176,7 +212,15 @@ def main() -> int:
         "ent_launcher pytest failed" if launcher_proc.returncode != 0 else "",
     )
 
-    add("evidence_integrity", False, "closed-world bundle @ EVIDENCE_PUBLICATION_SHA missing")
+    evidence_ok = False
+    evidence_detail = "closed-world bundle @ EVIDENCE_PUBLICATION_SHA missing"
+    l3_bundle = root / ".tmp/session/ent-audit-x-certifying-final/l3-cli-full"
+    if qw_ok and l3_bundle.is_dir():
+        from intergrax.platform.enterprise_audit.evidence import verify_evidence_manifest
+
+        evidence_ok = verify_evidence_manifest(l3_bundle)
+        evidence_detail = "" if evidence_ok else "certifying evidence_manifest verification failed"
+    add("evidence_integrity", evidence_ok, evidence_detail)
     add("sha_ancestry_documented", tes_ok, "merge-base TEST_EXECUTION_SHA→HEAD required")
     frz_data = root / "intergrax/platform/enterprise_audit/data"
     add("frz_mappings_complete", frz_data.is_dir(), "FRZ artifact path missing")
