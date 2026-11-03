@@ -190,34 +190,87 @@ def _parse_dossier_ci_runs(text: str) -> list[dict[str, str]]:
     return rows
 
 
-def _verify_pr_nightly_ci_proof(dossier_path: Path, tes_pin: str | None) -> tuple[bool, str]:
-    if not dossier_path.is_file():
-        return False, "dossier missing"
-    text = dossier_path.read_text(encoding="utf-8")
-    runs = _parse_dossier_ci_runs(text)
-    if len(runs) < 2:
-        return False, "need >=2 pinned CI rows (PR + nightly) in dossier CI section"
-    required_workflows = {"enterprise-audit.yml", "enterprise-audit-nightly.yml"}
-    seen: set[str] = set()
-    for row in runs:
-        wf = row.get("workflow", "")
-        run_id = row.get("run_id", "")
-        url = row.get("url", "")
-        head = row.get("head_sha", "")
-        if wf not in required_workflows:
+def _verify_ci_workflow_green(root: Path, workflow_file: str, head: str) -> tuple[bool, str]:
+    proc = subprocess.run(
+        [
+            "gh",
+            "run",
+            "list",
+            "--workflow",
+            workflow_file,
+            "--limit",
+            "15",
+            "--json",
+            "databaseId,conclusion,headSha,url,status",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return False, proc.stderr.strip() or "gh run list failed"
+    try:
+        runs = json.loads(proc.stdout or "[]")
+    except json.JSONDecodeError:
+        return False, "gh run list returned invalid JSON"
+    for run in runs:
+        if str(run.get("headSha", "")) != head:
             continue
-        if not re.fullmatch(r"\d+", run_id):
-            return False, f"invalid run_id for {wf}"
-        if "github.com" not in url or run_id not in url:
-            return False, f"run URL must include run_id for {wf}"
-        if not re.fullmatch(r"[0-9a-f]{40}", head):
-            return False, f"head_sha missing for {wf}"
-        if tes_pin and wf == "enterprise-audit.yml" and head != tes_pin:
-            return False, f"PR workflow head_sha must match TEST_EXECUTION_SHA ({tes_pin})"
-        seen.add(wf)
-    if seen != required_workflows:
-        return False, f"missing workflows: {sorted(required_workflows - seen)}"
+        conclusion = str(run.get("conclusion", ""))
+        if conclusion == "success":
+            run_id = run.get("databaseId", "?")
+            return True, f"run_id={run_id} url={run.get('url', '')}"
+        if conclusion in {"failure", "cancelled"}:
+            return False, f"run_id={run.get('databaseId')} conclusion={conclusion}"
+        return False, f"run_id={run.get('databaseId')} status={run.get('status')} (not success)"
+    return False, f"no workflow run for {workflow_file} @ HEAD {head[:12]}"
+
+
+def _run_ssot_validator(root: Path) -> tuple[bool, str]:
+    script = root / "scripts/enterprise_audit/validate_post_implementation_master_plan.py"
+    proc = subprocess.run([sys.executable, str(script)], cwd=root, capture_output=True, text=True, check=False)
+    if proc.returncode != 0:
+        detail = (
+            (proc.stderr or proc.stdout).strip().splitlines()[-1] if proc.stderr or proc.stdout else "validator fail"
+        )
+        return False, detail
     return True, ""
+
+
+def _qualification_current_after_tes(root: Path, tes_pin: str | None, head: str) -> tuple[bool, str]:
+    if not tes_pin:
+        return False, "TEST_EXECUTION_SHA not pinned"
+    proc = subprocess.run(
+        ["git", "diff", "--name-only", tes_pin, head],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return False, "git diff TES..HEAD failed"
+    changed = [ln.strip() for ln in proc.stdout.splitlines() if ln.strip()]
+    qual_sensitive = (
+        "intergrax/platform/enterprise_audit/",
+        "scripts/enterprise_audit/run_enterprise_audit.py",
+        "scripts/enterprise_audit/qual_wave_lib.py",
+        "scripts/enterprise_audit/run_qual_wave.py",
+    )
+    touched = [p for p in changed if any(p.startswith(prefix) for prefix in qual_sensitive)]
+    if touched:
+        return False, f"qual-sensitive delta post-TES ({len(touched)} paths) — new TES required"
+    return True, "post-TES delta doc/scripts/CI only"
+
+
+def _verify_pr_nightly_ci_proof(dossier_path: Path, tes_pin: str | None, head: str, root: Path) -> tuple[bool, str]:
+    pr_ok, pr_detail = _verify_ci_workflow_green(root, "enterprise-audit.yml", head)
+    if not pr_ok:
+        return False, f"PR FAST: {pr_detail}"
+    nightly_ok, nightly_detail = _verify_ci_workflow_green(root, "enterprise-audit-nightly.yml", head)
+    if not nightly_ok:
+        return False, f"nightly: {nightly_detail}"
+    return True, f"PR {pr_detail}; nightly {nightly_detail}"
 
 
 def _verify_dossier_complete(dossier_path: Path, tes_pin: str | None, head: str, root: Path) -> tuple[bool, str]:
@@ -407,16 +460,52 @@ def main() -> int:
     frz_ok, frz_detail = _verify_frz_mappings(l3_bundle_dir)
     add("frz_mappings_complete", frz_ok, frz_detail)
     dossier = root / "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md"
-    ci_ok, ci_detail = _verify_pr_nightly_ci_proof(dossier, tes_pin)
+    ci_ok, ci_detail = _verify_pr_nightly_ci_proof(dossier, tes_pin, head, root)
+    add("ci_pr_fast_green_at_head", _verify_ci_workflow_green(root, "enterprise-audit.yml", head)[0], ci_detail)
+    add("ci_nightly_green_at_head", _verify_ci_workflow_green(root, "enterprise-audit-nightly.yml", head)[0], ci_detail)
     add("pr_nightly_ci_proof", ci_ok, ci_detail)
     dossier_ok, dossier_detail = _verify_dossier_complete(dossier, tes_pin, head, root)
     add("dossier_complete", dossier_ok, dossier_detail)
+    ssot_ok, ssot_detail = _run_ssot_validator(root)
+    add("wbs_ssot_validator_pass", ssot_ok, ssot_detail)
+    qual_current_ok, qual_current_detail = _qualification_current_after_tes(root, tes_pin, head)
+    add("qualification_current_post_tes", qual_current_ok, qual_current_detail)
     add("external_blockers_listed", True, "")
 
-    ready = all(ok for _, ok, _ in checks)
+    machine_layer = all(
+        ok
+        for name, ok, _ in checks
+        if name
+        in {
+            "test_execution_sha_pinned",
+            "full_85_85_executed",
+            "pre_qual_or_certifying_wave",
+            "vbn_domains_31",
+            "adv_31_fault_suite",
+            "ten_13_executed",
+            "vbn_9_executed",
+        }
+    )
+    integrity_layer = evidence_ok and frz_ok
+    ci_layer = ci_ok
+    wbs_layer = ssot_ok and dossier_ok
+    qual_layer = qual_current_ok
+
+    ready = machine_layer and integrity_layer and ci_layer and wbs_layer and qual_layer
     report = {
         "formally_certified": False,
+        "disposition": "ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS"
+        if not ready
+        else "ENT-AUDIT-X — TECHNICAL COMPLETE / B5 PUBLISHED / READY FOR INDEPENDENT B6",
         "technical_ready_for_independent_b6_mechanical": ready,
+        "layers": {
+            "machine_evidence_presence": machine_layer,
+            "evidence_integrity": integrity_layer,
+            "current_sha_qualification_preserved": qual_layer,
+            "ci_run_success_at_head": ci_layer,
+            "mandatory_wbs_ssot_complete": wbs_layer,
+            "external_governance_acceptance": False,
+        },
         "implementation_sha": head,
         "test_execution_sha": tes_pin,
         "checks": [{"name": n, "ok": ok, "detail": d} for n, ok, d in checks],

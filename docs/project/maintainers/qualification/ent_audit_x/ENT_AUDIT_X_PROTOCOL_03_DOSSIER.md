@@ -1,6 +1,6 @@
 # ENT-AUDIT-X — Protocol 03 independent audit dossier (draft)
 
-**Status:** READY FOR INDEPENDENT B6 MECHANICAL REVIEW — **no PASS declared by agent**
+**Status:** TECHNICAL PARTIAL — **no PASS declared by agent** (see master plan disposition)
 
 | Field | Value |
 | --- | --- |

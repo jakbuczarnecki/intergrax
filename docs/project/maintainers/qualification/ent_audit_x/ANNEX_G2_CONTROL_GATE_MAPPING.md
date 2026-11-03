@@ -2,6 +2,7 @@
 
 **PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
 **PLAN_PUBLICATION_SHA:** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
+**Qual @ TES:** all 85 CheckID PASS in B5 outcomes @ `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (Matrix E SSOT).
 
 **Executable primary set:** PG-001..020 in [ANNEX_G_GATE_REGISTRY.md](./ANNEX_G_GATE_REGISTRY.md).  
 **Historical corpus:** 411 `test_*gate*.py` files — not auto-executed; phase-2 manifest (ENT-T-0303).

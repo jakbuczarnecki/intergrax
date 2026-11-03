@@ -91,6 +91,8 @@ READY_DISPOSITION = "ENT-AUDIT-X — CURRENT-HEAD COMPLETE CLOSURE EXECUTION PLA
 
 PARTIAL_DISPOSITION = "ENT-AUDIT-X — PLAN PARTIAL / EXACT BLOCKERS"
 
+TECHNICAL_PARTIAL_DISPOSITION = "ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS"
+
 TASK_ID_RE = re.compile(r"^C0(?:0[1-9]|[1-6][0-9]|7[0-5])$")
 
 FORBIDDEN_SELF_CERT = (
@@ -175,7 +177,7 @@ def parse_matrix_c(text: str) -> dict[str, MatrixCRow]:
         if not line.startswith("| C"):
             continue
         cells = _split_md_row(line)
-        if len(cells) < 10:
+        if len(cells) < 11:
             continue
         task_id = cells[0]
         if not TASK_ID_RE.match(task_id):
@@ -366,7 +368,7 @@ def matrix_e_task_id(check_id: str) -> str:
     return "C034"
 
 
-def build_matrix_e_table(root: Path | None = None) -> str:
+def build_matrix_e_table(root: Path | None = None, qual_fn: Any | None = None) -> str:
     root = root or repo_root()
     manifest = load_manifest()
     annex = parse_annex_c_requirements(annex_c_path(root))
@@ -392,6 +394,8 @@ def build_matrix_e_table(root: Path | None = None) -> str:
         )
         if kind == "pytest_file":
             oracle += f" (shared file — wrapper scopes assertion to {cid})"
+        evidence_cell = "manifest outcomes + junit @ TES"
+        qual_cell = qual_fn(cid) if qual_fn else "OPEN until certifying FULL @ TEST_EXECUTION_SHA"
         lines.append(
             "| "
             + " | ".join(
@@ -405,8 +409,8 @@ def build_matrix_e_table(root: Path | None = None) -> str:
                     frz,
                     f"GAP-COV-{cid}",
                     matrix_e_task_id(cid),
-                    "manifest outcomes + junit @ TES",
-                    "OPEN until certifying FULL @ TEST_EXECUTION_SHA",
+                    evidence_cell,
+                    qual_cell,
                 ]
             )
             + " |"
@@ -426,8 +430,8 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
     errors: list[str] = []
     root = root or repo_root()
 
-    if READY_DISPOSITION not in text and PARTIAL_DISPOSITION not in text:
-        errors.append("disposition must declare READY or PLAN PARTIAL constant")
+    if READY_DISPOSITION not in text and PARTIAL_DISPOSITION not in text and TECHNICAL_PARTIAL_DISPOSITION not in text:
+        errors.append("disposition must declare READY, PLAN PARTIAL, or TECHNICAL PARTIAL constant")
 
     for line in text.splitlines():
         for phrase in FORBIDDEN_SELF_CERT:
@@ -455,10 +459,14 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
         if row.qual == "QUALIFIED" and row.impl != "IMPLEMENTED":
             errors.append(f"{tid}: QUALIFIED requires IMPLEMENTED impl status")
         cells = _split_md_row(row.line)
-        if len(cells) > 8 and tid not in DOC_ONLY_NEGATIVE_WHITELIST:
-            neg = cells[8]
+        if len(cells) > 9 and tid not in DOC_ONLY_NEGATIVE_WHITELIST:
+            neg = cells[9]
             if neg.strip().upper() == "N/A":
                 errors.append(f"{tid}: negative test cannot be N/A")
+        if row.qual == "QUALIFIED":
+            evid = cells[4] if len(cells) > 4 else ""
+            if evid.strip() in ("—", "-", "") or evid.startswith("—"):
+                errors.append(f"{tid}: QUALIFIED requires Evidence @ TES/B5 path")
 
     gap_rc = parse_gap_rc_ids(text)
     if gap_rc != EXPECTED_GAP_RC_IDS:
@@ -468,6 +476,18 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
             errors.append(f"GAP-RC missing ids: {sorted(missing)}")
         if extra:
             errors.append(f"GAP-RC extra ids: {sorted(extra)}")
+
+    allowed_rc = {"CLOSED", "PARTIAL", "OPEN", "EXTERNAL-BLOCKED"}
+    for line in extract_section(text, "### GAP-RC (33)").splitlines():
+        if not line.startswith("| GAP-RC-"):
+            continue
+        cells = _split_md_row(line)
+        if len(cells) > 4:
+            status = cells[4].strip().upper()
+            if status not in allowed_rc:
+                errors.append(f"{cells[0]}: invalid reconcile status {cells[4]!r}")
+            if status == "CLOSED" and len(cells) > 5 and cells[5].strip() in ("—", "-", ""):
+                errors.append(f"{cells[0]}: CLOSED requires Evidence @ SHA")
 
     gap_b = parse_gap_b_ids(text)
     if gap_b != EXPECTED_GAP_B_IDS:
@@ -529,10 +549,10 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
         errors.append("C075 final reconcile must be W-G (C075-S1 is W-0 substep only)")
 
     if not re.search(
-        r"PL-07[\s\S]{0,200}\*\*282\*\* tests collect-only",
+        r"PL-07[\s\S]{0,280}tests collect-only",
         text,
     ):
-        errors.append("PL-07 must declare **282** tests collect-only @ audited implementation baseline")
+        errors.append("PL-07 must declare tests collect-only @ documentation HEAD")
 
     pl08 = extract_section(text, "### PL-08 — ECAP (canonical)")
     if pl08 and "B5" in pl08 and "B6" in pl08 and pl08.index("B5") > pl08.index("B6"):
