@@ -150,7 +150,10 @@ def _verify_vbn_domains_31(root: Path, tes_pin: str | None, l3_dir: Path | None)
         audit_report_path = l3_dir / "enterprise_audit_report.json"
         if audit_report_path.is_file():
             audit_report = json.loads(audit_report_path.read_text(encoding="utf-8"))
-            rollup = int(audit_report.get("vbn_domains_accounted", 0))
+            rollup = int(
+                audit_report.get("vbn_domains_accounted")
+                or audit_report.get("coverage_matrix_summary", {}).get("vbn_domains_accounted", 0)
+            )
             if rollup != 31:
                 return False, f"enterprise_audit_report.vbn_domains_accounted={rollup}"
         return True, ""
@@ -217,20 +220,23 @@ def _verify_pr_nightly_ci_proof(dossier_path: Path, tes_pin: str | None) -> tupl
     return True, ""
 
 
-def _verify_dossier_complete(dossier_path: Path, tes_pin: str | None, head: str) -> tuple[bool, str]:
+def _verify_dossier_complete(dossier_path: Path, tes_pin: str | None, head: str, root: Path) -> tuple[bool, str]:
     if not dossier_path.is_file():
         return False, "Protocol 03 dossier missing"
     text = dossier_path.read_text(encoding="utf-8")
     missing: list[str] = []
     if tes_pin and tes_pin not in text:
         missing.append("TEST_EXECUTION_SHA")
-    if head not in text:
-        missing.append("Audited IMPLEMENTATION_SHA (HEAD)")
+    impl_match = re.search(r"Audited IMPLEMENTATION_SHA[^\n]*`([0-9a-f]{40})`", text)
+    if not impl_match:
+        missing.append("Audited IMPLEMENTATION_SHA")
+    elif _run_git(root, "merge-base", "--is-ancestor", impl_match.group(1), head).returncode != 0:
+        missing.append("Audited IMPLEMENTATION_SHA not ancestor of HEAD")
     if "b6_independent_handoff" not in text:
         missing.append("b6_independent_handoff path")
     if "## External blockers (GAP-B)" not in text:
         missing.append("GAP-B external blockers section")
-    if "formally_certified" in text.lower() and "no pass declared" not in text.lower():
+    if "no pass declared" not in text.lower():
         missing.append("explicit no-B6-PASS disclaimer")
     if missing:
         return False, "dossier incomplete: " + ", ".join(missing)
@@ -403,7 +409,7 @@ def main() -> int:
     dossier = root / "docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md"
     ci_ok, ci_detail = _verify_pr_nightly_ci_proof(dossier, tes_pin)
     add("pr_nightly_ci_proof", ci_ok, ci_detail)
-    dossier_ok, dossier_detail = _verify_dossier_complete(dossier, tes_pin, head)
+    dossier_ok, dossier_detail = _verify_dossier_complete(dossier, tes_pin, head, root)
     add("dossier_complete", dossier_ok, dossier_detail)
     add("external_blockers_listed", True, "")
 
