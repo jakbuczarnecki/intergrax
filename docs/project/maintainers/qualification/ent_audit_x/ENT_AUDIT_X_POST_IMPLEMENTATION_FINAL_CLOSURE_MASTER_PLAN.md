@@ -4,7 +4,7 @@
 
 **Audited implementation HEAD:** `d4974efc255bf6ff6ca96e00fb084293ea685d66`
 
-**PLAN_PUBLICATION_SHA:** `1c121040706f35d1210306aaadb93346abfa0fb8`
+**PLAN_PUBLICATION_SHA:** `87e185dd3bcce45f107149b4b3691c3ede614c8a`
 
 **Mode:** execution SSOT — no B6 PASS / FRZ CLOSED / ARCH-FREEZE / ENT stage CLOSED.
 
