@@ -15,9 +15,6 @@ from intergrax.applications._shared.capability_alias_wiring import (
     check_manifest_lists_canonical_capabilities,
     validate_capability_governance_profile,
 )
-from intergrax.applications._shared.strict_product_manifest_ci_gates import (
-    check_strict_product_capability_graph,
-)
 from intergrax.applications._shared.environment_snapshot_wiring import capture_environment_snapshot
 from intergrax.applications._shared.migration_wiring import (
     iter_application_migration_files,
@@ -28,6 +25,10 @@ from intergrax.applications._shared.migration_wiring import (
 from intergrax.applications._shared.ownership_wiring import check_manifest_operational_ownership
 from intergrax.applications._shared.recovery_contract_wiring import (
     check_strict_product_recovery_contract,
+)
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    check_strict_product_capability_graph,
+    manifest_ci_contract_authority,
 )
 from intergrax.applications._shared.tier3_scenario_matrix_wiring import (
     check_reference_host_scenario_matrix,
@@ -73,11 +74,11 @@ def _deprecated_capability_violations(
     violations.extend(
         check_manifest_lists_canonical_capabilities(package, manifest, registry),
     )
-    from intergrax.applications._shared.strict_product_manifest_ci_gates import (
-        manifest_ci_contract_authority,
-    )
     from intergrax.applications._shared.roster_agent_contract_authority import (
         resolve_roster_agent_contract,
+    )
+    from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+        manifest_ci_contract_authority,
     )
 
     authority = manifest_ci_contract_authority(manifest)
@@ -96,7 +97,12 @@ def _stale_agent_violations(
     manifest: ApplicationManifest,
     env: ApplicationEnvironmentProfile,
 ) -> list[str]:
-    return validate_strict_roster_agent_certification(manifest, env)
+    authority = manifest_ci_contract_authority(manifest)
+    return validate_strict_roster_agent_certification(
+        manifest,
+        env,
+        contract_authority=authority,
+    )
 
 
 def _migration_violations(
@@ -136,11 +142,7 @@ def _policy_coverage_violations(
 
 def _scenario_violations_for_package(repo_root: Path, package: str) -> list[str]:
     prefix = f"{package}:"
-    return [
-        item[len(prefix) :]
-        for item in check_reference_host_scenario_matrix(repo_root)
-        if item.startswith(prefix)
-    ]
+    return [item[len(prefix) :] for item in check_reference_host_scenario_matrix(repo_root) if item.startswith(prefix)]
 
 
 def compute_environment_health_score(
@@ -228,9 +230,7 @@ def build_application_health_score(
 ) -> ApplicationHealthScore:
     """Roll up environment scores for one application."""
     env_score = compute_environment_health_score(product_id, manifest, repo_root=repo_root)
-    production_ready = (
-        env_score.overall >= PRODUCTION_READY_THRESHOLD and not env_score.blockers
-    )
+    production_ready = env_score.overall >= PRODUCTION_READY_THRESHOLD and not env_score.blockers
     worst = None
     if env_score.overall < PRODUCTION_READY_THRESHOLD:
         worst = env_score.environment_id
@@ -273,8 +273,7 @@ def check_strict_product_health_scores(repo_root: Path) -> list[str]:
         env_score = rollup.environments[0]
         if not rollup.production_ready:
             violations.append(
-                f"{product_id}: health overall {env_score.overall:.2f} below "
-                f"{PRODUCTION_READY_THRESHOLD}",
+                f"{product_id}: health overall {env_score.overall:.2f} below {PRODUCTION_READY_THRESHOLD}",
             )
         if env_score.blockers:
             violations.append(f"{product_id}: blockers present ({len(env_score.blockers)})")
