@@ -1,723 +1,610 @@
 # ENT-AUDIT-X — post-implementation final closure master plan
 
-**Disposition:** `ENT-AUDIT-X — FINAL CONSOLIDATED PLAN — READY FOR ONE-PASS AGENT IMPLEMENTATION`
+**Disposition:** `ENT-AUDIT-X — FINAL CLOSURE EXECUTION SSOT PUBLISHED / READY FOR AGENT WAVE`
 
 **Mode:** PLAN SSOT (implementation wave follows this document; no B6 PASS / FRZ CLOSED / ARCH-FREEZE declared here)
 
-**AUDIT BASELINE / IMPLEMENTATION_SHA:** `1fa5347a56c569fa62ac2c777ff3947d11e906b4`  
+**CURRENT HEAD / audited implementation baseline:** `34e03425b2322f415a99a7cfd290fe0982bf6970`  
+**Historical IMPLEMENTATION_SHA (prior closure wave):** `1fa5347a56c569fa62ac2c777ff3947d11e906b4`  
 **Branch:** `development` · **Repo:** `jakbuczarnecki/intergrax`
 
-**Supersedes (execution):** [ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md](./ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md) — retained as historical corrective spec; **this file is the single authoritative execution SSOT** for the one-pass agent wave.
+**PLAN_PUBLICATION_SHA:** resolve @ publication HEAD — `git rev-list -1 HEAD -- docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md`
 
-**Historical (do not execute):** [ENT_AUDIT_X_FINAL_COMPLETION_AND_CERTIFICATION_MASTER_PLAN.md](./ENT_AUDIT_X_FINAL_COMPLETION_AND_CERTIFICATION_MASTER_PLAN.md), [ENT_AUDIT_X_COMPLETE_IMPLEMENTATION_AND_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_COMPLETE_IMPLEMENTATION_AND_CLOSURE_MASTER_PLAN.md), [ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md](./ENT_AUDIT_X_FINAL_IMPLEMENTATION_AND_B6_READINESS_MASTER_PLAN.md) — evidence-only / superseded by corrective + this closure plan.
+**R0 closure commit @ HEAD:** `34e03425b2322f415a99a7cfd290fe0982bf6970` — 13 files (OD verify, dry-run, evidence eligibility, readiness fail-closed, qual tests, master plan reconciliation).
 
-**Reconciles (doc-only in R5):** [ANNEX_F_GAP_REGISTER.md](./ANNEX_F_GAP_REGISTER.md), [ANNEX_H_WBS.md](./ANNEX_H_WBS.md), [ANNEX_G2_CONTROL_GATE_MAPPING.md](./ANNEX_G2_CONTROL_GATE_MAPPING.md), [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md), [ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md](./ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md), [ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md](./ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md).
+**Supersedes (execution):** [ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md](./ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md) — immutable TaskID text for C001–C064.
+
+**Reconciles (R5 doc lifecycle):** [ANNEX_F_GAP_REGISTER.md](./ANNEX_F_GAP_REGISTER.md), [ANNEX_H_WBS.md](./ANNEX_H_WBS.md), [ANNEX_G2_CONTROL_GATE_MAPPING.md](./ANNEX_G2_CONTROL_GATE_MAPPING.md), [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md), [ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md](./ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md), [ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md](./ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md).
 
 ### PL-01..PL-12 resolution index
 
 | PL | Topic | Resolution |
 | --- | --- | --- |
-| PL-01 | GAP counts | **32** unique `GAP-RC-*` + **6** `GAP-B-*` + **85** `GAP-COV-*` (separate); not 41/52 |
-| PL-02 | TaskID canon | C001–C064 meanings frozen from corrective plan; C055=Annex F only; C057=OD matrix doc; C058=B6 handoff tree; C065–C075 NETNEW only |
-| PL-03 | Atomic WBS | **75** tasks; §9 + Appendix C; **2** CLOSED_WITH_EVIDENCE, **17** IMPLEMENTED_NOT_QUALIFIED, **56** OPEN |
-| PL-04 | Qual timing | §7 thirteen-step sequence; final L3/ADV after R0–R4 merge + push + pin |
-| PL-05 | DAG | §14 topological layers + shared-file matrix |
-| PL-06 | 85 matrix | Appendix A (+ entrypoint column §14); D01–D31 Appendix D; ADV31 Appendix E |
-| PL-07 | Pytest taxonomy | §3; **115** files ≠ **180** nodeids ≠ stale **164** claim |
-| PL-08 | OD-ENT-01 | §4 + C065; trusted source = operator_records + ladder pins |
-| PL-09 | Readiness | §6 + C066; `formally_certified` always false in agent |
-| PL-10 | Dependencies | §14 |
-| PL-11 | SSOT lifecycle | this file supersedes execution; corrective plan = historical spec |
-| PL-12 | Mechanical READY | §12 + PL table |
+| PL-01 | GAP counts | **33** GAP-RC (mechanical @ HEAD) + **6** GAP-B + **85** GAP-COV — prior **32** claim omitted GAP-RC-CI-PROFILE in summary only |
+| PL-02 | TaskID canon | C001–C064 frozen; C055=Annex F; C057=OD matrix **doc by agent**; C058=B6 handoff tree |
+| PL-03 | Atomic WBS | **75** tasks; Matrix C dual-axis; impl {'PARTIAL': 21, 'IMPLEMENTED': 4, 'NOT_STARTED': 50}; qual {'NOT_QUALIFIED': 73, 'QUALIFIED': 2} |
+| PL-04 | Qual timing | §7 fifteen-step sequence after R0–R4 integration |
+| PL-05 | DAG | §14 topological order + shared-file matrix |
+| PL-06 | 85 matrix | Matrix E (authoritative CheckID set) |
+| PL-07 | Pytest taxonomy | **184** nodeids @ `34e0342` collect-only |
+| PL-08 | OD-ENT-01 | ECAP order: B6 → EVIDENCE_PUBLICATION → OD-ENT-01 → ACCEPTED |
+| PL-09 | Readiness | C066; `formally_certified` always false in agent script |
+| PL-10 | Dependencies | §14 DAG |
+| PL-11 | SSOT lifecycle | This file = single execution SSOT |
+| PL-12 | Mechanical READY | §16 checklist PASS @ plan publication |
 
 ### TaskID immutability control (PL-02)
 
-- **Registry:** C001–C064 authoritative text = corrective plan rows `ENT-T-C001..C064` (64 rows); C065–C075 = Appendix B only.
-- **Rule:** no reuse of `ENT-T-C###` for a different scope; new work → new ID ≥ C065 (already allocated).
-- **CI guard (C075):** add `tests/qualification/ent_audit_x/unit/test_task_id_registry.py` — parse this doc + corrective plan; assert 75 unique IDs; assert C055/C057/C058 descriptions match canonical substrings (`Annex F`, `OD-ENT matrix`, `b6-handoff`).
+- **Registry:** C001–C064 = corrective plan `ENT-T-C001..C064`; C065–C075 = Appendix B in corrective + Matrix C.
+- **CI guard:** `tests/qualification/ent_audit_x/unit/test_task_id_registry.py` @ `34e0342`.
 
 ---
 
-## 1. Executive audit disposition @ `1fa5347a5`
+## 1. Executive audit disposition @ `34e0342`
 
-Tier-0 enterprise audit **exists** but is **IMPLEMENTED_NOT_QUALIFIED**: manifest 85/85 wired, runner/CLI/CI/qual tree present, partial corrective wave landed; **no** current-SHA semantic 85/85 execution, **no** trusted OD-ENT-01, **no** evidence-based mechanical B6 handoff, **no** independent Protocol 03 B6.
+Tier-0 enterprise audit **exists**; R0 trust wave **partially implemented**; **0/85** semantic certifying PASS @ `TEST_EXECUTION_SHA` for current HEAD (historical ladder TES **`0cee41a88274a53d14bb3558752d55bdde0d0b01`** is **not** current 85/85 proof).
 
 | Authority | Status @ HEAD (read-only) |
 | --- | --- |
-| ENT-AUDIT-X (roadmap) | OPEN; depends EVOL-X CLOSED |
-| FRZ-AUD-01..10 | OPEN (checklist) |
+| ENT-AUDIT-X (roadmap §3.1) | OPEN |
+| FRZ-AUD-01..10 | OPEN ([checklist](../../PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)) |
 | ARCH-FREEZE | OPEN |
-| EVOL B6_ACCEPTANCE_PUBLICATION_SHA | PENDING (external) |
+| EVOL B6_ACCEPTANCE_PUBLICATION_SHA | EXTERNAL_PENDING |
+| TEST_EXECUTION_SHA (ladder) | Stale until §7 step 3 after R0–R4 |
 
----
+### 1.1 R0 commit inventory (`34e03425b`)
 
-## 2. PL-01 — exact GAP inventory (unique root causes)
-
-**Correction:** prior estimate `30+13+9−11=52` was **arithmetically wrong** and **semantically double-counted** (A-01..30 overlapped GAP-FND; A-20 duplicated A-02).
-
-### 2.1 Counting rules
-
-| Bucket | Count | Meaning |
-| --- | ---: | --- |
-| **GAP-RC-*** (unique root causes, agent-closable) | **32** | Deduped defects; each maps to ≥1 A-xx / P0/P1 / boundary finding |
-| **GAP-B-*** (formal / operator blockers) | **6** | External; tracked, not closed by agent alone |
-| **GAP-COV-&lt;CheckID&gt;** | **85** | **Separate dimension:** per-control semantic execution @ TEST_EXECUTION_SHA |
-| **GAP-C historical** | **11 CLOSED_WITH_EVIDENCE**, **3 PARTIAL** | Component existence @ HEAD |
-| **A-01..30** | **30 mapped** (A-20 merges into A-02) | See §2.3 |
-
-**Proof of 32:** mechanical dedupe table §2.2 (one row = one root cause).
-
-### 2.2 Consolidated GAP register (unique root causes)
-
-| GAP-ID | Source findings | Root cause | Sev | Code location | Status @ `1fa5347a5` | TaskID | Positive test | Negative test | Evidence | Acceptance |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GAP-RC-OD-TRUST | A-01, P0-01, F-07 | OD-ENT-01 verifies boolean JSON only | CRIT | `baseline.py::verify_operator_decision_record` | OPEN | C003,C042,C065 | promote w/ ladder-valid fixture | forged `operator_origin=true` | OD record + bundle | Promotion fails without ECAP anchors |
-| GAP-RC-MECH-READY | A-02,A-20 | Readiness = file existence | CRIT | OPEN | C054,C066 | readiness @ qual SHA | missing L3 artifact | readiness JSON | `TECHNICAL_READY_FOR_B6` false without qual artifacts |
-| GAP-RC-EVIDENCE-TRUST | A-03,A-06,A-14,P1-01,P1-12 | Bundle not tied to execution manifest | CRIT | PARTIAL | C006,C026,C068,C073 | closed bundle @ real FULL | dry-run bundle | manifest+digest | No qual bundle without 85 executed |
-| GAP-RC-L3-FULL | A-04,P0-02,P1-15 | No real FULL/FREEZE 85/85 L3 | CRIT | OPEN | C031,C032,C074 | L3 FULL exit 0 strict | single-check/dry-run | `.tmp/proof/` | `checks_executed==85`, coverage FULL |
-| GAP-RC-DRY-RUN | A-05,ADV-05 | FAST dry-run can exit CLEAN | CRIT | OPEN | C067,C004 | dry-run INCOMPLETE | dry-run PASS | report+manifest | `certifying_run`+dry_run → non-qual |
-| GAP-RC-VBN-31 | A-07,A-08,P0-03,P1-07 | No D01..D31 validator/provenance | CRIT | OPEN | C008–C011,C018,C043 | 31 IDs fresh | stale cache | vbn_domains.v1.json | domains_accounted==31 on certifying FULL |
-| GAP-RC-CHANGED-IMPACT | A-09,P1-03 | Path-only CHANGED-SINCE | MAJ | OPEN | C024,C025,C029,C072 | impact map selects checks | unmapped path BLOCKER | impact map JSON | SSOT Changed→Invariant→CheckID |
-| GAP-RC-GIT-ANCESTRY | A-10,P1-13 | Ancestry only on FREEZE w/ accepted | MAJ | PARTIAL | C012,C072 | ancestor valid | forked baseline | git log | CHANGED-SINCE + publish pins |
-| GAP-RC-RESOLVED-BLOCK | A-11 | RESOLVED keeps old severity in aggregate | MAJ | OPEN | C071,C023 | RESOLVED not BLOCKED | BLOCKER resolved | drift unit | aggregate ignores RESOLVED severity |
-| GAP-RC-DRIFT-SCHEMA | A-12,P1-02 | `current_schema=1` hardcoded | MAJ | OPEN | C022,C028 | schema bump REGRESSED | stable pass | baseline rows | per-check schema in manifest |
-| GAP-RC-JSON-SCHEMA | A-13 | Shallow validator | MAJ | OPEN | C069 | full schema pass | extra fields fail | validator errors | jsonschema on all artifacts |
-| GAP-RC-ATOMIC-PUB | A-15 | Per-file atomic only | MAJ | PARTIAL | C013 | interrupt mid-publish | torn set | output dir | all-or-nothing report set |
-| GAP-RC-SANDBOX | A-16,P1-10 | Isolation/timeouts/concurrency | MAJ | OPEN | C014–C017 | concurrent runs | collision | sandbox tests | isolated output + kill orphans |
-| GAP-RC-REDACTION | A-17,P1-11 | Marker redaction only | MAJ | OPEN | C015 | tenant uuid stripped | leak fixture | stdout/json | negative leakage tests |
-| GAP-RC-SEMANTIC-GATES | A-18 | Gates = entrypoint exists not exec | CRIT | OPEN | C033–C036 | per-gate subprocess | inject fail | outcomes.json | 85/85 gates exit 0 @ qual SHA |
-| GAP-RC-ADV-INJECT | A-19,P1-04 | ADV mostly existence | MAJ | OPEN | C037–C039 | per ADV fault | N/A | adv log | 31 fault-injection tests |
-| GAP-RC-PR-PATH-SKIP | A-22,P1-05 | paths-filter skips PR jobs | MAJ | OPEN | C046,C059 | path audit test | doc-only PR | workflow | broad triggers or required paths doc |
-| GAP-RC-NIGHTLY-FREEZE | A-23,P1-06 | Nightly FREEZE bootstrap | MAJ | OPEN | C007,C046 | scheduled FULL only | auto bootstrap | yaml | FREEZE bootstrap operator-only |
-| GAP-RC-LAUNCHER-BAT | A-24 | Unknown arg → FAST | MAJ | OPEN | C060,C063 | valid modes | unknown arg ≠0 | bat test | invalid → exit 1 |
-| GAP-RC-LAUNCHER-SH | A-25 | Same as BAT | MAJ | OPEN | C061,C063 | parity | unknown mode | sh test | invalid → exit 1 |
-| GAP-RC-LAUNCHER-CWD | A-26 | No spaces-in-path qual | MAJ | OPEN | C063 | cwd≠repo root | spaced path | launcher test | uv cwd = repo root |
-| GAP-RC-OUTPUT-COLLISION | A-27 | RANDOM output dirs | MAJ | OPEN | C070 | unique run_id | parallel clash | proof dir | uuid+pid lock |
-| GAP-RC-DOSSIER | A-28 | Draft dossier unpinned | MAJ | OPEN | C053,C075 | dossier fields | missing SHA | dossier md | TEST_EXECUTION_SHA filled post-qual |
-| GAP-RC-SHA-LADDER | A-29,P1-17 | Ladder stale vs HEAD | MAJ | OPEN | C048,C075 | append-only row | rewrite old | ladder md | IMPLEMENTATION_SHA `1fa5347a5` row |
-| GAP-RC-SSOT-DRIFT | A-30,P1-16,P1-18 | Doc counts ≠ collect-only | MAJ | OPEN | C041,C055,C064,C075 | collect-only match | stale § | pytest log | 180 nodeids reconciled |
-| GAP-RC-FRZ-MAP | P1-08 | FRZ artifact coarse | MAJ | OPEN | C020,C021 | per-check FRZ | missing map | frz_coverage | each check has frz_mapping |
-| GAP-RC-RUN-STATUS | P1-14 | No run_status on interrupt | MAJ | OPEN | C016 | complete enum | kill mid-run | manifest | partial runs INCOMPLETE |
-| GAP-RC-REQUAL-DIGEST | requal | manifest_digest change | MAJ | OPEN | C028 | digest change blocks | same digest ok | baseline | accepted invalid until requal |
-| GAP-RC-AUDIT-OF-AUDITOR | false PASS | status field tamper | MAJ | OPEN | C044 | mutate status | clean verify | report | tamper detected |
-| GAP-RC-EVID-PUBLISH | CP-08 | No orchestrated publish | MAJ | OPEN | C049–C051,C058 | bundle builder e2e | tamper | `.tmp/proof/` | immutable publication tree |
-| GAP-RC-CI-PROFILE | GAP-P-01 | enterprise profile ≠ ENT audit | MIN | OPEN | C045 | distinct job | conflation | yaml | separate workflow identity |
-| GAP-RC-CERTIFY-SPLIT | P0-04 | — | — | **CLOSED_WITH_EVIDENCE** | C004,C005 | certifying default | check-id blocked | tests | no re-impl |
-| GAP-RC-CANDIDATE-FSM | P0-01 partial | — | — | **PARTIAL** | C001,C002 | no auto accepted | bootstrap candidate | tests | promotion still GAP-RC-OD-TRUST |
-
-### 2.3 Formal blockers (not agent-closed)
-
-| GAP-B-ID | Status | Owner |
-| --- | --- | --- |
-| BLK-EVOL-B6 | EXTERNAL | Auditor + operator |
-| BLK-EVOL-FRZ | EXTERNAL | Operator |
-| BLK-EVOL-HANDOFF | EXTERNAL | Operator |
-| BLK-CI-ENFORCE | EXTERNAL | OD-ENT-02 + GitHub |
-| BLK-ROADMAP-ENT-DEP | EXTERNAL | OD-ENT-00 |
-| BLK-ENT-B6 | EXTERNAL | Independent Protocol 03 |
-
-### 2.4 Coverage dimension (85/85)
-
-**GAP-COV-&lt;CheckID&gt;:** **85 OPEN** — manifest entrypoint wired; **0** qualified semantic PASS @ TEST_EXECUTION_SHA for full certifying run. Closes via C034–C036 + L3 (C031–C032) per check.
-
----
-
-## 3. PL-07 — pytest taxonomy (@ `1fa5347a5`, mechanical)
-
-**Command:** `uv run pytest tests/qualification/ent_audit_x --collect-only -q`  
-**Log:** `.tmp/session/ent-audit-x-plan/collect-only.txt`
-
-| Metric | Count | Evidence |
-| --- | ---: | --- |
-| `test_*.py` files | **115** | glob |
-| **Collected nodeids** | **180** | pytest summary `180 tests collected` |
-| unit/ nodeids | **44** | 19 files |
-| integration/ nodeids | **41** | 9 files |
-| l3/ nodeids | **7** | 1 file |
-| acceptance/ nodeids | **88** | 86 files |
-| acceptance `entrypoint_exists` | **85** | name filter (≈1 per Annex C control) |
-| acceptance oracle (non-exists) | **3** | runner subprocess + FRZ wired |
-| ADV-named nodeids | **32** | includes non-fault tests |
-| pytest skip/xfail collected | **0** | no skip markers in collect output |
-
-**L1/L2/L3/ADV (plan taxonomy, not pytest markers until C040):**
-
-| Layer | Nodeids | Role |
-| --- | ---: | --- |
-| L1 | **44** | unit: contracts, manifest, drift, schema smoke |
-| L2 | **41** | integration: CLI, adversarial scaffold, bootstrap |
-| L3 | **7** | **planned** heavy; **0** authoritative 85/85 qual @ HEAD |
-| Acceptance | **88** | **85** wiring-only + **3** subprocess oracles |
-| ADV (target) | **31** | fault injection spec C037–C039; **≠** current ADV-named count |
-
-**Set reconciliation (PL-07):** **115** test modules ≠ **180** collected nodeids ≠ historical **164** in corrective plan — three different metrics; authoritative @ HEAD = **180** nodeids (`pytest --collect-only`).
-
-**True semantic gates @ HEAD:** **0** of 85 manifest checks have proven certifying PASS @ TEST_EXECUTION_SHA; **85** acceptance `entrypoint_exists` + **3** subprocess oracles = wiring only.
-
-**Duplicate/overlap:** ADV-named tests (**32** nodeids) overlap integration scaffold; not 31 independent fault injections until C037–C039.
-
----
-
-## 4. PL-08 — OD-ENT-01 (ECAP-aligned, no invented crypto)
-
-**Order (ECAP + corrective F-07):** Independent ENT **B6 PASS** @ `TEST_EXECUTION_SHA` → **EVIDENCE_PUBLICATION_SHA** → operator **OD-ENT-01** → `ACCEPTED_BASELINE_SHA` (never reverse).
-
-**Record location:** `docs/project/maintainers/qualification/ent_audit_x/operator_records/` (git-tracked **operator commit** on protected branch) **or** path listed in C057 — **not** writable by agent promotion code paths.
-
-**Verification (`verify_operator_decision_record` + C065):**
-
-1. `decision_id == OD-ENT-01`; reject `record_origin ∈ {agent,cursor,automation}` (existing).
-2. **Require** `b6_acceptance_sha == ENT_AUDIT_X_SHA_LADDER.B6_ACCEPTANCE_PUBLICATION_SHA` (non-null at promote time).
-3. **Require** `evidence_publication_sha` equals ladder pin; `merge-base --is-ancestor(test_execution_sha, head)` and bundle closed-verify @ publication tree.
-4. **Require** `accepted_baseline_sha == candidate_baseline_sha` and `candidate` file exists.
-5. **Require** dossier cross-ref: `ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md` lists same three SHAs.
-6. **Reject** records where `test_execution_sha` ≠ bundle manifest `qualification_sha`.
-7. Negative tests: forged operator JSON, wrong SHA length, missing B6 pin, tampered bundle, agent-origin (existing).
-
-**Trusted authorization source (implementable):**
-
-| Source | Role |
+| Path | TaskIDs |
 | --- | --- |
-| `docs/project/maintainers/qualification/ent_audit_x/operator_records/OD-ENT-01_*.json` | Operator-published record (protected branch commit) |
-| `ENT_AUDIT_X_SHA_LADDER.md` | Pins: TEST_EXECUTION_SHA, EVIDENCE_PUBLICATION_SHA, B6_ACCEPTANCE_PUBLICATION_SHA, ACCEPTED_BASELINE_SHA |
-| `.tmp/proof/ent-audit-x/<publication>/` or tagged release tree | Closed bundle @ EVIDENCE_PUBLICATION_SHA |
-| External Protocol 03 PASS artifact | Sets B6_ACCEPTANCE_PUBLICATION_SHA (not agent) |
-
-**Promotion gate (`promote_accepted_baseline`):** all ladder equalities + `verify_closed_evidence_bundle` + `merge-base --is-ancestor(test_execution_sha, HEAD)` + candidate SHA match.
-
-**Negative tests (C065,C042):** forged record; forged SHA; missing bundle; tampered artifact bit; agent-origin; B6 pin null; test_execution_sha ≠ manifest qualification_sha.
+| `intergrax/platform/enterprise_audit/baseline.py` | C065, C003 |
+| `intergrax/platform/enterprise_audit/evidence.py` | C068, C006 |
+| `intergrax/platform/enterprise_audit/modes.py` | C067, C071 |
+| `intergrax/platform/enterprise_audit/runner.py` | C067 |
+| `scripts/enterprise_audit/mechanical_readiness_check.py` | C066, C054 |
+| `tests/qualification/ent_audit_x/unit/test_*` | C042, C066, C075 |
+| This document | C075 |
 
 ---
 
-## 5. FCL-09 — baseline lifecycle FSM (acyclic)
+## Matrix A — Roadmap §3.1 + FRZ-AUD-01..10
 
-```mermaid
-stateDiagram-v2
-  direction LR
-  NO_BASELINE --> FIRST_BOOTSTRAP_CANDIDATE: certifying FREEZE bootstrap CLEAN
-  FIRST_BOOTSTRAP_CANDIDATE --> FULL_FREEZE_CANDIDATE_QUALIFIED: L3 85/85 + domains31
-  FULL_FREEZE_CANDIDATE_QUALIFIED --> EVIDENCE_PUBLISHED: closed bundle @ TEST_EXECUTION_SHA
-  EVIDENCE_PUBLISHED --> INDEPENDENT_B6: external Protocol 03
-  INDEPENDENT_B6 --> OPERATOR_ACCEPTED: OD-ENT-01 promote
-  OPERATOR_ACCEPTED --> NORMAL_FREEZE: certifying FREEZE ancestor ok
-  NO_BASELINE --> NORMAL_FREEZE: blocked
+### A.1 Roadmap §3.1 families
+
+| Requirement | Invariant / checks | Implementation @ HEAD | Current proof | Gap | Task | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| RM-ARCH-BND | Architecture / boundaries | ENT-A-BND-* | runner+manifest | wiring tests | GAP-RC-SEMANTIC-GATES | C034 | 85 gate exec @ TES |
+| RM-OWN | Ownership | ENT-A-OWN-* | manifest | entrypoint_exists | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-CTR | Contracts / abstraction | ENT-A-CTR-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-TYP | Strong typing | ENT-A-TYP-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-DUP | Duplication | ENT-A-DUP-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-PLG | Pluginability | ENT-A-PLG-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-VBN | Vendor/backend neutrality | VBN-* + ENT-A-VBN-* | vbn.py | partial script | GAP-RC-VBN-31 | C008-C036 | 31 domains + 9 checks |
+| RM-GOV | Governance | ENT-A-GOV-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-EXE | Execution | ENT-A-EXE-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-OBS | Observability | ENT-A-OBS-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-STA | State / persistence | ENT-A-STA-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-SEC | Security / data lifecycle | ENT-A-SEC-* | manifest | wiring | GAP-RC-REDACTION | C015,C034 | redaction+gate |
+| RM-REL | Resource / overload | ENT-A-REL-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-REC | Durable recovery | ENT-A-REC-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-PRD | Production operability | ENT-A-PRD-* | report limitations | partial flag | GAP-RC-SEMANTIC-GATES | C034 | scoped PASS |
+| RM-CMP | Compatibility | ENT-A-CMP-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-REG | Qualification / debt | ENT-A-REG-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-DOC | Documentation drift | ENT-A-DOC-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-TEN | Tenant isolation | TEN-* (13) | tenant enrich | wiring | GAP-COV×13 | C035 | TEN13 @ TES |
+| RM-EVOL | Enterprise evolvability | ENT-A-EVOL-* | changed_since partial | no EVOL bind | GAP-RC-CHANGED-IMPACT | C072,C029 | impact map |
+| RM-INV | Platform invariants | ENT-A-INV-* | manifest | wiring | GAP-RC-SEMANTIC-GATES | C034 | gate PASS |
+| RM-MOD | Modular runner framework | EnterpriseAuditRunner | package exists | import+CLI | GAP-RC-CERTIFY-SPLIT closed | C004 | FRZ-AUD-01 partial |
+| RM-BASE | Baseline / drift | baseline.py | FSM partial | unit tests | GAP-RC-OD-TRUST | C001-C003,C065 | promote ECAP order |
+| RM-MODE | FAST/FULL/FREEZE/CHANGED | modes.py+runner | modes exist | dry-run fixed INQ | GAP-RC-DRY-RUN | C067,C009 | L3 modes @ TES |
+| RM-RPT | Reports JSON+MD | report.py | reports exist | schema shallow | GAP-RC-JSON-SCHEMA | C013,C069 | schema valid |
+| RM-EXIT | Exit codes 0-3 | modes.py | enum exists | L3 loose | GAP-RC-L3-FULL | C004,C067 | strict qual |
+| RM-POST | Post-freeze policy | runbook+CI | draft | BLK-CI | GAP-RC-PR-PATH-SKIP | C047,C064 | enforceable policy |
+
+### A.2 FRZ-AUD-01..10
+
+| FRZ | Requirement | Invariant | Implementation | Current proof | Gap | Task | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| FRZ-AUD-01 | Runner exists | RM-MOD | `EnterpriseAuditRunner` | import + CLI | partial qual | C004,C031 | Modes execute |
+| FRZ-AUD-02 | Modular checks | RM-MOD | manifest 85 | wiring | GAP-RC-SEMANTIC-GATES | C019,C030,C033 | 85 gates @ TES |
+| FRZ-AUD-03 | FRZ map | RM-REG | digests coarse | partial | GAP-RC-FRZ-MAP | C020,C021 | frz_coverage |
+| FRZ-AUD-04 | Reports | RM-RPT | JSON+MD | shallow schema | GAP-RC-JSON-SCHEMA | C013,C062,C069 | jsonschema |
+| FRZ-AUD-05 | Exact SHA | RM-RPT | manifest fields | partial | GAP-RC-SHA-LADDER | C048,C059 | SHA = git HEAD |
+| FRZ-AUD-06 | Baseline drift | RM-BASE | baseline+drift | unit | GAP-RC-OD-TRUST | C001,C022 | drift vs accepted |
+| FRZ-AUD-07 | Drift classes | RM-BASE | REGRESSED/RESOLVED | partial | GAP-RC-RESOLVED-BLOCK | C071,C023 | RESOLVED non-blocking |
+| FRZ-AUD-08 | Exit codes | RM-EXIT | modes.py | C067 tests | GAP-RC-L3-FULL | C004,C067 | strict L3 |
+| FRZ-AUD-09 | Modes | RM-MODE | 4 modes | CI FAST real | GAP-RC-L3-FULL | C009,C031,C032 | L3 FULL/FREEZE |
+| FRZ-AUD-10 | Post-freeze policy | RM-POST | runbook | no enforce proof | BLK-CI-ENFORCE | C047,C064 | operator CI |
+
+---
+
+## Matrix B — AUD-01..44
+
+| AUD-ID | Status | Path / function | Evidence @ HEAD | Root cause | GAP-RC | TaskID | Positive test | Negative test | Closure criterion |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| AUD-01 | PARTIAL | baseline.py::promote_accepted_baseline L258 | optional bundle verify | GAP-RC-OD-TRUST | C065,C042 | promote w/ bundle required | promote without bundle | Promotion requires closed bundle |
+| AUD-02 | CONFIRMED_OPEN | ENT_AUDIT_X_SHA_LADDER.md | TES still 0cee41a8 not HEAD | GAP-RC-SHA-LADDER | C048,C075 | append IMPLEMENTATION row | rewrite history | Ladder matches HEAD lineage |
+| AUD-03 | PARTIAL | baseline.py L203-208 | operator_records path enforced | GAP-RC-OD-TRUST | C065 | promote path test | record outside dir | Only operator_records authorize |
+| AUD-04 | PARTIAL | evidence.py L51-56 | execution_manifest optional | GAP-RC-EVIDENCE-TRUST | C068 | bundle w/ manifest | None manifest | Manifest required certifying |
+| AUD-05 | CONFIRMED_OPEN | l3/test_l3_clean_checkout_full.py | dry-run/single-check; loose exit | GAP-RC-L3-FULL | C031,C074 | strict 85/85 exit 0 | dry-run qual | Real FULL @ TES |
+| AUD-06 | PARTIAL | vbn.py::load_vbn_domain_report | script exists; validator C008 open | GAP-RC-VBN-31 | C008-C011 | 31 accounted qual | stale cache | domains_accounted==31 @ TES |
+| AUD-07 | FIXED_NOT_QUALIFIED | mechanical_readiness_check.py | fail-closed JSON not is_file | GAP-RC-MECH-READY | C066 | all checks true post-qual | missing L3 | TECHNICAL_READY only w/ proof |
+| AUD-08 | CONFIRMED_OPEN | — | 0/85 QUALIFIED @ TES | GAP-RC-L3-FULL | C031-C036,C074 | 85/85 manifest | collect-only | Semantic PASS @ pinned SHA |
+| AUD-09 | PARTIAL | changed_since.py | path-only selection | GAP-RC-CHANGED-IMPACT | C024,C072 | impact map selects | unmapped BLOCKER | SSOT impact map |
+| AUD-10 | OPEN | EVOL artifacts | not bound CHANGED-SINCE | GAP-RC-CHANGED-IMPACT | C029,C072 | EVOL map reuse | bypass impact | Impact includes EVOL SSOT |
+| AUD-11 | OPEN | baseline.py drift | schema_version per-check incomplete | GAP-RC-DRIFT-SCHEMA | C022 | schema bump REGRESSED | stable pass | Per-check schema in manifest |
+| AUD-12 | PARTIAL | baseline.py apply_drift | fingerprint identity partial | GAP-RC-DRIFT-SCHEMA | C022,C023 | REGRESSED severity | wrong identity | Stable finding IDs |
+| AUD-13 | CONFIRMED_OPEN | validators.py L17-37 | shallow type check only | GAP-RC-JSON-SCHEMA | C069 | jsonschema pass | extra props | Nested schema all artifacts |
+| AUD-14 | PARTIAL | sandbox.py + unit test | traversal test exists | GAP-RC-EVIDENCE-TRUST | C027 | symlink escape blocked | path escape | Sandbox jail proven |
+| AUD-15 | OPEN | evidence_artifact_catalog.v1.json | no mode profiles | GAP-RC-EVIDENCE-TRUST | C073 | profile match | missing artifact | FAST/FULL/FREEZE profiles |
+| AUD-16 | PARTIAL | report.py | per-file write | GAP-RC-ATOMIC-PUB | C013 | interrupt atomic | torn report | All-or-nothing set |
+| AUD-17 | OPEN | sandbox.py | isolation/timeouts incomplete | GAP-RC-SANDBOX | C014-C017 | concurrent runs | collision | Isolated runs + kill orphans |
+| AUD-18 | OPEN | sandbox/report redaction | marker-only | GAP-RC-REDACTION | C015 | tenant uuid stripped | leak fixture | Negative leakage tests |
+| AUD-19 | PARTIAL | manifest.py + JSON | 85 IDs wired | GAP-RC-SEMANTIC-GATES | C019 | closed-world 85 | extra ID | Exact 85 CheckIDs |
+| AUD-20 | OPEN | digests.py | coarse FRZ-AUD-03 | GAP-RC-FRZ-MAP | C020,C021 | per-check FRZ | missing map | frz_coverage complete |
+| AUD-21 | PARTIAL | modes.py compute_exit_code | L3 accepts {0,1,2,3} | GAP-RC-L3-FULL | C031,C074 | strict exit semantics | any exit pass | Deterministic exit codes |
+| AUD-22 | CONFIRMED_OPEN | checks/executor.py | entrypoint exists not exec semantics | GAP-RC-SEMANTIC-GATES | C033-C036 | subprocess gate | is_file pass | 85 executed semantic gates |
+| AUD-23 | CONFIRMED_OPEN | acceptance/test_ent_a_*.py | entrypoint_exists only | GAP-RC-SEMANTIC-GATES | C034-C036 | gate exit 0 | wiring only | Semantic oracle per check |
+| AUD-24 | OPEN | integration/test_adversarial_adv01_30.py | scaffold not 31 faults | GAP-RC-ADV-INJECT | C037-C039 | per ADV inject | existence test | 31 fault injections |
+| AUD-25 | FIXED_NOT_QUALIFIED | enterprise-audit.yml L38-41 | real FAST in CI | GAP-RC-PR-PATH-SKIP | C059 | CI artifact @ head | dry-run only | PR FAST proof URL |
+| AUD-26 | EXTERNAL_BLOCKER | GitHub branch protection | OD-ENT-02 not verified | GAP-B BLK-CI-ENFORCE | C047 | N/A | N/A | Operator configures required checks |
+| AUD-27 | OPEN | enterprise-audit-nightly.yml | FREEZE bootstrap risk | GAP-RC-NIGHTLY-FREEZE | C007,C046 | FULL only schedule | auto bootstrap | Operator-only FREEZE |
+| AUD-28 | CONFIRMED_OPEN | audit.bat L10-14 | unknown arg → FAST | GAP-RC-LAUNCHER-BAT | C060,C063 | invalid exit 1 | silent FAST | Unknown mode fails |
+| AUD-29 | PARTIAL | audit.bat L3-4 | repo root via script dir | GAP-RC-LAUNCHER-CWD | C063 | cwd≠repo | wrong cwd | Launch from any cwd |
+| AUD-30 | OPEN | — | no spaced-path qual | GAP-RC-LAUNCHER-CWD | C063 | path w/ spaces | fail | Spaces in path proof |
+| AUD-31 | OPEN | audit.bat L20 RANDOM | collision risk | GAP-RC-OUTPUT-COLLISION | C070 | parallel unique | clash | uuid+lock dirs |
+| AUD-32 | OPEN | BAT vs SH | Windows-first dev | GAP-RC-LAUNCHER-SH | C061,C063 | Linux SH parity | divergence | Cross-platform parity |
+| AUD-33 | PARTIAL | report.py | interrupt run_status open | GAP-RC-RUN-STATUS | C016 | partial INCOMPLETE | kill mid-run | run_status enum complete |
+| AUD-34 | CLOSED_WITH_EVIDENCE | this master plan | HEAD 34e03425b reconciled | GAP-RC-SSOT-DRIFT | C075 | doc baseline updated | stale 1fa5347a5 header | Doc matches HEAD |
+| AUD-35 | PARTIAL | Matrix D GAP register | 33 RC statuses @ HEAD | GAP-RC-SSOT-DRIFT | C055 | set equality | duplicate RC | Unique root causes |
+| AUD-36 | EVIDENCE_GAP | ANNEX_G2 63 ENT rows | TEN/VBN in Annex C not G2 | GAP-RC-FRZ-MAP | C020,C055 | 85 row crosswalk | missing rows | G2+C matrix complete |
+| AUD-37 | OPEN | ANNEX_H_WBS.md | stale vs C001-C075 | GAP-RC-SSOT-DRIFT | C055,C075 | H matches WBS | orphan task | Annex H reconciled |
+| AUD-38 | CONFIRMED_OPEN | SHA ladder | no 34e03425b row yet | GAP-RC-SHA-LADDER | C048,C075 | append row | rewrite | Append-only ladder |
+| AUD-39 | OPEN | PROTOCOL_03_DOSSIER.md | TES unset; 164 claim stale | GAP-RC-DOSSIER | C053,C075 | post-qual pins | fiction SHA | Dossier after qual only |
+| AUD-40 | OPEN | FRZ-AUD-01..10 checklist | all OPEN | GAP-B multiple | C019-C064 | B6 closure | agent FRZ edit | Operator post-B6 |
+| AUD-41 | EXTERNAL_BLOCKER | EVOL B6 pin PENDING | predecessor gate | GAP-B BLK-EVOL-B6 | — | N/A | N/A | External EVOL B6 |
+| AUD-42 | OPEN | C057 doc | OD matrix not written | GAP-RC-SSOT-DRIFT | C057 | matrix published | N/A | Agent doc; operator signs separately |
+| AUD-43 | OPEN | Roadmap §5 ENT row | FINAL not CLOSED | GAP-B BLK-ROADMAP-ENT-DEP | OD-ENT-00 | N/A | N/A | Operator roadmap §5 |
+| AUD-44 | OPEN | ARCH-FREEZE handoff doc | blocked on ENT B6 | GAP-B BLK-ENT-B6 | C058 | handoff tree | early freeze | Post independent B6 |
+
+
+---
+
+## Matrix C — 75 TaskID WBS (dual-axis)
+
+**Implementation:** NOT_STARTED · PARTIAL · IMPLEMENTED  
+**Qualification:** NOT_QUALIFIED · QUALIFIED · EXTERNAL_PENDING  
+
+**Counts @ `34e0342`:** implementation {'PARTIAL': 21, 'IMPLEMENTED': 4, 'NOT_STARTED': 50} · qualification {'NOT_QUALIFIED': 73, 'QUALIFIED': 2}
+
+### Gate ownership (external — separate from TaskID axes)
+
+| Gate | Owner | Blocks |
+| --- | --- | --- |
+| OD-ENT-00 / roadmap §5 | Operator | Program closure |
+| OD-ENT-01 promotion | Operator | ACCEPTED_BASELINE_SHA |
+| OD-ENT-02 required checks | Operator | BLK-CI-ENFORCE |
+| OD-ENT-08 | Operator | Formal closure |
+| Protocol 03 B6 | External auditor | B6_ACCEPTANCE_PUBLICATION_SHA |
+| EVOL B6 predecessor | External | BLK-EVOL-B6 |
+
+| TaskID | Batch | Original scope | Impl | Qual | Remaining | Deps | Primary test | Evidence | Acceptance | Owner |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| C001 | R0 | BaselinePhase FSM; candidate vs accepted paths | PARTIAL | NOT_QUALIFIED | Complete remaining scope: BaselinePhase FSM; candidate vs accepte | — | ENT-T-C001 in corrective plan | post-qual @ TEST_EXECUTION_SHA | BaselinePhase FSM; candidate vs accepted paths | ENT |
+| C002 | R0 | Remove auto save_baseline; candidate write only on bootstrap | PARTIAL | NOT_QUALIFIED | Complete remaining scope: Remove auto save_baseline; candidate wr | C001 | ENT-T-C002 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Remove auto save_baseline; candidate write only on bootstrap | ENT |
+| C003 | R0 | promote-baseline CLI; OD-ENT-01 verify boundary | PARTIAL | NOT_QUALIFIED | Complete remaining scope: promote-baseline CLI; OD-ENT-01 verify  | C001,C006 | ENT-T-C003 in corrective plan | post-qual @ TEST_EXECUTION_SHA | promote-baseline CLI; OD-ENT-01 verify boundary | ENT |
+| C004 | R0 | certifying_run default true on manifest/report | IMPLEMENTED | QUALIFIED | None — qualified @ HEAD | — | ENT-T-C004 in corrective plan | unit/CLI @ 34e0342 | certifying_run default true on manifest/report | ENT |
+| C005 | R0 | CLI --check-id requires --non-certifying | IMPLEMENTED | QUALIFIED | None — qualified @ HEAD | — | ENT-T-C005 in corrective plan | unit/CLI @ 34e0342 | CLI --check-id requires --non-certifying | ENT |
+| C006 | R0 | Closed-world evidence artifact catalog + builder | PARTIAL | NOT_QUALIFIED | Complete remaining scope: Closed-world evidence artifact catalog  | — | ENT-T-C006 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Closed-world evidence artifact catalog + builder | ENT |
+| C007 | R4 | Nightly workflow: no auto FREEZE bootstrap | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Nightly workflow: no auto FREEZE bootstrap | — | ENT-T-C007 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Nightly workflow: no auto FREEZE bootstrap | ENT |
+| C008 | R0 | validate_domain_report() D01..D31 | NOT_STARTED | NOT_QUALIFIED | Implement full scope: validate_domain_report() D01..D31 | — | ENT-T-C008 in corrective plan | post-qual @ TEST_EXECUTION_SHA | validate_domain_report() D01..D31 | ENT |
+| C009 | R1 | FREEZE FSM: bootstrap candidate vs normal FREEZE | PARTIAL | NOT_QUALIFIED | Complete remaining scope: FREEZE FSM: bootstrap candidate vs norm | C001,C002 | ENT-T-C009 in corrective plan | post-qual @ TEST_EXECUTION_SHA | FREEZE FSM: bootstrap candidate vs normal FREEZE | ENT |
+| C010 | R1 | Fresh VBN domain report provenance | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Fresh VBN domain report provenance | — | ENT-T-C010 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Fresh VBN domain report provenance | ENT |
+| C011 | R1 | domains_accounted<31 → BLOCKER on certifying FULL/FREEZE | NOT_STARTED | NOT_QUALIFIED | Implement full scope: domains_accounted<31 → BLOCKER on certifyin | C008 | ENT-T-C011 in corrective plan | post-qual @ TEST_EXECUTION_SHA | domains_accounted<31 → BLOCKER on certifying FULL/FREEZE | ENT |
+| C012 | R1 | assert_git_ancestor for baseline/publish pins | PARTIAL | NOT_QUALIFIED | Complete remaining scope: assert_git_ancestor for baseline/publis | — | ENT-T-C012 in corrective plan | post-qual @ TEST_EXECUTION_SHA | assert_git_ancestor for baseline/publish pins | ENT |
+| C013 | R1 | Atomic report publication temp+rename | PARTIAL | NOT_QUALIFIED | Complete remaining scope: Atomic report publication temp+rename | — | ENT-T-C013 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Atomic report publication temp+rename | ENT |
+| C014 | R1 | Sandbox per-run isolation | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Sandbox per-run isolation | — | ENT-T-C014 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Sandbox per-run isolation | ENT |
+| C015 | R1 | Log/report redaction v2 tenant-safe | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Log/report redaction v2 tenant-safe | — | ENT-T-C015 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Log/report redaction v2 tenant-safe | ENT |
+| C016 | R1 | execution_manifest run_status on interrupt | NOT_STARTED | NOT_QUALIFIED | Implement full scope: execution_manifest run_status on interrupt | — | ENT-T-C016 in corrective plan | post-qual @ TEST_EXECUTION_SHA | execution_manifest run_status on interrupt | ENT |
+| C017 | R1 | Sandbox timeout and orphan subprocess cleanup | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Sandbox timeout and orphan subprocess clean | — | ENT-T-C017 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Sandbox timeout and orphan subprocess cleanup | ENT |
+| C018 | R1 | Runner enforces VBN rollup fail-closed | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Runner enforces VBN rollup fail-closed | C011 | ENT-T-C018 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Runner enforces VBN rollup fail-closed | ENT |
+| C019 | R2 | Manifest closed-world vs Annex C 85 IDs | PARTIAL | NOT_QUALIFIED | Complete remaining scope: Manifest closed-world vs Annex C 85 IDs | — | ENT-T-C019 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Manifest closed-world vs Annex C 85 IDs | ENT |
+| C020 | R2 | Per-check FRZ map JSON (not all FRZ-AUD-03) | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Per-check FRZ map JSON (not all FRZ-AUD-03) | — | ENT-T-C020 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Per-check FRZ map JSON (not all FRZ-AUD-03) | ENT |
+| C021 | R2 | Manifest frz_mapping rows per check | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Manifest frz_mapping rows per check | — | ENT-T-C021 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Manifest frz_mapping rows per check | ENT |
+| C022 | R2 | Per-check schema_version drift REGRESSED | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Per-check schema_version drift REGRESSED | — | ENT-T-C022 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Per-check schema_version drift REGRESSED | ENT |
+| C023 | R2 | RESOLVED reopen when finding returns | NOT_STARTED | NOT_QUALIFIED | Implement full scope: RESOLVED reopen when finding returns | — | ENT-T-C023 in corrective plan | post-qual @ TEST_EXECUTION_SHA | RESOLVED reopen when finding returns | ENT |
+| C024 | R2 | CHANGED-SINCE impact map data SSOT | NOT_STARTED | NOT_QUALIFIED | Implement full scope: CHANGED-SINCE impact map data SSOT | — | ENT-T-C024 in corrective plan | post-qual @ TEST_EXECUTION_SHA | CHANGED-SINCE impact map data SSOT | ENT |
+| C025 | R2 | Unknown changed paths fail-closed BLOCKER | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Unknown changed paths fail-closed BLOCKER | — | ENT-T-C025 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Unknown changed paths fail-closed BLOCKER | ENT |
+| C026 | R2 | verify_closed_evidence_bundle tamper-closed | PARTIAL | NOT_QUALIFIED | Complete remaining scope: verify_closed_evidence_bundle tamper-cl | C006 | ENT-T-C026 in corrective plan | post-qual @ TEST_EXECUTION_SHA | verify_closed_evidence_bundle tamper-closed | ENT |
+| C027 | R2 | Evidence path traversal rejection | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Evidence path traversal rejection | — | ENT-T-C027 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Evidence path traversal rejection | ENT |
+| C028 | R2 | manifest_digest change invalidates accepted baseline | NOT_STARTED | NOT_QUALIFIED | Implement full scope: manifest_digest change invalidates accepted | — | ENT-T-C028 in corrective plan | post-qual @ TEST_EXECUTION_SHA | manifest_digest change invalidates accepted baseline | ENT |
+| C029 | R2 | Impact map generator build_impact_map.py | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Impact map generator build_impact_map.py | — | ENT-T-C029 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Impact map generator build_impact_map.py | ENT |
+| C030 | R2 | Manifest DAG orphan/cycle detection | PARTIAL | NOT_QUALIFIED | Complete remaining scope: Manifest DAG orphan/cycle detection | — | ENT-T-C030 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Manifest DAG orphan/cycle detection | ENT |
+| C031 | R3 | L3 real certifying FULL 85/85 CLI subprocess | NOT_STARTED | NOT_QUALIFIED | Implement full scope: L3 real certifying FULL 85/85 CLI subproces | C004,C011 | ENT-T-C031 in corrective plan | post-qual @ TEST_EXECUTION_SHA | L3 real certifying FULL 85/85 CLI subprocess | ENT |
+| C032 | R3 | L3 FREEZE pair: first candidate + normal FREEZE | NOT_STARTED | NOT_QUALIFIED | Implement full scope: L3 FREEZE pair: first candidate + normal FR | C002,C009,C011,C031 | ENT-T-C032 in corrective plan | post-qual @ TEST_EXECUTION_SHA | L3 FREEZE pair: first candidate + normal FREEZE | ENT |
+| C033 | R3 | acceptance gate helper conftest | NOT_STARTED | NOT_QUALIFIED | Implement full scope: acceptance gate helper conftest | C004 | ENT-T-C033 in corrective plan | post-qual @ TEST_EXECUTION_SHA | acceptance gate helper conftest | ENT |
+| C034 | R3 | ENT-A 63 semantic subprocess gates | NOT_STARTED | NOT_QUALIFIED | Implement full scope: ENT-A 63 semantic subprocess gates | C033 | ENT-T-C034 in corrective plan | post-qual @ TEST_EXECUTION_SHA | ENT-A 63 semantic subprocess gates | ENT |
+| C035 | R3 | TEN 13 semantic subprocess gates | NOT_STARTED | NOT_QUALIFIED | Implement full scope: TEN 13 semantic subprocess gates | C033 | ENT-T-C035 in corrective plan | post-qual @ TEST_EXECUTION_SHA | TEN 13 semantic subprocess gates | ENT |
+| C036 | R3 | VBN 9 semantic subprocess gates | NOT_STARTED | NOT_QUALIFIED | Implement full scope: VBN 9 semantic subprocess gates | C033 | ENT-T-C036 in corrective plan | post-qual @ TEST_EXECUTION_SHA | VBN 9 semantic subprocess gates | ENT |
+| C037 | R3 | ADV-01..10 fault injection suite | NOT_STARTED | NOT_QUALIFIED | Implement full scope: ADV-01..10 fault injection suite | C004,C026 | ENT-T-C037 in corrective plan | post-qual @ TEST_EXECUTION_SHA | ADV-01..10 fault injection suite | ENT |
+| C038 | R3 | ADV-11..20 fault injection suite | NOT_STARTED | NOT_QUALIFIED | Implement full scope: ADV-11..20 fault injection suite | C037 | ENT-T-C038 in corrective plan | post-qual @ TEST_EXECUTION_SHA | ADV-11..20 fault injection suite | ENT |
+| C039 | R3 | ADV-21..31 fault injection suite | NOT_STARTED | NOT_QUALIFIED | Implement full scope: ADV-21..31 fault injection suite | C037 | ENT-T-C039 in corrective plan | post-qual @ TEST_EXECUTION_SHA | ADV-21..31 fault injection suite | ENT |
+| C040 | R3 | pytest markers ent_l1/l2/l3_heavy taxonomy | NOT_STARTED | NOT_QUALIFIED | Implement full scope: pytest markers ent_l1/l2/l3_heavy taxonomy | — | ENT-T-C040 in corrective plan | post-qual @ TEST_EXECUTION_SHA | pytest markers ent_l1/l2/l3_heavy taxonomy | ENT |
+| C041 | R3 | Mechanical pytest collect-only inventory reconcile | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Mechanical pytest collect-only inventory re | — | ENT-T-C041 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Mechanical pytest collect-only inventory reconcile | ENT |
+| C042 | R3 | Promotion trust tests + bundle leg after C026 | PARTIAL | NOT_QUALIFIED | Complete remaining scope: Promotion trust tests + bundle leg afte | C003,C026 | ENT-T-C042 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Promotion trust tests + bundle leg after C026 | ENT |
+| C043 | R3 | Forged vbn_domains.v1.json detection | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Forged vbn_domains.v1.json detection | — | ENT-T-C043 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Forged vbn_domains.v1.json detection | ENT |
+| C044 | R3 | Report status tamper audit-of-auditor | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Report status tamper audit-of-auditor | — | ENT-T-C044 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Report status tamper audit-of-auditor | ENT |
+| C045 | R4 | enterprise-audit.yml skeleton identity | PARTIAL | NOT_QUALIFIED | Complete remaining scope: enterprise-audit.yml skeleton identity | — | ENT-T-C045 in corrective plan | post-qual @ TEST_EXECUTION_SHA | enterprise-audit.yml skeleton identity | ENT |
+| C046 | R4 | Nightly align with C007 operator-only FREEZE | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Nightly align with C007 operator-only FREEZ | — | ENT-T-C046 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Nightly align with C007 operator-only FREEZE | ENT |
+| C047 | R4 | CI runbook required-check procedure (no false enforce claim) | NOT_STARTED | NOT_QUALIFIED | Implement full scope: CI runbook required-check procedure (no fal | — | ENT-T-C047 in corrective plan | post-qual @ TEST_EXECUTION_SHA | CI runbook required-check procedure (no false enforce claim) | ENT |
+| C048 | R5 | SHA ladder append-only rules + IMPLEMENTATION rows | NOT_STARTED | NOT_QUALIFIED | Implement full scope: SHA ladder append-only rules + IMPLEMENTATI | — | ENT-T-C048 in corrective plan | post-qual @ TEST_EXECUTION_SHA | SHA ladder append-only rules + IMPLEMENTATION rows | ENT |
+| C049 | R5 | Evidence env fingerprint artifact | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Evidence env fingerprint artifact | — | ENT-T-C049 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Evidence env fingerprint artifact | ENT |
+| C050 | R5 | build_evidence_bundle.py orchestrator | NOT_STARTED | NOT_QUALIFIED | Implement full scope: build_evidence_bundle.py orchestrator | C026,C031 | ENT-T-C050 in corrective plan | post-qual @ TEST_EXECUTION_SHA | build_evidence_bundle.py orchestrator | ENT |
+| C051 | R5 | run_qual_wave.py L1→L3 orchestrator | NOT_STARTED | NOT_QUALIFIED | Implement full scope: run_qual_wave.py L1→L3 orchestrator | C031,C032 | ENT-T-C051 in corrective plan | post-qual @ TEST_EXECUTION_SHA | run_qual_wave.py L1→L3 orchestrator | ENT |
+| C052 | R5 | Runbook retention/replay CI evidence | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Runbook retention/replay CI evidence | — | ENT-T-C052 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Runbook retention/replay CI evidence | ENT |
+| C053 | R5 | Protocol 03 dossier mechanical fill post-qual | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Protocol 03 dossier mechanical fill post-qu | — | ENT-T-C053 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Protocol 03 dossier mechanical fill post-qual | ENT |
+| C054 | R5 | mechanical_readiness_check.py fail-closed pre-B6 | PARTIAL | NOT_QUALIFIED | Complete remaining scope: mechanical_readiness_check.py fail-clos | — | ENT-T-C054 in corrective plan | post-qual @ TEST_EXECUTION_SHA | mechanical_readiness_check.py fail-closed pre-B6 | ENT |
+| C055 | R5 | Annex F gap register reconciliation @ HEAD | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Annex F gap register reconciliation @ HEAD | — | ENT-T-C055 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Annex F gap register reconciliation @ HEAD | ENT |
+| C056 | R5 | Corrective plan supersede header note | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Corrective plan supersede header note | — | ENT-T-C056 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Corrective plan supersede header note | ENT |
+| C057 | R5 | Operator OD-ENT decision authority matrix (doc only; agent writes) | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Operator OD-ENT decision authority matrix ( | — | ENT-T-C057 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Operator OD-ENT decision authority matrix (doc only; agent w | ENT |
+| C058 | R5 | B6 handoff replay tree layout validator | NOT_STARTED | NOT_QUALIFIED | Implement full scope: B6 handoff replay tree layout validator | C050,C053 | ENT-T-C058 in corrective plan | post-qual @ TEST_EXECUTION_SHA | B6 handoff replay tree layout validator | ENT |
+| C059 | R4 | PR FAST real certifying run @ PR head SHA | PARTIAL | NOT_QUALIFIED | Complete remaining scope: PR FAST real certifying run @ PR head S | C004,C045 | ENT-T-C059 in corrective plan | post-qual @ TEST_EXECUTION_SHA | PR FAST real certifying run @ PR head SHA | ENT |
+| C060 | R4 | audit.bat modes + fail unknown args + unique out dir | PARTIAL | NOT_QUALIFIED | Complete remaining scope: audit.bat modes + fail unknown args + u | C004,C062 | ENT-T-C060 in corrective plan | post-qual @ TEST_EXECUTION_SHA | audit.bat modes + fail unknown args + unique out dir | ENT |
+| C061 | R4 | audit.sh parity with BAT | PARTIAL | NOT_QUALIFIED | Complete remaining scope: audit.sh parity with BAT | C060,C062 | ENT-T-C061 in corrective plan | post-qual @ TEST_EXECUTION_SHA | audit.sh parity with BAT | ENT |
+| C062 | R4 | CLI/report summary UX fields | PARTIAL | NOT_QUALIFIED | Complete remaining scope: CLI/report summary UX fields | — | ENT-T-C062 in corrective plan | post-qual @ TEST_EXECUTION_SHA | CLI/report summary UX fields | ENT |
+| C063 | R4 | Launcher integration tests matrix (16 cases) | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Launcher integration tests matrix (16 cases | C059,C060,C061 | ENT-T-C063 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Launcher integration tests matrix (16 cases) | ENT |
+| C064 | R5 | Operator quickstart + FRZ-AUD-10 mapping doc | NOT_STARTED | NOT_QUALIFIED | Implement full scope: Operator quickstart + FRZ-AUD-10 mapping do | — | ENT-T-C064 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Operator quickstart + FRZ-AUD-10 mapping doc | ENT |
+| C065 | R0 | ECAP OD-ENT-01 verify: ladder pins, operator_records path, dossier | PARTIAL | NOT_QUALIFIED | Mandatory verify_closed_bundle on promote; e2e promote w/ ladder  | C003,C026 | ENT-T-C065 in corrective plan | post-qual @ TEST_EXECUTION_SHA | ECAP OD-ENT-01 verify: ladder pins, operator_records path, d | ENT |
+| C066 | R5 | Readiness parses qual artifacts @ TEST_EXECUTION_SHA (not file exists) | PARTIAL | NOT_QUALIFIED | Wire TEN/VBN/ADV/CI/bundle parsers; remove hardcoded False stubs  | C031,C032,C051,C074 | ENT-T-C066 in corrective plan | post-qual @ TEST_EXECUTION_SHA | Readiness parses qual artifacts @ TEST_EXECUTION_SHA (not fi | ENT |
+| C067 | R0 | dry_run non-certifying; INCOMPLETE exit; block qual bundle | IMPLEMENTED | NOT_QUALIFIED | Complete remaining scope: dry_run non-certifying; INCOMPLETE exit | — | ENT-T-C067 in corrective plan | post-qual @ TEST_EXECUTION_SHA | dry_run non-certifying; INCOMPLETE exit; block qual bundle | ENT |
+| C068 | R0 | build_evidence_manifest requires execution manifest eligibility | PARTIAL | NOT_QUALIFIED | Require execution_manifest on all certifying bundle builds; rejec | C067,C006 | ENT-T-C068 in corrective plan | post-qual @ TEST_EXECUTION_SHA | build_evidence_manifest requires execution manifest eligibil | ENT |
+| C069 | R0 | jsonschema draft 2020-12 nested validators all artifacts | NOT_STARTED | NOT_QUALIFIED | Implement full scope: jsonschema draft 2020-12 nested validators  | — | ENT-T-C069 in corrective plan | post-qual @ TEST_EXECUTION_SHA | jsonschema draft 2020-12 nested validators all artifacts | ENT |
+| C070 | R4 | uuid+timestamp+lock collision-safe output dirs | NOT_STARTED | NOT_QUALIFIED | Implement full scope: uuid+timestamp+lock collision-safe output d | — | ENT-T-C070 in corrective plan | post-qual @ TEST_EXECUTION_SHA | uuid+timestamp+lock collision-safe output dirs | ENT |
+| C071 | R1 | aggregate_status excludes RESOLVED from blocking severities | IMPLEMENTED | NOT_QUALIFIED | Complete remaining scope: aggregate_status excludes RESOLVED from | — | ENT-T-C071 in corrective plan | post-qual @ TEST_EXECUTION_SHA | aggregate_status excludes RESOLVED from blocking severities | ENT |
+| C072 | R2 | CHANGED-SINCE semantic impact + ancestry pins | NOT_STARTED | NOT_QUALIFIED | Implement full scope: CHANGED-SINCE semantic impact + ancestry pi | — | ENT-T-C072 in corrective plan | post-qual @ TEST_EXECUTION_SHA | CHANGED-SINCE semantic impact + ancestry pins | ENT |
+| C073 | R0 | evidence_artifact_catalog mode profiles FAST/FULL/FREEZE/B6 | NOT_STARTED | NOT_QUALIFIED | Implement full scope: evidence_artifact_catalog mode profiles FAS | — | ENT-T-C073 in corrective plan | post-qual @ TEST_EXECUTION_SHA | evidence_artifact_catalog mode profiles FAST/FULL/FREEZE/B6 | ENT |
+| C074 | R3 | test_l3_qual_wave.py clean-checkout strict harness | NOT_STARTED | NOT_QUALIFIED | Implement full scope: test_l3_qual_wave.py clean-checkout strict  | C031,C032 | ENT-T-C074 in corrective plan | post-qual @ TEST_EXECUTION_SHA | test_l3_qual_wave.py clean-checkout strict harness | ENT |
+| C075 | R5 | SSOT reconcile this doc + annexes + ladder + dossier counts | PARTIAL | NOT_QUALIFIED | Annex F/H/G2 header sync; append ladder IMPLEMENTATION_SHA row (n | C041,C048,C055 | ENT-T-C075 in corrective plan | post-qual @ TEST_EXECUTION_SHA | SSOT reconcile this doc + annexes + ladder + dossier counts | ENT |
+
+---
+
+## Matrix D — GAP reconciliation
+
+### D.1 GAP-RC (33) @ HEAD
+
+| GAP-ID | Source | Root cause | Sev | Code | Status @ HEAD | TaskID |
+| --- | --- | --- | --- | --- | --- | --- |
+| GAP-RC-OD-TRUST | A-01,P0-01,F-07 | OD verify incomplete vs ECAP | CRIT | baseline.py | PARTIAL | C003,C042,C065 |
+| GAP-RC-MECH-READY | A-02,A-20 | Readiness not tied to qual artifacts | CRIT | mechanical_readiness_check.py | PARTIAL | C054,C066 |
+| GAP-RC-EVIDENCE-TRUST | A-03,A-06,A-14 | Bundle/manifest coupling partial | CRIT | evidence.py | PARTIAL | C006,C026,C068,C073 |
+| GAP-RC-L3-FULL | A-04,P0-02 | No real 85/85 L3 | CRIT | l3/ | OPEN | C031,C032,C074 |
+| GAP-RC-DRY-RUN | A-05,ADV-05 | dry_run policy landed; not qual | CRIT | runner.py | PARTIAL | C067 |
+| GAP-RC-VBN-31 | A-07,A-08 | D01..D31 validator open | CRIT | vbn.py | OPEN | C008-C011,C018,C043 |
+| GAP-RC-CHANGED-IMPACT | A-09,P1-03 | Path-only CHANGED-SINCE | MAJ | changed_since.py | OPEN | C024,C025,C029,C072 |
+| GAP-RC-GIT-ANCESTRY | A-10,P1-13 | Ancestry partial | MAJ | repo_identity.py | PARTIAL | C012,C072 |
+| GAP-RC-RESOLVED-BLOCK | A-11 | aggregate filter landed; test gap | MAJ | modes.py | PARTIAL | C071,C023 |
+| GAP-RC-DRIFT-SCHEMA | A-12,P1-02 | schema_version drift open | MAJ | baseline.py | OPEN | C022,C028 |
+| GAP-RC-JSON-SCHEMA | A-13 | Shallow validator | MAJ | validators.py | OPEN | C069 |
+| GAP-RC-ATOMIC-PUB | A-15 | Per-file atomic only | MAJ | report.py | PARTIAL | C013 |
+| GAP-RC-SANDBOX | A-16,P1-10 | Isolation/timeouts | MAJ | sandbox.py | OPEN | C014-C017 |
+| GAP-RC-REDACTION | A-17,P1-11 | Marker redaction only | MAJ | sandbox.py | OPEN | C015 |
+| GAP-RC-SEMANTIC-GATES | A-18 | Gates not semantic | CRIT | checks/executor.py | OPEN | C033-C036 |
+| GAP-RC-ADV-INJECT | A-19,P1-04 | ADV scaffold only | MAJ | integration/adversarial | OPEN | C037-C039 |
+| GAP-RC-PR-PATH-SKIP | A-22,P1-05 | paths-filter; real FAST landed | MAJ | enterprise-audit.yml | PARTIAL | C046,C059 |
+| GAP-RC-NIGHTLY-FREEZE | A-23,P1-06 | Nightly FREEZE bootstrap | MAJ | nightly yml | OPEN | C007,C046 |
+| GAP-RC-LAUNCHER-BAT | A-24 | Unknown arg → FAST | MAJ | audit.bat | OPEN | C060,C063 |
+| GAP-RC-LAUNCHER-SH | A-25 | SH parity gaps | MAJ | audit.sh | OPEN | C061,C063 |
+| GAP-RC-LAUNCHER-CWD | A-26 | Launcher cwd/spaces qual | MAJ | launchers | OPEN | C063 |
+| GAP-RC-OUTPUT-COLLISION | A-27 | RANDOM output dirs | MAJ | audit.bat | OPEN | C070 |
+| GAP-RC-DOSSIER | A-28 | Draft dossier unpinned | MAJ | dossier md | OPEN | C053,C075 |
+| GAP-RC-SHA-LADDER | A-29,P1-17 | Ladder stale vs HEAD | MAJ | SHA ladder | OPEN | C048,C075 |
+| GAP-RC-SSOT-DRIFT | A-30,P1-16 | Doc counts drift | MAJ | annexes | PARTIAL | C041,C055,C064,C075 |
+| GAP-RC-FRZ-MAP | P1-08 | FRZ artifact coarse | MAJ | digests.py | OPEN | C020,C021 |
+| GAP-RC-RUN-STATUS | P1-14 | run_status on interrupt | MAJ | runner.py | OPEN | C016 |
+| GAP-RC-REQUAL-DIGEST | requal | manifest_digest change | MAJ | baseline.py | OPEN | C028 |
+| GAP-RC-AUDIT-OF-AUDITOR | false PASS | status tamper | MAJ | report | OPEN | C044 |
+| GAP-RC-EVID-PUBLISH | CP-08 | Orchestrated publish | MAJ | scripts | OPEN | C049-C051,C058 |
+| GAP-RC-CI-PROFILE | GAP-P-01 | profile identity | MIN | yaml | OPEN | C045 |
+| GAP-RC-CERTIFY-SPLIT | P0-04 | closed | — | contracts | CLOSED_WITH_EVIDENCE | C004,C005 |
+| GAP-RC-CANDIDATE-FSM | P0-01 | candidate FSM partial | — | baseline | PARTIAL | C001,C002 |
+
+### D.2 GAP-B (6)
+
+| GAP-B-ID | Owner |
+| --- | --- |
+| BLK-EVOL-B6 | Auditor + operator |
+| BLK-EVOL-FRZ | Operator |
+| BLK-EVOL-HANDOFF | Operator |
+| BLK-CI-ENFORCE | OD-ENT-02 + GitHub |
+| BLK-ROADMAP-ENT-DEP | OD-ENT-00 |
+| BLK-ENT-B6 | Protocol 03 |
+
+### D.3 GAP-COV (85)
+
+One `GAP-COV-<CheckID>` per manifest row — all **OPEN** until Matrix E semantic closure @ `TEST_EXECUTION_SHA`.
+
+**Set equality:** |GAP-COV| = |CheckID| = 85.
+
+### D.4 Annex F historical buckets (136 rows — not merged into 32 RC)
+
+Reconcile in **C055** without duplicating GAP-RC root causes.
+
+---
+
+## Matrix E — 85 CheckID
+
+| CheckID | Invariant family | Entrypoint | Current oracle | Missing work | Negative test | FRZ | Task | Evidence | Qual SHA |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ENT-A-BND-01 | Annex C | `pytest_nodeid` tests/unit/runtime/architecture/test_hardening_3_layer_ | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-BND-01 OPEN | *unset* |
+| ENT-A-BND-02 | Annex C | `pytest_nodeid` tests/unit/runtime/architecture/test_hardening_3_layer_ | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-BND-02 OPEN | *unset* |
+| ENT-A-BND-03 | Annex C | `python_script` scripts/maintenance/check_agents_no_tier3_imports.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-BND-03 OPEN | *unset* |
+| ENT-A-OWN-01 | Annex C | `pytest_file` tests/unit/architecture/test_ebh_3_dependency_ownership | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-OWN-01 OPEN | *unset* |
+| ENT-A-OWN-02 | Annex C | `pytest_file` tests/unit/architecture/test_ebh_3_dependency_ownership | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-OWN-02 OPEN | *unset* |
+| ENT-A-OWN-03 | Annex C | `pytest_file` tests/unit/architecture/test_ebh_3_dependency_ownership | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-OWN-03 OPEN | *unset* |
+| ENT-A-CTR-01 | Annex C | `pytest_nodeid` tests/unit/architecture/test_ebh_2i_final_rescan_gate.p | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-CTR-01 OPEN | *unset* |
+| ENT-A-CTR-02 | Annex C | `pytest_nodeid` tests/unit/architecture/test_ebh_2i_final_rescan_gate.p | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-CTR-02 OPEN | *unset* |
+| ENT-A-CTR-03 | Annex C | `pytest_nodeid` tests/unit/architecture/test_ebh_2i_final_rescan_gate.p | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-CTR-03 OPEN | *unset* |
+| ENT-A-TYP-01 | Annex C | `pytest_file` tests/unit/architecture/test_ebh_2a_public_contract_bou | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-TYP-01 OPEN | *unset* |
+| ENT-A-TYP-02 | Annex C | `pytest_nodeid` tests/unit/architecture/test_ebh_2i_final_rescan_gate.p | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-TYP-02 OPEN | *unset* |
+| ENT-A-TYP-03 | Annex C | `pytest_nodeid` tests/unit/architecture/test_ebh_2i_final_rescan_gate.p | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-TYP-03 OPEN | *unset* |
+| ENT-A-DUP-01 | Annex C | `pytest_file` tests/qualification/dup_x/test_dup_x_mechanical_exit_ga | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-DUP-01 OPEN | *unset* |
+| ENT-A-DUP-02 | Annex C | `pytest_file` tests/qualification/dup_x/test_dup_x_mechanical_exit_ga | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-DUP-02 OPEN | *unset* |
+| ENT-A-DUP-03 | Annex C | `pytest_file` tests/qualification/dup_x/test_dup_x_mechanical_exit_ga | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-DUP-03 OPEN | *unset* |
+| ENT-A-PLG-01 | Annex C | `pytest_file` tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pa | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-PLG-01 OPEN | *unset* |
+| ENT-A-PLG-02 | Annex C | `pytest_file` tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pa | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-PLG-02 OPEN | *unset* |
+| ENT-A-PLG-03 | Annex C | `pytest_file` tests/qualification/ebh_5/test_ebh_5_factory_rpl_one_pa | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-PLG-03 OPEN | *unset* |
+| ENT-A-VBN-01 | Annex C | `pytest_nodeid` tests/qualification/ebh_5/test_ebh_5_g06_enterprise_int | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-VBN-01 OPEN | *unset* |
+| ENT-A-VBN-02 | Annex C | `pytest_nodeid` tests/qualification/ebh_6/test_ebh_6_hardcoding_registe | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-VBN-02 OPEN | *unset* |
+| ENT-A-VBN-03 | Annex C | `pytest_file` tests/qualification/config_x/test_config_x_final_reconc | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-VBN-03 OPEN | *unset* |
+| ENT-A-GOV-01 | Annex C | `pytest_nodeid` tests/qualification/governance/gov_x2/test_gov_x2_quali | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-GOV-01 OPEN | *unset* |
+| ENT-A-GOV-02 | Annex C | `pytest_nodeid` tests/qualification/governance/gov_x2/test_gov_x2_quali | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-GOV-02 OPEN | *unset* |
+| ENT-A-GOV-03 | Annex C | `pytest_nodeid` tests/qualification/governance/gov_x2/test_gov_x2_proof | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-GOV-03 OPEN | *unset* |
+| ENT-A-EXE-01 | Annex C | `pytest_file` tests/unit/runtime/architecture/test_ee_a1_execution_en | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-EXE-01 OPEN | *unset* |
+| ENT-A-EXE-02 | Annex C | `pytest_file` tests/unit/runtime/architecture/test_ee_a1_execution_en | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-EXE-02 OPEN | *unset* |
+| ENT-A-EXE-03 | Annex C | `pytest_file` tests/unit/runtime/architecture/test_ee_a1_execution_en | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-EXE-03 OPEN | *unset* |
+| ENT-A-OBS-01 | Annex C | `pytest_nodeid` tests/unit/runtime/architecture/test_harness_w5_typed_o | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-OBS-01 OPEN | *unset* |
+| ENT-A-OBS-02 | Annex C | `pytest_nodeid` tests/unit/runtime/architecture/test_harness_w5_typed_o | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-OBS-02 OPEN | *unset* |
+| ENT-A-OBS-03 | Annex C | `pytest_nodeid` tests/qualification/trace_x/test_trace_x_p4_r1_recorder | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-OBS-03 OPEN | *unset* |
+| ENT-A-STA-01 | Annex C | `pytest_nodeid` tests/qualification/state_x/test_state_x_p0_baseline.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-STA-01 OPEN | *unset* |
+| ENT-A-STA-02 | Annex C | `pytest_nodeid` tests/qualification/state_x/test_state_x_p0_baseline.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-STA-02 OPEN | *unset* |
+| ENT-A-STA-03 | Annex C | `pytest_nodeid` tests/qualification/state_x/test_state_x_r3_auxiliary_d | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-STA-03 OPEN | *unset* |
+| ENT-A-SEC-01 | Annex C | `python_script` scripts/maintenance/check_immutable_security_audit_trai | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-SEC-01 OPEN | *unset* |
+| ENT-A-SEC-02 | Annex C | `python_script` scripts/maintenance/check_immutable_security_audit_trai | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-SEC-02 OPEN | *unset* |
+| ENT-A-SEC-03 | Annex C | `pytest_nodeid` tests/qualification/ent_audit_x/unit/test_enterprise_au | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-SEC-03 OPEN | *unset* |
+| ENT-A-REL-01 | Annex C | `pytest_nodeid` tests/unit/runtime/architecture/test_harness_w4_r1_prod | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REL-01 OPEN | *unset* |
+| ENT-A-REL-02 | Annex C | `pytest_nodeid` tests/qualification/harness_01/test_harness_01_gates.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REL-02 OPEN | *unset* |
+| ENT-A-REL-03 | Annex C | `pytest_nodeid` tests/qualification/harness_01/test_harness_01_gates.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REL-03 OPEN | *unset* |
+| ENT-A-REC-01 | Annex C | `pytest_nodeid` tests/qualification/state_x/test_state_x_p0_baseline.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REC-01 OPEN | *unset* |
+| ENT-A-REC-02 | Annex C | `pytest_nodeid` tests/qualification/state_x/test_state_x_r3_auxiliary_d | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REC-02 OPEN | *unset* |
+| ENT-A-REC-03 | Annex C | `pytest_nodeid` tests/qualification/state_x/test_state_x_r3_auxiliary_d | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REC-03 OPEN | *unset* |
+| ENT-A-PRD-01 | Annex C | `python_script` scripts/gates/check_application_production_gates.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-PRD-01 OPEN | *unset* |
+| ENT-A-PRD-02 | Annex C | `python_script` scripts/gates/check_application_production_gates.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-PRD-02 OPEN | *unset* |
+| ENT-A-PRD-03 | Annex C | `pytest_nodeid` tests/qualification/ent_audit_x/unit/test_report_includ | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-PRD-03 OPEN | *unset* |
+| ENT-A-CMP-01 | Annex C | `pytest_nodeid` tests/qualification/compat_x/test_compat_x_inventory_ga | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-CMP-01 OPEN | *unset* |
+| ENT-A-CMP-02 | Annex C | `pytest_nodeid` tests/qualification/compat_x/test_compat_x_persisted_r2 | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-CMP-02 OPEN | *unset* |
+| ENT-A-CMP-03 | Annex C | `pytest_nodeid` tests/qualification/compat_x/test_compat_x_inventory_ga | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-CMP-03 OPEN | *unset* |
+| ENT-A-REG-01 | Annex C | `pytest_nodeid` tests/qualification/roadmap_replay_x/test_roadmap_repla | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REG-01 OPEN | *unset* |
+| ENT-A-REG-02 | Annex C | `pytest_file` tests/qualification/evol_x/gates/test_evol_x_closed_wor | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REG-02 OPEN | *unset* |
+| ENT-A-REG-03 | Annex C | `python_script` scripts/gates/check_application_production_gates.py | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-REG-03 OPEN | *unset* |
+| ENT-A-DOC-01 | Annex C | `pytest_nodeid` tests/qualification/roadmap_replay_x/test_roadmap_repla | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-DOC-01 OPEN | *unset* |
+| ENT-A-DOC-02 | Annex C | `python_script` scripts/enterprise_audit/check_manifest_annex_c_alignme | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-DOC-02 OPEN | *unset* |
+| ENT-A-DOC-03 | Annex C | `pytest_nodeid` tests/qualification/roadmap_replay_x/test_roadmap_repla | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-DOC-03 OPEN | *unset* |
+| ENT-A-TEN-01 | Annex C | `pytest_file` tests/qualification/tenant_x/test_tenant_x_final_curren | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-TEN-01 OPEN | *unset* |
+| ENT-A-TEN-02 | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r1_current_h | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-TEN-02 OPEN | *unset* |
+| ENT-A-TEN-03 | Annex C | `pytest_nodeid` tests/qualification/ent_audit_x/integration/test_ent_a_ | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-TEN-03 OPEN | *unset* |
+| ENT-A-EVOL-01 | Annex C | `pytest_file` tests/qualification/evol_x/gates/test_evol_x_selection. | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-EVOL-01 OPEN | *unset* |
+| ENT-A-EVOL-02 | Annex C | `pytest_file` tests/qualification/evol_x/gates/test_evol_x_selection_ | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-EVOL-02 OPEN | *unset* |
+| ENT-A-EVOL-03 | Annex C | `pytest_file` tests/qualification/evol_x/gates/test_evol_x_closed_wor | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-EVOL-03 OPEN | *unset* |
+| ENT-A-INV-01 | Annex C | `pytest_file` tests/qualification/evol_x/gates/test_evol_x_closed_wor | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-INV-01 OPEN | *unset* |
+| ENT-A-INV-02 | Annex C | `pytest_nodeid` tests/qualification/ent_audit_x/unit/test_frz_coverage_ | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-INV-02 OPEN | *unset* |
+| ENT-A-INV-03 | Annex C | `pytest_nodeid` tests/qualification/ent_audit_x/integration/test_ent_au | entrypoint_exists / executor skip | semantic gate @ TES | architecture inject | Annex C/G2 | C034 | GAP-COV-ENT-A-INV-03 OPEN | *unset* |
+| TEN-IDENTITY | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r1_current_h | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-IDENTITY OPEN | *unset* |
+| TEN-PROPAGATION | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_p0_current_h | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-PROPAGATION OPEN | *unset* |
+| TEN-AUTHORITY | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r4_fast.py:: | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-AUTHORITY OPEN | *unset* |
+| TEN-STATE | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r4_fast.py:: | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-STATE OPEN | *unset* |
+| TEN-PROVIDER | Annex C | `pytest_nodeid` tests/qualification/existing_capability_configuration/t | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-PROVIDER OPEN | *unset* |
+| TEN-CONFIG | Annex C | `pytest_file` tests/qualification/config_x/test_config_x_final_reconc | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-CONFIG OPEN | *unset* |
+| TEN-CREDENTIALS | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r2_current_h | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-CREDENTIALS OPEN | *unset* |
+| TEN-EVIDENCE | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r4_fast.py:: | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-EVIDENCE OPEN | *unset* |
+| TEN-TRACE | Annex C | `pytest_nodeid` tests/qualification/trace_x/test_trace_x_p4_r1_recorder | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-TRACE OPEN | *unset* |
+| TEN-RECOVERY | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r4_fast.py:: | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-RECOVERY OPEN | *unset* |
+| TEN-ASYNC | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r4_fast.py:: | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-ASYNC OPEN | *unset* |
+| TEN-CROSS-TENANT | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r4_fast.py:: | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-CROSS-TENANT OPEN | *unset* |
+| TEN-FAIL-CLOSED | Annex C | `pytest_nodeid` tests/qualification/tenant_x/test_tenant_x_r4_fast.py:: | entrypoint_exists / executor skip | semantic gate @ TES | tenant leak inject | FRZ-TEN-* | C035 | GAP-COV-TEN-FAIL-CLOSED OPEN | *unset* |
+| VBN-INVENTORY-DRIFT | Annex C | `pytest_nodeid` tests/qualification/ebh_5/test_ebh_5_g06_enterprise_int | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-INVENTORY-DRIFT OPEN | *unset* |
+| VBN-CORE-HARDCODING | Annex C | `pytest_nodeid` tests/qualification/ebh_6/test_ebh_6_hardcoding_registe | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-CORE-HARDCODING OPEN | *unset* |
+| VBN-SHADOW-SELECTION | Annex C | `pytest_file` tests/qualification/config_x/test_config_x_final_reconc | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-SHADOW-SELECTION OPEN | *unset* |
+| VBN-SILENT-FALLBACK | Annex C | `pytest_file` tests/qualification/ebh_6/test_ebh_6_config_x_head_reco | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-SILENT-FALLBACK OPEN | *unset* |
+| VBN-CONTRACT-LEAKAGE | Annex C | `pytest_nodeid` tests/unit/architecture/test_ebh_2i_final_rescan_gate.p | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-CONTRACT-LEAKAGE OPEN | *unset* |
+| VBN-SQLITE-EFFECTIVE | Annex C | `pytest_file` tests/qualification/ebh_5/test_ebh_5_l2_integrity_gates | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-SQLITE-EFFECTIVE OPEN | *unset* |
+| VBN-OBS-OPS-COUPLING | Annex C | `pytest_nodeid` tests/unit/runtime/architecture/test_harness_w5_typed_o | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-OBS-OPS-COUPLING OPEN | *unset* |
+| VBN-REPLACEABILITY-MATRIX | Annex C | `pytest_file` tests/qualification/ebh_5/test_ebh_5_dual_slug_rpl_e_op | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-REPLACEABILITY-MATRIX OPEN | *unset* |
+| VBN-REACHABILITY | Annex C | `pytest_file` tests/qualification/ebh_5/test_ebh_5_behavioral_package | entrypoint_exists / executor skip | semantic gate @ TES | VBN violation inject | FRZ-RPL-* | C036 | GAP-COV-VBN-REACHABILITY OPEN | *unset* |
+
+**TEN13:** CheckIDs `TEN-*` (13) · **VBN9:** `VBN-*` (9) · **D01..D31:** Annex D rollup via C008–C011.
+
+---
+
+## Matrix F — ADV-01..31
+
+| ADV-ID | Threat | Fault injection | Expected finding/exit | Test path | TaskID | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| ADV-01 | manifest shrink | 84-check manifest | BLOCKER/3 | C019 | test_adv01_manifest_too_few_rejected | @ TES post C037–C039 |
+| ADV-02 | duplicate ID | dup row | ValueError | C019 | test_adv02_duplicate_check_id_rejected | @ TES post C037–C039 |
+| ADV-03 | Annex C drift | unknown ID | closed-world 3 | C019 | test_adv03_unknown_check_id_rejected | @ TES post C037–C039 |
+| ADV-04 | DAG cycle | cycle edge | ValueError | C030 | test_adv04_cycle_rejected | @ TES post C037–C039 |
+| ADV-05 | false FULL dry | dry_run FULL | INCOMPLETE 2 | C067 | test_adv05_dry_run_coverage_not_full | @ TES post C037–C039 |
+| ADV-06 | FAST as FULL | FAST run | PARTIAL label | C004 | test_adv06_fast_never_full_label | @ TES post C037–C039 |
+| ADV-07 | FAST floor skip | skip mandatory | INCOMPLETE 2 | C004 | test_adv07_fast_floor_incomplete_exit | @ TES post C037–C039 |
+| ADV-08 | FREEZE no baseline | no bootstrap | BLOCKER 1 | C009 | test_adv08_freeze_without_baseline_blocked | @ TES post C037–C039 |
+| ADV-09 | baseline path jail | bad path | ValueError | C001 | test_adv09_baseline_path_jail | @ TES post C037–C039 |
+| ADV-10 | orphan dep | unknown dep | ValueError | C030 | test_adv10_orphan_dep_rejected | @ TES post C037–C039 |
+| ADV-11 | mutating sandbox | mutating check | ValueError | C014 | test_adv11_sandbox_rejects_mutating | @ TES post C037–C039 |
+| ADV-12 | evidence tamper | bit flip | verify fail | C026 | test_adv12_tampered_evidence_fails | @ TES post C037–C039 |
+| ADV-13 | CHANGED-SINCE no sha | CLI | error 3 | C025 | test_adv13_changed_since_requires_since_sha_cli | @ TES post C037–C039 |
+| ADV-14 | REGRESSED | severity bump | REGRESSED | C022 | test_adv14_regressed_on_severity_increase | @ TES post C037–C039 |
+| ADV-15 | extra artifact | add file | verify fail | C026 | test_adv15_extra_artifact_fails_closed_verify | @ TES post C037–C039 |
+| ADV-16 | path traversal | ../ entry | ValueError | C027 | test_adv16_path_traversal_rejected | @ TES post C037–C039 |
+| ADV-17 | shell | shell=True | rejected | C014 | test_adv17_sandbox_never_shell_true | @ TES post C037–C039 |
+| ADV-18 | digest swap | wrong digest | BLOCKER 1 | C028 | test_adv18_manifest_digest_mismatch_finding | @ TES post C037–C039 |
+| ADV-19 | wrong SHA | fake HEAD | BLOCKER 1 | C012 | test_adv19_report_sha_matches_git_head | @ TES post C037–C039 |
+| ADV-20 | tenant category | strip category | TEN enrich | C015 | test_adv20_tenant_enrich_restores_category | @ TES post C037–C039 |
+| ADV-21 | VBN category | strip category | VBN enrich | C011 | test_adv21_vbn_enrich_restores_category | @ TES post C037–C039 |
+| ADV-22 | non-atomic report | interrupt | no torn file | C013 | test_adv22_no_partial_report_without_status | @ TES post C037–C039 |
+| ADV-23 | FRZ lie | all AUD-03 | BLOCKER 1 | C020 | test_adv23_frz_map_varies_by_check | @ TES post C037–C039 |
+| ADV-24 | bootstrap accepted | bootstrap | no accepted | C002 | test_adv24_bootstrap_never_writes_accepted | @ TES post C037–C039 |
+| ADV-25 | fake VBN NA | forged domains | VBN BLOCKER 1 | C043 | test_adv25_domain_gap_fails_full | @ TES post C037–C039 |
+| ADV-26 | empty CHANGED-SINCE | since=HEAD | BLOCKER 1 | C025 | test_adv26_empty_changed_since_blocked | @ TES post C037–C039 |
+| ADV-27 | bad mode | invalid mode | argparse 3 | C005 | test_adv27_invalid_mode_rejected | @ TES post C037–C039 |
+| ADV-28 | CI gap | readiness CI section | fail | C054 | test_adv28_mechanical_readiness_ci_section | @ TES post C037–C039 |
+| ADV-29 | non-cert bundle | non-cert run | build error | C068 | test_adv29_evidence_refused_when_non_certifying | @ TES post C037–C039 |
+| ADV-30 | L3 false qual | exit 3 accepted | assert fail | C031 | test_adv30_l3_full_strict_exit_zero_only | @ TES post C037–C039 |
+| ADV-31 | status mutation | PASS+findings | internal 3 | C044 | test_adv31_mutated_status_not_clean | @ TES post C037–C039 |
+
+
+---
+
+## 3. PL-07 — pytest taxonomy @ `34e0342`
+
+```powershell
+uv run pytest tests/qualification/ent_audit_x --collect-only -q
 ```
 
-| State | Guard | Actor |
-| --- | --- | --- |
-| NO_BASELINE | no accepted file | — |
-| FIRST_BOOTSTRAP_CANDIDATE | `--bootstrap-candidate`, no accepted | Agent |
-| FULL/FREEZE_CANDIDATE_QUALIFIED | 85 executed, VBN 31, CLEAN | Agent @ TEST_EXECUTION_SHA |
-| EVIDENCE_PUBLISHED | C051/C058 verify | Agent |
-| INDEPENDENT_B6 | external PASS | Auditor |
-| OPERATOR_ACCEPTED | C065 promote | Operator |
-| NORMAL_FREEZE | accepted + ancestor | Agent/CI |
-
-**Explicit:** first candidate FREEZE **does not** require pre-accepted baseline; normal FREEZE **requires** accepted + ancestry (fail-closed).
+**Result @ `34e03425b2322f415a99a7cfd290fe0982bf6970`:** **184** tests collected · **85** `entrypoint_exists` · **0/85** semantic QUALIFIED @ TES.
 
 ---
 
-## 6. PL-09 — mechanical readiness contract (C066)
+## 4. OD-ENT-01 / ECAP (PL-08)
 
-**Mandatory inputs (ALL required; any missing → `ready=false`):**
+**Mandatory order:** B6 PASS → EVIDENCE_PUBLICATION_SHA → OD-ENT-01 → ACCEPTED_BASELINE_SHA.
 
-| # | Input | Verification |
-| --- | --- | --- |
-| 1 | IMPLEMENTATION_SHA clean | `git status` empty + rev-parse |
-| 2 | TEST_EXECUTION_SHA pinned | ladder row + ancestor of HEAD |
-| 3 | FULL 85/85 executed | manifest `checks_executed==85`, coverage FULL |
-| 4 | TEN 13 executed PASS | outcomes for TEN-* |
-| 5 | VBN 9 executed PASS | outcomes for VBN-* |
-| 6 | Domains 31 | `vbn_domains.v1.json` accounted==31 |
-| 7 | L1/L2/L3 logs | pytest junit/log @ TES |
-| 8 | ADV 31 | fault suite PASS @ TES |
-| 9 | Evidence integrity | `verify_closed_evidence_bundle` |
-| 10 | SHA ancestry | merge-base checks documented |
-| 11 | FRZ mappings | `frz_coverage.v1.json` complete (C021) |
-| 12 | PR + nightly CI | run URLs + artifacts in dossier |
-| 13 | BAT/SH acceptance | C063 pass on target OS |
-| 14 | Dossier complete | C053 fields except B6 sign |
-| 15 | External blockers | listed OPEN; not claimed closed |
-
-**Outputs:** `technical_ready_for_independent_b6_mechanical: bool`; `formally_certified: false` (always in agent script).
+Promotion @ HEAD: ladder pins + `operator_records/` + dossier SHA cross-ref. **Remaining (C065):** mandatory closed bundle on promote (AUD-01).
 
 ---
 
-## 7. PL-04 — final qualification sequence (post R0–R4 integration)
+## 5. Baseline FSM (FCL-09)
 
-**During R0–R4:** L1/L2 and partial L3/integration tests allowed on dirty tree for fast feedback.
-
-**Authoritative certification (single wave after code complete):**
-
-1. Implement **R0–R4** + merge conflict resolution.  
-2. Integrate all changes (no parallel conflicting edits to `runner.py` / `baseline.py` / `contracts.py`).  
-3. **Commit + push** to `development`.  
-4. **Clean checkout** @ pushed SHA (or verify clean `origin/development`).  
-5. Pin **`TEST_EXECUTION_SHA`** on ladder (append-only).  
-6. Consolidated **final L1/L2/L3** pytest @ pinned SHA.  
-7. Certifying CLI **FULL 85/85** (C031, C074).  
-8. **First FREEZE candidate** bootstrap qual (C032 test 1 — no pre-accepted baseline).  
-9. **ADV-01..31** fault injection (C037–C039).  
-10. **BAT/SH** launcher acceptance (C063).  
-11. **CI execution evidence** (PR FAST + nightly FULL URLs in dossier).  
-12. **Evidence integrity** closed-bundle verify (C026,C068) → pin **EVIDENCE_PUBLICATION_SHA**.  
-13. **R5:** dossier C053, handoff C058, readiness C066, Annex/doc C055/C075 — **independent B6 external**.
-
-Semantic/code change after step 5 → restart from step 5 (requalification).
+Acyclic: NO_BASELINE → bootstrap candidate → L3 qual → evidence published → independent B6 → operator promote → normal FREEZE.
 
 ---
 
-## 8. R0–R5 batches (canonical TaskID meanings — PL-02)
+## 6. Mechanical readiness (PL-09 / C066)
 
-| Batch | TaskIDs | Notes |
-| --- | --- | --- |
-| **R0** | C001–C008, C065–C069, C073, C067–C068 | Trust, evidence policy, dry-run |
-| **R1** | C009–C018, C071, C022–C023 | VBN enforcement, sandbox, drift |
-| **R2** | C019–C030, C072 | Manifest, FRZ map, CHANGED-SINCE |
-| **R3** | C031–C044, C074 | L3 harness + semantic gates + ADV; **no final qual until §7 step 6** |
-| **R4** | C045–C047, C059–C063, C070, C007, C046 | CI, **C060 BAT**, **C061 SH**, launchers |
-| **R5** | C048–C058, C054–C056, C064, C066, C075, C053 | **C055 Annex F only** · **C057 OD-ENT matrix doc** · **C058 B6 handoff tree** · not BAT/SH/L3 |
-
-**Canonical collision fix (PL-02):**
-
-| TaskID | Canonical scope (corrective plan) | Forbidden mis-map |
-| --- | --- | --- |
-| **C055** | Annex F gap register reconciliation (136 rows) | L3 execution, BAT |
-| **C057** | Operator OD-ENT decision matrix (doc) | BAT launcher, promote code |
-| **C058** | B6 handoff / replay tree layout | audit.sh, nightly yaml |
-| **C060** | `audit.bat` | — |
-| **C061** | `audit.sh` | — |
-| **C031–C032** | L3 FULL/FREEZE real 85 | Annex F doc |
-
-**Parallelism:** serial `baseline.py` + `contracts.py` + `runner.py` through R1; `evidence.py`/`validators.py` owned by R0 with R5 verify-only; C034–C036 parallel after C033.
+@ HEAD script returns `technical_ready_for_independent_b6_mechanical: false` (expected). Post-§7: all 15 inputs in §6 table must parse real artifacts.
 
 ---
 
-## 9. FCL-02/05 — WBS C001..C075 (status @ `1fa5347a5`)
+## 7. Final qualification protocol (after R0–R4 integration)
 
-**Legend — @ HEAD status:** **DONE** = do not re-implement core; **PARTIAL** = extend/fix only; **OPEN** = implement.
+1. Commit + push implementation.  
+2. Clean checkout @ pushed SHA.  
+3. Pin **TEST_EXECUTION_SHA** (append-only ladder).  
+4. L1 + L2 pytest @ TES.  
+5. Certifying **FULL 85/85** (C031, C074).  
+6. **First FREEZE candidate** (C032).  
+7. **TEN13 + VBN9 + D01..D31**.  
+8. **ADV31** (C037–C039).  
+9. **BAT + SH** (C063).  
+10. **PR FAST + nightly FULL** CI evidence in dossier.  
+11. Evidence integrity + replay (C026, C068, ADV tamper).  
+12. Pin **EVIDENCE_PUBLICATION_SHA**.  
+13. Mechanical readiness (C066) true only if all gates proven.  
+14. Independent **Protocol 03 B6** (C058 handoff).  
+15. Operator **OD-ENT-01** promote (C065) — **after** B6 only.
 
-| TaskID | Batch | @HEAD | GapID | Primary target |
-| --- | --- | --- | --- | --- |
-| C001 | R0 | PARTIAL | GAP-RC-CANDIDATE-FSM | `baseline.py` BaselinePhase |
-| C002 | R0 | PARTIAL | GAP-RC-CANDIDATE-FSM | `runner.py` candidate only |
-| C003 | R0 | PARTIAL | GAP-RC-OD-TRUST | `promote-baseline` CLI |
-| C004 | R0 | DONE | GAP-RC-CERTIFY-SPLIT | `certifying_run` |
-| C005 | R0 | DONE | GAP-RC-CERTIFY-SPLIT | CLI `--non-certifying` |
-| C006 | R0 | PARTIAL | GAP-RC-EVIDENCE-TRUST | catalog + evidence |
-| C007 | R4 | OPEN | GAP-RC-NIGHTLY-FREEZE | nightly yml |
-| C008 | R1 | OPEN | GAP-RC-VBN-31 | `vbn.py` validator |
-| C009 | R1 | PARTIAL | GAP-RC-CANDIDATE-FSM | FREEZE FSM |
-| C010 | R1 | OPEN | GAP-RC-VBN-31 | VBN provenance |
-| C011 | R1 | OPEN | GAP-RC-VBN-31 | domain gap BLOCKER |
-| C012 | R1 | PARTIAL | GAP-RC-GIT-ANCESTRY | `assert_git_ancestor` |
-| C013 | R1 | PARTIAL | GAP-RC-ATOMIC-PUB | `report.py` |
-| C014 | R1 | OPEN | GAP-RC-SANDBOX | sandbox isolation |
-| C015 | R1 | OPEN | GAP-RC-REDACTION | redaction v2 |
-| C016 | R1 | OPEN | GAP-RC-RUN-STATUS | manifest run_status |
-| C017 | R1 | OPEN | GAP-RC-SANDBOX | timeout/orphans |
-| C018 | R1 | OPEN | GAP-RC-VBN-31 | rollup enforcement |
-| C019 | R2 | PARTIAL | GAP-RC-SEMANTIC-GATES | Annex C closed-world |
-| C020 | R2 | OPEN | GAP-RC-FRZ-MAP | `digests.py` |
-| C021 | R2 | OPEN | GAP-RC-FRZ-MAP | manifest frz_mapping |
-| C022 | R2 | OPEN | GAP-RC-DRIFT-SCHEMA | drift schema |
-| C023 | R2 | OPEN | GAP-RC-RESOLVED-BLOCK | RESOLVED reopen |
-| C024 | R2 | OPEN | GAP-RC-CHANGED-IMPACT | impact map data |
-| C025 | R2 | OPEN | GAP-RC-CHANGED-IMPACT | unknown paths |
-| C026 | R2 | PARTIAL | GAP-RC-EVIDENCE-TRUST | closed bundle verify |
-| C027 | R2 | OPEN | GAP-RC-EVIDENCE-TRUST | path traversal |
-| C028 | R2 | OPEN | GAP-RC-REQUAL-DIGEST | manifest digest requal |
-| C029 | R2 | OPEN | GAP-RC-CHANGED-IMPACT | impact map generator |
-| C030 | R2 | PARTIAL | GAP-RC-SEMANTIC-GATES | DAG orphans |
-| C031 | R3 | OPEN | GAP-RC-L3-FULL | L3 FULL 85 |
-| C032 | R3 | OPEN | GAP-RC-L3-FULL | L3 FREEZE pair |
-| C033 | R3 | OPEN | GAP-RC-SEMANTIC-GATES | acceptance conftest |
-| C034 | R3 | OPEN | GAP-RC-SEMANTIC-GATES | ENT-A gates |
-| C035 | R3 | OPEN | GAP-RC-SEMANTIC-GATES | TEN 13 |
-| C036 | R3 | OPEN | GAP-RC-SEMANTIC-GATES | VBN 9 |
-| C037 | R3 | OPEN | GAP-RC-ADV-INJECT | ADV 1–10 |
-| C038 | R3 | OPEN | GAP-RC-ADV-INJECT | ADV 11–20 |
-| C039 | R3 | OPEN | GAP-RC-ADV-INJECT | ADV 21–31 |
-| C040 | R3 | OPEN | GAP-RC-SSOT-DRIFT | pytest markers |
-| C041 | R3 | OPEN | GAP-RC-SSOT-DRIFT | collect-only reconcile |
-| C042 | R3 | PARTIAL | GAP-RC-OD-TRUST | promotion tests |
-| C043 | R3 | OPEN | GAP-RC-VBN-31 | forged VBN test |
-| C044 | R3 | OPEN | GAP-RC-AUDIT-OF-AUDITOR | status tamper |
-| C045 | R4 | PARTIAL | GAP-RC-CI-PROFILE | workflow skeleton |
-| C046 | R4 | OPEN | GAP-RC-NIGHTLY-FREEZE | nightly align |
-| C047 | R4 | OPEN | GAP-RC-PR-PATH-SKIP | runbook |
-| C048 | R5 | OPEN | GAP-RC-SHA-LADDER | ladder rules |
-| C049 | R5 | OPEN | GAP-RC-EVID-PUBLISH | env fingerprint |
-| C050 | R5 | OPEN | GAP-RC-EVID-PUBLISH | bundle builder |
-| C051 | R5 | OPEN | GAP-RC-EVID-PUBLISH | qual wave script |
-| C052 | R5 | OPEN | GAP-RC-EVID-PUBLISH | runbook replay |
-| C053 | R5 | OPEN | GAP-RC-DOSSIER | dossier fill |
-| C054 | R5 | PARTIAL | GAP-RC-MECH-READY | readiness script |
-| C055 | R5 | OPEN | GAP-RC-SSOT-DRIFT | Annex F reconcile |
-| C056 | R5 | OPEN | GAP-RC-SSOT-DRIFT | corrective supersede note |
-| C057 | R5 | OPEN | GAP-B | OD matrix doc |
-| C058 | R5 | OPEN | GAP-RC-EVID-PUBLISH | B6 handoff tree |
-| C059 | R4 | PARTIAL | GAP-RC-PR-PATH-SKIP | PR FAST workflow |
-| C060 | R4 | PARTIAL | GAP-RC-LAUNCHER-BAT | audit.bat |
-| C061 | R4 | PARTIAL | GAP-RC-LAUNCHER-SH | audit.sh |
-| C062 | R4 | PARTIAL | GAP-RC-SSOT-DRIFT | report summary |
-| C063 | R4 | OPEN | GAP-RC-LAUNCHER-CWD | launcher tests |
-| C064 | R5 | OPEN | GAP-RC-SSOT-DRIFT | operator quickstart |
-| **C065** | R0 | OPEN | GAP-RC-OD-TRUST | ECAP OD-ENT-01 verify + ladder pins |
-| **C066** | R5 | OPEN | GAP-RC-MECH-READY | evidence-based readiness |
-| **C067** | R0 | OPEN | GAP-RC-DRY-RUN | dry-run non-cert policy |
-| **C068** | R0 | OPEN | GAP-RC-EVIDENCE-TRUST | bundle eligibility |
-| **C069** | R0 | OPEN | GAP-RC-JSON-SCHEMA | jsonschema validators |
-| **C070** | R4 | OPEN | GAP-RC-OUTPUT-COLLISION | unique output dirs |
-| **C071** | R1 | OPEN | GAP-RC-RESOLVED-BLOCK | aggregate RESOLVED |
-| **C072** | R2 | OPEN | GAP-RC-CHANGED-IMPACT | CHANGED-SINCE ancestry+map |
-| **C073** | R0 | OPEN | GAP-RC-EVIDENCE-TRUST | mode-specific catalog |
-| **C074** | R3 | OPEN | GAP-RC-L3-FULL | clean-checkout qual harness |
-| **C075** | R5 | OPEN | GAP-RC-SSOT-DRIFT | this doc + annex reconcile |
-
-**Atomic task count:** **75** (64 canonical + 11 NETNEW). **Exact @ HEAD status:** **2** `CLOSED_WITH_EVIDENCE` (C004,C005) · **17** `IMPLEMENTED_NOT_QUALIFIED` · **56** `OPEN`. **Active implementation tasks:** **73** (exclude CLOSED).
-
-**Full 12-column specs:** C001–C064 = corrective plan table (immutable text); add @HEAD status from Appendix C; C065–C075 = Appendix B.
-
-**Topological order (all active tasks):**  
-L0: C004,C005 (done) → C001,C008,C019,C030 → C067,C069,C073,C006 → C065→C003 → C068 → C026,C027 → C008→C010→C011→C018 → C071,C022,C023 → C024→C025→C029→C072 → C033 → C034,C035,C036 → C037→C038→C039 → C031,C032,C074 → C045,C059,C007,C046,C060,C061,C063,C070 → C049,C050,C051 → C031/C032 **final qual** → C053,C058,C066 → C048,C055,C056,C057,C064,C075.
+Requalify from step 3 on any semantic change after pin.
 
 ---
 
-## 10. FCL-07 — 85-check matrix (summary + SSOT pointer)
+## 8. R0–R5 batches
 
-**Full row-level matrix** (CheckID × owner × FRZ × WBS × oracles) is mechanically exported from [`enterprise_audit_check_manifest.v1.json`](../../../../intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json) + [ANNEX_C_CONTROL_MATRIX.md](./ANNEX_C_CONTROL_MATRIX.md) + [ANNEX_G2_CONTROL_GATE_MAPPING.md](./ANNEX_G2_CONTROL_GATE_MAPPING.md).
+| Batch | TaskIDs |
+| --- | --- |
+| R0 | C001–C008, C065–C069, C073 |
+| R1 | C009–C018, C071, C022, C023 |
+| R2 | C019–C030, C072 |
+| R3 | C031–C044, C074 |
+| R4 | C045–C047, C059–C063, C070, C007, C046 |
+| R5 | C048–C058, C054–C056, C064, C066, C075, C053 |
 
-| Family | CheckIDs | Count | Semantic owner | WBS | Execution @ HEAD | Expected acceptance |
-| --- | --- | ---: | --- | --- | --- | --- |
-| ENT-A-* | BND,OWN,CTR,TYP,DUP,PLG,GOV,EXE,OBS,STA,SEC,REL,REC,PRD,CMP,REG,DOC,EVOL,INV + VBN-01..03 | **63** | Annex C / G2 | C034 | **PLANNED** (exists tests = wiring) | subprocess gate exit 0 @ TEST_EXECUTION_SHA |
-| TEN-* | TEN-IDENTITY … TEN-FAIL-CLOSED | **13** | TENANT-X | C035 | **PLANNED** | 13/13 executed PASS |
-| VBN-* | VBN-INVENTORY-DRIFT … VBN-REACHABILITY | **9** | VBN schema | C036 | **PLANNED** | 9/9 + domains D01..D31 |
-| **Total** | | **85** | | | **0 QUALIFIED** | certifying FULL coverage FULL |
+**R5 doc vs evidence:** C053/C048/C075 prepare structure; **do not** insert fictional TES/EVIDENCE/B6 SHAs before §7.
 
-**VBN domains D01..D31:** [ANNEX_D_VBN_DOMAINS_1_31.md](./ANNEX_D_VBN_DOMAINS_1_31.md) — validated only after C008/C010 (GAP-RC-VBN-31).
-
-**ADV-01..31:** spec in corrective CP-04; implementation C037–C039; **planned** fault injection, **not** current file-existence ADV tests.
-
----
-
-## 11. FRZ-AUD-01..10 → closure tasks
-
-| FRZ | Requirement | Task mapping | Evidence |
-| --- | --- | --- | --- |
-| AUD-01 | runner exists | DONE @ HEAD | package import |
-| AUD-02 | modular checks | C019,C030 | manifest |
-| AUD-03 | FRZ map | C020,C021 | frz_coverage |
-| AUD-04 | reports | C013,C062 | json+md |
-| AUD-05 | exact SHA | C059,C048 | report fields |
-| AUD-06 | baseline drift | C001,C022 | baseline+drift |
-| AUD-07 | drift classes | C071,C023 | RESOLVED fix |
-| AUD-08 | exit codes | C004,C067 | modes |
-| AUD-09 | modes | C009,C031–C032 | L3 |
-| AUD-10 | post-freeze policy | C064,C047,C046 | runbook+CI |
-
-Formal **PASS** rows: operator after B6 only.
+**C057:** agent-authored OD authority matrix document (operator decisions remain external gates).
 
 ---
 
-## 14. PL-05/PL-10 — task DAG, ownership, critical path
+## 9. Implementation inventory (Tier-0 @ HEAD)
 
-### 14.1 Shared-file execution owners (single writer per wave)
-
-| File | Owner batch | Consumers (read-only until merge) |
-| --- | --- | --- |
-| `baseline.py` | R0 (C001,C003,C065) | R1 drift C022,C071 |
-| `contracts.py` | R0 C004 | all |
-| `runner.py` | R0 C067 → R1 C009–C018 | R3 bootstrap |
-| `modes.py` | R0 C067, R1 C071 | — |
-| `evidence.py` / `validators.py` | R0 C006,C068,C069 | R2 C026,C027; R5 C050 |
-| `vbn.py` | R1 C008–C010 | runner rollup |
-| `changed_since.py` | R2 C024–C025,C072 | CLI |
-| `mechanical_readiness_check.py` | R5 C066 only | — |
-
-### 14.2 Topological layers (acyclic — no cross-batch cycles)
-
-```mermaid
-flowchart TB
-  subgraph L0 [Layer0_done]
-    C004[C004 C005 CLOSED]
-  end
-  subgraph L1 [Layer1_R0_trust]
-    C001[C001-C008 C065-C069 C073 C067 C068]
-  end
-  subgraph L2 [Layer2_R1_runner]
-    C009[C009-C018 C071 C022 C023]
-  end
-  subgraph L3 [Layer3_R2_manifest]
-    C019[C019-C030 C072]
-  end
-  subgraph L4 [Layer4_R3_qual_code]
-    C033[C033-C044 C074 code]
-  end
-  subgraph L5 [Layer5_R4_ci]
-    C045[C045-C047 C059-C063 C070 C007]
-  end
-  subgraph L6 [Layer6_final_qual]
-    FQ[§7 steps 5-12 @ TEST_EXECUTION_SHA]
-  end
-  subgraph L7 [Layer7_R5_publish]
-    C048[C048-C058 C054-C057 C066 C075 C053]
-  end
-  L0 --> L1 --> L2 --> L3 --> L4 --> L5 --> FQ --> L7
-```
-
-**Critical path:** C067 → C068 → C026 → C008 → C011 → C033 → C034–C036 → C031 → C074 → **final qual** → C051 → C058 → C066 → C075.
-
-**Operator-only edges:** INDEPENDENT_B6 (external) → C065 promote; OD-ENT-02 (BLK-CI) — no agent closure.
-
-**L3 vs R4:** R4 CI/launcher code lands before **final** L3 qual; qual harness C074 merged in R3 but **executed** only at §7 step 6 after R4 push.
+| Component | Path | Contract | Behavior @ HEAD | Tests | Gap/Task |
+| --- | --- | --- | --- | --- | --- |
+| Runner | `runner.py` | certifying modes | dry_run → non-certifying | unit/integration | C067,C009,C031 |
+| Baseline | `baseline.py` | FSM + promote | OD verify partial | test_baseline_promotion | C065,C003 |
+| Evidence | `evidence.py` | closed bundle | certifying rules partial | test_certifying_and_bundle | C068,C006 |
+| Validators | `validators.py` | schema verify | shallow | test_json_schema_report | C069,C026 |
+| Sandbox | `sandbox.py` | allowlist exec | partial isolation | test_sandbox_path_traversal | C014-C017 |
+| VBN | `vbn.py` | D01..D31 rollup | script invoke | unit partial | C008-C011 |
+| Checks | `checks/executor.py` | manifest exec | wiring/skip pending | acceptance exists | C033-C036 |
+| CLI | `run_enterprise_audit.py` | exit 0-3 | modes | integration | C005,C059 |
+| CI | `enterprise-audit.yml` | PR FAST | real FAST + pytest | workflow | C059,C046 |
+| Launchers | `audit.bat`/`audit.sh` | one-command | unknown arg bug | partial | C060-C063 |
+| Readiness | `mechanical_readiness_check.py` | fail-closed | stubs false | test_mechanical_readiness | C066 |
+| Qual tree | `tests/qualification/ent_audit_x/` | L1/L2/L3/acc | 184 collect | pytest | C031-C041 |
 
 ---
 
-## 12. Mechanical final acceptance (plan completeness — PL-12)
+## 14. Task DAG (executable)
+
+**Topological order:**  
+C004,C005 → C001,C008,C019,C030 → C067,C069,C073,C006 → C065→C003 → C068 → C026,C027 → C008→C011→C018 → C071,C022,C023 → C024→C025→C029→C072 → C033 → C034,C035,C036 → C037→C038→C039 → C031,C032,C074 → C045,C059,C007,C046,C060,C061,C063,C070 → **§7 qual** → C049,C050,C051 → C053,C058,C066 → C048,C055,C056,C057,C064,C075.
+
+**Shared-file serial owners:** `baseline.py` (R0); `runner.py` (R0→R1); `modes.py` (R0/R1); `evidence.py`/`validators.py` (R0/R2); `vbn.py` (R1); `changed_since.py` (R2); readiness script verify-only until post-qual.
+
+**Safe parallelism:** C034|C035|C036 after C033; C037–C039 parallel; C055|C057|C056 doc after C041.
+
+---
+
+## 16. Mechanical completeness @ plan publication
 
 | Check | Result |
 | --- | --- |
-| A-01..30 mapped | **30/30** §2.2 |
-| P0/P1 reconciled | **yes** via GAP-RC |
-| FCL-01..12 | **resolved** → **PL-01..PL-12** §PL index |
-| Unique GAP count | **32 RC + 6 EXT + 85 COV** |
-| C001..C075 | **§9** |
-| DAG acyclic | **§9 topological** |
-| 85 CheckIDs | **§10** |
-| TEN13/VBN9/D31/ADV31 | **§10 + C035/C036/C008** |
-| No dry-run cert / false readiness / untrusted promote | **gaps OPEN; tasks assigned** |
-| L3 after integration | **§7** |
-| Independent B6 external | **§6, GAP-B** |
-| No placeholders in WBS | **§9 full IDs** |
-| No fabricated PASS | **yes** |
+| AUD-01..44 | **44/44** Matrix B |
+| C001..C075 exactly once | **75/75** Matrix C |
+| GAP-RC + GAP-B + GAP-COV | **33+6+85** Matrix D |
+| CheckIDs | **85/85** Matrix E |
+| ADV-01..31 | **31/31** Matrix F |
+| FRZ-AUD-01..10 | Matrix A.2 |
+| Dual-axis sums | **PASS** ({'PARTIAL': 21, 'IMPLEMENTED': 4, 'NOT_STARTED': 50}, {'NOT_QUALIFIED': 73, 'QUALIFIED': 2}) |
+| DAG acyclic | **PASS** §14 |
+| No fabricated qual SHA | **PASS** |
+| Operator gates separated | **PASS** |
+| C057 = agent doc | **PASS** |
 
 ---
 
 ## 13. One-pass agent instruction
 
-1. Execute **R0→R5** in dependency order (§8–9).  
-2. Do **not** re-implement **C004,C005**.  
-3. Run **final qualification only after R4 merge** (§7).  
-4. Publish evidence + update ladder/dossier in **R5**.  
-5. Stop at **TECHNICAL_READY_FOR_B6**; operator/external gates for B6 and FRZ.
-
-**Target stage label (post-wave, not self-declared now):** `ENT-AUDIT-X — TECHNICAL IMPLEMENTATION COMPLETE / QUALIFIED / READY FOR INDEPENDENT PROTOCOL 03 B6`.
+1. R0→R5 in DAG order.  
+2. Do not re-implement C004,C005.  
+3. §7 only after R4 push.  
+4. Stop at mechanical readiness; external B6 + operator closure.
 
 ---
 
-## Appendix A — PL-06 full 85-check matrix (@ HEAD)
+## Appendix B — C065..C075 (NETNEW specs)
 
-Columns: **Exec@HEAD** = PLANNED (0/85 QUALIFIED PASS) | **Mode** = FULL+FREEZE certifying primary | **Entrypoint** = SSOT in [`enterprise_audit_check_manifest.v1.json`](../../../../intergrax/platform/enterprise_audit/data/enterprise_audit_check_manifest.v1.json) | **Invariant** = Annex C / G2 row (see Annex C doc).
-
-| CheckID | Entry kind | Entrypoint (manifest SSOT) | Mode | Exec@HEAD | WBS | Positive oracle | Negative oracle |
-| --- | --- | --- | --- | --- | --- | --- |
-| ENT-A-BND-01 | pytest_nodeid | (Annex B via C021) | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-BND-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-BND-03 | python_script | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-OWN-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-OWN-02 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-OWN-03 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-CTR-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-CTR-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-CTR-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-TYP-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-TYP-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-TYP-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-DUP-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-DUP-02 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-DUP-03 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-PLG-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-PLG-02 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-PLG-03 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-VBN-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-VBN-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-VBN-03 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-GOV-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-GOV-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-GOV-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-EXE-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-EXE-02 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-EXE-03 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-OBS-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-OBS-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-OBS-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-STA-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-STA-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-STA-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-SEC-01 | python_script | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-SEC-02 | python_script | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-SEC-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REL-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REL-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REL-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REC-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REC-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REC-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-PRD-01 | python_script | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-PRD-02 | python_script | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-PRD-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-CMP-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-CMP-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-CMP-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REG-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REG-02 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-REG-03 | python_script | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-DOC-01 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-DOC-02 | python_script | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-DOC-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-TEN-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-TEN-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-TEN-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-EVOL-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-EVOL-02 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-EVOL-03 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-INV-01 | pytest_file | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-INV-02 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| ENT-A-INV-03 | pytest_nodeid | | PLANNED | C034 | gate exit 0 | inject violation |
-| TEN-IDENTITY | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-PROPAGATION | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-AUTHORITY | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-STATE | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-PROVIDER | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-CONFIG | pytest_file | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-CREDENTIALS | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-EVIDENCE | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-TRACE | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-RECOVERY | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-ASYNC | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-CROSS-TENANT | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| TEN-FAIL-CLOSED | pytest_nodeid | | PLANNED | C035 | gate exit 0 | tenant leak |
-| VBN-INVENTORY-DRIFT | pytest_nodeid | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-CORE-HARDCODING | pytest_nodeid | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-SHADOW-SELECTION | pytest_file | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-SILENT-FALLBACK | pytest_file | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-CONTRACT-LEAKAGE | pytest_nodeid | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-SQLITE-EFFECTIVE | pytest_file | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-OBS-OPS-COUPLING | pytest_nodeid | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-REPLACEABILITY-MATRIX | pytest_file | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-| VBN-REACHABILITY | pytest_file | | PLANNED | C036 | gate exit 0 | hardcoding inject |
-
-**D01..D31:** rollup via `vbn_domain_report.py`; each domain must reach QUALIFIED or NA_WITH_EVIDENCE per Annex D (C008–C011).
+See [corrective plan](./ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md) + Matrix C columns.
 
 ---
 
-## Appendix B — NETNEW C065..C075 (full task spec)
+## R5 annex / ladder / dossier tasks (no fictional SHAs)
 
-| TaskID | Batch | Sev | GapID | File/function | Current | Target | Steps | Deps | Pos test | Neg test | Evidence | Acceptance | Owner |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| C065 | R0 | CRIT | GAP-RC-OD-TRUST | `baseline.py::verify_operator_decision_record` | SHA length + operator_origin | Ladder B6/EVID/TES pins + bundle path verify + dossier match | Extend verify; wire promote; operator_records path | C003,C026 | promote w/ valid ladder fixture | forged JSON | OD record | no promote without B6 pin | ENT |
-| C066 | R5 | CRIT | GAP-RC-MECH-READY | `mechanical_readiness_check.py::main` | file exists | Parse qual logs + artifacts @ TES | Rewrite checker; JSON report | C031,C032,C051,C074 | all gates true | missing L3 | readiness JSON | TECHNICAL_READY only | ENT |
-| C067 | R0 | CRIT | GAP-RC-DRY-RUN | `runner.py`,`modes.py` | FAST dry-run PASS | dry_run forces INCOMPLETE; block certifying evidence | Flag manifest; exit code | C004 | dry-run exit 2 | dry-run exit 0 cert | report | no dry-run CLEAN certifying | ENT |
-| C068 | R0 | CRIT | GAP-RC-EVIDENCE-TRUST | `evidence.py::build_evidence_manifest` | certifying_run flag only | Require manifest executed==planned for mode | Cross-check manifest | C067,C006 | real FULL bundle | dry-run bundle fail | manifest | bundle rejected | ENT |
-| C069 | R0 | MAJ | GAP-RC-JSON-SCHEMA | `validators.py` | top-level keys | jsonschema draft 2020-12 nested | Add dependency; validate all artifacts | C006 | valid pass | extra props fail | validator | all artifacts | ENT |
-| C070 | R4 | MAJ | GAP-RC-OUTPUT-COLLISION | `audit.bat`,`audit.sh`, CLI | RANDOM suffix | uuid+timestamp+lock file | Replace OUT= pattern | C060,C061 | parallel runs | collision | proof dirs | unique paths | ENT |
-| C071 | R1 | MAJ | GAP-RC-RESOLVED-BLOCK | `modes.py::aggregate_status` | RESOLVED severity blocks | Exclude RESOLVED from blocking severities | Filter in aggregate | C023 | resolved PASS | blocker resolved | unit | no false BLOCK | ENT |
-| C072 | R2 | MAJ | GAP-RC-CHANGED-IMPACT | `changed_since.py`, impact JSON | path-only | SSOT map + baseline ancestry | Data file + tests | C012,C024 | mapped change | unmapped BLOCK | impact map | fail-closed | ENT |
-| C073 | R0 | MAJ | GAP-RC-EVIDENCE-TRUST | `evidence_artifact_catalog.v1.json` | static list | profiles: FAST/FULL/FREEZE/B6-handoff | Catalog versions | C006 | profile match | missing artifact | catalog | mode closure | ENT |
-| C074 | R3 | CRIT | GAP-RC-L3-FULL | `tests/.../l3/test_l3_qual_wave.py` (new) | dry-run L3 | clean checkout subprocess CLI @ pinned SHA | Harness + markers | C031,C032 | 85/85 PASS | partial fail | `.tmp/proof/` | strict exit 0 | ENT |
-| C075 | R5 | MAJ | GAP-RC-SSOT-DRIFT | this doc, Annex F/H, ladder, dossier | stale SHAs/counts | append IMPLEMENTATION_SHA; supersede headers | Doc pass | C041,C048,C055 | link lint | stale pin | git | SSOT match HEAD | ENT |
+| Artifact | Task | Action @ implementation wave |
+| --- | --- | --- |
+| [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md) | C048,C075 | Append `IMPLEMENTATION_SHA` row for each implementation commit; pin TES only in §7 step 3 |
+| [ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md](./ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md) | C053,C075 | Fill TES/EVID/B6 fields only after qual + B6 |
+| [ANNEX_F_GAP_REGISTER.md](./ANNEX_F_GAP_REGISTER.md) | C055 | Status columns @ HEAD; preserve historical GAP-C closed rows |
+| [ANNEX_H_WBS.md](./ANNEX_H_WBS.md) | C055,C075 | Align 75 TaskID rows to Matrix C |
+| [ANNEX_G2_CONTROL_GATE_MAPPING.md](./ANNEX_G2_CONTROL_GATE_MAPPING.md) | C020,C055 | Crosswalk 63 ENT-A + TEN/VBN via Annex C (AUD-36) |
 
 ---
 
-## Appendix C — PL-03 WBS status @ `1fa5347a5` (75 tasks, one row each)
-
-**Spec text:** C001–C064 = [corrective plan](./ENT_AUDIT_X_FINAL_CORRECTIVE_IMPLEMENTATION_AND_B6_READINESS_PLAN.md) table (immutable). C065–C075 = Appendix B.
-
-| TaskID | Batch | @HEAD status | Owner |
-| --- | --- | --- | --- |
-| ENT-T-C001 | R0 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C002 | R0 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C003 | R0 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C004 | R0 | CLOSED_WITH_EVIDENCE | ENT |
-| ENT-T-C005 | R0 | CLOSED_WITH_EVIDENCE | ENT |
-| ENT-T-C006 | R0 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C007 | R4 | OPEN | ENT |
-| ENT-T-C008 | R1 | OPEN | ENT |
-| ENT-T-C009 | R1 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C010 | R1 | OPEN | ENT |
-| ENT-T-C011 | R1 | OPEN | ENT |
-| ENT-T-C012 | R1 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C013 | R1 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C014 | R1 | OPEN | ENT |
-| ENT-T-C015 | R1 | OPEN | ENT |
-| ENT-T-C016 | R1 | OPEN | ENT |
-| ENT-T-C017 | R1 | OPEN | ENT |
-| ENT-T-C018 | R1 | OPEN | ENT |
-| ENT-T-C019 | R2 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C020 | R2 | OPEN | ENT |
-| ENT-T-C021 | R2 | OPEN | ENT |
-| ENT-T-C022 | R2 | OPEN | ENT |
-| ENT-T-C023 | R2 | OPEN | ENT |
-| ENT-T-C024 | R2 | OPEN | ENT |
-| ENT-T-C025 | R2 | OPEN | ENT |
-| ENT-T-C026 | R2 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C027 | R2 | OPEN | ENT |
-| ENT-T-C028 | R2 | OPEN | ENT |
-| ENT-T-C029 | R2 | OPEN | ENT |
-| ENT-T-C030 | R2 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C031 | R3 | OPEN | ENT |
-| ENT-T-C032 | R3 | OPEN | ENT |
-| ENT-T-C033 | R3 | OPEN | ENT |
-| ENT-T-C034 | R3 | OPEN | ENT |
-| ENT-T-C035 | R3 | OPEN | ENT |
-| ENT-T-C036 | R3 | OPEN | ENT |
-| ENT-T-C037 | R3 | OPEN | ENT |
-| ENT-T-C038 | R3 | OPEN | ENT |
-| ENT-T-C039 | R3 | OPEN | ENT |
-| ENT-T-C040 | R3 | OPEN | ENT |
-| ENT-T-C041 | R3 | OPEN | ENT |
-| ENT-T-C042 | R3 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C043 | R3 | OPEN | ENT |
-| ENT-T-C044 | R3 | OPEN | ENT |
-| ENT-T-C045 | R4 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C046 | R4 | OPEN | ENT |
-| ENT-T-C047 | R4 | OPEN | ENT |
-| ENT-T-C048 | R5 | OPEN | ENT |
-| ENT-T-C049 | R5 | OPEN | ENT |
-| ENT-T-C050 | R5 | OPEN | ENT |
-| ENT-T-C051 | R5 | OPEN | ENT |
-| ENT-T-C052 | R5 | OPEN | ENT |
-| ENT-T-C053 | R5 | OPEN | ENT |
-| ENT-T-C054 | R5 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C055 | R5 | OPEN | ENT |
-| ENT-T-C056 | R5 | OPEN | ENT |
-| ENT-T-C057 | R5 | OPEN | Operator |
-| ENT-T-C058 | R5 | OPEN | ENT |
-| ENT-T-C059 | R4 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C060 | R4 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C061 | R4 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C062 | R4 | IMPLEMENTED_NOT_QUALIFIED | ENT |
-| ENT-T-C063 | R4 | OPEN | ENT |
-| ENT-T-C064 | R5 | OPEN | ENT |
-| ENT-T-C065 | R0 | OPEN | ENT |
-| ENT-T-C066 | R5 | OPEN | ENT |
-| ENT-T-C067 | R0 | OPEN | ENT |
-| ENT-T-C068 | R0 | OPEN | ENT |
-| ENT-T-C069 | R0 | OPEN | ENT |
-| ENT-T-C070 | R4 | OPEN | ENT |
-| ENT-T-C071 | R1 | OPEN | ENT |
-| ENT-T-C072 | R2 | OPEN | ENT |
-| ENT-T-C073 | R0 | OPEN | ENT |
-| ENT-T-C074 | R3 | OPEN | ENT |
-| ENT-T-C075 | R5 | OPEN | ENT |
-
-**Sum check:** 2+17+56=**75** tasks · **73** require implementation work (exclude C004,C005).
-
----
-
-## Appendix D — VBN domains D01..D31
-
-See [ANNEX_D_VBN_DOMAINS_1_31.md](./ANNEX_D_VBN_DOMAINS_1_31.md). All **PLANNED** @ HEAD until C008–C011 + certifying FULL @ TEST_EXECUTION_SHA.
-
----
-
-## Appendix E — ADV-01..31 target matrix
-
-See corrective plan **CP-04** + §2 GAP-RC-ADV-INJECT. **0/31** fault-injection qualified @ HEAD; C037–C039.
-
----
-
-## Appendix F — GAP-COV qualification index
-
-**85** rows `GAP-COV-<CheckID>` — status **OPEN** @ HEAD; not counted in **32** GAP-RC defect set. Closes per Appendix A + C031–C036 @ TEST_EXECUTION_SHA.
+*Execution SSOT published — implementation baseline `34e03425b2322f415a99a7cfd290fe0982bf6970`; agent wave R0–R5 follows §8 DAG (no qual §7 until R4 lands).*

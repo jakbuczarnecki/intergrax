@@ -13,6 +13,8 @@
 | IMPLEMENTATION_SHA | `86832319b08b3837cfb4ae9c90919389f202cc37` | Tier-0 runner + manifest + CLI + qual L1/L2 |
 | FINAL_PLAN_PUBLICATION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | W0–W6 B6 readiness wave landed on `development` |
 | IMPLEMENTATION_SHA (ENT-AUDIT-X closure baseline) | `1fa5347a56c569fa62ac2c777ff3947d11e906b4` | Audited HEAD @ post-implementation closure master plan |
+| IMPLEMENTATION_SHA (R0 trust wave) | `34e03425b2322f415a99a7cfd290fe0982bf6970` | OD verify, dry-run, evidence eligibility, readiness fail-closed, qual tests |
+| POST_IMPLEMENTATION_FINAL_CLOSURE_PLAN_PUBLICATION_SHA | `git rev-list -1 HEAD -- docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md` | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) execution SSOT publication |
 | TEST_EXECUTION_SHA | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — log `.tmp/session/ent-audit-x-build/pytest.log` |
 | EVIDENCE_CANDIDATE_SHA | *unset* | Pre–independent-audit bundle |
 | EVIDENCE_PUBLICATION_SHA | *unset* | Qual artifacts @ descendant of TEST_EXECUTION_SHA |
