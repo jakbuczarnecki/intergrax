@@ -4,8 +4,10 @@
 
 | Field | Value |
 | --- | --- |
-| PLAN_BASELINE_SHA | `0321bf525d6c78c829706fe3498a8a95941fe528` |
-| TEST_EXECUTION_SHA | *operator pins at qual replay* |
+| Execution SSOT | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) |
+| Audited IMPLEMENTATION_SHA | `d4974efc255bf6ff6ca96e00fb084293ea685d66` |
+| Plan mechanical validator | `scripts/enterprise_audit/validate_post_implementation_master_plan.py` (exit 0 required before B6 dossier fill) |
+| TEST_EXECUTION_SHA | *operator pins at qual replay — not historical `0cee41a8`* |
 | EVIDENCE_CANDIDATE_SHA | *unset until L3 green bundle* |
 | EVIDENCE_PUBLICATION_SHA | *unset* |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor* |

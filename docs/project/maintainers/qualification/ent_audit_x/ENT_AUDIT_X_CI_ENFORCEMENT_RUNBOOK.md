@@ -1,6 +1,6 @@
 # ENT-AUDIT-X — CI enforcement runbook (OD-ENT-02)
 
-**Blocker:** `BLK-CI-ENFORCE` — `development` branch protection not configured (gh API 404 @ planning wave).
+**Blocker:** `BLK-CI-ENFORCE` — `development` branch protection not configured (gh API 404 @ documentation HEAD `c6d600df`). SSOT repair: [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) §13 / GAP-B.
 
 ## Required checks (target)
 

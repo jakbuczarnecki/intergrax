@@ -1,7 +1,7 @@
 # ANNEX H — Implementation WBS (reconciled P-11)
 
 **PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
-**PLAN_PUBLICATION_SHA:** `6328f0cf915ed1f4cee13acb5eb68f07a7438b8e`  
+**Execution WBS (C001–C075):** [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) Matrix C + §14 DAG (75 TaskID). **C075-S1** (W-0 inventory) / **C075-S2** (W-G final reconcile) documented in SSOT header.
 
 ## Batch summary (verified totals)
 
