@@ -160,7 +160,12 @@ class EnterpriseAuditRunner:
         ordered = topological_order(planned_all)
         sandbox = CheckExecutionSandbox(self._repo_root)
         output_dir.mkdir(parents=True, exist_ok=True)
-        domain_report = load_vbn_domain_report(self._repo_root, output_dir, expected_sha=identity.head_sha)
+        domain_report = load_vbn_domain_report(
+            self._repo_root,
+            output_dir,
+            expected_sha=identity.head_sha,
+            expected_manifest_digest=manifest_digest(),
+        )
         outcomes: list[CheckRunOutcome] = []
         failed_prereqs: set[str] = set()
 
@@ -201,7 +206,23 @@ class EnterpriseAuditRunner:
         }
 
         baseline_sha = baseline.accepted_baseline_sha if baseline else None
-        drifted = apply_drift(findings_tuple, baseline)
+        checks_by_id = {c.check_id: c for c in self._checks}
+        drifted = apply_drift(findings_tuple, baseline, checks_by_id=checks_by_id)
+        if baseline is not None and mode in {AuditMode.FULL, AuditMode.FREEZE} and effective_certifying:
+            from intergrax.platform.enterprise_audit.baseline import assert_baseline_manifest_digest_current
+
+            try:
+                assert_baseline_manifest_digest_current(baseline, manifest_digest())
+            except ValueError as exc:
+                drifted = drifted + (
+                    AuditFinding(
+                        finding_id="BASELINE:MANIFEST_DIGEST",
+                        check_id="ENT-A-BND-01",
+                        severity=AuditSeverity.BLOCKER,
+                        category=AuditCategory.ARCHITECTURE,
+                        message=str(exc),
+                    ),
+                )
 
         if (
             effective_certifying
@@ -255,6 +276,8 @@ class EnterpriseAuditRunner:
             checks_skipped=sum(1 for o in outcomes_tuple if o.skipped),
             coverage_label=coverage_label,
             certifying_run=effective_certifying,
+            run_status="completed",
+            check_manifest_digest=manifest_digest(),
             outcomes=outcomes_tuple,
         )
 
@@ -287,7 +310,8 @@ class EnterpriseAuditRunner:
                 candidate_file,
                 EnterpriseAuditBaseline(
                     accepted_baseline_sha=identity.head_sha,
-                    findings=findings_to_baseline_rows(drifted),
+                    findings=findings_to_baseline_rows(drifted, checks_by_id),
+                    check_manifest_digest=manifest_digest(),
                 ),
             )
 

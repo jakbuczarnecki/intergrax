@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import subprocess
 import time
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -61,6 +62,7 @@ class CheckExecutionSandbox:
     def __init__(self, repo_root: Path, *, timeout_seconds: int = 600) -> None:
         self._repo_root = repo_root.resolve()
         self._timeout = timeout_seconds
+        self.run_id = uuid.uuid4().hex
 
     def run_check(self, check: ManifestCheck) -> SandboxResult:
         if check.mutating:
@@ -81,6 +83,11 @@ class CheckExecutionSandbox:
             "stderr": subprocess.PIPE,
             "text": True,
             "shell": False,
+            "env": {
+                **os.environ,
+                "ENT_AUDIT_SANDBOX_RUN_ID": self.run_id,
+                "ENT_AUDIT_SANDBOX_ISOLATED": "1",
+            },
         }
         if os.name != "nt":
             popen_kwargs["start_new_session"] = True

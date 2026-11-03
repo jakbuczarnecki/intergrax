@@ -60,16 +60,32 @@ def verify_closed_evidence_bundle(output_dir: Path) -> tuple[str, ...]:
     )
 
     errors: list[str] = []
+    if not output_dir.is_dir():
+        return ("output_dir missing",)
+    try:
+        output_dir.resolve().relative_to(output_dir.resolve())
+    except ValueError:
+        errors.append("output_dir must be a normalized directory path")
     catalog = load_evidence_artifact_catalog()
     required = catalog.get("required_artifacts", [])
     for name in required:
-        if not (output_dir / name).is_file():
+        if ".." in Path(str(name)).parts:
+            errors.append(f"invalid catalog artifact name: {name}")
+            continue
+        target = output_dir / name
+        if not target.is_file():
             errors.append(f"missing required artifact: {name}")
+        elif target.is_symlink():
+            errors.append(f"symlink not allowed in closed bundle: {name}")
     if not verify_evidence_manifest(output_dir):
         errors.append("evidence manifest digest mismatch or missing")
     allowed = set(required) | set(catalog.get("optional_artifacts", []))
     allowed.add("evidence_manifest.v1.json")
-    present = list_bundle_files(output_dir) | {"evidence_manifest.v1.json"}
+    try:
+        present = list_bundle_files(output_dir) | {"evidence_manifest.v1.json"}
+    except ValueError as exc:
+        errors.append(str(exc))
+        present = set()
     extra = present - allowed
     if extra:
         errors.append(f"unexpected artifacts in closed bundle: {', '.join(sorted(extra))}")

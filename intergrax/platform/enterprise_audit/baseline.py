@@ -16,6 +16,7 @@ from intergrax.platform.enterprise_audit.contracts import (
     AuditFinding,
     AuditSeverity,
     DriftStatus,
+    ManifestCheck,
 )
 
 _SEVERITY_RANK = {
@@ -53,6 +54,7 @@ class EnterpriseAuditBaseline:
     accepted_baseline_sha: str
     findings: dict[str, dict]
     schema_version: int = 1
+    check_manifest_digest: str = ""
 
 
 def baseline_path(default_dir: Path) -> Path:
@@ -91,6 +93,7 @@ def load_baseline(path: Path) -> EnterpriseAuditBaseline | None:
         accepted_baseline_sha=str(raw["accepted_baseline_sha"]),
         findings={k: v for k, v in raw.get("findings", {}).items()},
         schema_version=int(raw.get("schema_version", 1)),
+        check_manifest_digest=str(raw.get("check_manifest_digest", "")),
     )
 
 
@@ -111,6 +114,7 @@ def save_baseline(path: Path, baseline: EnterpriseAuditBaseline) -> None:
     payload = {
         "schema_version": baseline.schema_version,
         "accepted_baseline_sha": baseline.accepted_baseline_sha,
+        "check_manifest_digest": baseline.check_manifest_digest,
         "findings": baseline.findings,
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -121,6 +125,7 @@ def save_candidate_baseline(path: Path, baseline: EnterpriseAuditBaseline) -> No
     payload = {
         "schema_version": baseline.schema_version,
         "candidate_baseline_sha": baseline.accepted_baseline_sha,
+        "check_manifest_digest": baseline.check_manifest_digest,
         "findings": baseline.findings,
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -285,16 +290,15 @@ def _message_fingerprint(message: str) -> str:
     return hashlib.sha256(message.encode("utf-8")).hexdigest()[:16]
 
 
-def _regressed(baseline_row: dict, finding: AuditFinding) -> bool:
+def _regressed(baseline_row: dict, finding: AuditFinding, *, current_check_schema: int) -> bool:
     old_sev = AuditSeverity(str(baseline_row.get("severity", AuditSeverity.INFO)))
     if _SEVERITY_RANK.get(finding.severity, 0) > _SEVERITY_RANK.get(old_sev, 0):
         return True
     old_fp = str(baseline_row.get("message_fingerprint", ""))
     if old_fp and old_fp != _message_fingerprint(finding.message):
         return True
-    old_schema = int(baseline_row.get("schema_version", 1))
-    current_schema = 1
-    if old_schema < current_schema:
+    old_schema = int(baseline_row.get("check_schema_version", baseline_row.get("schema_version", 1)))
+    if current_check_schema > old_schema:
         return True
     return False
 
@@ -302,15 +306,24 @@ def _regressed(baseline_row: dict, finding: AuditFinding) -> bool:
 def apply_drift(
     findings: tuple[AuditFinding, ...],
     baseline: EnterpriseAuditBaseline | None,
+    *,
+    checks_by_id: dict[str, ManifestCheck] | None = None,
 ) -> tuple[AuditFinding, ...]:
     if baseline is None:
         return findings
+    checks_by_id = checks_by_id or {}
     updated: list[AuditFinding] = []
     baseline_ids = set(baseline.findings)
     for finding in findings:
         if finding.finding_id in baseline.findings:
             row = baseline.findings[finding.finding_id]
-            drift = DriftStatus.REGRESSED if _regressed(row, finding) else DriftStatus.UNCHANGED
+            check = checks_by_id.get(finding.check_id)
+            current_schema = check.schema_version if check else 1
+            drift = (
+                DriftStatus.REGRESSED
+                if _regressed(row, finding, current_check_schema=current_schema)
+                else DriftStatus.UNCHANGED
+            )
         else:
             drift = DriftStatus.NEW
         updated.append(
@@ -340,13 +353,26 @@ def apply_drift(
     return tuple(updated)
 
 
-def findings_to_baseline_rows(findings: tuple[AuditFinding, ...]) -> dict[str, dict]:
+def findings_to_baseline_rows(
+    findings: tuple[AuditFinding, ...],
+    checks_by_id: dict[str, ManifestCheck] | None = None,
+) -> dict[str, dict]:
+    checks_by_id = checks_by_id or {}
     rows: dict[str, dict] = {}
     for finding in findings:
+        check = checks_by_id.get(finding.check_id)
         rows[finding.finding_id] = {
             "check_id": finding.check_id,
             "severity": finding.severity.value,
             "message_fingerprint": _message_fingerprint(finding.message),
             "schema_version": 1,
+            "check_schema_version": check.schema_version if check else 1,
         }
     return rows
+
+
+def assert_baseline_manifest_digest_current(baseline: EnterpriseAuditBaseline, current_digest: str) -> None:
+    if not baseline.check_manifest_digest:
+        raise ValueError("accepted baseline missing check_manifest_digest pin")
+    if baseline.check_manifest_digest != current_digest:
+        raise ValueError("check_manifest_digest changed since accepted baseline (fail-closed)")

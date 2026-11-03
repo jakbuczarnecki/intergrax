@@ -26,6 +26,8 @@ _VBN_IDS = frozenset(
 )
 
 _DOMAIN_ID_RE = re.compile(r"^D(0[1-9]|1[0-9]|2[0-9]|30|31)$")
+_SHA40 = re.compile(r"^[0-9a-f]{40}$")
+_REQUIRED_DOMAIN_IDS = frozenset(f"D{i:02d}" for i in range(1, 32))
 _ALLOWED_STATUS = frozenset({"QUALIFIED", "NA_WITH_EVIDENCE", "GAP", "PARTIAL"})
 
 
@@ -50,13 +52,35 @@ def enrich_vbn_findings(findings: tuple[AuditFinding, ...]) -> tuple[AuditFindin
     return tuple(enriched)
 
 
-def validate_domain_report(report: dict, *, expected_sha: str | None = None) -> tuple[str, ...]:
-    """Validate vbn_domains.v1.json shape and freshness (C008)."""
+def validate_domain_report(
+    report: dict,
+    *,
+    expected_sha: str | None = None,
+    expected_manifest_digest: str | None = None,
+) -> tuple[str, ...]:
+    """Validate vbn_domains.v1.json shape, provenance, and freshness (C008/C010)."""
     errors: list[str] = []
     if report.get("schema_version") != 1:
         errors.append("schema_version must be 1")
     if int(report.get("domains_total", 0)) != 31:
         errors.append("domains_total must be 31")
+    run_id = str(report.get("run_id", "")).strip()
+    if not run_id:
+        errors.append("run_id is required")
+    qual_sha = str(report.get("qualification_sha", "")).strip()
+    if not _SHA40.fullmatch(qual_sha):
+        errors.append("qualification_sha must be present 40-char hex")
+    if expected_sha is not None:
+        if not qual_sha:
+            errors.append("qualification_sha required when expected_sha is set")
+        elif qual_sha != expected_sha:
+            errors.append("qualification_sha stale vs expected HEAD")
+    report_digest = str(report.get("check_manifest_digest", "")).strip()
+    if expected_manifest_digest is not None:
+        if not report_digest:
+            errors.append("check_manifest_digest required for provenance validation")
+        elif report_digest != expected_manifest_digest:
+            errors.append("check_manifest_digest stale vs current enterprise manifest")
     domains = report.get("domains")
     if not isinstance(domains, list) or len(domains) != 31:
         errors.append("domains must contain exactly 31 rows")
@@ -75,11 +99,20 @@ def validate_domain_report(report: dict, *, expected_sha: str | None = None) -> 
         status = str(row.get("status", ""))
         if status not in _ALLOWED_STATUS:
             errors.append(f"invalid status for {domain_id}: {status}")
-    if len(seen) != 31:
-        errors.append("expected D01..D31 unique domain_id values")
-    qual_sha = str(report.get("qualification_sha", ""))
-    if expected_sha and qual_sha and qual_sha != expected_sha:
-        errors.append("qualification_sha stale vs expected HEAD")
+        if status == "NA_WITH_EVIDENCE":
+            note = str(row.get("coverage_note", ""))
+            na_ref = str(row.get("na_evidence_ref", "")).strip()
+            if not note.startswith("N/A") and not na_ref:
+                errors.append(
+                    f"unauthorized NA_WITH_EVIDENCE for {domain_id}: missing N/A coverage_note or na_evidence_ref"
+                )
+    if seen != _REQUIRED_DOMAIN_IDS:
+        missing = sorted(_REQUIRED_DOMAIN_IDS - seen)
+        extra = sorted(seen - _REQUIRED_DOMAIN_IDS)
+        if missing:
+            errors.append(f"missing domain_id values: {', '.join(missing[:8])}")
+        if extra:
+            errors.append(f"unexpected domain_id values: {', '.join(extra[:8])}")
     return tuple(errors)
 
 
@@ -88,12 +121,17 @@ def load_vbn_domain_report(
     output_dir: Path,
     *,
     expected_sha: str | None = None,
+    expected_manifest_digest: str | None = None,
     allow_cached: bool = True,
 ) -> dict | None:
     cached = output_dir / "vbn_domains.v1.json"
     if allow_cached and cached.is_file():
         report = json.loads(cached.read_text(encoding="utf-8"))
-        errors = validate_domain_report(report, expected_sha=expected_sha)
+        errors = validate_domain_report(
+            report,
+            expected_sha=expected_sha,
+            expected_manifest_digest=expected_manifest_digest,
+        )
         if errors:
             return None
         return report
@@ -110,7 +148,11 @@ def load_vbn_domain_report(
     if completed.returncode != 0 or not cached.is_file():
         return None
     report = json.loads(cached.read_text(encoding="utf-8"))
-    errors = validate_domain_report(report, expected_sha=expected_sha)
+    errors = validate_domain_report(
+        report,
+        expected_sha=expected_sha,
+        expected_manifest_digest=expected_manifest_digest,
+    )
     if errors:
         return None
     return report

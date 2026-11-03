@@ -48,6 +48,8 @@ def build_report_json(report: AuditReport, manifest: AuditExecutionManifest) -> 
             "checks_skipped": manifest.checks_skipped,
             "coverage_label": manifest.coverage_label,
             "certifying_run": manifest.certifying_run,
+            "run_status": manifest.run_status,
+            "check_manifest_digest": manifest.check_manifest_digest,
         },
     }
 

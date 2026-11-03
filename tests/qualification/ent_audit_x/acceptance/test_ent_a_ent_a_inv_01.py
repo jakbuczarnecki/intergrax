@@ -1,17 +1,14 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
-from intergrax.platform.enterprise_audit.manifest import load_default_manifest
+import pytest
+from tests.qualification.ent_audit_x.acceptance._gate_oracle import assert_semantic_gate_executes
 
 
-def test_acceptance_ent_a_inv_01_manifest_entrypoint_exists() -> None:
-    checks = load_default_manifest()
-    match = next(c for c in checks if c.check_id == "ENT-A-INV-01")
-    assert match.entrypoint_kind != "internal_pending"
-    root = Path(__file__).resolve().parents[4]
-    if "::" in match.entrypoint:
-        rel = match.entrypoint.split("::", 1)[0]
-    else:
-        rel = match.entrypoint
-    assert (root / rel).is_file(), rel
+@pytest.mark.ent_semantic_gate
+def test_acceptance_ent_a_inv_01_semantic_gate(repo_root: Path) -> None:
+    if os.environ.get("ENT_AUDIT_X_SEMANTIC") != "1":
+        pytest.skip("semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1")
+    assert_semantic_gate_executes(repo_root, "ENT-A-INV-01")

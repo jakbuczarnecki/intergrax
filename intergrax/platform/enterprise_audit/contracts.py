@@ -112,6 +112,8 @@ class AuditExecutionManifest:
     checks_skipped: int = 0
     coverage_label: str = "PARTIAL"
     certifying_run: bool = True
+    run_status: Literal["completed", "interrupted"] = "completed"
+    check_manifest_digest: str = ""
     outcomes: tuple[CheckRunOutcome, ...] = ()
 
 

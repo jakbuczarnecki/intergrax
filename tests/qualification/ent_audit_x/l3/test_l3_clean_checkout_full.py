@@ -69,13 +69,13 @@ def test_l3_freeze_real_single_check(tmp_path: Path) -> None:
 
 
 def test_l3_evidence_manifest_roundtrip(tmp_path: Path) -> None:
-    from intergrax.platform.enterprise_audit.evidence import verify_evidence_manifest
+    import pytest
 
     root = Path(__file__).resolve().parents[4]
     out = tmp_path / "bundle"
     runner = EnterpriseAuditRunner(root, dry_run=True)
-    runner.run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
-    assert verify_evidence_manifest(out)
+    with pytest.raises(ValueError, match="certifying_run"):
+        runner.run(AuditMode.FAST, output_dir=out, write_evidence_bundle=True)
 
 
 def test_l3_vbn_31_domains_replay_honest(tmp_path: Path) -> None:

@@ -1,6 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
-
-"""Generate 85 acceptance wrapper modules under acceptance/."""
+"""Generate 85 acceptance modules with semantic subprocess oracles (C033–C036)."""
 
 from __future__ import annotations
 
@@ -24,27 +22,25 @@ def main() -> None:
         path = ACCEPT / f"test_ent_a_{slug}.py"
         content = f'''from __future__ import annotations
 
+import os
 from pathlib import Path
 
-from intergrax.platform.enterprise_audit.manifest import load_default_manifest
+import pytest
+
+from tests.qualification.ent_audit_x.acceptance._gate_oracle import assert_semantic_gate_executes
 
 
-def test_acceptance_{slug}_manifest_entrypoint_exists() -> None:
-    checks = load_default_manifest()
-    match = next(c for c in checks if c.check_id == "{check.check_id}")
-    assert match.entrypoint_kind != "internal_pending"
-    root = Path(__file__).resolve().parents[4]
-    if "::" in match.entrypoint:
-        rel = match.entrypoint.split("::", 1)[0]
-    else:
-        rel = match.entrypoint
-    assert (root / rel).is_file(), rel
+@pytest.mark.ent_semantic_gate
+def test_acceptance_{slug}_semantic_gate(repo_root: Path) -> None:
+    if os.environ.get("ENT_AUDIT_X_SEMANTIC") != "1":
+        pytest.skip("semantic gate matrix requires ENT_AUDIT_X_SEMANTIC=1")
+    assert_semantic_gate_executes(repo_root, "{check.check_id}")
 '''
         path.write_text(content, encoding="utf-8")
     init = ACCEPT / "__init__.py"
     if not init.is_file():
         init.write_text("", encoding="utf-8")
-    print(f"wrote {len(checks)} acceptance wrappers")
+    print(f"wrote {len(checks)} acceptance semantic wrappers")
 
 
 if __name__ == "__main__":
