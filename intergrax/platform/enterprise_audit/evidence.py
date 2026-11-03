@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import platform
 import re
+import sys
 from pathlib import Path
 
 from intergrax.platform.enterprise_audit.contracts import (
@@ -90,6 +92,14 @@ def _assert_execution_manifest_allows_publication(manifest: AuditExecutionManife
     assert_certifying_publication_eligible(manifest)
 
 
+def build_environment_fingerprint() -> dict[str, str]:
+    return {
+        "python_version": sys.version.split()[0],
+        "platform": platform.platform(),
+        "implementation": platform.python_implementation(),
+    }
+
+
 def build_evidence_manifest(
     output_dir: Path,
     *,
@@ -122,6 +132,7 @@ def build_evidence_manifest(
         "audit_execution_sha": execution_manifest.audit_execution_sha,
         "check_manifest_digest": execution_manifest.check_manifest_digest or manifest_digest(),
         "certifying_run": True,
+        "environment_fingerprint": build_environment_fingerprint(),
         "artifacts": artifacts,
     }
     out = output_dir / "evidence_manifest.v1.json"
