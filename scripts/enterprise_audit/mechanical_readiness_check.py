@@ -109,6 +109,23 @@ def main() -> int:
     add("vbn_domains_31", False, "vbn_domains.v1.json accounted==31 not proven @ TES (OPEN)")
     add("l1_l2_l3_logs", l3_report_path is not None, "pytest/L3 logs @ TEST_EXECUTION_SHA missing")
     add("adv_31_fault_suite", False, "ADV31 fault injection not qualified @ TES (OPEN)")
+
+    qual_report = root / ".tmp/session/ent-audit-x-qual-wave/qual_wave_report.json"
+    if qual_report.is_file():
+        try:
+            qw_payload = json.loads(qual_report.read_text(encoding="utf-8"))
+            qw_status = str(qw_payload.get("status", ""))
+            qw_sha = str(qw_payload.get("qualification_sha", ""))
+            stages = {s.get("name"): s for s in qw_payload.get("stages", [])}
+            adv = stages.get("adv31", {})
+            add(
+                "adv_31_fault_suite",
+                qw_status in {"PASS", "PRE_QUAL_PASS"} and adv.get("exit_code") == 0,
+                f"qual_wave adv31 @ {qw_sha or '?'} status={qw_status}",
+            )
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+
     add("evidence_integrity", False, "closed-world bundle @ EVIDENCE_PUBLICATION_SHA missing")
     add("sha_ancestry_documented", tes_ok, "merge-base TEST_EXECUTION_SHA→HEAD required")
     frz_data = root / "intergrax/platform/enterprise_audit/data"
