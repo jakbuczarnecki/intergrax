@@ -25,6 +25,15 @@ def _ladder_tes(root: Path) -> str | None:
     return None
 
 
+def _strict_valid_tree(root: Path) -> Path | None:
+    handoff = root / "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff"
+    for path in sorted(handoff.glob("qualification_at_*")):
+        tes = path.name.removeprefix("qualification_at_")
+        if not verify_b5_publication_tree(root, path, expected_qualification_sha=tes):
+            return path
+    return None
+
+
 def _published_tree(root: Path) -> Path | None:
     handoff = root / "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff"
     tes = _ladder_tes(root)
@@ -32,6 +41,9 @@ def _published_tree(root: Path) -> Path | None:
         candidate = handoff / f"qualification_at_{tes}"
         if candidate.is_dir():
             return candidate
+    valid = _strict_valid_tree(root)
+    if valid is not None:
+        return valid
     matches = sorted(handoff.glob("qualification_at_*"), key=lambda p: p.stat().st_mtime)
     return matches[-1] if matches else None
 
@@ -62,13 +74,11 @@ def _fixture_copy(root: Path, source: Path, tag: str) -> Path:
 
 def test_verify_b5_publication_tree_passes_on_strict_bundle() -> None:
     root = _repo_root()
-    tree = _published_tree(root)
+    tree = _strict_valid_tree(root)
     if tree is None:
-        pytest.skip("no B5 handoff tree")
+        pytest.skip("no B5 handoff tree passes strict publication verification")
     tes = tree.name.removeprefix("qualification_at_")
     errors = verify_b5_publication_tree(root, tree, expected_qualification_sha=tes)
-    if errors and any("qual_wave_report sha256 mismatch" in e for e in errors):
-        pytest.skip("canonical B5 tree still has known R7 digest defect — republish required")
     assert not errors, errors
 
 
@@ -166,13 +176,10 @@ def test_known_defective_r7_tree_fails_closed() -> None:
 
 def test_republish_fixes_digest_consistency() -> None:
     root = _repo_root()
-    source = _published_tree(root)
-    if source is None:
-        pytest.skip("no B5 handoff tree")
-    qw = source / "qual_wave_report.json"
-    index_path = source / "publication_index.v1.json"
+    tree = _strict_valid_tree(root)
+    if tree is None:
+        pytest.skip("no strictly valid B5 tree")
+    qw = tree / "qual_wave_report.json"
+    index_path = tree / "publication_index.v1.json"
     index = json.loads(index_path.read_text(encoding="utf-8"))
-    actual = sha256_file(qw)
-    if index["qual_wave_report"]["sha256"] != actual:
-        pytest.skip("awaiting corrected B5 republication")
-    assert index["qual_wave_report"]["sha256"] == actual
+    assert index["qual_wave_report"]["sha256"] == sha256_file(qw)
