@@ -19,7 +19,7 @@ Reproduce: [`ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_B1_INDE
 | SURF-GOV-RUNTIME | Governance | Governance | GovernanceService | intergrax/runtime/governance/** | GOV contracts | PRODUCTION_EFFECTIVE | FRZ-GOV | GOV-X qual | PASS family GOV | — |
 | SURF-TENANT | Tenancy | TENANT-X | tenant propagation chain | cross-tier | FRZ-TEN | PRODUCTION_EFFECTIVE | FRZ-TEN | TENANT_X FINAL | 12/12 PASS | FREEZE reval |
 | SURF-EVIDENCE-PERSIST | Persistence | Events/Evidence | EvidencePersistencePort | intergrax/contracts/execution_evidence/** | Typed port | PRODUCTION_EFFECTIVE | FRZ-REC | STATE/compat gates | — | — |
-| SURF-DEBUG-LAB | Execution lab | EE debug zone | build_debug_minimal_nexus_loop | debug_lab_nexus_loop.py | Lab wiring | LAB_ONLY | FRZ-BND-03 | layer gate | CHECKLIST debt stale @ HEAD | T-B2-BND03-RECONCILE |
+| SURF-DEBUG-LAB | Execution lab | EE debug zone | build_debug_minimal_nexus_loop | debug_lab_nexus_loop.py | Lab wiring | LAB_ONLY | FRZ-BND-03 | layer gate | EvidencePersistencePort @ HEAD; BND03 dossier | T-B2-BND03-RECONCILE COMPLETE |
 | SURF-LKW-APP | Applications | applications/ | FastAPI routers | applications/** | App contracts | PRODUCTION_EFFECTIVE | FRZ-PRD | PROD-Q scoped | Path B split | — |
 
 
