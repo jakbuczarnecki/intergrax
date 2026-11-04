@@ -10,7 +10,7 @@
 | ENT-W8-B6-001 publication digest | **FIXED_WITH_EVIDENCE** | R7 tree preserved @ `d18f01f22`; byte mismatch reproduced (`4a1107f0…` ≠ `b914bd8b…`); corrective B5 @ `qualification_at_89c76eb7…`; `verify_b5_publication_tree()` → `()` |
 | ENT-W8-B6-002 incomplete B5 verifier | **FIXED_WITH_EVIDENCE** | `intergrax/platform/enterprise_audit/validators.py::verify_b5_publication_tree`; `tests/qualification/ent_audit_x/unit/test_b5_publication_verifier.py` |
 | ENT-W8-B6-003 readiness false PASS | **FIXED_WITH_EVIDENCE** | `mechanical_readiness_check.py` evidence_integrity → strict B5 verify; corrupt digest → FAIL; repaired tree → PASS |
-| ENT-W8-B6-004 current-SHA CI | **STILL_OPEN** (FAST) / **EXTERNAL_BLOCKED** (nightly @ HEAD) | FAST: GitHub Actions @ implementation SHA (see dossier CI table); nightly FULL not scheduled @ HEAD — operator dispatch or wait for schedule |
+| ENT-W8-B6-004 current-SHA CI | **ACCEPTED (dual-pin)** / **EXTERNAL_BLOCKED** (required checks @ `development`) | FAST + regression @ `0e538269…` (runs `41804655934`, `41798742568`); nightly FULL @ `618e234…` run `41800553851` success — branch protection still OD-ENT-02 + admin |
 | ENT-W8-B6-005 branch protection | **EXTERNAL_BLOCKED** | OD-ENT-02 + GitHub admin; workflows exist |
 | ENT-W8-B6-006 stale handoff README | **FIXED_WITH_EVIDENCE** | `b6_independent_handoff/README.md` pins current TES/EVID + R7 defect link |
 

@@ -1,6 +1,6 @@
 # ENT-AUDIT-X — Protocol 03 independent audit dossier (draft)
 
-**Status:** W8 B6 CORRECTIVE WAVE — **READY FOR INDEPENDENT RE-AUDIT** — no B6 PASS / no OD approved / no FRZ CLOSED
+**Status:** W8 B6 CORRECTIVE WAVE — **TECHNICAL RE-AUDIT COMPLETE @ `0e538269…` (RECOMMENDATION ONLY)** — **FORMAL B6 ATTESTATION PENDING** — no signed B6 PASS / no OD approved / no FRZ CLOSED
 
 | Field | Value |
 | --- | --- |
@@ -14,8 +14,10 @@
 | B5 handoff tree (R7 defect preserved) | [qualification_at_87203c1b…/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) + [R7_DEFECT_ENT-W8-B6-001.md](./b6_independent_handoff/R7_DEFECT_ENT-W8-B6-001.md) |
 | **EVIDENCE_PUBLICATION_SHA (current)** | `300859537f12a1de7bf3d75fd685bc3a5c727183` |
 | Historical EVIDENCE_PUBLICATION_SHA (R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` |
-| B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor — agent does not sign* |
-| ACCEPTED_BASELINE_SHA | *operator OD-ENT-01 after B6* |
+| INDEPENDENT_TECHNICAL_REAUDIT_SHA | `0e538269a7188075003b9ff2c7cce2545d8f1ccb` — regression gate green; technical recommendation only ([report draft](./ENT_AUDIT_X_INDEPENDENT_TECHNICAL_REAUDIT_REPORT_DRAFT.md)) |
+| B6_ACCEPTANCE_PUBLICATION_SHA | *unset — authorized independent auditor signs Protocol 03* |
+| ACCEPTED_BASELINE_SHA | *operator OD-ENT-01 after formal B6* |
+| Formal B6 package | [ENT_AUDIT_X_B6_FORMAL_ACCEPTANCE_PACKAGE_DRAFT.md](./ENT_AUDIT_X_B6_FORMAL_ACCEPTANCE_PACKAGE_DRAFT.md) (**DRAFT — NOT SIGNED**) |
 
 ## Scope
 
@@ -40,7 +42,7 @@
 | enterprise-audit.yml | 41797446254 | `2eddd42230da93f5f26dd648840c3c8af629f7ba` | *verify @ re-audit* | https://github.com/jakbuczarnecki/intergrax/actions/runs/41797446254 |
 | Regression gate | 41797446087 | `2eddd42230da93f5f26dd648840c3c8af629f7ba` | success | https://github.com/jakbuczarnecki/intergrax/actions/runs/41797446087 |
 
-**ENT-W8-B6-004 nightly @ HEAD:** OPEN until dispatch/schedule (no substitute @ older SHA for W8 verifier scope).
+**CI @ INDEPENDENT_TECHNICAL_REAUDIT_SHA (`0e538269…`):** Regression gate run `41804655934` → **success**. **ENT nightly FULL @ FROZEN ENT AUDIT HEAD:** run `41800553851` @ `618e234ee4dc41aa3673de5e1e81271f6039ca6c` → **success** (W8-004 dual-pin continuity — operator/admin boundary for required-check enforcement remains OD-ENT-02).
 
 Historical (pre-W8):
 
@@ -61,10 +63,10 @@ Historical (pre-HEAD — audit context only):
 
 | Stage | Evidence |
 | --- | --- |
-| L1/L2/L3 + semantic 85/85 + ADV31 | `qual_wave_report.json` status `PASS`, `qualification_sha=87203c1…` |
-| Certifying FULL 85/85 | `b6_independent_handoff/.../l3-cli-full/enterprise_audit_report.json` → `checks_executed=85`, `coverage_label=FULL` |
-| VBN D01–D31 | `vbn_domains.v1.json` → `domains_accounted=31` @ TES digest pin |
-| FRZ map | `frz_coverage.v1.json` → `row_count=85` |
+| L1/L2/L3 + semantic 85/85 + ADV31 | [qual_wave_report.json](./b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/qual_wave_report.json) status `PASS`, `qualification_sha=89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` |
+| Certifying FULL 85/85 | [enterprise_audit_report.json](./b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/l3-cli-full/enterprise_audit_report.json) → `checks_executed=85`, `coverage_label=FULL` |
+| VBN D01–D31 | [vbn_domains.v1.json](./b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/l3-cli-full/vbn_domains.v1.json) → `domains_accounted=31` @ TES digest pin |
+| FRZ map | [frz_coverage.v1.json](./b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/l3-cli-full/frz_coverage.v1.json) → `row_count=85` |
 
 ## External blockers (GAP-B)
 

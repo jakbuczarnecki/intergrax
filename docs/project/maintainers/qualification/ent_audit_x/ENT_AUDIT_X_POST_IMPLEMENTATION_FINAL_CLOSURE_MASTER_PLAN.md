@@ -2,19 +2,17 @@
 
 **Disposition:** `ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS`
 
-**W7 mechanical readiness (@ `1bee524218d9185175f3e24c6e6f205565ff0569`):** `ENT-AUDIT-X — TECHNICAL COMPLETE / B5 PUBLISHED / READY FOR INDEPENDENT B6` — external GAP-B / independent auditor / OD / FRZ remain OPEN; agent does **not** sign Protocol 03.
+**W8 corrective wave (@ TES `89c76eb7…`, EVID `30085953…`):** strict B5 verified; Matrix C/GAP-RC reconciled; independent **technical** re-audit @ `0e538269a7188075003b9ff2c7cce2545d8f1ccb` supports **Protocol 03 acceptance eligibility** — **not** formal attestation. External GAP-B / signed Protocol 03 / OD / FRZ remain OPEN; agent does **not** sign B6 or OD.
 
-**CURRENT_DOCUMENTATION_HEAD:** `c6d600df56f3fedb85bcdce12ba508ea8274ccd4`
+**INDEPENDENT_TECHNICAL_REAUDIT_SHA:** `0e538269a7188075003b9ff2c7cce2545d8f1ccb`
 
-**Audited implementation baseline (IMPLEMENTATION_SHA):** `5ceed24c829a953abd4ad4b98e24585aad218540`
+**TEST_EXECUTION_SHA (current qualification):** `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91`
 
-**Prior PLAN_PUBLICATION_SHA:** `87e185dd3bcce45f107149b4b3691c3ede614c8a`
+**EVIDENCE_PUBLICATION_SHA (current B5):** `300859537f12a1de7bf3d75fd685bc3a5c727183`
 
-**POST_IMPLEMENTATION_SSOT_REPAIR_PUBLICATION_SHA:** `8efac05b4ca18a31a754cf003851f5bf24725f76`
+**Historical TEST_EXECUTION_SHA (R6/R7 — defect preserved):** `87203c1b6ce9786dce0523cca29b556106b6bc8d` — B5 @ `d18f01f2291328a073dcbdfbe05489faf98013b7` fails strict `verify_b5_publication_tree()` (ENT-W8-B6-001). **Historical TEST_EXECUTION_SHA:** `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived).
 
-**Historical TEST_EXECUTION_SHA (not current qualification):** `0cee41a88274a53d14bb3558752d55bdde0d0b01` — log @ older wave; **do not** treat as proof @ `d4974efc255bf6ff6ca96e00fb084293ea685d66`.
-
-**TEST_EXECUTION_SHA:** `87203c1b6ce9786dce0523cca29b556106b6bc8d` (final closure R6 certifying PASS). **Historical TEST_EXECUTION_SHA:** `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived). **EVIDENCE_PUBLICATION_SHA:** `d18f01f2291328a073dcbdfbe05489faf98013b7` (R7 B5 @ NEW_TES).
+**Prior documentation HEAD pins (historical):** `c6d600df…`, `1bee5242…`, `5ceed24c…` — see [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md); do not substitute for current TES/B5 rows above.
 
 **Mode:** execution SSOT — no B6 PASS / FRZ CLOSED / ARCH-FREEZE / ENT stage CLOSED / OD APPROVED by agent.
 
