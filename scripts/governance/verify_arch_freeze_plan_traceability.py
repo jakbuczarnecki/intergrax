@@ -29,8 +29,8 @@ BLOCKER_FINDINGS = frozenset(
         "FIND-ACCEPTED-BASELINE",
     }
 )
-EXPECTED_WBS_TASKS = 48
-EXPECTED_QUAL_RUNS = 14
+EXPECTED_WBS_TASKS = 54
+EXPECTED_QUAL_RUNS = 16
 AUDIT_BASELINE_SHA = "a0624e28ff77b061e83f3e10aab4c2a9083ee1b4"
 
 PROMOTE_FAMS = ("BND", "CTR", "OBS", "OWN", "PLG", "PRD", "REG", "REL", "SEC", "TYP")
@@ -48,7 +48,14 @@ FRZ_FRZ02_PREREQ_TASKS = (
     "T-B7-PROMOTE-DOC",
 ) + PROMOTE_TASKS
 INDEPENDENT_AUDITOR_TASKS = frozenset(
-    {"T-B5-EVOL-B6", "T-B6-ENT-B6", "T-B7-ECAP-2C", "T-B7-TEN-REVAL", "T-B7-CMP-REVAL"}
+    {
+        "T-B5-EVOL-B6",
+        "T-B6-ENT-B6",
+        "T-B7-ECAP-2C",
+        "T-B7-TEN-REVAL",
+        "T-B7-CMP-REVAL",
+        "T-B7-VBN-INDEPENDENT-ACCEPT",
+    }
 )
 
 
@@ -170,6 +177,19 @@ def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], erro
         if aud_task not in task_ids:
             errors.append(f"missing independent auditor task {aud_task}")
 
+    if "T-B5-EVOL-FORMAL-CLOSURE" not in _ancestors(graph, "T-B6-OD-ENT-00"):
+        errors.append("OD-ENT-00 must follow T-B5-EVOL-FORMAL-CLOSURE (EVOL formal closure)")
+    if "T-B5-EVOL-FRZ" not in _ancestors(graph, "T-B5-EVOL-FORMAL-CLOSURE"):
+        errors.append("T-B5-EVOL-FORMAL-CLOSURE must follow T-B5-EVOL-FRZ")
+    if "T-B6-OD-ENT-02" not in _ancestors(graph, "T-B6-OD-ENT-08"):
+        errors.append("OD-ENT-08 must follow T-B6-OD-ENT-02 (branch protection)")
+    if "T-B7-VBN-INDEPENDENT-ACCEPT" not in _ancestors(graph, "T-B7-PROMOTE-RPL"):
+        errors.append("T-B7-PROMOTE-RPL must follow T-B7-VBN-INDEPENDENT-ACCEPT (not engineering-only)")
+    if "T-B7-LOCK-FREEZE-SHA" not in _ancestors(graph, "T-B7-L3-FREEZE"):
+        errors.append("T-B7-L3-FREEZE must follow T-B7-LOCK-FREEZE-SHA")
+    if "T-B6-OD-ENT-08" not in _ancestors(graph, "T-B7-LOCK-FREEZE-SHA"):
+        errors.append("T-B7-LOCK-FREEZE-SHA must follow T-B6-OD-ENT-08")
+
 
 def sync_matrix() -> None:
     lines = _MATRIX.read_text(encoding="utf-8").splitlines()
@@ -217,6 +237,38 @@ def sync_wbs() -> None:
 
     rows: list[tuple] = [
         (
+            "T-R0-WAVE1-SSOT-RECONCILE",
+            "R0",
+            "FRZ-FRZ-04",
+            "FIND-ARTIFACT-CONTRADICTION,FIND-VALIDATOR-WEAK",
+            "implementer",
+            "docs/project/maintainers/qualification/ARCH_FREEZE_*",
+            "[]",
+            "Reconcile SSOT: G6 ACCEPTED @ 950097ea; 54 tasks; SHA ladder; remove AUDIT_PENDING drift",
+            "uv run python scripts/governance/verify_arch_freeze_plan_traceability.py",
+            "ARCH_FREEZE dossier @ 950097ea",
+            "WAVE1 disposition aligned; validator WBS=54",
+            "MED",
+            "no",
+            "COMPLETE @ 950097ea",
+        ),
+        (
+            "T-R0-BASELINE-CLOSURE-HEAD",
+            "R0",
+            "",
+            "FIND-PRECHECKLIST-HEAD",
+            "implementer",
+            "ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md",
+            "[T-R0-WAVE1-SSOT-RECONCILE]",
+            "Close T-B0-001: refresh pre-admission pointer @ CLOSURE_DOC_HEAD; immutable AUDIT_BASELINE_SHA unchanged",
+            "git rev-parse HEAD; doc pointer refresh",
+            "pre-admission dossier @ 950097ea",
+            "pointer current; AUDIT_BASELINE_SHA=a0624e28 locked",
+            "LOW",
+            "yes",
+            "COMPLETE @ 950097ea",
+        ),
+        (
             "T-B0-001",
             "B0",
             "",
@@ -230,7 +282,7 @@ def sync_wbs() -> None:
             "225 FRZ / 26 fam verified",
             "LOW",
             "yes",
-            "PLANNED",
+            "COMPLETE @ 950097ea (superseded ongoing pointer: T-R0-BASELINE-CLOSURE-HEAD)",
         ),
         (
             "T-B0-SSOT-REFRESH",
@@ -505,13 +557,29 @@ def sync_wbs() -> None:
             "BLOCKED_EXTERNAL",
         ),
         (
+            "T-B5-EVOL-FORMAL-CLOSURE",
+            "B5",
+            "",
+            "FIND-FORMAL-B6",
+            "operator+auditor",
+            "evol_x/; roadmap §5",
+            "[T-B5-EVOL-B6,T-B5-EVOL-FRZ]",
+            "EVOL-X formal CLOSED: W7-06 publication; reconciliation package; roadmap §5 EVOL row",
+            "L3-EVOL-REPLAY evidence reuse",
+            "FORMAL_CLOSURE_PUBLICATION_SHA",
+            "EVOL CLOSED — INDEPENDENTLY ACCEPTED",
+            "CRIT",
+            "no",
+            "BLOCKED_EXTERNAL",
+        ),
+        (
             "T-B6-OD-ENT-00",
             "B6",
             "",
             "",
             "operator",
             "ENT_EVOL_CROSS_STAGE_DECISION_MATRIX.md",
-            "[T-B5-EVOL-FRZ]",
+            "[T-B5-EVOL-FORMAL-CLOSURE]",
             "OD-ENT-00 EVOL dependency acceptance",
             "—",
             "OD record",
@@ -591,7 +659,7 @@ def sync_wbs() -> None:
             "",
             "operator",
             "roadmap §5",
-            "[T-B6-FRZ-AUD,T-B6-OD-ENT-01]",
+            "[T-B6-FRZ-AUD,T-B6-OD-ENT-01,T-B6-OD-ENT-02]",
             "Formal ENT stage closure OD-ENT-08",
             "—",
             "FORMAL_CLOSURE_PUBLICATION_SHA",
@@ -601,13 +669,29 @@ def sync_wbs() -> None:
             "BLOCKED_EXTERNAL",
         ),
         (
+            "T-B7-LOCK-FREEZE-SHA",
+            "B7",
+            "FRZ-FRZ-05,FRZ-FRZ-06,FRZ-FRZ-07,FRZ-FRZ-08,FRZ-FRZ-09",
+            "",
+            "implementer+operator",
+            "repo-wide freeze manifest",
+            "[T-B6-OD-ENT-08]",
+            "Single commit FREEZE_CERTIFICATION_SHA (= IMPLEMENTATION_SHA); manifest freeze; no further product edits before L3 FREEZE",
+            "git rev-parse; freeze manifest",
+            "FREEZE_CERTIFICATION_SHA",
+            "SHA locked @ admission",
+            "CRIT",
+            "no",
+            "PLANNED",
+        ),
+        (
             "T-B7-L3-FREEZE",
             "B7",
             "FRZ-FRZ-03,FRZ-FRZ-12",
             "",
             "tester+auditor",
             "enterprise_audit",
-            "[T-B6-OD-ENT-08]",
+            "[T-B7-LOCK-FREEZE-SHA]",
             "FREEZE mode @ FREEZE_CERTIFICATION_SHA",
             "run_enterprise_audit.py --mode FREEZE",
             "FREEZE report",
@@ -615,6 +699,38 @@ def sync_wbs() -> None:
             "CRIT",
             "no",
             "PLANNED",
+        ),
+        (
+            "T-B7-VBN-HEAD-DOSSIER",
+            "B7",
+            "FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04",
+            "FIND-VBN-PARTIAL",
+            "implementer",
+            "ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md; tests/qualification/ebh_5/",
+            "[T-B7-L3-FREEZE]",
+            "VBN §2.1–2.7 SSOT @ FREEZE_CERTIFICATION_SHA; EBH-5/6/7 reconciliation pointers",
+            "pytest tests/qualification/ebh_5/ -q",
+            "dossier §2.1–2.7",
+            "prohibited_unresolved=0 frozen scope",
+            "HIGH",
+            "no",
+            "PLANNED",
+        ),
+        (
+            "T-B7-VBN-INDEPENDENT-ACCEPT",
+            "B7",
+            "FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04",
+            "FIND-VBN-PARTIAL",
+            "independent_auditor",
+            "ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md",
+            "[T-B7-VBN-HEAD-DOSSIER]",
+            "Independent replay ENT VBN 12/12 + dossier §2.1–2.7 @ exact FREEZE_SHA; FIND-VBN-PARTIAL disposition",
+            "pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_vbn_*.py -q; ENT_AUDIT_X_SEMANTIC=1",
+            "signed dossier §2.7",
+            "independent sign @ FREEZE_SHA",
+            "CRIT",
+            "no",
+            "BLOCKED_EXTERNAL",
         ),
         (
             "T-B7-ECAP-2C",
@@ -719,8 +835,8 @@ def sync_wbs() -> None:
             "",
             "operator+auditor",
             "checklist",
-            "[T-B7-L3-FREEZE,T-B2-VBN]",
-            "Promote FRZ-RPL after VBN complete",
+            "[T-B7-L3-FREEZE,T-B7-VBN-INDEPENDENT-ACCEPT]",
+            "Promote FRZ-RPL after VBN independent acceptance",
             "ENT VBN checks",
             "checklist promotion",
             "4 criteria",
@@ -860,6 +976,8 @@ def sync_wbs() -> None:
         f"**AUDIT_BASELINE_SHA:** `{AUDIT_BASELINE_SHA}`",
         f"**Task count:** {EXPECTED_WBS_TASKS} (unique TASK_ID rows below)",
         "",
+        "**Wave 1 (T-IGX-010-B):** **B0–B4** = **INDEPENDENTLY ACCEPTED (SCOPED)** @ G6 AUDIT `3d96691f1b02b393a4de189139a6e1347db99382` / closure doc `950097ea4bcfd5bba828f663bcd993b8bd1e1d63`; B1 `6bdf78c626bfcb347ad3ad9e3e18b65222f1b169`; B2–B4 `f7ce9daebad35537da974de0dda3962126c6030e`; L3 FULL 85/85; B1 digest `0ffa2676…`. **R0–R6** = **PLANNED** (`T-IGX-010-C`). Handoff: [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md).",
+        "",
         hdr,
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
@@ -868,7 +986,7 @@ def sync_wbs() -> None:
     lines += [
         "",
         "## Critical path",
-        "T-B0-001 → T-B0-TRACE-VALIDATE → T-B1-INV → T-B1-PROD-REACH-SCAN → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-L3-FREEZE → (promotions + T-PATHB-EXCL + T-B7-PFP-*) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16",
+        "T-R0-WAVE1-SSOT-RECONCILE → T-R0-BASELINE-CLOSURE-HEAD → T-B0-TRACE-VALIDATE → T-B1-INV → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B5-EVOL-FORMAL-CLOSURE → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-HEAD-DOSSIER → T-B7-VBN-INDEPENDENT-ACCEPT → (promotions + T-PATHB-EXCL + T-B7-PFP-*) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16",
     ]
     _WBS.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

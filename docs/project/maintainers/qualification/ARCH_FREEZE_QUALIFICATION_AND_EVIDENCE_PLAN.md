@@ -19,5 +19,7 @@
 | L3-NIGHTLY | L3 | optional CI consolidation | GitHub Actions workflow `.github/workflows/enterprise-audit-nightly.yml` @ HEAD | GitHub | enterprise nightly profile | CI run conclusion success | HEAD | historical only | investigate | workflow green | operator |
 | L3-EVOL-REPLAY | L3 | EVOL B6 external gate | GitHub workflow dispatch / replay @ TES `3c4a641b3e48a13f437e830a0562e2a80b03aabb` (CI `41337077334`) | GitHub | EVOL qualification package | B6 package artifacts | pinned TES | yes if no code delta | stop | independent auditor sign-off | independent_auditor |
 | L3-ENT-REPLAY | L3 | ENT B6 external gate | replay @ TES `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91`; B5 `300859537f12a1de7bf3d75fd685bc3a5c727183` | GitHub+local | ENT B6 dossier | B6 package | pinned TES | conditional | stop | independent auditor sign-off | independent_auditor |
+| L2-VBN-ENT | L2 | T-B7-VBN-INDEPENDENT-ACCEPT | `uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_vbn_*.py -q` with `ENT_AUDIT_X_SEMANTIC=1` | local venv | ENT VBN domain | pytest 12/12 pass | FREEZE_CERTIFICATION_SHA | no | stop | 12/12 @ FREEZE_SHA | independent_auditor |
+| L2-VBN-EBH5 | L2 | T-B7-VBN-HEAD-DOSSIER | `uv run pytest tests/qualification/ebh_5/ -q` | local venv | EBH-5 inventory + gates | pytest pass | FREEZE_CERTIFICATION_SHA | no | stop | tests green | tester |
 
 **Note:** B1 certifying inventory is **T-B1-STRICT-QUALIFY** (`L2-B1-STRICT`); wave-1 scan **SUPERSEDED** (`T-B1-PROD-REACH-SCAN` @ `18a0f68`).
