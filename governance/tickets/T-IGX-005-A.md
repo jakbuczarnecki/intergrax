@@ -6,13 +6,22 @@ Wave W2 in [`DCP-CLOSURE-BACKLOG.md`](../DCP-CLOSURE-BACKLOG.md): optional `TRUS
 
 ## Lifecycle state
 
-draft
+closed
 
 ## Test contract
 
 ```bash
 uv run pytest tests/unit/governance/test_dcp_*.py -q
 uv run python -m scripts.governance.igx_gov doctor
+uv run python scripts/governance/verify_trusted_policy_pin.py
+```
+
+## Checkpoint
+
+```
+[INFO] verify_trusted_policy_pin: OK
+[INFO] igx_gov doctor: OK
+governance-policy-pin CI job: ADVISORY (continue-on-error)
 ```
 
 ## Out of scope

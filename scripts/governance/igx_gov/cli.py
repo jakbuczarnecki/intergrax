@@ -63,8 +63,11 @@ def cmd_inventory(_: argparse.Namespace) -> int:
 
 
 def cmd_sync_adapters(_: argparse.Namespace) -> int:
-    print("[INFO] sync-adapters: Cursor-only stub — regenerate MATRIX via generate_control_plane_matrix.py")
-    return _run("scripts/governance/generate_control_plane_matrix.py")
+    print("[INFO] sync-adapters: Cursor MATRIX + advisory Claude/Codex fragments")
+    code = _run("scripts/governance/generate_control_plane_matrix.py")
+    if code != 0:
+        return code
+    return _run("scripts/governance/sync_adapter_fragments.py")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -82,9 +85,10 @@ def main(argv: list[str] | None = None) -> int:
     bp.set_defaults(func=cmd_before_push)
     sub.add_parser("lint", help="Ruff on changed Python paths (push mode)").set_defaults(func=cmd_lint)
     sub.add_parser("inventory", help="List DCP components").set_defaults(func=cmd_inventory)
-    sub.add_parser("sync-adapters", help="Regenerate adapter fragments (Cursor-only)").set_defaults(
-        func=cmd_sync_adapters
-    )
+    sub.add_parser(
+        "sync-adapters",
+        help="Regenerate Cursor MATRIX + advisory Claude/Codex adapter fragments",
+    ).set_defaults(func=cmd_sync_adapters)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

@@ -1,4 +1,4 @@
-# Task lifecycle FSM (TARGET DESIGN — procedural until operator OD-05)
+# Task lifecycle FSM (OD-05 — guards enforced by verify_ticket_lifecycle.py + verify_plan_approval.py)
 
 version: "1.0"
 
@@ -29,12 +29,18 @@ transitions:
     - closed
   closed: []
 
+# Binding guards (technical baseline — scripts/governance/verify_ticket_lifecycle.py):
+# - plan_pending → plan_approved: ticket must contain Approved: and matching Plan digest vs --plan file.
+# - States plan_approved and later: Approved: required; Plan digest lines require --plan stale check.
+# - in_progress → quality_gate: run `igx_gov ticket` (see igx_gov/ticket.py) before setting quality_gate.
 guards:
   plan_pending_to_plan_approved:
     requires:
       - ticket_field: "Approved:"
       - script: scripts/governance/verify_plan_approval.py
+    enforced_by: scripts/governance/verify_ticket_lifecycle.py
   in_progress_to_quality_gate:
     requires:
       - script: scripts/governance/igx_gov/__main__.py
       - subcommand: ticket
+    enforced_by: scripts/governance/verify_ticket_lifecycle.py

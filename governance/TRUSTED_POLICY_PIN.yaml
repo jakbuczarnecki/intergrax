@@ -1,0 +1,15 @@
+# GOV-06 — advisory integrity pins for DCP policy SSOT (compare via verify_trusted_policy_pin.py).
+# Enforcement: ADVISORY until operator promotes to SERVER / required CI check.
+# Regenerate hashes: uv run python scripts/governance/verify_trusted_policy_pin.py --write-pin
+
+version: '1.0'
+enforcement: advisory
+algorithm: sha256-file-bytes
+pins:
+  governance/GOVERNANCE-MANIFEST.yaml: 1ba1a043b63a58da797026f4c599bd01c8795bdd31425da206ccaa750fd07a42
+  governance/policy-registry.yaml: bbe9fc0c9e9541ba876bb80f389c8cd6a17f0c50d82a4c21bef74f8cf3638e9c
+  governance/dcp-commit-ref-config.yaml: 2604ccc51d1e446dd85f3d977ba95ed131beddb9914f3ef5bcb3990595612284
+  governance/agent-control-plane/role_registry.yaml: 7528e887957c70887bb7cca67633c7ccc054351453aaf83af56715ab663d9958
+  governance/agent-control-plane/skill_routing_registry.yaml: 8a19ff9daa8d57b4dc2788978e461c46d32df64514ef224ce690b0f06fda690c
+  governance/agent-control-plane/task_lifecycle.yaml: 7cd1fd96da4a5e5b0441cf1923ff11003d709221799ed0bc51681b5455ccc475
+  governance/agent-control-plane/plan_approvers.yaml: 35b177775970df52a43f7c641b9a6207810c2701624b182bc6ce364b32e27d7d

@@ -6,13 +6,23 @@ Waves W5–W8 in [`DCP-CLOSURE-BACKLOG.md`](../DCP-CLOSURE-BACKLOG.md): optional
 
 ## Lifecycle state
 
-draft
+closed
 
 ## Test contract
 
 ```bash
-uv run pytest tests/unit/governance/test_dcp_*.py -q
+uv run pytest tests/unit/governance/test_dcp_*.py tests/unit/governance/test_agent_role_routing.py -q
 uv run python -m scripts.governance.igx_gov doctor
+uv run python -m scripts.governance.igx_gov sync-adapters
+```
+
+## Checkpoint
+
+```
+[INFO] igx_gov doctor: OK
+sync-adapters: MATRIX + adapters/claude + adapters/codex (ADVISORY)
+GOV-08: ready_for_audit; global_certification.* remain false
+W7 branch protection: EXTERNAL_BLOCKED — gh api returned Branch not protected (404); see governance/rollout/BRANCH-PROTECTION-CHECKLIST.md
 ```
 
 ## Out of scope

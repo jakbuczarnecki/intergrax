@@ -34,6 +34,18 @@ for parity with GitHub **Regression gate** (`ci_smoke`).
 
 Install: [`ENTERPRISE_QUALITY_WORKFLOW.md`](../guides/ENTERPRISE_QUALITY_WORKFLOW.md) — `uv run python scripts/dev/install_git_hooks.py`.
 
+## DCP rollout checklist (operator)
+
+Complete before claiming SERVER enforcement on `development`:
+
+1. **Hooks** — `uv run python -m scripts.governance.igx_gov bootstrap` (installs hooks + push-gate readiness).
+2. **Local gate** — `uv run python scripts/dev/verify_push_gate_readiness.py` green.
+3. **Governance doctor** — `uv run python -m scripts.governance.igx_gov doctor` green @ recorded SHA.
+4. **Branch protection** — follow [`governance/rollout/BRANCH-PROTECTION-CHECKLIST.md`](../../../../governance/rollout/BRANCH-PROTECTION-CHECKLIST.md); apply via [`scripts/dev/apply_github_branch_protection.ps1`](../../../scripts/dev/apply_github_branch_protection.ps1) after `gh auth login`; verify with `gh api repos/:owner/:repo/branches/development/protection` (do not claim live without API proof).
+5. **CI** — PR shows green `governance-fast` + smoke; treat `governance-policy-pin` as **ADVISORY** until promoted.
+
+Track EXTERNAL_BLOCKED items in ticket checkpoint when GitHub admin auth is unavailable.
+
 ## Emergency bypass (operator only)
 
 | Variable | Effect |

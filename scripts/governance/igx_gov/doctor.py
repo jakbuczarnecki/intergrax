@@ -20,6 +20,7 @@ def run_doctor() -> int:
         exit_code = readiness.returncode
 
     for script in (
+        "validate_policy_registry.py",
         "verify_agent_control_plane.py",
         "verify_control_plane_consistency.py",
         "verify_agent_skills.py",

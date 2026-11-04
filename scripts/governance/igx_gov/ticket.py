@@ -28,6 +28,14 @@ def run_ticket(*, profile: str = "fast", skip_smoke: bool = False) -> int:
     if ref.returncode != 0:
         return ref.returncode
 
+    registry = subprocess.run(
+        [sys.executable, str(_REPO / "scripts/governance/validate_policy_registry.py")],
+        cwd=_REPO,
+        check=False,
+    )
+    if registry.returncode != 0:
+        return registry.returncode
+
     gate = subprocess.run(
         [
             sys.executable,

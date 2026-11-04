@@ -171,6 +171,21 @@ Until (5), **`dcp_program_certified`** and phase **`certification_ready`** remai
 
 ---
 
+## Rollout checklist (W7 — operator + docs)
+
+| Step | Command / artifact | Enforcement |
+|------|-------------------|-------------|
+| Hooks | `uv run python -m scripts.governance.igx_gov bootstrap` | LOCAL |
+| Push gate readiness | `uv run python scripts/dev/verify_push_gate_readiness.py` | LOCAL |
+| Doctor | `uv run python -m scripts.governance.igx_gov doctor` | TECHNICAL |
+| Branch protection | [`governance/rollout/BRANCH-PROTECTION-CHECKLIST.md`](./rollout/BRANCH-PROTECTION-CHECKLIST.md) + `scripts/dev/apply_github_branch_protection.ps1` | SERVER |
+| CI governance-fast | `.github/workflows/unit-tests.yml` job `governance-fast` | TECHNICAL |
+| GOV-06 pin job | same workflow job `governance-policy-pin` (`continue-on-error`) | ADVISORY |
+
+If `gh api` branch protection cannot run (auth), record **EXTERNAL_BLOCKED** in ticket checkpoint — do not claim checks are required on GitHub.
+
+---
+
 ## References
 
 - [`governance/tickets/README.md`](./tickets/README.md)

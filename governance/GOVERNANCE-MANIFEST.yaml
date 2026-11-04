@@ -19,8 +19,8 @@ phases:
     status: implemented
     certification_ready: false
     note: >-
-      Cursor-only igx_gov sync-adapters regenerates MATRIX.md via generate_control_plane_matrix.py;
-      Claude/Codex adapter packs ADAPT in a later batch if needed.
+      igx_gov sync-adapters regenerates MATRIX.md (Cursor) plus advisory Claude/Codex fragments
+      under governance/agent-control-plane/adapters/ (manual merge; not certification evidence).
   GOV-03:
     name: plan-approval
     status: implemented
@@ -35,22 +35,22 @@ phases:
     certification_ready: false
   GOV-06:
     name: trusted-policy-pin
-    status: deferred
+    status: implemented
     certification_ready: false
     note: >-
-      Optional TRUSTED_POLICY_PIN.yaml + CI pin compare — ADVISORY only; not required for DCP 0–7.
-      Do not add CI job until operator requests GOV-06 implementation.
+      governance/TRUSTED_POLICY_PIN.yaml + verify_trusted_policy_pin.py; CI job governance-policy-pin
+      (continue-on-error) — ADVISORY until operator promotes to required check on development.
   GOV-07:
     name: evidence-operations
     status: implemented
     certification_ready: false
   GOV-08:
     name: dcp-program-closure
-    status: in_progress
+    status: ready_for_audit
     certification_ready: false
     note: >-
-      Execution tracked by governance/DCP-CLOSURE-BACKLOG.md (W1–W8).
-      global_certification flags remain false until W8 G6 handoff.
+      W2–W7 agent deliverables landed; global_certification.* stay false until independent G6 PASS.
+      Branch protection SERVER evidence may remain EXTERNAL_BLOCKED — see governance/rollout/.
 
 global_certification:
   dcp_program_certified: false

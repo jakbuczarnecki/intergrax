@@ -39,7 +39,8 @@ policies:
     artifacts:
       - docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md
       - scripts/dev/install_git_hooks.py
-      - scripts/governance/igx_gov/
+      - scripts/governance/igx_gov/__main__.py
+      - scripts/governance/validate_policy_registry.py
     description: Hooks + unified igx_gov operator workflow.
 
   agent-control-plane:
