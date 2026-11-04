@@ -17,7 +17,7 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 | INTERNAL_CERTIFICATION_PUBLICATION_SHA | `5c08e5e6c44d21998c76bd27ad1efab172440f45` | OD-IC-01 consolidated record + roadmap §5 |
 | POST_IC_CONSOLIDATION_PUBLICATION_SHA | `81829712acc19ebeadb4773467b9c5642ca975e3` | ARCH-FREEZE pre-admission dossier + ladder reconciliation — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
 | INTERNAL_AUDIT_FINAL_DOSSIER_PUBLICATION_SHA | `c452721855b03f1f68db59edd1dc58df2d6c5000` | Internal audit final dossier @ baseline `444ffb09…` — [`EVOL_X_INTERNAL_AUDIT_FINAL_DOSSIER_2026_11_04.md`](./EVOL_X_INTERNAL_AUDIT_FINAL_DOSSIER_2026_11_04.md); **not** B6; Ref T-IGX-011-A |
-| R2_GLOBAL_AUDIT_RECONCILIATION_PUBLICATION_SHA | — | **PENDING** — EVOL-X R2 global audit reconciliation (orchestrator fix + canonical FRZ matrix); parent `e719afe58352422b800daaaec308d412257af128` |
+| R2_GLOBAL_AUDIT_RECONCILIATION_PUBLICATION_SHA | `167583ad1d33d9eb6e82589661e6d18aee15fa92` | R2 global audit reconciliation — orchestrator fix, canonical FRZ matrix, findings F-B6-AUD-01..03; parent `e719afe58352422b800daaaec308d412257af128` — [`EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md`](./EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md) |
 | PROTOCOL_03_AUTOMATED_AUDIT_PUBLICATION_SHA | `e719afe58352422b800daaaec308d412257af128` | Automated separate-agent audit record @ 2026-11-04 — **historical**; FRZ/orchestrator errata in R2 reconciliation doc |
 
 ## Historical W1 Documentation and Audit Lineage

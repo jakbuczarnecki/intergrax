@@ -19,7 +19,7 @@
 | Ancestry TES / FINAL / e719afe → reconciliation HEAD | verified `git merge-base --is-ancestor` |
 | Clean tree @ publication | required post-commit |
 
-**Corrective implementation SHA:** recorded on [`EVOL_X_SHA_LADDER.md`](./EVOL_X_SHA_LADDER.md) as `R2_GLOBAL_AUDIT_RECONCILIATION_PUBLICATION_SHA` after this commit lands.
+**Corrective implementation SHA:** `167583ad1d33d9eb6e82589661e6d18aee15fa92` (`R2_GLOBAL_AUDIT_RECONCILIATION_PUBLICATION_SHA` on ladder).
 
 ---
 
@@ -112,9 +112,9 @@ Profile: **AUTOMATION_FIRST_SCOPED** (OD-EVOL-13). **EVOL-M-09A** MEASURED @ FIN
 
 | FINDING_ID | ROOT_CAUSE | CODE_LOCATION | FIX | TEST | EVIDENCE | RESULT | CLOSURE_SHA |
 |------------|------------|---------------|-----|------|----------|--------|-------------|
-| F-B6-AUD-01 | Deep `.tmp/.../worktrees` + Windows MAX_PATH breaks `git show` in P03 | `p03._git` / orchestrator worktree base | Short-path worktrees `build/b6-independent-wt/` | Orchestrator Mode A+B post-fix | Session log + report JSON | **FIXED_AND_VERIFIED** | R2 publication SHA |
-| F-B6-AUD-02 | `uv --directory` pinned git HEAD to orchestrator repo | `_verify_mode_a_in_worktree` | In-worktree `sys.executable`; contract check on `evidence_head` | Same + unit attestation suite | Report payload `evidence_head==FINAL` | **FIXED_AND_VERIFIED** | R2 publication SHA |
-| F-B6-AUD-03 | Mode B artifact load failed due to F-B6-AUD-01 path context | orchestrator worktree base + embedded verify | Short path + unchanged P03 Mode B | Orchestrator Mode B step exit 0 | Replay outcomes JSON | **FIXED_AND_VERIFIED** | R2 publication SHA |
+| F-B6-AUD-01 | Deep `.tmp/.../worktrees` + Windows MAX_PATH breaks `git show` in P03 | `p03._git` / orchestrator worktree base | Short-path worktrees `build/b6-independent-wt/` | Orchestrator Mode A+B post-fix | Session `run-2026-11-04/` report exit 0 | **FIXED_AND_VERIFIED** | `167583ad1d33d9eb6e82589661e6d18aee15fa92` |
+| F-B6-AUD-02 | `uv --directory` pinned git HEAD to orchestrator repo | `_verify_mode_a_in_worktree` | In-worktree `sys.executable`; contract check on `evidence_head` | Unit + orchestrator | `evidence_head==bbf3e33…` | **FIXED_AND_VERIFIED** | `167583ad1d33d9eb6e82589661e6d18aee15fa92` |
+| F-B6-AUD-03 | Mode B artifact load failed due to F-B6-AUD-01 path context | orchestrator worktree base + embedded verify | Short path + unchanged P03 Mode B | Orchestrator Mode B step exit 0 | Replay outcomes JSON | **FIXED_AND_VERIFIED** | `167583ad1d33d9eb6e82589661e6d18aee15fa92` |
 | F-003 | OD-EVOL-11 auditor_id not recorded | governance register | — (authority) | — | register row | **OPEN_WITH_EXACT_BLOCKER** | — |
 | F-004 | No signed Protocol 03 PASS | ECAP Path A | — (authority) | — | no B6_ACCEPTANCE_PUBLICATION_SHA | **OPEN_WITH_EXACT_BLOCKER** | — |
 
@@ -124,9 +124,9 @@ Profile: **AUTOMATION_FIRST_SCOPED** (OD-EVOL-13). **EVOL-M-09A** MEASURED @ FIN
 
 Immutable certifying pins unchanged (TES, FINAL, original audit publication `e719afe…`).
 
-New row: **`R2_GLOBAL_AUDIT_RECONCILIATION_PUBLICATION_SHA`** = git commit containing this file + orchestrator fix + ladder update.
+New row: **`R2_GLOBAL_AUDIT_RECONCILIATION_PUBLICATION_SHA`** = `167583ad1d33d9eb6e82589661e6d18aee15fa92`.
 
-Lineage: `e719afe…` → R2 reconciliation commit(s) on `development`.
+Lineage: `e719afe58352422b800daaaec308d412257af128` → `167583ad1d33d9eb6e82589661e6d18aee15fa92` on `development`.
 
 ---
 
