@@ -33,6 +33,8 @@
 | INDEPENDENT_TECHNICAL_REAUDIT_SHA | `0e538269a7188075003b9ff2c7cce2545d8f1ccb` | Technical re-audit + regression gate `41804655934` — **not** formal B6 attestation |
 | FORMAL_B6_PACKAGE_PREPARATION_SHA | `b14a409c9894c77257487364a2d42d63ec22e295` | ENT+EVOL formal preparatory packages — [ENT_EVOL_FORMAL_CLOSURE_PUBLICATION_EVIDENCE.md](../ENT_EVOL_FORMAL_CLOSURE_PUBLICATION_EVIDENCE.md) |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Signed Protocol 03 ENT-AUDIT-X PASS (authorized independent auditor) |
+| INTERNAL_CERTIFICATION_STATUS | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (TECHNICAL SCOPE)** | OD-IC-01 (2026-11-04); technical re-audit recommendation **≠** formal attestation — [record](../EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md) |
+| INTERNAL_CERTIFICATION_PUBLICATION_SHA | *see record path* | Resolve: `git log -1 --format=%H -- docs/project/maintainers/qualification/EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md` |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
 | EVIDENCE_PUBLICATION_SHA | `300859537f12a1de7bf3d75fd685bc3a5c727183` | W8 B6 corrective B5 `qualification_at_89c76eb7…` (strict `verify_b5_publication_tree`) |

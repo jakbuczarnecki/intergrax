@@ -1,9 +1,12 @@
 # ENT-AUDIT-X + EVOL-X — Cross-stage decision matrix
 
-**Status:** **DRAFT — NOT SIGNED — NOT ACCEPTED**  
+**Status:** **DRAFT — NOT SIGNED — NOT ACCEPTED** (formal B6/OD chain) · **Internal certification recorded @ OD-IC-01 (2026-11-04)**  
 **START_HEAD @ preparation:** `0e538269a7188075003b9ff2c7cce2545d8f1ccb`
 
 | Gate | Stage | Required before | Owner | Evidence | State | Next action |
+| --- | --- | --- | --- | --- | --- | --- |
+| Internal certification (EVOL) | EVOL-X | Operator OD-IC-01 | Operator | TES/FINAL/CI + OD-EVOL-17..19 | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (SCOPED)** | Formal Protocol 03 B6 when authorized |
+| Internal certification (ENT) | ENT-AUDIT-X | Operator OD-IC-01 | Operator | TES/B5/re-audit + W8 disposition | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (TECHNICAL SCOPE)** | Formal Protocol 03 B6 when authorized |
 | --- | --- | --- | --- | --- | --- | --- |
 | EVOL B6 | EVOL-X | OD-EVOL-11 auditor + mandate | Independent auditor | TES `3c4a641b…`, FINAL `bbf3e33…`, CI `41337077334` | **OPEN** | Sign Protocol 03; set `B6_ACCEPTANCE_PUBLICATION_SHA` |
 | EVOL FRZ | EVOL-X | EVOL B6 ACCEPT | Operator | FRZ-EVOL-01..10 checklist | **OPEN** | Operator FRZ promotion after B6 |

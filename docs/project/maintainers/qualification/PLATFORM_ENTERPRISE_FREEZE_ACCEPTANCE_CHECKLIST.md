@@ -44,6 +44,8 @@ FRZ-* = PASS only when **all** exist:
 
 A Cursor implementation report alone is **not** sufficient evidence.
 
+**Internal certification (OD-IC-01, 2026-11-04):** Operator-accepted internal technical qualification for **EVOL-X** and **ENT-AUDIT-X** is recorded in [`EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md`](EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md). **`FRZ-EVOL-*`** and **`FRZ-AUD-*`** rows below remain **OPEN** until formal independent acceptance and operator FRZ promotion per ECAP — internal certification does **not** fabricate PASS.
+
 ## Initial checklist policy
 
 Criteria default to OPEN. Historical closure may be noted under **Evidence / historical evidence** without upgrading to PASS until independently recertified under the current program. Do not expand PASS coverage without exact-SHA independent evidence. **`FRZ-TEN-*` criteria default to OPEN; historical stage closure does not auto-PASS tenant isolation.**

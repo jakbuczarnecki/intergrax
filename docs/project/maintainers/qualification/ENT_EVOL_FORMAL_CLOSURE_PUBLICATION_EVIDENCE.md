@@ -58,6 +58,13 @@
 | Ancestry TES → HEAD | PASS |
 | Immutable R7 evidence | Unmodified under `qualification_at_87203c1…` |
 
+## Internal certification (operator — OD-IC-01)
+
+Operator-authorized **internal** qualification acceptance (2026-11-04) is recorded separately and **does not** replace formal B6 attestation or FRZ promotion:
+
+- [`EVOL_ENT_OD_IC_01_OPERATOR_INTERNAL_ACCEPTANCE_2026_11_04.md`](./EVOL_ENT_OD_IC_01_OPERATOR_INTERNAL_ACCEPTANCE_2026_11_04.md)
+- [`EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md`](./EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md)
+
 ## Remaining blockers
 
 - ENT formal B6 attestation (independent auditor)
