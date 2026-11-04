@@ -34,13 +34,13 @@
 | T-B6-OD-ENT-02 | B6 |  |  | github_admin | .github/workflows/ | [T-B6-ENT-B6] | Branch protection + required checks | enterprise-audit.yml | OD_ENT_02 packet | protection live | CRIT | no | BLOCKED_EXTERNAL |
 | T-B6-FRZ-AUD | B6 | FRZ-AUD-01,FRZ-AUD-02,FRZ-AUD-03,FRZ-AUD-04,FRZ-AUD-05,FRZ-AUD-06,FRZ-AUD-07,FRZ-AUD-08,FRZ-AUD-09,FRZ-AUD-10 |  | operator+auditor | checklist | [T-B6-ENT-B6] | Promote FRZ-AUD after ENT B6 | ENT runner evidence | checklist rows | 10/10 PASS | CRIT | no | BLOCKED_EXTERNAL |
 | T-B6-OD-ENT-08 | B6 |  |  | operator | roadmap §5 | [T-B6-FRZ-AUD,T-B6-OD-ENT-01,T-B6-OD-ENT-02] | Formal ENT stage closure OD-ENT-08 | — | FORMAL_CLOSURE_PUBLICATION_SHA | ENT CLOSED | CRIT | no | BLOCKED_EXTERNAL |
-| T-B7-LOCK-FREEZE-SHA | B7 | FRZ-FRZ-05,FRZ-FRZ-06,FRZ-FRZ-07,FRZ-FRZ-08,FRZ-FRZ-09 |  | implementer+operator | repo-wide freeze manifest | [T-B6-OD-ENT-08] | Single commit FREEZE_CERTIFICATION_SHA (= IMPLEMENTATION_SHA); manifest freeze; no further product edits before L3 FREEZE | git rev-parse; freeze manifest | FREEZE_CERTIFICATION_SHA | SHA locked @ admission | CRIT | no | PLANNED |
+| T-B7-LOCK-FREEZE-SHA | B7 | FRZ-FRZ-05,FRZ-FRZ-06,FRZ-FRZ-07,FRZ-FRZ-08,FRZ-FRZ-09 |  | implementer+operator | repo-wide freeze manifest | [T-B7-PFP-ACTIVATE] | Single commit FREEZE_CERTIFICATION_SHA (= IMPLEMENTATION_SHA); manifest freeze; no further product edits before L3 FREEZE (post-freeze policy active first) | git rev-parse; freeze manifest | FREEZE_CERTIFICATION_SHA | SHA locked @ admission | CRIT | no | PLANNED |
 | T-B7-L3-FREEZE | B7 | FRZ-FRZ-03,FRZ-FRZ-12 |  | tester+auditor | enterprise_audit | [T-B7-LOCK-FREEZE-SHA] | FREEZE mode @ FREEZE_CERTIFICATION_SHA | run_enterprise_audit.py --mode FREEZE | FREEZE report | FREEZE PASS | CRIT | no | PLANNED |
-| T-B7-VBN-HEAD-DOSSIER | B7 | FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04 | FIND-VBN-PARTIAL | implementer | ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md; tests/qualification/ebh_5/ | [T-B7-L3-FREEZE] | VBN §2.1–2.7 SSOT @ FREEZE_CERTIFICATION_SHA; EBH-5/6/7 reconciliation pointers | pytest tests/qualification/ebh_5/ -q | dossier §2.1–2.7 | prohibited_unresolved=0 frozen scope | HIGH | no | PLANNED |
-| T-B7-VBN-INDEPENDENT-ACCEPT | B7 | FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04 | FIND-VBN-PARTIAL | independent_auditor | ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md | [T-B7-VBN-HEAD-DOSSIER] | Independent replay ENT VBN 12/12 + dossier §2.1–2.7 @ exact FREEZE_SHA; FIND-VBN-PARTIAL disposition | pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_vbn_*.py -q; ENT_AUDIT_X_SEMANTIC=1 | signed dossier §2.7 | independent sign @ FREEZE_SHA | CRIT | no | BLOCKED_EXTERNAL |
+| T-B7-VBN-HEAD-DOSSIER | B7 | FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04 | FIND-VBN-PARTIAL | implementer | ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md; tests/qualification/ebh_5/ | [T-B6-OD-ENT-08] | VBN §2.1–2.7 SSOT rollup; may prep @ closure baseline HEAD before lock; certifying acceptance remains post-lock | pytest tests/qualification/ebh_5/ -q | dossier §2.1–2.7 | prohibited_unresolved=0 frozen scope | HIGH | partial | PLANNED |
+| T-B7-VBN-INDEPENDENT-ACCEPT | B7 | FRZ-RPL-01,FRZ-RPL-02,FRZ-RPL-03,FRZ-RPL-04 | FIND-VBN-PARTIAL | independent_auditor | ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md | [T-B7-VBN-HEAD-DOSSIER,T-B7-LOCK-FREEZE-SHA] | Independent replay ENT VBN 12/12 + dossier §2.1–2.7 @ exact FREEZE_SHA; FIND-VBN-PARTIAL disposition | pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_vbn_*.py -q; ENT_AUDIT_X_SEMANTIC=1 | signed dossier §2.7 | independent sign @ FREEZE_SHA | CRIT | no | BLOCKED_EXTERNAL |
 | T-B7-ECAP-2C | B7 | FRZ-FRZ-12 |  | independent_auditor | ECAP | [T-B7-L3-FREEZE] | ECAP §2.C @ freeze SHA | certifying replay | §2.C dossier | independent sign-off | CRIT | no | BLOCKED_EXTERNAL |
-| T-B7-PFP-ACTIVATE | B7 | FRZ-FRZ-10 |  | operator | ECAP §16; CHANGED-SINCE policy | [T-B7-L3-FREEZE] | Pre-closure: implement and activate post-freeze change policy | run_enterprise_audit.py --mode CHANGED-SINCE (dry-run); hooks doc | policy activation record | post-freeze policy active | CRIT | no | PLANNED |
-| T-B7-PFP-VERIFY | B7 | FRZ-FRZ-10 |  | operator+auditor | ECAP §16 | [T-B7-PFP-ACTIVATE] | Pre-closure: verify FRZ-FRZ-10 enforcement before formal closure | certifying CHANGED-SINCE smoke @ freeze SHA | FRZ-FRZ-10 evidence dossier | policy verified active | CRIT | no | PLANNED |
+| T-B7-PFP-ACTIVATE | B7 | FRZ-FRZ-10 |  | operator | ECAP §16; CHANGED-SINCE policy | [T-B6-OD-ENT-08] | Pre-lock: implement and activate post-freeze change policy before FREEZE_SHA lock | run_enterprise_audit.py --mode CHANGED-SINCE (dry-run); hooks doc | policy activation record | post-freeze policy active | CRIT | no | PLANNED |
+| T-B7-PFP-VERIFY | B7 | FRZ-FRZ-10 |  | operator+auditor | ECAP §16 | [T-B7-PFP-ACTIVATE,T-B7-L3-FREEZE] | Pre-closure: verify FRZ-FRZ-10 enforcement @ FREEZE_SHA before T-B7-FRZ-FRZ | certifying CHANGED-SINCE smoke @ freeze SHA | FRZ-FRZ-10 evidence dossier | policy verified active | CRIT | no | PLANNED |
 | T-B7-TEN-REVAL | B7 | FRZ-TEN-01,FRZ-TEN-02,FRZ-TEN-03,FRZ-TEN-04,FRZ-TEN-05,FRZ-TEN-06,FRZ-TEN-07,FRZ-TEN-08,FRZ-TEN-09,FRZ-TEN-10,FRZ-TEN-11,FRZ-TEN-12 |  | independent_auditor | TENANT_X qual | [T-B7-L3-FREEZE] | Revalidate FRZ-TEN @ freeze SHA | ENT tenant domain checks | TENANT_X replay | 12/12 confirmed | HIGH | no | PLANNED |
 | T-PATHB-EXCL | B7 | FRZ-PRD-01,FRZ-PRD-02 | FIND-PATHB-LIVE | operator | checklist Path B | [T-B7-L3-FREEZE] | Document Path B permitted OPEN @ freeze (no implicit global PASS) | — | Path B table | exclusions recorded | LOW | yes | PLANNED |
 | T-B7-CMP-REVAL | B7 | FRZ-CMP-01,FRZ-CMP-02,FRZ-CMP-03,FRZ-CMP-04,FRZ-CMP-05,FRZ-CMP-06,FRZ-CMP-07,FRZ-CMP-08 | FIND-CW-GATE-FAIL | independent_auditor | COMPAT-X | [T-B1-STRICT-QUALIFY,T-B7-L3-FREEZE] | Revalidate FRZ-CMP @ FREEZE SHA if B1 digest differs from historical PASS | uv run pytest tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py | CMP reval dossier | CMP evidence @ FREEZE_SHA | MED | no | PLANNED |
@@ -63,7 +63,7 @@
 | T-B7-PROMOTE-TYP | B7 | FRZ-TYP-01,FRZ-TYP-02,FRZ-TYP-03,FRZ-TYP-04,FRZ-TYP-05,FRZ-TYP-06 |  | operator+auditor | checklist | [T-B7-L3-FREEZE] | Promote OPEN TYP FRZ rows after FREEZE audit | ENT-A-TYP checks | checklist promotion | 6 criteria | MED | partial | PLANNED |
 
 ## Critical path
-T-R0-WAVE1-SSOT-RECONCILE → T-R0-BASELINE-CLOSURE-HEAD → T-B0-TRACE-VALIDATE → T-B1-INV → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B5-EVOL-FORMAL-CLOSURE → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-HEAD-DOSSIER → T-B7-VBN-INDEPENDENT-ACCEPT → (promotions + T-PATHB-EXCL + T-B7-PFP-*) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16
+T-R0-WAVE1-SSOT-RECONCILE → T-R0-BASELINE-CLOSURE-HEAD → T-B0-TRACE-VALIDATE → T-B1-INV → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B5-EVOL-FORMAL-CLOSURE → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-PFP-ACTIVATE → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-HEAD-DOSSIER → T-B7-VBN-INDEPENDENT-ACCEPT → (promotions + T-PATHB-EXCL) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16
 
 ## Dependency DAG (R0–R6 closure)
 
@@ -99,13 +99,16 @@ flowchart TD
   odEnt01 --> odEnt08
   odEnt02 --> odEnt08
   frzAud --> odEnt08
-  odEnt08 --> lockSha --> l3Freeze
-  l3Freeze --> vbnEng --> vbnAcc
-  l3Freeze --> pfpAct --> pfpVer
+  odEnt08 --> pfpAct --> lockSha --> l3Freeze
+  odEnt08 --> vbnEng
+  lockSha --> vbnAcc
+  vbnEng --> vbnAcc
   l3Freeze --> promos
   vbnAcc --> promos
   promos --> coord
   l3Freeze --> ecap2c
+  l3Freeze --> pfpVer
+  pfpAct --> pfpVer
   coord --> frzFrz
   ecap2c --> frzFrz
   pfpVer --> frzFrz

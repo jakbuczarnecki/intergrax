@@ -111,10 +111,11 @@ Normative order matches [ENT_EVOL_CROSS_STAGE_DECISION_MATRIX.md](./ENT_EVOL_CRO
 EVOL Protocol 03 B6 → FRZ-EVOL promotion → **T-B5-EVOL-FORMAL-CLOSURE** (EVOL-X formal CLOSED)
   → OD-ENT-00 → ENT Protocol 03 B6 → OD-ENT-01 → OD-ENT-02 (admin)
   → FRZ-AUD promotion → OD-ENT-08 → ENT-AUDIT-X formal CLOSED
+  → **T-B7-PFP-ACTIVATE** (post-freeze policy + material frozen-surface work qualified)
   → **T-B7-LOCK-FREEZE-SHA** → L3 FREEZE @ FREEZE_CERTIFICATION_SHA
-  → **T-B7-VBN-HEAD-DOSSIER** → **T-B7-VBN-INDEPENDENT-ACCEPT**
+  → **T-B7-VBN-HEAD-DOSSIER** (HEAD prep may precede lock) → **T-B7-VBN-INDEPENDENT-ACCEPT** @ FREEZE_SHA
   → ECAP §2.C → architecture FRZ promotions + Path B reconciliation → FRZ-FRZ-02 coordination
-  → pre-closure post-freeze policy (FRZ-FRZ-10) → ECAP §15 → FRZ-FRZ promotion
+  → **T-B7-PFP-VERIFY** (FRZ-FRZ-10 @ FREEZE_SHA) → ECAP §15 → FRZ-FRZ promotion
   → Roadmap §5 ARCH-FREEZE CLOSED — CERTIFIED → ECAP §16 post-closure handoff
 ```
 
@@ -126,7 +127,7 @@ EVOL Protocol 03 B6 → FRZ-EVOL promotion → **T-B5-EVOL-FORMAL-CLOSURE** (EVO
 
 **54 tasks** in [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md): R0 reconcile (+6 TASK_ID), baseline, inventory, remediation, qualification, **T-B5-EVOL-FORMAL-CLOSURE**, **T-B7-LOCK-FREEZE-SHA**, **T-B7-VBN-***, family promotion rows, **T-B7-COORD-ARCH-FRZ**, **T-B7-PFP-***, formal gates, Path B, publication.
 
-**Critical path:** T-R0-WAVE1-SSOT-RECONCILE → … → T-B5-EVOL-FORMAL-CLOSURE → … → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-* → promotions/Path B/PFP → **T-B7-COORD-ARCH-FRZ** → T-B7-ECAP-2C → **T-B7-PFP-VERIFY** → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16.
+**Critical path:** T-R0-WAVE1-SSOT-RECONCILE → … → T-B5-EVOL-FORMAL-CLOSURE → … → T-B6-OD-ENT-08 → **T-B7-PFP-ACTIVATE** → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-* → promotions/Path B → **T-B7-COORD-ARCH-FRZ** → T-B7-ECAP-2C → **T-B7-PFP-VERIFY** → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16.
 
 Validator: `uv run python scripts/governance/verify_arch_freeze_plan_traceability.py`.
 

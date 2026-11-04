@@ -187,8 +187,18 @@ def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], erro
         errors.append("T-B7-PROMOTE-RPL must follow T-B7-VBN-INDEPENDENT-ACCEPT (not engineering-only)")
     if "T-B7-LOCK-FREEZE-SHA" not in _ancestors(graph, "T-B7-L3-FREEZE"):
         errors.append("T-B7-L3-FREEZE must follow T-B7-LOCK-FREEZE-SHA")
-    if "T-B6-OD-ENT-08" not in _ancestors(graph, "T-B7-LOCK-FREEZE-SHA"):
-        errors.append("T-B7-LOCK-FREEZE-SHA must follow T-B6-OD-ENT-08")
+    if "T-B6-OD-ENT-08" not in _ancestors(graph, "T-B7-PFP-ACTIVATE"):
+        errors.append("T-B7-PFP-ACTIVATE must follow T-B6-OD-ENT-08")
+    if "T-B7-PFP-ACTIVATE" not in _ancestors(graph, "T-B7-LOCK-FREEZE-SHA"):
+        errors.append("T-B7-LOCK-FREEZE-SHA must follow T-B7-PFP-ACTIVATE (post-freeze policy before lock)")
+    if "T-B7-L3-FREEZE" in _ancestors(graph, "T-B7-PFP-ACTIVATE"):
+        errors.append("T-B7-PFP-ACTIVATE must precede T-B7-L3-FREEZE (pre-lock activation)")
+    if "T-B7-LOCK-FREEZE-SHA" not in _ancestors(graph, "T-B7-VBN-INDEPENDENT-ACCEPT"):
+        errors.append("T-B7-VBN-INDEPENDENT-ACCEPT must follow T-B7-LOCK-FREEZE-SHA (certify @ FREEZE_SHA)")
+    if "T-B7-LOCK-FREEZE-SHA" in _ancestors(graph, "T-B7-VBN-HEAD-DOSSIER"):
+        errors.append("T-B7-VBN-HEAD-DOSSIER must not require T-B7-LOCK-FREEZE-SHA (HEAD prep allowed pre-lock)")
+    if "T-B7-L3-FREEZE" not in _ancestors(graph, "T-B7-PFP-VERIFY"):
+        errors.append("T-B7-PFP-VERIFY must follow T-B7-L3-FREEZE (verify @ FREEZE_SHA)")
 
 
 def sync_matrix() -> None:
@@ -675,8 +685,8 @@ def sync_wbs() -> None:
             "",
             "implementer+operator",
             "repo-wide freeze manifest",
-            "[T-B6-OD-ENT-08]",
-            "Single commit FREEZE_CERTIFICATION_SHA (= IMPLEMENTATION_SHA); manifest freeze; no further product edits before L3 FREEZE",
+            "[T-B7-PFP-ACTIVATE]",
+            "Single commit FREEZE_CERTIFICATION_SHA (= IMPLEMENTATION_SHA); manifest freeze; no further product edits before L3 FREEZE (post-freeze policy active first)",
             "git rev-parse; freeze manifest",
             "FREEZE_CERTIFICATION_SHA",
             "SHA locked @ admission",
@@ -707,8 +717,8 @@ def sync_wbs() -> None:
             "FIND-VBN-PARTIAL",
             "implementer",
             "ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md; tests/qualification/ebh_5/",
-            "[T-B7-L3-FREEZE]",
-            "VBN §2.1–2.7 SSOT @ FREEZE_CERTIFICATION_SHA; EBH-5/6/7 reconciliation pointers",
+            "[T-B6-OD-ENT-08]",
+            "VBN §2.1–2.7 SSOT rollup; may prep @ closure baseline HEAD before lock; certifying acceptance remains post-lock",
             "pytest tests/qualification/ebh_5/ -q",
             "dossier §2.1–2.7",
             "prohibited_unresolved=0 frozen scope",
@@ -723,7 +733,7 @@ def sync_wbs() -> None:
             "FIND-VBN-PARTIAL",
             "independent_auditor",
             "ARCH_FREEZE_VBN_FREEZE_SHA_DOSSIER.md",
-            "[T-B7-VBN-HEAD-DOSSIER]",
+            "[T-B7-VBN-HEAD-DOSSIER,T-B7-LOCK-FREEZE-SHA]",
             "Independent replay ENT VBN 12/12 + dossier §2.1–2.7 @ exact FREEZE_SHA; FIND-VBN-PARTIAL disposition",
             "pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_vbn_*.py -q; ENT_AUDIT_X_SEMANTIC=1",
             "signed dossier §2.7",
@@ -755,8 +765,8 @@ def sync_wbs() -> None:
             "",
             "operator",
             "ECAP §16; CHANGED-SINCE policy",
-            "[T-B7-L3-FREEZE]",
-            "Pre-closure: implement and activate post-freeze change policy",
+            "[T-B6-OD-ENT-08]",
+            "Pre-lock: implement and activate post-freeze change policy before FREEZE_SHA lock",
             "run_enterprise_audit.py --mode CHANGED-SINCE (dry-run); hooks doc",
             "policy activation record",
             "post-freeze policy active",
@@ -771,8 +781,8 @@ def sync_wbs() -> None:
             "",
             "operator+auditor",
             "ECAP §16",
-            "[T-B7-PFP-ACTIVATE]",
-            "Pre-closure: verify FRZ-FRZ-10 enforcement before formal closure",
+            "[T-B7-PFP-ACTIVATE,T-B7-L3-FREEZE]",
+            "Pre-closure: verify FRZ-FRZ-10 enforcement @ FREEZE_SHA before T-B7-FRZ-FRZ",
             "certifying CHANGED-SINCE smoke @ freeze SHA",
             "FRZ-FRZ-10 evidence dossier",
             "policy verified active",
@@ -986,7 +996,7 @@ def sync_wbs() -> None:
     lines += [
         "",
         "## Critical path",
-        "T-R0-WAVE1-SSOT-RECONCILE → T-R0-BASELINE-CLOSURE-HEAD → T-B0-TRACE-VALIDATE → T-B1-INV → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B5-EVOL-FORMAL-CLOSURE → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-HEAD-DOSSIER → T-B7-VBN-INDEPENDENT-ACCEPT → (promotions + T-PATHB-EXCL + T-B7-PFP-*) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16",
+        "T-R0-WAVE1-SSOT-RECONCILE → T-R0-BASELINE-CLOSURE-HEAD → T-B0-TRACE-VALIDATE → T-B1-INV → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B5-EVOL-FORMAL-CLOSURE → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-PFP-ACTIVATE → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-HEAD-DOSSIER → T-B7-VBN-INDEPENDENT-ACCEPT → (promotions + T-PATHB-EXCL) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16",
     ]
     _WBS.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
