@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 TES = "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91"
-EVID = "W8_B6_EVIDENCE_PUBLICATION_PENDING"
+EVID = "300859537f12a1de7bf3d75fd685bc3a5c727183"
 EVID_SHORT = EVID[:12]
 HANDOFF = f"b6_independent_handoff/qualification_at_{TES}"
 B5_QUAL = f"{HANDOFF}/qual_wave_report.json"
