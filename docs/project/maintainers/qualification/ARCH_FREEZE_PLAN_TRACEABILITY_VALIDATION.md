@@ -2,51 +2,63 @@
 
 **Execution SSOT:** [ARCH_FREEZE_COMPLETE_IMPLEMENTATION_AND_CERTIFICATION_MASTER_PLAN.md](./ARCH_FREEZE_COMPLETE_IMPLEMENTATION_AND_CERTIFICATION_MASTER_PLAN.md)  
 **AUDIT_BASELINE_SHA:** `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a`  
-**Validated:** 2026-11-04 (pre-publication; no L3 qual PASS claimed)
+**Independent re-audit validator:** `scripts/governance/verify_arch_freeze_plan_traceability.py`
 
-## Mechanical counts
+## Reproducible command
 
-| Metric | Count |
-|--------|------:|
-| Unique FRZ IDs (checklist) | 225 |
+```bash
+uv run python scripts/governance/verify_arch_freeze_plan_traceability.py
+```
+
+Optional resync (maintainers only — regenerates matrix REMEDIATION_TASK and WBS from checklist):
+
+```bash
+uv run python scripts/governance/verify_arch_freeze_plan_traceability.py --sync-matrix --sync-wbs
+```
+
+**Last run (corrective batch):** exit **0** — log: `.tmp/session/arch-freeze-traceability/run.log`
+
+## Mechanical counts (validator output)
+
+| Metric | Result |
+|--------|--------|
+| Unique FRZ IDs | 225 |
 | FRZ families | 26 |
 | Checklist PASS | 95 |
 | Checklist OPEN | 130 |
-| Architecture-scoped OPEN (excl. FRZ-PRD-01, FRZ-PRD-02) | 128 |
-| FRZ matrix rows | 225 |
+| Architecture-scoped OPEN (excl. FRZ-PRD-01/02) | 128 |
 | Unique WBS TASK_ID | 37 |
-| Unique findings (gap register) | 7 |
-| Unmapped OPEN FRZ (missing matrix row) | 0 |
-| Orphan WBS (no REQUIREMENT_IDS/FINDING_IDS/gate action) | 0 |
-| Unmapped BLOCKER findings | 0 |
+| Unique findings | 8 |
+| Dangling OPEN FRZ → REMEDIATION_TASK | **0** |
+| Qualification RUN_ID (table rows) | 11 |
+| Unmapped BLOCKER findings | **0** |
 
 ## FRZ → WBS → TEST → EVIDENCE → AUDIT → APPROVAL
 
-| BLOCKER finding | WBS task | Test / evidence contract | Audit / approval gate |
-|-----------------|----------|--------------------------|------------------------|
-| FIND-PROD-REACH-DEFERRED | T-B1-PROD-REACH-SCAN | COMPAT/PROD-Q inventory; ENT FULL | ECAP §2.C @ freeze SHA |
-| FIND-VBN-PARTIAL | T-B2-VBN | ENT VBN domain (9 checks) | ECAP-§15 |
-| FIND-FORMAL-B6 | T-B5-EVOL-B6, T-B6-ENT-B6 | Protocol 03 replay @ TES | Independent auditor |
-| FIND-ACCEPTED-BASELINE | T-B6-OD-ENT-01 | promote_accepted_baseline | Operator OD-ENT-01 |
-| FIND-BND03-DEBT-STALE | T-B2-BND03-RECONCILE | layer boundary gate | Operator FRZ promotion |
+| Finding | Severity | WBS FINDING_IDS / gap CORRECTION | Qual / evidence | Approval gate |
+|---------|----------|----------------------------------|-----------------|---------------|
+| FIND-PRECHECKLIST-HEAD | MIN | T-B0-001 | L1-LADDER / doc refresh | operator |
+| FIND-PROD-REACH-DEFERRED | BLOCKER | T-B1-PROD-REACH-SCAN | COMPAT/PROD-Q inventory; L3-ENT-FULL | ECAP §2.C |
+| FIND-BND03-DEBT-STALE | MAJ | T-B2-BND03-RECONCILE | L2-BND | operator FRZ promotion |
+| FIND-DEBT-REG | MAJ | T-B2-DEBT | gap register rollup | FRZ-DEBT promotion |
+| FIND-VBN-PARTIAL | BLOCKER | T-B2-VBN | ENT VBN domain | ECAP-§15 |
+| FIND-FORMAL-B6 | BLOCKER | T-B5-EVOL-B6; T-B6-ENT-B6 | L3-EVOL-REPLAY; L3-ENT-REPLAY | independent auditor |
+| FIND-ACCEPTED-BASELINE | BLOCKER | T-B6-OD-ENT-01 | promote CLI | OD-ENT-01 |
+| FIND-PATHB-LIVE | INFO | T-PATHB-EXCL | Path B table | operator |
 
-Every OPEN FRZ row maps to `REMEDIATION_TASK` in [ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md](./ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md) (18 unique task IDs covering 130 OPEN rows).
+## Path B exclusions
 
-## Unverified production surfaces
-
-| Surface class | Status |
-|---------------|--------|
-| ~7k production Python modules (full reachability) | **UNVERIFIED** — T-B1-PROD-REACH-SCAN |
-| 85 ENT manifest checks | Listed; **not** executed certifying @ this validation |
-| 8 anchor surfaces | Classified in planning inventory only |
-
-## Path B exclusions (canonical)
-
-| FRZ ID | Basis |
-|--------|--------|
+| FRZ ID | Canonical basis |
+|--------|-----------------|
 | FRZ-PRD-01, FRZ-PRD-02 | Checklist L64; FRZ-FRZ-01/02; roadmap §2.0.3 |
-| Live slices FRZ-PRD-03, FRZ-PRD-08, FRZ-SEC-04 | Checklist L64 row notes |
+| Live slices FRZ-PRD-03, FRZ-PRD-08, FRZ-SEC-04 | Checklist L64 + row notes |
+
+## Scope honesty (unchanged)
+
+- Production ~7k-file reachability scan: **NOT EXECUTED** — **T-B1-PROD-REACH-SCAN**
+- Closed-world architecture audit: **NOT COMPLETE** (85 manifest + 8 anchors only)
+- No L3 certifying PASS claimed in planning artifacts
 
 ## Disposition
 
-Planning documentation traceability: **PASS**. Closed-world production audit: **NOT COMPLETE** (explicit deferral).
+Planning traceability: **PASS** @ validator. Ready for **independent plan re-audit**.

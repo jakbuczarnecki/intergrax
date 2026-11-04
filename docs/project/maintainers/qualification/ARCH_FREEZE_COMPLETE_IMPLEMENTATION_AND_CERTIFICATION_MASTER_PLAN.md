@@ -1,7 +1,7 @@
 # ARCH-FREEZE — Complete implementation and certification master plan (SSOT)
 
 **Status:** PLANNING ARTIFACT — **NOT** ARCH-FREEZE CLOSED · **NOT** B6 ACCEPTED · **NOT** global FRZ PASS  
-**Disposition:** `ARCH-FREEZE PLAN DOSSIER — READY FOR INDEPENDENT REVIEW` (planning artifacts; **not** ARCH-FREEZE CLOSED)  
+**Disposition:** `ARCH-FREEZE PLAN TRACEABILITY — CORRECTED — READY FOR INDEPENDENT RE-AUDIT`  
 **AUDIT_BASELINE_SHA:** `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a` · **Branch:** `development` · **Recorded:** 2026-11-04 (corrective planning pass)
 
 **Child artifacts (substantive — not placeholders):**
@@ -122,7 +122,9 @@ EVOL Protocol 03 B6 → FRZ-EVOL promotion → EVOL-X formal CLOSED
 
 **37 tasks** in [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md): baseline, partial inventory, **T-B1-PROD-REACH-SCAN**, remediation, qualification, family promotion rows, formal gates, Path B, publication.
 
-**Critical path:** T-B0-001 (dossier publication) → T-B1-INV → **T-B1-PROD-REACH-SCAN** → T-B2-* → T-B4-L3-FULL → external EVOL B6 → ENT chain → T-B7-L3-FREEZE → ECAP §2.C/§15 → T-B8-ROADMAP.
+**Critical path:** T-B0-001 → T-B0-TRACE-VALIDATE → T-B1-INV → **T-B1-PROD-REACH-SCAN** → T-B2-* → T-B4-L3-FULL → external EVOL B6 → ENT chain → T-B7-L3-FREEZE → ECAP §2.C/§15 → T-B8-ROADMAP.
+
+Validator: `uv run python scripts/governance/verify_arch_freeze_plan_traceability.py`.
 
 ---
 
