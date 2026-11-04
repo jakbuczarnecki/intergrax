@@ -22,7 +22,7 @@
 
 ## PUBLICATION_SHA
 
-*Set to git commit SHA publishing this wave (`FORMAL_B6_PACKAGE_PREPARATION_SHA` on ladder after commit).*
+`b14a409c9894c77257487364a2d42d63ec22e295` (`FORMAL_B6_PACKAGE_PREPARATION_SHA`)
 
 ## Deliverables published (paths)
 

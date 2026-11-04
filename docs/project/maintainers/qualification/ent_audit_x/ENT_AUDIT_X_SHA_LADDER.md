@@ -31,7 +31,7 @@
 | EVIDENCE_PUBLICATION_SHA (historical) | `894b0e1aff071d19636d23bea406b95dcffc79e1` | B5 @ `b8bb88c9…` — archived |
 | EVIDENCE_PUBLICATION_SHA (final closure R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | B5 handoff `qualification_at_87203c1b…` |
 | INDEPENDENT_TECHNICAL_REAUDIT_SHA | `0e538269a7188075003b9ff2c7cce2545d8f1ccb` | Technical re-audit + regression gate `41804655934` — **not** formal B6 attestation |
-| FORMAL_B6_PACKAGE_PREPARATION_SHA | *pending this publication commit* | [ENT_AUDIT_X_B6_FORMAL_ACCEPTANCE_PACKAGE_DRAFT.md](./ENT_AUDIT_X_B6_FORMAL_ACCEPTANCE_PACKAGE_DRAFT.md) + cross-stage operator packet |
+| FORMAL_B6_PACKAGE_PREPARATION_SHA | `b14a409c9894c77257487364a2d42d63ec22e295` | ENT+EVOL formal preparatory packages — [ENT_EVOL_FORMAL_CLOSURE_PUBLICATION_EVIDENCE.md](../ENT_EVOL_FORMAL_CLOSURE_PUBLICATION_EVIDENCE.md) |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Signed Protocol 03 ENT-AUDIT-X PASS (authorized independent auditor) |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
