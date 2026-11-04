@@ -40,3 +40,23 @@ def test_verify_trusted_policy_pin_exit_zero() -> None:
         check=False,
     )
     assert completed.returncode == 0
+
+
+def test_trusted_policy_pin_uses_git_blob_not_worktree_newlines() -> None:
+    """Pins must match HEAD blob bytes (CI/Linux LF), not CRLF working-tree on Windows."""
+    import hashlib
+    import subprocess
+
+    rel = "governance/GOVERNANCE-MANIFEST.yaml"
+    wt = (ROOT / rel).read_bytes()
+    blob = subprocess.check_output(["git", "rev-parse", f"HEAD:{rel}"], cwd=ROOT).strip()
+    head = subprocess.check_output(["git", "cat-file", "blob", blob], cwd=ROOT)
+    if wt == head:
+        return
+    assert hashlib.sha256(wt).hexdigest() != hashlib.sha256(head).hexdigest()
+    completed = subprocess.run(
+        [sys.executable, str(GOV / "verify_trusted_policy_pin.py")],
+        cwd=ROOT,
+        check=False,
+    )
+    assert completed.returncode == 0
