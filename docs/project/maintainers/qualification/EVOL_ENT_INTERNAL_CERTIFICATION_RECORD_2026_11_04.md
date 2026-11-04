@@ -74,3 +74,13 @@ Internal certification **does not** satisfy ARCH-FREEZE mechanical requirements 
 | ECAP unauthorized change | **None** |
 
 **INTERNAL_CERTIFICATION_PUBLICATION_SHA:** `5c08e5e6c44d21998c76bd27ad1efab172440f45` (OD-IC-01 publication commit).
+
+## Post–internal-certification consolidation (2026-11-04)
+
+| Artifact | Purpose |
+| --- | --- |
+| [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](./ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) | Pre-admission gate inventory — **not** formal ARCH-FREEZE entry |
+| [`POST_INTERNAL_CERTIFICATION_CONSOLIDATION_INDEPENDENT_VERIFICATION_HANDOFF.md`](./POST_INTERNAL_CERTIFICATION_CONSOLIDATION_INDEPENDENT_VERIFICATION_HANDOFF.md) | Independent reviewer handoff for this batch |
+| Root [`EVOL_X_SHA_LADDER.md`](./EVOL_X_SHA_LADDER.md) | Shadow SSOT removed — pointer to [`evol_x/EVOL_X_SHA_LADDER.md`](./evol_x/EVOL_X_SHA_LADDER.md) |
+
+**POST_IC_CONSOLIDATION_PUBLICATION_SHA:** see handoff dossier (set on consolidation publication commit). **IC-AUD-001** corrective @ `1b82324abe0f775086617f907870dd30dd11aade` included in ancestry.

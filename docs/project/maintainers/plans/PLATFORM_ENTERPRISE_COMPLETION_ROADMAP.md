@@ -1801,7 +1801,7 @@ Every parent-level closure from this point forward must explicitly assess the ap
 
 Update this section only after independent exact-SHA audit.
 
-**Internal certification (OD-IC-01, 2026-11-04):** Operator-accepted internal qualification for **EVOL-X** and **ENT-AUDIT-X** is tracked in [`EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md`](../qualification/EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md). Internal rows **do not** substitute for formal **`CLOSED — INDEPENDENTLY ACCEPTED`** ledger closure or ECAP B6 publication SHAs.
+**Internal certification (OD-IC-01, 2026-11-04):** Operator-accepted internal qualification for **EVOL-X** and **ENT-AUDIT-X** is tracked in [`EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md`](../qualification/EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md). Internal rows **do not** substitute for formal **`CLOSED — INDEPENDENTLY ACCEPTED`** ledger closure or ECAP B6 publication SHAs. **ARCH-FREEZE pre-admission (not entry):** [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../qualification/ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md).
 
 | Etap | Closure SHA / evidence | Notes |
 |---|---|---|
