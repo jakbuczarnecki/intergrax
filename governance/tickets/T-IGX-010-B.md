@@ -29,4 +29,6 @@ Evidence: B1 [`ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md`](../../docs/project/
 
 ## Lifecycle state
 
-handoff_to_independent_audit @ publication HEAD `32fc2bce52c46ec721633453e401839cb39181d7` — **not** ARCH-FREEZE certified; B5–B8 external gates remain open
+**independent_g6_accepted_scoped** @ AUDIT HEAD `3d96691f1b02b393a4de189139a6e1347db99382` (2026-11-04) — wave **B0–B4** independently replayed (B0/B1/BND03/B3 per prior G6 session; L3 FULL 85/85 @ `f7ce9dae` via worktree; VBN acceptance 12/12 @ HEAD with `ENT_AUDIT_X_SEMANTIC=1`). **Not** ARCH-FREEZE certified; **no** FRZ promotion; B5–B8 external gates **open**. Residual BLOCKERs: FIND-VBN-PARTIAL, FIND-FORMAL-B6, FIND-ACCEPTED-BASELINE.
+
+G6 evidence (gitignored): `.tmp/session/arch-freeze-g6-wave1-audit/`; L3 bundle copy `.tmp/proof/arch-freeze-g6-full-g6/`.

@@ -61,3 +61,18 @@ INFO / disposition-only findings (B1 strict run, no FRZ promotion): see gap regi
 - **T-B7-*** / **T-B8-*** — FREEZE mode, FRZ promotions, roadmap §5 **ARCH-FREEZE CLOSED** publication  
 
 Roadmap evidence ledger §5: wave-1 handoff pointer only — **not** formal ARCH-FREEZE closure row.
+
+## Independent G6 disposition (completion @ AUDIT HEAD)
+
+| Pole | Wartość |
+| --- | --- |
+| **AUDIT HEAD** | `3d96691f1b02b393a4de189139a6e1347db99382` |
+| **B1 EXECUTION_SHA** | `6bdf78c626bfcb347ad3ad9e3e18b65222f1b169` |
+| **L3 EXECUTION_SHA** | `f7ce9daebad35537da974de0dda3962126c6030e` |
+| **Decyzja** | **`INDEPENDENTLY ACCEPTED (SCOPED)`** — fale B0–B4 @ EXECUTION_SHAs; **nie** ARCH-FREEZE CLOSED |
+| **L3 G6 replay** | 85/85 PASS, certifying bundle `.tmp/proof/arch-freeze-g6-full-g6/` (auditor session); digest `0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b` |
+| **VBN acceptance @ HEAD** | pytest 12/12 z `ENT_AUDIT_X_SEMANTIC=1` (auditor replay) |
+| **Residual BLOCKERs** | FIND-VBN-PARTIAL (artifact §2.1–2.7), FIND-FORMAL-B6, FIND-ACCEPTED-BASELINE — **bez promocji FRZ** |
+| **Raport sesji** | `.tmp/session/arch-freeze-g6-wave1-audit/G6_WAVE1_INDEPENDENT_AUDIT_REPORT.md` |
+
+**Publication SHA (G6 completion docs):** recorded on commit `Ref: governance/tickets/T-IGX-010-B.md` after operator push.
