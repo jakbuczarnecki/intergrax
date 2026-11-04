@@ -1,0 +1,13 @@
+# Product paths that require a ticket Ref: trailer on each commit that touches them.
+
+product_path_prefixes:
+  - intergrax/
+  - agents/
+  - applications/
+  - scripts/
+
+# Repo-relative path after "Ref: " (single canonical format).
+ref_line_prefix: "Ref: governance/tickets/"
+ref_id_pattern: "T-IGX-[0-9]{3}-[A-Z]\\.md"
+
+skip_env: INTERGRAX_SKIP_TICKET_REF_GATE

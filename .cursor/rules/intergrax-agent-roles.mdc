@@ -1,0 +1,24 @@
+---
+description: InterGRAX Delivery DevOS agent roles and handoff routing
+alwaysApply: false
+---
+
+# Agent roles (Delivery DevOS)
+
+SSOT: [`governance/agent-control-plane/role_registry.yaml`](../../governance/agent-control-plane/role_registry.yaml).
+
+| Operator intent | Role | Load skill |
+|-----------------|------|------------|
+| Unclear / multi-step | `orchestrator` | `@igx-devos-qc-orchestrator` |
+| Plan or scope only | `architect-planner` | `@igx-devos-role-architect` |
+| Implement ticket batch | `implementer` | `@igx-devos-ticket-driven-work` |
+| Verify / pytest | `tester` | `@igx-devos-role-tester` |
+| Review diff | `reviewer` | `@igx-devos-role-reviewer` |
+| Open PR | `delivery-closure` | `@igx-devos-github-pr-workflow` |
+| G6 / audit campaign | `independent-quality-auditor` | `@intergrax-independent-audit` |
+
+**Handoff chain:** plan_approved → in_progress (implementer) → quality_gate (tester checkpoint) → ready_for_audit (new session, auditor).
+
+Subagents: follow `subagent_role_map` and `@igx-devos-parallel-orchestration`. Parent owns commits and `Ref:` trailers.
+
+Default session role when unspecified: **orchestrator** (see root `AGENTS.md`).

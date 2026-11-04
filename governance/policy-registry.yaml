@@ -1,0 +1,91 @@
+# Delivery DevOS policy registry — maps policy IDs to repo artifacts and enforcement class.
+
+policies:
+  tier-boundaries:
+    id: POL-TIER-BOUNDARY
+    enforcement: procedural
+    artifacts:
+      - AGENTS.md
+      - .cursor/rules/intergrax-iteration.mdc
+    description: Four-tier import boundaries (intergrax / agents / applications).
+
+  token-budget:
+    id: POL-I1-O1
+    enforcement: procedural
+    artifacts:
+      - .cursor/rules/intergrax-token-budget.mdc
+    description: Input/output token budget; subagent exception when control plane active.
+
+  ticket-first:
+    id: POL-DCP-TICKET
+    enforcement: technical
+    artifacts:
+      - governance/tickets/README.md
+      - scripts/governance/verify_commit_ticket_refs.py
+    description: Product-path commits require Ref trailer to governance ticket.
+
+  push-gate:
+    id: POL-PUSH-GATE
+    enforcement: technical
+    artifacts:
+      - scripts/ci/run_push_gate.py
+      - scripts/ci/run_regression_gate_ci.py
+      - docs/project/technical/guides/LOCAL_PUSH_GATE.md
+    description: Pre-push regression profile (default fast).
+
+  enterprise-quality:
+    id: POL-EQW
+    enforcement: procedural
+    artifacts:
+      - docs/project/technical/guides/ENTERPRISE_QUALITY_WORKFLOW.md
+      - scripts/dev/install_git_hooks.py
+      - scripts/governance/igx_gov/
+    description: Hooks + unified igx_gov operator workflow.
+
+  agent-control-plane:
+    id: POL-DCP-ACP
+    enforcement: technical
+    artifacts:
+      - governance/agent-control-plane/role_registry.yaml
+      - governance/agent-control-plane/skill_routing_registry.yaml
+      - scripts/governance/verify_agent_control_plane.py
+      - scripts/governance/verify_control_plane_consistency.py
+    description: Seven roles, skill routing, subagent caps.
+
+  plan-approval:
+    id: POL-DCP-PLAN
+    enforcement: technical
+    artifacts:
+      - governance/agent-control-plane/plan_approvers.yaml
+      - scripts/governance/plan_digest.py
+      - scripts/governance/verify_plan_approval.py
+    description: Plan digest + operator Approved line in ticket.
+
+  independent-audit:
+    id: POL-G6-AUDIT
+    enforcement: procedural
+    artifacts:
+      - .cursor/rules/intergrax-independent-audit.mdc
+      - docs/audit_results/AUDIT_PROTOCOL.md
+    description: Implementer never declares G6 PASS; separate audit session.
+
+  parallel-worktrees:
+    id: POL-DCP-PARALLEL
+    enforcement: procedural
+    artifacts:
+      - governance/workflows/WORKTREES.md
+      - docs/project/technical/devos/PARALLEL-EXECUTION.md
+      - scripts/governance/worktree/new-worktree.ps1
+    description: One ticket = one executor = one worktree; no PostgreSQL lease.
+
+  qualification-freeze:
+    id: POL-FRZ-REF
+    enforcement: advisory
+    artifacts:
+      - docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md
+    description: Reference only — statuses unchanged by DCP.
+
+commit_ref_gate:
+  config: governance/dcp-commit-ref-config.yaml
+  verifier: scripts/governance/verify_commit_ticket_refs.py
+  skip_env: INTERGRAX_SKIP_TICKET_REF_GATE

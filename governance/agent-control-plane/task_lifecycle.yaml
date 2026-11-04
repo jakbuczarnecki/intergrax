@@ -1,0 +1,40 @@
+# Task lifecycle FSM (TARGET DESIGN — procedural until operator OD-05)
+
+version: "1.0"
+
+states:
+  - draft
+  - plan_pending
+  - plan_approved
+  - in_progress
+  - quality_gate
+  - ready_for_audit
+  - closed
+
+transitions:
+  draft:
+    - plan_pending
+  plan_pending:
+    - plan_approved
+    - draft
+  plan_approved:
+    - in_progress
+  in_progress:
+    - quality_gate
+    - draft
+  quality_gate:
+    - ready_for_audit
+    - in_progress
+  ready_for_audit:
+    - closed
+  closed: []
+
+guards:
+  plan_pending_to_plan_approved:
+    requires:
+      - ticket_field: "Approved:"
+      - script: scripts/governance/verify_plan_approval.py
+  in_progress_to_quality_gate:
+    requires:
+      - script: scripts/governance/igx_gov/__main__.py
+      - subcommand: ticket

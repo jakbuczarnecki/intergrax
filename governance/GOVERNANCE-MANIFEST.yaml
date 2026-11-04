@@ -1,0 +1,53 @@
+# InterGRAX Delivery DevOS (DCP) — governance program manifest.
+# Certification flags remain false until external G6 audit (see EVIDENCE-AND-CERTIFICATION.md).
+
+program: intergrax-delivery-devos
+version: "1.0.0"
+ticket_ssot: governance/tickets/T-IGX-{nn}-{batch}.md
+
+phases:
+  GOV-00:
+    name: policy-ssot
+    status: implemented
+    certification_ready: false
+  GOV-01:
+    name: quality-engine
+    status: implemented
+    certification_ready: false
+  GOV-02:
+    name: agent-control-plane
+    status: implemented
+    certification_ready: false
+  GOV-03:
+    name: plan-approval
+    status: implemented
+    certification_ready: false
+  GOV-04:
+    name: parallel-execution
+    status: implemented
+    certification_ready: false
+  GOV-05:
+    name: ci-tiers-pr-metadata
+    status: implemented
+    certification_ready: false
+  GOV-06:
+    name: trusted-policy-pin
+    status: deferred
+    certification_ready: false
+    note: Optional TRUSTED_POLICY_PIN.yaml — not required for first DCP merge.
+  GOV-07:
+    name: evidence-operations
+    status: implemented
+    certification_ready: false
+
+global_certification:
+  dcp_program_certified: false
+  g6_independent_audit_pass: false
+  operator_signoff: false
+
+references:
+  policy_hierarchy: governance/POLICY-HIERARCHY.md
+  policy_registry: governance/policy-registry.yaml
+  agent_control_plane: governance/agent-control-plane/
+  tickets: governance/tickets/
+  devos_hub: docs/project/technical/devos/README.md
