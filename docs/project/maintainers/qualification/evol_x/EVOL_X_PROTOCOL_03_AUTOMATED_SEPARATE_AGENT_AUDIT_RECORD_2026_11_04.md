@@ -45,7 +45,7 @@ All ladder SHAs verified as ancestors of audit start HEAD (`git merge-base --is-
 | `MODE_A_TECHNICAL_PASS` | **PASS** | §3 · `.tmp/session/.../mode_a_canonical.log` |
 | `MODE_B_TECHNICAL_PASS` | **PASS** | §4 · `.tmp/session/.../mode_b_canonical.log` · replay JUnit §4 |
 | Adversarial P03 suite | **PASS** | §7 · 52/52 `test_evol_x_p03_integrity.py` |
-| Orchestrator bundle | **PARTIAL** | §5 — Mode B embedded verify FAIL; Mode A reported non-FINAL `evidence_head` |
+| Orchestrator bundle | **PASS** (post R2 fix) | §5 · [`EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md`](./EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md) |
 
 ---
 
@@ -89,9 +89,10 @@ verify-test-execution --evidence-ref bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1 --
 
 ## 5. Orchestrator run (`evol_x_b6_independent_verification.py`)
 
-**Session root:** `.tmp/session/evol-x-r2-automated-b6-audit/2026-11-04-r2/`  
-**Report:** `independent_verification_report.json`  
-**Exit code:** 2 · `technical_verification`: FAIL · `formal_acceptance_eligibility`: NOT_ELIGIBLE
+> **Historical @ publication `e719afe…`:** exit 2 · Mode A `evidence_head` anomaly · Mode B missing artifact (deep `.tmp` worktrees). **R2 reconciliation:** FIXED — see [`EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md`](./EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md) §C–G · session `.tmp/session/evol-x-r2-final-reconciliation/run-2026-11-04/` · orchestrator **PASS** @ corrective HEAD.
+
+**Original session root:** `.tmp/session/evol-x-r2-automated-b6-audit/2026-11-04-r2/`  
+**Original report:** `independent_verification_report.json` · exit 2
 
 | Step | Exit | Note |
 |------|------|------|
@@ -126,6 +127,8 @@ No committed canonical evidence tampered; negative artifacts isolated under `.tm
 ## 8. FRZ-EVOL-01..10 (auditor assessment)
 
 Behavioral evidence @ TES in published FINAL bundle (`evol_frz_evidence.v1.json`). **Enterprise checklist rows remain OPEN** until E4 operator promotion — auditor does **not** promote FRZ.
+
+> **R2 reconciliation:** Checklist-literal matrix and mechanical validation — [`EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md`](./EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md) §B (supersedes table below for requirement text).
 
 | FRZ_ID | REQUIREMENT (summary) | IMPLEMENTATION | TEST / EVIDENCE | EXECUTION_SHA | AUDITOR_RESULT | SCOPE_LIMITATION |
 |--------|----------------------|----------------|-----------------|---------------|----------------|------------------|
@@ -163,9 +166,9 @@ Automated agent technical PASS **does not** authorize `ACCEPTED`. Do not publish
 
 | ID | Severity | Finding | Disposition |
 |----|----------|---------|-------------|
-| F-B6-AUD-01 | Medium | Windows `Filename too long` breaks P03 `git show` in deep `.tmp/.../worktrees` | Mitigation: short-path worktrees (`build/wt-evol-b6-*`) for Mode A |
-| F-B6-AUD-02 | Low | Orchestrator Mode A reported `evidence_head` = `d5bef42…` | Document; canonical CLI @ FINAL supersedes for acceptance |
-| F-B6-AUD-03 | Info | Orchestrator embedded Mode B verify failed; canonical CLI PASS | Tooling gap — not evidence invalidity |
+| F-B6-AUD-01 | Medium | Windows `Filename too long` breaks P03 `git show` in deep `.tmp/.../worktrees` | **FIXED_AND_VERIFIED** @ R2 — `build/b6-independent-wt/` |
+| F-B6-AUD-02 | Low | Orchestrator Mode A reported `evidence_head` = `d5bef42…` | **FIXED_AND_VERIFIED** @ R2 — in-worktree interpreter; `evidence_head==FINAL` |
+| F-B6-AUD-03 | Info | Orchestrator embedded Mode B verify failed; canonical CLI PASS | **FIXED_AND_VERIFIED** @ R2 — short-path worktrees; Mode B exit 0 |
 | F-003 | Open (prior) | G-02 OD-EVOL-11 identity | **Blocks formal B6** |
 | F-004 | Open (prior) | G-07 unsigned Protocol 03 | **Blocks formal B6** |
 

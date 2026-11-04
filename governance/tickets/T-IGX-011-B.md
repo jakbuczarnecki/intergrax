@@ -2,11 +2,13 @@
 
 ## Scope
 
-Publish **automated independent-quality-auditor** technical audit record for EVOL-X Protocol 03 B6 (Mode A @ FINAL, Mode B @ TES, adversarial P03 gates, FRZ-EVOL assessment, R2 closure handoff). Documentation and session evidence references only — **no** signed Protocol 03 PASS, **no** `B6_ACCEPTANCE_PUBLICATION_SHA`, **no** FRZ-EVOL promotion, **no** EVOL-X formal CLOSED.
+Publish **automated independent-quality-auditor** technical audit record for EVOL-X Protocol 03 B6 (Mode A @ FINAL, Mode B @ TES, adversarial P03 gates, FRZ-EVOL assessment, R2 closure handoff). **R2 global reconciliation** (`EVOL-X-R2-FINAL-RECONCILIATION`): canonical FRZ-EVOL matrix, orchestrator root-cause fix, finding closure, SHA ladder update — see [`EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md`](../../docs/project/maintainers/qualification/evol_x/EVOL_X_R2_GLOBAL_AUDIT_RECONCILIATION_FINAL.md).
 
-**Artifacts:** [`docs/project/maintainers/qualification/evol_x/EVOL_X_PROTOCOL_03_AUTOMATED_SEPARATE_AGENT_AUDIT_RECORD_2026_11_04.md`](../../docs/project/maintainers/qualification/evol_x/EVOL_X_PROTOCOL_03_AUTOMATED_SEPARATE_AGENT_AUDIT_RECORD_2026_11_04.md)
+Documentation and session evidence references only — **no** signed Protocol 03 PASS, **no** `B6_ACCEPTANCE_PUBLICATION_SHA`, **no** FRZ-EVOL promotion, **no** EVOL-X formal CLOSED.
 
-**Session logs (gitignored):** `.tmp/session/evol-x-r2-automated-b6-audit/2026-11-04-r2/`
+**Artifacts:** [`docs/project/maintainers/qualification/evol_x/EVOL_X_PROTOCOL_03_AUTOMATED_SEPARATE_AGENT_AUDIT_RECORD_2026_11_04.md`](../../docs/project/maintainers/qualification/evol_x/EVOL_X_PROTOCOL_03_AUTOMATED_SEPARATE_AGENT_AUDIT_RECORD_2026_11_04.md) · R2 reconciliation final (above)
+
+**Session logs (gitignored):** `.tmp/session/evol-x-r2-automated-b6-audit/2026-11-04-r2/` · `.tmp/session/evol-x-r2-final-reconciliation/`
 
 ## Plan digest
 
@@ -18,9 +20,12 @@ Approved: operator @ 2026-11-04T17:54:00+01:00 (EVOL-X R2 automated B6 audit mis
 
 ## Test contract
 
-No product code change. Pre-push:
+No product code change in original audit publication. R2 reconciliation includes **minimal orchestrator fix** (`evol_x_b6_independent_verification.py`) + FRZ matrix validator + docs.
+
+Pre-push:
 
 ```powershell
+uv run pytest tests/unit/qualification/test_evol_x_frz_evol_canonical_matrix.py tests/unit/qualification/test_evol_x_b6_attestation_contract.py -q
 uv run python -m scripts.governance.igx_gov ticket
 ```
 
