@@ -121,7 +121,16 @@ Dossier: [`EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md`](./EVOL_X_FORMAL_
 
 ## L. Commit and push confirmation
 
-*Updated after publication commit.*
+| Item | Value |
+|------|--------|
+| Campaign publication SHA | `8195d84b4f05677206b54132f0a2ab6b4d7b29cc` |
+| Ladder pin commit | *same push tip after pin commit* |
+| Tests | 31 passed (FRZ matrix + B6 attestation contract) |
+| `igx_gov ticket` | PASS |
+| `HEAD == origin/development` | verified post-push |
+| Working tree | clean post-push |
+
+**Validation log:** `.tmp/session/evol-x-formal-closure-campaign/`
 
 ---
 
