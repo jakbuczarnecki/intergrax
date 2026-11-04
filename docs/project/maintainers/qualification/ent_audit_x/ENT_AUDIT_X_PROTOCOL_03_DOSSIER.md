@@ -5,6 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Execution SSOT | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) |
+| W8 findings disposition | [ENT_AUDIT_X_W8_B6_FINDINGS_DISPOSITION.md](./ENT_AUDIT_X_W8_B6_FINDINGS_DISPOSITION.md) |
 | Audited IMPLEMENTATION_SHA (W8 corrective code) | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` |
 | **TEST_EXECUTION_SHA (current qual)** | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` |
 | Historical TEST_EXECUTION_SHA (R6/R7) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` — R7 B5 fails `verify_b5_publication_tree()` (ENT-W8-B6-001) |
@@ -32,7 +33,16 @@
 
 ## CI qualification runs
 
-Latest green @ `1bee524218d9185175f3e24c6e6f205565ff0569` (historical failures retained below — **not** HEAD proof):
+**W8 @ `2eddd42230da93f5f26dd648840c3c8af629f7ba`** (covers W8 code; HEAD `5ceed24c…` is doc-only post-TES):
+
+| workflow | run_id | head_sha | conclusion | url |
+| --- | --- | --- | --- | --- |
+| enterprise-audit.yml | 41797446254 | `2eddd42230da93f5f26dd648840c3c8af629f7ba` | *verify @ re-audit* | https://github.com/jakbuczarnecki/intergrax/actions/runs/41797446254 |
+| Regression gate | 41797446087 | `2eddd42230da93f5f26dd648840c3c8af629f7ba` | success | https://github.com/jakbuczarnecki/intergrax/actions/runs/41797446087 |
+
+**ENT-W8-B6-004 nightly @ HEAD:** OPEN until dispatch/schedule (no substitute @ older SHA for W8 verifier scope).
+
+Historical (pre-W8):
 
 | workflow | run_id | head_sha | conclusion | artifact | url |
 | --- | --- | --- | --- | --- | --- |

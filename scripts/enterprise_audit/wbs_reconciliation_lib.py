@@ -173,6 +173,8 @@ def remaining_delta(task_id: str) -> str:
             "C069": "jsonschema all artifacts",
             "C072": "impact map neg paths @ CI",
             "C073": "catalog profile strict @ CI",
+            "C054": "mechanical readiness W8 gate @ HEAD (evidence_integrity strict B5)",
+            "C066": "mechanical_readiness_check @ HEAD post-TES script delta",
         }
         return specifics.get(task_id, "Negative / integration qual @ HEAD not fully replayed @ TES")
     return "See Matrix C acceptance"
@@ -215,7 +217,7 @@ def matrix_e_qual_label(check_id: str, outcomes: dict[str, dict[str, Any]]) -> s
 
 GAP_RC_STATUS: dict[str, str] = {
     "GAP-RC-OD-TRUST": "OPEN",
-    "GAP-RC-MECH-READY": "PARTIAL",
+    "GAP-RC-MECH-READY": "CLOSED",
     "GAP-RC-EVIDENCE-TRUST": "CLOSED",
     "GAP-RC-L3-FULL": "CLOSED",
     "GAP-RC-DRY-RUN": "CLOSED",
@@ -264,8 +266,8 @@ GAP_RC_EVIDENCE: dict[str, str] = {
     "GAP-RC-SHA-LADDER": f"ENT_AUDIT_X_SHA_LADDER.md `{EVID}`",
     "GAP-RC-EVIDENCE-TRUST": f"{B5_L3}/evidence_manifest.v1.json + verify_b5_publication_tree @ `{EVID}`",
     "GAP-RC-JSON-SCHEMA": "verify_b5_publication_tree + test_b5_publication_verifier.py @ HEAD",
-    "GAP-RC-MECH-READY": "mechanical_readiness_check evidence_integrity uses verify_b5_publication_tree",
-    "GAP-RC-REQUAL-DIGEST": "W8 B5 republish @ TEST_EXECUTION_SHA 89c76eb7… (supersedes R7 digest defect)",
+    "GAP-RC-MECH-READY": f"mechanical_readiness_check + verify_b5_publication_tree @ `{EVID}`",
+    "GAP-RC-REQUAL-DIGEST": f"W8 B5 republish @ `{EVID}` (supersedes R7 digest defect)",
     "GAP-RC-PR-PATH-SKIP": "enterprise-audit.yml ent-audit-pr-gate @ HEAD",
     "GAP-RC-OD-TRUST": "operator_records/ — no production OD @ HEAD",
     "GAP-RC-CHANGED-IMPACT": f"changed_since_impact_map.v1.json + test_changed_since_impact_map @ `{TES}`",

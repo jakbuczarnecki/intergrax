@@ -1,6 +1,6 @@
 # ANNEX F — Exact AS-IS gap register
 
-**C075-S2 reconcile @ HEAD:** TEST_EXECUTION_SHA `87203c1b6ce9786dce0523cca29b556106b6bc8d` · EVIDENCE_PUBLICATION_SHA `d18f01f2291328a073dcbdfbe05489faf98013b7` · disposition `ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS` until mechanical readiness + external gates (B6/OD/FRZ).
+**C075-S2 reconcile @ HEAD:** TEST_EXECUTION_SHA `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` · EVIDENCE_PUBLICATION_SHA `300859537f12a1de7bf3d75fd685bc3a5c727183` · [W8 disposition](./ENT_AUDIT_X_W8_B6_FINDINGS_DISPOSITION.md).
 
 **START_HEAD / PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
 **Corrective reconciliation @ ENT-AUDIT-X wave:** execution SSOT [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) — **GAP-RC (33)** tracked in Matrix D; formal **GAP-B (6)** remain operator/auditor gates. Mechanical plan validator: `scripts/enterprise_audit/validate_post_implementation_master_plan.py`.
