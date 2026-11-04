@@ -8,7 +8,7 @@ Publish the ARCH-FREEZE closed-world **planning** dossier (10 `ARCH_FREEZE_*` qu
 
 ## Plan digest
 
-Plan digest: 662c870447a75319d8ffc8b1bae2871cb0f615d84c0bcb086e21473cf9283612
+Plan digest: 4627b4792cc548f040f482a3bd94745c86e38b0fd27ca26352773b40698e9658
 
 ## Approved
 
