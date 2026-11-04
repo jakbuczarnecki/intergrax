@@ -83,4 +83,4 @@ Internal certification **does not** satisfy ARCH-FREEZE mechanical requirements 
 | [`POST_INTERNAL_CERTIFICATION_CONSOLIDATION_INDEPENDENT_VERIFICATION_HANDOFF.md`](./POST_INTERNAL_CERTIFICATION_CONSOLIDATION_INDEPENDENT_VERIFICATION_HANDOFF.md) | Independent reviewer handoff for this batch |
 | Root [`EVOL_X_SHA_LADDER.md`](./EVOL_X_SHA_LADDER.md) | Shadow SSOT removed — pointer to [`evol_x/EVOL_X_SHA_LADDER.md`](./evol_x/EVOL_X_SHA_LADDER.md) |
 
-**POST_IC_CONSOLIDATION_PUBLICATION_SHA:** see handoff dossier (set on consolidation publication commit). **IC-AUD-001** corrective @ `1b82324abe0f775086617f907870dd30dd11aade` included in ancestry.
+**POST_IC_CONSOLIDATION_PUBLICATION_SHA:** `81829712acc19ebeadb4773467b9c5642ca975e3`. **IC-AUD-001** corrective @ `1b82324abe0f775086617f907870dd30dd11aade` included in ancestry.

@@ -15,7 +15,7 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 | B6_ACCEPTANCE_PUBLICATION_SHA | — | **PENDING.** OD-EVOL-17 selects local ECAP-§2.B Path A. Amendment `ECAP-P4-EVOL-SCOPE-AUTO-B6` stays `NOT_IN_FORCE`. OD-EVOL-11 `auditor_id` is not recorded. No Protocol 03 PASS. |
 | INTERNAL_CERTIFICATION_STATUS | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (SCOPED)** | OD-IC-01 (2026-11-04); **not** formal B6; **not** FRZ promotion — [record](../EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md) |
 | INTERNAL_CERTIFICATION_PUBLICATION_SHA | `5c08e5e6c44d21998c76bd27ad1efab172440f45` | OD-IC-01 consolidated record + roadmap §5 |
-| POST_IC_CONSOLIDATION_PUBLICATION_SHA | *(publication commit)* | ARCH-FREEZE pre-admission dossier + ladder reconciliation — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
+| POST_IC_CONSOLIDATION_PUBLICATION_SHA | `81829712acc19ebeadb4773467b9c5642ca975e3` | ARCH-FREEZE pre-admission dossier + ladder reconciliation — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
 
 ## Superseded (historical)
 

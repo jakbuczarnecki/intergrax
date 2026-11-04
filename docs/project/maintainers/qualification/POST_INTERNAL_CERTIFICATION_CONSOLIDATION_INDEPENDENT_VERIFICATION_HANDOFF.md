@@ -11,7 +11,7 @@
 | Field | SHA |
 | --- | --- |
 | **START_HEAD** (operator expected) | `1b82324abe0f775086617f907870dd30dd11aade` |
-| **END_HEAD** | *(set @ publication commit — see POST_IC_CONSOLIDATION_PUBLICATION_SHA below)* |
+| **END_HEAD** | `81829712acc19ebeadb4773467b9c5642ca975e3` |
 | **Branch** | `development` |
 | **PRE-INTERNAL BASELINE** | `becbcb9c4339e081b9cc3094c84d3fcd595e1ffe` |
 | **INTERNAL_CERTIFICATION_PUBLICATION** | `5c08e5e6c44d21998c76bd27ad1efab172440f45` |
@@ -101,4 +101,4 @@ Independent reviewer: confirm `git diff START_HEAD..END_HEAD` matches scope.
 
 ## 9. POST_IC_CONSOLIDATION_PUBLICATION_SHA
 
-**Unset in this draft.** Updated to END_HEAD on publication commit message subject: `docs(qual): post-IC consolidation — ARCH-FREEZE pre-admission dossier`.
+`81829712acc19ebeadb4773467b9c5642ca975e3` — `docs(qual): post-IC consolidation — ARCH-FREEZE pre-admission dossier`

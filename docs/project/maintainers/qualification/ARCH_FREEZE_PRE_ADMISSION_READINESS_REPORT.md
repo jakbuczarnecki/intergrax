@@ -3,7 +3,8 @@
 **Document status:** **PRE-ADMISSION ASSESSMENT — NOT FORMAL ARCH-FREEZE ENTRY**  
 **Recorded:** 2026-11-04  
 **Repository:** `jakbuczarnecki/intergrax` · **Branch:** `development`  
-**Assessment HEAD (post–IC consolidation input):** `1b82324abe0f775086617f907870dd30dd11aade`  
+**Assessment HEAD (post–IC consolidation):** `81829712acc19ebeadb4773467b9c5642ca975e3`  
+**Prior corrective HEAD (IC-AUD-001):** `1b82324abe0f775086617f907870dd30dd11aade`  
 **Operator internal acceptance:** OD-IC-01 @ [`EVOL_ENT_OD_IC_01_OPERATOR_INTERNAL_ACCEPTANCE_2026_11_04.md`](EVOL_ENT_OD_IC_01_OPERATOR_INTERNAL_ACCEPTANCE_2026_11_04.md)
 
 **Authority:** [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) · [PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) · [ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md](ENTERPRISE_CONTINUOUS_ARCHITECTURE_ASSURANCE_PROTOCOL.md) ECAP-§15.
@@ -70,6 +71,7 @@ Internal certification **does not** satisfy roadmap mechanical requirements nami
 | Qualified CI | `41337077334` |
 | INTERNAL_CERTIFICATION_PUBLICATION | `5c08e5e6c44d21998c76bd27ad1efab172440f45` |
 | IC corrective / consolidation tip | `1b82324abe0f775086617f907870dd30dd11aade` |
+| POST_IC_CONSOLIDATION_PUBLICATION | `81829712acc19ebeadb4773467b9c5642ca975e3` |
 
 ### ENT-AUDIT-X
 
