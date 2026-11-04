@@ -28,8 +28,14 @@ uv run python -m scripts.governance.igx_gov doctor
 
 ## Lifecycle state
 
-in_progress
+closed
+
+## Implementation
+
+- Git: `2eddd42230da93f5f26dd648840c3c8af629f7ba` on `development`
+- Phases 0–7 delivered in same program batch (control plane, skills, docs hub)
 
 ## Checkpoint
 
-(pending)
+- pytest DCP unit tests: pass
+- `igx_gov doctor`: OK
