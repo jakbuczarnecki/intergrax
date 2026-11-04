@@ -1,7 +1,7 @@
 # ARCH-FREEZE plan — traceability validation (L1/L2 documentation)
 
 **Execution SSOT:** [ARCH_FREEZE_COMPLETE_IMPLEMENTATION_AND_CERTIFICATION_MASTER_PLAN.md](./ARCH_FREEZE_COMPLETE_IMPLEMENTATION_AND_CERTIFICATION_MASTER_PLAN.md)  
-**AUDIT_BASELINE_SHA:** `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a`  
+**AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4`  
 **Independent re-audit validator:** `scripts/governance/verify_arch_freeze_plan_traceability.py`
 
 ## Reproducible command
@@ -27,11 +27,11 @@ uv run python scripts/governance/verify_arch_freeze_plan_traceability.py --sync-
 | Checklist PASS | 95 |
 | Checklist OPEN | 130 |
 | Architecture-scoped OPEN (excl. FRZ-PRD-01/02) | 128 |
-| Unique WBS TASK_ID | 39 |
+| Unique WBS TASK_ID | 48 |
 | Semantic DAG (FRZ-FRZ-02 / FRZ-FRZ-10 / closure) | **PASS** @ validator |
-| Unique findings | 8 |
+| Unique findings | 18 |
 | Dangling OPEN FRZ → REMEDIATION_TASK | **0** |
-| Qualification RUN_ID (table rows) | 11 |
+| Qualification RUN_ID (table rows) | 14 |
 | Unmapped BLOCKER findings | **0** |
 
 ## FRZ → WBS → TEST → EVIDENCE → AUDIT → APPROVAL

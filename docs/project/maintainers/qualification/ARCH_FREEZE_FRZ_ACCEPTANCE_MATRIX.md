@@ -1,6 +1,6 @@
 # ARCH-FREEZE FRZ acceptance matrix
 
-**Rows:** 225 | **Families:** 26 | **AUDIT_BASELINE_SHA:** `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a`
+**Rows:** 225 | **Families:** 26 | **AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4`
 
 | FRZ_ID | CURRENT_STATUS | REQUIREMENT | SEMANTIC_OWNER | CODE_PATH | PRODUCTION_REACHABILITY | ACCEPTED_EVIDENCE_SHA | EVIDENCE_GAP | REMEDIATION_TASK | TEST_ID | AUDIT_GATE | OPERATOR_GATE | CLOSURE_DISPOSITION | WORK_CLASS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

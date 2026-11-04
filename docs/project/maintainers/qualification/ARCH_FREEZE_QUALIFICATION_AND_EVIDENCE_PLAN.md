@@ -1,13 +1,16 @@
 # ARCH-FREEZE qualification and evidence plan
 
 **Execution SSOT:** [ARCH_FREEZE_COMPLETE_IMPLEMENTATION_AND_CERTIFICATION_MASTER_PLAN.md](./ARCH_FREEZE_COMPLETE_IMPLEMENTATION_AND_CERTIFICATION_MASTER_PLAN.md)  
-**AUDIT_BASELINE_SHA:** `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a`
+**AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4`
 
 | RUN_ID | TIER | TRIGGER | COMMAND_OR_WORKFLOW | ENVIRONMENT | TEST_SCOPE | EXPECTED_EVIDENCE | EXACT_SHA | REUSE_POLICY | FAILURE_POLICY | ACCEPTANCE_GATE | OWNER |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | L1-GOV | L1 | product batch / dossier edit | `uv run python -m scripts.governance.igx_gov ticket` | Windows dev; repo venv | governance ticket + fast gate | ticket check log | IMPLEMENTATION_SHA | no | fail-closed stop | igx_gov exit 0 | implementer |
 | L1-TRACE | L1 | dossier corrective batch | `uv run python scripts/governance/verify_arch_freeze_plan_traceability.py` | repo checkout | FRZ/WBS/gap/qual structural traceability | validator stdout | AUDIT_BASELINE_SHA or doc publication SHA | no | fail-closed stop | validator exit 0 | implementer |
-| L1-LADDER | L1 | EVOL ladder delta @ baseline | manual: verify pins in `docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md` | repo | link + SHA existence | L1 checklist note | `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a` | reuse IC FAST only if no code delta | stop | pins resolve in git | implementer |
+| L1-LADDER | L1 | EVOL ladder delta @ baseline | manual: verify pins in `docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md` | repo | link + SHA existence | L1 checklist note | `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` | reuse IC FAST only if no code delta | stop | pins resolve in git | implementer |
+| L2-B1-UNIT | L2 | post T-B1-ENGINE | `uv run pytest tests/unit/governance/test_arch_freeze_b1_closed_world_inventory.py -m "not slow"` | local venv | B1 classification + schema | pytest pass | IMPLEMENTATION_SHA | no | stop | tests green | tester |
+| L2-B1-STRICT | L2 | T-B1-STRICT-QUALIFY | `uv run python scripts/governance/arch_freeze_b1_closed_world_inventory.py --strict-certify --output-dir .tmp/session/arch-freeze-b1-cert/` | local venv | full CW gates + dispositions | summary JSON strict_pass | INVENTORY_EXECUTION_SHA | no | stop | exit 0 | tester |
+| L2-CW-EVOL | L2 | T-B1-MANDATORY-DISPOSITION | `uv run pytest tests/qualification/evol_x/gates/test_evol_x_closed_world_gates.py -q` | local venv | CW-01..CW-10 patterns | pytest pass | IMPLEMENTATION_SHA | no | stop | tests green | tester |
 | L2-BND | L2 | post T-B2-BND03-RECONCILE | `uv run pytest tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py` | local venv | layer boundary gate | pytest junit / pass | IMPLEMENTATION_SHA | no | stop | tests green | tester |
 | L2-DOC | L2 | post T-B3-DOC | `uv run pytest tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py -k mandatory_docs` | local venv | FRZ-DOC mechanical docs | pytest pass | IMPLEMENTATION_SHA | partial historical | stop | tests green | tester |
 | L2-ENT-ACCEPT | L2 | pre T-B4-L3-FULL | `uv run pytest tests/qualification/ent_audit_x/acceptance/ -q` | local venv | ENT acceptance wrappers | pytest pass | IMPLEMENTATION_SHA | no | stop | tests green | tester |
@@ -17,4 +20,4 @@
 | L3-EVOL-REPLAY | L3 | EVOL B6 external gate | GitHub workflow dispatch / replay @ TES `3c4a641b3e48a13f437e830a0562e2a80b03aabb` (CI `41337077334`) | GitHub | EVOL qualification package | B6 package artifacts | pinned TES | yes if no code delta | stop | independent auditor sign-off | independent_auditor |
 | L3-ENT-REPLAY | L3 | ENT B6 external gate | replay @ TES `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91`; B5 `300859537f12a1de7bf3d75fd685bc3a5c727183` | GitHub+local | ENT B6 dossier | B6 package | pinned TES | conditional | stop | independent auditor sign-off | independent_auditor |
 
-**Note:** No L3 PASS is claimed by this planning document. Production reachability scan remains **NOT EXECUTED** — **T-B1-PROD-REACH-SCAN**.
+**Note:** B1 certifying inventory is **T-B1-STRICT-QUALIFY** (`L2-B1-STRICT`); wave-1 scan **SUPERSEDED** (`T-B1-PROD-REACH-SCAN` @ `18a0f68`).
