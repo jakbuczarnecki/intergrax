@@ -28,8 +28,20 @@ BLOCKER_FINDINGS = frozenset(
         "FIND-ACCEPTED-BASELINE",
     }
 )
-EXPECTED_WBS_TASKS = 37
+EXPECTED_WBS_TASKS = 39
 EXPECTED_QUAL_RUNS = 11
+
+PROMOTE_FAMS = ("BND", "CTR", "OBS", "OWN", "PLG", "PRD", "REG", "REL", "SEC", "TYP")
+PROMOTE_TASKS = tuple(f"T-B7-PROMOTE-{fam}" for fam in PROMOTE_FAMS)
+FRZ_FRZ02_PREREQ_TASKS = (
+    "T-B5-EVOL-FRZ",
+    "T-B6-FRZ-AUD",
+    "T-B2-DEBT",
+    "T-B3-DOC",
+    "T-B7-TEN-REVAL",
+    "T-PATHB-EXCL",
+) + PROMOTE_TASKS
+INDEPENDENT_AUDITOR_TASKS = frozenset({"T-B5-EVOL-B6", "T-B6-ENT-B6", "T-B7-ECAP-2C", "T-B7-TEN-REVAL"})
 
 
 def _parse_checklist() -> dict[str, str]:
@@ -71,6 +83,84 @@ def remediation_task(frz_id: str, status: str) -> str:
         "RPL": "T-B2-VBN",
     }
     return mapping.get(fam, f"T-B7-PROMOTE-{fam}")
+
+
+def _coord_arch_frz_deps() -> str:
+    inner = ",".join(FRZ_FRZ02_PREREQ_TASKS)
+    return f"[{inner}]"
+
+
+def _ancestors(graph: dict[str, list[str]], node: str) -> set[str]:
+    seen: set[str] = set()
+    stack = list(graph.get(node, []))
+    while stack:
+        nxt = stack.pop()
+        if nxt in seen:
+            continue
+        seen.add(nxt)
+        stack.extend(graph.get(nxt, []))
+    return seen
+
+
+def _validate_semantic_dag(graph: dict[str, list[str]], task_ids: set[str], errors: list[str]) -> None:
+    required = {
+        "T-B7-COORD-ARCH-FRZ",
+        "T-B7-FRZ-FRZ",
+        "T-B7-PFP-ACTIVATE",
+        "T-B7-PFP-VERIFY",
+        "T-PATHB-EXCL",
+        "T-B8-ROADMAP",
+        "T-B8-ECAP-16",
+    }
+    missing = required - task_ids
+    if missing:
+        errors.append(f"semantic DAG missing tasks: {sorted(missing)}")
+        return
+
+    coord_anc = _ancestors(graph, "T-B7-COORD-ARCH-FRZ")
+    for prereq in FRZ_FRZ02_PREREQ_TASKS:
+        if prereq not in coord_anc:
+            errors.append(f"FRZ-FRZ-02: T-B7-COORD-ARCH-FRZ must follow {prereq} (reachability)")
+
+    frz_frz_anc = _ancestors(graph, "T-B7-FRZ-FRZ")
+    for gate in ("T-B7-COORD-ARCH-FRZ", "T-B7-ECAP-2C", "T-B7-PFP-VERIFY"):
+        if gate not in frz_frz_anc:
+            errors.append(f"T-B7-FRZ-FRZ must follow {gate} (FRZ-FRZ suite gate)")
+
+    if "T-B7-FRZ-FRZ" in _ancestors(graph, "T-PATHB-EXCL"):
+        errors.append("Path B: T-PATHB-EXCL must not depend on T-B7-FRZ-FRZ")
+
+    pfp_anc = _ancestors(graph, "T-B7-PFP-VERIFY")
+    if "T-B7-PFP-ACTIVATE" not in pfp_anc:
+        errors.append("FRZ-FRZ-10: T-B7-PFP-VERIFY must follow T-B7-PFP-ACTIVATE")
+
+    roadmap_anc = _ancestors(graph, "T-B8-ROADMAP")
+    for gate in ("T-B7-FRZ-FRZ", "T-B7-PFP-VERIFY", "T-B7-COORD-ARCH-FRZ"):
+        if gate not in roadmap_anc:
+            errors.append(f"Formal closure T-B8-ROADMAP must follow {gate}")
+
+    if "T-B7-PFP-VERIFY" not in roadmap_anc:
+        errors.append("FRZ-FRZ-10: post-freeze policy must be verified before T-B8-ROADMAP")
+
+    ecap16_anc = _ancestors(graph, "T-B8-ECAP-16")
+    if "T-B8-ROADMAP" not in ecap16_anc:
+        errors.append("T-B8-ECAP-16 must follow T-B8-ROADMAP (post-closure handoff only)")
+
+    if "T-B7-PFP-ACTIVATE" in ecap16_anc and "T-B8-ROADMAP" not in _ancestors(graph, "T-B7-PFP-ACTIVATE"):
+        pass  # PFP activate is pre-roadmap by design
+
+    auditor_before: tuple[tuple[str, str, str], ...] = (
+        ("T-B5-EVOL-B6", "T-B5-EVOL-FRZ", "EVOL B6 before FRZ-EVOL promotion"),
+        ("T-B6-ENT-B6", "T-B6-FRZ-AUD", "ENT B6 before FRZ-AUD promotion"),
+        ("T-B7-ECAP-2C", "T-B7-FRZ-FRZ", "ECAP §2.C before FRZ-FRZ admission"),
+    )
+    for aud_task, dependent, label in auditor_before:
+        if aud_task not in _ancestors(graph, dependent):
+            errors.append(f"{label}: {aud_task} must precede {dependent}")
+
+    for aud_task in INDEPENDENT_AUDITOR_TASKS:
+        if aud_task not in task_ids:
+            errors.append(f"missing independent auditor task {aud_task}")
 
 
 def sync_matrix() -> None:
@@ -455,17 +545,33 @@ def sync_wbs() -> None:
             "BLOCKED_EXTERNAL",
         ),
         (
-            "T-B7-FRZ-FRZ",
+            "T-B7-PFP-ACTIVATE",
             "B7",
-            frz,
+            "FRZ-FRZ-10",
+            "",
+            "operator",
+            "ECAP §16; CHANGED-SINCE policy",
+            "[T-B7-L3-FREEZE]",
+            "Pre-closure: implement and activate post-freeze change policy",
+            "run_enterprise_audit.py --mode CHANGED-SINCE (dry-run); hooks doc",
+            "policy activation record",
+            "post-freeze policy active",
+            "CRIT",
+            "no",
+            "PLANNED",
+        ),
+        (
+            "T-B7-PFP-VERIFY",
+            "B7",
+            "FRZ-FRZ-10",
             "",
             "operator+auditor",
-            "freeze dossier",
-            "[T-B7-ECAP-2C]",
-            "ECAP §15 admission + FRZ-FRZ mechanics",
-            "FRZ-FRZ suite",
-            "admission dossier",
-            "13/13 PASS/N/A",
+            "ECAP §16",
+            "[T-B7-PFP-ACTIVATE]",
+            "Pre-closure: verify FRZ-FRZ-10 enforcement before formal closure",
+            "certifying CHANGED-SINCE smoke @ freeze SHA",
+            "FRZ-FRZ-10 evidence dossier",
+            "policy verified active",
             "CRIT",
             "no",
             "PLANNED",
@@ -493,13 +599,45 @@ def sync_wbs() -> None:
             "FIND-PATHB-LIVE",
             "operator",
             "checklist Path B",
-            "[T-B7-FRZ-FRZ]",
-            "Document Path B permitted OPEN @ freeze",
+            "[T-B7-L3-FREEZE]",
+            "Document Path B permitted OPEN @ freeze (no implicit global PASS)",
             "—",
             "Path B table",
             "exclusions recorded",
             "LOW",
             "yes",
+            "PLANNED",
+        ),
+        (
+            "T-B7-COORD-ARCH-FRZ",
+            "B7",
+            "FRZ-FRZ-02",
+            "",
+            "operator+auditor",
+            "checklist",
+            _coord_arch_frz_deps(),
+            "Architecture-scoped FRZ PASS/N/A coordination (excl. Path B permitted OPEN)",
+            "ENT FREEZE + promotion ledger",
+            "FRZ-FRZ-02 satisfied",
+            "arch-scoped OPEN=0 or N/A w/ evidence",
+            "HIGH",
+            "partial",
+            "PLANNED",
+        ),
+        (
+            "T-B7-FRZ-FRZ",
+            "B7",
+            frz,
+            "",
+            "operator+auditor",
+            "freeze dossier",
+            "[T-B7-ECAP-2C,T-B7-COORD-ARCH-FRZ,T-B7-PFP-VERIFY]",
+            "ECAP §15 admission + promote FRZ-FRZ suite (authorized only)",
+            "FRZ-FRZ suite",
+            "admission dossier",
+            "13/13 PASS/N/A",
+            "CRIT",
+            "no",
             "PLANNED",
         ),
         (
@@ -526,28 +664,12 @@ def sync_wbs() -> None:
             "operator",
             "ECAP §16",
             "[T-B8-ROADMAP]",
-            "Post-freeze continuous enforcement",
-            "ENT CHANGED-SINCE policy",
-            "§16 record",
-            "enforcement active",
+            "Post-closure: ECAP §16 monitoring and operator handoff (policy already active)",
+            "ENT CHANGED-SINCE ongoing runs",
+            "§16 handoff record",
+            "monitoring live",
             "MED",
             "yes",
-            "PLANNED",
-        ),
-        (
-            "T-B7-COORD-ARCH-FRZ",
-            "B7",
-            "FRZ-FRZ-02",
-            "",
-            "operator+auditor",
-            "checklist",
-            "[T-B7-L3-FREEZE]",
-            "Coordinate architecture-scoped FRZ promotion (excl. Path B permitted OPEN)",
-            "ENT FREEZE + promotion ledger",
-            "FRZ-FRZ-02 satisfied",
-            "arch-scoped OPEN=0 or N/A w/ evidence",
-            "HIGH",
-            "partial",
             "PLANNED",
         ),
     ]
@@ -587,7 +709,7 @@ def sync_wbs() -> None:
     lines += [
         "",
         "## Critical path",
-        "T-B0-001 → T-B0-TRACE-VALIDATE → T-B1-INV → T-B1-PROD-REACH-SCAN → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-L3-FREEZE → T-B7-ECAP-2C → T-B7-FRZ-FRZ → T-B8-ROADMAP",
+        "T-B0-001 → T-B0-TRACE-VALIDATE → T-B1-INV → T-B1-PROD-REACH-SCAN → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-L3-FREEZE → (promotions + T-PATHB-EXCL + T-B7-PFP-*) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16",
     ]
     _WBS.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -743,6 +865,8 @@ def validate(*, strict_counts: bool = True) -> int:
     for tid in task_ids:
         dfs(tid)
 
+    _validate_semantic_dag(graph, task_ids, errors)
+
     qual_text = _QUAL_PLAN.read_text(encoding="utf-8")
     run_ids = re.findall(r"^\| (L[123]-[A-Z0-9-]+) \|", qual_text, re.M)
     if len(run_ids) != len(set(run_ids)):
@@ -770,7 +894,7 @@ def validate(*, strict_counts: bool = True) -> int:
     print("[OK] verify_arch_freeze_plan_traceability: all checks passed")
     print(
         f"  FRZ=225 families=26 PASS={pass_n} OPEN={open_n} "
-        f"WBS={len(task_ids)} findings={len(findings)} dangling_open_frz=0"
+        f"WBS={len(task_ids)} findings={len(findings)} dangling_open_frz=0 semantic_dag=OK"
     )
     return 0
 

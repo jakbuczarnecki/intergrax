@@ -1,7 +1,7 @@
 # ARCH-FREEZE WBS and dependency DAG
 
 **AUDIT_BASELINE_SHA:** `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a`
-**Task count:** 37 (unique TASK_ID rows below)
+**Task count:** 39 (unique TASK_ID rows below)
 
 | TASK_ID | BATCH | REQUIREMENT_IDS | FINDING_IDS | OWNER | FILES | DEPENDENCIES | IMPLEMENTATION_ACTION | TESTS | EVIDENCE | ACCEPTANCE | RISK | PARALLELISM | STATUS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -26,12 +26,14 @@
 | T-B6-OD-ENT-08 | B6 |  |  | operator | roadmap §5 | [T-B6-FRZ-AUD,T-B6-OD-ENT-01] | Formal ENT stage closure OD-ENT-08 | — | FORMAL_CLOSURE_PUBLICATION_SHA | ENT CLOSED | CRIT | no | BLOCKED_EXTERNAL |
 | T-B7-L3-FREEZE | B7 | FRZ-FRZ-03,FRZ-FRZ-12 |  | tester+auditor | enterprise_audit | [T-B6-OD-ENT-08] | FREEZE mode @ FREEZE_CERTIFICATION_SHA | run_enterprise_audit.py --mode FREEZE | FREEZE report | FREEZE PASS | CRIT | no | PLANNED |
 | T-B7-ECAP-2C | B7 | FRZ-FRZ-12 |  | independent_auditor | ECAP | [T-B7-L3-FREEZE] | ECAP §2.C @ freeze SHA | certifying replay | §2.C dossier | independent sign-off | CRIT | no | BLOCKED_EXTERNAL |
-| T-B7-FRZ-FRZ | B7 | FRZ-FRZ-01,FRZ-FRZ-02,FRZ-FRZ-03,FRZ-FRZ-04,FRZ-FRZ-05,FRZ-FRZ-06,FRZ-FRZ-07,FRZ-FRZ-08,FRZ-FRZ-09,FRZ-FRZ-10,FRZ-FRZ-11,FRZ-FRZ-12,FRZ-FRZ-13 |  | operator+auditor | freeze dossier | [T-B7-ECAP-2C] | ECAP §15 admission + FRZ-FRZ mechanics | FRZ-FRZ suite | admission dossier | 13/13 PASS/N/A | CRIT | no | PLANNED |
+| T-B7-PFP-ACTIVATE | B7 | FRZ-FRZ-10 |  | operator | ECAP §16; CHANGED-SINCE policy | [T-B7-L3-FREEZE] | Pre-closure: implement and activate post-freeze change policy | run_enterprise_audit.py --mode CHANGED-SINCE (dry-run); hooks doc | policy activation record | post-freeze policy active | CRIT | no | PLANNED |
+| T-B7-PFP-VERIFY | B7 | FRZ-FRZ-10 |  | operator+auditor | ECAP §16 | [T-B7-PFP-ACTIVATE] | Pre-closure: verify FRZ-FRZ-10 enforcement before formal closure | certifying CHANGED-SINCE smoke @ freeze SHA | FRZ-FRZ-10 evidence dossier | policy verified active | CRIT | no | PLANNED |
 | T-B7-TEN-REVAL | B7 | FRZ-TEN-01,FRZ-TEN-02,FRZ-TEN-03,FRZ-TEN-04,FRZ-TEN-05,FRZ-TEN-06,FRZ-TEN-07,FRZ-TEN-08,FRZ-TEN-09,FRZ-TEN-10,FRZ-TEN-11,FRZ-TEN-12 |  | independent_auditor | TENANT_X qual | [T-B7-L3-FREEZE] | Revalidate FRZ-TEN @ freeze SHA | ENT tenant domain checks | TENANT_X replay | 12/12 confirmed | HIGH | no | PLANNED |
-| T-PATHB-EXCL | B7 | FRZ-PRD-01,FRZ-PRD-02 | FIND-PATHB-LIVE | operator | checklist Path B | [T-B7-FRZ-FRZ] | Document Path B permitted OPEN @ freeze | — | Path B table | exclusions recorded | LOW | yes | PLANNED |
+| T-PATHB-EXCL | B7 | FRZ-PRD-01,FRZ-PRD-02 | FIND-PATHB-LIVE | operator | checklist Path B | [T-B7-L3-FREEZE] | Document Path B permitted OPEN @ freeze (no implicit global PASS) | — | Path B table | exclusions recorded | LOW | yes | PLANNED |
+| T-B7-COORD-ARCH-FRZ | B7 | FRZ-FRZ-02 |  | operator+auditor | checklist | [T-B5-EVOL-FRZ,T-B6-FRZ-AUD,T-B2-DEBT,T-B3-DOC,T-B7-TEN-REVAL,T-PATHB-EXCL,T-B7-PROMOTE-BND,T-B7-PROMOTE-CTR,T-B7-PROMOTE-OBS,T-B7-PROMOTE-OWN,T-B7-PROMOTE-PLG,T-B7-PROMOTE-PRD,T-B7-PROMOTE-REG,T-B7-PROMOTE-REL,T-B7-PROMOTE-SEC,T-B7-PROMOTE-TYP] | Architecture-scoped FRZ PASS/N/A coordination (excl. Path B permitted OPEN) | ENT FREEZE + promotion ledger | FRZ-FRZ-02 satisfied | arch-scoped OPEN=0 or N/A w/ evidence | HIGH | partial | PLANNED |
+| T-B7-FRZ-FRZ | B7 | FRZ-FRZ-01,FRZ-FRZ-02,FRZ-FRZ-03,FRZ-FRZ-04,FRZ-FRZ-05,FRZ-FRZ-06,FRZ-FRZ-07,FRZ-FRZ-08,FRZ-FRZ-09,FRZ-FRZ-10,FRZ-FRZ-11,FRZ-FRZ-12,FRZ-FRZ-13 |  | operator+auditor | freeze dossier | [T-B7-ECAP-2C,T-B7-COORD-ARCH-FRZ,T-B7-PFP-VERIFY] | ECAP §15 admission + promote FRZ-FRZ suite (authorized only) | FRZ-FRZ suite | admission dossier | 13/13 PASS/N/A | CRIT | no | PLANNED |
 | T-B8-ROADMAP | B8 | FRZ-FRZ-04 |  | operator | PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md §5 | [T-B7-FRZ-FRZ] | Publish ARCH-FREEZE CLOSED record | — | FORMAL_CLOSURE_PUBLICATION_SHA | roadmap §5 updated | CRIT | no | PLANNED |
-| T-B8-ECAP-16 | B8 |  |  | operator | ECAP §16 | [T-B8-ROADMAP] | Post-freeze continuous enforcement | ENT CHANGED-SINCE policy | §16 record | enforcement active | MED | yes | PLANNED |
-| T-B7-COORD-ARCH-FRZ | B7 | FRZ-FRZ-02 |  | operator+auditor | checklist | [T-B7-L3-FREEZE] | Coordinate architecture-scoped FRZ promotion (excl. Path B permitted OPEN) | ENT FREEZE + promotion ledger | FRZ-FRZ-02 satisfied | arch-scoped OPEN=0 or N/A w/ evidence | HIGH | partial | PLANNED |
+| T-B8-ECAP-16 | B8 |  |  | operator | ECAP §16 | [T-B8-ROADMAP] | Post-closure: ECAP §16 monitoring and operator handoff (policy already active) | ENT CHANGED-SINCE ongoing runs | §16 handoff record | monitoring live | MED | yes | PLANNED |
 | T-B7-PROMOTE-BND | B7 | FRZ-BND-01,FRZ-BND-02,FRZ-BND-03,FRZ-BND-04,FRZ-BND-05,FRZ-BND-06 |  | operator+auditor | checklist | [T-B7-L3-FREEZE] | Promote OPEN BND FRZ rows after FREEZE audit | ENT-A-BND checks | checklist promotion | 6 criteria | MED | partial | PLANNED |
 | T-B7-PROMOTE-CTR | B7 | FRZ-CTR-01,FRZ-CTR-02,FRZ-CTR-03,FRZ-CTR-04,FRZ-CTR-05,FRZ-CTR-06 |  | operator+auditor | checklist | [T-B7-L3-FREEZE] | Promote OPEN CTR FRZ rows after FREEZE audit | ENT-A-CTR checks | checklist promotion | 6 criteria | MED | partial | PLANNED |
 | T-B7-PROMOTE-OBS | B7 | FRZ-OBS-01,FRZ-OBS-02,FRZ-OBS-03,FRZ-OBS-04,FRZ-OBS-05,FRZ-OBS-06,FRZ-OBS-07 |  | operator+auditor | checklist | [T-B7-L3-FREEZE] | Promote OPEN OBS FRZ rows after FREEZE audit | ENT-A-OBS checks | checklist promotion | 7 criteria | MED | partial | PLANNED |
@@ -44,4 +46,17 @@
 | T-B7-PROMOTE-TYP | B7 | FRZ-TYP-01,FRZ-TYP-02,FRZ-TYP-03,FRZ-TYP-04,FRZ-TYP-05,FRZ-TYP-06 |  | operator+auditor | checklist | [T-B7-L3-FREEZE] | Promote OPEN TYP FRZ rows after FREEZE audit | ENT-A-TYP checks | checklist promotion | 6 criteria | MED | partial | PLANNED |
 
 ## Critical path
-T-B0-001 → T-B0-TRACE-VALIDATE → T-B1-INV → T-B1-PROD-REACH-SCAN → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-L3-FREEZE → T-B7-ECAP-2C → T-B7-FRZ-FRZ → T-B8-ROADMAP
+T-B0-001 → T-B0-TRACE-VALIDATE → T-B1-INV → T-B1-PROD-REACH-SCAN → T-B2-* → T-B4-L3-FULL → T-B5-EVOL-B6 → T-B5-EVOL-FRZ → T-B6-OD-ENT-00 → T-B6-ENT-B6 → T-B6-OD-ENT-01/02 → T-B6-FRZ-AUD → T-B6-OD-ENT-08 → T-B7-L3-FREEZE → (promotions + T-PATHB-EXCL + T-B7-PFP-*) → T-B7-COORD-ARCH-FRZ → T-B7-ECAP-2C → T-B7-PFP-VERIFY → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16
+
+## FRZ-FRZ-01..13 certification chain (semantic)
+| FRZ ID | Prerequisite (canonical) | WBS tasks (evidence → promotion) | Blocks |
+| --- | --- | --- | --- |
+| FRZ-FRZ-01 | Mandatory roadmap stages CLOSED (Path B PROD-Q carve-out) | T-B5-EVOL-FRZ → T-B6-OD-ENT-08 | T-B7-L3-FREEZE |
+| FRZ-FRZ-02 | Architecture-scoped FRZ PASS/N/A (Path B explicit) | T-B2-DEBT; T-B3-DOC; T-B5-EVOL-FRZ; T-B6-FRZ-AUD; T-B7-PROMOTE-*; T-B7-TEN-REVAL; T-PATHB-EXCL → **T-B7-COORD-ARCH-FRZ** | T-B7-FRZ-FRZ |
+| FRZ-FRZ-03 | Mandatory qualification suite green | T-B4-L3-FULL; T-B7-L3-FREEZE | T-B7-FRZ-FRZ |
+| FRZ-FRZ-04 | Exact freeze SHA recorded | T-B7-L3-FREEZE evidence → **T-B8-ROADMAP** publication | — |
+| FRZ-FRZ-05..09 | Canonical manifests + debt register frozen @ SHA | T-B7-L3-FREEZE FREEZE bundle | T-B7-FRZ-FRZ |
+| FRZ-FRZ-10 | Post-freeze change policy **active pre-closure** | **T-B7-PFP-ACTIVATE** → **T-B7-PFP-VERIFY** | T-B7-FRZ-FRZ; T-B8-ROADMAP |
+| FRZ-FRZ-11 | ENT-AUDIT-X independently CLOSED | T-B6-ENT-B6 → T-B6-OD-ENT-08 | T-B7-L3-FREEZE |
+| FRZ-FRZ-12 | Enterprise audit green @ exact freeze SHA | T-B7-L3-FREEZE → T-B7-ECAP-2C | T-B7-FRZ-FRZ |
+| FRZ-FRZ-13 | Post-freeze audit baseline recorded | T-B6-OD-ENT-01 → ladder field → T-B7-FRZ-FRZ promotion | T-B7-FRZ-FRZ |

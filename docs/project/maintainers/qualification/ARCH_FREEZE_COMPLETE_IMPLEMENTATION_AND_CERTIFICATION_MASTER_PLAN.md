@@ -110,8 +110,9 @@ EVOL Protocol 03 B6 → FRZ-EVOL promotion → EVOL-X formal CLOSED
   → OD-ENT-00 → ENT Protocol 03 B6 → OD-ENT-01 → OD-ENT-02 (admin)
   → FRZ-AUD promotion → OD-ENT-08 → ENT-AUDIT-X formal CLOSED
   → IMPLEMENTATION_SHA lock → L3 FREEZE @ FREEZE_CERTIFICATION_SHA
-  → ECAP §2.C → ECAP §15 → FRZ-FRZ + architecture-scoped FRZ promotion
-  → Roadmap §5 ARCH-FREEZE CLOSED — CERTIFIED → ECAP §16
+  → ECAP §2.C → architecture FRZ promotions + Path B reconciliation → FRZ-FRZ-02 coordination
+  → pre-closure post-freeze policy (FRZ-FRZ-10) → ECAP §15 → FRZ-FRZ promotion
+  → Roadmap §5 ARCH-FREEZE CLOSED — CERTIFIED → ECAP §16 post-closure handoff
 ```
 
 **Separation:** Tasks T-B5-* / T-B6-* / T-B7-ECAP-* marked **BLOCKED_EXTERNAL** or **independent_auditor** — implementer cannot self-certify.
@@ -120,9 +121,9 @@ EVOL Protocol 03 B6 → FRZ-EVOL promotion → EVOL-X formal CLOSED
 
 ## 6. WBS summary
 
-**37 tasks** in [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md): baseline, partial inventory, **T-B1-PROD-REACH-SCAN**, remediation, qualification, family promotion rows, formal gates, Path B, publication.
+**39 tasks** in [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md): baseline, partial inventory, **T-B1-PROD-REACH-SCAN**, remediation, qualification, family promotion rows, **T-B7-COORD-ARCH-FRZ**, **T-B7-PFP-***, formal gates, Path B, publication.
 
-**Critical path:** T-B0-001 → T-B0-TRACE-VALIDATE → T-B1-INV → **T-B1-PROD-REACH-SCAN** → T-B2-* → T-B4-L3-FULL → external EVOL B6 → ENT chain → T-B7-L3-FREEZE → ECAP §2.C/§15 → T-B8-ROADMAP.
+**Critical path:** T-B0-001 → … → T-B7-L3-FREEZE → promotions/Path B/PFP → **T-B7-COORD-ARCH-FRZ** → T-B7-ECAP-2C → **T-B7-PFP-VERIFY** → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16 (monitoring only).
 
 Validator: `uv run python scripts/governance/verify_arch_freeze_plan_traceability.py`.
 
@@ -158,7 +159,7 @@ Detail: [ARCH_FREEZE_QUALIFICATION_AND_EVIDENCE_PLAN.md](./ARCH_FREEZE_QUALIFICA
 | 11 | No unexplained debt outside WBS | **PASS** @ planning scope |
 | 12 | No false PASS / self-audit | **PASS** (disposition labels) |
 | 13 | No hidden prereq on impl tasks | **PASS** (DEPENDENCIES column) |
-| 14 | Publication + ECAP §16 | **PASS** (T-B8-*) |
+| 14 | Publication + ECAP §16 | **PASS** (T-B7-PFP-* pre-closure; T-B8-ROADMAP then T-B8-ECAP-16 handoff) |
 
 ---
 

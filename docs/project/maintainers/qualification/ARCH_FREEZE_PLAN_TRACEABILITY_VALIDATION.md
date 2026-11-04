@@ -27,7 +27,8 @@ uv run python scripts/governance/verify_arch_freeze_plan_traceability.py --sync-
 | Checklist PASS | 95 |
 | Checklist OPEN | 130 |
 | Architecture-scoped OPEN (excl. FRZ-PRD-01/02) | 128 |
-| Unique WBS TASK_ID | 37 |
+| Unique WBS TASK_ID | 39 |
+| Semantic DAG (FRZ-FRZ-02 / FRZ-FRZ-10 / closure) | **PASS** @ validator |
 | Unique findings | 8 |
 | Dangling OPEN FRZ → REMEDIATION_TASK | **0** |
 | Qualification RUN_ID (table rows) | 11 |
@@ -61,4 +62,8 @@ uv run python scripts/governance/verify_arch_freeze_plan_traceability.py --sync-
 
 ## Disposition
 
-Planning traceability: **PASS** @ validator. Ready for **independent plan re-audit**.
+Planning traceability: **PASS** (mechanical + semantic DAG) @ validator. Ready for **agent execution** (implementation batches), not formal ARCH-FREEZE CLOSED.
+
+## FRZ-FRZ-01..13 → tasks (semantic summary)
+
+See WBS § **FRZ-FRZ-01..13 certification chain**; validator enforces reachability for FRZ-FRZ-02, FRZ-FRZ-10, Path B, independent gates, and acyclic DAG.
