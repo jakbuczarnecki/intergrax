@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Execution SSOT | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) |
-| Audited IMPLEMENTATION_SHA (closure start) | `45240b2d4b108bb813b8d7683f10d6e56121b3c4` |
+| Audited IMPLEMENTATION_SHA (closure start) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
 | **TEST_EXECUTION_SHA (current qual)** | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
 | Historical TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived B5 only) |
 | Qual wave report | [qualification_at_87203c1b…/qual_wave_report.json](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/qual_wave_report.json) (`status=PASS`, L3 85/85 + FREEZE candidate) |
@@ -31,20 +31,26 @@
 
 ## CI qualification runs
 
-Pinned GitHub Actions evidence (honest conclusions — **not** claimed green until post-fix re-run):
+Latest green @ `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` (historical failures retained below — **not** HEAD proof):
 
 | workflow | run_id | head_sha | conclusion | artifact | url |
 | --- | --- | --- | --- | --- | --- |
-| enterprise-audit.yml | 41647490846 | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | failure | ent-audit-pr-383 (warn: empty — pytest failed before CLI) | https://github.com/jakbuczarnecki/intergrax/actions/runs/41647490846 |
-| enterprise-audit-nightly.yml | 41618283515 | `5a1bed2fd464a006725d9bd076dd2149dfa75790` | failure | nightly bundle (see run log) | https://github.com/jakbuczarnecki/intergrax/actions/runs/41618283515 |
+| enterprise-audit.yml (push) | 41705029402 | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | success | ent-audit-pr gate + FAST | https://github.com/jakbuczarnecki/intergrax/actions/runs/41705029402 |
+| enterprise-audit.yml (PR) | 41710223602 | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | success | ent-audit-pr gate + FAST | https://github.com/jakbuczarnecki/intergrax/actions/runs/41710223602 |
+| enterprise-audit-nightly.yml | 41777671972 | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | success (W3 dispatch FULL @ HEAD) | nightly bundle | https://github.com/jakbuczarnecki/intergrax/actions/runs/41777671972 |
 
-**PR failure root cause @ TES:** shallow checkout — `test_changed_since_git.py` requires `HEAD~1` (fixed in workflow `fetch-depth: 0` @ post-TES commit). **Re-run required** after push for OD-ENT-02 enforceability evidence.
+Historical (pre-HEAD — audit context only):
+
+| workflow | run_id | head_sha | conclusion | notes |
+| --- | --- | --- | --- | --- |
+| enterprise-audit.yml | 41647490846 | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` | failure | shallow checkout before `fetch-depth: 0` fix |
+| enterprise-audit-nightly.yml | 41618283515 | `5a1bed2fd464a006725d9bd076dd2149dfa75790` | failure | schedule on `main` |
 
 ## Certifying qualification @ TEST_EXECUTION_SHA
 
 | Stage | Evidence |
 | --- | --- |
-| L1/L2/L3 + semantic 85/85 + ADV31 | `qual_wave_report.json` status `PASS`, `qualification_sha=b8bb88c9…` |
+| L1/L2/L3 + semantic 85/85 + ADV31 | `qual_wave_report.json` status `PASS`, `qualification_sha=87203c1…` |
 | Certifying FULL 85/85 | `b6_independent_handoff/.../l3-cli-full/enterprise_audit_report.json` → `checks_executed=85`, `coverage_label=FULL` |
 | VBN D01–D31 | `vbn_domains.v1.json` → `domains_accounted=31` @ TES digest pin |
 | FRZ map | `frz_coverage.v1.json` → `row_count=85` |

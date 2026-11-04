@@ -33,6 +33,9 @@
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
+| TEST_EXECUTION_SHA | `87203c1b6ce9786dce0523cca29b556106b6bc8d` | Canonical qual pin (R6 certifying PASS; supersedes historical rows above) |
+| EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` | Canonical B5 publication (R7; supersedes historical rows above) |
+| CURRENT_DOCUMENTATION_HEAD (R8 external gate packet) | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | Dossier EVID pin + W0–W7 closure prep (doc/scripts only post-TES) |
 
 ## Lineage rules
 
