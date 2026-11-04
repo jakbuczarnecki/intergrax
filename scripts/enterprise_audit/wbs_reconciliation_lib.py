@@ -8,8 +8,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-TES = "87203c1b6ce9786dce0523cca29b556106b6bc8d"
-EVID = "d18f01f2291328a073dcbdfbe05489faf98013b7"
+TES = "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91"
+EVID = "W8_B6_EVIDENCE_PUBLICATION_PENDING"
 EVID_SHORT = EVID[:12]
 HANDOFF = f"b6_independent_handoff/qualification_at_{TES}"
 B5_QUAL = f"{HANDOFF}/qual_wave_report.json"
@@ -241,7 +241,7 @@ GAP_RC_STATUS: dict[str, str] = {
     "GAP-RC-SSOT-DRIFT": "PARTIAL",
     "GAP-RC-FRZ-MAP": "CLOSED",
     "GAP-RC-RUN-STATUS": "PARTIAL",
-    "GAP-RC-REQUAL-DIGEST": "PARTIAL",
+    "GAP-RC-REQUAL-DIGEST": "CLOSED",
     "GAP-RC-AUDIT-OF-AUDITOR": "CLOSED",
     "GAP-RC-EVID-PUBLISH": "CLOSED",
     "GAP-RC-CI-PROFILE": "CLOSED",
@@ -262,8 +262,10 @@ GAP_RC_EVIDENCE: dict[str, str] = {
     "GAP-RC-CERTIFY-SPLIT": f"contracts @ `{TES}`",
     "GAP-RC-CI-PROFILE": "enterprise-audit.yml identity",
     "GAP-RC-SHA-LADDER": f"ENT_AUDIT_X_SHA_LADDER.md `{EVID}`",
-    "GAP-RC-EVIDENCE-TRUST": f"{B5_L3}/evidence_manifest.v1.json",
-    "GAP-RC-JSON-SCHEMA": "test_validators_all_artifacts.py + validate_b5_handoff_bundle @ HEAD",
+    "GAP-RC-EVIDENCE-TRUST": f"{B5_L3}/evidence_manifest.v1.json + verify_b5_publication_tree @ `{EVID}`",
+    "GAP-RC-JSON-SCHEMA": "verify_b5_publication_tree + test_b5_publication_verifier.py @ HEAD",
+    "GAP-RC-MECH-READY": "mechanical_readiness_check evidence_integrity uses verify_b5_publication_tree",
+    "GAP-RC-REQUAL-DIGEST": "W8 B5 republish @ TEST_EXECUTION_SHA 89c76eb7… (supersedes R7 digest defect)",
     "GAP-RC-PR-PATH-SKIP": "enterprise-audit.yml ent-audit-pr-gate @ HEAD",
     "GAP-RC-OD-TRUST": "operator_records/ — no production OD @ HEAD",
     "GAP-RC-CHANGED-IMPACT": f"changed_since_impact_map.v1.json + test_changed_since_impact_map @ `{TES}`",

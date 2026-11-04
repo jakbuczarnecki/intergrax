@@ -33,8 +33,10 @@
 | B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
-| TEST_EXECUTION_SHA | `87203c1b6ce9786dce0523cca29b556106b6bc8d` | Canonical qual pin (R6 certifying PASS; supersedes historical rows above) |
-| EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` | Canonical B5 publication (R7; supersedes historical rows above) |
+| TEST_EXECUTION_SHA | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` | W8 B6 corrective certifying qual @ strict B5 verifier wave (supersedes R6/R7 canonical rows below) |
+| EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` | **Superseded** — R7 digest defect ENT-W8-B6-001; see W8 EVIDENCE row after publication commit |
+| TEST_EXECUTION_SHA (historical — R6/R7) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` | Preserved; B5 @ `d18f01f22` fails `verify_b5_publication_tree()` |
+| EVIDENCE_PUBLICATION_SHA (historical — R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | Preserved defect record; do not use for B6 evidence integrity |
 | CURRENT_DOCUMENTATION_HEAD (R8 external gate packet) | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | Dossier EVID pin + W0–W7 closure prep (doc/scripts only post-TES) |
 | CURRENT_DOCUMENTATION_HEAD (W7 mechanical readiness) | `1bee524218d9185175f3e24c6e6f205565ff0569` | C075-S2 sync + canonical ladder pins + dossier CI @ HEAD |
 

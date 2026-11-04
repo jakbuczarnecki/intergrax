@@ -1,13 +1,18 @@
 # ENT-AUDIT-X — B6 independent handoff (B5 evidence tree)
 
-Tracked qualification artifacts @ **TEST_EXECUTION_SHA** `b8bb88c9db1060153ec0a6a29bbb79ba16e00078`.
+Tracked qualification artifacts @ **TEST_EXECUTION_SHA** (see `ENT_AUDIT_X_SHA_LADDER.md` canonical row).
 
 | Path | Role |
 | --- | --- |
 | `qualification_at_<TES>/l3-cli-full/` | Certifying FULL closed-world bundle + `evidence_manifest.v1.json` |
-| `qualification_at_<TES>/qual_wave_report.json` | L1→L2→semantic 85→ADV31 orchestration record |
-| `qualification_at_<TES>/publication_index.v1.json` | SHA256 index for independent replay |
+| `qualification_at_<TES>/qual_wave_report.json` | L1→L2→semantic 85→ADV31→L3 FULL orchestration record |
+| `qualification_at_<TES>/publication_index.v1.json` | SHA256 index for independent replay (strict closed-world verify) |
 
-Republish: `uv run python scripts/enterprise_audit/publish_b5_evidence_bundle.py --qualification-sha <TES>`.
+**Historical defect (ENT-W8-B6-001):** R7 tree `qualification_at_87203c1b…` @ `d18f01f22` — preserved; see
+[`R7_DEFECT_ENT-W8-B6-001.md`](./R7_DEFECT_ENT-W8-B6-001.md).
 
-**EVIDENCE_PUBLICATION_SHA** is the git commit that first lands this tree (see SHA ladder); not the MANIFEST self-hash field.
+**Current corrective tree:** `qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` (W8 wave).
+
+Republish: `uv run python scripts/enterprise_audit/publish_b5_evidence_bundle.py --qualification-sha <TES>` (fails closed via `verify_b5_publication_tree()`).
+
+**EVIDENCE_PUBLICATION_SHA** is the git commit that first lands a handoff tree (see SHA ladder); not the MANIFEST self-hash field.

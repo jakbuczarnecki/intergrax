@@ -1,0 +1,32 @@
+{
+  "audit_mode": "FULL",
+  "baseline_sha": null,
+  "certifying_run": true,
+  "coverage_matrix_summary": {
+    "checks_planned": 85,
+    "findings_total": 0,
+    "manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
+    "vbn_domains_accounted": 31
+  },
+  "current_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+  "execution_manifest": {
+    "audit_execution_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+    "audit_mode": "FULL",
+    "certifying_run": true,
+    "check_manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
+    "checks_executed": 85,
+    "checks_planned": 85,
+    "checks_skipped": 0,
+    "coverage_label": "FULL",
+    "qualification_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+    "run_status": "completed",
+    "schema_version": 1
+  },
+  "exit_code": 0,
+  "findings": [],
+  "limitations": [
+    "Path B: FRZ-PRD live qualification dimension remains OPEN \u2014 see QUALIFICATION_LIMITATIONS.",
+    "Historical gate PASS at scoped SHA does not imply current-HEAD PASS (ECAP-P2)."
+  ],
+  "status": "PASS"
+}
