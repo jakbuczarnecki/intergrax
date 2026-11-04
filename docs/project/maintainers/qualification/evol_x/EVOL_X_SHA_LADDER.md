@@ -17,6 +17,36 @@ Root stub: [../EVOL_X_SHA_LADDER.md](../EVOL_X_SHA_LADDER.md) (pointer only).
 | INTERNAL_CERTIFICATION_PUBLICATION_SHA | `5c08e5e6c44d21998c76bd27ad1efab172440f45` | OD-IC-01 consolidated record + roadmap §5 |
 | POST_IC_CONSOLIDATION_PUBLICATION_SHA | `81829712acc19ebeadb4773467b9c5642ca975e3` | ARCH-FREEZE pre-admission dossier + ladder reconciliation — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
 
+## Historical W1 Documentation and Audit Lineage
+
+**HISTORICAL — NOT CURRENT CERTIFYING EVIDENCE.** Preserves EVOL-X W1 documentation and independent-audit remediation chain from the pre–post-IC root ladder (`1b82324abe0f775086617f907870dd30dd11aade`). Does **not** supersede active `TEST_EXECUTION_SHA`, `EVIDENCE_FINAL_PUBLICATION_SHA`, B6, or internal-certification rows above.
+
+### W1 commit chain (ancestor order)
+
+| Order | Role | Full SHA | Subject (verified @ PIC-AUD-001 corrective) |
+|-------|------|----------|---------------------------------------------|
+| 0 | **START_HEAD** / authorized stage baseline | `5a4e922ffacabef0ee24eb676e5c8705c20ef4a1` | Pin EBH-7 FORMAL_CLOSURE_PUBLICATION_SHA and P03 identity allowlist. |
+| 1 | **W1_DOCUMENTATION_SHA** | `9f9cc8b573d2629c140b3a58bf239e8a92d0b1d0` | docs(EVOL-X): publish W1 architecture freeze and qualification annexes |
+| 2 | **W1_LADDER_UPDATE_SHA** | `cac5dfd91f8a98c1183e6864a93bc74ddc41b725` | docs(EVOL-X): record W1_DOCUMENTATION_SHA on ladder |
+| 3 | **W1_RECONCILIATION_PUBLICATION_SHA** | `54e0de377644fe19156a2f8497efa6cd10d7fdd2` | docs(EVOL-X): W1 reconciliation — N-18/N-04, audit index, AF/OD register |
+| 4 | **W1_AUDIT_REMEDIATION_SHA** | `e48cae037fc022da0a99da66314d17dd6abbe296` | docs(EVOL-X): W1 audit remediation F-01/F-02/F-03 |
+
+**Independent audit snapshot (documentation):** pin **`e48cae037fc022da0a99da66314d17dd6abbe296`** (includes F-batch) or **`54e0de377644fe19156a2f8497efa6cd10d7fdd2`** (pre–F-batch tip) — record which in AF-8 worksheet. Index: [`EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md`](EVOL_X_W1_INDEPENDENT_AUDIT_INDEX.md).
+
+**Ancestry:** `merge-base --is-ancestor` holds for each consecutive pair through **W1_AUDIT_REMEDIATION_SHA**; W1 chain is an ancestor of **IMPLEMENTATION_PARTIAL_SHA** and **PLAN_PUBLICATION_SHA** below.
+
+### Implementation baseline (audit @ plan publication; not qualification evidence)
+
+| Role | SHA | Notes |
+|------|-----|--------|
+| **IMPLEMENTATION_PARTIAL_SHA** | `8848857741f4b04e5b476dca3c47f7d0a60bf672` | Partial W2–W6 code on `development` at architecture audit; **not** TEST_EXECUTION_SHA |
+
+### Plan publication (historical anchor; active pin in table above)
+
+| Role | SHA | Notes |
+|------|-----|--------|
+| **PLAN_PUBLICATION_SHA** | `b4fca4bc413a650b2e5a8dd8826669a9025864c5` | Same object as **PLAN_PUBLICATION_SHA** in the active SSOT table — master plan v3 publication; not a second certifying pin. |
+
 ## Superseded (historical)
 
 | Role | SHA | Notes |
