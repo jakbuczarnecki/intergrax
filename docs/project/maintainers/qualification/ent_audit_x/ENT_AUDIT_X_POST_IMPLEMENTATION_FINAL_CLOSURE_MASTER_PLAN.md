@@ -2,7 +2,7 @@
 
 **Disposition:** `ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS`
 
-**W7 mechanical readiness (@ `1bee524218d9185175f3e24c6e6f205565ff0569`):** `ENT-AUDIT-X — TECHNICAL COMPLETE / B5 PUBLISHED / READY FOR INDEPENDENT B6` — external GAP-B / B6 / OD / FRZ remain OPEN; agent does **not** declare B6 PASS.
+**W7 mechanical readiness (@ `1bee524218d9185175f3e24c6e6f205565ff0569`):** `ENT-AUDIT-X — TECHNICAL COMPLETE / B5 PUBLISHED / READY FOR INDEPENDENT B6` — external GAP-B / independent auditor / OD / FRZ remain OPEN; agent does **not** sign Protocol 03.
 
 **CURRENT_DOCUMENTATION_HEAD:** `c6d600df56f3fedb85bcdce12ba508ea8274ccd4`
 
