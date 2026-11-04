@@ -54,11 +54,11 @@ def main() -> int:
             _ok(f"push_gate profile={config.profile}")
 
         steps = smoke_steps(include_uv_sync=False)
-        if len(steps) != 5:
-            _fail(f"smoke_steps count={len(steps)} (expected 5 without uv sync)")
+        if len(steps) != 4:
+            _fail(f"smoke_steps count={len(steps)} (expected 4 without uv sync)")
             errors += 1
         else:
-            _ok("smoke_steps SSOT (5 steps without uv sync)")
+            _ok("smoke_steps SSOT (4 steps without uv sync)")
     except Exception as exc:  # noqa: BLE001
         _fail(f"import smoke SSOT: {exc}")
         errors += 1

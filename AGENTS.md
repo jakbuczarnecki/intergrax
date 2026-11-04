@@ -39,3 +39,11 @@ applications/ MAY import from agents/ and intergrax/
 **Token setup:** [`docs/project/technical/guides/CURSOR_TOKEN_SETUP.md`](docs/project/technical/guides/CURSOR_TOKEN_SETUP.md)
 
 **Do not delete this file via Cursor Settings** - use stub + full reference split (CURSOR_TOKEN_SETUP F2).
+
+## Delivery DevOS (ticket-first)
+
+- **Tickets SSOT:** [`governance/tickets/`](governance/tickets/) — every product-path batch needs `T-IGX-<NN>-<L>.md`.
+- **Commit trailer:** `Ref: governance/tickets/T-IGX-012-A.md` on commits touching `intergrax/`, `agents/`, `applications/`, `scripts/`.
+- **Default agent role:** `orchestrator` — see [`governance/agent-control-plane/role_registry.yaml`](governance/agent-control-plane/role_registry.yaml).
+- **Quality before push:** `uv run python -m scripts.governance.igx_gov ticket` (wraps ticket Ref check + regression `fast`).
+- **Hub:** [`docs/project/technical/devos/README.md`](docs/project/technical/devos/README.md).

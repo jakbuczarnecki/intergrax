@@ -1,0 +1,23 @@
+{
+  "unknown:dynamic:applications/local_workspace_application/tests/workspaces/test_vendor_knowledge_scoped_source_seam_qualification.py:100": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/agents/authoring/__init__.py:38": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/agents/readiness/scoreboard.py:57": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/applications/_shared/agent_resolution.py:42": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/applications/_shared/agent_resolution.py:99": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/applications/_shared/mcp_import_guard.py:52": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/applications/_shared/migration_wiring.py:337": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/applications/_shared/product_manifest_registry.py:30": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/applications/_shared/wiring.py:64": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/dev_support/agent_registry_bootstrap.py:61": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/integrations/_shared/p4/factories.py:28": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/integrations/providers/sandbox_host/daytona/integration.py:43": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/integrations/providers/sandbox_host/e2b/integration.py:67": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/integrations/providers/sandbox_host/modal/integration.py:43": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/model_inference/registry/vision_adapter_registry.py:60": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/rag/graph/soak/prod_slo.py:42": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/rag/vectorstore/soak/prod_slo.py:57": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/runtime/execution/__init__.py:41": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/runtime/execution/context_engine_resolver.py:29": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/speech_adapters/registry/speech_adapter_registry.py:43": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1",
+  "unknown:dynamic:intergrax/utils/lazy_export.py:25": "EXTRACTOR_LIMITATION_ARCH_FREEZE_B1_V1"
+}

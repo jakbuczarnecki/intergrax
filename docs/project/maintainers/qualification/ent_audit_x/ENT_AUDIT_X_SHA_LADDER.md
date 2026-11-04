@@ -30,9 +30,21 @@
 | TEST_EXECUTION_SHA (historical — not current @ d4974efc) | `0cee41a88274a53d14bb3558752d55bdde0d0b01` | 164 passed — **do not** substitute for re-qual @ audited baseline |
 | EVIDENCE_PUBLICATION_SHA (historical) | `894b0e1aff071d19636d23bea406b95dcffc79e1` | B5 @ `b8bb88c9…` — archived |
 | EVIDENCE_PUBLICATION_SHA (final closure R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | B5 handoff `qualification_at_87203c1b…` |
-| B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Protocol 03 ENT-AUDIT-X PASS |
+| INDEPENDENT_TECHNICAL_REAUDIT_SHA | `0e538269a7188075003b9ff2c7cce2545d8f1ccb` | Technical re-audit + regression gate `41804655934` — **not** formal B6 attestation |
+| FORMAL_B6_PACKAGE_PREPARATION_SHA | `b14a409c9894c77257487364a2d42d63ec22e295` | ENT+EVOL formal preparatory packages — [ENT_EVOL_FORMAL_CLOSURE_PUBLICATION_EVIDENCE.md](../ENT_EVOL_FORMAL_CLOSURE_PUBLICATION_EVIDENCE.md) |
+| B6_ACCEPTANCE_PUBLICATION_SHA | *unset* | Signed Protocol 03 ENT-AUDIT-X PASS (authorized independent auditor) |
+| INTERNAL_CERTIFICATION_STATUS | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (TECHNICAL SCOPE)** | OD-IC-01 (2026-11-04); technical re-audit recommendation **≠** formal attestation — [record](../EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md) |
+| INTERNAL_CERTIFICATION_PUBLICATION_SHA | `5c08e5e6c44d21998c76bd27ad1efab172440f45` | OD-IC-01 consolidated record + roadmap §5 |
+| POST_IC_CONSOLIDATION_PUBLICATION_SHA | `81829712acc19ebeadb4773467b9c5642ca975e3` | Pre-admission + IC consolidation handoff — [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md) |
 | FORMAL_CLOSURE_PUBLICATION_SHA | *unset* | OD-ENT-08 + roadmap §5 |
 | ACCEPTED_BASELINE_SHA | *unset* | Operator OD-ENT-01 after first green FREEZE |
+| EVIDENCE_PUBLICATION_SHA | `300859537f12a1de7bf3d75fd685bc3a5c727183` | W8 B6 corrective B5 `qualification_at_89c76eb7…` (strict `verify_b5_publication_tree`) |
+| TEST_EXECUTION_SHA | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` | W8 B6 corrective certifying qual @ strict B5 verifier wave (supersedes R6/R7 canonical rows below) |
+| EVIDENCE_PUBLICATION_SHA (pending row placeholder) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | **Superseded** — see W8 row above |
+| TEST_EXECUTION_SHA (historical — R6/R7) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` | Preserved; B5 @ `d18f01f22` fails `verify_b5_publication_tree()` |
+| EVIDENCE_PUBLICATION_SHA (historical — R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | Preserved defect record; do not use for B6 evidence integrity |
+| CURRENT_DOCUMENTATION_HEAD (R8 external gate packet) | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | Dossier EVID pin + W0–W7 closure prep (doc/scripts only post-TES) |
+| CURRENT_DOCUMENTATION_HEAD (W7 mechanical readiness) | `1bee524218d9185175f3e24c6e6f205565ff0569` | C075-S2 sync + canonical ladder pins + dossier CI @ HEAD |
 
 ## Lineage rules
 

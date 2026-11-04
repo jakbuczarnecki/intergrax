@@ -27,6 +27,8 @@ Tier-3  applications/        Deployable product environments
 
 **Cursor context budget:** respect `.cursorignore`. **I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. Plan hubs + [`../plan/satellites/`](../../maintainers/plans/satellites) satellites. Platform audits: follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md). **F2:** root `AGENTS.md` is a stub; full reference is this file - see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat; HEP → [`../bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt). **O1:** terse operator replies by default - see § Operator communication below.
 
+**Delivery DevOS (ticket-first batches):** product-path commits require `Ref: governance/tickets/T-IGX-<NN>-<L>.md`; run `uv run python -m scripts.governance.igx_gov ticket` before push; roles/skills SSOT under `governance/agent-control-plane/`; hub [`../devos/README.md`](../devos/README.md).
+
 ---
 
 ## Operator communication (O1 - output token budget)

@@ -48,6 +48,21 @@ def main() -> int:
             print("[ERROR] Diff-scoped gates failed before push gate.", file=sys.stderr)
             return diff.returncode
 
+    ticket_ref = subprocess.run(
+        [
+            sys.executable,
+            "-u",
+            str(_REPO / "scripts" / "governance" / "verify_commit_ticket_refs.py"),
+            "--mode",
+            "push",
+        ],
+        cwd=_REPO,
+        check=False,
+    )
+    if ticket_ref.returncode != 0:
+        print("[ERROR] Ticket Ref gate failed before push gate.", file=sys.stderr)
+        return ticket_ref.returncode
+
     print(f"[INFO] Running push gate profile={config.profile} ...", flush=True)
     regression = _REPO / "scripts" / "ci" / "run_regression_gate_ci.py"
     command = [sys.executable, "-u", str(regression), "--profile", config.profile]

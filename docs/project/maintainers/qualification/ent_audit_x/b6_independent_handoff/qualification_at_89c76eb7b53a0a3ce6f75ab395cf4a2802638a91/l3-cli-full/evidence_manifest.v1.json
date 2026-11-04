@@ -1,0 +1,35 @@
+{
+  "artifacts": [
+    {
+      "path": "enterprise_audit_outcomes.json",
+      "sha256": "3f7de4e1d6a3bb470c558b2dc1f998384a0a737b9576c31f7517dda860bd7e52"
+    },
+    {
+      "path": "enterprise_audit_report.json",
+      "sha256": "87f566629b60c02f2d383ffe21badc8708fdc5feff85507ed95b5367a5fc5d8a"
+    },
+    {
+      "path": "enterprise_audit_report.md",
+      "sha256": "6ddd514c19a3ab51a066ee00a9b8e988bbfa3a47c88519037e76b01f48e49ff9"
+    },
+    {
+      "path": "frz_coverage.v1.json",
+      "sha256": "ddef45a165fc8623146d83c23af44297f2cf37d60a20f6bae15b582c6f87dfe0"
+    },
+    {
+      "path": "vbn_domains.v1.json",
+      "sha256": "b6b6237dedf7dd288e1af45365a5090e74e3a765de5410f47915300036b89966"
+    }
+  ],
+  "audit_execution_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+  "certifying_run": true,
+  "check_manifest_digest": "0fe966e43a10a561c38222b6cff30269e906633e61862d76aa29c1775e691b8b",
+  "environment_fingerprint": {
+    "implementation": "CPython",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.12.11"
+  },
+  "qualification_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+  "run_id": "l3-cli-full",
+  "schema_version": 1
+}

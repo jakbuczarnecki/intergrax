@@ -33,6 +33,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | Strategy, invariants, authoring guides | [guides/README.md](guides/README.md) |
 | **Documentation Design System** (domain / feature hub standard) | [DOCUMENTATION_DESIGN_SYSTEM.md](guides/DOCUMENTATION_DESIGN_SYSTEM.md) |
 | Work with Cursor (AI agent) | [AGENTS.md](../../../AGENTS.md) + [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) |
+| **Delivery DevOS** (tickets, roles, `igx_gov`, CI tier map) | [devos/README.md](devos/README.md) · tickets [`governance/tickets/`](../../../governance/tickets/) · [ENTERPRISE_QUALITY_WORKFLOW.md](guides/ENTERPRISE_QUALITY_WORKFLOW.md) |
 | Cursor token budget (F2 / F3) | [CURSOR_TOKEN_SETUP.md](guides/CURSOR_TOKEN_SETUP.md) |
 | Platform audit procedure | [audit_results/README.md](../../audit_results/README.md) |
 | **Platform proofs** (methodology, scenario/conformance library) | [platform_proofs/README.md](../../../platform_proofs/README.md) |

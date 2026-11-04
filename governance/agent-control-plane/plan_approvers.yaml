@@ -1,0 +1,19 @@
+# Plan approvers — procedural gateway (no PostgreSQL lease)
+
+version: "1.0"
+
+approvers:
+  - id: operator
+    description: Human operator with repo write access
+    may_approve_plans: true
+  - id: maintainer
+    description: Platform maintainer role (documented in AGENT_INSTRUCTIONS)
+    may_approve_plans: true
+
+approval_format:
+  ticket_line_prefix: "Approved:"
+  digest_line_prefix: "Plan digest:"
+
+required_for_states:
+  - plan_approved
+  - in_progress

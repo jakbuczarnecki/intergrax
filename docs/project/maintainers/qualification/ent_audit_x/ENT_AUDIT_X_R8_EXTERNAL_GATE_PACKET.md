@@ -2,13 +2,22 @@
 
 **Agent stop line:** TECHNICAL work through R7 complete; **do not** declare B6 PASS, OD approved, FRZ CLOSED, or ENT stage FORMALLY CLOSED.
 
-## Current pins (post R6/R7)
+## Current pins (W8 corrective — active qualification)
+
+| Role | SHA |
+| --- | --- |
+| TEST_EXECUTION_SHA | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` |
+| EVIDENCE_PUBLICATION_SHA | `300859537f12a1de7bf3d75fd685bc3a5c727183` |
+| INDEPENDENT_TECHNICAL_REAUDIT_SHA | `0e538269a7188075003b9ff2c7cce2545d8f1ccb` |
+| B5 bundle (current) | [qualification_at_89c76eb7…/](./b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/) |
+
+## Historical pins (R6/R7 defect record — not current B6 evidence)
 
 | Role | SHA |
 | --- | --- |
 | TEST_EXECUTION_SHA | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
 | EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` |
-| B5 bundle | [b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) |
+| B5 bundle | [qualification_at_87203c1b…/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) |
 
 ## Required operator sequence (ECAP PL-08)
 

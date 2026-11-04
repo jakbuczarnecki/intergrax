@@ -1,0 +1,89 @@
+# InterGRAX agent role registry (Delivery DevOS control plane)
+
+version: "1.0"
+default_role: orchestrator
+
+global_denied_commands:
+  - git push --force
+  - git reset --hard
+  - git checkout -b
+
+roles:
+  orchestrator:
+    description: Routes operator intent; may spawn subagents per subagent_role_map.
+    allowed_skills:
+      - igx-devos-qc-orchestrator
+      - igx-devos-ticket-driven-work
+      - igx-devos-parallel-orchestration
+      - igx-devos-ticket-scaffold
+    may_commit: false
+
+  architect-planner:
+    description: Read-only planning; plan digest and ticket scope.
+    allowed_skills:
+      - igx-devos-role-architect
+      - igx-devos-plan-ticket-scope
+      - igx-devos-ticket-scaffold
+    may_commit: false
+
+  implementer:
+    description: Product code changes within approved ticket scope.
+    allowed_skills:
+      - igx-devos-role-implementer
+      - igx-devos-ticket-driven-work
+      - igx-devos-enterprise-quality-gate
+    may_commit: true
+
+  tester:
+    description: Runs verification; records checkpoint in ticket.
+    allowed_skills:
+      - igx-devos-role-tester
+      - igx-devos-enterprise-quality-gate
+    may_commit: false
+
+  reviewer:
+    description: Code review handoff; not G6 certification.
+    allowed_skills:
+      - igx-devos-role-reviewer
+    may_commit: false
+
+  delivery-closure:
+    description: PR creation and batch checklist; no merge authority.
+    allowed_skills:
+      - igx-devos-github-pr-workflow
+      - igx-devos-enterprise-quality-gate
+    may_commit: false
+
+  independent-quality-auditor:
+    description: Separate session G6 audit per AUDIT_PROTOCOL; never in implementer chat.
+    allowed_skills:
+      - igx-devos-role-reviewer
+    may_commit: false
+    declares_g6_pass: false
+
+subagent_role_map:
+  explore:
+    maps_to: architect-planner
+    max_parallel: 3
+    read_only: true
+  generalPurpose:
+    maps_to: orchestrator
+    max_parallel: 2
+    read_only: false
+  ci-investigator:
+    maps_to: tester
+    max_parallel: 1
+    read_only: true
+  bugbot:
+    maps_to: reviewer
+    max_parallel: 1
+    read_only: true
+  security-review:
+    maps_to: independent-quality-auditor
+    max_parallel: 1
+    read_only: true
+  best-of-n-runner:
+    maps_to: implementer
+    max_parallel: 2
+    read_only: false
+    requires_worktree: true

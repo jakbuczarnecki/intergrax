@@ -43,3 +43,15 @@ uv run python scripts/dev/verify_push_gate_readiness.py
 - Pre-commit: `INTERGRAX_SKIP_PRE_COMMIT_GATE=1`
 
 See also [LOCAL_PUSH_GATE.md](LOCAL_PUSH_GATE.md).
+
+## Delivery DevOS (agent batches)
+
+For ticket-scoped product work, use the unified CLI (hooks unchanged; `igx_gov ticket` adds Ref verification and documents the recommended sequence):
+
+```bash
+uv run python -m scripts.governance.igx_gov bootstrap   # once per clone
+uv run python -m scripts.governance.igx_gov ticket      # before risky push / batch close
+uv run python -m scripts.governance.igx_gov doctor      # hooks + control-plane sanity
+```
+
+Hub: [Delivery DevOS docs](../devos/README.md) · tickets: [`governance/tickets/`](../../../../governance/tickets/).

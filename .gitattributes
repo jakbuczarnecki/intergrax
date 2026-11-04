@@ -1,4 +1,7 @@
 *.ipynb linguist-documentation=true
 
+governance/**/*.yaml text eol=lf
+governance/**/*.yml text eol=lf
+
 applications/local_workspace_application/docker/sentry/bootstrap/*.sh text eol=lf
 applications/local_workspace_application/scripts/*.sh text eol=lf

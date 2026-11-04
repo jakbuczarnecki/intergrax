@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from intergrax.platform.enterprise_audit.evidence import sha256_file, verify_evidence_manifest
+from intergrax.platform.enterprise_audit.validators import verify_b5_publication_tree
 
 _HANDOFF_ROOT = Path("docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff")
 
@@ -92,7 +93,12 @@ def publish(
             "path": qw_dest.relative_to(root).as_posix(),
             "sha256": sha256_file(qw_dest),
         }
-    (out / "publication_index.v1.json").write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    index_path = out / "publication_index.v1.json"
+    index_path.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    pub_errors = verify_b5_publication_tree(root, out, expected_qualification_sha=qualification_sha)
+    if pub_errors:
+        raise ValueError("B5 publication verification failed: " + "; ".join(pub_errors[:8]))
     return out
 
 

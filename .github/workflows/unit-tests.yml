@@ -105,6 +105,68 @@ jobs:
       - name: Regression gate smoke (SSOT)
         run: uv run --frozen python scripts/ci/run_regression_gate_ci.py --profile smoke --skip-uv-sync
 
+  governance-fast:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (
+        github.event_name == 'push' &&
+        (
+          github.ref == 'refs/heads/main' ||
+          github.ref == 'refs/heads/development'
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: Validate policy registry (TECHNICAL)
+        run: uv run --frozen python scripts/governance/validate_policy_registry.py
+
+      - name: Governance unit suite (DCP)
+        run: uv run --frozen pytest tests/unit/governance/ -q --tb=line
+
+  governance-policy-pin:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (
+        github.event_name == 'push' &&
+        (
+          github.ref == 'refs/heads/main' ||
+          github.ref == 'refs/heads/development'
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: GOV-06 trusted policy pin compare (ADVISORY — job may fail without blocking merge policy)
+        run: uv run --frozen python scripts/governance/verify_trusted_policy_pin.py
+
   ci-enterprise:
     if: >-
       github.event_name == 'workflow_dispatch' &&

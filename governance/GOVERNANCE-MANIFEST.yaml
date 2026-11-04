@@ -1,0 +1,66 @@
+# InterGRAX Delivery DevOS (DCP) — governance program manifest.
+# Certification flags remain false until external G6 audit (see EVIDENCE-AND-CERTIFICATION.md).
+
+program: intergrax-delivery-devos
+version: "1.0.0"
+ticket_ssot: governance/tickets/T-IGX-{nn}-{batch}.md
+
+phases:
+  GOV-00:
+    name: policy-ssot
+    status: implemented
+    certification_ready: false
+  GOV-01:
+    name: quality-engine
+    status: implemented
+    certification_ready: false
+  GOV-02:
+    name: agent-control-plane
+    status: implemented
+    certification_ready: false
+    note: >-
+      igx_gov sync-adapters regenerates MATRIX.md (Cursor) plus advisory Claude/Codex fragments
+      under governance/agent-control-plane/adapters/ (manual merge; not certification evidence).
+  GOV-03:
+    name: plan-approval
+    status: implemented
+    certification_ready: false
+  GOV-04:
+    name: parallel-execution
+    status: implemented
+    certification_ready: false
+  GOV-05:
+    name: ci-tiers-pr-metadata
+    status: implemented
+    certification_ready: false
+  GOV-06:
+    name: trusted-policy-pin
+    status: implemented
+    certification_ready: false
+    note: >-
+      governance/TRUSTED_POLICY_PIN.yaml + verify_trusted_policy_pin.py; CI job governance-policy-pin
+      (continue-on-error) — ADVISORY until operator promotes to required check on development.
+  GOV-07:
+    name: evidence-operations
+    status: implemented
+    certification_ready: false
+  GOV-08:
+    name: dcp-program-closure
+    status: ready_for_audit
+    certification_ready: false
+    note: >-
+      W2–W7 agent deliverables landed; global_certification.* stay false until independent G6 PASS.
+      Branch protection SERVER evidence may remain EXTERNAL_BLOCKED — see governance/rollout/.
+
+global_certification:
+  dcp_program_certified: false
+  g6_independent_audit_pass: false
+  operator_signoff: false
+
+references:
+  policy_hierarchy: governance/POLICY-HIERARCHY.md
+  policy_registry: governance/policy-registry.yaml
+  closure_backlog: governance/DCP-CLOSURE-BACKLOG.md
+  agent_control_plane: governance/agent-control-plane/
+  tickets: governance/tickets/
+  devos_hub: docs/project/technical/devos/README.md

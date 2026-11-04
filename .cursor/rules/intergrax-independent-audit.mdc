@@ -1,0 +1,15 @@
+---
+description: Independent G6 audit — implementer must not PASS; separate session only
+alwaysApply: false
+---
+
+# Independent audit (G6)
+
+- **Implementer / tester / reviewer sessions MUST NOT** declare G6 PASS, certification, or FRZ closure.
+- Organizational independence requires a **new chat** with role `independent-quality-auditor` and operator authorization.
+- Follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../docs/audit_results/AUDIT_PROTOCOL.md) when operator requests audit — do not auto-load audit dossiers.
+- Cursor `security-review` or `bugbot` subagents are **tools**, not G6 sign-off.
+
+Ticket lifecycle: implementer stops at `quality_gate` with `igx_gov ticket` checkpoint; operator moves to `ready_for_audit` for external review.
+
+See [`docs/project/technical/devos/INDEPENDENT-REVIEW-HANDOFF.md`](../../docs/project/technical/devos/INDEPENDENT-REVIEW-HANDOFF.md).

@@ -1,0 +1,40 @@
+# Skill routing registry — maps skill id to role and on-disk path under .cursor/skills/
+# InterGRAX ships 11 igx-devos-* skills (reference DevOS ~15–16 minus GitHub Issues and unported packs).
+# Registry entries MUST match on-disk SKILL.md paths (verified by verify_agent_skills.py).
+
+version: "1.0"
+
+skills:
+  igx-devos-ticket-driven-work:
+    role: implementer
+    path: .cursor/skills/igx-devos-ticket-driven-work/SKILL.md
+  igx-devos-ticket-scaffold:
+    role: orchestrator
+    path: .cursor/skills/igx-devos-ticket-scaffold/SKILL.md
+  igx-devos-role-implementer:
+    role: implementer
+    path: .cursor/skills/igx-devos-role-implementer/SKILL.md
+  igx-devos-role-architect:
+    role: architect-planner
+    path: .cursor/skills/igx-devos-role-architect/SKILL.md
+  igx-devos-role-tester:
+    role: tester
+    path: .cursor/skills/igx-devos-role-tester/SKILL.md
+  igx-devos-role-reviewer:
+    role: reviewer
+    path: .cursor/skills/igx-devos-role-reviewer/SKILL.md
+  igx-devos-qc-orchestrator:
+    role: orchestrator
+    path: .cursor/skills/igx-devos-qc-orchestrator/SKILL.md
+  igx-devos-enterprise-quality-gate:
+    role: implementer
+    path: .cursor/skills/igx-devos-enterprise-quality-gate/SKILL.md
+  igx-devos-parallel-orchestration:
+    role: orchestrator
+    path: .cursor/skills/igx-devos-parallel-orchestration/SKILL.md
+  igx-devos-plan-ticket-scope:
+    role: architect-planner
+    path: .cursor/skills/igx-devos-plan-ticket-scope/SKILL.md
+  igx-devos-github-pr-workflow:
+    role: delivery-closure
+    path: .cursor/skills/igx-devos-github-pr-workflow/SKILL.md

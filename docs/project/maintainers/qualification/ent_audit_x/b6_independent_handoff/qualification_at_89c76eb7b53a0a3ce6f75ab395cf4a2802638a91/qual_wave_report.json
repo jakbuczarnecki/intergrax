@@ -1,0 +1,89 @@
+{
+  "certifying": true,
+  "clean_tree": true,
+  "error": "",
+  "interruption_class": "",
+  "pinned_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+  "profile": "certifying",
+  "qualification_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+  "stages": [
+    {
+      "detail": "passed=111",
+      "duration_ms": 32093,
+      "exit_code": 0,
+      "name": "l1",
+      "skipped": false
+    },
+    {
+      "detail": "passed=42",
+      "duration_ms": 15885,
+      "exit_code": 0,
+      "name": "l2",
+      "skipped": false
+    },
+    {
+      "detail": "passed=63",
+      "duration_ms": 1532694,
+      "exit_code": 0,
+      "name": "semantic_acceptance",
+      "skipped": false
+    },
+    {
+      "detail": "passed=85",
+      "duration_ms": 935740,
+      "exit_code": 0,
+      "name": "semantic_matrix",
+      "skipped": false
+    },
+    {
+      "detail": "passed=33",
+      "duration_ms": 11334,
+      "exit_code": 0,
+      "name": "adv31",
+      "skipped": false
+    },
+    {
+      "detail": "passed=13",
+      "duration_ms": 117596,
+      "exit_code": 0,
+      "name": "ten13",
+      "skipped": false
+    },
+    {
+      "detail": "passed=9",
+      "duration_ms": 63617,
+      "exit_code": 0,
+      "name": "vbn9",
+      "skipped": false
+    },
+    {
+      "detail": "passed=2",
+      "duration_ms": 3379,
+      "exit_code": 0,
+      "name": "d31",
+      "skipped": false
+    },
+    {
+      "detail": "cli_full exit=0 ms=1143699",
+      "duration_ms": 1143700,
+      "exit_code": 0,
+      "name": "l3_cli_full",
+      "skipped": false
+    },
+    {
+      "detail": "FULL 85/85 + evidence integrity validated",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "name": "l3_validate",
+      "skipped": false
+    },
+    {
+      "detail": "CANDIDATE_ENTERPRISE_AUDIT_BASELINE.json (retry after stale baseline removal ENT-W8-B6-001)",
+      "duration_ms": 1387073,
+      "exit_code": 0,
+      "name": "first_freeze_candidate",
+      "skipped": false
+    }
+  ],
+  "status": "PASS"
+}
