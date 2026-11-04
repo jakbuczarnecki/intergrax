@@ -36,6 +36,7 @@
 | TEST_EXECUTION_SHA | `87203c1b6ce9786dce0523cca29b556106b6bc8d` | Canonical qual pin (R6 certifying PASS; supersedes historical rows above) |
 | EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` | Canonical B5 publication (R7; supersedes historical rows above) |
 | CURRENT_DOCUMENTATION_HEAD (R8 external gate packet) | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | Dossier EVID pin + W0–W7 closure prep (doc/scripts only post-TES) |
+| CURRENT_DOCUMENTATION_HEAD (W7 mechanical readiness) | `1bee524218d9185175f3e24c6e6f205565ff0569` | C075-S2 sync + canonical ladder pins + dossier CI @ HEAD |
 
 ## Lineage rules
 

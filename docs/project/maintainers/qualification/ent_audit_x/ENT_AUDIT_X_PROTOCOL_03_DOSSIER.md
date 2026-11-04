@@ -1,6 +1,6 @@
 # ENT-AUDIT-X — Protocol 03 independent audit dossier (draft)
 
-**Status:** TECHNICAL PARTIAL — **no B6 PASS / no OD approved / no FRZ CLOSED** (agent-prepared handoff only)
+**Status:** TECHNICAL COMPLETE / READY FOR INDEPENDENT B6 — **no B6 PASS / no OD approved / no FRZ CLOSED** (agent-prepared handoff only)
 
 | Field | Value |
 | --- | --- |
@@ -31,13 +31,13 @@
 
 ## CI qualification runs
 
-Latest green @ `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` (historical failures retained below — **not** HEAD proof):
+Latest green @ `1bee524218d9185175f3e24c6e6f205565ff0569` (historical failures retained below — **not** HEAD proof):
 
 | workflow | run_id | head_sha | conclusion | artifact | url |
 | --- | --- | --- | --- | --- | --- |
-| enterprise-audit.yml (push) | 41705029402 | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | success | ent-audit-pr gate + FAST | https://github.com/jakbuczarnecki/intergrax/actions/runs/41705029402 |
-| enterprise-audit.yml (PR) | 41710223602 | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | success | ent-audit-pr gate + FAST | https://github.com/jakbuczarnecki/intergrax/actions/runs/41710223602 |
-| enterprise-audit-nightly.yml | 41777671972 | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | success (W3 dispatch FULL @ HEAD) | nightly bundle | https://github.com/jakbuczarnecki/intergrax/actions/runs/41777671972 |
+| enterprise-audit.yml (push) | 41779404835 | `1bee524218d9185175f3e24c6e6f205565ff0569` | success | FAST + L1/L2/L3 qual | https://github.com/jakbuczarnecki/intergrax/actions/runs/41779404835 |
+| enterprise-audit-nightly.yml | 41779405128 | `1bee524218d9185175f3e24c6e6f205565ff0569` | success (FULL dispatch @ HEAD) | nightly bundle | https://github.com/jakbuczarnecki/intergrax/actions/runs/41779405128 |
+| enterprise-audit.yml (PR @ prior HEAD) | 41710223602 | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | success | ent-audit-pr gate + FAST | https://github.com/jakbuczarnecki/intergrax/actions/runs/41710223602 |
 
 Historical (pre-HEAD — audit context only):
 

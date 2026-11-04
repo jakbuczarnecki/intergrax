@@ -1,6 +1,6 @@
 # ENT-AUDIT-X — post-implementation final closure master plan
 
-**Disposition:** `ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS`
+**Disposition:** `ENT-AUDIT-X — TECHNICAL COMPLETE / B5 PUBLISHED / READY FOR INDEPENDENT B6` (mechanical readiness @ HEAD; **no B6 PASS / no OD / no FRZ CLOSED**)
 
 **CURRENT_DOCUMENTATION_HEAD:** `c6d600df56f3fedb85bcdce12ba508ea8274ccd4`
 
