@@ -11,10 +11,11 @@ Delivery Quality / DevOS (DCP) layers:
 | [INDEPENDENT-REVIEW-HANDOFF.md](./INDEPENDENT-REVIEW-HANDOFF.md) | G6 handoff |
 | [EVIDENCE-AND-CERTIFICATION.md](./EVIDENCE-AND-CERTIFICATION.md) | SHA ladder, manifest flags |
 | [OPERATIONS-AND-RECOVERY.md](./OPERATIONS-AND-RECOVERY.md) | Locks, bypass, recovery |
+| [DCP closure backlog](../../../../governance/DCP-CLOSURE-BACKLOG.md) | W1–W8 closure program, agent protocol |
 
 SSOT paths:
 
-- Policy: `governance/GOVERNANCE-MANIFEST.yaml`, `governance/policy-registry.yaml`
+- Policy: `governance/GOVERNANCE-MANIFEST.yaml`, `governance/policy-registry.yaml`, `governance/DCP-CLOSURE-BACKLOG.md`
 - Tickets: `governance/tickets/`
 - Agent control plane: `governance/agent-control-plane/`
 - CLI: `uv run python -m scripts.governance.igx_gov`

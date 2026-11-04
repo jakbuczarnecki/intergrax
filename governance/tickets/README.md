@@ -2,6 +2,10 @@
 
 Ticket path: `governance/tickets/T-IGX-<NN>-<L>.md` where `<NN>` is zero-padded batch number and `<L>` is scope letter (A, B, …).
 
+## DCP closure program (batch 004+)
+
+Remaining Delivery DevOS closure work is tracked in **[`governance/DCP-CLOSURE-BACKLOG.md`](../DCP-CLOSURE-BACKLOG.md)** (waves W1–W8). Use ticket batches **`T-IGX-004-A`** through **`T-IGX-008-A`** (and `-B` splits only when file trees do not conflict). Batch **001–003** cover phase 0–7 delivery and proportionate doc follow-ups.
+
 ## Required sections
 
 Every ticket MUST include these headings (order may vary):
@@ -44,5 +48,6 @@ Implementer MUST NOT set `ready_for_audit` to PASS or claim G6 certification —
 
 ## Related docs
 
+- [`governance/DCP-CLOSURE-BACKLOG.md`](../DCP-CLOSURE-BACKLOG.md)
 - [`docs/project/technical/devos/DEVELOPER-QUALITY-PROCESS.md`](../../docs/project/technical/devos/DEVELOPER-QUALITY-PROCESS.md)
 - [`governance/agent-control-plane/`](../../governance/agent-control-plane/)

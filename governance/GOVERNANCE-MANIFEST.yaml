@@ -44,6 +44,13 @@ phases:
     name: evidence-operations
     status: implemented
     certification_ready: false
+  GOV-08:
+    name: dcp-program-closure
+    status: in_progress
+    certification_ready: false
+    note: >-
+      Execution tracked by governance/DCP-CLOSURE-BACKLOG.md (W1–W8).
+      global_certification flags remain false until W8 G6 handoff.
 
 global_certification:
   dcp_program_certified: false
@@ -53,6 +60,7 @@ global_certification:
 references:
   policy_hierarchy: governance/POLICY-HIERARCHY.md
   policy_registry: governance/policy-registry.yaml
+  closure_backlog: governance/DCP-CLOSURE-BACKLOG.md
   agent_control_plane: governance/agent-control-plane/
   tickets: governance/tickets/
   devos_hub: docs/project/technical/devos/README.md
