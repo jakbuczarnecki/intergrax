@@ -1,6 +1,6 @@
 # ARCH-FREEZE closed-world gap register
 
-**Baseline:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` · **B1 strict certifying EXECUTION_SHA:** `6bdf78c626bfcb347ad3ad9e3e18b65222f1b169` · **B2/B4 wave EXECUTION_SHA:** `f7ce9daebad35537da974de0dda3962126c6030e` (publication SHA updated on commit)
+**Baseline:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` · **B1 strict certifying EXECUTION_SHA:** `6bdf78c626bfcb347ad3ad9e3e18b65222f1b169` · **B2/B4 wave EXECUTION_SHA:** `f7ce9daebad35537da974de0dda3962126c6030e` · **Handoff publication HEAD:** `32fc2bce52c46ec721633453e401839cb39181d7` · Auditor SSOT: [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md)
 
 | FINDING_ID | SEVERITY | REQUIREMENT | LOCATION | EVIDENCE | CAUSE | IMPACT | CORRECTION | TEST | OWNER | ACCEPTANCE |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

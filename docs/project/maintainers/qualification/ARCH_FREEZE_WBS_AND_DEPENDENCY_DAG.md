@@ -3,6 +3,8 @@
 **AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4`
 **Task count:** 48 (unique TASK_ID rows below)
 
+**Wave 1 (T-IGX-010-B):** **B0–B4** = **COMPLETE** @ `f7ce9daebad35537da974de0dda3962126c6030e` (B1 @ `6bdf78c626bfcb347ad3ad9e3e18b65222f1b169`); batch disposition **HANDOFF_TO_AUDITOR** / **AUDIT_PENDING** (external G6). **B5–B8** = **BLOCKED_EXTERNAL** or **PLANNED** — not in wave-1 authorization. Handoff: [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md).
+
 | TASK_ID | BATCH | REQUIREMENT_IDS | FINDING_IDS | OWNER | FILES | DEPENDENCIES | IMPLEMENTATION_ACTION | TESTS | EVIDENCE | ACCEPTANCE | RISK | PARALLELISM | STATUS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | T-B0-001 | B0 |  | FIND-PRECHECKLIST-HEAD | implementer | repo-wide | [] | Lock baseline; refresh pre-admission dossier pointer | git merge-base; FRZ mechanical counts | ARCH_FREEZE_* @ baseline | 225 FRZ / 26 fam verified | LOW | yes | PLANNED |

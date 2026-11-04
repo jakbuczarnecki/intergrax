@@ -1,4 +1,4 @@
-# T-IGX-010-B — ARCH-FREEZE execution wave 1 (B0 + B1)
+# T-IGX-010-B — ARCH-FREEZE execution wave 1 (B0–B4)
 
 ## Scope
 
@@ -25,8 +25,8 @@ uv run python -m scripts.governance.igx_gov ticket
 uv run python scripts/enterprise_audit/run_enterprise_audit.py run --mode FULL --output-dir .tmp/proof/arch-freeze-full/ --evidence-bundle
 ```
 
-Evidence: B1 [`ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md); B2 [`ARCH_FREEZE_B2_BND03_EVIDENCE_RECONCILIATION.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B2_BND03_EVIDENCE_RECONCILIATION.md), [`ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md), [`ARCH_FREEZE_B2_VBN_CURRENT_HEAD_EVIDENCE.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B2_VBN_CURRENT_HEAD_EVIDENCE.md); L3 `.tmp/proof/arch-freeze-full/enterprise_audit_report.json` (85/85 PASS @ f7ce9dae)
+Evidence: B1 [`ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md); B2 [`ARCH_FREEZE_B2_BND03_EVIDENCE_RECONCILIATION.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B2_BND03_EVIDENCE_RECONCILIATION.md), [`ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B2_DEBT_REGISTER_RECONCILIATION.md), [`ARCH_FREEZE_B2_VBN_CURRENT_HEAD_EVIDENCE.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_B2_VBN_CURRENT_HEAD_EVIDENCE.md); L3 `.tmp/proof/arch-freeze-full/enterprise_audit_report.json` (85/85 PASS @ f7ce9dae); auditor handoff [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](../../docs/project/maintainers/qualification/ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md)
 
 ## Lifecycle state
 
-quality_gate
+handoff_to_independent_audit @ publication HEAD `32fc2bce52c46ec721633453e401839cb39181d7` — **not** ARCH-FREEZE certified; B5–B8 external gates remain open

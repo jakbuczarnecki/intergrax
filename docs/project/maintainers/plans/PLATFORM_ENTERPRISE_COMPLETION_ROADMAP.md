@@ -1803,8 +1803,11 @@ Update this section only after independent exact-SHA audit.
 
 **Internal certification (OD-IC-01, 2026-11-04):** Operator-accepted internal qualification for **EVOL-X** and **ENT-AUDIT-X** is tracked in [`EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md`](../qualification/EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md). Internal rows **do not** substitute for formal **`CLOSED — INDEPENDENTLY ACCEPTED`** ledger closure or ECAP B6 publication SHAs. **ARCH-FREEZE pre-admission (not entry):** [`ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md`](../qualification/ARCH_FREEZE_PRE_ADMISSION_READINESS_REPORT.md).
 
+**ARCH-FREEZE execution wave 1 handoff (2026-11-04):** Operator requested audit transfer after completing authorized engineering (**T-IGX-010-B**, B0–B4). This is **not** §3 **`ARCH-FREEZE` = CLOSED** — stage row remains open; B5–B8 WBS gates remain **BLOCKED_EXTERNAL** / **PLANNED**. Auditor SSOT: [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](../qualification/ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md).
+
 | Etap | Closure SHA / evidence | Notes |
 |---|---|---|
+| T-IGX-010-B / ARCH-FREEZE wave 1 | B1 **`6bdf78c626bfcb347ad3ad9e3e18b65222f1b169`** · B2–B4 **`f7ce9daebad35537da974de0dda3962126c6030e`** · publication **`32fc2bce52c46ec721633453e401839cb39181d7`** | **`READY FOR INDEPENDENT AUDIT`** — engineering **B0–B4** only (L3 FULL **85/85** @ `f7ce9dae`). **Not** §3 **`ARCH-FREEZE` CLOSED**; **not** FRZ promotion; **not** B5–B8 / Protocol 03 B6. Handoff: [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](../qualification/ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md). Residual BLOCKERs: **FIND-VBN-PARTIAL**, **FIND-FORMAL-B6**, **FIND-ACCEPTED-BASELINE**. |
 | EBH-2E | `6fa75172468461dc084a2221a5fdff6f23c1fa1c` | Final LLM boundary certification accepted after independent GitHub audit. |
 | ADR3-IMP-03-R1 | `255590897603f6e59ffebf4c1e4e7fde3ba747d1` | Typed declarative dispatch contract deduplication independently audited. |
 | ADR3-IMP-03 / M4 | `702cb0a2024a7a98ab0bb88c1f645efeb0e7eb38` | M4 final typed declarative dispatch certification independently audited. |

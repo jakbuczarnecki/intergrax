@@ -1,8 +1,9 @@
 # ARCH-FREEZE — Complete implementation and certification master plan (SSOT)
 
 **Status:** PLANNING ARTIFACT — **NOT** ARCH-FREEZE CLOSED · **NOT** B6 ACCEPTED · **NOT** global FRZ PASS  
-**Disposition:** `ARCH-FREEZE PLAN TRACEABILITY — CORRECTED — READY FOR INDEPENDENT RE-AUDIT`  
-**AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` · **Branch:** `development` · **Recorded:** 2026-11-04 (corrective planning pass)
+**Disposition:** `EXECUTION WAVE 1 (T-IGX-010-B) — HANDOFF_TO_AUDITOR — READY FOR INDEPENDENT AUDIT`  
+**AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` · **Wave EXECUTION_SHA:** B1 `6bdf78c…` · B2–B4 `f7ce9dae…` · **Publication HEAD:** `32fc2bce52c46ec721633453e401839cb39181d7` · **Branch:** `development` · **Recorded:** 2026-11-04  
+**Auditor entry:** [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md)
 
 **Child artifacts (substantive — not placeholders):**
 
