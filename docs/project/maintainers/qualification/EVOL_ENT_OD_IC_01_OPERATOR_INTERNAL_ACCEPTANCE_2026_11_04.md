@@ -61,4 +61,5 @@ No fictional auditor identity, signature, or external trust mechanism is created
 
 This document is the primary operator acceptance artifact for OD-IC-01. Consolidated cross-stage record: [`EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md`](./EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md).
 
-**START_HEAD (pre-publication):** `becbcb9c4339e081b9cc3094c84d3fcd595e1ffe`
+**START_HEAD (pre-publication):** `becbcb9c4339e081b9cc3094c84d3fcd595e1ffe`  
+**INTERNAL_CERTIFICATION_PUBLICATION_SHA:** `5c08e5e6c44d21998c76bd27ad1efab172440f45`

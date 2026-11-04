@@ -73,4 +73,4 @@ Internal certification **does not** satisfy ARCH-FREEZE mechanical requirements 
 | Formal package artifacts retained | PASS |
 | ECAP unauthorized change | **None** |
 
-**INTERNAL_CERTIFICATION_PUBLICATION_SHA:** resolve with `git log -1 --format=%H -- docs/project/maintainers/qualification/EVOL_ENT_INTERNAL_CERTIFICATION_RECORD_2026_11_04.md` on the publication commit.
+**INTERNAL_CERTIFICATION_PUBLICATION_SHA:** `5c08e5e6c44d21998c76bd27ad1efab172440f45` (OD-IC-01 publication commit).
