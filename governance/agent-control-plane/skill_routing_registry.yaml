@@ -1,4 +1,6 @@
 # Skill routing registry — maps skill id to role and on-disk path under .cursor/skills/
+# InterGRAX ships 11 igx-devos-* skills (reference DevOS ~15–16 minus GitHub Issues and unported packs).
+# Registry entries MUST match on-disk SKILL.md paths (verified by verify_agent_skills.py).
 
 version: "1.0"
 

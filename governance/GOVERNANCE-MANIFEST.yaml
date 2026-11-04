@@ -18,6 +18,9 @@ phases:
     name: agent-control-plane
     status: implemented
     certification_ready: false
+    note: >-
+      Cursor-only igx_gov sync-adapters regenerates MATRIX.md via generate_control_plane_matrix.py;
+      Claude/Codex adapter packs ADAPT in a later batch if needed.
   GOV-03:
     name: plan-approval
     status: implemented
@@ -34,7 +37,9 @@ phases:
     name: trusted-policy-pin
     status: deferred
     certification_ready: false
-    note: Optional TRUSTED_POLICY_PIN.yaml — not required for first DCP merge.
+    note: >-
+      Optional TRUSTED_POLICY_PIN.yaml + CI pin compare — ADVISORY only; not required for DCP 0–7.
+      Do not add CI job until operator requests GOV-06 implementation.
   GOV-07:
     name: evidence-operations
     status: implemented
