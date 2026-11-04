@@ -82,9 +82,9 @@ Full per-row columns: [ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md](./ARCH_FREEZE_FRZ_A
 
 ### 3.3 Not executed (no PASS claimed)
 
-- Full closed-world import graph (~7k production Python modules).
 - Certifying **L3** pytest/CLI runs (CLI syntax verified via `--help` only).
 - Live GitHub branch protection (OD-ENT-02 = **BLOCKED_EXTERNAL_AUTHORITY**).
+- EVOL **CW-05,CW-08,CW-09,CW-10** @ HEAD — see FIND-CW-GATE-FAIL (inventory executed wave 1).
 
 ---
 
@@ -155,7 +155,7 @@ Detail: [ARCH_FREEZE_QUALIFICATION_AND_EVIDENCE_PLAN.md](./ARCH_FREEZE_QUALIFICA
 | 7 | Formal gates have owner | **PASS** (audit matrix + OD register) |
 | 8 | Path B exclusions documented | **PASS** (§2 + T-PATHB-EXCL) |
 | 9 | Predecessor disposition | **PASS** (pre-admission + cross-stage matrix) |
-| 10 | Architecture surfaces classified | **PARTIAL** — 85 manifest + 8 anchors; **T-B1-PROD-REACH-SCAN** required |
+| 10 | Architecture surfaces classified | **INVENTORY COMPLETE** @ `18a0f68` — mandatory tier UNKNOWN=0; CW gates **not** PASS @ HEAD |
 | 11 | No unexplained debt outside WBS | **PASS** @ planning scope |
 | 12 | No false PASS / self-audit | **PASS** (disposition labels) |
 | 13 | No hidden prereq on impl tasks | **PASS** (DEPENDENCIES column) |

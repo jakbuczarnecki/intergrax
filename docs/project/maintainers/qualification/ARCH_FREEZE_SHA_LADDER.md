@@ -3,6 +3,8 @@
 | Field | SHA / value | Status @ 967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a |
 | --- | --- | --- |
 | AUDIT_BASELINE_SHA | 967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a | LOCKED |
+| EXECUTION_WAVE1_SHA | 18a0f68fc6c8107e6344fdb4641ecec1945dae5e | B0/B1 inventory @ HEAD |
+| B1_INVENTORY_DIGEST | 984e155d46529ddb345ac43a5c6493e747e8cc0fb56fc9c7408e1914a96d910c | reproducible |
 | IMPLEMENTATION_SHA | TBD at freeze lock | OPEN |
 | TEST_EXECUTION_SHA | TBD per certifying run | OPEN |
 | EVIDENCE_PUBLICATION_SHA | TBD | OPEN |

@@ -1,8 +1,15 @@
 # ARCH-FREEZE architecture and production surface inventory
 
-**Method (planning phase — partial):** ENT enterprise audit manifest v1 (85 checks) + 8 anchor surfaces @ `967ef2f30c9c263fb9bb40d1b0fe77c98fc3919a`.
+**Method:** EVOL `build_closed_world_inventory` @ EXECUTION_SHA + PROD-Q P0 discovery + supplementary `scripts/` git ls-files + strict production AST reachability (PROD-Q P1).
 
-**Coverage honesty:** 85+8 = manifest-driven ENT audit coverage, **not** complete production reachability. Full closed-world scan: **T-B1-PROD-REACH-SCAN** (see SSOT §3.1). ENT `FULL`/`FREEZE` executes 85 checks; scan extends inventory to ~7k production modules.
+**Wave 1 EXECUTION_SHA:** `18a0f68fc6c8107e6344fdb4641ecec1945dae5e` · **inventory_digest:** `984e155d46529ddb345ac43a5c6493e747e8cc0fb56fc9c7408e1914a96d910c`
+
+| Scope | Modules | PRODUCTION_EFFECTIVE | LAB_ONLY | UNKNOWN |
+| --- | ---: | ---: | ---: | ---: |
+| All inventoried | 9024 | 8351 | 673 | 0 |
+| Mandatory tier only | 7928 | 7922 | 6 | 0 |
+
+Reproduce: [`ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_B1_INDEPENDENT_AUDIT_HANDOFF.md). ENT manifest **85 checks** remain qualification scope — not a substitute for this inventory.
 
 | SURFACE_ID | DOMAIN | SEMANTIC_OWNER | ENTRYPOINT | IMPLEMENTATION_PATH | CONTRACT | PRODUCTION_REACHABILITY | INVARIANTS | TESTS | EVIDENCE | GAPS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

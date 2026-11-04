@@ -3,7 +3,8 @@
 **Document status:** **PRE-ADMISSION ASSESSMENT — NOT FORMAL ARCH-FREEZE ENTRY**  
 **Recorded:** 2026-11-04  
 **Repository:** `jakbuczarnecki/intergrax` · **Branch:** `development`  
-**Assessment HEAD (post–IC consolidation):** `81829712acc19ebeadb4773467b9c5642ca975e3`  
+**Assessment HEAD (post–IC consolidation, historical — preserved):** `81829712acc19ebeadb4773467b9c5642ca975e3`  
+**B0/B1 operational execution baseline (wave 1):** `18a0f68fc6c8107e6344fdb4641ecec1945dae5e` — does **not** rewrite IC/TES evidence SHAs below.
 **Prior corrective HEAD (IC-AUD-001):** `1b82324abe0f775086617f907870dd30dd11aade`  
 **Operator internal acceptance:** OD-IC-01 @ [`EVOL_ENT_OD_IC_01_OPERATOR_INTERNAL_ACCEPTANCE_2026_11_04.md`](EVOL_ENT_OD_IC_01_OPERATOR_INTERNAL_ACCEPTANCE_2026_11_04.md)
 

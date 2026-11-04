@@ -674,19 +674,26 @@ def sync_wbs() -> None:
         ),
     ]
     for fam in ("BND", "CTR", "OBS", "OWN", "PLG", "PRD", "REG", "REL", "SEC", "TYP"):
+        ids = list(by_fam[fam])
+        if fam == "PRD":
+            ids = [i for i in ids if i not in PATH_B_FULL]
         rows.append(
             (
                 f"T-B7-PROMOTE-{fam}",
                 "B7",
-                promote(fam),
+                _frz_csv(ids),
                 "",
                 "operator+auditor",
                 "checklist",
                 "[T-B7-L3-FREEZE]",
-                f"Promote OPEN {fam} FRZ rows after FREEZE audit",
+                (
+                    f"Promote architecture-scoped OPEN {fam} FRZ rows after FREEZE audit"
+                    if fam == "PRD"
+                    else f"Promote OPEN {fam} FRZ rows after FREEZE audit"
+                ),
                 f"ENT-A-{fam[:3]} checks",
                 "checklist promotion",
-                f"{len(by_fam[fam])} criteria",
+                (f"{len(ids)} criteria; Path B split" if fam == "PRD" else f"{len(by_fam[fam])} criteria"),
                 "MED",
                 "partial",
                 "PLANNED",
@@ -866,6 +873,17 @@ def validate(*, strict_counts: bool = True) -> int:
         dfs(tid)
 
     _validate_semantic_dag(graph, task_ids, errors)
+
+    for row in wbs_rows:
+        if row["TASK_ID"] == "T-B7-PROMOTE-PRD":
+            prd_ids = set(_extract_frz_ids(row["REQUIREMENT_IDS"]))
+            overlap = prd_ids & PATH_B_FULL
+            if overlap:
+                errors.append(f"T-B7-PROMOTE-PRD must not include Path B FRZ {sorted(overlap)} (use T-PATHB-EXCL)")
+        if row["TASK_ID"] == "T-PATHB-EXCL":
+            prd_ids = set(_extract_frz_ids(row["REQUIREMENT_IDS"]))
+            if not PATH_B_FULL.issubset(prd_ids):
+                errors.append("T-PATHB-EXCL must document FRZ-PRD-01 and FRZ-PRD-02")
 
     qual_text = _QUAL_PLAN.read_text(encoding="utf-8")
     run_ids = re.findall(r"^\| (L[123]-[A-Z0-9-]+) \|", qual_text, re.M)
