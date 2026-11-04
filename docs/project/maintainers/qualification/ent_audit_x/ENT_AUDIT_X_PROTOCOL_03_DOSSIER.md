@@ -1,17 +1,18 @@
 # ENT-AUDIT-X — Protocol 03 independent audit dossier (draft)
 
-**Status:** TECHNICAL COMPLETE / READY FOR INDEPENDENT B6 — **no B6 PASS / no OD approved / no FRZ CLOSED** (agent-prepared handoff only)
+**Status:** W8 B6 CORRECTIVE WAVE — **READY FOR INDEPENDENT RE-AUDIT** — no B6 PASS / no OD approved / no FRZ CLOSED
 
 | Field | Value |
 | --- | --- |
 | Execution SSOT | [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) |
-| Audited IMPLEMENTATION_SHA (closure start) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
-| **TEST_EXECUTION_SHA (current qual)** | `87203c1b6ce9786dce0523cca29b556106b6bc8d` |
-| Historical TEST_EXECUTION_SHA | `b8bb88c9db1060153ec0a6a29bbb79ba16e00078` (archived B5 only) |
-| Qual wave report | [qualification_at_87203c1b…/qual_wave_report.json](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/qual_wave_report.json) (`status=PASS`, L3 85/85 + FREEZE candidate) |
-| B5 handoff tree (current) | [qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) |
-| B5 handoff tree (historical) | [qualification_at_b8bb88c9…/](./b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/) |
-| EVIDENCE_PUBLICATION_SHA | `d18f01f2291328a073dcbdfbe05489faf98013b7` |
+| Audited IMPLEMENTATION_SHA (W8 corrective code) | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` |
+| **TEST_EXECUTION_SHA (current qual)** | `89c76eb7b53a0a3ce6f75ab395cf4a2802638a91` |
+| Historical TEST_EXECUTION_SHA (R6/R7) | `87203c1b6ce9786dce0523cca29b556106b6bc8d` — R7 B5 fails `verify_b5_publication_tree()` (ENT-W8-B6-001) |
+| Qual wave report (current) | [qualification_at_89c76eb7…/qual_wave_report.json](./b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/qual_wave_report.json) |
+| B5 handoff tree (current) | [qualification_at_89c76eb7…/](./b6_independent_handoff/qualification_at_89c76eb7b53a0a3ce6f75ab395cf4a2802638a91/) |
+| B5 handoff tree (R7 defect preserved) | [qualification_at_87203c1b…/](./b6_independent_handoff/qualification_at_87203c1b6ce9786dce0523cca29b556106b6bc8d/) + [R7_DEFECT_ENT-W8-B6-001.md](./b6_independent_handoff/R7_DEFECT_ENT-W8-B6-001.md) |
+| **EVIDENCE_PUBLICATION_SHA (current)** | `300859537f12a1de7bf3d75fd685bc3a5c727183` |
+| Historical EVIDENCE_PUBLICATION_SHA (R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` |
 | B6_ACCEPTANCE_PUBLICATION_SHA | *external auditor — agent does not sign* |
 | ACCEPTED_BASELINE_SHA | *operator OD-ENT-01 after B6* |
 
