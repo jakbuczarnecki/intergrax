@@ -447,12 +447,21 @@ def main() -> int:
     evidence_detail = "closed-world bundle @ EVIDENCE_PUBLICATION_SHA missing"
     evid_pub = _parse_ladder_pin(ladder_text, "EVIDENCE_PUBLICATION_SHA")
     published_l3 = _b6_handoff_l3_bundle(root, tes_pin)
-    if qw_ok and published_l3 is not None and published_l3.is_dir():
-        from intergrax.platform.enterprise_audit.evidence import verify_evidence_manifest
+    qual_tree = None
+    if tes_pin:
+        candidate_tree = (
+            root
+            / "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff"
+            / f"qualification_at_{tes_pin}"
+        )
+        if candidate_tree.is_dir():
+            qual_tree = candidate_tree
+    if qw_ok and published_l3 is not None and published_l3.is_dir() and qual_tree is not None:
+        from intergrax.platform.enterprise_audit.validators import verify_b5_publication_tree
 
-        manifest_ok = verify_evidence_manifest(published_l3)
-        if not manifest_ok:
-            evidence_detail = "published evidence_manifest verification failed"
+        pub_errors = verify_b5_publication_tree(root, qual_tree, expected_qualification_sha=tes_pin)
+        if pub_errors:
+            evidence_detail = "B5 publication tree: " + "; ".join(pub_errors[:4])
         elif not evid_pub:
             evidence_detail = "EVIDENCE_PUBLICATION_SHA unset in ladder"
         else:
@@ -465,6 +474,8 @@ def main() -> int:
             else:
                 evidence_ok = True
                 evidence_detail = ""
+    elif qw_ok and qual_tree is None:
+        evidence_detail = f"qualification_at_{tes_pin or '?'} tree missing"
     add("evidence_integrity", evidence_ok, evidence_detail)
     add("sha_ancestry_documented", tes_ok, "merge-base TEST_EXECUTION_SHA→HEAD required")
     frz_ok, frz_detail = _verify_frz_mappings(l3_bundle_dir)
