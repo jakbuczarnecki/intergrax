@@ -1,7 +1,11 @@
 {
   "schema_version": "evol_x_closure_execution_status.v1",
   "execution_start_head": "a20acf4d5fc23887fc3e331bdd5bd03cdb9f48f1",
-  "execution_end_head": "a91b8fb653d87b4788b81beb40b4142bcaf91ef6",
+  "execution_end_head": "4b8276a2ea69afb441680650f94875feda8f080f",
+  "r2_global_reconciliation_publication_sha": "167583ad1d33d9eb6e82589661e6d18aee15fa92",
+  "formal_closure_campaign_id": "EVOL-X-R2-FINAL-FORMAL-CLOSURE",
+  "formal_closure_campaign_start_head": "4b8276a2ea69afb441680650f94875feda8f080f",
+  "formal_closure_campaign_terminal_disposition": "TECHNICALLY_COMPLETE_FORMAL_CLOSURE_BLOCKED_BY_AUTHORITY",
   "path_a_decision_id": "OD-EVOL-17",
   "od_evol_17_publication_sha": "7ab634dcf33bf4954a942b29bd573c9931617fb8",
   "path_a_decision_status": "OPERATOR_APPROVED_LOCAL_PATH_A",
@@ -49,11 +53,14 @@
       "blockers": [
         "MISSING_SIGNED_PASS_RECORD",
         "MISSING_NAMED_AUDITOR"
-      ]
+      ],
+      "campaign_record": "EVOL_X_FINAL_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md",
+      "authority_dossier": "EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md"
     },
     "batch_4_w7_frz_od": {
-      "status": "NOT_STARTED_PENDING_B6",
-      "reason": "W7-03 requires formal B6"
+      "status": "PREPARED_NOT_EXECUTED",
+      "reason": "W7-03 Outcome A package prepared; OD-EVOL-12 pending B6",
+      "w7_03_outcome_a_package": "EVOL_X_W7_03_FRZ_EVOL_07_OUTCOME_A_DECISION_PACKAGE_PREPARED.md"
     },
     "batch_5_final_closure": {
       "status": "BLOCKED",
