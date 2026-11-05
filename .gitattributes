@@ -1,4 +1,5 @@
 docs/project/maintainers/qualification/iiac_evidence/** -text
+docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json -text
 
 
 governance/**/*.yaml text eol=lf

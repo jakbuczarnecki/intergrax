@@ -25,8 +25,8 @@ uv run python scripts/governance/verify_iiac_policy_activation.py --expect-not-i
 
 ## Lifecycle state
 
-ready_for_operator_activation
+activated_in_force
 
 ## Checkpoint
 
-ACT-01 dossier digest `c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e` published under `iiac_evidence/IIAC-GOV-1/certification/`. Certification publication SHA `a5fb6cb51ecd982284fd53ebc41e284e18b5523d`. Disposition: `IIAC GOVERNANCE — CERTIFIED — ACTIVATION BLOCKED BY EXACT OPERATOR GATE`. HEAD `765be93a7b3fb649ccd8922fc5591a5a46d51f33` (ahead of `origin/development` until push).
+OD-01 decision `IIAC-OD-01-2026-11-05` @ recording `2026-11-05T18:14:38+01:00`. Phase 1 `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`, phase 2 `847e9c84a1f2440161cce5a1510b7bb7ff8fcfad`. `--require-in-force` exit 0. Disposition: `IIAC GOVERNANCE — CERTIFIED — POLICY IN_FORCE — PUBLISHED`.

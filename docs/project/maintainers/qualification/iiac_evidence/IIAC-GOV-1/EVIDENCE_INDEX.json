@@ -1,7 +1,7 @@
 {
   "schema": "iiac-evidence-index.v1",
   "policy_version": "IIAC-2026-11-05.1",
-  "policy_status": "NOT_IN_FORCE",
+  "policy_status": "IN_FORCE",
   "files": [
     {
       "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC-GOV-1_certification_findings.json",
