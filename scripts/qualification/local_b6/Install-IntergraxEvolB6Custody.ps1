@@ -17,7 +17,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $Root = "C:\ProgramData\Intergrax\evol-b6-custody"
-$Subdirs = @("private", "public", "pending", "signed", "audit")
+$Subdirs = @("private", "public", "pending", "signed", "ledger", "audit", "archive")
 
 New-Item -ItemType Directory -Force -Path $Root | Out-Null
 foreach ($name in $Subdirs) {
