@@ -13,6 +13,7 @@
 | **START_HEAD** | `b342e5e7f56fe67aa4dcc7b7f828da5fd4f15bbe` |
 | **P1-B1 publication SHA** | `e2f88cdf4f25d0f77642503731361f669b3f3200` |
 | **AUDITED_SHA** | `7de6b41f637df1d6949985d9dc567602a074e230` |
+| **FORMAL_CLOSURE_SHA** | `55fb0341672e37ae6da9b750874f1e27eb677090` |
 | **Branch** | `development` |
 
 ## Scope accepted (documentation only)

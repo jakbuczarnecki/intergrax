@@ -67,7 +67,7 @@ closed
 - `igx_gov ticket`: PASS — `igx_gov_ticket_closure.log`
 - `check_harness_adr.py`: exit **1**, **24** findings — `check_harness_adr_closure.log`
 
-**FORMAL_CLOSURE_SHA:** _(recorded in closure commit — see git log `Ref: governance/tickets/T-IGX-SEF-A.md`)_
+**FORMAL_CLOSURE_SHA:** `55fb0341672e37ae6da9b750874f1e27eb677090`
 
 **Closure note:** ASF-SEF-P1 documentation campaign closed with operator acceptance **PASS WITH FINDINGS** @ AUDITED_SHA `7de6b41f637df1d6949985d9dc567602a074e230`. **ADR-SEF-001** remains **`Proposed`**. **P2–P13** engineering waves **not started**. This closure is **not** independent G6/B6 certification and **not** ARCH-FREEZE / FRZ promotion.
 
