@@ -18,8 +18,15 @@ Two agent sessions or two worktrees **do not** satisfy ECAP-P4 independence.
 Run elevated once (adjust paths / usernames):
 
 ```powershell
-# scripts/qualification/local_b6/Install-IntergraxEvolB6Custody.ps1
+# Option A — UAC launcher (recommended for unattended agent resume)
+scripts/qualification/local_b6/Invoke-IntergraxEvolB6ElevatedLaunch.ps1 -RepoRoot <repo>
+
+# Option B — direct admin shell
+scripts/qualification/local_b6/Install-IntergraxEvolB6Custody.ps1
+scripts/qualification/local_b6/Invoke-IntergraxEvolB6UnattendedBootstrap.ps1 ...
 ```
+
+Windows SAM account names are limited to **20** characters; bootstrap uses `IntergraxEvolAttst` / `IntergraxEvolCustn` mapping to logical attestor/custodian roles.
 
 Then:
 
