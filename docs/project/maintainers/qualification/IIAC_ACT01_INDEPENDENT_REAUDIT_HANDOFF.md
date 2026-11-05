@@ -6,7 +6,9 @@
 **Parent baseline (pre-ACT-01):** `5d6b44b05f90ecf420d45d01659ea64565b52848`  
 **Historical governance SHA:** `2ae1014116d353bc7742985e62f2bccc2bfac798`  
 **Re-audit report digest (unchanged bytes):** `62b93665a97024337638e966ca87cbe37f32e1b4c9c795bef46e4c1097aefbde`  
-**ACT01_CORRECTIVE_IMPLEMENTATION_SHA:** the commit whose parent is the baseline above and whose tree contains this handoff. Do not treat a SHA written inside that same commit as self-proof. Read `git rev-parse HEAD` after fetch.
+**ACT01_CORRECTIVE_IMPLEMENTATION_SHA:** `2a6545f1d551814a0ba8896be79576c580353771`  
+**Gate logic commit:** `1d0722723687fb93d0a538161ca4cce376b3ecef` (parent `5d6b44b05f90ecf420d45d01659ea64565b52848`)  
+The logic commit stored evidence with rewritten line endings. `2a6545f1` restores the original bytes (`iiac_evidence/** -text`). Audit the pushed HEAD, which must contain `2a6545f1`.
 
 ## Original finding
 

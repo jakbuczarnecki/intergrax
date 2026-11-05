@@ -14,7 +14,7 @@
 | Re-audit verdict | `PASS — F01–F03 INDEPENDENTLY VERIFIED` |
 | Re-audit report digest | `62b93665a97024337638e966ca87cbe37f32e1b4c9c795bef46e4c1097aefbde` |
 | Historical Session B | `PARTIAL / EXACT BLOCKERS`; manifest `CONDITIONAL`; digest `56c9b078e42e1408799e37a2535aa61879e31021864214e46dfa165fb41fded1` |
-| ACT-01 implementation | commit that contains `IIAC_ACT01_INDEPENDENT_REAUDIT_HANDOFF.md`, parent `5d6b44b05f90ecf420d45d01659ea64565b52848` |
+| ACT-01 implementation | gate logic `1d0722723687fb93d0a538161ca4cce376b3ecef`; byte-correct evidence `2a6545f1d551814a0ba8896be79576c580353771` |
 | Independent ACT-01 re-audit | **required and not yet issued** |
 
 Session A line `Approved: operator Session A @ 2026-11-05T13:00:00+01:00 (IIAC-GOVERNANCE-REFORM)` authorizes implementation only. The handoff line remains `Approved handoff: operator @ ________________`.

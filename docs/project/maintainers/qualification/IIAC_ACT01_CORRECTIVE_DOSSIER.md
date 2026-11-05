@@ -2,6 +2,8 @@
 
 **Policy:** `IIAC-2026-11-05.1`  
 **Parent baseline:** `5d6b44b05f90ecf420d45d01659ea64565b52848`  
+**Gate logic commit:** `1d0722723687fb93d0a538161ca4cce376b3ecef`  
+**Byte-correct evidence commit / ACT01 pin:** `2a6545f1d551814a0ba8896be79576c580353771`  
 **Historical governance SHA:** `2ae1014116d353bc7742985e62f2bccc2bfac798`  
 **Re-audit PASS digest:** `62b93665a97024337638e966ca87cbe37f32e1b4c9c795bef46e4c1097aefbde`  
 **Historical PARTIAL digest:** `56c9b078e42e1408799e37a2535aa61879e31021864214e46dfa165fb41fded1`  

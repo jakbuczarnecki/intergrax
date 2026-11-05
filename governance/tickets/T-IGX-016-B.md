@@ -40,4 +40,4 @@ quality_gate
 
 ## Checkpoint
 
-IIAC pytest: 45 passed, 1 skipped (symlink creation unavailable; ACT-N14 traversal rejected). Canonical gate: default and `--require-in-force` exit 1 (`ACT-N01`); `--expect-not-in-force` exit 0. G0 completeness PASS. Parent baseline `5d6b44b05f90ecf420d45d01659ea64565b52848`. `ACT01_CORRECTIVE_IMPLEMENTATION_SHA` is the commit that adds this ticket, not a SHA embedded as self-proof.
+IIAC pytest: 45 passed, 1 skipped (symlink creation unavailable; ACT-N14 traversal rejected). Blob digest test passed after the evidence commit. Canonical gate: default and `--require-in-force` exit 1 (`ACT-N01`); `--expect-not-in-force` exit 0. G0 completeness PASS. Parent baseline `5d6b44b05f90ecf420d45d01659ea64565b52848`. Gate logic `1d0722723687fb93d0a538161ca4cce376b3ecef`. Byte-correct evidence `2a6545f1d551814a0ba8896be79576c580353771`.
