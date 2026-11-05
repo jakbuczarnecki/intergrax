@@ -17,7 +17,7 @@ Formal EVOL-X closure, B6 acceptance SHA, FRZ promotion, and W7-05 remain **bloc
 | START_HEAD | `e8de0cb034505ad045c336da435fcaccaec1a49c` (matches expected) |
 | Ancestor of START_HEAD | **yes** |
 | Working tree @ campaign start | **clean** |
-| `END_TO_END_CAMPAIGN_PUBLICATION_SHA` | *set on publication commit — see §Q* |
+| `END_TO_END_CAMPAIGN_PUBLICATION_SHA` | `0dab7bfb8db67b431581bd840b094e046335523e` |
 
 Immutable pins preserved: TES `3c4a641b3e48a13f437e830a0562e2a80b03aabb` · FINAL `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` · CI `41337077334` · R2 `167583ad1d33d9eb6e82589661e6d18aee15fa92`.
 
@@ -163,13 +163,21 @@ Log: `.tmp/session/evol-x-local-b6-end-to-end/pytest.log`
 | R2_GLOBAL_AUDIT_RECONCILIATION_PUBLICATION_SHA | `167583ad1d33d9eb6e82589661e6d18aee15fa92` |
 | B6_ACCEPTANCE_PUBLICATION_SHA | **— (pending)** |
 | FORMAL_CLOSURE_PUBLICATION_SHA | **— (pending)** |
-| END_TO_END_CAMPAIGN_PUBLICATION_SHA | *§Q* |
+| END_TO_END_CAMPAIGN_PUBLICATION_SHA | `0dab7bfb8db67b431581bd840b094e046335523e` |
 
 ---
 
 ## Q. Commit/push confirmation
 
-*Updated after publication commit.*
+| Item | Value |
+|------|-------|
+| Publication commit | `0dab7bfb8db67b431581bd840b094e046335523e` |
+| Branch | `development` |
+| Remote | `origin/development` (push @ campaign close) |
+| `igx_gov ticket` | **PASS** (pre-push @ `e8de0cb0…` working tree) |
+| Working tree | clean post-commit |
+
+Checkpoint log: `.tmp/session/evol-x-local-b6-end-to-end/igx_gov.log`
 
 ---
 
