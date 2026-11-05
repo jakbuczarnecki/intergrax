@@ -20,7 +20,7 @@ This register is the **canonical repo store** for OD-SEF rows (pattern: EVOL-X [
 | OD-SEF-08 | Campaign closure + roadmap ledger | PENDING | Operator | T-P13-006 |
 | (existing) OD-IC-01 | Internal EVOL/ENT acceptance | COMPLETE | Operator | Does **not** replace formal B6 |
 | (existing) EVOL B6 | Protocol 03 independent | OPEN | Independent auditor | ARCH-FREEZE chain |
-| **OD-SEF-P1-EXCEPTION** | Accept global `check_harness_adr.py` **24-findings** as **out-of-scope** for ASF-SEF-P1 closure | **AWAITING OPERATOR EXCEPTION APPROVAL** | Operator | P1 ticket closure; does **not** waive **T-IGX-014-A** hygiene |
+| **OD-SEF-P1-EXCEPTION** | Accept global `check_harness_adr.py` **24-findings** as **out-of-scope** for ASF-SEF-P1 closure | **APPROVED (P1 closure only)** | Operator @ 2026-11-05T11:09:00+01:00 | P1 ticket closure; does **not** waive **T-IGX-014-A** hygiene; **not** global PASS |
 
 ## Decision text (OD-SEF-01..03)
 
@@ -44,14 +44,14 @@ This register is the **canonical repo store** for OD-SEF rows (pattern: EVOL-X [
 
 ### OD-SEF-P1-EXCEPTION — Global ADR validator @ P1 closure
 
-**Status:** **AWAITING OPERATOR EXCEPTION APPROVAL** (placeholder — **no operator signature**)
+**Status:** **APPROVED (P1 closure only — not global PASS)**
 
-**Decision (draft):** For **ASF-SEF-P1** independent acceptance and ticket closure only, treat **`scripts/maintenance/check_harness_adr.py` exit 1** with the **24** documented findings (`.tmp/session/ASF-SEF-P1-CLOSURE/DOSSIER.md` § ADR_GLOBAL_BASELINE_RECONCILIATION) as **pre-existing global index/parser drift**, **not introduced** by commits `e2f88cdf4` / `7de6b41f`. P1 scope added **ADR-SEF-001** with a validator-visible index link. This exception **does not** declare `check_harness_adr.py` PASS, **does not** close **T-IGX-014-A**, and **does not** promote FRZ/B6/ARCH-FREEZE or ADR **`Accepted`**.
+**Decision:** For **ASF-SEF-P1** operator acceptance and ticket closure only, treat **`scripts/maintenance/check_harness_adr.py` exit 1** with the **24** documented findings (`.tmp/session/ASF-SEF-P1-CLOSURE/DOSSIER.md` § ADR_GLOBAL_BASELINE_RECONCILIATION) as **pre-existing global index/parser drift**, **not introduced** by commits `e2f88cdf4` / `7de6b41f`. P1 scope added **ADR-SEF-001** with a validator-visible index link. This exception **does not** declare `check_harness_adr.py` PASS, **does not** close **T-IGX-014-A**, **does not** grant a permanent gate waiver, and **does not** promote FRZ/B6/ARCH-FREEZE or ADR **`Accepted`**.
 
 **Evidence baselines:** START_HEAD `b342e5e7f` and AUDITED_SHA `7de6b41f` both report **24** identical missing-index messages; logs under `.tmp/session/ASF-SEF-P1-CORRECTIVE/` and `.tmp/session/ASF-SEF-P1-CLOSURE/`.
 
-**Operator signature (required to activate):**
+**Operator signature:**
 
 ```text
-Exception approved: operator @ <ISO8601> (OD-SEF-P1-EXCEPTION — global ADR validator out-of-scope for ASF-SEF-P1 only)
+Exception approved: operator @ 2026-11-05T11:09:00+01:00 (OD-SEF-P1-EXCEPTION — limited exception for 24 check_harness_adr findings for ASF-SEF-P1 closure only; not global PASS; T-IGX-014-A stays open; no permanent gate waiver)
 ```

@@ -1,7 +1,7 @@
-# ASF-SEF-P1 — Operator acceptance record (prepared)
+# ASF-SEF-P1 — Operator acceptance record
 
 > **Label:** **Operator acceptance record — not independent audit signature.**  
-> **Prepared by:** implementer / governance closure prep session @ AUDITED_SHA.  
+> **Signed by:** operator @ 2026-11-05T11:09:00+01:00 (Session E formal P1 closure).  
 > **Independent auditor verdict:** cite separate session when available; this file does **not** substitute Protocol 03 or G6 certification.
 
 ## Identity
@@ -26,33 +26,30 @@ P1-B1 + corrective batch: OD register OD-SEF-01/02/03, ADR-SEF-001 **`Proposed`*
 | Corrective implementer dossier | `.tmp/session/ASF-SEF-P1-CORRECTIVE/DOSSIER.md` |
 | Closure prep dossier (ADR reconciliation) | `.tmp/session/ASF-SEF-P1-CLOSURE/DOSSIER.md` |
 | ADR validator log @ AUDITED_SHA | `.tmp/session/ASF-SEF-P1-CLOSURE/check_harness_adr_audited.log` |
+| ADR validator log @ Session E closure | `.tmp/session/ASF-SEF-P1-CLOSURE/check_harness_adr_closure.log` |
 
-## Mechanical verification @ prep time (HEAD = AUDITED_SHA)
+## Mechanical verification @ acceptance baseline
 
 | Check | Result | Notes |
 |-------|--------|-------|
 | Relative links (7 P1 files + adr README) | **108 OK / 0 broken** | Corrective wave [`.tmp/session/ASF-SEF-P1-CORRECTIVE/check_links_after.log`](../../../../../../.tmp/session/ASF-SEF-P1-CORRECTIVE/check_links_after.log) |
-| `verify_plan_approval.py` | **OK** | `Approved:` preserved |
-| `verify_ticket_lifecycle.py` | **OK** | lifecycle `quality_gate` |
-| `igx_gov ticket` | **PASS** | [`.tmp/session/ASF-SEF-P1-CORRECTIVE/igx_gov_ticket_after.log`](../../../../../../.tmp/session/ASF-SEF-P1-CORRECTIVE/igx_gov_ticket_after.log) |
-| `git status` (post-publication) | **clean** @ AUDITED_SHA | session artifacts under `.tmp/` only |
-| `check_harness_adr.py` | **FAIL (24)** | **Global exception** — see OD-SEF-P1-EXCEPTION; **not** P1-introduced |
+| `verify_plan_approval.py` | **OK** | Session E — `.tmp/session/ASF-SEF-P1-CLOSURE/` |
+| `verify_ticket_lifecycle.py` | **OK** | Session E — `.tmp/session/ASF-SEF-P1-CLOSURE/` |
+| `igx_gov ticket` | **PASS** | Session E — `.tmp/session/ASF-SEF-P1-CLOSURE/igx_gov_ticket_closure.log` |
+| `check_harness_adr.py` | **FAIL (24)** | **Disclosed** — global drift; **OD-SEF-P1-EXCEPTION**; **not** P1-introduced; **T-IGX-014-A** open |
 
-## Findings disposition (implementer summary)
+## Findings disposition
 
 | Area | Disposition |
 |------|-------------|
 | P1 governance content (OD-SEF-01/02/03, satellites, links) | **PASS WITH FINDINGS** — findings limited to pre-existing global ADR index validator drift |
-| ADR-SEF-001 | **`Proposed`** only (OD-SEF-03); correctly indexed for validator regex |
-| Global ADR README / parser | **OUT OF SCOPE for P1** pending **OD-SEF-P1-EXCEPTION** operator approval + **T-IGX-014-A** hygiene |
+| ADR-SEF-001 | **`Proposed`** only (OD-SEF-03) |
+| Global ADR README / parser | **OUT OF SCOPE for P1** — **OD-SEF-P1-EXCEPTION** approved; hygiene **T-IGX-014-A** |
 
-## Operator signature block
+## Operator signature
 
-**Status:** **AWAITING OPERATOR ACCEPTANCE SIGNATURE**
+**Status:** **ACCEPTED (PASS WITH FINDINGS — documentation scope)**
 
+```text
+Accepted: operator @ 2026-11-05T11:09:00+01:00 (ASF-SEF-P1 PASS WITH FINDINGS — documentation scope accepted @ AUDITED_SHA 7de6b41f637df1d6949985d9dc567602a074e230; OD-SEF-P1-EXCEPTION acknowledged; ADR-SEF-001 remains Proposed; not formal B6/FRZ/ARCH-FREEZE closure; P2–P13 not started)
 ```
-Accepted: operator @ <ISO8601> (ASF-SEF-P1 documentation batch @ AUDITED_SHA 7de6b41f…;
-OD-SEF-P1-EXCEPTION acknowledged; not formal B6/FRZ/ARCH-FREEZE closure)
-```
-
-**Do not** set **FORMAL_CLOSURE_SHA** until operator line above is recorded and **OD-SEF-P1-EXCEPTION** is **APPROVED**.
