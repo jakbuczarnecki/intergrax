@@ -14,6 +14,6 @@
 | Evidence / SHA ladder | R0–R7 | Deliverable 13 |
 | Independent audit plan | Protocol 03 SEF scope | Deliverable 19 |
 
-**Authoritative path:** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md)  
-**Ticket:** [`governance/tickets/T-IGX-SEF-A.md`](../../../../governance/tickets/T-IGX-SEF-A.md)  
+**Authoritative path:** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md)  
+**Ticket:** [`governance/tickets/T-IGX-SEF-A.md`](../../../../../governance/tickets/T-IGX-SEF-A.md)  
 **Architecture narrative:** [`ASF_SEF_MASTER_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md`](ASF_SEF_MASTER_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md)

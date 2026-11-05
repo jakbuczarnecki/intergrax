@@ -1,7 +1,7 @@
 # ASF/SEF — Operator decision register (OD-SEF)
 
-**Campaign:** ASF-SEF corrective program · **Ticket:** [`governance/tickets/T-IGX-SEF-A.md`](../../../../governance/tickets/T-IGX-SEF-A.md)  
-**Plan SSOT (binding):** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md)  
+**Campaign:** ASF-SEF corrective program · **Ticket:** [`governance/tickets/T-IGX-SEF-A.md`](../../../../../governance/tickets/T-IGX-SEF-A.md)  
+**Plan SSOT (binding):** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md)  
 **Publication batch:** P1-B1 @ operator authorization 2026-11-05 (plan digest `a500419535c8187d16e4950744fb0cb99fdc77b6ccd1d76092f254d1ccae80d2`)
 
 This register is the **canonical repo store** for OD-SEF rows (pattern: EVOL-X [`EVOL_X_OPERATOR_DECISION_REGISTER_W1.md`](../evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md), ARCH-FREEZE [`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md)).

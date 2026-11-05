@@ -5,7 +5,7 @@
 | **Status** | **Proposed** (OD-SEF-03 — preparation approved; **not Accepted**) |
 | **Date** | 2026-11-05 |
 | **Deciders** | Operator (OD-SEF-01/03); implementation gated on ARCH-FREEZE + contracts |
-| **Related** | [`ASF_SEF_MASTER_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md`](../../../maintainers/plans/satellites/ASF_SEF_MASTER_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md) · [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) · [`ADR-CODECRAFT-001`](../2026-06-10/ADR-CODECRAFT-001.md) · [`ADR-HARNESS-001`](../2026-09-20/ADR-HARNESS-001.md) · [`T-IGX-SEF-A`](../../../../../governance/tickets/T-IGX-SEF-A.md) |
+| **Related** | [`ASF_SEF_MASTER_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md`](../../../../maintainers/plans/satellites/ASF_SEF_MASTER_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md) · [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) · [`ADR-CODECRAFT-001`](../2026-06-10/ADR-CODECRAFT-001.md) · [`ADR-HARNESS-001`](../2026-09-20/ADR-HARNESS-001.md) · [`T-IGX-SEF-A`](../../../../../../governance/tickets/T-IGX-SEF-A.md) |
 
 ## Context
 

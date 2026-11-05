@@ -1,8 +1,8 @@
 ﻿# ASF/SEF — Master architecture & implementation plan (published narrative)
 
 **Status:** Architecture narrative — **Proposed** (P1-B1 publication; not product implementation)  
-**Binding SSOT:** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) (38 REQ · 82 WBS · 30 GAP · 52 CAP · 30 contracts — no competing traceability)  
-**Operator:** OD-SEF-01 **APPROVED** (Variant **C + D-lite**) · Ticket [`T-IGX-SEF-A`](../../../../governance/tickets/T-IGX-SEF-A.md)
+**Binding SSOT:** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md) (38 REQ · 82 WBS · 30 GAP · 52 CAP · 30 contracts — no competing traceability)  
+**Operator:** OD-SEF-01 **APPROVED** (Variant **C + D-lite**) · Ticket [`T-IGX-SEF-A`](../../../../../governance/tickets/T-IGX-SEF-A.md)
 
 ## Purpose
 

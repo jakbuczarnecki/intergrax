@@ -1,7 +1,7 @@
 ﻿# ASF/SEF — Semantic ownership & reuse matrix
 
 **Status:** Published architecture satellite (P1-B1) · **SSOT tables:** Master Plan Deliverable 5  
-**Binding plan:** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md)
+**Binding plan:** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md)
 
 | Concern | Canonical owner | Engineering plane may | Scenario plane may | Duplicate risk |
 |---------|-----------------|----------------------|--------------------|----------------|

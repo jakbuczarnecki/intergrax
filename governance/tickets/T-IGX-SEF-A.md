@@ -41,7 +41,7 @@ Product CAP-049..052 implementation, Option 4 pilot, ADR **`Accepted`**, Protoco
 
 ## Lifecycle state
 
-`quality_gate`
+quality_gate
 
 ## Checkpoint
 
