@@ -2,8 +2,8 @@
   "schema_version": "iiac-policy-activation.v1",
   "policy_version": "IIAC-2026-11-05.1",
   "status": "IN_FORCE",
-  "effective_from_sha": null,
-  "policy_activation_sha": null,
+  "effective_from_sha": "f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d",
+  "policy_activation_sha": "f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d",
   "governance_implementation_sha": "2ae1014116d353bc7742985e62f2bccc2bfac798",
   "corrective_implementation_sha": "2a6545f1d551814a0ba8896be79576c580353771",
   "audit_execution_sha": "ae467c8c4dd9c87521c1c60a7e5e75224d3214a0",
@@ -23,5 +23,5 @@
   "operator_decision_id": "IIAC-OD-01-2026-11-05",
   "operator_activation_line": "Approved IIAC policy activation IIAC-2026-11-05.1: operator @ 2026-11-05T18:14:38+01:00",
   "operator_decision_class": "OD-01",
-  "notes": "Phase 1 activation publication. effective_from_sha and policy_activation_sha remain empty until phase 2 SHA binding."
+  "notes": "Phase 2 SHA binding complete. effective_from_sha and policy_activation_sha reference phase 1 commit f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d."
 }
