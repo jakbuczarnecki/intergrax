@@ -48,4 +48,4 @@ quality_gate
 
 ## Checkpoint
 
-`igx_gov ticket`: OK @ push (`.tmp/session/IIAC-GOV-A/igx-gov-ticket.log`); `GOVERNANCE_IMPLEMENTATION_SHA=2ae1014116d353bc7742985e62f2bccc2bfac798` (historical audit pin). F01 corrective: see Session A F01 terminal addendum + `IIAC_SESSION_HANDOFF_RECORD_2026_11_05_SESSION_A_B.md`.
+`igx_gov ticket`: OK @ F01 corrective push; `GOVERNANCE_IMPLEMENTATION_SHA=2ae1014116d353bc7742985e62f2bccc2bfac798`; `CORRECTIVE_IMPLEMENTATION_SHA=9bd8559b36948aefd8134232b89b7738d6dd5bbc`
