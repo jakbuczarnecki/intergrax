@@ -1,0 +1,33 @@
+# Certifier validator runs @ HEAD 06a459afbab3aa8cea89e4118865d55e7b537a34 (2026-11-05), no files modified by these runs
+## verify_iiac_policy_activation --require-in-force
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d
+exit=0
+## verify_iiac_audit_manifest <auditor draft, unmodified>
+verify_iiac_audit_manifest: FAIL
+  - jsonschema: 'PENDING_CERTIFIER' does not match '^[0-9a-f]{40}$'
+  - certification_publication_sha must be 40-char lowercase hex SHA
+exit=1
+## verify_iiac_role_separation --strict-product-diff <auditor draft, unmodified>
+verify_iiac_role_separation: FAIL
+  - certification_publication_sha must be 40-char lowercase hex SHA
+exit=1
+## evol_x_closure_publication_preflight.py
+EVOL-X closure preflight: FAIL
+  - IIAC policy IN_FORCE: missing EVOL IIAC audit manifest JSON
+  - b6_acceptance_publication_sha unset in governance JSON
+  - SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+  - OD-EVOL-12 still PENDING in register
+  - OD-EVOLX-08 still PENDING in register
+  - OD-EVOL-11 auditor identity still not named
+exit=1
+## evidence digest check (EVIDENCE_INDEX.json vs bytes)
+indexed files 51 bad 0; not indexed []; missing []
+pass record copies byte-equal True sha256 d9d175059651c013dceba3efb4155591a70463941b2bd35b7fdc6c947d0f4cca
+## FRZ canonical requirement labels (validate_requirement_labels on auditor matrix)
+problems: []
+## git ancestry / exact SHA
+PLAN<TES y; TES<FINAL y; FINAL<activation y; all <HEAD y; HEAD == origin/development
+TES->FINAL product/test files: 0; FINAL->HEAD bundle files: 0; TES->HEAD EVOL-X-scope files: 0; TES->HEAD product files: 34 (ENT-AUDIT-X, outside audited tree)
+MANIFEST parent_test_execution_tree 3244d4ea9c9bfb388ffb614656c71f0b7eafd3ad == TES^{tree}
+## note
+No B6 acceptance preflight separate from the closure preflight exists in scripts/; the closure preflight is the B6/closure gate. The 290-test replay was not repeated (no material change since TES/FINAL).
