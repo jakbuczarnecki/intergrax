@@ -43,8 +43,10 @@
 |-------|-------|
 | Session B disposition addressed | F01 (blocker), F02, F03 |
 | `GOVERNANCE_IMPLEMENTATION_SHA` (historical) | `2ae1014116d353bc7742985e62f2bccc2bfac798` (unchanged) |
-| `CORRECTIVE_IMPLEMENTATION_SHA` | *(set @ push — corrective dossier)* |
-| `inventory_publication_sha` | *(set @ push — not embedded in matrix at write)* |
+| `CORRECTIVE_IMPLEMENTATION_SHA` | `afe9e8abeabdbab410bf562ebed6f4a309a91057` (code/handoff) + G0 matrix publication commit follows |
+| `INVENTORY_SOURCE_SHA` | `afe9e8abeabdbab410bf562ebed6f4a309a91057` |
+| `inventory_publication_sha` | *(matrix publication commit — dossier `.tmp/session/IIAC-GOV-A-F01/`)* |
+| G0 v2 stats | **17510** covered paths · **18388** entries · schema `iiac-authority-impact.v2` |
 | Handoff (F03) | [`IIAC_SESSION_HANDOFF_RECORD_2026_11_05_SESSION_A_B.md`](./IIAC_SESSION_HANDOFF_RECORD_2026_11_05_SESSION_A_B.md) — operator line **pending** |
 
 **Prior G0 @ Session A close:** 3492 pattern-only entries @ `eab65e0…` — superseded by v2 full enumeration after F01 fix.
