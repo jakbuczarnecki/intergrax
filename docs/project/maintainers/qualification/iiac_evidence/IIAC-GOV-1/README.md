@@ -6,5 +6,6 @@ Byte-for-byte copies of session evidence. This directory is not an activation re
 |---|---|---|
 | `reaudit/` | F01–F03 re-audit | manifest `PASS` |
 | `historical_session_b/` | original Session B | manifest `CONDITIONAL`; report prose `PARTIAL / EXACT BLOCKERS` |
+| `certification/` | governance certification publication | manifest `PASS`; policy still `NOT_IN_FORCE` until operator `IIAC_OD_ACTIVATION_*.md` |
 
 Policy status remains `NOT_IN_FORCE`. The historical tree cannot be selected as the active acceptance manifest. Digests are listed in `EVIDENCE_INDEX.json`.

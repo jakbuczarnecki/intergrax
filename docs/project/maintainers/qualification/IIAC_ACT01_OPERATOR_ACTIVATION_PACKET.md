@@ -15,7 +15,8 @@
 | Re-audit report digest | `62b93665a97024337638e966ca87cbe37f32e1b4c9c795bef46e4c1097aefbde` |
 | Historical Session B | `PARTIAL / EXACT BLOCKERS`; manifest `CONDITIONAL`; digest `56c9b078e42e1408799e37a2535aa61879e31021864214e46dfa165fb41fded1` |
 | ACT-01 implementation | gate logic `1d0722723687fb93d0a538161ca4cce376b3ecef`; byte-correct evidence `2a6545f1d551814a0ba8896be79576c580353771` |
-| Independent ACT-01 re-audit | **required and not yet issued** |
+| Independent ACT-01 re-audit | **PASS** — dossier digest `c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e` @ `iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md` |
+| Governance certification | manifest @ `iiac_evidence/IIAC-GOV-1/certification/` — policy still `NOT_IN_FORCE` |
 
 Session A line `Approved: operator Session A @ 2026-11-05T13:00:00+01:00 (IIAC-GOVERNANCE-REFORM)` authorizes implementation only. The handoff line remains `Approved handoff: operator @ ________________`.
 
@@ -28,7 +29,7 @@ Decision ID: <id>
 Policy version: IIAC-2026-11-05.1
 Decision scope: IIAC policy activation
 Decision status: AUTHORIZED
-Audit report digest: <64-char sha256 of the accepted audit report>
+Audit report digest: c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
 Approved IIAC policy activation IIAC-2026-11-05.1: operator @ <ISO-8601 timestamp>
 ```
 
