@@ -37,10 +37,10 @@
       "note": "No production trust root, custodian, or replay ledger observed"
     },
     {
-      "id": "local_windows_dev_workstation",
-      "classification": "AVAILABLE_BUT_NOT_INDEPENDENT",
-      "note": "Orchestrator for technical replay only; session logs under .tmp/ are not an audit ledger"
-    }
+      "id": "local_windows_custody_separated_accounts",
+      "classification": "REQUIRES_PROVISIONING",
+      "note": "Reference tooling + Install-IntergraxEvolB6Custody.ps1; independence only after separate Windows principals and external key path"
+    },
   ],
   "github_secrets_metadata": {
     "count_observed": 1,
@@ -51,6 +51,11 @@
     "scripts/qualification/evol_x_b6_independent_verification.py",
     "scripts/qualification/evol_x_b6_attestation.py",
     "scripts/qualification/evol_x_b6_evaluate_signed_attestation.py",
+    "scripts/qualification/evol_x_b6_local_attestor.py",
+    "scripts/qualification/evol_x_b6_custodian_sign.py",
+    "scripts/qualification/evol_x_b6_replay_ledger.py",
+    "scripts/qualification/local_b6/README.md",
+    "scripts/qualification/local_b6/Install-IntergraxEvolB6Custody.ps1",
     "docs/project/maintainers/qualification/evol_x/EVOL_X_AUTO_B6_GOVERNANCE_STATUS.json",
     "docs/project/maintainers/qualification/evol_x/b6_technical_qualification/templates/evol_x_b6_trust_root.example.json",
     "docs/project/maintainers/qualification/evol_x/b6_technical_qualification/templates/evol_x_b6_replay_ledger.example.json"
