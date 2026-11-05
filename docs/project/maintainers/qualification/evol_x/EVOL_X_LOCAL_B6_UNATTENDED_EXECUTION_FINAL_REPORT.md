@@ -3,19 +3,19 @@
 **Campaign:** `EVOL-X-LOCAL-B6-UNATTENDED-EXECUTION`  
 **Ticket:** [`T-IGX-012-B.md`](../../../governance/tickets/T-IGX-012-B.md)  
 **Baseline @ start:** `bffd689d3b127bbcd753f0cf6f2c863c4db4a032` (`origin/development`)  
-**Disposition (continuation @ 2026-11-05):** **PIPELINE INCOMPLETE — UAC SECURE DESKTOP NOT APPROVED IN AGENT WINDOW** — custody/users/ACL partial; **no production key/signature**; formal gates unchanged.
+**Disposition (terminal @ 2026-11-05):** **`TECHNICAL_PIPELINE_OK_PENDING_AUTHORITY`** — key ceremony, attestor, custodian **completed** under SAM principals; evaluator **`NOT_ELIGIBLE`** (governance **`NOT_IN_FORCE`**). **Not** B6 formal acceptance, **not** ECAP `IN_FORCE`.
 
 ---
 
-## Continuation run (same campaign, no new ticket)
+## Superseded runs (historical)
 
-| Action | Result |
-|--------|--------|
-| RunAs launcher | **Multiple invocations** + 3 min UAC wait window; **no fresh `elevated-result.json`** without interactive Secure Desktop approval |
-| Bootstrap fixes | Python arg join; `Start-Process -Credential` + wrapper scripts (replaces flaky scheduled-task race **267011**); launcher **UAC timeout** (exit 5); targeted repo/python RX grants |
-| `sudo.exe` | **Disabled** on host (cannot use Developer sudo path) |
-| Implementer NTFS probe (non-elevated) | **Write denied** on `private\k-prod-local-1.ed25519`; key **absent**; `elevated-launch.json` **`implementer_can_read_private_key: false`** |
-| Isolation caveat | **Separate SAM accounts exist**; **full attestor→custodian pipeline not proven** until elevated bootstrap completes; **Administrators** can override ACL during elevated sessions — not claimed as organizational custody |
+| Run | Outcome | Notes |
+|-----|---------|-------|
+| Launcher **EXIT=5** @ ~07:35 UTC | **Superseded** | 15 min UAC/wait timeout; partial ACL; key ceremony **103** (uv Python RX for SAM users — fixed) |
+| Multiple parallel elevated windows | **Superseded** | Same-user elevation without Secure Desktop prompt; **`icacls` Invalid parameter** — fixed (per-grant + SID grants) |
+| Continuation @ morning | **Superseded** | `PIPELINE INCOMPLETE — UAC` narrative replaced by successful pass @ `2026-11-05T08:00:08Z` |
+
+Evidence (session, gitignored): `.tmp/session/evol-x-local-b6-unattended/elevated-result.json`, `elevated-launch.json`.
 
 ---
 
@@ -25,11 +25,9 @@
 |------|--------|
 | Mechanism | `Invoke-IntergraxEvolB6ElevatedLaunch.ps1` → `Start-Process -Verb RunAs` → `Invoke-IntergraxEvolB6UnattendedBootstrap.ps1` |
 | Agent session admin | **No** (non-elevated implementer) |
-| UAC / RunAs | **Invoked repeatedly**; succeeds when operator approves elevation |
+| UAC / RunAs | Same-user elevation; **no** separate Secure Desktop prompt required on host after first approval |
 | Structured result | `.tmp/session/evol-x-local-b6-unattended/elevated-result.json` |
-| Launch meta | `.tmp/session/evol-x-local-b6-unattended/elevated-launch.json` (when completed) |
-
-**Non-automatable gate:** Windows UAC consent for `#Requires -RunAsAdministrator` bootstrap (cannot be bypassed or forged).
+| Launch meta | `.tmp/session/evol-x-local-b6-unattended/elevated-launch.json` |
 
 ---
 
@@ -44,13 +42,17 @@ Note: canonical names exceed Windows SAM 20-character limit; bootstrap documents
 
 ---
 
-## Principal isolation
+## Principal isolation and ACL (technical, local)
 
 | Check | Result |
 |-------|--------|
-| Separate local users | **Yes** |
-| Attestor/custodian runs | **`Start-Process -Credential`** wrapper under SAM accounts (elevated bootstrap caller) |
-| Full pipeline under isolated principals | **Incomplete** — last elevated pass failed key ceremony (**267011** scheduled-task race, since fixed); **re-run blocked on UAC** in agent session |
+| Separate local SAM users | **Yes** |
+| Attestor/custodian runs | **`Start-Process -Credential`** under SAM accounts (elevated bootstrap) |
+| `attestor_can_read_private_key` (elevated probe) | **`false`** |
+| `implementer_can_read_private_key` (launcher, non-elevated) | **`false`** |
+| Implementer read `private\*.ed25519` | **Denied** (open + `Test-Path` unauthorized) |
+| Implementer read `signed\attestation.json` | **Denied** |
+| **Caveat — not full organizational custody** | Bootstrap creates accounts and passwords on **one workstation**; **Administrators** / elevated implementer can change ACLs; SAM isolation **≠** HSM or independent security org; do **not** infer ECAP Path A production independence from NTFS alone |
 
 ---
 
@@ -58,10 +60,10 @@ Note: canonical names exceed Windows SAM 20-character limit; bootstrap documents
 
 | Path | Status |
 |------|--------|
-| `C:\ProgramData\Intergrax\evol-b6-custody\` | **Exists** (install OK) |
+| `C:\ProgramData\Intergrax\evol-b6-custody\` | **Exists** |
 | Subdirs | `private`, `public`, `pending`, `signed`, `ledger`, `audit`, `archive` |
-| ACL configuration | **CONFIGURED** (icacls; last elevated result @ 2026-11-05T06:17:57Z) |
-| Implementer private-key probe | **Deferred** to non-elevated launcher (admin token skew) |
+| ACL configuration | **`CONFIGURED`** (@ `2026-11-05T08:00:08Z`) |
+| Repo / uv execute grants | Marker **`repo-acl-v1.done`** — targeted RX (no repeated `/T` walk) |
 
 ---
 
@@ -69,21 +71,31 @@ Note: canonical names exceed Windows SAM 20-character limit; bootstrap documents
 
 | Item | Status |
 |------|--------|
-| Production key `k-prod-local-1.ed25519` | **Not present** @ campaign end |
-| `public\trust_root.v1.json` | **Not published** |
-| `ledger\replay_ledger.v1.json` | **Not created** |
-| Module | `scripts/qualification/local_b6/evol_x_b6_local_key_ceremony.py` (custodian mode only) |
+| Production key `k-prod-local-1.ed25519` | **Created** (ceremony exit **0**) |
+| `public\trust_root.v1.json` | **Published** |
+| `ledger\replay_ledger.v1.json` | **Created** (custodian path) |
+| Module | `scripts/qualification/local_b6/evol_x_b6_local_key_ceremony.py` |
 
 ---
 
 ## Attestor / custodian signer / evaluator
 
-| Stage | Status |
-|-------|--------|
-| Attestor (isolated) | **Not completed** (blocked on key/trust root) |
-| Custodian sign | **Not completed** |
-| Evaluator | **Not run** on production signed artifact |
-| Governance | **`NOT_IN_FORCE`** → evaluator would return **`NOT_ELIGIBLE`** even if crypto OK |
+| Stage | Exit | Notes |
+|-------|------|-------|
+| Key ceremony (custodian) | **0** | Trust root @ `public\trust_root.v1.json` |
+| Attestor (isolated) | **0** | Pending → signed pipeline |
+| Custodian sign | **0** | `signed\attestation.json` |
+| Evaluator (attestor credential) | **1** | **`formal_acceptance_eligibility`: `NOT_ELIGIBLE`** — expected under **`NOT_IN_FORCE`**; disposition still **`TECHNICAL_PIPELINE_OK_PENDING_AUTHORITY`** (crypto path completed; formal gate blocked) |
+| Evaluator artifact | `C:\ProgramData\Intergrax\evol-b6-custody\audit\evaluator-result.json` | ProgramData (implementer may lack list/read) |
+
+---
+
+## Governance
+
+| Item | Status |
+|------|--------|
+| `EVOL_X_AUTO_B6_GOVERNANCE_STATUS.json` | **`NOT_IN_FORCE`** |
+| Evaluator eligibility | **`NOT_ELIGIBLE`** (not forged `IN_FORCE`) |
 
 ---
 
@@ -104,10 +116,11 @@ Note: canonical names exceed Windows SAM 20-character limit; bootstrap documents
 
 | Suite | Result |
 |-------|--------|
-| B6 contract + custody guards + FRZ matrix | **35 passed** |
+| B6 contract + custody guards + FRZ matrix | **35 passed** (@ terminal commit) |
 | 290 VL3 replay | **Skipped** (TES pin unchanged) |
+| `igx_gov ticket` | **PASS** (@ terminal commit, `PYTHONPATH` unset) |
 
-Log: `.tmp/session/evol-x-local-b6-unattended/pytest.log`
+Logs: `.tmp/session/evol-x-local-b6-unattended/pytest-final.log`, `igx-gov-ticket.log`
 
 ---
 
@@ -115,16 +128,16 @@ Log: `.tmp/session/evol-x-local-b6-unattended/pytest.log`
 
 | Item | Value |
 |------|-------|
-| `UNATTENDED_EXECUTION_PUBLICATION_SHA` | `0356554cf8065a10a00b925afbdab4327375beaf` |
+| `LOCAL_B6_UNATTENDED_EXECUTION_PUBLICATION_SHA` | **See [`EVOL_X_SHA_LADDER.md`](./EVOL_X_SHA_LADDER.md)** (terminal row @ this report) |
 | Branch | `development` → `origin/development` |
 
 ---
 
-## Remaining gates (ordered)
+## Remaining gates (formal only)
 
-1. **UAC approval** for one elevated bootstrap completion (or persistent admin session for agent).  
-2. Re-run `Invoke-IntergraxEvolB6ElevatedLaunch.ps1` (idempotent) to finish key → attestor → custodian → evaluator under isolated principals.  
-3. ECAP maintainer + independent security review + OD-EVOL-11 auditor_id.  
-4. Authorized Protocol 03 publication → FRZ / W7 closure chain.
+1. ECAP amendment **`IN_FORCE`** + maintainer / independent security signatures (OD-EVOL-11 `auditor_id`, etc.).  
+2. Authorized **Protocol 03** B6 publication → set **`B6_ACCEPTANCE_PUBLICATION_SHA`**.  
+3. **FRZ-EVOL-*** promotion and **W7-05 / W7-06** closure chain.  
+4. Organizational acceptance of local Path A custody (beyond NTFS + SAM on one host).
 
 **Ref:** [`EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md`](./EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md)

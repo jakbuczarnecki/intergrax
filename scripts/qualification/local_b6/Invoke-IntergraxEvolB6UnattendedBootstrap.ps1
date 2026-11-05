@@ -71,21 +71,28 @@ function Invoke-AsLocalUser {
         $envLines += "`$env:$k='$v'"
     }
     $argList = ($PythonArgs | ForEach-Object { "'" + ($_ -replace "'", "''") + "'" }) -join " "
+    $auditDir = Join-Path $CustodyRoot "audit"
+    if (-not (Test-Path $auditDir)) { New-Item -ItemType Directory -Force -Path $auditDir | Out-Null }
+    $logFile = Join-Path $auditDir "invoke-$UserName.log"
     @"
 Set-StrictMode -Version Latest
+`$log = '$($logFile -replace "'", "''")'
 Set-Location '$($Repo -replace "'", "''")'
 $($envLines -join "`n")
-& '$($python -replace "'", "''")' $argList
-exit `$LASTEXITCODE
+try {
+  & '$($python -replace "'", "''")' $argList *>&1 | Out-File -FilePath `$log -Encoding utf8
+  exit `$LASTEXITCODE
+} catch {
+  `$_ | Out-File -FilePath `$log -Encoding utf8 -Append
+  exit 1
+}
 "@ | Set-Content -Path $wrapper -Encoding UTF8
     $sec = ConvertTo-SecureString $PlainPassword -AsPlainText -Force
     $cred = New-Object System.Management.Automation.PSCredential(".\$UserName", $sec)
-    $errLog = Join-Path $wrapperDir "run-as-$UserName.err.log"
-    $outLog = Join-Path $wrapperDir "run-as-$UserName.out.log"
     $p = Start-Process -FilePath "powershell.exe" -Credential $cred -ArgumentList @(
         "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $wrapper
-    ) -WorkingDirectory $Repo -Wait -PassThru -NoNewWindow -RedirectStandardError $errLog -RedirectStandardOutput $outLog
-    return @{ exit = $p.ExitCode; stderr_log = $errLog; stdout_log = $outLog }
+    ) -WorkingDirectory $Repo -Wait -PassThru -NoNewWindow
+    return @{ exit = $p.ExitCode; log = $logFile }
 }
 
 $result = @{
@@ -129,6 +136,8 @@ try {
     foreach ($d in @($privateDir, $publicDir, $pendingDir, $signedDir, $ledgerDir)) {
         if (-not (Test-Path $d)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
     }
+    $auditDir = Join-Path $CustodyRoot "audit"
+    if (-not (Test-Path $auditDir)) { New-Item -ItemType Directory -Force -Path $auditDir | Out-Null }
 
     function Set-CustodyIcacls {
         param(
@@ -137,58 +146,98 @@ try {
             [string[]] $Deny = @()
         )
         & icacls $Path /inheritance:r | Out-Null
-        if ($Grant.Count -gt 0) {
-            & icacls $Path /grant:r ($Grant -join " ") | Out-Null
+        foreach ($g in $Grant) {
+            & icacls $Path /grant:r $g | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                throw "icacls grant failed on ${Path}: ${g} (exit $LASTEXITCODE)"
+            }
         }
         foreach ($d in $Deny) {
             & icacls $Path /deny $d | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                throw "icacls deny failed on ${Path}: ${d} (exit $LASTEXITCODE)"
+            }
         }
     }
 
     $impDeny = "${implementerRef}:(OI)(CI)(W,D,WDAC,WO)"
+    $grantSystem = "*S-1-5-18:(OI)(CI)F"
+    $grantAdmins = "*S-1-5-32-544:(OI)(CI)F"
     Set-CustodyIcacls -Path $privateDir -Grant @(
-        "SYSTEM:(OI)(CI)F",
-        "Administrators:(OI)(CI)F",
+        $grantSystem,
+        $grantAdmins,
         "${CustodianName}:(OI)(CI)F"
     ) -Deny @($impDeny)
     Set-CustodyIcacls -Path $ledgerDir -Grant @(
-        "SYSTEM:(OI)(CI)F",
-        "Administrators:(OI)(CI)F",
+        $grantSystem,
+        $grantAdmins,
         "${CustodianName}:(OI)(CI)F"
     ) -Deny @($impDeny)
     Set-CustodyIcacls -Path $pendingDir -Grant @(
-        "SYSTEM:(OI)(CI)F",
-        "Administrators:(OI)(CI)F",
+        $grantSystem,
+        $grantAdmins,
         "${AttestorName}:(OI)(CI)M",
         "${CustodianName}:(OI)(CI)RX"
     ) -Deny @($impDeny)
     Set-CustodyIcacls -Path $signedDir -Grant @(
-        "SYSTEM:(OI)(CI)F",
-        "Administrators:(OI)(CI)F",
+        $grantSystem,
+        $grantAdmins,
         "${CustodianName}:(OI)(CI)M",
         "${AttestorName}:(OI)(CI)RX"
     ) -Deny @($impDeny)
     Set-CustodyIcacls -Path $publicDir -Grant @(
-        "SYSTEM:(OI)(CI)F",
-        "Administrators:(OI)(CI)F",
+        $grantSystem,
+        $grantAdmins,
+        "${CustodianName}:(OI)(CI)M",
         "${AttestorName}:(OI)(CI)RX",
-        "${CustodianName}:(OI)(CI)RX",
         "${implementerRef}:(OI)(CI)RX"
+    )
+    Set-CustodyIcacls -Path $auditDir -Grant @(
+        $grantSystem,
+        $grantAdmins,
+        "${AttestorName}:(OI)(CI)M",
+        "${CustodianName}:(OI)(CI)M"
     )
     $result.acl.status = "CONFIGURED"
 
-    foreach ($principal in @($AttestorName, $CustodianName)) {
-        & icacls $RepoRoot /grant "${principal}:(OI)(CI)RX" | Out-Null
-        $pyExe = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-        if (Test-Path $pyExe) {
-            & icacls $pyExe /grant "${principal}:R" | Out-Null
+    $marker = Join-Path $RepoRoot ".tmp\session\evol-x-local-b6-unattended\repo-acl-v1.done"
+    if (Test-Path $marker) {
+        Write-Host "Repo ACL grants already applied (marker present); skipping uv/site-packages /T."
+    } else {
+        foreach ($principal in @($AttestorName, $CustodianName)) {
+            & icacls $RepoRoot /grant "${principal}:(OI)(CI)RX" | Out-Null
+            $scriptsDir = Join-Path $RepoRoot "scripts"
+            if (Test-Path $scriptsDir) {
+                & icacls $scriptsDir /grant "${principal}:(OI)(CI)RX" | Out-Null
+            }
+            $pyExe = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+            if (Test-Path $pyExe) {
+                & icacls $pyExe /grant "${principal}:R" | Out-Null
+            }
+            $pyScripts = Join-Path $RepoRoot ".venv\Scripts"
+            if (Test-Path $pyScripts) {
+                & icacls $pyScripts /grant "${principal}:(OI)(CI)RX" | Out-Null
+            }
+            $pyvenvCfg = Join-Path $RepoRoot ".venv\pyvenv.cfg"
+            if (Test-Path $pyvenvCfg) {
+                $homeLine = Get-Content $pyvenvCfg | Where-Object { $_ -match '^\s*home\s*=\s*(.+)$' } | Select-Object -First 1
+                if ($homeLine -match '=\s*(.+)$') {
+                    $pyHome = $matches[1].Trim()
+                    if (Test-Path $pyHome) {
+                        Write-Host "Granting ${principal} read on uv Python home ($pyHome)..."
+                        & icacls $pyHome /grant "${principal}:(OI)(CI)RX" /T | Out-Null
+                    }
+                }
+            }
+            $sitePackages = Join-Path $RepoRoot ".venv\Lib\site-packages"
+            if (Test-Path $sitePackages) {
+                Write-Host "Granting ${principal} read on site-packages..."
+                & icacls $sitePackages /grant "${principal}:(OI)(CI)RX" /T | Out-Null
+            }
         }
-        $pyScripts = Join-Path $RepoRoot ".venv\Scripts"
-        if (Test-Path $pyScripts) {
-            & icacls $pyScripts /grant "${principal}:(OI)(CI)RX" | Out-Null
-        }
+        New-Item -ItemType File -Force -Path $marker | Out-Null
     }
-    $result.acl.repo_execute_grants = "Repo-root inherit RX for attestor/custodian (no /T walk)"
+    $result.acl.repo_execute_grants = "Repo, scripts, venv Scripts, uv Python home, site-packages RX for attestor/custodian"
 
     Add-Type -AssemblyName System.Web
     $custPwdPlain = [System.Web.Security.Membership]::GeneratePassword(28, 6)
@@ -223,8 +272,8 @@ try {
     $result.key_ceremony.key_path = $keyPath
     $result.key_ceremony.trust_root_path = $trustPath
     if ($ceremony.exit -ne 0) {
-        if ($ceremony.stderr_log -and (Test-Path $ceremony.stderr_log)) {
-            $result.key_ceremony.stderr_tail = (Get-Content $ceremony.stderr_log -Tail 8) -join " | "
+        if ($ceremony.log -and (Test-Path $ceremony.log)) {
+            $result.key_ceremony.log_tail = (Get-Content $ceremony.log -Tail 12) -join " | "
         }
         throw "key ceremony failed exit $($ceremony.exit)"
     }
@@ -266,23 +315,28 @@ try {
         throw "custodian sign failed exit $($signRun.exit)"
     }
 
-    $evalOut = Join-Path $RepoRoot ".tmp\session\evol-x-local-b6-unattended\evaluator-result.json"
+    $evalOut = Join-Path $CustodyRoot "audit\evaluator-result.json"
     $evalDir = Split-Path $evalOut -Parent
     if (-not (Test-Path $evalDir)) { New-Item -ItemType Directory -Force -Path $evalDir | Out-Null }
-    $python = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-    $env:PYTHONPATH = $RepoRoot
-    $evalProc = Start-Process -FilePath $python -ArgumentList @(
+    $evalRun = Invoke-AsLocalUser -UserName $AttestorName -PlainPassword $attPwdPlain -Repo $RepoRoot -EnvExtra @{} -PythonArgs @(
         "scripts/qualification/evol_x_b6_evaluate_signed_attestation.py",
         "--attestation", $signedPath,
         "--trust-root", $trustPath,
         "--replay-ledger", $ledgerPath,
         "--output", $evalOut
-    ) -WorkingDirectory $RepoRoot -Wait -PassThru -NoNewWindow
-    $result.evaluator.exit = $evalProc.ExitCode
+    )
+    $result.evaluator.exit = $evalRun.exit
+    $result.evaluator.formal_acceptance_eligibility = "NOT_ELIGIBLE"
     if (Test-Path $evalOut) {
+        Set-StrictMode -Off
         $ev = Get-Content $evalOut -Raw | ConvertFrom-Json
-        $result.evaluator.formal_acceptance_eligibility = $ev.formal_acceptance_eligibility
-        $result.evaluator.blockers = @($ev.formal_acceptance_blockers)
+        Set-StrictMode -Version Latest
+        if ($null -ne $ev.PSObject.Properties["formal_acceptance_eligibility"]) {
+            $result.evaluator.formal_acceptance_eligibility = [string]$ev.formal_acceptance_eligibility
+        }
+        if ($null -ne $ev.PSObject.Properties["formal_acceptance_blockers"]) {
+            $result.evaluator.blockers = @($ev.formal_acceptance_blockers)
+        }
     }
 
     $probePy = "import sys`ntry:`n open(r'$($keyPath -replace '\\','\\')','rb').read(1)`n sys.exit(0)`nexcept OSError:`n sys.exit(1)"
