@@ -43,7 +43,8 @@
 |-------|-------|
 | Session B disposition addressed | F01 (blocker), F02, F03 |
 | `GOVERNANCE_IMPLEMENTATION_SHA` (historical) | `2ae1014116d353bc7742985e62f2bccc2bfac798` (unchanged) |
-| `CORRECTIVE_IMPLEMENTATION_SHA` | `9bd8559b36948aefd8134232b89b7738d6dd5bbc` |
+| **`CORRECTIVE_IMPLEMENTATION_SHA`** (publication HEAD @ push) | `7d6061e48c6f84bbf1b05e34a28d4fd495602ae8` |
+| Matrix publication commit | `9bd8559b36948aefd8134232b89b7738d6dd5bbc` |
 | `INVENTORY_SOURCE_SHA` | `afe9e8abeabdbab410bf562ebed6f4a309a91057` |
 | `inventory_publication_sha` | `9bd8559b36948aefd8134232b89b7738d6dd5bbc` |
 | G0 v2 stats | **17510** covered paths · **18388** entries · schema `iiac-authority-impact.v2` |
