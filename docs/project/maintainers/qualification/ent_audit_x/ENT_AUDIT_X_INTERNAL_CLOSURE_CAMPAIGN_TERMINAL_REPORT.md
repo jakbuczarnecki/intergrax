@@ -26,7 +26,7 @@ Agent **does not** declare B6 PASS, OD approval, FRZ CLOSED, or `CLOSED — INDE
 | B1 | PASS | `validate_post_implementation_master_plan.py` exit 0 |
 | B2 | PARTIAL | GAP-RC launchers/output → CLOSED @ L2 tests; redaction/nightly/FSM remain PARTIAL |
 | B3 | PASS | L1/L2/L3: **185 passed** @ `b3-l1-l2-l3.log`; semantic acceptance **88/88 passed** @ `b3-acceptance-semantic.log` + `b3-acceptance-semantic-meta.txt` (HEAD `d07fbde…`, ~22m, exit 0) |
-| B4 | PARTIAL | B5 strict **PASS** @ `b4-verify-b5.log`; mechanical readiness @ HEAD: `implementation_sha_clean` + nightly @ HEAD blockers — see `b4-mechanical-readiness-b3-pass.log` |
+| B4 | PASS (mechanical @ HEAD) | B5 strict **PASS** @ `b4-verify-b5.log`; `mechanical_readiness_check` **exit 0** @ `162acea…` — `b4-mechanical-readiness-post-b3-commit.log`; nightly **42015310879** success |
 | B5 | PARTIAL | This report + SSOT reconcile; **not** full D11 internal acceptance |
 | B6 | PREP | Protocol 03 dossier / OD packets / R8 — refreshed @ HEAD; **no signatures** |
 | B7 | PASS | Matrix C/GAP-RC reconcile, ladder append, roadmap footnote |
@@ -59,6 +59,6 @@ Separate review of diffs/tests: WBS reconcile moves **30** C-tasks to `QUALIFIED
 - Confirmed clean tree @ main repo; re-ran `mechanical_readiness_check` @ `d07fbde…` (post-SEF HEAD): **only** `ci_nightly_green_at_head` / `pr_nightly_ci_proof` FAIL (no nightly run @ that SHA); local session/B5 gates **OK**.
 - @ detached worktree `2dddb6fa9`: CI nightly/FAST gates **OK**; local `.tmp/session` qual artifacts **absent** (expected on clean worktree) — use main repo + publication SHA for dossier replay.
 - **Disposition unchanged:** `INTERNAL CLOSURE PARTIAL — EXACT BLOCKERS`; formal B6/OD/FRZ/EVOL remain EXTERNAL.
-- **B3 semantic recovery @ 2026-11-05:** full `ENT_AUDIT_X_SEMANTIC=1` acceptance matrix **88 passed / 0 failed / 0 skipped** (~1315s); prior ~9m/~28m runs were **operator-aborted** (empty tee log), not gate failures. B7 reconcile preview **PASS** @ `b7-reconcile-c075-b3-pass.log`.
+- **B3 recovery @ [B3 semantic acceptance recovery](d437d5e7-7971-4abb-870b-7c36bbe66085):** B4 mechanical **PASS** @ commit `162acea31833a6d40d3a5e8e79638db7e443ce3e`; nightly run **42015310879**. Disposition still **INTERNAL CLOSURE PARTIAL** (Matrix C / GAP-RC / external B6·OD·FRZ).
 
 Ref: governance/tickets/T-IGX-002-A.md
