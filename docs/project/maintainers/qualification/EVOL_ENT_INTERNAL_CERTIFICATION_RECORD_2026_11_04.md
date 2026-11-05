@@ -84,3 +84,12 @@ Internal certification **does not** satisfy ARCH-FREEZE mechanical requirements 
 | Root [`EVOL_X_SHA_LADDER.md`](./EVOL_X_SHA_LADDER.md) | Shadow SSOT removed — pointer to [`evol_x/EVOL_X_SHA_LADDER.md`](./evol_x/EVOL_X_SHA_LADDER.md) |
 
 **POST_IC_CONSOLIDATION_PUBLICATION_SHA:** `81829712acc19ebeadb4773467b9c5642ca975e3`. **IC-AUD-001** corrective @ `1b82324abe0f775086617f907870dd30dd11aade` included in ancestry.
+
+## EVOL-X internal final closure (2026-11-05)
+
+| Stage | Internal disposition | Formal disposition |
+| --- | --- | --- |
+| **EVOL-X** | **`INTERNALLY CLOSED — AUTOMATED INTERNAL AUDIT ACCEPTED (AUTOMATION_FIRST_SCOPED)`** — [`evol_x/EVOL_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md`](./evol_x/EVOL_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md) | Protocol 03 B6 **`PENDING_AUTHORITY`**; FRZ-EVOL **OPEN** |
+| **ENT-AUDIT-X** | Unchanged @ OD-IC-01 internal cert; **internal handoff from EVOL-X COMPLETE** | Formal B6 **PENDING** |
+
+**INTERNAL_CLOSURE_PUBLICATION_SHA:** see [`evol_x/EVOL_X_SHA_LADDER.md`](./evol_x/EVOL_X_SHA_LADDER.md). Does **not** set `B6_ACCEPTANCE_PUBLICATION_SHA` or `FORMAL_CLOSURE_PUBLICATION_SHA`.
