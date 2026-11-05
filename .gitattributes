@@ -1,4 +1,5 @@
-*.ipynb linguist-documentation=true
+docs/project/maintainers/qualification/iiac_evidence/** -text
+
 
 governance/**/*.yaml text eol=lf
 governance/**/*.yml text eol=lf

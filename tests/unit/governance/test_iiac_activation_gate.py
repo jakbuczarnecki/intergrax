@@ -492,6 +492,18 @@ def test_historical_partial_bytes_remain_distinct() -> None:
     assert HISTORICAL_REPORT.is_file()
     assert _sha256(REAUDIT_REPORT.read_bytes()) == REPORT_DIGEST
     assert _sha256(HISTORICAL_REPORT.read_bytes()) == HISTORICAL_DIGEST
+    for path, digest in (
+        (REAUDIT_REPORT, REPORT_DIGEST),
+        (HISTORICAL_REPORT, HISTORICAL_DIGEST),
+    ):
+        rel = path.relative_to(REPO).as_posix()
+        blob = subprocess.run(
+            ["git", "cat-file", "blob", f"HEAD:{rel}"],
+            cwd=REPO,
+            capture_output=True,
+            check=True,
+        )
+        assert _sha256(blob.stdout) == digest
     historical = json.loads(
         (
             REPO
