@@ -1,0 +1,29 @@
+CONTROL FINAL: OK
+[DETECTED] T1 raw byte tamper without digest update: ['tampered ARTIFACT_DIGESTS entry: evol_metrics.v1.json']
+[DETECTED] T2 metric flipped to failing, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T3 FRZ-07 scope footnote removed, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T4 FRZ row failed, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T5 experiment arm failed, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T6 M-09H forged MEASURED, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T7 stale source_commit_sha in metrics, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T8 junit outcome flipped to failed, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T9 M-09A automated qual: human_m09h_measured forged true, re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+[DETECTED] T10 C1 diagnostic output byte tamper, digests re-signed: ['tampered ARTIFACT_DIGESTS entry: evol_frz_evidence.v1.json', 'tampered ARTIFACT_DIGESTS entry: evol_junit_outcomes.v1.json']
+Traceback (most recent call last):
+  File "C:\Users\XPS\AppData\Local\Temp\claude\a6d338a1be78d1c4\a18c2476-3b59-4cc7-bc0f-fa22b25edcfc\scratchpad\probe_tamper.py", line 39, in <module>
+    run("T11 delete one experiment verdict, digests re-signed (manifest unchanged)", lambda: (B/"experiments/S4_negative.json").unlink(), True)
+  File "C:\Users\XPS\AppData\Local\Temp\claude\a6d338a1be78d1c4\a18c2476-3b59-4cc7-bc0f-fa22b25edcfc\scratchpad\probe_tamper.py", line 19, in run
+    if redigest: rewrite_digests()
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Local\Temp\claude\a6d338a1be78d1c4\a18c2476-3b59-4cc7-bc0f-fa22b25edcfc\scratchpad\probe_tamper.py", line 15, in rewrite_digests
+    p03.write_digests(B, tuple(m["artifact_paths"]))
+  File "D:\Projekty\intergrax\build\iiac-c\adv\testing_support\change_safety\evidence\p03.py", line 619, in write_digests
+    digests={rel: sha256_hex((bundle_dir / rel).read_bytes()) for rel in sorted(artifact_paths)}
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py", line 1019, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Projekty\\intergrax\\build\\iiac-c\\adv\\docs\\project\\maintainers\\qualification\\evol_x\\evol_x_p03_independent_replay\\experiments\\S4_negative.json'

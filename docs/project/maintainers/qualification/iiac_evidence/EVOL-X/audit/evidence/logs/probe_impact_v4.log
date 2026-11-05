@@ -1,0 +1,14 @@
+TOTAL missed production(non-tests) modules: 0 | missed test modules: 4161
+paths with missed production modules: 0
+sampled: 60 status: {'COMPLETE': 60}
+oracle closure total: 75380 tool-missed (under-detected): 4161 tool-extra: 59344
+paths with under-detection: 0
+missed test-module categories: {'conftest': 41, 'suite(test_*)': 2803, 'helper/support': 1317}
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.conformance.runtime.durability.test_identity_continuity')
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.conformance.runtime.durability.test_tenant_isolation')
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.integration.applications.architecture.test_harden_4f_mongo_problem_store_failure_e2e')
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.integration.core.qualification.test_provider_qualification_discovery_mongo')
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.integration.core.qualification.test_provider_qualification_persistence_durable_reopen')
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.integration.decision_system.test_otlp_reconstruction')
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.integration.memory.e2e.test_mem_ent15_governance_isolation')
+  suite example: ('intergrax/runtime/nexus/engine/contracts/runtime_state_contract.py', 'tests.integration.runtime.test_diag_enterprise_1_mongo_scalable_read')

@@ -1,0 +1,1604 @@
+{
+  "schema_version": "iiac_part_vii_id_matrix.v1",
+  "stage_id": "EVOL-X",
+  "source": "docs/project/maintainers/qualification/EVOL_X_FINAL_COMPLETION_MASTER_PLAN_v3.md Part VII",
+  "tes": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
+  "final": "bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1",
+  "section_counts": {
+    "VII-A EVOL-01..10": 10,
+    "VII-B FRZ-EVOL-01..10": 10,
+    "VII-C CW-01..10": 10,
+    "VII-D D1..D10": 10,
+    "VII-E S1..S8": 8,
+    "VII-F EVOL-M-01..11 (+supplements)": 17,
+    "VII-G findings F-P0/F-P1/F-P2": 17,
+    "VII-H mandatory evidence artifacts": 11,
+    "VII-I operator decision gates": 12
+  },
+  "rows": [
+    {
+      "id": "EVOL-01",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 11,
+      "test_files_or_names": [
+        "frz_01",
+        "intake_and_impact"
+      ],
+      "artifacts": [],
+      "auditor_probes": [
+        "P-IMP"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "Graph-derived impact; unknown -> fail closed; 0 production consumers missed vs independent AST closure.",
+      "findings": [
+        "F-C-03"
+      ],
+      "limitations": [
+        "LIM-03"
+      ]
+    },
+    {
+      "id": "EVOL-02",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 8,
+      "test_files_or_names": [
+        "frz_03",
+        "isolation",
+        "exp_s1"
+      ],
+      "artifacts": [],
+      "auditor_probes": [
+        "P-IMP"
+      ],
+      "result": "PASS",
+      "note": "S1 escape=0; escapes carry witness.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-03",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 20,
+      "test_files_or_names": [
+        "compat_adapter",
+        "consumer_index",
+        "exp_s2"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "INCOMPATIBLE detected, consumers enumerated, hidden consumer found.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-04",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 19,
+      "test_files_or_names": [
+        "frz_05",
+        "workflow_matrix",
+        "exp_s3"
+      ],
+      "artifacts": [],
+      "auditor_probes": [
+        "P-ASSESS"
+      ],
+      "result": "PASS",
+      "note": "128-input exhaustive: unsafe_adoption=0.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-05",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 25,
+      "test_files_or_names": [
+        "test_evol_x_selection",
+        "selection_fault_injection",
+        "exp_s6"
+      ],
+      "artifacts": [],
+      "auditor_probes": [
+        "P-SEL"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "8 fault classes fail closed; scope = EVOL_CONSERVATIVE_FULL.",
+      "findings": [
+        "F-C-02",
+        "F-C-04"
+      ],
+      "limitations": [
+        "LIM-01",
+        "LIM-04"
+      ]
+    },
+    {
+      "id": "EVOL-06",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 21,
+      "test_files_or_names": [
+        "frz_07",
+        "deployment_safety",
+        "exp_s7"
+      ],
+      "artifacts": [],
+      "auditor_probes": [
+        "P-ASSESS"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "Qualification-layer DM-01..07 (384 combinations).",
+      "findings": [
+        "F-C-06"
+      ],
+      "limitations": [
+        "LIM-05"
+      ]
+    },
+    {
+      "id": "EVOL-07",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 9,
+      "test_files_or_names": [
+        "frz_08",
+        "dossier_triggers"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS \u2014 SCOPED",
+      "note": "Passive Q1-Q6 dossier; deterministic; no runtime coupling.",
+      "findings": [
+        "F-C-05"
+      ],
+      "limitations": [
+        "LIM-02"
+      ]
+    },
+    {
+      "id": "EVOL-08",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 9,
+      "test_files_or_names": [
+        "frz_09",
+        "extension_safety",
+        "exp_s8"
+      ],
+      "artifacts": [],
+      "auditor_probes": [
+        "P-ASSESS"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "M-10 satisfied: 0 unauthorized core edits; registry limited to 9 surfaces.",
+      "findings": [
+        "F-C-07"
+      ],
+      "limitations": [
+        "LIM-06"
+      ]
+    },
+    {
+      "id": "EVOL-09",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 4,
+      "test_files_or_names": [
+        "frz_10",
+        "test_trigger_table_is_exactly_t1_to_t9",
+        "each_single_digest_flip"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS \u2014 SCOPED",
+      "note": "T1..T9 executable; freshness counter.",
+      "findings": [],
+      "limitations": [
+        "LIM-07"
+      ]
+    },
+    {
+      "id": "EVOL-10",
+      "section": "VII-A EVOL-01..10",
+      "tests_replayed": 6,
+      "test_files_or_names": [
+        "test_evol_x_change_workflow"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "8-stage pipeline; CLI e2e; failures return non-zero.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-01",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "frz_01"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-02",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "frz_02"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-03",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_03"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-04",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_04"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-05",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_05"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-06",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_06"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-07",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_07"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-08",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_08"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-09",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_09"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "FRZ-EVOL-10",
+      "section": "VII-B FRZ-EVOL-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "frz_10"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "SEE frz_evol_acceptance_matrix.json",
+      "note": "Criterion-level result is recorded only in the dedicated FRZ matrix (no duplication, no mass PASS).",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-01",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "CW-01",
+        "cw01"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "unclassified=0; negative injection detected",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-02",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "CW-02"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "dual-owner conflicts=0",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-03",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "CW-03"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "orphan imports=0",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-04",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "CW-04",
+        "cw04"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "exclusion predicates X-03/X-06/X-07 proven",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-05",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "cw05"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "pytest-collect vs AST reconciled; fails closed without collect",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-06",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "CW-06"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "text oracle parity (M-02)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-07",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "cw07"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "10/10 mutation probes flip",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-08",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "cw08_cw10"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "dual build digest parity \u2014 Windows local replay + Ubuntu CI both green against the same committed digests",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-09",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "cw09"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "QUAL/COMPAT parity explained",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "CW-10",
+      "section": "VII-C CW-01..10",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "cw10",
+        "cw08_cw10"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "incremental == full; stale fact cache detected",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D1",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "test_evol_x_closed_world_smoke",
+        "CW-01"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "universe scan complete",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D2",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 8,
+      "test_files_or_names": [
+        "test_evol_x_extractors"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "symbol extraction",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D3",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "extractor_registry_is_19",
+        "dynamic_import_non_literal"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "19 REL typed; dynamic -> UNKNOWN not dropped",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D4",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 9,
+      "test_files_or_names": [
+        "CW-02",
+        "test_evol_x_contracts_and_data"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "owner rules load/validate",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D5",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "cw04_x03_x06_x07_proofs_recorded"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "X register",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D6",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "test_evol_x_full_cw_report_has_ten_gates"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "CW suite runs ten gates",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D7",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "unknown_path_is_conservative",
+        "dynamic_import_non_literal"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "UNKNOWN register explicit",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D8",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "graph_digest_is_rel_aware_and_tamper_evident",
+        "inventory_digest_stable"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "digest stable and tamper-evident",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D9",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "cw10_stale_fact_cache",
+        "cw08_cw10_dual_and_incremental"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "incremental is development-only; equals full",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "D10",
+      "section": "VII-D D1..D10",
+      "tests_replayed": 4,
+      "test_files_or_names": [
+        "test_evol_x_vl3_manifest_integrity"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "digest chain MANIFEST -> ARTIFACT_DIGESTS -> VL3 independently verified (27/27 digests recomputed); ENT handoff pin W7-06 belongs to certifier",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "S1",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "exp_s1_",
+        "negative_arm_is_non_vacuous[S1]"
+      ],
+      "artifacts": [
+        "experiments/S1_positive.json",
+        "experiments/S1_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "positive: blast_apps=['app_a'] escapes=[] | negative: escapes=['module:applications.app_b.escape'] naive_blast=['app_a'] blast=['app_a', 'app_b']",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "S2",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 4,
+      "test_files_or_names": [
+        "exp_s2_",
+        "negative_arm_is_non_vacuous[S2]"
+      ],
+      "artifacts": [
+        "experiments/S2_positive.json",
+        "experiments/S2_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "positive: consumers=['module:agents.fx_planner.plan', 'module:applications.app_a.billing', 'module:applications.app_b.ship', 'module:applications.app_c.hidden'] orphans=0 breaking=INCOMPATIBLE | negative: hidden=['module:applications.app_c.hidden'] naive_missed=['module:applications.app_c.hidden']",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "S3",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "exp_s3_",
+        "negative_arm_is_non_vacuous[S3]"
+      ],
+      "artifacts": [
+        "experiments/S3_positive.json",
+        "experiments/S3_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "positive: matrix_rows=5 pin_preserved=True | negative: production_rejects_repin=True unsafe_adoptions=0",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "S4",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "exp_s4_",
+        "negative_arm_is_non_vacuous[S4]"
+      ],
+      "artifacts": [
+        "experiments/S4_positive.json",
+        "experiments/S4_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "positive: rewrite_set=[] extension=EXTENSION_ONLY | negative: rewrite_required=['module:applications.app_a.use_concrete']",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "S5",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "exp_s5_",
+        "negative_arm_is_non_vacuous[S5]"
+      ],
+      "artifacts": [
+        "experiments/S5_positive.json",
+        "experiments/S5_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "positive: migrate=MIGRATION_REQUIRED additive=COMPATIBLE | negative: no_migration=INCOMPATIBLE reasons=['type changed:total', 'no migration registered (silent break)']",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "S6",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "exp_s6_",
+        "negative_arm_is_non_vacuous[S6]"
+      ],
+      "artifacts": [
+        "experiments/S6_positive.json",
+        "experiments/S6_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "positive: detected=8/8 baseline=SELECTED | negative: bypass_count=0 of 64 compound injections",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "S7",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "exp_s7_",
+        "negative_arm_is_non_vacuous[S7]"
+      ],
+      "artifacts": [
+        "experiments/S7_positive.json",
+        "experiments/S7_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS \u2014 SCOPED",
+      "note": "positive: dm_outcomes=7/7 ad_rollback_ok=True | negative: dm04=REFUSE false_safe=0 ad_layer_alone_succeeds=True",
+      "findings": [
+        "F-C-06"
+      ],
+      "limitations": [
+        "LIM-05"
+      ]
+    },
+    {
+      "id": "S8",
+      "section": "VII-E S1..S8",
+      "tests_replayed": 3,
+      "test_files_or_names": [
+        "exp_s8_",
+        "negative_arm_is_non_vacuous[S8]"
+      ],
+      "artifacts": [
+        "experiments/S8_positive.json",
+        "experiments/S8_negative.json"
+      ],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "positive: scaffold=EXTENSION_ONLY real_poc_files=35 | negative: core_edit=CORE_TOUCH_UNAUTHORIZED unauthorized_surfaces=1",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-01",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 40/40 threshold=0.95 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-02",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 11528/11528 threshold=0.9 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-02C",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 0/11528 threshold=0.0 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-03",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "MEASURED 2082/2082 threshold=0.98 \u2014 Independent AST oracle; arcs A1..A6 are self-surface arcs; identical results independently re-derived.",
+      "findings": [
+        "F-C-04"
+      ],
+      "limitations": [
+        "LIM-04"
+      ]
+    },
+    {
+      "id": "EVOL-M-03R",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "MEASURED 2082/2082 threshold=1.0 \u2014 Independent AST oracle; arcs A1..A6 are self-surface arcs; identical results independently re-derived.",
+      "findings": [
+        "F-C-04"
+      ],
+      "limitations": [
+        "LIM-04"
+      ]
+    },
+    {
+      "id": "EVOL-M-03C",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "MEASURED 342/342 threshold=1.0 \u2014 Independent AST oracle; arcs A1..A6 are self-surface arcs; identical results independently re-derived.",
+      "findings": [
+        "F-C-04"
+      ],
+      "limitations": [
+        "LIM-04"
+      ]
+    },
+    {
+      "id": "EVOL-M-03E",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "MEASURED 0/2082 threshold=0.0 \u2014 Independent AST oracle; arcs A1..A6 are self-surface arcs; identical results independently re-derived.",
+      "findings": [
+        "F-C-04"
+      ],
+      "limitations": [
+        "LIM-04"
+      ]
+    },
+    {
+      "id": "EVOL-M-04",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 8/8 threshold=1.0 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-05",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 2/2 threshold=1.0 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-06",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 0/1 threshold=0.0 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-07",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 4/4 threshold=1.0 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-08",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 2/2 threshold=1.0 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-09A",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS \u2014 SCOPED",
+      "note": "MEASURED 3/3 threshold=1.0 \u2014 Independently re-derived by Mode A (registry oracle, diagnostic digests, adversarial control).",
+      "findings": [
+        "F-C-05"
+      ],
+      "limitations": [
+        "LIM-02"
+      ]
+    },
+    {
+      "id": "EVOL-M-09H",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "NOT_MEASURED \u2014 scoped by OD-EVOL-13 (not a failure, not a pass)",
+      "note": "NOT_MEASURED 0/0 threshold=1.0 \u2014 Human drill not performed; verifier forbids forged M-09H (probe T6/T12 detected).",
+      "findings": [
+        "F-C-05"
+      ],
+      "limitations": [
+        "LIM-02"
+      ]
+    },
+    {
+      "id": "EVOL-M-10",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 0/2 threshold=0.0 \u2014 Independently re-derived at TES: numerator/denominator/population digest identical.",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-09T",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 3/3 threshold=1.0 \u2014 independently re-derived",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "EVOL-M-11",
+      "section": "VII-F EVOL-M-01..11 (+supplements)",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [
+        "evol_metrics.v1.json"
+      ],
+      "auditor_probes": [
+        "P-MET"
+      ],
+      "result": "PASS",
+      "note": "MEASURED 9/9 threshold=1.0 \u2014 independently re-derived",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P0-01",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "leave_one_out"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "leave-one-out detection real",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P0-02",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 2,
+      "test_files_or_names": [
+        "vl3_manifest_unpinned_node_and_shrunk",
+        "adjacent_nodes_are_part_of_conservative_universe"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "EVOL manifest cannot be shrunk",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P0-03",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 52,
+      "test_files_or_names": [
+        "test_evol_x_p03_integrity"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "52 negatives + auditor Mode A (12) and Mode B (5) tamper probes; HEAD-only replay refused",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P0-04",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 8,
+      "test_files_or_names": [
+        "non_vacuous"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "anti-vacuity guards for all S1..S8 negatives",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P0-05",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 22,
+      "test_files_or_names": [
+        "frz_0",
+        "frz_10"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "FRZ tests behavioral",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P0-06",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 22,
+      "test_files_or_names": [
+        "test_evol_x_metrics"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "real populations; independent re-derivation identical",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P1-01",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "real_graph_has_semantic_rels_beyond_imports"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "semantic RELs beyond imports",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P1-02",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 23,
+      "test_files_or_names": [
+        "test_evol_x_selection"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS \u2014 SCOPED",
+      "note": "TESTED_BY direct-import only (F-C-03); in-scope under-selection probe: 0",
+      "findings": [
+        "F-C-03"
+      ],
+      "limitations": [
+        "LIM-03"
+      ]
+    },
+    {
+      "id": "F-P1-03",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 23,
+      "test_files_or_names": [
+        "test_evol_x_selection"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "deterministic selection decision identity",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P1-04",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 4,
+      "test_files_or_names": [
+        "exp_s3_",
+        "exp_s7_"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "flag smokes replaced by harness arms",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P1-05",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 4,
+      "test_files_or_names": [
+        "exp_s1_",
+        "exp_s8_"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "fixture trees exist (collected and executed)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P1-06",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 15,
+      "test_files_or_names": [
+        "closed_world_gates"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "all ten CW gates present",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P1-07",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS \u2014 OD-EVOL-01..10,13 signed; OD-EVOL-11/12/EVOLX-08 handled per IIAC migration (see dossier \u00a710)",
+      "note": "register verified; legacy OD-11/12/EVOLX-08 remain PENDING in the register",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P1-08",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "RC-7 formal exclusion (OD-EVOL-10) verified; the ImportError still reproduces at HEAD (tracked platform defect, outside EVOL scope)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P2-01",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "roadmap \u00a75 ledger sync is a certifier publication step (W7-05); auditor edits no roadmap",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P2-02",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 1,
+      "test_files_or_names": [
+        "graph_digest_is_rel_aware"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "semantic graph digest",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "F-P2-03",
+      "section": "VII-G findings F-P0/F-P1/F-P2",
+      "tests_replayed": 74,
+      "test_files_or_names": [
+        "test_evol_x_p03_integrity",
+        "negative"
+      ],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "expanded negatives in junit",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "MANIFEST.json",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "bound to TES; no self-referential field",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "ARTIFACT_DIGESTS.json",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "27/27 digests independently recomputed over git blobs at FINAL",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "evol_test_execution_manifest.v1",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "290 node ids; content digest verified; 2 documented exclusions (OD-EVOL-10)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "evol_junit_outcomes.v1.json",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "290 passed; equals auditor's independent replay outcome map",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "inventory/graph/selection manifests",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "inventory_binding + m03_causal_audit bound to TES",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "junit XML archive",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "CI artifact sha256 69c6a9ad\u2026 (not byte-comparable to local replay by design); auditor local replay sha256 fe8abfce\u2026",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "evol_metrics.v1",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS \u2014 SCOPED",
+      "note": "M-09H NOT_MEASURED by OD-EVOL-13 (plan row says 'no NOT_MEASURED at closure': operator-scoped deviation)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "16 experiment verdicts",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS",
+      "note": "8x2 arms, all passed",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "evol_frz_evidence.v1",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PASS \u2014 SCOPED",
+      "note": "10 rows; FRZ-EVOL-06 scope_footnote empty (F-C-02)",
+      "findings": [
+        "F-C-02"
+      ],
+      "limitations": []
+    },
+    {
+      "id": "B6 PASS record",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PENDING \u2014 this audit's pass record is the auditor deliverable; certification publication belongs to certifier",
+      "note": "see EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "ENT handoff",
+      "section": "VII-H mandatory evidence artifacts",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "W7-06 ENT-AUDIT-X handoff pin is a certifier publication step",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOLX-01",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED (register)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-01",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-09",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-10",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-02",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-06",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-05a/c",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-05b",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED \u2014 Option 1 (qualification-only)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-03/07/08",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "SIGNED / APPROVED (+OD-EVOL-08-M1)",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-11",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "Human auditor identity NOT NAMED \u2014 superseded by IIAC auditor_session_id (migration matrix); IIAC handoff record operator attestation PENDING",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOL-12",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "PENDING in register \u2014 IIAC migration: operator FRZ row mass promotion -> certifier gate + per-row evidence",
+      "findings": [],
+      "limitations": []
+    },
+    {
+      "id": "OD-EVOLX-08",
+      "section": "VII-I operator decision gates",
+      "tests_replayed": 0,
+      "test_files_or_names": [],
+      "artifacts": [],
+      "auditor_probes": [],
+      "result": "PROCEDURAL \u2014 NOT AN AUDIT-EVIDENCE ITEM (certifier/operator gate)",
+      "note": "PENDING in register \u2014 IIAC migration: operator stage closure -> certifier + FORMAL_CLOSURE_PUBLICATION_SHA + preflight",
+      "findings": [],
+      "limitations": []
+    }
+  ]
+}

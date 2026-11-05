@@ -1,0 +1,13 @@
+CONTROL FINAL: OK
+[DETECTED] T1 byte tamper, digests NOT updated: ['tampered ARTIFACT_DIGESTS entry: evol_metrics.v1.json']
+[DETECTED] T2 metric flipped to failing, digests re-signed: ['metric not passing: EVOL-M-01']
+[DETECTED] T3 FRZ-07 scope footnote removed, re-signed: ['scope footnote missing: FRZ-EVOL-07']
+[DETECTED] T4 FRZ-04 row failed, re-signed: ['FRZ behavioral test not passed: FRZ-EVOL-04']
+[DETECTED] T5 experiment S6 negative arm failed, re-signed: ['experiment arm not passed: experiments/S6_negative.json']
+[DETECTED] T6 M-09H forged MEASURED/PASS, re-signed: ['automation-first scoped certification requires EVOL-M-09H NOT_MEASURED', 'automation-first scoped bundle requires EVOL-M-09H NOT_MEASURED']
+[DETECTED] T7 stale source_commit_sha in metrics, re-signed: ['stale source_commit_sha in evol_metrics.v1.json: 000000000 != test_execution_sha 3c4a641b3']
+[DETECTED] T8 junit-outcomes: one test flipped to failed, re-signed: ['non-passed outcome: tests/qualification/evol_x/experiments/test_evol_x_exp_anti_vacuity.py::test_evol_x_exp_negative_arm_is_non_vacuous[S1]=failed']
+[DETECTED] T9 M-09A qual: human_m09h_measured forged true, re-signed: ['evol_m09_automated_diagnostic_qualification.v1.json invalid: Input should be False']
+[DETECTED] T10 M-09A diagnostic output C2 byte tamper, re-signed: ['automated diagnostic digest mismatch for C2']
+[DETECTED] T11 delete experiment verdict S4_negative, re-signed: ['ARTIFACT_DIGESTS keys differ from MANIFEST artifact_paths', 'artifact missing @ evidence HEAD: experiments/S4_negative.json', 'missing artifact @ 1304fde6a: docs/project/maintainers/qualification/evol_x/evol_x_p03_independent_replay/experiments/S4_negative.json']
+[DETECTED] T12 manifest certification_profile flipped to HUMAN_FULL, re-signed: ['final certification requires EVOL-M-09H MEASURED and PASS', 'final certification requires evol_m09_human_drill.v2.json in MANIFEST artifact_paths']

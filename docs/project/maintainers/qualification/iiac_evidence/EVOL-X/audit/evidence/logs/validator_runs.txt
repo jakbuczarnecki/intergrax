@@ -1,0 +1,20 @@
+# Validators on a TEST-ONLY completed copy of the auditor draft (certifier/implementation fields filled with dummy values to exercise the validators; NOT a publication) 2026-11-05T19:03:15+01:00
+
+## (1) audit_execution_sha = FINAL (as in the draft)
+verify_iiac_audit_manifest: PASS
+exit=0
+verify_iiac_role_separation: PASS
+exit=0
+
+## (2) counter-case: audit_execution_sha = HEAD (06a459afb)
+verify_iiac_audit_manifest: PASS
+exit=0
+verify_iiac_role_separation: FAIL
+  - auditor product write-surface detected (34 paths) (N-03): intergrax/applications/_shared/health_score_wiring.py
+exit=1
+
+## (3) the unmodified auditor draft (expected FAIL: pending certifier fields)
+verify_iiac_audit_manifest: FAIL
+  - jsonschema: 'PENDING_CERTIFIER' does not match '^[0-9a-f]{40}$'
+  - certification_publication_sha must be 40-char lowercase hex SHA
+exit=1
