@@ -1,7 +1,7 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
-See LICENSE for permitted evaluation, collaboration, and contribution use.
+Intergrax is proprietary, source-visible software. No general use license is granted.
+See LICENSE. This notice does not claim ownership of third-party or contributor-owned materials.
 -->
 
 # Partners and Pilots
@@ -10,11 +10,11 @@ If your team runs a **private or controlled knowledge workflow** - approved sour
 
 **Can Intergrax make this workflow useful, controlled, and reviewable enough to justify deeper adoption or integration?**
 
-That is the purpose of a partner or design-partner discussion: not a generic product tour, but a focused evaluation of one real workflow against current evidence and boundaries.
+That is the purpose of a partner or design-partner discussion: a focused look at one real workflow against current evidence and boundaries. The public repository does not grant a right to run that workflow.
 
 Intergrax is strongest today at **governed private knowledge workflows** where teams need combinations of approved knowledge, grounded results, explicit access boundaries, evidence traceability, and reviewable execution. LKW is the **Active reference product** (**Backend Product Alpha / MVP**, **PARTIAL**). Not every listed capability is fully production-qualified; a pilot is how you judge fit for your specific workflow.
 
-Primary audience: a CTO, partner, integrator, or design partner with one concrete workflow to evaluate.
+Primary audience: a CTO, partner, integrator, or design partner with one concrete workflow to discuss. This page does not authorize an evaluation run, install, or pilot. Those activities require separate written permission.
 
 ---
 
@@ -120,11 +120,11 @@ flowchart LR
 1. **Workflow note** - Send 3–5 sentences describing users, workflow, problem, and desired result.
 2. **Fit discussion** - Confirm workflow clarity, mutual interest, and current evidence fit.
 3. **Scope and evidence** - Define allowed and forbidden actions, approvals, environment, and what evidence the evaluation must produce. Complete a concise pilot brief at this stage if proceeding.
-4. **Bounded evaluation** - Run an evaluation-only pilot under [LICENSE](../../../LICENSE), or an authorized pilot if operational activity requires explicit permission.
+4. **Bounded evaluation** - Run a pilot only after separate written permission, or under an earlier license that covers that copy. [LICENSE](../../../LICENSE) does not grant an evaluation-only pilot.
 5. **Review evidence** - Assess outcomes against agreed success criteria.
 6. **Decision** - CONTINUE, REVISE, or STOP.
 
-Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do **not** determine permission status. Actual activity and the terms of [LICENSE](../../../LICENSE) control.
+Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do not grant permission. Separate written permission is required before the activity starts.
 
 ---
 
@@ -160,20 +160,22 @@ A stopped pilot can still be a valid and useful result.
 
 ## Evaluation vs operational use
 
-### Evaluation-only pilot
+### Isolated pilot
 
-An evaluation-only pilot stays **isolated and non-production** and is solely for **Evaluation** under [LICENSE](../../../LICENSE):
+The public [LICENSE](../../../LICENSE) does not grant an evaluation, pilot, install, or test right. An isolated discussion is not permission to run the software. Any install, execution, test, or pilot requires separate explicit written permission, unless an earlier license covers that copy or applicable law does not allow the restriction.
+
+A written authorization, if given, still has to define scope. Isolation terms that the parties may need to write down include:
 
 - synthetic or appropriately anonymized test data;
 - no real customer-facing service;
 - no ongoing operational business process; and
 - no replacement of a production tool.
 
-**Evaluation Participants** may include employees, contractors, advisers, and technical reviewers acting solely for Evaluation. The activity remains subject to the exact terms of [LICENSE](../../../LICENSE).
+Employees, contractors, advisers, and technical reviewers are not authorized by this page.
 
 ### Operational or production pilot
 
-The following normally place the activity **outside** the public evaluation grant:
+The following are not covered by public access and are not turned into a permitted pilot by their label:
 
 - real operational users or real customers;
 - production data;
@@ -183,13 +185,13 @@ The following normally place the activity **outside** the public evaluation gran
 - hosting or SaaS; or
 - paid or commercial product integration.
 
-**Explicit written permission or a separate agreement is required before the activity starts.** Contacting the maintainer does not grant permission.
+**Separate explicit written permission is required before the activity starts.** Contacting the maintainer does not grant permission. Calling the activity a pilot, test, sandbox, or proof of concept does not grant permission.
 
 ---
 
 ## Permission and collaboration boundaries
 
-Intergrax is **source-available** and under **active R&D**. A partner discussion or pilot name does **not** grant production, commercial, hosting, redistribution, or endorsement rights. [LICENSE](../../../LICENSE) is legally authoritative.
+Intergrax is **proprietary, source-visible** software and under **active R&D**. A partner discussion or pilot name does not grant evaluation, production, commercial, hosting, redistribution, modification, or endorsement rights. [LICENSE](../../../LICENSE) controls Licensor materials. A prior license may still govern a copy obtained under that earlier text.
 
 A partner discussion or pilot does **not** automatically include production rights, commercial rights, hosting rights, redistribution rights, exclusivity, endorsement, SLA, support, certification, compliance approval, feature acceptance, or release-date commitment.
 
@@ -217,7 +219,7 @@ After mutual fit is established, a concise pilot brief should cover: concrete us
 
 ## Optional technical due diligence
 
-These documents support self-service evaluation and deeper technical review. None are required before first contact.
+These documents describe methods and evidence. They do not authorize a run, install, or modification. None are required before first contact.
 
 | Topic | Document |
 |-------|----------|

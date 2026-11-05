@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 title: Intergrax
-message: "If you use Intergrax in research or publications, please cite it as follows:"
+message: "If you refer to Intergrax in research or publications, please cite it as follows. This citation request is not a license to use the software."
 type: software
 authors:
   - family-names: Czarnecki

@@ -1,12 +1,12 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
-See LICENSE for permitted evaluation, collaboration, and contribution use.
+Intergrax is proprietary, source-visible software. No general use license is granted.
+See LICENSE. This notice does not claim ownership of third-party or contributor-owned materials.
 -->
 
 # Build with Intergrax - Builder Quick Start
 
-This is the canonical first builder entry point: a bounded, executable path from repository setup to a runnable agent + application stack. It uses current Intergrax scaffold capabilities - not a production template or stable public SDK.
+This is the canonical first builder entry point: a bounded path from repository setup to an agent + application stack. It uses current Intergrax scaffold capabilities. It is not a production template or a stable public SDK. Following this path requires separate written permission to install, run, and modify Intergrax. This page is not that permission. See [LICENSE](../../../LICENSE).
 
 ## At a glance
 

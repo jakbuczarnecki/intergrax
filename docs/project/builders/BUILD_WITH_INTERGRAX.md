@@ -1,7 +1,7 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
-See LICENSE for permitted evaluation, collaboration, and contribution use.
+Intergrax is proprietary, source-visible software. No general use license is granted.
+See LICENSE. This notice does not claim ownership of third-party or contributor-owned materials.
 -->
 
 # Build With Intergrax
@@ -11,7 +11,7 @@ You have completed the [Builder Quick Start](BUILDER_QUICKSTART.md) checkpoint. 
 This is the deeper builder planning guide: it helps an AI engineer or application architect decide what the product owns, which reusable Intergrax responsibilities are needed, and where the nearest technical and verification owners are. It does not replace module architecture, API contracts, or evaluation execution.
 
 > [!NOTE]
-> Intergrax is source-available and under **active R&D**. This guide plans bounded composition; it does not claim universal provider support, production readiness, or a stable universal public SDK.
+> Intergrax is proprietary, source-visible software under **active R&D**. No general license is granted. This guide plans bounded composition and is not permission to build or run the software. It does not claim universal provider support, production readiness, or a stable universal public SDK. See [LICENSE](../../../LICENSE).
 
 ## At a glance
 
