@@ -16,7 +16,7 @@ if str(_CI_DIR) not in sys.path:
     sys.path.insert(0, str(_CI_DIR))
 
 from git_changed_paths import staged_paths  # noqa: E402
-from push_gate_config import load_push_gate_config  # noqa: E402
+from push_gate_config import load_push_gate_config, split_ruff_exempt  # noqa: E402
 
 
 def _truthy_env(name: str) -> bool:
@@ -27,7 +27,10 @@ def _truthy_env(name: str) -> bool:
 
 
 def _staged_python_files() -> list[str]:
-    return sorted(path for path in staged_paths() if path.endswith(".py"))
+    lint, exempt = split_ruff_exempt(sorted(path for path in staged_paths() if path.endswith(".py")))
+    if exempt:
+        print(f"[INFO] pre-commit ruff: {len(exempt)} byte-preserved file(s) exempt via [tool.ruff] extend-exclude")
+    return lint
 
 
 def _run_ruff(paths: list[str]) -> int:

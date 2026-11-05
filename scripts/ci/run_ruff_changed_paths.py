@@ -17,10 +17,15 @@ if str(_CI_DIR) not in sys.path:
     sys.path.insert(0, str(_CI_DIR))
 
 from git_changed_paths import push_paths, staged_paths  # noqa: E402
+from push_gate_config import split_ruff_exempt  # noqa: E402
 
 
 def _python_paths(paths: frozenset[str]) -> list[str]:
-    return sorted(path for path in paths if path.endswith(".py") and (_REPO / path).is_file())
+    candidates = sorted(path for path in paths if path.endswith(".py") and (_REPO / path).is_file())
+    lint, exempt = split_ruff_exempt(candidates)
+    if exempt:
+        print(f"[INFO] ruff changed-paths: {len(exempt)} byte-preserved file(s) exempt via [tool.ruff] extend-exclude")
+    return lint
 
 
 def main(argv: Sequence[str] | None = None) -> int:
