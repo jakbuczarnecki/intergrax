@@ -147,6 +147,90 @@ def sign_attestation(private_key: Ed25519PrivateKey, body: Mapping[str, Any]) ->
     return unsigned
 
 
+def build_unsigned_attestation_payload(
+    *,
+    verification_tool_digest: str,
+    attestor_identity: str,
+    evidence_producer_identity: str,
+    key_id: str,
+    trust_root_ref: str,
+    attestation_id: str,
+    credential_class: str,
+    formal_acceptance_disposition: str,
+    mode_a_status: str,
+    mode_b_status: str,
+    now: datetime,
+    validity_hours: int = 168,
+) -> dict[str, Any]:
+    """Build attestation fields without signature or replay_binding (custodian signs externally)."""
+    if credential_class not in {CREDENTIAL_TEST, CREDENTIAL_PRODUCTION}:
+        raise ValueError("invalid credential_class")
+    if formal_acceptance_disposition not in {"NOT_ACCEPTED", "ACCEPTED_AUTOMATED_B6"}:
+        raise ValueError("invalid formal_acceptance_disposition")
+    from datetime import timedelta
+
+    mode_a = {"status": mode_a_status, "m09a": "MEASURED_PASS", "m09h": "NOT_MEASURED"}
+    mode_b = {"status": mode_b_status, "m09a": "MEASURED_PASS", "m09h": "NOT_MEASURED"}
+    not_before = now.replace(microsecond=0)
+    not_after = not_before + timedelta(hours=validity_hours)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "ecap_policy_id": POLICY_ID,
+        "ecap_policy_version": POLICY_VERSION,
+        "operator_decision_ref": OPERATOR_DECISION,
+        "certification_profile": PROFILE,
+        "test_execution_sha": PINNED_TES,
+        "evidence_final_publication_sha": PINNED_FINAL,
+        "verification_tool_id": TOOL_ID,
+        "verification_tool_version": TOOL_VERSION,
+        "verification_tool_digest": verification_tool_digest,
+        "ci_provenance": {
+            "run_id": QUALIFIED_CI_RUN_ID,
+            "conclusion": "success",
+            "head_sha": PINNED_TES,
+            "profile": "evol_x_p3_l3",
+        },
+        "mode_a_result": dict(mode_a),
+        "mode_b_result": dict(mode_b),
+        "findings_disposition": {
+            "register_id": FINDINGS_REGISTER_ID,
+            "complete": True,
+            "open_blocking": 0,
+            "m09h_disposition": "NOT_MEASURED",
+            "m09a_disposition": "MEASURED_PASS",
+        },
+        "frz_scope_declaration": {
+            "scope": "EVOL-X-ONLY",
+            "promotes_frz": False,
+            "frz_evol_07": "OPEN_NOT_PROMOTED",
+            "declares_evol_x_closed": False,
+        },
+        "attestor_identity": attestor_identity,
+        "evidence_producer_identity": evidence_producer_identity,
+        "key_id": key_id,
+        "trust_root_ref": trust_root_ref,
+        "signature_algorithm": SIGNATURE_ALGORITHM,
+        "signing_timestamp": now.replace(microsecond=0).isoformat(),
+        "validity_not_before": not_before.isoformat(),
+        "validity_not_after": not_after.isoformat(),
+        "attestation_id": attestation_id,
+        "replay_binding": "",
+        "credential_class": credential_class,
+        "formal_acceptance_disposition": formal_acceptance_disposition,
+    }
+
+
+def bind_and_sign_attestation(private_key: Ed25519PrivateKey, body: Mapping[str, Any]) -> dict[str, Any]:
+    """Compute replay_binding and Ed25519 signature (custodian/runtime use only)."""
+    unsigned = dict(body)
+    unsigned.pop("signature", None)
+    unsigned.pop("replay_binding", None)
+    unsigned["replay_binding"] = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
+    signature = private_key.sign(canonical_bytes(unsigned))
+    unsigned["signature"] = base64.b64encode(signature).decode("ascii")
+    return unsigned
+
+
 def evaluate_acceptance(
     *,
     technical_verdict: str,

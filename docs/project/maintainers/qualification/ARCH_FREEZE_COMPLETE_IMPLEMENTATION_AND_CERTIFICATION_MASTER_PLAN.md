@@ -1,8 +1,9 @@
 # ARCH-FREEZE — Complete implementation and certification master plan (SSOT)
 
-**Status:** PLANNING ARTIFACT — **NOT** ARCH-FREEZE CLOSED · **NOT** B6 ACCEPTED · **NOT** global FRZ PASS  
-**Disposition:** `ARCH-FREEZE PLAN TRACEABILITY — CORRECTED — READY FOR INDEPENDENT RE-AUDIT`  
-**AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` · **Branch:** `development` · **Recorded:** 2026-11-04 (corrective planning pass)
+**Status:** PLANNING ARTIFACT — **NOT** ARCH-FREEZE CLOSED · **NOT** global FRZ PASS  
+**Disposition:** `WAVE1 G6 ACCEPTED (SCOPED) @ 3d96691f — R0–R6 CLOSURE OPEN (T-IGX-010-C)`  
+**AUDIT_BASELINE_SHA:** `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` · **Wave EXECUTION_SHA:** B1 `6bdf78c…` · B2–B4 `f7ce9dae…` · **G6 AUDIT:** `3d96691f…` · **CLOSURE_DOC_HEAD:** `950097ea4bcfd5bba828f663bcd993b8bd1e1d63` · **Branch:** `development` · **Recorded:** 2026-11-04  
+**Auditor entry:** [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md) · **Closure ticket:** [`governance/tickets/T-IGX-010-C.md`](../../../governance/tickets/T-IGX-010-C.md)
 
 **Child artifacts (substantive — not placeholders):**
 
@@ -12,7 +13,7 @@
 | 2 | [ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md](./ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md) — **225 rows** |
 | 3 | [ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md](./ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md) |
 | 4 | [ARCH_FREEZE_ARCHITECTURE_AND_PRODUCTION_SURFACE_INVENTORY.md](./ARCH_FREEZE_ARCHITECTURE_AND_PRODUCTION_SURFACE_INVENTORY.md) |
-| 5 | [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md) — **48 tasks** |
+| 5 | [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md) — **54 tasks** |
 | 6 | [ARCH_FREEZE_QUALIFICATION_AND_EVIDENCE_PLAN.md](./ARCH_FREEZE_QUALIFICATION_AND_EVIDENCE_PLAN.md) |
 | 7 | [ARCH_FREEZE_INDEPENDENT_AUDIT_AND_CLOSURE_MATRIX.md](./ARCH_FREEZE_INDEPENDENT_AUDIT_AND_CLOSURE_MATRIX.md) |
 | 8 | [ARCH_FREEZE_SHA_LADDER.md](./ARCH_FREEZE_SHA_LADDER.md) |
@@ -28,9 +29,10 @@
 
 | Item | Value |
 |------|-------|
-| HEAD | `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` (PIC-AUD-001: EVOL ladder W1 lineage) |
-| `origin/development` | Same SHA; clean tree |
-| Pre-admission dossier HEAD | `81829712…` — **stale pointer** → **FIND-PRECHECKLIST-HEAD** (T-B0-001) |
+| CLOSURE_DOC_HEAD | `950097ea4bcfd5bba828f663bcd993b8bd1e1d63` (`origin/development`; clean tree @ R0) |
+| AUDIT_BASELINE_SHA | `a0624e28ff77b061e83f3e10aab4c2a9083ee1b4` (**immutable** — PIC-AUD-001 planning lock) |
+| G6 independent audit | `3d96691f1b02b393a4de189139a6e1347db99382` — wave **B0–B4 ACCEPTED (SCOPED)** |
+| Pre-admission dossier pointer | Refreshed @ **T-R0-BASELINE-CLOSURE-HEAD** / **T-B0-001** COMPLETE @ `950097ea` |
 
 ---
 
@@ -93,7 +95,7 @@ Full per-row columns: [ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md](./ARCH_FREEZE_FRZ_A
 | Area | Actual @ HEAD | Missing proof | Task |
 |------|---------------|---------------|------|
 | FRZ-BND-03 debt text | Code @ HEAD uses evidence port; checklist stale | Gate + evidence reconciliation | T-B2-BND03-RECONCILE |
-| VBN-CURRENT | Pre-admission partial | CURRENT_HEAD audit artifact | T-B2-VBN |
+| VBN-CURRENT | Engineering @ f7ce9dae; dossier shell | Independent §2.1–2.7 @ FREEZE_SHA | T-B2-VBN; **T-B7-VBN-HEAD-DOSSIER**; **T-B7-VBN-INDEPENDENT-ACCEPT** |
 | FRZ-EVOL / FRZ-AUD | Internal IC only | Protocol 03 B6 + promotion | T-B5-* / T-B6-* |
 | FRZ-FRZ-11..13 | ENT not formally closed | ENT B6 chain + FREEZE SHA | T-B6-* → T-B7-* |
 | FRZ-DEBT/DOC | All OPEN | Debt zero + doc gates | T-B2-DEBT, T-B3-DOC |
@@ -106,12 +108,14 @@ Full per-row columns: [ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md](./ARCH_FREEZE_FRZ_A
 Normative order matches [ENT_EVOL_CROSS_STAGE_DECISION_MATRIX.md](./ENT_EVOL_CROSS_STAGE_DECISION_MATRIX.md) and ECAP-§15:
 
 ```text
-EVOL Protocol 03 B6 → FRZ-EVOL promotion → EVOL-X formal CLOSED
+EVOL Protocol 03 B6 → FRZ-EVOL promotion → **T-B5-EVOL-FORMAL-CLOSURE** (EVOL-X formal CLOSED)
   → OD-ENT-00 → ENT Protocol 03 B6 → OD-ENT-01 → OD-ENT-02 (admin)
   → FRZ-AUD promotion → OD-ENT-08 → ENT-AUDIT-X formal CLOSED
-  → IMPLEMENTATION_SHA lock → L3 FREEZE @ FREEZE_CERTIFICATION_SHA
+  → **T-B7-PFP-ACTIVATE** (post-freeze policy + material frozen-surface work qualified)
+  → **T-B7-LOCK-FREEZE-SHA** → L3 FREEZE @ FREEZE_CERTIFICATION_SHA
+  → **T-B7-VBN-HEAD-DOSSIER** (HEAD prep may precede lock) → **T-B7-VBN-INDEPENDENT-ACCEPT** @ FREEZE_SHA
   → ECAP §2.C → architecture FRZ promotions + Path B reconciliation → FRZ-FRZ-02 coordination
-  → pre-closure post-freeze policy (FRZ-FRZ-10) → ECAP §15 → FRZ-FRZ promotion
+  → **T-B7-PFP-VERIFY** (FRZ-FRZ-10 @ FREEZE_SHA) → ECAP §15 → FRZ-FRZ promotion
   → Roadmap §5 ARCH-FREEZE CLOSED — CERTIFIED → ECAP §16 post-closure handoff
 ```
 
@@ -121,9 +125,9 @@ EVOL Protocol 03 B6 → FRZ-EVOL promotion → EVOL-X formal CLOSED
 
 ## 6. WBS summary
 
-**39 tasks** in [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md): baseline, partial inventory, **T-B1-PROD-REACH-SCAN**, remediation, qualification, family promotion rows, **T-B7-COORD-ARCH-FRZ**, **T-B7-PFP-***, formal gates, Path B, publication.
+**54 tasks** in [ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md](./ARCH_FREEZE_WBS_AND_DEPENDENCY_DAG.md): R0 reconcile (+6 TASK_ID), baseline, inventory, remediation, qualification, **T-B5-EVOL-FORMAL-CLOSURE**, **T-B7-LOCK-FREEZE-SHA**, **T-B7-VBN-***, family promotion rows, **T-B7-COORD-ARCH-FRZ**, **T-B7-PFP-***, formal gates, Path B, publication.
 
-**Critical path:** T-B0-001 → … → T-B7-L3-FREEZE → promotions/Path B/PFP → **T-B7-COORD-ARCH-FRZ** → T-B7-ECAP-2C → **T-B7-PFP-VERIFY** → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16 (monitoring only).
+**Critical path:** T-R0-WAVE1-SSOT-RECONCILE → … → T-B5-EVOL-FORMAL-CLOSURE → … → T-B6-OD-ENT-08 → **T-B7-PFP-ACTIVATE** → T-B7-LOCK-FREEZE-SHA → T-B7-L3-FREEZE → T-B7-VBN-* → promotions/Path B → **T-B7-COORD-ARCH-FRZ** → T-B7-ECAP-2C → **T-B7-PFP-VERIFY** → T-B7-FRZ-FRZ → T-B8-ROADMAP → T-B8-ECAP-16.
 
 Validator: `uv run python scripts/governance/verify_arch_freeze_plan_traceability.py`.
 
@@ -165,9 +169,9 @@ Detail: [ARCH_FREEZE_QUALIFICATION_AND_EVIDENCE_PLAN.md](./ARCH_FREEZE_QUALIFICA
 
 ## 9. AGENT entry conditions (implementation)
 
-1. Operator **Approved** line on this SSOT (and ticket `T-IGX-*` if required).
-2. Execute **T-B0-001** then **T-B1-INV** (no product code before inventory).
-3. **Stop** at **T-B5-EVOL-B6** until independent auditor + OD-EVOL-11.
+1. Operator **Approved** line on [`governance/tickets/T-IGX-010-C.md`](../../../governance/tickets/T-IGX-010-C.md) and this SSOT (R0–R6 closure campaign).
+2. **R0** may update dossier SSOT + WBS 54 + traceability validator without product code (except validator WBS count/DAG rules).
+3. **Stop** at **T-B5-EVOL-B6** until independent auditor + OD-EVOL-11; **stop** before OD-ENT-*, branch protection, FRZ promotions, FREEZE lock, ECAP §15, roadmap §5 CLOSED.
 4. One `uv run pytest` / one enterprise-audit CLI per verification step ([test process budget](.cursor/rules/intergrax-test-process-budget.mdc)).
 
-**Preflight:** read scope = SSOT + cited rows; edit scope = approved batches only; tests = qual plan RUN_IDs.
+**Preflight:** read scope = SSOT + cited rows; edit scope = approved batches only; tests = qual plan RUN_IDs + `verify_arch_freeze_plan_traceability.py`.

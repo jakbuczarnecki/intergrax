@@ -80,6 +80,17 @@ Register: [EVOL_X_OPERATOR_DECISION_REGISTER_W1.md](./EVOL_X_OPERATOR_DECISION_R
 
 Prepared intake **authorized**; **BLK-ROADMAP-ENT-DEP** remains OPEN until operator **OD-ENT-00** accepts EVOL formal disposition documented here. W7-06 pin pending EVOL formal closure publication.
 
-## 8. Agent boundary
+## 9. Post-R2 formal closure campaign (@ `4b8276a2e…`)
+
+| Item | State |
+| --- | --- |
+| Terminal report | [`EVOL_X_FINAL_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md`](./EVOL_X_FINAL_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md) |
+| Authority dossier | [`EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md`](./EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md) |
+| W7-03 Outcome A (prepared) | [`EVOL_X_W7_03_FRZ_EVOL_07_OUTCOME_A_DECISION_PACKAGE_PREPARED.md`](./EVOL_X_W7_03_FRZ_EVOL_07_OUTCOME_A_DECISION_PACKAGE_PREPARED.md) |
+| OD-EVOLX-08 (blocked) | [`EVOL_X_OD_EVOLX_08_CLOSURE_RECORD_PREPARED.md`](./EVOL_X_OD_EVOLX_08_CLOSURE_RECORD_PREPARED.md) |
+
+**Disposition:** technically complete; formal B6 / FRZ / CLOSED **blocked** — see terminal report §K.
+
+## 10. Agent boundary
 
 No FRZ PASS, no EVOL B6 PASS, no `FORMAL_CLOSURE_PUBLICATION_SHA`, no superseding OD-EVOL-18/19 signatures.

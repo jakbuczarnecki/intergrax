@@ -1,7 +1,12 @@
 {
   "schema_version": "evol_x_closure_execution_status.v1",
   "execution_start_head": "a20acf4d5fc23887fc3e331bdd5bd03cdb9f48f1",
-  "execution_end_head": "a91b8fb653d87b4788b81beb40b4142bcaf91ef6",
+  "execution_end_head": "4b8276a2ea69afb441680650f94875feda8f080f",
+  "r2_global_reconciliation_publication_sha": "167583ad1d33d9eb6e82589661e6d18aee15fa92",
+  "formal_closure_campaign_id": "EVOL-X-R2-FINAL-FORMAL-CLOSURE",
+  "formal_closure_campaign_start_head": "4b8276a2ea69afb441680650f94875feda8f080f",
+  "formal_closure_campaign_publication_sha": "8195d84b4f05677206b54132f0a2ab6b4d7b29cc",
+  "formal_closure_campaign_terminal_disposition": "TECHNICALLY_COMPLETE_FORMAL_CLOSURE_BLOCKED_BY_AUTHORITY",
   "path_a_decision_id": "OD-EVOL-17",
   "od_evol_17_publication_sha": "7ab634dcf33bf4954a942b29bd573c9931617fb8",
   "path_a_decision_status": "OPERATOR_APPROVED_LOCAL_PATH_A",
@@ -14,7 +19,13 @@
   "wave_disposition": "OD_EVOL_19_OPERATOR_CLOSURE_ACCEPTED",
   "parent_evol_x_status": "CLOSED_BY_OPERATOR_FORMAL_CERTIFICATION_PENDING",
   "parent_evol_x_status_label": "EVOL-X — CLOSED BY OPERATOR / TECHNICAL WORK ACCEPTED / INDEPENDENT CERTIFICATION PENDING",
-  "formal_independent_certification": "PENDING",
+  "internal_closure_campaign_id": "EVOL-X-INTERNAL-FINAL-CLOSURE",
+  "internal_closure_status": "INTERNALLY_CLOSED_AUTOMATION_FIRST_SCOPED",
+  "internal_closure_publication_sha": "ee2c89a0d18b43d7667e7ee2c5df3d446f2a73e1",
+  "internal_b6_technical_status": "INTERNAL_B6_TECHNICAL_ACCEPTED",
+  "internal_frz_status": "INTERNAL_FRZ_EVOL_01_10_ACCEPTED_SCOPED",
+  "internal_ent_handoff_status": "COMPLETE",
+  "formal_ecap_independent_b6": "PENDING_AUTHORITY",
   "implementer_technical_work": "COMPLETE",
   "certification_profile": "AUTOMATION_FIRST_SCOPED",
   "test_execution_sha": "3c4a641b3e48a13f437e830a0562e2a80b03aabb",
@@ -49,11 +60,14 @@
       "blockers": [
         "MISSING_SIGNED_PASS_RECORD",
         "MISSING_NAMED_AUDITOR"
-      ]
+      ],
+      "campaign_record": "EVOL_X_FINAL_FORMAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md",
+      "authority_dossier": "EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md"
     },
     "batch_4_w7_frz_od": {
-      "status": "NOT_STARTED_PENDING_B6",
-      "reason": "W7-03 requires formal B6"
+      "status": "INTERNALLY_ACCEPTED_SCOPED",
+      "reason": "W7-03 internal FRZ matrix @ EVOL-X-INTERNAL-FINAL-CLOSURE",
+      "w7_03_outcome_a_package": "EVOL_X_INTERNAL_FRZ_EVOL_ACCEPTANCE_MATRIX.md"
     },
     "batch_5_final_closure": {
       "status": "BLOCKED",
@@ -61,9 +75,9 @@
       "record": "EVOL_X_OD_EVOL_17_INDEPENDENT_TECHNICAL_REVIEW.md"
     },
     "batch_5_ent_handoff": {
-      "status": "OPERATOR_ACCEPTED_PREPARED",
+      "status": "INTERNAL_HANDOFF_COMPLETE",
       "record": "EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md",
-      "formal_w7_06_pin": "PENDING_W7_05"
+      "formal_w7_06_pin": "PENDING_FORMAL_CLOSURE_SHA"
     },
     "w7_02": {
       "status": "NOT_APPLICABLE",

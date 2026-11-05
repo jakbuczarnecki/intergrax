@@ -134,10 +134,8 @@ def _formal_authority_readiness(register_text: str, governance: Mapping[str, Any
     }
 
 
-def _verify_mode_a_in_worktree(final_wt: Path, *, orchestrator_repo: Path) -> tuple[int, str, str, dict[str, object]]:
-    """Run P03 Mode A using worktree sources (normative @ evidence SHA)."""
-    env = _subprocess_env()
-    env["PYTHONPATH"] = str(final_wt)
+def _verify_mode_a_in_worktree(final_wt: Path) -> tuple[int, str, str, dict[str, object]]:
+    """Run P03 Mode A in the FINAL worktree (``HEAD`` must equal evidence publication SHA)."""
     code = (
         "from pathlib import Path\n"
         "from testing_support.change_safety.evidence import p03\n"
@@ -150,11 +148,11 @@ def _verify_mode_a_in_worktree(final_wt: Path, *, orchestrator_repo: Path) -> tu
         "'evidence_head': p03.head_sha(Path('.'))}))\n"
     )
     proc = subprocess.run(
-        ["uv", "run", "--directory", str(orchestrator_repo), "python", "-c", code],
+        [sys.executable, "-c", code],
         cwd=final_wt,
         text=True,
         capture_output=True,
-        env=env,
+        env=_subprocess_env() | {"PYTHONPATH": str(final_wt)},
     )
     payload: dict[str, object] = {}
     if proc.returncode == 0:
@@ -209,6 +207,13 @@ def _wait_git_blob(repo: Path, ref: str, rel: str, *, timeout_s: float = 180.0) 
             return
         time.sleep(0.25)
     raise ValueError(f"timeout waiting for git blob @ {ref[:12]}: {rel}")
+
+
+def _worktree_base(repo: Path, session_root: Path) -> Path:
+    """Short-path worktrees (Windows ``git show`` / MAX_PATH); session logs stay under ``.tmp/``."""
+    base = repo / "build" / "b6-independent-wt"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
 
 
 def _worktree_add(repo: Path, base: Path, ref: str) -> Path:
@@ -322,8 +327,7 @@ def run_verification(
     logs: list[StepLog] = []
     exit_code = 0
     worktrees: list[Path] = []
-    wt_base = session_root / "worktrees"
-    wt_base.mkdir(parents=True, exist_ok=True)
+    wt_base = _worktree_base(repo, session_root)
     basetemp = repo / "build" / "pytest-b6-independent-replay"
     basetemp.mkdir(parents=True, exist_ok=True)
 
@@ -349,20 +353,27 @@ def run_verification(
         m09a = final_wt / bundle_m09
         if not m09a.is_file():
             raise ValueError(f"worktree @ {evidence_final[:12]} missing {m09a.name} — checkout incomplete")
-        cmd_a = ["uv", "run", "python", "-c", "mode_a_in_worktree"]
-        rc_a, out_a, err_a, payload_a = _verify_mode_a_in_worktree(final_wt, orchestrator_repo=repo)
+        cmd_a = [sys.executable, "-c", "mode_a_in_worktree"]
+        rc_a, out_a, err_a, payload_a = _verify_mode_a_in_worktree(final_wt)
+        mode_a_ok = rc_a == 0
+        if mode_a_ok and payload_a.get("evidence_head") != evidence_final:
+            mode_a_ok = False
+            payload_a = {
+                **payload_a,
+                "contract_fail": "evidence_head != evidence_final pin",
+                "expected": evidence_final,
+            }
         logs.append(
             StepLog(
                 step="mode_a_verify_evidence_publish",
                 command=cmd_a,
                 cwd=str(final_wt),
-                exit_code=rc_a,
+                exit_code=0 if mode_a_ok else 2,
                 stdout=out_a,
                 stderr=err_a,
                 payload=payload_a,
             )
         )
-        mode_a_ok = rc_a == 0
 
         if not mode_a_ok:
             exit_code = 2

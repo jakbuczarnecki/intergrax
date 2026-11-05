@@ -9,4 +9,4 @@
 
 **Handoff artifacts:** L3 logs @ `TEST_EXECUTION_SHA`, `enterprise_audit_report.json`, evidence bundle under `.tmp/proof/ent-audit-x/<run-id>/`, updated [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md).
 
-**Status @ W6 dossier prep:** Implementation wave landed; **READY FOR INDEPENDENT B6** pending operator Protocol 03 — **not signed** by agent.
+**Status @ one-pass campaign (2026-11-05):** Evidence checklist **READY** for operator handoff @ TES/B5; **ARCH-FREEZE entry blocked** until ENT formal closure. See [`ENT_AUDIT_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md`](./ENT_AUDIT_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md).

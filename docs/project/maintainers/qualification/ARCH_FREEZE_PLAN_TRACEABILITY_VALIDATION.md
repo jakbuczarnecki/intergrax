@@ -27,11 +27,11 @@ uv run python scripts/governance/verify_arch_freeze_plan_traceability.py --sync-
 | Checklist PASS | 95 |
 | Checklist OPEN | 130 |
 | Architecture-scoped OPEN (excl. FRZ-PRD-01/02) | 128 |
-| Unique WBS TASK_ID | 48 |
+| Unique WBS TASK_ID | 54 |
 | Semantic DAG (FRZ-FRZ-02 / FRZ-FRZ-10 / closure) | **PASS** @ validator |
 | Unique findings | 18 |
 | Dangling OPEN FRZ → REMEDIATION_TASK | **0** |
-| Qualification RUN_ID (table rows) | 14 |
+| Qualification RUN_ID (table rows) | 16 |
 | Unmapped BLOCKER findings | **0** |
 
 ## FRZ → WBS → TEST → EVIDENCE → AUDIT → APPROVAL
@@ -42,7 +42,7 @@ uv run python scripts/governance/verify_arch_freeze_plan_traceability.py --sync-
 | FIND-PROD-REACH-DEFERRED | BLOCKER | T-B1-PROD-REACH-SCAN | COMPAT/PROD-Q inventory; L3-ENT-FULL | ECAP §2.C |
 | FIND-BND03-DEBT-STALE | MAJ | T-B2-BND03-RECONCILE | L2-BND | operator FRZ promotion |
 | FIND-DEBT-REG | MAJ | T-B2-DEBT | gap register rollup | FRZ-DEBT promotion |
-| FIND-VBN-PARTIAL | BLOCKER | T-B2-VBN | ENT VBN domain | ECAP-§15 |
+| FIND-VBN-PARTIAL | BLOCKER | T-B2-VBN; T-B7-VBN-HEAD-DOSSIER; T-B7-VBN-INDEPENDENT-ACCEPT | L2-VBN-ENT; L2-VBN-EBH5 | T-B7-VBN-INDEPENDENT-ACCEPT @ FREEZE_SHA |
 | FIND-FORMAL-B6 | BLOCKER | T-B5-EVOL-B6; T-B6-ENT-B6 | L3-EVOL-REPLAY; L3-ENT-REPLAY | independent auditor |
 | FIND-ACCEPTED-BASELINE | BLOCKER | T-B6-OD-ENT-01 | promote CLI | OD-ENT-01 |
 | FIND-PATHB-LIVE | INFO | T-PATHB-EXCL | Path B table | operator |

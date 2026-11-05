@@ -1,9 +1,10 @@
 # EVOL-X → ENT-AUDIT-X handoff record
 
-**Schema:** intake record for **ENT-AUDIT-X** (no ENT implementation in this wave)  
-**Status:** **OPERATOR ACCEPTED — PREPARED INTAKE PACKAGE / W7-06 FORMAL PIN PENDING**  
-**Operator acceptance:** **OD-EVOL-18** (2026-11-02) — technical handoff to ENT-AUDIT-X authorized; not independent B6 certification.  
-**Authority:** Master plan v3 W7-06 · D10 digest reconciliation
+**Schema:** intake record for **ENT-AUDIT-X**  
+**Status:** **`EVOL-X → ENT-AUDIT-X INTERNAL HANDOFF COMPLETE`** (2026-11-05)  
+**Formal W7-06 pin:** **BLOCKED** — requires formal `FORMAL_CLOSURE_PUBLICATION_SHA` (unset)  
+**Campaign:** [`EVOL_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md`](./EVOL_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md)  
+**Authorization:** `OPERATOR-DIRECTED INTERNAL CLOSURE CAMPAIGN`
 
 ---
 
@@ -14,11 +15,13 @@
 | Source stage | EVOL-X |
 | Target stage | ENT-AUDIT-X |
 | Certification profile accepted | `AUTOMATION_FIRST_SCOPED` |
-| EVOL-X closure SHA | *TBD — `FORMAL_CLOSURE_PUBLICATION_SHA`* |
-| B6 acceptance SHA | *TBD — `B6_ACCEPTANCE_PUBLICATION_SHA`* |
-| Operator technical acceptance | **OD-EVOL-18** — see [EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md](./EVOL_X_OD_EVOL_18_FINAL_OPERATOR_TECHNICAL_ACCEPTANCE.md) |
+| EVOL-X **internal** closure SHA | **`INTERNAL_CLOSURE_PUBLICATION_SHA`** — [EVOL_X_SHA_LADDER.md](./EVOL_X_SHA_LADDER.md) |
+| EVOL-X **formal** closure SHA | **unset** — `FORMAL_CLOSURE_PUBLICATION_SHA` |
+| B6 **formal** acceptance SHA | **unset** — `B6_ACCEPTANCE_PUBLICATION_SHA` |
+| Internal B6 verdict | **`INTERNAL_B6_TECHNICAL_ACCEPTED`** — [EVOL_X_INTERNAL_B6_ACCEPTANCE_RECORD.md](./EVOL_X_INTERNAL_B6_ACCEPTANCE_RECORD.md) |
+| Operator technical acceptance | **OD-EVOL-18** (preserved) |
 
-ENT-AUDIT-X may begin **intake drafting** against pinned TES/FINAL/CI and this record. **W7-06** formal handoff pin remains blocked until W7-05 publishes `FORMAL_CLOSURE_PUBLICATION_SHA`.
+ENT-AUDIT-X may consume **internal** handoff artifacts for intake drafting. **Formal** dependency **`EVOL-X` = CLOSED — INDEPENDENTLY ACCEPTED** under ECAP remains **OPEN**.
 
 ---
 
@@ -29,11 +32,24 @@ ENT-AUDIT-X may begin **intake drafting** against pinned TES/FINAL/CI and this r
 | TEST_EXECUTION_SHA | `3c4a641b3e48a13f437e830a0562e2a80b03aabb` |
 | EVIDENCE_FINAL_PUBLICATION_SHA | `bbf3e33bc62a05fd205e07f3d2e35a6d1d689ca1` |
 | Qualified CI | `41337077334` |
+| R2 global reconciliation | `167583ad1d33d9eb6e82589661e6d18aee15fa92` |
+| Local B6 unattended | `42363732d9f450bfe4329d76a96c646d2ab730b2` |
 | Plan publication | `b4fca4bc413a650b2e5a8dd8826669a9025864c5` |
 
 ---
 
-## 3. D10 digest chain (reconciliation)
+## 3. Internal acceptance package (ENT intake)
+
+| Artifact | Purpose |
+| --- | --- |
+| [EVOL_X_INTERNAL_FRZ_EVOL_ACCEPTANCE_MATRIX.md](./EVOL_X_INTERNAL_FRZ_EVOL_ACCEPTANCE_MATRIX.md) | FRZ scoped acceptance — formal rows OPEN |
+| [EVOL_X_INTERNAL_PARENT_CLOSURE_RECORD.md](./EVOL_X_INTERNAL_PARENT_CLOSURE_RECORD.md) | Internal parent close |
+| [EVOL_X_INTERNAL_FINDINGS_RECONCILIATION_MATRIX.md](./EVOL_X_INTERNAL_FINDINGS_RECONCILIATION_MATRIX.md) | Outstanding formal-only flags |
+| [ENT_EVOL_CROSS_STAGE_DECISION_MATRIX.md](../ENT_EVOL_CROSS_STAGE_DECISION_MATRIX.md) | Cross-stage gates |
+
+---
+
+## 4. D10 digest chain (reconciliation)
 
 ENT-AUDIT-X must reconcile publication digests against accepted baseline:
 
@@ -49,11 +65,11 @@ ENT-AUDIT-X must reconcile publication digests against accepted baseline:
 
 **Reconciliation rule:** `merge-base --is-ancestor TEST_EXECUTION_SHA EVIDENCE_FINAL_PUBLICATION_SHA` — required.
 
-**Drift policy:** Material change to closed-world inventory or VL3 manifest after TES → new EVOL re-qualification — not ENT substitute.
+**Drift policy:** Material change to closed-world inventory or VL3 manifest after TES → new EVOL requalification — not ENT substitute.
 
 ---
 
-## 4. Accepted impact graph and regression-selection contract
+## 5. Accepted impact graph and regression-selection contract
 
 | Deliverable | Consumer |
 |-------------|----------|
@@ -65,7 +81,7 @@ Do **not** re-implement in ENT-AUDIT-X — **orchestrate** existing qualificatio
 
 ---
 
-## 5. Evidence oracle
+## 6. Evidence oracle
 
 | Oracle | Purpose |
 |--------|---------|
@@ -76,22 +92,25 @@ Do **not** re-implement in ENT-AUDIT-X — **orchestrate** existing qualificatio
 
 ---
 
-## 6. Change-safety certification record
+## 7. Change-safety certification record
 
-Independent B6 record @ `B6_ACCEPTANCE_PUBLICATION_SHA` attests scoped change-safety qualification — ENT-AUDIT-X treats this as **historical acceptance**, not live enforcement.
+**Internal:** [EVOL_X_INTERNAL_B6_ACCEPTANCE_RECORD.md](./EVOL_X_INTERNAL_B6_ACCEPTANCE_RECORD.md) — scoped technical acceptance only.
+
+**Formal:** Independent B6 @ `B6_ACCEPTANCE_PUBLICATION_SHA` — **not recorded**. ENT must not treat internal record as formal Protocol 03 attestation.
 
 ---
 
-## 7. Remaining exclusions (ENT must respect)
+## 8. Remaining exclusions (ENT must respect)
 
 - PROD-Q live integration OPEN
 - M-09H human drill NOT_MEASURED on scoped profile
 - Qualification-only FRZ-EVOL-07 (no production rollback hardening claim)
 - Vendor live qualification (Dimension B) unchanged
+- **Formal ECAP EVOL-X closure OPEN**
 
 ---
 
-## 8. Freshness and drift detection (ENT-AUDIT-X requirements)
+## 9. Freshness and drift detection (ENT-AUDIT-X requirements)
 
 ENT-AUDIT-X intake must implement:
 
@@ -101,22 +120,33 @@ ENT-AUDIT-X intake must implement:
 
 ---
 
-## 9. Required ENT-AUDIT-X intake evidence checklist
+## 10. Mandatory future requalification triggers
 
-- [ ] This handoff record @ closure descendant SHA
-- [ ] Copy of B6 Protocol 03 PASS (scoped)
-- [ ] OD-EVOLX-08 signature record
-- [ ] SHA ladder closure row
-- [ ] FRZ-EVOL promoted rows snapshot
-- [ ] Link to qualification tree paths (no `.tmp/` session logs)
+Per FRZ-EVOL-10 / post-freeze governance — VL3 manifest or closed-world inventory change after TES requires new EVOL qualification wave; internal closure does not waive.
 
 ---
 
-## 10. Finalization procedure (W7-06)
+## 11. ENT-AUDIT-X intake checklist (internal handoff)
 
-1. Complete W7-05 → obtain `FORMAL_CLOSURE_PUBLICATION_SHA`.
-2. Update §1 closure/B6 SHA fields in this document.
-3. Commit @ descendant of closure SHA.
-4. Set `batch_5_ent_handoff.status: COMPLETE` in [EVOL_X_CLOSURE_EXECUTION_STATUS.json](./EVOL_X_CLOSURE_EXECUTION_STATUS.json).
+- [x] This handoff record @ internal closure descendant SHA
+- [x] Internal B6 acceptance record (not formal PASS)
+- [x] OD-EVOLX-08-INTERNAL companion
+- [x] SHA ladder internal closure row
+- [x] Internal FRZ matrix (formal checklist still OPEN)
+- [x] Qualification tree paths (no `.tmp/` session logs as SSOT)
 
-**Do not start ENT-AUDIT-X implementation commits in the same closure wave.**
+**Formal checklist (still open):**
+
+- [ ] Copy of **signed** Protocol 03 PASS (scoped)
+- [ ] Formal OD-EVOLX-08 signature
+- [ ] `FORMAL_CLOSURE_PUBLICATION_SHA`
+
+---
+
+## 12. Finalization procedure
+
+**Internal handoff:** complete @ `EVOL-X-INTERNAL-FINAL-CLOSURE`.
+
+**Formal W7-06 pin:** remains blocked until W7-05 publishes `FORMAL_CLOSURE_PUBLICATION_SHA` under authorized independent certification.
+
+**Do not** mark ENT formal predecessor satisfied by internal handoff alone.

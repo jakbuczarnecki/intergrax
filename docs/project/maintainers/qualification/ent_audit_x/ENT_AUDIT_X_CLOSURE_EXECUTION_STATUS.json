@@ -1,0 +1,14 @@
+{
+  "campaign_id": "ENT-AUDIT-X-ONE-PASS-COMPLETE-IMPLEMENTATION",
+  "plan_baseline_sha": "7de6b41f637df1d6949985d9dc567602a074e230",
+  "test_execution_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
+  "evidence_publication_sha": "300859537f12a1de7bf3d75fd685bc3a5c727183",
+  "internal_closure_status": "INTERNAL_CLOSURE_PARTIAL_EXACT_BLOCKERS",
+  "formal_b6_status": "PENDING_AUTHORITY",
+  "frz_aud_status": "OPEN",
+  "b6_acceptance_publication_sha": null,
+  "formal_closure_publication_sha": null,
+  "ci_dispatch_run_ids": ["42002319372", "42002323615"],
+  "ci_dispatch_conclusion": "success",
+  "ci_dispatch_head_sha": "7de6b41f637df1d6949985d9dc567602a074e230"
+}

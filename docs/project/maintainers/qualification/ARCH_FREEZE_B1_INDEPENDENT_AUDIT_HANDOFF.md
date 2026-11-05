@@ -49,6 +49,8 @@ Mandatory dispositions: [`arch_freeze_b1_mandatory_dispositions.json`](./arch_fr
 
 **Claimed (implementation wave only):** B1 strict-certify replay @ EXECUTION_SHA reproduces `strict_pass=true` and digest above; handoff package refreshed for external auditor replay.
 
+**Wave 1 umbrella handoff (B0–B4):** [`ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md`](./ARCH_FREEZE_EXECUTION_WAVE1_INDEPENDENT_AUDIT_HANDOFF.md) — independent audit scope and residual BLOCKER register.
+
 ## Traceability
 
 ```bash
