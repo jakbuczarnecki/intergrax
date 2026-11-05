@@ -10,7 +10,7 @@
   "certifier_agent_id": "certification-governance-agent",
   "audited_implementation_sha": "2a6545f1d551814a0ba8896be79576c580353771",
   "test_execution_sha": "ae467c8c4dd9c87521c1c60a7e5e75224d3214a0",
-  "evidence_publication_sha": "ae467c8c4dd9c87521c1c60a7e5e75224d3214a0",
+  "evidence_publication_sha": "a5fb6cb51ecd982284fd53ebc41e284e18b5523d",
   "audit_execution_sha": "ae467c8c4dd9c87521c1c60a7e5e75224d3214a0",
   "audit_report_digest": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
   "audit_scope_manifest_digest": "65605e4be2793d0df56ea1cf93281ce9d957e12ef4656c63e6a57c532dc6a08f",
@@ -23,7 +23,7 @@
     "Operator activation authorization still PENDING — see IIAC_ACT01_OPERATOR_ACTIVATION_PACKET.md",
     "Does not close EVOL-X, ENT-AUDIT-X, or ARCH-FREEZE"
   ],
-  "certification_publication_sha": "ae467c8c4dd9c87521c1c60a7e5e75224d3214a0",
+  "certification_publication_sha": "a5fb6cb51ecd982284fd53ebc41e284e18b5523d",
   "assurance_level": "process_enforced",
   "handoff_record_path": "docs/project/maintainers/qualification/IIAC_SESSION_HANDOFF_RECORD_2026_11_05_CERTIFICATION.md",
   "activation_audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md",

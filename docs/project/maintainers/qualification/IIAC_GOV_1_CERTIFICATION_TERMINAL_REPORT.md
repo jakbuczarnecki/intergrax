@@ -29,7 +29,7 @@ Historical `historical_session_b/` (`CONDITIONAL`) and `reaudit/` (`PASS` @ `5d6
 | Findings | `iiac_evidence/IIAC-GOV-1/certification/IIAC-GOV-1_certification_findings.json` |
 | Handoff | `IIAC_SESSION_HANDOFF_RECORD_2026_11_05_CERTIFICATION.md` |
 
-`certification_publication_sha` in the manifest and record is bound to the governance certification publication commit (see manifest after SHA-binding commit).
+`certification_publication_sha`: `a5fb6cb51ecd982284fd53ebc41e284e18b5523d` (governance certification publication commit).
 
 ## Activation not executed
 

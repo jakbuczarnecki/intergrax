@@ -15,8 +15,8 @@
     },
     {
       "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_GOV_1_CERTIFICATION_RECORD.json",
-      "sha256": "1b4500edba67eab32f332ef9221e579b272c40ceb017ceaf300e42d1e3cea7ad",
-      "bytes": 1160
+      "sha256": "a20e9ddd0cb51b01d86eaaee0c67a79cd1240762a233204eabb781e8e4ce7bc2",
+      "bytes": 1212
     },
     {
       "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_GOV_1_GOVERNANCE_CERTIFICATION_REPORT.md",
@@ -30,7 +30,7 @@
     },
     {
       "path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/iiac_audit_session_manifest.IIAC-GOV-1.json",
-      "sha256": "436c5cf427c8c32fbd32ae513f5a5c293bbbd7692c8143de4cbb1946915fea2a",
+      "sha256": "c53e95db143cc6b3525b78e929aa6f42d01984c02fbce704fd2ccf63b57cdc28",
       "bytes": 2039
     },
     {
