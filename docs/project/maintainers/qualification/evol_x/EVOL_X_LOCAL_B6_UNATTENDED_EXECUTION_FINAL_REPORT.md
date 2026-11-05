@@ -3,7 +3,19 @@
 **Campaign:** `EVOL-X-LOCAL-B6-UNATTENDED-EXECUTION`  
 **Ticket:** [`T-IGX-012-B.md`](../../../governance/tickets/T-IGX-012-B.md)  
 **Baseline @ start:** `bffd689d3b127bbcd753f0cf6f2c863c4db4a032` (`origin/development`)  
-**Disposition:** **EVOL-X — LOCAL B6 DEPLOYMENT PARTIAL — PIPELINE INCOMPLETE — FORMAL ACCEPTANCE PENDING AUTHORITY**
+**Disposition (continuation @ 2026-11-05):** **PIPELINE INCOMPLETE — UAC SECURE DESKTOP NOT APPROVED IN AGENT WINDOW** — custody/users/ACL partial; **no production key/signature**; formal gates unchanged.
+
+---
+
+## Continuation run (same campaign, no new ticket)
+
+| Action | Result |
+|--------|--------|
+| RunAs launcher | **Multiple invocations** + 3 min UAC wait window; **no fresh `elevated-result.json`** without interactive Secure Desktop approval |
+| Bootstrap fixes | Python arg join; `Start-Process -Credential` + wrapper scripts (replaces flaky scheduled-task race **267011**); launcher **UAC timeout** (exit 5); targeted repo/python RX grants |
+| `sudo.exe` | **Disabled** on host (cannot use Developer sudo path) |
+| Implementer NTFS probe (non-elevated) | **Write denied** on `private\k-prod-local-1.ed25519`; key **absent**; `elevated-launch.json` **`implementer_can_read_private_key: false`** |
+| Isolation caveat | **Separate SAM accounts exist**; **full attestor→custodian pipeline not proven** until elevated bootstrap completes; **Administrators** can override ACL during elevated sessions — not claimed as organizational custody |
 
 ---
 
@@ -37,9 +49,8 @@ Note: canonical names exceed Windows SAM 20-character limit; bootstrap documents
 | Check | Result |
 |-------|--------|
 | Separate local users | **Yes** |
-| Attestor/custodian runs | Scheduled-task one-shot (`Invoke-AsLocalUser`) under respective SAM accounts |
-| Implementer env-only impersonation | **Not used** for production path |
-| Full pipeline under isolated principals | **Incomplete** (key ceremony exit **103** on first elevated pass; bootstrap updated to scheduled-task + repo RX grants — **re-run pending** UAC) |
+| Attestor/custodian runs | **`Start-Process -Credential`** wrapper under SAM accounts (elevated bootstrap caller) |
+| Full pipeline under isolated principals | **Incomplete** — last elevated pass failed key ceremony (**267011** scheduled-task race, since fixed); **re-run blocked on UAC** in agent session |
 
 ---
 

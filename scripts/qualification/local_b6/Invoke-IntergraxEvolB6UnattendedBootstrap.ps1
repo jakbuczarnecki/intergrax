@@ -51,38 +51,42 @@ function New-LocalPrincipal {
 }
 
 function Invoke-AsLocalUser {
-        param(
-            [string] $UserName,
-            [string] $PlainPassword,
-            [string] $Repo,
-            [hashtable] $EnvExtra,
-            [string[]] $PythonArgs
-        )
-        $python = Join-Path $Repo ".venv\Scripts\python.exe"
-        if (-not (Test-Path $python)) {
-            throw "venv python missing at $python"
-        }
-        $wrapperDir = Join-Path $Repo ".tmp\session\evol-x-local-b6-unattended"
-        if (-not (Test-Path $wrapperDir)) { New-Item -ItemType Directory -Force -Path $wrapperDir | Out-Null }
-        $taskName = "IntergraxEvolB6_$([guid]::NewGuid().ToString('N').Substring(0,8))"
-        $argList = ($PythonArgs | ForEach-Object { "'" + ($_ -replace "'", "''") + "'" }) -join ", "
-        $envLines = @("`$env:PYTHONPATH='$($Repo -replace "'", "''")'")
-        foreach ($k in $EnvExtra.Keys) {
-            $v = $EnvExtra[$k] -replace "'", "''"
-            $envLines += "`$env:$k='$v'"
-        }
-        $psCmd = "Set-Location '$($Repo -replace "'", "''")'; $($envLines -join '; '); & '$($python -replace "'", "''")' $argList; exit `$LASTEXITCODE"
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"$psCmd`""
-        Register-ScheduledTask -TaskName $taskName -Action $action -User $UserName -Password $PlainPassword -Force | Out-Null
-        Start-ScheduledTask -TaskName $taskName
-        $deadline = (Get-Date).AddMinutes(10)
-        while (((Get-ScheduledTask -TaskName $taskName).State -eq "Running") -and ((Get-Date) -lt $deadline)) {
-            Start-Sleep -Seconds 2
-        }
-        $exitCode = (Get-ScheduledTaskInfo -TaskName $taskName).LastTaskResult
-        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false | Out-Null
-        return @{ exit = [int]$exitCode }
+    param(
+        [string] $UserName,
+        [string] $PlainPassword,
+        [string] $Repo,
+        [hashtable] $EnvExtra,
+        [string[]] $PythonArgs
+    )
+    $python = Join-Path $Repo ".venv\Scripts\python.exe"
+    if (-not (Test-Path $python)) {
+        throw "venv python missing at $python"
     }
+    $wrapperDir = Join-Path $Repo ".tmp\session\evol-x-local-b6-unattended"
+    if (-not (Test-Path $wrapperDir)) { New-Item -ItemType Directory -Force -Path $wrapperDir | Out-Null }
+    $wrapper = Join-Path $wrapperDir "run-as-$UserName.ps1"
+    $envLines = @("`$env:PYTHONPATH='$($Repo -replace "'", "''")'")
+    foreach ($k in $EnvExtra.Keys) {
+        $v = $EnvExtra[$k] -replace "'", "''"
+        $envLines += "`$env:$k='$v'"
+    }
+    $argList = ($PythonArgs | ForEach-Object { "'" + ($_ -replace "'", "''") + "'" }) -join " "
+    @"
+Set-StrictMode -Version Latest
+Set-Location '$($Repo -replace "'", "''")'
+$($envLines -join "`n")
+& '$($python -replace "'", "''")' $argList
+exit `$LASTEXITCODE
+"@ | Set-Content -Path $wrapper -Encoding UTF8
+    $sec = ConvertTo-SecureString $PlainPassword -AsPlainText -Force
+    $cred = New-Object System.Management.Automation.PSCredential(".\$UserName", $sec)
+    $errLog = Join-Path $wrapperDir "run-as-$UserName.err.log"
+    $outLog = Join-Path $wrapperDir "run-as-$UserName.out.log"
+    $p = Start-Process -FilePath "powershell.exe" -Credential $cred -ArgumentList @(
+        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $wrapper
+    ) -WorkingDirectory $Repo -Wait -PassThru -NoNewWindow -RedirectStandardError $errLog -RedirectStandardOutput $outLog
+    return @{ exit = $p.ExitCode; stderr_log = $errLog; stdout_log = $outLog }
+}
 
 $result = @{
     schema_version = "evol_x_local_b6_unattended_bootstrap.v1"
@@ -174,11 +178,17 @@ try {
     $result.acl.status = "CONFIGURED"
 
     foreach ($principal in @($AttestorName, $CustodianName)) {
-        & icacls (Join-Path $RepoRoot ".venv") /grant "${principal}:(OI)(CI)RX" | Out-Null
-        & icacls (Join-Path $RepoRoot "scripts") /grant "${principal}:(OI)(CI)RX" | Out-Null
-        & icacls (Join-Path $RepoRoot ".tmp") /grant "${principal}:(OI)(CI)RX" | Out-Null
+        & icacls $RepoRoot /grant "${principal}:(OI)(CI)RX" | Out-Null
+        $pyExe = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+        if (Test-Path $pyExe) {
+            & icacls $pyExe /grant "${principal}:R" | Out-Null
+        }
+        $pyScripts = Join-Path $RepoRoot ".venv\Scripts"
+        if (Test-Path $pyScripts) {
+            & icacls $pyScripts /grant "${principal}:(OI)(CI)RX" | Out-Null
+        }
     }
-    $result.acl.repo_execute_grants = "RX on .venv, scripts, .tmp for attestor/custodian principals"
+    $result.acl.repo_execute_grants = "Repo-root inherit RX for attestor/custodian (no /T walk)"
 
     Add-Type -AssemblyName System.Web
     $custPwdPlain = [System.Web.Security.Membership]::GeneratePassword(28, 6)
@@ -213,6 +223,9 @@ try {
     $result.key_ceremony.key_path = $keyPath
     $result.key_ceremony.trust_root_path = $trustPath
     if ($ceremony.exit -ne 0) {
+        if ($ceremony.stderr_log -and (Test-Path $ceremony.stderr_log)) {
+            $result.key_ceremony.stderr_tail = (Get-Content $ceremony.stderr_log -Tail 8) -join " | "
+        }
         throw "key ceremony failed exit $($ceremony.exit)"
     }
 

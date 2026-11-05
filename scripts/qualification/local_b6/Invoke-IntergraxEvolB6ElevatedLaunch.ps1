@@ -30,17 +30,25 @@ if (-not (Test-Path $bootstrap)) {
     exit 2
 }
 
-$argList = @(
-    "-NoProfile",
-    "-ExecutionPolicy", "Bypass",
-    "-File", "`"$bootstrap`"",
-    "-RepoRoot", "`"$RepoRoot`"",
-    "-ResultPath", "`"$ResultPath`"",
-    "-ImplementerAccount", "`"$implementer`""
-)
-
 try {
-    $proc = Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList ($argList -join " ") -Wait -PassThru -ErrorAction Stop
+    $proc = Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $bootstrap,
+        "-RepoRoot", $RepoRoot,
+        "-ResultPath", $ResultPath,
+        "-ImplementerAccount", $implementer
+    ) -PassThru -ErrorAction Stop
+    $deadline = (Get-Date).AddMinutes(3)
+    while (-not $proc.HasExited -and (Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 2
+    }
+    if (-not $proc.HasExited) {
+        try { $proc.Kill() } catch { }
+        $launchMeta.disposition = "UAC_APPROVAL_TIMEOUT"
+        $launchMeta | ConvertTo-Json | Set-Content (Join-Path $resultDir "elevated-launch.json") -Encoding UTF8
+        exit 5
+    }
     $launchMeta.elevated_exit_code = $proc.ExitCode
 } catch {
     $launchMeta.disposition = "UAC_ELEVATION_DENIED_OR_FAILED"
