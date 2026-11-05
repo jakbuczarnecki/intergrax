@@ -23,6 +23,13 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-`quality_gate`
+`delivered`
+
+## Checkpoint (@ 2026-11-05)
+
+- Pipeline disposition: **`TECHNICAL_PIPELINE_OK_PENDING_AUTHORITY`** (`elevated-result.json` @ `2026-11-05T08:00:08Z`)
+- Publication SHA: `42363732d9f450bfe4329d76a96c646d2ab730b2`
+- Tests: 35/35 B6 suite; `igx_gov ticket` PASS (PYTHONPATH unset)
+- Superseded: launcher EXIT=5 timeout run (~07:35 UTC)
 
 **Commit trailer:** `Ref: governance/tickets/T-IGX-012-B.md`

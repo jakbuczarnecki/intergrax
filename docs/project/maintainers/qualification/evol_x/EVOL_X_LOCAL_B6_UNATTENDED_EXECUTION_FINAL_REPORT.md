@@ -128,7 +128,7 @@ Logs: `.tmp/session/evol-x-local-b6-unattended/pytest-final.log`, `igx-gov-ticke
 
 | Item | Value |
 |------|-------|
-| `LOCAL_B6_UNATTENDED_EXECUTION_PUBLICATION_SHA` | **See [`EVOL_X_SHA_LADDER.md`](./EVOL_X_SHA_LADDER.md)** (terminal row @ this report) |
+| `LOCAL_B6_UNATTENDED_EXECUTION_PUBLICATION_SHA` | `42363732d9f450bfe4329d76a96c646d2ab730b2` |
 | Branch | `development` → `origin/development` |
 
 ---
