@@ -14,8 +14,8 @@
 
 | Label | SHA |
 |-------|-----|
-| `GOVERNANCE_IMPLEMENTATION_SHA` | _(fill after commit — `git rev-parse HEAD`)_ |
-| `origin/development` @ push | _(fill after push)_ |
+| `GOVERNANCE_IMPLEMENTATION_SHA` | `2ae1014116d353bc7742985e62f2bccc2bfac798` |
+| `origin/development` @ push | `2ae1014116d353bc7742985e62f2bccc2bfac798` |
 
 ## Test results
 

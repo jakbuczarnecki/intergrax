@@ -43,8 +43,8 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-in_progress
+quality_gate
 
 ## Checkpoint
 
-(pending — paste `igx_gov ticket` stdout before push)
+`igx_gov ticket`: OK @ push (`.tmp/session/IIAC-GOV-A/igx-gov-ticket.log`); `GOVERNANCE_IMPLEMENTATION_SHA=2ae1014116d353bc7742985e62f2bccc2bfac798`
