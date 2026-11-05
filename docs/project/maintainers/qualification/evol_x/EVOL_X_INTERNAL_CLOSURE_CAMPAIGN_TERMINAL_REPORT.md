@@ -93,7 +93,7 @@ Roadmap §3 EVOL-X row + §5 ledger updated. **`INTERNAL_CLOSURE_PUBLICATION_SHA
 | CI | `41337077334` |
 | R2 | `167583ad1d33d9eb6e82589661e6d18aee15fa92` |
 | Local B6 unattended | `42363732d9f450bfe4329d76a96c646d2ab730b2` |
-| INTERNAL_CLOSURE_PUBLICATION_SHA | See ladder pin commit |
+| INTERNAL_CLOSURE_PUBLICATION_SHA | `ee2c89a0d18b43d7667e7ee2c5df3d446f2a73e1` |
 
 ---
 

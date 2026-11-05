@@ -23,7 +23,7 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Lifecycle state
 
-`quality_gate`
+`closed`
 
 ## Checkpoint (@ 2026-11-05)
 

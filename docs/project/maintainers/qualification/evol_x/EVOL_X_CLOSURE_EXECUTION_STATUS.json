@@ -21,7 +21,7 @@
   "parent_evol_x_status_label": "EVOL-X — CLOSED BY OPERATOR / TECHNICAL WORK ACCEPTED / INDEPENDENT CERTIFICATION PENDING",
   "internal_closure_campaign_id": "EVOL-X-INTERNAL-FINAL-CLOSURE",
   "internal_closure_status": "INTERNALLY_CLOSED_AUTOMATION_FIRST_SCOPED",
-  "internal_closure_publication_sha": null,
+  "internal_closure_publication_sha": "ee2c89a0d18b43d7667e7ee2c5df3d446f2a73e1",
   "internal_b6_technical_status": "INTERNAL_B6_TECHNICAL_ACCEPTED",
   "internal_frz_status": "INTERNAL_FRZ_EVOL_01_10_ACCEPTED_SCOPED",
   "internal_ent_handoff_status": "COMPLETE",
