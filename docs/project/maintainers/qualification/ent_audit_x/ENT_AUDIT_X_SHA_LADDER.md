@@ -45,6 +45,9 @@
 | EVIDENCE_PUBLICATION_SHA (historical — R7) | `d18f01f2291328a073dcbdfbe05489faf98013b7` | Preserved defect record; do not use for B6 evidence integrity |
 | CURRENT_DOCUMENTATION_HEAD (R8 external gate packet) | `d3d9b62da165ce98236ad7ece51a0f4b750a67d2` | Dossier EVID pin + W0–W7 closure prep (doc/scripts only post-TES) |
 | CURRENT_DOCUMENTATION_HEAD (W7 mechanical readiness) | `1bee524218d9185175f3e24c6e6f205565ff0569` | C075-S2 sync + canonical ladder pins + dossier CI @ HEAD |
+| ONE_PASS_CAMPAIGN_PLAN_BASELINE_SHA | `7de6b41f637df1d6949985d9dc567602a074e230` | ENT-AUDIT-X one-pass B0–B7 @ 2026-11-05 |
+| INTERNAL_CLOSURE_STATUS | **INTERNAL CLOSURE PARTIAL — EXACT BLOCKERS — PUBLISHED** | Not formal ECAP closure |
+| INTERNAL_CLOSURE_PUBLICATION_SHA | *set on publication commit* | Terminal report + SSOT reconcile |
 
 ## Lineage rules
 

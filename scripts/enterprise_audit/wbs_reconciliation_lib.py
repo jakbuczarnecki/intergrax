@@ -11,6 +11,8 @@ from typing import Any
 TES = "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91"
 EVID = "300859537f12a1de7bf3d75fd685bc3a5c727183"
 EVID_SHORT = EVID[:12]
+PLAN_BASELINE_SHA = "7de6b41f637df1d6949985d9dc567602a074e230"
+HEAD_L2_LOG = ".tmp/session/ent-audit-x-closure/b3-l1-l2-l3.log"
 HANDOFF = f"b6_independent_handoff/qualification_at_{TES}"
 B5_QUAL = f"{HANDOFF}/qual_wave_report.json"
 B5_L3 = f"{HANDOFF}/l3-cli-full"
@@ -54,14 +56,16 @@ QUALIFIED_TES: frozenset[str] = frozenset(
 OPERATOR_OR_EXTERNAL: frozenset[str] = frozenset({"C001", "C002", "C003", "C042", "C065", "C057"})
 
 # CI / launcher enforcement — qual requires green workflow @ HEAD.
-CI_BLOCKED: frozenset[str] = frozenset({"C045", "C046", "C047", "C059", "C060", "C061", "C063", "C070", "C007"})
+CI_BLOCKED: frozenset[str] = frozenset({"C045", "C046", "C047", "C059", "C060", "C061", "C062", "C063", "C070", "C007"})
 
 # Post-TES changes to readiness scripts — not re-run @ TES.
 POST_TES_DELTA: frozenset[str] = frozenset()
 
 NOT_STARTED: frozenset[str] = frozenset()
 
-IMPLEMENTED_PARTIAL_DEFAULT: frozenset[str] = frozenset(
+IMPLEMENTED_PARTIAL_DEFAULT: frozenset[str] = frozenset({"C054", "C066", "C075"})
+
+HEAD_L2_QUALIFIED: frozenset[str] = frozenset(
     {
         "C006",
         "C012",
@@ -93,7 +97,6 @@ IMPLEMENTED_PARTIAL_DEFAULT: frozenset[str] = frozenset(
         "C069",
         "C072",
         "C073",
-        "C075",
     }
 )
 
@@ -132,6 +135,8 @@ def load_qual_wave(repo: Path) -> dict[str, Any]:
 
 
 def evidence_path_for(task_id: str) -> str:
+    if task_id in HEAD_L2_QUALIFIED:
+        return f"`{HEAD_L2_LOG}` @ `{PLAN_BASELINE_SHA[:12]}…`"
     if task_id in QUALIFIED_TES:
         if task_id in {"C031", "C032", "C051", "C074", "C009"}:
             return f"`{B5_QUAL}` + `{B5_L3}/enterprise_audit_report.json`"
@@ -152,6 +157,8 @@ def evidence_path_for(task_id: str) -> str:
 
 
 def remaining_delta(task_id: str) -> str:
+    if task_id in HEAD_L2_QUALIFIED:
+        return "L2 replay @ PLAN_BASELINE_SHA; formal ENT closure still requires B6/OD"
     if task_id in QUALIFIED_TES:
         if task_id == "C032":
             return "Candidate FREEZE @ TES PASS; normal FREEZE w/ accepted baseline still operator-simulated"
@@ -192,6 +199,8 @@ def closure_condition(task_id: str) -> str:
 
 def classify_task(task_id: str) -> tuple[str, str]:
     if task_id in QUALIFIED_TES:
+        return "IMPLEMENTED", "QUALIFIED"
+    if task_id in HEAD_L2_QUALIFIED:
         return "IMPLEMENTED", "QUALIFIED"
     if task_id in POST_TES_DELTA:
         return "PARTIAL", "NOT_QUALIFIED"
@@ -234,10 +243,10 @@ GAP_RC_STATUS: dict[str, str] = {
     "GAP-RC-ADV-INJECT": "CLOSED",
     "GAP-RC-PR-PATH-SKIP": "CLOSED",
     "GAP-RC-NIGHTLY-FREEZE": "PARTIAL",
-    "GAP-RC-LAUNCHER-BAT": "PARTIAL",
-    "GAP-RC-LAUNCHER-SH": "PARTIAL",
-    "GAP-RC-LAUNCHER-CWD": "PARTIAL",
-    "GAP-RC-OUTPUT-COLLISION": "PARTIAL",
+    "GAP-RC-LAUNCHER-BAT": "CLOSED",
+    "GAP-RC-LAUNCHER-SH": "CLOSED",
+    "GAP-RC-LAUNCHER-CWD": "CLOSED",
+    "GAP-RC-OUTPUT-COLLISION": "CLOSED",
     "GAP-RC-DOSSIER": "PARTIAL",
     "GAP-RC-SHA-LADDER": "CLOSED",
     "GAP-RC-SSOT-DRIFT": "PARTIAL",
@@ -275,4 +284,8 @@ GAP_RC_EVIDENCE: dict[str, str] = {
     "GAP-RC-DRIFT-SCHEMA": f"test_drift_regressed_on_schema_bump @ `{TES}`",
     "GAP-RC-ATOMIC-PUB": f"report.write_reports staging publish @ `{TES}`",
     "GAP-RC-SANDBOX": f"test_sandbox_isolation @ `{TES}`",
+    "GAP-RC-LAUNCHER-BAT": f"test_audit_launchers_cross_platform.py @ `{PLAN_BASELINE_SHA[:12]}…`",
+    "GAP-RC-LAUNCHER-SH": f"test_audit_launchers_cross_platform.py (bash opt-in) @ `{PLAN_BASELINE_SHA[:12]}…`",
+    "GAP-RC-LAUNCHER-CWD": f"test_launcher_08/09 @ `{PLAN_BASELINE_SHA[:12]}…`",
+    "GAP-RC-OUTPUT-COLLISION": f"test_launcher_11 @ `{PLAN_BASELINE_SHA[:12]}…`",
 }
