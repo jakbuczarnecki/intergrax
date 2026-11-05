@@ -6,7 +6,12 @@
 
 **Plan binding (repo SSOT):** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](plans/ASF-SEF-MASTER-PLAN.md) — copied from Cursor plan `asf-sef_corrective_master_plan_89133b21.plan.md` @ B0; operator content pin (raw file SHA-256) `db3386be2b139e4340fea347c70851fa8451ec6f8c09f89f18fd34fb1788795e`.
 
-**Operator decisions (intent only until B1):** OD-SEF-01 Variant C+D-lite; OD-SEF-02 Option 3 (SEF-X ∥ SCENARIO-READINESS-X post ARCH-FREEZE); OD-SEF-03 ADR-SEF-001 **Proposed** only; **Option 4 NOT AUTHORIZED**.
+**Operator decisions (published P1-B1):** canonical register [`docs/project/maintainers/qualification/sef/ASF_SEF_OPERATOR_DECISION_REGISTER.md`](../../docs/project/maintainers/qualification/sef/ASF_SEF_OPERATOR_DECISION_REGISTER.md) — OD-SEF-01 Variant C+D-lite; OD-SEF-02 Option 3; OD-SEF-03 ADR **Proposed** only; **Option 4 NOT AUTHORIZED**.
+
+## P1-B1 publication (2026-11-05)
+
+- OD register, ADR-SEF-001 (`Proposed`), roadmap Option 3 (§3.0.7a **SEF-X**), architecture satellites under `docs/project/maintainers/plans/satellites/ASF_SEF_*`.
+- **START_HEAD (Phase 1):** `b342e5e7f56fe67aa4dcc7b7f828da5fd4f15bbe`
 
 ## Plan digest
 
@@ -32,10 +37,14 @@ uv run python -m scripts.governance.igx_gov ticket
 
 ## Out of scope
 
-P1-B1 until `plan_approved`: ADR-SEF-001 file, roadmap ledger edits, architecture satellites, CAP-049..052 product implementation, Option 4 pilot, Protocol 03 B6 / FRZ / ARCH-FREEZE status changes, EVOL-X formal CLOSED, fake `Approved:`.
+Product CAP-049..052 implementation, Option 4 pilot, ADR **`Accepted`**, Protocol 03 B6 / FRZ row promotion / ARCH-FREEZE CLOSED claims, EVOL-X formal CLOSED, P2–P13 engineering waves until post–P1-B1 gates.
 
 ## Lifecycle state
 
-`plan_approved`
+`quality_gate`
+
+## Checkpoint
+
+`igx_gov ticket`: PASS (pre-commit) — log `.tmp/session/T-IGX-SEF-A-P1-B1/igx_gov.log`
 
 **Commit trailer:** `Ref: governance/tickets/T-IGX-SEF-A.md`
