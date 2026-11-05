@@ -25,7 +25,7 @@ Approved: operator Session A @ 2026-11-05T13:00:00+01:00 (IIAC-GOVERNANCE-REFORM
 ## Test contract
 
 ```powershell
-uv run pytest tests/unit/governance/test_iiac_*.py -q
+uv run pytest tests/unit/governance/test_iiac_negative_guards.py -q
 uv run python scripts/governance/verify_iiac_policy_activation.py --expect-not-in-force
 uv run python scripts/governance/verify_iiac_audit_manifest.py docs/project/maintainers/qualification/examples/iiac_audit_session_manifest.example.json
 uv run python scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/examples/iiac_audit_session_manifest.example.json

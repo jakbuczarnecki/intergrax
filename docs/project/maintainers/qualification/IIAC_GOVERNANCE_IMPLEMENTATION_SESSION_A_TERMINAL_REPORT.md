@@ -12,10 +12,11 @@
 
 ## SHAs
 
-| Label | SHA |
-|-------|-----|
-| `GOVERNANCE_IMPLEMENTATION_SHA` | `2ae1014116d353bc7742985e62f2bccc2bfac798` |
-| `origin/development` @ push | `2ae1014116d353bc7742985e62f2bccc2bfac798` |
+| Label | Value |
+|-------|-------|
+| `GOVERNANCE_IMPLEMENTATION_SHA` (Session B audit pin; unchanged) | `2ae1014116d353bc7742985e62f2bccc2bfac798` |
+| `PUBLICATION_HEAD` (`development` after Session A doc reconciliation) | `b800b67df704212b6222d7af52863b9134540001` |
+| `IIAC_POLICY_STATUS` | **NOT_IN_FORCE** |
 
 ## Test results
 
