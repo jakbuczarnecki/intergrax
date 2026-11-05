@@ -1,0 +1,18 @@
+{
+  "stage_id": "IIAC-GOV-1",
+  "audited_implementation_sha": "2ae1014116d353bc7742985e62f2bccc2bfac798",
+  "audit_execution_sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2",
+  "paths_in_scope": [
+    "docs/project/maintainers/qualification/**",
+    "scripts/governance/verify_iiac_*",
+    "scripts/governance/generate_iiac_authority_impact_matrix.py",
+    "scripts/governance/iiac_common.py",
+    "scripts/governance/verify_od_ent_02_compensating_control.py",
+    "governance/tickets/T-IGX-016-A.md",
+    "tests/unit/governance/test_iiac_negative_guards.py"
+  ],
+  "post_pin_semantic_delta": [
+    "docs/.../IIAC_GOVERNANCE_IMPLEMENTATION_SESSION_A_TERMINAL_REPORT.md",
+    "governance/tickets/T-IGX-016-A.md"
+  ]
+}

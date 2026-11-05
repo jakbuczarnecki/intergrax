@@ -27,6 +27,12 @@ def main() -> int:
         action="store_true",
         help="Fail if IIAC handoff template missing (N-02 organizational gate)",
     )
+    parser.add_argument(
+        "--repo",
+        type=Path,
+        default=None,
+        help="Git repository for ancestry checks (defaults to the Intergrax checkout)",
+    )
     args = parser.parse_args()
 
     errors: list[str] = []
@@ -54,7 +60,7 @@ def main() -> int:
         if audited.strip() and audit_exec.strip():
             if audit_exec.strip() != audited.strip():
                 try:
-                    if not git_merge_base_is_ancestor(audited.strip(), audit_exec.strip()):
+                    if not git_merge_base_is_ancestor(audited.strip(), audit_exec.strip(), repo=args.repo):
                         errors.append("audited_implementation_sha not ancestor of audit_execution_sha (N-04)")
                 except RuntimeError as exc:
                     errors.append(str(exc))

@@ -1,7 +1,7 @@
 # INTEGRAX Internal Independent Agent Certification (IIAC) Protocol
 
 **Policy version (document):** `IIAC-2026-11-05.1`  
-**Activation:** [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json) — **`NOT_IN_FORCE`** until Session B independent governance audit and operator activation line.
+**Activation:** [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json) — **`NOT_IN_FORCE`**. Session B re-audit PASS is preserved evidence. `IN_FORCE` requires the fail-closed gate (`--require-in-force`) and a separate operator activation record.
 
 ## Purpose
 
@@ -88,12 +88,17 @@ Ticket handoff may also live under [`governance/tickets/`](../../../../governanc
 
 ## Policy activation
 
+Status remains **`NOT_IN_FORCE`** until a certification session after the ACT-01 gate correction. Session B `PASS` and the historical `PARTIAL` record are evidence, not activation.
+
 All required before `IN_FORCE`:
 
-1. Governance batch merged @ pinned SHA.
-2. Session B verdict **PASS** on that SHA (`stage_id=IIAC-GOV-1`).
-3. Operator line in `IIAC_OD_ACTIVATION_*.md` + JSON update.
-4. [`verify_iiac_policy_activation.py`](../../../../scripts/governance/verify_iiac_policy_activation.py) exit 0.
+1. Governance batch and ACT-01 corrective batch merged at pinned SHAs.
+2. Independent Session B verdict **PASS** on `stage_id=IIAC-GOV-1`, with artifact SHA-256 digests. A historical `PARTIAL` / `CONDITIONAL` manifest cannot be the active acceptance record.
+3. Operator decision file `IIAC_OD_ACTIVATION_*.md` with decision id, policy version, scope `IIAC policy activation`, `Decision status: AUTHORIZED`, the audit digest, and the exact line `Approved IIAC policy activation IIAC-2026-11-05.1: operator @ <timestamp>`. Session A implementation approval is not this decision.
+4. Two-phase SHA publication. Phase 1 commits the `IN_FORCE` record with `effective_from_sha` empty. Phase 2 sets `effective_from_sha` and `policy_activation_sha` to that phase-1 commit. The gate rejects `effective_from_sha = HEAD` and any blob that is still inactive.
+5. [`verify_iiac_policy_activation.py`](../../../../scripts/governance/verify_iiac_policy_activation.py) `--require-in-force` exit 0. Default invocation is the same fail-closed check. `--expect-not-in-force` exits 0 only while the policy is inactive and states no active claim.
+
+Evidence used for activation must be published under [`iiac_evidence/`](./iiac_evidence/) (byte-preserving copies). Paths limited to `.tmp/session/` are not durable authority. The gate runs manifest validation and role separation; it does not promote EVOL-X, ENT-AUDIT-X, or ARCH-FREEZE to CLOSED.
 
 ## Supersession
 
@@ -107,7 +112,7 @@ All required before `IN_FORCE`:
 |--------|------|
 | `verify_iiac_audit_manifest.py` | Schema + session inequality + SHA ancestry |
 | `verify_iiac_role_separation.py` | Auditor product write-surface |
-| `verify_iiac_policy_activation.py` | Fail-closed IN_FORCE gate |
+| `verify_iiac_policy_activation.py` | Fail-closed activation gate (`--require-in-force`; default rejects inactive policy) |
 | `verify_od_ent_02_compensating_control.py` | Option B package completeness |
 
 ## Related

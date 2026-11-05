@@ -68,10 +68,10 @@ def is_policy_in_force() -> bool:
     return policy_status() == "IN_FORCE"
 
 
-def git_rev_parse(ref: str = "HEAD") -> str:
+def git_rev_parse(ref: str = "HEAD", repo: Path | None = None) -> str:
     proc = subprocess.run(
         ["git", "rev-parse", ref],
-        cwd=REPO,
+        cwd=repo or REPO,
         capture_output=True,
         text=True,
         check=False,
@@ -81,10 +81,10 @@ def git_rev_parse(ref: str = "HEAD") -> str:
     return proc.stdout.strip()
 
 
-def git_merge_base_is_ancestor(ancestor: str, descendant: str) -> bool:
+def git_merge_base_is_ancestor(ancestor: str, descendant: str, repo: Path | None = None) -> bool:
     proc = subprocess.run(
         ["git", "merge-base", "--is-ancestor", ancestor, descendant],
-        cwd=REPO,
+        cwd=repo or REPO,
         capture_output=True,
         text=True,
         check=False,
@@ -92,10 +92,10 @@ def git_merge_base_is_ancestor(ancestor: str, descendant: str) -> bool:
     return proc.returncode == 0
 
 
-def product_paths_changed_between(base_sha: str, head_sha: str) -> list[str]:
+def product_paths_changed_between(base_sha: str, head_sha: str, repo: Path | None = None) -> list[str]:
     proc = subprocess.run(
         ["git", "diff", "--name-only", base_sha, head_sha],
-        cwd=REPO,
+        cwd=repo or REPO,
         capture_output=True,
         text=True,
         check=False,

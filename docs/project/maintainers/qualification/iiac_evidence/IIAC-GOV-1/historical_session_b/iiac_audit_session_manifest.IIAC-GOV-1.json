@@ -1,0 +1,29 @@
+{
+  "stage_id": "IIAC-GOV-1",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "implementation_session_id": "IIAC-GOV-A-2026-11-05",
+  "implementation_agent_id": "implementer",
+  "auditor_session_id": "IIAC-GOV-B-2026-11-05-independent",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "IIAC-GOV-CERT-PENDING",
+  "certifier_agent_id": "certification-governance-agent",
+  "audited_implementation_sha": "2ae1014116d353bc7742985e62f2bccc2bfac798",
+  "test_execution_sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2",
+  "evidence_publication_sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2",
+  "audit_execution_sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2",
+  "audit_report_digest": "56c9b078e42e1408799e37a2535aa61879e31021864214e46dfa165fb41fded1",
+  "audit_scope_manifest_digest": "11191a0a48bf5e0b24bee081f3d3483a1875bb9a39db320e9d19e5c8c08c5e63",
+  "test_matrix_digest": "63c7b1a75feef5eb7d6367e733f04c2b1947eb3ff5295c235946fd3f992aac9b",
+  "findings_digest": "ef03e9008884a14eec713acd95fd2bd26e5849050fb96be06f25c6f4c865dd1a",
+  "verdict": "CONDITIONAL",
+  "limitations": [
+    "PARTIAL / EXACT BLOCKERS \u2014 IIAC-GOV-B-F01: G0 authority matrix not regenerated @ GOVERNANCE_IMPLEMENTATION_SHA",
+    "Policy NOT_IN_FORCE \u2014 no activation in Session B",
+    "certification_publication_sha pending certifier publication commit",
+    "assurance_level=process_enforced \u2014 operator handoff template not filled (F03 INFO)"
+  ],
+  "certification_publication_sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2",
+  "assurance_level": "process_enforced",
+  "handoff_record_path": "docs/project/maintainers/qualification/IIAC_SESSION_HANDOFF_RECORD.template.md"
+}

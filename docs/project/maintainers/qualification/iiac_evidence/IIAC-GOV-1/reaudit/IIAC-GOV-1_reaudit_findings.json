@@ -1,0 +1,32 @@
+{
+  "verdict": "PASS — F01–F03 INDEPENDENTLY VERIFIED",
+  "manifest_verdict": "PASS",
+  "historical_verdict_preserved": "PARTIAL / EXACT BLOCKERS",
+  "historical_evidence": ".tmp/session/IIAC-GOV-B/IIAC_SESSION_B_INDEPENDENT_GOVERNANCE_AUDIT_REPORT.md",
+  "policy_status": "NOT_IN_FORCE",
+  "activation_eligibility": "NOT_ELIGIBLE",
+  "findings": [
+    {
+      "id": "IIAC-GOV-B-F01",
+      "original_severity": "BLOCKER",
+      "reaudit_disposition": "RESOLVED",
+      "root_cause": "G0 matrix generated before Session A artifacts and not regenerated",
+      "evidence": "independent git ls-tree 17510 == matrix covered 17510; entries 18388; 0 missing; mandatory IIAC paths present; stale fixture FAIL"
+    },
+    {
+      "id": "IIAC-GOV-B-F02",
+      "original_severity": "LOW",
+      "reaudit_disposition": "RESOLVED",
+      "root_cause": "ticket and Session B instructions used pytest glob test_iiac_*.py",
+      "evidence": "explicit paths; PowerShell pytest 22 passed"
+    },
+    {
+      "id": "IIAC-GOV-B-F03",
+      "original_severity": "INFO",
+      "reaudit_disposition": "RECORD_PRESENT_OPERATOR_LINE_PENDING",
+      "classification": "required_pre_activation_condition",
+      "root_cause": "handoff template existed without a filled session record",
+      "evidence": "IIAC_SESSION_HANDOFF_RECORD_2026_11_05_SESSION_A_B.md; operator signature line PENDING; not signed in this session"
+    }
+  ]
+}

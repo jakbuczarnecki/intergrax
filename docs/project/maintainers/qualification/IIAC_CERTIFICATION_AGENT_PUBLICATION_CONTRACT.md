@@ -13,7 +13,8 @@
 - Replace independent audit with checklist-only approval
 - Override fail-closed preflights
 - Certify governance validators authored in Session A without Session B independent review
-- Activate `IN_FORCE` without operator activation line + Session B digest pinned in [`IIAC_POLICY_ACTIVATION_RECORD.json`](./IIAC_POLICY_ACTIVATION_RECORD.json)
+- Activate `IN_FORCE` without `--require-in-force` exit 0, a published PASS manifest, and an authorized `IIAC_OD_ACTIVATION_*.md` decision. Session A approval is not that decision.
+- Treat the ACT-01 corrective batch as certification of itself.
 
 ## Closure commit rule (EBH-7)
 
@@ -21,4 +22,4 @@ Do not introduce formal CLOSED claim in the same commit that first creates the p
 
 ## Ticket
 
-Ref: [`governance/tickets/T-IGX-016-A.md`](../../../../governance/tickets/T-IGX-016-A.md) (Session A); stage certs may use T-IGX-016-B/C rows when scaffolded.
+Ref: [`governance/tickets/T-IGX-016-A.md`](../../../../governance/tickets/T-IGX-016-A.md) (Session A); ACT-01 gate correction is [`governance/tickets/T-IGX-016-B.md`](../../../../governance/tickets/T-IGX-016-B.md).

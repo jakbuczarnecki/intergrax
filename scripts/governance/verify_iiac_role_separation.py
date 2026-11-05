@@ -22,6 +22,12 @@ def main() -> int:
         action="store_true",
         help="Fail when product paths changed between audited and audit execution SHAs",
     )
+    parser.add_argument(
+        "--repo",
+        type=Path,
+        default=None,
+        help="Git repository for product-path diffs (defaults to the Intergrax checkout)",
+    )
     args = parser.parse_args()
 
     errors: list[str] = []
@@ -36,7 +42,7 @@ def main() -> int:
     audit_exec = str(manifest.get("audit_execution_sha") or "").strip()
     if audited and audit_exec and audited != audit_exec:
         try:
-            changed = product_paths_changed_between(audited, audit_exec)
+            changed = product_paths_changed_between(audited, audit_exec, repo=args.repo)
             if changed:
                 msg = f"auditor product write-surface detected ({len(changed)} paths) (N-03): {changed[0]}"
                 if args.strict_product_diff:

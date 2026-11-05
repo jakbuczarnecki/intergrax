@@ -1,0 +1,20 @@
+{
+  "verdict": "PARTIAL / EXACT BLOCKERS",
+  "findings": [
+    {
+      "id": "IIAC-GOV-B-F01",
+      "severity": "BLOCKER",
+      "sha": "2ae1014116d353bc7742985e62f2bccc2bfac798"
+    },
+    {
+      "id": "IIAC-GOV-B-F02",
+      "severity": "LOW",
+      "sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2"
+    },
+    {
+      "id": "IIAC-GOV-B-F03",
+      "severity": "INFO",
+      "sha": "82f5fa319d1f33c453d9aa506d6e042e5839dcc2"
+    }
+  ]
+}

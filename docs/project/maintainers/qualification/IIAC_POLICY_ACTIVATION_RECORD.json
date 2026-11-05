@@ -7,5 +7,5 @@
   "session_b_manifest_path": null,
   "session_b_verdict": null,
   "operator_activation_line": null,
-  "notes": "Session A governance implementation — activation requires Session B independent audit (IIAC-GOV-1) and operator line in IIAC_OD_ACTIVATION_*.md"
+  "notes": "ACT-01 fail-closed gate is implemented. Status remains NOT_IN_FORCE. Activation requires an independent re-audit of the ACT-01 baseline and an authorized IIAC_OD_ACTIVATION decision. Session A approval is not activation authorization."
 }
