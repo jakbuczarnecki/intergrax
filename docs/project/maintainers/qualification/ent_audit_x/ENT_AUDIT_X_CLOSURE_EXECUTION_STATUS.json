@@ -2,7 +2,7 @@
   "campaign_id": "ENT-AUDIT-X-FORMAL-CERTIFICATION-AND-CLOSURE",
   "prior_campaign_id": "ENT-AUDIT-X-POST-B4-EXACT-BLOCKER-CORRECTIVE",
   "plan_baseline_sha": "4d54dfa9e485329d81d0e0fa72436867458f3426",
-  "formal_master_plan_publication_sha": null,
+  "formal_master_plan_publication_sha": "116fb6a2ae5a40605bb569ac7685b62eb0a42539",
   "test_execution_sha": "89c76eb7b53a0a3ce6f75ab395cf4a2802638a91",
   "evidence_publication_sha": "300859537f12a1de7bf3d75fd685bc3a5c727183",
   "b4_mechanical_ci_sha": "162acea31833a6d40d3a5e8e79638db7e443ce3e",

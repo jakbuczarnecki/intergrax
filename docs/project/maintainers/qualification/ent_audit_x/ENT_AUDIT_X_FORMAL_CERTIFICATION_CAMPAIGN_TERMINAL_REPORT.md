@@ -24,7 +24,7 @@ Agent **does not** publish `ENT-AUDIT-X — CLOSED — INDEPENDENTLY ACCEPTED �
 | Field | Value |
 | --- | --- |
 | Document | `ENT_AUDIT_X_COMPLETE_FORMAL_CERTIFICATION_AND_CLOSURE_MASTER_PLAN.md` |
-| **MASTER_PLAN_PUBLICATION_SHA** | *set on campaign publication commit* — see git log after push |
+| **MASTER_PLAN_PUBLICATION_SHA** | **`116fb6a2ae5a40605bb569ac7685b62eb0a42539`** (campaign publication commit) |
 | `FORMAL_CLOSURE_PUBLICATION_SHA` | **unset** (EBH-7 — no embed in same commit) |
 
 ## F0–F7 phase summary
