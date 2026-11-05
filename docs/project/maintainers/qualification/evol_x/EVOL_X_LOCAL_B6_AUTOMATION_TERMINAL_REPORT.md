@@ -45,7 +45,7 @@ Log: `.tmp/session/evol-x-local-b6-automation/`
 
 ## G. Publication HEAD
 
-*Set after commit — `LOCAL_B6_AUTOMATION_PUBLICATION_SHA` on ladder optional row.*
+**`LOCAL_B6_AUTOMATION_PUBLICATION_SHA`:** `e0b12c90df5eff770278f76985c612492ceb2acc`
 
 ## H. Exact authorization package (single unblock chain)
 
