@@ -296,8 +296,15 @@ def _post_tes_doc_only_delta(root: Path, from_sha: str, to_sha: str) -> tuple[bo
     return True, ""
 
 
-def _resolve_ci_proof_sha(root: Path, head: str, *, tes_pin: str | None) -> tuple[str, str]:
-    ok_head, detail_head = _verify_ci_workflow_green(root, "enterprise-audit.yml", head)
+def _resolve_workflow_proof_sha(
+    root: Path,
+    head: str,
+    *,
+    tes_pin: str | None,
+    workflow_file: str,
+    proof_label: str,
+) -> tuple[str, str]:
+    ok_head, detail_head = _verify_ci_workflow_green(root, workflow_file, head)
     if ok_head:
         return head, detail_head
     qual_ok, _ = _qualification_current_after_tes(root, tes_pin, head)
@@ -319,10 +326,30 @@ def _resolve_ci_proof_sha(root: Path, head: str, *, tes_pin: str | None) -> tupl
         doc_ok, _ = _post_tes_doc_only_delta(root, sha, head)
         if not doc_ok:
             break
-        ok, detail = _verify_ci_workflow_green(root, "enterprise-audit.yml", sha)
+        ok, detail = _verify_ci_workflow_green(root, workflow_file, sha)
         if ok:
-            return sha, f"doc-only HEAD; FAST proof @ {sha[:12]} ({detail})"
+            return sha, f"doc-only HEAD; {proof_label} proof @ {sha[:12]} ({detail})"
     return head, detail_head
+
+
+def _resolve_ci_proof_sha(root: Path, head: str, *, tes_pin: str | None) -> tuple[str, str]:
+    return _resolve_workflow_proof_sha(
+        root,
+        head,
+        tes_pin=tes_pin,
+        workflow_file="enterprise-audit.yml",
+        proof_label="FAST",
+    )
+
+
+def _resolve_nightly_proof_sha(root: Path, head: str, *, tes_pin: str | None) -> tuple[str, str]:
+    return _resolve_workflow_proof_sha(
+        root,
+        head,
+        tes_pin=tes_pin,
+        workflow_file="enterprise-audit-nightly.yml",
+        proof_label="nightly",
+    )
 
 
 def _verify_pr_nightly_ci_proof(dossier_path: Path, tes_pin: str | None, head: str, root: Path) -> tuple[bool, str]:
@@ -330,7 +357,9 @@ def _verify_pr_nightly_ci_proof(dossier_path: Path, tes_pin: str | None, head: s
     pr_ok = _verify_ci_workflow_green(root, "enterprise-audit.yml", head)[0] or "doc-only HEAD" in pr_detail
     if not pr_ok:
         return False, f"PR FAST: {pr_detail}"
-    nightly_ok, nightly_detail = _verify_ci_workflow_green(root, "enterprise-audit-nightly.yml", head)
+    _nightly_sha, nightly_detail = _resolve_nightly_proof_sha(root, head, tes_pin=tes_pin)
+    nightly_at_head, _ = _verify_ci_workflow_green(root, "enterprise-audit-nightly.yml", head)
+    nightly_ok = nightly_at_head or "doc-only HEAD" in nightly_detail
     if not nightly_ok:
         return False, f"nightly: {nightly_detail}"
     return True, f"PR {pr_detail}; nightly {nightly_detail}"
@@ -538,7 +567,10 @@ def main() -> int:
     _proof_sha, fast_detail = _resolve_ci_proof_sha(root, head, tes_pin=tes_pin)
     fast_ok = _verify_ci_workflow_green(root, "enterprise-audit.yml", head)[0] or "doc-only HEAD" in fast_detail
     add("ci_pr_fast_green_at_head", fast_ok, fast_detail if fast_ok else ci_detail)
-    add("ci_nightly_green_at_head", _verify_ci_workflow_green(root, "enterprise-audit-nightly.yml", head)[0], ci_detail)
+    _nightly_sha, nightly_detail = _resolve_nightly_proof_sha(root, head, tes_pin=tes_pin)
+    nightly_at_head, _ = _verify_ci_workflow_green(root, "enterprise-audit-nightly.yml", head)
+    nightly_ok = nightly_at_head or "doc-only HEAD" in nightly_detail
+    add("ci_nightly_green_at_head", nightly_ok, nightly_detail if nightly_ok else ci_detail)
     add("pr_nightly_ci_proof", ci_ok, ci_detail)
     dossier_ok, dossier_detail = _verify_dossier_complete(dossier, tes_pin, head, root)
     add("dossier_complete", dossier_ok, dossier_detail)

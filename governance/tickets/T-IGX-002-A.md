@@ -6,7 +6,11 @@ W8 Protocol 03 B6 findings disposition, Matrix C/GAP-RC C075-S2 sync, mechanical
 
 ## Lifecycle state
 
-in_progress
+closed
+
+## Closure note (2026-11-05 POST-B4)
+
+Internal disposition promoted per [`ENT_AUDIT_X_POST_B4_EXACT_BLOCKER_AUDIT_AND_CORRECTIVE_CLOSURE_REPORT.md`](../../docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_POST_B4_EXACT_BLOCKER_AUDIT_AND_CORRECTIVE_CLOSURE_REPORT.md). Formal B6/OD/FRZ unchanged.
 
 ## Test contract
 

@@ -34,6 +34,7 @@ from wbs_reconciliation_lib import (
     evidence_path_for,
     load_b5_outcomes,
     matrix_e_qual_label,
+    refresh_mechanical_qualification,
     remaining_delta,
 )
 
@@ -231,6 +232,7 @@ def patch_header(text: str, root: Path, head: str, collect_n: int) -> str:
 
 
 def apply(root: Path) -> tuple[str, list[str]]:
+    refresh_mechanical_qualification(root)
     path = master_plan_path(root)
     text = path.read_text(encoding="utf-8")
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()

@@ -33,7 +33,7 @@ Agent **does not** declare B6 PASS, OD approval, FRZ CLOSED, or `CLOSED — INDE
 
 ## Exact blockers (fail-closed)
 
-1. **Matrix C:** **10** tasks remain `NOT_QUALIFIED` (CI-gated + C054/C066/C075 + operator OD tasks) after HEAD L2 replay — not **75/75 QUALIFIED**.
+1. **Matrix C:** **19** tasks were `NOT_QUALIFIED` in execution SSOT (**10** CI + **3** mechanical + **6** operator). Terminal report **“10”** referred to **CI-gated only** — see [POST-B4 report](./ENT_AUDIT_X_POST_B4_EXACT_BLOCKER_AUDIT_AND_CORRECTIVE_CLOSURE_REPORT.md). Post-B4: **69 QUALIFIED**, **6** operator NOT_QUALIFIED.
 2. **GAP-RC:** **GAP-RC-OD-TRUST** OPEN; **REDACTION**, **NIGHTLY-FREEZE**, **DOSSIER**, **SSOT-DRIFT**, **RUN-STATUS**, **CANDIDATE-FSM** PARTIAL.
 3. **GAP-B (6):** all **EXTERNAL** — BLK-EVOL-B6, BLK-ENT-B6, BLK-CI-ENFORCE, BLK-ROADMAP-ENT-DEP, etc.
 4. **CI proof @ INTERNAL_CLOSURE publication SHA (`2dddb6fa9…`):** push **42004861261** (FAST) **success**; follow-up nightly dispatch **42007265609** (FULL) **success** @ `2dddb6fa9`. Campaign baseline dispatch **42002319372** / **42002323615** @ `7de6b41f…` remain valid for PLAN_BASELINE. **Current `development` HEAD** may advance (e.g. SEF docs) — `mechanical_readiness_check` then requires a new nightly @ that HEAD or evaluation @ pinned ENT publication SHA only.

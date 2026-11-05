@@ -56,6 +56,25 @@ def test_publication_rejects_failed_outcome_exit_code() -> None:
         assert_certifying_publication_eligible(manifest)
 
 
+def test_publication_rejects_interrupted_run_status() -> None:
+    base = sample_full_execution_manifest()
+    manifest = AuditExecutionManifest(
+        audit_mode=base.audit_mode,
+        qualification_sha=base.qualification_sha,
+        audit_execution_sha=base.audit_execution_sha,
+        checks_planned=85,
+        checks_executed=10,
+        checks_skipped=0,
+        coverage_label="FULL",
+        certifying_run=True,
+        run_status="interrupted",
+        check_manifest_digest=manifest_digest(),
+        outcomes=base.outcomes,
+    )
+    with pytest.raises(ValueError, match="run_status"):
+        assert_certifying_publication_eligible(manifest)
+
+
 def test_verify_evidence_manifest_rejects_traversal_paths(tmp_path) -> None:
     from intergrax.platform.enterprise_audit.evidence import verify_evidence_manifest
 
