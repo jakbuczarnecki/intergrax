@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[2]
+_IIAC_ACTIVATION = _REPO / "docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json"
+_IIAC_EVOL_PASS_GLOB = "EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md"
 _GOVERNANCE = _REPO / "docs/project/maintainers/qualification/evol_x/EVOL_X_AUTO_B6_GOVERNANCE_STATUS.json"
 _LADDER = _REPO / "docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md"
 _REGISTER = _REPO / "docs/project/maintainers/qualification/evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md"
@@ -23,10 +25,27 @@ def _fail(msg: str, errors: list[str]) -> None:
     errors.append(msg)
 
 
+def _iiac_in_force() -> bool:
+    if not _IIAC_ACTIVATION.is_file():
+        return False
+    gov = json.loads(_IIAC_ACTIVATION.read_text(encoding="utf-8"))
+    return str(gov.get("status") or "").upper() == "IN_FORCE"
+
+
 def main() -> int:
     errors: list[str] = []
 
-    if not _B6_PASS.is_file():
+    if _iiac_in_force():
+        iiac_passes = list((_REPO / "docs/project/maintainers/qualification/evol_x").glob(f"*{_IIAC_EVOL_PASS_GLOB}"))
+        if not iiac_passes:
+            _fail(
+                "IIAC policy IN_FORCE: missing EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md",
+                errors,
+            )
+        manifest_dir = _REPO / "docs/project/maintainers/qualification/evol_x"
+        if not list(manifest_dir.glob("*iiac*manifest*.json")):
+            _fail("IIAC policy IN_FORCE: missing EVOL IIAC audit manifest JSON", errors)
+    elif not _B6_PASS.is_file():
         _fail(f"Missing signed B6 record: {_B6_PASS.relative_to(_REPO)}", errors)
 
     if _B6_DRAFT.is_file() and _B6_PASS.is_file():

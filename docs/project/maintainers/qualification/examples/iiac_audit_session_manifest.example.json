@@ -1,0 +1,27 @@
+{
+  "stage_id": "IIAC-GOV-1-EXAMPLE",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "implementation_session_id": "IIAC-GOV-A-implementer",
+  "implementation_agent_id": "governance-implementer",
+  "auditor_session_id": "IIAC-GOV-B-auditor",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "IIAC-GOV-B-certifier",
+  "certifier_agent_id": "certification-agent",
+  "audited_implementation_sha": "eab65e010f5a1abfc413bb05419435bdf6b1810b",
+  "test_execution_sha": "eab65e010f5a1abfc413bb05419435bdf6b1810b",
+  "evidence_publication_sha": "eab65e010f5a1abfc413bb05419435bdf6b1810b",
+  "audit_execution_sha": "eab65e010f5a1abfc413bb05419435bdf6b1810b",
+  "audit_report_digest": "a2e4e09011bc54b985784125bed85e30da0cfe11b2ee736da130a17b5dc09a6f",
+  "audit_scope_manifest_digest": "a2e4e09011bc54b985784125bed85e30da0cfe11b2ee736da130a17b5dc09a6f",
+  "test_matrix_digest": "a2e4e09011bc54b985784125bed85e30da0cfe11b2ee736da130a17b5dc09a6f",
+  "findings_digest": "a2e4e09011bc54b985784125bed85e30da0cfe11b2ee736da130a17b5dc09a6f",
+  "verdict": "CONDITIONAL",
+  "limitations": [
+    "EXAMPLE ONLY — NOT AN INDEPENDENT AUDIT PASS",
+    "Session B must publish a distinct manifest before policy IN_FORCE"
+  ],
+  "certification_publication_sha": "eab65e010f5a1abfc413bb05419435bdf6b1810b",
+  "assurance_level": "process_enforced",
+  "handoff_record_path": "docs/project/maintainers/qualification/IIAC_SESSION_HANDOFF_RECORD.template.md"
+}

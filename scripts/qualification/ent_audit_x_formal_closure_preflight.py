@@ -20,6 +20,10 @@ _ENT_B6_PASS = (
 _OD_RECORDS = _REPO / "docs/project/maintainers/qualification/ent_audit_x/operator_records"
 _ROADMAP = _REPO / "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md"
 _FRZ = _REPO / "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md"
+_IIAC_ACTIVATION = _REPO / "docs/project/maintainers/qualification/IIAC_POLICY_ACTIVATION_RECORD.json"
+_IIAC_ENT_PASS = (
+    _REPO / "docs/project/maintainers/qualification/ent_audit_x" / "ENT_AUDIT_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md"
+)
 
 
 def _fail(msg: str, errors: list[str]) -> None:
@@ -37,10 +41,27 @@ def _ladder_sha_unset(ladder: str, label: str) -> bool:
     return False
 
 
+def _iiac_in_force() -> bool:
+    if not _IIAC_ACTIVATION.is_file():
+        return False
+    st = json.loads(_IIAC_ACTIVATION.read_text(encoding="utf-8"))
+    return str(st.get("status") or "").upper() == "IN_FORCE"
+
+
 def main() -> int:
     errors: list[str] = []
+    iiac_active = _iiac_in_force()
 
-    if not _ENT_B6_PASS.is_file():
+    if iiac_active:
+        if not _IIAC_ENT_PASS.is_file():
+            _fail(
+                f"IIAC IN_FORCE: missing {_IIAC_ENT_PASS.relative_to(_REPO)}",
+                errors,
+            )
+        ent_dir = _REPO / "docs/project/maintainers/qualification/ent_audit_x"
+        if not list(ent_dir.glob("*iiac*manifest*.json")):
+            _fail("IIAC IN_FORCE: missing ENT IIAC audit manifest JSON", errors)
+    elif not _ENT_B6_PASS.is_file():
         _fail(f"Missing signed ENT B6 record: {_ENT_B6_PASS.relative_to(_REPO)}", errors)
 
     if not _STATUS.is_file():
@@ -59,7 +80,10 @@ def main() -> int:
     if _EVOL_STATUS.is_file():
         ev = json.loads(_EVOL_STATUS.read_text(encoding="utf-8"))
         formal = (ev.get("formal_closure_status") or "").upper()
-        if "CLOSED" not in formal or "INDEPENDENTLY" not in formal:
+        if iiac_active:
+            if "INTERNAL AGENT CERTIFICATION" not in formal and "IIAC" not in formal:
+                _fail("ENT preflight: EVOL predecessor not IIAC CLOSED (N-10)", errors)
+        elif "CLOSED" not in formal or "INDEPENDENTLY" not in formal:
             _fail("EVOL-X formal closure not independently accepted", errors)
 
     if not _LADDER.is_file():
@@ -74,11 +98,22 @@ def main() -> int:
             if _ladder_sha_unset(ladder, label):
                 _fail(f"SHA ladder {label} still pending/empty", errors)
 
-    for od_id in ("OD-ENT-00", "OD-ENT-01", "OD-ENT-02", "OD-ENT-08"):
-        matches = list(_OD_RECORDS.glob(f"*{od_id.lower().replace('-', '_')}*")) if _OD_RECORDS.is_dir() else []
-        signed = [p for p in matches if "SIGNED" in p.read_text(encoding="utf-8", errors="replace").upper()]
-        if not signed:
-            _fail(f"No signed operator record for {od_id} under operator_records/", errors)
+    if not iiac_active:
+        for od_id in ("OD-ENT-00", "OD-ENT-01", "OD-ENT-02", "OD-ENT-08"):
+            matches = list(_OD_RECORDS.glob(f"*{od_id.lower().replace('-', '_')}*")) if _OD_RECORDS.is_dir() else []
+            signed = [p for p in matches if "SIGNED" in p.read_text(encoding="utf-8", errors="replace").upper()]
+            if not signed:
+                _fail(f"No signed operator record for {od_id} under operator_records/", errors)
+    else:
+        od02_mode = None
+        if _STATUS.is_file():
+            od02_mode = json.loads(_STATUS.read_text(encoding="utf-8")).get("od_ent_02_mode")
+        if od02_mode == "compensating":
+            comp_verifier = _REPO / "scripts/governance/verify_od_ent_02_compensating_control.py"
+            if not comp_verifier.is_file():
+                _fail("compensating mode requires verify_od_ent_02_compensating_control.py", errors)
+        elif od02_mode != "live":
+            _fail("IIAC IN_FORCE: set od_ent_02_mode to live|compensating in status JSON", errors)
 
     if _ROADMAP.is_file():
         road = _ROADMAP.read_text(encoding="utf-8")

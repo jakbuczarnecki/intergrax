@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intergrax.local/schemas/iiac_audit_session_manifest.v1.schema.json",
+  "title": "IIAC audit session manifest v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "stage_id",
+    "certification_profile",
+    "policy_version",
+    "implementation_session_id",
+    "implementation_agent_id",
+    "auditor_session_id",
+    "auditor_agent_id",
+    "certifier_session_id",
+    "certifier_agent_id",
+    "audited_implementation_sha",
+    "test_execution_sha",
+    "evidence_publication_sha",
+    "audit_execution_sha",
+    "audit_report_digest",
+    "audit_scope_manifest_digest",
+    "test_matrix_digest",
+    "findings_digest",
+    "verdict",
+    "limitations",
+    "certification_publication_sha"
+  ],
+  "properties": {
+    "stage_id": { "type": "string", "minLength": 1 },
+    "certification_profile": { "const": "iiac-v1" },
+    "policy_version": { "type": "string", "minLength": 1 },
+    "implementation_session_id": { "type": "string", "minLength": 1 },
+    "implementation_agent_id": { "type": "string", "minLength": 1 },
+    "auditor_session_id": { "type": "string", "minLength": 1 },
+    "auditor_agent_id": { "type": "string", "minLength": 1 },
+    "certifier_session_id": { "type": "string", "minLength": 1 },
+    "certifier_agent_id": { "type": "string", "minLength": 1 },
+    "audited_implementation_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "test_execution_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "evidence_publication_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "audit_execution_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "audit_report_digest": { "type": "string", "minLength": 16 },
+    "audit_scope_manifest_digest": { "type": "string", "minLength": 16 },
+    "test_matrix_digest": { "type": "string", "minLength": 16 },
+    "findings_digest": { "type": "string", "minLength": 16 },
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "PASS_SCOPED", "CONDITIONAL"]
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "certification_publication_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "assurance_level": { "type": "string", "enum": ["process_enforced"] },
+    "handoff_record_path": { "type": "string" }
+  }
+}

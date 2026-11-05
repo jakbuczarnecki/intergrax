@@ -24,7 +24,9 @@
 | Pre-admission dossier | **COMPLETE** for independent review |
 | Production delta @ consolidation | **0** (documentation / governance registers) |
 
-**Critical path:** Authorized independent Protocol 03 B6 (EVOL) → EVOL formal closure + FRZ-EVOL → OD-ENT-00 → ENT B6 → ENT formal closure + FRZ-AUD → current-HEAD ECAP §2.C full-platform audit @ freeze SHA → ARCH-FREEZE admission audit.
+**Critical path:** After IIAC policy activation ([`INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md`](INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md)): EVOL-X and ENT-AUDIT-X **IIAC CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED** @ pinned manifest SHAs → FRZ-EVOL / FRZ-AUD individual promotion → current-HEAD ECAP §2.C @ freeze SHA → ARCH-FREEZE admission. Until IIAC `IN_FORCE`, legacy human Protocol 03 B6 chain remains documented below.
+
+**Legacy path (pre-IIAC activation):** Authorized independent Protocol 03 B6 (EVOL) → EVOL formal closure + FRZ-EVOL → OD-ENT-00 → ENT B6 → ENT formal closure + FRZ-AUD → current-HEAD ECAP §2.C full-platform audit @ freeze SHA → ARCH-FREEZE admission audit.
 
 ---
 

@@ -3,21 +3,23 @@
 **Status:** **DRAFT — NOT SIGNED — NOT ACCEPTED** (formal B6/OD chain) · **EVOL-X internal closure @ 2026-11-05** · **Internal certification @ OD-IC-01 (2026-11-04)**  
 **START_HEAD @ preparation:** `0e538269a7188075003b9ff2c7cce2545d8f1ccb`
 
+**IIAC path (NOT IN FORCE @ Session A):** After activation, formal B6/closure uses [INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md](./INTEGRAX_INTERNAL_INDEPENDENT_AGENT_CERTIFICATION_PROTOCOL.md) — closure string `CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED`. GitHub admin remains **external infra**, not a blocker to IIAC CLOSED when compensating OD-ENT-02 is accepted.
+
 | Gate | Stage | Required before | Owner | Evidence | State | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
 | EVOL internal closure | EVOL-X | OPERATOR-DIRECTED INTERNAL CLOSURE CAMPAIGN | Internal auditor session | [EVOL_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md](./evol_x/EVOL_X_INTERNAL_CLOSURE_CAMPAIGN_TERMINAL_REPORT.md) | **INTERNALLY CLOSED — AUTOMATION_FIRST_SCOPED** | Formal B6 when authorized |
 | EVOL → ENT internal handoff | EVOL-X → ENT | Internal parent close | Maintainer docs | [EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md](./evol_x/EVOL_X_ENT_AUDIT_X_HANDOFF_RECORD.md) | **INTERNAL HANDOFF COMPLETE** | Formal W7-06 pin still OPEN |
 | Internal certification (EVOL) | EVOL-X | Operator OD-IC-01 | Operator | TES/FINAL/CI + OD-EVOL-17..19 | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (SCOPED)** | Superseded in disposition by internal closure row above |
 | Internal certification (ENT) | ENT-AUDIT-X | Operator OD-IC-01 | Operator | TES/B5/re-audit + W8 disposition | **INTERNALLY CERTIFIED — OPERATOR ACCEPTED (TECHNICAL SCOPE)** | Formal Protocol 03 B6 when authorized |
-| EVOL B6 | EVOL-X | OD-EVOL-11 auditor + mandate | Independent auditor | TES `3c4a641b…`, FINAL `bbf3e33…`, CI `41337077334` | **OPEN** | Sign Protocol 03; set `B6_ACCEPTANCE_PUBLICATION_SHA` |
+| EVOL B6 | EVOL-X | OD-EVOL-11 / IIAC handoff when active | Independent auditor (IIAC session after activation) | TES `3c4a641b…`, FINAL `bbf3e33…`, CI `41337077334` | **OPEN** | IIAC manifest + `B6_ACCEPTANCE_PUBLICATION_SHA` (legacy human Protocol 03 until IN_FORCE) |
 | EVOL FRZ | EVOL-X | EVOL B6 ACCEPT | Operator | FRZ-EVOL-01..10 checklist | **OPEN** | Operator FRZ promotion after B6 |
 | EVOL W7-06 handoff (formal) | EVOL-X | W7-05 formal closure publication | Operator / maintainer | Handoff record formal pin | **OPEN** | Publish `FORMAL_CLOSURE_PUBLICATION_SHA` |
 | EVOL W7-06 handoff (internal) | EVOL-X | Internal closure campaign | Internal auditor session | Handoff record @ internal SHA | **COMPLETE** | ENT intake may use internal package |
 | EVOL formal CLOSED | EVOL-X | B6 + FRZ + W7 + §5 | Operator + auditor | Reconciliation + terminal campaign | **PARTIAL** (technical + R2; authority blocked) | [`EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md`](./evol_x/EVOL_X_FORMAL_CLOSURE_AUTHORITY_BLOCKED_DOSSIER.md) |
 | OD-ENT-00 | ENT-AUDIT-X | EVOL disposition documented | Operator | [EVOL_X_FORMAL_CLOSURE_RECONCILIATION_PACKAGE_DRAFT.md](./evol_x/EVOL_X_FORMAL_CLOSURE_RECONCILIATION_PACKAGE_DRAFT.md) | **OPEN** | Accept EVOL formal status for ENT dependency |
-| ENT B6 | ENT-AUDIT-X | B5 @ TES; technical re-audit | Independent auditor | TES `89c76eb7…`, EVID `30085953…`, re-audit `0e538269…` | **OPEN** (tech rec.) | Sign [ENT B6 package](./ent_audit_x/ENT_AUDIT_X_B6_FORMAL_ACCEPTANCE_PACKAGE_DRAFT.md) |
-| OD-ENT-01 | ENT-AUDIT-X | ENT B6 ACCEPT | Operator | Trust chain L6 | **OPEN** | Promote `ACCEPTED_BASELINE_SHA` |
-| OD-ENT-02 | ENT-AUDIT-X | Workflows @ TES | Operator + GitHub admin | [OD_ENT_02_OPERATOR_PACKET.md](./ent_audit_x/OD_ENT_02_OPERATOR_PACKET.md) | **OPEN** | Branch protection + required checks |
+| ENT B6 | ENT-AUDIT-X | B5 @ TES; technical re-audit | Independent auditor (IIAC after activation) | TES `89c76eb7…`, EVID `30085953…`, re-audit `0e538269…` | **OPEN** (tech rec.) | IIAC pass record + manifest (legacy human B6 until IN_FORCE) |
+| OD-ENT-01 | ENT-AUDIT-X | ENT B6 ACCEPT | Operator + IIAC certifier when active | Trust chain L6 | **OPEN** | Promote `ACCEPTED_BASELINE_SHA` |
+| OD-ENT-02 | ENT-AUDIT-X | ENT B6 path | GitHub admin **or** IIAC compensating (Option B) | LIVE: `verify_ent_audit_branch_protection.py` · COMPENSATING: [`OD_ENT_02_COMPENSATING_CONTROL_PACKAGE.md`](./ent_audit_x/OD_ENT_02_COMPENSATING_CONTROL_PACKAGE.md) · [operator packet](./ent_audit_x/OD_ENT_02_OPERATOR_PACKET.md) | **OPEN** | LIVE preferred; compensating without equivalence claim |
 | Branch protection | Platform | OD-ENT-02 | GitHub admin | CI runbook | **EXTERNAL** | Admin applies rules |
 | Accepted baseline | ENT-AUDIT-X | OD-ENT-01 | Operator | Ladder | **OPEN** | Record + promote CLI |
 | Normal FREEZE | ENT-AUDIT-X | Accepted baseline | Operator / qual | PL-08 | **OPEN** | Post-B6 qual path |

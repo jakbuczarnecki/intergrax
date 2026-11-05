@@ -1,0 +1,11 @@
+{
+  "schema_version": "iiac-policy-activation.v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "status": "NOT_IN_FORCE",
+  "effective_from_sha": null,
+  "session_b_governance_audit_report_digest": null,
+  "session_b_manifest_path": null,
+  "session_b_verdict": null,
+  "operator_activation_line": null,
+  "notes": "Session A governance implementation — activation requires Session B independent audit (IIAC-GOV-1) and operator line in IIAC_OD_ACTIVATION_*.md"
+}
