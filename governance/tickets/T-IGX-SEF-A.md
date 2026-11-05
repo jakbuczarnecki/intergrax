@@ -45,6 +45,14 @@ quality_gate
 
 ## Checkpoint
 
-`igx_gov ticket`: PASS (pre-commit) — log `.tmp/session/T-IGX-SEF-A-P1-B1/igx_gov.log`
+**P1-B1 + corrective (@ AUDITED_SHA `7de6b41f637df1d6949985d9dc567602a074e230`):**
+
+- Links: **108 OK / 0 broken** — `.tmp/session/ASF-SEF-P1-CORRECTIVE/check_links_after.log`
+- `verify_plan_approval.py` / `verify_ticket_lifecycle.py`: OK — corrective logs
+- `igx_gov ticket`: PASS — `.tmp/session/ASF-SEF-P1-CORRECTIVE/igx_gov_ticket_after.log`
+- `check_harness_adr.py`: **FAIL (24 global)** — not P1-introduced; **OD-SEF-P1-EXCEPTION** **AWAITING OPERATOR EXCEPTION APPROVAL**; hygiene **T-IGX-014-A** scaffolded
+- Acceptance prep: [`ASF_SEF_P1_OPERATOR_ACCEPTANCE_RECORD_PREPARED.md`](../../docs/project/maintainers/qualification/sef/ASF_SEF_P1_OPERATOR_ACCEPTANCE_RECORD_PREPARED.md); closure dossier `.tmp/session/ASF-SEF-P1-CLOSURE/DOSSIER.md`
+
+**Formal closure:** **blocked** until operator approves **OD-SEF-P1-EXCEPTION** and signs acceptance record (**no FORMAL_CLOSURE_SHA** in this batch).
 
 **Commit trailer:** `Ref: governance/tickets/T-IGX-SEF-A.md`
