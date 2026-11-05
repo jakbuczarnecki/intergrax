@@ -47,7 +47,7 @@
 | CURRENT_DOCUMENTATION_HEAD (W7 mechanical readiness) | `1bee524218d9185175f3e24c6e6f205565ff0569` | C075-S2 sync + canonical ladder pins + dossier CI @ HEAD |
 | ONE_PASS_CAMPAIGN_PLAN_BASELINE_SHA | `7de6b41f637df1d6949985d9dc567602a074e230` | ENT-AUDIT-X one-pass B0–B7 @ 2026-11-05 |
 | INTERNAL_CLOSURE_STATUS | **INTERNAL CLOSURE PARTIAL — EXACT BLOCKERS — PUBLISHED** | Not formal ECAP closure |
-| INTERNAL_CLOSURE_PUBLICATION_SHA | *set on publication commit* | Terminal report + SSOT reconcile |
+| INTERNAL_CLOSURE_PUBLICATION_SHA | `53fd582b654ab1d45cae67a4a43da1be737734d2` | Terminal report + SSOT reconcile — Ref T-IGX-002-A |
 
 ## Lineage rules
 

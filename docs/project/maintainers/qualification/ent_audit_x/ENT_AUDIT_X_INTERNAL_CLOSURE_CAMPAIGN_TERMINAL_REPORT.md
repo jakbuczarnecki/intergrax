@@ -16,7 +16,7 @@ Agent **does not** declare B6 PASS, OD approval, FRZ CLOSED, or `CLOSED — INDE
 | EVIDENCE_PUBLICATION_SHA (preserved) | `300859537f12a1de7bf3d75fd685bc3a5c727183` |
 | INDEPENDENT_TECHNICAL_REAUDIT_SHA | `0e538269a7188075003b9ff2c7cce2545d8f1ccb` |
 | OD-IC-01 (reference only) | `5c08e5e6c44d21998c76bd27ad1efab172440f45` |
-| INTERNAL_CLOSURE_PUBLICATION_SHA | *set on publication commit* — see [ENT_AUDIT_X_SHA_LADDER.md](./ENT_AUDIT_X_SHA_LADDER.md) |
+| INTERNAL_CLOSURE_PUBLICATION_SHA | *set on publication commit* — **`53fd582b654ab1d45cae67a4a43da1be737734d2`** |
 
 ## Batch outcomes (B0–B7)
 
