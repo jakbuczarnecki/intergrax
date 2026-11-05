@@ -2,7 +2,7 @@
 
 **Ticket:** [`T-IGX-017-A`](../../../../../governance/tickets/T-IGX-017-A.md) · **Role:** implementer (`may_commit: true`) · **Policy:** `IIAC-2026-11-05.1` (`IN_FORCE` @ `f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d`)
 **Start HEAD:** `ca2b147825ce6117cc7219e63a93d2872669cb49` · **Date:** 2026-11-05
-**`B4_CORRECTIVE_IMPLEMENTATION_SHA`:** recorded in the binding commit that follows the implementation commit (see §9).
+**`B4_CORRECTIVE_IMPLEMENTATION_SHA`:** `23feb2bbb017b1beb63f9368b5978384093ff924` (bound in a separate follow-up commit; non-self-referential).
 
 **Status:** implementation complete, **ready for independent re-audit**. This is not a self-PASS. This session issued no B6 acceptance, promoted no FRZ row, decided no operator item and did not close EVOL-X. Session C audit evidence and the P2 certification evidence are byte-unchanged.
 
@@ -125,6 +125,7 @@ All evidence checks (A-01..A-17) pass on the published Session C / P2 evidence. 
 - **R-4 Blocker parsing** relies on `B-<n>` prefixes in `open_blockers_for_closure`. Unprefixed entries block both gates.
 - **R-5 Private-helper reuse.** The preflight reuses `_companion_errors`, `_findings_errors`, `_path_rejected` from `iiac_activation_gate` to avoid divergent logic; a rename there breaks the import (fail-closed at import time).
 - **R-6 Audited scope list** is a constant mirroring `audit_scope.json` `in_scope`; a new audited path would need a code change.
+- **R-7 Pre-existing test side effect (not in this batch).** `tests/unit/governance/test_iiac_negative_guards.py` (lines 130/142) rewrites the canonical `IIAC_POLICY_ACTIVATION_RECORD.json` and restores it with `write_text`, which writes CRLF on Windows. The record is `-text`, so after a local governance-suite run the worktree record differs from HEAD and the activation gate fails until `git checkout -- <record>`. Observed and restored during this qualification; belongs to a governance test-hotfix ticket together with the 4 stale pre-activation assertions (§7.1).
 - **Re-audit focus:** two-gate separation, absence of any silent pass path, fidelity of A-07/A-08 to Session C limits, B-03/B-04 two-phase semantics, and the Ruff exemption boundary.
 
 ## 9. SHAs
@@ -132,4 +133,5 @@ All evidence checks (A-01..A-17) pass on the published Session C / P2 evidence. 
 | Role | SHA |
 |---|---|
 | START_HEAD | `ca2b147825ce6117cc7219e63a93d2872669cb49` |
-| `B4_CORRECTIVE_IMPLEMENTATION_SHA` | bound in the follow-up binding commit (this file, §9) |
+| `B4_CORRECTIVE_IMPLEMENTATION_SHA` (audit target) | `23feb2bbb017b1beb63f9368b5978384093ff924` |
+| Binding commit | the commit that adds this row (child of the implementation SHA; docs/ticket only) |

@@ -50,4 +50,4 @@ ready_for_audit
 
 ## Checkpoint
 
-Implementation complete; independent re-audit required. `B4_CORRECTIVE_IMPLEMENTATION_SHA` is recorded in the handoff §9 binding commit.
+Implementation complete; independent re-audit required. `B4_CORRECTIVE_IMPLEMENTATION_SHA` = `23feb2bbb017b1beb63f9368b5978384093ff924` (handoff §9). Qualification: 505 passed / 4 pre-existing failures (reproduced at START_HEAD) / 1 skipped. No implementation-session self-PASS.
