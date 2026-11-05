@@ -104,7 +104,7 @@ Log: `.tmp/session/evol-x-local-b6-unattended/pytest.log`
 
 | Item | Value |
 |------|-------|
-| `UNATTENDED_EXECUTION_PUBLICATION_SHA` | *set on publication commit* |
+| `UNATTENDED_EXECUTION_PUBLICATION_SHA` | `0356554cf8065a10a00b925afbdab4327375beaf` |
 | Branch | `development` → `origin/development` |
 
 ---
