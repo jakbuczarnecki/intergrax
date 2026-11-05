@@ -29,4 +29,4 @@ ready_for_operator_activation
 
 ## Checkpoint
 
-ACT-01 dossier digest `c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e` published under `iiac_evidence/IIAC-GOV-1/certification/`. Disposition: `IIAC GOVERNANCE — CERTIFIED — ACTIVATION BLOCKED BY EXACT OPERATOR GATE`.
+ACT-01 dossier digest `c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e` published under `iiac_evidence/IIAC-GOV-1/certification/`. Certification publication SHA `a5fb6cb51ecd982284fd53ebc41e284e18b5523d`. Disposition: `IIAC GOVERNANCE — CERTIFIED — ACTIVATION BLOCKED BY EXACT OPERATOR GATE`. HEAD `765be93a7b3fb649ccd8922fc5591a5a46d51f33` (ahead of `origin/development` until push).
