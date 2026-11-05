@@ -15,7 +15,7 @@
 | Label | Value |
 |-------|-------|
 | `GOVERNANCE_IMPLEMENTATION_SHA` (Session B audit pin; unchanged) | `2ae1014116d353bc7742985e62f2bccc2bfac798` |
-| `PUBLICATION_HEAD` (`development` after Session A doc reconciliation) | `b800b67df704212b6222d7af52863b9134540001` |
+| `PUBLICATION_HEAD` (`development` after Session A doc reconciliation) | `22ee2fb648a5a98d6e0fb3a0a40bb50b3ddb1bd5` |
 | `IIAC_POLICY_STATUS` | **NOT_IN_FORCE** |
 
 ## Test results
