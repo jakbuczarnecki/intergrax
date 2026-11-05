@@ -1,7 +1,7 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
-See LICENSE for permitted evaluation, collaboration, and contribution use.
+Intergrax is proprietary, source-visible software. No general use license is granted.
+See LICENSE. This notice does not claim ownership of third-party or contributor-owned materials.
 -->
 
 # Intergrax Public Documentation Map
@@ -87,7 +87,7 @@ with Try LKW as the repository’s primary product action.
 | Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Compare Intergrax with modern agent/platform alternatives | [Alternatives and trade-offs](../overview/ALTERNATIVES_AND_TRADEOFFS.md) |
-| Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
+| Read the evaluation method | [Evaluation Guide](../builders/EVALUATION_GUIDE.md). The guide is not permission to run |
 | Understand permission boundaries | [Collaboration](COLLABORATION.md) and [LICENSE](../../../LICENSE) |
 | Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) · [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (canonical domain index) |
 | Understand why Intergrax exists | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) |
@@ -242,9 +242,9 @@ Use the [intent table](#start-by-what-you-want-to-do) first. This quick index he
 | [FAQ](../overview/FAQ.md) | Concise first-contact questions |
 | [Roadmap](../overview/ROADMAP.md) | Outcome-gated direction across repeatability, complete intended outcome, real-user validation, evidence-driven expansion and hardening/packaging |
 | [Collaboration](COLLABORATION.md) | Evaluation feedback, contribution, pilot-discussion, permission-request and security routes |
-| [LICENSE](../../../LICENSE) | Legal evaluation and collaboration terms |
+| [LICENSE](../../../LICENSE) | Proprietary terms. No general license is granted |
 | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Non-executable product-first walkthrough of the supported LKW experience and boundaries |
-| [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
+| [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Indexed LKW product path. Running it requires separate written permission |
 | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
 | [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) | Future ecosystem direction - governed agent distribution concept and reference architecture (not a shipped product) |
@@ -271,7 +271,7 @@ and deep technical reviewers should use the technical map - not this public map:
 
 ## Current maturity boundary
 
-- Intergrax is **source-available** and under **active R&D**.
+- Intergrax is **proprietary, source-visible** software and under **active R&D**. No general license is granted. See [LICENSE](../../../LICENSE).
 - LKW is **Backend Product Alpha / MVP**.
 - Governed Execution has **implemented mechanisms** on bounded paths; **consolidation / qualification ongoing**; no dedicated accepted public proof yet.
 - Token Optimization has **implemented mechanisms** and **bounded proof paths**.

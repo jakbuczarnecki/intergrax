@@ -1,12 +1,12 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
-See LICENSE for permitted evaluation, collaboration, and contribution use.
+Intergrax is proprietary, source-visible software. No general use license is granted.
+See LICENSE. This notice does not claim ownership of third-party or contributor-owned materials.
 -->
 
 # Intergrax FAQ
 
-Intergrax is **source-available** and under **active R&D**. LKW is the **Active reference product**, classified as **Backend Product Alpha / MVP**, and remains **PARTIAL**. Real-user and commercial validation are incomplete.
+Intergrax is **proprietary, source-visible** software and under **active R&D**. No general license is granted. See [LICENSE](../../../LICENSE). LKW is the **Active reference product**, classified as **Backend Product Alpha / MVP**, and remains **PARTIAL**. Real-user and commercial validation are incomplete.
 
 This is a concise first-contact router. It does not replace the document that owns a detailed question or the legally authoritative [LICENSE](../../../LICENSE).
 
@@ -16,10 +16,10 @@ This is a concise first-contact router. It does not replace the document that ow
 
 | First-contact question | Correct route |
 |------------------------|---------------|
-| Try LKW | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| Read the LKW quickstart | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md). Running it requires separate written permission |
 | Understand LKW first | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
-| Evaluate a claim or proof | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
-| Build or extend an application | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) |
+| Read the evaluation method | [Evaluation Guide](../builders/EVALUATION_GUIDE.md). The guide is not permission to run |
+| Read the builder path | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md). It is not permission to install or modify |
 | Check current evidence | [PROOFS](../proofs/PROOFS.md) |
 | Discuss a bounded pilot | [Partners](../community/PARTNERS.md) |
 | Ask about permissions | [Collaboration](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) |
@@ -48,27 +48,27 @@ Partly, with boundaries. The [Product Quick Start](../../../applications/local_w
 
 ## Where should I start?
 
-Use the [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) to understand the path, then the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) to try it. For workflow fit, use [USE_CASES](USE_CASES.md).
+Use the [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) to understand the path, then read the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md). Running it requires separate written permission. For workflow fit, use [USE_CASES](USE_CASES.md).
 
 ## How do I evaluate Intergrax?
 
-Choose one claim or workflow and follow the [Evaluation Guide](../builders/EVALUATION_GUIDE.md). It owns the pinned revision, canonical path, evidence, skipped steps, limitations, and evaluation decision. A bounded evaluation is not production readiness or permission.
+The public [LICENSE](../../../LICENSE) does not grant evaluation. A run requires separate written permission, an earlier license for that copy, or a right that applicable law does not allow to be restricted. The [Evaluation Guide](../builders/EVALUATION_GUIDE.md) describes a method for one claim or workflow. It is not authorization to run that method.
 
 ## How do I build with Intergrax?
 
-Start at the [Builder Quick Start](../builders/BUILDER_QUICKSTART.md). After the first workflow and ownership checkpoint, use [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md) for application composition planning. Evaluation belongs to the [Evaluation Guide](../builders/EVALUATION_GUIDE.md).
+Read the [Builder Quick Start](../builders/BUILDER_QUICKSTART.md), then [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md) for application composition planning. Those pages are not permission to install, run, or modify Intergrax. The method for a bounded check is the [Evaluation Guide](../builders/EVALUATION_GUIDE.md), which is also not that permission.
 
 ## Is Intergrax open source?
 
-No. It is **source-available** under the [Intergrax Evaluation and Collaboration License 1.0](../../../LICENSE). Public source access does not itself grant open-source, production, commercial, hosting, or redistribution rights.
+No. It is **proprietary** software under [LICENSE](../../../LICENSE). No general license is granted to run, modify, develop software based on the protected Intergrax code, use it commercially, redistribute it, host it, sublicense it, or resell it. Viewing through GitHub is subject to the GitHub Terms of Service and does not expand those rights.
 
 ## Can a company evaluate Intergrax?
 
-Yes, internal non-production Evaluation by a commercial organization may be permitted under the [LICENSE](../../../LICENSE), subject to its exact terms and a controlled Evaluation Environment. Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) for the method.
+Not under the public [LICENSE](../../../LICENSE). Evaluation requires separate written permission, unless an earlier license covers that copy or applicable law does not allow the restriction. The [Evaluation Guide](../builders/EVALUATION_GUIDE.md) describes a method. It is not that permission.
 
 ## Can I use it in production or commercially?
 
-The [LICENSE](../../../LICENSE) controls this boundary. Production Use and Commercial Use require separate explicit written permission or agreement; a document route or request does not grant permission. For a practical request route, see [Collaboration](../community/COLLABORATION.md).
+The [LICENSE](../../../LICENSE) controls this boundary. Evaluation, production use, and commercial use require separate explicit written permission. A document route or request does not grant permission. For a practical request route, see [Collaboration](../community/COLLABORATION.md).
 
 ## How do I discuss a pilot?
 
@@ -76,7 +76,7 @@ Go to [Partners](../community/PARTNERS.md). For first contact, send a short 3–
 
 ## Can I contribute or send feedback?
 
-Use [Collaboration](../community/COLLABORATION.md) to choose feedback, documentation/code contribution, pilot, permission, or security routes. Follow [CONTRIBUTING.md](../../../CONTRIBUTING.md) for contribution workflow; submission does not guarantee acceptance.
+Use [Collaboration](../community/COLLABORATION.md) to choose a contact route. Follow [CONTRIBUTING.md](../../../CONTRIBUTING.md) before offering material. Opening a pull request or merging code does not transfer copyright. Any contribution license requires a separate written agreement. Submission does not guarantee acceptance and does not grant permission to run or modify the software.
 
 ## Where is the architecture?
 

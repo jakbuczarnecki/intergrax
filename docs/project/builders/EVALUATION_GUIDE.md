@@ -1,14 +1,14 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
-See LICENSE for permitted evaluation, collaboration, and contribution use.
+Intergrax is proprietary, source-visible software. No general use license is granted.
+See LICENSE. This notice does not claim ownership of third-party or contributor-owned materials.
 -->
 
 # Intergrax Evaluation Guide
 
-Intergrax is **source-available** and under **active R&D**. **LKW** is the **Active reference product**, classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** remain incomplete. The [LICENSE](../../../LICENSE) is authoritative.
+Intergrax is **proprietary, source-visible** software and under **active R&D**. **LKW** is the **Active reference product**, classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** remain incomplete. The [LICENSE](../../../LICENSE) does not grant a right to run this guide. A run requires separate written permission, an earlier license that covers that copy, or a right that applicable law does not allow to be restricted.
 
-This is a self-service method for one bounded technical/product evaluation. It is not a Builder Quick Start, application composition plan, proof status dashboard, external-reader validation protocol, generic test runner, or production certification procedure.
+This document describes a method for one bounded technical check. It is not permission to run that check, a Builder Quick Start, an application composition plan, a proof status dashboard, an external-reader validation protocol, a generic test runner, or a production certification procedure.
 
 Passing a bounded evaluation ≠ production readiness ≠ commercial permission ≠ external validation ≠ certification.
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "description": "Source-available operating layer for governed AI applications — reuse policy, authority, evidence, execution, and recovery across products instead of rebuilding them for every workflow.",
+  "description": "Proprietary, all-rights-reserved operating layer for governed AI applications — policy, authority, evidence, execution, and recovery. No general license is granted; see LICENSE.",
   "homepage": "https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/overview/WHY_INTERGRAX.md",
   "topics": [
     "ai-agents",
