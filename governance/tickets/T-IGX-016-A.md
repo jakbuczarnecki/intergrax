@@ -25,7 +25,8 @@ Approved: operator Session A @ 2026-11-05T13:00:00+01:00 (IIAC-GOVERNANCE-REFORM
 ## Test contract
 
 ```powershell
-uv run pytest tests/unit/governance/test_iiac_negative_guards.py -q
+uv run pytest tests/unit/governance/test_iiac_negative_guards.py tests/unit/governance/test_iiac_g0_inventory.py -q
+uv run python scripts/governance/verify_iiac_g0_inventory_completeness.py
 uv run python scripts/governance/verify_iiac_policy_activation.py --expect-not-in-force
 uv run python scripts/governance/verify_iiac_audit_manifest.py docs/project/maintainers/qualification/examples/iiac_audit_session_manifest.example.json
 uv run python scripts/governance/verify_iiac_role_separation.py docs/project/maintainers/qualification/examples/iiac_audit_session_manifest.example.json
@@ -47,4 +48,4 @@ quality_gate
 
 ## Checkpoint
 
-`igx_gov ticket`: OK @ push (`.tmp/session/IIAC-GOV-A/igx-gov-ticket.log`); `GOVERNANCE_IMPLEMENTATION_SHA=2ae1014116d353bc7742985e62f2bccc2bfac798`
+`igx_gov ticket`: OK @ push (`.tmp/session/IIAC-GOV-A/igx-gov-ticket.log`); `GOVERNANCE_IMPLEMENTATION_SHA=2ae1014116d353bc7742985e62f2bccc2bfac798` (historical audit pin). F01 corrective: see Session A F01 terminal addendum + `IIAC_SESSION_HANDOFF_RECORD_2026_11_05_SESSION_A_B.md`.

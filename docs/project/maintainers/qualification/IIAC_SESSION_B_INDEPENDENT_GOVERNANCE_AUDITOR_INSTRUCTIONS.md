@@ -13,7 +13,7 @@
 
 1. Adversarial review — no product/governance fixes in audited scope.
 2. Run:
-   - `uv run pytest tests/unit/governance/test_iiac_*.py -q`
+   - `uv run pytest tests/unit/governance/test_iiac_negative_guards.py tests/unit/governance/test_iiac_g0_inventory.py -q`
    - `uv run python scripts/governance/verify_iiac_audit_manifest.py <manifest>`
    - `uv run python scripts/governance/verify_iiac_role_separation.py <manifest> --strict-product-diff`
    - `uv run python scripts/governance/verify_od_ent_02_compensating_control.py`

@@ -34,4 +34,4 @@
 
 ## G0 cross-reference
 
-Automated inventory: [`IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json`](./IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json) — category 1 paths require manual review before activation.
+Automated inventory: [`IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json`](./IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json) — schema **`iiac-authority-impact.v2`**: full governed-path enumeration + content classification; category 1 paths require manual review before activation. Completeness: `verify_iiac_g0_inventory_completeness.py`.

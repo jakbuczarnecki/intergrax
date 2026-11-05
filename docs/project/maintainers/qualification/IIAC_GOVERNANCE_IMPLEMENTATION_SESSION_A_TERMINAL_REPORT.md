@@ -33,8 +33,21 @@
 
 ## G0
 
-- [`scripts/governance/generate_iiac_authority_impact_matrix.py`](../../../../scripts/governance/generate_iiac_authority_impact_matrix.py) — **3492** entries @ generation run
-- [`IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json`](./IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json)
+- [`scripts/governance/generate_iiac_authority_impact_matrix.py`](../../../../scripts/governance/generate_iiac_authority_impact_matrix.py) + [`iiac_g0_inventory.py`](../../../../scripts/governance/iiac_g0_inventory.py) — governed-path enumeration (v2 matrix)
+- [`verify_iiac_g0_inventory_completeness.py`](../../../../scripts/governance/verify_iiac_g0_inventory_completeness.py)
+- [`IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json`](./IIAC_GLOBAL_AUTHORITY_IMPACT_MATRIX.json) — see F01 corrective addendum below
+
+## F01 corrective addendum (Session A batch)
+
+| Field | Value |
+|-------|-------|
+| Session B disposition addressed | F01 (blocker), F02, F03 |
+| `GOVERNANCE_IMPLEMENTATION_SHA` (historical) | `2ae1014116d353bc7742985e62f2bccc2bfac798` (unchanged) |
+| `CORRECTIVE_IMPLEMENTATION_SHA` | *(set @ push — corrective dossier)* |
+| `inventory_publication_sha` | *(set @ push — not embedded in matrix at write)* |
+| Handoff (F03) | [`IIAC_SESSION_HANDOFF_RECORD_2026_11_05_SESSION_A_B.md`](./IIAC_SESSION_HANDOFF_RECORD_2026_11_05_SESSION_A_B.md) — operator line **pending** |
+
+**Prior G0 @ Session A close:** 3492 pattern-only entries @ `eab65e0…` — superseded by v2 full enumeration after F01 fix.
 
 ## G1 / G2 / G3 (summary)
 
