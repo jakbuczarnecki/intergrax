@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -3555,3 +3556,321 @@ def test_w401_ra_06_format_document_matches_the_code() -> None:
     }.items():
         assert pf.render_promoted_row(disposition) == (status, notes)
         assert f"| `{disposition}` | `{status}` | `{notes}` |" in doc
+
+
+# --------------------------------------------------------------------------- T-W4-01 round 3 (W402-01..04)
+
+INDEX_FLAGS = ["skip-worktree", "assume-unchanged"]
+# Fixture modules. ``scripts/governance/*`` cannot be seeded into a fixture (the activation gate treats it as a material
+# governance path, ACT-N11); the real governance modules are covered by the real-clone test below.
+SCRIPT_MODULES = (
+    "scripts/qualification/evol_x_frz_evol_canonical_matrix.py",
+    "scripts/qualification/fixture_gate_helper.py",
+    pf.PREFLIGHT_SCRIPT_REL,
+)
+GATE_MODULES = (
+    "scripts/governance/iiac_common.py",
+    "scripts/governance/iiac_activation_gate.py",
+    "scripts/qualification/evol_x_frz_evol_canonical_matrix.py",
+)
+
+
+def _seed_scripts(root: Path) -> None:
+    for rel in SCRIPT_MODULES:
+        _write(root, rel, f"# fixture module {rel}\nVALUE = 1\n")
+    _commit(root, "seed the script modules the gate imports")
+
+
+def _hide_difference(root: Path, rel: str, flag: str) -> None:
+    """W402-01 attack: HEAD holds a variant of ``rel``; the honest bytes live only in the working tree and the index
+    entry is flagged so that ``git status`` is silent."""
+    honest = (root / rel).read_bytes()
+    _write(root, rel, honest + b"\n")
+    _commit(root, f"HEAD variant of {rel}")
+    _git(root, "update-index", f"--{flag}", rel)
+    _write(root, rel, honest)
+    assert _git(root, "status", "--porcelain") == "", "precondition: git status must be blind to the difference"
+
+
+def _assert_dirty_in_both_gates(result: pf.PreflightResult, rel: str, label: str | None = None) -> None:
+    assert not result.gate_a_pass and not result.gate_b_pass
+    needle = f"{rel} [{label}]" if label else rel
+    assert any(needle in e for e in _b(result.gate_a, "A-21")), result.gate_a
+    assert any(needle in e for e in _b(result.gate_b, "B-12")), result.gate_b
+
+
+@pytest.mark.parametrize("flag", INDEX_FLAGS)
+def test_w402_01_widened_frz_row_at_head_hidden_by_an_index_flag_is_rejected(closed, flag: str) -> None:
+    """Audit repro V-a: widened FRZ row committed, correct row only in the working tree, git status empty."""
+    root, _ = closed
+    assert _eval(root).gate_b_pass, "control: the closed fixture passes before the attack"
+    original = (root / pf.REL_FRZ_CHECKLIST).read_bytes()
+    _write(root, pf.REL_FRZ_CHECKLIST, original + b"\n| FRZ-EVOL-01 | widened | PASS | forged |\n")
+    _commit(root, "commit a widened checklist")
+    assert not _eval(root).gate_b_pass, "control: the committed widening is rejected"
+    _git(root, "update-index", f"--{flag}", pf.REL_FRZ_CHECKLIST)
+    _write(root, pf.REL_FRZ_CHECKLIST, original)
+    assert _git(root, "status", "--porcelain") == "", "precondition: the attack is invisible to git status"
+    _assert_dirty_in_both_gates(_eval(root), pf.REL_FRZ_CHECKLIST, flag)
+
+
+@pytest.mark.parametrize("flag", INDEX_FLAGS)
+@pytest.mark.parametrize(
+    "rel",
+    [
+        pf.REL_FRZ_CHECKLIST,
+        pf.REL_REGISTER,
+        pf.REL_GOVERNANCE,
+        pf.REL_LADDER,
+        pf.REL_CERT_RECORD,
+        pf.REL_CERT_HANDOFF,
+        pf.REL_PASS_RECORD,
+        pf.PREFLIGHT_SCRIPT_REL,
+    ],
+)
+def test_w402_01_a_hidden_difference_on_any_verified_input_fails_both_gates(closed, rel: str, flag: str) -> None:
+    root, _ = closed
+    if not (root / rel).exists():
+        _seed_scripts(root)
+    _hide_difference(root, rel, flag)
+    _assert_dirty_in_both_gates(_eval(root), rel, flag)
+
+
+@pytest.mark.parametrize("flag", INDEX_FLAGS)
+def test_w402_01_a_flagged_input_is_rejected_even_when_its_bytes_equal_head(closed, flag: str) -> None:
+    root, _ = closed
+    _git(root, "update-index", f"--{flag}", pf.REL_REGISTER)
+    assert _git(root, "status", "--porcelain") == ""
+    _assert_dirty_in_both_gates(_eval(root), pf.REL_REGISTER, flag)
+
+
+@pytest.mark.parametrize("flag", INDEX_FLAGS)
+def test_w402_01_a_flag_on_an_unrelated_file_is_not_a_false_positive(closed, flag: str) -> None:
+    root, _ = closed
+    _write(root, f"{pf.QUAL}/UNRELATED_NOTE.md", "committed, but not an input\n")
+    _commit(root, "an unrelated tracked file")
+    _git(root, "update-index", f"--{flag}", f"{pf.QUAL}/UNRELATED_NOTE.md")
+    _write(root, f"{pf.QUAL}/UNRELATED_NOTE.md", "edited and hidden\n")
+    assert _eval(root).gate_b_pass
+
+
+def test_w402_01_an_fsmonitor_hook_that_reports_no_changes_cannot_hide_an_edit(closed, tmp_path: Path) -> None:
+    root, _ = closed
+    hook = tmp_path / "fsmonitor_stub.sh"
+    hook.write_bytes(b"#!/bin/sh\nprintf 'stub-token\\0'\n")  # protocol v2: nothing changed since the token
+    _git(root, "config", "core.fsmonitor", hook.as_posix())
+    _git(root, "update-index", "--fsmonitor")
+    _git(root, "update-index", "--refresh")
+    _git(root, "status", "--porcelain")  # records the stub's token
+    _git(root, "status", "--porcelain")
+    data = (root / pf.REL_REGISTER).read_bytes()
+    _write(root, pf.REL_REGISTER, data + b"\n")
+    assert _git(root, "status", "--porcelain", "--", pf.REL_REGISTER) == "", "precondition: the stub blinds git status"
+    _assert_dirty_in_both_gates(_eval(root), pf.REL_REGISTER, "modified")
+
+
+def test_w402_01_git_status_is_not_consulted_and_fsmonitor_is_disabled() -> None:
+    import inspect
+
+    assert {"core.fsmonitor=false", "core.commitGraph=false", "core.autocrlf=false"} <= set(pf._GIT_BASE)
+    source = inspect.getsource(pf._dirty_input_errors)
+    assert '"status"' not in source and "'status'" not in source
+    assert not hasattr(pf, "_git_repo_config"), "no helper may run git with the repository's own fsmonitor settings"
+
+
+def test_w402_01_a_deleted_input_and_a_staged_only_input_are_dirty(closed) -> None:
+    root, _ = closed
+    (root / pf.REL_LADDER).unlink()
+    assert any(f"{pf.REL_LADDER} [missing]" in e for e in _b(_eval(root).gate_b, "B-12"))
+    _git(root, "checkout", "--", pf.REL_LADDER)
+    _write(root, f"{pf.CERT_DIR}/STAGED_ONLY.md", "staged, never committed\n")
+    _git(root, "add", f"{pf.CERT_DIR}/STAGED_ONLY.md")
+    assert any("STAGED_ONLY.md [untracked]" in e for e in _b(_eval(root).gate_b, "B-12"))
+
+
+@pytest.mark.parametrize("autocrlf", ["true", "false", "input"])
+def test_w402_01_fresh_clones_with_every_autocrlf_setting_are_clean(closed, tmp_path: Path, autocrlf: str) -> None:
+    root, _ = closed
+    _seed_scripts(root)
+    clone = tmp_path / "fresh"
+    proc = subprocess.run(
+        ["git", "clone", "-q", "-c", f"core.autocrlf={autocrlf}", "--no-hardlinks", str(root), str(clone)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    result = _eval(clone)
+    assert not _b(result.gate_a, "A-21") and not _b(result.gate_b, "B-12"), (result.gate_a, result.gate_b)
+    assert result.gate_a == [] and result.gate_b == [], (result.gate_a, result.gate_b)
+
+
+@pytest.mark.parametrize("rel", SCRIPT_MODULES[:2])
+def test_w402_02_any_modified_script_module_fails_both_gates(closed, rel: str) -> None:
+    """Audit repro V-c: a comment line appended to an imported gate module was not flagged."""
+    root, _ = closed
+    _seed_scripts(root)
+    assert _eval(root).gate_b_pass, "control: the seeded fixture passes"
+    _write(root, rel, (root / rel).read_bytes() + b"# appended after the audit\n")
+    _assert_dirty_in_both_gates(_eval(root), rel, "modified")
+
+
+@pytest.fixture(scope="module")
+def real_clone(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A fresh ``core.autocrlf=true`` clone of the committed HEAD (the preflight there is canonical)."""
+    dst = tmp_path_factory.mktemp("w402_real") / "c"
+    proc = subprocess.run(
+        ["git", "clone", "-q", "--no-hardlinks", "-c", "core.autocrlf=true", str(REPO), str(dst)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        pytest.skip(f"cannot clone the repository: {proc.stderr.strip()}")
+    return dst
+
+
+def _canonical_preflight(clone: Path, gate: str = "b6-readiness") -> str:
+    env = {**os.environ, "PYTHONPATH": str(clone), "PYTHONUTF8": "1"}
+    proc = subprocess.run(
+        [sys.executable, str(clone / pf.PREFLIGHT_SCRIPT_REL), "--gate", gate],
+        cwd=clone,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        errors="replace",
+    )
+    return proc.stdout + proc.stderr
+
+
+def test_w402_02_real_clone_is_clean_and_every_imported_gate_module_is_byte_bound(real_clone: Path) -> None:
+    """Audit repro V-c on the real tree: a comment line in an imported gate module was not flagged."""
+    clean = _canonical_preflight(real_clone)
+    assert "A-21" not in clean and "A-22" not in clean and "B-12" not in clean, clean
+    assert len(re.findall(r"^\s*- A-18 ", clean, re.MULTILINE)) == 2, clean  # B-4 and B6-P3 only
+    for rel in GATE_MODULES:
+        path = real_clone / rel
+        original = path.read_bytes()
+        path.write_bytes(original + b"# appended after the audit\n")
+        try:
+            tampered = _canonical_preflight(real_clone)
+        finally:
+            path.write_bytes(original)
+        assert f"{rel} [modified]" in tampered and "A-21" in tampered, (rel, tampered)
+    for flag in INDEX_FLAGS:  # an index flag on a gate module is rejected even with identical bytes
+        _git(real_clone, "update-index", f"--{flag}", GATE_MODULES[0])
+        try:
+            flagged = _canonical_preflight(real_clone)
+        finally:
+            _git(real_clone, "update-index", f"--no-{flag}", GATE_MODULES[0])
+        assert f"{GATE_MODULES[0]} [{flag}]" in flagged, flagged
+    assert "A-21" not in _canonical_preflight(real_clone)
+
+
+def test_w402_02_untracked_unrelated_files_outside_evidence_and_modules_stay_clean(closed) -> None:
+    root, _ = closed
+    _seed_scripts(root)
+    _write(root, "scripts/qualification/scratch_untracked.py", "print('scratch')\n")
+    _write(root, f"{pf.QUAL}/UNRELATED_SCRATCH.txt", "not an input\n")
+    assert _eval(root).gate_b_pass
+
+
+def test_w402_03_open_blocker_text_must_equal_the_published_text(repo) -> None:
+    """Audit repro V-d: free text appended to the open B-5 blocker was accepted."""
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(
+            open_blockers_for_closure=[
+                t + " -- scope extended to all profiles" if t.startswith("B-5") else t
+                for t in c["open_blockers_for_closure"]
+            ]
+        ),
+        reindex=True,
+    )
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("differs from the published text" in e for e in _b(result.gate_a, "A-18")), result.gate_a
+
+
+@pytest.mark.parametrize("blocker_id", ["B-4", "B6-P3"])
+def test_w402_03_a_resolved_blocker_entry_may_carry_only_allow_listed_keys(repo, blocker_id: str) -> None:
+    """Audit repro V-e: free-text keys in resolved-blocker entries were accepted."""
+    root, _ = repo
+    _edit_resolution(root, blocker_id, lambda e: e.update(scope_note="LIM-01..05 are withdrawn"))
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("unexpected key(s) ['scope_note']" in e for e in _b(result.gate_a, "A-18")), result.gate_a
+
+
+def test_w402_03_nested_resolution_objects_are_allow_listed_too(repo) -> None:
+    root, _ = repo
+    _edit_resolution(root, "B-4", lambda e: e["certifier_disposition"].update(remark="scope widened"))
+    assert any("certifier_disposition has unexpected key" in e for e in _b(_eval(root).gate_a, "A-18"))
+    _edit_resolution(root, "B-4", lambda e: e["certifier_disposition"].pop("remark"))
+    assert _eval(root).gate_a == []
+    _edit_resolution(root, "B6-P3", lambda e: e["closure_evidence"][0].update(remark="scope widened"))
+    assert any("closure_evidence entry has unexpected key" in e for e in _b(_eval(root).gate_a, "A-18"))
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["NOT_CLOSED; scope extended", "NOT_CLOSED_PENDING_SCOPE_REVIEW", "closed", "", ["NOT_CLOSED"], {"a": 1}, 7],
+)
+def test_w402_03_stage_closure_status_is_an_enum(repo, value: Any) -> None:
+    """Audit repro V-f: a long status token with scope words was accepted; unhashable values must not crash."""
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(stage_closure_status=value), reindex=True)
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("stage_closure_status must be one of" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+def test_w402_03_the_two_enum_values_are_accepted_by_shape(repo) -> None:
+    root, _ = repo
+    for value in ("CLOSED", "NOT_CLOSED"):
+        _mutate_json(root, pf.REL_CERT_RECORD, lambda c, v=value: c.update(stage_closure_status=v), reindex=True)
+        assert not any("stage_closure_status" in e for e in _eval(root).gate_a)
+
+
+def test_w402_03_a_committed_addendum_at_the_evidence_root_is_rejected(repo) -> None:
+    """Audit repro V-g: a committed file at ``iiac_evidence/EVOL-X/`` itself was accepted."""
+    root, _ = repo
+    assert _eval(root).gate_a == []
+    _write(root, f"{pf.EVIDENCE_ROOT_REL}/SCOPE_ADDENDUM.md", "LIM-01..05 are withdrawn.\n")
+    _commit(root, "addendum at the evidence root")
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("SCOPE_ADDENDUM.md" in e for e in _b(result.gate_a, "A-23")), result.gate_a
+
+
+def test_w402_03_a_committed_file_in_an_unindexed_directory_is_rejected(repo) -> None:
+    root, _ = repo
+    _write(root, f"{pf.EVIDENCE_ROOT_REL}/side_channel/NOTE.md", "an evidence directory nobody indexes\n")
+    _commit(root, "unindexed evidence directory")
+    result = _eval(root)
+    assert any("side_channel/NOTE.md" in e for e in _b(result.gate_a, "A-23")), result.gate_a
+
+
+def test_w402_03_operator_decision_records_do_not_need_an_index(closed) -> None:
+    root, _ = closed
+    assert not _b(_eval(root).gate_a, "A-23")
+    assert (root / pf.OPERATOR_DIR).is_dir(), "fixture must carry operator decision records (non-vacuous control)"
+
+
+def test_w402_03_prefetched_attributes_agree_with_the_per_path_answer(closed) -> None:
+    root, _ = closed
+    ctx = pf.Context(repo=root, activation_record=root / pf.REL_ACTIVATION, evidence_root=root)
+    paths = [pf.REL_PASS_RECORD, pf.REL_LADDER, pf.REL_REGISTER]
+    expected = {p: pf._text_conversion_applies(ctx, p) for p in paths}
+    ctx.cache.clear()
+    pf._prefetch_text_attributes(ctx, paths)
+    assert ctx.cache["text_attr"] == expected
+    assert expected[pf.REL_PASS_RECORD] is False and expected[pf.REL_LADDER] is True
+
+
+def test_w402_04_commit_graph_and_alternates_are_documented_as_residuals() -> None:
+    doc = pf.__doc__ or ""
+    assert "alternates" in doc and "core.commitGraph=false" in doc

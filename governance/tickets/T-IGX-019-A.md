@@ -43,6 +43,23 @@ audit: W401-RA-05 (negation denylist / ASCII-only decision scope, process-enforc
 operator decision), W401-RA-09 (documentation at the old pin), W401-RA-10 (Linux container not reproduced by that auditor; CI evidence exists).
 The previous audit dossier is held outside the repository and was not edited.
 
+## Round 3 - delta re-audit W402 (verdict PARTIAL on `ca78b1c1f`, one MEDIUM blocker W402-01, auditor session `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9`)
+
+Operator request (recorded, not an approval line): the user asked in chat to start a new `implementer` session to carry out the certifier-track
+corrective plan (`STATUS_AND_NEXT_STEPS.md` section 5) in one pass. This section only continues the existing ticket; it adds no `Approved:` or
+`Publication-Approved:` line and edits none of the existing ones. Publication of round 3 is not authorised by this text and needs the user's
+own approval.
+
+Same ticket, same preflight and B4 test module. Findings addressed in this round: **W402-01** (MEDIUM blocker; `git status` is no longer the
+oracle for "inputs equal HEAD": every verified input is compared byte-wise with its HEAD blob through the RA-B4-01 contract, tracked paths flagged
+`skip-worktree` / `assume-unchanged` are rejected, untracked evidence is found by comparing the evidence directory listing with the HEAD tree),
+**W402-02** (the byte comparison covers everything under `scripts/`, so every imported gate module), **W402-03** (open blocker texts must equal the
+published text, resolved-blocker entries are key allow-listed, `stage_closure_status` is an enum, every committed file under
+`iiac_evidence/EVOL-X/` must be covered by an evidence index), **W402-04** (all git calls run with `core.fsmonitor=false` and
+`core.commitGraph=false`; alternates and a tampered object database stay documented residuals). Not changed: W401-RA-05, RA-07, RA-08/OD-1
+(operator-owned or deliberately open). No change under `intergrax/`, `agents/`, `applications/`, `scripts/governance/`, the activation record,
+`iiac_evidence/` or `.gitattributes`. Handoff: `EVOL_X_W4_01_ROUND3_REAUDIT_HANDOFF.md`.
+
 ## Plan digest
 
 Source: operator mission "INTEGRAX - EVOL-X B4 - ONE-PASS CONSOLIDATED CORRECTIVE IMPLEMENTATION" @ `5afaad9eadfc1655f4ef1ab59eb022960a924648`
