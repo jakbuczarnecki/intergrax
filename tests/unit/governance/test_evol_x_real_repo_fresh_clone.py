@@ -294,7 +294,17 @@ def test_da01_real_repoint_is_rejected_when_the_preflight_runs_against_another_r
         _reindex(clone)
         _git(clone, "commit", "-qam", "re-point the P2 baseline")
         proc = subprocess.run(
-            [sys.executable, PREFLIGHT_SCRIPT, "--gate", "b6-readiness", "--json", "--repo", str(clone)],
+            [
+                sys.executable,
+                PREFLIGHT_SCRIPT,
+                "--gate",
+                "b6-readiness",
+                "--json",
+                "--repo",
+                str(clone),
+                "--evidence-root",
+                str(clone),
+            ],
             cwd=REPO,
             env=_env(REPO),
             capture_output=True,
