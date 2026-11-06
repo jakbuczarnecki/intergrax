@@ -6,7 +6,7 @@
 
 ## A. Executive verdict
 
-**PARTIAL — ready for independent re-audit; not certified, not published.**
+**PARTIAL — ready for independent re-audit; not certified, not published.** Gates not satisfied: G11 (no Linux suite / GitHub Actions run), G19 (nothing pushed), G20 only after the operator accepts the open items.
 
 * Implemented and tested: DA-01, DA-02 / RA-B4-05, W4-F01, W4-F03/F05, W4-F04, W4-F06 / DA-09, W4-F07, HF-01..03 regression coverage, RA-B4-01..04 regression (existing suites unchanged in meaning, see §C).
 * Open (authority / external prerequisites, not technical): **W4-F08** (operator attestation of historical session identities), push/publication (see §K), GitHub Actions run on a pushed SHA (G11 — a genuine Linux container run was used instead, see §E).
@@ -20,7 +20,7 @@
 | Reused unpublished candidate (earlier sessions; reviewed here, see §H provenance) | `e0eeca8de` (evidence-only UTF-8 republication) → `742b47cfc` (Part 1) → `e641a134a` (P2 pin) → `fa43976f8` |
 | W4-F01 repair | `4aa91dcc0` |
 | Consolidated hardening | `a4926c3d2` |
-| **IMPLEMENTATION_SHA / TEST_EXECUTION_SHA** | `__IMPL_SHA__` |
+| **IMPLEMENTATION_SHA / TEST_EXECUTION_SHA** | `9f8b04d2b8b670077b1e78ce812bb34b680f3968` |
 | EVIDENCE_PUBLICATION_SHA | not created (nothing published) |
 | PUBLICATION_HEAD | `origin/development` is still `5afaad9ea`; branch `evolx/w4-01-consolidated` is local only |
 
@@ -45,7 +45,7 @@ Sources: Audit A (`w4-01-package`, 7 findings) and the operator mission register
 | HF-01..03 | REGRESSION | Governance suite + CI depth | `tests/unit/governance`, workflow | — | **No regression observed** |
 | CI | — | New `evol-x-b4-preflight` job (parallel, xdist-stable ids via `tests/unit/qualification/conftest.py`); `governance-fast` timeout 8→15 min (three more real-repo clones, measured below) | workflow YAML parses; Linux container run | GitHub Actions run not executed (needs a push) | Prepared |
 
-## D. File-change manifest (`git diff 5afaad9ea..__IMPL_SHA__`)
+## D. File-change manifest (`git diff 5afaad9ea..9f8b04d2b8b670077b1e78ce812bb34b680f3968`)
 
 | Path | Reason |
 |---|---|
@@ -63,7 +63,21 @@ Untouched: `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, `II
 
 ## E. Test execution report
 
-__TEST_TABLE__
+All runs: Windows 11, `core.autocrlf=true`, Python 3.12.11 via `uv` (`--frozen`), short temp paths under `D:\w4c`. Linux evidence is partial (see the last rows).
+
+| Check | Tree | Result |
+|---|---|---|
+| `tests/unit/qualification/test_evol_x_closure_preflight_b4.py` + `test_evol_x_b4_ruff_evidence_exemption.py`, `-n 4` | `9f8b04d2b` (code identical to `b82c066f7`) | **423 passed**, 0 failed, 10 min 4 s (an earlier run of the same tree hit a full `D:` disk and produced 114 setup errors; invalid, discarded) |
+| First B4 run on `a4926c3d2` | `a4926c3d2` | 413 passed, 10 failed: 6 old tests asserting the previous (fallback) behaviour, 1 over-strict `limitations` comparison, 2 own-test bugs, 1 own-test expectation. All fixed in `b82c066f7` |
+| `tests/unit/governance`, `-n 4` | `b82c066f7` tree | 144 passed, 1 skipped (symlinks), 1 failed (own new test lacked `--evidence-root`) in 15 min 43 s |
+| the six `da01_real*` / `da02_real*` clone tests | `9f8b04d2b` | 6 passed (fix of the failure above) |
+| `test_evol_x_real_repo_fresh_clone.py` (W4-F01 part) | `a4926c3d2` ancestry | 9 passed: activation verifies in clones with `autocrlf` true / false / input; tamper cases fail `ACT-N08` |
+| `verify_iiac_policy_activation --require-in-force` in a manual `autocrlf=false` and `input` clone | `4aa91dcc0` | `IN_FORCE @ IIAC-2026-11-05.1` |
+| canonical `evol_x_closure_publication_preflight.py --gate b6-readiness` | `a4926c3d2` | FAIL with exactly two `A-18` open blockers (B-4, B6-P3); **no A-19** |
+| Linux (`python:3.12-slim` container, clone of the branch bundle, `autocrlf` unset, kernel 6.18 WSL2) | `9f8b04d2b` | activation gate: **exit 0, `IN_FORCE`** (LF checkout, the former W4-F01 failure). Governance suite, B4 suite and preflight in the container: **NOT RUN** - the host `D:` disk filled, Docker Desktop's metadata store went read-only and the later retry failed on the same daemon error. Needs a Docker Desktop restart or a GitHub Actions run |
+| GitHub Actions `governance-fast` / `evol-x-b4-preflight` | - | **not run** (nothing pushed); YAML parses |
+
+Environment notes: no path-length failure was observed with short paths (the deep-path fixture failures reported by the earlier audit were not investigated here). The mission item "tests touching canonical files" is covered by the unchanged HF-02 guard; no test in this change writes into the canonical repository (the working tree of the main checkout stayed clean apart from your pre-existing matrix change).
 
 ## F. Adversarial proof matrix (all must be rejected on both gates)
 
@@ -107,4 +121,4 @@ See [`EVOL_X_W4_01_CONSOLIDATED_REAUDIT_HANDOFF.md`](EVOL_X_W4_01_CONSOLIDATED_R
 
 ## K. Next roadmap action
 
-**Independent re-audit of this consolidated corrective at `__IMPL_SHA__`** (new `independent-quality-auditor` session), after the operator decides on publication/push. Then B-4 acceptance by a separate certifier, then the operator decisions and B6.
+**Independent re-audit of this consolidated corrective at `9f8b04d2b8b670077b1e78ce812bb34b680f3968`** (new `independent-quality-auditor` session), after the operator decides on publication/push. Then B-4 acceptance by a separate certifier, then the operator decisions and B6.
