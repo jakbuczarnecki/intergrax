@@ -57,3 +57,7 @@ Audit the code at **`dc650b8df`** (commits after it are documentation only; veri
 ## Round 5 addendum (after the W404 re-audit of `dc650b8df`: PARTIAL, HIGH blocker W404-01)
 
 Audit the code at **`fdb1e7a62`** (commits after it are documentation only; verify with `git diff fdb1e7a62 origin/development -- . ':!docs' ':!governance/tickets'`). Re-run your W404 repros (planted `random.py`/`shutil.py` next to the script; root `json.py` under `python -m` and `PYTHONPATH`; forged pyc for the companions) and variants, and try to find any other module that is imported before the bootstrap block or that resolves from outside the checkout. State the attacker capability per finding. Residuals left open on purpose: W404-04, W404-05 (threat-model boundary, OD-2 undecided), W403-04, RA-05, RA-07.
+
+## Certifier note (after round 5)
+
+The independent auditor reports no blocker on `fdb1e7a62`. The certifier (a third session, different from the implementer `local_4b071fe5-...` and the auditor `local_e360e892-...`) runs the preflight on a **fresh clone of `fdb1e7a62` in a clean environment** as required by `EVOL_X_OD2_DECISION_RECORD.md`, records the commands, and does not rely on any value in this repository's reports.

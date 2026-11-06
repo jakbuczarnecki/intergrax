@@ -251,3 +251,17 @@ The auditor found that the round-4 change itself introduced **W404-01 (HIGH)**: 
 **Pinned SHA for round 5: `fdb1e7a62`** (code and tests; later commits are documentation only). Evidence on that tree (Windows 11, `core.autocrlf=true`, short `--basetemp`, `-n 6`): B4 + ruff-exemption + governance suites together **646 passed, 1 skipped** (symlinks), 28 min 15 s; canonical `--gate b6-readiness` FAIL with exactly the two real `A-18` blockers; no `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed.
 
 A note on process: three consecutive fixes (rounds 3, 4, 5) each opened a neighbouring hole in the same bootstrap/binding code, and round 4 introduced a regression. The remaining findings are in the environment class (W404-05) that no in-script check can close. Recommended: the operator decides OD-2 (the threat-model boundary) before another corrective round, and the certifier runs the preflight on a fresh clone of the pinned SHA.
+
+## R. Round-5 re-audit result (`fdb1e7a62`): PARTIAL, no blocker
+
+The independent auditor (`local_e360e892-825d-4e0f-81f6-b4dc46ed4df9`) re-audited `fdb1e7a62`: **all three targeted findings (W404-01, W404-02, W404-03) PASS; `exact_blockers_for_acceptance` is empty.** Its own run: B4 501 passed (489 + 12 new, no existing test weakened), governance 145 passed / 1 skipped, canonical `b6-readiness` FAIL with exactly the two `A-18` blockers, clean real-chain clones with `core.autocrlf` true/false/input. The overall verdict stays **PARTIAL** only because of LOW/INFO residuals and the undecided T4 boundary. The auditor's dossier and findings are held in its worktree (`.tmp/session/evolx-w4-01-reaudit/`, round-5 files) and have not been published to the repository; publishing them is the next step and belongs to a publication session, not to this implementer.
+
+| Finding | Severity | Capability | Disposition |
+|---|---|---|---|
+| W405-01 companion subprocesses inherit `PYTHONPATH`, so a repository-root module shadows the standard library inside them | LOW | T2 + `PYTHONPATH=<repo>` | **Accepted residual** (OD-2): the companions need the repository root on their path; dropping it breaks them; the stray module is flagged by `A-21` and their exit codes cannot produce a PASS |
+| W405-02 any untracked root-level Python file or package blocks both gates | LOW | none (usability) | **Accepted** (auditor: acceptable as is) |
+| W405-03 interpreter-level hooks (`.pth`, `sitecustomize`, the git-ignored project venv inside the checkout) force PASS | INFO | T4 | **Outside the script; decided by OD-2** — mandatory procedure: certifier runs on a fresh clone of the pinned SHA in a clean environment |
+
+Open and unchanged: W404-04, W401-RA-05, W401-RA-07, W403-04 (unverified), OD-1 (decided C). OD-2 is recorded in `EVOL_X_OD2_DECISION_RECORD.md` as a delegated entry, the same way as OD-1.
+
+**Final pin for acceptance: `fdb1e7a62`** (code and tests). No further corrective round is proposed: a further round would be spent on LOW residuals and the T4 class that the script cannot close. Open before certification: publication of the auditor's evidence, the certifier session (a third, different session; its id goes into the W4-F08 record), the certifier's run on a fresh clone as defined in OD-2, and then B-4 acceptance.
