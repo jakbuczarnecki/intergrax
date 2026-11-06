@@ -6,7 +6,7 @@
 
 ## A. Executive verdict
 
-**PARTIAL — ready for independent re-audit; not certified, not published.** Gates not satisfied: G11 (no Linux suite / GitHub Actions run), G19 (nothing pushed), G20 only after the operator accepts the open items.
+**PARTIAL — ready for independent re-audit; not certified, not published.** Gates not satisfied: G19 (not merged to `development`; branch + draft PR #388 only), and the baseline `ent-audit-fast` failure is outside this change. G11 is satisfied by the Ubuntu runs above.
 
 * Implemented and tested: DA-01, DA-02 / RA-B4-05, W4-F01, W4-F03/F05, W4-F04, W4-F06 / DA-09, W4-F07, HF-01..03 regression coverage, RA-B4-01..04 regression (existing suites unchanged in meaning, see §C).
 * Open (authority / external prerequisites, not technical): **W4-F08** (operator attestation of historical session identities), push/publication (see §K), GitHub Actions run on a pushed SHA (G11 — a genuine Linux container run was used instead, see §E).
@@ -22,7 +22,7 @@
 | Consolidated hardening | `a4926c3d2` |
 | **IMPLEMENTATION_SHA / TEST_EXECUTION_SHA** | `9f8b04d2b8b670077b1e78ce812bb34b680f3968` |
 | EVIDENCE_PUBLICATION_SHA | not created (nothing published) |
-| PUBLICATION_HEAD | `origin/development` is still `5afaad9ea`; branch `evolx/w4-01-consolidated` is local only |
+| PUBLICATION_HEAD | `origin/development` is still `5afaad9ea`; branch `evolx/w4-01-consolidated` and draft PR #388 are on `origin` (CI evidence only, not merged) |
 
 Historical SHAs checked for existence and ancestry of `5afaad9ea`: `23feb2bbb`, `6cf8c5a22`, `1e28b9e2b`, `81418b0dd`, `cf264f3cf`, `ad0877715` (P2) — all present.
 **P2 provenance (DA-01):** `ad0877715ed079ce920ff9d925fda03555b2c04e` is the commit that first added `EVOL_X_IIAC_CERTIFICATION_RECORD.json` (`git log --diff-filter=A`; asserted by a test against the canonical history), bound by `ca2b14782`. It is not taken from any manifest field.
@@ -75,7 +75,8 @@ All runs: Windows 11, `core.autocrlf=true`, Python 3.12.11 via `uv` (`--frozen`)
 | `verify_iiac_policy_activation --require-in-force` in a manual `autocrlf=false` and `input` clone | `4aa91dcc0` | `IN_FORCE @ IIAC-2026-11-05.1` |
 | canonical `evol_x_closure_publication_preflight.py --gate b6-readiness` | `a4926c3d2` | FAIL with exactly two `A-18` open blockers (B-4, B6-P3); **no A-19** |
 | Linux (`python:3.12-slim` container, clone of the branch bundle, `autocrlf` unset, kernel 6.18 WSL2) | `9f8b04d2b` | activation gate: **exit 0, `IN_FORCE`** (LF checkout, the former W4-F01 failure). Governance suite, B4 suite and preflight in the container: **NOT RUN** - the host `D:` disk filled, Docker Desktop's metadata store went read-only and the later retry failed on the same daemon error. Needs a Docker Desktop restart or a GitHub Actions run |
-| GitHub Actions `governance-fast` / `evol-x-b4-preflight` | - | **not run** (nothing pushed); YAML parses |
+| GitHub Actions on PR #388 (draft, head `445d5883c`; code identical to `9f8b04d2b`), run `42210092666`, Ubuntu | `445d5883c` | `governance-fast`: **146 passed** (6 min 8 s, includes the real-repository clones and the former W4-F01 ACT-N08 tests); `evol-x-b4-preflight`: **423 passed** (1 min 28 s, `-n auto`); `ci-smoke`, `governance-policy-pin`, `ent-audit-pr-gate`: pass |
+| GitHub Actions `ent-audit-fast` (run `42210092609`) | `445d5883c` | **FAIL, pre-existing and unrelated**: `tests/qualification/ent_audit_x/unit/test_validate_post_implementation_master_plan.py` (2 tests, "disposition must declare READY, PLAN PARTIAL, or TECHNICAL PARTIAL constant"). Reproduced identically on a clean checkout of the baseline `5afaad9ea` (Windows); this change touches nothing in that area; not fixed here |
 
 Environment notes: no path-length failure was observed with short paths (the deep-path fixture failures reported by the earlier audit were not investigated here). The mission item "tests touching canonical files" is covered by the unchanged HF-02 guard; no test in this change writes into the canonical repository (the working tree of the main checkout stayed clean apart from your pre-existing matrix change).
 
