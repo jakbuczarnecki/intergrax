@@ -3,7 +3,7 @@
 **Ticket:** [`T-IGX-017-B`](../../../../../governance/tickets/T-IGX-017-B.md) (RA-B4 proof) · [`T-IGX-018-A`](../../../../../governance/tickets/T-IGX-018-A.md) (separate governance test hotfix)
 **Policy:** `IIAC-2026-11-05.1` (`IN_FORCE`) · **Role:** implementer (`may_commit: true`; cannot certify its own correction)
 **Baseline:** `9a8fa3634713f69b56ce87ceaf9ed319fad27dae` · **Audited predecessor:** `23feb2bbb017b1beb63f9368b5978384093ff924`
-**`RA_B4_CORRECTIVE_IMPLEMENTATION_SHA`:** `<bound in the follow-up record commit — see §9>`
+**`RA_B4_CORRECTIVE_IMPLEMENTATION_SHA`:** `6cf8c5a2247465a1321c239d0559d751383daec2` (bound in the record commit that adds §9; hotfix commit `1e28b9e2b77bbc44171f80017fd56b4032aa196e` is separate)
 **EVOL-X status:** `NOT_CLOSED`. No B6 acceptance, no FRZ promotion, no operator decision, no roadmap update was made.
 
 This handoff is evidence for an **independent delta re-audit**. It is not a PASS record and does not close B-4.
@@ -107,3 +107,18 @@ Baseline comparison (executed here in an isolated worktree at `9a8fa3634`, 14 mi
 ## 6. What this change deliberately does not do
 
 No B6 acceptance, no `B6_ACCEPTANCE_PUBLICATION_SHA`, no FRZ-EVOL promotion, no OD-EVOL-12 / OD-EVOLX-08 or P3 authorization, no resolution entry for B-4/B-5/P3 in the canonical certification record, no change to Session C / P2 / original B-4 re-audit evidence, no activation-record edit, no EVOL-X closure.
+
+## 9. Binding and fresh-checkout proof
+
+| Role | SHA |
+|---|---|
+| `RA_B4_CORRECTIVE_IMPLEMENTATION_SHA` (preflight, `.gitattributes`, tests, ticket T-IGX-017-B, this handoff) | `6cf8c5a2247465a1321c239d0559d751383daec2` |
+| Governance test hotfix (T-IGX-018-A; not part of the RA-B4 proof) | `1e28b9e2b77bbc44171f80017fd56b4032aa196e` |
+| Baseline / audited predecessor | `9a8fa3634713f69b56ce87ceaf9ed319fad27dae` / `23feb2bbb017b1beb63f9368b5978384093ff924` |
+
+The binding is non-self-referential: the SHA above is recorded in a later documentation-only commit.
+
+Fresh-checkout proof (`git worktree add` of the hotfix commit, `core.autocrlf=true`): `git ls-files --eol` shows the pass record `w/lf attr/-text` and the unprotected ladder `w/crlf`; `--gate b6-readiness` reports **only the two expected `A-18` errors** (no `A-14`), and the canonical preflight tests pass (13 passed). The same checkout procedure at `9a8fa3634` reproduced three `A-14` errors. A checkout *updated in place* from an older commit keeps its stale CRLF pass record and still fails `A-14` until the file is refreshed (see §2, RA-B4-01) — observed and documented.
+
+Governance suite hotfix verification (isolated worktree, never the canonical tree): the two modified governance modules pass (18 passed in the targeted rerun) and the activation record blob stayed `c505dd5b…` (pre-hotfix, the same suite left it at `c067ebc4…`). A full `tests/unit/governance` rerun on the final tree and the GitHub Actions `governance-fast` result were **not** executed here.
+
