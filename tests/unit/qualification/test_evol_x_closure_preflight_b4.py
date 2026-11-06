@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -77,6 +78,71 @@ PROMOTED_ROWS = {
 }
 
 
+B4_TEXT = "B-4 legacy closure preflight requires independent corrective implementation and re-audit"
+B5_TEXT = "B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows"
+P3_TEXT = "B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication"
+REAUDIT_DIR = f"{pf.EVIDENCE_ROOT_REL}/b4_delta_reaudit"
+REAUDIT_INDEX = f"{REAUDIT_DIR}/EVIDENCE_INDEX.json"
+REAUDIT_MANIFEST = f"{REAUDIT_DIR}/iiac_audit_session_manifest.EVOL-X.b4_reaudit.json"
+REAUDIT_IMPL_SESSION = "FIXTURE-B4-CORRECTIVE-IMPL-SESSION"
+REAUDIT_AUDITOR_SESSION = "FIXTURE-B4-REAUDIT-SESSION__claude-code-cccc"
+REAUDIT_CERT_SESSION = "FIXTURE-B4-RECERT-SESSION__claude-code-dddd"
+P3_DECISION_ID = "P3-FIXTURE-AUTH"
+P3_RECORD = f"{pf.OPERATOR_DIR}/OD_P3_B6_AUTHORIZATION_FIXTURE.md"
+OD12_RECORD = f"{pf.OPERATOR_DIR}/OD_EVOL_12_FIXTURE.md"
+ODX08_RECORD = f"{pf.OPERATOR_DIR}/OD_EVOLX_08_FIXTURE.md"
+OD12_SCOPE = "FRZ-EVOL-07, FRZ-EVOL-08 and FRZ-EVOL-10 scoped promotion wording"
+ODX08_SCOPE = "EVOL-X formal closure after B6 acceptance and FRZ promotion"
+B6_DECISION_ID = "B6-ACCEPT-EVOL-X-FIXTURE"
+B6_RECORD_NAME = "EVOL_X_IIAC_B6_ACCEPTANCE_RECORD.md"
+
+
+def _gitattributes(*, pass_record_rule: bool = True) -> str:
+    """Fixture attributes derived from the canonical ``.gitattributes`` so the real rules are exercised."""
+    lines = []
+    for line in (REPO / ".gitattributes").read_text(encoding="utf-8").splitlines():
+        if line.strip().endswith("-text") and "qualification" in line:
+            if "EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD" in line and not pass_record_rule:
+                continue
+            lines.append(line.strip())
+    lines.append("iiac_gov/** -text")
+    return "\n".join(lines) + "\n"
+
+
+def _now_iso(delta: timedelta | None = None) -> str:
+    return (datetime.now(UTC) + (delta or timedelta())).replace(microsecond=0).isoformat()
+
+
+def _operator_record(
+    decision_id: str,
+    scope: str,
+    *,
+    status: str = "AUTHORIZED",
+    stamp: str | None = None,
+    signed: bool = True,
+    extra: dict[str, str] | None = None,
+) -> str:
+    signature = (
+        f"Approved {decision_id}: operator @ {stamp or _now_iso()}"
+        if signed
+        else "Operator signature: ________________"
+    )
+    lines = [
+        f"# Operator decision record {decision_id} (fixture)",
+        "",
+        f"Decision ID: {decision_id}",
+        f"Stage: {pf.STAGE_ID}",
+        f"Policy version: {POLICY}",
+        f"Decision scope: {scope}",
+        f"Decision status: {status}",
+        *[f"{k}: {v}" for k, v in (extra or {}).items()],
+        "",
+        signature,
+        "",
+    ]
+    return "\n".join(lines)
+
+
 # --------------------------------------------------------------------------- git fixture helpers
 
 
@@ -134,6 +200,7 @@ def _reindex_cert(repo: Path) -> None:
 
 def _build_activation(repo: Path) -> None:
     """Minimal valid IIAC activation chain (mirrors tests/unit/governance/test_iiac_activation_gate.py)."""
+    _write(repo, ".gitattributes", _gitattributes())
     _write(repo, "iiac_gov/governance.txt", "governance-implementation\n")
     _dump(repo, pf.REL_ACTIVATION, {"status": "NOT_IN_FORCE", "policy_version": POLICY})
     governance = _commit(repo, "iiac governance implementation")
@@ -236,11 +303,11 @@ def _ladder(tes: str, final: str, internal_b6: str, b6: str | None = None) -> st
     )
 
 
-def _register(decided: bool) -> str:
+def _register(decided: bool, notes: dict[str, str] | None = None, *, closing_status: str | None = None) -> str:
     def row(od: str, status: str, date: str) -> str:
-        return f"| **{od}** | {status} | {date} | fixture |\n"
+        return f"| **{od}** | {status} | {date} | {(notes or {}).get(od, 'fixture')} |\n"
 
-    closing = ("**OPERATOR APPROVED**", "2026-11-06") if decided else ("**PENDING**", "—")
+    closing = (closing_status or "**OPERATOR APPROVED**", _now_iso()[:10]) if decided else ("**PENDING**", "—")
     return (
         "# EVOL-X register (fixture)\n\n| ID | Status | Signed date | Notes |\n|---|---|---|---|\n"
         + row("OD-EVOL-05b", "SIGNED / APPROVED", "2026-11-01")
@@ -406,7 +473,7 @@ def _build_base(repo: Path) -> dict[str, str]:
         "certifier_agent_id": "certification-governance-agent",
         "implementation_session_id": IMPL_SESSION,
         "frz_evol_dispositions": DISPOSITIONS,
-        "open_blockers_for_closure": ["B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows"],
+        "open_blockers_for_closure": [B4_TEXT, B5_TEXT, P3_TEXT],
     }
     _dump(repo, pf.REL_MANIFEST, manifest)
     _dump(repo, pf.REL_CERT_RECORD, cert)
@@ -420,11 +487,160 @@ def _build_base(repo: Path) -> dict[str, str]:
     _dump(repo, pf.REL_CERT_RECORD, cert)
     _reindex_cert(repo)
     head = _commit(repo, "Bind certification publication SHA (fixture)")
-    return {"tes": tes, "final": final, "audit_pub": audit_pub, "cert_pub": cert_pub, "head": head}
+    built = {"tes": tes, "final": final, "audit_pub": audit_pub, "cert_pub": cert_pub, "head": head}
+    built.update(_resolve_a_blockers(repo, built))
+    return built
 
 
-def _publish_b6(repo: Path) -> str:
-    """Two-phase B6 acceptance: phase 1 publishes, phase 2 binds the SHA (non-self-referential)."""
+def _reaudit_manifest(corrective: str, report: bytes, scope: bytes, matrix: bytes, findings: bytes) -> dict[str, Any]:
+    return {
+        "stage_id": "EVOL-X",
+        "certification_profile": "iiac-v1",
+        "policy_version": POLICY,
+        "implementation_session_id": REAUDIT_IMPL_SESSION,
+        "implementation_agent_id": "implementer",
+        "auditor_session_id": REAUDIT_AUDITOR_SESSION,
+        "auditor_agent_id": "independent-quality-auditor",
+        "certifier_session_id": REAUDIT_CERT_SESSION,
+        "certifier_agent_id": "certification-governance-agent",
+        "audited_implementation_sha": corrective,
+        "test_execution_sha": corrective,
+        "evidence_publication_sha": corrective,
+        "audit_execution_sha": corrective,
+        "certification_publication_sha": corrective,
+        "audit_report_digest": _sha256(report),
+        "audit_scope_manifest_digest": _sha256(scope),
+        "test_matrix_digest": _sha256(matrix),
+        "findings_digest": _sha256(findings),
+        "verdict": "PASS",
+        "limitations": ["Delta re-audit of RA-B4-01..04 only"],
+        "assurance_level": "process_enforced",
+        "audit_report_path": f"{REAUDIT_DIR}/REAUDIT_DOSSIER.md",
+        "findings_path": f"{REAUDIT_DIR}/REAUDIT_FINDINGS.json",
+        "handoff_record_path": f"{REAUDIT_DIR}/IIAC_SESSION_HANDOFF_RECORD_EVOL_X_B4_REAUDIT.md",
+    }
+
+
+def _reaudit_handoff() -> str:
+    return (
+        "# IIAC session handoff record — B-4 delta re-audit (fixture)\n\n"
+        f"**Policy:** `{POLICY}`\n\n## Operator attestation\n\n"
+        f"- [x] `implementation_session_id`: `{REAUDIT_IMPL_SESSION}`\n"
+        f"- [x] `auditor_session_id`: `{REAUDIT_AUDITOR_SESSION}`\n"
+        f"- [x] `certifier_session_id`: `{REAUDIT_CERT_SESSION}`\n\n"
+        "## Operator signature line\n\n`Approved handoff: operator @ 2026-11-06T09:00:00+01:00`\n"
+    )
+
+
+def _b4_entry(corrective: str, closure: str, cert_pub: str, manifest_raw: bytes, index_raw: bytes) -> dict[str, Any]:
+    manifest = json.loads(manifest_raw)
+    return {
+        "blocker_id": "B-4",
+        "status": "RESOLVED_WITH_EVIDENCE",
+        "baseline_text_sha256": _sha256(B4_TEXT.encode()),
+        "opened_at_sha": cert_pub,
+        "resolution_kind": "INDEPENDENT_REAUDIT",
+        "closure_publication_sha": closure,
+        "resolved_implementation_sha": corrective,
+        "closure_evidence_index_path": REAUDIT_INDEX,
+        "closure_evidence_index_digest": _sha256(index_raw),
+        "reaudit_manifest_path": REAUDIT_MANIFEST,
+        "reaudit_manifest_digest": _sha256(manifest_raw),
+        "certifier_disposition": {
+            "disposition": "ACCEPTED",
+            "certifier_agent_id": "certification-governance-agent",
+            "certifier_session_id": REAUDIT_CERT_SESSION,
+            "policy_version": POLICY,
+            "audit_report_digest": manifest["audit_report_digest"],
+            "findings_digest": manifest["findings_digest"],
+        },
+    }
+
+
+def _operator_entry(
+    blocker_id: str, baseline: str, cert_pub: str, closure: str, items: list[dict[str, str]]
+) -> dict[str, Any]:
+    return {
+        "blocker_id": blocker_id,
+        "status": "RESOLVED_WITH_EVIDENCE",
+        "baseline_text_sha256": _sha256(baseline.encode()),
+        "opened_at_sha": cert_pub,
+        "resolution_kind": "OPERATOR_AUTHORIZATION",
+        "closure_publication_sha": closure,
+        "closure_evidence": items,
+    }
+
+
+def _resolve_a_blockers(repo: Path, built: dict[str, str]) -> dict[str, str]:
+    """Independent B-4 re-audit + operator P3 authorization, published and then recorded by the certifier."""
+    _write(repo, "scripts/fixture_b4_corrective.py", "# fixture corrective implementation\n")
+    corrective = _commit(repo, "B-4 corrective implementation (fixture)")
+    report = _write(repo, f"{REAUDIT_DIR}/REAUDIT_DOSSIER.md", "# Delta re-audit dossier (fixture)\n")
+    scope = _write(repo, f"{REAUDIT_DIR}/audit_scope.json", '{"stage_id":"EVOL-X"}\n')
+    matrix = _write(repo, f"{REAUDIT_DIR}/test_matrix.txt", "fixture re-audit matrix\n")
+    findings = _dump(
+        repo,
+        f"{REAUDIT_DIR}/REAUDIT_FINDINGS.json",
+        {
+            "stage_id": "EVOL-X",
+            "audited_implementation_sha": corrective,
+            "summary": {"PROVEN_ARCHITECTURAL_DEFECT": 0, "IN_SCOPE_BLOCKER": 0, "blocking_for_scoped_pass": 0},
+            "findings": [
+                {"id": f"RA-B4-0{n}", "severity": "HIGH", "disposition": "RESOLVED", "blocks": ["B-4 acceptance"]}
+                for n in range(1, 5)
+            ],
+        },
+    )
+    manifest_raw = _dump(repo, REAUDIT_MANIFEST, _reaudit_manifest(corrective, report, scope, matrix, findings))
+    _write(repo, f"{REAUDIT_DIR}/IIAC_SESSION_HANDOFF_RECORD_EVOL_X_B4_REAUDIT.md", _reaudit_handoff())
+    index_raw = _index(repo, REAUDIT_DIR, REAUDIT_INDEX)
+    p3_raw = _write(repo, P3_RECORD, _operator_record(P3_DECISION_ID, "B6 acceptance authorization for EVOL-X"))
+    closure = _commit(repo, "B-4 re-audit evidence + P3 operator authorization (fixture)")
+    cert = _load(repo, pf.REL_CERT_RECORD)
+    cert["open_blockers_for_closure"] = [B5_TEXT]
+    cert["resolved_blockers_for_closure"] = [
+        _b4_entry(corrective, closure, built["cert_pub"], manifest_raw, index_raw),
+        _operator_entry(
+            "B6-P3",
+            P3_TEXT,
+            built["cert_pub"],
+            closure,
+            [{"decision_id": P3_DECISION_ID, "path": P3_RECORD, "sha256": _sha256(p3_raw)}],
+        ),
+    ]
+    _dump(repo, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(repo)
+    resolved_head = _commit(repo, "Certifier records B-4 and P3 resolutions (fixture)")
+    return {"corrective": corrective, "reaudit_closure": closure, "resolved_head": resolved_head}
+
+
+def _b6_record_text(repo: Path, **overrides: str) -> str:
+    manifest = _load(repo, pf.REL_MANIFEST)
+    fields = {
+        "Accepted verdict": manifest["verdict"],
+        "Accepted limitations": ", ".join(sorted(pf._limitation_map(manifest["limitations"]))),
+        "Independent audit manifest digest": _sha256((repo / pf.REL_MANIFEST).read_bytes()),
+        "Audit report digest": manifest["audit_report_digest"],
+        "Findings digest": manifest["findings_digest"],
+        "Audited implementation SHA": manifest["audited_implementation_sha"],
+        "Certification publication SHA": manifest["certification_publication_sha"],
+        "Certifier session": manifest["certifier_session_id"],
+        "Certifier agent": "certification-governance-agent",
+    }
+    control = {"scope", "status", "stamp", "signed", "decision_id"}
+    fields.update({k: v for k, v in overrides.items() if k not in control})
+    return _operator_record(
+        overrides.get("decision_id", B6_DECISION_ID),
+        overrides.get("scope", "B6 acceptance for EVOL-X (PASS_SCOPED, evidence-bound)"),
+        status=overrides.get("status", "AUTHORIZED"),
+        stamp=overrides.get("stamp"),
+        signed=overrides.get("signed", "yes") == "yes",
+        extra=fields,
+    )
+
+
+def _publish_b6(repo: Path, *, with_record: bool = True, **record_overrides: str) -> str:
+    """Two-phase B6 acceptance: phase 1 publishes (record + flags), phase 2 binds the SHA (non-self-referential)."""
     _dump(
         repo,
         pf.REL_GOVERNANCE,
@@ -432,13 +648,18 @@ def _publish_b6(repo: Path) -> str:
     )
     cert = _load(repo, pf.REL_CERT_RECORD)
     cert["b6_acceptance"] = "ISSUED"
+    if with_record:
+        record = _write(repo, f"{pf.B6_DIR}/{B6_RECORD_NAME}", _b6_record_text(repo, **record_overrides))
+        _index(repo, pf.B6_DIR, pf.REL_B6_INDEX)
+        cert["b6_acceptance_record_path"] = pf.REL_B6_RECORD
+        cert["b6_acceptance_record_digest"] = _sha256(record)
     _dump(repo, pf.REL_CERT_RECORD, cert)
     _reindex_cert(repo)
     return _commit(repo, "P3 B6 acceptance phase 1 (fixture)")
 
 
-def _close(repo: Path, built: dict[str, str]) -> str:
-    b6 = _publish_b6(repo)
+def _bind_b6(repo: Path, built: dict[str, str], b6: str) -> None:
+    """Phase 2: bind the published B6 SHA into governance, ladder and the certification record."""
     _dump(
         repo,
         pf.REL_GOVERNANCE,
@@ -447,12 +668,53 @@ def _close(repo: Path, built: dict[str, str]) -> str:
     _write(repo, pf.REL_LADDER, _ladder(built["tes"], built["final"], built["tes"], b6=b6))
     cert = _load(repo, pf.REL_CERT_RECORD)
     cert["b6_acceptance_publication_sha"] = b6
+    _dump(repo, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(repo)
+
+
+def _publish_decisions(repo: Path, *, od12_scope: str = OD12_SCOPE) -> dict[str, Any]:
+    """OD-EVOL-12 / OD-EVOLX-08 operator records (a separate operator act after B6 acceptance)."""
+    od12 = _write(repo, OD12_RECORD, _operator_record("OD-EVOL-12", od12_scope))
+    odx08 = _write(repo, ODX08_RECORD, _operator_record("OD-EVOLX-08", ODX08_SCOPE))
+    sha = _commit(repo, "OD-EVOL-12 / OD-EVOLX-08 operator decision records (fixture)")
+    return {"sha": sha, "od12": od12, "odx08": odx08}
+
+
+def _decision_notes(decisions: dict[str, Any]) -> dict[str, str]:
+    base = "../iiac_evidence/EVOL-X/operator_decisions"
+    return {
+        "OD-EVOL-12": f"[record]({base}/{Path(OD12_RECORD).name}) sha256:{_sha256(decisions['od12'])}",
+        "OD-EVOLX-08": f"[record]({base}/{Path(ODX08_RECORD).name}) sha256:{_sha256(decisions['odx08'])}",
+    }
+
+
+def _finish_close(repo: Path, built: dict[str, str], b6: str, decisions: dict[str, Any]) -> None:
+    _bind_b6(repo, built, b6)
+    cert = _load(repo, pf.REL_CERT_RECORD)
     cert["open_blockers_for_closure"] = []
+    cert["resolved_blockers_for_closure"].append(
+        _operator_entry(
+            "B-5",
+            B5_TEXT,
+            built["cert_pub"],
+            decisions["sha"],
+            [
+                {"decision_id": "OD-EVOL-12", "path": OD12_RECORD, "sha256": _sha256(decisions["od12"])},
+                {"decision_id": "OD-EVOLX-08", "path": ODX08_RECORD, "sha256": _sha256(decisions["odx08"])},
+            ],
+        )
+    )
     _dump(repo, pf.REL_CERT_RECORD, cert)
     _reindex_cert(repo)
     _write(repo, pf.REL_FRZ_CHECKLIST, _checklist(PROMOTED_ROWS))
-    _write(repo, pf.REL_REGISTER, _register(decided=True))
+    _write(repo, pf.REL_REGISTER, _register(decided=True, notes=_decision_notes(decisions)))
     _commit(repo, "P3 bind B6 + P4 FRZ dispositions + operator decisions (fixture)")
+
+
+def _close(repo: Path, built: dict[str, str]) -> str:
+    b6 = _publish_b6(repo)
+    decisions = _publish_decisions(repo)
+    _finish_close(repo, built, b6, decisions)
     return b6
 
 
@@ -916,7 +1178,10 @@ def test_open_blocker_holds_formal_closure(closed) -> None:
     _mutate_json(
         root,
         pf.REL_CERT_RECORD,
-        lambda c: c.update(open_blockers_for_closure=["B-5 OD-EVOLX-08 confirmation"]),
+        lambda c: c.update(
+            open_blockers_for_closure=["B-5 OD-EVOLX-08 confirmation"],
+            resolved_blockers_for_closure=[e for e in c["resolved_blockers_for_closure"] if e["blocker_id"] != "B-5"],
+        ),
         reindex=True,
     )
     result = _eval(root)
@@ -946,3 +1211,988 @@ def test_canonical_repository_formal_closure_fails_closed_while_b6_unpublished()
         assert _codes(result.gate_a) <= {"A-18"}, result.gate_a
     rows = pf.parse_frz_rows((REPO / pf.REL_FRZ_CHECKLIST).read_text(encoding="utf-8"))
     assert all(_codes([c[4]]) == {"OPEN"} for frz in rows.values() for c in frz)
+
+
+# =========================================================================== RA-B4 corrective (T-IGX-017-B)
+#
+# Independent re-audit findings RA-B4-01..04. Every case below runs against an isolated temporary
+# git fixture; the canonical activation record and the original auditor evidence are never touched.
+
+
+def _clone(src: Path, dst: Path, *, autocrlf: bool) -> Path:
+    """A fresh checkout of the fixture with the given ``core.autocrlf`` (Git for Windows default: true)."""
+    flag = "true" if autocrlf else "false"
+    proc = subprocess.run(
+        ["git", "clone", "-q", "-c", f"core.autocrlf={flag}", "--no-hardlinks", str(src), str(dst)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    return dst
+
+
+def _b(errors: list[str], code: str) -> list[str]:
+    return [e for e in errors if e.startswith(code)]
+
+
+def _resolved(root: Path, blocker_id: str) -> dict[str, Any]:
+    cert = _load(root, pf.REL_CERT_RECORD)
+    return next(e for e in cert["resolved_blockers_for_closure"] if e["blocker_id"] == blocker_id)
+
+
+def _edit_resolution(root: Path, blocker_id: str, change: Callable[[dict[str, Any]], None]) -> None:
+    def apply(cert: dict[str, Any]) -> None:
+        change(next(e for e in cert["resolved_blockers_for_closure"] if e["blocker_id"] == blocker_id))
+
+    _mutate_json(root, pf.REL_CERT_RECORD, apply, reindex=True)
+
+
+# --------------------------------------------------------------------------- RA-B4-01 fresh checkout / CRLF
+
+
+def test_ra_b4_01_pass_record_is_protected_from_eol_conversion_in_canonical_attributes() -> None:
+    proc = subprocess.run(
+        ["git", "check-attr", "text", "--", pf.REL_PASS_RECORD, pf.REL_AUDIT_PASS_COPY, pf.REL_ACTIVATION],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.count("text: unset") == 3, proc.stdout
+
+
+def test_ra_b4_01_gitattributes_rule_is_narrow() -> None:
+    rules = [
+        line.strip()
+        for line in (REPO / ".gitattributes").read_text(encoding="utf-8").splitlines()
+        if "EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD" in line
+    ]
+    assert rules == [f"{pf.REL_PASS_RECORD} -text"]
+
+
+def test_ra_b4_01_clean_lf_checkout_passes(closed, tmp_path: Path) -> None:
+    src, _ = closed
+    clone = _clone(src, tmp_path / "l", autocrlf=False)
+    result = _eval(clone)
+    assert result.gate_a == [] and result.gate_b == [], (result.gate_a, result.gate_b)
+
+
+def test_ra_b4_01_clean_crlf_checkout_with_text_attribute_passes(closed, tmp_path: Path) -> None:
+    src, _ = closed
+    clone = _clone(src, tmp_path / "c", autocrlf=True)
+    # The attribute keeps the digest-bound pass record at its blob bytes even on a converting checkout ...
+    assert b"\r" not in (clone / pf.REL_PASS_RECORD).read_bytes()
+    # ... while unprotected text files really are converted (the fixture reproduces the original condition).
+    assert b"\r\n" in (clone / pf.REL_LADDER).read_bytes()
+    result = _eval(clone)
+    assert result.gate_a == [] and result.gate_b == [], (result.gate_a, result.gate_b)
+
+
+def test_ra_b4_01_clean_crlf_checkout_without_attribute_passes_via_blob_contract(closed, tmp_path: Path) -> None:
+    src, _ = closed
+    bare = tmp_path / "na"
+    shutil.copytree(src, bare)
+    _write(bare, ".gitattributes", _gitattributes(pass_record_rule=False))
+    _commit(bare, "drop the pass record attribute")
+    clone = _clone(bare, tmp_path / "nc", autocrlf=True)
+    on_disk = (clone / pf.REL_PASS_RECORD).read_bytes()
+    assert b"\r\n" in on_disk, "fixture must reproduce the RA-B4-01 CRLF materialisation"
+    assert on_disk != (clone / pf.REL_AUDIT_PASS_COPY).read_bytes()
+    result = _eval(clone)
+    assert result.gate_a == [] and result.gate_b == [], (result.gate_a, result.gate_b)
+
+
+def test_ra_b4_01_raw_comparison_would_fail_but_canonical_bytes_hold(closed, tmp_path: Path) -> None:
+    """Guard against a vacuous fixture: the raw working-tree bytes differ, the canonical bytes do not."""
+    src, _ = closed
+    bare = tmp_path / "na"
+    shutil.copytree(src, bare)
+    _write(bare, ".gitattributes", _gitattributes(pass_record_rule=False))
+    _commit(bare, "drop the pass record attribute")
+    clone = _clone(bare, tmp_path / "nc", autocrlf=True)
+    assert (clone / pf.REL_PASS_RECORD).read_bytes() != (clone / pf.REL_AUDIT_PASS_COPY).read_bytes()
+    ctx = pf.Context(clone, clone / pf.REL_ACTIVATION, clone, head=_git(clone, "rev-parse", "HEAD"))
+    assert pf._read_bytes(ctx, pf.REL_PASS_RECORD) == (clone / pf.REL_AUDIT_PASS_COPY).read_bytes()
+
+
+@pytest.mark.parametrize("autocrlf", [False, True])
+def test_ra_b4_01_modified_committed_evidence_fails_in_every_checkout(closed, tmp_path: Path, autocrlf: bool) -> None:
+    src, _ = closed
+    clone = _clone(src, tmp_path / "k", autocrlf=autocrlf)
+    _write(clone, pf.REL_PASS_RECORD, (clone / pf.REL_PASS_RECORD).read_text(encoding="utf-8") + "\nforged line\n")
+    _commit(clone, "modify the committed pass record")
+    result = _eval(clone)
+    assert not result.gate_a_pass
+    assert _b(result.gate_a, "A-14"), result.gate_a
+
+
+@pytest.mark.parametrize("autocrlf", [False, True])
+def test_ra_b4_01_uncommitted_edit_fails_even_when_it_is_only_in_the_working_tree(
+    closed, tmp_path: Path, autocrlf: bool
+) -> None:
+    src, _ = closed
+    clone = _clone(src, tmp_path / "k", autocrlf=autocrlf)
+    path = clone / pf.REL_PASS_RECORD
+    path.write_bytes(path.read_bytes().replace(b"PASS", b"FAIL", 1))
+    result = _eval(clone)
+    assert not result.gate_a_pass
+    assert any("differs from HEAD" in e or "differs from the byte-preserved" in e for e in _b(result.gate_a, "A-14"))
+
+
+def test_ra_b4_01_crlf_inside_a_text_protected_path_is_not_normalised(closed, tmp_path: Path) -> None:
+    src, _ = closed
+    clone = _clone(src, tmp_path / "k", autocrlf=False)
+    path = clone / pf.REL_PASS_RECORD
+    path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    result = _eval(clone)
+    assert not result.gate_a_pass
+    assert _b(result.gate_a, "A-14")
+
+
+def test_ra_b4_01_wrong_digest_fails(closed) -> None:
+    root, _ = closed
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(pass_record_digest="c" * 64), reindex=True)
+    result = _eval(root)
+    assert any("digest" in e for e in _b(result.gate_a, "A-14")), result.gate_a
+
+
+def test_ra_b4_01_byte_contract_unit_semantics(tmp_path: Path) -> None:
+    root = tmp_path / "r"
+    root.mkdir()
+    _git(root, "init", "-b", "development")
+    _write(root, ".gitattributes", "frozen.txt -text\n")
+    _write(root, "plain.txt", "a\nb\n")
+    _write(root, "frozen.txt", "a\nb\n")
+    _write(root, "mixed.txt", "a\r\nb\n")
+    head = _commit(root, "seed")
+    ctx = pf.Context(root, root / "x.json", None, head=head)
+    blob = b"a\nb\n"
+    assert pf._worktree_matches_blob(ctx, "plain.txt", blob, blob)
+    assert pf._worktree_matches_blob(ctx, "plain.txt", b"a\r\nb\r\n", blob)  # converting path
+    assert not pf._worktree_matches_blob(ctx, "frozen.txt", b"a\r\nb\r\n", blob)  # -text path: exact only
+    assert not pf._worktree_matches_blob(ctx, "plain.txt", b"a\r\nb\n", blob)  # partial conversion is tampering
+    assert not pf._worktree_matches_blob(ctx, "plain.txt", b"a\r\nc\r\n", blob)  # content change
+    assert not pf._worktree_matches_blob(ctx, "mixed.txt", b"a\r\r\nb\r\n", b"a\r\nb\n")  # blob already holds CR
+
+
+# --------------------------------------------------------------------------- RA-B4-02 blocker lifecycle
+
+
+def test_ra_b4_02_genuine_independently_accepted_resolutions_pass_gate_a(repo) -> None:
+    root, _ = repo
+    ledger_cert = _load(root, pf.REL_CERT_RECORD)
+    assert {e["blocker_id"] for e in ledger_cert["resolved_blockers_for_closure"]} == {"B-4", "B6-P3"}
+    result = _eval(root)
+    assert result.gate_a == []
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_02_open_blocker_retained_fails(repo) -> None:
+    root, _ = repo
+
+    def reopen(c: dict[str, Any]) -> None:
+        c["resolved_blockers_for_closure"] = [e for e in c["resolved_blockers_for_closure"] if e["blocker_id"] != "B-4"]
+        c["open_blockers_for_closure"].append(B4_TEXT)
+
+    _mutate_json(root, pf.REL_CERT_RECORD, reopen, reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("open certification blocker" in e and "B-4" in e for e in result.gate_a)
+
+
+def test_ra_b4_02_open_and_resolved_at_once_fails(repo) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c["open_blockers_for_closure"].append(B4_TEXT), reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("open and resolved at once" in e for e in result.gate_a)
+
+
+@pytest.mark.parametrize("blocker_id", ["B-4", "B6-P3"])
+def test_ra_b4_02_blocker_deleted_without_closure_evidence_fails(repo, blocker_id: str) -> None:
+    root, _ = repo
+
+    def delete(c: dict[str, Any]) -> None:
+        c["resolved_blockers_for_closure"] = [
+            e for e in c["resolved_blockers_for_closure"] if e["blocker_id"] != blocker_id
+        ]
+
+    _mutate_json(root, pf.REL_CERT_RECORD, delete, reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("disappeared without closure evidence" in e and blocker_id in e for e in result.gate_a)
+
+
+def test_ra_b4_02_all_blockers_deleted_from_a_real_baseline_fails_both_gates(repo) -> None:
+    """The auditor's reproduction: deleting the lines (here: the whole ledger) must not manufacture readiness."""
+    root, _ = repo
+
+    def wipe(c: dict[str, Any]) -> None:
+        c["open_blockers_for_closure"] = []
+        c.pop("resolved_blockers_for_closure")
+
+    _mutate_json(root, pf.REL_CERT_RECORD, wipe, reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert len(_b(result.gate_a, "A-18")) >= 3
+    assert "B-09" in _codes(result.gate_b)
+
+
+def test_ra_b4_02_gate_b_only_blocker_deleted_fails_both_gates(repo) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(open_blockers_for_closure=[]), reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("B-5" in e and "disappeared" in e for e in result.gate_a)
+    assert any(e.startswith("B-09") and "B-5" in e for e in result.gate_b)
+
+
+def test_ra_b4_02_missing_or_null_blocker_field_fails(repo) -> None:
+    root, _ = repo
+    field = "open_blockers_for_closure"
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.pop(field), reindex=True)
+    _assert_a_fails(root, "A-18")
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update({field: None}), reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("missing or not a list" in e for e in result.gate_a)
+
+
+def test_ra_b4_02_blocker_renamed_without_lineage_fails(repo) -> None:
+    root, _ = repo
+
+    def rename(c: dict[str, Any]) -> None:
+        for entry in c["resolved_blockers_for_closure"]:
+            if entry["blocker_id"] == "B-4":
+                entry["blocker_id"] = "B-4-renamed"
+        c["open_blockers_for_closure"] = [x.replace("B-5", "B-55") for x in c["open_blockers_for_closure"]]
+
+    _mutate_json(root, pf.REL_CERT_RECORD, rename, reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("B-4 disappeared" in e for e in result.gate_a)
+    assert any("does not match any blocker open" in e for e in result.gate_a)
+    assert any("B-5 disappeared" in e for e in result.gate_a)
+
+
+def test_ra_b4_02_status_text_alone_is_not_closure(repo) -> None:
+    root, _ = repo
+
+    def downgrade(c: dict[str, Any]) -> None:
+        c["resolved_blockers_for_closure"] = [
+            {"blocker_id": "B-4", "status": "RESOLVED"},
+            c["resolved_blockers_for_closure"][1],
+        ]
+
+    _mutate_json(root, pf.REL_CERT_RECORD, downgrade, reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("status must be RESOLVED_WITH_EVIDENCE" in e for e in result.gate_a)
+
+
+def _reclassify_as_resolved_only_in_text(c: dict[str, Any]) -> None:
+    c["open_blockers_for_closure"].append("B-4 RESOLVED legacy closure preflight")
+
+
+def test_ra_b4_02_reclassified_text_does_not_clear_the_blocker(repo) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, _reclassify_as_resolved_only_in_text, reindex=True)
+    _assert_a_fails(root, "A-18")
+
+
+_FAKE_EVIDENCE_CASES: list[tuple[str, Callable[[dict[str, Any]], None], str]] = [
+    (
+        "fake_closure_sha",
+        lambda e: e.update(closure_publication_sha="d" * 40),
+        "closure_publication_sha is not a commit",
+    ),
+    (
+        "closure_sha_not_sha",
+        lambda e: e.update(closure_publication_sha="HEAD"),
+        "closure_publication_sha is not a commit",
+    ),
+    ("wrong_baseline_digest", lambda e: e.update(baseline_text_sha256="e" * 64), "baseline_text_sha256"),
+    ("wrong_opened_at", lambda e: e.update(opened_at_sha="a" * 40), "opened_at_sha"),
+    ("wrong_kind", lambda e: e.update(resolution_kind="OPERATOR_AUTHORIZATION"), "resolution_kind"),
+    ("fake_index_digest", lambda e: e.update(closure_evidence_index_digest="f" * 64), "closure_evidence_index_digest"),
+    ("fake_manifest_digest", lambda e: e.update(reaudit_manifest_digest="f" * 64), "reaudit_manifest_digest"),
+    ("missing_index_path", lambda e: e.pop("closure_evidence_index_path"), "closure_evidence_index_path"),
+    (
+        "evidence_inside_certification_dir",
+        lambda e: e.update(closure_evidence_index_path=pf.REL_CERT_INDEX, reaudit_manifest_path=pf.REL_MANIFEST),
+        "own directory",
+    ),
+    (
+        "evidence_path_traversal",
+        lambda e: e.update(reaudit_manifest_path=f"{REAUDIT_DIR}/../../../x.json"),
+        "path traversal",
+    ),
+    (
+        "implementation_not_a_descendant",
+        lambda e: e.update(resolved_implementation_sha="a" * 40),
+        "resolved_implementation_sha",
+    ),
+    ("disposition_not_accepted", lambda e: e["certifier_disposition"].update(disposition="PENDING"), "ACCEPTED"),
+    (
+        "disposition_certifier_mismatch",
+        lambda e: e["certifier_disposition"].update(certifier_session_id="SOMEONE-ELSE"),
+        "certifier_disposition session",
+    ),
+    (
+        "disposition_wrong_authority",
+        lambda e: e["certifier_disposition"].update(certifier_agent_id="independent-quality-auditor"),
+        "certifier_agent_id",
+    ),
+    (
+        "disposition_digest_drift",
+        lambda e: e["certifier_disposition"].update(findings_digest="0" * 64),
+        "findings_digest",
+    ),
+]
+
+
+@pytest.mark.parametrize(("name", "change", "fragment"), _FAKE_EVIDENCE_CASES, ids=[c[0] for c in _FAKE_EVIDENCE_CASES])
+def test_ra_b4_02_fake_closure_evidence_fails(repo, name: str, change, fragment: str) -> None:
+    root, _ = repo
+    _edit_resolution(root, "B-4", change)
+    result = _assert_a_fails(root, "A-18")
+    assert any(fragment in e for e in _b(result.gate_a, "A-18")), (name, result.gate_a)
+
+
+def test_ra_b4_02_closure_published_before_the_certification_fails(repo) -> None:
+    root, built = repo
+    _edit_resolution(root, "B-4", lambda e: e.update(closure_publication_sha=built["tes"]))
+    result = _assert_a_fails(root, "A-18")
+    assert any("after the certification publication" in e for e in result.gate_a)
+
+
+def _rewrite_reaudit(root: Path, change: Callable[[dict[str, Any]], None], *, handoff: str | None = None) -> None:
+    """Forge re-audit evidence *consistently* (manifest, index, ledger digests) so only semantics can reject it."""
+    manifest = _load(root, REAUDIT_MANIFEST)
+    change(manifest)
+    manifest_raw = _dump(root, REAUDIT_MANIFEST, manifest)
+    if handoff is not None:
+        _write(root, manifest["handoff_record_path"], handoff)
+    index_raw = _index(root, REAUDIT_DIR, REAUDIT_INDEX)
+    closure = _commit(root, "forged re-audit evidence")
+    cert = _load(root, pf.REL_CERT_RECORD)
+    entry = next(e for e in cert["resolved_blockers_for_closure"] if e["blocker_id"] == "B-4")
+    entry["closure_publication_sha"] = closure
+    entry["closure_evidence_index_digest"] = _sha256(index_raw)
+    entry["reaudit_manifest_digest"] = _sha256(manifest_raw)
+    entry["certifier_disposition"]["certifier_session_id"] = manifest["certifier_session_id"]
+    _dump(root, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(root)
+    _commit(root, "forged ledger")
+
+
+_FORGED_REAUDIT_CASES: list[tuple[str, Callable[[dict[str, Any]], None], str]] = [
+    ("verdict_fail", lambda m: m.update(verdict="FAIL"), "not an independent acceptance"),
+    ("verdict_conditional", lambda m: m.update(verdict="CONDITIONAL"), "not an independent acceptance"),
+    ("still_a_draft", lambda m: m.update(manifest_status="AUDITOR_DRAFT_NOT_A_PASS"), "still a draft"),
+    ("auditor_equals_certifier", lambda m: m.update(certifier_session_id=m["auditor_session_id"]), "distinct"),
+    ("implementer_equals_auditor", lambda m: m.update(implementation_session_id=m["auditor_session_id"]), "distinct"),
+    ("certifier_pending", lambda m: m.update(certifier_session_id="PENDING_CERTIFIER"), "PENDING"),
+    ("auditor_agent_is_implementer", lambda m: m.update(auditor_agent_id="implementer"), "auditor_agent_id"),
+    ("certifier_agent_is_auditor", lambda m: m.update(certifier_agent_id="independent-quality-auditor"), "distinct"),
+    ("wrong_stage", lambda m: m.update(stage_id="ENT-AUDIT-X"), "stage_id"),
+    ("wrong_policy", lambda m: m.update(policy_version="IIAC-2099-01-01.9"), "policy_version"),
+    (
+        "audited_sha_not_a_commit",
+        lambda m: m.update(audited_implementation_sha="0" * 40),
+        "audited_implementation_sha is not a commit",
+    ),
+    (
+        "audited_sha_not_the_corrective",
+        lambda m: m.update(
+            audited_implementation_sha="{}",
+            test_execution_sha="{}",
+            evidence_publication_sha="{}",
+            audit_execution_sha="{}",
+        ),
+        "contain the resolved corrective",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("name", "change", "fragment"), _FORGED_REAUDIT_CASES, ids=[c[0] for c in _FORGED_REAUDIT_CASES]
+)
+def test_ra_b4_02_forged_independent_acceptance_fails(repo, name: str, change, fragment: str) -> None:
+    root, built = repo
+
+    def forge(manifest: dict[str, Any]) -> None:
+        change(manifest)
+        for key, value in list(manifest.items()):
+            if value == "{}":
+                manifest[key] = built["tes"]
+
+    _rewrite_reaudit(root, forge)
+    result = _assert_a_fails(root, "A-18")
+    assert any(fragment in e for e in _b(result.gate_a, "A-18")), (name, _b(result.gate_a, "A-18"))
+
+
+def test_ra_b4_02_unresolved_reaudit_finding_blocks_closure(repo) -> None:
+    root, _ = repo
+    findings = _load(root, f"{REAUDIT_DIR}/REAUDIT_FINDINGS.json")
+    findings["findings"][0]["disposition"] = "OPEN"
+    _dump(root, f"{REAUDIT_DIR}/REAUDIT_FINDINGS.json", findings)
+    _rewrite_reaudit(
+        root, lambda m: m.update(findings_digest=_sha256((root / f"{REAUDIT_DIR}/REAUDIT_FINDINGS.json").read_bytes()))
+    )
+    result = _eval(root)
+    assert not result.gate_a_pass
+    assert any("unresolved blocking finding" in e for e in _b(result.gate_a, "A-18")), result.gate_a
+
+
+def test_ra_b4_02_unsigned_reaudit_handoff_blocks_closure(repo) -> None:
+    root, _ = repo
+    _rewrite_reaudit(
+        root, lambda m: None, handoff=_reaudit_handoff().replace("2026-11-06T09:00:00+01:00", "________________")
+    )
+    result = _eval(root)
+    assert not result.gate_a_pass
+    assert any("handoff" in e for e in _b(result.gate_a, "A-18")), result.gate_a
+
+
+def test_ra_b4_02_tampered_reaudit_evidence_after_publication_fails(repo) -> None:
+    root, _ = repo
+    _write(root, f"{REAUDIT_DIR}/REAUDIT_DOSSIER.md", "# rewritten after publication\n")
+    _commit(root, "tamper")
+    result = _assert_a_fails(root, "A-18")
+    assert any("digest mismatch" in e or "differs from the bytes committed" in e for e in result.gate_a)
+
+
+def test_ra_b4_02_unindexed_reaudit_evidence_fails(repo) -> None:
+    root, _ = repo
+    _write(root, f"{REAUDIT_DIR}/injected.md", "injected\n")
+    _commit(root, "inject")
+    result = _assert_a_fails(root, "A-18")
+    assert any("unindexed evidence" in e for e in result.gate_a)
+
+
+@pytest.mark.parametrize(
+    ("name", "record", "fragment"),
+    [
+        (
+            "unsigned",
+            _operator_record(P3_DECISION_ID, "B6 acceptance authorization for EVOL-X", signed=False),
+            "placeholder",
+        ),
+        (
+            "not_authorized",
+            _operator_record(P3_DECISION_ID, "B6 acceptance authorization for EVOL-X", status="NOT AUTHORIZED"),
+            "not AUTHORIZED",
+        ),
+        (
+            "pending",
+            _operator_record(P3_DECISION_ID, "B6 acceptance authorization for EVOL-X", status="PENDING"),
+            "not AUTHORIZED",
+        ),
+        ("wrong_scope", _operator_record(P3_DECISION_ID, "IIAC policy activation"), "Decision scope lacks"),
+        (
+            "future_signature",
+            _operator_record(
+                P3_DECISION_ID, "B6 acceptance authorization for EVOL-X", stamp=_now_iso(timedelta(days=30))
+            ),
+            "in the future",
+        ),
+    ],
+)
+def test_ra_b4_02_forged_p3_operator_authorization_fails(repo, name: str, record: str, fragment: str) -> None:
+    root, _ = repo
+    raw = _write(root, P3_RECORD, record)
+    closure = _commit(root, "forged P3 record")
+    cert = _load(root, pf.REL_CERT_RECORD)
+    entry = next(e for e in cert["resolved_blockers_for_closure"] if e["blocker_id"] == "B6-P3")
+    entry["closure_publication_sha"] = closure
+    entry["closure_evidence"][0]["sha256"] = _sha256(raw)
+    _dump(root, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(root)
+    _commit(root, "forged P3 ledger")
+    result = _assert_a_fails(root, "A-18")
+    assert any(fragment in e for e in _b(result.gate_a, "A-18")), (name, result.gate_a)
+
+
+def test_ra_b4_02_p3_record_cannot_be_an_od_evol_12_record(repo) -> None:
+    root, _ = repo
+    raw = _write(root, P3_RECORD, _operator_record("OD-EVOL-12", OD12_SCOPE + " B6 acceptance EVOL-X"))
+    closure = _commit(root, "OD-EVOL-12 reused as P3 authorization")
+    cert = _load(root, pf.REL_CERT_RECORD)
+    entry = next(e for e in cert["resolved_blockers_for_closure"] if e["blocker_id"] == "B6-P3")
+    entry.update(closure_publication_sha=closure)
+    entry["closure_evidence"] = [{"decision_id": "OD-EVOL-12", "path": P3_RECORD, "sha256": _sha256(raw)}]
+    _dump(root, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(root)
+    _commit(root, "forged P3 ledger")
+    result = _assert_a_fails(root, "A-18")
+    assert any("cannot authorize" in e for e in result.gate_a)
+
+
+def test_ra_b4_02_gate_a_pass_does_not_depend_on_the_b6_publication_sha(repo, tmp_path: Path, closed_repo) -> None:
+    """Gate A holds both before B6 exists (``repo``) and after it is published (a copy of ``closed_repo``)."""
+    root, _ = repo
+    assert _eval(root).gate_a == []
+    assert _load(root, pf.REL_GOVERNANCE)["b6_acceptance_publication_sha"] is None
+    published = tmp_path / "published"
+    shutil.copytree(closed_repo[0], published)
+    assert _eval(published).gate_a == []
+
+
+# --------------------------------------------------------------------------- RA-B4-03 operator decision parsing
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        "NOT APPROVED",
+        "**NOT APPROVED**",
+        "UNAPPROVED",
+        "PENDING",
+        "**PENDING**",
+        "REJECTED",
+        "REJECTED - not approved",
+        "DRAFT",
+        "NOT SIGNED",
+        "UNSIGNED",
+        "",
+        "   ",
+        "—",
+        "TBD",
+        "NOT CONFIRMED",
+        "CONFIRMED? NO",
+        "REVOKED (previously APPROVED)",
+        "APPROVED - WITHDRAWN",
+        "APPROVED (SUPERSEDED)",
+        "DECLINED",
+        "DENIED",
+        "SIGNED / APPROVED / NOT",
+        "OPERATOR APPROVED — DIRECTION AND IMPLEMENTATION ONLY",
+        "APPROVED IF REVIEW PASSES",
+        "AWAITING SIGNATURE (APPROVED DRAFT)",
+        "ΑPPROVED",  # Greek capital alpha: homoglyph of the Latin A
+        "APPROVED​ WITHDRAWN",
+    ],
+)
+def test_ra_b4_03_negated_or_ambiguous_status_is_not_a_decision(status: str) -> None:
+    assert not pf.decision_recorded(status, "2026-11-01")
+    assert pf.decision_status_errors(status, "2026-11-01")
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        "SIGNED / APPROVED",
+        "**OPERATOR APPROVED**",
+        "OPERATOR APPROVED",
+        "SIGNED",
+        "APPROVED",
+        "CONFIRMED",
+        "signed / approved",
+    ],
+)
+def test_ra_b4_03_canonical_positive_states_are_accepted(status: str) -> None:
+    assert pf.decision_recorded(status, "2026-11-01")
+
+
+@pytest.mark.parametrize(
+    "date_text", ["", "—", "2026-13-45", "2026-11-1", "yesterday", "2999-01-01", "2026-11-01T10:00:00"]
+)
+def test_ra_b4_03_invalid_or_future_decision_date_is_rejected(date_text: str) -> None:
+    assert not pf.decision_recorded("SIGNED / APPROVED", date_text)
+
+
+def test_ra_b4_03_real_register_rows_still_classify_correctly() -> None:
+    rows = pf.parse_register((REPO / pf.REL_REGISTER).read_text(encoding="utf-8"))
+    for od_id in ("OD-EVOL-05b", "OD-EVOL-10", "OD-EVOL-13"):
+        assert pf.decision_recorded(*rows[od_id]), od_id
+    for od_id in ("OD-EVOL-12", "OD-EVOLX-08"):
+        assert not pf.decision_recorded(*rows[od_id]), od_id
+    # scope-limited approvals are never closing decisions
+    for od_id in ("OD-EVOL-14", "OD-EVOL-15", "OD-EVOL-17"):
+        assert not pf.decision_recorded(*rows[od_id]), od_id
+
+
+@pytest.mark.parametrize("status", ["**NOT APPROVED**", "**PENDING**", "**REJECTED**", "**DRAFT**", "NOT SIGNED"])
+def test_ra_b4_03_gate_b_rejects_negated_closing_decision(closed, status: str) -> None:
+    root, built = closed
+    decisions = {
+        "od12": (root / OD12_RECORD).read_bytes(),
+        "odx08": (root / ODX08_RECORD).read_bytes(),
+    }
+    _write(root, pf.REL_REGISTER, _register(decided=True, notes=_decision_notes(decisions), closing_status=status))
+    _commit(root, "negated closing decisions")
+    result = _eval(root)
+    assert result.gate_a_pass
+    b07 = _b(result.gate_b, "B-07")
+    assert any("OD-EVOL-12" in e for e in b07) and any("OD-EVOLX-08" in e for e in b07), result.gate_b
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_03_narrative_mention_of_approval_is_not_a_decision(closed) -> None:
+    root, _ = closed
+    pending = _register(decided=False)
+    narrative = (
+        "\n## History\n\nOD-EVOL-12 was APPROVED in an earlier draft; "
+        "OPERATOR APPROVED OD-EVOLX-08 on 2026-11-01.\n\n"
+        "| ID | Proposed decision text | Technical basis |\n|---|---|---|\n"
+        "| **OD-EVOL-12** | OPERATOR APPROVED | 2026-11-01 |\n"
+        "| **OD-EVOLX-08** | SIGNED / APPROVED | 2026-11-01 |\n"
+    )
+    _write(root, pf.REL_REGISTER, pending + narrative)
+    _commit(root, "narrative approval")
+    result = _eval(root)
+    assert result.gate_a_pass
+    b07 = _b(result.gate_b, "B-07")
+    assert any("OD-EVOL-12" in e for e in b07) and any("OD-EVOLX-08" in e for e in b07)
+
+
+def test_ra_b4_03_duplicate_status_rows_are_ambiguous(closed) -> None:
+    root, _ = closed
+    text = (root / pf.REL_REGISTER).read_text(encoding="utf-8")
+    row = next(line for line in text.splitlines() if line.startswith("| **OD-EVOL-12**"))
+    _write(root, pf.REL_REGISTER, text.replace(row, row + "\n" + row.replace("OPERATOR APPROVED", "PENDING")))
+    _commit(root, "duplicate row")
+    assert any("ambiguous" in e for e in _b(_eval(root).gate_b, "B-07"))
+
+
+def test_ra_b4_03_row_outside_the_status_table_is_ignored(closed) -> None:
+    root, _ = closed
+    text = (root / pf.REL_REGISTER).read_text(encoding="utf-8")
+    _write(
+        root,
+        pf.REL_REGISTER,
+        text.replace("| ID | Status | Signed date | Notes |", "| Decision | Outcome | Date | Notes |"),
+    )
+    _commit(root, "renamed status table")
+    assert any("not recorded in the register status table" in e for e in _b(_eval(root).gate_b, "B-07"))
+
+
+def test_ra_b4_03_wrong_decision_scope_fails(closed) -> None:
+    root, _ = closed
+    bad = _operator_record("OD-EVOL-12", "IIAC policy activation")
+    raw = _write(root, OD12_RECORD, bad)
+    _commit(root, "wrong scope")
+    decisions = {"od12": raw, "odx08": (root / ODX08_RECORD).read_bytes()}
+    _write(root, pf.REL_REGISTER, _register(decided=True, notes=_decision_notes(decisions)))
+    _commit(root, "register binds the wrong-scope record")
+    b07 = _b(_eval(root).gate_b, "B-07")
+    assert any("Decision scope lacks" in e for e in b07), b07
+
+
+@pytest.mark.parametrize(
+    ("name", "mutate", "fragment"),
+    [
+        ("wrong_id", lambda t: t.replace("Decision ID: OD-EVOL-12", "Decision ID: OD-EVOL-99"), "Decision ID"),
+        ("unsigned", lambda t: t.replace(t.splitlines()[-1], "Operator signature: ________________"), "placeholder"),
+        ("not_authorized", lambda t: t.replace("AUTHORIZED", "NOT AUTHORIZED"), "not AUTHORIZED"),
+        (
+            "signature_for_other_decision",
+            lambda t: t.replace("Approved OD-EVOL-12:", "Approved OD-EVOLX-08:"),
+            "signature line is for",
+        ),
+        (
+            "no_signature",
+            lambda t: "\n".join(line for line in t.splitlines() if not line.startswith("Approved ")),
+            "signature line",
+        ),
+        (
+            "signature_only_in_a_code_block",
+            lambda t: "\n".join(
+                ["```", *[line for line in t.splitlines() if line.startswith("Approved ")], "```"]
+                + [line for line in t.splitlines() if not line.startswith("Approved ")]
+            ),
+            "signature line",
+        ),
+        ("wrong_policy", lambda t: t.replace(POLICY, "IIAC-2099-01-01.9"), "Policy version"),
+    ],
+)
+def test_ra_b4_03_unverifiable_decision_record_fails(closed, name: str, mutate, fragment: str) -> None:
+    root, _ = closed
+    raw = _write(root, OD12_RECORD, mutate((root / OD12_RECORD).read_text(encoding="utf-8")))
+    decisions = {"od12": raw, "odx08": (root / ODX08_RECORD).read_bytes()}
+    _write(root, pf.REL_REGISTER, _register(decided=True, notes=_decision_notes(decisions)))
+    _commit(root, f"forged decision record {name}")
+    b07 = _b(_eval(root).gate_b, "B-07")
+    assert any(fragment in e for e in b07), (name, b07)
+
+
+@pytest.mark.parametrize(
+    ("name", "notes", "fragment"),
+    [
+        ("no_record_cited", {"OD-EVOL-12": "fixture"}, "exactly one decision record"),
+        (
+            "digest_mismatch",
+            {"OD-EVOL-12": "[r](../iiac_evidence/EVOL-X/operator_decisions/OD_EVOL_12_FIXTURE.md) sha256:" + "a" * 64},
+            "digest does not match",
+        ),
+        (
+            "missing_record",
+            {"OD-EVOL-12": "[r](../iiac_evidence/EVOL-X/operator_decisions/NOPE.md) sha256:" + "a" * 64},
+            "is missing",
+        ),
+    ],
+)
+def test_ra_b4_03_register_must_bind_the_decision_record(
+    closed, name: str, notes: dict[str, str], fragment: str
+) -> None:
+    root, _ = closed
+    decisions = {"od12": (root / OD12_RECORD).read_bytes(), "odx08": (root / ODX08_RECORD).read_bytes()}
+    merged = {**_decision_notes(decisions), **notes}
+    _write(root, pf.REL_REGISTER, _register(decided=True, notes=merged))
+    _commit(root, f"register binding {name}")
+    b07 = _b(_eval(root).gate_b, "B-07")
+    assert any(fragment in e for e in b07), (name, b07)
+
+
+def test_ra_b4_03_uncommitted_decision_record_fails(closed) -> None:
+    root, _ = closed
+    path = root / OD12_RECORD
+    path.write_bytes(path.read_bytes() + b"late edit\n")
+    assert any("OD-EVOL-12" in e for e in _b(_eval(root).gate_b, "B-07"))
+
+
+def test_ra_b4_03_genuine_authorized_decisions_pass(closed) -> None:
+    root, _ = closed
+    result = _eval(root)
+    assert _b(result.gate_b, "B-07") == []
+    assert result.gate_b_pass
+
+
+def test_ra_b4_03_signature_provenance_limit_is_documented_in_the_gate() -> None:
+    assert "not cryptographic" in (pf.__doc__ or "").lower()
+
+
+# --------------------------------------------------------------------------- RA-B4-04 evidence-bound B6
+
+
+def _flags_only_b6(root: Path, built: dict[str, str], *, bind: bool = True) -> str:
+    b6 = _publish_b6(root, with_record=False)
+    if bind:
+        _bind_b6(root, built, b6)
+        _commit(root, "bind flags-only B6")
+    return b6
+
+
+def test_ra_b4_04_flags_only_b6_fails_gate_b(repo) -> None:
+    root, built = repo
+    _flags_only_b6(root, built)
+    result = _eval(root)
+    assert result.gate_a == []
+    b05 = _b(result.gate_b, "B-05")
+    assert any("absent at B6_ACCEPTANCE_PUBLICATION_SHA" in e for e in b05), result.gate_b
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_04_flag_flip_by_arbitrary_actor_cannot_close_the_gate(repo) -> None:
+    """The auditor's G6 reproduction: flags + blockers cleared + FRZ rows + register edited, no authorisation."""
+    root, built = repo
+    _flags_only_b6(root, built)
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(open_blockers_for_closure=[]), reindex=True)
+    _write(root, pf.REL_FRZ_CHECKLIST, _checklist(PROMOTED_ROWS))
+    _write(root, pf.REL_REGISTER, _register(decided=True))
+    _commit(root, "edit everything")
+    result = _eval(root)
+    assert not result.gate_a_pass, "deleting the B-5 blocker must not manufacture Gate A readiness"
+    assert "A-18" in _codes(result.gate_a)
+    assert {"B-05", "B-07"} <= _codes(result.gate_b)
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_04_fake_b6_sha_fails(closed) -> None:
+    root, built = closed
+    _mutate_json(root, pf.REL_GOVERNANCE, lambda g: g.update(b6_acceptance_publication_sha="9" * 40))
+    cert = _load(root, pf.REL_CERT_RECORD)
+    cert["b6_acceptance_publication_sha"] = "9" * 40
+    _dump(root, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(root)
+    _write(root, pf.REL_LADDER, _ladder(built["tes"], built["final"], built["tes"], b6="9" * 40))
+    _commit(root, "fabricated B6 SHA")
+    result = _eval(root)
+    assert result.gate_a_pass
+    assert any("is not a commit" in e for e in _b(result.gate_b, "B-03")), result.gate_b
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_04_b6_record_absent_at_the_pinned_sha_fails(repo) -> None:
+    root, built = repo
+    pinned = _flags_only_b6(root, built, bind=False)  # phase 1 without a record
+    record = _write(root, f"{pf.B6_DIR}/{B6_RECORD_NAME}", _b6_record_text(root))
+    _index(root, pf.B6_DIR, pf.REL_B6_INDEX)
+    cert = _load(root, pf.REL_CERT_RECORD)
+    cert.update(b6_acceptance_record_path=pf.REL_B6_RECORD, b6_acceptance_record_digest=_sha256(record))
+    _dump(root, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(root)
+    _commit(root, "record appears after the pinned B6 SHA")
+    _bind_b6(root, built, pinned)
+    _commit(root, "bind the earlier phase-1 commit")
+    result = _eval(root)
+    assert any("absent at B6_ACCEPTANCE_PUBLICATION_SHA" in e for e in _b(result.gate_b, "B-05")), result.gate_b
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_04_historical_b6_substituted_fails(closed) -> None:
+    root, built = closed
+    legacy = f"{pf.EVOL_DIR}/EVOL_X_INTERNAL_B6_ACCEPTANCE_RECORD.md"
+    raw = _write(root, legacy, "historical internal B6 acceptance\n")
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(b6_acceptance_record_path=legacy, b6_acceptance_record_digest=_sha256(raw)),
+        reindex=True,
+    )
+    assert any("canonical B6 acceptance record path" in e for e in _b(_eval(root).gate_b, "B-05"))
+
+
+def test_ra_b4_04_historical_sha_substituted_for_the_record_fails(closed) -> None:
+    root, built = closed
+    _mutate_json(root, pf.REL_GOVERNANCE, lambda g: g.update(b6_acceptance_publication_sha=built["tes"]))
+    cert = _load(root, pf.REL_CERT_RECORD)
+    cert["b6_acceptance_publication_sha"] = built["tes"]
+    _dump(root, pf.REL_CERT_RECORD, cert)
+    _reindex_cert(root)
+    _write(root, pf.REL_LADDER, _ladder(built["tes"], built["final"], built["tes"], b6=built["tes"]))
+    _commit(root, "historical SHA as B6")
+    result = _eval(root)
+    assert result.gate_a_pass
+    assert {"B-03", "B-05"} <= _codes(result.gate_b)
+
+
+def test_ra_b4_04_record_mutated_after_publication_fails(closed) -> None:
+    root, _ = closed
+    path = root / pf.REL_B6_RECORD
+    raw = path.read_bytes().replace(b"Decision status: AUTHORIZED", b"Decision status: AUTHORIZED ")
+    _write(root, pf.REL_B6_RECORD, raw)
+    _index(root, pf.B6_DIR, pf.REL_B6_INDEX)
+    _commit(root, "late edit of the B6 record")
+    b05 = _b(_eval(root).gate_b, "B-05")
+    assert any("differs from the bytes published" in e or "digest" in e for e in b05), b05
+
+
+def test_ra_b4_04_manifest_changed_after_b6_publication_fails(closed) -> None:
+    root, _ = closed
+    _mutate_json(
+        root, pf.REL_MANIFEST, lambda m: m["limitations"].append("LIM-99 added after B6 acceptance"), reindex=True
+    )
+    result = _eval(root)
+    assert any("manifest changed after" in e for e in _b(result.gate_b, "B-05")), result.gate_b
+
+
+@pytest.mark.parametrize(
+    ("name", "overrides", "fragment"),
+    [
+        ("widened_verdict", {"Accepted verdict": "PASS"}, "Accepted verdict"),
+        ("widened_limitations", {"Accepted limitations": "LIM-01"}, "Accepted limitations"),
+        (
+            "extra_limitation",
+            {"Accepted limitations": "LIM-01, LIM-02, LIM-03, LIM-04, LIM-05, LIM-06, LIM-07, F-C-02, LIM-99"},
+            "Accepted limitations",
+        ),
+        ("wrong_manifest_digest", {"Independent audit manifest digest": "a" * 64}, "manifest digest"),
+        ("wrong_report_digest", {"Audit report digest": "b" * 64}, "Audit report digest"),
+        ("wrong_findings_digest", {"Findings digest": "c" * 64}, "Findings digest"),
+        ("wrong_audited_sha", {"Audited implementation SHA": "d" * 40}, "Audited implementation SHA"),
+        ("wrong_certification_sha", {"Certification publication SHA": "e" * 40}, "Certification publication SHA"),
+        ("foreign_certifier_session", {"Certifier session": "SOMEONE-ELSE"}, "Certifier session"),
+        ("wrong_certifier_agent", {"Certifier agent": "implementer"}, "Certifier agent"),
+        ("not_authorized", {"status": "NOT AUTHORIZED"}, "not AUTHORIZED"),
+        ("pending", {"status": "PENDING"}, "not AUTHORIZED"),
+        ("unsigned", {"signed": "no"}, "placeholder"),
+        ("wrong_scope", {"scope": "IIAC policy activation"}, "Decision scope lacks"),
+        ("future_signature", {"stamp": _now_iso(timedelta(days=30))}, "in the future"),
+        ("stale_signature", {"stamp": "2020-01-01T00:00:00+00:00"}, "predates the certification"),
+    ],
+)
+def test_ra_b4_04_b6_record_content_must_match_the_independent_audit(
+    repo, name: str, overrides: dict[str, str], fragment: str
+) -> None:
+    root, built = repo
+    b6 = _publish_b6(root, **overrides)
+    decisions = _publish_decisions(root)
+    _finish_close(root, built, b6, decisions)
+    result = _eval(root)
+    assert result.gate_a_pass
+    assert any(fragment in e for e in _b(result.gate_b, "B-05")), (name, _b(result.gate_b, "B-05"))
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_04_signature_post_dating_the_publication_commit_fails(repo) -> None:
+    root, built = repo
+    b6 = _publish_b6(root, stamp=_now_iso(timedelta(hours=6)))
+    decisions = _publish_decisions(root)
+    _finish_close(root, built, b6, decisions)
+    result = _eval(root)
+    assert any("post-dates the B6 acceptance publication" in e for e in _b(result.gate_b, "B-05")), result.gate_b
+
+
+def test_ra_b4_04_b6_before_p3_operator_authorization_fails(repo) -> None:
+    root, built = repo
+    # Publish B6 on a branch point *before* the P3 authorization by pointing the ledger at a later authorization.
+    b6 = _publish_b6(root)
+    late = _write(root, P3_RECORD, _operator_record(P3_DECISION_ID, "B6 acceptance authorization for EVOL-X"))
+    later = _commit(root, "P3 authorization published after B6 (out of order)")
+    _edit_resolution(
+        root,
+        "B6-P3",
+        lambda e: (
+            e.update(closure_publication_sha=later),
+            e["closure_evidence"][0].update(sha256=_sha256(late)),
+        ),
+    )
+    decisions = _publish_decisions(root)
+    _finish_close(root, built, b6, decisions)
+    result = _eval(root)
+    assert any("after the operator P3 authorization" in e for e in _b(result.gate_b, "B-05")), result.gate_b
+
+
+def test_ra_b4_04_correctly_published_b6_with_verified_evidence_passes(closed) -> None:
+    root, built = closed
+    result = _eval(root)
+    assert result.gate_a == [] and result.gate_b == []
+    assert _load(root, pf.REL_CERT_RECORD)["b6_acceptance_record_path"] == pf.REL_B6_RECORD
+    assert (root / pf.REL_B6_RECORD).is_file() and built["tes"]
+
+
+def test_ra_b4_04_gate_a_pass_never_implies_gate_b_pass(repo) -> None:
+    root, built = repo
+    before = _eval(root)
+    assert before.gate_a_pass and not before.gate_b_pass
+    _flags_only_b6(root, built)
+    result = _eval(root)
+    assert result.gate_a_pass and not result.gate_b_pass
+
+
+def test_ra_b4_04_scoped_limitations_remain_binding_after_b6(closed) -> None:
+    root, _ = closed
+    _mutate_json(
+        root,
+        pf.REL_MANIFEST,
+        lambda m: m.update(limitations=[x for x in m["limitations"] if not x.startswith("LIM-05")]),
+        reindex=True,
+    )
+    result = _eval(root)
+    assert not result.gate_a_pass and "A-08" in _codes(result.gate_a)
+    assert not result.gate_b_pass
+
+
+def test_ra_b4_04_no_self_certification_or_evidence_drift_after_closure(closed) -> None:
+    root, _ = closed
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(certifier_session_id=AUDITOR_SESSION), reindex=True)
+    result = _eval(root)
+    assert "A-09" in _codes(result.gate_a)
+    assert not result.gate_b_pass
+
+
+# --------------------------------------------------------------------------- canonical repository
+
+
+def test_ra_b4_canonical_gate_a_reflects_unresolved_blockers_and_gate_b_requires_real_evidence() -> None:
+    cert = json.loads((REPO / pf.REL_CERT_RECORD).read_text(encoding="utf-8"))
+    governance = json.loads((REPO / pf.REL_GOVERNANCE).read_text(encoding="utf-8"))
+    if governance.get("b6_acceptance_publication_sha") or cert.get("resolved_blockers_for_closure"):
+        pytest.skip("blockers resolved / B6 published; canonical pre-closure assertion no longer applies")
+    result = pf.evaluate(REPO)
+    assert result.mode == "IIAC", result.gate_a
+    assert _codes(result.gate_a) == {"A-18"}, result.gate_a
+    assert sum("open certification blocker" in e for e in result.gate_a) == 2
+    assert not result.gate_b_pass
+    codes = _codes(result.gate_b)
+    assert {"B-01", "B-06", "B-07", "B-09"} <= codes
+    assert any("OD-EVOL-12" in e for e in _b(result.gate_b, "B-07"))
+    assert any("OD-EVOLX-08" in e for e in _b(result.gate_b, "B-07"))
+    assert pf.blocker_key(cert["open_blockers_for_closure"][0]) == "B-4"
+    assert pf.blocker_key(cert["open_blockers_for_closure"][2]) == "B6-P3"

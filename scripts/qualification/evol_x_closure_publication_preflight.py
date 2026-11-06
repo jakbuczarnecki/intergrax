@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""EVOL-X closure publication preflight — two-gate IIAC contract (B-4 corrective, T-IGX-017-A).
+"""EVOL-X closure publication preflight — two-gate IIAC contract (T-IGX-017-A, RA-B4 corrective T-IGX-017-B).
 
 The preflight is fail-closed and evaluates two separate gates:
 
@@ -12,15 +12,34 @@ Gate A — B6 acceptance readiness
     published.
 
 Gate B — formal EVOL-X closure readiness
-    Gate A holds, B6 acceptance is published and bound (two-phase, non-self-referential),
-    every FRZ-EVOL row has an individual disposition no wider than the certified scope,
-    the applicable operator decisions are recorded, the SHA ladder is valid and no
-    mandatory blocker is open. Gate B does not require ``FORMAL_CLOSURE_PUBLICATION_SHA``
-    (it cannot exist before the closure commit) but validates it when present.
+    Gate A holds, a genuine B6 acceptance *record* is published and bound (two-phase,
+    non-self-referential), every FRZ-EVOL row has an individual disposition no wider than the
+    certified scope, the applicable operator decisions are recorded with a positive decision state
+    and a verifiable decision record, the SHA ladder is valid and no mandatory blocker is open.
+    Gate B does not require ``FORMAL_CLOSURE_PUBLICATION_SHA`` (it cannot exist before the closure
+    commit) but validates it when present.
 
 Gate A PASS never implies Gate B PASS. Legacy human Protocol 03 requirements apply only
 while the IIAC policy is not in force; a policy record that claims ``IN_FORCE`` but fails
 the activation gate fails both gates (no legacy fallback).
+
+RA-B4 corrective contracts (handoff: ``evol_x/EVOL_X_RA_B4_CORRECTIVE_REAUDIT_HANDOFF.md``):
+
+* **Byte contract (RA-B4-01).** Evidence is verified against the *canonical committed bytes* (the Git blob at
+  ``HEAD``). A working-tree file is accepted as that blob when it is byte-identical, or — only for paths
+  whose ``text`` attribute is not ``unset`` — when it equals the blob with LF expanded to CRLF (the exact
+  transformation of a ``core.autocrlf=true`` checkout of a pure-LF blob). Any other difference (tampering,
+  uncommitted edits, CRLF under ``-text``) stays a mismatch. Digest-bound paths are additionally ``-text``
+  in ``.gitattributes``.
+* **Blocker lifecycle (RA-B4-02).** The blocker set published at ``certification_publication_sha`` is the
+  immutable baseline. Every baseline blocker must still be listed as open, or carry an evidence-bound
+  ``RESOLVED_WITH_EVIDENCE`` entry that is independently re-verified here. Absence is never closure.
+* **Operator decisions (RA-B4-03).** Decision state is an exact allow-list; any negation is rejected;
+  rows are read only from the register status table; decisions that close EVOL-X need a verifiable record.
+  Operator signature lines are process-enforced text, not cryptographic proof.
+* **B6 acceptance (RA-B4-04).** Flags are never sufficient. A B6 acceptance record must exist at the pinned
+  publication commit, be digest-bound by the certification record, cite the independent audit and the
+  certified scope, and carry an operator signature line.
 
 Verification is delegated to the canonical IIAC routines (activation gate, manifest
 validator, role-separation validator). This module adds only EVOL-X stage bindings.
@@ -32,10 +51,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import posixpath
 import re
 import subprocess
 import sys
+import unicodedata
 from dataclasses import dataclass, field
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -60,8 +82,11 @@ from scripts.qualification.evol_x_frz_evol_canonical_matrix import (  # noqa: E4
 STAGE_ID = "EVOL-X"
 QUAL = "docs/project/maintainers/qualification"
 EVOL_DIR = f"{QUAL}/evol_x"
-AUDIT_DIR = f"{QUAL}/iiac_evidence/EVOL-X/audit"
-CERT_DIR = f"{QUAL}/iiac_evidence/EVOL-X/certification"
+EVIDENCE_ROOT_REL = f"{QUAL}/iiac_evidence/EVOL-X"
+AUDIT_DIR = f"{EVIDENCE_ROOT_REL}/audit"
+CERT_DIR = f"{EVIDENCE_ROOT_REL}/certification"
+OPERATOR_DIR = f"{EVIDENCE_ROOT_REL}/operator_decisions"
+B6_DIR = f"{EVIDENCE_ROOT_REL}/b6_acceptance"
 
 REL_ACTIVATION = f"{QUAL}/IIAC_POLICY_ACTIVATION_RECORD.json"
 REL_MANIFEST = f"{CERT_DIR}/iiac_audit_session_manifest.EVOL-X.json"
@@ -80,6 +105,8 @@ REL_GOVERNANCE = f"{EVOL_DIR}/EVOL_X_AUTO_B6_GOVERNANCE_STATUS.json"
 REL_LADDER = f"{EVOL_DIR}/EVOL_X_SHA_LADDER.md"
 REL_REGISTER = f"{EVOL_DIR}/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md"
 REL_FRZ_CHECKLIST = f"{QUAL}/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md"
+REL_B6_RECORD = f"{B6_DIR}/EVOL_X_IIAC_B6_ACCEPTANCE_RECORD.md"
+REL_B6_INDEX = f"{B6_DIR}/B6_ACCEPTANCE_EVIDENCE_INDEX.json"
 # Legacy (policy not in force) human Protocol 03 artifacts — never IIAC authority.
 REL_LEGACY_B6_PASS = f"{EVOL_DIR}/EVOL_X_PROTOCOL_03_INDEPENDENT_AUDIT_PASS_RECORD.md"
 REL_LEGACY_B6_DRAFT = f"{EVOL_DIR}/b6_technical_qualification/EVOL_X_PROTOCOL_03_INDEPENDENT_AUDIT_RECORD_DRAFT.md"
@@ -132,6 +159,12 @@ GATE_B_ONLY_BLOCKERS = frozenset({"B-5"})
 # Operator decisions applicable to formal EVOL-X closure. OD-EVOL-11 (named human auditor)
 # is migrated to ``auditor_session_id`` + handoff record and is not an IIAC requirement.
 CLOSURE_OPERATOR_DECISIONS = ("OD-EVOL-12", "OD-EVOLX-08", "OD-EVOL-05b", "OD-EVOL-10", "OD-EVOL-13")
+# Closing decisions that are still outstanding at IIAC activation need a verifiable decision record in
+# addition to the register row. Value = tokens the record's ``Decision scope`` must contain.
+OD_RECORD_REQUIREMENTS: dict[str, tuple[str, ...]] = {
+    "OD-EVOL-12": ("FRZ-EVOL-07", "FRZ-EVOL-08", "FRZ-EVOL-10"),
+    "OD-EVOLX-08": (STAGE_ID, "formal closure"),
+}
 LEGACY_LADDER_ROWS = (
     "INTERNAL_B6_ACCEPTANCE_PUBLICATION_SHA",
     "INTERNAL_PARENT_CLOSURE_PUBLICATION_SHA",
@@ -140,15 +173,65 @@ LEGACY_LADDER_ROWS = (
     "PROTOCOL_03_AUTOMATED_AUDIT_PUBLICATION_SHA",
 )
 
+# Blocker lifecycle (RA-B4-02).
+RESOLUTION_STATUS = "RESOLVED_WITH_EVIDENCE"
+KIND_REAUDIT = "INDEPENDENT_REAUDIT"
+KIND_OPERATOR = "OPERATOR_AUTHORIZATION"
+BLOCKER_P3 = "B6-P3"
+BLOCKER_CLOSURE_KINDS: dict[str, str] = {"B-4": KIND_REAUDIT, "B-5": KIND_OPERATOR, BLOCKER_P3: KIND_OPERATOR}
+BLOCKER_REQUIRED_DECISIONS: dict[str, frozenset[str]] = {"B-5": frozenset({"OD-EVOL-12", "OD-EVOLX-08"})}
+BLOCKER_SCOPE_TOKENS: dict[str, tuple[str, ...]] = {BLOCKER_P3: ("B6 acceptance", STAGE_ID)}
+B6_SCOPE_TOKENS = ("B6 acceptance", STAGE_ID)
+
+# Operator decision state (RA-B4-03). Exact allow-list, matched against the whole normalised status.
+AFFIRMATIVE_STATUSES = frozenset(
+    {"SIGNED / APPROVED", "SIGNED/APPROVED", "OPERATOR APPROVED", "SIGNED", "APPROVED", "CONFIRMED"}
+)
+NEGATION_WORDS = frozenset(
+    {
+        "NOT",
+        "NO",
+        "NEVER",
+        "NONE",
+        "UNSIGNED",
+        "UNAPPROVED",
+        "UNCONFIRMED",
+        "PENDING",
+        "DRAFT",
+        "REJECTED",
+        "DECLINED",
+        "DENIED",
+        "REVOKED",
+        "WITHDRAWN",
+        "RESCINDED",
+        "SUPERSEDED",
+        "CANCELLED",
+        "CANCELED",
+        "EXPIRED",
+        "VOID",
+        "INVALID",
+        "TBD",
+        "AWAITING",
+        "PROPOSED",
+        "REQUIRED",
+    }
+)
+CLOCK_SKEW = timedelta(days=1)
+SIGNATURE_SKEW = timedelta(minutes=15)
+
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST64 = re.compile(r"^[0-9a-f]{64}$")
 _LADDER_SHA = re.compile(r"`([0-9a-f]{40})`")
 _LIM_ID = re.compile(r"^(LIM-\d{2}|F-C-\d{2})\b")
 _BLOCKER_ID = re.compile(r"^(B-\d+)\b")
-_HANDOFF_SIGNATURE = re.compile(
-    r"^`?Approved handoff: operator @ (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))`?",
-    re.MULTILINE,
-)
+_BLOCKER_P3_TEXT = re.compile(r"^B6 acceptance \(P3\)")
+_ISO_TS = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})"
+_HANDOFF_SIGNATURE = re.compile(rf"^`?Approved handoff: operator @ ({_ISO_TS})`?", re.MULTILINE)
+_RECORD_SIGNATURE = re.compile(rf"^Approved (.+?): operator @ ({_ISO_TS})\s*$")
+_RECORD_FIELD = re.compile(r"^([A-Z][A-Za-z0-9 /_-]{1,60}): (\S.*?)\s*$")
+_RECORD_NOTE_PATH = re.compile(r"iiac_evidence/EVOL-X/operator_decisions/([A-Za-z0-9_.\-]+\.md)")
+_RECORD_NOTE_DIGEST = re.compile(r"sha256[:=]\s*`?([0-9a-f]{64})")
+_REGISTER_HEADER = re.compile(r"^\|\s*ID\s*\|\s*Status\s*\|\s*Signed date\s*\|", re.IGNORECASE)
 
 
 @dataclass
@@ -202,6 +285,20 @@ def _is_ancestor(ctx: Context, ancestor: str, descendant: str) -> bool:
     return _git(ctx, "merge-base", "--is-ancestor", ancestor, descendant).returncode == 0
 
 
+def _is_strict_ancestor(ctx: Context, ancestor: str, descendant: str) -> bool:
+    return ancestor != descendant and _is_ancestor(ctx, ancestor, descendant)
+
+
+def _commit_time(ctx: Context, sha: str) -> datetime | None:
+    proc = _git(ctx, "show", "-s", "--format=%cI", sha)
+    if proc.returncode != 0:
+        return None
+    try:
+        return datetime.fromisoformat(proc.stdout.decode("utf-8").strip())
+    except ValueError:
+        return None
+
+
 def _show(ctx: Context, sha: str, rel: str) -> bytes | None:
     proc = _git(ctx, "show", f"{sha}:{rel}")
     return proc.stdout if proc.returncode == 0 else None
@@ -221,7 +318,7 @@ def _tree_blobs(ctx: Context, sha: str, rel_dir: str) -> dict[str, str]:
 
 
 def _git_blob_id(data: bytes) -> str:
-    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()  # noqa: S324 - git object id, not security
 
 
 def _changed_paths(ctx: Context, base: str, head: str, rel: str) -> list[str]:
@@ -231,12 +328,51 @@ def _changed_paths(ctx: Context, base: str, head: str, rel: str) -> list[str]:
     return [line.strip() for line in proc.stdout.decode("utf-8").splitlines() if line.strip()]
 
 
-def _read_bytes(ctx: Context, rel: str) -> bytes | None:
+def _worktree_bytes(ctx: Context, rel: str) -> bytes | None:
     path = ctx.path(rel)
     try:
         return path.read_bytes() if path.is_file() else None
     except OSError:
         return None
+
+
+def _text_conversion_applies(ctx: Context, rel: str) -> bool:
+    """True unless ``.gitattributes`` marks the path ``-text`` (checkout never rewrites it)."""
+    proc = _git(ctx, "check-attr", "text", "--", rel)
+    if proc.returncode != 0:
+        return True
+    return proc.stdout.decode("utf-8", errors="replace").rsplit(":", 1)[-1].strip() != "unset"
+
+
+def _worktree_matches_blob(ctx: Context, rel: str, raw: bytes, blob: bytes) -> bool:
+    """RA-B4-01 byte contract: identical, or the exact CRLF expansion of a pure-LF blob on a converting path."""
+    if raw == blob:
+        return True
+    return b"\r" not in blob and raw == blob.replace(b"\n", b"\r\n") and _text_conversion_applies(ctx, rel)
+
+
+def _head_blob_ids(ctx: Context) -> dict[str, str]:
+    if "head_blobs" not in ctx.cache:
+        ctx.cache["head_blobs"] = _tree_blobs(ctx, ctx.head, QUAL) if ctx.head else {}
+    return ctx.cache["head_blobs"]
+
+
+def _read_bytes(ctx: Context, rel: str) -> bytes | None:
+    """Canonical bytes of an evidence path.
+
+    Returns the Git blob at ``HEAD`` when the working tree equals it under the RA-B4-01 byte contract,
+    otherwise the working-tree bytes (so tampering and uncommitted edits surface as digest/blob mismatches).
+    """
+    raw = _worktree_bytes(ctx, rel)
+    if raw is None or not ctx.head:
+        return raw
+    blob_id = _head_blob_ids(ctx).get(rel)
+    if blob_id is None or _git_blob_id(raw) == blob_id:
+        return raw
+    blob = _show(ctx, ctx.head, rel)
+    if blob is not None and _worktree_matches_blob(ctx, rel, raw, blob):
+        return blob
+    return raw
 
 
 def _read_json(ctx: Context, rel: str, code: str, errors: list[str]) -> dict[str, Any] | None:
@@ -301,26 +437,156 @@ def ladder_sha(rows: dict[str, str], role: str) -> str:
     return match.group(1) if match else ""
 
 
-def parse_register(text: str) -> dict[str, tuple[str, str]]:
-    """First ``| **OD-…** | status | date |`` row per decision id."""
-    rows: dict[str, tuple[str, str]] = {}
+def parse_register_rows(text: str) -> dict[str, list[tuple[str, str, str]]]:
+    """``| **OD-…** | status | date | notes |`` rows of the register *status* tables only.
+
+    Rows of other tables (decision-text tables) and narrative lines are never decisions (RA-B4-03).
+    """
+    rows: dict[str, list[tuple[str, str, str]]] = {}
+    in_status_table = False
     for line in text.splitlines():
-        if not line.startswith("| **OD-"):
+        if not line.startswith("|"):
+            in_status_table = False
+            continue
+        if _REGISTER_HEADER.match(line):
+            in_status_table = True
+            continue
+        if not in_status_table or not line.startswith("| **OD-"):
             continue
         cells = _table_cells(line)
         if len(cells) < 3:
             continue
-        rows.setdefault(_norm(cells[0]), (_norm(cells[1]), _norm(cells[2])))
+        notes = cells[3] if len(cells) > 3 else ""
+        rows.setdefault(_norm(cells[0]), []).append((_norm(cells[1]), _norm(cells[2]), notes))
     return rows
 
 
-def decision_recorded(status: str, date: str) -> bool:
-    upper = status.upper()
-    if not status or "PENDING" in upper or "NOT SIGNED" in upper or "DRAFT" in upper:
-        return False
-    if not re.search(r"\b(SIGNED|APPROVED|CONFIRMED)\b", upper):
-        return False
-    return re.fullmatch(r"\d{4}-\d{2}-\d{2}", date.strip()) is not None
+def parse_register(text: str) -> dict[str, tuple[str, str]]:
+    """First status-table row per decision id as ``(status, date)``."""
+    return {od: (rows[0][0], rows[0][1]) for od, rows in parse_register_rows(text).items() if rows}
+
+
+def _normalize_status(status: str) -> str:
+    text = unicodedata.normalize("NFKC", status)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+    return re.sub(r"\s+", " ", text.replace("*", "").replace("`", "")).strip().upper()
+
+
+def decision_status_errors(status: str, date_text: str, *, today: date | None = None) -> list[str]:
+    """Reasons a register row is not a recorded positive decision (empty list = recorded)."""
+    errors: list[str] = []
+    normalized = _normalize_status(status)
+    words = set(re.findall(r"[A-Z0-9/]+", normalized))
+    if not normalized:
+        errors.append("empty decision status")
+    elif normalized not in AFFIRMATIVE_STATUSES:
+        if words & NEGATION_WORDS or "?" in normalized:
+            errors.append(f"decision status {status!r} is negated, pending or not final")
+        else:
+            errors.append(f"decision status {status!r} is not a canonical positive decision state")
+    stripped = date_text.strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", stripped) is None:
+        errors.append(f"decision date {date_text!r} is not an ISO date")
+    else:
+        try:
+            decided = date.fromisoformat(stripped)
+        except ValueError:
+            errors.append(f"decision date {date_text!r} is not a calendar date")
+        else:
+            limit = (today or datetime.now(UTC).date()) + CLOCK_SKEW
+            if decided > limit:
+                errors.append(f"decision date {date_text!r} is in the future")
+    return errors
+
+
+def decision_recorded(status: str, date_text: str) -> bool:
+    return not decision_status_errors(status, date_text)
+
+
+def parse_operator_record(text: str) -> tuple[dict[str, list[str]], list[tuple[str, str]]]:
+    """Field lines (``Key: value`` at column 0) and ``Approved <id>: operator @ <ISO>`` signature lines.
+
+    Fenced blocks, quotes, list items and mid-line mentions never count (RA-B4-03 narrative guard).
+    """
+    fields: dict[str, list[str]] = {}
+    signatures: list[tuple[str, str]] = []
+    fenced = False
+    for line in text.lstrip("﻿").splitlines():
+        if line.lstrip().startswith(("```", "~~~")):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        sig = _RECORD_SIGNATURE.match(line)
+        if sig:
+            signatures.append((sig.group(1).strip(), sig.group(2)))
+            continue
+        item = _RECORD_FIELD.match(line)
+        if item:
+            fields.setdefault(item.group(1).strip(), []).append(item.group(2).strip())
+    return fields, signatures
+
+
+def operator_record_errors(
+    text: str,
+    *,
+    decision_id: str | None,
+    scope_tokens: tuple[str, ...],
+    expected: dict[str, str] | None = None,
+    now: datetime | None = None,
+) -> tuple[list[str], dict[str, Any]]:
+    """Validate an operator decision record. Returns ``(errors, info)``; ``info`` carries id and signature time."""
+    errors: list[str] = []
+    info: dict[str, Any] = {"decision_id": None, "signed_at": None, "fields": {}}
+    if re.search(r"_{4,}", text) or "NOT SIGNED" in text.upper():
+        errors.append("record contains an unsigned placeholder")
+    fields, signatures = parse_operator_record(text)
+    info["fields"] = fields
+
+    def single(key: str) -> str | None:
+        values = fields.get(key, [])
+        if len(values) != 1:
+            errors.append(f"record must state exactly one {key!r} line (found {len(values)})")
+            return None
+        return values[0]
+
+    found_id = single("Decision ID")
+    info["decision_id"] = found_id
+    if found_id is not None and decision_id is not None and found_id != decision_id:
+        errors.append(f"record Decision ID {found_id!r} != {decision_id!r}")
+    stage = single("Stage")
+    if stage not in (None, STAGE_ID):
+        errors.append(f"record Stage must be {STAGE_ID}")
+    policy = single("Policy version")
+    if policy not in (None, POLICY_VERSION):
+        errors.append(f"record Policy version must be {POLICY_VERSION}")
+    scope = single("Decision scope")
+    if scope is not None:
+        for token in scope_tokens:
+            if token not in scope:
+                errors.append(f"record Decision scope lacks {token!r}")
+    status = single("Decision status")
+    if status is not None and status != "AUTHORIZED":
+        errors.append(f"record Decision status {status!r} is not AUTHORIZED")
+    for key, want in (expected or {}).items():
+        got = single(key)
+        if got is not None and got != want:
+            errors.append(f"record {key!r} does not match the verified evidence")
+    if len(signatures) != 1:
+        errors.append(f"record must carry exactly one operator signature line (found {len(signatures)})")
+    else:
+        label, stamp = signatures[0]
+        if found_id is not None and label != found_id:
+            errors.append(f"operator signature line is for {label!r}, not {found_id!r}")
+        try:
+            signed_at = datetime.fromisoformat(stamp)
+        except ValueError:
+            errors.append(f"operator signature timestamp {stamp!r} is not valid")
+        else:
+            info["signed_at"] = signed_at
+            if signed_at.tzinfo is None or signed_at > (now or datetime.now(UTC)) + CLOCK_SKEW:
+                errors.append("operator signature timestamp is in the future")
+    return errors, info
 
 
 def parse_frz_rows(text: str) -> dict[str, list[list[str]]]:
@@ -352,6 +618,17 @@ def _limitation_map(items: Any) -> dict[str, str]:
             if match:
                 out.setdefault(match.group(1), item.strip())
     return out
+
+
+def blocker_key(text: str) -> str:
+    """Stable blocker id: ``B-<n>``, ``B6-P3`` or a text digest id for unlabeled blockers."""
+    stripped = text.strip()
+    match = _BLOCKER_ID.match(stripped)
+    if match:
+        return match.group(1)
+    if _BLOCKER_P3_TEXT.match(stripped):
+        return BLOCKER_P3
+    return "TXT-" + _sha256(stripped.encode("utf-8"))[:12]
 
 
 # --------------------------------------------------------------------------- policy
@@ -603,41 +880,43 @@ def _gate_a_digests(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any]
         errors.append("A-13 certification record audit_evidence_index_digest differs from EVIDENCE_INDEX.json")
 
 
-def _verify_index(ctx: Context, rel_index: str, rel_dir: str, committed_at: str, errors: list[str]) -> None:
-    index = _read_json(ctx, rel_index, "A-13", errors)
+def _verify_index(
+    ctx: Context, rel_index: str, rel_dir: str, committed_at: str, errors: list[str], *, code: str = "A-13"
+) -> None:
+    index = _read_json(ctx, rel_index, code, errors)
     if index is None:
         return
     files = index.get("files")
     if index.get("stage_id") != STAGE_ID or not isinstance(files, dict) or not files:
-        errors.append(f"A-13 {rel_index} is not an {STAGE_ID} evidence index")
+        errors.append(f"{code} {rel_index} is not an {STAGE_ID} evidence index")
         return
     root = ctx.path(rel_dir)
     on_disk = {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()} if root.is_dir() else set()
     index_name = Path(rel_index).name
     unindexed = sorted(on_disk - set(files) - {index_name})
     if unindexed:
-        errors.append(f"A-13 unindexed evidence in {rel_dir}: {unindexed[0]}")
+        errors.append(f"{code} unindexed evidence in {rel_dir}: {unindexed[0]}")
     blobs = _tree_blobs(ctx, committed_at, rel_dir) if committed_at else {}
     if not blobs:
-        errors.append(f"A-13 no committed evidence for {rel_dir} at {committed_at or 'unknown SHA'}")
+        errors.append(f"{code} no committed evidence for {rel_dir} at {committed_at or 'unknown SHA'}")
     for name, meta in files.items():
         reason = _path_rejected(name)
         if reason:
-            errors.append(f"A-13 index entry {name!r}: {reason}")
+            errors.append(f"{code} index entry {name!r}: {reason}")
             continue
         raw = _read_bytes(ctx, f"{rel_dir}/{name}")
         expected = meta.get("sha256") if isinstance(meta, dict) else None
         if raw is None:
-            errors.append(f"A-13 indexed evidence missing: {rel_dir}/{name}")
+            errors.append(f"{code} indexed evidence missing: {rel_dir}/{name}")
             continue
         if _sha256(raw) != expected or (isinstance(meta, dict) and meta.get("bytes") != len(raw)):
-            errors.append(f"A-13 digest mismatch for {rel_dir}/{name}")
+            errors.append(f"{code} digest mismatch for {rel_dir}/{name}")
         if blobs and blobs.get(f"{rel_dir}/{name}") != _git_blob_id(raw):
-            errors.append(f"A-13 {rel_dir}/{name} differs from the bytes committed at {committed_at[:12]}")
+            errors.append(f"{code} {rel_dir}/{name} differs from the bytes committed at {committed_at[:12]}")
     index_blob = blobs.get(rel_index)
     raw_index = _read_bytes(ctx, rel_index)
     if blobs and raw_index is not None and index_blob != _git_blob_id(raw_index):
-        errors.append(f"A-13 {rel_index} differs from the bytes committed at {committed_at[:12]}")
+        errors.append(f"{code} {rel_index} differs from the bytes committed at {committed_at[:12]}")
 
 
 def _gate_a_pass_record(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any] | None, errors: list[str]) -> None:
@@ -672,6 +951,25 @@ def _gate_a_pass_record(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
             errors.append(f"A-14 IIAC pass record does not state {needle!r}")
 
 
+def blocking_finding_errors(findings: dict[str, Any], code: str) -> list[str]:
+    """Unresolved blocking findings: blocking class/severity, or any finding that declares what it ``blocks``."""
+    errors: list[str] = []
+    summary = findings.get("summary") if isinstance(findings.get("summary"), dict) else {}
+    for key in ("PROVEN_ARCHITECTURAL_DEFECT", "IN_SCOPE_BLOCKER", "blocking_for_scoped_pass"):
+        if key in summary and summary.get(key) != 0:
+            errors.append(f"{code} findings summary {key} is {summary.get(key)!r}, expected 0")
+    for item in findings.get("findings") or []:
+        if not isinstance(item, dict):
+            continue
+        cls = str(item.get("class") or "").upper()
+        sev = str(item.get("severity") or "").upper()
+        disp = str(item.get("disposition") or item.get("reaudit_disposition") or "").upper()
+        blocking = cls in BLOCKING_FINDING_CLASSES or sev in BLOCKING_FINDING_SEVERITIES or bool(item.get("blocks"))
+        if blocking and disp not in RESOLVED_DISPOSITIONS:
+            errors.append(f"{code} unresolved blocking finding {item.get('id')} ({cls or '-'}/{sev or '-'})")
+    return errors
+
+
 def _gate_a_findings(ctx: Context, manifest: dict[str, Any], errors: list[str]) -> None:
     findings = _read_json(ctx, REL_FINDINGS, "A-15", errors)
     if findings is None:
@@ -685,35 +983,32 @@ def _gate_a_findings(ctx: Context, manifest: dict[str, Any], errors: list[str]) 
     for key in ("PROVEN_ARCHITECTURAL_DEFECT", "IN_SCOPE_BLOCKER", "blocking_for_scoped_pass"):
         if summary.get(key) != 0:
             errors.append(f"A-15 findings summary {key} is {summary.get(key)!r}, expected 0")
-    for item in findings.get("findings") or []:
-        if not isinstance(item, dict):
-            continue
-        cls = str(item.get("class") or "").upper()
-        sev = str(item.get("severity") or "").upper()
-        disp = str(item.get("disposition") or item.get("reaudit_disposition") or "").upper()
-        blocking = cls in BLOCKING_FINDING_CLASSES or sev in BLOCKING_FINDING_SEVERITIES
-        if blocking and disp not in RESOLVED_DISPOSITIONS:
-            errors.append(f"A-15 unresolved blocking finding {item.get('id')} ({cls}/{sev})")
+    errors.extend(blocking_finding_errors({"findings": findings.get("findings")}, "A-15"))
 
 
-def _gate_a_handoff(ctx: Context, manifest: dict[str, Any], errors: list[str]) -> None:
-    text = _read_text(ctx, REL_CERT_HANDOFF)
+def _handoff_errors(ctx: Context, manifest: dict[str, Any], rel: str, code: str) -> list[str]:
+    errors: list[str] = []
+    text = _read_text(ctx, rel)
     if text is None:
-        errors.append(f"A-16 missing operator-attested handoff record {REL_CERT_HANDOFF}")
-        return
+        return [f"{code} missing operator-attested handoff record {rel}"]
     if POLICY_VERSION not in text:
-        errors.append("A-16 handoff record does not cite the policy version")
+        errors.append(f"{code} handoff record does not cite the policy version")
     for key in ("implementation_session_id", "auditor_session_id", "certifier_session_id"):
         value = str(manifest.get(key) or "")
         if not value or value not in text:
-            errors.append(f"A-16 handoff record does not attest {key}")
+            errors.append(f"{code} handoff record does not attest {key}")
     if re.search(r"^\s*- \[ \]", text, re.MULTILINE):
-        errors.append("A-16 handoff record has unattested operator checkboxes")
+        errors.append(f"{code} handoff record has unattested operator checkboxes")
     if "________________" in text or not _HANDOFF_SIGNATURE.search(text):
-        errors.append("A-16 handoff record has no operator approval line")
-    head_blob = _show(ctx, ctx.head, REL_CERT_HANDOFF) if ctx.head else None
+        errors.append(f"{code} handoff record has no operator approval line")
+    head_blob = _show(ctx, ctx.head, rel) if ctx.head else None
     if head_blob is None or head_blob.decode("utf-8-sig", errors="replace") != text:
-        errors.append("A-16 handoff record on disk differs from HEAD")
+        errors.append(f"{code} handoff record on disk differs from HEAD")
+    return errors
+
+
+def _gate_a_handoff(ctx: Context, manifest: dict[str, Any], errors: list[str]) -> None:
+    errors.extend(_handoff_errors(ctx, manifest, REL_CERT_HANDOFF, "A-16"))
 
 
 def _gate_a_cert_record(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any], errors: list[str]) -> None:
@@ -733,18 +1028,315 @@ def _gate_a_cert_record(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
         errors.append(f"A-17 certification_verdict {cert_verdict!r} does not preserve the audit verdict {verdict}")
 
 
-def _blocker_ids(cert: dict[str, Any] | None) -> list[tuple[str, str]]:
-    blockers = (cert or {}).get("open_blockers_for_closure")
-    if blockers is None:
-        return []
-    if not isinstance(blockers, list):
-        return [("?", "open_blockers_for_closure is not a list")]
-    out: list[tuple[str, str]] = []
-    for item in blockers:
-        text = str(item).strip()
-        match = _BLOCKER_ID.match(text)
-        out.append((match.group(1) if match else "?", text))
+# --------------------------------------------------------------------------- blocker lifecycle (RA-B4-02)
+
+
+@dataclass
+class BlockerLedger:
+    cert_sha: str
+    baseline: dict[str, str] = field(default_factory=dict)
+    open_now: dict[str, str] = field(default_factory=dict)
+    resolved: dict[str, Any] = field(default_factory=dict)
+    lineage: list[str] = field(default_factory=list)
+
+
+def _blocker_texts(document: dict[str, Any] | None, label: str, lineage: list[str]) -> dict[str, str] | None:
+    value = (document or {}).get("open_blockers_for_closure")
+    if not isinstance(value, list):
+        lineage.append(f"{label} open_blockers_for_closure is missing or not a list")
+        return None
+    out: dict[str, str] = {}
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            lineage.append(f"{label} open_blockers_for_closure holds a non-text or empty entry")
+            continue
+        out.setdefault(blocker_key(item), item.strip())
     return out
+
+
+def blocker_ledger(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any]) -> BlockerLedger:
+    """Compare the current blocker set with the baseline published at ``certification_publication_sha``."""
+    cache_key = "blocker_ledger"
+    if cache_key in ctx.cache:
+        return ctx.cache[cache_key]
+    cert_sha = _sha(manifest.get("certification_publication_sha"))
+    ledger = BlockerLedger(cert_sha=cert_sha)
+    current = _blocker_texts(cert, "certification record", ledger.lineage)
+    ledger.open_now = current or {}
+    baseline_doc: dict[str, Any] | None = None
+    if not cert_sha or not _commit_exists(ctx, cert_sha):
+        ledger.lineage.append("blocker baseline unavailable: certification_publication_sha is not a commit")
+    else:
+        raw = _show(ctx, cert_sha, REL_CERT_RECORD)
+        try:
+            baseline_doc = json.loads(raw.decode("utf-8-sig")) if raw is not None else None
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            baseline_doc = None
+        if not isinstance(baseline_doc, dict):
+            ledger.lineage.append("blocker baseline unavailable: certification record absent at the publication SHA")
+            baseline_doc = None
+    base = _blocker_texts(baseline_doc, "baseline", ledger.lineage) if baseline_doc is not None else None
+    ledger.baseline = base or {}
+
+    resolved_raw = cert.get("resolved_blockers_for_closure", [])
+    if resolved_raw is None:
+        resolved_raw = []
+    if not isinstance(resolved_raw, list):
+        ledger.lineage.append("resolved_blockers_for_closure is not a list")
+        resolved_raw = []
+    for entry in resolved_raw:
+        key = str(entry.get("blocker_id") or "") if isinstance(entry, dict) else ""
+        if not key:
+            ledger.lineage.append("resolved blocker entry has no blocker_id")
+        elif key in ledger.resolved:
+            ledger.lineage.append(f"blocker {key} is resolved more than once")
+        else:
+            ledger.resolved[key] = entry
+    for key in ledger.baseline:
+        if key in ledger.open_now and key in ledger.resolved:
+            ledger.lineage.append(f"baseline blocker {key} is listed as open and resolved at once")
+        elif key not in ledger.open_now and key not in ledger.resolved and current is not None:
+            ledger.lineage.append(
+                f"baseline blocker {key} disappeared without closure evidence "
+                f"(removed, renamed or reclassified): {ledger.baseline[key]}"
+            )
+    for key in ledger.resolved:
+        if ledger.baseline and key not in ledger.baseline:
+            ledger.lineage.append(
+                f"resolution for {key} does not match any blocker open at the certification publication"
+            )
+    ctx.cache[cache_key] = ledger
+    return ledger
+
+
+def _entry_path(entry: dict[str, Any], field_name: str, fail: Any) -> str | None:
+    raw = str(entry.get(field_name) or "").replace("\\", "/")
+    reason = _path_rejected(raw) if raw else "missing"
+    if reason:
+        fail(f"{field_name}: {reason}")
+        return None
+    if not raw.startswith(EVIDENCE_ROOT_REL + "/"):
+        fail(f"{field_name} {raw!r} is outside {EVIDENCE_ROOT_REL}")
+        return None
+    return raw
+
+
+def _reaudit_resolution_errors(
+    ctx: Context, entry: dict[str, Any], closure: str, cert_sha: str, code: str, fail: Any
+) -> None:
+    index_rel = _entry_path(entry, "closure_evidence_index_path", fail)
+    manifest_rel = _entry_path(entry, "reaudit_manifest_path", fail)
+    resolved_impl = _sha(entry.get("resolved_implementation_sha"))
+    if not resolved_impl or not _commit_exists(ctx, resolved_impl):
+        fail("resolved_implementation_sha is not a commit")
+        resolved_impl = ""
+    elif not _is_strict_ancestor(ctx, cert_sha, resolved_impl):
+        fail("resolved_implementation_sha must descend from the certification publication")
+    if index_rel is None or manifest_rel is None:
+        return
+    index_dir = posixpath.dirname(index_rel)
+    if index_dir in {AUDIT_DIR, CERT_DIR, EVIDENCE_ROOT_REL, B6_DIR, OPERATOR_DIR}:
+        fail("re-audit evidence must live in its own directory, not in Session C audit/certification evidence")
+        return
+    if not manifest_rel.startswith(index_dir + "/"):
+        fail("reaudit_manifest_path is not inside the indexed evidence directory")
+        return
+    sink: list[str] = []
+    _verify_index(ctx, index_rel, index_dir, closure, sink, code=code)
+    for message in sink:
+        fail(f"closure evidence: {message.split(' ', 1)[1]}")
+    index_raw = _read_bytes(ctx, index_rel)
+    if index_raw is None or _sha256(index_raw) != entry.get("closure_evidence_index_digest"):
+        fail("closure_evidence_index_digest does not match the evidence index")
+    index_doc = _read_json(ctx, index_rel, code, sink) or {}
+    if manifest_rel[len(index_dir) + 1 :] not in (index_doc.get("files") or {}):
+        fail("re-audit manifest is not covered by the evidence index")
+    raw = _read_bytes(ctx, manifest_rel)
+    if raw is None:
+        fail("re-audit manifest is missing")
+        return
+    if _sha256(raw) != entry.get("reaudit_manifest_digest"):
+        fail("reaudit_manifest_digest does not match the re-audit manifest")
+    try:
+        manifest = json.loads(raw.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        fail("re-audit manifest is not valid JSON")
+        return
+    if not isinstance(manifest, dict):
+        fail("re-audit manifest must be a JSON object")
+        return
+    schema: list[str] = []
+    validate_manifest_dict(manifest, schema)
+    for message in schema:
+        fail(f"re-audit manifest: {message}")
+    for message in _companion_errors(ctx.repo, ctx.path(manifest_rel)):
+        fail(f"re-audit manifest: {message}")
+    _reaudit_manifest_errors(ctx, entry, manifest, resolved_impl, closure, index_dir, index_doc, fail)
+
+
+def _reaudit_manifest_errors(
+    ctx: Context,
+    entry: dict[str, Any],
+    manifest: dict[str, Any],
+    resolved_impl: str,
+    closure: str,
+    index_dir: str,
+    index_doc: dict[str, Any],
+    fail: Any,
+) -> None:
+    if manifest.get("stage_id") != STAGE_ID:
+        fail(f"re-audit manifest stage_id != {STAGE_ID}")
+    if manifest.get("policy_version") != POLICY_VERSION:
+        fail(f"re-audit manifest policy_version != {POLICY_VERSION}")
+    if manifest.get("certification_profile") != "iiac-v1" or manifest.get("assurance_level") != "process_enforced":
+        fail("re-audit manifest profile/assurance_level mismatch")
+    if str(manifest.get("verdict") or "").upper() not in ACCEPTABLE_VERDICTS:
+        fail(f"re-audit verdict {manifest.get('verdict')!r} is not an independent acceptance")
+    if manifest.get("manifest_status") not in (None, ""):
+        fail("re-audit manifest is still a draft (manifest_status set)")
+    sessions = {
+        k: str(manifest.get(k) or "")
+        for k in ("implementation_session_id", "auditor_session_id", "certifier_session_id")
+    }
+    if any(
+        not v or v.startswith("PENDING") for v in (sessions["auditor_session_id"], sessions["certifier_session_id"])
+    ):
+        fail("re-audit auditor/certifier session is missing or PENDING")
+    if len(set(sessions.values())) != 3 or "" in sessions.values():
+        fail("re-audit implementer, auditor and certifier sessions must be three distinct sessions")
+    agents = [str(manifest.get(k) or "") for k in ("implementation_agent_id", "auditor_agent_id", "certifier_agent_id")]
+    if len(set(agents)) != 3:
+        fail("re-audit agent ids must be distinct (self-certification)")
+    if manifest.get("auditor_agent_id") != AUDITOR_AGENT_ID:
+        fail(f"re-audit auditor_agent_id must be {AUDITOR_AGENT_ID}")
+    if manifest.get("certifier_agent_id") != CERTIFIER_AGENT_ID:
+        fail(f"re-audit certifier_agent_id must be {CERTIFIER_AGENT_ID}")
+    audited = _sha(manifest.get("audited_implementation_sha"))
+    if not audited or not _commit_exists(ctx, audited):
+        fail("re-audit audited_implementation_sha is not a commit")
+    else:
+        if resolved_impl and not _is_ancestor(ctx, resolved_impl, audited):
+            fail("re-audit audited_implementation_sha does not contain the resolved corrective implementation")
+        if not _is_strict_ancestor(ctx, audited, closure):
+            fail("closure_publication_sha must descend from the audited implementation")
+    disposition = entry.get("certifier_disposition")
+    if not isinstance(disposition, dict):
+        fail("certifier_disposition is missing")
+    else:
+        if disposition.get("disposition") != "ACCEPTED":
+            fail("certifier_disposition.disposition must be ACCEPTED")
+        if disposition.get("certifier_agent_id") != CERTIFIER_AGENT_ID:
+            fail(f"certifier_disposition.certifier_agent_id must be {CERTIFIER_AGENT_ID}")
+        if disposition.get("certifier_session_id") != manifest.get("certifier_session_id"):
+            fail("certifier_disposition session differs from the re-audit manifest certifier")
+        if disposition.get("policy_version") != POLICY_VERSION:
+            fail("certifier_disposition.policy_version mismatch")
+        for key in ("audit_report_digest", "findings_digest"):
+            if disposition.get(key) != manifest.get(key):
+                fail(f"certifier_disposition {key} differs from the re-audit manifest")
+    files = index_doc.get("files") or {}
+    for path_key, digest_key in (("audit_report_path", "audit_report_digest"), ("findings_path", "findings_digest")):
+        rel = str(manifest.get(path_key) or "").replace("\\", "/")
+        raw = _read_bytes(ctx, rel) if rel and _path_rejected(rel) is None else None
+        if raw is None or not rel.startswith(index_dir + "/") or rel[len(index_dir) + 1 :] not in files:
+            fail(f"re-audit manifest {path_key} is missing or not indexed")
+        elif _sha256(raw) != manifest.get(digest_key):
+            fail(f"re-audit {digest_key} does not match {rel}")
+        elif path_key == "findings_path":
+            try:
+                findings = json.loads(raw.decode("utf-8-sig"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                fail("re-audit findings register is not valid JSON")
+                continue
+            if isinstance(findings, dict):
+                for message in [*_findings_errors(findings), *blocking_finding_errors(findings, "findings")]:
+                    fail(f"re-audit {message}")
+            else:
+                fail("re-audit findings register must be a JSON object")
+    handoff_rel = str(manifest.get("handoff_record_path") or "").replace("\\", "/")
+    if not handoff_rel.startswith(index_dir + "/") or handoff_rel[len(index_dir) + 1 :] not in files:
+        fail("re-audit handoff record is missing or not indexed")
+    else:
+        for message in _handoff_errors(ctx, manifest, handoff_rel, "handoff"):
+            fail(f"re-audit {message}")
+
+
+def _operator_resolution_errors(ctx: Context, key: str, entry: dict[str, Any], closure: str, fail: Any) -> None:
+    items = entry.get("closure_evidence")
+    if not isinstance(items, list) or not items:
+        fail("closure_evidence must list the operator decision records")
+        return
+    required = BLOCKER_REQUIRED_DECISIONS.get(key, frozenset())
+    seen: set[str] = set()
+    for item in items:
+        if not isinstance(item, dict):
+            fail("closure_evidence entry is not an object")
+            continue
+        raw_path = str(item.get("path") or "").replace("\\", "/")
+        reason = _path_rejected(raw_path) if raw_path else "missing"
+        if reason or not raw_path.startswith(OPERATOR_DIR + "/"):
+            fail(f"operator record path {raw_path!r} is not a decision record under {OPERATOR_DIR}")
+            continue
+        published = _show(ctx, closure, raw_path)
+        current = _read_bytes(ctx, raw_path)
+        if published is None:
+            fail(f"operator record {raw_path} is absent at closure_publication_sha")
+            continue
+        if current != published:
+            fail(f"operator record {raw_path} differs from the bytes published at closure_publication_sha")
+        if _sha256(published) != item.get("sha256"):
+            fail(f"operator record {raw_path} digest does not match closure_evidence")
+        decision_id = str(item.get("decision_id") or "")
+        tokens = OD_RECORD_REQUIREMENTS.get(decision_id) or BLOCKER_SCOPE_TOKENS.get(key, ())
+        if not tokens:
+            fail(f"no scope contract for decision {decision_id!r}")
+            continue
+        record_errors, _ = operator_record_errors(
+            published.decode("utf-8-sig", errors="replace"), decision_id=decision_id, scope_tokens=tokens
+        )
+        for message in record_errors:
+            fail(f"{raw_path}: {message}")
+        seen.add(decision_id)
+    if required - seen:
+        fail(f"missing operator decision record(s): {sorted(required - seen)}")
+    if not required and not seen:
+        fail("no operator authorization record")
+    if not required and seen & set(OD_RECORD_REQUIREMENTS):
+        fail("an OD-EVOL-12/OD-EVOLX-08 record cannot authorize this blocker")
+
+
+def resolution_errors(ctx: Context, key: str, entry: Any, baseline_text: str, cert_sha: str, code: str) -> list[str]:
+    """Independently re-verify an evidence-bound blocker resolution."""
+    errors: list[str] = []
+
+    def fail(message: str) -> None:
+        errors.append(f"{code} blocker {key} resolution: {message}")
+
+    if not isinstance(entry, dict):
+        fail("entry is not an object")
+        return errors
+    if entry.get("status") != RESOLUTION_STATUS:
+        fail(f"status must be {RESOLUTION_STATUS}")
+    if entry.get("baseline_text_sha256") != _sha256(baseline_text.encode("utf-8")):
+        fail("baseline_text_sha256 does not match the blocker as opened at the certification publication")
+    if entry.get("opened_at_sha") != cert_sha:
+        fail("opened_at_sha must be the certification publication SHA")
+    kind = BLOCKER_CLOSURE_KINDS.get(key, KIND_REAUDIT)
+    if entry.get("resolution_kind") != kind:
+        fail(f"resolution_kind must be {kind}")
+    closure = _sha(entry.get("closure_publication_sha"))
+    if not closure or not _commit_exists(ctx, closure):
+        fail("closure_publication_sha is not a commit")
+        return errors
+    if not cert_sha or not _is_strict_ancestor(ctx, cert_sha, closure):
+        fail("closure must be published after the certification publication")
+    if not ctx.head or not _is_strict_ancestor(ctx, closure, ctx.head):
+        fail("closure_publication_sha must be a strict ancestor of HEAD (no self-reference)")
+    if kind == KIND_REAUDIT:
+        _reaudit_resolution_errors(ctx, entry, closure, cert_sha, code, fail)
+    else:
+        _operator_resolution_errors(ctx, key, entry, closure, fail)
+    return errors
 
 
 def gate_a(ctx: Context) -> list[str]:
@@ -765,13 +1357,94 @@ def gate_a(ctx: Context) -> list[str]:
     _gate_a_handoff(ctx, manifest, errors)
     if cert is not None:
         _gate_a_cert_record(ctx, manifest, cert, errors)
-        for blocker_id, text in _blocker_ids(cert):
-            if blocker_id not in GATE_B_ONLY_BLOCKERS:
+        ledger = blocker_ledger(ctx, manifest, cert)
+        errors.extend(f"A-18 blocker lifecycle: {message}" for message in ledger.lineage)
+        for key, text in ledger.open_now.items():
+            if key not in GATE_B_ONLY_BLOCKERS:
                 errors.append(f"A-18 open certification blocker for B6 acceptance: {text}")
+        for key, entry in ledger.resolved.items():
+            if key in ledger.baseline and key not in GATE_B_ONLY_BLOCKERS and key not in ledger.open_now:
+                errors.extend(resolution_errors(ctx, key, entry, ledger.baseline[key], ledger.cert_sha, "A-18"))
     return errors
 
 
 # --------------------------------------------------------------------------- Gate B
+
+
+def _b6_record_errors(ctx: Context, b6: str, manifest: dict[str, Any], cert: dict[str, Any]) -> list[str]:
+    """RA-B4-04: the B6 acceptance record must exist at the pinned publication commit and match the audit."""
+    errors: list[str] = []
+
+    def fail(message: str) -> None:
+        errors.append(f"B-05 {message}")
+
+    cert_sha = _sha(manifest.get("certification_publication_sha"))
+    if str(cert.get("b6_acceptance_record_path") or "").replace("\\", "/") != REL_B6_RECORD:
+        fail("certification record does not bind the canonical B6 acceptance record path")
+    digest = str(cert.get("b6_acceptance_record_digest") or "")
+    if not _DIGEST64.fullmatch(digest):
+        fail("certification record has no b6_acceptance_record_digest")
+    published = _show(ctx, b6, REL_B6_RECORD)
+    if published is None:
+        fail(f"B6 acceptance record is absent at B6_ACCEPTANCE_PUBLICATION_SHA {b6[:12]}")
+        return errors
+    if cert_sha and _show(ctx, cert_sha, REL_B6_RECORD) is not None:
+        fail("B6 acceptance record already existed at the certification publication (not a new acceptance)")
+    if _read_bytes(ctx, REL_B6_RECORD) != published:
+        fail("B6 acceptance record differs from the bytes published at the B6 SHA")
+    if _sha256(published) != digest:
+        fail("B6 acceptance record digest does not match the certification record")
+    sink: list[str] = []
+    _verify_index(ctx, REL_B6_INDEX, B6_DIR, b6, sink, code="B-05")
+    errors.extend(sink)
+    manifest_raw = _read_bytes(ctx, REL_MANIFEST) or b""
+    if _show(ctx, b6, REL_MANIFEST) != manifest_raw:
+        fail("IIAC manifest changed after the B6 acceptance publication")
+    phase1_raw = _show(ctx, b6, REL_CERT_RECORD)
+    try:
+        phase1 = json.loads(phase1_raw.decode("utf-8-sig")) if phase1_raw is not None else None
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        phase1 = None
+    if not isinstance(phase1, dict):
+        fail("certification record is absent at the B6 acceptance publication")
+    else:
+        if str(phase1.get("b6_acceptance") or "").upper() not in {"ISSUED", "ACCEPTED"}:
+            fail("certification record at the B6 SHA does not issue the acceptance")
+        if phase1.get("b6_acceptance_record_digest") != digest:
+            fail("certification record at the B6 SHA does not bind the acceptance record digest")
+        if phase1.get("b6_acceptance_publication_sha") not in (None, ""):
+            fail("B6 phase-1 certification record must leave b6_acceptance_publication_sha empty")
+
+    text = published.decode("utf-8-sig", errors="replace")
+    verdict = str(manifest.get("verdict") or "").upper()
+    expected = {
+        "Stage": STAGE_ID,
+        "Policy version": POLICY_VERSION,
+        "Accepted verdict": verdict,
+        "Independent audit manifest digest": _sha256(manifest_raw),
+        "Audit report digest": str(manifest.get("audit_report_digest") or ""),
+        "Findings digest": str(manifest.get("findings_digest") or ""),
+        "Audited implementation SHA": str(manifest.get("audited_implementation_sha") or ""),
+        "Certification publication SHA": cert_sha,
+        "Certifier session": str(manifest.get("certifier_session_id") or ""),
+        "Certifier agent": CERTIFIER_AGENT_ID,
+    }
+    record_errors, info = operator_record_errors(
+        text, decision_id=None, scope_tokens=B6_SCOPE_TOKENS, expected=expected
+    )
+    for message in record_errors:
+        fail(f"B6 acceptance record: {message}")
+    accepted = {x.strip() for x in ",".join(info["fields"].get("Accepted limitations", [])).split(",") if x.strip()}
+    if accepted != set(_limitation_map(manifest.get("limitations"))):
+        fail("B6 acceptance record 'Accepted limitations' must equal the certified limitation ids exactly")
+    signed_at = info.get("signed_at")
+    cert_time, b6_time = _commit_time(ctx, cert_sha) if cert_sha else None, _commit_time(ctx, b6)
+    if isinstance(signed_at, datetime) and signed_at.tzinfo is not None:
+        if cert_time is not None and signed_at < cert_time:
+            fail("operator signature predates the certification publication")
+        if b6_time is not None and signed_at > b6_time + SIGNATURE_SKEW:
+            fail("operator signature post-dates the B6 acceptance publication commit")
+    return errors
 
 
 def _gate_b_b6(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any], errors: list[str]) -> str:
@@ -817,6 +1490,12 @@ def _gate_b_b6(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any], err
         errors.append("B-04 governance JSON at B6_ACCEPTANCE_PUBLICATION_SHA does not publish the acceptance")
     elif phase1.get("b6_acceptance_publication_sha") not in (None, ""):
         errors.append("B-04 B6 phase-1 publication must leave b6_acceptance_publication_sha empty")
+    errors.extend(_b6_record_errors(ctx, b6, manifest, cert))
+    ledger = ctx.cache.get("blocker_ledger")
+    p3 = ledger.resolved.get(BLOCKER_P3) if isinstance(ledger, BlockerLedger) else None
+    p3_sha = _sha(p3.get("closure_publication_sha")) if isinstance(p3, dict) else ""
+    if p3_sha and not _is_ancestor(ctx, p3_sha, b6):
+        errors.append("B-05 B6 acceptance must be published after the operator P3 authorization")
     return b6
 
 
@@ -856,19 +1535,53 @@ def _gate_b_frz(ctx: Context, cert: dict[str, Any], errors: list[str]) -> None:
                 errors.append(f"B-06 {frz_id} promoted row omits mandatory scope text {phrase!r}")
 
 
+def _decision_record_errors(ctx: Context, od_id: str, notes: str) -> list[str]:
+    paths = sorted(set(_RECORD_NOTE_PATH.findall(notes)))
+    digests = sorted(set(_RECORD_NOTE_DIGEST.findall(notes)))
+    if len(paths) != 1 or len(digests) != 1:
+        return [f"{od_id} register notes must cite exactly one decision record path and one sha256"]
+    rel = f"{OPERATOR_DIR}/{paths[0]}"
+    raw = _read_bytes(ctx, rel)
+    if raw is None:
+        return [f"{od_id} decision record {rel} is missing"]
+    errors: list[str] = []
+    if _show(ctx, ctx.head, rel) != raw:
+        errors.append(f"{od_id} decision record {rel} is not committed at HEAD")
+    if _sha256(raw) != digests[0]:
+        errors.append(f"{od_id} decision record digest does not match the register notes")
+    record_errors, _ = operator_record_errors(
+        raw.decode("utf-8-sig", errors="replace"),
+        decision_id=od_id,
+        scope_tokens=OD_RECORD_REQUIREMENTS[od_id],
+    )
+    errors.extend(f"{od_id} decision record: {message}" for message in record_errors)
+    return errors
+
+
 def _gate_b_operators(ctx: Context, errors: list[str]) -> None:
     text = _read_text(ctx, REL_REGISTER)
     if text is None:
         errors.append(f"B-07 missing {REL_REGISTER}")
         return
-    rows = parse_register(text)
+    rows = parse_register_rows(text)
     for od_id in CLOSURE_OPERATOR_DECISIONS:
-        if od_id not in rows:
-            errors.append(f"B-07 operator decision {od_id} not recorded in the register")
+        found = rows.get(od_id, [])
+        if not found:
+            errors.append(f"B-07 operator decision {od_id} not recorded in the register status table")
             continue
-        status, date = rows[od_id]
-        if not decision_recorded(status, date):
-            errors.append(f"B-07 operator decision {od_id} not recorded as decided (status {status!r}, date {date!r})")
+        if len(found) != 1:
+            errors.append(f"B-07 operator decision {od_id} is ambiguous ({len(found)} status rows)")
+            continue
+        status, date_text, notes = found[0]
+        reasons = decision_status_errors(status, date_text)
+        if reasons:
+            errors.append(
+                f"B-07 operator decision {od_id} not recorded as decided "
+                f"(status {status!r}, date {date_text!r}): {reasons[0]}"
+            )
+            continue
+        if od_id in OD_RECORD_REQUIREMENTS:
+            errors.extend(f"B-07 {message}" for message in _decision_record_errors(ctx, od_id, notes))
 
 
 def _gate_b_ladder(ctx: Context, b6: str, cert: dict[str, Any], errors: list[str]) -> None:
@@ -898,12 +1611,17 @@ def gate_b(ctx: Context) -> list[str]:
     cert = _read_json(ctx, REL_CERT_RECORD, "B-00", sink)
     if manifest is None or cert is None:
         return ["B-00 IIAC manifest or certification record unavailable"]
+    ledger = blocker_ledger(ctx, manifest, cert)
     b6 = _gate_b_b6(ctx, manifest, cert, errors)
     _gate_b_frz(ctx, cert, errors)
     _gate_b_operators(ctx, errors)
     _gate_b_ladder(ctx, b6, cert, errors)
-    for blocker_id, text in _blocker_ids(cert):
-        errors.append(f"B-09 unresolved mandatory blocker ({blocker_id}): {text}")
+    errors.extend(f"B-09 blocker lifecycle: {message}" for message in ledger.lineage)
+    for key, text in ledger.open_now.items():
+        errors.append(f"B-09 unresolved mandatory blocker ({key}): {text}")
+    for key, entry in ledger.resolved.items():
+        if key in GATE_B_ONLY_BLOCKERS and key in ledger.baseline and key not in ledger.open_now:
+            errors.extend(resolution_errors(ctx, key, entry, ledger.baseline[key], ledger.cert_sha, "B-09"))
     return errors
 
 
@@ -931,8 +1649,8 @@ def legacy_errors(ctx: Context) -> list[str]:
         errors.append("L-03 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty")
     register = parse_register(_read_text(ctx, REL_REGISTER) or "")
     for od_id in ("OD-EVOL-12", "OD-EVOLX-08"):
-        status, date = register.get(od_id, ("", ""))
-        if not decision_recorded(status, date):
+        status, date_text = register.get(od_id, ("", ""))
+        if not decision_recorded(status, date_text):
             errors.append(f"L-04 {od_id} not decided in register")
     od11 = register.get("OD-EVOL-11", ("", ""))[0]
     if not od11 or "NOT NAMED" in od11.upper():
@@ -974,8 +1692,12 @@ def evaluate(
     return PreflightResult(mode, a_errors, b_errors)
 
 
+def _repository_class(repo: Path) -> str:
+    return "canonical" if repo.resolve() == _REPO.resolve() else "fixture"
+
+
 def _print(result: PreflightResult, gate: str, repo: Path) -> int:
-    label = "canonical" if repo.resolve() == _REPO.resolve() else "FIXTURE (not canonical evidence)"
+    label = "canonical" if _repository_class(repo) == "canonical" else "FIXTURE (not canonical evidence)"
     selected_pass = result.gate_a_pass if gate == "b6-readiness" else result.gate_b_pass
     stream = sys.stdout if selected_pass else sys.stderr
     print(f"EVOL-X closure preflight: {'PASS' if selected_pass else 'FAIL'}", file=stream)
@@ -1014,6 +1736,7 @@ def main(argv: list[str] | None = None) -> int:
     result = evaluate(args.repo, activation_record=args.activation_record, evidence_root=args.evidence_root)
     if args.json:
         payload = {
+            "repository_class": _repository_class(args.repo),
             "mode": result.mode,
             "gate_a_pass": result.gate_a_pass,
             "gate_b_pass": result.gate_b_pass,

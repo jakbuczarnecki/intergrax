@@ -7,3 +7,7 @@ governance/**/*.yml text eol=lf
 
 applications/local_workspace_application/docker/sentry/bootstrap/*.sh text eol=lf
 applications/local_workspace_application/scripts/*.sh text eol=lf
+
+# RA-B4-01: the IIAC pass record is digest-bound to its Git blob and to the byte-preserved auditor copy;
+# checkout line-ending conversion must never rewrite it.
+docs/project/maintainers/qualification/evol_x/EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md -text
