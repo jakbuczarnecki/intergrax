@@ -103,6 +103,10 @@ CERT_DIR = f"{EVIDENCE_ROOT_REL}/certification"
 OPERATOR_DIR = f"{EVIDENCE_ROOT_REL}/operator_decisions"
 B6_DIR = f"{EVIDENCE_ROOT_REL}/b6_acceptance"
 
+# DA-01: the P2 certification publication is pinned here and never taken from a mutable manifest field. The canonical
+# repository always uses this constant; isolated fixture repositories supply their own commit through ``p2_sha``.
+P2_CERTIFICATION_PUBLICATION_SHA = "ad0877715ed079ce920ff9d925fda03555b2c04e"
+
 REL_ACTIVATION = f"{QUAL}/IIAC_POLICY_ACTIVATION_RECORD.json"
 REL_MANIFEST = f"{CERT_DIR}/iiac_audit_session_manifest.EVOL-X.json"
 REL_CERT_RECORD = f"{CERT_DIR}/EVOL_X_IIAC_CERTIFICATION_RECORD.json"
@@ -318,6 +322,7 @@ class Context:
     activation_record: Path
     evidence_root: Path | None
     head: str = ""
+    p2: str = ""
     cache: dict[str, Any] = field(default_factory=dict)
 
     def path(self, rel: str) -> Path:
@@ -916,7 +921,7 @@ def _baseline_documents(
     """``(manifest, certification record, problem)`` exactly as published at ``certification_publication_sha`` (P2)."""
     if "scope_baseline" in ctx.cache:
         return ctx.cache["scope_baseline"]
-    cert_sha = _sha(manifest.get("certification_publication_sha"))
+    cert_sha = _p2_sha(ctx, manifest)
     docs: list[dict[str, Any] | None] = []
     problem = ""
     if not cert_sha or not _commit_exists(ctx, cert_sha):
@@ -949,6 +954,11 @@ def _first_publication_sha(ctx: Context, rel: str) -> str:
     return cache[rel]
 
 
+def _p2_sha(ctx: Context, manifest: dict[str, Any] | None) -> str:
+    """The P2 baseline commit: the pinned anchor when set, else (fixture repositories only) the declared field."""
+    return ctx.p2 or _sha((manifest or {}).get("certification_publication_sha"))
+
+
 def _digest8(text: str) -> str:
     return _sha256(text.encode("utf-8"))[:12]
 
@@ -972,18 +982,60 @@ def _scope_key_errors(
     return errors
 
 
+_CERT_SHA_VALUE = re.compile(rb'("certification_publication_sha"\s*:\s*")[^"]*(")')
+
+
+def _manifest_bytes_errors(ctx: Context, p2: str) -> list[str]:
+    """DA-02 M0: the manifest blob at HEAD equals the P2 blob byte for byte except the ``certification_publication_sha``
+    value (a commit cannot contain its own SHA); a pure reformat or a key reorder is therefore detected."""
+    if not p2 or not ctx.head:
+        return []
+    baseline, current = _show(ctx, p2, REL_MANIFEST), _show(ctx, ctx.head, REL_MANIFEST)
+    if baseline is None or current is None:
+        return ["A-19 manifest blob unavailable at the certification publication or at HEAD"]
+    match = _CERT_SHA_VALUE.search(current)
+    if match is None:
+        return ["A-19 manifest at HEAD has no certification_publication_sha value"]
+    expected = _CERT_SHA_VALUE.sub(lambda m: m.group(1) + p2.encode("ascii") + m.group(2), baseline, count=1)
+    if current != expected:
+        return [
+            "A-19 manifest bytes differ from the certification publication "
+            "(only certification_publication_sha may change)"
+        ]
+    return []
+
+
 def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any] | None, errors: list[str]) -> None:
     """RA-B4-05: certified scope equals the P2 baseline blob; nothing is decided by phrase search."""
     base_manifest, base_cert, problem = _baseline_documents(ctx, manifest)
     if problem or base_manifest is None:
         errors.append(f"A-19 scope baseline unavailable: {problem or 'manifest absent'}")
         return
+    declared = _sha(manifest.get("certification_publication_sha"))
+    anchor = ctx.p2
+    if anchor:
+        if declared != anchor:
+            errors.append(
+                f"A-19 manifest certification_publication_sha {declared[:12] or '<empty>'} differs from the pinned P2 "
+                f"certification publication {anchor[:12]}: the baseline cannot be re-pointed"
+            )
+        if cert is not None and _sha(cert.get("certification_publication_sha")) != anchor:
+            errors.append(
+                "A-19 certification record certification_publication_sha differs from the pinned P2 certification "
+                f"publication {anchor[:12]}: the baseline cannot be re-pointed"
+            )
     first = _first_publication_sha(ctx, REL_CERT_RECORD)
-    if first and first != _sha(manifest.get("certification_publication_sha")):
+    if not first:
+        errors.append(
+            "A-19 the commit that first published the certification record cannot be derived "
+            "(history unavailable or the record was never committed): failing closed"
+        )
+    elif first != (anchor or declared):
         errors.append(
             "A-19 certification_publication_sha is not the commit that first published the certification record "
             f"({first[:12]}): the scope and blocker baseline cannot be moved to a later commit"
         )
+    errors.extend(_manifest_bytes_errors(ctx, anchor or declared))
 
     current, structural = limitation_entries(manifest.get("limitations"))
     baseline, _ = limitation_entries(base_manifest.get("limitations"))
@@ -1337,7 +1389,7 @@ def blocker_ledger(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any])
     cache_key = "blocker_ledger"
     if cache_key in ctx.cache:
         return ctx.cache[cache_key]
-    cert_sha = _sha(manifest.get("certification_publication_sha"))
+    cert_sha = _p2_sha(ctx, manifest)
     ledger = BlockerLedger(cert_sha=cert_sha)
     current = _blocker_texts(cert, "certification record", ledger.lineage)
     ledger.open_now = current or {}
@@ -1736,7 +1788,7 @@ def _b6_record_errors(ctx: Context, b6: str, manifest: dict[str, Any], cert: dic
     def fail(message: str) -> None:
         errors.append(f"B-05 {message}")
 
-    cert_sha = _sha(manifest.get("certification_publication_sha"))
+    cert_sha = _p2_sha(ctx, manifest)
     if str(cert.get("b6_acceptance_record_path") or "").replace("\\", "/") != REL_B6_RECORD:
         fail("certification record does not bind the canonical B6 acceptance record path")
     digest = str(cert.get("b6_acceptance_record_digest") or "")
@@ -1827,7 +1879,7 @@ def _gate_b_b6(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any], err
     legacy = {ladder_sha(rows, role) for role in LEGACY_LADDER_ROWS} - {""}
     if b6 in legacy:
         errors.append("B-03 B6 SHA is a historical/internal legacy publication, not IIAC B6 acceptance")
-    cert_sha = _sha(manifest.get("certification_publication_sha"))
+    cert_sha = _p2_sha(ctx, manifest)
     if not _commit_exists(ctx, b6):
         errors.append(f"B-03 B6_ACCEPTANCE_PUBLICATION_SHA {b6} is not a commit in this repository")
         return ""
@@ -1925,7 +1977,7 @@ def _decision_record_errors(ctx: Context, od_id: str, notes: str) -> list[str]:
     if _sha256(raw) != digests[0]:
         errors.append(f"{od_id} decision record digest does not match the register notes")
     manifest = _read_json(ctx, REL_MANIFEST, "B-07", [])
-    cert_sha = _sha((manifest or {}).get("certification_publication_sha"))
+    cert_sha = _p2_sha(ctx, manifest)
     record_errors, _ = operator_record_errors(
         raw.decode("utf-8-sig", errors="replace"),
         decision_id=od_id,
@@ -2045,14 +2097,19 @@ def evaluate(
     *,
     activation_record: Path | None = None,
     evidence_root: Path | None = None,
+    p2_sha: str | None = None,
 ) -> PreflightResult:
     repo = (repo or _REPO).resolve()
     canonical = repo == _REPO.resolve()
     if canonical and evidence_root is not None:
         msg = "A-01 evidence-root override is forbidden for the canonical repository"
         return PreflightResult("INVALID", [msg], ["B-00 Gate A not satisfied"])
+    if canonical and p2_sha is not None and p2_sha != P2_CERTIFICATION_PUBLICATION_SHA:
+        msg = "A-19 P2 anchor override is forbidden for the canonical repository"
+        return PreflightResult("INVALID", [msg], ["B-00 Gate A not satisfied"])
+    p2 = P2_CERTIFICATION_PUBLICATION_SHA if canonical else (p2_sha or "")
     record = activation_record or (CANONICAL_RECORD if canonical else repo / REL_ACTIVATION)
-    ctx = Context(repo=repo, activation_record=record, evidence_root=evidence_root)
+    ctx = Context(repo=repo, activation_record=record, evidence_root=evidence_root, p2=p2)
     head = _git(ctx, "rev-parse", "HEAD")
     ctx.head = head.stdout.decode("utf-8").strip() if head.returncode == 0 else ""
     if not ctx.head:
@@ -2107,12 +2164,19 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Fixture-only evidence root for the activation gate; rejected for the canonical repository",
     )
+    parser.add_argument(
+        "--p2-sha",
+        default=None,
+        help="Fixture-only P2 certification publication commit; rejected for the canonical repository",
+    )
     parser.add_argument("--json", action="store_true", help="Emit a JSON result instead of text")
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")
-    result = evaluate(args.repo, activation_record=args.activation_record, evidence_root=args.evidence_root)
+    result = evaluate(
+        args.repo, activation_record=args.activation_record, evidence_root=args.evidence_root, p2_sha=args.p2_sha
+    )
     if args.json:
         payload = {
             "repository_class": _repository_class(args.repo),

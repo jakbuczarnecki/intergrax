@@ -2902,3 +2902,111 @@ def test_w4_ra_b4_02_blocker_baseline_cannot_be_moved_to_a_commit_that_already_d
     result = _eval(root)
     assert any("first published the certification record" in e for e in _b(result.gate_a, "A-19")), result.gate_a
     assert not result.gate_a_pass and not result.gate_b_pass
+
+
+# --------------------------------------------------------------------------- T-W4-01 qualification hardening
+# DA-01 (pinned P2 anchor) and DA-02 M0 (byte-level manifest drift); added by the qualification session on top of
+# the recovered implementer commits. The recovered tests stay unchanged.
+
+
+def _widen_lim03_and_rebind(root: Path, *, manifest: bool = True, record: bool = True) -> str:
+    _mutate_json(
+        root,
+        pf.REL_MANIFEST,
+        lambda m: m["limitations"].__setitem__(
+            _find_limitation(m, "LIM-03"), m["limitations"][_find_limitation(m, "LIM-03")] + _WIDENING
+        ),
+        reindex=True,
+    )
+    later = _git(root, "rev-parse", "HEAD")
+    if manifest:
+        _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(certification_publication_sha=later), reindex=True)
+    if record:
+        _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(certification_publication_sha=later), reindex=True)
+    return later
+
+
+def test_da01_canonical_repository_rejects_a_p2_anchor_override() -> None:
+    result = pf.evaluate(pf._REPO, p2_sha="0" * 40)
+    assert result.mode == "INVALID"
+    assert any(e.startswith("A-19") and "override" in e for e in result.gate_a), result.gate_a
+
+
+def test_da01_pinned_constant_is_the_commit_that_first_published_the_certification_record() -> None:
+    shallow = subprocess.run(
+        ["git", "rev-parse", "--is-shallow-repository"], cwd=pf._REPO, capture_output=True, text=True, check=False
+    ).stdout.strip()
+    if shallow == "true":
+        pytest.skip("shallow clone: first-publication derivation needs full history")
+    added = _git(pf._REPO, "log", "--diff-filter=A", "--format=%H", "--", pf.REL_CERT_RECORD).split()
+    assert added and added[-1] == pf.P2_CERTIFICATION_PUBLICATION_SHA
+    assert re.fullmatch(r"[0-9a-f]{40}", pf.P2_CERTIFICATION_PUBLICATION_SHA)
+
+
+def test_da01_pinned_anchor_rejects_a_repoint_of_both_documents(repo) -> None:
+    """C1/C2 of the delta re-audit: widen, then re-point manifest AND record at the widened commit."""
+    root, built = repo
+    _widen_lim03_and_rebind(root)
+    result = pf.evaluate(root, evidence_root=root, p2_sha=built["cert_pub"])
+    a19 = _b(result.gate_a, "A-19")
+    assert sum("differs from the pinned P2" in e for e in a19) == 2, a19
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+@pytest.mark.parametrize("which", ["manifest", "record"])
+def test_da01_pinned_anchor_rejects_a_repoint_of_a_single_document(repo, which: str) -> None:
+    root, built = repo
+    _widen_lim03_and_rebind(root, manifest=which == "manifest", record=which == "record")
+    result = pf.evaluate(root, evidence_root=root, p2_sha=built["cert_pub"])
+    a19 = _b(result.gate_a, "A-19")
+    assert any("differs from the pinned P2" in e for e in a19), a19
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_da01_pinned_anchor_that_is_not_the_first_publication_fails(repo) -> None:
+    """A pin that names a valid later commit cannot launder the baseline: it must also be the first add."""
+    root, _ = repo
+    later = _widen_lim03_and_rebind(root)
+    result = pf.evaluate(root, evidence_root=root, p2_sha=later)
+    assert any("first published the certification record" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_da01_pinned_anchor_positive_control_passes_the_anchor_checks(repo) -> None:
+    root, built = repo
+    result = pf.evaluate(root, evidence_root=root, p2_sha=built["cert_pub"])
+    assert not any("pinned P2" in e or "first published" in e for e in result.gate_a), result.gate_a
+
+
+def test_da01_underivable_first_publication_fails_closed(repo, monkeypatch: pytest.MonkeyPatch) -> None:
+    root, _ = repo
+    monkeypatch.setattr(pf, "_first_publication_sha", lambda ctx, rel: "")
+    result = _eval(root)
+    assert any("cannot be derived" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_da02_m0_manifest_reformat_only_is_detected(repo) -> None:
+    root, _ = repo
+    manifest = _load(root, pf.REL_MANIFEST)
+    _write(root, pf.REL_MANIFEST, json.dumps(manifest, indent=4, ensure_ascii=False) + "\n")
+    _reindex_cert(root)
+    _commit(root, "reformat manifest only")
+    result = _eval(root)
+    assert any("manifest bytes differ" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_da02_m0_key_reorder_only_is_detected(repo) -> None:
+    root, _ = repo
+    manifest = _load(root, pf.REL_MANIFEST)
+    _dump(root, pf.REL_MANIFEST, dict(reversed(list(manifest.items()))))
+    _reindex_cert(root)
+    _commit(root, "reorder manifest keys")
+    result = _eval(root)
+    assert any("manifest bytes differ" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+def test_da02_m0_positive_control_untouched_manifest_has_no_byte_difference(repo) -> None:
+    root, _ = repo
+    assert not any("manifest bytes differ" in e for e in _eval(root).gate_a)
