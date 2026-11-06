@@ -2,7 +2,7 @@
 
 **For:** a NEW `independent-quality-auditor` session (not `local_4b071fe5-82d0-48bc-b524-146a3daf5c45`, not any session listed in §H of the report).
 **Ticket:** `T-IGX-019-A` · **Policy:** `IIAC-2026-11-05.1` · **Audit baseline:** `5afaad9eadfc1655f4ef1ab59eb022960a924648`
-**Pinned SHA to audit:** `9f8b04d2b8b670077b1e78ce812bb34b680f3968` (branch `evolx/w4-01-consolidated`, not pushed) · the report and this handoff are in a later documentation commit; audit the code at the pinned SHA.
+**Pinned SHA to audit:** `9f8b04d2b8b670077b1e78ce812bb34b680f3968` (branch `evolx/w4-01-consolidated`, pushed; PR jakbuczarnecki/intergrax#388) · the report and this handoff are in a later documentation commit; audit the code at the pinned SHA.
 This handoff is evidence for an audit. It is not a PASS record, resolves nothing and authorises nothing. EVOL-X is `NOT_CLOSED`.
 
 ## 1. What to verify
@@ -36,7 +36,7 @@ Linux: clone the bundle/branch inside a `python:3.12` container (no `core.autocr
 
 * The pin is a constant in a non-material script (OD-1). History rewrite is outside the model. The operator signature line is process-enforced text.
 * Raw auditor evidence of the delta audit (DA-01/DA-02/DA-09) was not available locally; the findings were reproduced from the mission description.
-* GitHub Actions was not run (nothing pushed); the Linux evidence is a container run.
+* GitHub Actions run 42210092666 (head 445d5883c): governance-fast 146 passed, evol-x-b4-preflight 423 passed (report §L). `ent-audit-fast` fails on `development` too and is unrelated.
 
 ## 5. Session identity (W4-F08)
 

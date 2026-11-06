@@ -123,3 +123,20 @@ See [`EVOL_X_W4_01_CONSOLIDATED_REAUDIT_HANDOFF.md`](EVOL_X_W4_01_CONSOLIDATED_R
 ## K. Next roadmap action
 
 **Independent re-audit of this consolidated corrective at `9f8b04d2b8b670077b1e78ce812bb34b680f3968`** (new `independent-quality-auditor` session), after the operator decides on publication/push. Then B-4 acceptance by a separate certifier, then the operator decisions and B6.
+
+## L. Addendum — GitHub Actions evidence and gap closure (2026-11-06; documentation-only commit)
+
+The branch was pushed as `origin/evolx/w4-01-consolidated` (PR `jakbuczarnecki/intergrax#388`, base `development`, not for merge before independent re-audit). `origin/development` is still `5afaad9ea`. The code under audit is unchanged: **IMPLEMENTATION_SHA remains `9f8b04d2b8b670077b1e78ce812bb34b680f3968`**; later commits are documentation only. This addendum supersedes the statements in §A, §B, §E that say "nothing pushed / Actions not run".
+
+| Item | Evidence (run `42210092666` "Regression gate", head `445d5883c`, Ubuntu 24.04) |
+|---|---|
+| `governance-fast` | success - `146 passed in 338.38s` (Linux checkout, no `core.autocrlf`; includes the W4-F01 activation gate and the real-repository clone tests) |
+| `evol-x-b4-preflight` | success - `423 passed in 87.98s` (xdist, isolated tmp repositories) |
+| `governance-policy-pin`, `ci-smoke` | success |
+| G11 | **satisfied** by the two Linux jobs above (replaces the unfinished container run) |
+
+**`ent-audit-fast` (run `42210092609`) fails — pre-existing and unrelated.** Failing tests: `test_validate_post_implementation_master_plan.py::test_validator_passes_on_canonical_ssot` and `::test_validator_cli_passes` ("disposition must declare READY, PLAN PARTIAL, or TECHNICAL PARTIAL constant"). The same workflow fails on the last five `development` pushes (`2ae101411`, `eab65e010`, `116fb6a2a`, `4d54dfa9e`, `477017f15`), and this branch changes nothing under `scripts/enterprise_audit`, `tests/qualification/ent_audit_x` or the master plan. Not touched here; it is an independent defect for the owner of that validator and must not be read as a result of this corrective.
+
+**Deep-path fixture failures (previously uninvestigated).** Reproduced on Windows with `--basetemp` of ~114 characters: fixtures error in setup (`WinError 3/206`; with ~200 characters `git init` additionally fails with `Filename too long` on `.git/hooks/*.sample`). Cause: Win32 `MAX_PATH` (260) — the fixture repositories nest `docs/project/maintainers/qualification/iiac_evidence/EVOL-X/...` (~140 characters) below the temp root, and `LongPathsEnabled` is off for the Python/git tool chain. It is neither state pollution nor a defect in the gates: `--basetemp` of 80 characters passes, 114 fails, identically with and without an empty git template (an `--template=` experiment was reverted as ineffective). Mitigation: keep `--basetemp` short (the handoff already prescribes `D:/w4a/...`) or enable long paths. Linux CI is unaffected.
+
+**Still open (unchanged, authority items):** W4-F08 operator attestation, OD-1, publication of the branch to `development`, independent re-audit, OD-EVOL-12 / OD-EVOLX-08 / P3, B6, FRZ promotion. The scratch directory `D:/w4d_deep` created for the path experiment can be deleted by the operator.
