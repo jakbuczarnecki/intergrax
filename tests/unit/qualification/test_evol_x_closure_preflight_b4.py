@@ -1216,11 +1216,14 @@ def test_mass_promotion_without_canonical_requirement_text(closed) -> None:
 
 def test_open_blocker_holds_formal_closure(closed) -> None:
     root, _ = closed
+    # W402-03: an open blocker keeps the exact text it was published with, so re-open B-5 with its P2 text.
+    published = json.loads(_git(root, "show", f"{_honest_p2(root)}:{pf.REL_CERT_RECORD}"))
+    b5_text = next(t for t in published["open_blockers_for_closure"] if t.startswith("B-5"))
     _mutate_json(
         root,
         pf.REL_CERT_RECORD,
         lambda c: c.update(
-            open_blockers_for_closure=["B-5 OD-EVOLX-08 confirmation"],
+            open_blockers_for_closure=[b5_text],
             resolved_blockers_for_closure=[e for e in c["resolved_blockers_for_closure"] if e["blocker_id"] != "B-5"],
         ),
         reindex=True,
