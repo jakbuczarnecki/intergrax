@@ -3795,6 +3795,12 @@ def test_hunt_an_unexpected_evidence_shape_is_an_internal_error_not_a_crash(repo
 # --------------------------------------------------------------------------- W403 round-3 delta re-audit (W403-01..03)
 
 
+def _clean_env() -> dict[str, str]:
+    """Environment of a plain Python child: without the settings the imported preflight module exports."""
+    drop = {"PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX", "PYTHONPATH"}
+    return {k: v for k, v in os.environ.items() if k not in drop}
+
+
 def _copy_scripts_tree(tmp_path: Path) -> Path:
     import shutil
 
@@ -3825,6 +3831,7 @@ def test_w403_01_a_forged_bytecode_cache_is_never_loaded(tmp_path: Path) -> None
     subprocess.run(
         [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(root)!r}); import scripts.governance.iiac_common"],
         cwd=root,
+        env=_clean_env(),
         capture_output=True,
         check=False,
     )
@@ -3911,3 +3918,90 @@ def test_w403_03_the_loaded_verifier_modules_are_part_of_the_bound_set() -> None
     loaded = pf._loaded_module_paths(ctx)
     assert "scripts/qualification/evol_x_closure_publication_preflight.py" in loaded
     assert "scripts/governance/iiac_common.py" in loaded
+
+
+# --------------------------------------------------------------------------- W404 round-4 re-audit (W404-01..03)
+
+
+def _plant_stdlib_shadow(directory: Path, name: str, marker: Path) -> None:
+    (directory / f"{name}.py").write_text(f"open({str(marker)!r}, 'w').write('shadow')\n", encoding="utf-8")
+
+
+@pytest.mark.parametrize("name", ["random", "shutil", "tempfile", "json", "argparse", "hashlib"])
+def test_w404_01_a_stdlib_named_file_next_to_the_script_never_runs(tmp_path: Path, name: str) -> None:
+    """Audit repro r6: an untracked ``random.py`` / ``shutil.py`` in scripts/qualification/ ran before any check."""
+    root = _copy_scripts_tree(tmp_path)
+    script_dir = root / "scripts" / "qualification"
+    marker = tmp_path / f"{name}_shadow_ran.txt"
+    _plant_stdlib_shadow(script_dir, name, marker)
+    control = subprocess.run(
+        [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(script_dir)!r}); import {name}"],
+        env=_clean_env(),
+        capture_output=True,
+        check=False,
+    )
+    assert marker.exists(), (
+        f"control failed: a plain import did not run the planted {name}.py ({control.stderr[-200:]!r})"
+    )
+    marker.unlink()
+    proc = subprocess.run(
+        [sys.executable, str(script_dir / "evol_x_closure_publication_preflight.py"), "--help"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert not marker.exists(), f"the preflight executed the planted {name}.py"
+    assert proc.returncode == 0, proc.stderr[-400:]
+
+
+@pytest.mark.parametrize("mode", ["module", "pythonpath"])
+def test_w404_02_a_stdlib_named_file_at_the_repository_root_never_runs(tmp_path: Path, mode: str) -> None:
+    """Audit repro r4b: ``python -m`` or ``PYTHONPATH=<repo>`` put the repository root first on ``sys.path``."""
+    root = _copy_scripts_tree(tmp_path)
+    marker = tmp_path / "root_shadow_ran.txt"
+    _plant_stdlib_shadow(root, "json", marker)
+    control = subprocess.run(
+        [sys.executable, "-c", "import json"], cwd=root, env=_clean_env(), capture_output=True, check=False
+    )
+    assert marker.exists(), f"control failed: the planted json.py was not imported ({control.stderr[-200:]!r})"
+    marker.unlink()
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    if mode == "module":
+        command = [sys.executable, "-m", "scripts.qualification.evol_x_closure_publication_preflight", "--help"]
+    else:
+        env["PYTHONPATH"] = str(root)
+        command = [
+            sys.executable,
+            str(root / "scripts" / "qualification" / "evol_x_closure_publication_preflight.py"),
+            "--help",
+        ]
+    proc = subprocess.run(command, cwd=root, env=env, capture_output=True, text=True, check=False)
+    assert not marker.exists(), "the preflight executed a planted repository-root json.py"
+    assert proc.returncode == 0, proc.stderr[-400:]
+
+
+def test_w404_02_the_repository_modules_must_come_from_the_repository(tmp_path: Path) -> None:
+    root = _copy_scripts_tree(tmp_path)
+    foreign = tmp_path / "foreign"
+    (foreign / "scripts" / "governance").mkdir(parents=True)
+    (foreign / "scripts" / "__init__.py").write_text("", encoding="utf-8")
+    (foreign / "scripts" / "governance" / "__init__.py").write_text("", encoding="utf-8")
+    for module in ("iiac_activation_gate", "iiac_common"):
+        (foreign / "scripts" / "governance" / f"{module}.py").write_text("", encoding="utf-8")
+    env = {k: v for k, v in os.environ.items()}
+    env["PYTHONPATH"] = str(foreign)
+    script = root / "scripts" / "qualification" / "evol_x_closure_publication_preflight.py"
+    proc = subprocess.run(
+        [sys.executable, str(script), "--help"], cwd=root, env=env, capture_output=True, text=True, check=False
+    )
+    # the foreign ``scripts`` package either is never reached (the repository wins) or the run refuses to start
+    assert proc.returncode == 0 or "was not imported from this repository" in proc.stderr + proc.stdout, proc.stderr[
+        -400:
+    ]
+
+
+def test_w404_03_children_inherit_the_bytecode_and_replace_object_settings() -> None:
+    assert os.environ.get("PYTHONDONTWRITEBYTECODE") == "1"
+    assert os.environ.get("PYTHONPYCACHEPREFIX") == sys.pycache_prefix
+    assert os.environ.get("GIT_NO_REPLACE_OBJECTS") == "1"

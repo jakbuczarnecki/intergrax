@@ -64,20 +64,39 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 
-# W402-05/06 (defect-hunt D4/D5). Imported modules and git subprocesses must not be redirected by files or
-# variables that ``git status`` cannot see: drop the script directory from ``sys.path`` (a planted, git-ignored
-# ``json.py`` next to this file would otherwise shadow the standard library) and make every git call in this process,
-# including those of the imported IIAC modules, ignore replace objects.
+# Bootstrap (W402-05/06, W403-01, W404-01/02/03). Nothing from outside the interpreter's built-ins may be imported
+# before this block: a planted, git-ignored ``random.py`` / ``json.py`` / ``shutil.py`` next to the script, in the
+# current directory or at the repository root would otherwise shadow the standard library and run before any check.
+# (1) Drop the script directory from ``sys.path``; when run as a program also drop the current directory and the
+#     repository root, so only the standard library and site-packages can supply non-repository modules.
+# (2) Every git call in this process and its children ignores replace objects.
+# (3) No bytecode is read from or written into the repository: an unchecked-hash ``.pyc`` in a git-ignored
+#     ``__pycache__`` would replace a committed verifier module. Children inherit the same settings through the
+#     environment. The prefix is computed without importing ``tempfile``.
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path[:] = [entry for entry in sys.path if os.path.abspath(entry or os.getcwd()) != _HERE]
+_ROOT = os.path.dirname(os.path.dirname(_HERE))
+
+
+def _same_dir(entry: str, target: str) -> bool:
+    return os.path.normcase(os.path.abspath(entry or os.getcwd())) == os.path.normcase(target)
+
+
+_STRIP = [_HERE]
+if __name__ == "__main__":
+    _STRIP += [_ROOT, os.getcwd()]
+sys.path[:] = [entry for entry in sys.path if not any(_same_dir(entry, target) for target in _STRIP)]
 os.environ["GIT_NO_REPLACE_OBJECTS"] = "1"
-# W403-01: an unchecked-hash ``.pyc`` in a git-ignored ``__pycache__`` replaces its source without being compared
-# with it. Point the bytecode cache at a directory that does not exist and never write one, so every imported
-# module (the IIAC verifier included) is compiled from the committed source that is bound to HEAD below.
+_TMP = (
+    os.environ.get("TEMP")
+    or os.environ.get("TMP")
+    or os.environ.get("TMPDIR")
+    or ("/tmp" if os.name != "nt" else "C:\\Windows\\Temp")
+)
 sys.dont_write_bytecode = True
-sys.pycache_prefix = os.path.join(tempfile.gettempdir(), "evolx-preflight-no-bytecode-cache", str(os.getpid()))
+sys.pycache_prefix = os.path.join(_TMP, "evolx-preflight-no-bytecode-cache", str(os.getpid()))
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+os.environ["PYTHONPYCACHEPREFIX"] = sys.pycache_prefix
 
 import argparse  # noqa: E402
 import hashlib  # noqa: E402
@@ -93,8 +112,16 @@ from pathlib import Path  # noqa: E402
 from typing import Any  # noqa: E402
 
 _REPO = Path(__file__).resolve().parents[2]
-if str(_REPO) not in sys.path:
-    sys.path.insert(0, str(_REPO))
+# W404-02: the repository's ``scripts`` package is registered explicitly from this checkout, so it is found neither
+# through ``sys.path`` (an editable install, ``PYTHONPATH`` or a repository-root file could supply another one) nor
+# does the repository root ever have to precede the standard library.
+if "scripts" not in sys.modules:
+    import importlib.machinery as _machinery  # noqa: E402
+    import importlib.util as _importlib_util  # noqa: E402
+
+    _spec = _machinery.ModuleSpec("scripts", None, is_package=True)
+    _spec.submodule_search_locations = [str(_REPO / "scripts")]
+    sys.modules["scripts"] = _importlib_util.module_from_spec(_spec)
 
 from scripts.governance.iiac_activation_gate import (  # noqa: E402
     CANONICAL_RECORD,
@@ -109,6 +136,11 @@ from scripts.qualification.evol_x_frz_evol_canonical_matrix import (  # noqa: E4
     FRZ_EVOL_CANONICAL_REQUIREMENTS,
     validate_frz_evol_id_set,
 )
+
+for _module_name in ("scripts.governance.iiac_activation_gate", "scripts.governance.iiac_common"):
+    _module_file = Path(sys.modules[_module_name].__file__ or "").resolve()
+    if _REPO not in _module_file.parents:
+        raise SystemExit(f"{_module_name} was not imported from this repository ({_module_file}): refusing to run")
 
 STAGE_ID = "EVOL-X"
 PREFLIGHT_SCRIPT_REL = "scripts/qualification/evol_x_closure_publication_preflight.py"
