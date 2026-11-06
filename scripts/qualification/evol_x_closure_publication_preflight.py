@@ -41,6 +41,20 @@ RA-B4 corrective contracts (handoff: ``evol_x/EVOL_X_RA_B4_CORRECTIVE_REAUDIT_HA
   publication commit, be digest-bound by the certification record, cite the independent audit and the
   certified scope, and carry an operator signature line.
 
+T-W4-01 corrective contracts (ticket ``T-IGX-019-A``):
+
+* **Exact certified scope (RA-B4-05, ``A-19`` / ``B-11``).** Scope is never decided by phrase presence or prefix
+  match. The blob published at ``certification_publication_sha`` (P2) is the immutable scope baseline: the
+  limitation multiset ``(id, text)``, ``certification_verdict`` and every FRZ-EVOL disposition must be *equal* to it
+  (order is irrelevant). A promoted FRZ row must equal the row rendered from the baseline disposition
+  (:func:`render_promoted_row`); the B6 record may carry only allow-listed lines and its ``Accepted limitations``
+  must equal the baseline ``(id, sha256(text))`` set (:func:`accepted_limitation_tokens`). There is no amendment
+  channel: any difference from the baseline needs a new P2 certification publication.
+* **Blocker lifecycle for late blockers (W4-F03).** Every blocker that appeared in any published version of the
+  certification record after the baseline must stay open or carry an evidence-bound resolution; duplicate ids fail.
+* **Operator records (W4-F04).** A signature older than the certification publication and a ``Decision scope``
+  containing a negation are rejected.
+
 Verification is delegated to the canonical IIAC routines (activation gate, manifest
 validator, role-separation validator). This module adds only EVOL-X stage bindings.
 It never writes to the repository.
@@ -56,6 +70,7 @@ import re
 import subprocess
 import sys
 import unicodedata
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -218,6 +233,69 @@ NEGATION_WORDS = frozenset(
 )
 CLOCK_SKEW = timedelta(days=1)
 SIGNATURE_SKEW = timedelta(minutes=15)
+
+# Negations that make a ``Decision scope`` a refusal, not an authorization (W4-F04). Matched as whole words on the
+# NFKC-normalised, upper-cased scope; contractions (``isn't``) are rejected separately.
+SCOPE_NEGATION_WORDS = frozenset(
+    {
+        "NOT",
+        "NO",
+        "NEVER",
+        "NONE",
+        "DENIED",
+        "DENY",
+        "UNAUTHORIZED",
+        "UNAUTHORISED",
+        "REVOKED",
+        "REJECTED",
+        "DECLINED",
+        "WITHDRAWN",
+        "PROHIBITED",
+        "FORBIDDEN",
+    }
+)
+_SCOPE_CONTRACTION = re.compile(r"\w[nN]['’]t\b")
+
+# RA-B4-05 exact scope. Certification-record keys that legitimately change after the P2 publication; every other
+# key must already exist in the baseline (and scope/claim-named keys must equal it).
+CERT_LIFECYCLE_KEYS = frozenset(
+    {
+        "certification_publication_sha",
+        "certification_publication_sha_binding",
+        "open_blockers_for_closure",
+        "resolved_blockers_for_closure",
+        "stage_closure_status",
+        "frz_checklist_rows_changed",
+        "formal_closure_publication_sha",
+        "b6_acceptance",
+        "b6_acceptance_publication_sha",
+        "b6_acceptance_record_path",
+        "b6_acceptance_record_digest",
+    }
+)
+_SCOPE_KEY = re.compile(r"scope|claim", re.IGNORECASE)
+
+# B6 acceptance record: the only lines it may carry (RA-B4-05). Title, scope and decision fields are canonical.
+B6_RECORD_TITLE = f"# {STAGE_ID} IIAC B6 acceptance record"
+B6_RECORD_FIELDS = frozenset(
+    {
+        "Decision ID",
+        "Stage",
+        "Policy version",
+        "Decision scope",
+        "Decision status",
+        "Accepted verdict",
+        "Accepted limitations",
+        "Independent audit manifest digest",
+        "Audit report digest",
+        "Findings digest",
+        "Audited implementation SHA",
+        "Certification publication SHA",
+        "Certifier session",
+        "Certifier agent",
+    }
+)
+_B6_DECISION_ID = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST64 = re.compile(r"^[0-9a-f]{64}$")
@@ -534,8 +612,12 @@ def operator_record_errors(
     scope_tokens: tuple[str, ...],
     expected: dict[str, str] | None = None,
     now: datetime | None = None,
+    not_before: datetime | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
-    """Validate an operator decision record. Returns ``(errors, info)``; ``info`` carries id and signature time."""
+    """Validate an operator decision record. Returns ``(errors, info)``; ``info`` carries id and signature time.
+
+    ``not_before`` (W4-F04): a signature older than this instant (the certification publication) is rejected.
+    """
     errors: list[str] = []
     info: dict[str, Any] = {"decision_id": None, "signed_at": None, "fields": {}}
     if re.search(r"_{4,}", text) or "NOT SIGNED" in text.upper():
@@ -565,6 +647,9 @@ def operator_record_errors(
         for token in scope_tokens:
             if token not in scope:
                 errors.append(f"record Decision scope lacks {token!r}")
+        negation = scope_negation(scope)
+        if negation:
+            errors.append(f"record Decision scope contains the negation {negation!r}")
     status = single("Decision status")
     if status is not None and status != "AUTHORIZED":
         errors.append(f"record Decision status {status!r} is not AUTHORIZED")
@@ -586,7 +671,21 @@ def operator_record_errors(
             info["signed_at"] = signed_at
             if signed_at.tzinfo is None or signed_at > (now or datetime.now(UTC)) + CLOCK_SKEW:
                 errors.append("operator signature timestamp is in the future")
+            elif not_before is not None and signed_at < not_before:
+                errors.append("operator signature predates the certification publication")
     return errors, info
+
+
+def scope_negation(scope: str) -> str:
+    """The first negation found in a decision scope ('' when none): ``NOT``, ``DENIED``, ``UNAUTHORIZED``, ``n't``…"""
+    text = "".join(ch for ch in unicodedata.normalize("NFKC", scope) if unicodedata.category(ch) != "Cf")
+    contraction = _SCOPE_CONTRACTION.search(text)
+    if contraction:
+        return contraction.group(0)
+    for word in re.findall(r"[A-Z0-9]+", text.upper()):
+        if word in SCOPE_NEGATION_WORDS:
+            return word
+    return ""
 
 
 def parse_frz_rows(text: str) -> dict[str, list[list[str]]]:
@@ -618,6 +717,48 @@ def _limitation_map(items: Any) -> dict[str, str]:
             if match:
                 out.setdefault(match.group(1), item.strip())
     return out
+
+
+def limitation_entries(items: Any) -> tuple[list[tuple[str, str]], list[str]]:
+    """``(id, exact text)`` for every limitation entry plus structural problems (RA-B4-05).
+
+    Entries without an ``LIM-nn`` / ``F-C-nn`` id keep ``id == ""``; their exact text is still compared.
+    """
+    entries: list[tuple[str, str]] = []
+    problems: list[str] = []
+    if not isinstance(items, list):
+        return entries, ["limitations is missing or not a list"]
+    for item in items:
+        if not isinstance(item, str):
+            problems.append("limitations holds a non-text entry")
+            continue
+        match = _LIM_ID.match(item.strip())
+        entries.append((match.group(1) if match else "", item))
+    return entries, problems
+
+
+def accepted_limitation_tokens(limitations: Any) -> list[str]:
+    """Sorted ``<id>:<sha256 of the exact text>`` for every id-bearing limitation (B6 ``Accepted limitations``)."""
+    entries, _ = limitation_entries(limitations)
+    return sorted(f"{lim_id}:{_sha256(text.encode('utf-8'))}" for lim_id, text in entries if lim_id)
+
+
+def render_promoted_row(disposition: str) -> tuple[str, str]:
+    """Canonical ``(status, notes)`` cells of a promoted FRZ-EVOL checklist row, rendered from a certified disposition.
+
+    ``ELIGIBLE_PASS`` -> ``("PASS", "—")``; ``ELIGIBLE_PASS_SCOPED(a; b)`` -> ``("PASS — SCOPED", "a; b")``;
+    ``ELIGIBLE_PASS_EVOL_X_SCOPED(a)`` -> ``("PASS (EVOL-X SCOPED)", "a")``.
+    """
+    head, _, rest = disposition.partition("(")
+    qualifier = head.removeprefix("ELIGIBLE_PASS").strip("_")
+    if not qualifier:
+        status = "PASS"
+    elif qualifier == "SCOPED":
+        status = "PASS — SCOPED"
+    else:
+        status = f"PASS ({qualifier.replace('EVOL_X', 'EVOL-X').replace('_', ' ')})"
+    notes = rest[:-1] if rest.endswith(")") else rest
+    return status, notes.strip() or "—"
 
 
 def blocker_key(text: str) -> str:
@@ -767,6 +908,116 @@ def _gate_a_scope(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any] |
         for phrase in FRZ_DISPOSITION_RESTRICTIONS.get(frz_id, ()):
             if phrase not in disp:
                 errors.append(f"A-08 {frz_id} disposition lost {phrase!r}")
+
+
+def _baseline_documents(
+    ctx: Context, manifest: dict[str, Any]
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, str]:
+    """``(manifest, certification record, problem)`` exactly as published at ``certification_publication_sha`` (P2)."""
+    if "scope_baseline" in ctx.cache:
+        return ctx.cache["scope_baseline"]
+    cert_sha = _sha(manifest.get("certification_publication_sha"))
+    docs: list[dict[str, Any] | None] = []
+    problem = ""
+    if not cert_sha or not _commit_exists(ctx, cert_sha):
+        problem = "certification_publication_sha is not a commit"
+    else:
+        for rel in (REL_MANIFEST, REL_CERT_RECORD):
+            raw = _show(ctx, cert_sha, rel)
+            try:
+                doc = json.loads(raw.decode("utf-8-sig")) if raw is not None else None
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                doc = None
+            if not isinstance(doc, dict):
+                problem = f"{rel} is absent or malformed at the certification publication"
+                doc = None
+            docs.append(doc)
+    result = (docs[0], docs[1], problem) if len(docs) == 2 else (None, None, problem)
+    ctx.cache["scope_baseline"] = result
+    return result
+
+
+def _first_publication_sha(ctx: Context, rel: str) -> str:
+    """The oldest commit that added ``rel`` ('' when git cannot say): the only legitimate P2 baseline."""
+    if "first_publication" not in ctx.cache:
+        ctx.cache["first_publication"] = {}
+    cache: dict[str, str] = ctx.cache["first_publication"]
+    if rel not in cache:
+        proc = _git(ctx, "log", "--diff-filter=A", "--format=%H", ctx.head or "HEAD", "--", rel)
+        shas = proc.stdout.decode("utf-8", errors="replace").split() if proc.returncode == 0 else []
+        cache[rel] = shas[-1] if shas else ""
+    return cache[rel]
+
+
+def _digest8(text: str) -> str:
+    return _sha256(text.encode("utf-8"))[:12]
+
+
+def _scope_key_errors(
+    document: dict[str, Any], baseline: dict[str, Any], label: str, *, lifecycle: frozenset[str], sealed: bool
+) -> list[str]:
+    """A-19: scope/claim-named keys must equal the baseline; unknown new keys are rejected."""
+    errors: list[str] = []
+    for key, value in document.items():
+        if key in baseline:
+            if _SCOPE_KEY.search(key) and value != baseline[key]:
+                errors.append(f"A-19 {label} scope key {key!r} differs from the certification publication")
+        elif key not in lifecycle:
+            kind = "scope/claim" if _SCOPE_KEY.search(key) else "unexpected"
+            errors.append(f"A-19 {label} carries {kind} key {key!r} that is absent from the certification publication")
+    if sealed:
+        for key in baseline:
+            if key not in document and _SCOPE_KEY.search(key):
+                errors.append(f"A-19 {label} dropped scope key {key!r} published at the certification publication")
+    return errors
+
+
+def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any] | None, errors: list[str]) -> None:
+    """RA-B4-05: certified scope equals the P2 baseline blob; nothing is decided by phrase search."""
+    base_manifest, base_cert, problem = _baseline_documents(ctx, manifest)
+    if problem or base_manifest is None:
+        errors.append(f"A-19 scope baseline unavailable: {problem or 'manifest absent'}")
+        return
+    first = _first_publication_sha(ctx, REL_CERT_RECORD)
+    if first and first != _sha(manifest.get("certification_publication_sha")):
+        errors.append(
+            "A-19 certification_publication_sha is not the commit that first published the certification record "
+            f"({first[:12]}): the scope and blocker baseline cannot be moved to a later commit"
+        )
+
+    current, structural = limitation_entries(manifest.get("limitations"))
+    baseline, _ = limitation_entries(base_manifest.get("limitations"))
+    errors.extend(f"A-19 manifest {message}" for message in structural)
+    by_id = Counter(lim_id for lim_id, _ in current if lim_id)
+    errors.extend(
+        f"A-19 limitation id {lim_id} is listed {n} times (duplicate id)" for lim_id, n in by_id.items() if n > 1
+    )
+    now_counts, then_counts = Counter(current), Counter(baseline)
+    for (lim_id, text), n in sorted((then_counts - now_counts).items()):
+        errors.append(
+            f"A-19 limitation {lim_id or '<unlabelled>'} [{_digest8(text)}] x{n} was dropped or reworded "
+            "relative to the certification publication"
+        )
+    for (lim_id, text), n in sorted((now_counts - then_counts).items()):
+        errors.append(
+            f"A-19 limitation {lim_id or '<unlabelled>'} [{_digest8(text)}] x{n} was added or reworded "
+            "relative to the certification publication (scope widening)"
+        )
+    errors.extend(_scope_key_errors(manifest, base_manifest, "manifest", lifecycle=frozenset(), sealed=True))
+    if cert is None or base_cert is None:
+        return
+    if cert.get("certification_verdict") != base_cert.get("certification_verdict"):
+        errors.append("A-19 certification_verdict differs from the certification publication")
+    dispositions, base_dispositions = cert.get("frz_evol_dispositions"), base_cert.get("frz_evol_dispositions")
+    if not isinstance(dispositions, dict) or not isinstance(base_dispositions, dict):
+        errors.append("A-19 frz_evol_dispositions is not an object at HEAD or at the certification publication")
+    else:
+        for frz_id in sorted(set(dispositions) | set(base_dispositions)):
+            if dispositions.get(frz_id) != base_dispositions.get(frz_id):
+                errors.append(f"A-19 {frz_id} disposition differs from the certification publication")
+    errors.extend(
+        _scope_key_errors(cert, base_cert, "certification record", lifecycle=CERT_LIFECYCLE_KEYS, sealed=True)
+    )
 
 
 def _gate_a_roles(manifest: dict[str, Any], cert: dict[str, Any] | None, errors: list[str]) -> None:
@@ -1038,6 +1289,9 @@ class BlockerLedger:
     open_now: dict[str, str] = field(default_factory=dict)
     resolved: dict[str, Any] = field(default_factory=dict)
     lineage: list[str] = field(default_factory=list)
+    # Every blocker ever published in the certification record since the baseline: id -> (opened_at_sha, text).
+    # Baseline blockers open at ``cert_sha``; later ones at the first published version that listed them (W4-F03).
+    origin: dict[str, tuple[str, str]] = field(default_factory=dict)
 
 
 def _blocker_texts(document: dict[str, Any] | None, label: str, lineage: list[str]) -> dict[str, str] | None:
@@ -1050,8 +1304,32 @@ def _blocker_texts(document: dict[str, Any] | None, label: str, lineage: list[st
         if not isinstance(item, str) or not item.strip():
             lineage.append(f"{label} open_blockers_for_closure holds a non-text or empty entry")
             continue
-        out.setdefault(blocker_key(item), item.strip())
+        key = blocker_key(item)
+        if key in out:
+            lineage.append(f"{label} open_blockers_for_closure lists blocker id {key} more than once (duplicate id)")
+            continue
+        out[key] = item.strip()
     return out
+
+
+def _published_blocker_history(ctx: Context, cert_sha: str) -> dict[str, tuple[str, str]]:
+    """Blockers first published in certification-record versions *after* ``cert_sha`` (oldest first)."""
+    if not ctx.head or not cert_sha or not _commit_exists(ctx, cert_sha):
+        return {}
+    proc = _git(ctx, "log", "--reverse", "--format=%H", f"{cert_sha}..{ctx.head}", "--", REL_CERT_RECORD)
+    if proc.returncode != 0:
+        return {}
+    seen: dict[str, tuple[str, str]] = {}
+    for sha in proc.stdout.decode("utf-8", errors="replace").split():
+        raw = _show(ctx, sha, REL_CERT_RECORD)
+        try:
+            doc = json.loads(raw.decode("utf-8-sig")) if raw is not None else None
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        texts = _blocker_texts(doc if isinstance(doc, dict) else None, "history", [])
+        for key, text in (texts or {}).items():
+            seen.setdefault(key, (sha, text))
+    return seen
 
 
 def blocker_ledger(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any]) -> BlockerLedger:
@@ -1092,16 +1370,24 @@ def blocker_ledger(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any])
             ledger.lineage.append(f"blocker {key} is resolved more than once")
         else:
             ledger.resolved[key] = entry
-    for key in ledger.baseline:
+    ledger.origin = {key: (cert_sha, text) for key, text in ledger.baseline.items()}
+    for key, origin in _published_blocker_history(ctx, cert_sha).items():
+        ledger.origin.setdefault(key, origin)
+    for key, (opened_at, text) in ledger.origin.items():
+        later = key not in ledger.baseline
+        label = (
+            f"blocker {key} added after the certification publication ({opened_at[:12]})"
+            if later
+            else (f"baseline blocker {key}")
+        )
         if key in ledger.open_now and key in ledger.resolved:
-            ledger.lineage.append(f"baseline blocker {key} is listed as open and resolved at once")
+            ledger.lineage.append(f"{label} is listed as open and resolved at once")
         elif key not in ledger.open_now and key not in ledger.resolved and current is not None:
             ledger.lineage.append(
-                f"baseline blocker {key} disappeared without closure evidence "
-                f"(removed, renamed or reclassified): {ledger.baseline[key]}"
+                f"{label} disappeared without closure evidence (removed, renamed or reclassified): {text}"
             )
     for key in ledger.resolved:
-        if ledger.baseline and key not in ledger.baseline:
+        if ledger.origin and key not in ledger.origin:
             ledger.lineage.append(
                 f"resolution for {key} does not match any blocker open at the certification publication"
             )
@@ -1261,7 +1547,15 @@ def _reaudit_manifest_errors(
             fail(f"re-audit {message}")
 
 
-def _operator_resolution_errors(ctx: Context, key: str, entry: dict[str, Any], closure: str, fail: Any) -> None:
+def _signed_not_before(ctx: Context, sha: str) -> datetime | None:
+    """Earliest acceptable operator-signature instant: the commit time of the publication that opened the matter."""
+    when = _commit_time(ctx, sha) if sha else None
+    return when if when is not None and when.tzinfo is not None else None
+
+
+def _operator_resolution_errors(
+    ctx: Context, key: str, entry: dict[str, Any], closure: str, fail: Any, opened_at_sha: str = ""
+) -> None:
     items = entry.get("closure_evidence")
     if not isinstance(items, list) or not items:
         fail("closure_evidence must list the operator decision records")
@@ -1292,7 +1586,10 @@ def _operator_resolution_errors(ctx: Context, key: str, entry: dict[str, Any], c
             fail(f"no scope contract for decision {decision_id!r}")
             continue
         record_errors, _ = operator_record_errors(
-            published.decode("utf-8-sig", errors="replace"), decision_id=decision_id, scope_tokens=tokens
+            published.decode("utf-8-sig", errors="replace"),
+            decision_id=decision_id,
+            scope_tokens=tokens,
+            not_before=_signed_not_before(ctx, opened_at_sha),
         )
         for message in record_errors:
             fail(f"{raw_path}: {message}")
@@ -1320,7 +1617,7 @@ def resolution_errors(ctx: Context, key: str, entry: Any, baseline_text: str, ce
     if entry.get("baseline_text_sha256") != _sha256(baseline_text.encode("utf-8")):
         fail("baseline_text_sha256 does not match the blocker as opened at the certification publication")
     if entry.get("opened_at_sha") != cert_sha:
-        fail("opened_at_sha must be the certification publication SHA")
+        fail("opened_at_sha must be the publication that opened the blocker")
     kind = BLOCKER_CLOSURE_KINDS.get(key, KIND_REAUDIT)
     if entry.get("resolution_kind") != kind:
         fail(f"resolution_kind must be {kind}")
@@ -1335,7 +1632,7 @@ def resolution_errors(ctx: Context, key: str, entry: Any, baseline_text: str, ce
     if kind == KIND_REAUDIT:
         _reaudit_resolution_errors(ctx, entry, closure, cert_sha, code, fail)
     else:
-        _operator_resolution_errors(ctx, key, entry, closure, fail)
+        _operator_resolution_errors(ctx, key, entry, closure, fail, cert_sha)
     return errors
 
 
@@ -1349,6 +1646,7 @@ def gate_a(ctx: Context) -> list[str]:
     if manifest is None:
         return errors
     _gate_a_scope(ctx, manifest, cert, errors)
+    _gate_a_scope_exact(ctx, manifest, cert, errors)
     _gate_a_roles(manifest, cert, errors)
     _gate_a_shas(ctx, manifest, cert, errors)
     _gate_a_digests(ctx, manifest, cert, errors)
@@ -1363,12 +1661,72 @@ def gate_a(ctx: Context) -> list[str]:
             if key not in GATE_B_ONLY_BLOCKERS:
                 errors.append(f"A-18 open certification blocker for B6 acceptance: {text}")
         for key, entry in ledger.resolved.items():
-            if key in ledger.baseline and key not in GATE_B_ONLY_BLOCKERS and key not in ledger.open_now:
-                errors.extend(resolution_errors(ctx, key, entry, ledger.baseline[key], ledger.cert_sha, "A-18"))
+            if key in ledger.origin and key not in GATE_B_ONLY_BLOCKERS and key not in ledger.open_now:
+                opened_at, text = ledger.origin[key]
+                errors.extend(resolution_errors(ctx, key, entry, text, opened_at, "A-18"))
     return errors
 
 
 # --------------------------------------------------------------------------- Gate B
+
+
+def _b6_record_exactness_errors(
+    ctx: Context, text: str, info: dict[str, Any], manifest: dict[str, Any], verdict: str
+) -> list[str]:
+    """B-11 (RA-B4-05): the B6 record carries only allow-listed lines and the baseline limitation set, verbatim."""
+    errors: list[str] = []
+
+    def fail(message: str) -> None:
+        errors.append(f"B-11 B6 acceptance record: {message}")
+
+    fenced = False
+    titled = False
+    for number, line in enumerate(text.lstrip("﻿").splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith(("```", "~~~")):
+            fenced = not fenced
+            fail(f"line {number}: fenced blocks are not allowed")
+        elif fenced:
+            continue
+        elif _RECORD_SIGNATURE.match(line):
+            continue
+        elif not titled and line == B6_RECORD_TITLE:
+            titled = True
+        else:
+            item = _RECORD_FIELD.match(line)
+            if item is None or item.group(1).strip() not in B6_RECORD_FIELDS:
+                fail(f"line {number} is not an allow-listed field (unexpected or scope-widening text)")
+    if not titled:
+        fail(f"title line must be exactly {B6_RECORD_TITLE!r}")
+    fields: dict[str, list[str]] = info["fields"]
+    for key in sorted(set(fields) - B6_RECORD_FIELDS):
+        fail(f"unexpected field {key!r}")
+    decision_ids = fields.get("Decision ID", [])
+    if len(decision_ids) == 1 and not _B6_DECISION_ID.fullmatch(decision_ids[0]):
+        fail("Decision ID must be a bare identifier")
+    scope = fields.get("Decision scope", [])
+    canonical_scope = f"B6 acceptance for {STAGE_ID} ({verdict}, evidence-bound)"
+    if len(scope) == 1 and scope[0] != canonical_scope:
+        fail(f"Decision scope must be exactly {canonical_scope!r}")
+
+    base_manifest, _, problem = _baseline_documents(ctx, manifest)
+    if problem or base_manifest is None:
+        fail(f"limitation baseline unavailable: {problem or 'manifest absent'}")
+        return errors
+    expected_tokens = accepted_limitation_tokens(base_manifest.get("limitations"))
+    lines = fields.get("Accepted limitations", [])
+    if len(lines) != 1:
+        fail(f"'Accepted limitations' must be stated exactly once (found {len(lines)})")
+    else:
+        got = sorted(token.strip() for token in lines[0].split(",") if token.strip())
+        if got != expected_tokens:
+            fail(
+                "'Accepted limitations' must equal the certified (id, sha256 of text) set "
+                f"({len(expected_tokens)} entries: <id>:<sha256>); got {len(got)}"
+            )
+    return errors
 
 
 def _b6_record_errors(ctx: Context, b6: str, manifest: dict[str, Any], cert: dict[str, Any]) -> list[str]:
@@ -1434,9 +1792,7 @@ def _b6_record_errors(ctx: Context, b6: str, manifest: dict[str, Any], cert: dic
     )
     for message in record_errors:
         fail(f"B6 acceptance record: {message}")
-    accepted = {x.strip() for x in ",".join(info["fields"].get("Accepted limitations", [])).split(",") if x.strip()}
-    if accepted != set(_limitation_map(manifest.get("limitations"))):
-        fail("B6 acceptance record 'Accepted limitations' must equal the certified limitation ids exactly")
+    errors.extend(_b6_record_exactness_errors(ctx, text, info, manifest, verdict))
     signed_at = info.get("signed_at")
     cert_time, b6_time = _commit_time(ctx, cert_sha) if cert_sha else None, _commit_time(ctx, b6)
     if isinstance(signed_at, datetime) and signed_at.tzinfo is not None:
@@ -1499,13 +1855,24 @@ def _gate_b_b6(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any], err
     return b6
 
 
-def _gate_b_frz(ctx: Context, cert: dict[str, Any], errors: list[str]) -> None:
+def _baseline_dispositions(ctx: Context, manifest: dict[str, Any]) -> dict[str, Any] | None:
+    _, base_cert, problem = _baseline_documents(ctx, manifest)
+    value = (base_cert or {}).get("frz_evol_dispositions")
+    return value if not problem and isinstance(value, dict) else None
+
+
+def _gate_b_frz(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any], errors: list[str]) -> None:
     text = _read_text(ctx, REL_FRZ_CHECKLIST)
     if text is None:
         errors.append(f"B-06 missing {REL_FRZ_CHECKLIST}")
         return
     rows = parse_frz_rows(text)
     dispositions = cert.get("frz_evol_dispositions") if isinstance(cert.get("frz_evol_dispositions"), dict) else {}
+    baseline_dispositions = _baseline_dispositions(ctx, manifest)
+    if baseline_dispositions is None:
+        errors.append(
+            "B-11 FRZ promotion baseline unavailable: certified dispositions absent at the certification publication"
+        )
     for frz_id, requirement in FRZ_EVOL_CANONICAL_REQUIREMENTS.items():
         found = rows.get(frz_id, [])
         if len(found) != 1:
@@ -1533,6 +1900,14 @@ def _gate_b_frz(ctx: Context, cert: dict[str, Any], errors: list[str]) -> None:
         for phrase in FRZ_ROW_RESTRICTIONS.get(frz_id, ()):
             if phrase.lower() not in row_text.lower():
                 errors.append(f"B-06 {frz_id} promoted row omits mandatory scope text {phrase!r}")
+        if baseline_dispositions is not None:
+            want_status, want_notes = render_promoted_row(str(baseline_dispositions.get(frz_id) or ""))
+            got_status, got_notes = _norm(cells[4]), _norm(cells[5]) if len(cells) > 5 else ""
+            if len(cells) != 6 or (got_status, got_notes) != (want_status, want_notes):
+                errors.append(
+                    f"B-11 {frz_id} promoted row must equal the row rendered from the certified disposition "
+                    f"(status {want_status!r}, notes {want_notes!r}); got status {got_status!r}, notes {got_notes!r}"
+                )
 
 
 def _decision_record_errors(ctx: Context, od_id: str, notes: str) -> list[str]:
@@ -1549,10 +1924,13 @@ def _decision_record_errors(ctx: Context, od_id: str, notes: str) -> list[str]:
         errors.append(f"{od_id} decision record {rel} is not committed at HEAD")
     if _sha256(raw) != digests[0]:
         errors.append(f"{od_id} decision record digest does not match the register notes")
+    manifest = _read_json(ctx, REL_MANIFEST, "B-07", [])
+    cert_sha = _sha((manifest or {}).get("certification_publication_sha"))
     record_errors, _ = operator_record_errors(
         raw.decode("utf-8-sig", errors="replace"),
         decision_id=od_id,
         scope_tokens=OD_RECORD_REQUIREMENTS[od_id],
+        not_before=_signed_not_before(ctx, cert_sha),
     )
     errors.extend(f"{od_id} decision record: {message}" for message in record_errors)
     return errors
@@ -1613,15 +1991,16 @@ def gate_b(ctx: Context) -> list[str]:
         return ["B-00 IIAC manifest or certification record unavailable"]
     ledger = blocker_ledger(ctx, manifest, cert)
     b6 = _gate_b_b6(ctx, manifest, cert, errors)
-    _gate_b_frz(ctx, cert, errors)
+    _gate_b_frz(ctx, manifest, cert, errors)
     _gate_b_operators(ctx, errors)
     _gate_b_ladder(ctx, b6, cert, errors)
     errors.extend(f"B-09 blocker lifecycle: {message}" for message in ledger.lineage)
     for key, text in ledger.open_now.items():
         errors.append(f"B-09 unresolved mandatory blocker ({key}): {text}")
     for key, entry in ledger.resolved.items():
-        if key in GATE_B_ONLY_BLOCKERS and key in ledger.baseline and key not in ledger.open_now:
-            errors.extend(resolution_errors(ctx, key, entry, ledger.baseline[key], ledger.cert_sha, "B-09"))
+        if key in GATE_B_ONLY_BLOCKERS and key in ledger.origin and key not in ledger.open_now:
+            opened_at, text = ledger.origin[key]
+            errors.extend(resolution_errors(ctx, key, entry, text, opened_at, "B-09"))
     return errors
 
 

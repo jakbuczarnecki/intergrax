@@ -11,3 +11,9 @@ applications/local_workspace_application/scripts/*.sh text eol=lf
 # RA-B4-01: the IIAC pass record is digest-bound to its Git blob and to the byte-preserved auditor copy;
 # checkout line-ending conversion must never rewrite it.
 docs/project/maintainers/qualification/evol_x/EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md -text
+
+# W4-F06: the evidence-publication binding, its UTF-8 republication and the delegation record are digest-bound
+# (the binding names the SHA-256 of the delegation record); checkout line-ending conversion must never rewrite them.
+docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.json -text
+docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.utf8.json -text
+docs/project/maintainers/qualification/IIAC_OD_DELEGATION_EVOLX_B4_EVIDENCE_PUBLICATION_2026-11-06.md -text

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -55,7 +56,10 @@ DISPOSITIONS = {
     "FRZ-EVOL-04": "ELIGIBLE_PASS",
     "FRZ-EVOL-05": "ELIGIBLE_PASS",
     "FRZ-EVOL-06": "ELIGIBLE_PASS_SCOPED(LIM-01,LIM-03,LIM-04; footnote: EVOL_CONSERVATIVE_FULL scope only)",
-    "FRZ-EVOL-07": "ELIGIBLE_PASS_EVOL_X_SCOPED(LIM-05; production rollback enforcement is NOT claimed)",
+    "FRZ-EVOL-07": (
+        "ELIGIBLE_PASS_EVOL_X_SCOPED(LIM-05; qualification-layer deploy/rollback safety; "
+        "production rollback enforcement is NOT claimed)"
+    ),
     "FRZ-EVOL-08": "ELIGIBLE_PASS_SCOPED(LIM-02; M-09H not measured)",
     "FRZ-EVOL-09": "ELIGIBLE_PASS_SCOPED(LIM-06)",
     "FRZ-EVOL-10": "ELIGIBLE_PASS_SCOPED(LIM-07)",
@@ -67,12 +71,12 @@ PROMOTED_ROWS = {
     "FRZ-EVOL-03": ("PASS", "—"),
     "FRZ-EVOL-04": ("PASS", "—"),
     "FRZ-EVOL-05": ("PASS", "—"),
-    "FRZ-EVOL-06": ("PASS — SCOPED", "LIM-01, LIM-03, LIM-04; EVOL_CONSERVATIVE_FULL scope only"),
+    "FRZ-EVOL-06": ("PASS — SCOPED", "LIM-01,LIM-03,LIM-04; footnote: EVOL_CONSERVATIVE_FULL scope only"),
     "FRZ-EVOL-07": (
         "PASS (EVOL-X SCOPED)",
-        "LIM-05; qualification-layer only; production rollback enforcement NOT claimed",
+        "LIM-05; qualification-layer deploy/rollback safety; production rollback enforcement is NOT claimed",
     ),
-    "FRZ-EVOL-08": ("PASS — SCOPED", "LIM-02; change-time diagnostics; M-09H not measured"),
+    "FRZ-EVOL-08": ("PASS — SCOPED", "LIM-02; M-09H not measured"),
     "FRZ-EVOL-09": ("PASS — SCOPED", "LIM-06"),
     "FRZ-EVOL-10": ("PASS — SCOPED", "LIM-07"),
 }
@@ -121,6 +125,7 @@ def _operator_record(
     stamp: str | None = None,
     signed: bool = True,
     extra: dict[str, str] | None = None,
+    title: str | None = None,
 ) -> str:
     signature = (
         f"Approved {decision_id}: operator @ {stamp or _now_iso()}"
@@ -128,7 +133,7 @@ def _operator_record(
         else "Operator signature: ________________"
     )
     lines = [
-        f"# Operator decision record {decision_id} (fixture)",
+        title or f"# Operator decision record {decision_id} (fixture)",
         "",
         f"Decision ID: {decision_id}",
         f"Stage: {pf.STAGE_ID}",
@@ -365,7 +370,7 @@ def _handoff() -> str:
     )
 
 
-def _build_base(repo: Path) -> dict[str, str]:
+def _build_base(repo: Path, *, resolve: bool = True) -> dict[str, str]:
     repo.mkdir(parents=True)
     _git(repo, "init", "-b", "development")
     _build_activation(repo)
@@ -488,7 +493,8 @@ def _build_base(repo: Path) -> dict[str, str]:
     _reindex_cert(repo)
     head = _commit(repo, "Bind certification publication SHA (fixture)")
     built = {"tes": tes, "final": final, "audit_pub": audit_pub, "cert_pub": cert_pub, "head": head}
-    built.update(_resolve_a_blockers(repo, built))
+    if resolve:
+        built.update(_resolve_a_blockers(repo, built))
     return built
 
 
@@ -614,11 +620,21 @@ def _resolve_a_blockers(repo: Path, built: dict[str, str]) -> dict[str, str]:
     return {"corrective": corrective, "reaudit_closure": closure, "resolved_head": resolved_head}
 
 
+def _accepted_limitation_tokens(limitations: list[str]) -> list[str]:
+    """Independent re-statement of the B6 ``Accepted limitations`` contract: ``<id>:<sha256 of exact text>``."""
+    tokens = []
+    for text in limitations:
+        match = re.match(r"^(LIM-\d{2}|F-C-\d{2})\b", text.strip())
+        if match:
+            tokens.append(f"{match.group(1)}:{_sha256(text.encode('utf-8'))}")
+    return sorted(tokens)
+
+
 def _b6_record_text(repo: Path, **overrides: str) -> str:
     manifest = _load(repo, pf.REL_MANIFEST)
     fields = {
         "Accepted verdict": manifest["verdict"],
-        "Accepted limitations": ", ".join(sorted(pf._limitation_map(manifest["limitations"]))),
+        "Accepted limitations": ",".join(_accepted_limitation_tokens(manifest["limitations"])),
         "Independent audit manifest digest": _sha256((repo / pf.REL_MANIFEST).read_bytes()),
         "Audit report digest": manifest["audit_report_digest"],
         "Findings digest": manifest["findings_digest"],
@@ -631,15 +647,22 @@ def _b6_record_text(repo: Path, **overrides: str) -> str:
     fields.update({k: v for k, v in overrides.items() if k not in control})
     return _operator_record(
         overrides.get("decision_id", B6_DECISION_ID),
-        overrides.get("scope", "B6 acceptance for EVOL-X (PASS_SCOPED, evidence-bound)"),
+        overrides.get("scope", f"B6 acceptance for EVOL-X ({manifest['verdict']}, evidence-bound)"),
         status=overrides.get("status", "AUTHORIZED"),
         stamp=overrides.get("stamp"),
         signed=overrides.get("signed", "yes") == "yes",
         extra=fields,
+        title=pf.B6_RECORD_TITLE,
     )
 
 
-def _publish_b6(repo: Path, *, with_record: bool = True, **record_overrides: str) -> str:
+def _publish_b6(
+    repo: Path,
+    *,
+    with_record: bool = True,
+    record_transform: Callable[[str], str] | None = None,
+    **record_overrides: str,
+) -> str:
     """Two-phase B6 acceptance: phase 1 publishes (record + flags), phase 2 binds the SHA (non-self-referential)."""
     _dump(
         repo,
@@ -649,7 +672,8 @@ def _publish_b6(repo: Path, *, with_record: bool = True, **record_overrides: str
     cert = _load(repo, pf.REL_CERT_RECORD)
     cert["b6_acceptance"] = "ISSUED"
     if with_record:
-        record = _write(repo, f"{pf.B6_DIR}/{B6_RECORD_NAME}", _b6_record_text(repo, **record_overrides))
+        text = _b6_record_text(repo, **record_overrides)
+        record = _write(repo, f"{pf.B6_DIR}/{B6_RECORD_NAME}", record_transform(text) if record_transform else text)
         _index(repo, pf.B6_DIR, pf.REL_B6_INDEX)
         cert["b6_acceptance_record_path"] = pf.REL_B6_RECORD
         cert["b6_acceptance_record_digest"] = _sha256(record)
@@ -1691,6 +1715,18 @@ def test_ra_b4_02_unindexed_reaudit_evidence_fails(repo) -> None:
             ),
             "in the future",
         ),
+        (
+            "w4_f04_signed_before_the_certification",
+            _operator_record(
+                P3_DECISION_ID, "B6 acceptance authorization for EVOL-X", stamp="2020-01-01T00:00:00+00:00"
+            ),
+            "predates the certification publication",
+        ),
+        (
+            "w4_f04_negated_scope_with_all_tokens",
+            _operator_record(P3_DECISION_ID, "B6 acceptance for EVOL-X is NOT authorized"),
+            "negation",
+        ),
     ],
 )
 def test_ra_b4_02_forged_p3_operator_authorization_fails(repo, name: str, record: str, fragment: str) -> None:
@@ -1899,6 +1935,21 @@ def test_ra_b4_03_wrong_decision_scope_fails(closed) -> None:
             "signature line",
         ),
         ("wrong_policy", lambda t: t.replace(POLICY, "IIAC-2099-01-01.9"), "Policy version"),
+        (
+            "w4_f04_negated_scope_with_all_tokens",
+            lambda t: re.sub(
+                r"^Decision scope: (.*)$",
+                r"Decision scope: NOT authorized - promotion of \1 DENIED",
+                t,
+                flags=re.MULTILINE,
+            ),
+            "negation",
+        ),
+        (
+            "w4_f04_signed_before_the_certification",
+            lambda t: re.sub(r"operator @ \S+", "operator @ 2020-01-01T00:00:00+00:00", t),
+            "predates the certification publication",
+        ),
     ],
 )
 def test_ra_b4_03_unverifiable_decision_record_fails(closed, name: str, mutate, fragment: str) -> None:
@@ -2082,6 +2133,11 @@ def test_ra_b4_04_manifest_changed_after_b6_publication_fails(closed) -> None:
             {"Accepted limitations": "LIM-01, LIM-02, LIM-03, LIM-04, LIM-05, LIM-06, LIM-07, F-C-02, LIM-99"},
             "Accepted limitations",
         ),
+        (
+            "legacy_id_only_limitations",
+            {"Accepted limitations": "LIM-01, LIM-02, LIM-03, LIM-04, LIM-05, LIM-06, LIM-07, F-C-02"},
+            "Accepted limitations",
+        ),
         ("wrong_manifest_digest", {"Independent audit manifest digest": "a" * 64}, "manifest digest"),
         ("wrong_report_digest", {"Audit report digest": "b" * 64}, "Audit report digest"),
         ("wrong_findings_digest", {"Findings digest": "c" * 64}, "Findings digest"),
@@ -2106,7 +2162,8 @@ def test_ra_b4_04_b6_record_content_must_match_the_independent_audit(
     _finish_close(root, built, b6, decisions)
     result = _eval(root)
     assert result.gate_a_pass
-    assert any(fragment in e for e in _b(result.gate_b, "B-05")), (name, _b(result.gate_b, "B-05"))
+    errors = [*_b(result.gate_b, "B-05"), *_b(result.gate_b, "B-11")]
+    assert any(fragment in e for e in errors), (name, errors)
     assert not result.gate_b_pass
 
 
@@ -2196,3 +2253,652 @@ def test_ra_b4_canonical_gate_a_reflects_unresolved_blockers_and_gate_b_requires
     assert any("OD-EVOLX-08" in e for e in _b(result.gate_b, "B-07"))
     assert pf.blocker_key(cert["open_blockers_for_closure"][0]) == "B-4"
     assert pf.blocker_key(cert["open_blockers_for_closure"][2]) == "B6-P3"
+
+
+# =========================================================================== T-W4-01 corrective (T-IGX-019-A)
+#
+# RA-B4-05 exact certified scope (A-19 / B-11), W4-F03 late-blocker lifecycle, W4-F04 operator-record hardening,
+# W4-F06 byte-stable binding records. Fixtures are the same isolated temporary git repositories as above.
+
+
+def _find_limitation(m: dict[str, Any], lim_id: str) -> int:
+    return next(i for i, text in enumerate(m["limitations"]) if text.startswith(lim_id))
+
+
+def _assert_scope_fails(root: Path, fragment: str | None = None) -> pf.PreflightResult:
+    result = _assert_a_fails(root, "A-19")
+    if fragment is not None:
+        assert any(fragment in e for e in _b(result.gate_a, "A-19")), (fragment, result.gate_a)
+    return result
+
+
+_LIMITATION_IDS = ["LIM-01", "LIM-02", "LIM-03", "LIM-04", "LIM-05", "LIM-06", "LIM-07", "F-C-02"]
+_WIDENING = "; platform-wide ownership is established and production rollback enforcement is in force"
+
+
+@pytest.mark.parametrize("mode", ["append", "prepend", "replace"])
+@pytest.mark.parametrize("lim_id", _LIMITATION_IDS)
+def test_w4_ra_b4_05_any_text_change_of_a_certified_limitation_is_rejected(repo, lim_id: str, mode: str) -> None:
+    root, _ = repo
+
+    def widen(m: dict[str, Any]) -> None:
+        i = _find_limitation(m, lim_id)
+        original = m["limitations"][i]
+        m["limitations"][i] = {
+            "append": original + _WIDENING,
+            "prepend": "Unrestricted: " + original,
+            "replace": f"{lim_id} Selection scope is PLATFORM_CONSERVATIVE_FULL (all scoped phrases removed)",
+        }[mode]
+
+    _mutate_json(root, pf.REL_MANIFEST, widen, reindex=True)
+    _assert_scope_fails(root, f"limitation {lim_id}")
+
+
+@pytest.mark.parametrize(
+    "lim_id", ["LIM-01", "LIM-02", "LIM-03", "LIM-04", "LIM-05"], ids=lambda x: f"phrase-preserving-{x}"
+)
+def test_w4_ra_b4_05_appended_widening_keeps_every_legacy_phrase_check_green_but_fails_a19(repo, lim_id: str) -> None:
+    """The audited FALSE_PASS: the old phrase/prefix controls (A-07/A-08) all stay silent; only A-19 can catch it."""
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_MANIFEST,
+        lambda m: m["limitations"].__setitem__(
+            _find_limitation(m, lim_id), m["limitations"][_find_limitation(m, lim_id)] + _WIDENING
+        ),
+        reindex=True,
+    )
+    result = _assert_scope_fails(root)
+    assert {"A-07", "A-08"}.isdisjoint(_codes(result.gate_a)), result.gate_a
+
+
+def test_w4_ra_b4_05_negated_sentence_is_rejected(repo) -> None:
+    root, _ = repo
+
+    def negate(m: dict[str, Any]) -> None:
+        i = _find_limitation(m, "LIM-03")
+        m["limitations"][i] += " - NOT direct-import only: transitive imports covered"
+
+    _mutate_json(root, pf.REL_MANIFEST, negate, reindex=True)
+    _assert_scope_fails(root, "LIM-03")
+
+
+def test_w4_ra_b4_05_duplicate_widened_limitation_id_is_rejected(repo) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_MANIFEST,
+        lambda m: m["limitations"].append("LIM-03 TESTED_BY ownership complete platform-wide (direct-import only)"),
+        reindex=True,
+    )
+    result = _assert_scope_fails(root, "duplicate id")
+    assert any("scope widening" in e for e in _b(result.gate_a, "A-19"))
+
+
+def test_w4_ra_b4_05_exact_duplicate_of_a_certified_limitation_is_rejected(repo) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m["limitations"].append(m["limitations"][0]), reindex=True)
+    _assert_scope_fails(root, "duplicate id")
+
+
+@pytest.mark.parametrize("action", ["drop", "reword", "append"])
+def test_w4_ra_b4_05_unlabelled_certifier_entry_is_bound_exactly(repo, action: str) -> None:
+    root, _ = repo
+
+    def change(m: dict[str, Any]) -> None:
+        i = next(i for i, x in enumerate(m["limitations"]) if x.startswith("Evidence-only publication"))
+        if action == "drop":
+            del m["limitations"][i]
+        elif action == "reword":
+            m["limitations"][i] = "Evidence-only publication: closes EVOL-X"
+        else:
+            m["limitations"][i] += ", and certifies the whole platform"
+
+    _mutate_json(root, pf.REL_MANIFEST, change, reindex=True)
+    _assert_scope_fails(root, "<unlabelled>")
+
+
+@pytest.mark.parametrize("lim_id", _LIMITATION_IDS)
+def test_w4_ra_b4_05_dropping_any_certified_limitation_is_rejected(repo, lim_id: str) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_MANIFEST,
+        lambda m: m.update(limitations=[x for x in m["limitations"] if not x.startswith(lim_id)]),
+        reindex=True,
+    )
+    _assert_scope_fails(root, f"limitation {lim_id}")
+
+
+@pytest.mark.parametrize("order", ["reversed", "rotated", "sorted"])
+def test_w4_ra_b4_05_reordering_only_is_a_positive_control(repo, order: str) -> None:
+    root, _ = repo
+
+    def reorder(m: dict[str, Any]) -> None:
+        items = list(m["limitations"])
+        m["limitations"] = {
+            "reversed": list(reversed(items)),
+            "rotated": [*items[3:], *items[:3]],
+            "sorted": sorted(items),
+        }[order]
+
+    _mutate_json(root, pf.REL_MANIFEST, reorder, reindex=True)
+    assert _eval(root).gate_a == []
+
+
+def test_w4_ra_b4_05_widen_and_restore_is_judged_by_content_not_history(repo) -> None:
+    root, _ = repo
+    original = _load(root, pf.REL_MANIFEST)["limitations"]
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(limitations=[*original, "LIM-99 widened"]), reindex=True)
+    _assert_scope_fails(root)
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(limitations=original), reindex=True)
+    assert _eval(root).gate_a == []
+
+
+@pytest.mark.parametrize(
+    "widened",
+    [
+        "PASS_SCOPED_UNRESTRICTED_PLATFORM_WIDE",
+        "PASS_SCOPED_EVIDENCE_PUBLICATION_ONLY_AND_FULL_PLATFORM",
+        "pass_scoped_evidence_publication_only",
+    ],
+)
+def test_w4_ra_b4_05_certification_verdict_must_equal_the_baseline(repo, widened: str) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(certification_verdict=widened), reindex=True)
+    _assert_scope_fails(root, "certification_verdict")
+
+
+@pytest.mark.parametrize("frz_id", list(DISPOSITIONS))
+def test_w4_ra_b4_05_every_frz_disposition_must_equal_the_baseline(repo, frz_id: str) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c["frz_evol_dispositions"].update(
+            {frz_id: c["frz_evol_dispositions"][frz_id] + "; enforcement IS claimed"}
+        ),
+        reindex=True,
+    )
+    _assert_scope_fails(root, frz_id)
+
+
+def test_w4_ra_b4_05_frz_disposition_that_keeps_its_scoped_phrases_is_still_rejected(repo) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c["frz_evol_dispositions"].update(
+            {"FRZ-EVOL-07": c["frz_evol_dispositions"]["FRZ-EVOL-07"] + "; production rollback enforcement IS claimed"}
+        ),
+        reindex=True,
+    )
+    result = _assert_scope_fails(root, "FRZ-EVOL-07")
+    assert "A-08" not in _codes(result.gate_a)
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["certified_scope_statement", "platform_claims", "scope", "Claim", "extra_note", "certified_for"],
+)
+def test_w4_ra_b4_05_new_scope_or_unknown_key_in_the_certification_record_is_rejected(repo, key: str) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update({key: "EVOL-X is certified for the whole platform without scope restriction"}),
+        reindex=True,
+    )
+    _assert_scope_fails(root, key)
+
+
+@pytest.mark.parametrize("key", ["scope_statement", "claimed_coverage", "extra_note"])
+def test_w4_ra_b4_05_new_key_in_the_manifest_is_rejected(repo, key: str) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update({key: "platform-wide"}), reindex=True)
+    result = _assert_a_fails(root, "A-19")
+    assert any(key in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+def test_w4_ra_b4_05_baseline_scope_key_cannot_be_dropped_or_changed(repo) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(audit_scope_manifest_digest="0" * 64), reindex=True)
+    _assert_scope_fails(root, "audit_scope_manifest_digest")
+
+
+def test_w4_ra_b4_05_lifecycle_fields_may_change_after_the_baseline(repo) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(frz_checklist_rows_changed=True, stage_closure_status="NOT_CLOSED"),
+        reindex=True,
+    )
+    assert _eval(root).gate_a == []
+
+
+def test_w4_ra_b4_05_unavailable_scope_baseline_fails_closed(repo) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(certification_publication_sha="f" * 40), reindex=True)
+    _assert_scope_fails(root, "baseline unavailable")
+
+
+# ---- Gate B: promoted FRZ rows
+
+
+def test_w4_ra_b4_05_test_constants_match_the_canonical_row_template() -> None:
+    for frz_id, disposition in DISPOSITIONS.items():
+        assert pf.render_promoted_row(disposition) == PROMOTED_ROWS[frz_id], frz_id
+    assert pf.render_promoted_row("ELIGIBLE_PASS") == ("PASS", "—")
+    assert pf.render_promoted_row("ELIGIBLE_PASS_SCOPED(LIM-03)") == ("PASS — SCOPED", "LIM-03")
+    assert pf.render_promoted_row("ELIGIBLE_PASS_EVOL_X_SCOPED(a; b (c))") == ("PASS (EVOL-X SCOPED)", "a; b (c)")
+
+
+@pytest.mark.parametrize(
+    ("frz_id", "status", "notes"),
+    [
+        ("FRZ-EVOL-07", "PASS (EVOL-X SCOPED)", PROMOTED_ROWS["FRZ-EVOL-07"][1] + "; unrestricted platform-wide"),
+        ("FRZ-EVOL-01", "PASS — SCOPED", "LIM-03; unrestricted platform-wide"),
+        ("FRZ-EVOL-08", "PASS — SCOPED", "M-09H not measured; LIM-02"),
+        ("FRZ-EVOL-06", "PASS — SCOPED", "LIM-01, LIM-03, LIM-04; footnote: EVOL_CONSERVATIVE_FULL scope only"),
+        ("FRZ-EVOL-02", "PASS", "unrestricted"),
+        ("FRZ-EVOL-09", "PASS — SCOPED (LIM-06 waived)", "LIM-06"),
+    ],
+)
+def test_w4_ra_b4_05_promoted_row_must_equal_the_template_rendered_from_the_baseline(
+    closed, frz_id: str, status: str, notes: str
+) -> None:
+    root, _ = closed
+    _write(root, pf.REL_FRZ_CHECKLIST, _checklist({**PROMOTED_ROWS, frz_id: (status, notes)}))
+    _commit(root, f"widen promoted row {frz_id}")
+    result = _eval(root)
+    assert result.gate_a_pass
+    assert any(e.startswith("B-11") and frz_id in e for e in result.gate_b), result.gate_b
+    assert not result.gate_b_pass
+
+
+def test_w4_ra_b4_05_promoted_row_with_an_extra_cell_is_rejected(closed) -> None:
+    root, _ = closed
+    text = (root / pf.REL_FRZ_CHECKLIST).read_text(encoding="utf-8")
+    marker = "| FRZ-EVOL-07 |"
+    lines = [line + " unrestricted platform-wide |" if line.startswith(marker) else line for line in text.splitlines()]
+    _write(root, pf.REL_FRZ_CHECKLIST, "\n".join(lines) + "\n")
+    _commit(root, "extra cell in promoted row")
+    assert any(e.startswith("B-11") and "FRZ-EVOL-07" in e for e in _eval(root).gate_b)
+
+
+def test_w4_ra_b4_05_markdown_emphasis_does_not_change_the_rendered_row(closed) -> None:
+    root, _ = closed
+    rows = {k: (f"**{s}**", f"`{n}`" if n != "—" else n) for k, (s, n) in PROMOTED_ROWS.items()}
+    _write(root, pf.REL_FRZ_CHECKLIST, _checklist(rows))
+    _commit(root, "emphasised rows")
+    result = _eval(root)
+    assert _b(result.gate_b, "B-11") == [] and _b(result.gate_b, "B-06") == []
+
+
+# ---- Gate B: B6 acceptance record
+
+
+def _insert_before_signature(extra: str) -> Callable[[str], str]:
+    def transform(text: str) -> str:
+        head, sep, tail = text.rpartition("Approved ")
+        return head + extra + "\n" + sep + tail
+
+    return transform
+
+
+_B6_RECORD_CASES: list[Any] = [
+    pytest.param(
+        {"Accepted scope": "unrestricted PLATFORM_CONSERVATIVE_FULL, rollback enforcement in force"},
+        None,
+        "unexpected field",
+        id="extra-field-accepted-scope",
+    ),
+    pytest.param({"Scope note": "unrestricted"}, None, "unexpected field", id="extra-field-scope-note"),
+    pytest.param(
+        {}, _insert_before_signature("Unrestricted platform-wide acceptance."), "allow-listed", id="free-text-line"
+    ),
+    pytest.param(
+        {},
+        _insert_before_signature("Note - accepted for the whole platform"),
+        "allow-listed",
+        id="free-text-line-with-dash",
+    ),
+    pytest.param({}, _insert_before_signature("```\nAccepted scope: platform-wide\n```"), "fenced", id="fenced-block"),
+    pytest.param(
+        {},
+        lambda t: t.replace(pf.B6_RECORD_TITLE, pf.B6_RECORD_TITLE + " - unrestricted platform-wide"),
+        "title line",
+        id="widened-title",
+    ),
+    pytest.param(
+        {"scope": "B6 acceptance for EVOL-X (PASS_SCOPED, evidence-bound) and unrestricted platform-wide"},
+        None,
+        "Decision scope must be exactly",
+        id="widened-decision-scope",
+    ),
+    pytest.param(
+        {"decision_id": "B6 accepted for all of the platform"}, None, "Decision ID", id="free-text-decision-id"
+    ),
+    pytest.param(
+        {"Accepted limitations": "LIM-01, LIM-02, LIM-03, LIM-04, LIM-05, LIM-06, LIM-07, F-C-02"},
+        None,
+        "Accepted limitations",
+        id="legacy-id-only-limitations",
+    ),
+    pytest.param(
+        {"Accepted limitations": "LIM-01:" + "0" * 64}, None, "Accepted limitations", id="wrong-limitation-digest"
+    ),
+    pytest.param(
+        {},
+        lambda t: "\n".join(x for x in t.splitlines() if not x.startswith("Accepted limitations:")) + "\n",
+        "stated exactly once",
+        id="limitations-line-absent",
+    ),
+]
+
+
+@pytest.mark.parametrize(("overrides", "transform", "fragment"), _B6_RECORD_CASES)
+def test_w4_ra_b4_05_b6_record_is_limited_to_allow_listed_exact_content(
+    repo, overrides: dict[str, str], transform: Callable[[str], str] | None, fragment: str
+) -> None:
+    root, built = repo
+    b6 = _publish_b6(root, record_transform=transform, **overrides)
+    decisions = _publish_decisions(root)
+    _finish_close(root, built, b6, decisions)
+    result = _eval(root)
+    assert result.gate_a_pass
+    errors = _b(result.gate_b, "B-11")
+    assert any(fragment in e for e in errors), (fragment, errors)
+    assert not result.gate_b_pass
+
+
+def test_w4_ra_b4_05_b6_record_with_a_changed_limitation_digest_or_duplicate_token_is_rejected(repo) -> None:
+    root, built = repo
+    tokens = _accepted_limitation_tokens(_load(root, pf.REL_MANIFEST)["limitations"])
+    for variant, listed in (
+        ("duplicate", [*tokens, tokens[0]]),
+        ("missing", tokens[1:]),
+        ("extra", [*tokens, "LIM-99:" + "1" * 64]),
+    ):
+        fresh = root.parent / f"b6_{variant}"
+        shutil.copytree(root, fresh)
+        b6 = _publish_b6(fresh, **{"Accepted limitations": ",".join(listed)})
+        decisions = _publish_decisions(fresh)
+        _finish_close(fresh, built, b6, decisions)
+        errors = _b(_eval(fresh).gate_b, "B-11")
+        assert any("Accepted limitations" in e for e in errors), (variant, errors)
+
+
+def test_w4_ra_b4_05_accepted_limitation_tokens_bind_the_baseline_text() -> None:
+    tokens = pf.accepted_limitation_tokens(["LIM-01 a", "LIM-01 b", "F-C-02 c", "no id here"])
+    assert tokens == sorted(
+        [f"LIM-01:{_sha256(b'LIM-01 a')}", f"LIM-01:{_sha256(b'LIM-01 b')}", f"F-C-02:{_sha256(b'F-C-02 c')}"]
+    )
+
+
+def test_w4_ra_b4_05_a_correct_closure_still_passes_both_gates(closed) -> None:
+    root, _ = closed
+    result = _eval(root)
+    assert result.gate_a == [] and result.gate_b == []
+
+
+# --------------------------------------------------------------------------- W4-F03 late-blocker lifecycle
+
+LATE_TEXT = "B-7 RA-B4-05 semantic scope widening not corrected"
+
+
+def _repo_with_late_blocker(tmp_path: Path) -> tuple[Path, dict[str, str], str]:
+    """Baseline + a blocker published *after* the certification publication, before the re-audit evidence."""
+    root = tmp_path / "repo"
+    built = _build_base(root, resolve=False)
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c["open_blockers_for_closure"].append(LATE_TEXT),
+        reindex=True,
+    )
+    opened = _git(root, "rev-parse", "HEAD")
+    built.update(_resolve_a_blockers(root, built))
+    return root, built, opened
+
+
+def _late_entry(root: Path, built: dict[str, str], opened: str, **changes: Any) -> dict[str, Any]:
+    entry = json.loads(json.dumps(_resolved(root, "B-4")))
+    entry.update(
+        blocker_id="B-7",
+        baseline_text_sha256=_sha256(LATE_TEXT.encode()),
+        opened_at_sha=opened,
+    )
+    entry.update(changes)
+    return entry
+
+
+def test_w4_f03_blocker_added_after_the_baseline_and_then_deleted_fails(tmp_path: Path) -> None:
+    root, _, _ = _repo_with_late_blocker(tmp_path)
+    result = _assert_a_fails(root, "A-18")
+    assert any("B-7" in e and "added after the certification publication" in e for e in result.gate_a), result.gate_a
+    assert any("disappeared without closure evidence" in e for e in result.gate_a)
+
+
+def test_w4_f03_blocker_added_after_the_baseline_holds_gate_a_while_open(tmp_path: Path) -> None:
+    root, _, _ = _repo_with_late_blocker(tmp_path)
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c["open_blockers_for_closure"].append(LATE_TEXT), reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("open certification blocker" in e and "B-7" in e for e in result.gate_a)
+
+
+def test_w4_f03_late_blocker_resolved_with_independent_evidence_passes(tmp_path: Path) -> None:
+    root, built, opened = _repo_with_late_blocker(tmp_path)
+
+    def add(c: dict[str, Any]) -> None:
+        c["resolved_blockers_for_closure"].append(_late_entry(root, built, opened))
+
+    _mutate_json(root, pf.REL_CERT_RECORD, add, reindex=True)
+    assert _eval(root).gate_a == []
+
+
+@pytest.mark.parametrize(
+    ("name", "change", "fragment"),
+    [
+        (
+            "opened_at_baseline_instead_of_first_publication",
+            lambda e, b, o: e.update(opened_at_sha=b["cert_pub"]),
+            "opened_at_sha",
+        ),
+        ("wrong_baseline_text", lambda e, b, o: e.update(baseline_text_sha256="0" * 64), "baseline_text_sha256"),
+        ("closure_before_opening", lambda e, b, o: e.update(closure_publication_sha=b["cert_pub"]), "published after"),
+    ],
+)
+def test_w4_f03_late_blocker_resolution_is_independently_verified(
+    tmp_path: Path, name: str, change, fragment: str
+) -> None:
+    root, built, opened = _repo_with_late_blocker(tmp_path)
+
+    def add(c: dict[str, Any]) -> None:
+        entry = _late_entry(root, built, opened)
+        change(entry, built, opened)
+        c["resolved_blockers_for_closure"].append(entry)
+
+    _mutate_json(root, pf.REL_CERT_RECORD, add, reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("B-7" in e and fragment in e for e in result.gate_a), (name, result.gate_a)
+
+
+def test_w4_f03_resolution_for_a_blocker_that_never_existed_fails(repo) -> None:
+    root, built = repo
+
+    def add(c: dict[str, Any]) -> None:
+        entry = json.loads(json.dumps(next(e for e in c["resolved_blockers_for_closure"] if e["blocker_id"] == "B-4")))
+        entry["blocker_id"] = "B-9"
+        c["resolved_blockers_for_closure"].append(entry)
+
+    _mutate_json(root, pf.REL_CERT_RECORD, add, reindex=True)
+    result = _assert_a_fails(root, "A-18")
+    assert any("B-9" in e and "does not match any blocker" in e for e in result.gate_a)
+
+
+def test_w4_f03_blocker_added_and_removed_in_one_history_is_found_even_if_head_looks_clean(repo) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c["open_blockers_for_closure"].append(LATE_TEXT), reindex=True)
+    assert not _eval(root).gate_a_pass
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(
+            open_blockers_for_closure=[x for x in c["open_blockers_for_closure"] if not x.startswith("B-7")]
+        ),
+        reindex=True,
+    )
+    assert any("B-7" in e for e in _b(_eval(root).gate_a, "A-18"))
+
+
+@pytest.mark.parametrize("gate", ["a", "b"])
+@pytest.mark.parametrize("duplicate", ["same-text", "reworded"])
+def test_w4_f03_duplicate_open_blocker_ids_are_an_explicit_error(repo, gate: str, duplicate: str) -> None:
+    root, _ = repo
+    extra = B5_TEXT if duplicate == "same-text" else B5_TEXT + " (dup)"
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c["open_blockers_for_closure"].append(extra), reindex=True)
+    result = _eval(root)
+    errors = result.gate_a if gate == "a" else result.gate_b
+    assert any("duplicate id" in e and "B-5" in e for e in errors), errors
+    assert not result.gate_a_pass
+
+
+# --------------------------------------------------------------------------- W4-F04 operator-record hardening
+
+
+@pytest.mark.parametrize(
+    "scope",
+    [
+        "B6 acceptance for EVOL-X is NOT authorized",
+        "FRZ-EVOL-07 promotion DENIED",
+        "promotion UNAUTHORIZED for FRZ-EVOL-08",
+        "promotion unauthorised",
+        "B6 acceptance isn't granted",
+        "B6 acceptance isn’t granted",
+        "never authorized",
+        "N​OT authorized",
+        "ＮＯＴ authorized",
+        "Promotion revoked",
+    ],
+)
+def test_w4_f04_negated_decision_scope_is_detected(scope: str) -> None:
+    assert pf.scope_negation(scope), scope
+
+
+@pytest.mark.parametrize(
+    "scope",
+    [
+        OD12_SCOPE,
+        ODX08_SCOPE,
+        "B6 acceptance authorization for EVOL-X",
+        "B6 acceptance for EVOL-X (PASS_SCOPED, evidence-bound)",
+        "IIAC policy activation",
+    ],
+)
+def test_w4_f04_canonical_decision_scopes_carry_no_negation(scope: str) -> None:
+    assert pf.scope_negation(scope) == ""
+
+
+def test_w4_f04_operator_record_errors_unit_semantics() -> None:
+    now = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
+    record = _operator_record("X-1", "B6 acceptance for EVOL-X", stamp="2026-11-05T10:00:00+00:00")
+    before = datetime(2026, 11, 5, 11, 0, tzinfo=UTC)
+    errors, _ = pf.operator_record_errors(
+        record, decision_id="X-1", scope_tokens=("EVOL-X",), now=now, not_before=before
+    )
+    assert errors == ["operator signature predates the certification publication"]
+    errors, _ = pf.operator_record_errors(
+        record, decision_id="X-1", scope_tokens=("EVOL-X",), now=now, not_before=before - timedelta(hours=2)
+    )
+    assert errors == []
+    errors, _ = pf.operator_record_errors(record, decision_id="X-1", scope_tokens=("EVOL-X",), now=now)
+    assert errors == []
+
+
+# --------------------------------------------------------------------------- W4-F06 byte-stable binding records
+
+_BINDING = "docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.json"
+_DELEGATION = "docs/project/maintainers/qualification/IIAC_OD_DELEGATION_EVOLX_B4_EVIDENCE_PUBLICATION_2026-11-06.md"
+_BINDING_UTF8 = "docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.utf8.json"
+
+
+@pytest.mark.parametrize("rel", [_BINDING, _DELEGATION, _BINDING_UTF8])
+def test_w4_f06_digest_bound_publication_records_are_not_text_converted(rel: str) -> None:
+    proc = subprocess.run(
+        ["git", "check-attr", "text", "--", rel], cwd=REPO, capture_output=True, text=True, check=False
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip().endswith("text: unset"), proc.stdout
+
+
+_EVIDENCE_BASELINE_SHA = "5afaad9eadfc1655f4ef1ab59eb022960a924648"  # T-W4-01 audit baseline
+
+
+def test_w4_f06_the_original_binding_and_delegation_record_are_never_edited() -> None:
+    for rel in (_BINDING, _DELEGATION):
+        published = subprocess.run(
+            ["git", "show", f"{_EVIDENCE_BASELINE_SHA}:{rel}"], cwd=REPO, capture_output=True, check=False
+        )
+        if published.returncode != 0:
+            pytest.skip("audit baseline commit is not available in this clone")
+        assert _sha256((REPO / rel).read_bytes()) == _sha256(published.stdout), (
+            f"{rel} differs from the published bytes"
+        )
+
+
+def test_w4_f06_the_republication_is_valid_utf8_and_binds_the_original_bytes() -> None:
+    original = (REPO / _BINDING).read_bytes()
+    document = json.loads((REPO / _BINDING_UTF8).read_bytes().decode("utf-8"))
+    assert document["supersedes"]["path"] == _BINDING
+    assert document["supersedes"]["sha256"] == _sha256(original)
+    assert document["supersedes"]["transcoding"] == "cp1252 -> utf-8 (byte 0x97 -> U+2014)"
+    assert document["auditor_verdict"] == "EVOL-X B-4 — PARTIAL / EXACT BLOCKERS"
+    assert document["delegation_record_sha256"] == _sha256((REPO / _DELEGATION).read_bytes())
+
+
+# --------------------------------------------------------------------------- movable baseline
+
+
+def _rebind_certification_publication(root: Path, sha: str) -> None:
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(certification_publication_sha=sha), reindex=True)
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(certification_publication_sha=sha), reindex=True)
+
+
+def test_w4_ra_b4_05_scope_baseline_cannot_be_moved_to_a_later_widened_commit(repo) -> None:
+    """Re-pointing ``certification_publication_sha`` at an already-widened commit must not launder the scope."""
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_MANIFEST,
+        lambda m: m["limitations"].__setitem__(
+            _find_limitation(m, "LIM-03"), m["limitations"][_find_limitation(m, "LIM-03")] + _WIDENING
+        ),
+        reindex=True,
+    )
+    widened = _git(root, "rev-parse", "HEAD")
+    _rebind_certification_publication(root, widened)
+    result = _eval(root)
+    a19 = _b(result.gate_a, "A-19")
+    assert any("first published the certification record" in e for e in a19), result.gate_a
+    # the equality itself is satisfied against the moved baseline: only the first-publication pin can catch this
+    assert not any("limitation" in e for e in a19), a19
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w4_ra_b4_02_blocker_baseline_cannot_be_moved_to_a_commit_that_already_dropped_a_blocker(repo) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(
+            open_blockers_for_closure=[x for x in c["open_blockers_for_closure"] if not x.startswith("B-5")]
+        ),
+        reindex=True,
+    )
+    dropped = _git(root, "rev-parse", "HEAD")
+    _rebind_certification_publication(root, dropped)
+    result = _eval(root)
+    assert any("first published the certification record" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
