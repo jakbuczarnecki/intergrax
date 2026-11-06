@@ -49,6 +49,12 @@ Same ticket and files. **W402-01** (HEAD-binding evaded by index flags: content 
 `.gitattributes` bound to `HEAD`), **W402-03** (free-text channels), **W402-04** (commit-graph / fsmonitor off) and the subagent defect hunt D3-D8
 (sys.path shadowing, git environment, structured lifecycle values, gitlinks). Open on purpose: W401-RA-05, RA-07 / D9, OD-1 (decided: accept residual).
 
+## Round 4 - re-audit W403 (verdict PARTIAL on `2e0ed9c6b`)
+
+Same ticket and files. **W403-01** (forged bytecode: no repository bytecode is read or written), **W403-02** (closure_evidence keys, audit directory freeze,
+indexed evidence directories), **W403-03** (binding limited to the verifier directories and the loaded modules). Open on purpose: W403-04 (unverified), RA-05,
+RA-07, OD-1 (decided C), threat-model boundary (suggested OD-2, undecided).
+
 ## Plan digest
 
 Source: operator mission "INTEGRAX - EVOL-X B4 - ONE-PASS CONSOLIDATED CORRECTIVE IMPLEMENTATION" @ `5afaad9eadfc1655f4ef1ab59eb022960a924648`

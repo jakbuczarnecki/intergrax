@@ -220,3 +220,18 @@ One existing test changed meaning on purpose: `test_open_blocker_holds_formal_cl
 * `tests/unit/governance -n 4`: **145 passed, 1 skipped** (symlinks), 14 min 39 s;
 * canonical `--gate b6-readiness`: FAIL with exactly the two real `A-18` blockers and no other code; `verify_iiac_policy_activation --require-in-force`: `IN_FORCE @ IIAC-2026-11-05.1`;
 * no `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed.
+
+## P. Round 4 — round-3 delta re-audit W403 (verdict PARTIAL on `2e0ed9c6b`)
+
+The auditor closed every W402 repro and found one MEDIUM blocker, **W403-01**: a forged `UNCHECKED_HASH` `.pyc` in a git-ignored `__pycache__` replaces a committed verifier module without touching the source, `git status` or the byte comparison, and can make the canonical clone print PASS.
+
+| Finding | Severity | Disposition | Fix and test |
+|---|---|---|---|
+| W403-01 forged bytecode in `__pycache__` | MEDIUM | **Fixed in code** | the preflight sets `sys.dont_write_bytecode` and a `sys.pycache_prefix` outside the repository before any import, so no repository bytecode is read or written and every imported module is compiled from the HEAD-bound source; `test_w403_01_*` plants a forged `.pyc` in a copy of `scripts/` (control: a plain import does run it; the preflight does not) |
+| W403-02 residual free-text channels | LOW | **Fixed in code** | `closure_evidence` items accept only `path`/`sha256`/`decision_id`; the audit directory is frozen like the certification directory (gitlinks included); a new evidence directory must be named by a blocker resolution (`closure_evidence_index_path`); every file of an indexed directory is listed in its index; `test_w403_02_*`. Not covered: free files inside `operator_decisions/` (no index exists for that directory) |
+| W403-03 whole-`scripts/` binding rejects unrelated files, slow | LOW | **Fixed in code** | the binding covers `scripts/governance`, `scripts/qualification`, `scripts/__init__.py`, `.gitattributes` and the modules actually loaded from `scripts/` or `intergrax/`; unrelated scripts no longer block the run; `test_w403_03_*`. A canonical run takes about 30 s on this machine |
+| W403-04 forged commit-graph, `GIT_DIR`/`GIT_INDEX_FILE`, git calls of the imported (material) IIAC modules | INFO | **UNVERIFIED / residual** | unchanged: the imported modules are material paths and were not edited |
+
+**Pinned SHA for round 4: `dc650b8df`** (code and tests; later commits are documentation only). Evidence on that tree (Windows 11, `core.autocrlf=true`, short `--basetemp`, `-n 6`): B4 + ruff-exemption + governance suites together **634 passed, 1 skipped** (symlinks), 30 min 31 s; canonical `--gate b6-readiness` FAIL with exactly the two real `A-18` blockers; no `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed.
+
+**Threat-model note for the next audit and for the operator.** Rounds 2-4 each moved the same boundary: what a person with *write access to the checkout* (working tree, index, git config, ignored caches) can do. Every such attack found so far is now closed, but the class is open-ended by nature; the preflight is a fail-closed guard against accidental or careless divergence from the committed publication, not a defence against an attacker who controls the machine that runs it. A certifier should run it on a fresh clone of the pinned SHA, in a clean environment, which makes this class moot. Recording that boundary is an operator decision (suggested id: OD-2, not decided here).
