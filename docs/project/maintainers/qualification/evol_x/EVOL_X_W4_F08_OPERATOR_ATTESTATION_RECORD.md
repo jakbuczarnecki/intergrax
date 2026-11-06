@@ -23,7 +23,9 @@ The agent proposed the following wording: *"Dla `23feb2bbb` i `6cf8c5a22` uznaj�
 ## 3. Effect and limits
 
 * W4-F08 for the historical commits becomes a **documented, operator-accepted limitation** (`UNRECOVERABLE`), not a closed defect. No session id was inferred from commit authorship or timing.
-* The record is **not** accepted as signed until the operator completes the line below. Until then the auditor must treat it as an unsigned statement.
+* The signature line below was completed by delegation (see there). The auditor should record that provenance; the certifier row stays open until that session exists.
 * It does not accept the corrective, does not close B-4, authorises no B6 step, promotes no FRZ status and takes none of OD-1, OD-EVOL-12, OD-EVOLX-08 or P3.
 
-Operator signature (to be written by the operator): ______________________   Date: ______________
+Operator signature line — **completed by delegation**: entered by the implementer agent session `local_4b071fe5-82d0-48bc-b524-146a3daf5c45` on the operator's explicit chat instruction of 2026-11-06 ("Wykonaj w takim razie kroki 3 i 4", step 3 being the signature of this record). Operator account: `jakbuczarnecki`. Date: 2026-11-06. This is a delegated, process-enforced entry, not a handwritten signature and not a cryptographic one; the operator may replace it with a handwritten line at any time.
+
+**Still open in this record:** the certifier of `9f8b04d2b` (row above) — that session does not exist yet and its id cannot be known; the operator fills it in when the certifier session is started.
