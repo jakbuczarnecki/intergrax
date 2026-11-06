@@ -39,6 +39,7 @@ Source: operator mission "INTEGRAX - EVOL-X B4 - ONE-PASS CONSOLIDATED CORRECTIV
 ## Approved
 
 Approved: operator @ 2026-11-06 (mission "ONE-PASS CONSOLIDATED CORRECTIVE IMPLEMENTATION" sections 14-15: create the consolidated corrective ticket and implement; the mission does not authorise B6, FRZ promotion, closure or material governance edits)
+Publication-Approved: operator @ 2026-11-06 (chat authorisation: push to `development` by fast-forward and complete the remaining technical steps; it does not cover independent re-audit acceptance, W4-F08 attestation, OD-1, OD-EVOL-12 / OD-EVOLX-08 / P3, B6, FRZ promotion or EVOL-X closure)
 
 ## Test contract
 
