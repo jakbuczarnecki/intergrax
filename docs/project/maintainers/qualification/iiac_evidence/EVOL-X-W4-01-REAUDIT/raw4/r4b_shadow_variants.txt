@@ -1,0 +1,15 @@
+== R4b script mode WITHOUT PYTHONPATH (the documented command form), cwd=repo root, json.py planted at root
+EVOL-X closure preflight: FAIL
+  repository: canonical | policy mode: IIAC | selected gate: b6-readiness
+marker: none
+== R4c script mode, cwd = a different directory
+EVOL-X closure preflight: FAIL
+  repository: canonical | policy mode: IIAC | selected gate: b6-readiness
+marker: none
+== R4d module mode -m, cwd=repo root, no PYTHONPATH
+Traceback (most recent call last):
+  File "D:\w4a4\cl_false\scripts\qualification\evol_x_closure_publication_preflight.py", line 1029, in policy_mode
+marker: json.py shadow executed, argv0=D:\w4a4\cl_false\scripts\qualification\evol_x_closure_publication_preflight.py
+== R4e how the repo's own tests/CI invoke it: subprocess [sys.executable, SCRIPT_PATH] with PYTHONPATH=<clone> (tests/unit/governance/test_evol_x_real_repo_fresh_clone.py::_env)
+Traceback (most recent call last):
+marker: json.py shadow executed, argv0=scripts/qualification/evol_x_closure_publication_preflight.py

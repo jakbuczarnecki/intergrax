@@ -1,0 +1,81 @@
+{
+  "schema_version": "auditor-findings.v1",
+  "stage_id": "EVOL-X",
+  "ticket": "T-IGX-019-A",
+  "round": 4,
+  "audited_sha": "dc650b8df67349896bb813c3fd723fcd36717362",
+  "previous_audited_sha": "2e0ed9c6b07fd3f4218d769b35a70cb7230db8fb",
+  "auditor_session_id": "local_e360e892-825d-4e0f-81f6-b4dc46ed4df9",
+  "auditor_agent_id": "independent-quality-auditor",
+  "not_certification": true,
+  "overall_verdict": "PARTIAL",
+  "exact_blockers_for_acceptance": ["W404-01"],
+  "attacker_capability_tiers": {
+    "T1": "write access to the working tree only: new or modified files that git status shows",
+    "T2": "write access to ignored or hidden files (git-ignored paths, __pycache__, .git/info/exclude entries, repo-root files that no check binds)",
+    "T3": "write access to the git index or git config (skip-worktree, assume-unchanged, fsmonitor, replace refs, grafts)",
+    "T4": "control of the Python environment or process (PYTHONPATH, sitecustomize, usercustomize, .pth, the interpreter, the user temp directory)"
+  },
+  "per_previous_finding": [
+    {"id": "W403-01", "verdict": "PARTIAL", "note": "Main-process bytecode is closed (forged pycs for iiac_common, iiac_activation_gate, the canonical matrix and scripts/__init__ are not executed; formal-closure FAIL, exit 1). The IIAC companion subprocesses (verify_iiac_audit_manifest.py, verify_iiac_role_separation.py) still load forged bytecode: W404-03. The round-4 change also opened a worse hole before the strip: W404-01."},
+    {"id": "W403-02", "verdict": "PARTIAL", "note": "closure_evidence item keys (T8), gitlink in audit/ (T6a), new indexed directory (T7b) are now rejected; every file of an indexed directory must be listed. Residual: free file in operator_decisions/ (no index, acknowledged) and an addendum listed in an edited index of a known directory: W404-04."},
+    {"id": "W403-03", "verdict": "PASS", "note": "binding limited to scripts/governance, scripts/qualification, scripts/__init__.py, .gitattributes and loaded modules: unrelated modified or untracked files under scripts/ (also scripts/dev) no longer block; files in the bound trees still do (A-21). Canonical run 45 s."},
+    {"id": "W403-04", "verdict": "UNVERIFIED", "note": "forged commit-graph, GIT_DIR/GIT_INDEX_FILE and the imported modules' own git calls: not exercised, unchanged."},
+    {"id": "W402-01", "verdict": "PASS", "note": "re-run (V-a, V-b): rejected."},
+    {"id": "W402-03", "verdict": "PASS", "note": "re-run (V-d..V-g): rejected."},
+    {"id": "W401-RA-01..04, RA-06", "verdict": "PASS", "note": "all original repros S1..S6, V1..V3 re-run on dc650b8df: rejected; controls pass."},
+    {"id": "W401-RA-05/07/08", "verdict": "PARTIAL", "note": "open on purpose, code untouched."}
+  ],
+  "regression_and_legitimate_operations": {
+    "b4_suite": "489 passed (481 + 8 new), 0 failed, EXIT=0",
+    "governance_suite": "145 passed, 1 skipped (symlinks), EXIT=0",
+    "existing_tests_weakened": "no: the test diff removes no line",
+    "real_chain_clones_autocrlf_true_false_input": "status clean, activation IN_FORCE, canonical b6-readiness FAIL with exactly two A-18, no A-21/A-22, no B-12/B-13",
+    "linked_worktree": "clone's linked worktree and the audited worktree: exactly two A-18",
+    "unrelated_dirty_files": "modified README.md, untracked and modified files under scripts/ outside the bound trees: accepted; an untracked file in scripts/qualification: rejected (A-21/B-12)",
+    "canonical_formal_closure": "FAIL, exit 1, only the two A-18 in Gate A",
+    "runtime": "formal-closure 45 s (suites running concurrently)"
+  },
+  "findings": [
+    {
+      "id": "W404-01", "severity": "HIGH", "verdict": "FAIL", "capability": "T1", "area": "W403-01 fix, regression of the round-3 D4 protection",
+      "title": "import tempfile runs before the sys.path strip: an untracked stdlib-named file in scripts/qualification/ executes and can force PASS",
+      "summary": "Round 4 added `import tempfile` above the code that removes the script directory from sys.path. tempfile imports random and shutil (and others) that are not yet loaded, and they are resolved from sys.path[0] = scripts/qualification/ first. A planted scripts/qualification/random.py or shutil.py therefore runs before any check, in the documented command form.",
+      "reproduction": "raw4/r6_tempfile_shadow.txt. Clone of dc650b8df (canonical class), documented command `python scripts/qualification/evol_x_closure_publication_preflight.py --gate formal-closure` with PYTHONPATH unset: `git status` shows only `?? scripts/qualification/random.py` (same for shutil.py); output `EVOL-X closure preflight: PASS`, exit 0, with B-4/B-5/P3 open; the marker file proves the planted module ran. Control without the file: FAIL, exit 1. At 2e0ed9c6b the strip came before any non-builtin import, so this hole is new in round 4.",
+      "impact": "Weakest capability tier (a new untracked file that git status itself shows) yields a complete false PASS with the documented command. The A-21 check that would flag the file runs only after the code that was already hijacked.",
+      "required_correction": "Put the sys.path strip (or `python -I`, or a re-exec with -I -B) before every non-builtin import, and avoid importing tempfile at all (compute the prefix from os.environ/os.getpid)."
+    },
+    {
+      "id": "W404-02", "severity": "MEDIUM", "verdict": "FAIL", "capability": "T2", "area": "W402-05/06 residual",
+      "title": "A stdlib-named file at the repository root shadows the standard library under `python -m` or PYTHONPATH=<repo>",
+      "summary": "Only the script directory is stripped from sys.path. With `python -m scripts.qualification.evol_x_closure_publication_preflight` (cwd on sys.path) or PYTHONPATH=<repo root> (what tests/unit/governance/test_evol_x_real_repo_fresh_clone.py::_env sets), an untracked and ignored json.py at the repo root is imported instead of the standard library. Repo-root files are in no bound tree.",
+      "reproduction": "raw4/r4b_shadow_variants.txt and r4_r5_shadow_env.txt: json.py (hidden by .git/info/exclude, `git status` empty) executed in module mode and with PYTHONPATH=clone; not executed in the documented script mode without PYTHONPATH.",
+      "impact": "Arbitrary code before any check under a non-documented but plausible invocation; the repository's own test harness uses the exposed form.",
+      "required_correction": "Re-exec or start with -I/-P semantics, ignore '' and PYTHONPATH entries that resolve inside the repository, and bind top-level repository files."
+    },
+    {
+      "id": "W404-03", "severity": "LOW", "verdict": "PARTIAL", "capability": "T2", "area": "W403-01 residual",
+      "title": "IIAC companion subprocesses still load forged bytecode",
+      "summary": "sys.dont_write_bytecode and sys.pycache_prefix are set only in the preflight process. _companion_errors starts verify_iiac_audit_manifest.py and verify_iiac_role_separation.py with the default settings, so a forged unchecked-hash pyc for scripts/governance/iiac_common.py runs there (and may silence their exit codes). The report statement 'no repository bytecode is read' is inaccurate for them.",
+      "reproduction": "raw4/r1_r3_pyc_replay.txt: marker lines from both companions, four invocations; the in-process modules ran no forged code.",
+      "impact": "No reachable false PASS shown: after P2 the inputs of the companion checks (manifest, schema, audited/audit-execution SHAs) are sealed, so the companions cannot be made to matter. Defence-in-depth gap only.",
+      "required_correction": "Export PYTHONDONTWRITEBYTECODE=1 and PYTHONPYCACHEPREFIX to subprocesses (or run them with -B -I)."
+    },
+    {
+      "id": "W404-04", "severity": "LOW", "verdict": "PARTIAL", "capability": "T1", "area": "W403-02 residual",
+      "title": "Unconsumed text can still be added to operator_decisions/ and, with an edited index, to b4_reaudit/",
+      "summary": "A committed file in operator_decisions/ (no index exists) and an addendum listed in an edited EVIDENCE_INDEX.json of the known b4_reaudit/ directory are accepted by Gate A. An unlisted file in b4_reaudit/ is rejected.",
+      "reproduction": "raw4/r7_real_chain_addenda.txt on a clone of the real chain; fixture T7 in r4_atk7.txt.",
+      "impact": "Descriptive channels, not read by any gate; the gate-consumed scope stays sealed.",
+      "required_correction": "Freeze the known directories like certification/audit or allow-list file names."
+    },
+    {
+      "id": "W404-05", "severity": "INFO", "verdict": "UNVERIFIED", "capability": "T4", "area": "Threat-model boundary",
+      "title": "Python-environment hooks are outside what the script can defend",
+      "summary": "A sitecustomize.py on PYTHONPATH that prints PASS and exits 0 forces PASS for the canonical clone (reproduced); the same holds for usercustomize, .pth files in site-packages or the project venv, and a replaced interpreter. A pre-created pyc under the predictable pycache prefix (temp dir/evolx-preflight-no-bytecode-cache/<pid>) is a theoretical variant I did not brute-force.",
+      "reproduction": "raw4/r4_r5_shadow_env.txt (R5).",
+      "impact": "Cannot be closed inside the script; the operator must decide the boundary (see dossier section 5).",
+      "required_correction": "Run on a fresh clone in a clean environment with `python -I -S`-style isolation."
+    }
+  ]
+}

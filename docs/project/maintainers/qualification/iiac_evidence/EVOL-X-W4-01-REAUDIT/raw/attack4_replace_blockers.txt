@@ -1,0 +1,31 @@
+P2 baseline blockers: ['B-4 legacy closure preflight r', 'B-5 OD-EVOL-12 / OD-EVOLX-08 a', 'B6 acceptance (P3), FRZ promot']
+== S6c-a HEAD without any blocker, honest history: gateA=FAIL gateB=FAIL
+   A: A-18 blocker lifecycle: baseline blocker B-4 disappeared without closure evidence (removed, renamed or reclassified): B-4 legacy closure preflight requires independent corrective implementation and re-audit
+   A: A-18 blocker lifecycle: baseline blocker B-5 disappeared without closure evidence (removed, renamed or reclassified): B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows
+   A: A-18 blocker lifecycle: baseline blocker B6-P3 disappeared without closure evidence (removed, renamed or reclassified): B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+   B: B-00 Gate A not satisfied (3 error(s))
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+== S6c-b same HEAD + refs/replace/<P2> (blocker-free forged baseline): gateA=FAIL gateB=FAIL
+   A: A-18 blocker lifecycle: blocker B-4 added after the certification publication (bb090245a5e2) disappeared without closure evidence (removed, renamed or reclassified): B-4 legacy closure preflight requires independent corrective imp
+   A: A-18 blocker lifecycle: blocker B-5 added after the certification publication (bb090245a5e2) disappeared without closure evidence (removed, renamed or reclassified): B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed ro
+   A: A-18 blocker lifecycle: blocker B6-P3 added after the certification publication (bb090245a5e2) disappeared without closure evidence (removed, renamed or reclassified): B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5)
+   B: B-00 Gate A not satisfied (3 error(s))
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+== S6c-c mitigation: GIT_NO_REPLACE_OBJECTS=1: gateA=FAIL gateB=FAIL
+   A: A-18 blocker lifecycle: baseline blocker B-4 disappeared without closure evidence (removed, renamed or reclassified): B-4 legacy closure preflight requires independent corrective implementation and re-audit
+   A: A-18 blocker lifecycle: baseline blocker B-5 disappeared without closure evidence (removed, renamed or reclassified): B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows
+   A: A-18 blocker lifecycle: baseline blocker B6-P3 disappeared without closure evidence (removed, renamed or reclassified): B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+   B: B-00 Gate A not satisfied (3 error(s))
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED

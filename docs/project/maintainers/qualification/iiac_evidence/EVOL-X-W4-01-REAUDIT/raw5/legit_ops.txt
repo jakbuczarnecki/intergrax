@@ -1,0 +1,17 @@
+== clone autocrlf=true status:'' IIAC policy activation: IN_FORCE @ IIAC-2026-11-
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== clone autocrlf=false status:'' IIAC policy activation: IN_FORCE @ IIAC-2026-11-
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== clone autocrlf=input status:'' IIAC policy activation: IN_FORCE @ IIAC-2026-11-
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== unrelated dirty: README.md modified; untracked scripts/dev scratch; modified tracked scripts/dev file; untracked docs file; untracked tests file
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== untracked repo-root non-module files (notes.txt, .env, scratch.md)
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False
+== untracked repo-root python file with innocuous name (my_scratch.py) -- over-blocking?
+  class canonical | A codes: ['A-18', 'A-21'] n= 3 | B-12/13: True
+== untracked package dir at root (tmp_pkg/__init__.py)
+  class canonical | A codes: ['A-18', 'A-21'] n= 3 | B-12/13: True
+== linked worktree of the clone
+  class canonical | A codes: ['A-18'] n= 2 | B-12/13: False

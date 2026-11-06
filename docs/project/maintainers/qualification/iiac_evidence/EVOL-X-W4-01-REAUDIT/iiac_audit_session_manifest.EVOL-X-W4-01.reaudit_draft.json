@@ -1,0 +1,36 @@
+{
+  "stage_id": "EVOL-X-W4-01-CONSOLIDATED-B4-CORRECTIVE",
+  "certification_profile": "iiac-v1",
+  "policy_version": "IIAC-2026-11-05.1",
+  "manifest_status": "AUDITOR_DRAFT_NOT_A_PASS",
+  "implementation_session_id": "local_4b071fe5-82d0-48bc-b524-146a3daf5c45",
+  "implementation_agent_id": "implementer",
+  "auditor_session_id": "local_e360e892-825d-4e0f-81f6-b4dc46ed4df9",
+  "auditor_agent_id": "independent-quality-auditor",
+  "certifier_session_id": "PENDING_CERTIFIER",
+  "certifier_agent_id": "certification-governance-agent",
+  "audited_implementation_sha": "9f8b04d2b8b670077b1e78ce812bb34b680f3968",
+  "test_execution_sha": "9f8b04d2b8b670077b1e78ce812bb34b680f3968",
+  "audit_execution_sha": "9f8b04d2b8b670077b1e78ce812bb34b680f3968",
+  "evidence_publication_sha": "PENDING_CERTIFIER",
+  "audit_report_digest": "d72aee5ec4c1deca163376fac31b91b30a58cdb9b3c8bd8da4667735111b4fde",
+  "findings_digest": "45e5e74f218d8e2b8ae783306850e379b7420733134740c048e76efe9106f80b",
+  "verdict": "CONDITIONAL",
+  "terminal_verdict_text": "EVOL-X W4-01 consolidated B4 corrective — PARTIAL / EXACT BLOCKERS: W401-RA-01, W401-RA-02, W401-RA-03",
+  "limitations": [
+    "Blocking: W401-RA-01 (git replace refs forge the P2 scope baseline), W401-RA-02 (unsealed scope-bearing channels accepted by Gate A), W401-RA-03 (verdict not bound to HEAD; uncommitted working-tree edits accepted for non-digest inputs)",
+    "Non-blocking: W401-RA-04..09 (history simplification for late blockers, parser denylist gaps and over-broad non-ASCII rejection, undocumented exact formats, fixture exit code, OD-1 residual, documentation inconsistencies)",
+    "Linux container run not reproduced by the auditor (Docker daemon read-only); GitHub Actions run 42214173868 on 49b50fd74 used as substitute",
+    "Operator-owned and untouched: W4-F08, OD-1, OD-EVOL-12, OD-EVOLX-08, P3, B6 acceptance, FRZ promotion, EVOL-X closure",
+    "assurance_level process_enforced; no cryptographic session proof; this draft is not a certification and does not accept B-4"
+  ],
+  "certification_publication_sha": "PENDING_CERTIFIER",
+  "assurance_level": "process_enforced",
+  "audit_report_path": "EVOL_X_W4_01_REAUDIT_DOSSIER.md",
+  "findings_path": "EVOL_X_W4_01_REAUDIT_FINDINGS.json",
+  "certifier_fields_pending": [
+    "certifier_session_id",
+    "evidence_publication_sha",
+    "certification_publication_sha"
+  ]
+}

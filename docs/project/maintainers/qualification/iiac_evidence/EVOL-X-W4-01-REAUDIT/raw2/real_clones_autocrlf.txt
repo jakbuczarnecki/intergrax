@@ -1,0 +1,18 @@
+== clone autocrlf=true status: ''
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d
+class canonical mode IIAC A False B False
+  A: A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+  A: A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+  B codes: ['B-00', 'B-01', 'B-02', 'B-06', 'B-07', 'B-09']
+== clone autocrlf=false status: ''
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d
+class canonical mode IIAC A False B False
+  A: A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+  A: A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+  B codes: ['B-00', 'B-01', 'B-02', 'B-06', 'B-07', 'B-09']
+== clone autocrlf=input status: ''
+IIAC policy activation: IN_FORCE @ IIAC-2026-11-05.1 from f8c29fb8dfe5e14d9b06ff16659fd9cbe9ad326d
+class canonical mode IIAC A False B False
+  A: A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+  A: A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+  B codes: ['B-00', 'B-01', 'B-02', 'B-06', 'B-07', 'B-09']

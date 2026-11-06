@@ -1,0 +1,11 @@
+ .gitattributes                                     |   12 +
+ .github/workflows/unit-tests.yml                   |   42 +-
+ ...EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.utf8.json |   36 +
+ ...ONSOLIDATED_CORRECTIVE_IMPLEMENTATION_REPORT.md |  110 ++
+ .../EVOL_X_W4_01_CONSOLIDATED_REAUDIT_HANDOFF.md   |   43 +
+ governance/tickets/T-IGX-019-A.md                  |   65 ++
+ .../evol_x_closure_publication_preflight.py        |  579 +++++++++-
+ .../test_evol_x_real_repo_fresh_clone.py           |  364 ++++++
+ tests/unit/qualification/conftest.py               |   24 +
+ .../test_evol_x_closure_preflight_b4.py            | 1170 +++++++++++++++++++-
+ 10 files changed, 2404 insertions(+), 41 deletions(-)

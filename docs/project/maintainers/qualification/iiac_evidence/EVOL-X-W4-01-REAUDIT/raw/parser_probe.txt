@@ -1,0 +1,22 @@
+baseline ascii                                                         -> ACCEPT
+Polish diacritics in scope (legit operator language)                   -> REJECT: record Decision scope contains non-ASCII or non-printable characters (ambiguous text)
+typographic em dash in scope                                           -> REJECT: record Decision scope contains non-ASCII or non-printable characters (ambiguous text)
+scope: refuses ...                                                     -> ACCEPT
+scope: cannot ...                                                      -> ACCEPT
+scope: except/excluding ...                                            -> ACCEPT
+prose revocation line (col 0, no colon-key)                            -> ACCEPT
+second status line REVOKED                                             -> REJECT: record must state exactly one 'Decision status' line (found 2)
+quoted revoked status                                                  -> ACCEPT
+revocation-type key 'Revoked: yes'                                     -> REJECT: record carries the revocation-type field 'Revoked'
+CRLF record                                                            -> ACCEPT
+signature predates P2 (not_before checked elsewhere)                   -> ACCEPT
+register status 'SIGNED / APPROVED'                      -> ACCEPT
+register status 'Signed / Approved'                      -> ACCEPT
+register status 'signed/approved'                        -> ACCEPT
+register status 'SIGNED / APPROVED ✅'                    -> REJECT
+register status '~~SIGNED / APPROVED~~'                  -> REJECT
+register status '**SIGNED / APPROVED**'                  -> ACCEPT
+register status 'SIGNED / APPROVED (conditional)'        -> REJECT
+register status 'DECIDED'                                -> REJECT
+register status 'AUTHORIZED'                             -> REJECT
+register status 'RATIFIED'                               -> REJECT

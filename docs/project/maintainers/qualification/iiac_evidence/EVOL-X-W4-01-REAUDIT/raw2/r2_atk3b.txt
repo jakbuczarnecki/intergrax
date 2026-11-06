@@ -1,0 +1,31 @@
+== S6a widened HEAD, no replace ref (must FAIL A): gateA=FAIL gateB=FAIL
+   A: A-19 limitation LIM-01 [6ddd49c796d0] x1 was dropped or reworded relative to the certification publication
+   A: A-19 limitation LIM-01 [5b80023b0df3] x1 was added or reworded relative to the certification publication (scope widening)
+   B: B-00 Gate A not satisfied (2 error(s))
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   replace refs: 9ab327e260d7756d543c732c6e27438448d78bc3 commit	refs/replace/67df4badc6d7dea1605cfab136a6937f6cd5db81
+== S6b widened HEAD + refs/replace/<P2> -> forged P2: gateA=FAIL gateB=FAIL
+   A: A-19 limitation LIM-01 [6ddd49c796d0] x1 was dropped or reworded relative to the certification publication
+   A: A-19 limitation LIM-01 [5b80023b0df3] x1 was added or reworded relative to the certification publication (scope widening)
+   A: A-22 repository carries replace refs (refs/replace/67df4badc6d7dea1605cfab136a6937f6cd5db81): history is not trusted
+   B: B-00 Gate A not satisfied (3 error(s))
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   replace refs in a plain `git clone`: ''
+== S6d mitigation GIT_NO_REPLACE_OBJECTS=1 on S6b state: gateA=FAIL gateB=FAIL
+   A: A-19 limitation LIM-01 [6ddd49c796d0] x1 was dropped or reworded relative to the certification publication
+   A: A-19 limitation LIM-01 [5b80023b0df3] x1 was added or reworded relative to the certification publication (scope widening)
+   A: A-22 repository carries replace refs (refs/replace/67df4badc6d7dea1605cfab136a6937f6cd5db81): history is not trusted
+   B: B-00 Gate A not satisfied (3 error(s))
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED

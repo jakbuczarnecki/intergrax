@@ -1,0 +1,11 @@
+== import closure of the preflight process (b6-readiness run) and sys.path
+inside repository: ['scripts.governance', 'scripts.governance.iiac_activation_gate', 'scripts.governance.iiac_common', 'scripts.qualification.evol_x_frz_evol_canonical_matrix']
+site-packages: []
+outside stdlib/site/repo: ['__main__ <- C:\\Users\\XPS\\AppData\\Local\\Temp\\claude\\d19482db763911f7\\fc570696-4e30-4d85-ac50-378e86e4ede8\\scratchpad\\closure.py', '_bz2 <- C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\DLLs\\_bz2.pyd', '_hashlib <- C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\DLLs\\_hashlib.pyd', '_lzma <- C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\DLLs\\_lzma.pyd', 'unicodedata <- C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\DLLs\\uni
+stdlib count: 79
+sys.path: ['C:\\Users\\XPS\\AppData\\Local\\Temp\\claude\\d19482db763911f7\\fc570696-4e30-4d85-ac50-378e86e4ede8\\scratchpad', 'C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python312.zip', 'C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\DLLs', 'C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\Lib', 'C:\\Users\\XPS\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none', 'D:\\Projekty\\intergrax\\.claude\\worktrees\\stoic-panini-83e1a9\\.venv', 'D:\\Projekty\\intergrax\\.claude\\worktrees
+== static: statements executed before the bootstrap block
+1:from __future__ import annotations
+3:import os
+4:import sys
+40:import argparse  # noqa: E402

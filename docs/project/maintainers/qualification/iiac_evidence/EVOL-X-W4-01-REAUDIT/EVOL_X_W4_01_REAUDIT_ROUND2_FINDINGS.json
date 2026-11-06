@@ -1,0 +1,64 @@
+{
+  "schema_version": "auditor-findings.v1",
+  "stage_id": "EVOL-X",
+  "ticket": "T-IGX-019-A",
+  "round": 2,
+  "audited_sha": "ca78b1c1f73f1e23c3a9bfed118988c12a0c71fa",
+  "previous_audited_sha": "9f8b04d2b8b670077b1e78ce812bb34b680f3968",
+  "auditor_session_id": "local_e360e892-825d-4e0f-81f6-b4dc46ed4df9",
+  "auditor_agent_id": "independent-quality-auditor",
+  "not_certification": true,
+  "overall_verdict": "PARTIAL",
+  "exact_blockers_for_acceptance": ["W402-01"],
+  "per_original_finding": [
+    {"id": "W401-RA-01", "verdict": "PASS", "note": "replace refs, grafts file, shallow repository refused (A-22/B-13) and every git call runs --no-replace-objects; original repro S6b now FAILS; detection also verified on the real chain (clone of ca78b1c1f). Untested variants (commit-graph, fsmonitor) -> W402-04 UNVERIFIED."},
+    {"id": "W401-RA-02", "verdict": "PARTIAL", "note": "original S1 (binding text, frz_checklist_rows_changed), S2 (added certification file), S5 (duplicate key) all rejected. Residual free-text channels remain: see W402-03."},
+    {"id": "W401-RA-03", "verdict": "PARTIAL", "note": "original repros (checklist, register, governance JSON) now rejected with B-12/A-21; real CRLF checkouts stay clean (autocrlf true/false/input). The git-status based check is evaded with skip-worktree/assume-unchanged (W402-01, blocker); verifier code outside the read set is not bound (W402-02)."},
+    {"id": "W401-RA-04", "verdict": "PASS", "note": "side-branch blocker dropped by an 'ours' merge is now reported as 'disappeared without closure evidence' (--full-history); control still rejected."},
+    {"id": "W401-RA-06", "verdict": "PASS", "note": "EVOL_X_B6_RECORD_AND_FRZ_ROW_FORMATS.md present, consistent with the code and with the real P2 dispositions, protected by a drift test."},
+    {"id": "W401-RA-05", "verdict": "PARTIAL", "note": "deliberately left open; parser code unchanged in the diff; re-test not repeated."},
+    {"id": "W401-RA-07", "verdict": "PARTIAL", "note": "deliberately left open; exit-code contract unchanged."},
+    {"id": "W401-RA-08", "verdict": "PARTIAL", "note": "OD-1 operator decision; unchanged."}
+  ],
+  "regression_and_legitimate_operations": {
+    "b4_suite": "448 passed (423 + 25 new w401 tests), 0 failed, EXIT=0",
+    "governance_suite": "145 passed, 1 skipped (symlinks), EXIT=0",
+    "existing_tests_weakened": "no: the test diff has 0 removed lines",
+    "real_chain_clones_autocrlf_true_false_input": "status clean, activation IN_FORCE, canonical b6-readiness FAIL with exactly two A-18 (B-4, B6-P3), no A-19/A-21/A-22, no B-12/B-13",
+    "canonical_formal_closure": "FAIL, exit 1, no A-21/A-22/B-12/B-13",
+    "untracked_unrelated_files_under_qualification_and_scripts": "do not trip the check (V-i)",
+    "shallow_clone": "refused (fail-closed; CI uses fetch-depth 0)"
+  },
+  "findings": [
+    {
+      "id": "W402-01", "severity": "MEDIUM", "verdict": "FAIL", "area": "W401-RA-03 residual",
+      "title": "HEAD-binding check is evaded by skip-worktree / assume-unchanged on a tracked input",
+      "summary": "_dirty_input_errors relies on `git status --porcelain`, which hides a modified tracked file whose index entry carries the skip-worktree or assume-unchanged bit, while _read_bytes still returns the modified working-tree bytes as the evidence.",
+      "reproduction": "raw2/r2_atk6.txt (V-a). Closed fixture: commit a widened FRZ row (Gate B FAIL, B-11), restore the correct row only in the working tree, `git update-index --skip-worktree` (or --assume-unchanged) on the checklist: `git status --porcelain` is empty and Gate A PASS + Gate B PASS with HEAD still widened. The same-size/old-mtime variant (V-b) is detected.",
+      "impact": "A PASS can still be produced for a state that is not the committed publication by anyone who can write the repository index (same access class as the replace-ref attack that RA-01 treats as in scope). Canonical cannot PASS today (B-4/P3 open).",
+      "required_correction": "Do not use git status as the oracle: compare every read input byte-wise with the HEAD blob (the existing _worktree_matches_blob contract) or check `git ls-files -v`/`git diff-index HEAD` with the skip/assume flags rejected."
+    },
+    {
+      "id": "W402-02", "severity": "LOW", "verdict": "PARTIAL", "area": "W401-RA-03 residual",
+      "title": "Uncommitted edits to verifier code that is not a read input are not flagged",
+      "summary": "The dirty check covers read inputs, the evidence root and the preflight script itself. Imported verifier code outside that set (scripts/governance/iiac_common.py, iiac_activation_gate.py, scripts/qualification/evol_x_frz_evol_canonical_matrix.py) can be modified in the working tree without any A-21/B-12.",
+      "reproduction": "raw2/real_chain_variants.txt (V-c1, V-c2): clone of ca78b1c1f, one comment line appended; `git status` shows M; canonical b6-readiness still reports exactly the two A-18 and no A-21. Control V-c3 (the preflight script) is flagged.",
+      "impact": "Local tampering with validators (validate_manifest_dict, _findings_errors, _path_rejected, canonical FRZ requirements) is not bound to HEAD; only hypothetical today because the blocker checks live in the protected script.",
+      "required_correction": "Include every imported repository module (or all of scripts/) in the dirty-state check."
+    },
+    {
+      "id": "W402-03", "severity": "LOW", "verdict": "PARTIAL", "area": "W401-RA-02 residual",
+      "title": "Free-text channels remain in values that are only type- or key-checked",
+      "summary": "Gate A still accepts: arbitrary text appended to an OPEN blocker entry (key-only comparison, e.g. B-5), extra free-text keys in resolved_blockers_for_closure entries, a token-shaped stage_closure_status of up to 64 characters carrying scope words, and a committed addendum file elsewhere under iiac_evidence/EVOL-X/ (outside the certification directory). An unindexed file in audit/ or certification/ is rejected.",
+      "reproduction": "raw2/r2_atk6.txt V-d, V-e, V-f, V-g (accepted) and V-g2 (rejected).",
+      "impact": "Nothing consumes these values; they are descriptive. Gate-consumed scope and the originally reported channels are sealed.",
+      "required_correction": "Compare open blocker texts with the baseline (or hash them), allow-list resolved-entry keys, use an enum for stage_closure_status, bind the evidence root file set."
+    },
+    {
+      "id": "W402-04", "severity": "INFO", "verdict": "UNVERIFIED", "area": "RA-01 / RA-03 variants",
+      "title": "Further git-level redirections not tested",
+      "summary": "A forged commit-graph, a core.fsmonitor program reporting no changes (would defeat git status like W402-01), alternates, and commit ordering by committer date in the first-publication derivation (a side-branch commit with an old date could only cause a fail-closed rejection, not a pass) were not exercised.",
+      "reproduction": "not executed", "impact": "unknown", "required_correction": "Prefer content comparison over git metadata (see W402-01)."
+    }
+  ]
+}

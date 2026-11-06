@@ -1,0 +1,64 @@
+== W404-03 replay: forged unchecked-hash pycs for in-process AND companion-loaded modules, documented command
+forged scripts\governance\__pycache__\iiac_common.cpython-312.pyc
+forged scripts\governance\__pycache__\iiac_activation_gate.cpython-312.pyc
+forged scripts\qualification\__pycache__\evol_x_frz_evol_canonical_matrix.cpython-312.pyc
+forged scripts\__pycache__\__init__.cpython-312.pyc
+git status: ''
+EVOL-X closure preflight: FAIL
+  repository: canonical | policy mode: IIAC | selected gate: formal-closure
+  Gate A - B6 acceptance readiness: FAIL
+    - A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+  Gate B - formal EVOL-X closure readiness: FAIL
+    - B-00 Gate A not satisfied (2 error(s))
+    - B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+    - B-01 governance formal_b6_status is not ACCEPTED
+    - B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+    - B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+    - B-02 certification record b6_acceptance is not ISSUED
+    - B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-02 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-03 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-04 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-05 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-06 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-07 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-08 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-09 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-10 has no individual PASS disposition (status OPEN)
+    - B-07 operator decision OD-EVOL-12 not recorded as decided (status 'PENDING', date '—'): decision status 'PENDING' is negated, pending or not final
+    - B-07 operator decision OD-EVOLX-08 not recorded as decided (status 'PENDING', date '—'): decision status 'PENDING' is negated, pending or not final
+    - B-09 unresolved mandatory blocker (B-4): B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - B-09 unresolved mandatory blocker (B-5): B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows
+    - B-09 unresolved mandatory blocker (B6-P3): B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+exit=1
+marker (forged code executed anywhere, incl. companions): none
+-- same with PYTHONPATH=<clone> (harness form):
+EVOL-X closure preflight: FAIL
+  repository: canonical | policy mode: IIAC | selected gate: formal-closure
+  Gate A - B6 acceptance readiness: FAIL
+    - A-18 open certification blocker for B6 acceptance: B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - A-18 open certification blocker for B6 acceptance: B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+  Gate B - formal EVOL-X closure readiness: FAIL
+    - B-00 Gate A not satisfied (2 error(s))
+    - B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+    - B-01 governance formal_b6_status is not ACCEPTED
+    - B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+    - B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+    - B-02 certification record b6_acceptance is not ISSUED
+    - B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-02 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-03 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-04 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-05 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-06 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-07 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-08 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-09 has no individual PASS disposition (status OPEN)
+    - B-06 FRZ-EVOL-10 has no individual PASS disposition (status OPEN)
+    - B-07 operator decision OD-EVOL-12 not recorded as decided (status 'PENDING', date '—'): decision status 'PENDING' is negated, pending or not final
+    - B-07 operator decision OD-EVOLX-08 not recorded as decided (status 'PENDING', date '—'): decision status 'PENDING' is negated, pending or not final
+    - B-09 unresolved mandatory blocker (B-4): B-4 legacy closure preflight requires independent corrective implementation and re-audit
+    - B-09 unresolved mandatory blocker (B-5): B-5 OD-EVOL-12 / OD-EVOLX-08 authority confirmation or signed rows
+    - B-09 unresolved mandatory blocker (B6-P3): B6 acceptance (P3), FRZ promotion (P4) and formal closure (P5) not authorized in this publication
+marker: none

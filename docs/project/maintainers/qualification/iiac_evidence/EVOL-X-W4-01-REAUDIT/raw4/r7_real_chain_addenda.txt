@@ -1,0 +1,7 @@
+== real chain: committed unlisted addendum in b4_reaudit/ (has EVIDENCE_INDEX.json)
+  A codes: ['A-18', 'A-19'] n= 3
+    A-19 docs/project/maintainers/qualification/iiac_evidence/EVOL-X/b4_reaudit/ADDENDUM.md is not listed by the evidence index of its directory
+== real chain: addendum listed in b4_reaudit index (index edited)
+  A codes: ['A-18'] n= 2
+== real chain: committed addendum in operator_decisions/
+  A codes: ['A-18'] n= 2

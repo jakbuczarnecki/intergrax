@@ -1,0 +1,2 @@
+docker: Error response from daemon: write /var/lib/desktop-containerd/daemon/io.containerd.metadata.v1.bolt/meta.db: read-only file system: unknown.
+See 'docker run --help'.

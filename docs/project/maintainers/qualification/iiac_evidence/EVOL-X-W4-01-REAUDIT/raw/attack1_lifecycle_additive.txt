@@ -1,0 +1,52 @@
+== CONTROL base (A should pass, B fail): gateA=PASS gateB=FAIL
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   B: B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+== CONTROL closed (both pass): gateA=PASS gateB=PASS
+== S1 lifecycle-key widening text: gateA=PASS gateB=FAIL
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   B: B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+== S2 extra indexed file in certification dir: gateA=PASS gateB=FAIL
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   B: B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+== S5 duplicate key in cert record (first widened): gateA=PASS gateB=FAIL
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   B: B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+   (python json.loads takes the LAST value; strict parsers/humans may see the first)
+== S7a legit: cert record re-indented: gateA=PASS gateB=FAIL
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   B: B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)
+== S7b legit-ish: manifest re-indented (formatter): gateA=FAIL gateB=FAIL
+   A: A-19 manifest bytes differ from the certification publication (only the certification_publication_sha value and the limitation order may change)
+   B: B-00 Gate A not satisfied (1 error(s))
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+== S7c positive: limitation reorder: gateA=PASS gateB=FAIL
+   B: B-01 B6 acceptance not published: governance b6_acceptance_publication_sha unset
+   B: B-01 governance formal_b6_status is not ACCEPTED
+   B: B-01 governance b6_acceptance_policy_version does not cite the IIAC policy in force
+   B: B-02 SHA ladder B6_ACCEPTANCE_PUBLICATION_SHA still pending/empty
+   B: B-02 certification record b6_acceptance is not ISSUED
+   B: B-06 FRZ-EVOL-01 has no individual PASS disposition (status OPEN)

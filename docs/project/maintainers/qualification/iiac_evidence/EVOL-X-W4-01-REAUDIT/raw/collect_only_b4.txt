@@ -1,0 +1,4 @@
+tests/unit/qualification/test_evol_x_b4_ruff_evidence_exemption.py::test_published_audit_evidence_bytes_are_preserved
+tests/unit/qualification/test_evol_x_b4_ruff_evidence_exemption.py::test_probe_scripts_match_p1_published_blobs
+
+423 tests collected in 0.52s

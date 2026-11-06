@@ -1,0 +1,10 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [ 49%]
+......................s................................................. [ 98%]
+..                                                                       [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\unit\governance\test_iiac_activation_gate.py:439: symlink creation is unavailable
+145 passed, 1 skipped in 1019.35s (0:16:59)
+EXIT=0

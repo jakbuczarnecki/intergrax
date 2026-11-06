@@ -1,0 +1,31 @@
+   git status --porcelain: ''
+== V-a HEAD widened, correct row only in worktree, --skip-worktree: gateA=PASS gateB=FAIL 
+     B-12 uncommitted or hidden changes in verified inputs (2): docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md [modified], docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_
+   git status --porcelain: ''
+== V-a HEAD widened, correct row only in worktree, --assume-unchanged: gateA=PASS gateB=FAIL 
+     B-12 uncommitted or hidden changes in verified inputs (2): docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md [modified], docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_
+== V-b0 committed PENDING (must FAIL B): gateA=PASS gateB=FAIL 
+   git status: 'M docs/project/maintainers/qualification/evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md'
+== V-b same-size worktree restore with old mtime: gateA=PASS gateB=FAIL 
+     B-12 uncommitted or hidden changes in verified inputs (1): docs/project/maintainers/qualification/evol_x/EVOL_X_OPERATOR_DECISION_REGISTER_W1.md [modified]; the verdict must bind to HEAD
+== V-d widening text appended to open B-5 blocker text: gateA=FAIL gateB=FAIL 
+     A-18 blocker lifecycle: open blocker B-5 no longer carries the text it was published with (text changed or extended)
+== V-e free-text key in resolved blocker entries: gateA=FAIL gateB=FAIL 
+     A-18 blocker B-4 resolution: unexpected key 'note' (resolution entries carry only structured, gate-checked fields)
+     A-18 blocker B6-P3 resolution: unexpected key 'note' (resolution entries carry only structured, gate-checked fields)
+== V-f stage_closure_status token with scope words: gateA=FAIL gateB=FAIL 
+     A-19 stage_closure_status must be one of ['CLOSED', 'NOT_CLOSED']
+== V-g committed addendum at iiac_evidence/EVOL-X/ root: gateA=FAIL gateB=FAIL 
+     A-19 docs/project/maintainers/qualification/iiac_evidence/EVOL-X/SCOPE_ADDENDUM.md is outside the known EVOL-X evidence directories
+== V-g2 committed unindexed addendum in audit/ dir: gateA=FAIL gateB=FAIL 
+     A-19 SCOPE_ADDENDUM.md was added to the audit directory after the certification publication
+     A-13 unindexed evidence in docs/project/maintainers/qualification/iiac_evidence/EVOL-X/audit: SCOPE_ADDENDUM.md
+== V-h legit but shallow clone: gateA=FAIL gateB=FAIL 
+     A-01 IIAC policy claims IN_FORCE but activation gate fails: ACT-N09 governance implementation SHA: ac14dc4cfc188e18bfb03a25a2726f680d4e2af1 is not an ancestor of 776f23028f189c4f8a408130e23fffdab06960d4
+     A-01 IIAC policy claims IN_FORCE but activation gate fails: ACT-N09 corrective implementation SHA: 776f23028f189c4f8a408130e23fffdab06960d4 is not an ancestor of 776f23028f189c4f8a408130e23fffdab06960d4
+     A-01 IIAC policy claims IN_FORCE but activation gate fails: ACT-N09 audit execution SHA: 776f23028f189c4f8a408130e23fffdab06960d4 is not an ancestor of 2f8c6ad6f1ef738de35aa7d76496d6fe195e20f2
+== V-i untracked unrelated files under QUAL and scripts (should stay PASS A): gateA=PASS gateB=FAIL 
+== V-j untracked junk inside certification dir: gateA=FAIL gateB=FAIL 
+     A-13 unindexed evidence in docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification: .swp~
+     A-21 uncommitted or hidden changes in verified inputs (1): docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/.swp~ [untracked]; the verdict must bind to HEAD
+     B-12 uncommitted or hidden changes in verified inputs (1): docs/project/maintainers/qualification/iiac_evidence/EVOL-X/certification/.swp~ [untracked]; the verdict must bind to HEAD

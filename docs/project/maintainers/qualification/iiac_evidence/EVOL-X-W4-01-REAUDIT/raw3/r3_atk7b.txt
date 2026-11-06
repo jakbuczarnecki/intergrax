@@ -1,0 +1,11 @@
+== T6a gitlink in audit/ (committed): gateA=PASS gateB=FAIL
+== T6b gitlink in certification/ (committed): gateA=FAIL gateB=FAIL
+     A-19 gitlink_dir was added to the certification directory after the certification publication
+== T7 committed addendum in operator_decisions/: gateA=PASS gateB=FAIL
+== T7 committed addendum in b6_acceptance/: gateA=PASS gateB=FAIL
+== T7 committed addendum in b4_reaudit/: gateA=PASS gateB=FAIL
+== T7b new indexed directory beside the known ones: gateA=PASS gateB=FAIL
+== T8 free-text key inside closure_evidence items (operator-kind resolutions): gateA=PASS gateB=PASS
+   porcelain: ''
+== T9 activation record modified in worktree + skip-worktree: gateA=FAIL gateB=FAIL
+     A-01 IIAC policy claims IN_FORCE but activation gate fails: worktree activation record does not match HEAD

@@ -1,0 +1,12 @@
+== S3a committed widened FRZ row (must FAIL B): gateA=PASS gateB=FAIL
+   B: B-06 FRZ-EVOL-01 falsely promoted to unrestricted PASS (certified 'ELIGIBLE_PASS_SCOPED(LIM-03)')
+   B: B-11 FRZ-EVOL-01 promoted row must equal the row rendered from the certified disposition (status 'PASS — SCOPED', notes 'LIM-03'); got status 'PASS', notes 'LIM-03'
+   git status: M docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md
+== S3b same HEAD, uncommitted corrected checklist (HEAD still widened): gateA=PASS gateB=PASS
+== S3c committed register PENDING: gateA=PASS gateB=FAIL
+   B: B-07 operator decision OD-EVOL-05b not recorded as decided (status 'PENDING', date '2026-11-01'): decision status 'PENDING' is negated, pending or not final
+   B: B-07 operator decision OD-EVOL-10 not recorded as decided (status 'PENDING', date '2026-11-01'): decision status 'PENDING' is negated, pending or not final
+== S3d uncommitted register restored: gateA=PASS gateB=PASS
+== S3e committed governance formal_b6_status PENDING: gateA=PASS gateB=FAIL
+   B: B-01 governance formal_b6_status is not ACCEPTED
+== S3f uncommitted governance restored: gateA=PASS gateB=PASS

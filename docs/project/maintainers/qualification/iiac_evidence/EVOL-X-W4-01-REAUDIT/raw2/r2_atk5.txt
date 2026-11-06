@@ -1,0 +1,13 @@
+== V1 widen LIM-02 + repoint manifest&record certification_publication_sha to widened commit: gateA=FAIL
+   A: A-19 manifest certification_publication_sha fa1a36165926 differs from the pinned P2 certification publication 67df4badc6d7: the baseline cannot be re-pointed
+   A: A-19 certification record certification_publication_sha differs from the pinned P2 certification publication 67df4badc6d7: the baseline cannot be re-pointed
+   A: A-19 limitation LIM-02 [024a41964da5] x1 was dropped or reworded relative to the certification publication
+   cert dir md files: ['IIAC_SESSION_HANDOFF_RECORD_EVOL_X_CERTIFICATION.md']
+== V2 amend a P2 certification evidence file + reindex: gateA=FAIL
+   A: A-19 certification evidence IIAC_SESSION_HANDOFF_RECORD_EVOL_X_CERTIFICATION.md differs from the certification publication
+   A: A-19 certification evidence index entry for IIAC_SESSION_HANDOFF_RECORD_EVOL_X_CERTIFICATION.md differs from the certification publication
+== V3 FRZ-EVOL-09 SCOPED->UNSCOPED + repoint: gateA=FAIL
+   A: A-08 FRZ-EVOL-09 widened from auditor SCOPED result to 'ELIGIBLE_PASS'
+   A: A-19 manifest certification_publication_sha 5455d498b917 differs from the pinned P2 certification publication 67df4badc6d7: the baseline cannot be re-pointed
+   A: A-19 certification record certification_publication_sha differs from the pinned P2 certification publication 67df4badc6d7: the baseline cannot be re-pointed
+== V4 control: honest base: gateA=PASS
