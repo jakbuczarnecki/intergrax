@@ -1,0 +1,203 @@
+{
+  "schema_version": "iiac-b4-reaudit-findings.v1",
+  "stage_id": "EVOL-X",
+  "audit_subject": "B-4 corrective implementation (T-IGX-017-A)",
+  "policy_version": "IIAC-2026-11-05.1",
+  "auditor_role": "independent-quality-auditor",
+  "baseline_sha": "ca2b147825ce6117cc7219e63a93d2872669cb49",
+  "audited_implementation_sha": "23feb2bbb017b1beb63f9368b5978384093ff924",
+  "audit_head_sha": "9a8fa3634713f69b56ce87ceaf9ed319fad27dae",
+  "terminal_verdict": "EVOL-X B-4 — PARTIAL / EXACT BLOCKERS",
+  "classification_basis": "A finding blocks only when independent reproduction shows a violation of an explicit B-4 acceptance criterion. Accepted scoped limitations are listed separately and are not blockers.",
+  "summary": {
+    "blocking_b4_acceptance": 4,
+    "non_blocking_recommended": 2,
+    "informational": 4,
+    "historical_or_not_introduced_by_b4": 3,
+    "total": 13
+  },
+  "findings": [
+    {
+      "id": "RA-B4-01",
+      "severity": "HIGH",
+      "origin": "introduced_by_b4",
+      "kind": "false_rejection",
+      "location": "scripts/qualification/evol_x_closure_publication_preflight.py:643-672 (_gate_a_pass_record, A-14); docs/project/maintainers/qualification/evol_x/EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md has no -text attribute (.gitattributes only protects iiac_evidence/**)",
+      "failure_condition": "Gate A compares the working-tree bytes of the pass record to the auditor copy, to the certification-record digest and to the HEAD blob. In a fresh checkout with Git for Windows default core.autocrlf=true the file is materialised with CRLF, so all three comparisons fail. The result depends on checkout configuration, not on evidence.",
+      "independent_evidence": "Fresh clone of HEAD with default config: git ls-files --eol = i/lf w/crlf; preflight Gate A emits 3x A-14 (differs from auditor copy; digest mismatch; differs from HEAD). The implementer's own test test_canonical_repository_formal_closure_fails_closed_while_b6_unpublished FAILS there: assert {'A-14','A-18'} <= {'A-18'}. With core.autocrlf=false and the file re-checked-out as LF the same clone gives only the two expected A-18 errors. Linux CI would not show it.",
+      "required_correction": "Make the byte contract checkout-independent: add the pass-record path to .gitattributes with -text (or compare against git blob content normalised identically on both sides) and add a regression test that runs the canonical check in a clone made with core.autocrlf=true.",
+      "gate_affected": "A-14 (Gate A, therefore Gate B)",
+      "closure_criteria": "Fresh clone with core.autocrlf=true: preflight --gate b6-readiness returns only A-18 errors while blockers are open and the canonical test passes; corrective SHA re-audited.",
+      "blocks": [
+        "B-4 acceptance",
+        "B6 admission on any CRLF checkout"
+      ]
+    },
+    {
+      "id": "RA-B4-02",
+      "severity": "MEDIUM",
+      "origin": "introduced_by_b4",
+      "kind": "unsafe_acceptance",
+      "location": "scripts/qualification/evol_x_closure_publication_preflight.py:736-747 (_blocker_ids) and :766-770 (A-18)",
+      "failure_condition": "A-18 passes when the open_blockers_for_closure entries are absent. Closing the B-4 blocker and the P3-authorisation blocker needs no reference to any independent evidence (re-audit record, digest, SHA, operator authorisation). A missing or null open_blockers_for_closure field is also read as 'no blockers'.",
+      "independent_evidence": "Isolated clone of the REAL published evidence (certification index re-hashed, nothing else changed): deleting the two lines 'B-4 ...' and 'B6 acceptance (P3) ...' gives Gate A PASS (exit 0 for --gate b6-readiness) with B-5 still open. Rewriting the B-4 line to 'B-4 RESOLVED ...' keeps Gate A FAIL (status text alone does not pass), but deletion does. Synthetic fixture T5e: removing the field entirely gives Gate A PASS.",
+      "required_correction": "Bind blocker closure to evidence: require a resolved-blockers structure that cites (a) the B-4 re-audit manifest/findings digest produced by independent-quality-auditor with audited SHA = the corrective implementation SHA (descendant check), and (b) an operator-attested P3 authorisation artefact with signature line and digest, both verified by Gate A. Make open_blockers_for_closure a required list (missing/null = FAIL).",
+      "gate_affected": "A-17/A-18",
+      "closure_criteria": "Fixtures: blocker lines deleted without evidence reference -> Gate A FAIL; with a valid reference -> PASS; forged/mismatched reference -> FAIL; missing field -> FAIL.",
+      "blocks": [
+        "B-4 acceptance (explicit criterion: closure needs an independent evidence reference)",
+        "B6 admission"
+      ]
+    },
+    {
+      "id": "RA-B4-03",
+      "severity": "MEDIUM",
+      "origin": "introduced_by_b4",
+      "kind": "false_acceptance",
+      "location": "scripts/qualification/evol_x_closure_publication_preflight.py:317-323 (decision_recorded, B-07)",
+      "failure_condition": "Any status text that contains SIGNED, APPROVED or CONFIRMED and a date is treated as a recorded decision, including negated or revoked ones.",
+      "independent_evidence": "decision_recorded(status, '2026-11-06') returns True for 'NOT APPROVED', 'NOT CONFIRMED', 'REVOKED (previously APPROVED)', 'REJECTED - not approved', 'APPROVED - WITHDRAWN', 'CONFIRMED? NO'; False only for 'UNSIGNED', PENDING, DRAFT, 'NOT SIGNED'. An operator who declines OD-EVOL-12 or OD-EVOLX-08 with the natural wording 'NOT APPROVED' would satisfy B-07.",
+      "required_correction": "Use an allow-list of affirmative status tokens (SIGNED / APPROVED, OPERATOR APPROVED, CONFIRMED) matched at the start of the normalised status, and a deny-list of NOT, NO, REVOKED, WITHDRAWN, REJECTED, DECLINED, SUPERSEDED, DENIED anywhere. Add negative tests for each.",
+      "gate_affected": "B-07 (Gate B)",
+      "closure_criteria": "All listed negated/revoked wordings fail B-07; real register rows (SIGNED / APPROVED, OPERATOR APPROVED, ...) still pass.",
+      "blocks": [
+        "B-4 acceptance (no unsafe acceptance)",
+        "formal closure"
+      ]
+    },
+    {
+      "id": "RA-B4-04",
+      "severity": "MEDIUM",
+      "origin": "introduced_by_b4",
+      "kind": "unsafe_acceptance",
+      "location": "scripts/qualification/evol_x_closure_publication_preflight.py:777-820 (_gate_b_b6: B-01..B-04)",
+      "failure_condition": "Gate B accepts 'genuine published B6 acceptance' on three self-asserted flags (governance formal_b6_status=ACCEPTED, b6_acceptance_policy_version, certification record b6_acceptance=ISSUED) plus a commit whose governance JSON carries the flag. No acceptance record, operator signature line, certifier session id or digest is required or verified; the flags can be set by any committer.",
+      "independent_evidence": "Synthetic fixture G6: flags flipped in one commit by an arbitrary actor, blockers cleared, FRZ rows and register edited -> Gate A PASS and Gate B PASS with no authorisation artefact referenced. Contrast with A-16, which does require an operator-attested handoff for the audit sessions.",
+      "required_correction": "Require a P3 B6 acceptance record (path, SHA-256 digest in the certification record, operator signature line with ISO timestamp, certifier session id matching the manifest) published at B6_ACCEPTANCE_PUBLICATION_SHA and verify it in B-01..B-04. This is the same artefact class recommended for RA-B4-02(b).",
+      "gate_affected": "B-01..B-04",
+      "closure_criteria": "Fixture with flags only -> Gate B FAIL; fixture with valid acceptance record at the B6 SHA -> PASS; digest/signature/session mismatch -> FAIL.",
+      "blocks": [
+        "B-4 acceptance (Gate B 'genuine B6 acceptance')",
+        "formal closure"
+      ]
+    },
+    {
+      "id": "RA-B4-05",
+      "severity": "MEDIUM",
+      "origin": "accepted_scoped_limitation_with_hardening",
+      "kind": "semantic_scope_widening_not_detected",
+      "location": "preflight A-07/A-08 (startswith + phrase presence), A-17 (verdict prefix), B-06 (phrase presence in FRZ rows)",
+      "failure_condition": "Required phrases are checked for presence, never for absence of a contradicting claim. The certified-limitation check allows arbitrary appended text because it only requires the auditor text as prefix. Certifier-authored limitations (LIM-08..LIM-10, F-C-01, F-C-02, the evidence-only line) and the certified manifest are not compared with the bytes published at certification_publication_sha, so they can be altered or dropped after P2.",
+      "independent_evidence": "Real-evidence clone, blockers removed so only scope checks decide: appending 'platform-wide test ownership is established' to LIM-03, 'production ActivationService.rollback enforcement is in force' to LIM-05, 'M-09H was measured' to LIM-02, 'M-03 generalises' to LIM-04, appending 'production rollback enforcement IS claimed' to the FRZ-EVOL-07 disposition, rewriting FRZ-EVOL-01 to '...unrestricted ownership', and setting certification_verdict to PASS_SCOPED_UNRESTRICTED_PLATFORM_WIDE all keep Gate A PASS. Gate B fixtures G9-G11: FRZ-07/-08/-01 rows contradicting the scope but retaining the tokens pass Gate B. Fixture M1: dropping every certifier-authored limitation after P2 keeps Gate A PASS.",
+      "determination": "Not a bypass of independent authority: the auditor draft, pass record and dossier stay digest-bound and the original restrictions stay present as prefix, so a contradiction is visible to a reader. It is the documented limitation R-1 of the handoff, with the consequence that gate PASS must never be read as semantic confirmation of scope. The post-publication mutability part is a cheap, deterministic gap.",
+      "required_correction": "Recommended in the same corrective cycle: (1) require manifest limitations/verdict/session ids at HEAD to equal the blob at certification_publication_sha (immutability, no text matching needed); (2) deny-list of widening tokens in limitations, dispositions, FRZ rows (platform-wide, unrestricted, is claimed, enforcement is in force, was measured); (3) mandatory recorded human semantic review of FRZ row text and limitations in the P4 publication.",
+      "gate_affected": "A-07, A-08, A-17, B-06",
+      "closure_criteria": "(1) and (2) covered by negative fixtures; (3) recorded in the certifier P4 checklist.",
+      "blocks": []
+    },
+    {
+      "id": "RA-B4-06",
+      "severity": "LOW",
+      "origin": "introduced_by_b4",
+      "kind": "informational_hardening",
+      "location": "preflight main()/_print and --repo/--activation-record flags",
+      "failure_condition": "JSON output carries no repository class (canonical vs fixture) and exit code 0 is returned for any --repo. Only the text report labels FIXTURE.",
+      "independent_evidence": "Code reading; fixtures in the B-4 tests use exactly this path.",
+      "required_correction": "Add repository_class to JSON, and return a non-zero exit code for non-canonical repositories unless an explicit --fixture flag is passed.",
+      "gate_affected": "reporting",
+      "closure_criteria": "JSON contains repository_class.",
+      "blocks": []
+    },
+    {
+      "id": "RA-B4-07",
+      "severity": "INFO",
+      "origin": "introduced_by_b4",
+      "kind": "informational",
+      "location": "scripts/ci/push_gate_config.py:ruff_exempt",
+      "failure_condition": "Prefix test is purely textual: a path with '..' segments would be reported exempt. Git never emits such paths, so the gates cannot receive one. The exemption covers every .py under iiac_evidence/, not only the 7 probes.",
+      "independent_evidence": "split_ruff_exempt on 12 probe paths: only iiac_evidence/** paths are exempt; iiac_evidence_x/, iiac_evidence.py, IIAC_EVIDENCE/, evol_x/misplaced_probe.py, scripts/** are linted. Staged-file simulation of both gates: evidence probe exempt, misplaced file linted. ruff directory discovery excludes the evidence root and still flags the misplaced file.",
+      "required_correction": "None required; optional posixpath.normpath before matching.",
+      "gate_affected": "Ruff gates",
+      "closure_criteria": "n/a",
+      "blocks": []
+    },
+    {
+      "id": "RA-B4-08",
+      "severity": "INFO",
+      "origin": "introduced_by_b4",
+      "kind": "informational",
+      "location": "preflight legacy_errors L-00",
+      "failure_condition": "Legacy (policy not IN_FORCE) mode always contains L-00, so it can never pass either gate. Fail-closed; the handoff phrase 'legacy path kept' means kept as a diagnostic only.",
+      "independent_evidence": "Activation record committed as NOT_IN_FORCE or with status removed -> mode LEGACY, A/B FAIL, no downgrade path.",
+      "required_correction": "None; document that legacy is diagnostic-only.",
+      "gate_affected": "policy_mode",
+      "closure_criteria": "n/a",
+      "blocks": []
+    },
+    {
+      "id": "RA-B4-09",
+      "severity": "INFO",
+      "origin": "not_in_b4_scope",
+      "kind": "informational",
+      "location": "scripts/qualification/evol_x_b6_independent_verification.py:95-98 (G-02)",
+      "failure_condition": "A separate legacy verifier still requires a named OD-EVOL-11 human auditor. It is not called by the closure preflight and not wired to CI.",
+      "independent_evidence": "grep: no workflow or script references closure preflight; the verifier states it does not sign B6.",
+      "required_correction": "Decide separately whether it is retired or migrated; not a B-4 item.",
+      "gate_affected": "none",
+      "closure_criteria": "n/a",
+      "blocks": []
+    },
+    {
+      "id": "RA-B4-10",
+      "severity": "INFO",
+      "origin": "introduced_by_b4",
+      "kind": "documentation_inaccuracy",
+      "location": "EVOL_X_B4_CORRECTIVE_REAUDIT_HANDOFF.md §3 ('B-01..B-10') vs preflight gate_b",
+      "failure_condition": "Gate B implements nine controls (B-00 prerequisite, B-01..B-04, B-06..B-10); no B-05 exists. The documented range B-01..B-10 implies ten.",
+      "independent_evidence": "grep 'B-05' in the preflight, its tests and the handoff: only the unrelated certifier blocker id 'B-5'. All requirement areas of Gate B (Gate A, published B6, two-phase SHA, certification record, FRZ dispositions, operator decisions, ladder, blockers, scope restrictions) are covered by the existing controls.",
+      "required_correction": "Renumber or document the gap in the corrective.",
+      "gate_affected": "documentation",
+      "closure_criteria": "handoff matches code",
+      "blocks": []
+    },
+    {
+      "id": "HF-01",
+      "severity": "MEDIUM",
+      "origin": "historical_stale_test_assumption",
+      "kind": "stale_tests",
+      "location": "tests/unit/governance/test_iiac_activation_gate.py::test_act_n01_inactive_policy_fails_default_and_require, ::test_positive_fixture_passes_without_activating_canonical_policy; tests/unit/governance/test_iiac_negative_guards.py::test_n09_implementer_must_not_publish_pass_filename_glob, ::test_n12_session_a_policy_not_in_force_by_default",
+      "failure_condition": "Assertions encode the pre-activation state (canonical status NOT_IN_FORCE; no *IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md anywhere). IIAC activation (f8c29fb8...) and the P1/P2 publications legitimately changed that state. The four tests fail identically at baseline and at HEAD.",
+      "independent_evidence": "Reproduced in clones at ca2b14782 and 9a8fa3634: 4 failed in both, identical assertion text. CI run 42104326792 (HEAD) governance-fast: 6 failed, 120 passed.",
+      "required_correction": "Separate governance test-hotfix ticket (spec delivered). Not part of B-4.",
+      "gate_affected": "CI governance-fast",
+      "closure_criteria": "see GOVERNANCE_TEST_HOTFIX_TICKET_SPEC.md",
+      "blocks": []
+    },
+    {
+      "id": "HF-02",
+      "severity": "MEDIUM",
+      "origin": "historical_test_pollution",
+      "kind": "test_pollution",
+      "location": "tests/unit/governance/test_iiac_negative_guards.py:99-108 (n05) and :126-142 (n08)",
+      "failure_condition": "The tests overwrite canonical files and restore them with Path.write_text, which translates LF to CRLF on Windows. IIAC_POLICY_ACTIVATION_RECORD.json is -text, so the restored file no longer matches its blob and the activation gate fails until git checkout. OD_ENT_02_THREAT_MODEL.md is rewritten the same way.",
+      "independent_evidence": "In a clone, running the file left the activation blob at c067ebc4... instead of c505dd5b...; verify_iiac_policy_activation then failed with 'worktree activation record does not match HEAD' and the EVOL-X preflight mode became INVALID (A-01). Restored with git checkout. The canonical repository was never exposed: the blob stayed c505dd5b... after every canonical-repo test run.",
+      "required_correction": "Tests must operate on copies in tmp_path or write bytes (write_bytes) and restore the original bytes.",
+      "gate_affected": "A-01 via activation gate",
+      "closure_criteria": "see ticket spec",
+      "blocks": []
+    },
+    {
+      "id": "HF-03",
+      "severity": "LOW",
+      "origin": "historical_ci_configuration",
+      "kind": "ci_environment",
+      "location": ".github/workflows/unit-tests.yml governance-fast (actions/checkout@v5 default depth)",
+      "failure_condition": "tests/unit/governance/test_iiac_g0_inventory.py (2 tests) fail in CI with 'not ancestor of HEAD' / 'bad object': the activation and G0 checks need history that a depth-1 checkout lacks. They pass locally (G0 PASS, 17510 paths).",
+      "independent_evidence": "gh run view 42104326792 --log-failed; local verify_iiac_g0_inventory_completeness PASS. Not runnable at baseline in CI (no run exists for ca2b14782), inferred from the failing messages which reference pre-B-4 commits.",
+      "required_correction": "fetch-depth: 0 for governance-fast, in the hotfix ticket.",
+      "gate_affected": "CI governance-fast",
+      "closure_criteria": "see ticket spec",
+      "blocks": []
+    }
+  ]
+}
