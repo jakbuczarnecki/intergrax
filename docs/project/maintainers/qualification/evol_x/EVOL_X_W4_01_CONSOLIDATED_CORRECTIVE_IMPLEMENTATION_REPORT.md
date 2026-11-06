@@ -168,3 +168,29 @@ Candidate correlations (timing and titles only, **not proof**) are in §H. Until
 ### Remaining after publication
 
 Independent re-audit (new auditor session) → B-4 acceptance by a separate certifier → OD-1, OD-EVOL-12, OD-EVOLX-08, P3 → B6 → FRZ. The agent that implemented this corrective must not perform any of them.
+
+## N. Round 2 — independent re-audit W401 (verdict PARTIAL on `9f8b04d2b`) and its corrective
+
+Auditor session `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9` (new context, own worktree) audited `9f8b04d2b`: **PARTIAL, three MEDIUM blockers**; its dossier is held outside the repository (`.tmp/session/evolx-w4-01-reaudit/` of its worktree). It reproduced B4 423 passed and governance 145 passed / 1 skipped, and judged the `.gitattributes` repair (W4-F01) acceptable on its own reasoning. This implementer did not alter or answer its findings.
+
+| Finding | Severity | Disposition | Fix and test |
+|---|---|---|---|
+| W401-RA-01 `refs/replace/<P2>` forges the scope baseline | MEDIUM | **Fixed in code** | every git call runs `--no-replace-objects`; replace refs, a grafts file and shallow repositories fail both gates (`A-22` / `B-13`); `test_w401_ra_01_*` (replace ref, grafts, shallow, clean control) |
+| W401-RA-02 scope-bearing channels outside the sealed set | MEDIUM | **Fixed in code** | lifecycle keys accept only values of their shape; `certification_publication_sha_binding` only the P2 text or the one binding text `P2_BINDING_TEXT`; the certification directory must hold exactly the P2 file set; duplicate JSON keys are rejected for every evidence JSON; `test_w401_ra_02_*` (9 lifecycle cases, added file, duplicate key, legitimate binding text) |
+| W401-RA-03 gates evaluate uncommitted working-tree bytes | MEDIUM | **Fixed in code** | every read input and anything below the EVOL-X evidence root must equal `HEAD` (modified, staged, untracked → `A-21` / `B-12`; repository configuration is used so a normal CRLF checkout stays clean; unrelated dirty files are not flagged); `test_w401_ra_03_*` |
+| W401-RA-04 blocker dropped by an `-s ours` merge | LOW | **Fixed in code** | `--full-history` for the blocker history and the first-publication derivation; `test_w401_ra_04_*` |
+| W401-RA-06 B6 record / promoted-row formats undocumented | LOW | **Fixed** | `EVOL_X_B6_RECORD_AND_FRZ_ROW_FORMATS.md` + drift test |
+| W401-RA-05 negation denylist, ASCII-only decision scope | LOW | **Open, not changed** | fail-closed today; the false rejects are a usability issue for Polish operator text; a grammar change would need its own audit |
+| W401-RA-07 fixture-class PASS exits 0 | INFO | **Open, not changed** | changing the exit code would alter the contract of every caller |
+| W401-RA-08 P2 pin in an ungoverned file | INFO | **Open: operator decision OD-1** | not an exploit of the shipped code |
+| W401-RA-09 documentation at the old pin | INFO | **Closed by later documentation commits** | |
+| W401-RA-10 Linux container run not reproduced by that auditor | INFO | **Evidence by CI** | run `42214173868` on `49b50fd74`; a new run is needed for the round-2 SHA |
+
+**Pinned SHA for round 2: `ca78b1c1f`** (code and tests; the commits after it are documentation only). Evidence on that tree (Windows 11, `core.autocrlf=true`, short `--basetemp`):
+
+* new tests: 24 `w401` tests passed, plus the format-drift test (1 passed);
+* full B4 suite (`-n 6`) on the working tree before the commit: **445 passed**, 2 failed — both canonical-repository assertions failed only because the tree was uncommitted (`A-21` working as designed); the same assertions then **passed** on the committed tree (`-k canonical`: 20 passed). The full B4 suite was not re-run end to end after the commit; CI does that;
+* `tests/unit/governance -n 4`: **145 passed, 1 skipped** (symlinks), 7 min 45 s;
+* canonical `--gate b6-readiness`: FAIL with exactly the two real `A-18` blockers (B-4, B6-P3), no other code; `verify_iiac_policy_activation --require-in-force`: `IN_FORCE @ IIAC-2026-11-05.1`.
+
+No `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed. A canonical or `--repo` run now requires the verified inputs to be committed: operators must commit evidence before running the preflight.

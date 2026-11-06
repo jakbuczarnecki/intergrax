@@ -41,3 +41,7 @@ Linux: clone the bundle/branch inside a `python:3.12` container (no `core.autocr
 ## 5. Session identity (W4-F08)
 
 Implementer: `local_4b071fe5-82d0-48bc-b524-146a3daf5c45` (verified). The historical implementer ids are `UNVERIFIED / OPERATOR_ATTESTATION_REQUIRED`. Fill your own session id in the auditor manifest; the certifier must be a third session.
+
+## Round 2 addendum (after the W401 re-audit of `9f8b04d2b`: PARTIAL)
+
+Audit the code at **`ca78b1c1f`** (commits after it are documentation only; verify with `git diff ca78b1c1f origin/development -- . ':!docs' ':!governance/tickets'`). A new independent-quality-auditor session is preferable; a different session than the implementer and the certifier is mandatory. Check specifically: the six W401 fixes in report §N (replace refs / grafts / shallow, lifecycle values, certification-directory freeze, duplicate keys, HEAD-bound inputs, `--full-history`); that no legitimate operation is now rejected (a normal clean Windows checkout with `autocrlf=true`, the real chain); and the residual findings RA-05, RA-07, RA-08 left open on purpose. The `w401` tests are the reproductions of the previous auditor's attacks.
