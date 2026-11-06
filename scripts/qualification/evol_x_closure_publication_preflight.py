@@ -258,6 +258,7 @@ SCOPE_NEGATION_WORDS = frozenset(
         "FORBIDDEN",
     }
 )
+_REVOCATION_FIELD = re.compile(r"revok|revoc|rescind|withdraw|supersed|retract|cancel|void", re.IGNORECASE)
 _SCOPE_CONTRACTION = re.compile(r"\w[nN]['’]t\b")
 
 # RA-B4-05 exact scope. Certification-record keys that legitimately change after the P2 publication; every other
@@ -655,6 +656,12 @@ def operator_record_errors(
         negation = scope_negation(scope)
         if negation:
             errors.append(f"record Decision scope contains the negation {negation!r}")
+        if not scope.isascii() or not scope.isprintable():
+            # W4-F04: homoglyphs / zero-width / control characters can hide a negation from the word scan
+            errors.append("record Decision scope contains non-ASCII or non-printable characters (ambiguous text)")
+    for key in fields:
+        if _REVOCATION_FIELD.search(key):
+            errors.append(f"record carries the revocation-type field {key!r}")
     status = single("Decision status")
     if status is not None and status != "AUTHORIZED":
         errors.append(f"record Decision status {status!r} is not AUTHORIZED")
@@ -955,8 +962,9 @@ def _first_publication_sha(ctx: Context, rel: str) -> str:
 
 
 def _p2_sha(ctx: Context, manifest: dict[str, Any] | None) -> str:
-    """The P2 baseline commit: the pinned anchor when set, else (fixture repositories only) the declared field."""
-    return ctx.p2 or _sha((manifest or {}).get("certification_publication_sha"))
+    """The P2 baseline commit: always the anchor of the evaluation context, never a field of the evidence under test."""
+    del manifest  # DA-01: kept for call-site compatibility; the declared field has no authority
+    return ctx.p2
 
 
 def _digest8(text: str) -> str:
@@ -970,15 +978,56 @@ def _scope_key_errors(
     errors: list[str] = []
     for key, value in document.items():
         if key in baseline:
-            if _SCOPE_KEY.search(key) and value != baseline[key]:
-                errors.append(f"A-19 {label} scope key {key!r} differs from the certification publication")
+            if key not in lifecycle and value != baseline[key]:
+                kind = "scope/claim" if _SCOPE_KEY.search(key) else "sealed"
+                errors.append(f"A-19 {label} {kind} key {key!r} differs from the certification publication")
         elif key not in lifecycle:
             kind = "scope/claim" if _SCOPE_KEY.search(key) else "unexpected"
             errors.append(f"A-19 {label} carries {kind} key {key!r} that is absent from the certification publication")
     if sealed:
         for key in baseline:
-            if key not in document and _SCOPE_KEY.search(key):
-                errors.append(f"A-19 {label} dropped scope key {key!r} published at the certification publication")
+            if key not in document and key not in lifecycle:
+                errors.append(f"A-19 {label} dropped key {key!r} published at the certification publication")
+    return errors
+
+
+def _p2_evidence_immutability_errors(ctx: Context, p2: str) -> list[str]:
+    """DA-02: every P2 certification evidence file other than the lifecycle documents (manifest and record, whose
+    legitimate drift is checked structurally) is byte-identical at HEAD, and the P2 evidence index entries still bind
+    them; this freezes the assessment (findings F-C-*, evidence-only statement), the handoff and the validator runs."""
+    raw_index = _show(ctx, p2, REL_CERT_INDEX)
+    try:
+        baseline = json.loads(raw_index.decode("utf-8-sig")) if raw_index is not None else None
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        baseline = None
+    files = baseline.get("files") if isinstance(baseline, dict) else None
+    if not isinstance(files, dict) or not files:
+        return ["A-19 the P2 certification evidence index is unavailable or malformed: failing closed"]
+    current_raw = _show(ctx, ctx.head, REL_CERT_INDEX)
+    try:
+        current = json.loads(current_raw.decode("utf-8-sig")) if current_raw is not None else None
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        current = None
+    current_files = current.get("files") if isinstance(current, dict) else None
+    if not isinstance(current_files, dict):
+        return ["A-19 the certification evidence index at HEAD is unavailable or malformed"]
+    errors: list[str] = []
+    lifecycle_docs = {Path(REL_MANIFEST).name, Path(REL_CERT_RECORD).name}
+    for name in sorted(files):
+        if name in lifecycle_docs:
+            if name not in current_files:
+                errors.append(f"A-19 certification evidence index at HEAD no longer lists {name}")
+            continue
+        rel = f"{CERT_DIR}/{name}"
+        before, after = _show(ctx, p2, rel), _show(ctx, ctx.head, rel)
+        if before is None:
+            errors.append(f"A-19 {name} is listed by the P2 evidence index but absent at the certification publication")
+        elif after != before:
+            errors.append(f"A-19 certification evidence {name} differs from the certification publication")
+        if current_files.get(name) != files[name]:
+            errors.append(
+                f"A-19 certification evidence index entry for {name} differs from the certification publication"
+            )
     return errors
 
 
@@ -1026,29 +1075,34 @@ def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
         return
     declared = _sha(manifest.get("certification_publication_sha"))
     anchor = ctx.p2
-    if anchor:
-        if declared != anchor:
-            errors.append(
-                f"A-19 manifest certification_publication_sha {declared[:12] or '<empty>'} differs from the pinned P2 "
-                f"certification publication {anchor[:12]}: the baseline cannot be re-pointed"
-            )
-        if cert is not None and _sha(cert.get("certification_publication_sha")) != anchor:
-            errors.append(
-                "A-19 certification record certification_publication_sha differs from the pinned P2 certification "
-                f"publication {anchor[:12]}: the baseline cannot be re-pointed"
-            )
+    if not anchor:
+        errors.append("A-19 no trusted P2 certification publication anchor is available: failing closed")
+        return
+    if declared != anchor:
+        errors.append(
+            f"A-19 manifest certification_publication_sha {declared[:12] or '<empty>'} differs from the pinned P2 "
+            f"certification publication {anchor[:12]}: the baseline cannot be re-pointed"
+        )
+    if cert is not None and _sha(cert.get("certification_publication_sha")) != anchor:
+        errors.append(
+            "A-19 certification record certification_publication_sha differs from the pinned P2 certification "
+            f"publication {anchor[:12]}: the baseline cannot be re-pointed"
+        )
+    if not _is_strict_ancestor(ctx, anchor, ctx.head):
+        errors.append(f"A-19 the pinned P2 certification publication {anchor[:12]} is not a strict ancestor of HEAD")
     first = _first_publication_sha(ctx, REL_CERT_RECORD)
     if not first:
         errors.append(
             "A-19 the commit that first published the certification record cannot be derived "
             "(history unavailable or the record was never committed): failing closed"
         )
-    elif first != (anchor or declared):
+    elif first != anchor:
         errors.append(
             "A-19 certification_publication_sha is not the commit that first published the certification record "
             f"({first[:12]}): the scope and blocker baseline cannot be moved to a later commit"
         )
-    errors.extend(_manifest_bytes_errors(ctx, anchor or declared))
+    errors.extend(_manifest_bytes_errors(ctx, anchor))
+    errors.extend(_p2_evidence_immutability_errors(ctx, anchor))
 
     current, structural = limitation_entries(manifest.get("limitations"))
     baseline, _ = limitation_entries(base_manifest.get("limitations"))
@@ -1068,7 +1122,11 @@ def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
             f"A-19 limitation {lim_id or '<unlabelled>'} [{_digest8(text)}] x{n} was added or reworded "
             "relative to the certification publication (scope widening)"
         )
-    errors.extend(_scope_key_errors(manifest, base_manifest, "manifest", lifecycle=frozenset(), sealed=True))
+    errors.extend(
+        _scope_key_errors(
+            manifest, base_manifest, "manifest", lifecycle=frozenset({"certification_publication_sha"}), sealed=True
+        )
+    )
     if cert is None or base_cert is None:
         return
     if cert.get("certification_verdict") != base_cert.get("certification_verdict"):
@@ -2120,7 +2178,9 @@ def evaluate(
     if canonical and p2_sha is not None and p2_sha != P2_CERTIFICATION_PUBLICATION_SHA:
         msg = "A-19 P2 anchor override is forbidden for the canonical repository"
         return PreflightResult("INVALID", [msg], ["B-00 Gate A not satisfied"])
-    p2 = P2_CERTIFICATION_PUBLICATION_SHA if canonical else (p2_sha or "")
+    # DA-01: the trusted P2 is never read from the repository under test. Fixture repositories may supply their own
+    # commit; without one the pinned constant applies (absent from a synthetic repository -> fail closed).
+    p2 = P2_CERTIFICATION_PUBLICATION_SHA if canonical else (p2_sha or P2_CERTIFICATION_PUBLICATION_SHA)
     record = activation_record or (CANONICAL_RECORD if canonical else repo / REL_ACTIVATION)
     ctx = Context(repo=repo, activation_record=record, evidence_root=evidence_root, p2=p2)
     head = _git(ctx, "rev-parse", "HEAD")

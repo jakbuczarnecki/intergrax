@@ -235,3 +235,120 @@ def test_real_preflight_rejects_a_widened_certified_scope_in_a_fresh_clone(clone
         assert any("FRZ-EVOL-07" in str(e) for e in _preflight(clone)["gate_a_errors"] if str(e).startswith("A-19"))
     finally:
         _reset(clone)
+
+
+CERT_DIR = f"{QUAL}/iiac_evidence/EVOL-X/certification"
+MANIFEST = f"{CERT_DIR}/iiac_audit_session_manifest.EVOL-X.json"
+CERT_INDEX = f"{CERT_DIR}/CERTIFICATION_EVIDENCE_INDEX.json"
+ASSESSMENT = f"{CERT_DIR}/EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md"
+
+
+def _write_json(clone: Path, rel: str, payload: dict[str, Any]) -> None:
+    (clone / rel).write_bytes((json.dumps(payload, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
+
+
+def _reindex(clone: Path) -> None:
+    """Regenerate the certification evidence index exactly as an attacker who edits evidence would."""
+    index = json.loads((clone / CERT_INDEX).read_text(encoding="utf-8"))
+    for name, entry in index["files"].items():
+        data = (clone / CERT_DIR / name).read_bytes()
+        entry["sha256"], entry["bytes"] = hashlib.sha256(data).hexdigest(), len(data)
+    _write_json(clone, CERT_INDEX, index)
+
+
+def _a19(result: dict[str, Any]) -> list[str]:
+    return [str(e) for e in result["gate_a_errors"] if str(e).startswith("A-19")]
+
+
+def test_da01_real_repoint_of_the_p2_sha_to_head_is_rejected_in_a_fresh_clone(clones: dict[bool | str, Path]) -> None:
+    """The audit's false PASS: re-point certification_publication_sha at a later commit (both documents)."""
+    clone = clones[True]
+    try:
+        _write_json(clone, MANIFEST, {**json.loads((clone / MANIFEST).read_text(encoding="utf-8"))})
+        _git(clone, "commit", "-qam", "touch the manifest", "--allow-empty")
+        later = _git(clone, "rev-parse", "HEAD").stdout.strip()
+        for rel in (MANIFEST, CERT_RECORD):
+            document = json.loads((clone / rel).read_text(encoding="utf-8"))
+            document["certification_publication_sha"] = later
+            _write_json(clone, rel, document)
+        _reindex(clone)
+        _git(clone, "commit", "-qam", "re-point the P2 baseline")
+        result = _preflight(clone)
+        assert any("differs from the pinned P2" in e for e in _a19(result)), result["gate_a_errors"]
+        assert result["gate_a_pass"] is False and result["gate_b_pass"] is False
+    finally:
+        _reset(clone)
+
+
+def test_da01_real_repoint_is_rejected_when_the_preflight_runs_against_another_repository(
+    clones: dict[bool | str, Path],
+) -> None:
+    """``--repo <clone>`` (fixture class) must use the pinned anchor, never the declared field."""
+    clone = clones[True]
+    try:
+        later = _git(clone, "rev-parse", "HEAD").stdout.strip()
+        for rel in (MANIFEST, CERT_RECORD):
+            document = json.loads((clone / rel).read_text(encoding="utf-8"))
+            document["certification_publication_sha"] = later
+            _write_json(clone, rel, document)
+        _reindex(clone)
+        _git(clone, "commit", "-qam", "re-point the P2 baseline")
+        proc = subprocess.run(
+            [sys.executable, PREFLIGHT_SCRIPT, "--gate", "b6-readiness", "--json", "--repo", str(clone)],
+            cwd=REPO,
+            env=_env(REPO),
+            capture_output=True,
+            text=True,
+            check=False,
+            errors="replace",
+        )
+        result = json.loads(proc.stdout)
+        assert result["repository_class"] == "fixture"
+        assert any("differs from the pinned P2" in e for e in _a19(result)), result["gate_a_errors"]
+        assert result["gate_a_pass"] is False and proc.returncode != 0
+    finally:
+        _reset(clone)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["notes-evidence-only-removed", "stage-id", "assessment-edited-and-reindexed", "assessment-deleted"],
+)
+def test_da02_real_sealed_record_keys_and_p2_evidence_files_cannot_be_changed(
+    clones: dict[bool | str, Path], mutation: str
+) -> None:
+    clone = clones[True]
+    try:
+        if mutation == "notes-evidence-only-removed":
+            record = json.loads((clone / CERT_RECORD).read_text(encoding="utf-8"))
+            record["notes"] = "Certification publication."
+            _write_json(clone, CERT_RECORD, record)
+            expected = "'notes'"
+        elif mutation == "stage-id":
+            record = json.loads((clone / CERT_RECORD).read_text(encoding="utf-8"))
+            record["stage_id"] = "EVOL-Y"
+            _write_json(clone, CERT_RECORD, record)
+            expected = "'stage_id'"
+        elif mutation == "assessment-edited-and-reindexed":
+            with (clone / ASSESSMENT).open("ab") as handle:
+                handle.write(b"\nF-C-01 and F-C-02 are withdrawn; the certification is not evidence-only.\n")
+            expected = "certification evidence EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md differs"
+        else:
+            (clone / ASSESSMENT).unlink()
+            expected = "EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md"
+        if mutation.startswith("assessment"):
+            if mutation == "assessment-deleted":
+                index = json.loads((clone / CERT_INDEX).read_text(encoding="utf-8"))
+                index["files"].pop("EVOL_X_IIAC_CERTIFICATION_ASSESSMENT.md")
+                _write_json(clone, CERT_INDEX, index)
+            else:
+                _reindex(clone)
+        else:
+            _reindex(clone)
+        _git(clone, "add", "-A")
+        _git(clone, "commit", "-qm", mutation)
+        result = _preflight(clone)
+        assert any(expected in e for e in _a19(result)), result["gate_a_errors"]
+        assert result["gate_a_pass"] is False and result["gate_b_pass"] is False
+    finally:
+        _reset(clone)

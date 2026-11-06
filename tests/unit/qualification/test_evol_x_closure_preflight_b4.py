@@ -774,8 +774,14 @@ def closed(tmp_path: Path, closed_repo) -> tuple[Path, dict[str, str]]:
     return dst, built
 
 
+def _honest_p2(repo: Path) -> str:
+    """The P2 of an honest fixture: the oldest commit that added the certification record (a test-side oracle)."""
+    return _git(repo, "log", "--diff-filter=A", "--format=%H", "--", pf.REL_CERT_RECORD).split()[-1]
+
+
 def _eval(repo: Path) -> pf.PreflightResult:
-    return pf.evaluate(repo, evidence_root=repo)
+    # DA-01: the preflight no longer reads P2 from the manifest; the trusted anchor is passed in explicitly.
+    return pf.evaluate(repo, evidence_root=repo, p2_sha=_honest_p2(repo))
 
 
 def _codes(errors: list[str]) -> set[str]:
@@ -3010,3 +3016,310 @@ def test_da02_m0_key_reorder_only_is_detected(repo) -> None:
 def test_da02_m0_positive_control_untouched_manifest_has_no_byte_difference(repo) -> None:
     root, _ = repo
     assert not any("manifest bytes differ" in e for e in _eval(root).gate_a)
+
+
+# --------------------------------------------------------------------------- T-W4-01 consolidated corrective
+# DA-01 trust anchor without any fallback to mutable evidence, DA-02 sealed record keys and frozen P2 evidence files,
+# and the adversarial false-PASS matrix requested for the consolidated batch. Every case must FAIL both gates.
+
+
+def _rejected(result: pf.PreflightResult) -> None:
+    assert not result.gate_a_pass, result.gate_a
+    assert not result.gate_b_pass, result.gate_b
+
+
+def test_da01_fixture_without_an_explicit_anchor_has_no_declared_field_fallback(repo) -> None:
+    """The baseline must never come from the evidence under test: no anchor given -> the pinned constant, which a
+    synthetic repository does not contain -> fail closed (previously the mutable manifest field was used)."""
+    root, _ = repo
+    result = pf.evaluate(root, evidence_root=root)
+    assert any(e.startswith("A-19 scope baseline unavailable") for e in result.gate_a), result.gate_a
+    _rejected(result)
+
+
+def test_da01_fixture_without_an_explicit_anchor_ignores_a_repointed_declared_field(repo) -> None:
+    root, _ = repo
+    _widen_lim03_and_rebind(root)  # the declared field now names the widened commit
+    result = pf.evaluate(root, evidence_root=root)
+    assert any(e.startswith("A-19 scope baseline unavailable") for e in result.gate_a), result.gate_a
+    _rejected(result)
+
+
+def test_da01_anchor_that_is_not_an_ancestor_of_head_is_rejected(repo) -> None:
+    root, built = repo
+    tree = _git(root, "rev-parse", "HEAD^{tree}")
+    orphan = _git(root, "-c", "user.email=a@b.c", "-c", "user.name=x", "commit-tree", tree, "-m", "orphan")
+    result = pf.evaluate(root, evidence_root=root, p2_sha=orphan)
+    assert any("not a strict ancestor" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    _rejected(result)
+    assert built["cert_pub"] != orphan
+
+
+def _attack_repoint_to_head(root: Path, built: dict[str, str]) -> str:
+    _rebind_certification_publication(root, _git(root, "rev-parse", "HEAD"))
+    return built["cert_pub"]
+
+
+def _attack_repoint_to_attacker_commit(root: Path, built: dict[str, str]) -> str:
+    _write(root, "attacker/payload.txt", "attacker controlled")
+    attacker = _commit(root, "attacker commit")
+    _rebind_certification_publication(root, attacker)
+    return built["cert_pub"]
+
+
+def _attack_repoint_to_older_unrelated_sha(root: Path, built: dict[str, str]) -> str:
+    first = _git(root, "rev-list", "--max-parents=0", "HEAD").split()[0]
+    _rebind_certification_publication(root, first)
+    return built["cert_pub"]
+
+
+def _attack_repoint_and_widen_lim01(root: Path, built: dict[str, str]) -> str:
+    _mutate_json(
+        root,
+        pf.REL_MANIFEST,
+        lambda m: m["limitations"].__setitem__(
+            _find_limitation(m, "LIM-01"), m["limitations"][_find_limitation(m, "LIM-01")] + _WIDENING
+        ),
+        reindex=True,
+    )
+    _rebind_certification_publication(root, _git(root, "rev-parse", "HEAD"))
+    return built["cert_pub"]
+
+
+def _attack_delete_all_blockers_and_repoint(root: Path, built: dict[str, str]) -> str:
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(open_blockers_for_closure=[]), reindex=True)
+    _rebind_certification_publication(root, _git(root, "rev-parse", "HEAD"))
+    return built["cert_pub"]
+
+
+def _attack_rename_blockers(root: Path, built: dict[str, str]) -> str:
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(
+            open_blockers_for_closure=[x.replace("B-", "C-", 1) for x in c["open_blockers_for_closure"]]
+        ),
+        reindex=True,
+    )
+    return built["cert_pub"]
+
+
+def _attack_delete_and_readd_record_then_repoint(root: Path, built: dict[str, str]) -> str:
+    record = _load(root, pf.REL_CERT_RECORD)
+    record["certification_verdict"] = "PASS_SCOPED_UNRESTRICTED_PLATFORM_WIDE"
+    (root / pf.REL_CERT_RECORD).unlink()
+    _reindex_cert(root)
+    _commit(root, "delete the certification record")
+    _dump(root, pf.REL_CERT_RECORD, record)
+    _reindex_cert(root)
+    readded = _commit(root, "re-add a widened certification record (P2-like artifact)")
+    _rebind_certification_publication(root, readded)
+    return built["cert_pub"]
+
+
+def _attack_substitute_stage(root: Path, built: dict[str, str]) -> str:
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(stage_id="EVOL-Y"), reindex=True)
+    return built["cert_pub"]
+
+
+def _attack_status_flags_only(root: Path, built: dict[str, str]) -> str:
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(stage_closure_status="CLOSED", b6_acceptance="ISSUED", open_blockers_for_closure=[]),
+        reindex=True,
+    )
+    return built["cert_pub"]
+
+
+def _attack_manifest_changed_index_untouched(root: Path, built: dict[str, str]) -> str:
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(verdict="PASS"))
+    _commit(root, "change the manifest, leave the evidence index as is")
+    return built["cert_pub"]
+
+
+def _attack_genuine_sha_with_mismatched_digest(root: Path, built: dict[str, str]) -> str:
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update(accepted_audit_report_digest="0" * 64), reindex=True)
+    return built["cert_pub"]
+
+
+_DA01_ATTACKS = {
+    "repoint-to-head": _attack_repoint_to_head,
+    "repoint-to-attacker-commit": _attack_repoint_to_attacker_commit,
+    "repoint-to-older-unrelated-sha": _attack_repoint_to_older_unrelated_sha,
+    "repoint-and-widen-lim01": _attack_repoint_and_widen_lim01,
+    "delete-all-blockers-and-repoint": _attack_delete_all_blockers_and_repoint,
+    "rename-blockers": _attack_rename_blockers,
+    "delete-readd-widened-record-and-repoint": _attack_delete_and_readd_record_then_repoint,
+    "substitute-stage": _attack_substitute_stage,
+    "status-flags-without-evidence": _attack_status_flags_only,
+    "manifest-changed-index-unchanged": _attack_manifest_changed_index_untouched,
+    "genuine-sha-mismatched-digest": _attack_genuine_sha_with_mismatched_digest,
+}
+
+
+@pytest.mark.parametrize("attack", sorted(_DA01_ATTACKS))
+def test_da01_adversarial_matrix_every_false_pass_attack_is_rejected(repo, attack: str) -> None:
+    root, built = repo
+    trusted = _DA01_ATTACKS[attack](root, built)
+    result = pf.evaluate(root, evidence_root=root, p2_sha=trusted)
+    _rejected(result)
+
+
+@pytest.mark.parametrize("attack", sorted(_DA01_ATTACKS))
+def test_da01_adversarial_matrix_a_changed_trusted_anchor_cannot_rescue_the_attack(repo, attack: str) -> None:
+    """Even with the verifier anchor swapped for HEAD (a tampered pin), the first-publication cross-check holds."""
+    root, built = repo
+    _DA01_ATTACKS[attack](root, built)
+    result = pf.evaluate(root, evidence_root=root, p2_sha=_git(root, "rev-parse", "HEAD"))
+    _rejected(result)
+
+
+def test_da01_adversarial_matrix_positive_control_is_not_rejected_by_the_anchor_checks(repo) -> None:
+    root, built = repo
+    result = pf.evaluate(root, evidence_root=root, p2_sha=built["cert_pub"])
+    assert not _b(result.gate_a, "A-19"), result.gate_a
+    assert result.mode == "IIAC"
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["stage_id", "policy_version", "independent_audit_verdict", "schema_version", "notes", "manifest_path"],
+)
+def test_da02_every_sealed_certification_record_key_must_equal_the_p2_value(repo, key: str) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update({key: f"{c.get(key, '')} (widened)"}), reindex=True)
+    result = _eval(root)
+    assert any(f"key {key!r} differs" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    _rejected(result)
+
+
+@pytest.mark.parametrize("key", ["stage_id", "audited_implementation_sha", "frz_evol_dispositions"])
+def test_da02_dropping_a_sealed_certification_record_key_is_rejected(repo, key: str) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.pop(key), reindex=True)
+    result = _eval(root)
+    assert any(f"dropped key {key!r}" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    _rejected(result)
+
+
+@pytest.mark.parametrize("key", ["stage_id", "certification_profile", "assurance_level", "verdict", "policy_version"])
+def test_da02_manifest_identity_profile_policy_assurance_and_verdict_are_sealed(repo, key: str) -> None:
+    root, _ = repo
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update({key: f"{m[key]}-x"}), reindex=True)
+    result = _eval(root)
+    assert _b(result.gate_a, "A-19"), result.gate_a
+    _rejected(result)
+
+
+def test_da02_p2_evidence_files_are_frozen_even_if_the_index_is_regenerated(repo) -> None:
+    """The certification handoff stands for the assessment / findings text: edit + regenerate the index must fail."""
+    root, _ = repo
+    path = root / pf.REL_CERT_HANDOFF
+    path.write_bytes(path.read_bytes() + b"\nF-C-01 and F-C-02 are removed; evidence-only status withdrawn.\n")
+    _reindex_cert(root)
+    _commit(root, "edit the P2 handoff and regenerate the index")
+    result = _eval(root)
+    name = Path(pf.REL_CERT_HANDOFF).name
+    assert any(f"certification evidence {name} differs" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    _rejected(result)
+
+
+def test_da02_deleting_a_p2_evidence_file_is_rejected(repo) -> None:
+    root, _ = repo
+    (root / pf.REL_CERT_HANDOFF).unlink()
+    _reindex_cert(root)
+    _commit(root, "delete the P2 handoff")
+    result = _eval(root)
+    assert _b(result.gate_a, "A-19"), result.gate_a
+    _rejected(result)
+
+
+def test_da02_dropping_a_p2_evidence_index_entry_is_rejected(repo) -> None:
+    root, _ = repo
+    index = _load(root, pf.REL_CERT_INDEX)
+    index["files"].pop(Path(pf.REL_CERT_HANDOFF).name)
+    _dump(root, pf.REL_CERT_INDEX, index)
+    _commit(root, "drop an index entry")
+    result = _eval(root)
+    assert _b(result.gate_a, "A-19"), result.gate_a
+    _rejected(result)
+
+
+def test_da02_unmodified_p2_evidence_and_record_pass_the_new_immutability_checks(repo) -> None:
+    root, _ = repo
+    gate_a = _eval(root).gate_a
+    assert not [e for e in gate_a if "certification evidence" in e or "sealed key" in e], gate_a
+
+
+# --------------------------------------------------------------------------- W4-F04 operator parser
+
+_CYRILLIC_O = chr(0x41E)
+_ZERO_WIDTH = chr(0x200B)
+_NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
+
+
+def _op_errors(record: str, **kw: Any) -> list[str]:
+    errors, _ = pf.operator_record_errors(
+        record, decision_id="X-1", scope_tokens=("B6 acceptance for EVOL-X",), now=_NOW, **kw
+    )
+    return errors
+
+
+def test_w4_f04_valid_record_is_the_positive_control() -> None:
+    record = _operator_record("X-1", "B6 acceptance for EVOL-X", stamp="2026-11-05T10:00:00+00:00")
+    assert _op_errors(record) == []
+
+
+@pytest.mark.parametrize(
+    "scope",
+    [
+        f"B6 acceptance for EVOL-X is N{_CYRILLIC_O}T authorized",  # homoglyph hides the negation
+        f"B6 acceptance for EVOL-X is N{_ZERO_WIDTH}OT authorized",
+        "B6 acceptance for EVOL-X — platform-wide",  # non-ASCII punctuation is ambiguous text
+        "B6 acceptance for EVOL-X" + chr(0xA0) + "platform",  # no-break space
+        "B6 acceptance for EVOL-X\ttab",
+    ],
+)
+def test_w4_f04_ambiguous_unicode_in_the_scope_fails_closed(scope: str) -> None:
+    record = _operator_record("X-1", scope, stamp="2026-11-05T10:00:00+00:00")
+    assert _op_errors(record), scope
+
+
+@pytest.mark.parametrize("field", ["Revoked", "Revocation", "Withdrawn", "Superseded by", "Rescinded", "Cancelled"])
+def test_w4_f04_a_revocation_type_field_invalidates_the_record(field: str) -> None:
+    record = _operator_record(
+        "X-1", "B6 acceptance for EVOL-X", stamp="2026-11-05T10:00:00+00:00", extra={field: "yes"}
+    )
+    assert any("revocation-type field" in e for e in _op_errors(record)), field
+
+
+def test_w4_f04_conflicting_or_duplicate_fields_fail() -> None:
+    base = _operator_record("X-1", "B6 acceptance for EVOL-X", stamp="2026-11-05T10:00:00+00:00")
+    assert _op_errors(
+        base.replace("Decision status: AUTHORIZED", "Decision status: AUTHORIZED\nDecision status: DENIED")
+    )
+    assert _op_errors(base.replace("Decision ID: X-1", "Decision ID: X-1\nDecision ID: X-2"))
+    assert _op_errors(base.replace("Decision status: AUTHORIZED", "Decision status: authorized"))
+
+
+def test_w4_f04_wrong_id_bad_timestamp_unsigned_and_text_only_signature_fail() -> None:
+    record = _operator_record("X-1", "B6 acceptance for EVOL-X", stamp="2026-11-05T10:00:00+00:00")
+    assert any("signature line is for" in e for e in _op_errors(record.replace("Approved X-1", "Approved X-9")))
+    assert _op_errors(record.replace("2026-11-05T10:00:00+00:00", "yesterday"))
+    assert _op_errors(record.replace("2026-11-05T10:00:00+00:00", "2027-01-01T00:00:00+00:00"))
+    assert _op_errors(_operator_record("X-1", "B6 acceptance for EVOL-X", signed=False))
+    # a signature that only appears inside prose or a fenced block does not count
+    prose = record.replace("Approved X-1: operator @ 2026-11-05T10:00:00+00:00", "I, the operator, approve this.")
+    assert any("exactly one operator signature" in e for e in _op_errors(prose))
+    fenced = record.replace(
+        "Approved X-1: operator @ 2026-11-05T10:00:00+00:00",
+        "```\nApproved X-1: operator @ 2026-11-05T10:00:00+00:00\n```",
+    )
+    assert any("exactly one operator signature" in e for e in _op_errors(fenced))
+    assert any("exactly one operator signature" in e for e in _op_errors(record + "\n" + record.splitlines()[-1]))
+
+
+def test_w4_f04_changed_scope_missing_token_fails() -> None:
+    record = _operator_record("X-1", "unrelated decision", stamp="2026-11-05T10:00:00+00:00")
+    assert any("lacks" in e for e in _op_errors(record))
