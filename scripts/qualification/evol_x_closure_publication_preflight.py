@@ -97,6 +97,7 @@ sys.dont_write_bytecode = True
 sys.pycache_prefix = os.path.join(_TMP, "evolx-preflight-no-bytecode-cache", str(os.getpid()))
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 os.environ["PYTHONPYCACHEPREFIX"] = sys.pycache_prefix
+os.environ["PYTHONSAFEPATH"] = "1"  # children: no script directory / cwd prepended to their sys.path
 
 import argparse  # noqa: E402
 import hashlib  # noqa: E402
@@ -730,6 +731,18 @@ def _dirty_input_errors(ctx: Context, code: str) -> list[str]:
     dirty.extend(f"{rel} [modified]" for rel in suspects if rel in unset)
     for tree in _BOUND_TREES:
         dirty.extend(f"{rel} [untracked]" for rel in sorted(_worktree_files(ctx, tree) - set(blobs)))
+    root_listing = _git(ctx, "ls-tree", "-z", "--name-only", ctx.head)
+    tracked_root = (
+        set(root_listing.stdout.decode("utf-8", errors="replace").split("\x00"))
+        if root_listing.returncode == 0
+        else set()
+    )
+    for path in sorted(ctx.repo.iterdir()):
+        looks_importable = (path.is_file() and path.suffix in (".py", ".pyc", ".pyd")) or (
+            path.is_dir() and (path / "__init__.py").is_file()
+        )
+        if looks_importable and path.name not in tracked_root:
+            dirty.append(f"{path.name} [untracked repository-root module: could shadow the standard library]")
     for rel in sorted(read_paths - set(blobs)):
         if _worktree_bytes(ctx, rel) is not None:
             dirty.append(f"{rel} [untracked]")

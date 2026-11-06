@@ -3797,7 +3797,7 @@ def test_hunt_an_unexpected_evidence_shape_is_an_internal_error_not_a_crash(repo
 
 def _clean_env() -> dict[str, str]:
     """Environment of a plain Python child: without the settings the imported preflight module exports."""
-    drop = {"PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX", "PYTHONPATH"}
+    drop = {"PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX", "PYTHONPATH", "PYTHONSAFEPATH"}
     return {k: v for k, v in os.environ.items() if k not in drop}
 
 
@@ -3966,7 +3966,7 @@ def test_w404_02_a_stdlib_named_file_at_the_repository_root_never_runs(tmp_path:
     )
     assert marker.exists(), f"control failed: the planted json.py was not imported ({control.stderr[-200:]!r})"
     marker.unlink()
-    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    env = _clean_env()
     if mode == "module":
         command = [sys.executable, "-m", "scripts.qualification.evol_x_closure_publication_preflight", "--help"]
     else:
@@ -3989,7 +3989,7 @@ def test_w404_02_the_repository_modules_must_come_from_the_repository(tmp_path: 
     (foreign / "scripts" / "governance" / "__init__.py").write_text("", encoding="utf-8")
     for module in ("iiac_activation_gate", "iiac_common"):
         (foreign / "scripts" / "governance" / f"{module}.py").write_text("", encoding="utf-8")
-    env = {k: v for k, v in os.environ.items()}
+    env = _clean_env()
     env["PYTHONPATH"] = str(foreign)
     script = root / "scripts" / "qualification" / "evol_x_closure_publication_preflight.py"
     proc = subprocess.run(
@@ -4005,3 +4005,21 @@ def test_w404_03_children_inherit_the_bytecode_and_replace_object_settings() -> 
     assert os.environ.get("PYTHONDONTWRITEBYTECODE") == "1"
     assert os.environ.get("PYTHONPYCACHEPREFIX") == sys.pycache_prefix
     assert os.environ.get("GIT_NO_REPLACE_OBJECTS") == "1"
+
+
+def test_w404_02_an_untracked_repository_root_module_is_flagged(repo) -> None:
+    """The IIAC companion subprocesses need the repository root on their path: a stray root module could shadow
+    the standard library there, so the dirty check flags it (the file is invisible to ``git status`` when ignored)."""
+    root, _ = repo
+    assert not _b(_eval(root).gate_a, "A-21"), "control: clean"
+    _write(root, "json.py", "raise SystemExit(0)\n")
+    (root / ".git" / "info").mkdir(parents=True, exist_ok=True)
+    (root / ".git" / "info" / "exclude").write_text("json.py\n", encoding="utf-8")
+    assert _git(root, "status", "--porcelain") == "", "precondition: git status is blind to the file"
+    result = _eval(root)
+    assert any("json.py" in e and "repository-root module" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w404_03_children_get_a_safe_path() -> None:
+    assert os.environ.get("PYTHONSAFEPATH") == "1"
