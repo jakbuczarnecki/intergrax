@@ -32,6 +32,17 @@ Files: `scripts/qualification/evol_x_closure_publication_preflight.py`, `tests/u
 `docs/project/maintainers/qualification/evol_x/EVOL_X_W4_01_CONSOLIDATED_CORRECTIVE_IMPLEMENTATION_REPORT.md` and the re-audit handoff.
 No `intergrax/`, `agents/`, `applications/`.
 
+## Round 2 - independent re-audit W401 (verdict PARTIAL on `9f8b04d2b`, auditor session `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9`)
+
+Same ticket, same preflight and test files. Blockers and findings addressed in this round: **W401-RA-01** (refs/replace, grafts and shallow
+repositories refused; every git call runs with `--no-replace-objects`), **W401-RA-02** (lifecycle keys accept only values of their shape,
+the certification directory holds exactly the P2 files, duplicate JSON keys are rejected), **W401-RA-03** (every verified input must equal
+`HEAD`; modified, staged or untracked inputs fail both gates), **W401-RA-04** (`--full-history` for the blocker history and the first
+publication), **W401-RA-06** (`EVOL_X_B6_RECORD_AND_FRZ_ROW_FORMATS.md` plus a drift test). Not changed, documented as residuals for the next
+audit: W401-RA-05 (negation denylist / ASCII-only decision scope, process-enforced), W401-RA-07 (fixture PASS exit code), W401-RA-08 (OD-1,
+operator decision), W401-RA-09 (documentation at the old pin), W401-RA-10 (Linux container not reproduced by that auditor; CI evidence exists).
+The previous audit dossier is held outside the repository and was not edited.
+
 ## Plan digest
 
 Source: operator mission "INTEGRAX - EVOL-X B4 - ONE-PASS CONSOLIDATED CORRECTIVE IMPLEMENTATION" @ `5afaad9eadfc1655f4ef1ab59eb022960a924648`

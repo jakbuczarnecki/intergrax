@@ -95,6 +95,7 @@ from scripts.qualification.evol_x_frz_evol_canonical_matrix import (  # noqa: E4
 )
 
 STAGE_ID = "EVOL-X"
+PREFLIGHT_SCRIPT_REL = "scripts/qualification/evol_x_closure_publication_preflight.py"
 QUAL = "docs/project/maintainers/qualification"
 EVOL_DIR = f"{QUAL}/evol_x"
 EVIDENCE_ROOT_REL = f"{QUAL}/iiac_evidence/EVOL-X"
@@ -106,6 +107,12 @@ B6_DIR = f"{EVIDENCE_ROOT_REL}/b6_acceptance"
 # DA-01: the P2 certification publication is pinned here and never taken from a mutable manifest field. The canonical
 # repository always uses this constant; isolated fixture repositories supply their own commit through ``p2_sha``.
 P2_CERTIFICATION_PUBLICATION_SHA = "ad0877715ed079ce920ff9d925fda03555b2c04e"
+
+# The one legitimate rewrite of the binding description (separate binding commit ca2b14782); no other text is accepted.
+P2_BINDING_TEXT = (
+    "bound to the P2 publication commit (the commit that first published this record); "
+    "interim placeholder in that commit was audit_execution_sha"
+)
 
 REL_ACTIVATION = f"{QUAL}/IIAC_POLICY_ACTIVATION_RECORD.json"
 REL_MANIFEST = f"{CERT_DIR}/iiac_audit_session_manifest.EVOL-X.json"
@@ -353,12 +360,38 @@ def _sha256(data: bytes) -> str:
 
 
 def _git(ctx: Context, *args: str) -> subprocess.CompletedProcess[bytes]:
+    # W401-RA-01: replace refs must never substitute the content of a pinned commit.
     return subprocess.run(
-        ["git", "-c", "core.autocrlf=false", *args],
+        ["git", "--no-replace-objects", "-c", "core.autocrlf=false", *args],
         cwd=ctx.repo,
         capture_output=True,
         check=False,
     )
+
+
+def _git_repo_config(ctx: Context, *args: str) -> subprocess.CompletedProcess[bytes]:
+    """Git with the repository's own configuration (no overrides): used to ask whether a file is *clean* by the
+    conventions the checkout was made with. Replace objects stay disabled."""
+    return subprocess.run(
+        ["git", "--no-replace-objects", *args],
+        cwd=ctx.repo,
+        capture_output=True,
+        check=False,
+    )
+
+
+def _strict_json_loads(text: str) -> Any:
+    """``json.loads`` that rejects duplicate object keys (W401-RA-02: Python would silently keep the last one)."""
+
+    def hook(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        seen: set[str] = set()
+        for key, _ in pairs:
+            if key in seen:
+                raise json.JSONDecodeError(f"duplicate JSON object key {key!r}", text, 0)
+            seen.add(key)
+        return dict(pairs)
+
+    return json.loads(text, object_pairs_hook=hook)
 
 
 def _commit_exists(ctx: Context, sha: str) -> bool:
@@ -448,6 +481,7 @@ def _read_bytes(ctx: Context, rel: str) -> bytes | None:
     otherwise the working-tree bytes (so tampering and uncommitted edits surface as digest/blob mismatches).
     """
     raw = _worktree_bytes(ctx, rel)
+    ctx.cache.setdefault("read_paths", set()).add(rel)
     if raw is None or not ctx.head:
         return raw
     blob_id = _head_blob_ids(ctx).get(rel)
@@ -469,7 +503,7 @@ def _read_json(ctx: Context, rel: str, code: str, errors: list[str]) -> dict[str
         ctx.cache[key] = None
         return None
     try:
-        loaded = json.loads(raw.decode("utf-8-sig"))
+        loaded = _strict_json_loads(raw.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         errors.append(f"{code} malformed JSON {rel}: {exc}")
         loaded = None
@@ -483,6 +517,66 @@ def _read_json(ctx: Context, rel: str, code: str, errors: list[str]) -> dict[str
 def _read_text(ctx: Context, rel: str) -> str | None:
     raw = _read_bytes(ctx, rel)
     return None if raw is None else raw.decode("utf-8-sig", errors="replace")
+
+
+def _repository_integrity_errors(ctx: Context, code: str) -> list[str]:
+    """W401-RA-01: refuse a repository whose history can be rewritten underneath the pinned commits.
+
+    Replace refs, a grafts file and shallow boundaries all make ``git show <pinned sha>:path`` return content that
+    is not the pinned commit's. Every git call also runs with ``--no-replace-objects``; this check makes the
+    condition visible and fail-closed instead of silently neutralised."""
+    errors: list[str] = []
+    refs = _git(ctx, "for-each-ref", "--format=%(refname)", "refs/replace/")
+    if refs.returncode != 0:
+        errors.append(f"{code} cannot list refs/replace (git for-each-ref failed): failing closed")
+    else:
+        replaced = [line for line in refs.stdout.decode("utf-8", errors="replace").splitlines() if line.strip()]
+        if replaced:
+            errors.append(f"{code} repository carries replace refs ({', '.join(replaced[:3])}): history is not trusted")
+    graft = _git(ctx, "rev-parse", "--git-path", "info/grafts")
+    if graft.returncode == 0:
+        graft_path = Path(graft.stdout.decode("utf-8", errors="replace").strip())
+        if not graft_path.is_absolute():
+            graft_path = ctx.repo / graft_path
+        if graft_path.exists():
+            errors.append(f"{code} repository carries a grafts file ({graft_path.name}): history is not trusted")
+    shallow = _git(ctx, "rev-parse", "--is-shallow-repository")
+    if shallow.returncode != 0 or shallow.stdout.decode("utf-8", errors="replace").strip() != "false":
+        errors.append(f"{code} repository is shallow or its depth is unknown: the pinned history is not complete")
+    return errors
+
+
+_EVIDENCE_PREFIX = f"{EVIDENCE_ROOT_REL}/"
+
+
+def _dirty_input_errors(ctx: Context, code: str) -> list[str]:
+    """W401-RA-03: every verified input equals the committed ``HEAD`` content.
+
+    The verdict is bound to ``HEAD``: an input that the preflight read (or any file below the EVOL-X evidence root)
+    that is modified, staged or untracked makes the gate fail, so a PASS can never be obtained for an uncommitted
+    state. Uses the repository's own configuration so a normal CRLF checkout stays clean."""
+    proc = _git_repo_config(ctx, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", QUAL, "scripts")
+    if proc.returncode != 0:
+        return [f"{code} git status failed ({proc.stderr.decode('utf-8', errors='replace').strip()}): failing closed"]
+    read_paths: set[str] = ctx.cache.get("read_paths", set())
+    dirty: list[str] = []
+    entries = proc.stdout.decode("utf-8", errors="replace").split("\x00")
+    skip_next = False
+    for entry in entries:
+        if skip_next:  # the origin path of a rename follows its destination
+            skip_next = False
+            continue
+        if len(entry) < 4:
+            continue
+        status, path = entry[:2], entry[3:]
+        if "R" in status or "C" in status:
+            skip_next = True
+        if path in read_paths or path.startswith(_EVIDENCE_PREFIX) or path == PREFLIGHT_SCRIPT_REL:
+            dirty.append(f"{path} [{status.strip() or '?'}]")
+    if dirty:
+        shown = ", ".join(sorted(dirty)[:5])
+        return [f"{code} uncommitted changes in verified inputs ({len(dirty)}): {shown}; the verdict must bind to HEAD"]
+    return []
 
 
 def _sha(value: Any) -> str:
@@ -792,7 +886,7 @@ def policy_mode(ctx: Context) -> tuple[str, list[str]]:
     if not ctx.activation_record.is_file():
         return "INVALID", ["A-01 IIAC activation record is missing"]
     try:
-        record = json.loads(ctx.activation_record.read_text(encoding="utf-8"))
+        record = _strict_json_loads(ctx.activation_record.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         return "INVALID", [f"A-01 malformed IIAC activation record: {exc}"]
     if not isinstance(record, dict):
@@ -937,7 +1031,7 @@ def _baseline_documents(
         for rel in (REL_MANIFEST, REL_CERT_RECORD):
             raw = _show(ctx, cert_sha, rel)
             try:
-                doc = json.loads(raw.decode("utf-8-sig")) if raw is not None else None
+                doc = _strict_json_loads(raw.decode("utf-8-sig")) if raw is not None else None
             except (UnicodeDecodeError, json.JSONDecodeError):
                 doc = None
             if not isinstance(doc, dict):
@@ -955,7 +1049,7 @@ def _first_publication_sha(ctx: Context, rel: str) -> str:
         ctx.cache["first_publication"] = {}
     cache: dict[str, str] = ctx.cache["first_publication"]
     if rel not in cache:
-        proc = _git(ctx, "log", "--diff-filter=A", "--format=%H", ctx.head or "HEAD", "--", rel)
+        proc = _git(ctx, "log", "--full-history", "--diff-filter=A", "--format=%H", ctx.head or "HEAD", "--", rel)
         shas = proc.stdout.decode("utf-8", errors="replace").split() if proc.returncode == 0 else []
         cache[rel] = shas[-1] if shas else ""
     return cache[rel]
@@ -1005,7 +1099,7 @@ def _p2_evidence_immutability_errors(ctx: Context, p2: str) -> list[str]:
     them; this freezes the assessment (findings F-C-*, evidence-only statement), the handoff and the validator runs."""
     raw_index = _show(ctx, p2, REL_CERT_INDEX)
     try:
-        baseline = json.loads(raw_index.decode("utf-8-sig")) if raw_index is not None else None
+        baseline = _strict_json_loads(raw_index.decode("utf-8-sig")) if raw_index is not None else None
     except (UnicodeDecodeError, json.JSONDecodeError):
         baseline = None
     files = baseline.get("files") if isinstance(baseline, dict) else None
@@ -1013,7 +1107,7 @@ def _p2_evidence_immutability_errors(ctx: Context, p2: str) -> list[str]:
         return ["A-19 the P2 certification evidence index is unavailable or malformed: failing closed"]
     current_raw = _show(ctx, ctx.head, REL_CERT_INDEX)
     try:
-        current = json.loads(current_raw.decode("utf-8-sig")) if current_raw is not None else None
+        current = _strict_json_loads(current_raw.decode("utf-8-sig")) if current_raw is not None else None
     except (UnicodeDecodeError, json.JSONDecodeError):
         current = None
     current_files = current.get("files") if isinstance(current, dict) else None
@@ -1058,7 +1152,10 @@ def _manifest_bytes_errors(ctx: Context, p2: str) -> list[str]:
     if current == expected:
         return []
     try:
-        current_doc, baseline_doc = json.loads(current.decode("utf-8")), json.loads(baseline.decode("utf-8"))
+        current_doc, baseline_doc = (
+            _strict_json_loads(current.decode("utf-8")),
+            _strict_json_loads(baseline.decode("utf-8")),
+        )
     except (UnicodeDecodeError, json.JSONDecodeError):
         current_doc = baseline_doc = None
     if isinstance(current_doc, dict) and isinstance(baseline_doc, dict):
@@ -1073,6 +1170,62 @@ def _manifest_bytes_errors(ctx: Context, p2: str) -> list[str]:
         "A-19 manifest bytes differ from the certification publication "
         "(only the certification_publication_sha value and the limitation order may change)"
     ]
+
+
+_STATUS_TOKEN = re.compile(r"^[A-Z][A-Z0-9_]{2,63}$")
+_B6_STATES = frozenset({"NOT_ISSUED", "ISSUED", "ACCEPTED"})
+
+
+def _lifecycle_value_errors(cert: dict[str, Any], base_cert: dict[str, Any] | None) -> list[str]:
+    """W401-RA-02: lifecycle keys may change after P2, but only to values of the right shape. Free text in a
+    lifecycle field would be a channel that no gate consumes yet is carried by a signed record."""
+    errors: list[str] = []
+    if "certification_publication_sha_binding" in cert:
+        allowed = {P2_BINDING_TEXT}
+        if base_cert is not None and "certification_publication_sha_binding" in base_cert:
+            allowed.add(base_cert["certification_publication_sha_binding"])
+        if cert["certification_publication_sha_binding"] not in allowed:
+            errors.append(
+                "A-19 certification_publication_sha_binding is neither the text published at P2 nor the one "
+                "binding text of the separate P2 binding commit"
+            )
+    if "frz_checklist_rows_changed" in cert and not isinstance(cert["frz_checklist_rows_changed"], bool):
+        errors.append("A-19 frz_checklist_rows_changed must be a boolean")
+    status = cert.get("stage_closure_status")
+    if "stage_closure_status" in cert and not (isinstance(status, str) and _STATUS_TOKEN.fullmatch(status)):
+        errors.append("A-19 stage_closure_status must be a status token (A-Z, 0-9, _), not free text")
+    b6_state = cert.get("b6_acceptance")
+    if "b6_acceptance" in cert and not (isinstance(b6_state, str) and b6_state.upper() in _B6_STATES):
+        errors.append(f"A-19 b6_acceptance must be one of {sorted(_B6_STATES)}")
+    for key in ("b6_acceptance_publication_sha", "formal_closure_publication_sha"):
+        value = cert.get(key)
+        if key in cert and value not in (None, "") and not (isinstance(value, str) and _SHA40.fullmatch(value)):
+            errors.append(f"A-19 {key} must be null or a 40-hex commit id")
+    path = cert.get("b6_acceptance_record_path")
+    if "b6_acceptance_record_path" in cert and path not in (None, "") and path != REL_B6_RECORD:
+        errors.append(f"A-19 b6_acceptance_record_path must be null or {REL_B6_RECORD}")
+    digest = cert.get("b6_acceptance_record_digest")
+    if "b6_acceptance_record_digest" in cert and digest not in (None, ""):
+        if not (isinstance(digest, str) and _DIGEST64.fullmatch(digest)):
+            errors.append("A-19 b6_acceptance_record_digest must be null or a 64-hex SHA-256")
+    for key in ("open_blockers_for_closure", "resolved_blockers_for_closure"):
+        if key in cert and not isinstance(cert[key], list):
+            errors.append(f"A-19 {key} must be a list")
+    return errors
+
+
+def _certification_directory_errors(ctx: Context, p2: str) -> list[str]:
+    """W401-RA-02: the certification directory holds exactly the files published at P2. An added file (for example
+    a scope addendum) would be indexed and signed alongside the record without any gate reading it."""
+    before, after = set(_tree_blobs(ctx, p2, CERT_DIR)), set(_tree_blobs(ctx, ctx.head, CERT_DIR))
+    errors = [
+        f"A-19 {Path(rel).name} was added to the certification directory after the certification publication"
+        for rel in sorted(after - before)
+    ]
+    errors.extend(
+        f"A-19 {Path(rel).name} was removed from the certification directory" for rel in sorted(before - after)
+    )
+    return errors
 
 
 def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any] | None, errors: list[str]) -> None:
@@ -1111,6 +1264,7 @@ def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
         )
     errors.extend(_manifest_bytes_errors(ctx, anchor))
     errors.extend(_p2_evidence_immutability_errors(ctx, anchor))
+    errors.extend(_certification_directory_errors(ctx, anchor))
 
     current, structural = limitation_entries(manifest.get("limitations"))
     baseline, _ = limitation_entries(base_manifest.get("limitations"))
@@ -1154,6 +1308,7 @@ def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
     errors.extend(
         _scope_key_errors(cert, base_cert, "certification record", lifecycle=CERT_LIFECYCLE_KEYS, sealed=True)
     )
+    errors.extend(_lifecycle_value_errors(cert, base_cert))
 
 
 def _gate_a_roles(manifest: dict[str, Any], cert: dict[str, Any] | None, errors: list[str]) -> None:
@@ -1452,14 +1607,16 @@ def _published_blocker_history(ctx: Context, cert_sha: str) -> dict[str, tuple[s
     """Blockers first published in certification-record versions *after* ``cert_sha`` (oldest first)."""
     if not ctx.head or not cert_sha or not _commit_exists(ctx, cert_sha):
         return {}
-    proc = _git(ctx, "log", "--reverse", "--format=%H", f"{cert_sha}..{ctx.head}", "--", REL_CERT_RECORD)
+    proc = _git(
+        ctx, "log", "--full-history", "--reverse", "--format=%H", f"{cert_sha}..{ctx.head}", "--", REL_CERT_RECORD
+    )
     if proc.returncode != 0:
         return {}
     seen: dict[str, tuple[str, str]] = {}
     for sha in proc.stdout.decode("utf-8", errors="replace").split():
         raw = _show(ctx, sha, REL_CERT_RECORD)
         try:
-            doc = json.loads(raw.decode("utf-8-sig")) if raw is not None else None
+            doc = _strict_json_loads(raw.decode("utf-8-sig")) if raw is not None else None
         except (UnicodeDecodeError, json.JSONDecodeError):
             continue
         texts = _blocker_texts(doc if isinstance(doc, dict) else None, "history", [])
@@ -1483,7 +1640,7 @@ def blocker_ledger(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any])
     else:
         raw = _show(ctx, cert_sha, REL_CERT_RECORD)
         try:
-            baseline_doc = json.loads(raw.decode("utf-8-sig")) if raw is not None else None
+            baseline_doc = _strict_json_loads(raw.decode("utf-8-sig")) if raw is not None else None
         except (UnicodeDecodeError, json.JSONDecodeError):
             baseline_doc = None
         if not isinstance(baseline_doc, dict):
@@ -1580,7 +1737,7 @@ def _reaudit_resolution_errors(
     if _sha256(raw) != entry.get("reaudit_manifest_digest"):
         fail("reaudit_manifest_digest does not match the re-audit manifest")
     try:
-        manifest = json.loads(raw.decode("utf-8-sig"))
+        manifest = _strict_json_loads(raw.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError):
         fail("re-audit manifest is not valid JSON")
         return
@@ -1666,7 +1823,7 @@ def _reaudit_manifest_errors(
             fail(f"re-audit {digest_key} does not match {rel}")
         elif path_key == "findings_path":
             try:
-                findings = json.loads(raw.decode("utf-8-sig"))
+                findings = _strict_json_loads(raw.decode("utf-8-sig"))
             except (UnicodeDecodeError, json.JSONDecodeError):
                 fail("re-audit findings register is not valid JSON")
                 continue
@@ -1772,7 +1929,7 @@ def resolution_errors(ctx: Context, key: str, entry: Any, baseline_text: str, ce
     return errors
 
 
-def gate_a(ctx: Context) -> list[str]:
+def _gate_a_core(ctx: Context) -> list[str]:
     errors: list[str] = []
     governance = _read_json(ctx, REL_GOVERNANCE, "A-02", errors)
     if governance is not None and governance.get("normative_effect") == "IN_FORCE":
@@ -1896,7 +2053,7 @@ def _b6_record_errors(ctx: Context, b6: str, manifest: dict[str, Any], cert: dic
         fail("IIAC manifest changed after the B6 acceptance publication")
     phase1_raw = _show(ctx, b6, REL_CERT_RECORD)
     try:
-        phase1 = json.loads(phase1_raw.decode("utf-8-sig")) if phase1_raw is not None else None
+        phase1 = _strict_json_loads(phase1_raw.decode("utf-8-sig")) if phase1_raw is not None else None
     except (UnicodeDecodeError, json.JSONDecodeError):
         phase1 = None
     if not isinstance(phase1, dict):
@@ -1975,7 +2132,7 @@ def _gate_b_b6(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any], err
         errors.append("B-03 B6_ACCEPTANCE_PUBLICATION_SHA is not an ancestor of HEAD")
     blob = _show(ctx, b6, REL_GOVERNANCE)
     try:
-        phase1 = json.loads(blob.decode("utf-8-sig")) if blob is not None else None
+        phase1 = _strict_json_loads(blob.decode("utf-8-sig")) if blob is not None else None
     except (UnicodeDecodeError, json.JSONDecodeError):
         phase1 = None
     if not isinstance(phase1, dict) or phase1.get("formal_b6_status") != "ACCEPTED":
@@ -2118,7 +2275,7 @@ def _gate_b_ladder(ctx: Context, b6: str, cert: dict[str, Any], errors: list[str
         errors.append("B-10 EVOL-X closure claimed before FORMAL_CLOSURE_PUBLICATION_SHA exists")
 
 
-def gate_b(ctx: Context) -> list[str]:
+def _gate_b_core(ctx: Context) -> list[str]:
     errors: list[str] = []
     sink: list[str] = []
     manifest = _read_json(ctx, REL_MANIFEST, "B-00", sink)
@@ -2137,6 +2294,21 @@ def gate_b(ctx: Context) -> list[str]:
         if key in GATE_B_ONLY_BLOCKERS and key in ledger.origin and key not in ledger.open_now:
             opened_at, text = ledger.origin[key]
             errors.extend(resolution_errors(ctx, key, entry, text, opened_at, "B-09"))
+    return errors
+
+
+def gate_a(ctx: Context) -> list[str]:
+    """Gate A plus the repository-integrity (RA-01) and HEAD-binding (RA-03) checks each gate enforces itself."""
+    errors = _gate_a_core(ctx)
+    errors.extend(_repository_integrity_errors(ctx, "A-22"))
+    errors.extend(_dirty_input_errors(ctx, "A-21"))
+    return errors
+
+
+def gate_b(ctx: Context) -> list[str]:
+    errors = _gate_b_core(ctx)
+    errors.extend(_repository_integrity_errors(ctx, "B-13"))
+    errors.extend(_dirty_input_errors(ctx, "B-12"))
     return errors
 
 

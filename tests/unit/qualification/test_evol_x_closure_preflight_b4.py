@@ -1238,7 +1238,22 @@ def test_gate_a_pass_never_implies_gate_b(repo) -> None:
 # --------------------------------------------------------------------------- canonical repository
 
 
+def _canonical_inputs_are_dirty() -> bool:
+    """W401-RA-03: the canonical assertions below describe the committed state; a locally edited tree is reported
+    by the new A-21/B-12 checks (covered by its own tests), so these two assertions are skipped there."""
+    proc = subprocess.run(
+        ["git", "status", "--porcelain", "--", pf.QUAL, "scripts"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return bool(proc.stdout.strip())
+
+
 def test_canonical_repository_formal_closure_fails_closed_while_b6_unpublished() -> None:
+    if _canonical_inputs_are_dirty():
+        pytest.skip("uncommitted edits in the working tree: A-21 correctly reports them")
     governance = json.loads((REPO / pf.REL_GOVERNANCE).read_text(encoding="utf-8"))
     if governance.get("b6_acceptance_publication_sha"):
         pytest.skip("B6 acceptance published; canonical pre-B6 assertion no longer applies")
@@ -2254,6 +2269,8 @@ def test_ra_b4_04_no_self_certification_or_evidence_drift_after_closure(closed) 
 
 
 def test_ra_b4_canonical_gate_a_reflects_unresolved_blockers_and_gate_b_requires_real_evidence() -> None:
+    if _canonical_inputs_are_dirty():
+        pytest.skip("uncommitted edits in the working tree: A-21 correctly reports them")
     cert = json.loads((REPO / pf.REL_CERT_RECORD).read_text(encoding="utf-8"))
     governance = json.loads((REPO / pf.REL_GOVERNANCE).read_text(encoding="utf-8"))
     if governance.get("b6_acceptance_publication_sha") or cert.get("resolved_blockers_for_closure"):
@@ -3336,3 +3353,205 @@ def test_w4_f04_wrong_id_bad_timestamp_unsigned_and_text_only_signature_fail() -
 def test_w4_f04_changed_scope_missing_token_fails() -> None:
     record = _operator_record("X-1", "unrelated decision", stamp="2026-11-05T10:00:00+00:00")
     assert any("lacks" in e for e in _op_errors(record))
+
+
+# --------------------------------------------------------------------------- W401 re-audit (RA-01..RA-04)
+
+
+def _widen_lim01_in_manifest(root: Path) -> None:
+    def change(manifest: dict[str, Any]) -> None:
+        manifest["limitations"][0] = f"{manifest['limitations'][0]} scope extended to all profiles"
+
+    _mutate_json(root, pf.REL_MANIFEST, change)
+
+
+def test_w401_ra_01_a_replace_ref_cannot_forge_the_p2_baseline(repo) -> None:
+    """Audit repro attack3b: ``git replace <P2> <forged>`` made the widened manifest the baseline (false PASS)."""
+    root, _ = repo
+    p2 = _honest_p2(root)
+    _widen_lim01_in_manifest(root)
+    assert not _eval(root).gate_a_pass, "control: the committed widening is rejected before the forgery"
+    _git(root, "replace", p2, _git(root, "rev-parse", "HEAD"))
+    # the test-side oracle ``_honest_p2`` would itself read the replaced history: pass the real P2 explicitly
+    result = pf.evaluate(root, evidence_root=root, p2_sha=p2)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("replace refs" in e for e in _b(result.gate_a, "A-22")), result.gate_a
+    assert any("scope widening" in e or "reworded" in e for e in _b(result.gate_a, "A-19")), (
+        "the widened limitation must still be compared with the real P2 blob, not the replaced one"
+    )
+    assert any("replace refs" in e for e in _b(result.gate_b, "B-13")), result.gate_b
+
+
+def test_w401_ra_01_a_grafts_file_is_refused(repo) -> None:
+    root, _ = repo
+    graft = root / ".git" / "info" / "grafts"
+    graft.parent.mkdir(parents=True, exist_ok=True)
+    graft.write_text("", encoding="utf-8")
+    result = _eval(root)
+    assert any("grafts file" in e for e in _b(result.gate_a, "A-22")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w401_ra_01_a_shallow_repository_is_refused(repo, tmp_path: Path) -> None:
+    root, _ = repo
+    shallow = tmp_path / "shallow"
+    subprocess.run(
+        ["git", "clone", "-q", "--depth", "1", "--no-local", str(root), str(shallow)],
+        check=True,
+        capture_output=True,
+    )
+    ctx = pf.Context(repo=shallow, activation_record=shallow / pf.REL_ACTIVATION, evidence_root=shallow)
+    assert any("shallow" in e for e in pf._repository_integrity_errors(ctx, "A-22"))
+    result = pf.evaluate(shallow, evidence_root=shallow, p2_sha=_honest_p2(root))
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w401_ra_01_a_clean_repository_has_no_integrity_error(repo) -> None:
+    root, _ = repo
+    result = _eval(root)
+    assert not _b(result.gate_a, "A-22") and not _b(result.gate_a, "A-21"), result.gate_a
+
+
+def test_w401_ra_03_uncommitted_restoration_of_a_committed_widening_does_not_pass(closed) -> None:
+    """Audit repro attack2: commit a widened FRZ row (Gate B FAIL), then restore the correct row UNCOMMITTED."""
+    root, _ = closed
+    assert _eval(root).gate_b_pass, "control: the closed fixture passes before the attack"
+    original = (root / pf.REL_FRZ_CHECKLIST).read_bytes()
+    _write(root, pf.REL_FRZ_CHECKLIST, original + b"\n| FRZ-EVOL-01 | widened | PASS | forged |\n")
+    _commit(root, "commit a widened checklist")
+    assert not _eval(root).gate_b_pass, "control: the committed widening is rejected"
+    _write(root, pf.REL_FRZ_CHECKLIST, original)  # restored in the working tree only
+    result = _eval(root)
+    assert not result.gate_b_pass, "an uncommitted restoration must not produce PASS"
+    assert any("uncommitted" in e for e in _b(result.gate_b, "B-12")), result.gate_b
+
+
+@pytest.mark.parametrize(
+    "rel",
+    [pf.REL_REGISTER, pf.REL_LADDER, pf.REL_GOVERNANCE, pf.REL_FRZ_CHECKLIST],
+)
+def test_w401_ra_03_any_dirty_gate_b_input_blocks_pass(closed, rel: str) -> None:
+    root, _ = closed
+    data = (root / rel).read_bytes()
+    _write(root, rel, data + b"\n")
+    result = _eval(root)
+    assert not result.gate_b_pass
+    assert any(rel in e for e in _b(result.gate_b, "B-12")), result.gate_b
+
+
+def test_w401_ra_03_staged_and_untracked_inputs_are_dirty(closed) -> None:
+    root, _ = closed
+    data = (root / pf.REL_REGISTER).read_bytes()
+    _write(root, pf.REL_REGISTER, data + b"\n")
+    _git(root, "add", pf.REL_REGISTER)  # staged, not committed
+    staged = _eval(root)
+    assert any(pf.REL_REGISTER in e for e in _b(staged.gate_b, "B-12")), staged.gate_b
+    _git(root, "reset", "-q", "--hard", "HEAD")
+    assert _eval(root).gate_b_pass
+    _write(root, f"{pf.CERT_DIR}/UNTRACKED_NOTE.md", "an untracked file next to the certification record\n")
+    untracked = _eval(root)
+    assert any("UNTRACKED_NOTE.md" in e for e in _b(untracked.gate_b, "B-12")), untracked.gate_b
+
+
+def test_w401_ra_03_an_unrelated_dirty_file_is_not_a_false_positive(closed) -> None:
+    root, _ = closed
+    _write(root, f"{pf.QUAL}/UNRELATED_SCRATCH.txt", "not an input\n")
+    result = _eval(root)
+    assert result.gate_b_pass, result.gate_b
+
+
+def test_w401_ra_02_duplicate_json_keys_are_rejected(repo) -> None:
+    """Audit repro S5: two ``certification_verdict`` keys, Python keeps the last one."""
+    root, _ = repo
+    raw = (root / pf.REL_CERT_RECORD).read_text(encoding="utf-8")
+    match = re.search(r'^(\s*)"certification_verdict": ("[^"]*"),?\s*$', raw, re.MULTILINE)
+    assert match, "fixture record must carry certification_verdict"
+    widened = f'{match.group(1)}"certification_verdict": "PASS_SCOPED_WIDENED",\n'
+    _write(root, pf.REL_CERT_RECORD, raw.replace(match.group(0), widened + match.group(0), 1))
+    _reindex_cert(root)
+    _commit(root, "duplicate certification_verdict key")
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("duplicate JSON object key" in e for e in result.gate_a), result.gate_a
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("certification_publication_sha_binding", "SCOPE EXTENDED: LIM-01 now covers PLATFORM_CONSERVATIVE_FULL/T4"),
+        ("frz_checklist_rows_changed", {"claim": "LIM-* waived"}),
+        ("stage_closure_status", "NOT_CLOSED; scope extended to all profiles"),
+        ("b6_acceptance", "ISSUED FOR ALL PROFILES"),
+        ("b6_acceptance_publication_sha", "scope extended"),
+        ("formal_closure_publication_sha", "LIM-01..05 withdrawn"),
+        ("b6_acceptance_record_path", "docs/anywhere.md"),
+        ("b6_acceptance_record_digest", "not-a-digest"),
+        ("open_blockers_for_closure", "all LIM-* waived"),
+    ],
+)
+def test_w401_ra_02_lifecycle_keys_only_accept_values_of_their_shape(repo, key: str, value: Any) -> None:
+    """Audit repro S1: free text in a lifecycle field was carried by a signed record and earned Gate A."""
+    root, _ = repo
+    _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update({key: value}), reindex=True)
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any(key in e for e in _b(result.gate_a, "A-19") + _b(result.gate_a, "A-18")), result.gate_a
+
+
+def test_w401_ra_02_the_one_legitimate_binding_text_is_accepted(repo) -> None:
+    root, _ = repo
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c.update(certification_publication_sha_binding=pf.P2_BINDING_TEXT),
+        reindex=True,
+    )
+    result = _eval(root)
+    assert not any("sha_binding" in e for e in result.gate_a), result.gate_a
+
+
+def test_w401_ra_02_a_file_added_to_the_certification_directory_is_rejected(repo) -> None:
+    """Audit repro S2: an indexed SCOPE_ADDENDUM.md in certification/ withdrawing limitations earned Gate A."""
+    root, _ = repo
+    _write(root, f"{pf.CERT_DIR}/SCOPE_ADDENDUM.md", "LIM-01..05 are withdrawn; scope extended to all profiles.\n")
+    _reindex_cert(root)
+    _commit(root, "add a scope addendum to the certification directory")
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("SCOPE_ADDENDUM.md was added" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+
+
+def test_w401_ra_04_a_blocker_dropped_by_an_ours_merge_is_still_seen(repo) -> None:
+    """Audit repro attack3: blocker B-7 published on a side branch and discarded by ``merge -s ours``."""
+    root, _ = repo
+    branch = _git(root, "rev-parse", "--abbrev-ref", "HEAD")
+    _git(root, "checkout", "-q", "-b", "side-blocker")
+    _mutate_json(
+        root,
+        pf.REL_CERT_RECORD,
+        lambda c: c["open_blockers_for_closure"].append("B-7 side-branch blocker published after P2"),
+        reindex=True,
+    )
+    _git(root, "checkout", "-q", branch)
+    ident = ["-c", "user.email=b4-fixture@example.com", "-c", "user.name=b4-fixture"]
+    _git(root, *ident, "merge", "-q", "-s", "ours", "side-blocker", "-m", "discard the side branch")
+    result = _eval(root)
+    assert not result.gate_a_pass and not result.gate_b_pass
+    assert any("B-7" in e for e in _b(result.gate_a, "A-18")), result.gate_a
+
+
+def test_w401_ra_06_format_document_matches_the_code() -> None:
+    """The published B6 record / promoted-row formats cannot drift from what the preflight enforces."""
+    doc = (Path(pf.__file__).resolve().parents[2] / pf.EVOL_DIR / "EVOL_X_B6_RECORD_AND_FRZ_ROW_FORMATS.md").read_text(
+        encoding="utf-8"
+    )
+    assert pf.B6_RECORD_TITLE in doc
+    for name in pf.B6_RECORD_FIELDS:
+        assert f"`{name}`" in doc, f"B6 field {name!r} is not documented"
+    for disposition, (status, notes) in {
+        "ELIGIBLE_PASS": ("PASS", "—"),
+        "ELIGIBLE_PASS_SCOPED(a; b)": ("PASS — SCOPED", "a; b"),
+        "ELIGIBLE_PASS_EVOL_X_SCOPED(a)": ("PASS (EVOL-X SCOPED)", "a"),
+    }.items():
+        assert pf.render_promoted_row(disposition) == (status, notes)
+        assert f"| `{disposition}` | `{status}` | `{notes}` |" in doc
