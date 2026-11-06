@@ -55,6 +55,11 @@ Same ticket and files. **W403-01** (forged bytecode: no repository bytecode is r
 indexed evidence directories), **W403-03** (binding limited to the verifier directories and the loaded modules). Open on purpose: W403-04 (unverified), RA-05,
 RA-07, OD-1 (decided C), threat-model boundary (suggested OD-2, undecided).
 
+## Round 5 - re-audit W404 (verdict PARTIAL on `dc650b8df`)
+
+Same ticket and files. **W404-01** (HIGH regression: bootstrap imports only os/sys before the sys.path strip), **W404-02** (repository `scripts` package pinned, untracked
+repository-root modules flagged), **W404-03** (bytecode/safe-path environment for children). Open on purpose: W404-04, W404-05 (threat-model boundary, suggested OD-2).
+
 ## Plan digest
 
 Source: operator mission "INTEGRAX - EVOL-X B4 - ONE-PASS CONSOLIDATED CORRECTIVE IMPLEMENTATION" @ `5afaad9eadfc1655f4ef1ab59eb022960a924648`
