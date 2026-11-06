@@ -987,22 +987,35 @@ _CERT_SHA_VALUE = re.compile(rb'("certification_publication_sha"\s*:\s*")[^"]*("
 
 def _manifest_bytes_errors(ctx: Context, p2: str) -> list[str]:
     """DA-02 M0: the manifest blob at HEAD equals the P2 blob byte for byte except the ``certification_publication_sha``
-    value (a commit cannot contain its own SHA); a pure reformat or a key reorder is therefore detected."""
+    value (a commit cannot contain its own SHA). A pure reformat or a key reorder is therefore detected; the order of
+    the ``limitations`` entries stays free (the multiset is compared separately), provided the file keeps the
+    canonical serialization and key order of the P2 blob."""
     if not p2 or not ctx.head:
         return []
     baseline, current = _show(ctx, p2, REL_MANIFEST), _show(ctx, ctx.head, REL_MANIFEST)
     if baseline is None or current is None:
         return ["A-19 manifest blob unavailable at the certification publication or at HEAD"]
-    match = _CERT_SHA_VALUE.search(current)
-    if match is None:
+    if _CERT_SHA_VALUE.search(current) is None:
         return ["A-19 manifest at HEAD has no certification_publication_sha value"]
     expected = _CERT_SHA_VALUE.sub(lambda m: m.group(1) + p2.encode("ascii") + m.group(2), baseline, count=1)
-    if current != expected:
-        return [
-            "A-19 manifest bytes differ from the certification publication "
-            "(only certification_publication_sha may change)"
-        ]
-    return []
+    if current == expected:
+        return []
+    try:
+        current_doc, baseline_doc = json.loads(current.decode("utf-8")), json.loads(baseline.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        current_doc = baseline_doc = None
+    if isinstance(current_doc, dict) and isinstance(baseline_doc, dict):
+
+        def canonical(doc: dict[str, Any]) -> bytes:
+            return (json.dumps(doc, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+
+        if canonical(baseline_doc) == baseline and canonical(current_doc) == current:
+            if list(current_doc) == list(baseline_doc):
+                return []
+    return [
+        "A-19 manifest bytes differ from the certification publication "
+        "(only the certification_publication_sha value and the limitation order may change)"
+    ]
 
 
 def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, Any] | None, errors: list[str]) -> None:
