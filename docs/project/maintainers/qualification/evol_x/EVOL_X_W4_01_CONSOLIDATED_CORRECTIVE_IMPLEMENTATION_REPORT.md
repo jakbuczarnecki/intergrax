@@ -194,3 +194,29 @@ Auditor session `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9` (new context, own w
 * canonical `--gate b6-readiness`: FAIL with exactly the two real `A-18` blockers (B-4, B6-P3), no other code; `verify_iiac_policy_activation --require-in-force`: `IN_FORCE @ IIAC-2026-11-05.1`.
 
 No `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed. A canonical or `--repo` run now requires the verified inputs to be committed: operators must commit evidence before running the preflight.
+
+## O. Round 3 — delta re-audit W402 (verdict PARTIAL on `ca78b1c1f`) and the defect hunt
+
+The delta re-audit by `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9` closed W401-RA-01, RA-04 and RA-06 (PASS) and left RA-02 and RA-03 PARTIAL with one MEDIUM blocker, **W402-01** (a tracked input hidden by `skip-worktree` / `assume-unchanged` passed the HEAD-binding because the check trusted `git status`). In parallel this implementer ran a read-only adversarial review by a subagent on `ca78b1c1f`; its findings D1-D9 are folded in below (the subagent's report is not an audit and certifies nothing).
+
+| Finding | Source | Disposition | Fix and test |
+|---|---|---|---|
+| W402-01 index flags / fsmonitor hide an uncommitted input | auditor MEDIUM, hunt D2 | **Fixed in code** | `git status` is no longer the oracle: every verified input is compared byte for byte with its HEAD blob (RA-B4-01 byte contract), untracked files are found by walking the file system, and index flags other than `H` fail; `test_w402_01_*` |
+| W402-02 verifier code outside the read inputs | auditor LOW, hunt D3 | **Fixed in code** | the whole `scripts/` tree, the EVOL-X evidence tree and `.gitattributes` are HEAD-bound; `test_w402_02_*`, `test_hunt_d3_*` |
+| W402-03 free-text channels | auditor LOW, hunt D7 | **Fixed in code** | open blockers keep their published text; resolved entries and `certifier_disposition` accept only structured keys; `stage_closure_status` and `b6_acceptance` are exact enums; padded SHAs and `NaN`/`Infinity` rejected; the evidence root holds only known or index-bound directories; `test_w402_03_*`, `test_hunt_d7_*` |
+| W402-04 / D1 forged commit-graph, fsmonitor | auditor INFO, hunt D1 | **Fixed in code** | `core.commitGraph=false` and `core.fsmonitor=false` on every preflight git call; `test_w402_04_*` (the forged-graph repro itself was not re-executed; the setting disables the graph) |
+| D4 planted git-ignored module on `sys.path[0]` | hunt MEDIUM | **Fixed and checked by hand** | the script directory is removed from `sys.path` before any import; a planted ignored `json.py` in a fresh clone was not executed and the run exited 1 with an `A-21` untracked-file error; `test_hunt_d4_*` |
+| D5 `GIT_REPLACE_REF_BASE`, imported modules' git calls | hunt MEDIUM | **Fixed in code** | `GIT_NO_REPLACE_OBJECTS=1` for the whole process (imported IIAC modules included); redirecting git variables (`GIT_REPLACE_REF_BASE`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_OBJECT_DIRECTORY`, `GIT_NAMESPACE`, `GIT_SHALLOW_FILE`, `GIT_GRAFT_FILE`) fail both gates; `test_hunt_d5_*` |
+| D6 crash on unhashable lifecycle value | hunt LOW | **Fixed in code** | values are type-checked before they are hashed; any unexpected evidence shape is an `A-99` internal error with a structured, failing verdict; `test_hunt_d6_*`, `test_hunt_an_unexpected_*` |
+| D8 gitlinks / non-ASCII names in the certification directory | hunt LOW | **Fixed in code** | `ls-tree -r -z` over every entry type; `test_hunt_d8_*` |
+| D9 / W401-RA-07 fixture PASS exits 0 | INFO | **Open, not changed** | same reason as before |
+| `GIT_DIR` / `GIT_INDEX_FILE` redirection, forged commit-graph in the *imported* activation modules | — | **UNVERIFIED / residual** | the imported material IIAC modules (not changed here) still call git without `core.commitGraph=false`; the process-wide `GIT_NO_REPLACE_OBJECTS` covers replace objects only |
+
+One existing test changed meaning on purpose: `test_open_blocker_holds_formal_closure` used to reword blocker B-5; it now re-opens B-5 with its P2 text, because rewording an open blocker is the channel W402-03 closes.
+
+**Pinned SHA for round 3: `2e0ed9c6b`** (code and tests; commits after it are documentation only). Evidence on that tree (Windows 11, `core.autocrlf=true`, short `--basetemp`):
+
+* full B4 suite (`-n 6`) at `1b89c47b3`: 480 passed, 1 failed (the stale fixture above); that test passes after the fix in `2e0ed9c6b` and the 20 `canonical` tests pass on the committed tree. The whole suite was not repeated end to end after the one-test change; CI does that;
+* `tests/unit/governance -n 4`: **145 passed, 1 skipped** (symlinks), 14 min 39 s;
+* canonical `--gate b6-readiness`: FAIL with exactly the two real `A-18` blockers and no other code; `verify_iiac_policy_activation --require-in-force`: `IN_FORCE @ IIAC-2026-11-05.1`;
+* no `intergrax/`, `agents/`, `applications/`, `scripts/governance/*`, activation record, protocol or existing evidence changed.

@@ -43,6 +43,12 @@ audit: W401-RA-05 (negation denylist / ASCII-only decision scope, process-enforc
 operator decision), W401-RA-09 (documentation at the old pin), W401-RA-10 (Linux container not reproduced by that auditor; CI evidence exists).
 The previous audit dossier is held outside the repository and was not edited.
 
+## Round 3 - delta re-audit W402 (verdict PARTIAL on `ca78b1c1f`) and defect hunt
+
+Same ticket and files. **W402-01** (HEAD-binding evaded by index flags: content comparison replaces `git status`), **W402-02** (verifier code and
+`.gitattributes` bound to `HEAD`), **W402-03** (free-text channels), **W402-04** (commit-graph / fsmonitor off) and the subagent defect hunt D3-D8
+(sys.path shadowing, git environment, structured lifecycle values, gitlinks). Open on purpose: W401-RA-05, RA-07 / D9, OD-1 (decided: accept residual).
+
 ## Plan digest
 
 Source: operator mission "INTEGRAX - EVOL-X B4 - ONE-PASS CONSOLIDATED CORRECTIVE IMPLEMENTATION" @ `5afaad9eadfc1655f4ef1ab59eb022960a924648`
