@@ -972,13 +972,21 @@ def _digest8(text: str) -> str:
 
 
 def _scope_key_errors(
-    document: dict[str, Any], baseline: dict[str, Any], label: str, *, lifecycle: frozenset[str], sealed: bool
+    document: dict[str, Any],
+    baseline: dict[str, Any],
+    label: str,
+    *,
+    lifecycle: frozenset[str],
+    sealed: bool,
+    compared_elsewhere: frozenset[str] = frozenset(),
 ) -> list[str]:
-    """A-19: scope/claim-named keys must equal the baseline; unknown new keys are rejected."""
+    """A-19: every non-lifecycle baseline key keeps its value, unknown new keys are rejected.
+
+    ``compared_elsewhere`` names keys with a dedicated (order-insensitive) comparison, e.g. the manifest limitations."""
     errors: list[str] = []
     for key, value in document.items():
         if key in baseline:
-            if key not in lifecycle and value != baseline[key]:
+            if key not in lifecycle and key not in compared_elsewhere and value != baseline[key]:
                 kind = "scope/claim" if _SCOPE_KEY.search(key) else "sealed"
                 errors.append(f"A-19 {label} {kind} key {key!r} differs from the certification publication")
         elif key not in lifecycle:
@@ -1124,7 +1132,12 @@ def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
         )
     errors.extend(
         _scope_key_errors(
-            manifest, base_manifest, "manifest", lifecycle=frozenset({"certification_publication_sha"}), sealed=True
+            manifest,
+            base_manifest,
+            "manifest",
+            lifecycle=frozenset({"certification_publication_sha"}),
+            sealed=True,
+            compared_elsewhere=frozenset({"limitations"}),
         )
     )
     if cert is None or base_cert is None:

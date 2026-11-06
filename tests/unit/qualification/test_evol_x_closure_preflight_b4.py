@@ -160,7 +160,7 @@ def _git(repo: Path, *args: str) -> str:
         ["git", "-c", "core.autocrlf=false", *args], cwd=repo, capture_output=True, text=True, check=False
     )
     if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or f"git {' '.join(args)} failed")
+        raise RuntimeError(proc.stderr.strip() or proc.stdout.strip() or f"git {' '.join(args)} failed")
     return proc.stdout.strip()
 
 
@@ -832,7 +832,17 @@ def test_cli_reports_both_gates_and_selects_exit_code(repo) -> None:
 
     def run(*args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, str(SCRIPT), "--repo", str(root), "--evidence-root", str(root), *args],
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--repo",
+                str(root),
+                "--evidence-root",
+                str(root),
+                "--p2-sha",
+                _honest_p2(root),
+                *args,
+            ],
             cwd=REPO,
             capture_output=True,
             text=True,
@@ -2485,8 +2495,10 @@ def test_w4_ra_b4_05_lifecycle_fields_may_change_after_the_baseline(repo) -> Non
 
 def test_w4_ra_b4_05_unavailable_scope_baseline_fails_closed(repo) -> None:
     root, _ = repo
-    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(certification_publication_sha="f" * 40), reindex=True)
-    _assert_scope_fails(root, "baseline unavailable")
+    # the trusted anchor names a commit that does not exist in the repository (DA-01: never the declared field)
+    result = pf.evaluate(root, evidence_root=root, p2_sha="f" * 40)
+    assert any("baseline unavailable" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
 
 
 # ---- Gate B: promoted FRZ rows
@@ -2887,9 +2899,9 @@ def test_w4_ra_b4_05_scope_baseline_cannot_be_moved_to_a_later_widened_commit(re
     _rebind_certification_publication(root, widened)
     result = _eval(root)
     a19 = _b(result.gate_a, "A-19")
-    assert any("first published the certification record" in e for e in a19), result.gate_a
-    # the equality itself is satisfied against the moved baseline: only the first-publication pin can catch this
-    assert not any("limitation" in e for e in a19), a19
+    # DA-01: the trusted anchor is honest, so the moved declared field is caught and the widening is still visible
+    assert any("differs from the pinned P2" in e for e in a19), result.gate_a
+    assert any("limitation" in e and "scope widening" in e for e in a19), a19
     assert not result.gate_a_pass and not result.gate_b_pass
 
 
@@ -2906,7 +2918,8 @@ def test_w4_ra_b4_02_blocker_baseline_cannot_be_moved_to_a_commit_that_already_d
     dropped = _git(root, "rev-parse", "HEAD")
     _rebind_certification_publication(root, dropped)
     result = _eval(root)
-    assert any("first published the certification record" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert any("differs from the pinned P2" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert any("removed, renamed or reclassified" in e for e in _b(result.gate_a, "A-18")), result.gate_a
     assert not result.gate_a_pass and not result.gate_b_pass
 
 
@@ -3133,8 +3146,7 @@ def _attack_status_flags_only(root: Path, built: dict[str, str]) -> str:
 
 
 def _attack_manifest_changed_index_untouched(root: Path, built: dict[str, str]) -> str:
-    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(verdict="PASS"))
-    _commit(root, "change the manifest, leave the evidence index as is")
+    _mutate_json(root, pf.REL_MANIFEST, lambda m: m.update(verdict="PASS_UNRESTRICTED"))
     return built["cert_pub"]
 
 
@@ -3190,7 +3202,8 @@ def test_da02_every_sealed_certification_record_key_must_equal_the_p2_value(repo
     root, _ = repo
     _mutate_json(root, pf.REL_CERT_RECORD, lambda c: c.update({key: f"{c.get(key, '')} (widened)"}), reindex=True)
     result = _eval(root)
-    assert any(f"key {key!r} differs" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    # the synthetic P2 record has no ``notes`` (the real-repository test covers its value): adding it is rejected
+    assert any(f"key {key!r}" in e for e in _b(result.gate_a, "A-19")), result.gate_a
     _rejected(result)
 
 
