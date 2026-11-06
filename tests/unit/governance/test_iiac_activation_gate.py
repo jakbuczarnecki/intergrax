@@ -234,27 +234,39 @@ def _live(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_act_n01_inactive_policy_fails_default_and_require() -> None:
-    default = _live()
-    required = _live("--require-in-force")
-    inactive = _live("--expect-not-in-force")
+def test_act_n01_inactive_policy_fails_default_and_require(tmp_path: Path) -> None:
+    """T-IGX-018-A: the negative guard now runs on a NOT_IN_FORCE fixture (the canonical policy is IN_FORCE)."""
+    repo = Path(_build_repo(tmp_path)["repo"])
+    _save_and_commit(repo, {"status": "NOT_IN_FORCE", "policy_version": POLICY}, "deactivate fixture policy")
+    default = _run(repo)
+    required = _run(repo, "--require-in-force")
+    inactive = _run(repo, "--expect-not-in-force")
     assert default.returncode != 0
     assert "ACT-N01" in default.stderr
     assert required.returncode != 0
     assert "ACT-N01" in required.stderr
-    assert inactive.returncode == 0
+    assert inactive.returncode == 0, inactive.stderr
+
+
+def test_canonical_policy_is_in_force_and_verifies() -> None:
+    """Post-activation contract: the canonical record verifies under --require-in-force and not as inactive."""
     canonical = json.loads(CANONICAL.read_text(encoding="utf-8"))
-    assert canonical["status"] == "NOT_IN_FORCE"
+    assert canonical["status"] == "IN_FORCE"
+    required = _live("--require-in-force")
+    assert required.returncode == 0, required.stderr
+    assert _live().returncode == 0
+    assert _live("--expect-not-in-force").returncode != 0
 
 
-def test_positive_fixture_passes_without_activating_canonical_policy(tmp_path: Path) -> None:
+def test_positive_fixture_passes_without_touching_the_canonical_policy(tmp_path: Path) -> None:
+    before = CANONICAL.read_bytes()
     built = _build_repo(tmp_path)
     repo = Path(built["repo"])
     default = _run(repo)
     required = _run(repo, "--require-in-force")
     assert default.returncode == 0, default.stderr
     assert required.returncode == 0, required.stderr
-    assert json.loads(CANONICAL.read_text(encoding="utf-8"))["status"] == "NOT_IN_FORCE"
+    assert CANONICAL.read_bytes() == before
 
 
 def test_act_n02_arbitrary_digest(tmp_path: Path) -> None:
