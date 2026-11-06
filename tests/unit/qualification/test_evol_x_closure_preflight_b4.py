@@ -1220,7 +1220,8 @@ def test_open_blocker_holds_formal_closure(closed) -> None:
         root,
         pf.REL_CERT_RECORD,
         lambda c: c.update(
-            open_blockers_for_closure=["B-5 OD-EVOLX-08 confirmation"],
+            # W402-03: an open blocker keeps the exact published text (the test used to rename it).
+            open_blockers_for_closure=[B5_TEXT],
             resolved_blockers_for_closure=[e for e in c["resolved_blockers_for_closure"] if e["blocker_id"] != "B-5"],
         ),
         reindex=True,
