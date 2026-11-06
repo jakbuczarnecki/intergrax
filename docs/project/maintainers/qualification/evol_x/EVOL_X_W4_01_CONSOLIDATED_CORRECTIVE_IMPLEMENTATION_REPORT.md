@@ -140,3 +140,31 @@ The branch was pushed as `origin/evolx/w4-01-consolidated` (PR `jakbuczarnecki/i
 **Deep-path fixture failures (previously uninvestigated).** Reproduced on Windows with `--basetemp` of ~114 characters: fixtures error in setup (`WinError 3/206`; with ~200 characters `git init` additionally fails with `Filename too long` on `.git/hooks/*.sample`). Cause: Win32 `MAX_PATH` (260) — the fixture repositories nest `docs/project/maintainers/qualification/iiac_evidence/EVOL-X/...` (~140 characters) below the temp root, and `LongPathsEnabled` is off for the Python/git tool chain. It is neither state pollution nor a defect in the gates: `--basetemp` of 80 characters passes, 114 fails, identically with and without an empty git template (an `--template=` experiment was reverted as ineffective). Mitigation: keep `--basetemp` short (the handoff already prescribes `D:/w4a/...`) or enable long paths. Linux CI is unaffected.
 
 **Still open (unchanged, authority items):** W4-F08 operator attestation, OD-1, publication of the branch to `development`, independent re-audit, OD-EVOL-12 / OD-EVOLX-08 / P3, B6, FRZ promotion. The scratch directory `D:/w4d_deep` created for the path experiment can be deleted by the operator.
+
+## M. Publication binding (2026-11-06, after operator authorisation)
+
+The operator authorised fast-forward publication to `development` in chat; the authorisation is recorded in `T-IGX-019-A` (`Publication-Approved:`, scoped to publication only). `igx_gov ticket` passed before the push.
+
+| Role | SHA |
+|---|---|
+| START_HEAD | `5afaad9eadfc1655f4ef1ab59eb022960a924648` |
+| IMPLEMENTATION_SHA / TEST_EXECUTION_SHA (code under audit) | `9f8b04d2b8b670077b1e78ce812bb34b680f3968` |
+| Documentation commits after the implementation (no code change) | `445d5883c`, `5376d761a`, `f6d3b6aaf` |
+| **PUBLICATION_HEAD** (`origin/development`, fast-forward from `5afaad9ea`, no force) | `49b50fd7442b1977cee53fdc80b7fbd0c33ec203` |
+| This binding commit | the commit that adds this section (its own SHA is deliberately not recorded here) |
+
+`git diff 5afaad9ea..49b50fd74 --stat` contains only the files listed in §D, this report, the handoff and the ticket. Publication is **not** acceptance: the auditor still audits `9f8b04d2b`, and `49b50fd74` differs from it by documentation and ticket text only (verify with `git diff 9f8b04d2b 49b50fd74 -- . ':!docs' ':!governance/tickets'`, expected empty).
+
+### W4-F08 — exact operator attestation request (nothing below has been signed on the operator's behalf)
+
+The operator is asked to record, in their own words and signature, one of the following per commit:
+
+> `23feb2bbb`: implementer session id = `<id>` / auditor = `<id>` / certifier = `<id>`, **or** "unrecoverable".
+> `6cf8c5a22`: implementer session id = `<id>`, **or** "unrecoverable".
+> `9f8b04d2b` (this corrective): implementer = `local_4b071fe5-82d0-48bc-b524-146a3daf5c45` (verified), auditor and certifier must be two different new sessions.
+
+Candidate correlations (timing and titles only, **not proof**) are in §H. Until the operator attests, W4-F08 stays `UNVERIFIED / OPERATOR_ATTESTATION_REQUIRED`.
+
+### Remaining after publication
+
+Independent re-audit (new auditor session) → B-4 acceptance by a separate certifier → OD-1, OD-EVOL-12, OD-EVOLX-08, P3 → B6 → FRZ. The agent that implemented this corrective must not perform any of them.

@@ -2,7 +2,7 @@
 
 **For:** a NEW `independent-quality-auditor` session (not `local_4b071fe5-82d0-48bc-b524-146a3daf5c45`, not any session listed in §H of the report).
 **Ticket:** `T-IGX-019-A` · **Policy:** `IIAC-2026-11-05.1` · **Audit baseline:** `5afaad9eadfc1655f4ef1ab59eb022960a924648`
-**Pinned SHA to audit:** `9f8b04d2b8b670077b1e78ce812bb34b680f3968` (branch `evolx/w4-01-consolidated`, pushed; PR jakbuczarnecki/intergrax#388) · the report and this handoff are in a later documentation commit; audit the code at the pinned SHA.
+**Pinned SHA to audit:** `9f8b04d2b8b670077b1e78ce812bb34b680f3968` (published: `origin/development` @ `49b50fd74`, which differs from the pinned SHA by documentation and ticket text only; report §M) · the report and this handoff are in a later documentation commit; audit the code at the pinned SHA.
 This handoff is evidence for an audit. It is not a PASS record, resolves nothing and authorises nothing. EVOL-X is `NOT_CLOSED`.
 
 ## 1. What to verify
