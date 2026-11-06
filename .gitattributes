@@ -17,3 +17,9 @@ docs/project/maintainers/qualification/evol_x/EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS
 docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.json -text
 docs/project/maintainers/qualification/IIAC_EVOLX_B4_EVIDENCE_PUBLICATION_BINDING.utf8.json -text
 docs/project/maintainers/qualification/IIAC_OD_DELEGATION_EVOLX_B4_EVIDENCE_PUBLICATION_2026-11-06.md -text
+
+# W4-F01: IIAC_POLICY_ACTIVATION_RECORD.json binds `handoff_digest` to the SHA-256 of this record with CRLF line endings
+# (96fcf995...), while the committed blob is LF (3b7e901f...). `eol=crlf` materialises the CRLF bytes on EVERY platform and
+# autocrlf setting, so the unchanged ACT-N08 digest holds in Windows (autocrlf true/false/input) and Linux checkouts.
+# Blob, activation record and gate are untouched; the digest meaning is unchanged.
+docs/project/maintainers/qualification/IIAC_SESSION_HANDOFF_RECORD_2026_11_05_CERTIFICATION.md text eol=crlf

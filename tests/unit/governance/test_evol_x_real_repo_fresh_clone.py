@@ -7,14 +7,15 @@ repositories with their own activation record, so they cannot see a defect in th
 (W4-F01). These tests clone the committed ``HEAD`` of the real repository with ``core.autocrlf=true`` and
 ``core.autocrlf=false`` and run the real ``verify_iiac_policy_activation --require-in-force`` and the real preflight.
 
-W4-F01 (``IIAC_POLICY_ACTIVATION_RECORD.json`` ``handoff_digest`` is bound to CRLF bytes) is a material governance
-file and needs an Operator decision. Until it is fixed the ``autocrlf=false`` activation checks are *strict*
-``xfail``: they document the defect, and they turn red (XPASS) the moment it is repaired so the marker is removed.
-No test here writes into the canonical repository.
+W4-F01: ``IIAC_POLICY_ACTIVATION_RECORD.json`` binds ``handoff_digest`` to the CRLF bytes of the handoff record. The
+non-material repair is ``text eol=crlf`` in ``.gitattributes`` for that one path: the CRLF bytes are materialised in
+every checkout (Windows ``autocrlf`` true/false/input, Linux), so the unchanged digest and the unchanged gate hold.
+The activation record, the gate and the blob are untouched. No test here writes into the canonical repository.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -31,14 +32,9 @@ ACTIVATION_SCRIPT = "scripts/governance/verify_iiac_policy_activation.py"
 PREFLIGHT_SCRIPT = "scripts/qualification/evol_x_closure_publication_preflight.py"
 QUAL = "docs/project/maintainers/qualification"
 PASS_RECORD = f"{QUAL}/evol_x/EVOL_X_IIAC_INDEPENDENT_AUDIT_PASS_RECORD.md"
+ACTIVATION_RECORD = f"{QUAL}/IIAC_POLICY_ACTIVATION_RECORD.json"
 AUDIT_DOSSIER = f"{QUAL}/iiac_evidence/EVOL-X/audit/IIAC_EVOL_X_INDEPENDENT_AUDIT_DOSSIER.md"
 CERT_RECORD = f"{QUAL}/iiac_evidence/EVOL-X/certification/EVOL_X_IIAC_CERTIFICATION_RECORD.json"
-
-W4_F01 = pytest.mark.xfail(
-    strict=True,
-    reason="W4-F01: activation handoff_digest is bound to CRLF bytes; LF checkouts fail ACT-N08 "
-    "(needs the Operator decision for the activation-record amendment)",
-)
 
 
 def _run(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -52,8 +48,8 @@ def _git(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProce
     return _run(cwd, "git", "-c", "user.email=w4f07@example.com", "-c", "user.name=w4f07", *args, check=check)
 
 
-def _fresh_clone(root: Path, autocrlf: bool) -> Path:
-    flag = "true" if autocrlf else "false"
+def _fresh_clone(root: Path, autocrlf: bool | str) -> Path:
+    flag = autocrlf if isinstance(autocrlf, str) else ("true" if autocrlf else "false")
     dst = root / f"clone_{flag}"
     _git(root, "clone", "-q", "--no-checkout", "-c", f"core.autocrlf={flag}", str(REPO), str(dst))
     _git(dst, "config", "core.autocrlf", flag)
@@ -63,11 +59,11 @@ def _fresh_clone(root: Path, autocrlf: bool) -> Path:
 
 
 @pytest.fixture(scope="module")
-def clones(tmp_path_factory: pytest.TempPathFactory) -> dict[bool, Path]:
+def clones(tmp_path_factory: pytest.TempPathFactory) -> dict[bool | str, Path]:
     if _git(REPO, "rev-parse", "HEAD", check=False).returncode != 0:
         pytest.skip("not a git checkout")
     root = tmp_path_factory.mktemp("w4f07")
-    return {flag: _fresh_clone(root, flag) for flag in (True, False)}
+    return {flag: _fresh_clone(root, flag) for flag in (True, False, "input")}
 
 
 def _env(clone: Path) -> dict[str, str]:
@@ -110,28 +106,54 @@ def _reset(clone: Path) -> None:
     _git(clone, "clean", "-qfd")
 
 
-def test_real_activation_verifies_in_a_fresh_autocrlf_true_clone(clones: dict[bool, Path]) -> None:
+def test_real_activation_verifies_in_a_fresh_autocrlf_true_clone(clones: dict[bool | str, Path]) -> None:
     proc = _activation(clones[True])
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
-@W4_F01
-def test_real_activation_verifies_in_a_fresh_autocrlf_false_clone(clones: dict[bool, Path]) -> None:
+def test_real_activation_verifies_in_a_fresh_autocrlf_false_clone(clones: dict[bool | str, Path]) -> None:
     proc = _activation(clones[False])
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
-def test_w4_f01_is_the_only_reason_the_lf_clone_activation_fails(clones: dict[bool, Path]) -> None:
-    """Pins the failure mode: if a different ACT code appears for an LF checkout, this must be looked at."""
-    proc = _activation(clones[False])
-    if proc.returncode == 0:
-        return  # W4-F01 repaired; the strict xfail above reports it
-    findings = [line for line in (proc.stdout + proc.stderr).splitlines() if "ACT-" in line]
-    assert findings and all("ACT-N08" in line for line in findings), proc.stdout + proc.stderr
+def test_real_activation_verifies_in_a_fresh_autocrlf_input_clone(clones: dict[bool | str, Path]) -> None:
+    proc = _activation(clones["input"])
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_w4_f01_handoff_bytes_are_crlf_in_every_checkout_mode(clones: dict[bool | str, Path]) -> None:
+    """The materialised handoff bytes are the CRLF form the activation record binds, whatever the autocrlf mode."""
+    activation = json.loads((clones[True] / ACTIVATION_RECORD).read_text(encoding="utf-8"))
+    for flag, clone in clones.items():
+        data = (clone / activation["handoff_record_path"]).read_bytes()
+        assert hashlib.sha256(data).hexdigest() == activation["handoff_digest"], flag
+
+
+def test_w4_f01_a_tampered_handoff_still_fails_act_n08_in_every_checkout_mode(clones: dict[bool | str, Path]) -> None:
+    for flag, clone in clones.items():
+        activation = json.loads((clone / ACTIVATION_RECORD).read_text(encoding="utf-8"))
+        target = clone / activation["handoff_record_path"]
+        original = target.read_bytes()
+        try:
+            for label, mutated in (
+                ("plus-one-byte", original + b"x"),
+                ("lf-collapsed", original.replace(b"\r\n", b"\n")),
+                ("double-crlf", original.replace(b"\r\n", b"\r\r\n")),
+            ):
+                target.write_bytes(mutated)
+                proc = _activation(clone)
+                assert proc.returncode != 0 and "ACT-N08 handoff digest mismatch" in proc.stdout + proc.stderr, (
+                    flag,
+                    label,
+                )
+            target.unlink()
+            assert _activation(clone).returncode != 0, (flag, "deleted")
+        finally:
+            target.write_bytes(original)
 
 
 def test_real_preflight_in_a_fresh_autocrlf_true_clone_reports_only_certifier_blockers(
-    clones: dict[bool, Path],
+    clones: dict[bool | str, Path],
 ) -> None:
     result = _preflight(clones[True])
     assert result["mode"] == "IIAC", result["gate_a_errors"]
@@ -140,15 +162,16 @@ def test_real_preflight_in_a_fresh_autocrlf_true_clone_reports_only_certifier_bl
     assert result["repository_class"] == "canonical"
 
 
-@W4_F01
-def test_real_preflight_in_a_fresh_autocrlf_false_clone_matches_the_crlf_clone(clones: dict[bool, Path]) -> None:
-    crlf, lf = _preflight(clones[True]), _preflight(clones[False])
-    assert lf["mode"] == "IIAC", lf["gate_a_errors"]
-    assert lf["gate_a_errors"] == crlf["gate_a_errors"]
-    assert lf["gate_b_errors"] == crlf["gate_b_errors"]
+def test_real_preflight_in_a_fresh_autocrlf_false_clone_matches_the_crlf_clone(clones: dict[bool | str, Path]) -> None:
+    crlf = _preflight(clones[True])
+    for flag in (False, "input"):
+        lf = _preflight(clones[flag])
+        assert lf["mode"] == "IIAC", lf["gate_a_errors"]
+        assert lf["gate_a_errors"] == crlf["gate_a_errors"], flag
+        assert lf["gate_b_errors"] == crlf["gate_b_errors"], flag
 
 
-def test_real_preflight_flags_tampered_evidence_in_a_fresh_clone(clones: dict[bool, Path]) -> None:
+def test_real_preflight_flags_tampered_evidence_in_a_fresh_clone(clones: dict[bool | str, Path]) -> None:
     clone = clones[True]
     try:
         # N1: one extra byte in the digest-bound pass record
@@ -179,7 +202,7 @@ def test_real_preflight_flags_tampered_evidence_in_a_fresh_clone(clones: dict[bo
         _reset(clone)
 
 
-def test_real_preflight_rejects_a_widened_certified_scope_in_a_fresh_clone(clones: dict[bool, Path]) -> None:
+def test_real_preflight_rejects_a_widened_certified_scope_in_a_fresh_clone(clones: dict[bool | str, Path]) -> None:
     """RA-B4-05 on the real evidence: appended widening text, widened verdict and a scope key each add A-19."""
     clone = clones[True]
     manifest_rel = f"{QUAL}/iiac_evidence/EVOL-X/certification/iiac_audit_session_manifest.EVOL-X.json"
