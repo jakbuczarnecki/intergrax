@@ -64,6 +64,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 
 # W402-05/06 (defect-hunt D4/D5). Imported modules and git subprocesses must not be redirected by files or
 # variables that ``git status`` cannot see: drop the script directory from ``sys.path`` (a planted, git-ignored
@@ -72,6 +73,11 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:] = [entry for entry in sys.path if os.path.abspath(entry or os.getcwd()) != _HERE]
 os.environ["GIT_NO_REPLACE_OBJECTS"] = "1"
+# W403-01: an unchecked-hash ``.pyc`` in a git-ignored ``__pycache__`` replaces its source without being compared
+# with it. Point the bytecode cache at a directory that does not exist and never write one, so every imported
+# module (the IIAC verifier included) is compiled from the committed source that is bound to HEAD below.
+sys.dont_write_bytecode = True
+sys.pycache_prefix = os.path.join(tempfile.gettempdir(), "evolx-preflight-no-bytecode-cache", str(os.getpid()))
 
 import argparse  # noqa: E402
 import hashlib  # noqa: E402
@@ -591,7 +597,13 @@ def _repository_integrity_errors(ctx: Context, code: str) -> list[str]:
 _EVIDENCE_PREFIX = f"{EVIDENCE_ROOT_REL}/"
 # Everything the verdict stands on: the evidence tree, the qualification inputs that were read, and the verifier code
 # (the preflight itself and every module it imports live below ``scripts``).
-_BOUND_TREES = (EVIDENCE_ROOT_REL, "scripts", ".gitattributes")
+_BOUND_TREES = (
+    EVIDENCE_ROOT_REL,
+    "scripts/governance",
+    "scripts/qualification",
+    "scripts/__init__.py",
+    ".gitattributes",
+)
 _IGNORED_PARTS = frozenset({"__pycache__"})
 
 
@@ -623,6 +635,26 @@ def _worktree_files(ctx: Context, rel_dir: str) -> set[str]:
     return found
 
 
+def _loaded_module_paths(ctx: Context) -> set[str]:
+    """Repository modules (``scripts/`` or ``intergrax/``) that this process has actually imported: the verifier's
+    real import closure, bound to HEAD whatever directory they live in. Only meaningful when the repository under
+    test is the one the code runs from."""
+    if ctx.repo.resolve() != _REPO.resolve():
+        return set()
+    found: set[str] = set()
+    for module in list(sys.modules.values()):
+        file = getattr(module, "__file__", None)
+        if not file or not str(file).endswith(".py"):
+            continue
+        try:
+            rel = Path(file).resolve().relative_to(_REPO).as_posix()
+        except ValueError:
+            continue
+        if rel.startswith(("scripts/", "intergrax/")):
+            found.add(rel)
+    return found
+
+
 def _dirty_input_errors(ctx: Context, code: str) -> list[str]:
     """W401-RA-03 / W402-01 / W402-02: every verified input equals the committed ``HEAD`` content.
 
@@ -642,7 +674,7 @@ def _dirty_input_errors(ctx: Context, code: str) -> list[str]:
             parts = meta.split()
             if path and len(parts) == 3 and parts[1] == "blob":
                 blobs[path] = parts[2]
-    read_paths: set[str] = ctx.cache.get("read_paths", set())
+    read_paths: set[str] = set(ctx.cache.get("read_paths", set())) | _loaded_module_paths(ctx)
     for rel in read_paths:
         if rel not in blobs:
             single = _git(ctx, "rev-parse", "--verify", "-q", f"{ctx.head}:{rel}")
@@ -1323,17 +1355,15 @@ def _lifecycle_value_errors(cert: dict[str, Any], base_cert: dict[str, Any] | No
     return errors
 
 
-def _certification_directory_errors(ctx: Context, p2: str) -> list[str]:
-    """W401-RA-02: the certification directory holds exactly the files published at P2. An added file (for example
-    a scope addendum) would be indexed and signed alongside the record without any gate reading it."""
-    before, after = set(_tree_entries(ctx, p2, CERT_DIR)), set(_tree_entries(ctx, ctx.head, CERT_DIR))
+def _frozen_directory_errors(ctx: Context, p2: str, rel_dir: str, label: str) -> list[str]:
+    """W401-RA-02 / W403-02: ``rel_dir`` holds exactly the entries published at P2 (every entry type). An added
+    file, symlink or gitlink would be indexed and signed alongside the record without any gate reading it."""
+    before, after = set(_tree_entries(ctx, p2, rel_dir)), set(_tree_entries(ctx, ctx.head, rel_dir))
     errors = [
-        f"A-19 {Path(rel).name} was added to the certification directory after the certification publication"
+        f"A-19 {Path(rel).name} was added to the {label} directory after the certification publication"
         for rel in sorted(after - before)
     ]
-    errors.extend(
-        f"A-19 {Path(rel).name} was removed from the certification directory" for rel in sorted(before - after)
-    )
+    errors.extend(f"A-19 {Path(rel).name} was removed from the {label} directory" for rel in sorted(before - after))
     return errors
 
 
@@ -1341,12 +1371,23 @@ _EVIDENCE_DIRS = frozenset({"audit", "certification", "b4_reaudit", "operator_de
 _INDEX_NAME = re.compile(r"EVIDENCE_INDEX\.json$")
 
 
-def _evidence_layout_errors(ctx: Context) -> list[str]:
-    """W402-03: the EVOL-X evidence root holds only the known evidence directories, plus directories that bind
-    their content with an evidence index (closure evidence is referenced by an indexed re-audit directory). A file
-    placed beside them, or inside an unindexed directory, would be committed with the evidence without any gate
-    reading it."""
+def _referenced_evidence_dirs(cert: dict[str, Any] | None) -> set[str]:
+    """Evidence directories named by a blocker resolution (``closure_evidence_index_path``)."""
+    resolved = (cert or {}).get("resolved_blockers_for_closure")
+    found: set[str] = set()
+    for entry in resolved if isinstance(resolved, list) else []:
+        if isinstance(entry, dict) and isinstance(entry.get("closure_evidence_index_path"), str):
+            found.add(posixpath.dirname(entry["closure_evidence_index_path"].replace("\\", "/")))
+    return found
+
+
+def _evidence_layout_errors(ctx: Context, cert: dict[str, Any] | None) -> list[str]:
+    """W402-03 / W403-02: the EVOL-X evidence root holds only the known evidence directories and the directories a
+    blocker resolution names; every file of an indexed directory is listed in its index. A file placed beside them,
+    in an unreferenced directory or outside an index would be committed with the evidence without any gate reading
+    it."""
     prefix = f"{EVIDENCE_ROOT_REL}/"
+    referenced = _referenced_evidence_dirs(cert)
     by_dir: dict[str, list[str]] = {}
     errors: list[str] = []
     for rel in sorted(_tree_entries(ctx, ctx.head, EVIDENCE_ROOT_REL)):
@@ -1356,11 +1397,29 @@ def _evidence_layout_errors(ctx: Context) -> list[str]:
         else:
             by_dir.setdefault(head_dir, []).append(rest)
     for head_dir, files in sorted(by_dir.items()):
-        indexed = any(_INDEX_NAME.search(name) and "/" not in name for name in files)
-        if head_dir not in _EVIDENCE_DIRS and not indexed:
+        dir_rel = f"{prefix}{head_dir}"
+        index_names = [name for name in files if _INDEX_NAME.search(name) and "/" not in name]
+        if head_dir not in _EVIDENCE_DIRS and (not index_names or dir_rel not in referenced):
             errors.append(
-                f"A-19 {prefix}{head_dir}/ is neither a known EVOL-X evidence directory nor bound by an evidence index"
+                f"A-19 {dir_rel}/ is neither a known EVOL-X evidence directory nor an indexed directory "
+                "named by a blocker resolution"
             )
+            continue
+        if head_dir in ("audit", "certification") or not index_names:
+            continue  # covered by the P2 freeze and by the index verification of the gates
+        listing = _show(ctx, ctx.head, f"{dir_rel}/{index_names[0]}")
+        try:
+            document = _strict_json_loads(listing.decode("utf-8-sig")) if listing is not None else None
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            document = None
+        indexed = document.get("files") if isinstance(document, dict) else None
+        if not isinstance(indexed, dict):
+            errors.append(f"A-19 {dir_rel}/{index_names[0]} has no readable files listing")
+            continue
+        errors.extend(
+            f"A-19 {dir_rel}/{name} is not listed by the evidence index of its directory"
+            for name in sorted(set(files) - set(indexed) - {index_names[0]})
+        )
     return errors
 
 
@@ -1400,8 +1459,9 @@ def _gate_a_scope_exact(ctx: Context, manifest: dict[str, Any], cert: dict[str, 
         )
     errors.extend(_manifest_bytes_errors(ctx, anchor))
     errors.extend(_p2_evidence_immutability_errors(ctx, anchor))
-    errors.extend(_certification_directory_errors(ctx, anchor))
-    errors.extend(_evidence_layout_errors(ctx))
+    errors.extend(_frozen_directory_errors(ctx, anchor, CERT_DIR, "certification"))
+    errors.extend(_frozen_directory_errors(ctx, anchor, AUDIT_DIR, "audit"))
+    errors.extend(_evidence_layout_errors(ctx, cert))
 
     current, structural = limitation_entries(manifest.get("limitations"))
     baseline, _ = limitation_entries(base_manifest.get("limitations"))
@@ -2002,6 +2062,8 @@ def _operator_resolution_errors(
         if not isinstance(item, dict):
             fail("closure_evidence entry is not an object")
             continue
+        for extra in sorted(set(item) - _CLOSURE_ITEM_KEYS):
+            fail(f"closure_evidence item carries unexpected key {extra!r}")
         raw_path = str(item.get("path") or "").replace("\\", "/")
         reason = _path_rejected(raw_path) if raw_path else "missing"
         if reason or not raw_path.startswith(OPERATOR_DIR + "/"):
@@ -2059,6 +2121,7 @@ _REAUDIT_RESOLUTION_KEYS = frozenset(
     }
 )
 _OPERATOR_RESOLUTION_KEYS = frozenset({"closure_evidence"})
+_CLOSURE_ITEM_KEYS = frozenset({"path", "sha256", "decision_id"})
 _DISPOSITION_KEYS = frozenset(
     {
         "disposition",

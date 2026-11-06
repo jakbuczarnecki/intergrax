@@ -3790,3 +3790,124 @@ def test_hunt_an_unexpected_evidence_shape_is_an_internal_error_not_a_crash(repo
     result = _eval(root)
     assert result.mode == "INVALID" and result.gate_a[0].startswith("A-99")
     assert not result.gate_a_pass and not result.gate_b_pass
+
+
+# --------------------------------------------------------------------------- W403 round-3 delta re-audit (W403-01..03)
+
+
+def _copy_scripts_tree(tmp_path: Path) -> Path:
+    import shutil
+
+    target = tmp_path / "pyc_repo"
+    shutil.copytree(
+        Path(pf.__file__).resolve().parents[2] / "scripts",
+        target / "scripts",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    return target
+
+
+def test_w403_01_a_forged_bytecode_cache_is_never_loaded(tmp_path: Path) -> None:
+    """Audit repro t2: an UNCHECKED_HASH ``.pyc`` in a git-ignored ``__pycache__`` replaces the committed verifier."""
+    import py_compile
+
+    root = _copy_scripts_tree(tmp_path)
+    marker = tmp_path / "forged_bytecode_ran.txt"
+    payload = tmp_path / "payload.py"
+    payload.write_text(f"open({str(marker)!r}, 'w').write('forged')\n", encoding="utf-8")
+    source = root / "scripts" / "governance" / "iiac_common.py"
+    cache = source.parent / "__pycache__" / f"{source.stem}.{sys.implementation.cache_tag}.pyc"
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    py_compile.compile(
+        str(payload), cfile=str(cache), doraise=True, invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH
+    )
+    # control: a plain import of the same tree does run the forged bytecode (the plant works)
+    subprocess.run(
+        [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(root)!r}); import scripts.governance.iiac_common"],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    assert marker.exists(), "control failed: the forged bytecode was not loaded by a plain import"
+    marker.unlink()
+    script = root / "scripts" / "qualification" / "evol_x_closure_publication_preflight.py"
+    proc = subprocess.run(
+        [sys.executable, str(script), "--help"], cwd=root, capture_output=True, text=True, check=False
+    )
+    assert not marker.exists(), "the preflight executed forged bytecode"
+    assert proc.returncode == 0, proc.stderr[-400:]
+    assert "Gate" in proc.stdout or "gate" in proc.stdout
+
+
+def test_w403_01_the_process_never_writes_bytecode_into_the_repository() -> None:
+    assert sys.dont_write_bytecode is True
+    prefix = sys.pycache_prefix
+    assert prefix and "evolx-preflight-no-bytecode-cache" in prefix
+    repo_root = Path(pf.__file__).resolve().parents[2]
+    assert repo_root not in Path(prefix).resolve().parents, "the bytecode cache must live outside the repository"
+
+
+def test_w403_02_closure_evidence_items_accept_only_gate_checked_keys(closed) -> None:
+    root, _ = closed
+
+    def change(cert: dict[str, Any]) -> None:
+        entry = next(e for e in cert["resolved_blockers_for_closure"] if e.get("closure_evidence"))
+        entry["closure_evidence"][0]["note"] = "scope extended to all profiles"
+
+    _mutate_json(root, pf.REL_CERT_RECORD, change, reindex=True)
+    result = _eval(root)
+    assert not result.gate_b_pass
+    assert any("unexpected key 'note'" in e for e in result.gate_a + result.gate_b), (result.gate_a, result.gate_b)
+
+
+def test_w403_02_a_gitlink_in_the_audit_directory_is_rejected(repo) -> None:
+    root, _ = repo
+    _git(root, "update-index", "--add", "--cacheinfo", f"160000,{'2' * 40},{pf.AUDIT_DIR}/submodule_like")
+    _git(root, "-c", "user.email=b4-fixture@example.com", "-c", "user.name=b4-fixture", "commit", "-q", "-m", "gitlink")
+    result = _eval(root)
+    assert any("submodule_like was added to the audit directory" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w403_02_a_new_indexed_directory_must_be_named_by_a_resolution(repo) -> None:
+    root, _ = repo
+    base = f"{pf.EVIDENCE_ROOT_REL}/unreferenced_dir"
+    _write(root, f"{base}/note.md", "LIM-01..05 are withdrawn.\n")
+    _write(root, f"{base}/EVIDENCE_INDEX.json", json.dumps({"files": {"note.md": {}}}))
+    _commit(root, "an indexed directory that no resolution names")
+    result = _eval(root)
+    assert any("unreferenced_dir" in e and "named by a blocker resolution" in e for e in _b(result.gate_a, "A-19")), (
+        result.gate_a
+    )
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w403_02_a_file_missing_from_its_directory_index_is_rejected(closed) -> None:
+    root, _ = closed
+    index_dir = str(Path(REAUDIT_INDEX).parent).replace("\\", "/")
+    _write(root, f"{index_dir}/UNLISTED_ADDENDUM.md", "scope extended\n")
+    _commit(root, "an unindexed file in an indexed directory")
+    result = _eval(root)
+    assert any("UNLISTED_ADDENDUM.md is not listed" in e for e in _b(result.gate_a, "A-19")), result.gate_a
+    assert not result.gate_a_pass and not result.gate_b_pass
+
+
+def test_w403_03_unrelated_scripts_are_not_bound_but_the_verifier_directories_are(repo) -> None:
+    root, _ = repo
+    _write(root, "scripts/dev/scratch_tool.py", "VALUE = 1\n")
+    _write(root, "scripts/governance/verifier_helper.py", "VALUE = 1\n")
+    _commit(root, "add an unrelated and a verifier script")
+    assert not _b(_eval(root).gate_a, "A-21"), "control: clean"
+    _write(root, "scripts/dev/scratch_tool.py", "VALUE = 2  # edited\n")
+    _write(root, "scripts/dev/untracked_scratch.py", "VALUE = 3\n")
+    assert not _b(_eval(root).gate_a, "A-21"), "unrelated scripts must not block the preflight"
+    _write(root, "scripts/governance/verifier_helper.py", "VALUE = 2  # edited\n")
+    result = _eval(root)
+    assert any("scripts/governance/verifier_helper.py" in e for e in _b(result.gate_a, "A-21")), result.gate_a
+
+
+def test_w403_03_the_loaded_verifier_modules_are_part_of_the_bound_set() -> None:
+    ctx = pf.Context(repo=Path(pf.__file__).resolve().parents[2], activation_record=Path("x"), evidence_root=None)
+    loaded = pf._loaded_module_paths(ctx)
+    assert "scripts/qualification/evol_x_closure_publication_preflight.py" in loaded
+    assert "scripts/governance/iiac_common.py" in loaded
